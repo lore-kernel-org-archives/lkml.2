@@ -1,97 +1,49 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab2JAXBU (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 1 Oct 2012 19:01:20 -0400
-Received: from 1wt.eu ([62.212.114.60]:35318 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932864Ab2JAXBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Oct 2012 19:01:13 -0400
-Message-Id: <20121001225204.519792971@1wt.eu>
-User-Agent: quilt/0.48-1
-Date: Tue, 02 Oct 2012 00:54:40 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, "Theodore Tso" <tytso@mit.edu>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Matt Mackall <mpm@selenic.com>, Tony Luck <tony.luck@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Willy Tarreau <w@1wt.eu>
-Subject: [ 163/180] random: Use arch_get_random_int instead of cycle counter if avail
-In-Reply-To: <6a854f579a99b4fe2efaca1057e8ae22@local>
+	id S1754519Ab2JCOgq (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 3 Oct 2012 10:36:46 -0400
+Received: from nm3.bullet.mail.sg3.yahoo.com ([106.10.148.82]:48415 "HELO
+	nm3.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753672Ab2JCOgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Oct 2012 10:36:45 -0400
+X-Yahoo-Newman-Id: 499882.39434.bm@omp1026.mail.sg3.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: L3FY0egVM1mFewK.jM7xN95r09eCxvobtVna9pSrY3wIOUG
+ 67N9xoHaUm2WhLXpzMB7DMzE1ba0_MBhJBVSp7fk878aHB1H3UfNaYPMAZff
+ bl82ZB5PsTNy6DGHfsdCjAZEfKSQulGPclqf11ddta7UEdPxxSu_7JtxNEgu
+ sms0rH4k8VtblH3Yel3JsQWaGPqscRpTzdK4.KOOxzfkKs390rj1WmCEDzIt
+ WqmAVK37oqFP8K.cKI54tMAIm0FJI8x_KkqbXKqtDR_1wsEDbk79ocQM1OJG
+ wJn3qbCaKT1TThKmS2PDiTQtboe8l3wqkkSQPMtWHtj5fRKxinfhfYhjKDMu
+ IoCBYV7PlSYNzQMMTCUmjGb2yhfWDuSFH_XlWKMI-
+X-Yahoo-SMTP: Gs08DLeswBDy1tJmeF_6bDHWgzTmNaRlC9Pm0WXr3sAe
+Message-ID: <CB6887D474EF94109BAA167CFDD8DAEA@hmzo>
+From: "osclr" <weizuofazpu@yahoo.cn>
+To: <denny@id.net>
+Subject: 556%..@@...2585.1222..%1283.
+Date: Thu, 3 Oct 2002 22:35:42 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="utf-8"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id q93Eb3cr031929
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+æ‚¨å¥½ï¼š
 
-------------------
+    æœ¬å…¬å¸æœ‰æ­£è§„ï¼ˆå›½-åœ°ç¨)ï¼ˆå‘-ç¥¨ï¼‰å¯ä»¥ä»£&å¼€ï¼Œç‚¹æ•°
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+è¾ƒä¼˜æƒ ï¼Œå¯ä»¥éªŒè¯åä»˜æ¬¾ã€‚ æœ‰éœ€æ±‚è¯·æ¥ç”µè¯¦è°ˆã€‚(å¦‚æœ‰æ‰“
 
-commit cf833d0b9937874b50ef2867c4e8badfd64948ce upstream.
+æ‰°ï¼Œè¯·è°…è§£)ã€‚è°¢è°¢!
 
-We still don't use rdrand in /dev/random, which just seems stupid. We
-accept the *cycle*counter* as a random input, but we don't accept
-rdrand? That's just broken.
+             è”ç³»äºº:ç‹å‰‘é”‹ï¼ˆå…ˆç”Ÿï¼‰
 
-Sure, people can do things in user space (write to /dev/random, use
-rdrand in addition to /dev/random themselves etc etc), but that
-*still* seems to be a particularly stupid reason for saying "we
-shouldn't bother to try to do better in /dev/random".
+              ç”µ  è¯:13538292585
 
-And even if somebody really doesn't trust rdrand as a source of random
-bytes, it seems singularly stupid to trust the cycle counter *more*.
-
-So I'd suggest the attached patch. I'm not going to even bother
-arguing that we should add more bits to the entropy estimate, because
-that's not the point - I don't care if /dev/random fills up slowly or
-not, I think it's just stupid to not use the bits we can get from
-rdrand and mix them into the strong randomness pool.
-
-Link: http://lkml.kernel.org/r/CA%2B55aFwn59N1=m651QAyTy-1gO1noGbK18zwKDwvwqnravA84A@mail.gmail.com
-Acked-by: "David S. Miller" <davem@davemloft.net>
-Acked-by: "Theodore Ts'o" <tytso@mit.edu>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Willy Tarreau <w@1wt.eu>
----
- drivers/char/random.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index f2a1651..ac74029 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -624,8 +624,8 @@ static struct timer_rand_state input_timer_state;
- static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- {
- 	struct {
--		cycles_t cycles;
- 		long jiffies;
-+		unsigned cycles;
- 		unsigned num;
- 	} sample;
- 	long delta, delta2, delta3;
-@@ -637,7 +637,11 @@ static void add_timer_randomness(struct timer_rand_state *state, unsigned num)
- 		goto out;
- 
- 	sample.jiffies = jiffies;
--	sample.cycles = get_cycles();
-+
-+	/* Use arch random value, fall back to cycles */
-+	if (!arch_get_random_int(&sample.cycles))
-+		sample.cycles = get_cycles();
-+
- 	sample.num = num;
- 	mix_pool_bytes(&input_pool, &sample, sizeof(sample));
- 
--- 
-1.7.2.1.45.g54fbc
-
-
-
+               Q  Q:1060046785ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
