@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab1CAAHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 28 Feb 2011 19:07:51 -0500
-Received: from chain.prefecturams.ro ([213.157.167.121]:53877 "EHLO
-	prefecturamures.ro" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755263Ab1CAAHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 28 Feb 2011 19:07:50 -0500
-Message-ID: <2097.41.138.189.133.1298884712.squirrel@mail.prefecturamures.ro>
-Date: Mon, 28 Feb 2011 11:18:32 +0200 (EET)
-Subject: *** Lieber Sieger ***
-From: "British National Lotterie" <info@bnl.co.uk>
-Reply-To: mr.fredpeters10@yahoo.ie
-User-Agent: SquirrelMail/1.4.9a
+	id S1753165Ab1BLIlh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Feb 2011 03:41:37 -0500
+Received: from nm6-vm0.bullet.mail.ac4.yahoo.com ([98.139.52.70]:30305 "HELO
+	nm6-vm0.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752486Ab1BLIlc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Feb 2011 03:41:32 -0500
+X-Greylist: delayed 366 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Feb 2011 03:41:31 EST
+X-Yahoo-Newman-Id: 662014.60675.bm@omp1040.mail.ac4.yahoo.com
+X-Yahoo-SMTP: pNjPktSswBD1A7XPUwYt.8BEHByK4mFNwsq50A3Au6D6b1_VYoN1
+X-YMail-OSG: OA5azKUVM1m__GlaBVcdjy35iPGzTyNPzICLOcgpEOjKBqb
+ 9Iecxi0BEt6KO0rMO9puMLOCI4GNhdxGJY2DMdheu969zZXfByyExKqpaVYQ
+ I4cYFRfXgd5sFPOyTj4aMID6HCg_I3eTnkf5BfAhWfjcVLSFVSieMyzlbD9L
+ M0L0Q928f1lqiZK63CAgJ2zEASJz8_.yWx2tnFct9aWGQjQQwWUePo2WkNrF
+ EKA--
+X-Yahoo-Newman-Property: ymail-3
+From: "Hassan Bin Ismail" <hassanbinismai0088@att.net>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-To: hassan8888@live.com.my
+Date: Thu, 24 Jan 2002 04:32:15 +0800
+Subject: GET BACK TO ME ASAP 1
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <USERCD06892FFEbbe7ffb41e684819b05ec77178ddfb32@usercd06892ffe>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+HASSAN ISMAIL & ASSOCIATES.
+NO. 122A, 1ST FLOOR JALAN
+SULTANAH BATU PAHAT 80000
+JOHOR BAHRU MALAYSIA.
 
+(PRIVATE/CONFIDENTIAL)
 
+My name is Hassan Bin Ismail,a legal practitioner with Hassan Ismail & Associates. A deceased client of mine, that shares the same last name as yours,who died as a result of a heart related condition in 18th November 2004.
 
-Hiermit möchten wir Sie informieren, dass Sie wurden
-ausgewählt für ein Preisgeld von £ 1.000.000
-(Britische Pfund) auf den 28. Februar statt
-2011 in London (Vereinigtes Königreich). Das
-Auswahlprozess wurde durchgeführt mittels
-zufällige Auswahl in unserem EDV-E-Mail
-Auswahl-System (ESS), Großbritannien. Füllen Sie den
-unten:
+I have contacted you to assist in distributing the money left behind by my late client(US$19,000,000.00) Nineteen Million United States Dollars is lodged in the bank.
 
-1. Vollständiger Name
-2.Full Adresse
-3.Marital Status
-4.Occupation
-5.Age
-6.Sex
-7.Nationality
-8.Country Of Residence
-9.Telephone Anzahl
-
-Agent Name: Herr Fred Peters
-Tel: +447024051534
-E-Mail:mr.fredpeters10@yahoo.ie
+Sincerely yours.
+Barr.Hassan Bin Ismail (Esq)
+(Attorney at Law
 
