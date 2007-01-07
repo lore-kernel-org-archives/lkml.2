@@ -1,59 +1,51 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754700Ab1LMCQf (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Mon, 12 Dec 2011 21:16:35 -0500
-Received: from [66.232.142.96] ([66.232.142.96]:49683 "EHLO sdnmall.co.kr"
-        rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-        id S1753947Ab1LMCQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Mon, 12 Dec 2011 21:16:33 -0500
-Reply-To: <jefflinarm@hotmail.com>
-Message-ID: <B0871B6FF9B61B8450F619E4FD53E361@imrfyrf>
-From: "Jeff" <admin@sudocorp.co.kr>
-To: <lee_vw2006@ymail.com>
-Subject: cut the cost of gas detector ,your own design ----measurement software tech. group
-Date: Wed, 12 Dec 2018 10:12:39 +0800
+        id S1758871Ab1LONNH (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Thu, 15 Dec 2011 08:13:07 -0500
+Received: from nm30-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.54]:28311 "HELO
+        nm30-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with SMTP id S1751287Ab1LONNF (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 15 Dec 2011 08:13:05 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Dec 2011 08:13:05 EST
+X-Yahoo-Newman-Id: 551416.61270.bm@smtp204.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-5
+X-YMail-OSG: FjTkKDQVM1mAHO6N1PFVKE17SX77riEPxFirteV2WqktnJ8
+ O12nklCDaor0pqvCtRqlotr5Zt9ZJ8.vKpnh3XKkP7YufzQNKTc6EzzcOD7L
+ pm8pDUND7YISOQMMMfcMGg.ley9r.rn77ofJTAYdIviREToaCekK372jUNTR
+ I5NZvMrBJ1kwzJ_C8GCrcISBBCgMNrUCrgz7yh_znFaDibWgm1.l7gHfaYrh
+ 7v4gZJyphZafPU2_aQwiXJZExi2.mFUzDxNh7aAqUj0pg2323T8ojkvi5XQ9
+ PHMCXmPXcrT3TKD48OD09bFoKYah7DIbMx5CU1ikvhxQtNRAPdzzfUhUmYiC
+ Iy5DVjFDVSFRxM5A8g_k67ZWYH2hj.2m5ssdOgHxK0MOs9Z8pFe10
+X-Yahoo-SMTP: L6SBfASswBCFoWtrBb6rkTgoYJQ6vDCG30qsCuQ-
+Reply-To: <fa1fa000@sina.com>
+Message-ID: <2C4F1ADBE065DC2F5A09B2C608CA4C83@woqzcmj>
+From: "sfvev" <eveningshadefarm@yahoo.com>
+To: <lyhfx@188.net>, <manzi@shit.com>, <linux-kernel@vger.kernel.org>,
+        <ciw_lf@ciw.com.cn>, <lsn@r4.linksynergy.com>, <wsc@znufe.edu.cn>,
+        <huanduo@sina.com>, <lyx880@263.net>, <alagi@cn6000.com>,
+        <1jacky@163.net>, <00@0110.com>
+Subject: =?utf-8?B?5LyB5Lia5ZCI5L2c?=
+Date: Mon, 8 Jan 2007 00:40:35 +0800
 MIME-Version: 1.0
 Content-Type: text/plain;
         charset="utf-8"
 Content-Transfer-Encoding: base64
-X-Priority: 3
-X-MSMail-Priority: Normal
+X-Priority: 1
+X-MSMail-Priority: High
 X-Mailer: Microsoft Outlook Express 6.00.2900.5512
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-RGVhciBmcmllbmQsDQogDQpNYXliZSB5b3UgYXJlIGNvbmZ1c2VkIGluIHRoZSBjb3N0IG9mIHlv
-dXIgcHJvZHVjdChnYXMgZGV0ZWN0b3IgIG9yIG90aGVyIG1lYXN1cmVtZW50KSwNCnRoZSBsYWNr
-IG9mIGNvcmUgZGVzaWduaW5nIHRlYW0sIGFuZCB0aGUgaW5jb252ZW5pZW5jZSBvZiB5b3VyIGNs
-aWVudHMnIGN1c3RvbWl6YXRpb24gPyAgDQogDQpJZiB5b3UgYXJlIGluIHRoaXMgcHJlZGljYW1l
-bnQgLCBJdCB3b3VsZCBiZSBsdWNreSBmb3IgeW91IHRvIHNlZSB0aGlzIGVtYWlsLCANCm9yIHBs
-ZWFzZSBqdXN0IGlnbm9yZSB0aGlzIGVtYWlsIGFuZCBJIHdvdWxkIGFwb2xvZ2l6ZSBmb3IgeW91
-ciB2YWx1YWJsZSB0aW1lLg0KIA0KDQo8dGhlIHBpY3R1cmUgaXMgb25seSBmb3IgaWxsdXN0cmF0
-aW9uLG5vdCB0aGUgcmVhbCBwcm9kdWN0IHdlIGRlc2lnbmVkPg0KIA0KVG8gb3duIGFuIGV4cHJp
-ZW5jZWQgcmVzZWFyY2ggZGVwYXJ0bWVudCB3aXRob3V0IHByZXNzdXJlIQ0KVG8gY3JlYXRlIHlv
-dSBvd24gcHJvZHVjdCBhdCB0aGUgbG93ZXN0IGNvc3QgYW5kIHRoZSBmYXN0ZXN0IHNwZWVkIQ0K
-IA0KV2UgYXJlIGEgZ3JvdXAgb2YgZXhwcmllbmNlZCBlbmdpbmVlcnMgY29tcG9zZWQgb2YgRWxl
-Y3RyaWMsIFNvZnR3YXJlLCBTdHJ1Y3R1cmUsIA0Kd2hvIHVzZWQgdG8gYmUgZW5nYWdlZCBpbiBn
-YXMgZGV0ZWN0b3IgZGVzaWduLg0KIA0KSXQgd291bGQgYmUgbXVjaCBtb3JlIGNvbnZpbmllbnQg
-aWYgeW91IGhhdmUgYSBzaW1pbGFyIHByb2R1Y3QgY3VycmVudGx5LCBhbmQgd2Ugd2lsbCBkZXNp
-Z24gdGhlIHNvZnR3YXJlIGZvciB5b3UuDQp0aGVuIHlvdSBjb3VsZCBwcm9kdWNlIHRoZSBtYWlu
-Ym9hcmQgYnkgeW91cnNlbGYsIGFuZCBvZiBjb3Vyc2UgY3VzdG9taXplIHlvdXIgZnVuY3Rpb24s
-IGxvZ28sIGFuZCBldGMuDQogIA0KRWFzeSBjby13b3JraW5nOiANClRoZSBkZXNpZ25lZCBzb2Z0
-d2FyZSB3aWxsIGJlIHNlbnQgdGhyb3VnaCB3ZWIgdG8geW91Lg0KYW5kIHdlIHdpbGwgYWlkIHlv
-dSB0byBidXJuIHRoZSBzb2Z0IGNvZGUgdG8geW91ciBtYWNoaW5lLiANCllvdSBjYW4gdGVzdCB0
-aGUgZGVzaWduZWQgbWFjaGluZSBmaXJzdCx0aGVuIHBheSBmb3IgaXQgaWYgeW91IGFyZSBzYXRp
-c2ZpZWQuDQpVc3VhbGx5IHlvdSBldmVuIGRvbid0IGhhdmUgdG8gc2VuZCB5b3VyIG1hY2hpbmUg
-dG8gdXMsIGhhaGFoLg0KIA0KSXQgd291bGQgZ2l2ZSBhIHNpZ25pZmljYW50IGNoYW5nZSB0byB5
-b3VyIGNvbXBhbnkhDQogDQpJIHdvdWxkIGJlIHZlcnkgYXBwcmljYXRlZCBmb3IgeW91ciByZXBs
-eSwgd2FpdGluZy4uLi4NCg0Kb3IgYWRkIG1lIG9udG8geW91ciBza3lwZSBvciBNU04gZm9yIGRp
-cmVjdCBjb250YWN0LCBUaGFua3MuIA0KIA0KIA0KVGhhbmtzJlJlZ2FyZHMsDQpKZWZmDQogDQpR
-VGVjaC4gRGVzaWduIEdyb3VwDQogDQpTa3lwZTogamVmZi5saW5hcm0NCk1TTjogICBqZWZmbGlu
-YXJtQGhvdG1haWwuY29tDQogDQogIA0KPElmIHlvdSBjYW5ub3QgbWFrZSBkZWNpc2lvbiBhYm91
-dCB0aGlzIGFmZmFpciwgd291bGQgeW91IHBsZWFzZSBraW5kbHkgdHJhbnNtaXQgaXQgdG8gIHRo
-ZSByaWdodCBwZXJzb24gPw0KDQpJJ2QgYmUgYXBwcmljYWl0ZWQgZm9yIGl0J3MgZXNzZW50aWFs
-IHRvIGJvdGggb2YgdXMuIA0KDQpJZiB5b3UgYXJlIGludGVyZXN0ZWQsIHBsZWFzZSBkb24ndCBo
-ZXNpdGF0ZSB0byBjb250YWN0IHdpdGggbWUgZm9yIG1vcmUgZGV0YWlscy4NCg0KIEkgYW0gc3Vy
-ZSB5b3Ugd29uJ3QgYmUgZGlzYXBwb2ludGVkIT4NCg==
+bHloZnjmgqjlpb3vvIHmiJHlj7jkuJPkuJrku47kuovotKLnqI7ku6PnkIYu6LSi56iO5ZKo6K+i
+562J5Lia5Yqh5LiT5Lia5py65p6ELuivmuS/oeS4uuS8geS4muWSjOS4quS6uuWKnueQhu+8iOS+
+i+Wmgu+8mua1t+WFs+eojuOAgeaZrumAmueojuOAgeWinuWAvOeojuOAgeWVhuWTgemUgOWUruOA
+geWVhuS4muOAgeW3peS4muOAgeacuuWKqOi9pumUgOWUruOAgei/kOi+k+S4muOAgeacjeWKoeS4
+muOAgeW5v+WRiuS4muOAgeWbvemZhei0p+i/kOOAgeW7uuetkeS4mu+8ieetiemhueebruS4k+eU
+qOecn++8iOWPke+8iWd577yI56Wo77yJLOmqjOivgeWQjuS7mOasvuOAglRFTO+8mjEzNjIxODg4
+MzYz6JSh57uP55CG77yI6IGU57O75pa55byP6K+35YGa5L+d5a2Y5aSH6ZyA6KaB5pe255So77yJ
+5pe25pS/IHwg5paH5aixIHwg5L2T6IKyIHwg5pe25bCaIHwg5Zu96ZmFIHwg56eR5pWZMDo0MDoz
+OA0K
 
 
