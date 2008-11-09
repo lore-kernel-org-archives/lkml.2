@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab2KACW7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Oct 2012 22:22:59 -0400
-Received: from host2.northwestnissans.com ([173.199.143.79]:55373 "EHLO
-	host.northwestnissans.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab2KACW5 (ORCPT
+	id S1760090Ab2JLS74 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Oct 2012 14:59:56 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:25689 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab2JLS7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Oct 2012 22:22:57 -0400
-To: linux-kernel@vger.kernel.org
-Subject: How Are You Doing Today.
-X-PHP-Script: www.terra2imports.ca/wp-includes/feed-resl.php for 208.131.144.44
-From: Leung Andrew <captainan@email.org>
-Reply-To: captainan@e-mail.ua
+	Fri, 12 Oct 2012 14:59:54 -0400
+X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Oct 2012 14:59:54 EDT
+Date: Sun, 9 Nov 2008 14:38:30 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-acpi@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI: Fix memory leak in acpi_bind_one()
+Message-ID: <alpine.LNX.2.00.0811091436310.23308@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E1TSZmq-00008W-G4@host.northwestnissans.com>
-Date: Sun, 28 Oct 2012 15:48:48 -0500
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host.northwestnissans.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [613 32003] / [47 12]
-X-AntiAbuse: Sender Address Domain - host.northwestnissans.com
-X-Get-Message-Sender-Via: host.northwestnissans.com: authenticated_id: terra2/only user confirmed/virtual account not confirmed
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am a Canadian Army my name is Captain Andrew Leung. 090209-M-3450C-014
-II Marine Expeditionary of Multinational Division Center base in
-Kabul,Afghanistan, of the NATO Marine Force on Monitoring and Peace
-keeping mission in Afghanistan,On May 7,2012! we were alerted on the
-sudden presence of some Terrorists camping in Marzar Sharif . a suburb not
-too far from Kabul here in Afghanistan. After Immediate intervention, we
-captured three (3) of the Terrorists,(7) injured.In the process of torture
-they confessed being re! bels for Abu Baqir a Taliban sub-commander and
-al-Qaida group leader, and they took us to a cave in Marzar Sharif. which
-served as their camp.Here we recovered several guns and other Ammunitions
-including some boxes among which two contains nuclear weapons, and the
-other contains some millions of US Dollars and i have in my possession the
-sum of 9.7 million U.S. dollars as my share.
+Memory is allocated with kzalloc() and assigned to
+'physical_node'. Then 'physical_node->node_id' is initialized with a
+call to 'find_first_zero_bit()', if that results in a value greater
+than ACPI_MAX_PHYSICAL_NODE we'll end up jumping to the 'err:' label
+and there leave the function and let 'physical_node' go out of scope
+and leak the memory we allocated.
+This patch fixes the leak by simply freeing the unused/unneeded memory
+pointed to by 'physical_node' just before we jump to 'err:'.
 
-I am in keen need of a Reliable and Trust worthy person like you who would
-receive the MONEY,secure and protect the box which contains the US Dollars
-for me because in 3 weeks time some U.S.Army will replace our UNIT in
-Afghanistan and i will soon come back and finish the deal and reloc! ate my
-family to your country. I assure and promise to give! you 30% of this fund
-and you keep 70%for me, however feel free to negotiate what you wish to
-have as your percentage in this business.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/acpi/glue.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-It is never a stolen money or illegal money but because were ! on duty to
-bring peace in Afghanistan many soldiers lost th! eir life and no amount of
-compensation that may bring back the life of dead soldier then consider
-how the family will feel,that is the reasons my unit decided to share the
-money among us but return all the guns and ammunition's to our Camp,it is
-official and that's the reason i need your assistance to ship the box to
-any save location of your choice.
+diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
+index d1a2d74..0837308 100644
+--- a/drivers/acpi/glue.c
++++ b/drivers/acpi/glue.c
+@@ -159,6 +159,7 @@ static int acpi_bind_one(struct device *dev, acpi_handle handle)
+ 	if (physical_node->node_id >= ACPI_MAX_PHYSICAL_NODE) {
+ 		retval = -ENOSPC;
+ 		mutex_unlock(&acpi_dev->physical_node_lock);
++		kfree(physical_node);
+ 		goto err;
+ 	}
+ 
+-- 
+1.7.1
 
-Please, i trust you to maintain absolute secrecy and confidentiality to
-protect my job,myself and the money. In less than 5 days the box should be
-in your possession and i will give you further instructions.But you must
-know that i have taken precautionary measures to secure the money.The box
-is coded with high secu! rity gadget so am the only one that has the right
-combination to unlock it.Please send the following information me so i can
-proceed.
 
-Your full name ............................
-Your full address ..........................
-Your direct phone number ................
-Your Age .......................
-
-Regards,
-Captain Andrew Leung
-
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
