@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab2J1T5s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Oct 2012 15:57:48 -0400
-Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:15635 "EHLO
+	id S1755086Ab2J1T6L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Oct 2012 15:58:11 -0400
+Received: from 1010ds2-suoe.0.fullrate.dk ([90.184.90.115]:15711 "EHLO
 	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab2J1T5q (ORCPT
+	with ESMTP id S1752976Ab2J1T6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Oct 2012 15:57:46 -0400
-Date: Tue, 25 Nov 2008 15:57:30 +0100 (CET)
+	Sun, 28 Oct 2012 15:58:09 -0400
+Date: Tue, 25 Nov 2008 15:57:54 +0100 (CET)
 From: Jesper Juhl <jj@chaosbits.net>
 To: Mauro Carvalho Chehab <mchehab@infradead.org>
 cc: =?ISO-8859-15?Q?Beno=EEt_Th=E9baudeau?= 
@@ -16,8 +16,8 @@ cc: =?ISO-8859-15?Q?Beno=EEt_Th=E9baudeau?=
         Dan Carpenter <dan.carpenter@oracle.com>,
         "Du, Changbin" <changbin.du@gmail.com>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] [media] rc: Fix double free in gpio_ir_recv_probe()
-Message-ID: <alpine.LNX.2.00.0811251553500.1109@swampdragon.chaosbits.net>
+Subject: [PATCH 2/2] [media] rc: Fix double free in gpio_ir_recv_remove()
+Message-ID: <alpine.LNX.2.00.0811251556020.1109@swampdragon.chaosbits.net>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,39 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the 'err_request_irq' label, rc_unregister_device(rcdev) frees its
-argument. So when we fall through to the 'err_gpio_request' label
-further down and call rc_free_device(rcdev) then that's a double free.
-
-Fix that by moving 'rcdev = NULL' from after the call to
-rc_free_device() to after rc_unregister_device(). That fixes the
-problem since rc_free_device() just does nothing if passed NULL and
-there's no further use of 'rcdev' after the call to rc_free_device()
-so it's not needed there.
+Since rc_unregister_device() frees its argument there's no need to
+subsequently call rc_free_device() on the same variable - in fact it's
+a double free bug.
+Easily fixed by just removing the rc_free_device() call.
 
 Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/media/rc/gpio-ir-recv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/media/rc/gpio-ir-recv.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/media/rc/gpio-ir-recv.c b/drivers/media/rc/gpio-ir-recv.c
-index 04cb272..c698408 100644
+index c698408..fe0941d 100644
 --- a/drivers/media/rc/gpio-ir-recv.c
 +++ b/drivers/media/rc/gpio-ir-recv.c
-@@ -129,12 +129,12 @@ static int __devinit gpio_ir_recv_probe(struct platform_device *pdev)
- err_request_irq:
+@@ -148,7 +148,6 @@ static int __devexit gpio_ir_recv_remove(struct platform_device *pdev)
  	platform_set_drvdata(pdev, NULL);
- 	rc_unregister_device(rcdev);
-+	rcdev = NULL;
- err_register_rc_device:
- err_gpio_direction_input:
- 	gpio_free(pdata->gpio_nr);
- err_gpio_request:
- 	rc_free_device(rcdev);
--	rcdev = NULL;
- err_allocate_device:
+ 	rc_unregister_device(gpio_dev->rcdev);
+ 	gpio_free(gpio_dev->gpio_nr);
+-	rc_free_device(gpio_dev->rcdev);
  	kfree(gpio_dev);
- 	return rc;
+ 	return 0;
+ }
 -- 
 1.7.1
 
