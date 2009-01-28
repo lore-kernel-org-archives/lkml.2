@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab2H2ILJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Aug 2012 04:11:09 -0400
-Received: from mail.steuer-voss.com ([85.183.17.159]:42012 "EHLO
-	mail.steuer-voss.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752868Ab2H2ILA (ORCPT
+	id S934451Ab2HWVH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Aug 2012 17:07:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45993 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934412Ab2HWVHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Aug 2012 04:11:00 -0400
-Message-Id: <b56adb1bfd2c2188d759ee9cbd5f38208e561667.1346225321.git.n.voss@weinmann.de>
-In-Reply-To: <cover.1346225321.git.n.voss@weinmann.de>
-References: <cover.1346225321.git.n.voss@weinmann.de>
-From: Nikolaus Voss <n.voss@weinmann.de>
-Date: Tue, 8 Nov 2011 12:11:03 +0100
-Subject: [PATCH v11 4/4] G45 TWI: remove open drain setting for twi function
- gpios
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Cc: nicolas.ferre@atmel.com, ben-linux@fluff.org, balbi@ti.com,
-        h.feurstein@gmail.com, rmallon@gmail.com, adrian.yanes@aalto.fi,
-        ludovic.desroches@atmel.com, carsten.behling@garz-fricke.com
+	Thu, 23 Aug 2012 17:07:25 -0400
+Date: Tue, 27 Jan 2009 16:53:59 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: hch@infradead.org, corbet@lwn.net, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, viro@ZenIV.linux.org.uk, oleg@redhat.com,
+        linux-api@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH, RFC] Remove fasync() BKL usage, take 3325
+Message-Id: <20090127165359.d6b95b52.akpm@linux-foundation.org>
+In-Reply-To: <20090123045646.GK15750@one.firstfloor.org>
+References: <20090115153211.663df310@bike.lwn.net>
+	<20090122065104.2787df2d.akpm@linux-foundation.org>
+	<20090122203248.GA20159@infradead.org>
+	<20090123045646.GK15750@one.firstfloor.org>
+X-Mailer: Sylpheed version 2.2.4 (GTK+ 2.8.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The G45 datasheets explicitly states that setting the open drain property
-on peripheral function gpios is not allowed. (How about other A91 chips?)
+On Fri, 23 Jan 2009 05:56:46 +0100
+Andi Kleen <andi@firstfloor.org> wrote:
 
-Signed-off-by: Nikolaus Voss <n.voss@weinmann.de>
----
- arch/arm/mach-at91/at91sam9g45_devices.c |    6 ------
- 1 file changed, 6 deletions(-)
+> On Thu, Jan 22, 2009 at 03:32:49PM -0500, Christoph Hellwig wrote:
+> > On Thu, Jan 22, 2009 at 06:51:04AM -0800, Andrew Morton wrote:
+> > > OK, replacing a lock_kernel() with a spin_lock(&global_lock) is pretty
+> > > straightforwad.  But it's really really sad.  It basically leaves a great
+> > > big FIXME in there.  It'd be better to fix it.
+> > 
+> > 
+> > Umm, we've been discussiong this in and out a guestimated million times.
+> > 
+> > Let's go forward with Jon's patch which is on obvious improvement and
+> > if it shows problems later on we can revisit it.
+> 
+> The point was that we already have a better patch from Oleg.
+> 
 
-diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
-index eec5eb6..2134663 100644
---- a/arch/arm/mach-at91/at91sam9g45_devices.c
-+++ b/arch/arm/mach-at91/at91sam9g45_devices.c
-@@ -686,18 +686,12 @@ void __init at91_add_device_i2c(short i2c_id, struct i2c_board_info *devices, in
- 	/* pins used for TWI interface */
- 	if (i2c_id == 0) {
- 		at91_set_A_periph(AT91_PIN_PA20, 0);		/* TWD */
--		at91_set_multi_drive(AT91_PIN_PA20, 1);
--
- 		at91_set_A_periph(AT91_PIN_PA21, 0);		/* TWCK */
--		at91_set_multi_drive(AT91_PIN_PA21, 1);
- 
- 		platform_device_register(&at91sam9g45_twi0_device);
- 	} else {
- 		at91_set_A_periph(AT91_PIN_PB10, 0);		/* TWD */
--		at91_set_multi_drive(AT91_PIN_PB10, 1);
--
- 		at91_set_A_periph(AT91_PIN_PB11, 0);		/* TWCK */
--		at91_set_multi_drive(AT91_PIN_PB11, 1);
- 
- 		platform_device_register(&at91sam9g45_twi1_device);
- 	}
--- 
-1.7.9.5
-
+Where is this patch??
