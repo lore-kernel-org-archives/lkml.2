@@ -1,137 +1,58 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab0DAD5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Mar 2010 23:57:32 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57087 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab0DAD5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Mar 2010 23:57:25 -0400
-Message-ID: <4BB41988.1030400@kernel.org>
-Date: Thu, 01 Apr 2010 12:56:56 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1751618Ab0CAUX4 (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 1 Mar 2010 15:23:56 -0500
+Received: from n22.bullet.mail.ukl.yahoo.com ([87.248.110.139]:24623 "HELO
+	n22.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751453Ab0CAUXx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Mar 2010 15:23:53 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 29495.43562.bm@omp225.mail.ukl.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=btinternet.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=MvHiBAiJtMWb2m++FZosIZ4/hLG3TJaTTLzGDoPfFIhp0fDRGz04RM/OX7njC3fsnIiwUZvMj01PmCDe2rbTf+Z9Fs/NgeOKd7CwTGWtk1fE0P4H9oQ/0A/lmW7ZlOCpTWUHO5uY+1+bQ/jzSdSiud7XRRtSRs9o0M/ZTYQg0m4=;
+Message-ID: <681224.35014.qm@web87111.mail.ird.yahoo.com>
+X-YMail-OSG: .uqcVjMVM1kxW48Pn69k5OAWlAxxNE3P1fG7xHpXf0uwYlB
+ 3WNXLI0l4xneqMal_JAbjDxL7BuCnSJpv8nL5oyCvpqRtURMkiS546a.5hhU
+ MeSwxZDv0RsyHem73MQwVyyhAJuSVIel3kXd6LmlzAwZfc8ZJ6EtFcgKTi1i
+ ObDX4qDZnBH6zk4MsAWCjz5sUgxpRH_IqXLkqw4pvP3qKwBOuuEky5XwOtZU
+ d02xC9y87uC0bIDUOhLB81vmmgYIGjb3C1Rwfy86YKSQtKCj86t6389OvTcU
+ tklsV5W7BF1olzeAfS5gtLsrfggg3KKcoXwoUVXiL1d7YJXoGl6uJZqxjHFn
+ LDgoJSwIBivS2EHSLh8MSTVPQVn8.JC1iDt.HeXQ_Sfvk9J8SCKnFDOb0lbM
+ OZLPJeA3PXqUV42G5exHaol9.qLbT4zF71NOo5k5jJDgXtVxtVHcbzsj2Tyy
+ Zn4XAFJaBJ.2H8jF3Dd2qoeztAzWUzT6AQXlEuOpE6xV2AV4vOHWdFDEJn1M
+ c8hmKLY7aVd1dpCM5FcRZscY4gDctXQAzXhUMXq_nwWCc_VA8GimdE4Mg3oG
+ e5ihyRypeHUH2Soj3QKjif2CeumgH2Ht.15J2f0sDYIjeLaeMpuKsckQvQ7g
+ jg8W8kCkyk_wgPm.MjIAvXLeuwJGNpQgqxbcH1o3CM3M4.9gWgxd3rti6mH2
+ YGZwms_foaCc8MeUoiz8JxA8vqLkM4Lp05B10tOhiQQ4TJrAT9Unq61IrfCD
+ CWBIqmLPhV_mO3Nolmw533Q_y8nLdOcg36w7wNqVp4W8CRxoIXPJ4jbdFi1a
+ kYEkKsu36.ZP2nI8eIc39KNHC6Nwyn9PKA_2TgzF7PV5.zXrKWPD7lzDw_IM
+ jfVn96rOIBWNJtugSqiQFmy5BrEdY16TChlkhu1MI5b6DbreB0wghQrwl9nN
+ QXStZHU1bHi0p1HLJTjvrqHwi2OUnyAJMFBs6_YbFZyCgJV66XnCDYK1H8T2
+ RN.peet00QI39paEmQrHlWZUdEueDQzENCX51wRUupUgcbXvIt1IOdS6yzr_
+ X7mXE2Z3UR5P185MSLCQAGWgPaHQ2WU.gXUIP0rBsDB.Ai16rt6NfF9htRKo
+ kijO1t4KpcRRVRtma75ktIdp8imllTMyOLlkUi9yL7IB3mtqhEc2SeYnL6ix
+ 11OkpFVYRKMn5F_n.pNngqEEQuLTBjerTjpEepiMq7pf9Azw7NmqtutfP9kC
+ wxFG92_agTVFXm0cQUhukepr4m1v17.aKcD8LlNXWIqVwsZjplR81dpsi9N_
+ oCWpbNZBtRNjWm13dnZeapk1iw4EujfwH2PbM_0CFbi45WmxfOoxaibvtmIw
+ oOg18bSf.FFGlGrTTAMFGZw--
+X-Mailer: YahooMailClassic/9.2.12 YahooMailWebService/0.8.100.260964
+Date: Mon, 1 Mar 2010 20:23:51 +0000 (GMT)
+From: Rose Anderson <rose673400@btinternet.com>
+Reply-To: rose_8v8@yahoo.com
+Subject: HELLO
+To: undisclosed recipients:;
 MIME-Version: 1.0
-To: Cong Wang <amwang@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, akpm@linux-foundation.org,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [Patch] workqueue: move lockdep annotations up to	destroy_workqueue()
-References: <20100331105534.5601.50813.sendpatchset@localhost.localdomain> <20100331112559.GA17747@redhat.com> <4BB408AF.4080908@redhat.com>
-In-Reply-To: <4BB408AF.4080908@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 01 Apr 2010 03:56:59 +0000 (UTC)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+HELLO
+My name is Rose
+i interested in you,i will also like to know you the more,and i want you to send an email to my email address so i can give you my picture for you to know whom i am  Here is my email address (Rose_8v8@yahoo.com) i believe we can move from here!I am waiting for your mail to my email address above. Rose
+(Remember the distance or color an age does not matter but love matters a lot in life
+(Rose_8v8@yahoo.com)
 
-On 04/01/2010 11:45 AM, Cong Wang wrote:
->> OK, but nobody should take cpu_maps_update_begin() under wq->lockdep_map,
->> in particular work->func() must not.
->>
->> I must have missed something, but it seems to me this patch tries to
->> supress the valid warning.
->>
->> Could you please clarify?
-> 
-> Sure, below is the whole warning. Please teach me how this is valid.
-
-I still have some trouble interpreting lockdep warnings.  Please
-correct me if I get something wrong.
-
-> modprobe/5264 is trying to acquire lock:
->  ((bond_dev->name)){+.+...}, at: [<ffffffff8108524a>] cleanup_workqueue_thread+0x2b/0x10b
->
-> but task is already holding lock:
->  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
-
-This (cpu hotplug -> wq) is the expected sequence.  Plug cpu
-hotplugging and then flush cpu workqueues.
-
-> which lock already depends on the new lock.
-
-But lockdep says the other way around has already happened.
-
-> the existing dependency chain (in reverse order) is:
->
-> -> #3 (cpu_add_remove_lock){+.+.+.}:
->        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
->        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
->        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
->        [<ffffffff815523f8>] mutex_lock_nested+0x64/0x4e9
->        [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
->        [<ffffffff810853cd>] destroy_workqueue+0x41/0x107
->        [<ffffffffa0839d32>] bond_uninit+0x524/0x58a [bonding]
->        [<ffffffff8146967b>] rollback_registered_many+0x205/0x2e3
->        [<ffffffff81469783>] unregister_netdevice_many+0x2a/0x75
->        [<ffffffff8147ada3>] __rtnl_kill_links+0x8b/0x9d
->        [<ffffffff8147adea>] __rtnl_link_unregister+0x35/0x72
->        [<ffffffff8147b293>] rtnl_link_unregister+0x2c/0x43
->        [<ffffffffa0845ca6>] bonding_exit+0x5a/0x76 [bonding]
->        [<ffffffff810b7749>] sys_delete_module+0x306/0x3b1
->        [<ffffffff81003a5b>] system_call_fastpath+0x16/0x1b
-
-This is bond_uninit() calling destroy_workqueue() but I don't get how
-this thread would be already holding wq lock.
-
-> -> #2 (rtnl_mutex){+.+.+.}:
->        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
->        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
->        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
->        [<ffffffff815523f8>] mutex_lock_nested+0x64/0x4e9
->        [<ffffffff8147af16>] rtnl_lock+0x1e/0x27
->        [<ffffffffa0836779>] bond_mii_monitor+0x39f/0x74b [bonding]
->        [<ffffffff8108654f>] worker_thread+0x2da/0x46c
->        [<ffffffff8108b1ea>] kthread+0xdd/0xec
->        [<ffffffff81004894>] kernel_thread_helper+0x4/0x10
->
-> -> #1 ((&(&bond->mii_work)->work)){+.+...}:
->        [<ffffffff810a6bc1>] validate_chain+0x1019/0x1540
->        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
->        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
->        [<ffffffff81086542>] worker_thread+0x2cd/0x46c
->        [<ffffffff8108b1ea>] kthread+0xdd/0xec
->        [<ffffffff81004894>] kernel_thread_helper+0x4/0x10
-
-These two are form a workqueue worker thread and I don't quite
-understand why they are here.
-
-> -> #0 ((bond_dev->name)){+.+...}:
->        [<ffffffff810a6696>] validate_chain+0xaee/0x1540
->        [<ffffffff810a7e75>] __lock_acquire+0xd8d/0xe55
->        [<ffffffff810aa3a4>] lock_acquire+0x160/0x1af
->        [<ffffffff81085278>] cleanup_workqueue_thread+0x59/0x10b
->        [<ffffffff81085428>] destroy_workqueue+0x9c/0x107
->        [<ffffffffa0839d32>] bond_uninit+0x524/0x58a [bonding]
->        [<ffffffff8146967b>] rollback_registered_many+0x205/0x2e3
->        [<ffffffff81469783>] unregister_netdevice_many+0x2a/0x75
->        [<ffffffff8147ada3>] __rtnl_kill_links+0x8b/0x9d
->        [<ffffffff8147adea>] __rtnl_link_unregister+0x35/0x72
->        [<ffffffff8147b293>] rtnl_link_unregister+0x2c/0x43
->        [<ffffffffa0845ca6>] bonding_exit+0x5a/0x76 [bonding]
->        [<ffffffff810b7749>] sys_delete_module+0x306/0x3b1
->        [<ffffffff81003a5b>] system_call_fastpath+0x16/0x1b
-
-This seems to be from the original thread of frame#3.  It's grabbing
-wq lock here but the problem is that the lock will be released
-immediately, so bond_dev->name (the wq) can't be held by the time it
-reaches frame#3.  How is this dependency chain completed?  Is it
-somehow transitive through rtnl_mutex?
-
-> other info that might help us debug this:
->
-> 2 locks held by modprobe/5264:
->  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff8147af16>] rtnl_lock+0x1e/0x27
->  #1:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810631d1>] cpu_maps_update_begin+0x1e/0x27
-
-Isn't there a circular dependency here?  bonding_exit() calls
-destroy_workqueue() under rtnl_mutex but destroy_workqueue() should
-flush works which could be trying to grab rtnl_lock.  Or am I
-completely misunderstanding locking here?
-
-Thanks.
-
--- 
-tejun
