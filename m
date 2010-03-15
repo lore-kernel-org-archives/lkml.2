@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965266Ab0COQAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:00:08 -0400
-Received: from mail-gw21.credit-suisse.com ([198.240.212.9]:51818 "EHLO
-	mail-gw21.credit-suisse.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965234Ab0COQAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:00:05 -0400
-X-Greylist: delayed 592 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 12:00:04 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S965270Ab0COQBZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:01:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965216Ab0COQBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 12:01:22 -0400
+Message-ID: <4B9E59B7.6060405@redhat.com>
+Date: Mon, 15 Mar 2010 09:00:55 -0700
+From: Ulrich Drepper <drepper@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Subject: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs or elsewhere?
-Date: Mon, 15 Mar 2010 15:49:50 -0000
-Message-ID: <5608FA8A997F1A46B7E985494F8478DD07930AF1@ELON17P32003A.csfb.cs-group.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs or elsewhere?
-thread-index: AcrEVyU9eM2XHUpKQFmf/jFe5hS2zA==
-From: "MacCana, Mike" <mike.maccana@credit-suisse.com>
-To: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 15 Mar 2010 15:49:51.0550 (UTC) FILETIME=[263225E0:01CAC457]
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ralf Baechle <ralf@linux-mips.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
+       torvalds@linux-foundation.org, munroesj@linux.vnet.ibm.com
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+References: <1268628493.2355.2.camel@pasglop> <20100314.220646.190065794.davem@davemloft.net> <1268630313.2335.2.camel@pasglop> <20100315134449.GB1653@linux-mips.org> <4B9E4EB1.9010800@zytor.com>
+In-Reply-To: <4B9E4EB1.9010800@zytor.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi kernel folks,
- 
-I was wondering if there was a standard location to see TCP socket
-options (eg, nodelay, cork, etc), perhaps via procfs or some other
-means? I'd like to check whether arbitrary apps (for which I don't have
-code) are using particular TCP options. 
- 
-Wandering round /proc/net hasn't turned up anything yet, and after a
-quick:
-socket.setsockopt(0, 1, 1)
-to enable NODELAY I can't see any obvious difference in procfs or
-netstat output (where other Unixes seem to put this info). hat's the
-best way to see TCP options on sockets created by others' code?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Thanks,
- 
-Mike
- 
+On 03/15/2010 08:13 AM, H. Peter Anvin wrote:
+> One option would be to do a libkernel.so,
 
-Mike MacCana 
-Engineer
-RDO Low Latency Infrastructure 
-CREDIT SUISSE
-Phone: +44 (0)20 7883 5907 
-Mobile: +44 (0)7547 004474 
-mike.maccana@credit-suisse.com  
-Five Canada Square, London, E14 4QJ. 
-www.credit-suisse.com 
+No need.  Put it in the vdso.  And name it something other than syscall.
+ The syscall() API is fixed, you cannot change it.
 
+All this only if it makes sense for ALL archs.  If it cannot work for
+just one arch then it's not worth it at all.
 
-=============================================================================== 
- Please access the attached hyperlink for an important electronic communications disclaimer: 
- http://www.credit-suisse.com/legal/en/disclaimer_email_ib.html 
- =============================================================================== 
- 
+- -- 
+➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkueWbcACgkQ2ijCOnn/RHRtBQCeP88S/0xei7CAt65AGboqsrC8
+N7wAoK7Qbi+OZuQrgHTCgTA27TgY+gQU
+=4tJ6
+-----END PGP SIGNATURE-----
