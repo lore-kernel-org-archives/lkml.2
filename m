@@ -1,173 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965753Ab0COWzm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:55:42 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:43465 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937047Ab0COWzl (ORCPT
+	id S937065Ab0COW7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:59:51 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48094 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S937040Ab0COW7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:55:41 -0400
-Message-ID: <4B9EBAF2.1060304@cs.columbia.edu>
-Date: Mon, 15 Mar 2010 18:55:46 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Jiro SEKIBA <jir@dependable-os.net>
-CC: Linux-Kernel <linux-kernel@vger.kernel.org>,
-       "containers@lists.linux-foundation.org" 
-	<containers@lists.linux-foundation.org>
-Subject: Re: Linux Checkpoint-Restart - v19
-References: <4B83106C.7040203@cs.columbia.edu> <a1c54a921003150155q4a0c7fc1vb02ba0464b07f452@mail.gmail.com>
-In-Reply-To: <a1c54a921003150155q4a0c7fc1vb02ba0464b07f452@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 15 Mar 2010 18:59:50 -0400
+Subject: Re: dma_sync_sg_for_cpu applied to a single scatterlist element
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.44L0.1003151721190.1332-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1003151721190.1332-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Mar 2010 18:59:45 -0400
+Message-ID: <1268693985.2853.62.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-03-15 at 17:30 -0400, Alan Stern wrote:
+> This is addressed to James Bottomley as he is the author of
+> Documentation/DMA-API.txt, but anyone else who can contribute is
+> invited to do so.
+> 
+> Suppose a scatter-gather transfer with multiple scatterlist elements
+> has been mapped via dma_map_sg().  Is it then valid to call 
+> dma_sync_sg_for_cpu() with the "sg" argument pointing to one of the 
+> mapped scatterlist elements (not necessarily the first one) and the 
+> "nelems" argument set to 1?
 
-Thanks for taking the time to evaluate c/r. You may want to also
-try the latest, which is (as of now) ckpt-v20-rc2.
+It's not the design of the API, but I'm guessing, given the way the API
+works on most arch's that it will work.  However, if you just want a
+single element sync'd, won't dma_sync_single_for_cpu do that
+transparently (as in just feed in the address and length from the sg
+list), without mucking with the sg API?
 
-In the future, please CC the containers mailing list for issues
-related to c/r, at "containers@lists.linux-foundation.org".
+James
 
-Jiro SEKIBA wrote:
-> Hi,
-> 
-> I'm trying to evaluate external checkpoint/restart with cr-v19 kernel.
-> However, when I restart, I got "Killed" message in stdout.
-> Do you have any tips or clue that are not in
-> Documentation/checkpoint/usage.txt ?
-> 
-> I'm using kernel pulled from
-> git://git.ncl.cs.columbia.edu/pub/git/linux-cr.git .
-> checkout tag named "ckpt-v19". Base distro is ubuntu 9.10.
-> 
-> I ran self checkpioint/restart sample program in Documentation/checkpint.
-> It works as written in usage.txt.
-> However, I can not make external checkpint/restart work properly.
-> 
-> I made a simple test program bellow and create checkpoint externally using
-> the program in Documentation/checkpoint/, it looks checkpoint file is
-> created properly.
-> However, when I ran self_restart < ckpt.image, I got "Killed" message.
 
-If you take an external checkpoint, then you need to match it
-with an external restart, as opposed to self_restart.
-
-Otherwise, restarting with self_restart from a checkpoint that is
-not a self-checkpoint can yield unexpected results.
-
-Since you don't mention in your post, I don't know if you are using
-the tools from user-cr. If not, then you should use 'checkpoint' and
-'restart' tools from there. It is available from:
-	git://git.ncl.cs.columbia.edu/pub/git/user-cr.git
-(use the same branch as the one you used to linux-cr).
-
-Once you have the tools compiled, and you checkpoint with the
-'checkpoint' utility from there, you can restart with:
-	restart -v < ckpt.image
-
-Oren.
-
-> 
-> Is there any extra configurations other than cgroup freezer and
-> checkpint/restart ?
-> Or any limitation other than closing stdout,err,in ?
-> 
-> what I did is following:
-> 
-> # mount -t cgroup -o freezer cgroup /cgroup
-> # mkdir /cgroup/0
-> ..
-> # ./test &
-> # PID=$(ps | grep test | cut -f 2 -d' ')
-> # echo $PID > /cgroup/0/tasks
-> # sleep 3
-> # echo FROZEN > /cgroup/0/freezer.state
-> # ./checkpoint $PID > ckpt.image
-> # mv /tmp/test.out /tmp/test.out.orig
-> # cp /tmp/test.out.orig /tmp/test.out
-> # echo THAWED > /cgroup/0/freezer.state
-> # ./self_restart < ckpt.image
-> Killed
-> 
-> ----- test.c -----
-> int main(void)
-> {
->   FILE *fp;
->   int i;
-> 
->   close(0);
-> //  close(1);  // I got SEGV when I uncomment this line, when restarting
->   close(2);
-> 
->   fp = fopen("/tmp/test.out","w+");
-> 
->   for(i=0;i<10;i++) {
->     fprintf(fp,"%d\n",i);
->     fflush(fp);
->     sleep(1);
->   }
-> 
->   fclose(fp);
->   return 0;
-> }
-> ----- test.c -----
-> 
-> Thank you very much in advance
-> 
-> 2010/2/23 Oren Laadan <orenl@cs.columbia.edu>:
->> Hi Andrew,
->>
->> We've put a stake in the ground for our next set of checkpoint/restart
->> patches, v19. It has some great new stuff, and we put extra effort to
->> address your concerns. We would like to have the code included in -mm
->> for wider feedback and testing.
->>
->> This one is able to checkpoint/restart screen and vnc sessions, and
->> live-migrate network servers between hosts. It also adds support for
->> x86-64 (in addition to x86-32, s390x and powerpc). It is rebased to
->> kernel 2.6.33-rc8.
->>
->> Since one of your main concerns was about what is not yet implemented
->> and how complicated or ugly it will be to support that, we've put up
->> a wiki page to address that. In it there is a simple table that lists
->> what is not implemented and the anticipated solution impact, and for
->> some entries a link to more details.
->>
->> The page is here:   http://ckpt.wiki.kernel.org/index.php/Checklist
->>
->> We want to stress that the patchset is already very useful as-is. We
->> will keep working to implement more features cleanly. Some features we
->> are working on include network namespaces and device configurations,
->> mounts and mounts namespaces, and file locks. Should a complicated
->> feature prove hard to implement, users have alternatives systems like
->> kvm, until we manage to come up with a clean solution.
->>
->> We believe that maintenance is best addressed through testing. We now
->> have a comprehensive test-suite to automatically find regressions.
->> In addition, we ran LTP and the results are the same with CHECKPOINT=n
->> and =y.
->>
->> If desired we'll send the whole patchset to lkml, but the git trees
->> can be seen at:
->>
->>  kernel:       http://www.linux-cr.org/git/?p=linux-cr.git;a=summary
->>  user tools:   http://www.linux-cr.org/git/?p=user-cr.git;a=summary
->>  tests suite:  http://www.linux-cr.org/git/?p=tests-cr.git;a=summary
->>
->> Thanks,
->>
->> Application checkpoint/restart team
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
