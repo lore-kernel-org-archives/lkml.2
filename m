@@ -1,114 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965423Ab0COQnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:43:35 -0400
-Received: from bob75-7-88-160-5-175.fbx.proxad.net ([88.160.5.175]:58172 "EHLO
-	cerbere.dyndns.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964965Ab0COQnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:43:31 -0400
-From: Samir Bellabes <sam@synack.fr>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       netfilter-devel@vger.kernel.org, hadi@cyberus.ca, kaber@trash.net,
-       zbr@ioremap.net, nhorman@tuxdriver.com, root@localdomain.pl,
-       linux-security-module@vger.kernel.org
-Subject: Re: [RFC v2 00/10] snet: Security for NETwork syscalls
-References: <1267561394-13626-1-git-send-email-sam@synack.fr>
-	<201003030156.o231udx1023055@www262.sakura.ne.jp>
-	<m2vdd9p9r7.fsf@ssh.synack.fr>
-	<201003071445.FJB39029.QLSHtOFOJFOVMF@I-love.SAKURA.ne.jp>
-Date: Mon, 15 Mar 2010 17:43:29 +0100
-In-Reply-To: <201003071445.FJB39029.QLSHtOFOJFOVMF@I-love.SAKURA.ne.jp>
-	(Tetsuo Handa's message of "Sun, 7 Mar 2010 14:45:20 +0900")
-Message-ID: <m2wrxdilhq.fsf@ssh.synack.fr>
-User-Agent: Gnus/5.110003 (No Gnus v0.3) Emacs/21.4 (gnu/linux)
+	id S965429Ab0COQoG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:44:06 -0400
+Received: from mail-gw26.credit-suisse.com ([198.240.213.9]:50194 "EHLO
+	mail-gw26.credit-suisse.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932612Ab0COQoB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 12:44:01 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 12:44:00 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs or elsewhere?
+Date: Mon, 15 Mar 2010 16:40:26 -0000
+Message-ID: <5608FA8A997F1A46B7E985494F8478DD07930AF3@ELON17P32003A.csfb.cs-group.com>
+In-Reply-To: <5608FA8A997F1A46B7E985494F8478DD07930AF2@ELON17P32003A.csfb.cs-group.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs or elsewhere?
+thread-index: AcrEW3U66fgmssVtQSaFIfapDSkHsgAATifwAABG0rA=
+References: <5608FA8A997F1A46B7E985494F8478DD07930AF1@ELON17P32003A.csfb.cs-group.com> <1268670031.3154.35.camel@edumazet-laptop> <5608FA8A997F1A46B7E985494F8478DD07930AF2@ELON17P32003A.csfb.cs-group.com>
+From: "MacCana, Mike" <mike.maccana@credit-suisse.com>
+To: "MacCana, Mike" <mike.maccana@credit-suisse.com>,
+       "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 15 Mar 2010 16:40:27.0181 (UTC) FILETIME=[3792ADD0:01CAC45E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> writes:
 
-> Hello.
->
-> Samir Bellabes wrote:
->> Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> writes:
+-----Original Message-----
+From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
+Sent: 15 March 2010 16:21
+To: MacCana, Mike
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs or elsewhere?
+
+>Le lundi 15 mars 2010 à 15:49 +0000, MacCana, Mike a écrit :
+>> Hi kernel folks,
+>>  
+>> I was wondering if there was a standard location to see TCP socket 
+>> options (eg, nodelay, cork, etc), perhaps via procfs or some other 
+>> means? I'd like to check whether arbitrary apps (for which I don't 
+>> have
+>> code) are using particular TCP options. 
+>>  
+>> Wandering round /proc/net hasn't turned up anything yet, and after a
+>> quick:
+>> socket.setsockopt(0, 1, 1)
+>> to enable NODELAY I can't see any obvious difference in procfs or 
+>> netstat output (where other Unixes seem to put this info). hat's the 
+>> best way to see TCP options on sockets created by others' code?
 >> 
->> > Regarding [RFC v2 09/10] snet: introduce snet_ticket
->> > +enum snet_verdict snet_ticket_check(struct snet_info *info)
->> > +{
->> > +       struct snet_ticket *st = NULL;
->> > +       unsigned int h = 0, verdict = SNET_VERDICT_NONE;
->> > +       struct list_head *l = NULL;
->> > +       struct snet_task_security *tsec = NULL;
->> > +
->> > +       if (snet_ticket_mode == SNET_TICKET_OFF)
->> > +               goto out;
->> > +
->> > +       tsec = (struct snet_task_security*) current_security();
->> > +
->> > +       h = jhash_2words(info->syscall, info->protocol, 0) % HSIZE;
->> > +       l = &tsec->hash[h];
->> > +
->> > +       read_lock_bh(&tsec->lock);
->> >
->> > Credentials are allocated for copy-on-write basis.
->> > Sharing "tsec" among multiple "struct task_struct" is what you intended?
->> 
->> No, there is no shared "tsec".
->> snet_ticket_check() is called from the process context. So "tsec" is
->> a pointer to the "void *security" pointer from its own "struct
->> task_struct".
->>
-> Until 2.6.28:
->
->   "void *security" is directory attached to "struct task_struct".
->   copy_process() calls security_task_alloc().
->
->   Therefore, task1->security != task2->security is guaranteed as long as you do
->
->     task->security = kmalloc();
->
->   at security_task_alloc().
->
-> Since 2.6.29:
->
->   "void *security" is attached to "struct cred", and "struct cred *" is
->   attached to "struct task_struct". copy_process() calls copy_creds() and
->   prepare_creds() calls security_prepare_creds(). But copy_creds() does not
->   call prepare_creds() for clone(CLONE_THREAD) case.
->
->   Therefore, task1->cred->security != task2->cred->security is not guaranteed
->   even if you do
->
->     cred->security = kmalloc();
->
->   at security_prepare_creds().
->
->> every task_struct have a "tsec" allocated to its "void *security"
->> pointer. 
->
-> You meant to have assigned "void *security" dedicated to "struct task_struct".
-> But "void *security" is no longer directly attached to "struct task_struct".
-> I couldn't find code that checks whether "current->cred" is used by only
-> current thread or not. "current->cred" being used by only current thread is
-> a requirement for having a "tsec" allocated to every "struct task_struct".
->
-> Your code will share "tsec" among multiple threads if a process created
-> threads using clone(CLONE_THREAD | CLONE_SIGHAND | CLONE_VM). Each thread has
-> its own "struct task_struct" but they share "cred->security".
-> Sharing "tsec" among multiple threads is what you intended?
 
-Hello Tetsuo,
+>There is limited support given by ss command (part of iproute2) :
+>
+>ss -emoi
+>
+>ESTAB       0      0                                55.225.18.5:4900
+>55.225.18.5:50000    uid:501 ino:135421 sk:c3b405c0
+>	 mem:(r0,w0,f4096,t0) ts bic wscale:6,6 rto:201 rtt:1/0.5 ato:40 
+>cwnd:3 send 393.2Mbps rcv_space:32768
+>
+> But CORK flag is not exported yet (its usually a volatile flag, at 
+> least with Apache server)
 
-ok, I get your point now.
-It seems that this is the common behaviour of credentials, so yes, "tsec"
-will be shared between this kind of threads, and it makes sense.
+Thanks Eric. Checking here:
 
-Maybe, I need to protect read-write access to this "tsec" structure.
+# sockettest.settcpoption(serversocket,'nodelay',True)    
 
-thank you for this comment Tetsuo,
+# ss -emoi
+LISTEN     0      5                 127.0.0.1:7778                     *:*      ino:4095699 sk:0a53b500ffff8100
 
-sam
+<my last reply was truncated>
+
+I can't get NODELAY either. Looking at lsof FAQ Linux seems to be limited in this regard. 
+
+3.14.1	Why doesn't lsof report socket options, socket states, and TCP
+	flags and values for my dialect?
+
+Linux
+		No socket options and values, socket states, or TCP
+		flags and values are reported.  The support for "-Tf"
+		could not be added to Linux, because socket options,
+		socket states, and TCP flags and values are not
+		available via the /proc file system.
+
+However the SystemTap Networking Tapset provides a tcp.setsockopt breakpoint which I can use.
+
+Mike
+
+1. http://gd.tuwien.ac.at/utils/admin-tools/lsof/FAQ
+2. http://www.redhat.com/docs/en-US/Red_Hat_Enterprise_Linux/pdf/SystemTap_Tapset_Reference.pdf
+
+
+
+
+
+
+
+
+=============================================================================== 
+ Please access the attached hyperlink for an important electronic communications disclaimer: 
+ http://www.credit-suisse.com/legal/en/disclaimer_email_ib.html 
+ =============================================================================== 
+ 
