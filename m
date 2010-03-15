@@ -1,38 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936868Ab0COViq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:38:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35340
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932222Ab0COVip (ORCPT
+	id S936884Ab0COVjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:39:17 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:62813 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab0COVjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:38:45 -0400
-Date: Mon, 15 Mar 2010 14:39:06 -0700 (PDT)
-Message-Id: <20100315.143906.150716862.davem@davemloft.net>
-To: shemminger@vyatta.com
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       roger.oksanen@cs.helsinki.fi
-Subject: Re: [Stable-review] [19/39] e100: Use pci pool to work around
- GFP_ATOMIC order 5 memory allocation failure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100315143653.294c0650@nehalam>
-References: <20100315142953.7aae4395@nehalam>
-	<20100315.143225.212581877.davem@davemloft.net>
-	<20100315143653.294c0650@nehalam>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Mar 2010 17:39:15 -0400
+X-Authority-Analysis: v=1.0 c=1 a=liZIUYJZmcwA:10 a=20KFwNOVAAAA:8 a=Zta3FSDLUddj1wS2cT8A:9 a=K3BsB9p390UPpIRonpNI20ok8vQA:4 a=jEp0ucaQiEUA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 71.70.153.3
+From: Jeff Layton <jlayton@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens
+Date: Mon, 15 Mar 2010 17:39:12 -0400
+Message-Id: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Hemminger <shemminger@vyatta.com>
-Date: Mon, 15 Mar 2010 14:36:53 -0700
+When a file is opened with O_TRUNC, the truncate processing is handled
+by handle_truncate(). This function however doesn't receive any info
+about the newly instantiated filp, and therefore can't pass that info
+along so that the setattr can use it.
 
-> The kernel has both fixes in it. The customer reported that if both
-> were reverted, the kernel panic went away.
+This makes NFSv4 misbehave. The client does an open and gets a valid
+stateid, and then doesn't use that stateid on the subsequent truncate.
+It uses the zero-stateid instead. Most servers ignore this fact and
+just do the truncate anyway, but some don't like it (notably, RHEL4).
 
-Please recheck that as your backtrace matches exactly the
-crash signature fixed by the memset().
+It seems more correct that since we have a fully instantiated file at
+the time that handle_truncate is called, that we pass that along so
+that the truncate operation can properly use it.
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 1c0fca6..965a3bb 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1472,8 +1472,9 @@ int may_open(struct path *path, int acc_mode, int flag)
+ 	return break_lease(inode, flag);
+ }
+ 
+-static int handle_truncate(struct path *path)
++static int handle_truncate(struct file *filp)
+ {
++	struct path *path = &filp->f_path;
+ 	struct inode *inode = path->dentry->d_inode;
+ 	int error = get_write_access(inode);
+ 	if (error)
+@@ -1488,7 +1489,7 @@ static int handle_truncate(struct path *path)
+ 	if (!error) {
+ 		error = do_truncate(path->dentry, 0,
+ 				    ATTR_MTIME|ATTR_CTIME|ATTR_OPEN,
+-				    NULL);
++				    filp);
+ 	}
+ 	put_write_access(inode);
+ 	return error;
+@@ -1585,7 +1586,7 @@ static struct file *finish_open(struct nameidata *nd,
+ 	}
+ 	if (!IS_ERR(filp)) {
+ 		if (will_truncate) {
+-			error = handle_truncate(&nd->path);
++			error = handle_truncate(filp);
+ 			if (error) {
+ 				fput(filp);
+ 				filp = ERR_PTR(error);
+-- 
+1.6.6.1
+
