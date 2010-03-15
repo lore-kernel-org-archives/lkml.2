@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937005Ab0COWrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:47:04 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34465
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932386Ab0COWqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:46:54 -0400
-Date: Mon, 15 Mar 2010 15:47:14 -0700 (PDT)
-Message-Id: <20100315.154714.23695928.davem@davemloft.net>
-To: julia@diku.dk
-Cc: ram.vepa@neterion.com, santosh.rastapur@neterion.com,
-       sivakumar.subramani@neterion.com, sreenivasa.honnur@neterion.com,
-       anil.murthy@neterion.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/5] drivers/net: drop redundant memset
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1003092213500.4974@ask.diku.dk>
-References: <Pine.LNX.4.64.1003092213500.4974@ask.diku.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S937028Ab0COWrX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:47:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9302 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937008Ab0COWrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 18:47:11 -0400
+Date: Mon, 15 Mar 2010 18:47:02 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens
+Message-ID: <20100315184702.35c4d140@tlielax.poochiereds.net>
+In-Reply-To: <1268692288.3040.2.camel@localhost.localdomain>
+References: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
+	<1268692288.3040.2.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Tue, 9 Mar 2010 22:14:11 +0100 (CET)
+On Mon, 15 Mar 2010 18:31:28 -0400
+Trond Myklebust <trond.myklebust@fys.uio.no> wrote:
 
-> From: Julia Lawall <julia@diku.dk>
+> On Mon, 2010-03-15 at 17:39 -0400, Jeff Layton wrote: 
+> > When a file is opened with O_TRUNC, the truncate processing is handled
+> > by handle_truncate(). This function however doesn't receive any info
+> > about the newly instantiated filp, and therefore can't pass that info
+> > along so that the setattr can use it.
+> > 
+> > This makes NFSv4 misbehave. The client does an open and gets a valid
+> > stateid, and then doesn't use that stateid on the subsequent truncate.
+> > It uses the zero-stateid instead. Most servers ignore this fact and
+> > just do the truncate anyway, but some don't like it (notably, RHEL4).
+> > 
+> > It seems more correct that since we have a fully instantiated file at
+> > the time that handle_truncate is called, that we pass that along so
+> > that the truncate operation can properly use it.
 > 
-> The region set by the call to memset is immediately overwritten by the
-> subsequent call to memcpy.
+> At least in the O_CREAT|O_TRUNC case, we really should modify
+> nfs4_opendata_alloc() to set the attrs.ia_size to zero, so that the
+> server does an atomic open(O_CREAT|O_TRUNC) for us (see the DESCRIPTION
+> paragraph in RFC3530 section 14.2.16). There shouldn't be any need for
+> an extra truncate RPC call.
 > 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
+> Plain open(O_TRUNC) probably does need something along the lines of what
+> you propose, however.
 > 
-> // <smpl>
-> @@
-> expression e1,e2,e3,e4;
-> @@
-> 
-> - memset(e1,e2,e3);
->   memcpy(e1,e4,e3);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Applied, thanks!
+Yeah that would be cleaner on the wire for the create case. It's not
+clear to me how to implement that though. There doesn't appear to be
+a straightforward way to tell the VFS to skip the truncate.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
