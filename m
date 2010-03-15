@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936670Ab0COTuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 15:50:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28610 "EHLO mx1.redhat.com"
+	id S936653Ab0COUAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 16:00:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44988 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936626Ab0COTul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 15:50:41 -0400
-Date: Mon, 15 Mar 2010 20:49:11 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       David Howells <dhowells@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Roland McGrath <roland@redhat.com>
-Subject: [PATCH 6/6] call_usermodehelper: UMH_WAIT_EXEC ignores
-	kernel_thread() failure
-Message-ID: <20100315194911.GG10896@redhat.com>
-References: <20100315122908.GB16175@hmsreliant.think-freely.org> <20100315194609.GA10896@redhat.com>
+	id S936605Ab0COUAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 16:00:02 -0400
+Message-ID: <4B9E91BC.7010208@zytor.com>
+Date: Mon, 15 Mar 2010 12:59:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315194609.GA10896@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Wang, Shane" <shane.wang@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, "Cihula, Joseph" <joseph.cihula@intel.com>
+Subject: Re: [PATCH v2] intel_txt: fix section warning messages from tboot
+ when "allyesconfig" is set on i386
+References: <D5AB6E638E5A3E4B8F4406B113A5A19A1D3C6817@shsmsx501.ccr.corp.intel.com> <D5AB6E638E5A3E4B8F4406B113A5A19A1D3C690F@shsmsx501.ccr.corp.intel.com>
+In-Reply-To: <D5AB6E638E5A3E4B8F4406B113A5A19A1D3C690F@shsmsx501.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UMH_WAIT_EXEC should report the error if kernel_thread() fails, like
-UMH_WAIT_PROC does.
+Shane,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+All your patches are sent in a form which is difficult for automation.
+Could you please use "git send-email" instead of whatever method you are
+currently using to send patches?
 
- kernel/kmod.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- 34-rc1/kernel/kmod.c~6_UMH_WAIT_EXEC	2010-03-15 20:32:23.000000000 +0100
-+++ 34-rc1/kernel/kmod.c	2010-03-15 20:37:07.000000000 +0100
-@@ -235,10 +235,10 @@ static void __call_usermodehelper(struct
- 	case UMH_WAIT_PROC:
- 		if (pid > 0)
- 			break;
--		sub_info->retval = pid;
- 		/* FALLTHROUGH */
--
- 	case UMH_WAIT_EXEC:
-+		if (pid < 0)
-+			sub_info->retval = pid;
- 		complete(sub_info->complete);
- 	}
- }
+	-hpa
 
