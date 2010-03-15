@@ -1,246 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965521Ab0COWzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:55:06 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:49132 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937047Ab0COWzD (ORCPT
+	id S965753Ab0COWzm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:55:42 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:43465 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937047Ab0COWzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:55:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:cc:references:in-reply-to:subject:date:message-id:mime-version
-         :content-type:content-transfer-encoding:x-mailer:thread-index
-         :content-language;
-        b=WcdlhuQe+Ll2daKf8jaHcPGwyMt7p+ZbnvZEFIYcfeXq9Z2fUmF8MftQn4Y+vQb8Bj
-         xjw8bZC9nJSoTyijktS/1rQS/lT4JrosR1dVXnw+CyInQQ8s7njzDCv7O+RAh8f519Oa
-         2mXclW7hRhmHhCSm4m3vUDjD7OoSZBhLHWxj4=
-From: "Will L Givens" <wlgivens@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-alpha@vger.kernel.org>
-References: <4B9DDCD8.4070902@orcon.net.nz> <20100315192321I.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100315192321I.fujita.tomonori@lab.ntt.co.jp>
-Subject: RE: Alpha:  Compilation error 2.6.34-rc1 git a3d3203e4b
-Date: Mon, 15 Mar 2010 17:54:43 -0500
-Message-ID: <001201cac492$82380860$86a81920$@com>
+	Mon, 15 Mar 2010 18:55:41 -0400
+Message-ID: <4B9EBAF2.1060304@cs.columbia.edu>
+Date: Mon, 15 Mar 2010 18:55:46 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Jiro SEKIBA <jir@dependable-os.net>
+CC: Linux-Kernel <linux-kernel@vger.kernel.org>,
+       "containers@lists.linux-foundation.org" 
+	<containers@lists.linux-foundation.org>
+Subject: Re: Linux Checkpoint-Restart - v19
+References: <4B83106C.7040203@cs.columbia.edu> <a1c54a921003150155q4a0c7fc1vb02ba0464b07f452@mail.gmail.com>
+In-Reply-To: <a1c54a921003150155q4a0c7fc1vb02ba0464b07f452@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcrEKaS8QOibpTQmTdyEOBuI+8I59QAZ1bJQ
-Content-Language: en-us
-To: unlisted-recipients:; (no To-header on input)
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-alpha-owner@vger.kernel.org [mailto:linux-alpha-
-> owner@vger.kernel.org] On Behalf Of FUJITA Tomonori
-> Sent: Monday, March 15, 2010 05:24
-> To: mcree@orcon.net.nz
-> Cc: linux-kernel@vger.kernel.org; linux-alpha@vger.kernel.org;
-> akpm@linux-foundation.org
-> Subject: Re: Alpha: Compilation error 2.6.34-rc1 git a3d3203e4b
-> 
-> On Mon, 15 Mar 2010 20:08:08 +1300
-> Michael Cree <mcree@orcon.net.nz> wrote:
-> 
-> > I note that for_each_sg is defined in include/linux/scatterlist.h,
-> which
-> > arch/alpha/include/asm/dma-mapping.h attempts to load, however
-> > include/linux/scatterlist.h was the one that included (indirectly)
-> > arch/alpha/include/asm/dma-mapping.h.  There is therefore a complete
-> > loop of includes from include/linux/scatterlist.h back to itself.
-> 
-> Very sorry about that. Seems that I broke CONFIG_ALPHA_{TSUNAMI,
-> TITAN, RAWHIDE, MARVEL}.
-> 
-> =
-> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Subject: [PATCH] alpha: fix compile errors in dma-mapping-common.h
-> 
-> The commit c186caca3dbe7f44da624cb4f9d78e1b1dfb13b8 leads to the
-> following errors with CONFIG_ALPHA_{TSUNAMI, TITAN, RAWHIDE, MARVEL}:
-> 
-> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h: In
-> function `dma_map_sg_attrs':
-> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h:49:
-> error: implicit declaration of function `for_each_sg'
-> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h:50:
-> error: syntax error before "kmemcheck_mark_initialized"
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> Reported-by: Michael Cree <mcree@orcon.net.nz>
-> ---
->  arch/alpha/include/asm/core_marvel.h  |    1 -
->  arch/alpha/include/asm/core_mcpcia.h  |    1 -
->  arch/alpha/include/asm/core_titan.h   |    1 -
->  arch/alpha/include/asm/core_tsunami.h |    1 -
->  4 files changed, 0 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/alpha/include/asm/core_marvel.h
-> b/arch/alpha/include/asm/core_marvel.h
-> index 30d55fe..dad300f 100644
-> --- a/arch/alpha/include/asm/core_marvel.h
-> +++ b/arch/alpha/include/asm/core_marvel.h
-> @@ -12,7 +12,6 @@
->  #define __ALPHA_MARVEL__H__
-> 
->  #include <linux/types.h>
-> -#include <linux/pci.h>
->  #include <linux/spinlock.h>
-> 
->  #include <asm/compiler.h>
-> diff --git a/arch/alpha/include/asm/core_mcpcia.h
-> b/arch/alpha/include/asm/core_mcpcia.h
-> index acf55b4..21ac533 100644
-> --- a/arch/alpha/include/asm/core_mcpcia.h
-> +++ b/arch/alpha/include/asm/core_mcpcia.h
-> @@ -6,7 +6,6 @@
->  #define MCPCIA_ONE_HAE_WINDOW 1
-> 
->  #include <linux/types.h>
-> -#include <linux/pci.h>
->  #include <asm/compiler.h>
-> 
->  /*
-> diff --git a/arch/alpha/include/asm/core_titan.h
-> b/arch/alpha/include/asm/core_titan.h
-> index a17f6f3..8cf79d1 100644
-> --- a/arch/alpha/include/asm/core_titan.h
-> +++ b/arch/alpha/include/asm/core_titan.h
-> @@ -2,7 +2,6 @@
->  #define __ALPHA_TITAN__H__
-> 
->  #include <linux/types.h>
-> -#include <linux/pci.h>
->  #include <asm/compiler.h>
-> 
->  /*
-> diff --git a/arch/alpha/include/asm/core_tsunami.h
-> b/arch/alpha/include/asm/core_tsunami.h
-> index 58d4fe4..8e39ecf 100644
-> --- a/arch/alpha/include/asm/core_tsunami.h
-> +++ b/arch/alpha/include/asm/core_tsunami.h
-> @@ -2,7 +2,6 @@
->  #define __ALPHA_TSUNAMI__H__
-> 
->  #include <linux/types.h>
-> -#include <linux/pci.h>
->  #include <asm/compiler.h>
-> 
->  /*
-> --
-> 1.7.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-alpha"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi,
 
-Thanks for the patch... now it brings me right back the same error I get
-with the release 'stable' and 'git snapshot, respectfully 2.33.1 and
-2.6.34-rc1. I've tried several different builds of GCC (3.2.3, 3.4.3, 4.3.4,
-4.4.2) and various releases of binutils (2.15 - no go, 2.17.90, and 2.20.1).
-This was after several failed builds after adjusting the CFLAGS and adding
-either -Wl,--no-relax and -relax.
+Thanks for taking the time to evaluate c/r. You may want to also
+try the latest, which is (as of now) ckpt-v20-rc2.
 
-[root@jericho linux]# as -v
-GNU assembler version 2.20.1 (alphaev5-alpha-linux) using BFD version (GNU
-Binutils) 2.20.1.20100303
+In the future, please CC the containers mailing list for issues
+related to c/r, at "containers@lists.linux-foundation.org".
 
-[root@jericho linux]# gcc-3.4.3 -v
-Reading specs from /usr/lib/gcc/alphaev5-alpha-linux/3.4.3/specs
-Configured with: ../gcc-3.4.3/configure --prefix=/usr --sysconfdir=/etc
---mandir=/usr/share/man --infodir=/usr/share/info
---build=alphaev5-alpha-linux --host=alphaev5-alpha-linux
---target=alphaev5-alpha-linux --program-suffix=-3.4.3 --enable-languages=all
+Jiro SEKIBA wrote:
+> Hi,
+> 
+> I'm trying to evaluate external checkpoint/restart with cr-v19 kernel.
+> However, when I restart, I got "Killed" message in stdout.
+> Do you have any tips or clue that are not in
+> Documentation/checkpoint/usage.txt ?
+> 
+> I'm using kernel pulled from
+> git://git.ncl.cs.columbia.edu/pub/git/linux-cr.git .
+> checkout tag named "ckpt-v19". Base distro is ubuntu 9.10.
+> 
+> I ran self checkpioint/restart sample program in Documentation/checkpint.
+> It works as written in usage.txt.
+> However, I can not make external checkpint/restart work properly.
+> 
+> I made a simple test program bellow and create checkpoint externally using
+> the program in Documentation/checkpoint/, it looks checkpoint file is
+> created properly.
+> However, when I ran self_restart < ckpt.image, I got "Killed" message.
 
-Thread model: posix
-gcc version 3.4.3
-[root@jericho linux]# make -v
-GNU Make 3.80
-Copyright (C) 2002  Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.
-There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
+If you take an external checkpoint, then you need to match it
+with an external restart, as opposed to self_restart.
 
-gcc-3.4.3 -Wp,-MD,arch/alpha/lib/.__remqu.o.d  -nostdinc -isystem
-/usr/lib/gcc/alphaev5-alpha-linux/3.4.3/include
--I/usr/src/linux-2.6.34-rc1/arch/alpha/include -Iinclude  -include
-include/generated/autoconf.h -D__KERNEL__ -D__ASSEMBLY__    -Wall -Wundef
--Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common
--Werror-implicit-function-declaration -Wno-format-security
--fno-delete-null-pointer-checks -pipe -Os -pipe -mno-fp-regs -ffixed-8
--msmall-data  -mcpu=ev67 -Wa,-mev6   -fomit-frame-pointer
--Wdeclaration-after-statement     -DREM  -c -o arch/alpha/lib/__remqu.o
-arch/alpha/lib/ev6-divide.S
-  AS      arch/alpha/lib/callback_srm.o
-  CC      arch/alpha/lib/checksum.o
-  CC      arch/alpha/lib/csum_partial_copy.o
-  AS      arch/alpha/lib/ev6-clear_page.o
-  AS      arch/alpha/lib/ev6-clear_user.o
-  AS      arch/alpha/lib/ev6-copy_page.o
-  AS      arch/alpha/lib/ev6-copy_user.o
-  AS      arch/alpha/lib/ev6-csum_ipv6_magic.o
-  AS      arch/alpha/lib/ev6-memchr.o
-  AS      arch/alpha/lib/ev6-memcpy.o
-  AS      arch/alpha/lib/ev6-memset.o
-  AS      arch/alpha/lib/ev6-strncpy_from_user.o
-  AS      arch/alpha/lib/ev6-stxcpy.o
-  AS      arch/alpha/lib/ev6-stxncpy.o
-  AS      arch/alpha/lib/ev67-strcat.o
-  AS      arch/alpha/lib/ev67-strchr.o
-  AS      arch/alpha/lib/ev67-strlen.o
-  AS      arch/alpha/lib/ev67-strlen_user.o
-  AS      arch/alpha/lib/ev67-strncat.o
-  AS      arch/alpha/lib/ev67-strrchr.o
-  CC      arch/alpha/lib/fls.o
-  CC      arch/alpha/lib/fpreg.o
-  AS      arch/alpha/lib/memmove.o
-  CC      arch/alpha/lib/srm_printk.o
-  CC      arch/alpha/lib/srm_puts.o
-  AS      arch/alpha/lib/strcpy.o
-  AS      arch/alpha/lib/strncpy.o
-  CC      arch/alpha/lib/udelay.o
-  AR      arch/alpha/lib/lib.a
-  LD      vmlinux.o
-  MODPOST vmlinux.o
-WARNING: modpost: Found 1 section mismatch(es).
-To see full details build your kernel with:
-'make CONFIG_DEBUG_SECTION_MISMATCH=y'
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-  LD      .tmp_vmlinux1
-kernel/built-in.o: In function `kthread_create':
-(.text+0x1ece4): relocation truncated to fit: GPREL16 against symbol
-`kthreadd_task' defined in .sbss section in kernel/built-in.o
-kernel/built-in.o: In function `check_cpu_itimer':
-(.text+0x21784): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `check_cpu_itimer':
-(.text+0x2179c): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `free_nsproxy':
-(.text+0x23064): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `create_new_namespaces':
-(.text+0x230a4): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `create_new_namespaces':
-(.text+0x23254): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `notify_die':
-(.text+0x2413c): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `register_die_notifier':
-(.text+0x241a4): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `unregister_die_notifier':
-(.text+0x241bc): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `sched_clock_init':
-(.text+0x24ba4): relocation truncated to fit: GPREL16 against `.sbss'
-kernel/built-in.o: In function `sched_clock_cpu':
-(.text+0x24bb4): additional relocation overflows omitted from the output
-make: *** [.tmp_vmlinux1] Error 1
-[root@jericho linux]#
+Otherwise, restarting with self_restart from a checkpoint that is
+not a self-checkpoint can yield unexpected results.
 
+Since you don't mention in your post, I don't know if you are using
+the tools from user-cr. If not, then you should use 'checkpoint' and
+'restart' tools from there. It is available from:
+	git://git.ncl.cs.columbia.edu/pub/git/user-cr.git
+(use the same branch as the one you used to linux-cr).
 
+Once you have the tools compiled, and you checkpoint with the
+'checkpoint' utility from there, you can restart with:
+	restart -v < ckpt.image
+
+Oren.
+
+> 
+> Is there any extra configurations other than cgroup freezer and
+> checkpint/restart ?
+> Or any limitation other than closing stdout,err,in ?
+> 
+> what I did is following:
+> 
+> # mount -t cgroup -o freezer cgroup /cgroup
+> # mkdir /cgroup/0
+> ..
+> # ./test &
+> # PID=$(ps | grep test | cut -f 2 -d' ')
+> # echo $PID > /cgroup/0/tasks
+> # sleep 3
+> # echo FROZEN > /cgroup/0/freezer.state
+> # ./checkpoint $PID > ckpt.image
+> # mv /tmp/test.out /tmp/test.out.orig
+> # cp /tmp/test.out.orig /tmp/test.out
+> # echo THAWED > /cgroup/0/freezer.state
+> # ./self_restart < ckpt.image
+> Killed
+> 
+> ----- test.c -----
+> int main(void)
+> {
+>   FILE *fp;
+>   int i;
+> 
+>   close(0);
+> //  close(1);  // I got SEGV when I uncomment this line, when restarting
+>   close(2);
+> 
+>   fp = fopen("/tmp/test.out","w+");
+> 
+>   for(i=0;i<10;i++) {
+>     fprintf(fp,"%d\n",i);
+>     fflush(fp);
+>     sleep(1);
+>   }
+> 
+>   fclose(fp);
+>   return 0;
+> }
+> ----- test.c -----
+> 
+> Thank you very much in advance
+> 
+> 2010/2/23 Oren Laadan <orenl@cs.columbia.edu>:
+>> Hi Andrew,
+>>
+>> We've put a stake in the ground for our next set of checkpoint/restart
+>> patches, v19. It has some great new stuff, and we put extra effort to
+>> address your concerns. We would like to have the code included in -mm
+>> for wider feedback and testing.
+>>
+>> This one is able to checkpoint/restart screen and vnc sessions, and
+>> live-migrate network servers between hosts. It also adds support for
+>> x86-64 (in addition to x86-32, s390x and powerpc). It is rebased to
+>> kernel 2.6.33-rc8.
+>>
+>> Since one of your main concerns was about what is not yet implemented
+>> and how complicated or ugly it will be to support that, we've put up
+>> a wiki page to address that. In it there is a simple table that lists
+>> what is not implemented and the anticipated solution impact, and for
+>> some entries a link to more details.
+>>
+>> The page is here:   http://ckpt.wiki.kernel.org/index.php/Checklist
+>>
+>> We want to stress that the patchset is already very useful as-is. We
+>> will keep working to implement more features cleanly. Some features we
+>> are working on include network namespaces and device configurations,
+>> mounts and mounts namespaces, and file locks. Should a complicated
+>> feature prove hard to implement, users have alternatives systems like
+>> kvm, until we manage to come up with a clean solution.
+>>
+>> We believe that maintenance is best addressed through testing. We now
+>> have a comprehensive test-suite to automatically find regressions.
+>> In addition, we ran LTP and the results are the same with CHECKPOINT=n
+>> and =y.
+>>
+>> If desired we'll send the whole patchset to lkml, but the git trees
+>> can be seen at:
+>>
+>>  kernel:       http://www.linux-cr.org/git/?p=linux-cr.git;a=summary
+>>  user tools:   http://www.linux-cr.org/git/?p=user-cr.git;a=summary
+>>  tests suite:  http://www.linux-cr.org/git/?p=tests-cr.git;a=summary
+>>
+>> Thanks,
+>>
+>> Application checkpoint/restart team
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
