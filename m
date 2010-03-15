@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936587Ab0COTdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 15:33:22 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42345 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab0COTdQ (ORCPT
+	id S1757601Ab0COTfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 15:35:43 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37662 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab0COTfm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 15:33:16 -0400
-From: Surbhi Palande <surbhi.palande@canonical.com>
-To: dri-devel@lists.sourceforge.net
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
-       linux-kernel@vger.kernel.org, airlied@linux.ie, yakui.zhao@intel.com,
-       jbarnes@virtuousgeek.org, zhenyuw@linux.intel.com, stable@kernel.org
-Subject: [PATCH 2/2] drm/i915: blacklist lid status: Elite Co. G335
-Date: Mon, 15 Mar 2010 21:33:06 +0200
-Message-Id: <ce705907d4c925bc2efa92a9b6854a2b42cbaa75.1268680514.git.surbhi.palande@canonical.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <cover.1268680514.git.surbhi.palande@canonical.com>
-References: <cover.1268680514.git.surbhi.palande@canonical.com>
+	Mon, 15 Mar 2010 15:35:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: =?utf-8?q?Rafa=C5=82_Mi=C5=82ecki?= <zajec5@gmail.com>,
+       Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>
+Subject: Re: ACPI patches for Linux-2.6.34-rc1
+Date: Mon, 15 Mar 2010 20:38:47 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-acpi@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <alpine.LFD.2.00.1003142155470.19244@sony> <b170af451003142310i3fe61282pb6536f6d2000c9c8@mail.gmail.com>
+In-Reply-To: <b170af451003142310i3fe61282pb6536f6d2000c9c8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201003152038.47124.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: http://launchpad.net/bug/515246
+On Monday 15 March 2010, Rafał Miłecki wrote:
+> 2010/3/15 Len Brown <lenb@kernel.org>:
+> > Hi Linus,
+> >
+> > please pull from:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
+> >
+> > Here is why three things included in this request
+> > look somewhat "merge-windo-ish".
+> 
+> Len, you seem to hardly ignore
+> [PATCH] ACPI / PM: Move ACPI video resume to a PM notifier
+> 
+> AFAIK this didn't hit rc1, is not included in this patchset and we
+> couldn't get any response from you in this thread.
 
-Elite Computers G335 reports the lid status as closed when it is open. This
-leads to a "no connectors reported" error at startup. Blacklisting
-it to always return a connected status for the default lvds connector.
+I wanted to mention that too.  Here's the patchwork link:
 
-Signed-off-by: Surbhi Palande <surbhi.palande@canonical.com>
----
- drivers/gpu/drm/i915/intel_lvds.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+http://patchwork.kernel.org/patch/83479/
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index afd0ee7..b75a941 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -650,6 +650,13 @@ static const struct dmi_system_id bad_lid_status[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "VGN-BX196VP"),
- 		},
- 	},
-+	{
-+		.ident = "Elitegroup ECS G335",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Elitegroup Co."),
-+			DMI_MATCH(DMI_BOARD_NAME, "ECS G335"),
-+		},
-+	},
- 	{ }
- };
- 
--- 
-1.6.3.3
+Len, if you want me to push it myself, I can do that.
 
+Thanks,
+Rafael
