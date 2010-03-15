@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937196Ab0COXcI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:32:08 -0400
-Received: from mail-yw0-f176.google.com ([209.85.211.176]:48429 "EHLO
-	mail-yw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937174Ab0COXcE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:32:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FbrIYCP2cpoZkSd0orJ5VIYfFsUSOeyt3YFsyVhcskWhDSWpk3mwKxTpKkTC+JhtzA
-         CJUwnbjZzExMv9g0WUDZCvu8vudScMPDkVhRZzsIEOw7rh8Q3RxztAv/hil9ICkFVKco
-         XRxxM8ETVtpjbDyJfaEdiU8cpCkz0cqIzJbTk=
-Message-ID: <4B9EC36F.8010404@gmail.com>
-Date: Mon, 15 Mar 2010 17:31:59 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Mike Hayward <hayward@loup.net>
-CC: linux-kernel@vger.kernel.org, mvds.00@gmail.com
-Subject: Re: SCSI GENERIC command queueing for block storage is unstable.
-References: <201003151825.o2FIPUTV006948@alien.loup.net>
-In-Reply-To: <201003151825.o2FIPUTV006948@alien.loup.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1757246Ab0COXdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:33:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41689 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756651Ab0COXde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 19:33:34 -0400
+Date: Tue, 16 Mar 2010 10:33:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+       ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCH] sysdev: the cpu probe/release attributes should be
+ sysdev_class_attributes
+Message-Id: <20100316103332.ade0b5d9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 12:25 PM, Mike Hayward wrote:
-> After discovering that O_NONBLOCK reads and writes were actually
-> blocking calls, I attempted to use the SCSI generic driver for
-> nonblocking io.  The good news is that it is nonblocking; the bad news
-> is that it is not dependable in any of the systems I have tested with.
->
-> Does anyone know if these defects have been fixed in later kernels?
->
-> 1. When queueing, write can occassionally return errno 12 (ENOMEM, Cannot
->     allocate memory).  This is documented in the SCSI GENERIC HOWTO,
->     however only for indirect io and it says extremely rare.  I can cause
->     it easily within a few hours and it can return even for direct io when
->     no io's are queued and 80% of the ram is free or in buffer cache.  The
->     fd polls as available for writing, but retrying never clears the error
->     and the fd is no longer usable.  This is a complete show stopper.
->
->     Linux 2.6.22.1-32.fc6 #1 SMP Wed Aug 1 14:30:16 EDT 2007 x86_64 x86_64 x86_64 GNU/Linux
+This fixes these warnings:
 
-First off, have you tested any of these problems against a newer kernel?
+drivers/base/cpu.c:264: warning: initialization from incompatible pointer type
+drivers/base/cpu.c:265: warning: initialization from incompatible pointer type
+
+Cc: Andi Kleen <andi@firstfloor.org>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/base/cpu.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
+
+Hi Greg,
+
+Could you pleas send this on to Linuse as this is now a bug in mainline.
+
+Thanks.
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 7036e8e..b5242e1 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -79,24 +79,24 @@ void unregister_cpu(struct cpu *cpu)
+ }
+ 
+ #ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
+-static ssize_t cpu_probe_store(struct sys_device *dev,
+-				struct sysdev_attribute *attr,
+-				const char *buf,
++static ssize_t cpu_probe_store(struct sysdev_class *class,
++			       struct sysdev_class_attribute *attr,
++			       const char *buf,
+ 			       size_t count)
+ {
+ 	return arch_cpu_probe(buf, count);
+ }
+ 
+-static ssize_t cpu_release_store(struct sys_device *dev,
+-				struct sysdev_attribute *attr,
+-				const char *buf,
++static ssize_t cpu_release_store(struct sysdev_class *class,
++				 struct sysdev_class_attribute *attr,
++				 const char *buf,
+ 				 size_t count)
+ {
+ 	return arch_cpu_release(buf, count);
+ }
+ 
+-static SYSDEV_ATTR(probe, S_IWUSR, NULL, cpu_probe_store);
+-static SYSDEV_ATTR(release, S_IWUSR, NULL, cpu_release_store);
++static SYSDEV_CLASS_ATTR(probe, S_IWUSR, NULL, cpu_probe_store);
++static SYSDEV_CLASS_ATTR(release, S_IWUSR, NULL, cpu_release_store);
+ #endif /* CONFIG_ARCH_CPU_PROBE_RELEASE */
+ 
+ #else /* ... !CONFIG_HOTPLUG_CPU */
+-- 
+1.7.0
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
