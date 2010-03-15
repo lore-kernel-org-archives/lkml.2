@@ -1,94 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965053Ab0COOkA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:40:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61317 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab0COOjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:39:54 -0400
-X-Authority-Analysis: v=1.0 c=1 a=u-VO3dv88eYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=D19gQVrFAAAA:8 a=cNj22-NcwO_uoGkf2NwA:9 a=BlZGyBYNgiMHJRlqqumi7Dxd4gkA:4 a=PUjeQqilurYA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: 2.6.33: ftrace triggers soft lockup
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <4B9D915A.6080101@cn.fujitsu.com>
-References: <2375c9f91003022204p5bdab1fdj3b3500998575fc28@mail.gmail.com>
-	 <1267710847.10871.102.camel@gandalf.stny.rr.com>
-	 <2375c9f91003042014y17588865g8f9110e666ac2456@mail.gmail.com>
-	 <2375c9f91003042316g6e774d60n90dfc4784d3b66bf@mail.gmail.com>
-	 <1267801603.10871.1725.camel@gandalf.stny.rr.com>
-	 <20100305171614.GC5244@nowhere>  <4B94A816.4090608@cn.fujitsu.com>
-	 <1268061312.10871.1810.camel@gandalf.stny.rr.com>
-	 <4B95AE4E.6060700@cn.fujitsu.com>
-	 <1268101394.10871.1861.camel@gandalf.stny.rr.com>
-	 <4B95C2AF.7010508@cn.fujitsu.com>
-	 <1268446049.4471.787.camel@gandalf.stny.rr.com>
-	 <1268502976.4471.798.camel@gandalf.stny.rr.com>
-	 <4B9D915A.6080101@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 15 Mar 2010 10:39:50 -0400
-Message-ID: <1268663990.4471.808.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S965056Ab0COOmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:42:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965027Ab0COOmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:42:08 -0400
+Date: Mon, 15 Mar 2010 10:41:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v6)
+Message-ID: <20100315144120.GF21127@redhat.com>
+References: <1268175636-4673-1-git-send-email-arighi@develer.com> <20100311180753.GE29246@redhat.com> <20100311235922.GA4569@linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100311235922.GA4569@linux>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-15 at 09:46 +0800, Li Zefan wrote:
-> Steven Rostedt wrote:
-> > On Fri, 2010-03-12 at 21:07 -0500, Steven Rostedt wrote:
-> >> On Tue, 2010-03-09 at 11:38 +0800, Li Zefan wrote:
-> >>
-> >>> The segfault is from userspace. This is a segfault I just got:
-> >>>
-> >>> ftrace_stack_ma[14989]: segfault at fe2e ip 00000000004474c0 sp 00007fffb97e38c0 error 4 in bash[400000+d1000]
-> >> Li and Lai,
-> >>
-> >> Thanks a lot for reporting all this, and writing the ftrace_stress_test.
-> >> I've fixed all the bugs that it has reported (to my knowledge) and after
-> >> a little more testing I will soon be sending a patch series out.
+On Fri, Mar 12, 2010 at 12:59:22AM +0100, Andrea Righi wrote:
+> On Thu, Mar 11, 2010 at 01:07:53PM -0500, Vivek Goyal wrote:
+> > On Wed, Mar 10, 2010 at 12:00:31AM +0100, Andrea Righi wrote:
+> > > Control the maximum amount of dirty pages a cgroup can have at any given time.
+> > > 
+> > > Per cgroup dirty limit is like fixing the max amount of dirty (hard to reclaim)
+> > > page cache used by any cgroup. So, in case of multiple cgroup writers, they
+> > > will not be able to consume more than their designated share of dirty pages and
+> > > will be forced to perform write-out if they cross that limit.
+> > > 
+> > > The overall design is the following:
+> > > 
+> > >  - account dirty pages per cgroup
+> > >  - limit the number of dirty pages via memory.dirty_ratio / memory.dirty_bytes
+> > >    and memory.dirty_background_ratio / memory.dirty_background_bytes in
+> > >    cgroupfs
+> > >  - start to write-out (background or actively) when the cgroup limits are
+> > >    exceeded
+> > > 
+> > > This feature is supposed to be strictly connected to any underlying IO
+> > > controller implementation, so we can stop increasing dirty pages in VM layer
+> > > and enforce a write-out before any cgroup will consume the global amount of
+> > > dirty pages defined by the /proc/sys/vm/dirty_ratio|dirty_bytes and
+> > > /proc/sys/vm/dirty_background_ratio|dirty_background_bytes limits.
+> > > 
 > > 
-> > Li,
+> > Hi Andrea,
 > > 
-> > I ran your test for 13 hours on three different machines. I did not hit
-> > any more errors. Although I see a lockdep warning (not a locking problem
-> > but the WARN_ON in fork.c is triggering). I'll look into that on Monday.
+> > I am doing a simple dd test of writting a 4G file. This machine has got
+> > 64G of memory and I have created one cgroup with 100M as limit_in_bytes.
 > > 
-> 
-> As I said in the offline mail, this warning is caused by global trace_clock,
-> and I sent a fix sometime ago:
-> 
-> http://lkml.org/lkml/2009/12/21/4
-
-Ah, I was waiting for a final Acked-by: from Peter Zijlstra.
-
-Peter,
-
-Should I pull in that patch? I don't see anything wrong with converting
-a raw_local_irq_save() to a local_irq_save() in the tracing code. I'll
-apply it locally and see if it fixes the warn on that I see.
-
-Note, even the function tracer uses straight local_irq_save(), so I
-would think that the clock code could too.
-
--- Steve
-
-> 
-> > Please take the new patches that Ingo just pushed to Linus, if you find
-> > any more bugs, please let me know right away.
+> > I run following dd program both in root cgroup as well as test1/
+> > cgroup(100M limit) one after the other.
 > > 
+> > In root cgroup
+> > ==============
+> > dd if=/dev/zero of=/root/zerofile bs=4K count=1000000
+> > 1000000+0 records in
+> > 1000000+0 records out
+> > 4096000000 bytes (4.1 GB) copied, 59.5571 s, 68.8 MB/s
+> > 
+> > In test1/ cgroup
+> > ===============
+> > dd if=/dev/zero of=/root/zerofile bs=4K count=1000000
+> > 1000000+0 records in
+> > 1000000+0 records out
+> > 4096000000 bytes (4.1 GB) copied, 20.6683 s, 198 MB/s
+> > 
+> > It is strange that we are throttling process in root group much more than
+> > process in test1/ cgroup?
 > 
-> Thanks for the fixes!
+> mmmh.. strange, on my side I get something as expected:
 > 
+> <root cgroup>
+> $ dd if=/dev/zero of=test bs=1M count=500
+> 500+0 records in
+> 500+0 records out
+> 524288000 bytes (524 MB) copied, 6.28377 s, 83.4 MB/s
+> 
+> <child cgroup with 100M memory.limit_in_bytes>
+> $ dd if=/dev/zero of=test bs=1M count=500
+> 500+0 records in
+> 500+0 records out
+> 524288000 bytes (524 MB) copied, 11.8884 s, 44.1 MB/s
+> 
+> Did you change the global /proc/sys/vm/dirty_* or memcg dirty
+> parameters?
 
+No I did not change any memecg dirty parameters.
 
+Vivek
