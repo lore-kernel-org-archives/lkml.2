@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937078Ab0COXBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:01:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58516
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932386Ab0COXBL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:01:11 -0400
-Date: Mon, 15 Mar 2010 16:01:33 -0700 (PDT)
-Message-Id: <20100315.160133.67908104.davem@davemloft.net>
-To: keil@b1-systems.de
-Cc: torvalds@linux-foundation.org, lars.ellenberg@linbit.com,
-       netdev@vger.kernel.org, andreas@eversberg.eu, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ISDN: Add PCI ID for HFC-2S/4S Beronet Card PCIe
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1268668176.12629@pingi>
-References: <1268668176.12629@pingi>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S937104Ab0COXDo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:03:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937092Ab0COXDm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 19:03:42 -0400
+Date: Mon, 15 Mar 2010 19:03:33 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens
+Message-ID: <20100315190333.195a327a@tlielax.poochiereds.net>
+In-Reply-To: <20100315225037.GX30031@ZenIV.linux.org.uk>
+References: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
+	<1268692288.3040.2.camel@localhost.localdomain>
+	<20100315184702.35c4d140@tlielax.poochiereds.net>
+	<20100315225037.GX30031@ZenIV.linux.org.uk>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Karsten Keil <keil@b1-systems.de>
-Date: Mon, 15 Mar 2010 14:18:41 +0100
+On Mon, 15 Mar 2010 22:50:37 +0000
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-> A few subdevice IDs seem to have been dropped when hfc_multi was
-> included upstream, just compare the list at
-> http://www.openvox.cn/viewvc/misdn/trunk/hfc_multi.c?revision=75&view=annotate#l175
-> with the IDs in drivers/isdn/hardware/mISDN/hfcmulti.c
+> On Mon, Mar 15, 2010 at 06:47:02PM -0400, Jeff Layton wrote:
 > 
-> Added PCIe 2 Port card and LED settings (same as PCI) /KKe
+> > Yeah that would be cleaner on the wire for the create case. It's not
+> > clear to me how to implement that though. There doesn't appear to be
+> > a straightforward way to tell the VFS to skip the truncate.
 > 
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> Signed-off-by: Karsten Keil <keil@b1-systems.de>
+> The plan is to turn most of the guts of do_last() into fs method...
 
-We don't add new defines to linux/pci_ids.h, it is deprecated.
-Simply add the device ID constants to the table.
+Thanks Al, that makes sense.
 
-The only exception is the case where a device ID is used in
-more than one driver, but even that scenerio is heavily
-discouraged.
+Does the patch I've proposed look reasonable in the interim?
+-- 
+Jeff Layton <jlayton@redhat.com>
