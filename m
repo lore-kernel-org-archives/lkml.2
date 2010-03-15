@@ -1,51 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965270Ab0COQBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56608 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965216Ab0COQBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:01:22 -0400
-Message-ID: <4B9E59B7.6060405@redhat.com>
-Date: Mon, 15 Mar 2010 09:00:55 -0700
-From: Ulrich Drepper <drepper@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
+	id S965300Ab0COQEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:04:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56803 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965216Ab0COQEp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 12:04:45 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       stable@kernel.org,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/1 v2] perf annotate: Properly notify the user that vmlinux is missing
+Date: Mon, 15 Mar 2010 13:04:33 -0300
+Message-Id: <1268669073-6856-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ralf Baechle <ralf@linux-mips.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
-       torvalds@linux-foundation.org, munroesj@linux.vnet.ibm.com
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-References: <1268628493.2355.2.camel@pasglop> <20100314.220646.190065794.davem@davemloft.net> <1268630313.2335.2.camel@pasglop> <20100315134449.GB1653@linux-mips.org> <4B9E4EB1.9010800@zytor.com>
-In-Reply-To: <4B9E4EB1.9010800@zytor.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-On 03/15/2010 08:13 AM, H. Peter Anvin wrote:
-> One option would be to do a libkernel.so,
+Before this patch we would not find a vmlinux, then try to pass objdump "[kernel.kallsyms]"
+as the filename, it would get confused and produce no output:
 
-No need.  Put it in the vdso.  And name it something other than syscall.
- The syscall() API is fixed, you cannot change it.
+[root@doppio ~]# perf annotate n_tty_write
 
-All this only if it makes sense for ALL archs.  If it cannot work for
-just one arch then it's not worth it at all.
+------------------------------------------------
+ Percent |      Source code & Disassembly of [kernel.kallsyms]
+------------------------------------------------
 
-- -- 
-➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+Now we check that and emit meaningful warning:
 
-iEYEARECAAYFAkueWbcACgkQ2ijCOnn/RHRtBQCeP88S/0xei7CAt65AGboqsrC8
-N7wAoK7Qbi+OZuQrgHTCgTA27TgY+gQU
-=4tJ6
------END PGP SIGNATURE-----
+[root@doppio ~]# perf annotate n_tty_write
+Can't annotate n_tty_write: No vmlinux file was found in the path:
+[0] vmlinux
+[1] /boot/vmlinux
+[2] /boot/vmlinux-2.6.34-rc1-tip+
+[3] /lib/modules/2.6.34-rc1-tip+/build/vmlinux
+[4] /usr/lib/debug/lib/modules/2.6.34-rc1-tip+/vmlinux
+[root@doppio ~]#
+
+This bug was introduced when we added automatic search for vmlinux, before that
+time the user had to specify a vmlinux file.
+
+v2: Print the warning just for the first symbol found when no symbol
+name is specified, otherwise it will spam the screen repeating the
+warning for each symbol.
+
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Cc: stable@kernel.org
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-annotate.c |   10 ++++++++++
+ tools/perf/util/newt.c        |    2 +-
+ tools/perf/util/symbol.h      |    1 +
+ 3 files changed, 12 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 6ad7148..45d1466 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -452,6 +452,16 @@ static void annotate_sym(struct hist_entry *he)
+ 	if (!filename)
+ 		return;
+ 
++	if (dso->origin == DSO__ORIG_KERNEL) {
++		if (dso->annotate_warned)
++			return;
++		dso->annotate_warned = 1;
++		pr_err("Can't annotate %s: No vmlinux file was found in the "
++		       "path:\n", sym->name);
++		vmlinux_path__fprintf(stderr);
++		return;
++	}
++
+ 	pr_debug("%s: filename=%s, sym=%s, start=%#Lx, end=%#Lx\n", __func__,
+ 		 filename, sym->name, map->unmap_ip(map, sym->start),
+ 		 map->unmap_ip(map, sym->end));
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 2836394..2d19e7a 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -63,7 +63,7 @@ static void hist_entry__annotate_browser(struct hist_entry *self)
+ 	if (self->sym == NULL)
+ 		return;
+ 
+-	if (asprintf(&str, "perf annotate %s | expand", self->sym->name) < 0)
++	if (asprintf(&str, "perf annotate %s 2>&1 | expand", self->sym->name) < 0)
+ 		return;
+ 
+ 	fp = popen(str, "r");
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index d983bba..5bd91d1 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -106,6 +106,7 @@ struct dso {
+ 	u8		 has_build_id:1;
+ 	u8		 kernel:1;
+ 	u8		 hit:1;
++	u8		 annotate_warned:1;
+ 	unsigned char	 origin;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
+-- 
+1.6.2.5
+
