@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab0COSji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:39:38 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4518 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab0COSjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:39:37 -0400
-X-Server-Uuid: D3C04415-6FA8-4F2C-93C1-920E106A2031
-Date: Mon, 15 Mar 2010 11:39:26 -0700
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "Joe Perches" <joe@perches.com>
-cc: "David Miller" <davem@davemloft.net>,
-       "thisdyingdream@gmail.com" <thisdyingdream@gmail.com>,
-       "sjharms@gmail.com" <sjharms@gmail.com>,
-       "Matthew Carlson" <mcarlson@broadcom.com>,
-       "Michael Chan" <mchan@broadcom.com>, "Benjamin Li" <benli@broadcom.com>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "sharms@ubuntu.com" <sharms@ubuntu.com>
-Subject: Re: [PATCH] NET: tg3: fix brace, switch, and comma spacing
- coding style in tg3.c This is a patch to the tg3.c file that aligns
- switch and case statements, else statements following braces, and
- inserts a space after commas listed in the coding style g
-Message-ID: <20100315183926.GA9159@xw6200.broadcom.net>
-References: <b6bf7b051003131152t38c8b1e1m33e8844468b9e46a@mail.gmail.com>
- <20100313.115555.209991546.davem@davemloft.net>
- <1268511742.30289.74.camel@Joe-Laptop.home>
+	id S934017Ab0COSpM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 14:45:12 -0400
+Received: from fg-out-1718.google.com ([72.14.220.152]:62260 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab0COSpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 14:45:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VmUmGMN1x0e8f4FnBTpqwPbmCXmAnVx1ZWu/0Zo7zR2tPLxZHZfdVErtzPMuZfqJdf
+         HSZBUtioZpoC60Gqj4dN7YC4GVDZ8Fx3bgkOG4qmH1CtJdl0VI7mmyGpsZLcnDyeC/MR
+         +BTTc99Xg2wMRLLR1wo/eaqUkd79dauuMzH6o=
+Date: Tue, 16 Mar 2010 00:15:06 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Abhishek Sagar <sagar.abhishek@gmail.com>,
+       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 03/10] ftrace: allow building without frame pointers
+Message-ID: <20100315184506.GA2303@debian>
+References: <1268462987-8271-1-git-send-email-rabin@rab.in>
+ <1268462987-8271-4-git-send-email-rabin@rab.in>
+ <1268501792.3366.7.camel@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1268511742.30289.74.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 6780A15438O142791158-01-01
-Content-Type: text/plain;
- charset=us-ascii
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1268501792.3366.7.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a patch awaiting net-next that does these kinds of things.  I
-can roll (most of) Steven's changes into that patch and get it all
-done in one shot if you like.
+On Sat, Mar 13, 2010 at 12:36:32PM -0500, Steven Rostedt wrote:
+> On Sat, 2010-03-13 at 12:19 +0530, Rabin Vincent wrote:
+> >  ifdef CONFIG_FRAME_POINTER
+> >  KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
+> >  else
+> > +# Some targets (ARM with Thumb2, for example), can't be built with frame
+> > +# pointers.  For those, we don't have FUNCTION_TRACER automatically
+> > +# select FRAME_POINTER.  However, FUNCTION_TRACER adds -pg, and this is
+> > +# incompatible with -fomit-frame-pointer with current GCC, so we don't use
+> > +# -fomit-frame-pointer with FUNCTION_TRACER.
+> > +ifndef CONFIG_FUNCTION_TRACER
+> >  KBUILD_CFLAGS	+= -fomit-frame-pointer
+> 
+> I believe this is correct, but have you tested this on other archs other
+> than ARM? I can do it for x86 and PPC, but it will need to wait as those
+> machines are currently performing stress tests.
 
-On Sat, Mar 13, 2010 at 12:22:22PM -0800, Joe Perches wrote:
-> On Sat, 2010-03-13 at 11:55 -0800, David Miller wrote:
-> > From: Steven Harms <thisdyingdream@gmail.com>
-> > Date: Sat, 13 Mar 2010 14:52:26 -0500
-> > 
-> > > Would you like me to submit the patch adding only the spaces after
-> > > commas and leave the rest of the defines as is, or discard the changes
-> > > all together?
-> > 
-> > I would like you to toss them altogether.
-> 
-> I think that Steven got off on the wrong foot
-> a bit by adding the parentheses to the defines.
-> 
-> I think the other changes he suggested are
-> tree-wide style consistency only and are ok.
-> 
-> Perhaps you might reconsider later, after
-> net-next reopens.
-> 
-> 
-> 
+I've tested the series on x86-64.
 
+Note that this particular change will not currently affect other archs
+since they still have the "select FRAME_POINTER" in FUNCTION_TRACER.
+
+Rabin
