@@ -1,104 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965814Ab0COU2N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 16:28:13 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:59445 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936715Ab0COU2B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 16:28:01 -0400
-Date: Mon, 15 Mar 2010 21:28:00 +0100
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: f_mass_storage: dynamic buffers for better alignment
-In-reply-to: <op.u9mjqvz87p4s8u@pikus>
-To: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Felipe Balbi <me@felipebalbi.com>,
-       Michal Nazarewicz <mina86@mina86.com>
-Message-id: <99772ee77bb5e3bf56f115bd0b28786218e08662.1268682737.git.mina86@mina86.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.0
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <op.u9mjqvz87p4s8u@pikus>
+	id S936724Ab0COUcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 16:32:13 -0400
+Received: from xenotime.net ([72.52.64.118]:46226 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S936684Ab0COUcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 16:32:10 -0400
+Message-ID: <4B9E9946.20001@xenotime.net>
+Date: Mon, 15 Mar 2010 13:32:06 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [RFC][PATCH] PM: Update device power management document
+References: <201003142103.19420.rjw@sisk.pl> <4B9DA9F4.7040906@xenotime.net> <201003152104.24882.rjw@sisk.pl>
+In-Reply-To: <201003152104.24882.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On 03/15/10 13:04, Rafael J. Wysocki wrote:
+> 
+> Updated patch is appended.
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM: Update device power management document
+> 
+> The device PM document, Documentation/power/devices.txt, is badly
+> outdated and requires total rework to fit the current design of the
+> PM framework.  Make it more up to date.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-Using of "static" buffers in fsg_buffhd structure causes buffers
-not to be aligned to any bigger power of two (like cache size for
-instance) which as a result may lead to some copying of data or
-slower DMA access (as head must to be copied via CPU).  So even
-though code gets a bit more complicated this patch changes the
-behaviour of mass storage function to use kmalloc()ed buffers which
-are (because of their size) page aligned -- that should be enought
-for any DMA or other hardware.
----
- drivers/usb/gadget/f_mass_storage.c |   23 ++++++++++++++++++-----
- 1 files changed, 18 insertions(+), 5 deletions(-)
+Reviewed-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 84f6491..eff339d 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -302,7 +302,6 @@ static const char fsg_string_interface[] = "Mass Storage";
- 
- 
- #define FSG_NO_INTR_EP 1
--#define FSG_BUFFHD_STATIC_BUFFER 1
- #define FSG_NO_DEVICE_STRINGS    1
- #define FSG_NO_OTG               1
- #define FSG_NO_INTR_EP           1
-@@ -2747,13 +2746,19 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 
- 
- 	/* Data buffers cyclic list */
--	/* Buffers in buffhds are static -- no need for additional
--	 * allocation. */
- 	bh = common->buffhds;
--	i = FSG_NUM_BUFFERS - 1;
-+	i = FSG_NUM_BUFFERS;
-+	goto buffhds_first_it;
- 	do {
- 		bh->next = bh + 1;
--	} while (++bh, --i);
-+		++bh;
-+buffhds_first_it:
-+		bh->buf = kmalloc(FSG_BUFLEN, GFP_KERNEL);
-+		if (unlikely(!bh->buf)) {
-+			rc = -ENOMEM;
-+			goto error_release;
-+		}
-+	} while (--i);
- 	bh->next = common->buffhds;
- 
- 
-@@ -2861,6 +2866,7 @@ static void fsg_common_release(struct kref *ref)
- 		container_of(ref, struct fsg_common, ref);
- 	unsigned i = common->nluns;
- 	struct fsg_lun *lun = common->luns;
-+	struct fsg_buffhd *bh;
- 
- 	/* If the thread isn't already dead, tell it to exit now */
- 	if (common->state != FSG_STATE_TERMINATED) {
-@@ -2882,6 +2888,13 @@ static void fsg_common_release(struct kref *ref)
- 	}
- 
- 	kfree(common->luns);
-+
-+	i = FSG_BUFFHD;
-+	bh = common->buffhds;
-+	do {
-+		kfree(bh->buf);
-+	} while (++bh, --i);
-+
- 	if (common->free_storage_on_release)
- 		kfree(common);
- }
+> ---
+>  Documentation/power/devices.txt |  722 ++++++++++++++++++++++++----------------
+>  1 file changed, 443 insertions(+), 279 deletions(-)
+> 
+> Index: linux-2.6/Documentation/power/devices.txt
+> ===================================================================
+> --- linux-2.6.orig/Documentation/power/devices.txt
+> +++ linux-2.6/Documentation/power/devices.txt
+
+
 -- 
-1.7.0
-
+~Randy
