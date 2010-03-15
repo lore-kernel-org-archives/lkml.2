@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab0COVuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:50:44 -0400
-Received: from tundra.namei.org ([65.99.196.166]:45853 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936912Ab0COVuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:50:40 -0400
-Date: Tue, 16 Mar 2010 08:50:32 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: linux-next: build warning after merge of the security-testing
- tree
-In-Reply-To: <20100310153116.291d4e6f.sfr@canb.auug.org.au>
-Message-ID: <alpine.LRH.2.00.1003160850080.13724@tundra.namei.org>
-References: <20100310153116.291d4e6f.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S936936Ab0COVvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:51:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42543 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936926Ab0COVuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 17:50:55 -0400
+Date: Mon, 15 Mar 2010 14:50:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "kirill@shutemov.name" <kirill@shutemov.name>
+Subject: Re: [PATCH 1/3] memcg: oom wakeup filter
+Message-Id: <20100315145013.ee5919fd.akpm@linux-foundation.org>
+In-Reply-To: <20100312143137.f4cf0a04.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100312143137.f4cf0a04.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Mar 2010, Stephen Rothwell wrote:
+On Fri, 12 Mar 2010 14:31:37 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> Hi James,
-> 
-> After merging the security-testing tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> scripts/selinux/genheaders/genheaders.c: In function 'main':
-> scripts/selinux/genheaders/genheaders.c:84: warning: initialization discards qualifiers from pointer target type
-> 
-> Introduced by commit 634a539e16bd7a1ba31c3f832baa725565cc9f96 ("selinux:
-> const strings in tables").
+> +static int memcg_oom_wake_function(wait_queue_t *wait,
+> +	unsigned mode, int sync, void *arg)
+> +{
+> +	struct mem_cgroup *wake_mem = (struct mem_cgroup *)arg;
+> +	struct oom_wait_info *oom_wait_info;
+> +
+> +	/* both of oom_wait_info->mem and wake_mem are stable under us */
+> +	oom_wait_info = container_of(wait, struct oom_wait_info, wait);
+> +
+> +	if (oom_wait_info->mem == wake_mem)
+> +		goto wakeup;
+> +	/* if no hierarchy, no match */
+> +	if (!oom_wait_info->mem->use_hierarchy || !wake_mem->use_hierarchy)
+> +		return 0;
+> +	/* check hierarchy */
+> +	if (!css_is_ancestor(&oom_wait_info->mem->css, &wake_mem->css) &&
+> +	    !css_is_ancestor(&wake_mem->css, &oom_wait_info->mem->css))
+> +		return 0;
+> +
+> +wakeup:
+> +	return autoremove_wake_function(wait, mode, sync, arg);
+> +}
 
-Thanks, fix applied per below.
-
-commit 310de047eef6685274045db1e6b39c9f313df428
-Author: James Morris <jmorris@namei.org>
-Date:   Tue Mar 16 08:47:36 2010 +1100
-
-    selinux: fix warning in genheaders
-    
-    Fix const warning in the genheaders script as a result of
-    changes to the headers, as noted here:
-    
-    http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-03/msg03977.html
-    
-    Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-    Signed-off-by: James Morris <jmorris@namei.org>
-
-diff --git a/scripts/selinux/genheaders/genheaders.c b/scripts/selinux/genheaders/genheaders.c
-index 2462696..58a12c2 100644
---- a/scripts/selinux/genheaders/genheaders.c
-+++ b/scripts/selinux/genheaders/genheaders.c
-@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
- 	fprintf(fout, "\n");
- 
- 	for (i = 1; i < isids_len; i++) {
--		char *s = initial_sid_to_string[i];
-+		const char *s = initial_sid_to_string[i];
- 		fprintf(fout, "#define SECINITSID_%s", s);
- 		for (j = 0; j < max(1, 40 - strlen(s)); j++)
- 			fprintf(fout, " ");
-
+What are the locking rules for calling css_is_ancestor()?
