@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936759Ab0COVAK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:00:10 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:48842 "EHLO
+	id S936795Ab0COVBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:01:13 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:39503 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266Ab0COVAG (ORCPT
+	with ESMTP id S932266Ab0COVBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:00:06 -0400
+	Mon, 15 Mar 2010 17:01:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=MOMRaVF34/sslTIwqNawIunArCCBwIYdrA3YiIkvzfjA/HGv8b0VqaqnBmhpQFQDOB
-         b7whwWO4tgTUKeubqFaxV7hlunNA22WOJamsDcub4KnbWg7EuwkYBcm2zDdzsfqVMw/H
-         ljYJePuPKar+pjVBXoPkH72m1pRfPdGZtLExo=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "\\ \" H . Peter Anvin \\ \"" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux Next <linux-next@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] perf: Fix unexported generic perf_arch_fetch_caller_regs
-Date: Mon, 15 Mar 2010 22:00:06 +0100
-Message-Id: <1268686806-7286-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <20100312172641.f683dfd9.sfr@canb.auug.org.au>
-References: <20100312172641.f683dfd9.sfr@canb.auug.org.au>
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=S1kk7q10mv1HVHU3dlYA8a3J2xg/T0zT8Z3b2fYDxW2PhorepHUkWeIKD0WINCBsZ4
+         hLYoYbmadc2wMeCAWrcb/EnXUjrR7+Nwhm1uxLZIMw6vtjncoVLCNQjQgiTcGIZemKPO
+         PFMSvlQyCp4HbyF5KHJcds/RBCp9fPKMKdjk0=
+Subject: Re: inconsistent lock state
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+In-Reply-To: <20100308125122.GA11242@redhat.com>
+References: <20100307192305.GA598@elte.hu>
+	 <20100308125122.GA11242@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Mar 2010 22:01:05 +0100
+Message-ID: <1268686865.2824.4.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_arch_fetch_caller_regs() is exported for the overriden x86
-version, but not for the generic weak version.
-As a general rule, weak functions should have their symbol exported
-in the same file they are defined.
+Le lundi 08 mars 2010 à 13:51 +0100, Oleg Nesterov a écrit :
+> Sergey Senozhatsky wrote:
+> >
+> > Hello,
+> >
+> > Hardly reproducible.
+> > /*
+> > * 2.6.33. x86. ASUS f3jc
+> > */
+> >
+> > [329645.010697] =================================
+> > [329645.010699] [ INFO: inconsistent lock state ]
+> > [329645.010703] 2.6.33-33-0-dbg #31
+> > [329645.010705] ---------------------------------
+> > [329645.010708] inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
+> >
+> > ...
+> >
+> > [329645.011083]  [<c128858d>] netif_receive_skb+0x340/0x360
+> > [329645.011093]  [<fd1ab6f4>] rtl8169_rx_interrupt+0x2bf/0x37e [r8169]
+> > [329645.011100]  [<fd1aba02>] rtl8169_reset_task+0x38/0xcd [r8169]
+> > [329645.011105]  [<c1044f71>] worker_thread+0x1ac/0x27c
+> 
+> I don't understand this code, but at first glance drivers/net/r8169.c
+> is obviously buggy.
+> 
+> The work->func, rtl8169_reset_task(), calls rtl8169_rx_interrupt() ->
+> netif_receive_skb(), and the last one may only be called from softirq.
+> 
 
-So let's export it on trace_event_perf.c as it is used by trace
-events only.
+Yes, this is wrong. In this context (process context, not softirq), we
+should use netif_rx() or just drop frames if we are in reset phase.
 
-This fixes:
-	ERROR: ".perf_arch_fetch_caller_regs" [fs/xfs/xfs.ko] undefined!
-	ERROR: ".perf_arch_fetch_caller_regs" [arch/powerpc/platforms/cell/spufs/spufs.ko] undefined!
+Also, this driver schedules a reset in case a fifo error is reported in
+rtl8169_rx_interrupt()
 
-And also only build it if trace events are enabled.
+                if (status & RxFOVF) {
+                        rtl8169_schedule_work(dev, rtl8169_reset_task);
+                        dev->stats.rx_fifo_errors++;
+                }
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Paul Mackerras <paulus@samba.org>
----
- arch/x86/kernel/cpu/perf_event.c |    1 -
- kernel/trace/trace_event_perf.c  |    2 ++
- 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 7645fae..5fb490c 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1713,4 +1713,3 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
- 	regs->cs = __KERNEL_CS;
- 	local_save_flags(regs->flags);
- }
--EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0709e4f..7d79a10 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -12,6 +12,8 @@
- DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
- EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
- 
-+EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-+
- static char *perf_trace_buf;
- static char *perf_trace_buf_nmi;
- 
--- 
-1.6.2.3
+This seems very strange too : In case of a RX spike, we reset card ?
+
 
