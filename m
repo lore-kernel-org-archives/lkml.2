@@ -1,129 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965512Ab0COROG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 13:14:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965500Ab0COROD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 13:14:03 -0400
-Date: Mon, 15 Mar 2010 13:12:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v7)
-Message-ID: <20100315171209.GI21127@redhat.com>
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	id S965548Ab0CORTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:19:38 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:44498 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965445Ab0CORTh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 13:19:37 -0400
+Date: Mon, 15 Mar 2010 13:17:49 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost
+To: Daniel Baluta <daniel.baluta@gmail.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kfifo has temporarily invalid in pointer?
+In-Reply-To: <413a6a951003150906ve38d1dy95ed07f026accf09@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1003151315580.11348@localhost>
+References: <alpine.LFD.2.00.1003151044590.8729@localhost> <413a6a951003150906ve38d1dy95ed07f026accf09@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268609202-15581-1-git-send-email-arighi@develer.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1371127320-1268673472=:11348"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 12:26:37AM +0100, Andrea Righi wrote:
-> Control the maximum amount of dirty pages a cgroup can have at any given time.
-> 
-> Per cgroup dirty limit is like fixing the max amount of dirty (hard to reclaim)
-> page cache used by any cgroup. So, in case of multiple cgroup writers, they
-> will not be able to consume more than their designated share of dirty pages and
-> will be forced to perform write-out if they cross that limit.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-For me even with this version I see that group with 100M limit is getting
-much more BW.
+--8323328-1371127320-1268673472=:11348
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-root cgroup
-==========
-#time dd if=/dev/zero of=/root/zerofile bs=4K count=1M
-4294967296 bytes (4.3 GB) copied, 55.7979 s, 77.0 MB/s
+On Mon, 15 Mar 2010, Daniel Baluta wrote:
 
-real	0m56.209s
+> Hi Robert,
+>
+> On Mon, Mar 15, 2010 at 4:58 PM, Robert P. J. Day <rpjday@crashcourse.ca>=
+ wrote:
+> >
+> > =A0(i am not trying to be annoyingly obsessive about the kernel kfifo,
+> > i am merely succeeding.)
+> :P
+> > =A0what appears to be a bit of an oddity WRT kfifo: =A0since a kfifo is
+> > defined with a fixed buffer size, it obviously enqueues and dequeues
+> > in a circular fashion. =A0so, the code to add some data to a kfifo (fro=
+m
+> > kernel/kfifo.c):
+> >
+> > =3D=3D=3D=3D=3D
+> > unsigned int kfifo_in(struct kfifo *fifo, const void *from,
+> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0unsigned=
+ int len)
+> > {
+> > =A0 =A0 =A0 =A0len =3D min(kfifo_avail(fifo), len);
+> >
+> > =A0 =A0 =A0 =A0__kfifo_in_data(fifo, from, len, 0);
+> > =A0 =A0 =A0 =A0__kfifo_add_in(fifo, len);
+> > =A0 =A0 =A0 =A0return len;
+> > }
+> > =3D=3D=3D=3D=3D
+> >
+> > =A0fair enough -- that first routine adds the data itself, while the
+> > second one correspondingly bumps up the pointer, which could
+> > conceivably wrap around to follow the data, correct? =A0but from
+> > include/linux.kfifo.h:len =3D min(kfifo_avail(fifo), len);
+>
+> Wrong :). If you notice len is truncated using:
+> len =3D min(kfifo_avail(fifo), len);
 
-test1 cgroup with memory limit of 100M
-======================================
-# time dd if=/dev/zero of=/root/zerofile1 bs=4K count=1M
-4294967296 bytes (4.3 GB) copied, 20.9252 s, 205 MB/s
+  kfifo_avail() is defined as returning the number of available bytes
+left in the buffer ready to accept incoming data, even if that
+incorporates wraparound.  that is not relevant to the point i was
+making.
 
-real	0m21.096s
+rday
+--
 
-Note, these two jobs are not running in parallel. These are running one
-after the other.
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+Robert P. J. Day                               Waterloo, Ontario, CANADA
 
-Vivek
+            Linux Consulting, Training and Kernel Pedantry.
 
-> The overall design is the following:
-> 
->  - account dirty pages per cgroup
->  - limit the number of dirty pages via memory.dirty_ratio / memory.dirty_bytes
->    and memory.dirty_background_ratio / memory.dirty_background_bytes in
->    cgroupfs
->  - start to write-out (background or actively) when the cgroup limits are
->    exceeded
-> 
-> This feature is supposed to be strictly connected to any underlying IO
-> controller implementation, so we can stop increasing dirty pages in VM layer
-> and enforce a write-out before any cgroup will consume the global amount of
-> dirty pages defined by the /proc/sys/vm/dirty_ratio|dirty_bytes and
-> /proc/sys/vm/dirty_background_ratio|dirty_background_bytes limits.
-> 
-> Changelog (v6 -> v7)
-> ~~~~~~~~~~~~~~~~~~~~~~
->  * introduce trylock_page_cgroup() to guarantee that lock_page_cgroup()
->    is never called under tree_lock (no strict accounting, but better overall
->    performance)
->  * do not account file cache statistics for the root cgroup (zero
->    overhead for the root cgroup)
->  * fix: evaluate cgroup free pages as at the minimum free pages of all
->    its parents
-> 
-> Results
-> ~~~~~~~
-> The testcase is a kernel build (2.6.33 x86_64_defconfig) on a Intel Core 2 @
-> 1.2GHz:
-> 
-> <before>
->  - root  cgroup:	11m51.983s
->  - child cgroup:	11m56.596s
-> 
-> <after>
->  - root cgroup:		11m51.742s
->  - child cgroup:	12m5.016s
-> 
-> In the previous version of this patchset, using the "complex" locking scheme
-> with the _locked and _unlocked version of mem_cgroup_update_page_stat(), the
-> child cgroup required 11m57.896s and 12m9.920s with lock_page_cgroup()+irq_disabled.
-> 
-> With this version there's no overhead for the root cgroup (the small difference
-> is in error range). I expected to see less overhead for the child cgroup, I'll
-> do more testing and try to figure better what's happening.
-> 
-> In the while, it would be great if someone could perform some tests on a larger
-> system... unfortunately at the moment I don't have a big system available for
-> this kind of tests...
-> 
-> Thanks,
-> -Andrea
-> 
->  Documentation/cgroups/memory.txt |   36 +++
->  fs/nfs/write.c                   |    4 +
->  include/linux/memcontrol.h       |   87 ++++++-
->  include/linux/page_cgroup.h      |   35 +++
->  include/linux/writeback.h        |    2 -
->  mm/filemap.c                     |    1 +
->  mm/memcontrol.c                  |  542 +++++++++++++++++++++++++++++++++++---
->  mm/page-writeback.c              |  215 ++++++++++------
->  mm/rmap.c                        |    4 +-
->  mm/truncate.c                    |    1 +
->  10 files changed, 806 insertions(+), 121 deletions(-)
+Web page:                                          http://crashcourse.ca
+Twitter:                                       http://twitter.com/rpjday
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+--8323328-1371127320-1268673472=:11348--
