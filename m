@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937339Ab0CPB1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 21:27:31 -0400
-Received: from mail-yw0-f189.google.com ([209.85.211.189]:63967 "EHLO
-	mail-yw0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932833Ab0CPB12 (ORCPT
+	id S965920Ab0CPB2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 21:28:08 -0400
+Received: from d112a2.x-mailer.de ([212.162.53.4]:56075 "EHLO
+	d112a2.x-mailer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937327Ab0CPB2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 21:27:28 -0400
-Message-ID: <4B9EDE7D.4040809@codemonkey.ws>
-Date: Mon, 15 Mar 2010 20:27:25 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Chris Webb <chris@arachsys.com>, Avi Kivity <avi@redhat.com>,
-       balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9EC60A.2070101@codemonkey.ws> <20100316004307.GA19470@infradead.org>
-In-Reply-To: <20100316004307.GA19470@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Mar 2010 21:28:04 -0400
+From: Karsten Keil <keil@b1-systems.de>
+Date: Mon, 15 Mar 2010 14:18:41 +0100
+Subject: [PATCH V2] ISDN: Add PCI ID for HFC-2S/4S Beronet Card PCIe
+References: <1268668176.12629@pingi>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lars Ellenberg <lars.ellenberg@linbit.com>, netdev@vger.kernel.org,
+       Andreas Eversberg <andreas@eversberg.eu>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Message-Id: <1268702879.31146@pingi>
+X-Info: valid message
+X-Info: original Date
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 07:43 PM, Christoph Hellwig wrote:
-> On Mon, Mar 15, 2010 at 06:43:06PM -0500, Anthony Liguori wrote:
->    
->> I knew someone would do this...
->>
->> This really gets down to your definition of "safe" behaviour.  As it
->> stands, if you suffer a power outage, it may lead to guest corruption.
->>
->> While we are correct in advertising a write-cache, write-caches are
->> volatile and should a drive lose power, it could lead to data
->> corruption.  Enterprise disks tend to have battery backed write caches
->> to prevent this.
->>
->> In the set up you're emulating, the host is acting as a giant write
->> cache.  Should your host fail, you can get data corruption.
->>
->> cache=writethrough provides a much stronger data guarantee.  Even in the
->> event of a host failure, data integrity will be preserved.
->>      
-> Actually cache=writeback is as safe as any normal host is with a
-> volatile disk cache, except that in this case the disk cache is
-> actually a lot larger.  With a properly implemented filesystem this
-> will never cause corruption.
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-Metadata corruption, not necessarily corruption of data stored in a file.
+A few subdevice IDs seem to have been dropped when hfc_multi was
+included upstream, just compare the list at
+http://www.openvox.cn/viewvc/misdn/trunk/hfc_multi.c?revision=75&view=annotate#l175
+with the IDs in drivers/isdn/hardware/mISDN/hfcmulti.c
 
->    You will lose recent updates after
-> the last sync/fsync/etc up to the size of the cache, but filesystem
-> metadata should never be corrupted, and data that has been forced to
-> disk using fsync/O_SYNC should never be lost either.
+Added PCIe 2 Port card and LED settings (same as PCI)
+Do not use <linux/pci_ids.h> /KKe
 
-Not all software uses fsync as much as they should.  And often times, 
-it's for good reason (like ext3).  This is mitigated by the fact that 
-there's usually a short window of time before metadata is flushed to 
-disk.  Adding another layer increases that delay.
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Karsten Keil <keil@b1-systems.de>
+---
+ drivers/isdn/hardware/mISDN/hfcmulti.c |    6 ++++++
+ include/linux/pci_ids.h                |    2 ++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-IIUC, an O_DIRECT write using cache=writeback is not actually on the 
-spindle when the write() completes.  Rather, an explicit fsync() would 
-be required.  That will cause data corruption in many applications (like 
-databases) regardless of whether the fs gets metadata corruption.
+diff --git a/drivers/isdn/hardware/mISDN/hfcmulti.c b/drivers/isdn/hardware/mISDN/hfcmulti.c
+index ad36df9..751b34c 100644
+--- a/drivers/isdn/hardware/mISDN/hfcmulti.c
++++ b/drivers/isdn/hardware/mISDN/hfcmulti.c
+@@ -5265,6 +5265,8 @@ static const struct hm_map hfcm_map[] = {
+ /*31*/	{VENDOR_CCD, "XHFC-4S Speech Design", 5, 4, 0, 0, 0, 0,
+ 		HFC_IO_MODE_EMBSD, XHFC_IRQ},
+ /*32*/	{VENDOR_JH, "HFC-8S (junghanns)", 8, 8, 1, 0, 0, 0, 0, 0},
++/*33*/	{VENDOR_BN, "HFC-2S Beronet Card PCIe", 4, 2, 1, 3, 0, DIP_4S, 0, 0},
++/*34*/	{VENDOR_BN, "HFC-4S Beronet Card PCIe", 4, 4, 1, 2, 0, DIP_4S, 0, 0},
+ };
+ 
+ #undef H
+@@ -5300,6 +5302,10 @@ static struct pci_device_id hfmultipci_ids[] __devinitdata = {
+ 		PCI_SUBDEVICE_ID_CCD_OV4S, 0, 0, H(28)}, /* OpenVox 4 */
+ 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
+ 		PCI_SUBDEVICE_ID_CCD_OV2S, 0, 0, H(29)}, /* OpenVox 2 */
++	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
++		0xb761, 0, 0, H(33)}, /* BN2S PCIe */
++	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
++		0xb762, 0, 0, H(34)}, /* BN4S PCIe */
+ 
+ 	/* Cards with HFC-8S Chip */
+ 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC8S, PCI_VENDOR_ID_CCD,
 
-You could argue that the software should disable writeback caching on 
-the virtual disk, but we don't currently support that so even if the 
-application did, it's not going to help.
-
-Regards,
-
-Anthony Liguori
-
->    If it is that's
-> a bug somewhere in the stack, but in my powerfail testing we never did
-> so using xfs or ext3/4 after I fixed up the fsync code in the latter
-> two.
->
->    
+-- 
+1.6.0.2
 
