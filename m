@@ -1,161 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936293Ab0CONog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 09:44:36 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:53190 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab0CONoe (ORCPT
+	id S936307Ab0CONpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 09:45:32 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:45438 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936195Ab0CONp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 09:44:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Zijk2CSVd1VCEAfQu3PWF9CoJ8x29iGqGEfVnR0ZPHVZPeiSCtYVi47DDyfdrgKY7l
-         Phw+LfTSM4xmao1Py/Sz5nx2au6D7pr+DitCX6XwYbmfaGxIBrx0K+27hC7DPamvvzXh
-         aUc6DD9Ig+MBBb/AsTLpDYlAozDxrOJUkiTzs=
-Subject: Re: [PATCH 07/11] Memory compaction core
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-In-Reply-To: <1268412087-13536-8-git-send-email-mel@csn.ul.ie>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie>
-	 <1268412087-13536-8-git-send-email-mel@csn.ul.ie>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Mar 2010 22:44:14 +0900
-Message-ID: <1268660654.1889.25.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Mar 2010 09:45:28 -0400
+Date: Mon, 15 Mar 2010 14:44:49 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: David Miller <davem@davemloft.net>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel@teksavvy.com, drepper@redhat.com,
+       torvalds@linux-foundation.org, munroesj@linux.vnet.ibm.com
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+Message-ID: <20100315134449.GB1653@linux-mips.org>
+References: <1268628493.2355.2.camel@pasglop>
+ <20100314.220646.190065794.davem@davemloft.net>
+ <1268630313.2335.2.camel@pasglop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268630313.2335.2.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-12 at 16:41 +0000, Mel Gorman wrote:
-> This patch is the core of a mechanism which compacts memory in a zone by
-> relocating movable pages towards the end of the zone.
+On Mon, Mar 15, 2010 at 04:18:33PM +1100, Benjamin Herrenschmidt wrote:
+
+> On Sun, 2010-03-14 at 22:06 -0700, David Miller wrote:
+> > From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Date: Mon, 15 Mar 2010 15:48:13 +1100
+> > 
+> > > As it is, any 32-bit app using syscall() on any of the syscalls that
+> > > takes 64-bit arguments will be broken, unless the app itself breaks up
+> > > the argument, but the the order of the hi and lo part is different
+> > > between BE and LE architectures ;-)
+> > 
+> > I think it is even different on the same endian architectures,
+> > f.e. mips I think.
+
+MIPS passes arguments in the endian order that is low/high for little
+endian rsp high/low for big endian.
+
+> > There is no way to do this without some arch specific code
+> > to handle things properly, really.
 > 
-> A single compaction run involves a migration scanner and a free scanner.
-> Both scanners operate on pageblock-sized areas in the zone. The migration
-> scanner starts at the bottom of the zone and searches for all movable pages
-> within each area, isolating them onto a private list called migratelist.
-> The free scanner starts at the top of the zone and searches for suitable
-> areas and consumes the free pages within making them available for the
-> migration scanner. The pages isolated for migration are then migrated to
-> the newly isolated free pages.
+> Right, but to what extent ? IE. do we always need the callers using
+> syscall() directly to know it all, or can we to some extent handle some
+> of it inside glibc ?
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> For example, if powerpc glibc is fixed so that syscall() takes a 64-bit
+> first argument (or calls via some macro to add a dummy 32-bit argument),
+> the register alignment will be preserved, and things will work just
+> fine.
+> 
+> IE. It may not fix all problems with all archs, but in this case, it
+> will fix the common cases for powerpc at least :-) And any other arch
+> that has the exact same alignment problem.
+> 
+> Or is there any good reason -not- to do that in glibc ?
 
-There is below some nitpicks. Otherwise looks good to me. 
+Syscall is most often used for new syscalls that have no syscall stub in
+glibc yet, so the user of syscall() encodes this ABI knowledge.  If at a
+later stage syscall() is changed to have this sort of knowledge we break
+the API.  This is something only the kernel can get right.
 
-..
-
-< snip >
-
-> +/* Update the number of anon and file isolated pages in the zone) */
-                                                single parenthesis ^ 
-
-> +void update_zone_isolated(struct zone *zone, struct compact_control *cc)
-> +{
-> +	struct page *page;
-> +	unsigned int count[NR_LRU_LISTS] = { 0, };
-> +
-> +	list_for_each_entry(page, &cc->migratepages, lru) {
-> +		int lru = page_lru_base_type(page);
-> +		count[lru]++;
-> +	}
-> +
-> +	cc->nr_anon = count[LRU_ACTIVE_ANON] + count[LRU_INACTIVE_ANON];
-> +	cc->nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
-> +	__mod_zone_page_state(zone, NR_ISOLATED_ANON, cc->nr_anon);
-> +	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
-> +}
-> +
-
-< snip >
-
-> +static unsigned long isolate_migratepages(struct zone *zone,
-> +					struct compact_control *cc)
-> +{
-> +	unsigned long low_pfn, end_pfn;
-> +	struct list_head *migratelist;
-> +
-> +	low_pfn = cc->migrate_pfn;
-> +	migratelist = &cc->migratepages;
-> +
-> +	/* Do not scan outside zone boundaries */
-> +	if (low_pfn < zone->zone_start_pfn)
-> +		low_pfn = zone->zone_start_pfn;
-> +
-> +	/* Setup to scan one block but not past where we are migrating to */
-> +	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
-> +
-> +	/* Do not cross the free scanner or scan within a memory hole */
-> +	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
-> +		cc->migrate_pfn = end_pfn;
-> +		return 0;
-> +	}
-> +
-> +	migrate_prep();
-> +
-> +	/* Time to isolate some pages for migration */
-> +	spin_lock_irq(&zone->lru_lock);
-> +	for (; low_pfn < end_pfn; low_pfn++) {
-> +		struct page *page;
-> +		if (!pfn_valid_within(low_pfn))
-> +			continue;
-> +
-> +		/* Get the page and skip if free */
-> +		page = pfn_to_page(low_pfn);
-> +		if (PageBuddy(page)) {
-> +			low_pfn += (1 << page_order(page)) - 1;
-> +			continue;
-> +		}
-> +
-> +		if (!PageLRU(page) || PageUnevictable(page))
-> +			continue;
-
-Do we need this checks?
-It is done by __isolate_lru_page. 
-
-Explicit check would make code readability good.
-So if you mind it, I don't oppose it, either. 
-But other caller of __isolate_lru_pages don't check it, either.
-
-> +		/* Try isolate the page */
-> +		if (__isolate_lru_page(page, ISOLATE_BOTH, 0) == 0) {
-> +			del_page_from_lru_list(zone, page, page_lru(page));
-> +			list_add(&page->lru, migratelist);
-> +			mem_cgroup_del_lru(page);
-> +			cc->nr_migratepages++;
-> +		}
-> +
-> +		/* Avoid isolating too much */
-> +		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
-> +			break;
-> +	}
-> +
-> +	update_zone_isolated(zone, cc);
-> +
-> +	spin_unlock_irq(&zone->lru_lock);
-> +	cc->migrate_pfn = low_pfn;
-> +
-> +	return cc->nr_migratepages;
-> +}
-> +
-
-
--- 
-Kind regards,
-Minchan Kim
-
-
+  Ralf
