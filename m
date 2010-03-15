@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965366Ab0COQTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:19:14 -0400
-Received: from kroah.org ([198.145.64.141]:34697 "EHLO coco.kroah.org"
+	id S965381Ab0COQTr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:19:47 -0400
+Received: from kroah.org ([198.145.64.141]:34705 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965346Ab0COQS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:18:59 -0400
-Date: Mon, 15 Mar 2010 09:18:02 -0700
+	id S965237Ab0COQTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 12:19:01 -0400
+Date: Mon, 15 Mar 2010 09:18:51 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.10
-Message-ID: <20100315161802.GB22091@kroah.com>
-References: <20100315161748.GA22091@kroah.com>
+Subject: Re: Linux 2.6.33.1
+Message-ID: <20100315161850.GD22091@kroah.com>
+References: <20100315161835.GC22091@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100315161748.GA22091@kroah.com>
+In-Reply-To: <20100315161835.GC22091@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 5bc4eaa..345c399 100644
+index e7848a0..e2c7487 100644
 --- a/Documentation/kernel-parameters.txt
 +++ b/Documentation/kernel-parameters.txt
-@@ -2668,6 +2668,13 @@ and is between 256 and 4096 characters. It is defined in the file
+@@ -2703,6 +2703,13 @@ and is between 256 and 4096 characters. It is defined in the file
  					medium is write-protected).
  			Example: quirks=0419:aaf5:rl,0421:0433:rc
  
@@ -41,21 +40,36 @@ index 5bc4eaa..345c399 100644
  	vdso=		[X86,SH]
  			vdso=2: enable compat VDSO (default with COMPAT_VDSO)
  			vdso=1: enable VDSO (default)
+diff --git a/Documentation/laptops/thinkpad-acpi.txt b/Documentation/laptops/thinkpad-acpi.txt
+index 75afa12..39c0a09 100644
+--- a/Documentation/laptops/thinkpad-acpi.txt
++++ b/Documentation/laptops/thinkpad-acpi.txt
+@@ -650,6 +650,10 @@ LCD, CRT or DVI (if available). The following commands are available:
+ 	echo expand_toggle > /proc/acpi/ibm/video
+ 	echo video_switch > /proc/acpi/ibm/video
+ 
++NOTE: Access to this feature is restricted to processes owning the
++CAP_SYS_ADMIN capability for safety reasons, as it can interact badly
++enough with some versions of X.org to crash it.
++
+ Each video output device can be enabled or disabled individually.
+ Reading /proc/acpi/ibm/video shows the status of each device.
+ 
 diff --git a/Makefile b/Makefile
-index ec932b2..2becebb 100644
+index 1b24895..61c7163 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,7 +1,7 @@
  VERSION = 2
  PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .9
-+EXTRAVERSION = .10
+ SUBLEVEL = 33
+-EXTRAVERSION =
++EXTRAVERSION = .1
  NAME = Man-Eating Seals of Antiquity
  
  # *DOCUMENTATION*
 diff --git a/arch/Kconfig b/arch/Kconfig
-index 7f418bb..90934b9 100644
+index 9d055b4..25e69f7 100644
 --- a/arch/Kconfig
 +++ b/arch/Kconfig
 @@ -6,8 +6,6 @@ config OPROFILE
@@ -67,225 +81,6 @@ index 7f418bb..90934b9 100644
  	select RING_BUFFER
  	select RING_BUFFER_ALLOW_SWAP
  	help
-diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
-index 91df968..8a20b58 100644
---- a/arch/ia64/include/asm/acpi.h
-+++ b/arch/ia64/include/asm/acpi.h
-@@ -94,6 +94,7 @@ ia64_acpi_release_global_lock (unsigned int *lock)
- #define acpi_noirq 0	/* ACPI always enabled on IA64 */
- #define acpi_pci_disabled 0 /* ACPI PCI always enabled on IA64 */
- #define acpi_strict 1	/* no ACPI spec workarounds on IA64 */
-+#define acpi_ht 0	/* no HT-only mode on IA64 */
- #endif
- #define acpi_processor_cstate_check(x) (x) /* no idle limits on IA64 :) */
- static inline void disable_acpi(void) { }
-diff --git a/arch/sparc/include/asm/io_32.h b/arch/sparc/include/asm/io_32.h
-index 93fe21e..679c750 100644
---- a/arch/sparc/include/asm/io_32.h
-+++ b/arch/sparc/include/asm/io_32.h
-@@ -8,7 +8,7 @@
- #include <asm/page.h>      /* IO address mapping routines need this */
- #include <asm/system.h>
- 
--#define page_to_phys(page)	(((page) - mem_map) << PAGE_SHIFT)
-+#define page_to_phys(page)	(page_to_pfn(page) << PAGE_SHIFT)
- 
- static inline u32 flip_dword (u32 l)
- {
-diff --git a/arch/sparc/include/asm/page_32.h b/arch/sparc/include/asm/page_32.h
-index f72080b..156707b 100644
---- a/arch/sparc/include/asm/page_32.h
-+++ b/arch/sparc/include/asm/page_32.h
-@@ -143,7 +143,7 @@ extern unsigned long pfn_base;
- #define phys_to_virt		__va
- 
- #define ARCH_PFN_OFFSET		(pfn_base)
--#define virt_to_page(kaddr)	(mem_map + ((((unsigned long)(kaddr)-PAGE_OFFSET)>>PAGE_SHIFT)))
-+#define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
- 
- #define pfn_valid(pfn)		(((pfn) >= (pfn_base)) && (((pfn)-(pfn_base)) < max_mapnr))
- #define virt_addr_valid(kaddr)	((((unsigned long)(kaddr)-PAGE_OFFSET)>>PAGE_SHIFT) < max_mapnr)
-diff --git a/arch/sparc/include/asm/stat.h b/arch/sparc/include/asm/stat.h
-index 55db5ec..39327d6 100644
---- a/arch/sparc/include/asm/stat.h
-+++ b/arch/sparc/include/asm/stat.h
-@@ -53,8 +53,8 @@ struct stat {
- 	ino_t		st_ino;
- 	mode_t		st_mode;
- 	short		st_nlink;
--	uid_t		st_uid;
--	gid_t		st_gid;
-+	uid16_t		st_uid;
-+	gid16_t		st_gid;
- 	unsigned short	st_rdev;
- 	off_t		st_size;
- 	time_t		st_atime;
-diff --git a/arch/sparc/kernel/central.c b/arch/sparc/kernel/central.c
-index f3b5466..4589ca3 100644
---- a/arch/sparc/kernel/central.c
-+++ b/arch/sparc/kernel/central.c
-@@ -99,7 +99,7 @@ static int __devinit clock_board_probe(struct of_device *op,
- 
- 	p->leds_resource.start = (unsigned long)
- 		(p->clock_regs + CLOCK_CTRL);
--	p->leds_resource.end = p->leds_resource.end;
-+	p->leds_resource.end = p->leds_resource.start;
- 	p->leds_resource.name = "leds";
- 
- 	p->leds_pdev.name = "sunfire-clockboard-leds";
-@@ -194,7 +194,7 @@ static int __devinit fhc_probe(struct of_device *op,
- 	if (!p->central) {
- 		p->leds_resource.start = (unsigned long)
- 			(p->pregs + FHC_PREGS_CTRL);
--		p->leds_resource.end = p->leds_resource.end;
-+		p->leds_resource.end = p->leds_resource.start;
- 		p->leds_resource.name = "leds";
- 
- 		p->leds_pdev.name = "sunfire-fhc-leds";
-diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
-index 2830b41..c49865b 100644
---- a/arch/sparc/kernel/process_32.c
-+++ b/arch/sparc/kernel/process_32.c
-@@ -526,7 +526,7 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
- 			 * Set some valid stack frames to give to the child.
- 			 */
- 			childstack = (struct sparc_stackf __user *)
--				(sp & ~0x7UL);
-+				(sp & ~0xfUL);
- 			parentstack = (struct sparc_stackf __user *)
- 				regs->u_regs[UREG_FP];
- 
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index c3f1cce..cb70476 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -398,11 +398,11 @@ static unsigned long clone_stackframe(unsigned long csp, unsigned long psp)
- 	} else
- 		__get_user(fp, &(((struct reg_window32 __user *)psp)->ins[6]));
- 
--	/* Now 8-byte align the stack as this is mandatory in the
--	 * Sparc ABI due to how register windows work.  This hides
--	 * the restriction from thread libraries etc.  -DaveM
-+	/* Now align the stack as this is mandatory in the Sparc ABI
-+	 * due to how register windows work.  This hides the
-+	 * restriction from thread libraries etc.
- 	 */
--	csp &= ~7UL;
-+	csp &= ~15UL;
- 
- 	distance = fp - psp;
- 	rval = (csp - distance);
-diff --git a/arch/sparc/kernel/signal32.c b/arch/sparc/kernel/signal32.c
-index ba5b09a..ea22cd3 100644
---- a/arch/sparc/kernel/signal32.c
-+++ b/arch/sparc/kernel/signal32.c
-@@ -120,8 +120,8 @@ struct rt_signal_frame32 {
- };
- 
- /* Align macros */
--#define SF_ALIGNEDSZ  (((sizeof(struct signal_frame32) + 7) & (~7)))
--#define RT_ALIGNEDSZ  (((sizeof(struct rt_signal_frame32) + 7) & (~7)))
-+#define SF_ALIGNEDSZ  (((sizeof(struct signal_frame32) + 15) & (~15)))
-+#define RT_ALIGNEDSZ  (((sizeof(struct rt_signal_frame32) + 15) & (~15)))
- 
- int copy_siginfo_to_user32(compat_siginfo_t __user *to, siginfo_t *from)
- {
-@@ -420,15 +420,17 @@ static void __user *get_sigframe(struct sigaction *sa, struct pt_regs *regs, uns
- 			sp = current->sas_ss_sp + current->sas_ss_size;
- 	}
- 
-+	sp -= framesize;
-+
- 	/* Always align the stack frame.  This handles two cases.  First,
- 	 * sigaltstack need not be mindful of platform specific stack
- 	 * alignment.  Second, if we took this signal because the stack
- 	 * is not aligned properly, we'd like to take the signal cleanly
- 	 * and report that.
- 	 */
--	sp &= ~7UL;
-+	sp &= ~15UL;
- 
--	return (void __user *)(sp - framesize);
-+	return (void __user *) sp;
- }
- 
- static int save_fpu_state32(struct pt_regs *regs, __siginfo_fpu_t __user *fpu)
-diff --git a/arch/sparc/kernel/signal_32.c b/arch/sparc/kernel/signal_32.c
-index 7ce1a10..9882df9 100644
---- a/arch/sparc/kernel/signal_32.c
-+++ b/arch/sparc/kernel/signal_32.c
-@@ -267,15 +267,17 @@ static inline void __user *get_sigframe(struct sigaction *sa, struct pt_regs *re
- 			sp = current->sas_ss_sp + current->sas_ss_size;
- 	}
- 
-+	sp -= framesize;
-+
- 	/* Always align the stack frame.  This handles two cases.  First,
- 	 * sigaltstack need not be mindful of platform specific stack
- 	 * alignment.  Second, if we took this signal because the stack
- 	 * is not aligned properly, we'd like to take the signal cleanly
- 	 * and report that.
- 	 */
--	sp &= ~7UL;
-+	sp &= ~15UL;
- 
--	return (void __user *)(sp - framesize);
-+	return (void __user *) sp;
- }
- 
- static inline int
-diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
-index 647afbd..9fa48c3 100644
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -353,7 +353,7 @@ segv:
- /* Checks if the fp is valid */
- static int invalid_frame_pointer(void __user *fp, int fplen)
- {
--	if (((unsigned long) fp) & 7)
-+	if (((unsigned long) fp) & 15)
- 		return 1;
- 	return 0;
- }
-@@ -396,15 +396,17 @@ static inline void __user *get_sigframe(struct k_sigaction *ka, struct pt_regs *
- 			sp = current->sas_ss_sp + current->sas_ss_size;
- 	}
- 
-+	sp -= framesize;
-+
- 	/* Always align the stack frame.  This handles two cases.  First,
- 	 * sigaltstack need not be mindful of platform specific stack
- 	 * alignment.  Second, if we took this signal because the stack
- 	 * is not aligned properly, we'd like to take the signal cleanly
- 	 * and report that.
- 	 */
--	sp &= ~7UL;
-+	sp &= ~15UL;
- 
--	return (void __user *)(sp - framesize);
-+	return (void __user *) sp;
- }
- 
- static inline void
-diff --git a/arch/sparc/kernel/tsb.S b/arch/sparc/kernel/tsb.S
-index 8c91d9b..db15d12 100644
---- a/arch/sparc/kernel/tsb.S
-+++ b/arch/sparc/kernel/tsb.S
-@@ -191,10 +191,12 @@ tsb_dtlb_load:
- 
- tsb_itlb_load:
- 	/* Executable bit must be set.  */
--661:	andcc		%g5, _PAGE_EXEC_4U, %g0
--	.section	.sun4v_1insn_patch, "ax"
-+661:	sethi		%hi(_PAGE_EXEC_4U), %g4
-+	andcc		%g5, %g4, %g0
-+	.section	.sun4v_2insn_patch, "ax"
- 	.word		661b
- 	andcc		%g5, _PAGE_EXEC_4V, %g0
-+	nop
- 	.previous
- 
- 	be,pn		%xcc, tsb_do_fault
 diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
 index f9f4724..14531ab 100644
 --- a/arch/x86/ia32/ia32_aout.c
@@ -326,8 +121,34 @@ index 0e8c2a0..271de94 100644
   * Allocate and free page tables.
   */
  extern pgd_t *pgd_alloc(struct mm_struct *);
+diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+index 40be813..14cc74b 100644
+--- a/arch/x86/include/asm/uv/uv_hub.h
++++ b/arch/x86/include/asm/uv/uv_hub.h
+@@ -329,7 +329,8 @@ static inline unsigned long uv_read_global_mmr64(int pnode, unsigned long offset
+  */
+ static inline unsigned long uv_global_gru_mmr_address(int pnode, unsigned long offset)
+ {
+-	return UV_GLOBAL_GRU_MMR_BASE | offset | (pnode << uv_hub_info->m_val);
++	return UV_GLOBAL_GRU_MMR_BASE | offset |
++		((unsigned long)pnode << uv_hub_info->m_val);
+ }
+ 
+ static inline void uv_write_global_mmr8(int pnode, unsigned long offset, unsigned char val)
+diff --git a/arch/x86/include/asm/vmx.h b/arch/x86/include/asm/vmx.h
+index 2b49454..8f6b011 100644
+--- a/arch/x86/include/asm/vmx.h
++++ b/arch/x86/include/asm/vmx.h
+@@ -251,6 +251,7 @@ enum vmcs_field {
+ #define EXIT_REASON_MSR_READ            31
+ #define EXIT_REASON_MSR_WRITE           32
+ #define EXIT_REASON_MWAIT_INSTRUCTION   36
++#define EXIT_REASON_MONITOR_INSTRUCTION 39
+ #define EXIT_REASON_PAUSE_INSTRUCTION   40
+ #define EXIT_REASON_MCE_DURING_VMENTRY	 41
+ #define EXIT_REASON_TPR_BELOW_THRESHOLD 43
 diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 67e929b..195e4b7 100644
+index af1c583..0a2b21a 100644
 --- a/arch/x86/kernel/acpi/boot.c
 +++ b/arch/x86/kernel/acpi/boot.c
 @@ -446,6 +446,12 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
@@ -353,26 +174,11 @@ index 67e929b..195e4b7 100644
  	return irq;
  }
  
-@@ -1348,14 +1355,6 @@ static struct dmi_system_id __initdata acpi_dmi_table[] = {
- 	 },
- 	{
- 	 .callback = force_acpi_ht,
--	 .ident = "ASUS P2B-DS",
--	 .matches = {
--		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
--		     DMI_MATCH(DMI_BOARD_NAME, "P2B-DS"),
--		     },
--	 },
--	{
--	 .callback = force_acpi_ht,
- 	 .ident = "ASUS CUR-DLS",
- 	 .matches = {
- 		     DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c107e83..dc4f486 100644
+index 53243ca..be37059 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1550,6 +1550,56 @@ static void __init setup_IO_APIC_irqs(void)
+@@ -1539,6 +1539,56 @@ static void __init setup_IO_APIC_irqs(void)
  }
  
  /*
@@ -429,7 +235,7 @@ index c107e83..dc4f486 100644
   * Set up the timer pin, possibly with the 8259A-master behind.
   */
  static void __init setup_timer_IRQ0_pin(unsigned int apic_id, unsigned int pin,
-@@ -3165,12 +3215,9 @@ unsigned int create_irq_nr(unsigned int irq_want, int node)
+@@ -3228,12 +3278,9 @@ unsigned int create_irq_nr(unsigned int irq_want, int node)
  	}
  	spin_unlock_irqrestore(&vector_lock, flags);
  
@@ -445,7 +251,7 @@ index c107e83..dc4f486 100644
  	return irq;
  }
  
-@@ -3193,17 +3240,12 @@ void destroy_irq(unsigned int irq)
+@@ -3256,17 +3303,12 @@ void destroy_irq(unsigned int irq)
  {
  	unsigned long flags;
  	struct irq_cfg *cfg;
@@ -466,7 +272,7 @@ index c107e83..dc4f486 100644
  	spin_unlock_irqrestore(&vector_lock, flags);
  }
 diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index bff34d6..269c2a3 100644
+index 704bddc..8e1aac8 100644
 --- a/arch/x86/kernel/reboot.c
 +++ b/arch/x86/kernel/reboot.c
 @@ -461,6 +461,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
@@ -485,18 +291,18 @@ index bff34d6..269c2a3 100644
  };
  
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index e02dbb6..7371e65 100644
+index 7e8faea..c998d27 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
-@@ -75,6 +75,7 @@
- #define Group       (1<<14)     /* Bits 3:5 of modrm byte extend opcode */
+@@ -76,6 +76,7 @@
  #define GroupDual   (1<<15)     /* Alternate decoding of mod == 3 */
  #define GroupMask   0xff        /* Group number stored in bits 0:7 */
+ /* Misc flags */
 +#define Priv        (1<<27) /* instruction generates #GP if current CPL != 0 */
+ #define No64	    (1<<28)
  /* Source 2 operand type */
  #define Src2None    (0<<29)
- #define Src2CL      (1<<29)
-@@ -86,6 +87,7 @@
+@@ -88,6 +89,7 @@
  enum {
  	Group1_80, Group1_81, Group1_82, Group1_83,
  	Group1A, Group3_Byte, Group3, Group4, Group5, Group7,
@@ -504,7 +310,7 @@ index e02dbb6..7371e65 100644
  };
  
  static u32 opcode_table[256] = {
-@@ -203,7 +205,7 @@ static u32 opcode_table[256] = {
+@@ -210,7 +212,7 @@ static u32 opcode_table[256] = {
  	SrcNone | ByteOp | ImplicitOps, SrcNone | ImplicitOps,
  	/* 0xF0 - 0xF7 */
  	0, 0, 0, 0,
@@ -513,7 +319,7 @@ index e02dbb6..7371e65 100644
  	/* 0xF8 - 0xFF */
  	ImplicitOps, 0, ImplicitOps, ImplicitOps,
  	ImplicitOps, ImplicitOps, Group | Group4, Group | Group5,
-@@ -211,16 +213,20 @@ static u32 opcode_table[256] = {
+@@ -218,16 +220,20 @@ static u32 opcode_table[256] = {
  
  static u32 twobyte_table[256] = {
  	/* 0x00 - 0x0F */
@@ -539,7 +345,7 @@ index e02dbb6..7371e65 100644
  	0, 0, 0, 0, 0, 0, 0, 0,
  	/* 0x40 - 0x47 */
  	DstReg | SrcMem | ModRM | Mov, DstReg | SrcMem | ModRM | Mov,
-@@ -258,11 +264,12 @@ static u32 twobyte_table[256] = {
+@@ -267,11 +273,12 @@ static u32 twobyte_table[256] = {
  	0, 0, ByteOp | DstReg | SrcMem | ModRM | Mov,
  	    DstReg | SrcMem16 | ModRM | Mov,
  	/* 0xB8 - 0xBF */
@@ -554,7 +360,7 @@ index e02dbb6..7371e65 100644
  	0, 0, 0, 0, 0, 0, 0, 0,
  	/* 0xD0 - 0xDF */
  	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-@@ -311,16 +318,24 @@ static u32 group_table[] = {
+@@ -320,16 +327,24 @@ static u32 group_table[] = {
  	SrcMem | ModRM | Stack, 0,
  	SrcMem | ModRM | Stack, 0, SrcMem | ModRM | Stack, 0,
  	[Group7*8] =
@@ -582,7 +388,7 @@ index e02dbb6..7371e65 100644
  };
  
  /* EFLAGS bit definitions. */
-@@ -1563,12 +1578,6 @@ emulate_sysexit(struct x86_emulate_ctxt *ctxt)
+@@ -1640,12 +1655,6 @@ emulate_sysexit(struct x86_emulate_ctxt *ctxt)
  		return -1;
  	}
  
@@ -595,7 +401,7 @@ index e02dbb6..7371e65 100644
  	setup_syscalls_segments(ctxt, &cs, &ss);
  
  	if ((c->rex_prefix & 0x8) != 0x0)
-@@ -1632,6 +1641,12 @@ x86_emulate_insn(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
+@@ -1709,6 +1718,12 @@ x86_emulate_insn(struct x86_emulate_ctxt *ctxt, struct x86_emulate_ops *ops)
  	memcpy(c->regs, ctxt->vcpu->arch.regs, sizeof c->regs);
  	saved_eip = c->eip;
  
@@ -608,7 +414,7 @@ index e02dbb6..7371e65 100644
  	if (((c->d & ModRM) && (c->modrm_mod != 3)) || (c->d & MemAbs))
  		memop = c->modrm_ea;
  
-@@ -1870,6 +1885,12 @@ special_insn:
+@@ -1982,6 +1997,12 @@ special_insn:
  		int err;
  
  		sel = c->src.val;
@@ -621,6 +427,41 @@ index e02dbb6..7371e65 100644
  		if (c->modrm_reg == VCPU_SREG_SS)
  			toggle_interruptibility(ctxt, X86_SHADOW_INT_MOV_SS);
  
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index d4918d6..8a8e139 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -1224,6 +1224,8 @@ static __init int setup_vmcs_config(struct vmcs_config *vmcs_conf)
+ 	      CPU_BASED_USE_IO_BITMAPS |
+ 	      CPU_BASED_MOV_DR_EXITING |
+ 	      CPU_BASED_USE_TSC_OFFSETING |
++	      CPU_BASED_MWAIT_EXITING |
++	      CPU_BASED_MONITOR_EXITING |
+ 	      CPU_BASED_INVLPG_EXITING;
+ 	opt = CPU_BASED_TPR_SHADOW |
+ 	      CPU_BASED_USE_MSR_BITMAPS |
+@@ -3416,6 +3418,12 @@ static int handle_pause(struct kvm_vcpu *vcpu)
+ 	return 1;
+ }
+ 
++static int handle_invalid_op(struct kvm_vcpu *vcpu)
++{
++	kvm_queue_exception(vcpu, UD_VECTOR);
++	return 1;
++}
++
+ /*
+  * The exit handlers return 1 if the exit was handled fully and guest execution
+  * may resume.  Otherwise they set the kvm_run parameter to indicate what needs
+@@ -3453,6 +3461,8 @@ static int (*kvm_vmx_exit_handlers[])(struct kvm_vcpu *vcpu) = {
+ 	[EXIT_REASON_EPT_VIOLATION]	      = handle_ept_violation,
+ 	[EXIT_REASON_EPT_MISCONFIG]           = handle_ept_misconfig,
+ 	[EXIT_REASON_PAUSE_INSTRUCTION]       = handle_pause,
++	[EXIT_REASON_MWAIT_INSTRUCTION]	      = handle_invalid_op,
++	[EXIT_REASON_MONITOR_INSTRUCTION]     = handle_invalid_op,
+ };
+ 
+ static const int kvm_vmx_max_exit_handlers =
 diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
 index ed34f5e..c9ba9de 100644
 --- a/arch/x86/mm/pgtable.c
@@ -889,11 +730,44 @@ index 8eb0587..2873c00 100644
  					GFP_ATOMIC);
  		if (!reset_value)
  			return;
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index b19d1e5..8f3f9a5 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -303,22 +303,17 @@ static void __init pci_mmcfg_check_end_bus_number(void)
+ {
+ 	struct pci_mmcfg_region *cfg, *cfgx;
+ 
+-	/* last one*/
+-	cfg = list_entry(pci_mmcfg_list.prev, typeof(*cfg), list);
+-	if (cfg)
+-		if (cfg->end_bus < cfg->start_bus)
+-			cfg->end_bus = 255;
+-
+-	if (list_is_singular(&pci_mmcfg_list))
+-		return;
+-
+-	/* don't overlap please */
++	/* Fixup overlaps */
+ 	list_for_each_entry(cfg, &pci_mmcfg_list, list) {
+ 		if (cfg->end_bus < cfg->start_bus)
+ 			cfg->end_bus = 255;
+ 
++		/* Don't access the list head ! */
++		if (cfg->list.next == &pci_mmcfg_list)
++			break;
++
+ 		cfgx = list_entry(cfg->list.next, typeof(*cfg), list);
+-		if (cfg != cfgx && cfg->end_bus >= cfgx->start_bus)
++		if (cfg->end_bus >= cfgx->start_bus)
+ 			cfg->end_bus = cfgx->start_bus - 1;
+ 	}
+ }
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 79f9738..3578688 100644
+index 36daccb..b607239 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -48,6 +48,7 @@
+@@ -50,6 +50,7 @@
  #include <asm/traps.h>
  #include <asm/setup.h>
  #include <asm/desc.h>
@@ -901,7 +775,7 @@ index 79f9738..3578688 100644
  #include <asm/pgtable.h>
  #include <asm/tlbflush.h>
  #include <asm/reboot.h>
-@@ -1092,6 +1093,12 @@ asmlinkage void __init xen_start_kernel(void)
+@@ -1094,6 +1095,12 @@ asmlinkage void __init xen_start_kernel(void)
  
  	__supported_pte_mask |= _PAGE_IOMAP;
  
@@ -911,9 +785,9 @@ index 79f9738..3578688 100644
 +	 */
 +	__userpte_alloc_gfp &= ~__GFP_HIGHMEM;
 +
- #ifdef CONFIG_X86_64
  	/* Work out if we support NX */
- 	check_efer();
+ 	x86_configure_nx();
+ 
 diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
 index bf4cd6b..350a3de 100644
 --- a/arch/x86/xen/mmu.c
@@ -939,79 +813,11 @@ index bf4cd6b..350a3de 100644
  	return kmap_atomic_prot(page, type, prot);
  }
  #endif
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index d9f78f6..c8f0797 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -888,12 +888,14 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
- 		return(acpi_idle_enter_c1(dev, state));
- 
- 	local_irq_disable();
--	current_thread_info()->status &= ~TS_POLLING;
--	/*
--	 * TS_POLLING-cleared state must be visible before we test
--	 * NEED_RESCHED:
--	 */
--	smp_mb();
-+	if (cx->entry_method != ACPI_CSTATE_FFH) {
-+		current_thread_info()->status &= ~TS_POLLING;
-+		/*
-+		 * TS_POLLING-cleared state must be visible before we test
-+		 * NEED_RESCHED:
-+		 */
-+		smp_mb();
-+	}
- 
- 	if (unlikely(need_resched())) {
- 		current_thread_info()->status |= TS_POLLING;
-@@ -973,12 +975,14 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
- 	}
- 
- 	local_irq_disable();
--	current_thread_info()->status &= ~TS_POLLING;
--	/*
--	 * TS_POLLING-cleared state must be visible before we test
--	 * NEED_RESCHED:
--	 */
--	smp_mb();
-+	if (cx->entry_method != ACPI_CSTATE_FFH) {
-+		current_thread_info()->status &= ~TS_POLLING;
-+		/*
-+		 * TS_POLLING-cleared state must be visible before we test
-+		 * NEED_RESCHED:
-+		 */
-+		smp_mb();
-+	}
- 
- 	if (unlikely(need_resched())) {
- 		current_thread_info()->status |= TS_POLLING;
-diff --git a/drivers/acpi/tables.c b/drivers/acpi/tables.c
-index f336bca..8a0ed28 100644
---- a/drivers/acpi/tables.c
-+++ b/drivers/acpi/tables.c
-@@ -213,7 +213,7 @@ acpi_table_parse_entries(char *id,
- 	unsigned long table_end;
- 	acpi_size tbl_size;
- 
--	if (acpi_disabled)
-+	if (acpi_disabled && !acpi_ht)
- 		return -ENODEV;
- 
- 	if (!handler)
-@@ -280,7 +280,7 @@ int __init acpi_table_parse(char *id, acpi_table_handler handler)
- 	struct acpi_table_header *table = NULL;
- 	acpi_size tbl_size;
- 
--	if (acpi_disabled)
-+	if (acpi_disabled && !acpi_ht)
- 		return -ENODEV;
- 
- 	if (!handler)
 diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 9b37502..a587046 100644
+index b343903..a6a736a 100644
 --- a/drivers/ata/ahci.c
 +++ b/drivers/ata/ahci.c
-@@ -3074,8 +3074,16 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+@@ -3082,8 +3082,16 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  	ahci_save_initial_config(pdev, hpriv);
  
  	/* prepare host */
@@ -1031,7 +837,7 @@ index 9b37502..a587046 100644
  	if (hpriv->cap & HOST_CAP_PMP)
  		pi.flags |= ATA_FLAG_PMP;
 diff --git a/drivers/ata/pata_hpt3x2n.c b/drivers/ata/pata_hpt3x2n.c
-index d16e87e..d9f2913 100644
+index dd26bc7..269b5db 100644
 --- a/drivers/ata/pata_hpt3x2n.c
 +++ b/drivers/ata/pata_hpt3x2n.c
 @@ -25,7 +25,7 @@
@@ -1043,7 +849,7 @@ index d16e87e..d9f2913 100644
  
  enum {
  	HPT_PCI_FAST	=	(1 << 31),
-@@ -547,16 +547,16 @@ static int hpt3x2n_init_one(struct pci_dev *dev, const struct pci_device_id *id)
+@@ -544,16 +544,16 @@ static int hpt3x2n_init_one(struct pci_dev *dev, const struct pci_device_id *id)
  	       pci_mhz);
  	/* Set our private data up. We only need a few flags so we use
  	   it directly */
@@ -1070,10 +876,10 @@ index d16e87e..d9f2913 100644
  	/* Now kick off ATA set up */
  	return ata_pci_sff_init_one(dev, ppi, &hpt3x2n_sht, hpriv);
 diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 1093179..f33d768 100644
+index 2820257..fb4bc4f 100644
 --- a/drivers/base/core.c
 +++ b/drivers/base/core.c
-@@ -603,6 +603,7 @@ static struct kobject *get_device_parent(struct device *dev,
+@@ -607,6 +607,7 @@ static struct kobject *get_device_parent(struct device *dev,
  	int retval;
  
  	if (dev->class) {
@@ -1081,7 +887,7 @@ index 1093179..f33d768 100644
  		struct kobject *kobj = NULL;
  		struct kobject *parent_kobj;
  		struct kobject *k;
-@@ -619,6 +620,8 @@ static struct kobject *get_device_parent(struct device *dev,
+@@ -623,6 +624,8 @@ static struct kobject *get_device_parent(struct device *dev,
  		else
  			parent_kobj = &parent->kobj;
  
@@ -1090,7 +896,7 @@ index 1093179..f33d768 100644
  		/* find our class-directory at the parent and reference it */
  		spin_lock(&dev->class->p->class_dirs.list_lock);
  		list_for_each_entry(k, &dev->class->p->class_dirs.list, entry)
-@@ -627,20 +630,26 @@ static struct kobject *get_device_parent(struct device *dev,
+@@ -631,20 +634,26 @@ static struct kobject *get_device_parent(struct device *dev,
  				break;
  			}
  		spin_unlock(&dev->class->p->class_dirs.list_lock);
@@ -1120,10 +926,10 @@ index 1093179..f33d768 100644
  	}
  
 diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index 33faaa2..4d80966 100644
+index 42ae452..dac478c 100644
 --- a/drivers/base/devtmpfs.c
 +++ b/drivers/base/devtmpfs.c
-@@ -295,6 +295,19 @@ int devtmpfs_delete_node(struct device *dev)
+@@ -301,6 +301,19 @@ int devtmpfs_delete_node(struct device *dev)
  		if (dentry->d_inode) {
  			err = vfs_getattr(nd.path.mnt, dentry, &stat);
  			if (!err && dev_mynode(dev, dentry->d_inode, &stat)) {
@@ -1143,46 +949,11 @@ index 33faaa2..4d80966 100644
  				err = vfs_unlink(nd.path.dentry->d_inode,
  						 dentry);
  				if (!err || err == -ENOENT)
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 0b73e4e..27e8de4 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -257,6 +257,10 @@ out:
- 	return size;
- }
- 
-+static int itpm;
-+module_param(itpm, bool, 0444);
-+MODULE_PARM_DESC(itpm, "Force iTPM workarounds (found on some Lenovo laptops)");
-+
- /*
-  * If interrupts are used (signaled by an irq set in the vendor structure)
-  * tpm.c can skip polling for the data to be available as the interrupt is
-@@ -293,7 +297,7 @@ static int tpm_tis_send(struct tpm_chip *chip, u8 *buf, size_t len)
- 		wait_for_stat(chip, TPM_STS_VALID, chip->vendor.timeout_c,
- 			      &chip->vendor.int_queue);
- 		status = tpm_tis_status(chip);
--		if ((status & TPM_STS_DATA_EXPECT) == 0) {
-+		if (!itpm && (status & TPM_STS_DATA_EXPECT) == 0) {
- 			rc = -EIO;
- 			goto out_err;
- 		}
-@@ -467,6 +471,10 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 		 "1.2 TPM (device-id 0x%X, rev-id %d)\n",
- 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
- 
-+	if (itpm)
-+		dev_info(dev, "Intel iTPM workaround enabled\n");
-+
-+
- 	/* Figure out the capabilities */
- 	intfcaps =
- 	    ioread32(chip->vendor.iobase +
 diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index feb5507..c6fbc27 100644
+index 3f653f7..500e740 100644
 --- a/drivers/char/tty_ldisc.c
 +++ b/drivers/char/tty_ldisc.c
-@@ -687,12 +687,13 @@ static void tty_reset_termios(struct tty_struct *tty)
+@@ -706,12 +706,13 @@ static void tty_reset_termios(struct tty_struct *tty)
  /**
   *	tty_ldisc_reinit	-	reinitialise the tty ldisc
   *	@tty: tty to reinit
@@ -1199,7 +970,7 @@ index feb5507..c6fbc27 100644
  {
  	struct tty_ldisc *ld;
  
-@@ -702,10 +703,10 @@ static void tty_ldisc_reinit(struct tty_struct *tty)
+@@ -721,10 +722,10 @@ static void tty_ldisc_reinit(struct tty_struct *tty)
  	/*
  	 *	Switch the line discipline back
  	 */
@@ -1212,7 +983,7 @@ index feb5507..c6fbc27 100644
  }
  
  /**
-@@ -726,6 +727,8 @@ static void tty_ldisc_reinit(struct tty_struct *tty)
+@@ -745,6 +746,8 @@ static void tty_ldisc_reinit(struct tty_struct *tty)
  void tty_ldisc_hangup(struct tty_struct *tty)
  {
  	struct tty_ldisc *ld;
@@ -1221,7 +992,7 @@ index feb5507..c6fbc27 100644
  
  	/*
  	 * FIXME! What are the locking issues here? This may me overdoing
-@@ -753,25 +756,32 @@ void tty_ldisc_hangup(struct tty_struct *tty)
+@@ -772,25 +775,32 @@ void tty_ldisc_hangup(struct tty_struct *tty)
  	wake_up_interruptible_poll(&tty->read_wait, POLLIN);
  	/*
  	 * Shutdown the current line discipline, and reset it to
@@ -1372,11 +1143,40 @@ index 93c2322..961f5b5 100644
  }
  
  static int sh_tmu_register(struct sh_tmu_priv *p, char *name,
+diff --git a/drivers/gpio/cs5535-gpio.c b/drivers/gpio/cs5535-gpio.c
+index 0fdbe94..0c3c498 100644
+--- a/drivers/gpio/cs5535-gpio.c
++++ b/drivers/gpio/cs5535-gpio.c
+@@ -154,7 +154,7 @@ static int chip_gpio_request(struct gpio_chip *c, unsigned offset)
+ 
+ static int chip_gpio_get(struct gpio_chip *chip, unsigned offset)
+ {
+-	return cs5535_gpio_isset(offset, GPIO_OUTPUT_VAL);
++	return cs5535_gpio_isset(offset, GPIO_READ_BACK);
+ }
+ 
+ static void chip_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+@@ -172,6 +172,7 @@ static int chip_direction_input(struct gpio_chip *c, unsigned offset)
+ 
+ 	spin_lock_irqsave(&chip->lock, flags);
+ 	__cs5535_gpio_set(chip, offset, GPIO_INPUT_ENABLE);
++	__cs5535_gpio_clear(chip, offset, GPIO_OUTPUT_ENABLE);
+ 	spin_unlock_irqrestore(&chip->lock, flags);
+ 
+ 	return 0;
+@@ -184,6 +185,7 @@ static int chip_direction_output(struct gpio_chip *c, unsigned offset, int val)
+ 
+ 	spin_lock_irqsave(&chip->lock, flags);
+ 
++	__cs5535_gpio_set(chip, offset, GPIO_INPUT_ENABLE);
+ 	__cs5535_gpio_set(chip, offset, GPIO_OUTPUT_ENABLE);
+ 	if (val)
+ 		__cs5535_gpio_set(chip, offset, GPIO_OUTPUT_VAL);
 diff --git a/drivers/gpio/wm831x-gpio.c b/drivers/gpio/wm831x-gpio.c
-index f9c09a5..9a27047 100644
+index b4468b6..c5a00f7 100644
 --- a/drivers/gpio/wm831x-gpio.c
 +++ b/drivers/gpio/wm831x-gpio.c
-@@ -61,23 +61,31 @@ static int wm831x_gpio_get(struct gpio_chip *chip, unsigned offset)
+@@ -60,23 +60,31 @@ static int wm831x_gpio_get(struct gpio_chip *chip, unsigned offset)
  		return 0;
  }
  
@@ -1414,40 +1214,29 @@ index f9c09a5..9a27047 100644
 +	return 0;
  }
  
- #ifdef CONFIG_DEBUG_FS
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index b00a1aa..cce453e 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4322,7 +4322,7 @@ static void intel_init_display(struct drm_device *dev)
- 	}
- 
- 	/* Returns the core display clock speed */
--	if (IS_I945G(dev))
-+	if (IS_I945G(dev) || (IS_G33(dev) && ! IS_IGDGM(dev)))
- 		dev_priv->display.get_display_clock_speed =
- 			i945_get_display_clock_speed;
- 	else if (IS_I915G(dev))
+ static int wm831x_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index 952bb4e..a177b57 100644
+index c2e8a45..93031a7 100644
 --- a/drivers/gpu/drm/i915/intel_lvds.c
 +++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -629,6 +629,13 @@ static const struct dmi_system_id bad_lid_status[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "PC-81005"),
- 		},
- 	},
-+	{
-+		.ident = "Clevo M5x0N",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
-+			DMI_MATCH(DMI_BOARD_NAME, "M5x0N"),
-+		},
-+	},
- 	{ }
- };
+@@ -655,8 +655,15 @@ static const struct dmi_system_id bad_lid_status[] = {
+  */
+ static enum drm_connector_status intel_lvds_detect(struct drm_connector *connector)
+ {
++	struct drm_device *dev = connector->dev;
+ 	enum drm_connector_status status = connector_status_connected;
+ 
++	/* ACPI lid methods were generally unreliable in this generation, so
++	 * don't even bother.
++	 */
++	if (IS_I8XX(dev))
++		return connector_status_connected;
++
+ 	if (!dmi_check_system(bad_lid_status) && !acpi_lid_open())
+ 		status = connector_status_disconnected;
  
 diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 3f5aaf1..5d9c6a7 100644
+index 82678d3..48daee5 100644
 --- a/drivers/gpu/drm/i915/intel_sdvo.c
 +++ b/drivers/gpu/drm/i915/intel_sdvo.c
 @@ -35,6 +35,7 @@
@@ -1456,9 +1245,9 @@ index 3f5aaf1..5d9c6a7 100644
  #include "intel_sdvo_regs.h"
 +#include <linux/dmi.h>
  
- #undef SDVO_DEBUG
- 
-@@ -2289,6 +2290,25 @@ intel_sdvo_get_slave_addr(struct drm_device *dev, int output_device)
+ static char *tv_format_names[] = {
+ 	"NTSC_M"   , "NTSC_J"  , "NTSC_443",
+@@ -2283,6 +2284,25 @@ intel_sdvo_get_slave_addr(struct drm_device *dev, int output_device)
  		return 0x72;
  }
  
@@ -1484,7 +1273,7 @@ index 3f5aaf1..5d9c6a7 100644
  static bool
  intel_sdvo_output_setup(struct intel_output *intel_output, uint16_t flags)
  {
-@@ -2329,7 +2349,8 @@ intel_sdvo_output_setup(struct intel_output *intel_output, uint16_t flags)
+@@ -2323,7 +2343,8 @@ intel_sdvo_output_setup(struct intel_output *intel_output, uint16_t flags)
  					(1 << INTEL_SDVO_NON_TV_CLONE_BIT) |
  					(1 << INTEL_ANALOG_CLONE_BIT);
  		}
@@ -1494,291 +1283,33 @@ index 3f5aaf1..5d9c6a7 100644
  
  		sdvo_priv->controlled_output = SDVO_OUTPUT_SVID0;
  		encoder->encoder_type = DRM_MODE_ENCODER_TVDAC;
-diff --git a/drivers/gpu/drm/i915/intel_tv.c b/drivers/gpu/drm/i915/intel_tv.c
-index ce026f0..5b28b4e 100644
---- a/drivers/gpu/drm/i915/intel_tv.c
-+++ b/drivers/gpu/drm/i915/intel_tv.c
-@@ -1801,8 +1801,6 @@ intel_tv_init(struct drm_device *dev)
- 	drm_connector_attach_property(connector,
- 				   dev->mode_config.tv_bottom_margin_property,
- 				   tv_priv->margin[TV_MARGIN_BOTTOM]);
--
--	dev_priv->hotplug_supported_mask |= TV_HOTPLUG_INT_STATUS;
- out:
- 	drm_sysfs_connector_add(connector);
- }
-diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
-index 278f646..7310473 100644
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -1686,13 +1686,14 @@ int r600_init(struct radeon_device *rdev)
- 	if (rdev->accel_working) {
- 		r = radeon_ib_pool_init(rdev);
- 		if (r) {
--			DRM_ERROR("radeon: failled initializing IB pool (%d).\n", r);
--			rdev->accel_working = false;
--		}
--		r = r600_ib_test(rdev);
--		if (r) {
--			DRM_ERROR("radeon: failled testing IB (%d).\n", r);
-+			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
- 			rdev->accel_working = false;
-+		} else {
-+			r = r600_ib_test(rdev);
-+			if (r) {
-+				dev_err(rdev->dev, "IB test failed (%d).\n", r);
-+				rdev->accel_working = false;
-+			}
- 		}
- 	}
- 	return 0;
-diff --git a/drivers/gpu/drm/radeon/r600_cs.c b/drivers/gpu/drm/radeon/r600_cs.c
-index 0d82076..838b88c 100644
---- a/drivers/gpu/drm/radeon/r600_cs.c
-+++ b/drivers/gpu/drm/radeon/r600_cs.c
-@@ -36,6 +36,10 @@ static int r600_cs_packet_next_reloc_nomm(struct radeon_cs_parser *p,
- typedef int (*next_reloc_t)(struct radeon_cs_parser*, struct radeon_cs_reloc**);
- static next_reloc_t r600_cs_packet_next_reloc = &r600_cs_packet_next_reloc_mm;
- 
-+struct r600_cs_track {
-+	u32	cb_color0_base_last;
-+};
-+
- /**
-  * r600_cs_packet_parse() - parse cp packet and point ib index to next packet
-  * @parser:	parser structure holding parsing context.
-@@ -177,6 +181,28 @@ static int r600_cs_packet_next_reloc_nomm(struct radeon_cs_parser *p,
- }
- 
- /**
-+ * r600_cs_packet_next_is_pkt3_nop() - test if next packet is packet3 nop for reloc
-+ * @parser:		parser structure holding parsing context.
-+ *
-+ * Check next packet is relocation packet3, do bo validation and compute
-+ * GPU offset using the provided start.
-+ **/
-+static inline int r600_cs_packet_next_is_pkt3_nop(struct radeon_cs_parser *p)
-+{
-+	struct radeon_cs_packet p3reloc;
-+	int r;
-+
-+	r = r600_cs_packet_parse(p, &p3reloc, p->idx);
-+	if (r) {
-+		return 0;
-+	}
-+	if (p3reloc.type != PACKET_TYPE3 || p3reloc.opcode != PACKET3_NOP) {
-+		return 0;
-+	}
-+	return 1;
-+}
-+
-+/**
-  * r600_cs_packet_next_vline() - parse userspace VLINE packet
-  * @parser:		parser structure holding parsing context.
-  *
-@@ -337,6 +363,7 @@ static int r600_packet3_check(struct radeon_cs_parser *p,
- 				struct radeon_cs_packet *pkt)
- {
- 	struct radeon_cs_reloc *reloc;
-+	struct r600_cs_track *track;
- 	volatile u32 *ib;
- 	unsigned idx;
- 	unsigned i;
-@@ -344,6 +371,7 @@ static int r600_packet3_check(struct radeon_cs_parser *p,
- 	int r;
- 	u32 idx_value;
- 
-+	track = (struct r600_cs_track *)p->track;
- 	ib = p->ib->ptr;
- 	idx = pkt->idx + 1;
- 	idx_value = radeon_get_ib_value(p, idx);
-@@ -503,9 +531,60 @@ static int r600_packet3_check(struct radeon_cs_parser *p,
- 		for (i = 0; i < pkt->count; i++) {
- 			reg = start_reg + (4 * i);
- 			switch (reg) {
-+			/* This register were added late, there is userspace
-+			 * which does provide relocation for those but set
-+			 * 0 offset. In order to avoid breaking old userspace
-+			 * we detect this and set address to point to last
-+			 * CB_COLOR0_BASE, note that if userspace doesn't set
-+			 * CB_COLOR0_BASE before this register we will report
-+			 * error. Old userspace always set CB_COLOR0_BASE
-+			 * before any of this.
-+			 */
-+			case R_0280E0_CB_COLOR0_FRAG:
-+			case R_0280E4_CB_COLOR1_FRAG:
-+			case R_0280E8_CB_COLOR2_FRAG:
-+			case R_0280EC_CB_COLOR3_FRAG:
-+			case R_0280F0_CB_COLOR4_FRAG:
-+			case R_0280F4_CB_COLOR5_FRAG:
-+			case R_0280F8_CB_COLOR6_FRAG:
-+			case R_0280FC_CB_COLOR7_FRAG:
-+			case R_0280C0_CB_COLOR0_TILE:
-+			case R_0280C4_CB_COLOR1_TILE:
-+			case R_0280C8_CB_COLOR2_TILE:
-+			case R_0280CC_CB_COLOR3_TILE:
-+			case R_0280D0_CB_COLOR4_TILE:
-+			case R_0280D4_CB_COLOR5_TILE:
-+			case R_0280D8_CB_COLOR6_TILE:
-+			case R_0280DC_CB_COLOR7_TILE:
-+				if (!r600_cs_packet_next_is_pkt3_nop(p)) {
-+					if (!track->cb_color0_base_last) {
-+						dev_err(p->dev, "Broken old userspace ? no cb_color0_base supplied before trying to write 0x%08X\n", reg);
-+						return -EINVAL;
-+					}
-+					ib[idx+1+i] = track->cb_color0_base_last;
-+					printk_once(KERN_WARNING "You have old & broken userspace "
-+						"please consider updating mesa & xf86-video-ati\n");
-+				} else {
-+					r = r600_cs_packet_next_reloc(p, &reloc);
-+					if (r) {
-+						dev_err(p->dev, "bad SET_CONTEXT_REG 0x%04X\n", reg);
-+						return -EINVAL;
-+					}
-+					ib[idx+1+i] += (u32)((reloc->lobj.gpu_offset >> 8) & 0xffffffff);
-+				}
-+				break;
- 			case DB_DEPTH_BASE:
- 			case DB_HTILE_DATA_BASE:
- 			case CB_COLOR0_BASE:
-+				r = r600_cs_packet_next_reloc(p, &reloc);
-+				if (r) {
-+					DRM_ERROR("bad SET_CONTEXT_REG "
-+							"0x%04X\n", reg);
-+					return -EINVAL;
-+				}
-+				ib[idx+1+i] += (u32)((reloc->lobj.gpu_offset >> 8) & 0xffffffff);
-+				track->cb_color0_base_last = ib[idx+1+i];
-+				break;
- 			case CB_COLOR1_BASE:
- 			case CB_COLOR2_BASE:
- 			case CB_COLOR3_BASE:
-@@ -678,8 +757,11 @@ static int r600_packet3_check(struct radeon_cs_parser *p,
- int r600_cs_parse(struct radeon_cs_parser *p)
- {
- 	struct radeon_cs_packet pkt;
-+	struct r600_cs_track *track;
- 	int r;
- 
-+	track = kzalloc(sizeof(*track), GFP_KERNEL);
-+	p->track = track;
- 	do {
- 		r = r600_cs_packet_parse(p, &pkt, p->idx);
- 		if (r) {
-@@ -757,6 +839,7 @@ int r600_cs_legacy(struct drm_device *dev, void *data, struct drm_file *filp,
- 	/* initialize parser */
- 	memset(&parser, 0, sizeof(struct radeon_cs_parser));
- 	parser.filp = filp;
-+	parser.dev = &dev->pdev->dev;
- 	parser.rdev = NULL;
- 	parser.family = family;
- 	parser.ib = &fake_ib;
-diff --git a/drivers/gpu/drm/radeon/r600d.h b/drivers/gpu/drm/radeon/r600d.h
-index 27ab428..56fc658 100644
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -674,4 +674,30 @@
- #define		S_000E60_SOFT_RESET_TSC(x)		(((x) & 1) << 16)
- #define		S_000E60_SOFT_RESET_VMC(x)		(((x) & 1) << 17)
- 
-+#define R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL		0x5480
-+
-+#define R_0280E0_CB_COLOR0_FRAG                      0x0280E0
-+#define   S_0280E0_BASE_256B(x)                        (((x) & 0xFFFFFFFF) << 0)
-+#define   G_0280E0_BASE_256B(x)                        (((x) >> 0) & 0xFFFFFFFF)
-+#define   C_0280E0_BASE_256B                           0x00000000
-+#define R_0280E4_CB_COLOR1_FRAG                      0x0280E4
-+#define R_0280E8_CB_COLOR2_FRAG                      0x0280E8
-+#define R_0280EC_CB_COLOR3_FRAG                      0x0280EC
-+#define R_0280F0_CB_COLOR4_FRAG                      0x0280F0
-+#define R_0280F4_CB_COLOR5_FRAG                      0x0280F4
-+#define R_0280F8_CB_COLOR6_FRAG                      0x0280F8
-+#define R_0280FC_CB_COLOR7_FRAG                      0x0280FC
-+#define R_0280C0_CB_COLOR0_TILE                      0x0280C0
-+#define   S_0280C0_BASE_256B(x)                        (((x) & 0xFFFFFFFF) << 0)
-+#define   G_0280C0_BASE_256B(x)                        (((x) >> 0) & 0xFFFFFFFF)
-+#define   C_0280C0_BASE_256B                           0x00000000
-+#define R_0280C4_CB_COLOR1_TILE                      0x0280C4
-+#define R_0280C8_CB_COLOR2_TILE                      0x0280C8
-+#define R_0280CC_CB_COLOR3_TILE                      0x0280CC
-+#define R_0280D0_CB_COLOR4_TILE                      0x0280D0
-+#define R_0280D4_CB_COLOR5_TILE                      0x0280D4
-+#define R_0280D8_CB_COLOR6_TILE                      0x0280D8
-+#define R_0280DC_CB_COLOR7_TILE                      0x0280DC
-+
-+
- #endif
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index 224506a..6735213 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -448,6 +448,7 @@ struct radeon_cs_chunk {
- };
- 
- struct radeon_cs_parser {
-+	struct device		*dev;
- 	struct radeon_device	*rdev;
- 	struct drm_file		*filp;
- 	/* chunks */
-diff --git a/drivers/gpu/drm/radeon/radeon_cs.c b/drivers/gpu/drm/radeon/radeon_cs.c
-index 5ab2cf9..484f791 100644
---- a/drivers/gpu/drm/radeon/radeon_cs.c
-+++ b/drivers/gpu/drm/radeon/radeon_cs.c
-@@ -230,6 +230,7 @@ int radeon_cs_ioctl(struct drm_device *dev, void *data, struct drm_file *filp)
- 	memset(&parser, 0, sizeof(struct radeon_cs_parser));
- 	parser.filp = filp;
- 	parser.rdev = rdev;
-+	parser.dev = rdev->dev;
- 	r = radeon_cs_parser_init(&parser, data);
- 	if (r) {
- 		DRM_ERROR("Failed to initialize parser !\n");
-diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
-index c85df4a..6f68315 100644
---- a/drivers/gpu/drm/radeon/radeon_display.c
-+++ b/drivers/gpu/drm/radeon/radeon_display.c
-@@ -599,7 +599,11 @@ radeon_user_framebuffer_create(struct drm_device *dev,
- 	struct drm_gem_object *obj;
- 
- 	obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handle);
--
-+	if (obj ==  NULL) {
-+		dev_err(&dev->pdev->dev, "No GEM object associated to handle 0x%08X, "
-+			"can't create framebuffer\n", mode_cmd->handle);
-+		return NULL;
-+	}
- 	return radeon_framebuffer_create(dev, mode_cmd, obj);
- }
- 
-diff --git a/drivers/gpu/drm/radeon/rv770.c b/drivers/gpu/drm/radeon/rv770.c
-index b0efd0d..c42403b 100644
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -1034,13 +1034,14 @@ int rv770_init(struct radeon_device *rdev)
- 	if (rdev->accel_working) {
- 		r = radeon_ib_pool_init(rdev);
- 		if (r) {
--			DRM_ERROR("radeon: failled initializing IB pool (%d).\n", r);
--			rdev->accel_working = false;
--		}
--		r = r600_ib_test(rdev);
--		if (r) {
--			DRM_ERROR("radeon: failled testing IB (%d).\n", r);
-+			dev_err(rdev->dev, "IB initialization failed (%d).\n", r);
- 			rdev->accel_working = false;
-+		} else {
-+			r = r600_ib_test(rdev);
-+			if (r) {
-+				dev_err(rdev->dev, "IB test failed (%d).\n", r);
-+				rdev->accel_working = false;
-+			}
- 		}
- 	}
- 	return 0;
+diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
+index 7f152f6..d75788f 100644
+--- a/drivers/gpu/drm/radeon/atom.c
++++ b/drivers/gpu/drm/radeon/atom.c
+@@ -881,8 +881,6 @@ static void atom_op_shl(atom_exec_context *ctx, int *ptr, int arg)
+ 	uint8_t attr = U8((*ptr)++), shift;
+ 	uint32_t saved, dst;
+ 	int dptr = *ptr;
+-	attr &= 0x38;
+-	attr |= atom_def_dst[attr >> 3] << 6;
+ 	SDEBUG("   dst: ");
+ 	dst = atom_get_dst(ctx, arg, attr, ptr, &saved, 1);
+ 	shift = atom_get_src(ctx, attr, ptr);
+@@ -897,8 +895,6 @@ static void atom_op_shr(atom_exec_context *ctx, int *ptr, int arg)
+ 	uint8_t attr = U8((*ptr)++), shift;
+ 	uint32_t saved, dst;
+ 	int dptr = *ptr;
+-	attr &= 0x38;
+-	attr |= atom_def_dst[attr >> 3] << 6;
+ 	SDEBUG("   dst: ");
+ 	dst = atom_get_dst(ctx, arg, attr, ptr, &saved, 1);
+ 	shift = atom_get_src(ctx, attr, ptr);
 diff --git a/drivers/gpu/drm/ttm/ttm_tt.c b/drivers/gpu/drm/ttm/ttm_tt.c
-index 7bcb89f..3d5b8b0 100644
+index 3d47a2c..a759170 100644
 --- a/drivers/gpu/drm/ttm/ttm_tt.c
 +++ b/drivers/gpu/drm/ttm/ttm_tt.c
-@@ -466,7 +466,7 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
+@@ -480,7 +480,7 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
  	void *from_virtual;
  	void *to_virtual;
  	int i;
@@ -1787,7 +1318,7 @@ index 7bcb89f..3d5b8b0 100644
  
  	if (ttm->page_flags & TTM_PAGE_FLAG_USER) {
  		ret = ttm_tt_set_user(ttm, ttm->tsk, ttm->start,
-@@ -485,8 +485,10 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
+@@ -499,8 +499,10 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
  
  	for (i = 0; i < ttm->num_pages; ++i) {
  		from_page = read_mapping_page(swap_space, i, NULL);
@@ -1799,7 +1330,7 @@ index 7bcb89f..3d5b8b0 100644
  		to_page = __ttm_tt_get_page(ttm, i);
  		if (unlikely(to_page == NULL))
  			goto out_err;
-@@ -509,7 +511,7 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
+@@ -523,7 +525,7 @@ static int ttm_tt_swapin(struct ttm_tt *ttm)
  	return 0;
  out_err:
  	ttm_tt_free_alloced_pages(ttm);
@@ -1808,7 +1339,7 @@ index 7bcb89f..3d5b8b0 100644
  }
  
  int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
-@@ -521,6 +523,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
+@@ -535,6 +537,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
  	void *from_virtual;
  	void *to_virtual;
  	int i;
@@ -1816,7 +1347,7 @@ index 7bcb89f..3d5b8b0 100644
  
  	BUG_ON(ttm->state != tt_unbound && ttm->state != tt_unpopulated);
  	BUG_ON(ttm->caching_state != tt_cached);
-@@ -543,7 +546,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
+@@ -557,7 +560,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
  						0);
  		if (unlikely(IS_ERR(swap_storage))) {
  			printk(KERN_ERR "Failed allocating swap storage.\n");
@@ -1825,7 +1356,7 @@ index 7bcb89f..3d5b8b0 100644
  		}
  	} else
  		swap_storage = persistant_swap_storage;
-@@ -555,9 +558,10 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
+@@ -569,9 +572,10 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistant_swap_storage)
  		if (unlikely(from_page == NULL))
  			continue;
  		to_page = read_mapping_page(swap_space, i, NULL);
@@ -1838,7 +1369,7 @@ index 7bcb89f..3d5b8b0 100644
  		preempt_disable();
  		from_virtual = kmap_atomic(from_page, KM_USER0);
  		to_virtual = kmap_atomic(to_page, KM_USER1);
-@@ -581,5 +585,5 @@ out_err:
+@@ -595,5 +599,5 @@ out_err:
  	if (!persistant_swap_storage)
  		fput(swap_storage);
  
@@ -1846,10 +1377,10 @@ index 7bcb89f..3d5b8b0 100644
 +	return ret;
  }
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 9678354..668604b 100644
+index eabe5f8..8455f3d 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1658,8 +1658,6 @@ static const struct hid_device_id hid_ignore_list[] = {
+@@ -1661,8 +1661,6 @@ static const struct hid_device_id hid_ignore_list[] = {
  	{ HID_USB_DEVICE(USB_VENDOR_ID_PANJIT, 0x0004) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_PHILIPS, USB_DEVICE_ID_PHILIPS_IEEE802154_DONGLE) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_POWERCOM, USB_DEVICE_ID_POWERCOM_UPS) },
@@ -1859,20 +1390,10 @@ index 9678354..668604b 100644
  	{ HID_USB_DEVICE(USB_VENDOR_ID_VERNIER, USB_DEVICE_ID_VERNIER_GOTEMP) },
  	{ HID_USB_DEVICE(USB_VENDOR_ID_VERNIER, USB_DEVICE_ID_VERNIER_SKIP) },
 diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index e380e7b..9831c3a 100644
+index 010368e..793691f 100644
 --- a/drivers/hid/hid-ids.h
 +++ b/drivers/hid/hid-ids.h
-@@ -349,6 +349,9 @@
- #define USB_VENDOR_ID_NEC		0x073e
- #define USB_DEVICE_ID_NEC_USB_GAME_PAD	0x0301
- 
-+#define USB_VENDOR_ID_NEXTWINDOW	0x1926
-+#define USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN	0x0003
-+
- #define USB_VENDOR_ID_NTRIG                0x1b96
- #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
- 
-@@ -392,10 +395,6 @@
+@@ -402,10 +402,6 @@
  #define USB_VENDOR_ID_SUNPLUS		0x04fc
  #define USB_DEVICE_ID_SUNPLUS_WDESKTOP	0x05d8
  
@@ -1884,10 +1405,10 @@ index e380e7b..9831c3a 100644
  
  #define USB_VENDOR_ID_TOPMAX		0x0663
 diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index 5d901f6..1ca6574 100644
+index e2997a8..2f84237 100644
 --- a/drivers/hid/usbhid/hid-core.c
 +++ b/drivers/hid/usbhid/hid-core.c
-@@ -318,6 +318,7 @@ static int hid_submit_out(struct hid_device *hid)
+@@ -316,6 +316,7 @@ static int hid_submit_out(struct hid_device *hid)
  			err_hid("usb_submit_urb(out) failed");
  			return -1;
  		}
@@ -1895,7 +1416,7 @@ index 5d901f6..1ca6574 100644
  	} else {
  		/*
  		 * queue work to wake up the device.
-@@ -379,6 +380,7 @@ static int hid_submit_ctrl(struct hid_device *hid)
+@@ -377,6 +378,7 @@ static int hid_submit_ctrl(struct hid_device *hid)
  			err_hid("usb_submit_urb(ctrl) failed");
  			return -1;
  		}
@@ -1903,7 +1424,7 @@ index 5d901f6..1ca6574 100644
  	} else {
  		/*
  		 * queue work to wake up the device.
-@@ -514,9 +516,20 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+@@ -512,9 +514,20 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
  		usbhid->out[usbhid->outhead].report = report;
  		usbhid->outhead = head;
  
@@ -1925,7 +1446,7 @@ index 5d901f6..1ca6574 100644
  		return;
  	}
  
-@@ -537,9 +550,20 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
+@@ -535,9 +548,20 @@ static void __usbhid_submit_report(struct hid_device *hid, struct hid_report *re
  	usbhid->ctrl[usbhid->ctrlhead].dir = dir;
  	usbhid->ctrlhead = head;
  
@@ -1947,18 +1468,6 @@ index 5d901f6..1ca6574 100644
  }
  
  void usbhid_submit_report(struct hid_device *hid, struct hid_report *report, unsigned char dir)
-diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
-index 5713b93..64c5dee 100644
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -37,6 +37,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_HAPP, USB_DEVICE_ID_UGCI_FIGHTING, HID_QUIRK_BADPAD | HID_QUIRK_MULTI_INPUT },
- 	{ USB_VENDOR_ID_NATSU, USB_DEVICE_ID_NATSU_GAMEPAD, HID_QUIRK_BADPAD },
- 	{ USB_VENDOR_ID_NEC, USB_DEVICE_ID_NEC_USB_GAME_PAD, HID_QUIRK_BADPAD },
-+	{ USB_VENDOR_ID_NEXTWINDOW, USB_DEVICE_ID_NEXTWINDOW_TOUCHSCREEN, HID_QUIRK_MULTI_INPUT},
- 	{ USB_VENDOR_ID_SAITEK, USB_DEVICE_ID_SAITEK_RUMBLEPAD, HID_QUIRK_BADPAD },
- 	{ USB_VENDOR_ID_TOPMAX, USB_DEVICE_ID_TOPMAX_COBRAPAD, HID_QUIRK_BADPAD },
- 
 diff --git a/drivers/hid/usbhid/usbhid.h b/drivers/hid/usbhid/usbhid.h
 index 08f505c..ec20400 100644
 --- a/drivers/hid/usbhid/usbhid.h
@@ -2052,11 +1561,111 @@ index 5ed387b..b28d7e2 100644
  
  extern int ams_pmu_init(struct device_node *np);
  extern int ams_i2c_init(struct device_node *np);
+diff --git a/drivers/hwmon/fschmd.c b/drivers/hwmon/fschmd.c
+index fa07282..0627f7a 100644
+--- a/drivers/hwmon/fschmd.c
++++ b/drivers/hwmon/fschmd.c
+@@ -267,7 +267,7 @@ struct fschmd_data {
+ 	struct list_head list; /* member of the watchdog_data_list */
+ 	struct kref kref;
+ 	struct miscdevice watchdog_miscdev;
+-	int kind;
++	enum chips kind;
+ 	unsigned long watchdog_is_open;
+ 	char watchdog_expect_close;
+ 	char watchdog_name[10]; /* must be unique to avoid sysfs conflict */
+@@ -325,8 +325,7 @@ static ssize_t show_in_value(struct device *dev,
+ 	int index = to_sensor_dev_attr(devattr)->index;
+ 	struct fschmd_data *data = fschmd_update_device(dev);
+ 
+-	/* fscher / fschrc - 1 as data->kind is an array index, not a chips */
+-	if (data->kind == (fscher - 1) || data->kind >= (fschrc - 1))
++	if (data->kind == fscher || data->kind >= fschrc)
+ 		return sprintf(buf, "%d\n", (data->volt[index] * dmi_vref *
+ 			dmi_mult[index]) / 255 + dmi_offset[index]);
+ 	else
+@@ -492,7 +491,7 @@ static ssize_t show_pwm_auto_point1_pwm(struct device *dev,
+ 	int val = data->fan_min[index];
+ 
+ 	/* 0 = allow turning off (except on the syl), 1-255 = 50-100% */
+-	if (val || data->kind == fscsyl - 1)
++	if (val || data->kind == fscsyl)
+ 		val = val / 2 + 128;
+ 
+ 	return sprintf(buf, "%d\n", val);
+@@ -506,7 +505,7 @@ static ssize_t store_pwm_auto_point1_pwm(struct device *dev,
+ 	unsigned long v = simple_strtoul(buf, NULL, 10);
+ 
+ 	/* reg: 0 = allow turning off (except on the syl), 1-255 = 50-100% */
+-	if (v || data->kind == fscsyl - 1) {
++	if (v || data->kind == fscsyl) {
+ 		v = SENSORS_LIMIT(v, 128, 255);
+ 		v = (v - 128) * 2 + 1;
+ 	}
+@@ -1037,7 +1036,7 @@ static int fschmd_detect(struct i2c_client *client,
+ 	else
+ 		return -ENODEV;
+ 
+-	strlcpy(info->type, fschmd_id[kind - 1].name, I2C_NAME_SIZE);
++	strlcpy(info->type, fschmd_id[kind].name, I2C_NAME_SIZE);
+ 
+ 	return 0;
+ }
+@@ -1065,6 +1064,7 @@ static int fschmd_probe(struct i2c_client *client,
+ 	   (where the client is found through a data ptr instead of the
+ 	   otherway around) */
+ 	data->client = client;
++	data->kind = kind;
+ 
+ 	if (kind == fscpos) {
+ 		/* The Poseidon has hardwired temp limits, fill these
+@@ -1085,9 +1085,6 @@ static int fschmd_probe(struct i2c_client *client,
+ 		}
+ 	}
+ 
+-	/* i2c kind goes from 1-6, we want from 0-5 to address arrays */
+-	data->kind = kind - 1;
+-
+ 	/* Read in some never changing registers */
+ 	data->revision = i2c_smbus_read_byte_data(client, FSCHMD_REG_REVISION);
+ 	data->global_control = i2c_smbus_read_byte_data(client,
+diff --git a/drivers/hwmon/tmp401.c b/drivers/hwmon/tmp401.c
+index a13b30e..d14a1af 100644
+--- a/drivers/hwmon/tmp401.c
++++ b/drivers/hwmon/tmp401.c
+@@ -134,7 +134,7 @@ struct tmp401_data {
+ 	struct mutex update_lock;
+ 	char valid; /* zero until following fields are valid */
+ 	unsigned long last_updated; /* in jiffies */
+-	int kind;
++	enum chips kind;
+ 
+ 	/* register values */
+ 	u8 status;
+@@ -524,7 +524,7 @@ static int tmp401_detect(struct i2c_client *client,
+ 	if (reg > 15)
+ 		return -ENODEV;
+ 
+-	strlcpy(info->type, tmp401_id[kind - 1].name, I2C_NAME_SIZE);
++	strlcpy(info->type, tmp401_id[kind].name, I2C_NAME_SIZE);
+ 
+ 	return 0;
+ }
+@@ -572,8 +572,7 @@ static int tmp401_probe(struct i2c_client *client,
+ 		goto exit_remove;
+ 	}
+ 
+-	dev_info(&client->dev, "Detected TI %s chip\n",
+-		 names[data->kind - 1]);
++	dev_info(&client->dev, "Detected TI %s chip\n", names[data->kind]);
+ 
+ 	return 0;
+ 
 diff --git a/drivers/hwmon/tmp421.c b/drivers/hwmon/tmp421.c
-index 2092434..d3a786b 100644
+index 4f7c051..738c472 100644
 --- a/drivers/hwmon/tmp421.c
 +++ b/drivers/hwmon/tmp421.c
-@@ -62,9 +62,9 @@ static const u8 TMP421_TEMP_LSB[4]		= { 0x10, 0x11, 0x12, 0x13 };
+@@ -61,9 +61,9 @@ static const u8 TMP421_TEMP_LSB[4]		= { 0x10, 0x11, 0x12, 0x13 };
  #define TMP423_DEVICE_ID			0x23
  
  static const struct i2c_device_id tmp421_id[] = {
@@ -2069,7 +1678,7 @@ index 2092434..d3a786b 100644
  	{ }
  };
  MODULE_DEVICE_TABLE(i2c, tmp421_id);
-@@ -74,21 +74,23 @@ struct tmp421_data {
+@@ -73,21 +73,23 @@ struct tmp421_data {
  	struct mutex update_lock;
  	char valid;
  	unsigned long last_updated;
@@ -2096,7 +1705,7 @@ index 2092434..d3a786b 100644
  
  	/* Add offset for extended temperature range. */
  	temp -= 64 * 256;
-@@ -108,7 +110,7 @@ static struct tmp421_data *tmp421_update_device(struct device *dev)
+@@ -107,7 +109,7 @@ static struct tmp421_data *tmp421_update_device(struct device *dev)
  		data->config = i2c_smbus_read_byte_data(client,
  			TMP421_CONFIG_REG_1);
  
@@ -2105,7 +1714,7 @@ index 2092434..d3a786b 100644
  			data->temp[i] = i2c_smbus_read_byte_data(client,
  				TMP421_TEMP_MSB[i]) << 8;
  			data->temp[i] |= i2c_smbus_read_byte_data(client,
-@@ -167,7 +169,7 @@ static mode_t tmp421_is_visible(struct kobject *kobj, struct attribute *a,
+@@ -166,7 +168,7 @@ static mode_t tmp421_is_visible(struct kobject *kobj, struct attribute *a,
  	devattr = container_of(a, struct device_attribute, attr);
  	index = to_sensor_dev_attr(devattr)->index;
  
@@ -2114,7 +1723,19 @@ index 2092434..d3a786b 100644
  		return a->mode;
  
  	return 0;
-@@ -275,7 +277,7 @@ static int tmp421_probe(struct i2c_client *client,
+@@ -252,9 +254,9 @@ static int tmp421_detect(struct i2c_client *client,
+ 		return -ENODEV;
+ 	}
+ 
+-	strlcpy(info->type, tmp421_id[kind - 1].name, I2C_NAME_SIZE);
++	strlcpy(info->type, tmp421_id[kind].name, I2C_NAME_SIZE);
+ 	dev_info(&adapter->dev, "Detected TI %s chip at 0x%02x\n",
+-		 names[kind - 1], client->addr);
++		 names[kind], client->addr);
+ 
+ 	return 0;
+ }
+@@ -271,7 +273,7 @@ static int tmp421_probe(struct i2c_client *client,
  
  	i2c_set_clientdata(client, data);
  	mutex_init(&data->update_lock);
@@ -2124,7 +1745,7 @@ index 2092434..d3a786b 100644
  	err = tmp421_init_client(client);
  	if (err)
 diff --git a/drivers/macintosh/therm_adt746x.c b/drivers/macintosh/therm_adt746x.c
-index 386a797..a564fe2 100644
+index 5ff47ba..58809b0 100644
 --- a/drivers/macintosh/therm_adt746x.c
 +++ b/drivers/macintosh/therm_adt746x.c
 @@ -90,6 +90,8 @@ static struct task_struct *thread_therm = NULL;
@@ -2214,11 +1835,37 @@ index 386a797..a564fe2 100644
  }
  
  module_init(thermostat_init);
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index 1d66932..e3cf568 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -897,16 +897,17 @@ static int do_resume(struct dm_ioctl *param)
+ 			set_disk_ro(dm_disk(md), 1);
+ 	}
+ 
+-	if (dm_suspended_md(md))
++	if (dm_suspended_md(md)) {
+ 		r = dm_resume(md);
++		if (!r)
++			dm_kobject_uevent(md, KOBJ_CHANGE, param->event_nr);
++	}
+ 
+ 	if (old_map)
+ 		dm_table_destroy(old_map);
+ 
+-	if (!r) {
+-		dm_kobject_uevent(md, KOBJ_CHANGE, param->event_nr);
++	if (!r)
+ 		r = __dev_status(md, param);
+-	}
+ 
+ 	dm_put(md);
+ 	return r;
 diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 724efc6..adb3f8a 100644
+index aa4e2aa..fa786b9 100644
 --- a/drivers/md/dm.c
 +++ b/drivers/md/dm.c
-@@ -614,8 +614,10 @@ static void dec_pending(struct dm_io *io, int error)
+@@ -635,8 +635,10 @@ static void dec_pending(struct dm_io *io, int error)
  			if (!md->barrier_error && io_error != -EOPNOTSUPP)
  				md->barrier_error = io_error;
  			end_io_acct(io);
@@ -2229,7 +1876,7 @@ index 724efc6..adb3f8a 100644
  
  			if (io_error != DM_ENDIO_REQUEUE) {
  				trace_block_bio_complete(md->queue, bio);
-@@ -623,8 +625,6 @@ static void dec_pending(struct dm_io *io, int error)
+@@ -644,8 +646,6 @@ static void dec_pending(struct dm_io *io, int error)
  				bio_endio(bio, io_error);
  			}
  		}
@@ -2239,7 +1886,7 @@ index 724efc6..adb3f8a 100644
  }
  
 diff --git a/drivers/media/dvb/dvb-core/dvb_net.c b/drivers/media/dvb/dvb-core/dvb_net.c
-index 0241a7c..dddfc46 100644
+index 8b8558f..b11533f 100644
 --- a/drivers/media/dvb/dvb-core/dvb_net.c
 +++ b/drivers/media/dvb/dvb-core/dvb_net.c
 @@ -504,6 +504,7 @@ static void dvb_net_ule( struct net_device *dev, const u8 *buf, size_t buf_len )
@@ -2250,90 +1897,11 @@ index 0241a7c..dddfc46 100644
  				continue;
  			}
  
-diff --git a/drivers/media/dvb/dvb-usb/Kconfig b/drivers/media/dvb/dvb-usb/Kconfig
-index 0e4b97f..690823f 100644
---- a/drivers/media/dvb/dvb-usb/Kconfig
-+++ b/drivers/media/dvb/dvb-usb/Kconfig
-@@ -112,8 +112,8 @@ config DVB_USB_CXUSB
- 	select DVB_MT352 if !DVB_FE_CUSTOMISE
- 	select DVB_ZL10353 if !DVB_FE_CUSTOMISE
- 	select DVB_DIB7000P if !DVB_FE_CUSTOMISE
--	select DVB_LGS8GL5 if !DVB_FE_CUSTOMISE
- 	select DVB_TUNER_DIB0070 if !DVB_FE_CUSTOMISE
-+	select DVB_LGS8GXX if !DVB_FE_CUSTOMISE
- 	select MEDIA_TUNER_SIMPLE if !MEDIA_TUNER_CUSTOMISE
- 	select MEDIA_TUNER_XC2028 if !MEDIA_TUNER_CUSTOMISE
- 	select MEDIA_TUNER_MXL5005S if !MEDIA_TUNER_CUSTOMISE
-diff --git a/drivers/media/dvb/frontends/l64781.c b/drivers/media/dvb/frontends/l64781.c
-index 3051b64..445fa10 100644
---- a/drivers/media/dvb/frontends/l64781.c
-+++ b/drivers/media/dvb/frontends/l64781.c
-@@ -192,8 +192,8 @@ static int apply_frontend_param (struct dvb_frontend* fe, struct dvb_frontend_pa
- 	spi_bias *= qam_tab[p->constellation];
- 	spi_bias /= p->code_rate_HP + 1;
- 	spi_bias /= (guard_tab[p->guard_interval] + 32);
--	spi_bias *= 1000ULL;
--	spi_bias /= 1000ULL + ppm/1000;
-+	spi_bias *= 1000;
-+	spi_bias /= 1000 + ppm/1000;
- 	spi_bias *= p->code_rate_HP;
- 
- 	val0x04 = (p->transmission_mode << 2) | p->guard_interval;
-diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
-index a672401..d258ed7 100644
---- a/drivers/media/video/bt8xx/bttv-driver.c
-+++ b/drivers/media/video/bt8xx/bttv-driver.c
-@@ -4468,6 +4468,7 @@ static int __devinit bttv_probe(struct pci_dev *dev,
- 		request_modules(btv);
- 	}
- 
-+	init_bttv_i2c_ir(btv);
- 	bttv_input_init(btv);
- 
- 	/* everything is fine */
-diff --git a/drivers/media/video/bt8xx/bttv-i2c.c b/drivers/media/video/bt8xx/bttv-i2c.c
-index beda363..3eb7c29 100644
---- a/drivers/media/video/bt8xx/bttv-i2c.c
-+++ b/drivers/media/video/bt8xx/bttv-i2c.c
-@@ -388,7 +388,12 @@ int __devinit init_bttv_i2c(struct bttv *btv)
- 	if (0 == btv->i2c_rc && i2c_scan)
- 		do_i2c_scan(btv->c.v4l2_dev.name, &btv->i2c_client);
- 
--	/* Instantiate the IR receiver device, if present */
-+	return btv->i2c_rc;
-+}
-+
-+/* Instantiate the I2C IR receiver device, if present */
-+void __devinit init_bttv_i2c_ir(struct bttv *btv)
-+{
- 	if (0 == btv->i2c_rc) {
- 		struct i2c_board_info info;
- 		/* The external IR receiver is at i2c address 0x34 (0x35 for
-@@ -408,7 +413,6 @@ int __devinit init_bttv_i2c(struct bttv *btv)
- 		strlcpy(info.type, "ir_video", I2C_NAME_SIZE);
- 		i2c_new_probed_device(&btv->c.i2c_adap, &info, addr_list);
- 	}
--	return btv->i2c_rc;
- }
- 
- int __devexit fini_bttv_i2c(struct bttv *btv)
-diff --git a/drivers/media/video/bt8xx/bttvp.h b/drivers/media/video/bt8xx/bttvp.h
-index a1d0e9c..6cccc2a 100644
---- a/drivers/media/video/bt8xx/bttvp.h
-+++ b/drivers/media/video/bt8xx/bttvp.h
-@@ -279,6 +279,7 @@ extern unsigned int bttv_debug;
- extern unsigned int bttv_gpio;
- extern void bttv_gpio_tracking(struct bttv *btv, char *comment);
- extern int init_bttv_i2c(struct bttv *btv);
-+extern void init_bttv_i2c_ir(struct bttv *btv);
- extern int fini_bttv_i2c(struct bttv *btv);
- 
- #define bttv_printk if (bttv_verbose) printk
 diff --git a/drivers/media/video/gspca/mr97310a.c b/drivers/media/video/gspca/mr97310a.c
-index f8328b9..d61767c 100644
+index 9154870..0493e40 100644
 --- a/drivers/media/video/gspca/mr97310a.c
 +++ b/drivers/media/video/gspca/mr97310a.c
-@@ -530,6 +530,12 @@ static int start_cif_cam(struct gspca_dev *gspca_dev)
+@@ -697,6 +697,12 @@ static int start_cif_cam(struct gspca_dev *gspca_dev)
  			{0x13, 0x00, {0x01}, 1},
  			{0, 0, {0}, 0}
  		};
@@ -2346,42 +1914,25 @@ index f8328b9..d61767c 100644
  		err_code = sensor_write_regs(gspca_dev, cif_sensor1_init_data,
  					 ARRAY_SIZE(cif_sensor1_init_data));
  	}
-diff --git a/drivers/media/video/pwc/pwc-ctrl.c b/drivers/media/video/pwc/pwc-ctrl.c
-index 50b415e..f7f7e04 100644
---- a/drivers/media/video/pwc/pwc-ctrl.c
-+++ b/drivers/media/video/pwc/pwc-ctrl.c
-@@ -753,7 +753,7 @@ int pwc_set_shutter_speed(struct pwc_device *pdev, int mode, int value)
- 		buf[0] = 0xff; /* fixed */
- 
- 	ret = send_control_msg(pdev,
--		SET_LUM_CTL, SHUTTER_MODE_FORMATTER, &buf, sizeof(buf));
-+		SET_LUM_CTL, SHUTTER_MODE_FORMATTER, &buf, 1);
- 
- 	if (!mode && ret >= 0) {
- 		if (value < 0)
-diff --git a/drivers/media/video/uvc/uvc_ctrl.c b/drivers/media/video/uvc/uvc_ctrl.c
-index 4a293b4..0ca39ec 100644
---- a/drivers/media/video/uvc/uvc_ctrl.c
-+++ b/drivers/media/video/uvc/uvc_ctrl.c
-@@ -826,6 +826,13 @@ int uvc_query_v4l2_ctrl(struct uvc_video_chain *chain,
- 		ret = 0;
- 		goto out;
- 
-+	case V4L2_CTRL_TYPE_BUTTON:
-+		v4l2_ctrl->minimum = 0;
-+		v4l2_ctrl->maximum = 0;
-+		v4l2_ctrl->step = 0;
-+		ret = 0;
-+		goto out;
-+
- 	default:
- 		break;
- 	}
+diff --git a/drivers/media/video/soc_mediabus.c b/drivers/media/video/soc_mediabus.c
+index f8d5c87..a4c0ef4 100644
+--- a/drivers/media/video/soc_mediabus.c
++++ b/drivers/media/video/soc_mediabus.c
+@@ -134,7 +134,8 @@ EXPORT_SYMBOL(soc_mbus_bytes_per_line);
+ const struct soc_mbus_pixelfmt *soc_mbus_get_fmtdesc(
+ 	enum v4l2_mbus_pixelcode code)
+ {
+-	if ((unsigned int)(code - V4L2_MBUS_FMT_FIXED) > ARRAY_SIZE(mbus_fmt))
++	if (code - V4L2_MBUS_FMT_FIXED > ARRAY_SIZE(mbus_fmt) ||
++	    code <= V4L2_MBUS_FMT_FIXED)
+ 		return NULL;
+ 	return mbus_fmt + code - V4L2_MBUS_FMT_FIXED - 1;
+ }
 diff --git a/drivers/mmc/host/s3cmci.c b/drivers/mmc/host/s3cmci.c
-index 99b74a3..f31f05a 100644
+index d96e1ab..2fdf768 100644
 --- a/drivers/mmc/host/s3cmci.c
 +++ b/drivers/mmc/host/s3cmci.c
-@@ -1178,7 +1178,7 @@ static int s3cmci_card_present(struct mmc_host *mmc)
+@@ -1179,7 +1179,7 @@ static int s3cmci_card_present(struct mmc_host *mmc)
  	struct s3c24xx_mci_pdata *pdata = host->pdata;
  	int ret;
  
@@ -2390,174 +1941,17 @@ index 99b74a3..f31f05a 100644
  		return -ENOSYS;
  
  	ret = gpio_get_value(pdata->gpio_detect) ? 0 : 1;
-diff --git a/drivers/net/ks8851_mll.c b/drivers/net/ks8851_mll.c
-index c146304..c0ceebc 100644
---- a/drivers/net/ks8851_mll.c
-+++ b/drivers/net/ks8851_mll.c
-@@ -854,8 +854,8 @@ static void ks_update_link_status(struct net_device *netdev, struct ks_net *ks)
+@@ -1360,6 +1360,8 @@ static struct mmc_host_ops s3cmci_ops = {
+ static struct s3c24xx_mci_pdata s3cmci_def_pdata = {
+ 	/* This is currently here to avoid a number of if (host->pdata)
+ 	 * checks. Any zero fields to ensure reasonable defaults are picked. */
++	 .no_wprotect = 1,
++	 .no_detect = 1,
+ };
  
- static irqreturn_t ks_irq(int irq, void *pw)
- {
--	struct ks_net *ks = pw;
--	struct net_device *netdev = ks->netdev;
-+	struct net_device *netdev = pw;
-+	struct ks_net *ks = netdev_priv(netdev);
- 	u16 status;
- 
- 	/*this should be the first in IRQ handler */
-diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
-index f3600b3..77125b5 100644
---- a/drivers/net/sky2.c
-+++ b/drivers/net/sky2.c
-@@ -1008,11 +1008,8 @@ static void sky2_prefetch_init(struct sky2_hw *hw, u32 qaddr,
- static inline struct sky2_tx_le *get_tx_le(struct sky2_port *sky2, u16 *slot)
- {
- 	struct sky2_tx_le *le = sky2->tx_le + *slot;
--	struct tx_ring_info *re = sky2->tx_ring + *slot;
- 
- 	*slot = RING_NEXT(*slot, sky2->tx_ring_size);
--	re->flags = 0;
--	re->skb = NULL;
- 	le->ctrl = 0;
- 	return le;
- }
-@@ -1580,8 +1577,7 @@ static unsigned tx_le_req(const struct sk_buff *skb)
- 	return count;
- }
- 
--static void sky2_tx_unmap(struct pci_dev *pdev,
--			  const struct tx_ring_info *re)
-+static void sky2_tx_unmap(struct pci_dev *pdev, struct tx_ring_info *re)
- {
- 	if (re->flags & TX_MAP_SINGLE)
- 		pci_unmap_single(pdev, pci_unmap_addr(re, mapaddr),
-@@ -1591,6 +1587,7 @@ static void sky2_tx_unmap(struct pci_dev *pdev,
- 		pci_unmap_page(pdev, pci_unmap_addr(re, mapaddr),
- 			       pci_unmap_len(re, maplen),
- 			       PCI_DMA_TODEVICE);
-+	re->flags = 0;
- }
- 
- /*
-@@ -1797,6 +1794,7 @@ static void sky2_tx_complete(struct sky2_port *sky2, u16 done)
- 			dev->stats.tx_packets++;
- 			dev->stats.tx_bytes += skb->len;
- 
-+			re->skb = NULL;
- 			dev_kfree_skb_any(skb);
- 
- 			sky2->tx_next = RING_NEXT(idx, sky2->tx_ring_size);
-diff --git a/drivers/net/via-rhine.c b/drivers/net/via-rhine.c
-index 1fd7058..31a5d3c 100644
---- a/drivers/net/via-rhine.c
-+++ b/drivers/net/via-rhine.c
-@@ -102,6 +102,7 @@ static const int multicast_filter_limit = 32;
- #include <linux/ethtool.h>
- #include <linux/crc32.h>
- #include <linux/bitops.h>
-+#include <linux/workqueue.h>
- #include <asm/processor.h>	/* Processor type for cache alignment. */
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -389,6 +390,7 @@ struct rhine_private {
- 	struct net_device *dev;
- 	struct napi_struct napi;
- 	spinlock_t lock;
-+	struct work_struct reset_task;
- 
- 	/* Frequently used values: keep some adjacent for cache effect. */
- 	u32 quirks;
-@@ -407,6 +409,7 @@ struct rhine_private {
- static int  mdio_read(struct net_device *dev, int phy_id, int location);
- static void mdio_write(struct net_device *dev, int phy_id, int location, int value);
- static int  rhine_open(struct net_device *dev);
-+static void rhine_reset_task(struct work_struct *work);
- static void rhine_tx_timeout(struct net_device *dev);
- static netdev_tx_t rhine_start_tx(struct sk_buff *skb,
- 				  struct net_device *dev);
-@@ -775,6 +778,8 @@ static int __devinit rhine_init_one(struct pci_dev *pdev,
- 	dev->irq = pdev->irq;
- 
- 	spin_lock_init(&rp->lock);
-+	INIT_WORK(&rp->reset_task, rhine_reset_task);
-+
- 	rp->mii_if.dev = dev;
- 	rp->mii_if.mdio_read = mdio_read;
- 	rp->mii_if.mdio_write = mdio_write;
-@@ -1179,22 +1184,18 @@ static int rhine_open(struct net_device *dev)
- 	return 0;
- }
- 
--static void rhine_tx_timeout(struct net_device *dev)
-+static void rhine_reset_task(struct work_struct *work)
- {
--	struct rhine_private *rp = netdev_priv(dev);
--	void __iomem *ioaddr = rp->base;
--
--	printk(KERN_WARNING "%s: Transmit timed out, status %4.4x, PHY status "
--	       "%4.4x, resetting...\n",
--	       dev->name, ioread16(ioaddr + IntrStatus),
--	       mdio_read(dev, rp->mii_if.phy_id, MII_BMSR));
-+	struct rhine_private *rp = container_of(work, struct rhine_private,
-+						reset_task);
-+	struct net_device *dev = rp->dev;
- 
- 	/* protect against concurrent rx interrupts */
- 	disable_irq(rp->pdev->irq);
- 
- 	napi_disable(&rp->napi);
- 
--	spin_lock(&rp->lock);
-+	spin_lock_bh(&rp->lock);
- 
- 	/* clear all descriptors */
- 	free_tbufs(dev);
-@@ -1206,7 +1207,7 @@ static void rhine_tx_timeout(struct net_device *dev)
- 	rhine_chip_reset(dev);
- 	init_registers(dev);
- 
--	spin_unlock(&rp->lock);
-+	spin_unlock_bh(&rp->lock);
- 	enable_irq(rp->pdev->irq);
- 
- 	dev->trans_start = jiffies;
-@@ -1214,6 +1215,19 @@ static void rhine_tx_timeout(struct net_device *dev)
- 	netif_wake_queue(dev);
- }
- 
-+static void rhine_tx_timeout(struct net_device *dev)
-+{
-+	struct rhine_private *rp = netdev_priv(dev);
-+	void __iomem *ioaddr = rp->base;
-+
-+	printk(KERN_WARNING "%s: Transmit timed out, status %4.4x, PHY status "
-+	       "%4.4x, resetting...\n",
-+	       dev->name, ioread16(ioaddr + IntrStatus),
-+	       mdio_read(dev, rp->mii_if.phy_id, MII_BMSR));
-+
-+	schedule_work(&rp->reset_task);
-+}
-+
- static netdev_tx_t rhine_start_tx(struct sk_buff *skb,
- 				  struct net_device *dev)
- {
-@@ -1830,10 +1844,11 @@ static int rhine_close(struct net_device *dev)
- 	struct rhine_private *rp = netdev_priv(dev);
- 	void __iomem *ioaddr = rp->base;
- 
--	spin_lock_irq(&rp->lock);
--
--	netif_stop_queue(dev);
- 	napi_disable(&rp->napi);
-+	cancel_work_sync(&rp->reset_task);
-+	netif_stop_queue(dev);
-+
-+	spin_lock_irq(&rp->lock);
- 
- 	if (debug > 1)
- 		printk(KERN_DEBUG "%s: Shutting down ethercard, "
+ #ifdef CONFIG_CPU_FREQ
 diff --git a/drivers/net/wireless/airo.c b/drivers/net/wireless/airo.c
-index abf896a..6c26840 100644
+index 4331d67..2a9f029 100644
 --- a/drivers/net/wireless/airo.c
 +++ b/drivers/net/wireless/airo.c
 @@ -5254,11 +5254,7 @@ static int set_wep_key(struct airo_info *ai, u16 index, const char *key,
@@ -2573,7 +1967,7 @@ index abf896a..6c26840 100644
  
  	memset(&wkr, 0, sizeof(wkr));
  	wkr.len = cpu_to_le16(sizeof(wkr));
-@@ -6404,11 +6400,7 @@ static int airo_set_encode(struct net_device *dev,
+@@ -6405,11 +6401,7 @@ static int airo_set_encode(struct net_device *dev,
  		if (dwrq->length > MIN_KEY_SIZE)
  			key.len = MAX_KEY_SIZE;
  		else
@@ -2586,7 +1980,7 @@ index abf896a..6c26840 100644
  		/* Check if the key is not marked as invalid */
  		if(!(dwrq->flags & IW_ENCODE_NOKEY)) {
  			/* Cleanup */
-@@ -6589,12 +6581,22 @@ static int airo_set_encodeext(struct net_device *dev,
+@@ -6590,12 +6582,22 @@ static int airo_set_encodeext(struct net_device *dev,
  		default:
  			return -EINVAL;
  		}
@@ -2616,10 +2010,10 @@ index abf896a..6c26840 100644
  	}
  
 diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
-index 6cd5efc..aafdc1e 100644
+index 6a2a967..bbd2f31 100644
 --- a/drivers/net/wireless/ath/ath5k/ath5k.h
 +++ b/drivers/net/wireless/ath/ath5k/ath5k.h
-@@ -546,7 +546,6 @@ struct ath5k_txq_info {
+@@ -541,7 +541,6 @@ struct ath5k_txq_info {
  /*
   * Transmit packet types.
   * used on tx control descriptor
@@ -2628,10 +2022,10 @@ index 6cd5efc..aafdc1e 100644
  enum ath5k_pkt_type {
  	AR5K_PKT_TYPE_NORMAL		= 0,
 diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index 8a82c75..46f913b 100644
+index e63b7c4..d6ee8ac 100644
 --- a/drivers/net/wireless/ath/ath5k/base.c
 +++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -1220,6 +1220,29 @@ ath5k_rxbuf_setup(struct ath5k_softc *sc, struct ath5k_buf *bf)
+@@ -1246,6 +1246,29 @@ ath5k_rxbuf_setup(struct ath5k_softc *sc, struct ath5k_buf *bf)
  	return 0;
  }
  
@@ -2661,7 +2055,7 @@ index 8a82c75..46f913b 100644
  static int
  ath5k_txbuf_setup(struct ath5k_softc *sc, struct ath5k_buf *bf,
  		  struct ath5k_txq *txq)
-@@ -1274,7 +1297,8 @@ ath5k_txbuf_setup(struct ath5k_softc *sc, struct ath5k_buf *bf,
+@@ -1300,7 +1323,8 @@ ath5k_txbuf_setup(struct ath5k_softc *sc, struct ath5k_buf *bf,
  			sc->vif, pktlen, info));
  	}
  	ret = ah->ah_setup_tx_desc(ah, ds, pktlen,
@@ -2672,10 +2066,10 @@ index 8a82c75..46f913b 100644
  		hw_rate,
  		info->control.rates[0].count, keyidx, ah->ah_tx_ant, flags,
 diff --git a/drivers/net/wireless/ath/ath9k/beacon.c b/drivers/net/wireless/ath/ath9k/beacon.c
-index 45c4ea5..72e2455 100644
+index 1660ef1..06eaaa9 100644
 --- a/drivers/net/wireless/ath/ath9k/beacon.c
 +++ b/drivers/net/wireless/ath/ath9k/beacon.c
-@@ -512,16 +512,13 @@ static void ath_beacon_config_ap(struct ath_softc *sc,
+@@ -525,16 +525,13 @@ static void ath_beacon_config_ap(struct ath_softc *sc,
  {
  	u32 nexttbtt, intval;
  
@@ -2696,10 +2090,10 @@ index 45c4ea5..72e2455 100644
  	/*
  	 * In AP mode we enable the beacon timers and SWBA interrupts to
 diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
-index 0905b38..f735a96 100644
+index ae37144..7c64aa5 100644
 --- a/drivers/net/wireless/ath/ath9k/hw.c
 +++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1295,6 +1295,16 @@ static void ath9k_hw_override_ini(struct ath_hw *ah,
+@@ -1345,6 +1345,16 @@ static void ath9k_hw_override_ini(struct ath_hw *ah,
  	 * Necessary to avoid issues on AR5416 2.0
  	 */
  	REG_WRITE(ah, 0x9800 + (651 << 2), 0x11);
@@ -2716,11 +2110,42 @@ index 0905b38..f735a96 100644
  }
  
  static u32 ath9k_hw_def_ini_fixup(struct ath_hw *ah,
+diff --git a/drivers/net/wireless/ath/ath9k/main.c b/drivers/net/wireless/ath/ath9k/main.c
+index 643bea3..4faafbd 100644
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -928,6 +928,7 @@ static void ath_key_delete(struct ath_common *common, struct ieee80211_key_conf
+ 
+ 	clear_bit(key->hw_key_idx + 64, common->keymap);
+ 	if (common->splitmic) {
++		ath9k_hw_keyreset(ah, key->hw_key_idx + 32);
+ 		clear_bit(key->hw_key_idx + 32, common->keymap);
+ 		clear_bit(key->hw_key_idx + 64 + 32, common->keymap);
+ 	}
+@@ -1848,6 +1849,8 @@ bad_free_hw:
+ 
+ void ath_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
+ {
++	struct ath_hw *ah = sc->sc_ah;
++
+ 	hw->flags = IEEE80211_HW_RX_INCLUDES_FCS |
+ 		IEEE80211_HW_HOST_BROADCAST_PS_BUFFERING |
+ 		IEEE80211_HW_SIGNAL_DBM |
+@@ -1865,7 +1868,8 @@ void ath_set_hw_capab(struct ath_softc *sc, struct ieee80211_hw *hw)
+ 		BIT(NL80211_IFTYPE_ADHOC) |
+ 		BIT(NL80211_IFTYPE_MESH_POINT);
+ 
+-	hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
++	if (AR_SREV_5416(ah))
++		hw->wiphy->flags &= ~WIPHY_FLAG_PS_ON_BY_DEFAULT;
+ 
+ 	hw->queues = 4;
+ 	hw->max_rates = 4;
 diff --git a/drivers/net/wireless/ath/ath9k/phy.h b/drivers/net/wireless/ath/ath9k/phy.h
-index dfda6f4..b36ec94 100644
+index 31de27d..0999a49 100644
 --- a/drivers/net/wireless/ath/ath9k/phy.h
 +++ b/drivers/net/wireless/ath/ath9k/phy.h
-@@ -368,6 +368,9 @@ bool ath9k_hw_init_rf(struct ath_hw *ah,
+@@ -384,6 +384,9 @@ bool ath9k_hw_set_rf_regs(struct ath_hw *ah,
  
  #define AR_PHY_HEAVY_CLIP_ENABLE         0x99E0
  
@@ -2731,10 +2156,10 @@ index dfda6f4..b36ec94 100644
  #define AR_PHY_REFCLKDLY    0x99f4
  #define AR_PHY_REFCLKPD     0x99f8
 diff --git a/drivers/net/wireless/ath/ath9k/rc.c b/drivers/net/wireless/ath/ath9k/rc.c
-index 1895d63..fd397aa 100644
+index 70fdb9d..1d6cf7d 100644
 --- a/drivers/net/wireless/ath/ath9k/rc.c
 +++ b/drivers/net/wireless/ath/ath9k/rc.c
-@@ -757,7 +757,7 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
+@@ -668,7 +668,7 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
  	struct ieee80211_tx_rate *rates = tx_info->control.rates;
  	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
  	__le16 fc = hdr->frame_control;
@@ -2743,7 +2168,7 @@ index 1895d63..fd397aa 100644
  	int is_probe = 0;
  
  	if (rate_control_send_low(sta, priv_sta, txrc))
-@@ -777,26 +777,25 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
+@@ -688,26 +688,25 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
  
  	rate_table = sc->cur_rate_table;
  	rix = ath_rc_get_highest_rix(sc, ath_rc_priv, rate_table, &is_probe);
@@ -2774,7 +2199,7 @@ index 1895d63..fd397aa 100644
  	}
  
  	/* Fill in the other rates for multirate retry */
-@@ -805,10 +804,10 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
+@@ -716,10 +715,10 @@ static void ath_get_rate(void *priv, struct ieee80211_sta *sta, void *priv_sta,
  		if (i + 1 == 4)
  			try_per_rate = 4;
  
@@ -2788,10 +2213,10 @@ index 1895d63..fd397aa 100644
  
  	/*
 diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
-index 9ca253e..2bde1a9 100644
+index 490fb45..b59166c 100644
 --- a/drivers/net/wireless/b43/main.c
 +++ b/drivers/net/wireless/b43/main.c
-@@ -3967,6 +3967,7 @@ static int b43_wireless_core_start(struct b43_wldev *dev)
+@@ -3970,6 +3970,7 @@ static int b43_wireless_core_start(struct b43_wldev *dev)
  	}
  
  	/* We are ready to run. */
@@ -2799,7 +2224,7 @@ index 9ca253e..2bde1a9 100644
  	b43_set_status(dev, B43_STAT_STARTED);
  
  	/* Start data flow (TX/RX). */
-@@ -4376,8 +4377,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
+@@ -4379,8 +4380,6 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
  
  	ieee80211_wake_queues(dev->wl->hw);
  
@@ -2809,7 +2234,7 @@ index 9ca253e..2bde1a9 100644
  
  out:
 diff --git a/drivers/net/wireless/b43legacy/main.c b/drivers/net/wireless/b43legacy/main.c
-index 4b60148..c3968fa 100644
+index 4a905b6..6d21b49 100644
 --- a/drivers/net/wireless/b43legacy/main.c
 +++ b/drivers/net/wireless/b43legacy/main.c
 @@ -2921,6 +2921,7 @@ static int b43legacy_wireless_core_start(struct b43legacy_wldev *dev)
@@ -2828,133 +2253,8 @@ index 4b60148..c3968fa 100644
  	b43legacy_set_status(dev, B43legacy_STAT_INITIALIZED);
  
  	b43legacy_leds_init(dev);
-diff --git a/drivers/net/wireless/iwlwifi/iwl-4965.c b/drivers/net/wireless/iwlwifi/iwl-4965.c
-index 99331ed..852753b 100644
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@ -2134,7 +2134,7 @@ static void iwl4965_rx_reply_tx(struct iwl_priv *priv,
- 			IWL_DEBUG_TX_REPLY(priv, "Retry scheduler reclaim scd_ssn "
- 					   "%d index %d\n", scd_ssn , index);
- 			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
--			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-+			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- 
- 			if (priv->mac80211_registered &&
- 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
-diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
-index 133df70..2f89b62 100644
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -1264,7 +1264,7 @@ static void iwl5000_rx_reply_tx(struct iwl_priv *priv,
- 					scd_ssn , index, txq_id, txq->swq_id);
- 
- 			freed = iwl_tx_queue_reclaim(priv, txq_id, index);
--			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-+			iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- 
- 			if (priv->mac80211_registered &&
- 			    (iwl_queue_space(&txq->q) > txq->q.low_mark) &&
-@@ -1293,16 +1293,14 @@ static void iwl5000_rx_reply_tx(struct iwl_priv *priv,
- 				   tx_resp->failure_frame);
- 
- 		freed = iwl_tx_queue_reclaim(priv, txq_id, index);
--		if (ieee80211_is_data_qos(tx_resp->frame_ctrl))
--			priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-+		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- 
- 		if (priv->mac80211_registered &&
- 		    (iwl_queue_space(&txq->q) > txq->q.low_mark))
- 			iwl_wake_queue(priv, txq_id);
- 	}
- 
--	if (ieee80211_is_data_qos(tx_resp->frame_ctrl))
--		iwl_txq_check_empty(priv, sta_id, tid, txq_id);
-+	iwl_txq_check_empty(priv, sta_id, tid, txq_id);
- 
- 	if (iwl_check_bits(status, TX_ABORT_REQUIRED_MSK))
- 		IWL_ERR(priv, "TODO:  Implement Tx ABORT REQUIRED!!!\n");
-diff --git a/drivers/net/wireless/iwlwifi/iwl-core.c b/drivers/net/wireless/iwlwifi/iwl-core.c
-index 0cd4ec4..6d6235f 100644
---- a/drivers/net/wireless/iwlwifi/iwl-core.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.c
-@@ -2645,8 +2645,8 @@ int iwl_mac_config(struct ieee80211_hw *hw, u32 changed)
- 		if ((le16_to_cpu(priv->staging_rxon.channel) != ch))
- 			priv->staging_rxon.flags = 0;
- 
--		iwl_set_rxon_ht(priv, ht_conf);
- 		iwl_set_rxon_channel(priv, conf->channel);
-+		iwl_set_rxon_ht(priv, ht_conf);
- 
- 		iwl_set_flags_for_band(priv, conf->channel->band);
- 		spin_unlock_irqrestore(&priv->lock, flags);
-diff --git a/drivers/net/wireless/iwlwifi/iwl-core.h b/drivers/net/wireless/iwlwifi/iwl-core.h
-index 7754538..40ec0c1 100644
---- a/drivers/net/wireless/iwlwifi/iwl-core.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.h
-@@ -410,6 +410,8 @@ void iwl_hw_txq_ctx_free(struct iwl_priv *priv);
- int iwl_hw_tx_queue_init(struct iwl_priv *priv,
- 			 struct iwl_tx_queue *txq);
- int iwl_txq_update_write_ptr(struct iwl_priv *priv, struct iwl_tx_queue *txq);
-+void iwl_free_tfds_in_queue(struct iwl_priv *priv,
-+			    int sta_id, int tid, int freed);
- int iwl_tx_queue_init(struct iwl_priv *priv, struct iwl_tx_queue *txq,
- 		      int slots_num, u32 txq_id);
- void iwl_tx_queue_free(struct iwl_priv *priv, int txq_id);
-diff --git a/drivers/net/wireless/iwlwifi/iwl-tx.c b/drivers/net/wireless/iwlwifi/iwl-tx.c
-index b7e196e..f449f06 100644
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -119,6 +119,20 @@ int iwl_txq_update_write_ptr(struct iwl_priv *priv, struct iwl_tx_queue *txq)
- EXPORT_SYMBOL(iwl_txq_update_write_ptr);
- 
- 
-+void iwl_free_tfds_in_queue(struct iwl_priv *priv,
-+			    int sta_id, int tid, int freed)
-+{
-+	if (priv->stations[sta_id].tid[tid].tfds_in_queue >= freed)
-+		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-+	else {
-+		IWL_ERR(priv, "free more than tfds_in_queue (%u:%d)\n",
-+			priv->stations[sta_id].tid[tid].tfds_in_queue,
-+			freed);
-+		priv->stations[sta_id].tid[tid].tfds_in_queue = 0;
-+	}
-+}
-+EXPORT_SYMBOL(iwl_free_tfds_in_queue);
-+
- /**
-  * iwl_tx_queue_free - Deallocate DMA queue.
-  * @txq: Transmit queue to deallocate.
-@@ -1057,6 +1071,7 @@ int iwl_tx_queue_reclaim(struct iwl_priv *priv, int txq_id, int index)
- 	struct iwl_queue *q = &txq->q;
- 	struct iwl_tx_info *tx_info;
- 	int nfreed = 0;
-+	struct ieee80211_hdr *hdr;
- 
- 	if ((index >= q->n_bd) || (iwl_queue_used(q, index) == 0)) {
- 		IWL_ERR(priv, "Read index for DMA queue txq id (%d), index %d, "
-@@ -1071,6 +1086,10 @@ int iwl_tx_queue_reclaim(struct iwl_priv *priv, int txq_id, int index)
- 
- 		tx_info = &txq->txb[txq->q.read_ptr];
- 		ieee80211_tx_status_irqsafe(priv->hw, tx_info->skb[0]);
-+
-+		hdr = (struct ieee80211_hdr *)tx_info->skb[0]->data;
-+		if (hdr && ieee80211_is_data_qos(hdr->frame_control))
-+			nfreed++;
- 		tx_info->skb[0] = NULL;
- 
- 		if (priv->cfg->ops->lib->txq_inval_byte_cnt_tbl)
-@@ -1485,7 +1504,7 @@ void iwl_rx_reply_compressed_ba(struct iwl_priv *priv,
- 	if (txq->q.read_ptr != (ba_resp_scd_ssn & 0xff)) {
- 		/* calculate mac80211 ampdu sw queue to wake */
- 		int freed = iwl_tx_queue_reclaim(priv, scd_flow, index);
--		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
-+		iwl_free_tfds_in_queue(priv, sta_id, tid, freed);
- 
- 		if ((iwl_queue_space(&txq->q) > txq->q.low_mark) &&
- 		    priv->mac80211_registered &&
 diff --git a/drivers/net/wireless/p54/p54pci.c b/drivers/net/wireless/p54/p54pci.c
-index d348c26..1b73733 100644
+index a72f7c2..4bf4c21 100644
 --- a/drivers/net/wireless/p54/p54pci.c
 +++ b/drivers/net/wireless/p54/p54pci.c
 @@ -157,6 +157,14 @@ static void p54p_refill_rx_ring(struct ieee80211_hw *dev,
@@ -2972,7 +2272,7 @@ index d348c26..1b73733 100644
  			desc->host_addr = cpu_to_le32(mapping);
  			desc->device_addr = 0;	// FIXME: necessary?
  			desc->len = cpu_to_le16(priv->common.rx_mtu + 32);
-@@ -317,14 +325,20 @@ static void p54p_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
+@@ -325,14 +333,20 @@ static void p54p_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
  	u32 device_idx, idx, i;
  
  	spin_lock_irqsave(&priv->lock, flags);
@@ -3007,58 +2307,6 @@ index 92af9b9..8742640 100644
  	{USB_DEVICE(0x0846, 0x4240)},	/* Netgear WG111 (v2) */
  	{USB_DEVICE(0x0915, 0x2000)},	/* Cohiba Proto board */
  	{USB_DEVICE(0x0915, 0x2002)},	/* Cohiba Proto board */
-diff --git a/drivers/net/wireless/rndis_wlan.c b/drivers/net/wireless/rndis_wlan.c
-index 54175b6..2ecbedb 100644
---- a/drivers/net/wireless/rndis_wlan.c
-+++ b/drivers/net/wireless/rndis_wlan.c
-@@ -83,11 +83,11 @@ MODULE_PARM_DESC(roamdelta,
- 	"set roaming tendency: 0=aggressive, 1=moderate, "
- 				"2=conservative (default: moderate)");
- 
--static int modparam_workaround_interval = 500;
-+static int modparam_workaround_interval;
- module_param_named(workaround_interval, modparam_workaround_interval,
- 							int, 0444);
- MODULE_PARM_DESC(workaround_interval,
--	"set stall workaround interval in msecs (default: 500)");
-+	"set stall workaround interval in msecs (0=disabled) (default: 0)");
- 
- 
- /* various RNDIS OID defs */
-@@ -733,12 +733,13 @@ static int rndis_query_oid(struct usbnet *dev, __le32 oid, void *data, int *len)
- 			le32_to_cpu(u.get_c->status));
- 
- 	if (ret == 0) {
-+		memcpy(data, u.buf + le32_to_cpu(u.get_c->offset) + 8, *len);
-+
- 		ret = le32_to_cpu(u.get_c->len);
- 		if (ret > *len)
- 			*len = ret;
--		memcpy(data, u.buf + le32_to_cpu(u.get_c->offset) + 8, *len);
--		ret = rndis_error_status(u.get_c->status);
- 
-+		ret = rndis_error_status(u.get_c->status);
- 		if (ret < 0)
- 			devdbg(dev, "rndis_query_oid(%s): device returned "
- 				"error,  0x%08x (%d)", oid_to_string(oid),
-@@ -1072,6 +1073,8 @@ static int set_auth_mode(struct usbnet *usbdev, u32 wpa_version,
- 		auth_mode = NDIS_80211_AUTH_SHARED;
- 	else if (auth_type == NL80211_AUTHTYPE_OPEN_SYSTEM)
- 		auth_mode = NDIS_80211_AUTH_OPEN;
-+	else if (auth_type == NL80211_AUTHTYPE_AUTOMATIC)
-+		auth_mode = NDIS_80211_AUTH_AUTO_SWITCH;
- 	else
- 		return -ENOTSUPP;
- 
-@@ -2547,7 +2550,7 @@ static void rndis_device_poller(struct work_struct *work)
- 	/* Workaround transfer stalls on poor quality links.
- 	 * TODO: find right way to fix these stalls (as stalls do not happen
- 	 * with ndiswrapper/windows driver). */
--	if (priv->last_qual <= 25) {
-+	if (priv->param_workaround_interval > 0 && priv->last_qual <= 25) {
- 		/* Decrease stats worker interval to catch stalls.
- 		 * faster. Faster than 400-500ms causes packet loss,
- 		 * Slower doesn't catch stalls fast enough.
 diff --git a/drivers/pci/hotplug/ibmphp_ebda.c b/drivers/pci/hotplug/ibmphp_ebda.c
 index c1abac8..5becbde 100644
 --- a/drivers/pci/hotplug/ibmphp_ebda.c
@@ -3090,11 +2338,55 @@ index c1abac8..5becbde 100644
  	if (!io_mem )
  		return -ENOMEM;
  	next_offset = 0x180;
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index f526e73..11fce79 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -319,9 +319,15 @@ config THINKPAD_ACPI_VIDEO
+ 	  server running, phase of the moon, and the current mood of
+ 	  Schroedinger's cat.  If you can use X.org's RandR to control
+ 	  your ThinkPad's video output ports instead of this feature,
+-	  don't think twice: do it and say N here to save some memory.
++	  don't think twice: do it and say N here to save memory and avoid
++	  bad interactions with X.org.
+ 
+-	  If you are not sure, say Y here.
++	  NOTE: access to this feature is limited to processes with the
++	  CAP_SYS_ADMIN capability, to avoid local DoS issues in platforms
++	  where it interacts badly with X.org.
++
++	  If you are not sure, say Y here but do try to check if you could
++	  be using X.org RandR instead.
+ 
+ config THINKPAD_ACPI_HOTKEY_POLL
+ 	bool "Support NVRAM polling for hot keys"
+diff --git a/drivers/platform/x86/eeepc-laptop.c b/drivers/platform/x86/eeepc-laptop.c
+index e2be6bb..6a47bb7 100644
+--- a/drivers/platform/x86/eeepc-laptop.c
++++ b/drivers/platform/x86/eeepc-laptop.c
+@@ -1277,7 +1277,8 @@ static void eeepc_dmi_check(struct eeepc_laptop *eeepc)
+ 	 * hotplug code. In fact, current hotplug code seems to unplug another
+ 	 * device...
+ 	 */
+-	if (strcmp(model, "1005HA") == 0 || strcmp(model, "1201N") == 0) {
++	if (strcmp(model, "1005HA") == 0 || strcmp(model, "1201N") == 0 ||
++	    strcmp(model, "1005PE") == 0) {
+ 		eeepc->hotplug_disabled = true;
+ 		pr_info("wlan hotplug disabled\n");
+ 	}
 diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
-index 1ee734c..fa0a0d3 100644
+index eb603f1..e7b0c3b 100644
 --- a/drivers/platform/x86/thinkpad_acpi.c
 +++ b/drivers/platform/x86/thinkpad_acpi.c
-@@ -2073,6 +2073,7 @@ static struct attribute_set *hotkey_dev_attributes;
+@@ -286,6 +286,7 @@ struct ibm_init_struct {
+ 	char param[32];
+ 
+ 	int (*init) (struct ibm_init_struct *);
++	mode_t base_procfs_mode;
+ 	struct ibm_struct *data;
+ };
+ 
+@@ -2082,6 +2083,7 @@ static struct attribute_set *hotkey_dev_attributes;
  
  static void tpacpi_driver_event(const unsigned int hkey_event);
  static void hotkey_driver_event(const unsigned int scancode);
@@ -3102,7 +2394,7 @@ index 1ee734c..fa0a0d3 100644
  
  /* HKEY.MHKG() return bits */
  #define TP_HOTKEY_TABLET_MASK (1 << 3)
-@@ -2254,6 +2255,8 @@ static int tpacpi_hotkey_driver_mask_set(const u32 mask)
+@@ -2264,6 +2266,8 @@ static int tpacpi_hotkey_driver_mask_set(const u32 mask)
  
  	rc = hotkey_mask_set((hotkey_acpi_mask | hotkey_driver_mask) &
  							~hotkey_source_mask);
@@ -3111,7 +2403,7 @@ index 1ee734c..fa0a0d3 100644
  	mutex_unlock(&hotkey_mutex);
  
  	return rc;
-@@ -2538,7 +2541,7 @@ static void hotkey_poll_stop_sync(void)
+@@ -2548,7 +2552,7 @@ static void hotkey_poll_stop_sync(void)
  }
  
  /* call with hotkey_mutex held */
@@ -3120,7 +2412,7 @@ index 1ee734c..fa0a0d3 100644
  {
  	const u32 poll_driver_mask = hotkey_driver_mask & hotkey_source_mask;
  	const u32 poll_user_mask = hotkey_user_mask & hotkey_source_mask;
-@@ -2569,7 +2572,7 @@ static void hotkey_poll_setup(bool may_warn)
+@@ -2579,7 +2583,7 @@ static void hotkey_poll_setup(bool may_warn)
  	}
  }
  
@@ -3129,7 +2421,7 @@ index 1ee734c..fa0a0d3 100644
  {
  	mutex_lock(&hotkey_mutex);
  	hotkey_poll_setup(may_warn);
-@@ -2587,7 +2590,11 @@ static void hotkey_poll_set_freq(unsigned int freq)
+@@ -2597,7 +2601,11 @@ static void hotkey_poll_set_freq(unsigned int freq)
  
  #else /* CONFIG_THINKPAD_ACPI_HOTKEY_POLL */
  
@@ -3142,7 +2434,7 @@ index 1ee734c..fa0a0d3 100644
  {
  }
  
-@@ -2597,16 +2604,11 @@ static int hotkey_inputdev_open(struct input_dev *dev)
+@@ -2607,16 +2615,11 @@ static int hotkey_inputdev_open(struct input_dev *dev)
  {
  	switch (tpacpi_lifecycle) {
  	case TPACPI_LIFE_INIT:
@@ -3161,7 +2453,7 @@ index 1ee734c..fa0a0d3 100644
  	}
  
  	/* Should only happen if tpacpi_lifecycle is corrupt */
-@@ -2617,7 +2619,7 @@ static int hotkey_inputdev_open(struct input_dev *dev)
+@@ -2627,7 +2630,7 @@ static int hotkey_inputdev_open(struct input_dev *dev)
  static void hotkey_inputdev_close(struct input_dev *dev)
  {
  	/* disable hotkey polling when possible */
@@ -3170,7 +2462,7 @@ index 1ee734c..fa0a0d3 100644
  	    !(hotkey_source_mask & hotkey_driver_mask))
  		hotkey_poll_setup_safe(false);
  }
-@@ -3635,13 +3637,19 @@ static void hotkey_notify(struct ibm_struct *ibm, u32 event)
+@@ -3655,13 +3658,19 @@ static void hotkey_notify(struct ibm_struct *ibm, u32 event)
  			break;
  		case 3:
  			/* 0x3000-0x3FFF: bay-related wakeups */
@@ -3192,7 +2484,7 @@ index 1ee734c..fa0a0d3 100644
  				known_ev = false;
  			}
  			break;
-@@ -3852,7 +3860,7 @@ enum {
+@@ -3870,7 +3879,7 @@ enum {
  	TP_ACPI_BLUETOOTH_HWPRESENT	= 0x01,	/* Bluetooth hw available */
  	TP_ACPI_BLUETOOTH_RADIOSSW	= 0x02,	/* Bluetooth radio enabled */
  	TP_ACPI_BLUETOOTH_RESUMECTRL	= 0x04,	/* Bluetooth state at resume:
@@ -3201,7 +2493,7 @@ index 1ee734c..fa0a0d3 100644
  };
  
  enum {
-@@ -3898,10 +3906,11 @@ static int bluetooth_set_status(enum tpacpi_rfkill_state state)
+@@ -3916,10 +3925,11 @@ static int bluetooth_set_status(enum tpacpi_rfkill_state state)
  	}
  #endif
  
@@ -3216,7 +2508,7 @@ index 1ee734c..fa0a0d3 100644
  
  	if (!acpi_evalf(hkey_handle, NULL, "SBDC", "vd", status))
  		return -EIO;
-@@ -4052,7 +4061,7 @@ enum {
+@@ -4070,7 +4080,7 @@ enum {
  	TP_ACPI_WANCARD_HWPRESENT	= 0x01,	/* Wan hw available */
  	TP_ACPI_WANCARD_RADIOSSW	= 0x02,	/* Wan radio enabled */
  	TP_ACPI_WANCARD_RESUMECTRL	= 0x04,	/* Wan state at resume:
@@ -3225,7 +2517,7 @@ index 1ee734c..fa0a0d3 100644
  };
  
  #define TPACPI_RFK_WWAN_SW_NAME		"tpacpi_wwan_sw"
-@@ -4089,10 +4098,11 @@ static int wan_set_status(enum tpacpi_rfkill_state state)
+@@ -4107,10 +4117,11 @@ static int wan_set_status(enum tpacpi_rfkill_state state)
  	}
  #endif
  
@@ -3240,16 +2532,29 @@ index 1ee734c..fa0a0d3 100644
  
  	if (!acpi_evalf(hkey_handle, NULL, "SWAN", "vd", status))
  		return -EIO;
-@@ -5736,7 +5746,7 @@ static void thermal_exit(void)
- 	case TPACPI_THERMAL_ACPI_TMP07:
- 	case TPACPI_THERMAL_ACPI_UPDT:
- 		sysfs_remove_group(&tpacpi_sensors_pdev->dev.kobj,
--				   &thermal_temp_input16_group);
-+				   &thermal_temp_input8_group);
- 		break;
- 	case TPACPI_THERMAL_NONE:
- 	default:
-@@ -6094,13 +6104,13 @@ static const struct tpacpi_quirk brightness_quirk_table[] __initconst = {
+@@ -4619,6 +4630,10 @@ static int video_read(struct seq_file *m)
+ 		return 0;
+ 	}
+ 
++	/* Even reads can crash X.org, so... */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	status = video_outputsw_get();
+ 	if (status < 0)
+ 		return status;
+@@ -4652,6 +4667,10 @@ static int video_write(char *buf)
+ 	if (video_supported == TPACPI_VIDEO_NONE)
+ 		return -ENODEV;
+ 
++	/* Even reads can crash X.org, let alone writes... */
++	if (!capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
+ 	enable = 0;
+ 	disable = 0;
+ 
+@@ -6133,13 +6152,13 @@ static const struct tpacpi_quirk brightness_quirk_table[] __initconst = {
  	TPACPI_Q_IBM('1', 'Y', TPACPI_BRGHT_Q_EC),	/* T43/p ATI */
  
  	/* Models with ATI GPUs that can use ECNVRAM */
@@ -3266,7 +2571,124 @@ index 1ee734c..fa0a0d3 100644
  	TPACPI_Q_IBM('1', 'V', TPACPI_BRGHT_Q_ASK|TPACPI_BRGHT_Q_EC),
  	TPACPI_Q_IBM('1', 'W', TPACPI_BRGHT_Q_ASK|TPACPI_BRGHT_Q_EC),
  
-@@ -8362,6 +8372,9 @@ static int __init thinkpad_acpi_module_init(void)
+@@ -6522,7 +6541,8 @@ static int volume_set_status(const u8 status)
+ 	return volume_set_status_ec(status);
+ }
+ 
+-static int volume_set_mute_ec(const bool mute)
++/* returns < 0 on error, 0 on no change, 1 on change */
++static int __volume_set_mute_ec(const bool mute)
+ {
+ 	int rc;
+ 	u8 s, n;
+@@ -6537,22 +6557,37 @@ static int volume_set_mute_ec(const bool mute)
+ 	n = (mute) ? s | TP_EC_AUDIO_MUTESW_MSK :
+ 		     s & ~TP_EC_AUDIO_MUTESW_MSK;
+ 
+-	if (n != s)
++	if (n != s) {
+ 		rc = volume_set_status_ec(n);
++		if (!rc)
++			rc = 1;
++	}
+ 
+ unlock:
+ 	mutex_unlock(&volume_mutex);
+ 	return rc;
+ }
+ 
++static int volume_alsa_set_mute(const bool mute)
++{
++	dbg_printk(TPACPI_DBG_MIXER, "ALSA: trying to %smute\n",
++		   (mute) ? "" : "un");
++	return __volume_set_mute_ec(mute);
++}
++
+ static int volume_set_mute(const bool mute)
+ {
++	int rc;
++
+ 	dbg_printk(TPACPI_DBG_MIXER, "trying to %smute\n",
+ 		   (mute) ? "" : "un");
+-	return volume_set_mute_ec(mute);
++
++	rc = __volume_set_mute_ec(mute);
++	return (rc < 0) ? rc : 0;
+ }
+ 
+-static int volume_set_volume_ec(const u8 vol)
++/* returns < 0 on error, 0 on no change, 1 on change */
++static int __volume_set_volume_ec(const u8 vol)
+ {
+ 	int rc;
+ 	u8 s, n;
+@@ -6569,19 +6604,22 @@ static int volume_set_volume_ec(const u8 vol)
+ 
+ 	n = (s & ~TP_EC_AUDIO_LVL_MSK) | vol;
+ 
+-	if (n != s)
++	if (n != s) {
+ 		rc = volume_set_status_ec(n);
++		if (!rc)
++			rc = 1;
++	}
+ 
+ unlock:
+ 	mutex_unlock(&volume_mutex);
+ 	return rc;
+ }
+ 
+-static int volume_set_volume(const u8 vol)
++static int volume_alsa_set_volume(const u8 vol)
+ {
+ 	dbg_printk(TPACPI_DBG_MIXER,
+-		   "trying to set volume level to %hu\n", vol);
+-	return volume_set_volume_ec(vol);
++		   "ALSA: trying to set volume level to %hu\n", vol);
++	return __volume_set_volume_ec(vol);
+ }
+ 
+ static void volume_alsa_notify_change(void)
+@@ -6628,7 +6666,7 @@ static int volume_alsa_vol_get(struct snd_kcontrol *kcontrol,
+ static int volume_alsa_vol_put(struct snd_kcontrol *kcontrol,
+ 				struct snd_ctl_elem_value *ucontrol)
+ {
+-	return volume_set_volume(ucontrol->value.integer.value[0]);
++	return volume_alsa_set_volume(ucontrol->value.integer.value[0]);
+ }
+ 
+ #define volume_alsa_mute_info snd_ctl_boolean_mono_info
+@@ -6651,7 +6689,7 @@ static int volume_alsa_mute_get(struct snd_kcontrol *kcontrol,
+ static int volume_alsa_mute_put(struct snd_kcontrol *kcontrol,
+ 				struct snd_ctl_elem_value *ucontrol)
+ {
+-	return volume_set_mute(!ucontrol->value.integer.value[0]);
++	return volume_alsa_set_mute(!ucontrol->value.integer.value[0]);
+ }
+ 
+ static struct snd_kcontrol_new volume_alsa_control_vol __devinitdata = {
+@@ -8477,9 +8515,10 @@ static int __init ibm_init(struct ibm_init_struct *iibm)
+ 		"%s installed\n", ibm->name);
+ 
+ 	if (ibm->read) {
+-		mode_t mode;
++		mode_t mode = iibm->base_procfs_mode;
+ 
+-		mode = S_IRUGO;
++		if (!mode)
++			mode = S_IRUGO;
+ 		if (ibm->write)
+ 			mode |= S_IWUSR;
+ 		entry = proc_create_data(ibm->name, mode, proc_dir,
+@@ -8670,6 +8709,7 @@ static struct ibm_init_struct ibms_init[] __initdata = {
+ #ifdef CONFIG_THINKPAD_ACPI_VIDEO
+ 	{
+ 		.init = video_init,
++		.base_procfs_mode = S_IRUSR,
+ 		.data = &video_driver_data,
+ 	},
+ #endif
+@@ -9032,6 +9072,9 @@ static int __init thinkpad_acpi_module_init(void)
  			return ret;
  		}
  	}
@@ -3276,7 +2698,7 @@ index 1ee734c..fa0a0d3 100644
  	ret = input_register_device(tpacpi_inputdev);
  	if (ret < 0) {
  		printk(TPACPI_ERR "unable to register input device\n");
-@@ -8371,7 +8384,6 @@ static int __init thinkpad_acpi_module_init(void)
+@@ -9041,7 +9084,6 @@ static int __init thinkpad_acpi_module_init(void)
  		tp_features.input_device_registered = 1;
  	}
  
@@ -3316,24 +2738,11 @@ index 03ea530..44c4399 100644
  	return 0;
  }
  #else
-diff --git a/drivers/scsi/arm/fas216.c b/drivers/scsi/arm/fas216.c
-index 4775426..9e71ac6 100644
---- a/drivers/scsi/arm/fas216.c
-+++ b/drivers/scsi/arm/fas216.c
-@@ -2516,7 +2516,7 @@ int fas216_eh_device_reset(struct scsi_cmnd *SCpnt)
- 		if (info->scsi.phase == PHASE_IDLE)
- 			fas216_kick(info);
- 
--		mod_timer(&info->eh_timer, 30 * HZ);
-+		mod_timer(&info->eh_timer, jiffies + 30 * HZ);
- 		spin_unlock_irqrestore(&info->host_lock, flags);
- 
- 		/*
 diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index 1743640..f10bf70 100644
+index efabea1..cd55176 100644
 --- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
 +++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -5721,6 +5721,8 @@ _scsih_remove(struct pci_dev *pdev)
+@@ -5998,6 +5998,8 @@ _scsih_remove(struct pci_dev *pdev)
  	struct _sas_port *mpt2sas_port;
  	struct _sas_device *sas_device;
  	struct _sas_node *expander_sibling;
@@ -3342,7 +2751,7 @@ index 1743640..f10bf70 100644
  	struct workqueue_struct	*wq;
  	unsigned long flags;
  
-@@ -5734,6 +5736,21 @@ _scsih_remove(struct pci_dev *pdev)
+@@ -6011,6 +6013,21 @@ _scsih_remove(struct pci_dev *pdev)
  	if (wq)
  		destroy_workqueue(wq);
  
@@ -3390,84 +2799,8 @@ index 8371d91..49ac414 100644
  	if (err) {
  		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
  		       ql1280_board_tbl[ha->devnum].fwname, err);
-diff --git a/drivers/scsi/qla2xxx/qla_gbl.h b/drivers/scsi/qla2xxx/qla_gbl.h
-index f3d1d1a..65ef03c 100644
---- a/drivers/scsi/qla2xxx/qla_gbl.h
-+++ b/drivers/scsi/qla2xxx/qla_gbl.h
-@@ -453,6 +453,5 @@ extern void qla24xx_wrt_req_reg(struct qla_hw_data *, uint16_t, uint16_t);
- extern void qla25xx_wrt_req_reg(struct qla_hw_data *, uint16_t, uint16_t);
- extern void qla25xx_wrt_rsp_reg(struct qla_hw_data *, uint16_t, uint16_t);
- extern void qla24xx_wrt_rsp_reg(struct qla_hw_data *, uint16_t, uint16_t);
--extern struct scsi_qla_host * qla25xx_get_host(struct rsp_que *);
- 
- #endif /* _QLA_GBL_H */
-diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
-index b20a716..b79481e 100644
---- a/drivers/scsi/qla2xxx/qla_isr.c
-+++ b/drivers/scsi/qla2xxx/qla_isr.c
-@@ -2018,7 +2018,7 @@ qla24xx_msix_rsp_q(int irq, void *dev_id)
- 
- 	spin_lock_irq(&ha->hardware_lock);
- 
--	vha = qla25xx_get_host(rsp);
-+	vha = pci_get_drvdata(ha->pdev);
- 	qla24xx_process_response_queue(vha, rsp);
- 	if (!ha->mqenable) {
- 		WRT_REG_DWORD(&reg->hccr, HCCRX_CLR_RISC_INT);
-@@ -2357,30 +2357,3 @@ int qla25xx_request_irq(struct rsp_que *rsp)
- 	msix->rsp = rsp;
- 	return ret;
- }
--
--struct scsi_qla_host *
--qla25xx_get_host(struct rsp_que *rsp)
--{
--	srb_t *sp;
--	struct qla_hw_data *ha = rsp->hw;
--	struct scsi_qla_host *vha = NULL;
--	struct sts_entry_24xx *pkt;
--	struct req_que *req;
--	uint16_t que;
--	uint32_t handle;
--
--	pkt = (struct sts_entry_24xx *) rsp->ring_ptr;
--	que = MSW(pkt->handle);
--	handle = (uint32_t) LSW(pkt->handle);
--	req = ha->req_q_map[que];
--	if (handle < MAX_OUTSTANDING_COMMANDS) {
--		sp = req->outstanding_cmds[handle];
--		if (sp)
--			return  sp->fcport->vha;
--		else
--			goto base_que;
--	}
--base_que:
--	vha = pci_get_drvdata(ha->pdev);
--	return vha;
--}
-diff --git a/drivers/scsi/qla2xxx/qla_mid.c b/drivers/scsi/qla2xxx/qla_mid.c
-index e07b361..4a69cc8 100644
---- a/drivers/scsi/qla2xxx/qla_mid.c
-+++ b/drivers/scsi/qla2xxx/qla_mid.c
-@@ -638,11 +638,15 @@ failed:
- 
- static void qla_do_work(struct work_struct *work)
- {
-+	unsigned long flags;
- 	struct rsp_que *rsp = container_of(work, struct rsp_que, q_work);
- 	struct scsi_qla_host *vha;
-+	struct qla_hw_data *ha = rsp->hw;
- 
--	vha = qla25xx_get_host(rsp);
-+	spin_lock_irqsave(&rsp->hw->hardware_lock, flags);
-+	vha = pci_get_drvdata(ha->pdev);
- 	qla24xx_process_response_queue(vha, rsp);
-+	spin_unlock_irqrestore(&rsp->hw->hardware_lock, flags);
- }
- 
- /* create response queue */
 diff --git a/drivers/serial/imx.c b/drivers/serial/imx.c
-index 18130f1..8c0dd13 100644
+index 60d665a..d00fcf8 100644
 --- a/drivers/serial/imx.c
 +++ b/drivers/serial/imx.c
 @@ -1279,7 +1279,7 @@ static int serial_imx_probe(struct platform_device *pdev)
@@ -3498,10 +2831,10 @@ index 18130f1..8c0dd13 100644
  
  	iounmap(sport->port.membase);
 diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index d21b346..b926b00 100644
+index fc2e963..ed77d88 100644
 --- a/drivers/staging/Kconfig
 +++ b/drivers/staging/Kconfig
-@@ -81,8 +81,6 @@ source "drivers/staging/rtl8192su/Kconfig"
+@@ -81,8 +81,6 @@ source "drivers/staging/rtl8192u/Kconfig"
  
  source "drivers/staging/rtl8192e/Kconfig"
  
@@ -3509,19 +2842,19 @@ index d21b346..b926b00 100644
 -
  source "drivers/staging/frontier/Kconfig"
  
- source "drivers/staging/android/Kconfig"
+ source "drivers/staging/dream/Kconfig"
 diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index 8cbf1ae..030d8f8 100644
+index b5e67b8..6035bff 100644
 --- a/drivers/staging/Makefile
 +++ b/drivers/staging/Makefile
-@@ -23,7 +23,6 @@ obj-$(CONFIG_ALTERA_PCIE_CHDMA)	+= altpciechdma/
- obj-$(CONFIG_RTL8187SE)		+= rtl8187se/
+@@ -23,7 +23,6 @@ obj-$(CONFIG_R8187SE)		+= rtl8187se/
  obj-$(CONFIG_RTL8192SU)		+= rtl8192su/
+ obj-$(CONFIG_RTL8192U)		+= rtl8192u/
  obj-$(CONFIG_RTL8192E)		+= rtl8192e/
 -obj-$(CONFIG_INPUT_MIMIO)	+= mimio/
  obj-$(CONFIG_TRANZPORT)		+= frontier/
- obj-$(CONFIG_ANDROID)		+= android/
- obj-$(CONFIG_ANDROID)		+= dream/
+ obj-$(CONFIG_DREAM)		+= dream/
+ obj-$(CONFIG_POHMELFS)		+= pohmelfs/
 diff --git a/drivers/staging/hv/vmbus_drv.c b/drivers/staging/hv/vmbus_drv.c
 index 894eecf..6acc49a 100644
 --- a/drivers/staging/hv/vmbus_drv.c
@@ -4527,11 +3860,111 @@ index 1ba8103..0000000
 -MODULE_AUTHOR(DRIVER_AUTHOR);
 -MODULE_DESCRIPTION(DRIVER_DESC);
 -MODULE_LICENSE("GPL");
+diff --git a/drivers/staging/pohmelfs/inode.c b/drivers/staging/pohmelfs/inode.c
+index f69b778..cd25811 100644
+--- a/drivers/staging/pohmelfs/inode.c
++++ b/drivers/staging/pohmelfs/inode.c
+@@ -36,6 +36,7 @@
+ #define POHMELFS_MAGIC_NUM	0x504f482e
+ 
+ static struct kmem_cache *pohmelfs_inode_cache;
++static atomic_t psb_bdi_num = ATOMIC_INIT(0);
+ 
+ /*
+  * Removes inode from all trees, drops local name cache and removes all queued
+@@ -1331,6 +1332,8 @@ static void pohmelfs_put_super(struct super_block *sb)
+ 	pohmelfs_crypto_exit(psb);
+ 	pohmelfs_state_exit(psb);
+ 
++	bdi_destroy(&psb->bdi);
++
+ 	kfree(psb);
+ 	sb->s_fs_info = NULL;
+ }
+@@ -1815,11 +1818,22 @@ static int pohmelfs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!psb)
+ 		goto err_out_exit;
+ 
++	err = bdi_init(&psb->bdi);
++	if (err)
++		goto err_out_free_sb;
++
++	err = bdi_register(&psb->bdi, NULL, "pfs-%d", atomic_inc_return(&psb_bdi_num));
++	if (err) {
++		bdi_destroy(&psb->bdi);
++		goto err_out_free_sb;
++	}
++
+ 	sb->s_fs_info = psb;
+ 	sb->s_op = &pohmelfs_sb_ops;
+ 	sb->s_magic = POHMELFS_MAGIC_NUM;
+ 	sb->s_maxbytes = MAX_LFS_FILESIZE;
+ 	sb->s_blocksize = PAGE_SIZE;
++	sb->s_bdi = &psb->bdi;
+ 
+ 	psb->sb = sb;
+ 
+@@ -1863,11 +1877,11 @@ static int pohmelfs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	err = pohmelfs_parse_options((char *) data, psb, 0);
+ 	if (err)
+-		goto err_out_free_sb;
++		goto err_out_free_bdi;
+ 
+ 	err = pohmelfs_copy_crypto(psb);
+ 	if (err)
+-		goto err_out_free_sb;
++		goto err_out_free_bdi;
+ 
+ 	err = pohmelfs_state_init(psb);
+ 	if (err)
+@@ -1916,6 +1930,8 @@ err_out_state_exit:
+ err_out_free_strings:
+ 	kfree(psb->cipher_string);
+ 	kfree(psb->hash_string);
++err_out_free_bdi:
++	bdi_destroy(&psb->bdi);
+ err_out_free_sb:
+ 	kfree(psb);
+ err_out_exit:
+diff --git a/drivers/staging/pohmelfs/netfs.h b/drivers/staging/pohmelfs/netfs.h
+index 623a07d..01cba00 100644
+--- a/drivers/staging/pohmelfs/netfs.h
++++ b/drivers/staging/pohmelfs/netfs.h
+@@ -18,6 +18,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/connector.h>
++#include <linux/backing-dev.h>
+ 
+ #define POHMELFS_CN_IDX			5
+ #define POHMELFS_CN_VAL			0
+@@ -624,6 +625,8 @@ struct pohmelfs_sb {
+ 
+ 	struct super_block	*sb;
+ 
++	struct backing_dev_info	bdi;
++
+ 	/*
+ 	 * Algorithm strings.
+ 	 */
+diff --git a/drivers/staging/wlan-ng/Kconfig b/drivers/staging/wlan-ng/Kconfig
+index f44294b..f1af507 100644
+--- a/drivers/staging/wlan-ng/Kconfig
++++ b/drivers/staging/wlan-ng/Kconfig
+@@ -1,6 +1,7 @@
+ config PRISM2_USB
+ 	tristate "Prism2.5/3 USB driver"
+ 	depends on WLAN && USB && WIRELESS_EXT
++	select WEXT_PRIV
+ 	default n
+ 	---help---
+ 	  This is the wlan-ng prism 2.5/3 USB driver for a wide range of
 diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
-index 4f86447..5d80d5e 100644
+index 60a45f1..ca479a7 100644
 --- a/drivers/usb/core/driver.c
 +++ b/drivers/usb/core/driver.c
-@@ -625,9 +625,6 @@ static int usb_uevent(struct device *dev, struct kobj_uevent_env *env)
+@@ -691,9 +691,6 @@ static int usb_uevent(struct device *dev, struct kobj_uevent_env *env)
  {
  	struct usb_device *usb_dev;
  
@@ -4541,7 +3974,7 @@ index 4f86447..5d80d5e 100644
  	if (is_usb_device(dev)) {
  		usb_dev = to_usb_device(dev);
  	} else if (is_usb_interface(dev)) {
-@@ -639,6 +636,7 @@ static int usb_uevent(struct device *dev, struct kobj_uevent_env *env)
+@@ -705,6 +702,7 @@ static int usb_uevent(struct device *dev, struct kobj_uevent_env *env)
  	}
  
  	if (usb_dev->devnum < 0) {
@@ -4550,10 +3983,10 @@ index 4f86447..5d80d5e 100644
  		return -ENODEV;
  	}
 diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 34de475..24e6205 100644
+index 80995ef..0477616 100644
 --- a/drivers/usb/core/hcd.c
 +++ b/drivers/usb/core/hcd.c
-@@ -140,7 +140,7 @@ static const u8 usb3_rh_dev_descriptor[18] = {
+@@ -141,7 +141,7 @@ static const u8 usb3_rh_dev_descriptor[18] = {
  	0x09,       /*  __u8  bMaxPacketSize0; 2^9 = 512 Bytes */
  
  	0x6b, 0x1d, /*  __le16 idVendor; Linux Foundation */
@@ -4563,10 +3996,10 @@ index 34de475..24e6205 100644
  
  	0x03,       /*  __u8  iManufacturer; */
 diff --git a/drivers/usb/core/hcd.h b/drivers/usb/core/hcd.h
-index 79782a1..bcbe104 100644
+index bbe2b92..89613a7 100644
 --- a/drivers/usb/core/hcd.h
 +++ b/drivers/usb/core/hcd.h
-@@ -234,7 +234,7 @@ struct hc_driver {
+@@ -248,7 +248,7 @@ struct hc_driver {
  	/* xHCI specific functions */
  		/* Called by usb_alloc_dev to alloc HC device structures */
  	int	(*alloc_dev)(struct usb_hcd *, struct usb_device *);
@@ -4576,10 +4009,10 @@ index 79782a1..bcbe104 100644
  
  	/* Bandwidth computation functions */
 diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
-index 1a7d54b..ed3aa7a 100644
+index 35cc8b9..9cc0aba 100644
 --- a/drivers/usb/core/hub.c
 +++ b/drivers/usb/core/hub.c
-@@ -1508,6 +1508,15 @@ static inline void usb_stop_pm(struct usb_device *udev)
+@@ -1554,6 +1554,15 @@ static inline void usb_stop_pm(struct usb_device *udev)
  
  #endif
  
@@ -4595,7 +4028,7 @@ index 1a7d54b..ed3aa7a 100644
  /**
   * usb_disconnect - disconnect a device (usbcore-internal)
   * @pdev: pointer to device being disconnected
-@@ -1578,6 +1587,8 @@ void usb_disconnect(struct usb_device **pdev)
+@@ -1624,6 +1633,8 @@ void usb_disconnect(struct usb_device **pdev)
  
  	usb_stop_pm(udev);
  
@@ -4604,7 +4037,7 @@ index 1a7d54b..ed3aa7a 100644
  	put_device(&udev->dev);
  }
  
-@@ -3130,6 +3141,7 @@ loop_disable:
+@@ -3191,6 +3202,7 @@ loop_disable:
  loop:
  		usb_ep0_reinit(udev);
  		release_address(udev);
@@ -4613,10 +4046,10 @@ index 1a7d54b..ed3aa7a 100644
  		if ((status == -ENOTCONN) || (status == -ENOTSUPP))
  			break;
 diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
-index 52e5e31..ab2d3e7 100644
+index 0daff0d..ced0776 100644
 --- a/drivers/usb/core/usb.c
 +++ b/drivers/usb/core/usb.c
-@@ -191,9 +191,6 @@ static void usb_release_dev(struct device *dev)
+@@ -228,9 +228,6 @@ static void usb_release_dev(struct device *dev)
  	hcd = bus_to_hcd(udev->bus);
  
  	usb_destroy_configuration(udev);
@@ -4626,8 +4059,20 @@ index 52e5e31..ab2d3e7 100644
  	usb_put_hcd(hcd);
  	kfree(udev->product);
  	kfree(udev->manufacturer);
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index a37640e..73f9bbd 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2852,7 +2852,6 @@ error_release:
+ 	/* Call fsg_common_release() directly, ref might be not
+ 	 * initialised */
+ 	fsg_common_release(&common->ref);
+-	complete(&common->thread_notifier);
+ 	return ERR_PTR(rc);
+ }
+ 
 diff --git a/drivers/usb/host/ohci-pnx4008.c b/drivers/usb/host/ohci-pnx4008.c
-index 100bf3d..1f1d4fa 100644
+index 2769326..cd74bbd 100644
 --- a/drivers/usb/host/ohci-pnx4008.c
 +++ b/drivers/usb/host/ohci-pnx4008.c
 @@ -327,7 +327,7 @@ static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
@@ -4691,18 +4136,6 @@ index ecc131c..78c4eda 100644
  	if (!next)
  		return 0;
  	/*
-diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
-index 0025847..8b37a4b 100644
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3245,6 +3245,7 @@ static struct usb_device_id sisusb_table [] = {
- 	{ USB_DEVICE(0x0711, 0x0902) },
- 	{ USB_DEVICE(0x0711, 0x0903) },
- 	{ USB_DEVICE(0x0711, 0x0918) },
-+	{ USB_DEVICE(0x0711, 0x0920) },
- 	{ USB_DEVICE(0x182d, 0x021c) },
- 	{ USB_DEVICE(0x182d, 0x0269) },
- 	{ }
 diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
 index bd254ec..7d920f2 100644
 --- a/drivers/usb/serial/cp210x.c
@@ -4722,78 +4155,10 @@ index bd254ec..7d920f2 100644
  	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
  	{ USB_DEVICE(0x10C4, 0x8382) }, /* Cygnal Integrated Products, Inc. */
 diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 13a1b39..ce937e7 100644
+index 7638828..34acf6c 100644
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -44,12 +44,13 @@
- #include <linux/serial.h>
- #include <linux/usb/serial.h>
- #include "ftdi_sio.h"
-+#include "ftdi_sio_ids.h"
- 
- /*
-  * Version Information
-  */
- #define DRIVER_VERSION "v1.5.0"
--#define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>, Bill Ryder <bryder@sgi.com>, Kuba Ober <kuba@mareimbrium.org>"
-+#define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>, Bill Ryder <bryder@sgi.com>, Kuba Ober <kuba@mareimbrium.org>, Andreas Mohr"
- #define DRIVER_DESC "USB FTDI Serial Converters Driver"
- 
- static int debug;
-@@ -144,10 +145,15 @@ static struct ftdi_sio_quirk ftdi_HE_TIRA1_quirk = {
- 
- 
- 
-+/*
-+ * Device ID not listed? Test via module params product/vendor or
-+ * /sys/bus/usb/ftdi_sio/new_id, then send patch/report!
-+ */
- static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_AMC232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_CANDAPTER_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_NXTCAM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_0_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_1_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_2_PID) },
-@@ -551,9 +557,16 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PEDO_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IBS_PROD_PID) },
- 	/*
--	 * Due to many user requests for multiple ELV devices we enable
--	 * them by default.
-+	 * ELV devices:
- 	 */
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_USR_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_MSM1_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_KL100_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS550_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_EC3000_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS888_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_TWS550_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_FEM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_CLI7000_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_PPS7330_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_TFM100_PID) },
-@@ -570,11 +583,17 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_PCK100_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_RFP500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_FS20SIG_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_UTP8_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS300PC_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS444PC_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_FHZ1300PC_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_EM1010PC_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS500_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELV_HS485_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_UMS100_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_TFD128_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_FM3RX_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_ELV_WS777_PID) },
- 	{ USB_DEVICE(FTDI_VID, LINX_SDMUSBQSS_PID) },
- 	{ USB_DEVICE(FTDI_VID, LINX_MASTERDEVEL2_PID) },
- 	{ USB_DEVICE(FTDI_VID, LINX_FUTURE_0_PID) },
-@@ -595,6 +614,7 @@ static struct usb_device_id id_table_combined [] = {
+@@ -614,6 +614,7 @@ static struct usb_device_id id_table_combined [] = {
  	{ USB_DEVICE(FTDI_VID, FTDI_OCEANIC_PID) },
  	{ USB_DEVICE(TTI_VID, TTI_QL355P_PID) },
  	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
@@ -4801,15 +4166,7 @@ index 13a1b39..ce937e7 100644
  	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
  	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
  	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
-@@ -696,6 +716,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
- 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
-@@ -717,6 +738,10 @@ static struct usb_device_id id_table_combined [] = {
+@@ -737,6 +738,10 @@ static struct usb_device_id id_table_combined [] = {
  		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
  	{ USB_DEVICE(FTDI_VID, HAMEG_HO820_PID) },
  	{ USB_DEVICE(FTDI_VID, HAMEG_HO870_PID) },
@@ -4820,1497 +4177,14 @@ index 13a1b39..ce937e7 100644
  	{ },					/* Optional parameter entry */
  	{ }					/* Terminating entry */
  };
-diff --git a/drivers/usb/serial/ftdi_sio.h b/drivers/usb/serial/ftdi_sio.h
-index 4586a24..b0e0d64 100644
---- a/drivers/usb/serial/ftdi_sio.h
-+++ b/drivers/usb/serial/ftdi_sio.h
-@@ -1,7 +1,10 @@
- /*
-- * Definitions for the FTDI USB Single Port Serial Converter -
-+ * Driver definitions for the FTDI USB Single Port Serial Converter -
-  * known as FTDI_SIO (Serial Input/Output application of the chipset)
-  *
-+ * For USB vendor/product IDs (VID/PID), please see ftdi_sio_ids.h
-+ *
-+ *
-  * The example I have is known as the USC-1000 which is available from
-  * http://www.dse.co.nz - cat no XH4214 It looks similar to this:
-  * http://www.dansdata.com/usbser.htm but I can't be sure There are other
-@@ -17,880 +20,7 @@
-  * Bill Ryder - bryder@sgi.com formerly of Silicon Graphics, Inc.- wrote the
-  * FTDI_SIO implementation.
-  *
-- * Philipp GÃ¼hring - pg@futureware.at - added the Device ID of the USB relais
-- * from Rudolf Gugler
-- *
-- */
--
--#define FTDI_VID	0x0403	/* Vendor Id */
--#define FTDI_SIO_PID	0x8372	/* Product Id SIO application of 8U100AX  */
--#define FTDI_8U232AM_PID 0x6001 /* Similar device to SIO above */
--#define FTDI_8U232AM_ALT_PID 0x6006 /* FTDI's alternate PID for above */
--#define FTDI_8U2232C_PID 0x6010 /* Dual channel device */
--#define FTDI_232RL_PID  0xFBFA  /* Product ID for FT232RL */
--#define FTDI_4232H_PID 0x6011 /* Quad channel hi-speed device */
--#define FTDI_RELAIS_PID	0xFA10  /* Relais device from Rudolf Gugler */
--#define FTDI_NF_RIC_VID	0x0DCD	/* Vendor Id */
--#define FTDI_NF_RIC_PID	0x0001	/* Product Id */
--#define FTDI_USBX_707_PID 0xF857	/* ADSTech IR Blaster USBX-707 */
--
--/* Larsen and Brusgaard AltiTrack/USBtrack  */
--#define LARSENBRUSGAARD_VID		0x0FD8
--#define LB_ALTITRACK_PID		0x0001
--
--/* www.canusb.com Lawicel CANUSB device */
--#define FTDI_CANUSB_PID 0xFFA8 /* Product Id */
--
--/* AlphaMicro Components AMC-232USB01 device */
--#define FTDI_AMC232_PID 0xFF00 /* Product Id */
--
--/* www.candapter.com Ewert Energy Systems CANdapter device */
--#define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
--
--/* SCS HF Radio Modems PID's (http://www.scs-ptc.com) */
--/* the VID is the standard ftdi vid (FTDI_VID) */
--#define FTDI_SCS_DEVICE_0_PID 0xD010    /* SCS PTC-IIusb */
--#define FTDI_SCS_DEVICE_1_PID 0xD011    /* SCS Tracker / DSP TNC */
--#define FTDI_SCS_DEVICE_2_PID 0xD012
--#define FTDI_SCS_DEVICE_3_PID 0xD013
--#define FTDI_SCS_DEVICE_4_PID 0xD014
--#define FTDI_SCS_DEVICE_5_PID 0xD015
--#define FTDI_SCS_DEVICE_6_PID 0xD016
--#define FTDI_SCS_DEVICE_7_PID 0xD017
--
--/* ACT Solutions HomePro ZWave interface (http://www.act-solutions.com/HomePro.htm) */
--#define FTDI_ACTZWAVE_PID	0xF2D0
--
--
--/* www.starting-point-systems.com ÂµChameleon device */
--#define FTDI_MICRO_CHAMELEON_PID	0xCAA0	/* Product Id */
--
--/* www.irtrans.de device */
--#define FTDI_IRTRANS_PID 0xFC60 /* Product Id */
--
--
--/* www.thoughttechnology.com/ TT-USB provide with procomp use ftdi_sio */
--#define FTDI_TTUSB_PID 0xFF20 /* Product Id */
--
--/* iPlus device */
--#define FTDI_IPLUS_PID 0xD070 /* Product Id */
--#define FTDI_IPLUS2_PID 0xD071 /* Product Id */
--
--/* DMX4ALL DMX Interfaces */
--#define FTDI_DMX4ALL 0xC850
--
--/* OpenDCC (www.opendcc.de) product id */
--#define FTDI_OPENDCC_PID	0xBFD8
--#define FTDI_OPENDCC_SNIFFER_PID	0xBFD9
--#define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
--#define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
--
--/* Sprog II (Andrew Crosland's SprogII DCC interface) */
--#define FTDI_SPROG_II		0xF0C8
--
--/* www.crystalfontz.com devices - thanx for providing free devices for evaluation ! */
--/* they use the ftdi chipset for the USB interface and the vendor id is the same */
--#define FTDI_XF_632_PID 0xFC08	/* 632: 16x2 Character Display */
--#define FTDI_XF_634_PID 0xFC09	/* 634: 20x4 Character Display */
--#define FTDI_XF_547_PID 0xFC0A	/* 547: Two line Display */
--#define FTDI_XF_633_PID 0xFC0B	/* 633: 16x2 Character Display with Keys */
--#define FTDI_XF_631_PID 0xFC0C	/* 631: 20x2 Character Display */
--#define FTDI_XF_635_PID 0xFC0D	/* 635: 20x4 Character Display */
--#define FTDI_XF_640_PID 0xFC0E	/* 640: Two line Display */
--#define FTDI_XF_642_PID 0xFC0F	/* 642: Two line Display */
--
--/* Video Networks Limited / Homechoice in the UK use an ftdi-based device for their 1Mb */
--/* broadband internet service.  The following PID is exhibited by the usb device supplied */
--/* (the VID is the standard ftdi vid (FTDI_VID) */
--#define FTDI_VNHCPCUSB_D_PID 0xfe38 /* Product Id */
--
--/*
-- * PCDJ use ftdi based dj-controllers.  The following PID is for their DAC-2 device
-- * http://www.pcdjhardware.com/DAC2.asp (PID sent by Wouter Paesen)
-- * (the VID is the standard ftdi vid (FTDI_VID) */
--#define FTDI_PCDJ_DAC2_PID 0xFA88
--
--/*
-- * The following are the values for the Matrix Orbital LCD displays,
-- * which are the FT232BM ( similar to the 8U232AM )
-- */
--#define FTDI_MTXORB_0_PID      0xFA00  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_1_PID      0xFA01  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_2_PID      0xFA02  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_3_PID      0xFA03  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_4_PID      0xFA04  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_5_PID      0xFA05  /* Matrix Orbital Product Id */
--#define FTDI_MTXORB_6_PID      0xFA06  /* Matrix Orbital Product Id */
--
--/* OOCDlink by Joern Kaipf <joernk@web.de>
-- * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink) */
--#define FTDI_OOCDLINK_PID	0xbaf8	/* Amontec JTAGkey */
--
--/*
-- * The following are the values for the Matrix Orbital FTDI Range
-- * Anything in this range will use an FT232RL.
-- */
--#define MTXORB_VID			0x1B3D
--#define MTXORB_FTDI_RANGE_0100_PID	0x0100
--#define MTXORB_FTDI_RANGE_0101_PID	0x0101
--#define MTXORB_FTDI_RANGE_0102_PID	0x0102
--#define MTXORB_FTDI_RANGE_0103_PID	0x0103
--#define MTXORB_FTDI_RANGE_0104_PID	0x0104
--#define MTXORB_FTDI_RANGE_0105_PID	0x0105
--#define MTXORB_FTDI_RANGE_0106_PID	0x0106
--#define MTXORB_FTDI_RANGE_0107_PID	0x0107
--#define MTXORB_FTDI_RANGE_0108_PID	0x0108
--#define MTXORB_FTDI_RANGE_0109_PID	0x0109
--#define MTXORB_FTDI_RANGE_010A_PID	0x010A
--#define MTXORB_FTDI_RANGE_010B_PID	0x010B
--#define MTXORB_FTDI_RANGE_010C_PID	0x010C
--#define MTXORB_FTDI_RANGE_010D_PID	0x010D
--#define MTXORB_FTDI_RANGE_010E_PID	0x010E
--#define MTXORB_FTDI_RANGE_010F_PID	0x010F
--#define MTXORB_FTDI_RANGE_0110_PID	0x0110
--#define MTXORB_FTDI_RANGE_0111_PID	0x0111
--#define MTXORB_FTDI_RANGE_0112_PID	0x0112
--#define MTXORB_FTDI_RANGE_0113_PID	0x0113
--#define MTXORB_FTDI_RANGE_0114_PID	0x0114
--#define MTXORB_FTDI_RANGE_0115_PID	0x0115
--#define MTXORB_FTDI_RANGE_0116_PID	0x0116
--#define MTXORB_FTDI_RANGE_0117_PID	0x0117
--#define MTXORB_FTDI_RANGE_0118_PID	0x0118
--#define MTXORB_FTDI_RANGE_0119_PID	0x0119
--#define MTXORB_FTDI_RANGE_011A_PID	0x011A
--#define MTXORB_FTDI_RANGE_011B_PID	0x011B
--#define MTXORB_FTDI_RANGE_011C_PID	0x011C
--#define MTXORB_FTDI_RANGE_011D_PID	0x011D
--#define MTXORB_FTDI_RANGE_011E_PID	0x011E
--#define MTXORB_FTDI_RANGE_011F_PID	0x011F
--#define MTXORB_FTDI_RANGE_0120_PID	0x0120
--#define MTXORB_FTDI_RANGE_0121_PID	0x0121
--#define MTXORB_FTDI_RANGE_0122_PID	0x0122
--#define MTXORB_FTDI_RANGE_0123_PID	0x0123
--#define MTXORB_FTDI_RANGE_0124_PID	0x0124
--#define MTXORB_FTDI_RANGE_0125_PID	0x0125
--#define MTXORB_FTDI_RANGE_0126_PID	0x0126
--#define MTXORB_FTDI_RANGE_0127_PID	0x0127
--#define MTXORB_FTDI_RANGE_0128_PID	0x0128
--#define MTXORB_FTDI_RANGE_0129_PID	0x0129
--#define MTXORB_FTDI_RANGE_012A_PID	0x012A
--#define MTXORB_FTDI_RANGE_012B_PID	0x012B
--#define MTXORB_FTDI_RANGE_012C_PID	0x012C
--#define MTXORB_FTDI_RANGE_012D_PID	0x012D
--#define MTXORB_FTDI_RANGE_012E_PID	0x012E
--#define MTXORB_FTDI_RANGE_012F_PID	0x012F
--#define MTXORB_FTDI_RANGE_0130_PID	0x0130
--#define MTXORB_FTDI_RANGE_0131_PID	0x0131
--#define MTXORB_FTDI_RANGE_0132_PID	0x0132
--#define MTXORB_FTDI_RANGE_0133_PID	0x0133
--#define MTXORB_FTDI_RANGE_0134_PID	0x0134
--#define MTXORB_FTDI_RANGE_0135_PID	0x0135
--#define MTXORB_FTDI_RANGE_0136_PID	0x0136
--#define MTXORB_FTDI_RANGE_0137_PID	0x0137
--#define MTXORB_FTDI_RANGE_0138_PID	0x0138
--#define MTXORB_FTDI_RANGE_0139_PID	0x0139
--#define MTXORB_FTDI_RANGE_013A_PID	0x013A
--#define MTXORB_FTDI_RANGE_013B_PID	0x013B
--#define MTXORB_FTDI_RANGE_013C_PID	0x013C
--#define MTXORB_FTDI_RANGE_013D_PID	0x013D
--#define MTXORB_FTDI_RANGE_013E_PID	0x013E
--#define MTXORB_FTDI_RANGE_013F_PID	0x013F
--#define MTXORB_FTDI_RANGE_0140_PID	0x0140
--#define MTXORB_FTDI_RANGE_0141_PID	0x0141
--#define MTXORB_FTDI_RANGE_0142_PID	0x0142
--#define MTXORB_FTDI_RANGE_0143_PID	0x0143
--#define MTXORB_FTDI_RANGE_0144_PID	0x0144
--#define MTXORB_FTDI_RANGE_0145_PID	0x0145
--#define MTXORB_FTDI_RANGE_0146_PID	0x0146
--#define MTXORB_FTDI_RANGE_0147_PID	0x0147
--#define MTXORB_FTDI_RANGE_0148_PID	0x0148
--#define MTXORB_FTDI_RANGE_0149_PID	0x0149
--#define MTXORB_FTDI_RANGE_014A_PID	0x014A
--#define MTXORB_FTDI_RANGE_014B_PID	0x014B
--#define MTXORB_FTDI_RANGE_014C_PID	0x014C
--#define MTXORB_FTDI_RANGE_014D_PID	0x014D
--#define MTXORB_FTDI_RANGE_014E_PID	0x014E
--#define MTXORB_FTDI_RANGE_014F_PID	0x014F
--#define MTXORB_FTDI_RANGE_0150_PID	0x0150
--#define MTXORB_FTDI_RANGE_0151_PID	0x0151
--#define MTXORB_FTDI_RANGE_0152_PID	0x0152
--#define MTXORB_FTDI_RANGE_0153_PID	0x0153
--#define MTXORB_FTDI_RANGE_0154_PID	0x0154
--#define MTXORB_FTDI_RANGE_0155_PID	0x0155
--#define MTXORB_FTDI_RANGE_0156_PID	0x0156
--#define MTXORB_FTDI_RANGE_0157_PID	0x0157
--#define MTXORB_FTDI_RANGE_0158_PID	0x0158
--#define MTXORB_FTDI_RANGE_0159_PID	0x0159
--#define MTXORB_FTDI_RANGE_015A_PID	0x015A
--#define MTXORB_FTDI_RANGE_015B_PID	0x015B
--#define MTXORB_FTDI_RANGE_015C_PID	0x015C
--#define MTXORB_FTDI_RANGE_015D_PID	0x015D
--#define MTXORB_FTDI_RANGE_015E_PID	0x015E
--#define MTXORB_FTDI_RANGE_015F_PID	0x015F
--#define MTXORB_FTDI_RANGE_0160_PID	0x0160
--#define MTXORB_FTDI_RANGE_0161_PID	0x0161
--#define MTXORB_FTDI_RANGE_0162_PID	0x0162
--#define MTXORB_FTDI_RANGE_0163_PID	0x0163
--#define MTXORB_FTDI_RANGE_0164_PID	0x0164
--#define MTXORB_FTDI_RANGE_0165_PID	0x0165
--#define MTXORB_FTDI_RANGE_0166_PID	0x0166
--#define MTXORB_FTDI_RANGE_0167_PID	0x0167
--#define MTXORB_FTDI_RANGE_0168_PID	0x0168
--#define MTXORB_FTDI_RANGE_0169_PID	0x0169
--#define MTXORB_FTDI_RANGE_016A_PID	0x016A
--#define MTXORB_FTDI_RANGE_016B_PID	0x016B
--#define MTXORB_FTDI_RANGE_016C_PID	0x016C
--#define MTXORB_FTDI_RANGE_016D_PID	0x016D
--#define MTXORB_FTDI_RANGE_016E_PID	0x016E
--#define MTXORB_FTDI_RANGE_016F_PID	0x016F
--#define MTXORB_FTDI_RANGE_0170_PID	0x0170
--#define MTXORB_FTDI_RANGE_0171_PID	0x0171
--#define MTXORB_FTDI_RANGE_0172_PID	0x0172
--#define MTXORB_FTDI_RANGE_0173_PID	0x0173
--#define MTXORB_FTDI_RANGE_0174_PID	0x0174
--#define MTXORB_FTDI_RANGE_0175_PID	0x0175
--#define MTXORB_FTDI_RANGE_0176_PID	0x0176
--#define MTXORB_FTDI_RANGE_0177_PID	0x0177
--#define MTXORB_FTDI_RANGE_0178_PID	0x0178
--#define MTXORB_FTDI_RANGE_0179_PID	0x0179
--#define MTXORB_FTDI_RANGE_017A_PID	0x017A
--#define MTXORB_FTDI_RANGE_017B_PID	0x017B
--#define MTXORB_FTDI_RANGE_017C_PID	0x017C
--#define MTXORB_FTDI_RANGE_017D_PID	0x017D
--#define MTXORB_FTDI_RANGE_017E_PID	0x017E
--#define MTXORB_FTDI_RANGE_017F_PID	0x017F
--#define MTXORB_FTDI_RANGE_0180_PID	0x0180
--#define MTXORB_FTDI_RANGE_0181_PID	0x0181
--#define MTXORB_FTDI_RANGE_0182_PID	0x0182
--#define MTXORB_FTDI_RANGE_0183_PID	0x0183
--#define MTXORB_FTDI_RANGE_0184_PID	0x0184
--#define MTXORB_FTDI_RANGE_0185_PID	0x0185
--#define MTXORB_FTDI_RANGE_0186_PID	0x0186
--#define MTXORB_FTDI_RANGE_0187_PID	0x0187
--#define MTXORB_FTDI_RANGE_0188_PID	0x0188
--#define MTXORB_FTDI_RANGE_0189_PID	0x0189
--#define MTXORB_FTDI_RANGE_018A_PID	0x018A
--#define MTXORB_FTDI_RANGE_018B_PID	0x018B
--#define MTXORB_FTDI_RANGE_018C_PID	0x018C
--#define MTXORB_FTDI_RANGE_018D_PID	0x018D
--#define MTXORB_FTDI_RANGE_018E_PID	0x018E
--#define MTXORB_FTDI_RANGE_018F_PID	0x018F
--#define MTXORB_FTDI_RANGE_0190_PID	0x0190
--#define MTXORB_FTDI_RANGE_0191_PID	0x0191
--#define MTXORB_FTDI_RANGE_0192_PID	0x0192
--#define MTXORB_FTDI_RANGE_0193_PID	0x0193
--#define MTXORB_FTDI_RANGE_0194_PID	0x0194
--#define MTXORB_FTDI_RANGE_0195_PID	0x0195
--#define MTXORB_FTDI_RANGE_0196_PID	0x0196
--#define MTXORB_FTDI_RANGE_0197_PID	0x0197
--#define MTXORB_FTDI_RANGE_0198_PID	0x0198
--#define MTXORB_FTDI_RANGE_0199_PID	0x0199
--#define MTXORB_FTDI_RANGE_019A_PID	0x019A
--#define MTXORB_FTDI_RANGE_019B_PID	0x019B
--#define MTXORB_FTDI_RANGE_019C_PID	0x019C
--#define MTXORB_FTDI_RANGE_019D_PID	0x019D
--#define MTXORB_FTDI_RANGE_019E_PID	0x019E
--#define MTXORB_FTDI_RANGE_019F_PID	0x019F
--#define MTXORB_FTDI_RANGE_01A0_PID	0x01A0
--#define MTXORB_FTDI_RANGE_01A1_PID	0x01A1
--#define MTXORB_FTDI_RANGE_01A2_PID	0x01A2
--#define MTXORB_FTDI_RANGE_01A3_PID	0x01A3
--#define MTXORB_FTDI_RANGE_01A4_PID	0x01A4
--#define MTXORB_FTDI_RANGE_01A5_PID	0x01A5
--#define MTXORB_FTDI_RANGE_01A6_PID	0x01A6
--#define MTXORB_FTDI_RANGE_01A7_PID	0x01A7
--#define MTXORB_FTDI_RANGE_01A8_PID	0x01A8
--#define MTXORB_FTDI_RANGE_01A9_PID	0x01A9
--#define MTXORB_FTDI_RANGE_01AA_PID	0x01AA
--#define MTXORB_FTDI_RANGE_01AB_PID	0x01AB
--#define MTXORB_FTDI_RANGE_01AC_PID	0x01AC
--#define MTXORB_FTDI_RANGE_01AD_PID	0x01AD
--#define MTXORB_FTDI_RANGE_01AE_PID	0x01AE
--#define MTXORB_FTDI_RANGE_01AF_PID	0x01AF
--#define MTXORB_FTDI_RANGE_01B0_PID	0x01B0
--#define MTXORB_FTDI_RANGE_01B1_PID	0x01B1
--#define MTXORB_FTDI_RANGE_01B2_PID	0x01B2
--#define MTXORB_FTDI_RANGE_01B3_PID	0x01B3
--#define MTXORB_FTDI_RANGE_01B4_PID	0x01B4
--#define MTXORB_FTDI_RANGE_01B5_PID	0x01B5
--#define MTXORB_FTDI_RANGE_01B6_PID	0x01B6
--#define MTXORB_FTDI_RANGE_01B7_PID	0x01B7
--#define MTXORB_FTDI_RANGE_01B8_PID	0x01B8
--#define MTXORB_FTDI_RANGE_01B9_PID	0x01B9
--#define MTXORB_FTDI_RANGE_01BA_PID	0x01BA
--#define MTXORB_FTDI_RANGE_01BB_PID	0x01BB
--#define MTXORB_FTDI_RANGE_01BC_PID	0x01BC
--#define MTXORB_FTDI_RANGE_01BD_PID	0x01BD
--#define MTXORB_FTDI_RANGE_01BE_PID	0x01BE
--#define MTXORB_FTDI_RANGE_01BF_PID	0x01BF
--#define MTXORB_FTDI_RANGE_01C0_PID	0x01C0
--#define MTXORB_FTDI_RANGE_01C1_PID	0x01C1
--#define MTXORB_FTDI_RANGE_01C2_PID	0x01C2
--#define MTXORB_FTDI_RANGE_01C3_PID	0x01C3
--#define MTXORB_FTDI_RANGE_01C4_PID	0x01C4
--#define MTXORB_FTDI_RANGE_01C5_PID	0x01C5
--#define MTXORB_FTDI_RANGE_01C6_PID	0x01C6
--#define MTXORB_FTDI_RANGE_01C7_PID	0x01C7
--#define MTXORB_FTDI_RANGE_01C8_PID	0x01C8
--#define MTXORB_FTDI_RANGE_01C9_PID	0x01C9
--#define MTXORB_FTDI_RANGE_01CA_PID	0x01CA
--#define MTXORB_FTDI_RANGE_01CB_PID	0x01CB
--#define MTXORB_FTDI_RANGE_01CC_PID	0x01CC
--#define MTXORB_FTDI_RANGE_01CD_PID	0x01CD
--#define MTXORB_FTDI_RANGE_01CE_PID	0x01CE
--#define MTXORB_FTDI_RANGE_01CF_PID	0x01CF
--#define MTXORB_FTDI_RANGE_01D0_PID	0x01D0
--#define MTXORB_FTDI_RANGE_01D1_PID	0x01D1
--#define MTXORB_FTDI_RANGE_01D2_PID	0x01D2
--#define MTXORB_FTDI_RANGE_01D3_PID	0x01D3
--#define MTXORB_FTDI_RANGE_01D4_PID	0x01D4
--#define MTXORB_FTDI_RANGE_01D5_PID	0x01D5
--#define MTXORB_FTDI_RANGE_01D6_PID	0x01D6
--#define MTXORB_FTDI_RANGE_01D7_PID	0x01D7
--#define MTXORB_FTDI_RANGE_01D8_PID	0x01D8
--#define MTXORB_FTDI_RANGE_01D9_PID	0x01D9
--#define MTXORB_FTDI_RANGE_01DA_PID	0x01DA
--#define MTXORB_FTDI_RANGE_01DB_PID	0x01DB
--#define MTXORB_FTDI_RANGE_01DC_PID	0x01DC
--#define MTXORB_FTDI_RANGE_01DD_PID	0x01DD
--#define MTXORB_FTDI_RANGE_01DE_PID	0x01DE
--#define MTXORB_FTDI_RANGE_01DF_PID	0x01DF
--#define MTXORB_FTDI_RANGE_01E0_PID	0x01E0
--#define MTXORB_FTDI_RANGE_01E1_PID	0x01E1
--#define MTXORB_FTDI_RANGE_01E2_PID	0x01E2
--#define MTXORB_FTDI_RANGE_01E3_PID	0x01E3
--#define MTXORB_FTDI_RANGE_01E4_PID	0x01E4
--#define MTXORB_FTDI_RANGE_01E5_PID	0x01E5
--#define MTXORB_FTDI_RANGE_01E6_PID	0x01E6
--#define MTXORB_FTDI_RANGE_01E7_PID	0x01E7
--#define MTXORB_FTDI_RANGE_01E8_PID	0x01E8
--#define MTXORB_FTDI_RANGE_01E9_PID	0x01E9
--#define MTXORB_FTDI_RANGE_01EA_PID	0x01EA
--#define MTXORB_FTDI_RANGE_01EB_PID	0x01EB
--#define MTXORB_FTDI_RANGE_01EC_PID	0x01EC
--#define MTXORB_FTDI_RANGE_01ED_PID	0x01ED
--#define MTXORB_FTDI_RANGE_01EE_PID	0x01EE
--#define MTXORB_FTDI_RANGE_01EF_PID	0x01EF
--#define MTXORB_FTDI_RANGE_01F0_PID	0x01F0
--#define MTXORB_FTDI_RANGE_01F1_PID	0x01F1
--#define MTXORB_FTDI_RANGE_01F2_PID	0x01F2
--#define MTXORB_FTDI_RANGE_01F3_PID	0x01F3
--#define MTXORB_FTDI_RANGE_01F4_PID	0x01F4
--#define MTXORB_FTDI_RANGE_01F5_PID	0x01F5
--#define MTXORB_FTDI_RANGE_01F6_PID	0x01F6
--#define MTXORB_FTDI_RANGE_01F7_PID	0x01F7
--#define MTXORB_FTDI_RANGE_01F8_PID	0x01F8
--#define MTXORB_FTDI_RANGE_01F9_PID	0x01F9
--#define MTXORB_FTDI_RANGE_01FA_PID	0x01FA
--#define MTXORB_FTDI_RANGE_01FB_PID	0x01FB
--#define MTXORB_FTDI_RANGE_01FC_PID	0x01FC
--#define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
--#define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
--#define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
--
--
--
--/* Interbiometrics USB I/O Board */
--/* Developed for Interbiometrics by Rudolf Gugler */
--#define INTERBIOMETRICS_VID              0x1209
--#define INTERBIOMETRICS_IOBOARD_PID      0x1002
--#define INTERBIOMETRICS_MINI_IOBOARD_PID 0x1006
--
--/*
-- * The following are the values for the Perle Systems
-- * UltraPort USB serial converters
-- */
--#define FTDI_PERLE_ULTRAPORT_PID 0xF0C0	/* Perle UltraPort Product Id */
--
--/*
-- * The following are the values for the Sealevel SeaLINK+ adapters.
-- * (Original list sent by Tuan Hoang.  Ian Abbott renamed the macros and
-- * removed some PIDs that don't seem to match any existing products.)
-- */
--#define SEALEVEL_VID		0x0c52	/* Sealevel Vendor ID */
--#define SEALEVEL_2101_PID	0x2101	/* SeaLINK+232 (2101/2105) */
--#define SEALEVEL_2102_PID	0x2102	/* SeaLINK+485 (2102) */
--#define SEALEVEL_2103_PID	0x2103	/* SeaLINK+232I (2103) */
--#define SEALEVEL_2104_PID	0x2104	/* SeaLINK+485I (2104) */
--#define SEALEVEL_2106_PID	0x9020	/* SeaLINK+422 (2106) */
--#define SEALEVEL_2201_1_PID	0x2211	/* SeaPORT+2/232 (2201) Port 1 */
--#define SEALEVEL_2201_2_PID	0x2221	/* SeaPORT+2/232 (2201) Port 2 */
--#define SEALEVEL_2202_1_PID	0x2212	/* SeaPORT+2/485 (2202) Port 1 */
--#define SEALEVEL_2202_2_PID	0x2222	/* SeaPORT+2/485 (2202) Port 2 */
--#define SEALEVEL_2203_1_PID	0x2213	/* SeaPORT+2 (2203) Port 1 */
--#define SEALEVEL_2203_2_PID	0x2223	/* SeaPORT+2 (2203) Port 2 */
--#define SEALEVEL_2401_1_PID	0x2411	/* SeaPORT+4/232 (2401) Port 1 */
--#define SEALEVEL_2401_2_PID	0x2421	/* SeaPORT+4/232 (2401) Port 2 */
--#define SEALEVEL_2401_3_PID	0x2431	/* SeaPORT+4/232 (2401) Port 3 */
--#define SEALEVEL_2401_4_PID	0x2441	/* SeaPORT+4/232 (2401) Port 4 */
--#define SEALEVEL_2402_1_PID	0x2412	/* SeaPORT+4/485 (2402) Port 1 */
--#define SEALEVEL_2402_2_PID	0x2422	/* SeaPORT+4/485 (2402) Port 2 */
--#define SEALEVEL_2402_3_PID	0x2432	/* SeaPORT+4/485 (2402) Port 3 */
--#define SEALEVEL_2402_4_PID	0x2442	/* SeaPORT+4/485 (2402) Port 4 */
--#define SEALEVEL_2403_1_PID	0x2413	/* SeaPORT+4 (2403) Port 1 */
--#define SEALEVEL_2403_2_PID	0x2423	/* SeaPORT+4 (2403) Port 2 */
--#define SEALEVEL_2403_3_PID	0x2433	/* SeaPORT+4 (2403) Port 3 */
--#define SEALEVEL_2403_4_PID	0x2443	/* SeaPORT+4 (2403) Port 4 */
--#define SEALEVEL_2801_1_PID	0X2811	/* SeaLINK+8/232 (2801) Port 1 */
--#define SEALEVEL_2801_2_PID	0X2821	/* SeaLINK+8/232 (2801) Port 2 */
--#define SEALEVEL_2801_3_PID	0X2831	/* SeaLINK+8/232 (2801) Port 3 */
--#define SEALEVEL_2801_4_PID	0X2841	/* SeaLINK+8/232 (2801) Port 4 */
--#define SEALEVEL_2801_5_PID	0X2851	/* SeaLINK+8/232 (2801) Port 5 */
--#define SEALEVEL_2801_6_PID	0X2861	/* SeaLINK+8/232 (2801) Port 6 */
--#define SEALEVEL_2801_7_PID	0X2871	/* SeaLINK+8/232 (2801) Port 7 */
--#define SEALEVEL_2801_8_PID	0X2881	/* SeaLINK+8/232 (2801) Port 8 */
--#define SEALEVEL_2802_1_PID	0X2812	/* SeaLINK+8/485 (2802) Port 1 */
--#define SEALEVEL_2802_2_PID	0X2822	/* SeaLINK+8/485 (2802) Port 2 */
--#define SEALEVEL_2802_3_PID	0X2832	/* SeaLINK+8/485 (2802) Port 3 */
--#define SEALEVEL_2802_4_PID	0X2842	/* SeaLINK+8/485 (2802) Port 4 */
--#define SEALEVEL_2802_5_PID	0X2852	/* SeaLINK+8/485 (2802) Port 5 */
--#define SEALEVEL_2802_6_PID	0X2862	/* SeaLINK+8/485 (2802) Port 6 */
--#define SEALEVEL_2802_7_PID	0X2872	/* SeaLINK+8/485 (2802) Port 7 */
--#define SEALEVEL_2802_8_PID	0X2882	/* SeaLINK+8/485 (2802) Port 8 */
--#define SEALEVEL_2803_1_PID	0X2813	/* SeaLINK+8 (2803) Port 1 */
--#define SEALEVEL_2803_2_PID	0X2823 	/* SeaLINK+8 (2803) Port 2 */
--#define SEALEVEL_2803_3_PID	0X2833 	/* SeaLINK+8 (2803) Port 3 */
--#define SEALEVEL_2803_4_PID	0X2843 	/* SeaLINK+8 (2803) Port 4 */
--#define SEALEVEL_2803_5_PID	0X2853 	/* SeaLINK+8 (2803) Port 5 */
--#define SEALEVEL_2803_6_PID	0X2863 	/* SeaLINK+8 (2803) Port 6 */
--#define SEALEVEL_2803_7_PID	0X2873 	/* SeaLINK+8 (2803) Port 7 */
--#define SEALEVEL_2803_8_PID	0X2883 	/* SeaLINK+8 (2803) Port 8 */
--
--/*
-- * The following are the values for two KOBIL chipcard terminals.
-- */
--#define KOBIL_VID		0x0d46	/* KOBIL Vendor ID */
--#define KOBIL_CONV_B1_PID	0x2020	/* KOBIL Konverter for B1 */
--#define KOBIL_CONV_KAAN_PID	0x2021	/* KOBIL_Konverter for KAAN */
--
--/*
-- * Icom ID-1 digital transceiver
-- */
--
--#define ICOM_ID1_VID            0x0C26
--#define ICOM_ID1_PID            0x0004
--
--/*
-- * ASK.fr devices
-- */
--#define FTDI_ASK_RDR400_PID	0xC991	/* ASK RDR 400 series card reader */
--
--/*
-- * FTDI USB UART chips used in construction projects from the
-- * Elektor Electronics magazine (http://elektor-electronics.co.uk)
-- */
--#define ELEKTOR_VID		0x0C7D
--#define ELEKTOR_FT323R_PID	0x0005	/* RFID-Reader, issue 09-2006 */
--
--/*
-- * DSS-20 Sync Station for Sony Ericsson P800
-- */
--#define FTDI_DSS20_PID          0xFC82
--
--/*
-- * Home Electronics (www.home-electro.com) USB gadgets
-- */
--#define FTDI_HE_TIRA1_PID	0xFA78	/* Tira-1 IR transceiver */
--
--/* USB-UIRT - An infrared receiver and transmitter using the 8U232AM chip */
--/* http://home.earthlink.net/~jrhees/USBUIRT/index.htm */
--#define FTDI_USB_UIRT_PID	0xF850	/* Product Id */
--
--/* TNC-X USB-to-packet-radio adapter, versions prior to 3.0 (DLP module) */
--
--#define FTDI_TNC_X_PID		0xEBE0
--
--/*
-- * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
-- * All of these devices use FTDI's vendor ID (0x0403).
-- *
-- * The previously included PID for the UO 100 module was incorrect.
-- * In fact, that PID was for ELV's UR 100 USB-RS232 converter (0xFB58).
-- *
-- * Armin Laeuger originally sent the PID for the UM 100 module.
-- */
--#define FTDI_R2000KU_TRUE_RNG	0xFB80  /* R2000KU TRUE RNG */
--#define FTDI_ELV_UR100_PID	0xFB58	/* USB-RS232-Umsetzer (UR 100) */
--#define FTDI_ELV_UM100_PID	0xFB5A	/* USB-Modul UM 100 */
--#define FTDI_ELV_UO100_PID	0xFB5B	/* USB-Modul UO 100 */
--#define FTDI_ELV_ALC8500_PID	0xF06E	/* ALC 8500 Expert */
--/* Additional ELV PIDs that default to using the FTDI D2XX drivers on
-- * MS Windows, rather than the FTDI Virtual Com Port drivers.
-- * Maybe these will be easier to use with the libftdi/libusb user-space
-- * drivers, or possibly the Comedi drivers in some cases. */
--#define FTDI_ELV_CLI7000_PID	0xFB59	/* Computer-Light-Interface (CLI 7000) */
--#define FTDI_ELV_PPS7330_PID	0xFB5C	/* Processor-Power-Supply (PPS 7330) */
--#define FTDI_ELV_TFM100_PID	0xFB5D	/* Temperartur-Feuchte Messgeraet (TFM 100) */
--#define FTDI_ELV_UDF77_PID	0xFB5E	/* USB DCF Funkurh (UDF 77) */
--#define FTDI_ELV_UIO88_PID	0xFB5F	/* USB-I/O Interface (UIO 88) */
--#define FTDI_ELV_UAD8_PID	0xF068	/* USB-AD-Wandler (UAD 8) */
--#define FTDI_ELV_UDA7_PID	0xF069	/* USB-DA-Wandler (UDA 7) */
--#define FTDI_ELV_USI2_PID	0xF06A	/* USB-Schrittmotoren-Interface (USI 2) */
--#define FTDI_ELV_T1100_PID	0xF06B	/* Thermometer (T 1100) */
--#define FTDI_ELV_PCD200_PID	0xF06C	/* PC-Datenlogger (PCD 200) */
--#define FTDI_ELV_ULA200_PID	0xF06D	/* USB-LCD-Ansteuerung (ULA 200) */
--#define FTDI_ELV_FHZ1000PC_PID	0xF06F	/* FHZ 1000 PC */
--#define FTDI_ELV_CSI8_PID	0xE0F0	/* Computer-Schalt-Interface (CSI 8) */
--#define FTDI_ELV_EM1000DL_PID	0xE0F1	/* PC-Datenlogger fuer Energiemonitor (EM 1000 DL) */
--#define FTDI_ELV_PCK100_PID	0xE0F2	/* PC-Kabeltester (PCK 100) */
--#define FTDI_ELV_RFP500_PID	0xE0F3	/* HF-Leistungsmesser (RFP 500) */
--#define FTDI_ELV_FS20SIG_PID	0xE0F4	/* Signalgeber (FS 20 SIG) */
--#define FTDI_ELV_WS300PC_PID	0xE0F6	/* PC-Wetterstation (WS 300 PC) */
--#define FTDI_ELV_FHZ1300PC_PID	0xE0E8	/* FHZ 1300 PC */
--#define FTDI_ELV_WS500_PID	0xE0E9	/* PC-Wetterstation (WS 500) */
--#define FTDI_ELV_HS485_PID	0xE0EA	/* USB to RS-485 adapter */
--#define FTDI_ELV_EM1010PC_PID	0xE0EF	/* Engery monitor EM 1010 PC */
--#define FTDI_PHI_FISCO_PID      0xE40B  /* PHI Fisco USB to Serial cable */
--
--/*
-- * Definitions for ID TECH (www.idt-net.com) devices
-- */
--#define IDTECH_VID		0x0ACD	/* ID TECH Vendor ID */
--#define IDTECH_IDT1221U_PID	0x0300	/* IDT1221U USB to RS-232 adapter */
--
--/*
-- * Definitions for Omnidirectional Control Technology, Inc. devices
-- */
--#define OCT_VID			0x0B39	/* OCT vendor ID */
--/* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
--/* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
--/* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
--#define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
--
--/* an infrared receiver for user access control with IR tags */
--#define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
--
--/*
-- * Definitions for Artemis astronomical USB based cameras
-- * Check it at http://www.artemisccd.co.uk/
-- */
--#define FTDI_ARTEMIS_PID	0xDF28	/* All Artemis Cameras */
--
--/*
-- * Definitions for ATIK Instruments astronomical USB based cameras
-- * Check it at http://www.atik-instruments.com/
-- */
--#define FTDI_ATIK_ATK16_PID	0xDF30	/* ATIK ATK-16 Grayscale Camera */
--#define FTDI_ATIK_ATK16C_PID	0xDF32	/* ATIK ATK-16C Colour Camera */
--#define FTDI_ATIK_ATK16HR_PID	0xDF31	/* ATIK ATK-16HR Grayscale Camera */
--#define FTDI_ATIK_ATK16HRC_PID	0xDF33	/* ATIK ATK-16HRC Colour Camera */
--#define FTDI_ATIK_ATK16IC_PID   0xDF35  /* ATIK ATK-16IC Grayscale Camera */
--
--/*
-- * Protego product ids
-- */
--#define PROTEGO_SPECIAL_1	0xFC70	/* special/unknown device */
--#define PROTEGO_R2X0		0xFC71	/* R200-USB TRNG unit (R210, R220, and R230) */
--#define PROTEGO_SPECIAL_3	0xFC72	/* special/unknown device */
--#define PROTEGO_SPECIAL_4	0xFC73	/* special/unknown device */
--
--/*
-- * Gude Analog- und Digitalsysteme GmbH
-- */
--#define FTDI_GUDEADS_E808_PID    0xE808
--#define FTDI_GUDEADS_E809_PID    0xE809
--#define FTDI_GUDEADS_E80A_PID    0xE80A
--#define FTDI_GUDEADS_E80B_PID    0xE80B
--#define FTDI_GUDEADS_E80C_PID    0xE80C
--#define FTDI_GUDEADS_E80D_PID    0xE80D
--#define FTDI_GUDEADS_E80E_PID    0xE80E
--#define FTDI_GUDEADS_E80F_PID    0xE80F
--#define FTDI_GUDEADS_E888_PID    0xE888  /* Expert ISDN Control USB */
--#define FTDI_GUDEADS_E889_PID    0xE889  /* USB RS-232 OptoBridge */
--#define FTDI_GUDEADS_E88A_PID    0xE88A
--#define FTDI_GUDEADS_E88B_PID    0xE88B
--#define FTDI_GUDEADS_E88C_PID    0xE88C
--#define FTDI_GUDEADS_E88D_PID    0xE88D
--#define FTDI_GUDEADS_E88E_PID    0xE88E
--#define FTDI_GUDEADS_E88F_PID    0xE88F
--
--/*
-- * Linx Technologies product ids
-- */
--#define LINX_SDMUSBQSS_PID	0xF448	/* Linx SDM-USB-QS-S */
--#define LINX_MASTERDEVEL2_PID   0xF449   /* Linx Master Development 2.0 */
--#define LINX_FUTURE_0_PID   0xF44A   /* Linx future device */
--#define LINX_FUTURE_1_PID   0xF44B   /* Linx future device */
--#define LINX_FUTURE_2_PID   0xF44C   /* Linx future device */
--
--/* CCS Inc. ICDU/ICDU40 product ID - the FT232BM is used in an in-circuit-debugger */
--/* unit for PIC16's/PIC18's */
--#define FTDI_CCSICDU20_0_PID    0xF9D0
--#define FTDI_CCSICDU40_1_PID    0xF9D1
--#define FTDI_CCSMACHX_2_PID     0xF9D2
--#define FTDI_CCSLOAD_N_GO_3_PID 0xF9D3
--#define FTDI_CCSICDU64_4_PID    0xF9D4
--#define FTDI_CCSPRIME8_5_PID    0xF9D5
--
--/* Inside Accesso contactless reader (http://www.insidefr.com) */
--#define INSIDE_ACCESSO		0xFAD0
--
--/*
-- * Intrepid Control Systems (http://www.intrepidcs.com/) ValueCAN and NeoVI
-- */
--#define INTREPID_VID		0x093C
--#define INTREPID_VALUECAN_PID	0x0601
--#define INTREPID_NEOVI_PID	0x0701
--
--/*
-- * Falcom Wireless Communications GmbH
-- */
--#define FALCOM_VID		0x0F94	/* Vendor Id */
--#define FALCOM_TWIST_PID	0x0001	/* Falcom Twist USB GPRS modem */
--#define FALCOM_SAMBA_PID	0x0005	/* Falcom Samba USB GPRS modem */
--
--/*
-- * SUUNTO product ids
-- */
--#define FTDI_SUUNTO_SPORTS_PID	0xF680	/* Suunto Sports instrument */
--
--/*
-- * Oceanic product ids
-- */
--#define FTDI_OCEANIC_PID	0xF460  /* Oceanic dive instrument */
--
--/*
-- * TTi (Thurlby Thandar Instruments)
-- */
--#define TTI_VID			0x103E	/* Vendor Id */
--#define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
--
--/*
-- * Definitions for B&B Electronics products.
-- */
--#define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
--#define BANDB_USOTL4_PID	0xAC01	/* USOTL4 Isolated RS-485 Converter */
--#define BANDB_USTL4_PID		0xAC02	/* USTL4 RS-485 Converter */
--#define BANDB_USO9ML2_PID	0xAC03	/* USO9ML2 Isolated RS-232 Converter */
--#define BANDB_USOPTL4_PID	0xAC11
--#define BANDB_USPTL4_PID	0xAC12
--#define BANDB_USO9ML2DR_2_PID	0xAC16
--#define BANDB_USO9ML2DR_PID	0xAC17
--#define BANDB_USOPTL4DR2_PID	0xAC18	/* USOPTL4R-2 2-port Isolated RS-232 Converter */
--#define BANDB_USOPTL4DR_PID	0xAC19
--#define BANDB_485USB9F_2W_PID	0xAC25
--#define BANDB_485USB9F_4W_PID	0xAC26
--#define BANDB_232USB9M_PID	0xAC27
--#define BANDB_485USBTB_2W_PID	0xAC33
--#define BANDB_485USBTB_4W_PID	0xAC34
--#define BANDB_TTL5USB9M_PID	0xAC49
--#define BANDB_TTL3USB9M_PID	0xAC50
--#define BANDB_ZZ_PROG1_USB_PID	0xBA02
--
--/*
-- * RM Michaelides CANview USB (http://www.rmcan.com)
-- * CAN fieldbus interface adapter, added by port GmbH www.port.de)
-- * Ian Abbott changed the macro names for consistency.
-- */
--#define FTDI_RM_CANVIEW_PID	0xfd60	/* Product Id */
--
--/*
-- * EVER Eco Pro UPS (http://www.ever.com.pl/)
-- */
--
--#define	EVER_ECO_PRO_CDS	0xe520	/* RS-232 converter */
--
--/*
-- * 4N-GALAXY.DE PIDs for CAN-USB, USB-RS232, USB-RS422, USB-RS485,
-- * USB-TTY activ, USB-TTY passiv.  Some PIDs are used by several devices
-- * and I'm not entirely sure which are used by which.
-- */
--#define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
--#define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
--
--/*
-- * Mobility Electronics products.
-- */
--#define MOBILITY_VID			0x1342
--#define MOBILITY_USB_SERIAL_PID		0x0202	/* EasiDock USB 200 serial */
--
--/*
-- * microHAM product IDs (http://www.microham.com).
-- * Submitted by Justin Burket (KL1RL) <zorton@jtan.com>
-- * and Mike Studer (K6EEP) <k6eep@hamsoftware.org>.
-- * Ian Abbott <abbotti@mev.co.uk> added a few more from the driver INF file.
-- */
--#define FTDI_MHAM_KW_PID 0xEEE8		/* USB-KW interface */
--#define FTDI_MHAM_YS_PID 0xEEE9		/* USB-YS interface */
--#define FTDI_MHAM_Y6_PID 0xEEEA		/* USB-Y6 interface */
--#define FTDI_MHAM_Y8_PID 0xEEEB		/* USB-Y8 interface */
--#define FTDI_MHAM_IC_PID 0xEEEC		/* USB-IC interface */
--#define FTDI_MHAM_DB9_PID 0xEEED	/* USB-DB9 interface */
--#define FTDI_MHAM_RS232_PID 0xEEEE	/* USB-RS232 interface */
--#define FTDI_MHAM_Y9_PID 0xEEEF		/* USB-Y9 interface */
--
--/*
-- * Active Robots product ids.
-- */
--#define FTDI_ACTIVE_ROBOTS_PID	0xE548	/* USB comms board */
--
--/*
-- * Xsens Technologies BV products (http://www.xsens.com).
-- */
--#define XSENS_CONVERTER_0_PID	0xD388
--#define XSENS_CONVERTER_1_PID	0xD389
--#define XSENS_CONVERTER_2_PID	0xD38A
--#define XSENS_CONVERTER_3_PID	0xD38B
--#define XSENS_CONVERTER_4_PID	0xD38C
--#define XSENS_CONVERTER_5_PID	0xD38D
--#define XSENS_CONVERTER_6_PID	0xD38E
--#define XSENS_CONVERTER_7_PID	0xD38F
--
--/*
-- * Teratronik product ids.
-- * Submitted by O. WÃ¶lfelschneider.
-- */
--#define FTDI_TERATRONIK_VCP_PID	 0xEC88	/* Teratronik device (preferring VCP driver on windows) */
--#define FTDI_TERATRONIK_D2XX_PID 0xEC89	/* Teratronik device (preferring D2XX driver on windows) */
--
--/*
-- * Evolution Robotics products (http://www.evolution.com/).
-- * Submitted by Shawn M. Lavelle.
-- */
--#define EVOLUTION_VID		0xDEEE	/* Vendor ID */
--#define EVOLUTION_ER1_PID	0x0300	/* ER1 Control Module */
--#define EVO_8U232AM_PID	0x02FF	/* Evolution robotics RCM2 (FT232AM)*/
--#define EVO_HYBRID_PID		0x0302	/* Evolution robotics RCM4 PID (FT232BM)*/
--#define EVO_RCM4_PID		0x0303	/* Evolution robotics RCM4 PID */
--
--/* Pyramid Computer GmbH */
--#define FTDI_PYRAMID_PID	0xE6C8	/* Pyramid Appliance Display */
--
--/*
-- * NDI (www.ndigital.com) product ids
-- */
--#define FTDI_NDI_HUC_PID		0xDA70	/* NDI Host USB Converter */
--#define FTDI_NDI_SPECTRA_SCU_PID	0xDA71	/* NDI Spectra SCU */
--#define FTDI_NDI_FUTURE_2_PID		0xDA72	/* NDI future device #2 */
--#define FTDI_NDI_FUTURE_3_PID		0xDA73	/* NDI future device #3 */
--#define FTDI_NDI_AURORA_SCU_PID		0xDA74	/* NDI Aurora SCU */
--
--/*
-- * Posiflex inc retail equipment (http://www.posiflex.com.tw)
-- */
--#define POSIFLEX_VID		0x0d3a  /* Vendor ID */
--#define POSIFLEX_PP7000_PID	0x0300  /* PP-7000II thermal printer */
--
--/*
-- * Westrex International devices submitted by Cory Lee
-- */
--#define FTDI_WESTREX_MODEL_777_PID	0xDC00	/* Model 777 */
--#define FTDI_WESTREX_MODEL_8900F_PID	0xDC01	/* Model 8900F */
--
--/*
-- * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
-- */
--#define FTDI_RRCIRKITS_LOCOBUFFER_PID	0xc7d0	/* LocoBuffer USB */
--
--/*
-- * Eclo (http://www.eclo.pt/) product IDs.
-- * PID 0xEA90 submitted by Martin Grill.
-- */
--#define FTDI_ECLO_COM_1WIRE_PID	0xEA90	/* COM to 1-Wire USB adaptor */
--
--/*
-- * Papouch products (http://www.papouch.com/)
-- * Submitted by Folkert van Heusden
-- */
--
--#define PAPOUCH_VID			0x5050	/* Vendor ID */
--#define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
--#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
--
--/*
-- * ACG Identification Technologies GmbH products (http://www.acg.de/).
-- * Submitted by anton -at- goto10 -dot- org.
-  */
--#define FTDI_ACG_HFDUAL_PID		0xDD20	/* HF Dual ISO Reader (RFID) */
--
--/*
-- * Yost Engineering, Inc. products (www.yostengineering.com).
-- * PID 0xE050 submitted by Aaron Prose.
-- */
--#define FTDI_YEI_SERVOCENTER31_PID	0xE050	/* YEI ServoCenter3.1 USB */
--
--/*
-- * ThorLabs USB motor drivers
-- */
--#define FTDI_THORLABS_PID		0xfaf0 /* ThorLabs USB motor drivers */
--
--/*
-- * Testo products (http://www.testo.com/)
-- * Submitted by Colin Leroy
-- */
--#define TESTO_VID			0x128D
--#define TESTO_USB_INTERFACE_PID		0x0001
--
--/*
-- * Gamma Scout (http://gamma-scout.com/). Submitted by rsc@runtux.com.
-- */
--#define FTDI_GAMMA_SCOUT_PID		0xD678	/* Gamma Scout online */
--
--/*
-- * Tactrix OpenPort (ECU) devices.
-- * OpenPort 1.3M submitted by Donour Sizemore.
-- * OpenPort 1.3S and 1.3U submitted by Ian Abbott.
-- */
--#define FTDI_TACTRIX_OPENPORT_13M_PID	0xCC48	/* OpenPort 1.3 Mitsubishi */
--#define FTDI_TACTRIX_OPENPORT_13S_PID	0xCC49	/* OpenPort 1.3 Subaru */
--#define FTDI_TACTRIX_OPENPORT_13U_PID	0xCC4A	/* OpenPort 1.3 Universal */
--
--/*
-- * Telldus Technologies
-- */
--#define TELLDUS_VID			0x1781	/* Vendor ID */
--#define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
--
--/*
-- * IBS elektronik product ids
-- * Submitted by Thomas Schleusener
-- */
--#define FTDI_IBS_US485_PID	0xff38  /* IBS US485 (USB<-->RS422/485 interface) */
--#define FTDI_IBS_PICPRO_PID	0xff39  /* IBS PIC-Programmer */
--#define FTDI_IBS_PCMCIA_PID	0xff3a  /* IBS Card reader for PCMCIA SRAM-cards */
--#define FTDI_IBS_PK1_PID	0xff3b  /* IBS PK1 - Particel counter */
--#define FTDI_IBS_RS232MON_PID	0xff3c  /* IBS RS232 - Monitor */
--#define FTDI_IBS_APP70_PID	0xff3d  /* APP 70 (dust monitoring system) */
--#define FTDI_IBS_PEDO_PID	0xff3e  /* IBS PEDO-Modem (RF modem 868.35 MHz) */
--#define FTDI_IBS_PROD_PID	0xff3f  /* future device */
--
--/*
-- *  MaxStream devices	www.maxstream.net
-- */
--#define FTDI_MAXSTREAM_PID	0xEE18	/* Xbee PKG-U Module */
--
--/* Olimex */
--#define OLIMEX_VID			0x15BA
--#define OLIMEX_ARM_USB_OCD_PID		0x0003
--
--/* Luminary Micro Stellaris Boards, VID = FTDI_VID */
--/* FTDI 2332C Dual channel device, side A=245 FIFO (JTAG), Side B=RS232 UART */
--#define LMI_LM3S_DEVEL_BOARD_PID	0xbcd8
--#define LMI_LM3S_EVAL_BOARD_PID		0xbcd9
--
--/* www.elsterelectricity.com Elster Unicom III Optical Probe */
--#define FTDI_ELSTER_UNICOM_PID		0xE700 /* Product Id */
--
--/*
-- * The Mobility Lab (TML)
-- * Submitted by Pierre Castella
-- */
--#define TML_VID			0x1B91	/* Vendor ID */
--#define TML_USB_SERIAL_PID	0x0064	/* USB - Serial Converter */
--
--/* Propox devices */
--#define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
--
--/* Rig Expert Ukraine devices */
--#define FTDI_REU_TINY_PID		0xED22	/* RigExpert Tiny */
--
--/* Domintell products  http://www.domintell.com */
--#define FTDI_DOMINTELL_DGQG_PID	0xEF50	/* Master */
--#define FTDI_DOMINTELL_DUSB_PID	0xEF51	/* DUSB01 module */
--
--/* Alti-2 products  http://www.alti-2.com */
--#define ALTI2_VID	0x1BC9
--#define ALTI2_N3_PID	0x6001	/* Neptune 3 */
- 
- /* Commands */
- #define FTDI_SIO_RESET 		0 /* Reset the port */
-@@ -910,86 +40,6 @@
- #define INTERFACE_C		3
- #define INTERFACE_D		4
- 
--/*
-- * FIC / OpenMoko, Inc. http://wiki.openmoko.org/wiki/Neo1973_Debug_Board_v3
-- * Submitted by Harald Welte <laforge@openmoko.org>
-- */
--#define	FIC_VID			0x1457
--#define	FIC_NEO1973_DEBUG_PID	0x5118
--
--/*
-- * RATOC REX-USB60F
-- */
--#define RATOC_VENDOR_ID		0x0584
--#define RATOC_PRODUCT_ID_USB60F	0xb020
--
--/*
-- * DIEBOLD BCS SE923
-- */
--#define DIEBOLD_BCS_SE923_PID	0xfb99
--
--/*
-- * Atmel STK541
-- */
--#define ATMEL_VID		0x03eb /* Vendor ID */
--#define STK541_PID		0x2109 /* Zigbee Controller */
--
--/*
-- * Dresden Elektronic Sensor Terminal Board
-- */
--#define DE_VID			0x1cf1 /* Vendor ID */
--#define STB_PID			0x0001 /* Sensor Terminal Board */
--#define WHT_PID			0x0004 /* Wireless Handheld Terminal */
--
--/*
-- * Blackfin gnICE JTAG
-- * http://docs.blackfin.uclinux.org/doku.php?id=hw:jtag:gnice
-- */
--#define ADI_VID 		0x0456
--#define ADI_GNICE_PID 		0xF000
--#define ADI_GNICEPLUS_PID 	0xF001
--
--/*
-- * JETI SPECTROMETER SPECBOS 1201
-- * http://www.jeti.com/products/sys/scb/scb1201.php
-- */
--#define JETI_VID		0x0c6c
--#define JETI_SPC1201_PID	0x04b2
--
--/*
-- * Marvell SheevaPlug
-- */
--#define MARVELL_VID		0x9e88
--#define MARVELL_SHEEVAPLUG_PID	0x9e8f
--
--#define FTDI_TURTELIZER_PID	0xBDC8 /* JTAG/RS-232 adapter by egnite GmBH */
--
--/*
-- * GN Otometrics (http://www.otometrics.com)
-- * Submitted by Ville Sundberg.
-- */
--#define GN_OTOMETRICS_VID	0x0c33	/* Vendor ID */
--#define AURICAL_USB_PID		0x0010	/* Aurical USB Audiometer */
--
--/*
-- * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-- * http://winglucofacts.com/cables/
-- */
--#define BAYER_VID                      0x1A79
--#define BAYER_CONTOUR_CABLE_PID        0x6001
--
--/*
-- * Marvell OpenRD Base, Client
-- * http://www.open-rd.org
-- * OpenRD Base, Client use VID 0x0403
-- */
--#define MARVELL_OPENRD_PID	0x9e90
--
--/*
-- * Hameg HO820 and HO870 interface (using VID 0x0403)
-- */
--#define        HAMEG_HO820_PID         0xed74
--#define        HAMEG_HO870_PID         0xed71
- 
- /*
-  *   BmRequestType:  1100 0000b
-@@ -1504,4 +554,3 @@ typedef enum {
-  * B2..7	Length of message - (not including Byte 0)
-  *
-  */
--
 diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-new file mode 100644
-index 0000000..d10b5a8
---- /dev/null
+index c8951ae..d10b5a8 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
 +++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -0,0 +1,1019 @@
-+/*
-+ * vendor/product IDs (VID/PID) of devices using FTDI USB serial converters.
-+ * Please keep numerically sorted within individual areas, thanks!
-+ *
-+ * Philipp Gühring - pg@futureware.at - added the Device ID of the USB relais
-+ * from Rudolf Gugler
-+ *
-+ */
-+
-+
-+/**********************************/
-+/***** devices using FTDI VID *****/
-+/**********************************/
-+
-+
-+#define FTDI_VID	0x0403	/* Vendor Id */
-+
-+
-+/*** "original" FTDI device PIDs ***/
-+
-+#define FTDI_8U232AM_PID 0x6001 /* Similar device to SIO above */
-+#define FTDI_8U232AM_ALT_PID 0x6006 /* FTDI's alternate PID for above */
-+#define FTDI_8U2232C_PID 0x6010 /* Dual channel device */
-+#define FTDI_4232H_PID 0x6011 /* Quad channel hi-speed device */
-+#define FTDI_SIO_PID	0x8372	/* Product Id SIO application of 8U100AX  */
-+#define FTDI_232RL_PID  0xFBFA  /* Product ID for FT232RL */
-+
-+
-+/*** third-party PIDs (using FTDI_VID) ***/
-+
-+/*
-+ * Marvell OpenRD Base, Client
-+ * http://www.open-rd.org
-+ * OpenRD Base, Client use VID 0x0403
-+ */
-+#define MARVELL_OPENRD_PID	0x9e90
-+
-+/* www.candapter.com Ewert Energy Systems CANdapter device */
-+#define FTDI_CANDAPTER_PID 0x9F80 /* Product Id */
-+
-+#define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
-+
-+/* OOCDlink by Joern Kaipf <joernk@web.de>
-+ * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink) */
-+#define FTDI_OOCDLINK_PID	0xbaf8	/* Amontec JTAGkey */
-+
-+/* Luminary Micro Stellaris Boards, VID = FTDI_VID */
-+/* FTDI 2332C Dual channel device, side A=245 FIFO (JTAG), Side B=RS232 UART */
-+#define LMI_LM3S_DEVEL_BOARD_PID	0xbcd8
-+#define LMI_LM3S_EVAL_BOARD_PID		0xbcd9
-+
-+#define FTDI_TURTELIZER_PID	0xBDC8 /* JTAG/RS-232 adapter by egnite GmBH */
-+
-+/* OpenDCC (www.opendcc.de) product id */
-+#define FTDI_OPENDCC_PID	0xBFD8
-+#define FTDI_OPENDCC_SNIFFER_PID	0xBFD9
-+#define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
-+#define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
-+
-+/*
-+ * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
-+ */
-+#define FTDI_RRCIRKITS_LOCOBUFFER_PID	0xc7d0	/* LocoBuffer USB */
-+
-+/* DMX4ALL DMX Interfaces */
-+#define FTDI_DMX4ALL 0xC850
-+
-+/*
-+ * ASK.fr devices
-+ */
-+#define FTDI_ASK_RDR400_PID	0xC991	/* ASK RDR 400 series card reader */
-+
-+/* www.starting-point-systems.com µChameleon device */
-+#define FTDI_MICRO_CHAMELEON_PID	0xCAA0	/* Product Id */
-+
-+/*
-+ * Tactrix OpenPort (ECU) devices.
-+ * OpenPort 1.3M submitted by Donour Sizemore.
-+ * OpenPort 1.3S and 1.3U submitted by Ian Abbott.
-+ */
-+#define FTDI_TACTRIX_OPENPORT_13M_PID	0xCC48	/* OpenPort 1.3 Mitsubishi */
-+#define FTDI_TACTRIX_OPENPORT_13S_PID	0xCC49	/* OpenPort 1.3 Subaru */
-+#define FTDI_TACTRIX_OPENPORT_13U_PID	0xCC4A	/* OpenPort 1.3 Universal */
-+
-+/* SCS HF Radio Modems PID's (http://www.scs-ptc.com) */
-+/* the VID is the standard ftdi vid (FTDI_VID) */
-+#define FTDI_SCS_DEVICE_0_PID 0xD010    /* SCS PTC-IIusb */
-+#define FTDI_SCS_DEVICE_1_PID 0xD011    /* SCS Tracker / DSP TNC */
-+#define FTDI_SCS_DEVICE_2_PID 0xD012
-+#define FTDI_SCS_DEVICE_3_PID 0xD013
-+#define FTDI_SCS_DEVICE_4_PID 0xD014
-+#define FTDI_SCS_DEVICE_5_PID 0xD015
-+#define FTDI_SCS_DEVICE_6_PID 0xD016
-+#define FTDI_SCS_DEVICE_7_PID 0xD017
-+
-+/* iPlus device */
-+#define FTDI_IPLUS_PID 0xD070 /* Product Id */
-+#define FTDI_IPLUS2_PID 0xD071 /* Product Id */
-+
-+/*
-+ * Gamma Scout (http://gamma-scout.com/). Submitted by rsc@runtux.com.
-+ */
-+#define FTDI_GAMMA_SCOUT_PID		0xD678	/* Gamma Scout online */
-+
-+/* Propox devices */
-+#define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
-+
-+/*
-+ * Xsens Technologies BV products (http://www.xsens.com).
-+ */
-+#define XSENS_CONVERTER_0_PID	0xD388
-+#define XSENS_CONVERTER_1_PID	0xD389
-+#define XSENS_CONVERTER_2_PID	0xD38A
-+#define XSENS_CONVERTER_3_PID	0xD38B
-+#define XSENS_CONVERTER_4_PID	0xD38C
-+#define XSENS_CONVERTER_5_PID	0xD38D
-+#define XSENS_CONVERTER_6_PID	0xD38E
-+#define XSENS_CONVERTER_7_PID	0xD38F
-+
-+/*
-+ * NDI (www.ndigital.com) product ids
-+ */
-+#define FTDI_NDI_HUC_PID		0xDA70	/* NDI Host USB Converter */
-+#define FTDI_NDI_SPECTRA_SCU_PID	0xDA71	/* NDI Spectra SCU */
-+#define FTDI_NDI_FUTURE_2_PID		0xDA72	/* NDI future device #2 */
-+#define FTDI_NDI_FUTURE_3_PID		0xDA73	/* NDI future device #3 */
-+#define FTDI_NDI_AURORA_SCU_PID		0xDA74	/* NDI Aurora SCU */
-+
-+/*
-+ * Westrex International devices submitted by Cory Lee
-+ */
-+#define FTDI_WESTREX_MODEL_777_PID	0xDC00	/* Model 777 */
-+#define FTDI_WESTREX_MODEL_8900F_PID	0xDC01	/* Model 8900F */
-+
-+/*
-+ * ACG Identification Technologies GmbH products (http://www.acg.de/).
-+ * Submitted by anton -at- goto10 -dot- org.
-+ */
-+#define FTDI_ACG_HFDUAL_PID		0xDD20	/* HF Dual ISO Reader (RFID) */
-+
-+/*
-+ * Definitions for Artemis astronomical USB based cameras
-+ * Check it at http://www.artemisccd.co.uk/
-+ */
-+#define FTDI_ARTEMIS_PID	0xDF28	/* All Artemis Cameras */
-+
-+/*
-+ * Definitions for ATIK Instruments astronomical USB based cameras
-+ * Check it at http://www.atik-instruments.com/
-+ */
-+#define FTDI_ATIK_ATK16_PID	0xDF30	/* ATIK ATK-16 Grayscale Camera */
-+#define FTDI_ATIK_ATK16C_PID	0xDF32	/* ATIK ATK-16C Colour Camera */
-+#define FTDI_ATIK_ATK16HR_PID	0xDF31	/* ATIK ATK-16HR Grayscale Camera */
-+#define FTDI_ATIK_ATK16HRC_PID	0xDF33	/* ATIK ATK-16HRC Colour Camera */
-+#define FTDI_ATIK_ATK16IC_PID   0xDF35  /* ATIK ATK-16IC Grayscale Camera */
-+
-+/*
-+ * Yost Engineering, Inc. products (www.yostengineering.com).
-+ * PID 0xE050 submitted by Aaron Prose.
-+ */
-+#define FTDI_YEI_SERVOCENTER31_PID	0xE050	/* YEI ServoCenter3.1 USB */
-+
-+/*
-+ * ELV USB devices submitted by Christian Abt of ELV (www.elv.de).
-+ * All of these devices use FTDI's vendor ID (0x0403).
-+ * Further IDs taken from ELV Windows .inf file.
-+ *
-+ * The previously included PID for the UO 100 module was incorrect.
-+ * In fact, that PID was for ELV's UR 100 USB-RS232 converter (0xFB58).
-+ *
-+ * Armin Laeuger originally sent the PID for the UM 100 module.
-+ */
-+#define FTDI_ELV_USR_PID	0xE000	/* ELV Universal-Sound-Recorder */
-+#define FTDI_ELV_MSM1_PID	0xE001	/* ELV Mini-Sound-Modul */
-+#define FTDI_ELV_KL100_PID	0xE002	/* ELV Kfz-Leistungsmesser KL 100 */
-+#define FTDI_ELV_WS550_PID	0xE004	/* WS 550 */
-+#define FTDI_ELV_EC3000_PID	0xE006	/* ENERGY CONTROL 3000 USB */
-+#define FTDI_ELV_WS888_PID	0xE008	/* WS 888 */
-+#define FTDI_ELV_TWS550_PID	0xE009	/* Technoline WS 550 */
-+#define FTDI_ELV_FEM_PID	0xE00A	/* Funk Energie Monitor */
-+#define FTDI_ELV_FHZ1300PC_PID	0xE0E8	/* FHZ 1300 PC */
-+#define FTDI_ELV_WS500_PID	0xE0E9	/* PC-Wetterstation (WS 500) */
-+#define FTDI_ELV_HS485_PID	0xE0EA	/* USB to RS-485 adapter */
-+#define FTDI_ELV_UMS100_PID	0xE0EB	/* ELV USB Master-Slave Schaltsteckdose UMS 100 */
-+#define FTDI_ELV_TFD128_PID	0xE0EC	/* ELV Temperatur-Feuchte-Datenlogger TFD 128 */
-+#define FTDI_ELV_FM3RX_PID	0xE0ED	/* ELV Messwertuebertragung FM3 RX */
-+#define FTDI_ELV_WS777_PID	0xE0EE	/* Conrad WS 777 */
-+#define FTDI_ELV_EM1010PC_PID	0xE0EF	/* Engery monitor EM 1010 PC */
-+#define FTDI_ELV_CSI8_PID	0xE0F0	/* Computer-Schalt-Interface (CSI 8) */
-+#define FTDI_ELV_EM1000DL_PID	0xE0F1	/* PC-Datenlogger fuer Energiemonitor (EM 1000 DL) */
-+#define FTDI_ELV_PCK100_PID	0xE0F2	/* PC-Kabeltester (PCK 100) */
-+#define FTDI_ELV_RFP500_PID	0xE0F3	/* HF-Leistungsmesser (RFP 500) */
-+#define FTDI_ELV_FS20SIG_PID	0xE0F4	/* Signalgeber (FS 20 SIG) */
-+#define FTDI_ELV_UTP8_PID	0xE0F5	/* ELV UTP 8 */
-+#define FTDI_ELV_WS300PC_PID	0xE0F6	/* PC-Wetterstation (WS 300 PC) */
-+#define FTDI_ELV_WS444PC_PID	0xE0F7	/* Conrad WS 444 PC */
-+#define FTDI_PHI_FISCO_PID      0xE40B  /* PHI Fisco USB to Serial cable */
-+#define FTDI_ELV_UAD8_PID	0xF068	/* USB-AD-Wandler (UAD 8) */
-+#define FTDI_ELV_UDA7_PID	0xF069	/* USB-DA-Wandler (UDA 7) */
-+#define FTDI_ELV_USI2_PID	0xF06A	/* USB-Schrittmotoren-Interface (USI 2) */
-+#define FTDI_ELV_T1100_PID	0xF06B	/* Thermometer (T 1100) */
-+#define FTDI_ELV_PCD200_PID	0xF06C	/* PC-Datenlogger (PCD 200) */
-+#define FTDI_ELV_ULA200_PID	0xF06D	/* USB-LCD-Ansteuerung (ULA 200) */
-+#define FTDI_ELV_ALC8500_PID	0xF06E	/* ALC 8500 Expert */
-+#define FTDI_ELV_FHZ1000PC_PID	0xF06F	/* FHZ 1000 PC */
-+#define FTDI_ELV_UR100_PID	0xFB58	/* USB-RS232-Umsetzer (UR 100) */
-+#define FTDI_ELV_UM100_PID	0xFB5A	/* USB-Modul UM 100 */
-+#define FTDI_ELV_UO100_PID	0xFB5B	/* USB-Modul UO 100 */
-+/* Additional ELV PIDs that default to using the FTDI D2XX drivers on
-+ * MS Windows, rather than the FTDI Virtual Com Port drivers.
-+ * Maybe these will be easier to use with the libftdi/libusb user-space
-+ * drivers, or possibly the Comedi drivers in some cases. */
-+#define FTDI_ELV_CLI7000_PID	0xFB59	/* Computer-Light-Interface (CLI 7000) */
-+#define FTDI_ELV_PPS7330_PID	0xFB5C	/* Processor-Power-Supply (PPS 7330) */
-+#define FTDI_ELV_TFM100_PID	0xFB5D	/* Temperartur-Feuchte Messgeraet (TFM 100) */
-+#define FTDI_ELV_UDF77_PID	0xFB5E	/* USB DCF Funkurh (UDF 77) */
-+#define FTDI_ELV_UIO88_PID	0xFB5F	/* USB-I/O Interface (UIO 88) */
-+
-+/*
-+ * EVER Eco Pro UPS (http://www.ever.com.pl/)
-+ */
-+
-+#define	EVER_ECO_PRO_CDS	0xe520	/* RS-232 converter */
-+
-+/*
-+ * Active Robots product ids.
-+ */
-+#define FTDI_ACTIVE_ROBOTS_PID	0xE548	/* USB comms board */
-+
-+/* Pyramid Computer GmbH */
-+#define FTDI_PYRAMID_PID	0xE6C8	/* Pyramid Appliance Display */
-+
-+/* www.elsterelectricity.com Elster Unicom III Optical Probe */
-+#define FTDI_ELSTER_UNICOM_PID		0xE700 /* Product Id */
-+
-+/*
-+ * Gude Analog- und Digitalsysteme GmbH
-+ */
-+#define FTDI_GUDEADS_E808_PID    0xE808
-+#define FTDI_GUDEADS_E809_PID    0xE809
-+#define FTDI_GUDEADS_E80A_PID    0xE80A
-+#define FTDI_GUDEADS_E80B_PID    0xE80B
-+#define FTDI_GUDEADS_E80C_PID    0xE80C
-+#define FTDI_GUDEADS_E80D_PID    0xE80D
-+#define FTDI_GUDEADS_E80E_PID    0xE80E
-+#define FTDI_GUDEADS_E80F_PID    0xE80F
-+#define FTDI_GUDEADS_E888_PID    0xE888  /* Expert ISDN Control USB */
-+#define FTDI_GUDEADS_E889_PID    0xE889  /* USB RS-232 OptoBridge */
-+#define FTDI_GUDEADS_E88A_PID    0xE88A
-+#define FTDI_GUDEADS_E88B_PID    0xE88B
-+#define FTDI_GUDEADS_E88C_PID    0xE88C
-+#define FTDI_GUDEADS_E88D_PID    0xE88D
-+#define FTDI_GUDEADS_E88E_PID    0xE88E
-+#define FTDI_GUDEADS_E88F_PID    0xE88F
-+
-+/*
-+ * Eclo (http://www.eclo.pt/) product IDs.
-+ * PID 0xEA90 submitted by Martin Grill.
-+ */
-+#define FTDI_ECLO_COM_1WIRE_PID	0xEA90	/* COM to 1-Wire USB adaptor */
-+
-+/* TNC-X USB-to-packet-radio adapter, versions prior to 3.0 (DLP module) */
-+#define FTDI_TNC_X_PID		0xEBE0
-+
-+/*
-+ * Teratronik product ids.
-+ * Submitted by O. Wölfelschneider.
-+ */
-+#define FTDI_TERATRONIK_VCP_PID	 0xEC88	/* Teratronik device (preferring VCP driver on windows) */
-+#define FTDI_TERATRONIK_D2XX_PID 0xEC89	/* Teratronik device (preferring D2XX driver on windows) */
-+
-+/* Rig Expert Ukraine devices */
-+#define FTDI_REU_TINY_PID		0xED22	/* RigExpert Tiny */
-+
-+/*
-+ * Hameg HO820 and HO870 interface (using VID 0x0403)
-+ */
-+#define        HAMEG_HO820_PID         0xed74
-+#define        HAMEG_HO870_PID         0xed71
-+
-+/*
-+ *  MaxStream devices	www.maxstream.net
-+ */
-+#define FTDI_MAXSTREAM_PID	0xEE18	/* Xbee PKG-U Module */
-+
-+/*
-+ * microHAM product IDs (http://www.microham.com).
-+ * Submitted by Justin Burket (KL1RL) <zorton@jtan.com>
-+ * and Mike Studer (K6EEP) <k6eep@hamsoftware.org>.
-+ * Ian Abbott <abbotti@mev.co.uk> added a few more from the driver INF file.
-+ */
-+#define FTDI_MHAM_KW_PID 0xEEE8		/* USB-KW interface */
-+#define FTDI_MHAM_YS_PID 0xEEE9		/* USB-YS interface */
-+#define FTDI_MHAM_Y6_PID 0xEEEA		/* USB-Y6 interface */
-+#define FTDI_MHAM_Y8_PID 0xEEEB		/* USB-Y8 interface */
-+#define FTDI_MHAM_IC_PID 0xEEEC		/* USB-IC interface */
-+#define FTDI_MHAM_DB9_PID 0xEEED	/* USB-DB9 interface */
-+#define FTDI_MHAM_RS232_PID 0xEEEE	/* USB-RS232 interface */
-+#define FTDI_MHAM_Y9_PID 0xEEEF		/* USB-Y9 interface */
-+
-+/* Domintell products  http://www.domintell.com */
-+#define FTDI_DOMINTELL_DGQG_PID	0xEF50	/* Master */
-+#define FTDI_DOMINTELL_DUSB_PID	0xEF51	/* DUSB01 module */
-+
-+/*
-+ * The following are the values for the Perle Systems
-+ * UltraPort USB serial converters
-+ */
-+#define FTDI_PERLE_ULTRAPORT_PID 0xF0C0	/* Perle UltraPort Product Id */
-+
-+/* Sprog II (Andrew Crosland's SprogII DCC interface) */
-+#define FTDI_SPROG_II		0xF0C8
-+
-+/* an infrared receiver for user access control with IR tags */
-+#define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
-+
-+/* ACT Solutions HomePro ZWave interface
-+   (http://www.act-solutions.com/HomePro.htm) */
-+#define FTDI_ACTZWAVE_PID	0xF2D0
-+
-+/*
-+ * 4N-GALAXY.DE PIDs for CAN-USB, USB-RS232, USB-RS422, USB-RS485,
-+ * USB-TTY activ, USB-TTY passiv.  Some PIDs are used by several devices
-+ * and I'm not entirely sure which are used by which.
-+ */
-+#define FTDI_4N_GALAXY_DE_1_PID	0xF3C0
-+#define FTDI_4N_GALAXY_DE_2_PID	0xF3C1
-+
-+/*
-+ * Linx Technologies product ids
-+ */
-+#define LINX_SDMUSBQSS_PID	0xF448	/* Linx SDM-USB-QS-S */
-+#define LINX_MASTERDEVEL2_PID   0xF449   /* Linx Master Development 2.0 */
-+#define LINX_FUTURE_0_PID   0xF44A   /* Linx future device */
-+#define LINX_FUTURE_1_PID   0xF44B   /* Linx future device */
-+#define LINX_FUTURE_2_PID   0xF44C   /* Linx future device */
-+
-+/*
-+ * Oceanic product ids
-+ */
-+#define FTDI_OCEANIC_PID	0xF460  /* Oceanic dive instrument */
-+
-+/*
-+ * SUUNTO product ids
-+ */
-+#define FTDI_SUUNTO_SPORTS_PID	0xF680	/* Suunto Sports instrument */
-+
-+/* USB-UIRT - An infrared receiver and transmitter using the 8U232AM chip */
-+/* http://home.earthlink.net/~jrhees/USBUIRT/index.htm */
-+#define FTDI_USB_UIRT_PID	0xF850	/* Product Id */
-+
-+/* CCS Inc. ICDU/ICDU40 product ID -
-+ * the FT232BM is used in an in-circuit-debugger unit for PIC16's/PIC18's */
-+#define FTDI_CCSICDU20_0_PID    0xF9D0
-+#define FTDI_CCSICDU40_1_PID    0xF9D1
-+#define FTDI_CCSMACHX_2_PID     0xF9D2
-+#define FTDI_CCSLOAD_N_GO_3_PID 0xF9D3
-+#define FTDI_CCSICDU64_4_PID    0xF9D4
-+#define FTDI_CCSPRIME8_5_PID    0xF9D5
-+
-+/*
-+ * The following are the values for the Matrix Orbital LCD displays,
-+ * which are the FT232BM ( similar to the 8U232AM )
-+ */
-+#define FTDI_MTXORB_0_PID      0xFA00  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_1_PID      0xFA01  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_2_PID      0xFA02  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_3_PID      0xFA03  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_4_PID      0xFA04  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_5_PID      0xFA05  /* Matrix Orbital Product Id */
-+#define FTDI_MTXORB_6_PID      0xFA06  /* Matrix Orbital Product Id */
-+
-+/*
-+ * Home Electronics (www.home-electro.com) USB gadgets
-+ */
-+#define FTDI_HE_TIRA1_PID	0xFA78	/* Tira-1 IR transceiver */
-+
-+/* Inside Accesso contactless reader (http://www.insidefr.com) */
-+#define INSIDE_ACCESSO		0xFAD0
-+
-+/*
-+ * ThorLabs USB motor drivers
-+ */
-+#define FTDI_THORLABS_PID		0xfaf0 /* ThorLabs USB motor drivers */
-+
-+/*
-+ * Protego product ids
-+ */
-+#define PROTEGO_SPECIAL_1	0xFC70	/* special/unknown device */
-+#define PROTEGO_R2X0		0xFC71	/* R200-USB TRNG unit (R210, R220, and R230) */
-+#define PROTEGO_SPECIAL_3	0xFC72	/* special/unknown device */
-+#define PROTEGO_SPECIAL_4	0xFC73	/* special/unknown device */
-+
-+/*
-+ * DSS-20 Sync Station for Sony Ericsson P800
-+ */
-+#define FTDI_DSS20_PID          0xFC82
-+
-+/* www.irtrans.de device */
-+#define FTDI_IRTRANS_PID 0xFC60 /* Product Id */
-+
-+/*
-+ * RM Michaelides CANview USB (http://www.rmcan.com) (FTDI_VID)
-+ * CAN fieldbus interface adapter, added by port GmbH www.port.de)
-+ * Ian Abbott changed the macro names for consistency.
-+ */
-+#define FTDI_RM_CANVIEW_PID	0xfd60	/* Product Id */
-+/* www.thoughttechnology.com/ TT-USB provide with procomp use ftdi_sio */
-+#define FTDI_TTUSB_PID 0xFF20 /* Product Id */
-+
-+#define FTDI_USBX_707_PID 0xF857	/* ADSTech IR Blaster USBX-707 (FTDI_VID) */
-+
-+#define FTDI_RELAIS_PID	0xFA10  /* Relais device from Rudolf Gugler */
-+
-+/*
-+ * PCDJ use ftdi based dj-controllers. The following PID is
-+ * for their DAC-2 device http://www.pcdjhardware.com/DAC2.asp
-+ * (the VID is the standard ftdi vid (FTDI_VID), PID sent by Wouter Paesen)
-+ */
-+#define FTDI_PCDJ_DAC2_PID 0xFA88
-+
-+#define FTDI_R2000KU_TRUE_RNG	0xFB80  /* R2000KU TRUE RNG (FTDI_VID) */
-+
-+/*
-+ * DIEBOLD BCS SE923 (FTDI_VID)
-+ */
-+#define DIEBOLD_BCS_SE923_PID	0xfb99
-+
-+/* www.crystalfontz.com devices
-+ * - thanx for providing free devices for evaluation !
-+ * they use the ftdi chipset for the USB interface
-+ * and the vendor id is the same
-+ */
-+#define FTDI_XF_632_PID 0xFC08	/* 632: 16x2 Character Display */
-+#define FTDI_XF_634_PID 0xFC09	/* 634: 20x4 Character Display */
-+#define FTDI_XF_547_PID 0xFC0A	/* 547: Two line Display */
-+#define FTDI_XF_633_PID 0xFC0B	/* 633: 16x2 Character Display with Keys */
-+#define FTDI_XF_631_PID 0xFC0C	/* 631: 20x2 Character Display */
-+#define FTDI_XF_635_PID 0xFC0D	/* 635: 20x4 Character Display */
-+#define FTDI_XF_640_PID 0xFC0E	/* 640: Two line Display */
-+#define FTDI_XF_642_PID 0xFC0F	/* 642: Two line Display */
-+
-+/*
-+ * Video Networks Limited / Homechoice in the UK use an ftdi-based device
-+ * for their 1Mb broadband internet service.  The following PID is exhibited
-+ * by the usb device supplied (the VID is the standard ftdi vid (FTDI_VID)
-+ */
-+#define FTDI_VNHCPCUSB_D_PID 0xfe38 /* Product Id */
-+
-+/* AlphaMicro Components AMC-232USB01 device (FTDI_VID) */
-+#define FTDI_AMC232_PID 0xFF00 /* Product Id */
-+
-+/*
-+ * IBS elektronik product ids (FTDI_VID)
-+ * Submitted by Thomas Schleusener
-+ */
-+#define FTDI_IBS_US485_PID	0xff38  /* IBS US485 (USB<-->RS422/485 interface) */
-+#define FTDI_IBS_PICPRO_PID	0xff39  /* IBS PIC-Programmer */
-+#define FTDI_IBS_PCMCIA_PID	0xff3a  /* IBS Card reader for PCMCIA SRAM-cards */
-+#define FTDI_IBS_PK1_PID	0xff3b  /* IBS PK1 - Particel counter */
-+#define FTDI_IBS_RS232MON_PID	0xff3c  /* IBS RS232 - Monitor */
-+#define FTDI_IBS_APP70_PID	0xff3d  /* APP 70 (dust monitoring system) */
-+#define FTDI_IBS_PEDO_PID	0xff3e  /* IBS PEDO-Modem (RF modem 868.35 MHz) */
-+#define FTDI_IBS_PROD_PID	0xff3f  /* future device */
-+/* www.canusb.com Lawicel CANUSB device (FTDI_VID) */
-+#define FTDI_CANUSB_PID 0xFFA8 /* Product Id */
-+
-+
-+
-+/********************************/
-+/** third-party VID/PID combos **/
-+/********************************/
-+
-+
-+
-+/*
-+ * Atmel STK541
-+ */
-+#define ATMEL_VID		0x03eb /* Vendor ID */
-+#define STK541_PID		0x2109 /* Zigbee Controller */
-+
-+/*
-+ * Blackfin gnICE JTAG
-+ * http://docs.blackfin.uclinux.org/doku.php?id=hw:jtag:gnice
-+ */
-+#define ADI_VID 		0x0456
-+#define ADI_GNICE_PID 		0xF000
-+#define ADI_GNICEPLUS_PID 	0xF001
-+
-+/*
-+ * RATOC REX-USB60F
-+ */
-+#define RATOC_VENDOR_ID		0x0584
-+#define RATOC_PRODUCT_ID_USB60F	0xb020
-+
-+/*
+@@ -494,6 +494,13 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
+ 
+ /*
 + * Contec products (http://www.contec.com)
 + * Submitted by Daniel Sangorrin
 + */
@@ -6318,514 +4192,13 @@ index 0000000..d10b5a8
 +#define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
 +
 +/*
-+ * Definitions for B&B Electronics products.
-+ */
-+#define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
-+#define BANDB_USOTL4_PID	0xAC01	/* USOTL4 Isolated RS-485 Converter */
-+#define BANDB_USTL4_PID		0xAC02	/* USTL4 RS-485 Converter */
-+#define BANDB_USO9ML2_PID	0xAC03	/* USO9ML2 Isolated RS-232 Converter */
-+#define BANDB_USOPTL4_PID	0xAC11
-+#define BANDB_USPTL4_PID	0xAC12
-+#define BANDB_USO9ML2DR_2_PID	0xAC16
-+#define BANDB_USO9ML2DR_PID	0xAC17
-+#define BANDB_USOPTL4DR2_PID	0xAC18	/* USOPTL4R-2 2-port Isolated RS-232 Converter */
-+#define BANDB_USOPTL4DR_PID	0xAC19
-+#define BANDB_485USB9F_2W_PID	0xAC25
-+#define BANDB_485USB9F_4W_PID	0xAC26
-+#define BANDB_232USB9M_PID	0xAC27
-+#define BANDB_485USBTB_2W_PID	0xAC33
-+#define BANDB_485USBTB_4W_PID	0xAC34
-+#define BANDB_TTL5USB9M_PID	0xAC49
-+#define BANDB_TTL3USB9M_PID	0xAC50
-+#define BANDB_ZZ_PROG1_USB_PID	0xBA02
-+
-+/*
-+ * Intrepid Control Systems (http://www.intrepidcs.com/) ValueCAN and NeoVI
-+ */
-+#define INTREPID_VID		0x093C
-+#define INTREPID_VALUECAN_PID	0x0601
-+#define INTREPID_NEOVI_PID	0x0701
-+
-+/*
-+ * Definitions for ID TECH (www.idt-net.com) devices
-+ */
-+#define IDTECH_VID		0x0ACD	/* ID TECH Vendor ID */
-+#define IDTECH_IDT1221U_PID	0x0300	/* IDT1221U USB to RS-232 adapter */
-+
-+/*
-+ * Definitions for Omnidirectional Control Technology, Inc. devices
-+ */
-+#define OCT_VID			0x0B39	/* OCT vendor ID */
-+/* Note: OCT US101 is also rebadged as Dick Smith Electronics (NZ) XH6381 */
-+/* Also rebadged as Dick Smith Electronics (Aus) XH6451 */
-+/* Also rebadged as SIIG Inc. model US2308 hardware version 1 */
-+#define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
-+
-+/*
-+ * Icom ID-1 digital transceiver
-+ */
-+
-+#define ICOM_ID1_VID            0x0C26
-+#define ICOM_ID1_PID            0x0004
-+
-+/*
-+ * GN Otometrics (http://www.otometrics.com)
-+ * Submitted by Ville Sundberg.
-+ */
-+#define GN_OTOMETRICS_VID	0x0c33	/* Vendor ID */
-+#define AURICAL_USB_PID		0x0010	/* Aurical USB Audiometer */
-+
-+/*
-+ * The following are the values for the Sealevel SeaLINK+ adapters.
-+ * (Original list sent by Tuan Hoang.  Ian Abbott renamed the macros and
-+ * removed some PIDs that don't seem to match any existing products.)
-+ */
-+#define SEALEVEL_VID		0x0c52	/* Sealevel Vendor ID */
-+#define SEALEVEL_2101_PID	0x2101	/* SeaLINK+232 (2101/2105) */
-+#define SEALEVEL_2102_PID	0x2102	/* SeaLINK+485 (2102) */
-+#define SEALEVEL_2103_PID	0x2103	/* SeaLINK+232I (2103) */
-+#define SEALEVEL_2104_PID	0x2104	/* SeaLINK+485I (2104) */
-+#define SEALEVEL_2106_PID	0x9020	/* SeaLINK+422 (2106) */
-+#define SEALEVEL_2201_1_PID	0x2211	/* SeaPORT+2/232 (2201) Port 1 */
-+#define SEALEVEL_2201_2_PID	0x2221	/* SeaPORT+2/232 (2201) Port 2 */
-+#define SEALEVEL_2202_1_PID	0x2212	/* SeaPORT+2/485 (2202) Port 1 */
-+#define SEALEVEL_2202_2_PID	0x2222	/* SeaPORT+2/485 (2202) Port 2 */
-+#define SEALEVEL_2203_1_PID	0x2213	/* SeaPORT+2 (2203) Port 1 */
-+#define SEALEVEL_2203_2_PID	0x2223	/* SeaPORT+2 (2203) Port 2 */
-+#define SEALEVEL_2401_1_PID	0x2411	/* SeaPORT+4/232 (2401) Port 1 */
-+#define SEALEVEL_2401_2_PID	0x2421	/* SeaPORT+4/232 (2401) Port 2 */
-+#define SEALEVEL_2401_3_PID	0x2431	/* SeaPORT+4/232 (2401) Port 3 */
-+#define SEALEVEL_2401_4_PID	0x2441	/* SeaPORT+4/232 (2401) Port 4 */
-+#define SEALEVEL_2402_1_PID	0x2412	/* SeaPORT+4/485 (2402) Port 1 */
-+#define SEALEVEL_2402_2_PID	0x2422	/* SeaPORT+4/485 (2402) Port 2 */
-+#define SEALEVEL_2402_3_PID	0x2432	/* SeaPORT+4/485 (2402) Port 3 */
-+#define SEALEVEL_2402_4_PID	0x2442	/* SeaPORT+4/485 (2402) Port 4 */
-+#define SEALEVEL_2403_1_PID	0x2413	/* SeaPORT+4 (2403) Port 1 */
-+#define SEALEVEL_2403_2_PID	0x2423	/* SeaPORT+4 (2403) Port 2 */
-+#define SEALEVEL_2403_3_PID	0x2433	/* SeaPORT+4 (2403) Port 3 */
-+#define SEALEVEL_2403_4_PID	0x2443	/* SeaPORT+4 (2403) Port 4 */
-+#define SEALEVEL_2801_1_PID	0X2811	/* SeaLINK+8/232 (2801) Port 1 */
-+#define SEALEVEL_2801_2_PID	0X2821	/* SeaLINK+8/232 (2801) Port 2 */
-+#define SEALEVEL_2801_3_PID	0X2831	/* SeaLINK+8/232 (2801) Port 3 */
-+#define SEALEVEL_2801_4_PID	0X2841	/* SeaLINK+8/232 (2801) Port 4 */
-+#define SEALEVEL_2801_5_PID	0X2851	/* SeaLINK+8/232 (2801) Port 5 */
-+#define SEALEVEL_2801_6_PID	0X2861	/* SeaLINK+8/232 (2801) Port 6 */
-+#define SEALEVEL_2801_7_PID	0X2871	/* SeaLINK+8/232 (2801) Port 7 */
-+#define SEALEVEL_2801_8_PID	0X2881	/* SeaLINK+8/232 (2801) Port 8 */
-+#define SEALEVEL_2802_1_PID	0X2812	/* SeaLINK+8/485 (2802) Port 1 */
-+#define SEALEVEL_2802_2_PID	0X2822	/* SeaLINK+8/485 (2802) Port 2 */
-+#define SEALEVEL_2802_3_PID	0X2832	/* SeaLINK+8/485 (2802) Port 3 */
-+#define SEALEVEL_2802_4_PID	0X2842	/* SeaLINK+8/485 (2802) Port 4 */
-+#define SEALEVEL_2802_5_PID	0X2852	/* SeaLINK+8/485 (2802) Port 5 */
-+#define SEALEVEL_2802_6_PID	0X2862	/* SeaLINK+8/485 (2802) Port 6 */
-+#define SEALEVEL_2802_7_PID	0X2872	/* SeaLINK+8/485 (2802) Port 7 */
-+#define SEALEVEL_2802_8_PID	0X2882	/* SeaLINK+8/485 (2802) Port 8 */
-+#define SEALEVEL_2803_1_PID	0X2813	/* SeaLINK+8 (2803) Port 1 */
-+#define SEALEVEL_2803_2_PID	0X2823 	/* SeaLINK+8 (2803) Port 2 */
-+#define SEALEVEL_2803_3_PID	0X2833 	/* SeaLINK+8 (2803) Port 3 */
-+#define SEALEVEL_2803_4_PID	0X2843 	/* SeaLINK+8 (2803) Port 4 */
-+#define SEALEVEL_2803_5_PID	0X2853 	/* SeaLINK+8 (2803) Port 5 */
-+#define SEALEVEL_2803_6_PID	0X2863 	/* SeaLINK+8 (2803) Port 6 */
-+#define SEALEVEL_2803_7_PID	0X2873 	/* SeaLINK+8 (2803) Port 7 */
-+#define SEALEVEL_2803_8_PID	0X2883 	/* SeaLINK+8 (2803) Port 8 */
-+
-+/*
-+ * JETI SPECTROMETER SPECBOS 1201
-+ * http://www.jeti.com/products/sys/scb/scb1201.php
-+ */
-+#define JETI_VID		0x0c6c
-+#define JETI_SPC1201_PID	0x04b2
-+
-+/*
-+ * FTDI USB UART chips used in construction projects from the
-+ * Elektor Electronics magazine (http://elektor-electronics.co.uk)
-+ */
-+#define ELEKTOR_VID		0x0C7D
-+#define ELEKTOR_FT323R_PID	0x0005	/* RFID-Reader, issue 09-2006 */
-+
-+/*
-+ * Posiflex inc retail equipment (http://www.posiflex.com.tw)
-+ */
-+#define POSIFLEX_VID		0x0d3a  /* Vendor ID */
-+#define POSIFLEX_PP7000_PID	0x0300  /* PP-7000II thermal printer */
-+
-+/*
-+ * The following are the values for two KOBIL chipcard terminals.
-+ */
-+#define KOBIL_VID		0x0d46	/* KOBIL Vendor ID */
-+#define KOBIL_CONV_B1_PID	0x2020	/* KOBIL Konverter for B1 */
-+#define KOBIL_CONV_KAAN_PID	0x2021	/* KOBIL_Konverter for KAAN */
-+
-+#define FTDI_NF_RIC_VID	0x0DCD	/* Vendor Id */
-+#define FTDI_NF_RIC_PID	0x0001	/* Product Id */
-+
-+/*
-+ * Falcom Wireless Communications GmbH
-+ */
-+#define FALCOM_VID		0x0F94	/* Vendor Id */
-+#define FALCOM_TWIST_PID	0x0001	/* Falcom Twist USB GPRS modem */
-+#define FALCOM_SAMBA_PID	0x0005	/* Falcom Samba USB GPRS modem */
-+
-+/* Larsen and Brusgaard AltiTrack/USBtrack  */
-+#define LARSENBRUSGAARD_VID		0x0FD8
-+#define LB_ALTITRACK_PID		0x0001
-+
-+/*
-+ * TTi (Thurlby Thandar Instruments)
-+ */
-+#define TTI_VID			0x103E	/* Vendor Id */
-+#define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
-+
-+/* Interbiometrics USB I/O Board */
-+/* Developed for Interbiometrics by Rudolf Gugler */
-+#define INTERBIOMETRICS_VID              0x1209
-+#define INTERBIOMETRICS_IOBOARD_PID      0x1002
-+#define INTERBIOMETRICS_MINI_IOBOARD_PID 0x1006
-+
-+/*
-+ * Testo products (http://www.testo.com/)
-+ * Submitted by Colin Leroy
-+ */
-+#define TESTO_VID			0x128D
-+#define TESTO_USB_INTERFACE_PID		0x0001
-+
-+/*
-+ * Mobility Electronics products.
-+ */
-+#define MOBILITY_VID			0x1342
-+#define MOBILITY_USB_SERIAL_PID		0x0202	/* EasiDock USB 200 serial */
-+
-+/*
-+ * FIC / OpenMoko, Inc. http://wiki.openmoko.org/wiki/Neo1973_Debug_Board_v3
-+ * Submitted by Harald Welte <laforge@openmoko.org>
-+ */
-+#define	FIC_VID			0x1457
-+#define	FIC_NEO1973_DEBUG_PID	0x5118
-+
-+/* Olimex */
-+#define OLIMEX_VID			0x15BA
-+#define OLIMEX_ARM_USB_OCD_PID		0x0003
-+
-+/*
-+ * Telldus Technologies
-+ */
-+#define TELLDUS_VID			0x1781	/* Vendor ID */
-+#define TELLDUS_TELLSTICK_PID		0x0C30	/* RF control dongle 433 MHz using FT232RL */
-+
-+/*
-+ * Bayer Ascensia Contour blood glucose meter USB-converter cable.
-+ * http://winglucofacts.com/cables/
-+ */
-+#define BAYER_VID                      0x1A79
-+#define BAYER_CONTOUR_CABLE_PID        0x6001
-+
-+/*
-+ * The following are the values for the Matrix Orbital FTDI Range
-+ * Anything in this range will use an FT232RL.
-+ */
-+#define MTXORB_VID			0x1B3D
-+#define MTXORB_FTDI_RANGE_0100_PID	0x0100
-+#define MTXORB_FTDI_RANGE_0101_PID	0x0101
-+#define MTXORB_FTDI_RANGE_0102_PID	0x0102
-+#define MTXORB_FTDI_RANGE_0103_PID	0x0103
-+#define MTXORB_FTDI_RANGE_0104_PID	0x0104
-+#define MTXORB_FTDI_RANGE_0105_PID	0x0105
-+#define MTXORB_FTDI_RANGE_0106_PID	0x0106
-+#define MTXORB_FTDI_RANGE_0107_PID	0x0107
-+#define MTXORB_FTDI_RANGE_0108_PID	0x0108
-+#define MTXORB_FTDI_RANGE_0109_PID	0x0109
-+#define MTXORB_FTDI_RANGE_010A_PID	0x010A
-+#define MTXORB_FTDI_RANGE_010B_PID	0x010B
-+#define MTXORB_FTDI_RANGE_010C_PID	0x010C
-+#define MTXORB_FTDI_RANGE_010D_PID	0x010D
-+#define MTXORB_FTDI_RANGE_010E_PID	0x010E
-+#define MTXORB_FTDI_RANGE_010F_PID	0x010F
-+#define MTXORB_FTDI_RANGE_0110_PID	0x0110
-+#define MTXORB_FTDI_RANGE_0111_PID	0x0111
-+#define MTXORB_FTDI_RANGE_0112_PID	0x0112
-+#define MTXORB_FTDI_RANGE_0113_PID	0x0113
-+#define MTXORB_FTDI_RANGE_0114_PID	0x0114
-+#define MTXORB_FTDI_RANGE_0115_PID	0x0115
-+#define MTXORB_FTDI_RANGE_0116_PID	0x0116
-+#define MTXORB_FTDI_RANGE_0117_PID	0x0117
-+#define MTXORB_FTDI_RANGE_0118_PID	0x0118
-+#define MTXORB_FTDI_RANGE_0119_PID	0x0119
-+#define MTXORB_FTDI_RANGE_011A_PID	0x011A
-+#define MTXORB_FTDI_RANGE_011B_PID	0x011B
-+#define MTXORB_FTDI_RANGE_011C_PID	0x011C
-+#define MTXORB_FTDI_RANGE_011D_PID	0x011D
-+#define MTXORB_FTDI_RANGE_011E_PID	0x011E
-+#define MTXORB_FTDI_RANGE_011F_PID	0x011F
-+#define MTXORB_FTDI_RANGE_0120_PID	0x0120
-+#define MTXORB_FTDI_RANGE_0121_PID	0x0121
-+#define MTXORB_FTDI_RANGE_0122_PID	0x0122
-+#define MTXORB_FTDI_RANGE_0123_PID	0x0123
-+#define MTXORB_FTDI_RANGE_0124_PID	0x0124
-+#define MTXORB_FTDI_RANGE_0125_PID	0x0125
-+#define MTXORB_FTDI_RANGE_0126_PID	0x0126
-+#define MTXORB_FTDI_RANGE_0127_PID	0x0127
-+#define MTXORB_FTDI_RANGE_0128_PID	0x0128
-+#define MTXORB_FTDI_RANGE_0129_PID	0x0129
-+#define MTXORB_FTDI_RANGE_012A_PID	0x012A
-+#define MTXORB_FTDI_RANGE_012B_PID	0x012B
-+#define MTXORB_FTDI_RANGE_012C_PID	0x012C
-+#define MTXORB_FTDI_RANGE_012D_PID	0x012D
-+#define MTXORB_FTDI_RANGE_012E_PID	0x012E
-+#define MTXORB_FTDI_RANGE_012F_PID	0x012F
-+#define MTXORB_FTDI_RANGE_0130_PID	0x0130
-+#define MTXORB_FTDI_RANGE_0131_PID	0x0131
-+#define MTXORB_FTDI_RANGE_0132_PID	0x0132
-+#define MTXORB_FTDI_RANGE_0133_PID	0x0133
-+#define MTXORB_FTDI_RANGE_0134_PID	0x0134
-+#define MTXORB_FTDI_RANGE_0135_PID	0x0135
-+#define MTXORB_FTDI_RANGE_0136_PID	0x0136
-+#define MTXORB_FTDI_RANGE_0137_PID	0x0137
-+#define MTXORB_FTDI_RANGE_0138_PID	0x0138
-+#define MTXORB_FTDI_RANGE_0139_PID	0x0139
-+#define MTXORB_FTDI_RANGE_013A_PID	0x013A
-+#define MTXORB_FTDI_RANGE_013B_PID	0x013B
-+#define MTXORB_FTDI_RANGE_013C_PID	0x013C
-+#define MTXORB_FTDI_RANGE_013D_PID	0x013D
-+#define MTXORB_FTDI_RANGE_013E_PID	0x013E
-+#define MTXORB_FTDI_RANGE_013F_PID	0x013F
-+#define MTXORB_FTDI_RANGE_0140_PID	0x0140
-+#define MTXORB_FTDI_RANGE_0141_PID	0x0141
-+#define MTXORB_FTDI_RANGE_0142_PID	0x0142
-+#define MTXORB_FTDI_RANGE_0143_PID	0x0143
-+#define MTXORB_FTDI_RANGE_0144_PID	0x0144
-+#define MTXORB_FTDI_RANGE_0145_PID	0x0145
-+#define MTXORB_FTDI_RANGE_0146_PID	0x0146
-+#define MTXORB_FTDI_RANGE_0147_PID	0x0147
-+#define MTXORB_FTDI_RANGE_0148_PID	0x0148
-+#define MTXORB_FTDI_RANGE_0149_PID	0x0149
-+#define MTXORB_FTDI_RANGE_014A_PID	0x014A
-+#define MTXORB_FTDI_RANGE_014B_PID	0x014B
-+#define MTXORB_FTDI_RANGE_014C_PID	0x014C
-+#define MTXORB_FTDI_RANGE_014D_PID	0x014D
-+#define MTXORB_FTDI_RANGE_014E_PID	0x014E
-+#define MTXORB_FTDI_RANGE_014F_PID	0x014F
-+#define MTXORB_FTDI_RANGE_0150_PID	0x0150
-+#define MTXORB_FTDI_RANGE_0151_PID	0x0151
-+#define MTXORB_FTDI_RANGE_0152_PID	0x0152
-+#define MTXORB_FTDI_RANGE_0153_PID	0x0153
-+#define MTXORB_FTDI_RANGE_0154_PID	0x0154
-+#define MTXORB_FTDI_RANGE_0155_PID	0x0155
-+#define MTXORB_FTDI_RANGE_0156_PID	0x0156
-+#define MTXORB_FTDI_RANGE_0157_PID	0x0157
-+#define MTXORB_FTDI_RANGE_0158_PID	0x0158
-+#define MTXORB_FTDI_RANGE_0159_PID	0x0159
-+#define MTXORB_FTDI_RANGE_015A_PID	0x015A
-+#define MTXORB_FTDI_RANGE_015B_PID	0x015B
-+#define MTXORB_FTDI_RANGE_015C_PID	0x015C
-+#define MTXORB_FTDI_RANGE_015D_PID	0x015D
-+#define MTXORB_FTDI_RANGE_015E_PID	0x015E
-+#define MTXORB_FTDI_RANGE_015F_PID	0x015F
-+#define MTXORB_FTDI_RANGE_0160_PID	0x0160
-+#define MTXORB_FTDI_RANGE_0161_PID	0x0161
-+#define MTXORB_FTDI_RANGE_0162_PID	0x0162
-+#define MTXORB_FTDI_RANGE_0163_PID	0x0163
-+#define MTXORB_FTDI_RANGE_0164_PID	0x0164
-+#define MTXORB_FTDI_RANGE_0165_PID	0x0165
-+#define MTXORB_FTDI_RANGE_0166_PID	0x0166
-+#define MTXORB_FTDI_RANGE_0167_PID	0x0167
-+#define MTXORB_FTDI_RANGE_0168_PID	0x0168
-+#define MTXORB_FTDI_RANGE_0169_PID	0x0169
-+#define MTXORB_FTDI_RANGE_016A_PID	0x016A
-+#define MTXORB_FTDI_RANGE_016B_PID	0x016B
-+#define MTXORB_FTDI_RANGE_016C_PID	0x016C
-+#define MTXORB_FTDI_RANGE_016D_PID	0x016D
-+#define MTXORB_FTDI_RANGE_016E_PID	0x016E
-+#define MTXORB_FTDI_RANGE_016F_PID	0x016F
-+#define MTXORB_FTDI_RANGE_0170_PID	0x0170
-+#define MTXORB_FTDI_RANGE_0171_PID	0x0171
-+#define MTXORB_FTDI_RANGE_0172_PID	0x0172
-+#define MTXORB_FTDI_RANGE_0173_PID	0x0173
-+#define MTXORB_FTDI_RANGE_0174_PID	0x0174
-+#define MTXORB_FTDI_RANGE_0175_PID	0x0175
-+#define MTXORB_FTDI_RANGE_0176_PID	0x0176
-+#define MTXORB_FTDI_RANGE_0177_PID	0x0177
-+#define MTXORB_FTDI_RANGE_0178_PID	0x0178
-+#define MTXORB_FTDI_RANGE_0179_PID	0x0179
-+#define MTXORB_FTDI_RANGE_017A_PID	0x017A
-+#define MTXORB_FTDI_RANGE_017B_PID	0x017B
-+#define MTXORB_FTDI_RANGE_017C_PID	0x017C
-+#define MTXORB_FTDI_RANGE_017D_PID	0x017D
-+#define MTXORB_FTDI_RANGE_017E_PID	0x017E
-+#define MTXORB_FTDI_RANGE_017F_PID	0x017F
-+#define MTXORB_FTDI_RANGE_0180_PID	0x0180
-+#define MTXORB_FTDI_RANGE_0181_PID	0x0181
-+#define MTXORB_FTDI_RANGE_0182_PID	0x0182
-+#define MTXORB_FTDI_RANGE_0183_PID	0x0183
-+#define MTXORB_FTDI_RANGE_0184_PID	0x0184
-+#define MTXORB_FTDI_RANGE_0185_PID	0x0185
-+#define MTXORB_FTDI_RANGE_0186_PID	0x0186
-+#define MTXORB_FTDI_RANGE_0187_PID	0x0187
-+#define MTXORB_FTDI_RANGE_0188_PID	0x0188
-+#define MTXORB_FTDI_RANGE_0189_PID	0x0189
-+#define MTXORB_FTDI_RANGE_018A_PID	0x018A
-+#define MTXORB_FTDI_RANGE_018B_PID	0x018B
-+#define MTXORB_FTDI_RANGE_018C_PID	0x018C
-+#define MTXORB_FTDI_RANGE_018D_PID	0x018D
-+#define MTXORB_FTDI_RANGE_018E_PID	0x018E
-+#define MTXORB_FTDI_RANGE_018F_PID	0x018F
-+#define MTXORB_FTDI_RANGE_0190_PID	0x0190
-+#define MTXORB_FTDI_RANGE_0191_PID	0x0191
-+#define MTXORB_FTDI_RANGE_0192_PID	0x0192
-+#define MTXORB_FTDI_RANGE_0193_PID	0x0193
-+#define MTXORB_FTDI_RANGE_0194_PID	0x0194
-+#define MTXORB_FTDI_RANGE_0195_PID	0x0195
-+#define MTXORB_FTDI_RANGE_0196_PID	0x0196
-+#define MTXORB_FTDI_RANGE_0197_PID	0x0197
-+#define MTXORB_FTDI_RANGE_0198_PID	0x0198
-+#define MTXORB_FTDI_RANGE_0199_PID	0x0199
-+#define MTXORB_FTDI_RANGE_019A_PID	0x019A
-+#define MTXORB_FTDI_RANGE_019B_PID	0x019B
-+#define MTXORB_FTDI_RANGE_019C_PID	0x019C
-+#define MTXORB_FTDI_RANGE_019D_PID	0x019D
-+#define MTXORB_FTDI_RANGE_019E_PID	0x019E
-+#define MTXORB_FTDI_RANGE_019F_PID	0x019F
-+#define MTXORB_FTDI_RANGE_01A0_PID	0x01A0
-+#define MTXORB_FTDI_RANGE_01A1_PID	0x01A1
-+#define MTXORB_FTDI_RANGE_01A2_PID	0x01A2
-+#define MTXORB_FTDI_RANGE_01A3_PID	0x01A3
-+#define MTXORB_FTDI_RANGE_01A4_PID	0x01A4
-+#define MTXORB_FTDI_RANGE_01A5_PID	0x01A5
-+#define MTXORB_FTDI_RANGE_01A6_PID	0x01A6
-+#define MTXORB_FTDI_RANGE_01A7_PID	0x01A7
-+#define MTXORB_FTDI_RANGE_01A8_PID	0x01A8
-+#define MTXORB_FTDI_RANGE_01A9_PID	0x01A9
-+#define MTXORB_FTDI_RANGE_01AA_PID	0x01AA
-+#define MTXORB_FTDI_RANGE_01AB_PID	0x01AB
-+#define MTXORB_FTDI_RANGE_01AC_PID	0x01AC
-+#define MTXORB_FTDI_RANGE_01AD_PID	0x01AD
-+#define MTXORB_FTDI_RANGE_01AE_PID	0x01AE
-+#define MTXORB_FTDI_RANGE_01AF_PID	0x01AF
-+#define MTXORB_FTDI_RANGE_01B0_PID	0x01B0
-+#define MTXORB_FTDI_RANGE_01B1_PID	0x01B1
-+#define MTXORB_FTDI_RANGE_01B2_PID	0x01B2
-+#define MTXORB_FTDI_RANGE_01B3_PID	0x01B3
-+#define MTXORB_FTDI_RANGE_01B4_PID	0x01B4
-+#define MTXORB_FTDI_RANGE_01B5_PID	0x01B5
-+#define MTXORB_FTDI_RANGE_01B6_PID	0x01B6
-+#define MTXORB_FTDI_RANGE_01B7_PID	0x01B7
-+#define MTXORB_FTDI_RANGE_01B8_PID	0x01B8
-+#define MTXORB_FTDI_RANGE_01B9_PID	0x01B9
-+#define MTXORB_FTDI_RANGE_01BA_PID	0x01BA
-+#define MTXORB_FTDI_RANGE_01BB_PID	0x01BB
-+#define MTXORB_FTDI_RANGE_01BC_PID	0x01BC
-+#define MTXORB_FTDI_RANGE_01BD_PID	0x01BD
-+#define MTXORB_FTDI_RANGE_01BE_PID	0x01BE
-+#define MTXORB_FTDI_RANGE_01BF_PID	0x01BF
-+#define MTXORB_FTDI_RANGE_01C0_PID	0x01C0
-+#define MTXORB_FTDI_RANGE_01C1_PID	0x01C1
-+#define MTXORB_FTDI_RANGE_01C2_PID	0x01C2
-+#define MTXORB_FTDI_RANGE_01C3_PID	0x01C3
-+#define MTXORB_FTDI_RANGE_01C4_PID	0x01C4
-+#define MTXORB_FTDI_RANGE_01C5_PID	0x01C5
-+#define MTXORB_FTDI_RANGE_01C6_PID	0x01C6
-+#define MTXORB_FTDI_RANGE_01C7_PID	0x01C7
-+#define MTXORB_FTDI_RANGE_01C8_PID	0x01C8
-+#define MTXORB_FTDI_RANGE_01C9_PID	0x01C9
-+#define MTXORB_FTDI_RANGE_01CA_PID	0x01CA
-+#define MTXORB_FTDI_RANGE_01CB_PID	0x01CB
-+#define MTXORB_FTDI_RANGE_01CC_PID	0x01CC
-+#define MTXORB_FTDI_RANGE_01CD_PID	0x01CD
-+#define MTXORB_FTDI_RANGE_01CE_PID	0x01CE
-+#define MTXORB_FTDI_RANGE_01CF_PID	0x01CF
-+#define MTXORB_FTDI_RANGE_01D0_PID	0x01D0
-+#define MTXORB_FTDI_RANGE_01D1_PID	0x01D1
-+#define MTXORB_FTDI_RANGE_01D2_PID	0x01D2
-+#define MTXORB_FTDI_RANGE_01D3_PID	0x01D3
-+#define MTXORB_FTDI_RANGE_01D4_PID	0x01D4
-+#define MTXORB_FTDI_RANGE_01D5_PID	0x01D5
-+#define MTXORB_FTDI_RANGE_01D6_PID	0x01D6
-+#define MTXORB_FTDI_RANGE_01D7_PID	0x01D7
-+#define MTXORB_FTDI_RANGE_01D8_PID	0x01D8
-+#define MTXORB_FTDI_RANGE_01D9_PID	0x01D9
-+#define MTXORB_FTDI_RANGE_01DA_PID	0x01DA
-+#define MTXORB_FTDI_RANGE_01DB_PID	0x01DB
-+#define MTXORB_FTDI_RANGE_01DC_PID	0x01DC
-+#define MTXORB_FTDI_RANGE_01DD_PID	0x01DD
-+#define MTXORB_FTDI_RANGE_01DE_PID	0x01DE
-+#define MTXORB_FTDI_RANGE_01DF_PID	0x01DF
-+#define MTXORB_FTDI_RANGE_01E0_PID	0x01E0
-+#define MTXORB_FTDI_RANGE_01E1_PID	0x01E1
-+#define MTXORB_FTDI_RANGE_01E2_PID	0x01E2
-+#define MTXORB_FTDI_RANGE_01E3_PID	0x01E3
-+#define MTXORB_FTDI_RANGE_01E4_PID	0x01E4
-+#define MTXORB_FTDI_RANGE_01E5_PID	0x01E5
-+#define MTXORB_FTDI_RANGE_01E6_PID	0x01E6
-+#define MTXORB_FTDI_RANGE_01E7_PID	0x01E7
-+#define MTXORB_FTDI_RANGE_01E8_PID	0x01E8
-+#define MTXORB_FTDI_RANGE_01E9_PID	0x01E9
-+#define MTXORB_FTDI_RANGE_01EA_PID	0x01EA
-+#define MTXORB_FTDI_RANGE_01EB_PID	0x01EB
-+#define MTXORB_FTDI_RANGE_01EC_PID	0x01EC
-+#define MTXORB_FTDI_RANGE_01ED_PID	0x01ED
-+#define MTXORB_FTDI_RANGE_01EE_PID	0x01EE
-+#define MTXORB_FTDI_RANGE_01EF_PID	0x01EF
-+#define MTXORB_FTDI_RANGE_01F0_PID	0x01F0
-+#define MTXORB_FTDI_RANGE_01F1_PID	0x01F1
-+#define MTXORB_FTDI_RANGE_01F2_PID	0x01F2
-+#define MTXORB_FTDI_RANGE_01F3_PID	0x01F3
-+#define MTXORB_FTDI_RANGE_01F4_PID	0x01F4
-+#define MTXORB_FTDI_RANGE_01F5_PID	0x01F5
-+#define MTXORB_FTDI_RANGE_01F6_PID	0x01F6
-+#define MTXORB_FTDI_RANGE_01F7_PID	0x01F7
-+#define MTXORB_FTDI_RANGE_01F8_PID	0x01F8
-+#define MTXORB_FTDI_RANGE_01F9_PID	0x01F9
-+#define MTXORB_FTDI_RANGE_01FA_PID	0x01FA
-+#define MTXORB_FTDI_RANGE_01FB_PID	0x01FB
-+#define MTXORB_FTDI_RANGE_01FC_PID	0x01FC
-+#define MTXORB_FTDI_RANGE_01FD_PID	0x01FD
-+#define MTXORB_FTDI_RANGE_01FE_PID	0x01FE
-+#define MTXORB_FTDI_RANGE_01FF_PID	0x01FF
-+
-+
-+
-+/*
-+ * The Mobility Lab (TML)
-+ * Submitted by Pierre Castella
-+ */
-+#define TML_VID			0x1B91	/* Vendor ID */
-+#define TML_USB_SERIAL_PID	0x0064	/* USB - Serial Converter */
-+
-+/* Alti-2 products  http://www.alti-2.com */
-+#define ALTI2_VID	0x1BC9
-+#define ALTI2_N3_PID	0x6001	/* Neptune 3 */
-+
-+/*
-+ * Dresden Elektronic Sensor Terminal Board
-+ */
-+#define DE_VID			0x1cf1 /* Vendor ID */
-+#define STB_PID			0x0001 /* Sensor Terminal Board */
-+#define WHT_PID			0x0004 /* Wireless Handheld Terminal */
-+
-+/*
-+ * Papouch products (http://www.papouch.com/)
-+ * Submitted by Folkert van Heusden
-+ */
-+
-+#define PAPOUCH_VID			0x5050	/* Vendor ID */
-+#define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
-+#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
-+#define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
-+
-+/*
-+ * Marvell SheevaPlug
-+ */
-+#define MARVELL_VID		0x9e88
-+#define MARVELL_SHEEVAPLUG_PID	0x9e8f
-+
-+/*
-+ * Evolution Robotics products (http://www.evolution.com/).
-+ * Submitted by Shawn M. Lavelle.
-+ */
-+#define EVOLUTION_VID		0xDEEE	/* Vendor ID */
-+#define EVOLUTION_ER1_PID	0x0300	/* ER1 Control Module */
-+#define EVO_8U232AM_PID	0x02FF	/* Evolution robotics RCM2 (FT232AM)*/
-+#define EVO_HYBRID_PID		0x0302	/* Evolution robotics RCM4 PID (FT232BM)*/
-+#define EVO_RCM4_PID		0x0303	/* Evolution robotics RCM4 PID */
+  * Definitions for B&B Electronics products.
+  */
+ #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
+@@ -1002,3 +1009,11 @@
+ #define EVO_8U232AM_PID	0x02FF	/* Evolution robotics RCM2 (FT232AM)*/
+ #define EVO_HYBRID_PID		0x0302	/* Evolution robotics RCM4 PID (FT232BM)*/
+ #define EVO_RCM4_PID		0x0303	/* Evolution robotics RCM4 PID */
 +
 +/*
 + * MJS Gadgets HD Radio / XM Radio / Sirius Radio interfaces (using VID 0x0403)
@@ -6835,10 +4208,10 @@ index 0000000..d10b5a8
 +#define MJSG_XM_RADIO_PID	0x937A
 +#define MJSG_HD_RADIO_PID	0x937C
 diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
-index 5019325..3689077 100644
+index 3eb6143..0cfd621 100644
 --- a/drivers/usb/serial/sierra.c
 +++ b/drivers/usb/serial/sierra.c
-@@ -567,14 +567,17 @@ static void sierra_indat_callback(struct urb *urb)
+@@ -604,14 +604,17 @@ static void sierra_indat_callback(struct urb *urb)
  	} else {
  		if (urb->actual_length) {
  			tty = tty_port_tty_get(&port->port);
@@ -6865,7 +4238,7 @@ index 5019325..3689077 100644
  			dev_dbg(&port->dev, "%s: empty read urb"
  				" received\n", __func__);
 diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index c932f90..4d0a208 100644
+index 49575fb..98b549b 100644
 --- a/drivers/usb/storage/unusual_devs.h
 +++ b/drivers/usb/storage/unusual_devs.h
 @@ -1147,8 +1147,8 @@ UNUSUAL_DEV( 0x0af0, 0x7401, 0x0000, 0x0000,
@@ -6970,44 +4343,6 @@ index c932f90..4d0a208 100644
  /* Reported by Ben Efros <ben@pc-doctor.com> */
  UNUSUAL_DEV( 0x0bc2, 0x3010, 0x0000, 0x0000,
  		"Seagate",
-diff --git a/drivers/video/offb.c b/drivers/video/offb.c
-index 4d8c54c..b043ac8 100644
---- a/drivers/video/offb.c
-+++ b/drivers/video/offb.c
-@@ -282,8 +282,17 @@ static int offb_set_par(struct fb_info *info)
- 	return 0;
- }
- 
-+static void offb_destroy(struct fb_info *info)
-+{
-+	if (info->screen_base)
-+		iounmap(info->screen_base);
-+	release_mem_region(info->aperture_base, info->aperture_size);
-+	framebuffer_release(info);
-+}
-+
- static struct fb_ops offb_ops = {
- 	.owner		= THIS_MODULE,
-+	.fb_destroy	= offb_destroy,
- 	.fb_setcolreg	= offb_setcolreg,
- 	.fb_set_par	= offb_set_par,
- 	.fb_blank	= offb_blank,
-@@ -482,10 +491,14 @@ static void __init offb_init_fb(const char *name, const char *full_name,
- 	var->sync = 0;
- 	var->vmode = FB_VMODE_NONINTERLACED;
- 
-+	/* set offb aperture size for generic probing */
-+	info->aperture_base = address;
-+	info->aperture_size = fix->smem_len;
-+
- 	info->fbops = &offb_ops;
- 	info->screen_base = ioremap(address, fix->smem_len);
- 	info->pseudo_palette = (void *) (info + 1);
--	info->flags = FBINFO_DEFAULT | foreign_endian;
-+	info->flags = FBINFO_DEFAULT | FBINFO_MISC_FIRMWARE | foreign_endian;
- 
- 	fb_alloc_cmap(&info->cmap, 256, 0);
- 
 diff --git a/drivers/video/sunxvr500.c b/drivers/video/sunxvr500.c
 index 18b9507..4cd5049 100644
 --- a/drivers/video/sunxvr500.c
@@ -7020,58 +4355,11 @@ index 18b9507..4cd5049 100644
  	{	PCI_DEVICE(PCI_VENDOR_ID_3DLABS, 0x7a2),	},
  	{	.vendor = PCI_VENDOR_ID_3DLABS,
  		.device = PCI_ANY_ID,
-diff --git a/drivers/watchdog/bfin_wdt.c b/drivers/watchdog/bfin_wdt.c
-index c7b3f9d..2159e66 100644
---- a/drivers/watchdog/bfin_wdt.c
-+++ b/drivers/watchdog/bfin_wdt.c
-@@ -1,9 +1,8 @@
- /*
-  * Blackfin On-Chip Watchdog Driver
-- *  Supports BF53[123]/BF53[467]/BF54[2489]/BF561
-  *
-  * Originally based on softdog.c
-- * Copyright 2006-2007 Analog Devices Inc.
-+ * Copyright 2006-2010 Analog Devices Inc.
-  * Copyright 2006-2007 Michele d'Amico
-  * Copyright 1996 Alan Cox <alan@lxorguk.ukuu.org.uk>
-  *
-@@ -137,13 +136,15 @@ static int bfin_wdt_running(void)
-  */
- static int bfin_wdt_set_timeout(unsigned long t)
- {
--	u32 cnt;
-+	u32 cnt, max_t, sclk;
- 	unsigned long flags;
- 
--	stampit();
-+	sclk = get_sclk();
-+	max_t = -1 / sclk;
-+	cnt = t * sclk;
-+	stamp("maxtimeout=%us newtimeout=%lus (cnt=%#x)", max_t, t, cnt);
- 
--	cnt = t * get_sclk();
--	if (cnt < get_sclk()) {
-+	if (t > max_t) {
- 		printk(KERN_WARNING PFX "timeout value is too large\n");
- 		return -EINVAL;
- 	}
-diff --git a/fs/exec.c b/fs/exec.c
-index da36c20..9b88366 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -638,7 +638,6 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	 * will align it up.
- 	 */
- 	rlim_stack = rlimit(RLIMIT_STACK) & PAGE_MASK;
--	rlim_stack = min(rlim_stack, stack_size);
- #ifdef CONFIG_STACK_GROWSUP
- 	if (stack_size + stack_expand > rlim_stack)
- 		stack_base = vma->vm_start + rlim_stack;
 diff --git a/fs/file_table.c b/fs/file_table.c
-index 8eb4404..666c7ce 100644
+index b98404b..32d12b7 100644
 --- a/fs/file_table.c
 +++ b/fs/file_table.c
-@@ -420,7 +420,9 @@ retry:
+@@ -393,7 +393,9 @@ retry:
  			continue;
  		if (!(f->f_mode & FMODE_WRITE))
  			continue;
@@ -7081,40 +4369,8 @@ index 8eb4404..666c7ce 100644
  		if (file_check_writeable(f) != 0)
  			continue;
  		file_release_write(f);
-diff --git a/fs/namei.c b/fs/namei.c
-index a2b3c28..b0afbd4 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -829,6 +829,17 @@ fail:
- }
- 
- /*
-+ * This is a temporary kludge to deal with "automount" symlinks; proper
-+ * solution is to trigger them on follow_mount(), so that do_lookup()
-+ * would DTRT.  To be killed before 2.6.34-final.
-+ */
-+static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
-+{
-+	return inode && unlikely(inode->i_op->follow_link) &&
-+		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
-+}
-+
-+/*
-  * Name resolution.
-  * This is the basic name resolution function, turning a pathname into
-  * the final dentry. We expect 'base' to be positive and a directory.
-@@ -964,8 +975,7 @@ last_component:
- 		if (err)
- 			break;
- 		inode = next.dentry->d_inode;
--		if ((lookup_flags & LOOKUP_FOLLOW)
--		    && inode && inode->i_op->follow_link) {
-+		if (follow_on_final(inode, lookup_flags)) {
- 			err = do_follow_link(&next, nd);
- 			if (err)
- 				goto return_err;
 diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index f4d54ba..c1fd68b 100644
+index 95e1ca7..3f0cd4d 100644
 --- a/fs/nfs/dns_resolve.c
 +++ b/fs/nfs/dns_resolve.c
 @@ -36,6 +36,19 @@ struct nfs_dns_ent {
@@ -7157,10 +4413,10 @@ index f4d54ba..c1fd68b 100644
  };
  
 diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 2153f9b..6ad6282 100644
+index f19ed86..fcafe60 100644
 --- a/fs/nfsd/nfs4state.c
 +++ b/fs/nfsd/nfs4state.c
-@@ -2002,7 +2002,9 @@ nfs4_file_downgrade(struct file *filp, unsigned int share_access)
+@@ -1998,7 +1998,9 @@ nfs4_file_downgrade(struct file *filp, unsigned int share_access)
  {
  	if (share_access & NFS4_SHARE_ACCESS_WRITE) {
  		drop_file_write_access(filp);
@@ -7171,10 +4427,10 @@ index 2153f9b..6ad6282 100644
  }
  
 diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index deb2b13..5fc918c 100644
+index 7e9df11..4c2a6d2 100644
 --- a/fs/ocfs2/aops.c
 +++ b/fs/ocfs2/aops.c
-@@ -591,8 +591,9 @@ static int ocfs2_direct_IO_get_blocks(struct inode *inode, sector_t iblock,
+@@ -577,8 +577,9 @@ static int ocfs2_direct_IO_get_blocks(struct inode *inode, sector_t iblock,
  		goto bail;
  	}
  
@@ -7186,48 +4442,120 @@ index deb2b13..5fc918c 100644
  	/*
  	 * get_more_blocks() expects us to describe a hole by clearing
  	 * the mapped bit on bh_result().
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index af643b5..6d71c67 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2304,16 +2304,30 @@ static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
- {
- 	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
- 	pid_t tgid = task_tgid_nr_ns(current, ns);
--	char tmp[PROC_NUMBUF];
--	if (!tgid)
--		return ERR_PTR(-ENOENT);
--	sprintf(tmp, "%d", task_tgid_nr_ns(current, ns));
--	return ERR_PTR(vfs_follow_link(nd,tmp));
-+	char *name = ERR_PTR(-ENOENT);
-+	if (tgid) {
-+		name = __getname();
-+		if (!name)
-+			name = ERR_PTR(-ENOMEM);
-+		else
-+			sprintf(name, "%d", tgid);
-+	}
-+	nd_set_link(nd, name);
-+	return NULL;
-+}
-+
-+static void proc_self_put_link(struct dentry *dentry, struct nameidata *nd,
-+				void *cookie)
-+{
-+	char *s = nd_get_link(nd);
-+	if (!IS_ERR(s))
-+		__putname(s);
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index 699f371..5c4703d 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -837,11 +837,46 @@ static inline unsigned char dt_type(struct sysfs_dirent *sd)
+ 	return (sd->s_mode >> 12) & 15;
  }
  
- static const struct inode_operations proc_self_inode_operations = {
- 	.readlink	= proc_self_readlink,
- 	.follow_link	= proc_self_follow_link,
-+	.put_link	= proc_self_put_link,
- };
++static int sysfs_dir_release(struct inode *inode, struct file *filp)
++{
++	sysfs_put(filp->private_data);
++	return 0;
++}
++
++static struct sysfs_dirent *sysfs_dir_pos(struct sysfs_dirent *parent_sd,
++	ino_t ino, struct sysfs_dirent *pos)
++{
++	if (pos) {
++		int valid = !(pos->s_flags & SYSFS_FLAG_REMOVED) &&
++			pos->s_parent == parent_sd &&
++			ino == pos->s_ino;
++		sysfs_put(pos);
++		if (valid)
++			return pos;
++	}
++	pos = NULL;
++	if ((ino > 1) && (ino < INT_MAX)) {
++		pos = parent_sd->s_dir.children;
++		while (pos && (ino > pos->s_ino))
++			pos = pos->s_sibling;
++	}
++	return pos;
++}
++
++static struct sysfs_dirent *sysfs_dir_next_pos(struct sysfs_dirent *parent_sd,
++	ino_t ino, struct sysfs_dirent *pos)
++{
++	pos = sysfs_dir_pos(parent_sd, ino, pos);
++	if (pos)
++		pos = pos->s_sibling;
++	return pos;
++}
++
+ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ {
+ 	struct dentry *dentry = filp->f_path.dentry;
+ 	struct sysfs_dirent * parent_sd = dentry->d_fsdata;
+-	struct sysfs_dirent *pos;
++	struct sysfs_dirent *pos = filp->private_data;
+ 	ino_t ino;
  
- /*
+ 	if (filp->f_pos == 0) {
+@@ -857,29 +892,31 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 		if (filldir(dirent, "..", 2, filp->f_pos, ino, DT_DIR) == 0)
+ 			filp->f_pos++;
+ 	}
+-	if ((filp->f_pos > 1) && (filp->f_pos < INT_MAX)) {
+-		mutex_lock(&sysfs_mutex);
+-
+-		/* Skip the dentries we have already reported */
+-		pos = parent_sd->s_dir.children;
+-		while (pos && (filp->f_pos > pos->s_ino))
+-			pos = pos->s_sibling;
+-
+-		for ( ; pos; pos = pos->s_sibling) {
+-			const char * name;
+-			int len;
+-
+-			name = pos->s_name;
+-			len = strlen(name);
+-			filp->f_pos = ino = pos->s_ino;
++	mutex_lock(&sysfs_mutex);
++	for (pos = sysfs_dir_pos(parent_sd, filp->f_pos, pos);
++	     pos;
++	     pos = sysfs_dir_next_pos(parent_sd, filp->f_pos, pos)) {
++		const char * name;
++		unsigned int type;
++		int len, ret;
++
++		name = pos->s_name;
++		len = strlen(name);
++		ino = pos->s_ino;
++		type = dt_type(pos);
++		filp->f_pos = ino;
++		filp->private_data = sysfs_get(pos);
+ 
+-			if (filldir(dirent, name, len, filp->f_pos, ino,
+-					 dt_type(pos)) < 0)
+-				break;
+-		}
+-		if (!pos)
+-			filp->f_pos = INT_MAX;
+ 		mutex_unlock(&sysfs_mutex);
++		ret = filldir(dirent, name, len, filp->f_pos, ino, type);
++		mutex_lock(&sysfs_mutex);
++		if (ret < 0)
++			break;
++	}
++	mutex_unlock(&sysfs_mutex);
++	if ((filp->f_pos > 1) && !pos) { /* EOF */
++		filp->f_pos = INT_MAX;
++		filp->private_data = NULL;
+ 	}
+ 	return 0;
+ }
+@@ -888,5 +925,6 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ const struct file_operations sysfs_dir_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= sysfs_readdir,
++	.release	= sysfs_dir_release,
+ 	.llseek		= generic_file_llseek,
+ };
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 98ea200..692a3ee 100644
+index ebb1cd5..f2f68ce 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -87,6 +87,9 @@ struct inodes_stat_t {
@@ -7241,7 +4569,7 @@ index 98ea200..692a3ee 100644
   * The below are the various read and write types that we support. Some of
   * them include behavioral modifiers that send information down to the
 diff --git a/include/linux/irq.h b/include/linux/irq.h
-index ae9653d..9e5f45a 100644
+index 451481c..4d9b26e 100644
 --- a/include/linux/irq.h
 +++ b/include/linux/irq.h
 @@ -400,7 +400,9 @@ static inline int irq_has_action(unsigned int irq)
@@ -7254,11 +4582,40 @@ index ae9653d..9e5f45a 100644
  
  /* Set/get chip/data for an IRQ: */
  extern int set_irq_chip(unsigned int irq, struct irq_chip *chip);
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index a3fccc8..99914e6 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -136,7 +136,7 @@ static inline bool dev_xmit_complete(int rc)
+  *	used.
+  */
+ 
+-#if defined(CONFIG_WLAN_80211) || defined(CONFIG_AX25) || defined(CONFIG_AX25_MODULE)
++#if defined(CONFIG_WLAN) || defined(CONFIG_AX25) || defined(CONFIG_AX25_MODULE)
+ # if defined(CONFIG_MAC80211_MESH)
+ #  define LL_MAX_HEADER 128
+ # else
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index a177698..c8ea0c7 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -496,9 +496,8 @@ struct hw_perf_event {
+ 	atomic64_t			period_left;
+ 	u64				interrupts;
+ 
+-	u64				freq_count;
+-	u64				freq_interrupts;
+-	u64				freq_stamp;
++	u64				freq_time_stamp;
++	u64				freq_count_stamp;
+ #endif
+ };
+ 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e48311e..70abfd3 100644
+index 78efe7c..1f5fa53 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -864,7 +864,10 @@ static inline int sd_balance_for_mc_power(void)
+@@ -878,7 +878,10 @@ static inline int sd_balance_for_mc_power(void)
  	if (sched_smt_power_savings)
  		return SD_POWERSAVINGS_BALANCE;
  
@@ -7270,8 +4627,80 @@ index e48311e..70abfd3 100644
  }
  
  static inline int sd_balance_for_package_power(void)
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index ae836fd..ec226a2 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -315,22 +315,23 @@ struct sk_buff {
+ 	struct sk_buff		*next;
+ 	struct sk_buff		*prev;
+ 
+-	struct sock		*sk;
+ 	ktime_t			tstamp;
++
++	struct sock		*sk;
+ 	struct net_device	*dev;
+ 
+-	unsigned long		_skb_dst;
+-#ifdef CONFIG_XFRM
+-	struct	sec_path	*sp;
+-#endif
+ 	/*
+ 	 * This is the control buffer. It is free to use for every
+ 	 * layer. Please put your private variables there. If you
+ 	 * want to keep them across layers you have to do a skb_clone()
+ 	 * first. This is owned by whoever has the skb queued ATM.
+ 	 */
+-	char			cb[48];
++	char			cb[48] __aligned(8);
+ 
++	unsigned long		_skb_dst;
++#ifdef CONFIG_XFRM
++	struct	sec_path	*sp;
++#endif
+ 	unsigned int		len,
+ 				data_len;
+ 	__u16			mac_len,
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 207466a..2540770 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -132,7 +132,8 @@ struct perf_event_attr;
+ 
+ #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
+ 	static const struct syscall_metadata __syscall_meta_##sname;	\
+-	static struct ftrace_event_call event_enter_##sname;		\
++	static struct ftrace_event_call					\
++	__attribute__((__aligned__(4))) event_enter_##sname;		\
+ 	static struct trace_event enter_syscall_print_##sname = {	\
+ 		.trace                  = print_syscall_enter,		\
+ 	};								\
+@@ -154,7 +155,8 @@ struct perf_event_attr;
+ 
+ #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
+ 	static const struct syscall_metadata __syscall_meta_##sname;	\
+-	static struct ftrace_event_call event_exit_##sname;		\
++	static struct ftrace_event_call					\
++	__attribute__((__aligned__(4))) event_exit_##sname;		\
+ 	static struct trace_event exit_syscall_print_##sname = {	\
+ 		.trace                  = print_syscall_exit,		\
+ 	};								\
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index c6fe03e..1ca4990 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -65,7 +65,8 @@
+ 	};
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args)	\
+-	static struct ftrace_event_call event_##name
++	static struct ftrace_event_call			\
++	__attribute__((__aligned__(4))) event_##name
+ 
+ #undef DEFINE_EVENT_PRINT
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
 diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index c166019..e570d19 100644
+index ecc3fa2..d70394f 100644
 --- a/kernel/irq/chip.c
 +++ b/kernel/irq/chip.c
 @@ -18,11 +18,7 @@
@@ -7337,7 +4766,7 @@ index c166019..e570d19 100644
  	desc->chip = &no_irq_chip;
  	desc->name = NULL;
 @@ -85,6 +99,26 @@ void dynamic_irq_cleanup(unsigned int irq)
- 	spin_unlock_irqrestore(&desc->lock, flags);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
  }
  
 +/**
@@ -7363,6 +4792,198 @@ index c166019..e570d19 100644
  
  /**
   *	set_irq_chip - set the irq chip for an irq
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 2ae7409..b707465 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -248,7 +248,7 @@ static void perf_unpin_context(struct perf_event_context *ctx)
+ 
+ static inline u64 perf_clock(void)
+ {
+-	return cpu_clock(smp_processor_id());
++	return cpu_clock(raw_smp_processor_id());
+ }
+ 
+ /*
+@@ -1350,14 +1350,83 @@ static void perf_event_cpu_sched_in(struct perf_cpu_context *cpuctx, int cpu)
+ 
+ static void perf_log_throttle(struct perf_event *event, int enable);
+ 
+-static void perf_adjust_period(struct perf_event *event, u64 events)
++static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
++{
++	u64 frequency = event->attr.sample_freq;
++	u64 sec = NSEC_PER_SEC;
++	u64 divisor, dividend;
++
++	int count_fls, nsec_fls, frequency_fls, sec_fls;
++
++	count_fls = fls64(count);
++	nsec_fls = fls64(nsec);
++	frequency_fls = fls64(frequency);
++	sec_fls = 30;
++
++	/*
++	 * We got @count in @nsec, with a target of sample_freq HZ
++	 * the target period becomes:
++	 *
++	 *             @count * 10^9
++	 * period = -------------------
++	 *          @nsec * sample_freq
++	 *
++	 */
++
++	/*
++	 * Reduce accuracy by one bit such that @a and @b converge
++	 * to a similar magnitude.
++	 */
++#define REDUCE_FLS(a, b) 		\
++do {					\
++	if (a##_fls > b##_fls) {	\
++		a >>= 1;		\
++		a##_fls--;		\
++	} else {			\
++		b >>= 1;		\
++		b##_fls--;		\
++	}				\
++} while (0)
++
++	/*
++	 * Reduce accuracy until either term fits in a u64, then proceed with
++	 * the other, so that finally we can do a u64/u64 division.
++	 */
++	while (count_fls + sec_fls > 64 && nsec_fls + frequency_fls > 64) {
++		REDUCE_FLS(nsec, frequency);
++		REDUCE_FLS(sec, count);
++	}
++
++	if (count_fls + sec_fls > 64) {
++		divisor = nsec * frequency;
++
++		while (count_fls + sec_fls > 64) {
++			REDUCE_FLS(count, sec);
++			divisor >>= 1;
++		}
++
++		dividend = count * sec;
++	} else {
++		dividend = count * sec;
++
++		while (nsec_fls + frequency_fls > 64) {
++			REDUCE_FLS(nsec, frequency);
++			dividend >>= 1;
++		}
++
++		divisor = nsec * frequency;
++	}
++
++	return div64_u64(dividend, divisor);
++}
++
++static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	u64 period, sample_period;
+ 	s64 delta;
+ 
+-	events *= hwc->sample_period;
+-	period = div64_u64(events, event->attr.sample_freq);
++	period = perf_calculate_period(event, nsec, count);
+ 
+ 	delta = (s64)(period - hwc->sample_period);
+ 	delta = (delta + 7) / 8; /* low pass filter */
+@@ -1368,13 +1437,22 @@ static void perf_adjust_period(struct perf_event *event, u64 events)
+ 		sample_period = 1;
+ 
+ 	hwc->sample_period = sample_period;
++
++	if (atomic64_read(&hwc->period_left) > 8*sample_period) {
++		perf_disable();
++		event->pmu->disable(event);
++		atomic64_set(&hwc->period_left, 0);
++		event->pmu->enable(event);
++		perf_enable();
++	}
+ }
+ 
+ static void perf_ctx_adjust_freq(struct perf_event_context *ctx)
+ {
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+-	u64 interrupts, freq;
++	u64 interrupts, now;
++	s64 delta;
+ 
+ 	raw_spin_lock(&ctx->lock);
+ 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+@@ -1395,44 +1473,18 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx)
+ 		if (interrupts == MAX_INTERRUPTS) {
+ 			perf_log_throttle(event, 1);
+ 			event->pmu->unthrottle(event);
+-			interrupts = 2*sysctl_perf_event_sample_rate/HZ;
+ 		}
+ 
+ 		if (!event->attr.freq || !event->attr.sample_freq)
+ 			continue;
+ 
+-		/*
+-		 * if the specified freq < HZ then we need to skip ticks
+-		 */
+-		if (event->attr.sample_freq < HZ) {
+-			freq = event->attr.sample_freq;
+-
+-			hwc->freq_count += freq;
+-			hwc->freq_interrupts += interrupts;
+-
+-			if (hwc->freq_count < HZ)
+-				continue;
+-
+-			interrupts = hwc->freq_interrupts;
+-			hwc->freq_interrupts = 0;
+-			hwc->freq_count -= HZ;
+-		} else
+-			freq = HZ;
+-
+-		perf_adjust_period(event, freq * interrupts);
++		event->pmu->read(event);
++		now = atomic64_read(&event->count);
++		delta = now - hwc->freq_count_stamp;
++		hwc->freq_count_stamp = now;
+ 
+-		/*
+-		 * In order to avoid being stalled by an (accidental) huge
+-		 * sample period, force reset the sample period if we didn't
+-		 * get any events in this freq period.
+-		 */
+-		if (!interrupts) {
+-			perf_disable();
+-			event->pmu->disable(event);
+-			atomic64_set(&hwc->period_left, 0);
+-			event->pmu->enable(event);
+-			perf_enable();
+-		}
++		if (delta > 0)
++			perf_adjust_period(event, TICK_NSEC, delta);
+ 	}
+ 	raw_spin_unlock(&ctx->lock);
+ }
+@@ -3688,12 +3740,12 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+ 
+ 	if (event->attr.freq) {
+ 		u64 now = perf_clock();
+-		s64 delta = now - hwc->freq_stamp;
++		s64 delta = now - hwc->freq_time_stamp;
+ 
+-		hwc->freq_stamp = now;
++		hwc->freq_time_stamp = now;
+ 
+-		if (delta > 0 && delta < TICK_NSEC)
+-			perf_adjust_period(event, NSEC_PER_SEC / (int)delta);
++		if (delta > 0 && delta < 2*TICK_NSEC)
++			perf_adjust_period(event, delta, hwc->last_period);
+ 	}
+ 
+ 	/*
 diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
 index 36cb168..fc9ed15 100644
 --- a/kernel/power/snapshot.c
@@ -7377,10 +4998,10 @@ index 36cb168..fc9ed15 100644
  		struct page *page = pfn_to_page(pfn);
  
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 60d74cc..380e1fa 100644
+index 3a8fb30..00a59b0 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -4098,12 +4098,23 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
+@@ -4119,12 +4119,23 @@ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
  			continue;
  
  		rq = cpu_rq(i);
@@ -7406,7 +5027,7 @@ index 60d74cc..380e1fa 100644
  		if (wl > max_load) {
  			max_load = wl;
  			busiest = rq;
-@@ -5998,7 +6009,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
+@@ -6054,7 +6065,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
  	unsigned long flags;
  	int oldprio, on_rq, running;
  	struct rq *rq;
@@ -7415,7 +5036,7 @@ index 60d74cc..380e1fa 100644
  
  	BUG_ON(prio < 0 || prio > MAX_PRIO);
  
-@@ -6006,6 +6017,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
+@@ -6062,6 +6073,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
  	update_rq_clock(rq);
  
  	oldprio = p->prio;
@@ -7423,7 +5044,7 @@ index 60d74cc..380e1fa 100644
  	on_rq = p->se.on_rq;
  	running = task_current(rq, p);
  	if (on_rq)
-@@ -6233,7 +6245,7 @@ static int __sched_setscheduler(struct task_struct *p, int policy,
+@@ -6281,7 +6293,7 @@ static int __sched_setscheduler(struct task_struct *p, int policy,
  {
  	int retval, oldprio, oldpolicy = -1, on_rq, running;
  	unsigned long flags;
@@ -7432,7 +5053,7 @@ index 60d74cc..380e1fa 100644
  	struct rq *rq;
  	int reset_on_fork;
  
-@@ -6347,6 +6359,7 @@ recheck:
+@@ -6395,6 +6407,7 @@ recheck:
  	p->sched_reset_on_fork = reset_on_fork;
  
  	oldprio = p->prio;
@@ -7440,24 +5061,20 @@ index 60d74cc..380e1fa 100644
  	__setscheduler(rq, p, policy, param->sched_priority);
  
  	if (running)
-diff --git a/lib/idr.c b/lib/idr.c
-index 80ca9ac..eda7ba3 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -156,10 +156,12 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa)
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4df6a77..a1edaa8 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -791,7 +791,8 @@ extern const char *__stop___trace_bprintk_fmt[];
  
- 			/* if already at the top layer, we need to grow */
--			if (!(p = pa[l])) {
-+			if (id >= 1 << (idp->layers * IDR_BITS)) {
- 				*starting_id = id;
- 				return IDR_NEED_TO_GROW;
- 			}
-+			p = pa[l];
-+			BUG_ON(!p);
- 
- 			/* If we need to go up one layer, continue the
- 			 * loop; otherwise, restart from the top.
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, id, tstruct, print)		\
+-	extern struct ftrace_event_call event_##call;
++	extern struct ftrace_event_call					\
++	__attribute__((__aligned__(4))) event_##call;
+ #undef FTRACE_ENTRY_DUP
+ #define FTRACE_ENTRY_DUP(call, struct_name, id, tstruct, print)		\
+ 	FTRACE_ENTRY(call, struct_name, id, PARAMS(tstruct), PARAMS(print))
 diff --git a/mm/fadvise.c b/mm/fadvise.c
 index e433592..8d723c9 100644
 --- a/mm/fadvise.c
@@ -7484,21 +5101,8 @@ index e433592..8d723c9 100644
  		break;
  	case POSIX_FADV_WILLNEED:
  		if (!mapping->a_ops->readpage) {
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 9092b43..83cd9bb 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -426,6 +426,8 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	list_for_each_entry(c, &p->children, sibling) {
- 		if (c->mm == p->mm)
- 			continue;
-+		if (mem && !task_in_mem_cgroup(c, mem))
-+			continue;
- 		if (!oom_kill_task(c))
- 			return 0;
- 	}
 diff --git a/mm/readahead.c b/mm/readahead.c
-index aa1aa23..8f40b47 100644
+index 033bc13..337b20e 100644
 --- a/mm/readahead.c
 +++ b/mm/readahead.c
 @@ -501,6 +501,12 @@ void page_cache_sync_readahead(struct address_space *mapping,
@@ -7515,10 +5119,10 @@ index aa1aa23..8f40b47 100644
  	ondemand_readahead(mapping, ra, filp, false, offset, req_size);
  }
 diff --git a/mm/slab.c b/mm/slab.c
-index 7dfa481..5d1a782 100644
+index 7451bda..ff44eb2 100644
 --- a/mm/slab.c
 +++ b/mm/slab.c
-@@ -971,13 +971,11 @@ static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
+@@ -983,13 +983,11 @@ static struct array_cache **alloc_alien_cache(int node, int limit, gfp_t gfp)
  
  	if (limit > 1)
  		limit = 12;
@@ -7534,33 +5138,6 @@ index 7dfa481..5d1a782 100644
  			ac_ptr[i] = alloc_arraycache(node, limit, 0xbaadf00d, gfp);
  			if (!ac_ptr[i]) {
  				for (i--; i >= 0; i--)
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 584046e..74d0cce 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2630,7 +2630,7 @@ int napi_frags_finish(struct napi_struct *napi, struct sk_buff *skb, int ret)
- 	switch (ret) {
- 	case GRO_NORMAL:
- 	case GRO_HELD:
--		skb->protocol = eth_type_trans(skb, napi->dev);
-+		skb->protocol = eth_type_trans(skb, skb->dev);
- 
- 		if (ret == GRO_NORMAL)
- 			return netif_receive_skb(skb);
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index 427ded8..d5617d4 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -366,7 +366,8 @@ static ssize_t wireless_show(struct device *d, char *buf,
- 	const struct iw_statistics *iw;
- 	ssize_t ret = -EINVAL;
- 
--	rtnl_lock();
-+	if (!rtnl_trylock())
-+		return restart_syscall();
- 	if (dev_isalive(dev)) {
- 		iw = get_wireless_stats(dev);
- 		if (iw)
 diff --git a/net/core/scm.c b/net/core/scm.c
 index b7ba91b..9b26463 100644
 --- a/net/core/scm.c
@@ -7574,130 +5151,11 @@ index b7ba91b..9b26463 100644
  			err=scm_fp_copy(cmsg, &p->fp);
  			if (err<0)
  				goto error;
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 0030e73..cc35645 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1351,14 +1351,19 @@ static int devinet_sysctl_forward(ctl_table *ctl, int write,
- {
- 	int *valp = ctl->data;
- 	int val = *valp;
-+	loff_t pos = *ppos;
- 	int ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
- 
- 	if (write && *valp != val) {
- 		struct net *net = ctl->extra2;
- 
- 		if (valp != &IPV4_DEVCONF_DFLT(net, FORWARDING)) {
--			if (!rtnl_trylock())
-+			if (!rtnl_trylock()) {
-+				/* Restore the original values before restarting */
-+				*valp = val;
-+				*ppos = pos;
- 				return restart_syscall();
-+			}
- 			if (valp == &IPV4_DEVCONF_ALL(net, FORWARDING)) {
- 				inet_forward_change(net);
- 			} else if (*valp) {
-diff --git a/net/ipv4/igmp.c b/net/ipv4/igmp.c
-index d41e5de..169da93 100644
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -946,7 +946,6 @@ int igmp_rcv(struct sk_buff *skb)
- 		break;
- 	case IGMP_HOST_MEMBERSHIP_REPORT:
- 	case IGMPV2_HOST_MEMBERSHIP_REPORT:
--	case IGMPV3_HOST_MEMBERSHIP_REPORT:
- 		/* Is it our report looped back? */
- 		if (skb_rtable(skb)->fl.iif == 0)
- 			break;
-@@ -960,6 +959,7 @@ int igmp_rcv(struct sk_buff *skb)
- 		in_dev_put(in_dev);
- 		return pim_rcv_v1(skb);
- #endif
-+	case IGMPV3_HOST_MEMBERSHIP_REPORT:
- 	case IGMP_DVMRP:
- 	case IGMP_TRACE:
- 	case IGMP_HOST_LEAVE_MESSAGE:
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index 1fd0a3d..d1f77cc 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -504,8 +504,11 @@ static int addrconf_fixup_forwarding(struct ctl_table *table, int *p, int old)
- 	if (p == &net->ipv6.devconf_dflt->forwarding)
- 		return 0;
- 
--	if (!rtnl_trylock())
-+	if (!rtnl_trylock()) {
-+		/* Restore the original values before restarting */
-+		*p = old;
- 		return restart_syscall();
-+	}
- 
- 	if (p == &net->ipv6.devconf_all->forwarding) {
- 		__s32 newf = net->ipv6.devconf_all->forwarding;
-@@ -3991,12 +3994,15 @@ int addrconf_sysctl_forward(ctl_table *ctl, int write,
- {
- 	int *valp = ctl->data;
- 	int val = *valp;
-+	loff_t pos = *ppos;
- 	int ret;
- 
- 	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
- 
- 	if (write)
- 		ret = addrconf_fixup_forwarding(ctl, valp, val);
-+	if (ret)
-+		*ppos = pos;
- 	return ret;
- }
- 
-@@ -4075,8 +4081,11 @@ static int addrconf_disable_ipv6(struct ctl_table *table, int *p, int old)
- 	if (p == &net->ipv6.devconf_dflt->disable_ipv6)
- 		return 0;
- 
--	if (!rtnl_trylock())
-+	if (!rtnl_trylock()) {
-+		/* Restore the original values before restarting */
-+		*p = old;
- 		return restart_syscall();
-+	}
- 
- 	if (p == &net->ipv6.devconf_all->disable_ipv6) {
- 		__s32 newf = net->ipv6.devconf_all->disable_ipv6;
-@@ -4095,12 +4104,15 @@ int addrconf_sysctl_disable(ctl_table *ctl, int write,
- {
- 	int *valp = ctl->data;
- 	int val = *valp;
-+	loff_t pos = *ppos;
- 	int ret;
- 
- 	ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
- 
- 	if (write)
- 		ret = addrconf_disable_ipv6(ctl, valp, val);
-+	if (ret)
-+		*ppos = pos;
- 	return ret;
- }
- 
-diff --git a/net/ipv6/netfilter/nf_conntrack_reasm.c b/net/ipv6/netfilter/nf_conntrack_reasm.c
-index 4b6a539..bfc8737 100644
---- a/net/ipv6/netfilter/nf_conntrack_reasm.c
-+++ b/net/ipv6/netfilter/nf_conntrack_reasm.c
-@@ -63,6 +63,7 @@ struct nf_ct_frag6_queue
- 	struct inet_frag_queue	q;
- 
- 	__be32			id;		/* fragment id		*/
-+	u32			user;
- 	struct in6_addr		saddr;
- 	struct in6_addr		daddr;
- 
 diff --git a/net/mac80211/agg-tx.c b/net/mac80211/agg-tx.c
-index 89e238b..9144ef0 100644
+index 5e3a7ec..304b0b6 100644
 --- a/net/mac80211/agg-tx.c
 +++ b/net/mac80211/agg-tx.c
-@@ -177,7 +177,8 @@ static void sta_addba_resp_timer_expired(unsigned long data)
+@@ -179,7 +179,8 @@ static void sta_addba_resp_timer_expired(unsigned long data)
  
  	/* check if the TID waits for addBA response */
  	spin_lock_bh(&sta->lock);
@@ -7707,8 +5165,51 @@ index 89e238b..9144ef0 100644
  						HT_ADDBA_REQUESTED_MSK) {
  		spin_unlock_bh(&sta->lock);
  		*state = HT_AGG_STATE_IDLE;
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 82a30c1..da92cde 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -1788,6 +1788,7 @@ static ieee80211_rx_result debug_noinline
+ ieee80211_rx_h_data(struct ieee80211_rx_data *rx)
+ {
+ 	struct ieee80211_sub_if_data *sdata = rx->sdata;
++	struct ieee80211_local *local = rx->local;
+ 	struct net_device *dev = sdata->dev;
+ 	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)rx->skb->data;
+ 	__le16 fc = hdr->frame_control;
+@@ -1819,6 +1820,13 @@ ieee80211_rx_h_data(struct ieee80211_rx_data *rx)
+ 	dev->stats.rx_packets++;
+ 	dev->stats.rx_bytes += rx->skb->len;
+ 
++	if (ieee80211_is_data(hdr->frame_control) &&
++	    !is_multicast_ether_addr(hdr->addr1) &&
++	    local->hw.conf.dynamic_ps_timeout > 0 && local->ps_sdata) {
++			mod_timer(&local->dynamic_ps_timer, jiffies +
++			 msecs_to_jiffies(local->hw.conf.dynamic_ps_timeout));
++	}
++
+ 	ieee80211_deliver_skb(rx);
+ 
+ 	return RX_QUEUED;
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index ac210b5..70c79c3 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1052,8 +1052,11 @@ ieee80211_tx_prepare(struct ieee80211_sub_if_data *sdata,
+ 
+ 	hdr = (struct ieee80211_hdr *) skb->data;
+ 
+-	if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++	if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN) {
+ 		tx->sta = rcu_dereference(sdata->u.vlan.sta);
++		if (!tx->sta && sdata->dev->ieee80211_ptr->use_4addr)
++			return TX_DROP;
++	}
+ 	if (!tx->sta)
+ 		tx->sta = sta_info_get(local, hdr->addr1);
+ 
 diff --git a/net/netfilter/xt_recent.c b/net/netfilter/xt_recent.c
-index eb0ceb8..1a3b650 100644
+index fc70a49..43e83a4 100644
 --- a/net/netfilter/xt_recent.c
 +++ b/net/netfilter/xt_recent.c
 @@ -173,10 +173,10 @@ recent_entry_init(struct recent_table *t, const union nf_inet_addr *addr,
@@ -7733,10 +5234,10 @@ index eb0ceb8..1a3b650 100644
  				break;
  			}
 diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index 0266cca..dafd341 100644
+index 7d1f9e9..4f30336 100644
 --- a/net/sunrpc/svc_xprt.c
 +++ b/net/sunrpc/svc_xprt.c
-@@ -901,11 +901,8 @@ void svc_delete_xprt(struct svc_xprt *xprt)
+@@ -889,11 +889,8 @@ void svc_delete_xprt(struct svc_xprt *xprt)
  	if (test_bit(XPT_TEMP, &xprt->xpt_flags))
  		serv->sv_tmpcnt--;
  
@@ -7750,10 +5251,10 @@ index 0266cca..dafd341 100644
  	svc_xprt_put(xprt);
  	spin_unlock_bh(&serv->sv_lock);
 diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 37c5475..5cdbf7c 100644
+index 3d739e5..4df801d 100644
 --- a/net/sunrpc/xprtsock.c
 +++ b/net/sunrpc/xprtsock.c
-@@ -1926,6 +1926,11 @@ static void xs_tcp_setup_socket(struct rpc_xprt *xprt,
+@@ -1912,6 +1912,11 @@ static void xs_tcp_setup_socket(struct rpc_xprt *xprt,
  	case -EALREADY:
  		xprt_clear_connecting(xprt);
  		return;
@@ -7765,6 +5266,46 @@ index 37c5475..5cdbf7c 100644
  	}
  out_eagain:
  	status = -EAGAIN;
+diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+index 2f3230d..049c419 100755
+--- a/scripts/get_maintainer.pl
++++ b/scripts/get_maintainer.pl
+@@ -314,6 +314,7 @@ foreach my $file (@files) {
+ 		if ($type eq 'X') {
+ 		    if (file_match_pattern($file, $value)) {
+ 			$exclude = 1;
++			last;
+ 		    }
+ 		}
+ 	    }
+@@ -340,8 +341,7 @@ foreach my $file (@files) {
+ 	    }
+ 	}
+ 
+-	$tvi += ($end - $start);
+-
++	$tvi = $end + 1;
+     }
+ 
+     foreach my $line (sort {$hash{$b} <=> $hash{$a}} keys %hash) {
+diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+index 0d83edc..2d4d05d 100644
+--- a/security/integrity/ima/ima_iint.c
++++ b/security/integrity/ima/ima_iint.c
+@@ -63,12 +63,11 @@ int ima_inode_alloc(struct inode *inode)
+ 	spin_lock(&ima_iint_lock);
+ 	rc = radix_tree_insert(&ima_iint_store, (unsigned long)inode, iint);
+ 	spin_unlock(&ima_iint_lock);
++	radix_tree_preload_end();
+ out:
+ 	if (rc < 0)
+ 		kmem_cache_free(iint_cache, iint);
+ 
+-	radix_tree_preload_end();
+-
+ 	return rc;
+ }
+ 
 diff --git a/security/selinux/ss/ebitmap.c b/security/selinux/ss/ebitmap.c
 index 68c7348..04b6145 100644
 --- a/security/selinux/ss/ebitmap.c
@@ -7779,10 +5320,10 @@ index 68c7348..04b6145 100644
  		e_iter = e_iter->next;
  	}
 diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
-index ab73edf..7ba779d 100644
+index 25b0641..f7e1c9f 100644
 --- a/sound/core/pcm_native.c
 +++ b/sound/core/pcm_native.c
-@@ -314,10 +314,10 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
+@@ -315,10 +315,10 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
  	if (!params->info)
  		params->info = hw->info & ~SNDRV_PCM_INFO_FIFO_IN_FRAMES;
  	if (!params->fifo_size) {
@@ -7798,27 +5339,27 @@ index ab73edf..7ba779d 100644
  					SNDRV_PCM_IOCTL1_FIFO_SIZE, params);
  			if (changed < 0)
 diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index fec8724..673cec3 100644
+index ff6da6f..6d6e307 100644
 --- a/sound/pci/hda/hda_intel.c
 +++ b/sound/pci/hda/hda_intel.c
-@@ -2224,7 +2224,12 @@ static int azx_dev_free(struct snd_device *device)
+@@ -2261,9 +2261,12 @@ static int azx_dev_free(struct snd_device *device)
  static struct snd_pci_quirk position_fix_list[] __devinitdata = {
  	SND_PCI_QUIRK(0x1028, 0x01cc, "Dell D820", POS_FIX_LPIB),
  	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x103c, 0x306d, "HP dv3", POS_FIX_LPIB),
 +	SND_PCI_QUIRK(0x1106, 0x3288, "ASUS M2V-MX SE", POS_FIX_LPIB),
  	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
-+	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1462, 0x1002, "MSI Wind U115", POS_FIX_LPIB),
 +	SND_PCI_QUIRK(0x1565, 0x820f, "Biostar Microtech", POS_FIX_LPIB),
  	{}
  };
  
 diff --git a/sound/pci/hda/patch_analog.c b/sound/pci/hda/patch_analog.c
-index 2d603f6..2377e75 100644
+index 69a941c..7069441 100644
 --- a/sound/pci/hda/patch_analog.c
 +++ b/sound/pci/hda/patch_analog.c
-@@ -1003,7 +1003,7 @@ static struct snd_pci_quirk ad1986a_cfg_tbl[] = {
+@@ -1008,7 +1008,7 @@ static struct snd_pci_quirk ad1986a_cfg_tbl[] = {
  	SND_PCI_QUIRK(0x1043, 0x81cb, "ASUS M2N", AD1986A_3STACK),
  	SND_PCI_QUIRK(0x1043, 0x8234, "ASUS M2N", AD1986A_3STACK),
  	SND_PCI_QUIRK(0x10de, 0xcb84, "ASUS A8N-VM", AD1986A_3STACK),
@@ -7845,7 +5386,7 @@ index 8a332d2..03d6aea 100644
  		.subdevice = 0x0a81,
  		.name = "ECS K7VTA3",
 diff --git a/sound/soc/codecs/ak4104.c b/sound/soc/codecs/ak4104.c
-index 4d47bc4..10c7550 100644
+index 3a14c6f..0f439ab 100644
 --- a/sound/soc/codecs/ak4104.c
 +++ b/sound/soc/codecs/ak4104.c
 @@ -90,12 +90,10 @@ static int ak4104_spi_write(struct snd_soc_codec *codec, unsigned int reg,
@@ -7864,10 +5405,10 @@ index 4d47bc4..10c7550 100644
  			dev_err(&spi->dev, "SPI write failed\n");
  			return -EIO;
 diff --git a/sound/usb/usbaudio.c b/sound/usb/usbaudio.c
-index f26a125..79633ea 100644
+index 9edef46..3c81add 100644
 --- a/sound/usb/usbaudio.c
 +++ b/sound/usb/usbaudio.c
-@@ -3326,6 +3326,32 @@ static int snd_usb_cm6206_boot_quirk(struct usb_device *dev)
+@@ -3327,6 +3327,32 @@ static int snd_usb_cm6206_boot_quirk(struct usb_device *dev)
  }
  
  /*
@@ -7900,7 +5441,7 @@ index f26a125..79633ea 100644
   * Setup quirks
   */
  #define AUDIOPHILE_SET			0x01 /* if set, parse device_setup */
-@@ -3616,6 +3642,12 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
+@@ -3624,6 +3650,12 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
  			goto __err_val;
  	}
  
@@ -7914,10 +5455,36 @@ index f26a125..79633ea 100644
  	 * found a config.  now register to ALSA
  	 */
 diff --git a/sound/usb/usbmidi.c b/sound/usb/usbmidi.c
-index 0eff19c..b8958f9 100644
+index 6e89b83..b2da478 100644
 --- a/sound/usb/usbmidi.c
 +++ b/sound/usb/usbmidi.c
-@@ -1360,6 +1360,12 @@ static struct port_info {
+@@ -1162,10 +1162,22 @@ static int snd_usbmidi_out_endpoint_create(struct snd_usb_midi* umidi,
+ 		pipe = usb_sndintpipe(umidi->dev, ep_info->out_ep);
+ 	else
+ 		pipe = usb_sndbulkpipe(umidi->dev, ep_info->out_ep);
+-	if (umidi->usb_id == USB_ID(0x0a92, 0x1020)) /* ESI M4U */
+-		ep->max_transfer = 4;
+-	else
++	switch (umidi->usb_id) {
++	default:
+ 		ep->max_transfer = usb_maxpacket(umidi->dev, pipe, 1);
++		break;
++		/*
++		 * Various chips declare a packet size larger than 4 bytes, but
++		 * do not actually work with larger packets:
++		 */
++	case USB_ID(0x0a92, 0x1020): /* ESI M4U */
++	case USB_ID(0x1430, 0x474b): /* RedOctane GH MIDI INTERFACE */
++	case USB_ID(0x15ca, 0x0101): /* Textech USB Midi Cable */
++	case USB_ID(0x15ca, 0x1806): /* Textech USB Midi Cable */
++	case USB_ID(0x1a86, 0x752d): /* QinHeng CH345 "USB2.0-MIDI" */
++		ep->max_transfer = 4;
++		break;
++	}
+ 	for (i = 0; i < OUTPUT_URBS; ++i) {
+ 		buffer = usb_buffer_alloc(umidi->dev,
+ 					  ep->max_transfer, GFP_KERNEL,
+@@ -1407,6 +1419,12 @@ static struct port_info {
  	EXTERNAL_PORT(0x086a, 0x0001, 8, "%s Broadcast"),
  	EXTERNAL_PORT(0x086a, 0x0002, 8, "%s Broadcast"),
  	EXTERNAL_PORT(0x086a, 0x0003, 4, "%s Broadcast"),
@@ -7931,10 +5498,10 @@ index 0eff19c..b8958f9 100644
  
  static struct port_info *find_port_info(struct snd_usb_midi* umidi, int number)
 diff --git a/sound/usb/usbquirks.h b/sound/usb/usbquirks.h
-index f6f201e..391e02f 100644
+index a892bda..406b74b 100644
 --- a/sound/usb/usbquirks.h
 +++ b/sound/usb/usbquirks.h
-@@ -2050,6 +2050,33 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+@@ -2073,6 +2073,33 @@ YAMAHA_DEVICE(0x7010, "UB99"),
  	}
  },
  
@@ -7968,3 +5535,16 @@ index f6f201e..391e02f 100644
  /* */
  {
  	/* aka. Serato Scratch Live DJ Box */
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index ab92763..72547b9 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -503,7 +503,7 @@ static int dso__split_kallsyms(struct dso *self, struct map *map,
+ 				return -1;
+ 
+ 			curr_map = map__new2(pos->start, dso, map->type);
+-			if (map == NULL) {
++			if (curr_map == NULL) {
+ 				dso__delete(dso);
+ 				return -1;
+ 			}
