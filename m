@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965166Ab0COPev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:34:51 -0400
+	id S965207Ab0COPfG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:35:06 -0400
 Received: from mail-fx0-f219.google.com ([209.85.220.219]:51368 "EHLO
 	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab0COPer (ORCPT
+	with ESMTP id S932525Ab0COPfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:34:47 -0400
+	Mon, 15 Mar 2010 11:35:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=GdY7S5epcJRzzmfSAcgcEAzL5/DCAIlbTAgQAFMnk3vz2IXEGKKQbGwredj0hvviFn
-         goIJ9Ai/qKW3pahiiIJOxZ3IpEZDe0IaKHG2PFmSejUyev8GGO1vmbIDO0vD5b1oWm5i
-         jzFnSeSxynKHJlgs9USqP8C8Mop2wbXuHViP0=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
+         :mime-version:content-type:content-transfer-encoding;
+        b=VRH/Vx1Ia1qmY8DdAI8O7FjL9QvpXrHXfdjxcg++VtEGmupkKyhcPTpO5AtF8T4U4R
+         /J1qwcDyAKsnmnIxr9Xscv605mAx5e5e5q/Ag+UjRDgR9D16ZSItCHw8yRYvv0ufG2WC
+         k6ORE5esAG4pVma7BtwUw2PmJOtw1DsfoEpTc=
 From: =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: fix callgraphs of 32-bit processes on 64-bit kernels.
-Date: Mon, 15 Mar 2010 17:34:19 +0200
-Message-Id: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
+       linux-kernel@vger.kernel.org,
+       =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
+Subject: [PATCH] perf: x86: fix callgraphs of 32-bit processes on 64-bit kernels.
+Date: Mon, 15 Mar 2010 17:34:20 +0200
+Message-Id: <1268667260-5505-2-git-send-email-edwintorok@gmail.com>
 X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
+References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,124 +34,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When profiling a 32-bit process on a 64-bit kernel, callgraph tracing
+stopped after the first function, because it has seen a garbage memory address
+(tried to interpret the frame pointer, and return address as a 64-bit pointer).
 
-Callgraph profiling 32-bit apps on a 64-bit kernel doesn't work.
-The reason is that perf_callchain_user tries to read a stackframe with 64-bit
-pointers, which is wrong for a 32-bit process.
+Fix this by using a struct stack_frame with 32-bit pointers when the TIF_IA32 flag is set.
 
-This patch fixes that, and I am almost able to get nice callgraph profiles
-from 32-bit apps now! (except for some problems with perf itself when tracing
-kernel modules, see [1])
+Note that TIF_IA32 flag must be used, and not is_compat_task(), because the
+latter is only set when the 32-bit process is executing a syscall,
+which may not always be the case (when tracing page fault events for example).
 
-Page-faults can be traced nicely (sid-ia32 is a 32-bit chroot):
+Signed-off-by: Török Edwin <edwintorok@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-$ sudo perf record -e page-faults -f -g /home/edwin/sid-ia32/usr/bin/glxgears
-$ sudo perf report
-...
-    45.33%  libc-2.10.2.so                   [.] __GI_memcpy
-            |
-            --- __GI_memcpy
-                _mesa_BufferDataARB
-                _mesa_meta_Clear
-                radeonUserClear
-                r700Clear
-                _mesa_Clear
-                0x8049367
-                0x804a6ba
-                __libc_start_main
-                0x8049111
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 8c1c070..13ee83a 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -2401,6 +2401,20 @@ static int copy_stack_frame(const void __user *fp, struct stack_frame *frame)
+ 	return bytes == sizeof(*frame);
+ }
+ 
++struct stack_frame_ia32 {
++    u32 next_frame;
++    u32 return_address;
++};
++
++static int copy_stack_frame_ia32(u32 fp, struct stack_frame_ia32 *frame)
++{
++	unsigned long bytes;
++
++	bytes = copy_from_user_nmi(frame, (const void __user*)(unsigned long)fp, sizeof(*frame));
++
++	return bytes == sizeof(*frame);
++}
++
+ static void
+ perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ {
+@@ -2414,6 +2428,25 @@ perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+ 
+ 	callchain_store(entry, PERF_CONTEXT_USER);
+ 	callchain_store(entry, regs->ip);
++	if (test_thread_flag(TIF_IA32)) {
++	    /* 32-bit process in 64-bit kernel. */
++	    u32 fp = regs->bp;
++	    struct stack_frame_ia32 frame;
++	    while (entry->nr < PERF_MAX_STACK_DEPTH) {
++		frame.next_frame     = 0;
++		frame.return_address = 0;
++
++		if (!copy_stack_frame_ia32(fp, &frame))
++			break;
++
++		if ((unsigned long)fp < regs->sp)
++			break;
++
++		callchain_store(entry, frame.return_address);
++		fp = frame.next_frame;
++	    }
++	    return;
++	}
+ 
+ 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
+ 		frame.next_frame	     = NULL;
+-- 
+1.7.0
 
-    16.96%  libc-2.10.2.so                   [.] __GI_memset
-            |
-            --- __GI_memset
-                _tnl_init_vertices
-                _swsetup_CreateContext
-                r600CreateContext
-                driCreateNewContext
-                dri2CreateNewContext
-                0xf77ab7dd
-                0xf7783c67
-                0xf778514c
-                0x804974f
-                0x804a33d
-                __libc_start_main
-                0x8049111
-
-And CPU cycles can be traced too in userspace:
-$ sudo perf record -f -g /home/edwin/sid-ia32/usr/bin/glxgears
-$ sudo perf report --sort comm,dso
-    [...]
-    44.97%  glxgears  r600_dri.so
-            |
-            |--5.85%-- r700SendSPIState
-            |          radeonEmitState
-            |          r700DrawPrims
-            |          |
-            |          |--95.45%-- vbo_save_playback_vertex_list
-            |          |          execute_list
-            |          |          _mesa_CallList
-            |          |          neutral_CallList
-            |          |          |
-            |          |          |--38.10%-- 0x80494a8
-            |          |          |          0x804a6ba
-            |          |          |          __libc_start_main
-            |          |          |          0x8049111
-    [....]
-    40.00%  glxgears  [kernel]
-            |
-            |--3.14%-- copy_user_generic_string
-            |          |
-            |          |--71.70%-- 0xffffffffa01b4493
-            |          |          0xffffffffa01b7c0b
-            |          |          0xffffffffa018b45b
-            |          |          0xffffffffa00ca927
-            |          |          0xffffffffa01c524e
-            |          |          compat_sys_ioctl
-            |          |          sysenter_dispatch
-            |          |          0xf77ca430
-            |          |          drmCommandWriteRead
-            |          |          0xf74d7ab5
-            |          |          0xf74d89a4
-            |          |          rcommonFlushCmdBufLocked
-            |          |          rcommonFlushCmdBuf
-            |          |          radeonFlush
-            |          |          _mesa_flush
-            |          |          _mesa_Flush
-            |          |          0xf775f270
-            |          |          0x804a6d5
-            |          |          __libc_start_main
-            |          |          0x8049111
-            |          |
-            |          |--15.09%-- 0xffffffffa01c524e
-            |          |          compat_sys_ioctl
-            |          |          sysenter_dispatch
-            |          |          0xf77ca430
-            |          |          drmCommandWriteRead
-
-[1] But there is a problem with the perf tool: it can't trace addresses in
-kernel modules. This is a problem regardless if the traced app is 32-bit or
-64-bit; and regardless if I do callgraph profiling or not.
-See the above trace, where the kernel addresses have all ffffffffa0* without a
-symbol name.
-
-If I look at /proc/kallsyms I can guess the symbols, for example
-0xffffffffa01b4493 is probably this one:
-  ffffffffa01b4411 t r600_cs_packet_parse	[radeon]
-
-If I record/report without callgraph its the same problem:
-[...]
-    24.01%  glxgears  [kernel]                           [k] 0xffffffffa01b4ee9
-     3.96%  glxgears  libdrm_radeon.so.1.0.0             [.] cs_gem_write_reloc
-     3.53%  glxgears  r600_dri.so                        [.] r700SendSPIState
-     2.77%  glxgears  r600_dri.so                        [.] r700DrawPrims
-     1.99%  glxgears  r600_dri.so                        [.] r700SendVSConsts
-
-Kernel symbol for 0xffffffffa01b4ee9 is not shown, I can guess it is this one
-(hey it was an exact match!):
-  ffffffffa01b4ee9 t r600_packet3_check	[radeon]
-
-It would be good if perf knew how to lookup symbols in kernel modules!
-
-Best regards,
---Edwin
