@@ -1,47 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936438Ab0COOQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:16:58 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:35869 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933971Ab0COOQ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:16:56 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4B9E4140.8000605@s5r6.in-berlin.de>
-Date: Mon, 15 Mar 2010 15:16:32 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
+	id S936489Ab0COORW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:17:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756634Ab0COORV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:17:21 -0400
+Date: Mon, 15 Mar 2010 10:16:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v6)
+Message-ID: <20100315141621.GD21127@redhat.com>
+References: <1268175636-4673-1-git-send-email-arighi@develer.com> <20100311093913.07c9ca8a.kamezawa.hiroyu@jp.fujitsu.com> <20100311101726.f58d24e9.kamezawa.hiroyu@jp.fujitsu.com> <1268298865.5279.997.camel@twins> <20100311182500.0f3ba994.kamezawa.hiroyu@jp.fujitsu.com> <20100311150307.GC29246@redhat.com> <20100311232708.GE2427@linux>
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: torvalds@osdl.org, akpm@linux-foundation.org, sgruszka@redhat.com,
-       davem@davemloft.net, linux-kernel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Document Linux's circular buffering capabilities
-References: <4B9E396E.8050606@s5r6.in-berlin.de> <4B9B5A37.2010206@s5r6.in-berlin.de> <4B9A6033.8010705@s5r6.in-berlin.de> <20100311172055.7328.51353.stgit@warthog.procyon.org.uk> <18180.1268437268@redhat.com> <30121.1268656565@redhat.com> <5635.1268661302@redhat.com>
-In-Reply-To: <5635.1268661302@redhat.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100311232708.GE2427@linux>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells wrote:
-> Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
+On Fri, Mar 12, 2010 at 12:27:09AM +0100, Andrea Righi wrote:
+> On Thu, Mar 11, 2010 at 10:03:07AM -0500, Vivek Goyal wrote:
+> > On Thu, Mar 11, 2010 at 06:25:00PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 11 Mar 2010 10:14:25 +0100
+> > > Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Thu, 2010-03-11 at 10:17 +0900, KAMEZAWA Hiroyuki wrote:
+> > > > > On Thu, 11 Mar 2010 09:39:13 +0900
+> > > > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > > > > The performance overhead is not so huge in both solutions, but the impact on
+> > > > > > > performance is even more reduced using a complicated solution...
+> > > > > > > 
+> > > > > > > Maybe we can go ahead with the simplest implementation for now and start to
+> > > > > > > think to an alternative implementation of the page_cgroup locking and
+> > > > > > > charge/uncharge of pages.
+> > > > 
+> > > > FWIW bit spinlocks suck massive.
+> > > > 
+> > > > > > 
+> > > > > > maybe. But in this 2 years, one of our biggest concerns was the performance.
+> > > > > > So, we do something complex in memcg. But complex-locking is , yes, complex.
+> > > > > > Hmm..I don't want to bet we can fix locking scheme without something complex.
+> > > > > > 
+> > > > > But overall patch set seems good (to me.) And dirty_ratio and dirty_background_ratio
+> > > > > will give us much benefit (of performance) than we lose by small overheads.
+> > > > 
+> > > > Well, the !cgroup or root case should really have no performance impact.
+> > > > 
+> > > > > IIUC, this series affects trgger for background-write-out.
+> > > > 
+> > > > Not sure though, while this does the accounting the actual writeout is
+> > > > still !cgroup aware and can definately impact performance negatively by
+> > > > shrinking too much.
+> > > > 
+> > > 
+> > > Ah, okay, your point is !cgroup (ROOT cgroup case.)
+> > > I don't think accounting these file cache status against root cgroup is necessary.
+> > > 
+> > 
+> > I think what peter meant was that with memory cgroups created we will do
+> > writeouts much more aggressively.
+> > 
+> > In balance_dirty_pages()
+> > 
+> > 	if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
+> > 		break;
+> > 
+> > Now with Andrea's patches, we are calculating bdi_thres per memory cgroup
+> > (almost)
+> > 
+> > bdi_thres ~= per_memory_cgroup_dirty * bdi_fraction
+> > 
+> > But bdi_nr_reclaimable and bdi_nr_writeback stats are still global.
 > 
->> Yes, thanks.  (The last "the" is superfluous.)
+> Correct. More exactly:
 > 
-> Only sort of.  Think of it as being emphasis.
+>  bdi_thresh = memcg dirty memory limit * BDI's share of the global dirty memory
+> 
+> Before:
+> 
+>  bdi_thresh = global dirty memory limit * BDI's share of the global dirty memory
+> 
+> > 
+> > So for the same number of dirty pages system wide on this bdi, we will be
+> > triggering writeouts much more aggressively if somebody has created few
+> > memory cgroups and tasks are running in those cgroups.
+> 
+> Right, if we don't touch per-cgroup dirty limits.
+> 
+> > 
+> > I guess it might cause performance regressions in case of small file
+> > writeouts because previously one could have written the file to cache and
+> > be done with it but with this patch set, there are higher changes that
+> > you will be throttled to write the pages back to disk.
+> > 
+> > I guess we need two pieces to resolve this.
+> > 	- BDI stats per cgroup.
+> > 	- Writeback of inodes from same cgroup.
+> > 
+> > I think BDI stats per cgroup will increase the complextiy.
+> 
+> There'll be the opposite problem I think, the number of dirty pages
+> (system-wide) will increase, because in this way we'll consider BDI
+> shares of memcg dirty memory.
 
-(OK, I mistook for a typo what was just unfamiliar to me.)
+In the current form of patch, number of dirty pages system wide will not
+increase. As following condition will be false more number of times and we
+will be doing writeout more aggressively.
 
-> Can I add your Reviewed-by?
+	if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
+			break;
 
-Now that you mention it,
-Reviewed-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
--- 
-Stefan Richter
--=====-==-=- --== -====
-http://arcgraph.de/sr/
+Once we implement per cgroup per BDI stats for bdi_nr_reclaimable and
+bdi_nr_writeback, then in theory we will have same number of dirty pages
+in system as of today.
+
+Thanks
+Vivek
+
+> So I think we need both: per memcg BDI
+> stats and system-wide BDI stats, then we need to take the min of the two
+> when evaluating bdi_thresh. Maybe... I'm not really sure about this, and
+> need to figure better this part. So I started with the simplest
+> implementation: global BDI stats, and per-memcg dirty memory.
+> 
+> I totally agree about the other point, writeback of inodes per cgroup is
+> another feature that we need.
+> 
+> > I am still setting up the system to test whether we see any speedup in
+> > writeout of large files with-in a memory cgroup with small memory limits.
+> > I am assuming that we are expecting a speedup because we will start
+> > writeouts early and background writeouts probably are faster than direct
+> > reclaim?
+> 
+> mmh... speedup? I think with a large file write + reduced dirty limits
+> you'll get a more uniform write-out (more frequent small writes),
+> respect to few and less frequent large writes. The system will be more
+> reactive, but I don't think you'll be able to see a speedup in the large
+> write itself.
+> 
+> Thanks,
+> -Andrea
