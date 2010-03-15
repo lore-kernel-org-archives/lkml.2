@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965559Ab0CORVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 13:21:47 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:56179 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965540Ab0CORVo (ORCPT
+	id S965567Ab0CORWv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:22:51 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:56659 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965538Ab0CORWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 13:21:44 -0400
-X-SENDER-IP: [83.226.250.22]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiFBAA4KnktT4voWPGdsb2JhbACBPYQtgXeTGwEBAQE3ui+EewQ
-X-IronPort-AV: E=Sophos;i="4.49,644,1262559600"; 
-   d="scan'208";a="50625127"
-Message-ID: <4B9E6CA2.10602@coyote.org>
-Date: Mon, 15 Mar 2010 18:21:38 +0100
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100308 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Dan Carpenter <error27@gmail.com>, gregkh@suse.de, greg@kroah.com,
-       pavel@ucw.cz, diegoliz@gmail.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, stefanr@s5r6.in-berlin.de
-Subject: Re: [PATCH] staging: winbond: mds.c whitspace, indentation etc.
-References: <1268670973-6223-1-git-send-email-lindley@coyote.org> <20100315165052.GA2661@bicker> <4B9E65DE.7060409@cs.helsinki.fi>
-In-Reply-To: <4B9E65DE.7060409@cs.helsinki.fi>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Mar 2010 13:22:49 -0400
+Subject: Re: swiotlb detection should be memory hotplug aware ?
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Len Brown <lenb@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+       linux-acpi <linux-acpi@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Petr Vandrovec <petr@vmware.com>
+In-Reply-To: <4B9B01F5.3000807@linux.intel.com>
+References: <1268446032.13691.69.camel@ank32>
+	 <4B9B01F5.3000807@linux.intel.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Mon, 15 Mar 2010 10:22:49 -0700
+Message-Id: <1268673769.28506.1.camel@ank32>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-03-15 17:52, Pekka Enberg wrote:
-> Dan Carpenter wrote:
->> On Mon, Mar 15, 2010 at 05:36:13PM +0100, Lars Lindley wrote:
->>> I fixed most of the problems found by checkpatch.pl.
->>> Some long lines are left and some KERN_..
->>> This is a new revised patch against master with changes
->>> after comments from Stefan Richter and Dan Carpenter.
->>> Forget the old one.
->>>
->>> Signed-off-by: Lars Lindley <lindley@coyote.org>
->>> Acked-by: Pavel Machek <pavel@ucw.cz>
->>
->> Acked-by: Dan Carpenter <error27@gmail.com>
+Hi Andi, 
+
+On Fri, 2010-03-12 at 19:09 -0800, Andi Kleen wrote:
+> , Alok Kataria wrote:
 > 
-> It's pretty difficult to say if anything changed based on the diff so
-> would you mind posting before and after output of 'size mds.o', please?
+> Hi Alok,
 > 
-Hi Pekka.
+> > Hi,
+> >
+> > Looking at the current code swiotlb is initialized for 64bit kernels
+> > only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
+> > So in cases when the initial memory is less than 4GB the kernel boots
+> > without enabling swiotlb, when we hotadd memory to such a kernel and go
+> > beyond the 4G limit, swiotlb is still disabled. As a result when any
+> > 32bit devices start using this newly added memory beyond 4G, the kernel
+> > starts spitting error messages like below or in some cases it causes
+> > kernel panics.
+> 
+> Yes seems like a real problem.
+> 
+> >
+> > 1. Enable swiotlb for all 64bit kernels which have memory hot-add
+> > support.
+> 
+> I don't think that's a good idea. It would enable it everywhere on
+> distributions which compile with hotadd. Need (2)
+> 
+> > 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
+> > for max_hotpluggable_pfn (or some such) value. Though I don't see such a
+> > value readily available. I could parse the SRAT and get hotplug memory
+> > information but that will make swiotlb detection logic a little too
+> > complex. A quick look around srat_xx.c files and the acpi_memhotplug
+> > module didn't find any useful API that could be used directly either.
+> > So was wondering if any of you are aware of an easy way to get such
+> > information ?
+> 
+> I have a patchkit to revamp the SRAT parsing to store the hotadd information
+> more efficiently (the current way is pretty dumb)  I need to repost that.
 
-Before:
-lali@lazer2 ~/linux3/linux-2.6 $ size drivers/staging/winbond/mds.o
-   text	   data	    bss	    dec	    hex	filename
-   2804	      0	      0	   2804	    af4	drivers/staging/winbond/mds.o
+Can you please send me any pointers to that patch series. Also am just
+curious to know about any merge plans for that patchkit.
 
-After:
-lali@lazer2 ~/linux2/linux-2.6 $ size drivers/staging/winbond/mds.o
-   text	   data	    bss	    dec	    hex	filename
-   2804	      0	      0	   2804	    af4	drivers/staging/winbond/mds.o
+Thanks,
+Alok
+> 
+> With that it would be relatively easy to do I think.
+> 
+> -Andi
 
-diff:
-lali@lazer2 ~/linux2/linux-2.6 $ diff ../../linux3/linux-2.6/drivers/staging/winbond/mds.o drivers/staging/winbond/mds.o
-lali@lazer2 ~/linux2/linux-2.6 $ 
-
-linux3 is a clean tree and linux2 the one i'm working on..
-
-Regards
-/Lars
