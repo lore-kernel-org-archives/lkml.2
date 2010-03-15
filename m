@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965707Ab0COS7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:59:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35846
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965680Ab0COS7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:59:43 -0400
-Date: Mon, 15 Mar 2010 12:00:04 -0700 (PDT)
-Message-Id: <20100315.120004.209998642.davem@davemloft.net>
-To: drepper@redhat.com
-Cc: hpa@zytor.com, ralf@linux-mips.org, benh@kernel.crashing.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel@teksavvy.com, torvalds@linux-foundation.org,
-       munroesj@linux.vnet.ibm.com
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4B9E59B7.6060405@redhat.com>
-References: <20100315134449.GB1653@linux-mips.org>
-	<4B9E4EB1.9010800@zytor.com>
-	<4B9E59B7.6060405@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S965720Ab0COTAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 15:00:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36130 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965680Ab0COTAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 15:00:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,644,1262592000"; 
+   d="scan'208";a="604603049"
+Date: Mon, 15 Mar 2010 19:59:58 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Florian Fainelli <florian@openwrt.org>, linux-kernel@vger.kernel.org,
+       Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: [PATCH 1/4 v2] x86: remove rdc321x_defs.h
+Message-ID: <20100315185957.GA3113@sortiz.org>
+References: <201003110942.06367.florian@openwrt.org>
+ <20100311105324.GA27207@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100311105324.GA27207@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ulrich Drepper <drepper@redhat.com>
-Date: Mon, 15 Mar 2010 09:00:55 -0700
+Hi Ingo,
 
-> On 03/15/2010 08:13 AM, H. Peter Anvin wrote:
->> One option would be to do a libkernel.so,
+On Thu, Mar 11, 2010 at 11:53:24AM +0100, Ingo Molnar wrote:
 > 
-> No need.  Put it in the vdso.  And name it something other than syscall.
->  The syscall() API is fixed, you cannot change it.
+> * Florian Fainelli <florian@openwrt.org> wrote:
 > 
-> All this only if it makes sense for ALL archs.  If it cannot work for
-> just one arch then it's not worth it at all.
+> > This file is going to be replaced with a cleaner version with the adding of 
+> > a MFD driver for the southbridge.
+> > 
+> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> 
+> Acked-by: Ingo Molnar <mingo@elte.hu>
+Thanks.
 
-There are many archs that still lack VDSO.
+
+> Feel free to carry it in the driver tree that ends up picking up the other 
+> patches. (the MTD tree?)
+The MFD tree, yes.
+Florian, I'll review those patches later this week, thanks.
+
+Cheers,
+Samuel.
+
+
+> Thanks,
+> 
+> 	Ingo
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
