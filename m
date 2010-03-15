@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936384Ab0COOJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:09:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48475 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933841Ab0COOJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:09:39 -0400
-Date: Mon, 15 Mar 2010 15:09:38 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Thomas Weber <weber@corscience.de>
-Cc: Roman Zippel <zippel@linux-m68k.org>,
-       Markus Heidelberg <markus.heidelberg@web.de>,
-       Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
+	id S936449Ab0COON5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:13:57 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58368 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935372Ab0COON4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:13:56 -0400
+Date: Mon, 15 Mar 2010 14:13:04 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andres Salomon <dilinger@debian.org>,
+       Alessandro Rubini <rubini@unipv.it>,
+       Krzysztof Helt <krzysztof.h1@wp.pl>, Kevin Wells <wellsk40@gmail.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Trivial: Scripts: kconfig: util: Fix typo in comment
-In-Reply-To: <1266579824-14706-1-git-send-email-weber@corscience.de>
-Message-ID: <alpine.LNX.2.00.1003151509190.18642@pobox.suse.cz>
-References: <1266579824-14706-1-git-send-email-weber@corscience.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+Subject: Re: [PATCH] amba-clcd: add RGB444 support
+Message-ID: <20100315141304.GF700@n2100.arm.linux.org.uk>
+References: <1268659809-3609-1-git-send-email-l.fu@pengutronix.de> <20100315133810.GE700@n2100.arm.linux.org.uk> <20100315135945.GA4584@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315135945.GA4584@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Feb 2010, Thomas Weber wrote:
-
-> sting replaced with string
+On Mon, Mar 15, 2010 at 02:59:45PM +0100, Luotao Fu wrote:
+> Hi Russell,
 > 
-> Signed-off-by: Thomas Weber <weber@corscience.de>
-> ---
->  scripts/kconfig/util.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> On Mon, Mar 15, 2010 at 01:38:10PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Mar 15, 2010 at 02:30:09PM +0100, Luotao Fu wrote:
+> > > This one adds RGB444 (bpp=12) support to amba clcd drivers. Tested on a lpc3250
+> > > based platform.
+> > 
+> > No - this is wrong.  You have a 16bpp display.  bpp is the number of bits
+> > in the framebuffer between two successive pixels.  It is not the number of
+> > bits used for the pixel information.
+> > 
 > 
-> diff --git a/scripts/kconfig/util.c b/scripts/kconfig/util.c
-> index b6b2a46..25d1ec4 100644
-> --- a/scripts/kconfig/util.c
-> +++ b/scripts/kconfig/util.c
-> @@ -72,7 +72,7 @@ int file_write_dep(const char *name)
->  }
->  
->  
-> -/* Allocate initial growable sting */
-> +/* Allocate initial growable string */
->  struct gstr str_new(void)
->  {
->  	struct gstr gs;
+> > The only case where you have a 12bpp display is if you have two pixels
+> > packed into three bytes.
+> >
+> For 12bpp actually 16bits/pixel is used. I'm aware of that. That's the
+> reason why the fb.var.bits_per_pixel is set to 16 in clcdfb_decode if
+> it is originally set to 12 from the platform file to make usage of 16bpp
+> display. omapfb driver does quite the same.
 
-Doesn't seem to be present in linux-next as of today. I have picked that 
-up.
+Then omapfb is also buggy and needs fixing in a similar manner.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+The de-facto way of determining the bitfield structure is as I highlighted,
+which is used by all the x86 drivers supporting RGB555 and RGB565.
+
+We don't use bits_per_pixel=15 for RGB555, and using bits_per_pixel=12 for
+RGB444 is wrong for all the same reasons.
