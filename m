@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936548Ab0COPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:42:56 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:11538 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936194Ab0COPmw (ORCPT
+	id S936556Ab0COPns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:43:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53814 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936194Ab0COPnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:42:52 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Giampaolo Bellini <iw2lsi@gmail.com>
-Subject: Re: PCI conflicts with latest kernels
-Date: Mon, 15 Mar 2010 08:42:48 -0700
-User-Agent: KMail/1.9.10
-Cc: Linux PCI <linux-pci@vger.kernel.org>, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <463bccef1003140331h72b1f11qe133a6a1c952fc6d@mail.gmail.com> <1268601123.28444.21.camel@dc7800.home> <463bccef1003141611q26229896y5d75b035552ff6fc@mail.gmail.com>
-In-Reply-To: <463bccef1003141611q26229896y5d75b035552ff6fc@mail.gmail.com>
+	Mon, 15 Mar 2010 11:43:47 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       stable@kernel.org,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/1] perf annotate: Properly notify the user that vmlinux is missing
+Date: Mon, 15 Mar 2010 12:43:33 -0300
+Message-Id: <1268667813-5710-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003150942.49987.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I re-added the CC: list, so the archives will have the whole
-conversation, in case anybody else has similar problems or
-can help answer this.]
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-On Sunday 14 March 2010 05:11:55 pm Giampaolo Bellini wrote:
-> I apply the patch but seems that it does not solve conflicts
+Before this patch we would not find a vmlinux, then try to pass objdump "[kernel.kallsyms]"
+as the filename, it would get confused and produce no output:
 
-Yes, I didn't expect it to fix anything, only to tell us more about
-what's happening.
+[root@doppio ~]# perf annotate n_tty_write
 
-But from your dmesg, I think the problem is that the e820 map reserves
-0xe0000-0x100000, and then PCI device 0b.0 has a BAR programmed to part
-of that same region:
+------------------------------------------------
+ Percent |      Source code & Disassembly of [kernel.kallsyms]
+------------------------------------------------
 
-   BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
-  pci 0000:00:0b.0: reg 10: [mem 0x000e0000-0x000e0fff]
-  pci 0000:00:0b.0: address space collision: [mem 0x000e0000-0x000e0fff] already in use
+Now we check that and emit meaningful warning:
 
-I don't know enough about the e820 map to know whether this is a bug in
-the e820 map or a problem in the PCI BAR programming, or what.
+[root@doppio ~]# perf annotate n_tty_write
+Can't annotate n_tty_write: No vmlinux file was found in the path:
+[0] vmlinux
+[1] /boot/vmlinux
+[2] /boot/vmlinux-2.6.34-rc1-tip+
+[3] /lib/modules/2.6.34-rc1-tip+/build/vmlinux
+[4] /usr/lib/debug/lib/modules/2.6.34-rc1-tip+/vmlinux
+[root@doppio ~]#
 
-> as far I understand, the problem was there also with 2.6.29 but was not
-> logged the same way and/or with the same debug-level due to changes made in
-> *drivers/pci/setup-res.c* (expecially in pci_claim_resource()))
+This bug was introduced when we added automatic search for vmlinux, before that
+time the user had to specify a vmlinux file.
 
-Yes.  In 2.6.29, pcibios_allocate_resources() used request_resource()
-directly and logged errors with dev_info().  In 2.6.34-rc1, we use
-pci_claim_resource(), which calls request_resource() and logs errors
-with dev_err(), so we now have a higher priority message than we used
-to have.
+Reported-by: Ingo Molnar <mingo@elte.hu>
+Cc: stable@kernel.org
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-annotate.c |    7 +++++++
+ tools/perf/util/newt.c        |    2 +-
+ 2 files changed, 8 insertions(+), 1 deletions(-)
 
-> machine, however, seems stable... for me the problem is that I'm trying to
-> avoid text-messages during boot stage and printk(KERN_ERR "message") cause
-> the system to switch in text mode & show such errors...
-
-If you only want to hide the message, you can use "loglevel=2".
-
-> as you can see, I've try also with pci=use_crs
-
-Since you don't have ACPI, pci=use_crs and pci=nocrs are not relevant
-for your system.
-
-Bjorn
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 6ad7148..b2ca290 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -452,6 +452,13 @@ static void annotate_sym(struct hist_entry *he)
+ 	if (!filename)
+ 		return;
+ 
++	if (dso->origin == DSO__ORIG_KERNEL) {
++		pr_err("Can't annotate %s: No vmlinux file was found in the "
++		       "path:\n", sym->name);
++		vmlinux_path__fprintf(stderr);
++		return;
++	}
++
+ 	pr_debug("%s: filename=%s, sym=%s, start=%#Lx, end=%#Lx\n", __func__,
+ 		 filename, sym->name, map->unmap_ip(map, sym->start),
+ 		 map->unmap_ip(map, sym->end));
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 2836394..2d19e7a 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -63,7 +63,7 @@ static void hist_entry__annotate_browser(struct hist_entry *self)
+ 	if (self->sym == NULL)
+ 		return;
+ 
+-	if (asprintf(&str, "perf annotate %s | expand", self->sym->name) < 0)
++	if (asprintf(&str, "perf annotate %s 2>&1 | expand", self->sym->name) < 0)
+ 		return;
+ 
+ 	fp = popen(str, "r");
+-- 
+1.6.2.5
 
