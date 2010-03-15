@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab0CORtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 13:49:21 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:54993 "EHLO
-	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab0CORtS (ORCPT
+	id S965134Ab0CORvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:51:08 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:11271 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab0CORvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 13:49:18 -0400
-Date: Mon, 15 Mar 2010 18:49:05 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       kernel-janitors@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-mips@linux-mips.org,
+	Mon, 15 Mar 2010 13:51:05 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Pete Zaitcev <zaitcev@redhat.com>
+Subject: Re: Regression in i915 on 2.6.34-rc1
+Date: Mon, 15 Mar 2010 10:51:01 -0700
+User-Agent: KMail/1.9.10
+Cc: dri-devel@lists.sourceforge.net, jbarnes@virtuousgeek.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] arch/mips/txx9/generic: init dynamic bin_attribute
- structures
-Message-ID: <20100315174905.GC20055@linux-mips.org>
-References: <1268377431-11671-1-git-send-email-w.sang@pengutronix.de>
- <1268377431-11671-2-git-send-email-w.sang@pengutronix.de>
- <20100312183450.GC8736@core.coreip.homeip.net>
- <20100313022855.GD4034@pengutronix.de>
+References: <20100311003358.58194366@redhat.com> <20100313134642.797c35d6@redhat.com> <1268535744.28444.16.camel@dc7800.home>
+In-Reply-To: <1268535744.28444.16.camel@dc7800.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100313022855.GD4034@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-Id: <201003151151.01891.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 13, 2010 at 03:28:55AM +0100, Wolfram Sang wrote:
-
-> > Regarding all 3 - it looks like these dynamically alocated attributes
-> > could be converted to statically allocated ones. I'd recommend doing
-> > that instead (in fact, I posted patch for the firmware_class couple days
-> > ago).
+On Saturday 13 March 2010 08:02:24 pm Bjorn Helgaas wrote:
+> On Sat, 2010-03-13 at 13:46 -0700, Pete Zaitcev wrote:
+> > On Fri, 12 Mar 2010 22:37:56 -0700
+> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > 
+> > > Thanks for the report.  Would you mind posting the entire dmesg
+> > > log, /proc/iomem contents, and "lspci -vv" output somewhere (maybe in
+> > > bugzilla)?
+> > 
+> > Done, new bug:
+> > http://bugzilla.kernel.org/show_bug.cgi?id=15533
 > 
-> I agree for the firmware-patch. Regarding the MIPS one, 'size' might differ and
-> 'private' will differ per instance. Regarding the RTC driver, 'size' might also
-> differ. I don't know if somebody really wants two RTCs or the SRAM for MIPS can
-> be instantiated more than once. Unless somebody with actual hardware jumps in,
-> I'd say better safe than sorry.
+> Thanks!  Sorry, I should have asked for the "pci=nocrs" (working) dmesg,
+> too.  Do you have that handy?  What kind of machine is this?  I don't
+> suppose you have Windows on it; I'd really like to know what the Device
+> Manager says about the PCI host bridge and graphics controller
+> resources.
 
-On the txx9 platform you've posted the patch for additional RTCs or SRAMs
-would not normally be expected.  On other platforms such as IP27 there
-would be one per node that is potencially very many.
+I added two patches to the bugzilla:
 
-  Ralf
+  http://bugzilla.kernel.org/attachment.cgi?id=25522 (possible fix)
+  http://bugzilla.kernel.org/attachment.cgi?id=25523 (additional debug)
+
+If the first patch fixes it, we're all set.  If it doesn't, I'd like
+the additional debug info from the second patch.
+
+Thanks!
+  Bjorn
