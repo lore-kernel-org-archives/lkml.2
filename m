@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965168Ab0COPEO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:04:14 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:51091 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965065Ab0COPEM (ORCPT
+	id S965155Ab0COPLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:11:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42450 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965070Ab0COPLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:04:12 -0400
-Date: Mon, 15 Mar 2010 15:04:01 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-arch@vger.kernel.org,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Mark Lord <kernel@teksavvy.com>, Ulrich Drepper <drepper@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Steven Munroe <munroesj@linux.vnet.ibm.com>
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-Message-ID: <20100315150401.GF15133@shareable.org>
-References: <1268628493.2355.2.camel@pasglop>
+	Mon, 15 Mar 2010 11:11:39 -0400
+Date: Mon, 15 Mar 2010 11:11:36 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Sandeen <sandeen@sandeen.net>
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com
+Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
+	assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+Message-ID: <20100315151136.GA1401@infradead.org>
+References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan> <4B9E46F9.8090209@sandeen.net> <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan> <4B9E4863.80905@sandeen.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1268628493.2355.2.camel@pasglop>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <4B9E4863.80905@sandeen.net>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt wrote:
-> err = syscall(SYS_fallocate, fd, mode, offset, len);
+On Mon, Mar 15, 2010 at 09:46:59AM -0500, Eric Sandeen wrote:
+> Ok, then you hit an ASSERT_ALWAYS
 > 
-> With "offset" being a 64-bit argument.
-> 
-> This will break because the first argument to syscall now shifts
-> everything by one register, which breaks the register pair alignment
-> (and I suppose archs with stack based calling convention can have
-> similar alignment issues even if x86 doesn't).
-> 
-> Ulrich, Steven, shouldn't we have glibc's syscall() take a long long as
-> it's first argument to correct that ? Either that or making it some kind
-> of macro wrapper around a __syscall(int dummy, int sysno, ...) ?
-> 
-> As it is, any 32-bit app using syscall() on any of the syscalls that
-> takes 64-bit arguments will be broken, unless the app itself breaks up
-> the argument, but the the order of the hi and lo part is different
-> between BE and LE architectures ;-)
-> 
-> So is there a more "correct" solution than another here ? Should powerpc
-> glibc be fixed at least so that syscall() keeps the alignment ?
+> There are only a few:
 
-There are several problems with syscall(), not just this - because a
-number of system calls in section 2 of the manual don't map directly
-to kernel syscalls with the same function prototype.
+If the box is a nfs server I suspect it's a reclaimable state one and
+the patch below should help:
 
-Even fork() has become something complicated in Glibc that doesn't use
-the fork syscall :-(
+---
 
-So anything using syscall() has to be careful on Linux already.
-Changing the 64-bit alignment won't fix the other differences.
+From: Christoph Hellwig <hch@lst.de>
+Subject: xfs: fix locking for inode cache radix tree tag updates
 
--- Jamie
+The radix-tree code requires it's users to serialize tag updates against
+other updates to the tree.  While XFS protects tag updates against each
+other it does not serialize them against updates of the tree contents,
+which can lead to tag corruption.  Fix the inode cache to always take
+pag_ici_lock in exclusive mode when updating radix tree tags.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Patrick Schreurs <patrick@news-service.com>
+Tested-by: Patrick Schreurs <patrick@news-service.com>
+
+Index: xfs/fs/xfs/linux-2.6/xfs_sync.c
+===================================================================
+--- xfs.orig/fs/xfs/linux-2.6/xfs_sync.c	2010-02-10 13:08:41.000000000 +0100
++++ xfs/fs/xfs/linux-2.6/xfs_sync.c	2010-02-10 15:53:28.739570272 +0100
+@@ -687,12 +687,12 @@ xfs_inode_set_reclaim_tag(
+ 	struct xfs_perag *pag;
+ 
+ 	pag = xfs_perag_get(mp, XFS_INO_TO_AGNO(mp, ip->i_ino));
+-	read_lock(&pag->pag_ici_lock);
++	write_lock(&pag->pag_ici_lock);
+ 	spin_lock(&ip->i_flags_lock);
+ 	__xfs_inode_set_reclaim_tag(pag, ip);
+ 	__xfs_iflags_set(ip, XFS_IRECLAIMABLE);
+ 	spin_unlock(&ip->i_flags_lock);
+-	read_unlock(&pag->pag_ici_lock);
++	write_unlock(&pag->pag_ici_lock);
+ 	xfs_perag_put(pag);
+ }
+ 
+Index: xfs/fs/xfs/xfs_iget.c
+===================================================================
+--- xfs.orig/fs/xfs/xfs_iget.c	2010-02-04 17:28:35.000000000 +0100
++++ xfs/fs/xfs/xfs_iget.c	2010-02-10 15:53:55.504284758 +0100
+@@ -190,13 +190,12 @@ xfs_iget_cache_hit(
+ 		trace_xfs_iget_reclaim(ip);
+ 
+ 		/*
+-		 * We need to set XFS_INEW atomically with clearing the
+-		 * reclaimable tag so that we do have an indicator of the
+-		 * inode still being initialized.
++		 * We need to set XFS_IRECLAIM to prevent xfs_reclaim_inode
++		 * from stomping over us while we recycle the inode.  We can't
++		 * clear the radix tree reclaimable tag yet as it requires
++		 * pag_ici_lock to be helt exclusive.
+ 		 */
+-		ip->i_flags |= XFS_INEW;
+-		ip->i_flags &= ~XFS_IRECLAIMABLE;
+-		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
++		ip->i_flags |= XFS_IRECLAIM;
+ 
+ 		spin_unlock(&ip->i_flags_lock);
+ 		read_unlock(&pag->pag_ici_lock);
+@@ -216,7 +215,15 @@ xfs_iget_cache_hit(
+ 			trace_xfs_iget_reclaim(ip);
+ 			goto out_error;
+ 		}
++
++		write_lock(&pag->pag_ici_lock);
++		spin_lock(&ip->i_flags_lock);
++		ip->i_flags &= ~(XFS_IRECLAIMABLE | XFS_IRECLAIM);
++		ip->i_flags |= XFS_INEW;
++		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
+ 		inode->i_state = I_NEW;
++		spin_unlock(&ip->i_flags_lock);
++		write_unlock(&pag->pag_ici_lock);
+ 	} else {
+ 		/* If the VFS inode is being torn down, pause and try again. */
+ 		if (!igrab(inode)) {
