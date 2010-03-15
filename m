@@ -1,41 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936809Ab0COVIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:08:25 -0400
-Received: from mail.perches.com ([173.55.12.10]:1710 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932738Ab0COVIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:08:21 -0400
-Subject: Re: [PATCH 0/4] Some typo fixing
-From: Joe Perches <joe@perches.com>
-To: Thomas Weber <swirl@gmx.li>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1268686558-28171-1-git-send-email-swirl@gmx.li>
-References: <1268686558-28171-1-git-send-email-swirl@gmx.li>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Mar 2010 14:08:20 -0700
-Message-ID: <1268687300.14465.8.camel@Joe-Laptop.home>
+	id S936817Ab0COVJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:09:31 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52043
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936744Ab0COVJ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 17:09:29 -0400
+Date: Mon, 15 Mar 2010 14:09:51 -0700 (PDT)
+Message-Id: <20100315.140951.149828242.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: oleg@redhat.com, mingo@elte.hu, sergey.senozhatsky@gmail.com,
+       romieu@fr.zoreil.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: inconsistent lock state
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1268686865.2824.4.camel@edumazet-laptop>
+References: <20100307192305.GA598@elte.hu>
+	<20100308125122.GA11242@redhat.com>
+	<1268686865.2824.4.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-15 at 21:55 +0100, Thomas Weber wrote:
-> I have fixed some typos.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 15 Mar 2010 22:01:05 +0100
 
-Hi Thomas.
+> Also, this driver schedules a reset in case a fifo error is reported in
+> rtl8169_rx_interrupt()
+> 
+>                 if (status & RxFOVF) {
+>                         rtl8169_schedule_work(dev, rtl8169_reset_task);
+>                         dev->stats.rx_fifo_errors++;
+>                 }
+> 
+> 
+> This seems very strange too : In case of a RX spike, we reset card ?
 
-The right address to send this sort of patch is
-Jiri Kosina <trivial@kernel.org>
+It's possible that this has been found to hang the card.
 
-And please limit patch submission cc's to a sensible number.
-
-If you are using scripts/get_maintainers.pl to find cc's for
-a patch, you can use the --nogit option to list just the
-specific maintainers so random patch submitters like me
-aren't added to your cc list.
-
-cheers, Joe
-
+If so, it should be documented because otherwise yes we
+should not be doing this.
