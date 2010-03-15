@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965190Ab0COPVF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:21:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42776 "EHLO mail.zytor.com"
+	id S965199Ab0COPVp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:21:45 -0400
+Received: from lucidpixels.com ([75.144.35.66]:33746 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965070Ab0COPVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:21:00 -0400
-Message-ID: <4B9E4EB1.9010800@zytor.com>
-Date: Mon, 15 Mar 2010 08:13:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S965070Ab0COPVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 11:21:44 -0400
+Date: Mon, 15 Mar 2010 11:21:42 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Christoph Hellwig <hch@infradead.org>
+cc: Eric Sandeen <sandeen@sandeen.net>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com
+Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
+ assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+In-Reply-To: <20100315151136.GA1401@infradead.org>
+Message-ID: <alpine.DEB.2.00.1003151112330.22155@p34.internal.lan>
+References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan> <4B9E46F9.8090209@sandeen.net> <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan> <4B9E4863.80905@sandeen.net> <20100315151136.GA1401@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel@teksavvy.com, drepper@redhat.com,
-       torvalds@linux-foundation.org, munroesj@linux.vnet.ibm.com
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-References: <1268628493.2355.2.camel@pasglop> <20100314.220646.190065794.davem@davemloft.net> <1268630313.2335.2.camel@pasglop> <20100315134449.GB1653@linux-mips.org>
-In-Reply-To: <20100315134449.GB1653@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 06:44 AM, Ralf Baechle wrote:
-> 
-> Syscall is most often used for new syscalls that have no syscall stub in
-> glibc yet, so the user of syscall() encodes this ABI knowledge.  If at a
-> later stage syscall() is changed to have this sort of knowledge we break
-> the API.  This is something only the kernel can get right.
-> 
 
-One option would be to do a libkernel.so, with auto-generated stubs out
-of the kernel build tree.  As already discussed in #kernel this morning,
-there are a number of sticky points with types and namespaces for this
-this, but those aren't any worse than the equivalent problems for
-syscall(3).
 
-	-hpa
+On Mon, 15 Mar 2010, Christoph Hellwig wrote:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> On Mon, Mar 15, 2010 at 09:46:59AM -0500, Eric Sandeen wrote:
+>> Ok, then you hit an ASSERT_ALWAYS
+>>
+>> There are only a few:
+>
+> If the box is a nfs server I suspect it's a reclaimable state one and
+> the patch below should help:
 
+Hello,
+
+The host is not running an NFS server actively, the option may be 
+compiled in but it is not 'acting' as an NFS server/has shares exported. I
+need stability for this specific host, I cannot run netconsole due to
+restrictions etc/will switch to ext4 since, if it recurs again, all I/O to 
+the disk stops and I will not be able to assist in reporting the 
+bug/giving the full output.  If I could reproduce the bug in another 
+environment, I would be able to troubleshoot the problem more..  This bug 
+is very similar to the one I reported in the past (that host was an active 
+NFS server):
+http://lists.openwall.net/linux-kernel/2009/10/19/118
+
+Justin.
