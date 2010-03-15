@@ -1,126 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965120Ab0COOye (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:54:34 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48525 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965103Ab0COOya (ORCPT
+	id S965117Ab0COO4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:56:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:61044 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964955Ab0COO4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:54:30 -0400
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: Steven Munroe <munroesj@linux.vnet.ibm.com>
-Reply-To: munroesj@us.ibm.com
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       "Ryan S. Arnold" <rsa@us.ibm.com>
-Cc: linux-arch@vger.kernel.org,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Mark Lord <kernel@teksavvy.com>, Ulrich Drepper <drepper@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1268628493.2355.2.camel@pasglop>
-References: <1268628493.2355.2.camel@pasglop>
-Content-Type: text/plain
-Organization: IBM Linux Technology Center
-Date: Mon, 15 Mar 2010 10:03:32 -0500
-Message-Id: <1268665412.19726.75.camel@spokane1.rchland.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.6.0 
+	Mon, 15 Mar 2010 10:56:31 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
+Subject: Re: [1/3] gigaset: avoid registering CAPI driver more than once
+Date: Mon, 15 Mar 2010 14:48:05 -0000
+To: Tilman Schmidt <tilman@imap.cc>
+From: Karsten Keil <isdn@linux-pingi.de>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+       isdn4linux <isdn4linux@listserv.isdn4linux.de>,
+       Hansjoerg Lipp <hjlipp@web.de>,
+       i4ldeveloper <i4ldeveloper@listserv.isdn4linux.de>
+Message-Id: <1268664986.25524@pingi>
+X-Provags-ID: V01U2FsdGVkX18Tyq7mmz6Ilk7AApWlUpJlRr4rdFem7ykA4ik
+ 0tv5DgypjydCpFBJEj59YV2S52Ni4iotvs4oFmW6HcwD14Vhel
+ G0LfP/OqEtbYohfypoYXx+AtM7ylAkl
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-15 at 15:48 +1100, Benjamin Herrenschmidt wrote:
-> Hoy there !
-> 
-> This may have been discussed earlier (I have some vague memories...) but
-> I just hit a problem with that again (Mark: hint, it's in hdparm's
-> fallocate) so I'd like a bit of a refresh here on what is the "right
-> thing" to do...
-> 
-> So some syscalls want a 64-bit argument. Let's take fallocate() as our
-> example. So we already know that we have to be extra careful since some
-> 32-bit arch will pass this into 2 registers (or stack slots) which need
-> to be aligned, and so we tend to already take care of making sure that
-> the said 64-bit argument is either defined as 2x32-bit arguments, or
-> defined as 1x64 bit argument aligned to 2x32-bit in the argument list.
-> 
-> So far so good...
-> 
-> The problem is when user space tries to use the same trick for calling
-> those functions using glibc-provided syscall() function. In this
-> example, hdparm does:
-> 
-> err = syscall(SYS_fallocate, fd, mode, offset, len);
-> 
-> With "offset" being a 64-bit argument.
-> 
+Registering/unregistering the Gigaset CAPI driver when a device is
+connected/disconnected causes an Oops when disconnecting two Gigaset
+devices in a row, because the same capi_driver structure gets
+unregistered twice. Fix by making driver registration/unregistration
+a separate operation (empty in the ISDN4Linux case) called when the
+main module is loaded/unloaded.
 
-The powerpc implementation of syscall is:
+Impact: bugfix
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Acked-by: Karsten Keil <keil@b1-systems.de>
 
+---
+Note to -stable: applies correctly to 2.6.33 with fuzz 2 in capi.c.
 
-ENTRY (syscall)
-	mr   r0,r3
-	mr   r3,r4
-	mr   r4,r5
-	mr   r5,r6
-	mr   r6,r7
-	mr   r7,r8
-	mr   r8,r9
-	sc
-	PSEUDO_RET
-PSEUDO_END (syscall)
+ drivers/isdn/gigaset/capi.c    |   44 ++++++++++++++++++++++-----------------
+ drivers/isdn/gigaset/common.c  |    6 +++-
+ drivers/isdn/gigaset/gigaset.h |    6 +++-
+ drivers/isdn/gigaset/i4l.c     |   28 ++++++++++++++++++-------
+ 4 files changed, 53 insertions(+), 31 deletions(-)
 
-The ABI says:
-
-"Long long arguments are considered to have 8-byte size and alignment.
-The same 8-byte arguments that must go in aligned pairs or registers are
-8-byte aligned on the stack."
-
-This implies that the SYS_fallocate call will skip a register to get the
-required alignment in the parameter save area.
-
-for ppc32 on entry
-
-r3 == SYS_fallocate
-r4 == fd
-r5 == mode
-r6 == not used
-r7, r8 == offset
-r9 == len
-
-This gets shifted to:
-
-r0 == SYS_fallocate
-r3 == fd
-r4 == mode
-r5 == not used
-r6, r7 == offset
-r8 == len
-
-For syscall the vararg parms will be mirrored to the parameter save area
-but will not be used. The ABI does not talk to LE for this case.
-
-Ryan does the new ABI doc cover this?
-
-> This will break because the first argument to syscall now shifts
-> everything by one register, which breaks the register pair alignment
-> (and I suppose archs with stack based calling convention can have
-> similar alignment issues even if x86 doesn't).
-> 
-> Ulrich, Steven, shouldn't we have glibc's syscall() take a long long as
-> it's first argument to correct that ? Either that or making it some kind
-> of macro wrapper around a __syscall(int dummy, int sysno, ...) ?
-> 
-> As it is, any 32-bit app using syscall() on any of the syscalls that
-> takes 64-bit arguments will be broken, unless the app itself breaks up
-> the argument, but the the order of the hi and lo part is different
-> between BE and LE architectures ;-)
-> 
-> So is there a more "correct" solution than another here ? Should powerpc
-> glibc be fixed at least so that syscall() keeps the alignment ?
-> 
-> Cheers,
-> Ben.
-> 
-> 
-
+diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
+index 6643d65..4a31962 100644
+--- a/drivers/isdn/gigaset/capi.c
++++ b/drivers/isdn/gigaset/capi.c
+@@ -2191,36 +2191,24 @@ static const struct file_operations gigaset_proc_fops = {
+ 	.release	= single_release,
+ };
+ 
+-static struct capi_driver capi_driver_gigaset = {
+-	.name		= "gigaset",
+-	.revision	= "1.0",
+-};
+-
+ /**
+- * gigaset_isdn_register() - register to LL
++ * gigaset_isdn_regdev() - register device to LL
+  * @cs:		device descriptor structure.
+  * @isdnid:	device name.
+  *
+- * Called by main module to register the device with the LL.
+- *
+  * Return value: 1 for success, 0 for failure
+  */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+ 	struct gigaset_capi_ctr *iif;
+ 	int rc;
+ 
+-	pr_info("Kernel CAPI interface\n");
+-
+ 	iif = kmalloc(sizeof(*iif), GFP_KERNEL);
+ 	if (!iif) {
+ 		pr_err("%s: out of memory\n", __func__);
+ 		return 0;
+ 	}
+ 
+-	/* register driver with CAPI (ToDo: what for?) */
+-	register_capi_driver(&capi_driver_gigaset);
+-
+ 	/* prepare controller structure */
+ 	iif->ctr.owner         = THIS_MODULE;
+ 	iif->ctr.driverdata    = cs;
+@@ -2241,7 +2229,6 @@ int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
+ 	rc = attach_capi_ctr(&iif->ctr);
+ 	if (rc) {
+ 		pr_err("attach_capi_ctr failed (%d)\n", rc);
+-		unregister_capi_driver(&capi_driver_gigaset);
+ 		kfree(iif);
+ 		return 0;
+ 	}
+@@ -2252,17 +2239,36 @@ int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
+ }
+ 
+ /**
+- * gigaset_isdn_unregister() - unregister from LL
++ * gigaset_isdn_unregdev() - unregister device from LL
+  * @cs:		device descriptor structure.
+- *
+- * Called by main module to unregister the device from the LL.
+  */
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
+ {
+ 	struct gigaset_capi_ctr *iif = cs->iif;
+ 
+ 	detach_capi_ctr(&iif->ctr);
+ 	kfree(iif);
+ 	cs->iif = NULL;
++}
++
++static struct capi_driver capi_driver_gigaset = {
++	.name		= "gigaset",
++	.revision	= "1.0",
++};
++
++/**
++ * gigaset_isdn_regdrv() - register driver to LL
++ */
++void gigaset_isdn_regdrv(void)
++{
++	pr_info("Kernel CAPI interface\n");
++	register_capi_driver(&capi_driver_gigaset);
++}
++
++/**
++ * gigaset_isdn_unregdrv() - unregister driver from LL
++ */
++void gigaset_isdn_unregdrv(void)
++{
+ 	unregister_capi_driver(&capi_driver_gigaset);
+ }
+diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
+index 85de339..bdc01cb 100644
+--- a/drivers/isdn/gigaset/common.c
++++ b/drivers/isdn/gigaset/common.c
+@@ -507,7 +507,7 @@ void gigaset_freecs(struct cardstate *cs)
+ 	case 2: /* error in initcshw */
+ 		/* Deregister from LL */
+ 		make_invalid(cs, VALID_ID);
+-		gigaset_isdn_unregister(cs);
++		gigaset_isdn_unregdev(cs);
+ 
+ 		/* fall through */
+ 	case 1: /* error when registering to LL */
+@@ -769,7 +769,7 @@ struct cardstate *gigaset_initcs(struct gigaset_driver *drv, int channels,
+ 	cs->cmdbytes = 0;
+ 
+ 	gig_dbg(DEBUG_INIT, "setting up iif");
+-	if (!gigaset_isdn_register(cs, modulename)) {
++	if (!gigaset_isdn_regdev(cs, modulename)) {
+ 		pr_err("error registering ISDN device\n");
+ 		goto error;
+ 	}
+@@ -1205,11 +1205,13 @@ static int __init gigaset_init_module(void)
+ 		gigaset_debuglevel = DEBUG_DEFAULT;
+ 
+ 	pr_info(DRIVER_DESC DRIVER_DESC_DEBUG "\n");
++	gigaset_isdn_regdrv();
+ 	return 0;
+ }
+ 
+ static void __exit gigaset_exit_module(void)
+ {
++	gigaset_isdn_unregdrv();
+ }
+ 
+ module_init(gigaset_init_module);
+diff --git a/drivers/isdn/gigaset/gigaset.h b/drivers/isdn/gigaset/gigaset.h
+index 1875ab8..cdd144e 100644
+--- a/drivers/isdn/gigaset/gigaset.h
++++ b/drivers/isdn/gigaset/gigaset.h
+@@ -675,8 +675,10 @@ int gigaset_isowbuf_getbytes(struct isowbuf_t *iwb, int size);
+  */
+ 
+ /* Called from common.c for setting up/shutting down with the ISDN subsystem */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid);
+-void gigaset_isdn_unregister(struct cardstate *cs);
++void gigaset_isdn_regdrv(void);
++void gigaset_isdn_unregdrv(void);
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid);
++void gigaset_isdn_unregdev(struct cardstate *cs);
+ 
+ /* Called from hardware module to indicate completion of an skb */
+ void gigaset_skb_sent(struct bc_state *bcs, struct sk_buff *skb);
+diff --git a/drivers/isdn/gigaset/i4l.c b/drivers/isdn/gigaset/i4l.c
+index f0acb9d..c22e5ac 100644
+--- a/drivers/isdn/gigaset/i4l.c
++++ b/drivers/isdn/gigaset/i4l.c
+@@ -592,15 +592,13 @@ void gigaset_isdn_stop(struct cardstate *cs)
+ }
+ 
+ /**
+- * gigaset_isdn_register() - register to LL
++ * gigaset_isdn_regdev() - register to LL
+  * @cs:		device descriptor structure.
+  * @isdnid:	device name.
+  *
+- * Called by main module to register the device with the LL.
+- *
+  * Return value: 1 for success, 0 for failure
+  */
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+ 	isdn_if *iif;
+ 
+@@ -650,15 +648,29 @@ int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
+ }
+ 
+ /**
+- * gigaset_isdn_unregister() - unregister from LL
++ * gigaset_isdn_unregdev() - unregister device from LL
+  * @cs:		device descriptor structure.
+- *
+- * Called by main module to unregister the device from the LL.
+  */
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
+ {
+ 	gig_dbg(DEBUG_CMD, "sending UNLOAD");
+ 	gigaset_i4l_cmd(cs, ISDN_STAT_UNLOAD);
+ 	kfree(cs->iif);
+ 	cs->iif = NULL;
+ }
++
++/**
++ * gigaset_isdn_regdrv() - register driver to LL
++ */
++void gigaset_isdn_regdrv(void)
++{
++	/* nothing to do */
++}
++
++/**
++ * gigaset_isdn_unregdrv() - unregister driver from LL
++ */
++void gigaset_isdn_unregdrv(void)
++{
++	/* nothing to do */
++}
