@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965498Ab0COREg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 13:04:36 -0400
-Received: from stinky.trash.net ([213.144.137.162]:47390 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965473Ab0COREd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 13:04:33 -0400
-Message-ID: <4B9E68A0.3060405@trash.net>
-Date: Mon, 15 Mar 2010 18:04:32 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	id S965512Ab0COROG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:14:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965500Ab0COROD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 13:14:03 -0400
+Date: Mon, 15 Mar 2010 13:12:09 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <arighi@develer.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v7)
+Message-ID: <20100315171209.GI21127@redhat.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-       Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>,
-       netdev@vger.kernel.org, lvs-devel <lvs-devel@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] net/netfilter/ipvs/ip_vs_ftp.c: Remove use of NIPQUAD
-References: <1268094699.1617.5.camel@Joe-Laptop.home>	 <4B9E5E43.9060206@trash.net> <1268672314.4027.46.camel@Joe-Laptop.home>
-In-Reply-To: <1268672314.4027.46.camel@Joe-Laptop.home>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268609202-15581-1-git-send-email-arighi@develer.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches wrote:
-> On Mon, 2010-03-15 at 17:20 +0100, Patrick McHardy wrote:
->> Joe Perches wrote:
->>> NIPQUAD has very few uses left.
->>> Remove this use and make the code have the identical form of the only
->>> other use of "%u,%u,%u,%u,%u,%u" in net/ipv4/netfilter/nf_nat_ftp.c
->> Are we trying to remove NIPQUAD? 
+On Mon, Mar 15, 2010 at 12:26:37AM +0100, Andrea Righi wrote:
+> Control the maximum amount of dirty pages a cgroup can have at any given time.
 > 
-> That is a goal for me yes.
-> Elimination of unnecessary stuff from kernel.h is useful.
+> Per cgroup dirty limit is like fixing the max amount of dirty (hard to reclaim)
+> page cache used by any cgroup. So, in case of multiple cgroup writers, they
+> will not be able to consume more than their designated share of dirty pages and
+> will be forced to perform write-out if they cross that limit.
 > 
->> In my opinion the current code is
->> preferrable to open-coding NIPQUAD.
-> 
-> $ grep -r --include=*.[ch] NIPQUAD *
-> include/linux/kernel.h:#define NIPQUAD(addr) \
-> include/linux/kernel.h:#define NIPQUAD_FMT "%u.%u.%u.%u"
-> net/netfilter/ipvs/ip_vs_ftp.c:		sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
-> 
-> As of right now NIPQUAD_FMT is unused and
-> could be removed from kernel.h
-> 
-> There's 1 use of NIPQUAD.
-> 
-> Maybe instead of removal the #define could be
-> moved to netfilter.h or netfilter_ipv4.h
-> 
-> Another is to consolidate the two uses of
-> "%u,%u,%u,%u,%u,%u"
-> 
-> $ grep -r --include=*.[ch] "%u,%u,%u,%u,%u,u%" *
-> fs/cachefiles/bind.c:	_enter("{%u,%u,%u,%u,%u,%u},%s",
-> net/ipv4/netfilter/nf_nat_ftp.c:		return snprintf(buffer, buflen, "%u,%u,%u,%u,%u,%u",
-> net/netfilter/ipvs/ip_vs_ftp.c:		sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
-> 
-> Maybe these 2 open coded sprintf/snprintf could be
-> consolidated and moved to an appropriate include
-> like netfilter_ipv4 or another.
-> 
-> What do you suggest?
 
-Well, removing the last user sounds acceptable :) Applied, thanks.
+For me even with this version I see that group with 100M limit is getting
+much more BW.
+
+root cgroup
+==========
+#time dd if=/dev/zero of=/root/zerofile bs=4K count=1M
+4294967296 bytes (4.3 GB) copied, 55.7979 s, 77.0 MB/s
+
+real	0m56.209s
+
+test1 cgroup with memory limit of 100M
+======================================
+# time dd if=/dev/zero of=/root/zerofile1 bs=4K count=1M
+4294967296 bytes (4.3 GB) copied, 20.9252 s, 205 MB/s
+
+real	0m21.096s
+
+Note, these two jobs are not running in parallel. These are running one
+after the other.
+
+Vivek
+
+> The overall design is the following:
+> 
+>  - account dirty pages per cgroup
+>  - limit the number of dirty pages via memory.dirty_ratio / memory.dirty_bytes
+>    and memory.dirty_background_ratio / memory.dirty_background_bytes in
+>    cgroupfs
+>  - start to write-out (background or actively) when the cgroup limits are
+>    exceeded
+> 
+> This feature is supposed to be strictly connected to any underlying IO
+> controller implementation, so we can stop increasing dirty pages in VM layer
+> and enforce a write-out before any cgroup will consume the global amount of
+> dirty pages defined by the /proc/sys/vm/dirty_ratio|dirty_bytes and
+> /proc/sys/vm/dirty_background_ratio|dirty_background_bytes limits.
+> 
+> Changelog (v6 -> v7)
+> ~~~~~~~~~~~~~~~~~~~~~~
+>  * introduce trylock_page_cgroup() to guarantee that lock_page_cgroup()
+>    is never called under tree_lock (no strict accounting, but better overall
+>    performance)
+>  * do not account file cache statistics for the root cgroup (zero
+>    overhead for the root cgroup)
+>  * fix: evaluate cgroup free pages as at the minimum free pages of all
+>    its parents
+> 
+> Results
+> ~~~~~~~
+> The testcase is a kernel build (2.6.33 x86_64_defconfig) on a Intel Core 2 @
+> 1.2GHz:
+> 
+> <before>
+>  - root  cgroup:	11m51.983s
+>  - child cgroup:	11m56.596s
+> 
+> <after>
+>  - root cgroup:		11m51.742s
+>  - child cgroup:	12m5.016s
+> 
+> In the previous version of this patchset, using the "complex" locking scheme
+> with the _locked and _unlocked version of mem_cgroup_update_page_stat(), the
+> child cgroup required 11m57.896s and 12m9.920s with lock_page_cgroup()+irq_disabled.
+> 
+> With this version there's no overhead for the root cgroup (the small difference
+> is in error range). I expected to see less overhead for the child cgroup, I'll
+> do more testing and try to figure better what's happening.
+> 
+> In the while, it would be great if someone could perform some tests on a larger
+> system... unfortunately at the moment I don't have a big system available for
+> this kind of tests...
+> 
+> Thanks,
+> -Andrea
+> 
+>  Documentation/cgroups/memory.txt |   36 +++
+>  fs/nfs/write.c                   |    4 +
+>  include/linux/memcontrol.h       |   87 ++++++-
+>  include/linux/page_cgroup.h      |   35 +++
+>  include/linux/writeback.h        |    2 -
+>  mm/filemap.c                     |    1 +
+>  mm/memcontrol.c                  |  542 +++++++++++++++++++++++++++++++++++---
+>  mm/page-writeback.c              |  215 ++++++++++------
+>  mm/rmap.c                        |    4 +-
+>  mm/truncate.c                    |    1 +
+>  10 files changed, 806 insertions(+), 121 deletions(-)
