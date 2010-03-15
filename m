@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937028Ab0COWrX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:47:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9302 "EHLO mx1.redhat.com"
+	id S937049Ab0COWsj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:48:39 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37085 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937008Ab0COWrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:47:11 -0400
-Date: Mon, 15 Mar 2010 18:47:02 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens
-Message-ID: <20100315184702.35c4d140@tlielax.poochiereds.net>
-In-Reply-To: <1268692288.3040.2.camel@localhost.localdomain>
-References: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
-	<1268692288.3040.2.camel@localhost.localdomain>
+	id S937016Ab0COWsg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 18:48:36 -0400
+Subject: Re: [patch] dpt_i20: several use after free issues
+From: James Bottomley <James.Bottomley@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dan Carpenter <error27@gmail.com>,
+       Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+       Yang Hongyang <yanghy@cn.fujitsu.com>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Alan Cox <alan@linux.intel.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <20100315134526.0b2e3637.akpm@linux-foundation.org>
+References: <20100315082656.GJ18181@bicker>
+	 <20100315134526.0b2e3637.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Mar 2010 17:48:11 -0500
+Message-ID: <1268693291.2853.60.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010 18:31:28 -0400
-Trond Myklebust <trond.myklebust@fys.uio.no> wrote:
-
-> On Mon, 2010-03-15 at 17:39 -0400, Jeff Layton wrote: 
-> > When a file is opened with O_TRUNC, the truncate processing is handled
-> > by handle_truncate(). This function however doesn't receive any info
-> > about the newly instantiated filp, and therefore can't pass that info
-> > along so that the setattr can use it.
-> > 
-> > This makes NFSv4 misbehave. The client does an open and gets a valid
-> > stateid, and then doesn't use that stateid on the subsequent truncate.
-> > It uses the zero-stateid instead. Most servers ignore this fact and
-> > just do the truncate anyway, but some don't like it (notably, RHEL4).
-> > 
-> > It seems more correct that since we have a fully instantiated file at
-> > the time that handle_truncate is called, that we pass that along so
-> > that the truncate operation can properly use it.
+On Mon, 2010-03-15 at 13:45 -0700, Andrew Morton wrote:
+> On Mon, 15 Mar 2010 11:26:56 +0300
+> Dan Carpenter <error27@gmail.com> wrote:
 > 
-> At least in the O_CREAT|O_TRUNC case, we really should modify
-> nfs4_opendata_alloc() to set the attrs.ia_size to zero, so that the
-> server does an atomic open(O_CREAT|O_TRUNC) for us (see the DESCRIPTION
-> paragraph in RFC3530 section 14.2.16). There shouldn't be any need for
-> an extra truncate RPC call.
+> > adpt_i2o_delete_hba() calls kfree() so we have to save "pHba->next"
+> > before calling it.  Also inside adpt_i2o_delete_hba() itself, there
+> > was another use after free bug which I fixed by moving the kfree() 
+> > down a line.
 > 
-> Plain open(O_TRUNC) probably does need something along the lines of what
-> you propose, however.
-> 
+> erk.  This code should be crashing most gruesomely.  I wonder why it
+> doesn't.
 
-Yeah that would be cleaner on the wire for the create case. It's not
-clear to me how to implement that though. There doesn't appear to be
-a straightforward way to tell the VFS to skip the truncate.
+I'm tempted to say because we have no users, but actually, for this
+driver, I know we do.  So I think it works because most people don't
+have poisoning turned on in a running system and there's no sleep
+between the free and the use, so no opportunity to reuse the area on the
+percpu hot list even in an smp system.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+I'll add it to -rc fixes ... when I get the current misc tree broken
+apart.
+
+James
+
+
