@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965087Ab0COOrA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:47:00 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:42270 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab0COOq7 (ORCPT
+	id S965100Ab0COOrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:47:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53622 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965089Ab0COOrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:46:59 -0400
-X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 10:46:59 EDT
-Message-ID: <4B9E4863.80905@sandeen.net>
-Date: Mon, 15 Mar 2010 09:46:59 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.23 (Macintosh/20090812)
-MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
- assfail+0x1b/0x20 SS:ESP 0068:f687bf14
-References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan> <4B9E46F9.8090209@sandeen.net> <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Mar 2010 10:47:09 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Eric B Munson <ebmunson@us.ibm.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/2] perf record: Enable the enable_on_exec flag if record forks the target
+Date: Mon, 15 Mar 2010 11:46:57 -0300
+Message-Id: <1268664418-28328-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Justin Piszcz wrote:
-> 
-> 
-> On Mon, 15 Mar 2010, Eric Sandeen wrote:
-> 
->> Justin Piszcz wrote:
->>> Specifications:
->>>
->>> 2.6.33
->>> 32bit
->>> Debian Testing
->>>
->>> On Mar 14th, my server hung up:
->>>
->>> Mar 14 00:00:22 server1 kernel: [488470.189675] ------------[ cut here
->>> ]------------
->>> Mar 14 00:00:22 server1 kernel: [488470.189679] invalid opcode: 0000
->>> [#1] SMP
->>> Mar 14 00:00:22 server1 kernel: [488470.189681] last sysfs file:
->>> /sys/devices/pci0000:00/0000:00:0e.0/host0/target0:0:0/0:0:0:0/block/sda/uevent
->>>
->>>
->>> Mar 14 00:00:22 server1 kernel: [488470.189704] Process xfssyncd (pid:
->>> 584, ti=f687a000 task=f70fa400 task.ti=f687a000)
->>> Mar 14 00:00:22 server1 kernel: [488470.189705] Stack:
->>> Mar 14 00:00:22 server1 kernel: [488470.189721] Call Trace:
->>> Mar 14 00:00:22 server1 kernel: [488470.189739] Code: 00 e8 ea e5 01 00
->>> 83 c4 14 c3 8d b6 00 00 00 00 83 ec 10 89 4c 24 0c 89 54 24 08 89 44 24
->>> 04 c7 04 24 30 ab 42 c1 e8 7c 11 1c 00 <0f> 0b eb fe 90 55 57 89 cf 56
->>> 89 c6 b8 80 b0 52 c1 83 e6 07 53
->>> Mar 14 00:00:22 server1 kernel: [488470.189739] EIP: [<c11a018b>]
->>> assfail+0x1b/0x20 SS:ESP 0068:f687bf14
->>>
->>> Is this a bug related to AMD (CPU) or XFS?
->>
->> Hard to know without seeing the rest of the stack trace, is this all
->> you got?
-> Yes, that was the only entry in the log file, I could not wake up the
-> monitor to get any more information.
-> 
->>
->> You hit an assertion failure in xfs.
->>
->> Are you running with CONFIG_XFS_DEBUG?
-> Nope.
-> 
-> CONFIG_XFS_FS=y
-> # CONFIG_XFS_QUOTA is not set
-> # CONFIG_XFS_POSIX_ACL is not set
-> # CONFIG_XFS_RT is not set
-> # CONFIG_XFS_DEBUG is not set
+From: Eric B Munson <ebmunson@us.ibm.com>
 
-Ok, then you hit an ASSERT_ALWAYS
+When forking its target, perf record can capture data from before the target
+application is started.  Perf stat uses the enable_on_exec flag in the event
+attributes to keep from displaying events from before the target program
+starts, this patch adds the same functionality to perf record when it is will
+fork the target process.
 
-There are only a few:
+Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
-0 xfs/linux-2.6/xfs_super.c xfs_fs_destroy_inode  953 ASSERT_ALWAYS(!xfs_iflags_test(ip, XFS_IRECLAIMABLE));
-1 xfs/linux-2.6/xfs_super.c xfs_fs_destroy_inode  954 ASSERT_ALWAYS(!xfs_iflags_test(ip, XFS_IRECLAIM));
-2 xfs/linux-2.6/xfs_sync.c  xfs_reclaim_inode     727 ASSERT_ALWAYS(__xfs_iflags_test(ip, XFS_IRECLAIMABLE));
-3 fs/xfs/xfs_log.c          xfs_log_notify        376 ASSERT_ALWAYS((iclog->ic_state == XLOG_STATE_ACTIVE) ||
-4 fs/xfs/xfs_log.c          xlog_commit_record   1273 ASSERT_ALWAYS(iclog);
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index bed175d..962cdbf 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -225,7 +225,7 @@ static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int n
+ 	return h_attr;
+ }
+ 
+-static void create_counter(int counter, int cpu, pid_t pid)
++static void create_counter(int counter, int cpu, pid_t pid, bool forks)
+ {
+ 	char *filter = filters[counter];
+ 	struct perf_event_attr *attr = attrs + counter;
+@@ -277,6 +277,9 @@ static void create_counter(int counter, int cpu, pid_t pid)
+ 	attr->inherit		= inherit;
+ 	attr->disabled		= 1;
+ 
++	if (forks)
++		attr->enable_on_exec = 1;
++
+ try_again:
+ 	fd[nr_cpu][counter] = sys_perf_event_open(attr, pid, cpu, group_fd, 0);
+ 
+@@ -381,13 +384,13 @@ try_again:
+ 	ioctl(fd[nr_cpu][counter], PERF_EVENT_IOC_ENABLE);
+ }
+ 
+-static void open_counters(int cpu, pid_t pid)
++static void open_counters(int cpu, pid_t pid, bool forks)
+ {
+ 	int counter;
+ 
+ 	group_fd = -1;
+ 	for (counter = 0; counter < nr_counters; counter++)
+-		create_counter(counter, cpu, pid);
++		create_counter(counter, cpu, pid, forks);
+ 
+ 	nr_cpu++;
+ }
+@@ -547,11 +550,11 @@ static int __cmd_record(int argc, const char **argv)
+ 
+ 
+ 	if ((!system_wide && !inherit) || profile_cpu != -1) {
+-		open_counters(profile_cpu, target_pid);
++		open_counters(profile_cpu, target_pid, forks);
+ 	} else {
+ 		nr_cpus = read_cpu_map();
+ 		for (i = 0; i < nr_cpus; i++)
+-			open_counters(cpumap[i], target_pid);
++			open_counters(cpumap[i], target_pid, forks);
+ 	}
+ 
+ 	if (file_new) {
+-- 
+1.6.2.5
 
-but I'm not sure which one you hit since there is no backtrace provided.
-
--Eric
