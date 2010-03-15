@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965096Ab0COOtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:49:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36659 "EHLO mail.zytor.com"
+	id S965115Ab0COOt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:49:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57733 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965030Ab0COOtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:49:16 -0400
-Message-ID: <4B9E489F.6040709@zytor.com>
-Date: Mon, 15 Mar 2010 07:47:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S965030Ab0COOtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:49:55 -0400
+Date: Mon, 15 Mar 2010 10:48:03 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Andrea Righi <arighi@develer.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v6)
+Message-ID: <20100315144803.GG21127@redhat.com>
+References: <1268175636-4673-1-git-send-email-arighi@develer.com> <20100311093913.07c9ca8a.kamezawa.hiroyu@jp.fujitsu.com> <20100311101726.f58d24e9.kamezawa.hiroyu@jp.fujitsu.com> <1268298865.5279.997.camel@twins> <20100311182500.0f3ba994.kamezawa.hiroyu@jp.fujitsu.com> <20100311184244.6735076a.kamezawa.hiroyu@jp.fujitsu.com> <20100312101411.b2639128.nishimura@mxp.nes.nec.co.jp> <20100312112433.689c7294.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-CC: david@lang.hm, Arnd Bergmann <arnd@arndb.de>, Tejun Heo <tj@kernel.org>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       hirofumi@mail.parknet.co.jp, Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-Subject: Re: ATA 4 KiB sector issues.
-References: <4B947393.2050002@kernel.org> <201003150326.22262.vda.linux@googlemail.com> <alpine.DEB.2.00.1003142216380.15263@asgard.lang.hm> <201003151056.05833.vda.linux@googlemail.com>
-In-Reply-To: <201003151056.05833.vda.linux@googlemail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100312112433.689c7294.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 02:56 AM, Denys Vlasenko wrote:
-> I think Linux already is doing this. The problem is, in many cases
-> OS can't possibly do this, short of using a specially designed
-> filesystem.
+On Fri, Mar 12, 2010 at 11:24:33AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Fri, 12 Mar 2010 10:14:11 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 > 
-> If you untar a Linux kernel source tarball on a seriously
-> fragmented ext2 filesystem, there will be a lot of discontiguous
-> and/or misaligned writes smaller than 256K.
-> Only smart firmware can help in this case.
+> > On Thu, 11 Mar 2010 18:42:44 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > On Thu, 11 Mar 2010 18:25:00 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > Then, it's not problem that check pc->mem_cgroup is root cgroup or not
+> > > > without spinlock.
+> > > > ==
+> > > > void mem_cgroup_update_stat(struct page *page, int idx, bool charge)
+> > > > {
+> > > > 	pc = lookup_page_cgroup(page);
+> > > > 	if (unlikely(!pc) || mem_cgroup_is_root(pc->mem_cgroup))
+> > > > 		return;	
+> > > > 	...
+> > > > }
+> > > > ==
+> > > > This can be handle in the same logic of "lock failure" path.
+> > > > And we just do ignore accounting.
+> > > > 
+> > > > There are will be no spinlocks....to do more than this,
+> > > > I think we have to use "struct page" rather than "struct page_cgroup".
+> > > > 
+> > > Hmm..like this ? The bad point of this patch is that this will corrupt FILE_MAPPED
+> > > status in root cgroup. This kind of change is not very good.
+> > > So, one way is to use this kind of function only for new parameters. Hmm.
+> > IMHO, if we disable accounting file stats in root cgroup, it would be better
+> > not to show them in memory.stat to avoid confusing users.
+> agreed.
+> 
+> > But, hmm, I think accounting them in root cgroup isn't so meaningless.
+> > Isn't making mem_cgroup_has_dirty_limit() return false in case of root cgroup enough?
+> > 
+> The problem is spinlock overhead.
+> 
+> IMHO, there are 2 excuse for "not accounting" in root cgroup
+>  1. Low overhead is always appreciated.
+>  2. Root's statistics can be obtained by "total - sum of children".
+> 
 
-Yes, but guess what... there is a lot of stupid firmware out there, and
-there are lots of RAID arrays, and so on.
+IIUC, Total sum of children works only if user_hierarchy=1? At the same time
+it does not work if there tasks in root cgroup and not in children group.
 
-"Seriously fragmented" means you have already lost in the first place.
-
-This doesn't change the fact that this is a real issue and that that is
-the major reason why aligning to 63*4K is a bad idea.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Vivek
