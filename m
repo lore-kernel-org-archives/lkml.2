@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937152Ab0COXRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:17:12 -0400
-Received: from sh.osrg.net ([192.16.179.4]:45944 "EHLO sh.osrg.net"
+	id S965793Ab0COXRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:17:30 -0400
+Received: from thunk.org ([69.25.196.29]:51463 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937118Ab0COXRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:17:08 -0400
-Date: Tue, 16 Mar 2010 08:16:51 +0900
-To: stern@rowland.harvard.edu
-Cc: James.Bottomley@HansenPartnership.com, linux-kernel@vger.kernel.org
-Subject: Re: dma_sync_sg_for_cpu applied to a single scatterlist element
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <Pine.LNX.4.44L0.1003151721190.1332-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1003151721190.1332-100000@iolanthe.rowland.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100316081620R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 16 Mar 2010 08:16:52 +0900 (JST)
+	id S937142Ab0COXR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 19:17:26 -0400
+Date: Mon, 15 Mar 2010 19:17:15 -0400
+From: tytso@mit.edu
+To: Greg KH <greg@kroah.com>
+Cc: "Jayson R. King" <dev@jaysonking.com>, LKML <linux-kernel@vger.kernel.org>,
+       Mingming Cao <cmm@us.ibm.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
+       Stable team <stable@kernel.org>
+Subject: Re: [stable] [00/11] fix ext4 deadlock on 2.6.27.y
+Message-ID: <20100315231715.GJ4484@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Greg KH <greg@kroah.com>,
+	"Jayson R. King" <dev@jaysonking.com>,
+	LKML <linux-kernel@vger.kernel.org>, Mingming Cao <cmm@us.ibm.com>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-ext4@vger.kernel.org, Stable team <stable@kernel.org>
+References: <4B88BA1B.4050500@jaysonking.com>
+ <20100228031635.GC1278@suse.de>
+ <20100315200929.GA20466@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315200929.GA20466@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010 17:30:19 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
-
-> This is addressed to James Bottomley as he is the author of
-> Documentation/DMA-API.txt, but anyone else who can contribute is
-> invited to do so.
+On Mon, Mar 15, 2010 at 01:09:30PM -0700, Greg KH wrote:
 > 
-> Suppose a scatter-gather transfer with multiple scatterlist elements
-> has been mapped via dma_map_sg().  Is it then valid to call 
-> dma_sync_sg_for_cpu() with the "sg" argument pointing to one of the 
-> mapped scatterlist elements (not necessarily the first one) and the 
-> "nelems" argument set to 1?
+> As no one has responded, I'm dropping these from my email queue.  If you
+> get an answer, please feel free to resend them.
 
-As James said, probably it works. As long as passed scatterlist
-elements points to mapped regions, it works.
+Sorry, I've been crazy busy.  I'm currently testing Jayson's
+backports, after having eyeballed them.  I'll resend them to you once
+they finish the test cycle.
 
-However, I think that the latest DMA-API.txt makes it clear that only
-dma_sync_single_for_{cpu|device} supports a partial sync. So it's not
-recommended, I guess.
+					- Ted
