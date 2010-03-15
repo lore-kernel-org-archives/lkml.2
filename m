@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936333Ab0CONvP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 09:51:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47414 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936249Ab0CONvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 09:51:13 -0400
-Date: Mon, 15 Mar 2010 14:51:11 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
-       Pavel Machek <pavel@suse.cz>,
-       Alessandro Guido <ag@alessandroguido.name>,
-       Tomas Hanak <tomas.hanak@gmail.com>, Jason Noble <nobleja@polezero.com>,
-       simon.windows@gmail.com, Sean Hildebrand <silverwraithii@gmail.com>,
-       Sid Boyce <sboyce@blueyonder.co.uk>, Henning Glawe <glaweh@debian.org>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] Added locks for sysfs attributes and internal
- data.
-In-Reply-To: <20100314084215.GA8226@core.coreip.homeip.net>
-Message-ID: <alpine.LNX.2.00.1003151449050.18642@pobox.suse.cz>
-References: <201002200911.53900.stefan_achatz@web.de> <201003081704.30119.stefan_achatz@web.de> <20100309074155.GA17288@core.coreip.homeip.net> <201003131219.27482.erazor_de@users.sourceforge.net> <20100314084215.GA8226@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S936372Ab0CONzr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 09:55:47 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:48263 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936249Ab0CONzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 09:55:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bmX4p+NQfYPhsMR/RWK4VPmpDruFJNdhVUC3J1Now0JKvSSb+j8ftl+KGO6rmvskNx
+         zwzDqBNGrWgh4F5C7beANZRIrKPdUEW+lzdTf7Ei8fXaXqN44jsLy910JJrU/9OuLhrS
+         0MhNQ9MoR9dVU/+BT7lTtZs0mpD3wKin+SouE=
+Message-ID: <4B9E3CBC.8020106@gmail.com>
+Date: Mon, 15 Mar 2010 14:57:16 +0100
+From: Roel Kluin <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?ISO-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>
+CC: linux-serial@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] serial: Two branches the same in timbuart_set_mctrl()
+References: <4B532CF5.7080000@gmail.com> <20100117181702.026269e9@lxorguk.ukuu.org.uk> <4B535ED8.2050703@gmail.com> <4B9E0160.5000900@pelagicore.com> <4B9E3747.9060400@gmail.com> <4B9E391A.5050808@pelagicore.com>
+In-Reply-To: <4B9E391A.5050808@pelagicore.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Mar 2010, Dmitry Torokhov wrote:
+CTS is a read only bit and we are to stop signal RTS if modem line
+TIOCM_RTS is not set.
 
-> > 3. grow up of driver
-> > I see my work is not quite ready for kernel inclusion. Maybe I'm wrong in this 
-> > list and should bug other people. Would the linuxdriverproject.org be a 
-> > better place to raise my work to adulthood?
-> > 
-> Rarely a driver is ready for inclusion right away ;) Normally that 
-> happens after someone submitted a few of them to the same subsystem so 
-> he knows maintainers perferences, etc. I'd say you are doing well as is 
-> here, there is no sense to move away somewhere else at this point.
+Thanks for suggestions by Richard Röjfors.
 
-Absolutely.
-
-Stefan, you are handling the review feedback in an excellent way, and the 
-driver is very quickly getting into shape in which it would be merge-able 
-right away.
-
-So please do another round of submission with all the concerns that have 
-been raised previously addressed, and I believe I'll just apply the driver 
-to my tree.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Acked-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+diff --git a/drivers/serial/timbuart.c b/drivers/serial/timbuart.c
+index 7bf1026..823b9c5 100644
+--- a/drivers/serial/timbuart.c
++++ b/drivers/serial/timbuart.c
+@@ -219,7 +219,7 @@ static void timbuart_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 	if (mctrl & TIOCM_RTS)
+ 		iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
+ 	else
+-		iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
++		iowrite8(0, port->membase + TIMBUART_CTRL);
+ }
+ 
+ static void timbuart_mctrl_check(struct uart_port *port, u32 isr, u32 *ier)
