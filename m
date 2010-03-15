@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965252Ab0COP2Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:28:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35000 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965193Ab0COP2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:28:21 -0400
-Message-ID: <4B9E5211.9000204@redhat.com>
-Date: Mon, 15 Mar 2010 17:28:17 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S932908Ab0COPeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:34:01 -0400
+Received: from [85.183.11.32] ([85.183.11.32]:52301 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932208Ab0COPd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 11:33:58 -0400
+X-Greylist: delayed 1481 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 11:33:58 EDT
+Date: Mon, 15 Mar 2010 16:10:41 +0100
+From: =?utf-8?Q?J=F6rn?= Engel <joern@dublin.logfs.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [Regression] r8169: enable 64-bit DMA by default for PCI
+	Express devices (v2)
+Message-ID: <20100315151041.GA15667@Dublin.logfs.org>
+References: <20100315150806.GA15354@Dublin.logfs.org>
 MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>
-Subject: CONFIG_NO_BOOTMEM woes, 2.6.34-rc1
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100315150806.GA15354@Dublin.logfs.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_NO_BOOTMEM=y, I get:
+Forgot to Cc: lkml.
 
-kobject '' (c252bfdc): tried to add an uninitialized object, something 
-is seriously wrong.
-Pid: 1, comm: swapper Not tainted 2.6.34-rc1 #121
-Call Trace:
-  [<c07803f5>] ? printk+0x14/0x17
-  [<c05a4cea>] kobject_add+0x28/0x49
-  [<c06e65c1>] add_sysfs_fw_map_entry+0x5b/0x74
-  [<c09fa56f>] memmap_init+0x13/0x2d
-  [<c040305b>] do_one_initcall+0x51/0x13f
-  [<c09ca376>] kernel_init+0x122/0x1a3
-  [<c09ca254>] ? kernel_init+0x0/0x1a3
-  [<c0408ffe>] kernel_thread_helper+0x6/0x10
-------------[ cut here ]------------
-WARNING: at lib/kobject.c:595 kobject_put+0x27/0x3c()
-
-a bit after which the kernel dies.  Inspection of memmap_init() and 
-related code appears to call kobject_init() correctly.
-
-With CONFIG_NO_BOOTMEM, the kernel hangs in early boot before displaying 
-anything.
-
-2.6.34-rc1, i386 (x86_64 works fine).
-
--- 
-error compiling committee.c: too many arguments to function
-
+On Mon, 15 March 2010 16:08:06 +0100, J�rn Engel wrote:
+> 
+> Hello Robert!
+> 
+> Looks like 353176888386d9025062a12dcec08d49af10cf2c broke one of my
+> machines.  Reverting that patch fixes things again.  Machine is
+> running an x86_64 kernel.  Lspci gives me this:
+> 
+> 01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast Ethernet controller (rev 02)
+>         Subsystem: ASRock Incorporation Device 8136
+>         Flags: bus master, fast devsel, latency 0, IRQ 26
+>         I/O ports at e800 [size=256]
+>         Memory at fdeff000 (64-bit, prefetchable) [size=4K]
+>         Memory at fdee0000 (64-bit, prefetchable) [size=64K]
+>         [virtual] Expansion ROM at fde00000 [disabled] [size=128K]
+>         Capabilities: [40] Power Management version 3
+>         Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+>         Capabilities: [70] Express Endpoint, MSI 01
+>         Capabilities: [ac] MSI-X: Enable- Count=2 Masked-
+>         Capabilities: [cc] Vital Product Data
+>         Capabilities: [100] Advanced Error Reporting
+>         Capabilities: [140] Virtual Channel <?>
+>         Capabilities: [160] Device Serial Number 08-00-00-00-ff-ff-00-00
+>         Kernel driver in use: r8169
+> 
+> If you have any test patches to try, please send them my way. :)
+> 
+> J�rn
