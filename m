@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936556Ab0COPns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:43:48 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53814 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936194Ab0COPnr (ORCPT
+	id S936561Ab0COPry (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:47:54 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:39424 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936228Ab0COPrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:43:47 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       stable@kernel.org,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 1/1] perf annotate: Properly notify the user that vmlinux is missing
-Date: Mon, 15 Mar 2010 12:43:33 -0300
-Message-Id: <1268667813-5710-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 15 Mar 2010 11:47:52 -0400
+Date: Mon, 15 Mar 2010 08:46:31 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: balbir@linux.vnet.ibm.com
+Cc: KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+ parameter
+Message-Id: <20100315084631.a350f066.randy.dunlap@oracle.com>
+In-Reply-To: <20100315072214.GA18054@balbir.in.ibm.com>
+References: <20100315072214.GA18054@balbir.in.ibm.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4B9E5680.012E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Mon, 15 Mar 2010 12:52:15 +0530 Balbir Singh wrote:
 
-Before this patch we would not find a vmlinux, then try to pass objdump "[kernel.kallsyms]"
-as the filename, it would get confused and produce no output:
+> Selectively control Unmapped Page Cache (nospam version)
+> 
+> From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> 
+> This patch implements unmapped page cache control via preferred
+> page cache reclaim. The current patch hooks into kswapd and reclaims
+> page cache if the user has requested for unmapped page control.
+> This is useful in the following scenario
+> 
+> - In a virtualized environment with cache!=none, we see
+>   double caching - (one in the host and one in the guest). As
+>   we try to scale guests, cache usage across the system grows.
+>   The goal of this patch is to reclaim page cache when Linux is running
+>   as a guest and get the host to hold the page cache and manage it.
+>   There might be temporary duplication, but in the long run, memory
+>   in the guests would be used for mapped pages.
+> - The option is controlled via a boot option and the administrator
+>   can selectively turn it on, on a need to use basis.
+> 
+> A lot of the code is borrowed from zone_reclaim_mode logic for
+> __zone_reclaim(). One might argue that the with ballooning and
+> KSM this feature is not very useful, but even with ballooning,
+> we need extra logic to balloon multiple VM machines and it is hard
+> to figure out the correct amount of memory to balloon. With these
+> patches applied, each guest has a sufficient amount of free memory
+> available, that can be easily seen and reclaimed by the balloon driver.
+> The additional memory in the guest can be reused for additional
+> applications or used to start additional guests/balance memory in
+> the host.
+> 
+> KSM currently does not de-duplicate host and guest page cache. The goal
+> of this patch is to help automatically balance unmapped page cache when
+> instructed to do so.
+> 
+> There are some magic numbers in use in the code, UNMAPPED_PAGE_RATIO
+> and the number of pages to reclaim when unmapped_page_control argument
+> is supplied. These numbers were chosen to avoid aggressiveness in
+> reaping page cache ever so frequently, at the same time providing control.
+> 
+> The sysctl for min_unmapped_ratio provides further control from
+> within the guest on the amount of unmapped pages to reclaim.
+> 
+> The patch is applied against mmotm feb-11-2010.
 
-[root@doppio ~]# perf annotate n_tty_write
+Hi,
+If you go ahead with this, please add the boot parameter & its description
+to Documentation/kernel-parameters.txt.
 
-------------------------------------------------
- Percent |      Source code & Disassembly of [kernel.kallsyms]
-------------------------------------------------
 
-Now we check that and emit meaningful warning:
+> TODOS
+> -----
+> 1. Balance slab cache as well
+> 2. Invoke the balance routines from the balloon driver
 
-[root@doppio ~]# perf annotate n_tty_write
-Can't annotate n_tty_write: No vmlinux file was found in the path:
-[0] vmlinux
-[1] /boot/vmlinux
-[2] /boot/vmlinux-2.6.34-rc1-tip+
-[3] /lib/modules/2.6.34-rc1-tip+/build/vmlinux
-[4] /usr/lib/debug/lib/modules/2.6.34-rc1-tip+/vmlinux
-[root@doppio ~]#
-
-This bug was introduced when we added automatic search for vmlinux, before that
-time the user had to specify a vmlinux file.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Cc: stable@kernel.org
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |    7 +++++++
- tools/perf/util/newt.c        |    2 +-
- 2 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 6ad7148..b2ca290 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -452,6 +452,13 @@ static void annotate_sym(struct hist_entry *he)
- 	if (!filename)
- 		return;
- 
-+	if (dso->origin == DSO__ORIG_KERNEL) {
-+		pr_err("Can't annotate %s: No vmlinux file was found in the "
-+		       "path:\n", sym->name);
-+		vmlinux_path__fprintf(stderr);
-+		return;
-+	}
-+
- 	pr_debug("%s: filename=%s, sym=%s, start=%#Lx, end=%#Lx\n", __func__,
- 		 filename, sym->name, map->unmap_ip(map, sym->start),
- 		 map->unmap_ip(map, sym->end));
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 2836394..2d19e7a 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -63,7 +63,7 @@ static void hist_entry__annotate_browser(struct hist_entry *self)
- 	if (self->sym == NULL)
- 		return;
- 
--	if (asprintf(&str, "perf annotate %s | expand", self->sym->name) < 0)
-+	if (asprintf(&str, "perf annotate %s 2>&1 | expand", self->sym->name) < 0)
- 		return;
- 
- 	fp = popen(str, "r");
--- 
-1.6.2.5
-
+~Randy
