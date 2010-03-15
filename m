@@ -1,111 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965082Ab0COOp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:45:56 -0400
-Received: from mtagate5.de.ibm.com ([195.212.17.165]:53429 "EHLO
-	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab0COOpz (ORCPT
+	id S965087Ab0COOrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:47:00 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:42270 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965042Ab0COOq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:45:55 -0400
-Message-ID: <4B9E481D.5020709@linux.vnet.ibm.com>
-Date: Mon, 15 Mar 2010 15:45:49 +0100
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Mon, 15 Mar 2010 10:46:59 -0400
+X-Greylist: delayed 361 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 10:46:59 EDT
+Message-ID: <4B9E4863.80905@sandeen.net>
+Date: Mon, 15 Mar 2010 09:46:59 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.23 (Macintosh/20090812)
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <1268048904-19397-1-git-send-email-mel@csn.ul.ie> <20100311154124.e1e23900.akpm@linux-foundation.org> <4B99E19E.6070301@linux.vnet.ibm.com> <20100312020526.d424f2a8.akpm@linux-foundation.org> <20100312104712.GB18274@csn.ul.ie> <4B9A3049.7010602@linux.vnet.ibm.com> <20100312093755.b2393b33.akpm@linux-foundation.org> <20100315122948.GJ18274@csn.ul.ie>
-In-Reply-To: <20100315122948.GJ18274@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
+ assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan> <4B9E46F9.8090209@sandeen.net> <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Justin Piszcz wrote:
+> 
+> 
+> On Mon, 15 Mar 2010, Eric Sandeen wrote:
+> 
+>> Justin Piszcz wrote:
+>>> Specifications:
+>>>
+>>> 2.6.33
+>>> 32bit
+>>> Debian Testing
+>>>
+>>> On Mar 14th, my server hung up:
+>>>
+>>> Mar 14 00:00:22 server1 kernel: [488470.189675] ------------[ cut here
+>>> ]------------
+>>> Mar 14 00:00:22 server1 kernel: [488470.189679] invalid opcode: 0000
+>>> [#1] SMP
+>>> Mar 14 00:00:22 server1 kernel: [488470.189681] last sysfs file:
+>>> /sys/devices/pci0000:00/0000:00:0e.0/host0/target0:0:0/0:0:0:0/block/sda/uevent
+>>>
+>>>
+>>> Mar 14 00:00:22 server1 kernel: [488470.189704] Process xfssyncd (pid:
+>>> 584, ti=f687a000 task=f70fa400 task.ti=f687a000)
+>>> Mar 14 00:00:22 server1 kernel: [488470.189705] Stack:
+>>> Mar 14 00:00:22 server1 kernel: [488470.189721] Call Trace:
+>>> Mar 14 00:00:22 server1 kernel: [488470.189739] Code: 00 e8 ea e5 01 00
+>>> 83 c4 14 c3 8d b6 00 00 00 00 83 ec 10 89 4c 24 0c 89 54 24 08 89 44 24
+>>> 04 c7 04 24 30 ab 42 c1 e8 7c 11 1c 00 <0f> 0b eb fe 90 55 57 89 cf 56
+>>> 89 c6 b8 80 b0 52 c1 83 e6 07 53
+>>> Mar 14 00:00:22 server1 kernel: [488470.189739] EIP: [<c11a018b>]
+>>> assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+>>>
+>>> Is this a bug related to AMD (CPU) or XFS?
+>>
+>> Hard to know without seeing the rest of the stack trace, is this all
+>> you got?
+> Yes, that was the only entry in the log file, I could not wake up the
+> monitor to get any more information.
+> 
+>>
+>> You hit an assertion failure in xfs.
+>>
+>> Are you running with CONFIG_XFS_DEBUG?
+> Nope.
+> 
+> CONFIG_XFS_FS=y
+> # CONFIG_XFS_QUOTA is not set
+> # CONFIG_XFS_POSIX_ACL is not set
+> # CONFIG_XFS_RT is not set
+> # CONFIG_XFS_DEBUG is not set
 
+Ok, then you hit an ASSERT_ALWAYS
 
-Mel Gorman wrote:
-> On Fri, Mar 12, 2010 at 09:37:55AM -0500, Andrew Morton wrote:
->> On Fri, 12 Mar 2010 13:15:05 +0100 Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
->>
->>>> It still feels a bit unnatural though that the page allocator waits on
->>>> congestion when what it really cares about is watermarks. Even if this
->>>> patch works for Christian, I think it still has merit so will kick it a
->>>> few more times.
->>> In whatever way I can look at it watermark_wait should be supperior to 
->>> congestion_wait. Because as Mel points out waiting for watermarks is 
->>> what is semantically correct there.
->> If a direct-reclaimer waits for some thresholds to be achieved then what
->> task is doing reclaim?
->>
->> Ultimately, kswapd. 
-> 
-> Well, not quite. The direct reclaimer will still wake up after a timeout
-> and try again regardless of whether watermarks have been met or not. The
-> intention is to back after after direct reclaim has failed. Granted, the
-> window during which a direct reclaim finishes and an allocation attempt
-> occurs is unnecessarily large. This may be addressed by the patch that
-> changes where cond_resched() is called.
-> 
->> This will introduce a hard dependency upon kswapd
->> activity.  This might introduce scalability problems.  And latency
->> problems if kswapd if off doodling with a slow device (say), or doing a
->> journal commit.  And perhaps deadlocks if kswapd tries to take a lock
->> which one of the waiting-for-watermark direct relcaimers holds.
->>
-> 
-> What lock could they be holding? Even if that is the case, the direct
-> reclaimers do not wait indefinitily.
-> 
->> Generally, kswapd is an optional, best-effort latency optimisation
->> thing and we haven't designed for it to be a critical service. 
->> Probably stuff would break were we to do so.
->>
-> 
-> No disagreements there.
-> 
->> This is one of the reasons why we avoided creating such dependencies in
->> reclaim.  Instead, what we do when a reclaimer is encountering lots of
->> dirty or in-flight pages is
->>
->> 	msleep(100);
->>
->> then try again.  We're waiting for the disks, not kswapd.
->>
->> Only the hard-wired 100 is a bit silly, so we made the "100" variable,
->> inversely dependent upon the number of disks and their speed.  If you
->> have more and faster disks then you sleep for less time.
->>
->> And that's what congestion_wait() does, in a very simplistic fashion. 
->> It's a facility which direct-reclaimers use to ratelimit themselves in
->> inverse proportion to the speed with which the system can retire writes.
->>
-> 
-> The problem being hit is when a direct reclaimer goes to sleep waiting
-> on congestion when in reality there were not lots of dirty or in-flight
-> pages. It goes to sleep for the wrong reasons and doesn't get woken up
-> again until the timeout expires.
-> 
-> Bear in mind that even if congestion clears, it just means that dirty
-> pages are now clean although I admit that the next direct reclaim it
-> does is going to encounter clean pages and should succeed.
-> 
-> Lets see how the other patch that changes when cond_reched() gets called
-> gets on. If it also works out, then it's harder to justify this patch.
-> If it doesn't work out then it'll need to be kicked another few times.
-> 
+There are only a few:
 
-Unfortunately "page-allocator: Attempt page allocation immediately after 
-direct reclaim" don't help. No improvement in the regression we had 
-fixed with the watermark wait patch.
+0 xfs/linux-2.6/xfs_super.c xfs_fs_destroy_inode  953 ASSERT_ALWAYS(!xfs_iflags_test(ip, XFS_IRECLAIMABLE));
+1 xfs/linux-2.6/xfs_super.c xfs_fs_destroy_inode  954 ASSERT_ALWAYS(!xfs_iflags_test(ip, XFS_IRECLAIM));
+2 xfs/linux-2.6/xfs_sync.c  xfs_reclaim_inode     727 ASSERT_ALWAYS(__xfs_iflags_test(ip, XFS_IRECLAIMABLE));
+3 fs/xfs/xfs_log.c          xfs_log_notify        376 ASSERT_ALWAYS((iclog->ic_state == XLOG_STATE_ACTIVE) ||
+4 fs/xfs/xfs_log.c          xlog_commit_record   1273 ASSERT_ALWAYS(iclog);
 
--> *kick*^^
+but I'm not sure which one you hit since there is no backtrace provided.
 
-
--- 
-
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
+-Eric
