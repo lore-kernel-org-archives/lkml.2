@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936287Ab0CONl6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 09:41:58 -0400
-Received: from av11-1-sn2.hy.skanova.net ([81.228.8.183]:60692 "EHLO
-	av11-1-sn2.hy.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936274Ab0CONl4 (ORCPT
+	id S936279Ab0CONnm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 09:43:42 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:35638 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932208Ab0CONnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 09:41:56 -0400
-Message-ID: <4B9E391A.5050808@pelagicore.com>
-Date: Mon, 15 Mar 2010 14:41:46 +0100
-From: =?ISO-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>
-Organization: Pelagicore AB
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100121 Iceowl/1.0b1 Icedove/3.0.1
+	Mon, 15 Mar 2010 09:43:40 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4B9E396E.8050606@s5r6.in-berlin.de>
+Date: Mon, 15 Mar 2010 14:43:10 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: Roel Kluin <roel.kluin@gmail.com>
-Cc: linux-serial@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] serial: Two branches the same in timbuart_set_mctrl()
-References: <4B532CF5.7080000@gmail.com> <20100117181702.026269e9@lxorguk.ukuu.org.uk> <4B535ED8.2050703@gmail.com> <4B9E0160.5000900@pelagicore.com> <4B9E3747.9060400@gmail.com>
-In-Reply-To: <4B9E3747.9060400@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Howells <dhowells@redhat.com>
+CC: torvalds@osdl.org, akpm@linux-foundation.org, sgruszka@redhat.com,
+       davem@davemloft.net, linux-kernel@vger.kernel.org,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] Document Linux's circular buffering capabilities
+References: <4B9B5A37.2010206@s5r6.in-berlin.de> <4B9A6033.8010705@s5r6.in-berlin.de> <20100311172055.7328.51353.stgit@warthog.procyon.org.uk> <18180.1268437268@redhat.com> <30121.1268656565@redhat.com>
+In-Reply-To: <30121.1268656565@redhat.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 02:33 PM, Roel Kluin wrote:
-> Hi Richard,
->
->>>        if (mctrl&   TIOCM_RTS)
->>>            iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
->>>        else
->>> -        iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
->>> +        iowrite8(TIMBUART_CTRL_CTS, port->membase + TIMBUART_CTRL);
->>
->> This is not completely correct. CTS is a read only bit and we are to
->> stop signal RTS. So the line should look like:
->> iowrite8(0, port->membase + TIMBUART_CTRL);
->
-> It appears as if this will also unset TIMBUART_CTRL_CTS (which is
-> probably ok since it's read-only) but TIMBUART_CTRL_FLSHTX and
-> TIMBUART_CTRL_FLSHRX as well.
+David Howells wrote:
+> How about adding a bit:
+> 
+>  Note the use of ACCESS_ONCE() in both algorithms to read the opposition index.
+>  This prevents the compiler from discarding and reloading its cached value -
+> -which some compilers will do across smp_read_barrier_depends().
+> +which some compilers will do across smp_read_barrier_depends().  This isn't
+> +strictly needed if you can be sure that the opposition index will _only_ be
+> +used the once.
 
-TIMBUART_CTRL_FLSH(RX/TX) are write only bits, writing a 1 to these will
-flush the corresponding FIFO. In this case we should not flush the FIFO:s,
-so writing 0 as I suggested is correct.
-
->
-> If not required I'll send the patch as you suggested.
-
-Great! Thanks!
-
---Richard
+Yes, thanks.  (The last "the" is superfluous.)
+-- 
+Stefan Richter
+-=====-==-=- --== -====
+http://arcgraph.de/sr/
