@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965720Ab0COTAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 15:00:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36130 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965680Ab0COTAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 15:00:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.49,644,1262592000"; 
-   d="scan'208";a="604603049"
-Date: Mon, 15 Mar 2010 19:59:58 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Florian Fainelli <florian@openwrt.org>, linux-kernel@vger.kernel.org,
-       Wim Van Sebroeck <wim@iguana.be>
-Subject: Re: [PATCH 1/4 v2] x86: remove rdc321x_defs.h
-Message-ID: <20100315185957.GA3113@sortiz.org>
-References: <201003110942.06367.florian@openwrt.org>
- <20100311105324.GA27207@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100311105324.GA27207@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965728Ab0COTBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 15:01:22 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35857
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965680Ab0COTBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 15:01:20 -0400
+Date: Mon, 15 Mar 2010 12:01:42 -0700 (PDT)
+Message-Id: <20100315.120142.113006088.davem@davemloft.net>
+To: kaber@trash.net
+Cc: joe@perches.com, wensong@linux-vs.org, horms@verge.net.au, ja@ssi.bg,
+       netdev@vger.kernel.org, lvs-devel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/netfilter/ipvs/ip_vs_ftp.c: Remove use of NIPQUAD
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4B9E5E43.9060206@trash.net>
+References: <1268094699.1617.5.camel@Joe-Laptop.home>
+	<4B9E5E43.9060206@trash.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Patrick McHardy <kaber@trash.net>
+Date: Mon, 15 Mar 2010 17:20:19 +0100
 
-On Thu, Mar 11, 2010 at 11:53:24AM +0100, Ingo Molnar wrote:
+> Joe Perches wrote:
+>> NIPQUAD has very few uses left.
+>> 
+>> Remove this use and make the code have the identical form of the only
+>> other use of "%u,%u,%u,%u,%u,%u" in net/ipv4/netfilter/nf_nat_ftp.c
 > 
-> * Florian Fainelli <florian@openwrt.org> wrote:
-> 
-> > This file is going to be replaced with a cleaner version with the adding of 
-> > a MFD driver for the southbridge.
-> > 
-> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
-> 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
-Thanks.
+> Are we trying to remove NIPQUAD?
 
+Yes.
 
-> Feel free to carry it in the driver tree that ends up picking up the other 
-> patches. (the MTD tree?)
-The MFD tree, yes.
-Florian, I'll review those patches later this week, thanks.
-
-Cheers,
-Samuel.
-
-
-> Thanks,
-> 
-> 	Ingo
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
