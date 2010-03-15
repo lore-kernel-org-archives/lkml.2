@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936983Ab0COW1l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:27:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51463 "EHLO smtps.tip.net.au"
+	id S936772Ab0COWbf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:31:35 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:47405 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936949Ab0COW1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:27:39 -0400
-Date: Tue, 16 Mar 2010 09:27:34 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Morris <jmorris@namei.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: linux-next: build warning after merge of the security-testing
- tree
-Message-Id: <20100316092734.7bf780d2.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.LRH.2.00.1003160850080.13724@tundra.namei.org>
-References: <20100310153116.291d4e6f.sfr@canb.auug.org.au>
-	<alpine.LRH.2.00.1003160850080.13724@tundra.namei.org>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+	id S932149Ab0COWbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 18:31:33 -0400
+Subject: Re: [PATCH] vfs: pass struct file to do_truncate on O_TRUNC opens
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
+References: <1268689152-19168-1-git-send-email-jlayton@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Mar 2010 18:31:28 -0400
+Message-ID: <1268692288.3040.2.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB"
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 4 msgs/h 1 sum rcpts/h 8 sum msgs/h 2 total rcpts 2556 max rcpts/h 27 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: A7BF944B1BACFC0D24B1813D62043909F79A7D93
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 245 max/h 7 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2010-03-15 at 17:39 -0400, Jeff Layton wrote: 
+> When a file is opened with O_TRUNC, the truncate processing is handled
+> by handle_truncate(). This function however doesn't receive any info
+> about the newly instantiated filp, and therefore can't pass that info
+> along so that the setattr can use it.
+> 
+> This makes NFSv4 misbehave. The client does an open and gets a valid
+> stateid, and then doesn't use that stateid on the subsequent truncate.
+> It uses the zero-stateid instead. Most servers ignore this fact and
+> just do the truncate anyway, but some don't like it (notably, RHEL4).
+> 
+> It seems more correct that since we have a fully instantiated file at
+> the time that handle_truncate is called, that we pass that along so
+> that the truncate operation can properly use it.
 
-Hi James,
+At least in the O_CREAT|O_TRUNC case, we really should modify
+nfs4_opendata_alloc() to set the attrs.ia_size to zero, so that the
+server does an atomic open(O_CREAT|O_TRUNC) for us (see the DESCRIPTION
+paragraph in RFC3530 section 14.2.16). There shouldn't be any need for
+an extra truncate RPC call.
 
-On Tue, 16 Mar 2010 08:50:32 +1100 (EST) James Morris <jmorris@namei.org> w=
-rote:
->
-> Thanks, fix applied per below.
->=20
-> commit 310de047eef6685274045db1e6b39c9f313df428
-> Author: James Morris <jmorris@namei.org>
-> Date:   Tue Mar 16 08:47:36 2010 +1100
->=20
->     selinux: fix warning in genheaders
+Plain open(O_TRUNC) probably does need something along the lines of what
+you propose, however.
 
-Thanks.
+Cheers
+  Trond 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuetFYACgkQjjKRsyhoI8yNpgCfZLg5vgAoIN5UH0jX8Ue9ChVb
-G9MAoKsxK0QBXtJFb461mgwYtQh0YbAv
-=IGQm
------END PGP SIGNATURE-----
-
---Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB--
