@@ -1,64 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965388Ab0COQUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:20:42 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:39049 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965346Ab0COQUg (ORCPT
+	id S965393Ab0COQXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:23:33 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:62601 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965361Ab0COQXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:20:36 -0400
+	Mon, 15 Mar 2010 12:23:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MD8ayYraTRZUc5l/Vvlzq/Xvl/RiEWTfOFvf+3U3Wq+x7pH7ShE2vmr7U4186N5WGb
-         7IzTMa50klxzbnFaSic8tSGq7ZIJTroakjwrXpkZvS1g6J5/wxqnJLX0gHDY+Kz9GFLJ
-         oSQM6S69Dzvg0uMEBJ/hT4wJCHtXJBhNR067k=
-Subject: Re: Seeing TCP socket options (nodelay, cork, etc) in Linux procfs
- or elsewhere?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "MacCana, Mike" <mike.maccana@credit-suisse.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <5608FA8A997F1A46B7E985494F8478DD07930AF1@ELON17P32003A.csfb.cs-group.com>
-References: <5608FA8A997F1A46B7E985494F8478DD07930AF1@ELON17P32003A.csfb.cs-group.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Mar 2010 17:20:31 +0100
-Message-ID: <1268670031.3154.35.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:openpgp:content-type
+         :content-transfer-encoding;
+        b=wOpjIyT9NO073TS+psogyILgW1XcMpFpvVPvlg5Z0xBUxG7ZElt/jdAbZgPNdlJqxs
+         9h05CXpQvHxTM9hwO7Nbhw6usu+6TRHQIqSE0+CM3gSWKBZjc5N3pVJrMUjM3xyf7nLf
+         nmKXmtQ/cZdGi4y1yF69WnRethIcZna4SDOAw=
+Message-ID: <4B9E5EFF.1080308@gmail.com>
+Date: Mon, 15 Mar 2010 18:23:27 +0200
+From: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: fix callgraphs of 32-bit processes on 64-bit kernels.
+References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
+In-Reply-To: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=5379965D
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 15 mars 2010 à 15:49 +0000, MacCana, Mike a écrit :
-> Hi kernel folks,
->  
-> I was wondering if there was a standard location to see TCP socket
-> options (eg, nodelay, cork, etc), perhaps via procfs or some other
-> means? I'd like to check whether arbitrary apps (for which I don't have
-> code) are using particular TCP options. 
->  
-> Wandering round /proc/net hasn't turned up anything yet, and after a
-> quick:
-> socket.setsockopt(0, 1, 1)
-> to enable NODELAY I can't see any obvious difference in procfs or
-> netstat output (where other Unixes seem to put this info). hat's the
-> best way to see TCP options on sockets created by others' code?
+On 03/15/2010 05:34 PM, Török Edwin wrote:
+> Hi,
 > 
+> Callgraph profiling 32-bit apps on a 64-bit kernel doesn't work.
+> The reason is that perf_callchain_user tries to read a stackframe with 64-bit
+> pointers, which is wrong for a 32-bit process.
+> 
+> This patch fixes that, and I am almost able to get nice callgraph profiles
+> from 32-bit apps now! (except for some problems with perf itself when tracing
+> kernel modules, see [1])
+> 
+> Page-faults can be traced nicely (sid-ia32 is a 32-bit chroot):
+> 
+> $ sudo perf record -e page-faults -f -g /home/edwin/sid-ia32/usr/bin/glxgears
+> $ sudo perf report
+> ...
+>     45.33%  libc-2.10.2.so                   [.] __GI_memcpy
+>             |
+>             --- __GI_memcpy
+>                 _mesa_BufferDataARB
+>                 _mesa_meta_Clear
+>                 radeonUserClear
+>                 r700Clear
+>                 _mesa_Clear
+>                 0x8049367
+>                 0x804a6ba
+>                 __libc_start_main
+>                 0x8049111
+> 
+>     16.96%  libc-2.10.2.so                   [.] __GI_memset
+>             |
+>             --- __GI_memset
+>                 _tnl_init_vertices
+>                 _swsetup_CreateContext
+>                 r600CreateContext
+>                 driCreateNewContext
+>                 dri2CreateNewContext
+>                 0xf77ab7dd
+>                 0xf7783c67
+>                 0xf778514c
+>                 0x804974f
+>                 0x804a33d
+>                 __libc_start_main
+>                 0x8049111
+> 
+> And CPU cycles can be traced too in userspace:
+> $ sudo perf record -f -g /home/edwin/sid-ia32/usr/bin/glxgears
+> $ sudo perf report --sort comm,dso
+>     [...]
+>     44.97%  glxgears  r600_dri.so
+>             |
+>             |--5.85%-- r700SendSPIState
+>             |          radeonEmitState
+>             |          r700DrawPrims
+>             |          |
+>             |          |--95.45%-- vbo_save_playback_vertex_list
+>             |          |          execute_list
+>             |          |          _mesa_CallList
+>             |          |          neutral_CallList
+>             |          |          |
+>             |          |          |--38.10%-- 0x80494a8
+>             |          |          |          0x804a6ba
+>             |          |          |          __libc_start_main
+>             |          |          |          0x8049111
+>     [....]
+>     40.00%  glxgears  [kernel]
+>             |
+>             |--3.14%-- copy_user_generic_string
+>             |          |
+>             |          |--71.70%-- 0xffffffffa01b4493
+>             |          |          0xffffffffa01b7c0b
+>             |          |          0xffffffffa018b45b
+>             |          |          0xffffffffa00ca927
+>             |          |          0xffffffffa01c524e
+>             |          |          compat_sys_ioctl
+>             |          |          sysenter_dispatch
+>             |          |          0xf77ca430
+>             |          |          drmCommandWriteRead
+>             |          |          0xf74d7ab5
+>             |          |          0xf74d89a4
+>             |          |          rcommonFlushCmdBufLocked
+>             |          |          rcommonFlushCmdBuf
+>             |          |          radeonFlush
+>             |          |          _mesa_flush
+>             |          |          _mesa_Flush
+>             |          |          0xf775f270
+>             |          |          0x804a6d5
+>             |          |          __libc_start_main
+>             |          |          0x8049111
+>             |          |
+>             |          |--15.09%-- 0xffffffffa01c524e
+>             |          |          compat_sys_ioctl
+>             |          |          sysenter_dispatch
+>             |          |          0xf77ca430
+>             |          |          drmCommandWriteRead
+> 
+> [1] But there is a problem with the perf tool: it can't trace addresses in
+> kernel modules. This is a problem regardless if the traced app is 32-bit or
+> 64-bit; and regardless if I do callgraph profiling or not.
+> See the above trace, where the kernel addresses have all ffffffffa0* without a
+> symbol name.
+> 
+> If I look at /proc/kallsyms I can guess the symbols, for example
+> 0xffffffffa01b4493 is probably this one:
+>   ffffffffa01b4411 t r600_cs_packet_parse	[radeon]
+> 
+> If I record/report without callgraph its the same problem:
+> [...]
+>     24.01%  glxgears  [kernel]                           [k] 0xffffffffa01b4ee9
+>      3.96%  glxgears  libdrm_radeon.so.1.0.0             [.] cs_gem_write_reloc
+>      3.53%  glxgears  r600_dri.so                        [.] r700SendSPIState
+>      2.77%  glxgears  r600_dri.so                        [.] r700DrawPrims
+>      1.99%  glxgears  r600_dri.so                        [.] r700SendVSConsts
+> 
+> Kernel symbol for 0xffffffffa01b4ee9 is not shown, I can guess it is this one
+> (hey it was an exact match!):
+>   ffffffffa01b4ee9 t r600_packet3_check	[radeon]
+> 
+> It would be good if perf knew how to lookup symbols in kernel modules!
 
-There is limited support given by ss command (part of iproute2) :
+BTW perf report -m -k /home/edwin/builds/linux-2.6/vmlinux doesn't show
+the symbols either.
 
-ss -emoi
-
-ESTAB       0      0                                55.225.18.5:4900
-55.225.18.5:50000    uid:501 ino:135421 sk:c3b405c0
-	 mem:(r0,w0,f4096,t0) ts bic wscale:6,6 rto:201 rtt:1/0.5 ato:40 cwnd:3
-send 393.2Mbps rcv_space:32768
-
-
-But CORK flag is not exported yet (its usually a volatile flag, at least
-with Apache server)
-
-
+> 
+> Best regards,
+> --Edwin
 
