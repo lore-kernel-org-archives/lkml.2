@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936886Ab0COVmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:42:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38817 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab0COVmu (ORCPT
+	id S936910Ab0COVu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:50:29 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35981 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932222Ab0COVuZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:42:50 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4B9EA9D7.9050009@s5r6.in-berlin.de>
-Date: Mon, 15 Mar 2010 22:42:47 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
+	Mon, 15 Mar 2010 17:50:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BLNyjsUG9RwDtYl0h4uMCp9S06SRvZTcgK2ADwG7JDIi/irQI2a+c+8iWxPigpvR+U
+         IEFj+qfcK11QQZC3NmUoQ6+LlN0Zkt/46/z5w9a17M6nEO/O0POzAmt7bH+/6CSYhKuR
+         ZeTCXMeQlY4Q0o6Aklu0AS11LvlxJKOKN+fA0=
 MIME-Version: 1.0
-To: Thomas Weber <swirl@gmx.li>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] Fix typo: paramters => parameters
-References: <1268686738-28293-1-git-send-email-swirl@gmx.li> <1268686738-28293-4-git-send-email-swirl@gmx.li>
-In-Reply-To: <1268686738-28293-4-git-send-email-swirl@gmx.li>
-X-Enigmail-Version: 0.96.0
+In-Reply-To: <20100315192321I.fujita.tomonori@lab.ntt.co.jp>
+References: <4B9DDCD8.4070902@orcon.net.nz>
+	 <20100315192321I.fujita.tomonori@lab.ntt.co.jp>
+Date: Mon, 15 Mar 2010 17:50:24 -0400
+Message-ID: <b4198de61003151450q67a24686pcc335b2e62923794@mail.gmail.com>
+Subject: Re: Alpha: Compilation error 2.6.34-rc1 git a3d3203e4b
+From: Matt Turner <mattst88@gmail.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: mcree@orcon.net.nz, linux-kernel@vger.kernel.org,
+       linux-alpha@vger.kernel.org, akpm@linux-foundation.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Weber wrote:
-> --- a/drivers/staging/rtl8187se/r8180_core.c
-> +++ b/drivers/staging/rtl8187se/r8180_core.c
-> @@ -2364,7 +2364,7 @@ void rtl8180_wmm_param_update(struct work_struct * work)
->  				u8		u1bAIFS;
->  				u32		u4bAcParam;
->  				pAcParam = (PAC_PARAM)(&AcParam);
-> -				// Retrive paramters to update.
-> +				// Retrive parameters to update.
->  				u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN *(((mode&IEEE_G) == IEEE_G)?9:20) + aSifsTime;
->  				u4bAcParam = ((((u32)(pAcParam->f.TXOPLimit))<<AC_PARAM_TXOP_LIMIT_OFFSET)|
->  					      (((u32)(pAcParam->f.Ecw.f.ECWmax))<<AC_PARAM_ECW_MAX_OFFSET)|
-> @@ -2400,7 +2400,7 @@ void rtl8180_wmm_param_update(struct work_struct * work)
->  			u8		u1bAIFS;
->  			u32		u4bAcParam;
->  
-> -			// Retrive paramters to update.
-> +			// Retrive parameters to update.
->  			eACI = pAcParam->f.AciAifsn.f.ACI;
->  			//Mode G/A: slotTimeTimer = 9; Mode B: 20
->  			u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN * (((mode&IEEE_G) == IEEE_G)?9:20) + aSifsTime;
-> diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
-> index 519383e..f22275e 100644
-> --- a/drivers/staging/rtl8187se/r8185b_init.c
-> +++ b/drivers/staging/rtl8187se/r8185b_init.c
-> @@ -1128,7 +1128,7 @@ ActUpdateChannelAccessSetting(
->  				u8		u1bAIFS;
->  				u32		u4bAcParam;
->  
-> -				// Retrive paramters to update.
-> +				// Retrive parameters to update.
+On Mon, Mar 15, 2010 at 6:23 AM, FUJITA Tomonori
+<fujita.tomonori@lab.ntt.co.jp> wrote:
+> On Mon, 15 Mar 2010 20:08:08 +1300
+> Michael Cree <mcree@orcon.net.nz> wrote:
+>
+>> I note that for_each_sg is defined in include/linux/scatterlist.h, which
+>> arch/alpha/include/asm/dma-mapping.h attempts to load, however
+>> include/linux/scatterlist.h was the one that included (indirectly)
+>> arch/alpha/include/asm/dma-mapping.h.  There is therefore a complete
+>> loop of includes from include/linux/scatterlist.h back to itself.
+>
+> Very sorry about that. Seems that I broke CONFIG_ALPHA_{TSUNAMI,
+> TITAN, RAWHIDE, MARVEL}.
+>
+> =
+> From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Subject: [PATCH] alpha: fix compile errors in dma-mapping-common.h
+>
+> The commit c186caca3dbe7f44da624cb4f9d78e1b1dfb13b8 leads to the
+> following errors with CONFIG_ALPHA_{TSUNAMI, TITAN, RAWHIDE, MARVEL}:
+>
+> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h: In function `dma_map_sg_attrs':
+> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h:49: error: implicit declaration of function `for_each_sg'
+> /home/fujita/git/linux-2.6/include/asm-generic/dma-mapping-common.h:50: error: syntax error before "kmemcheck_mark_initialized"
+>
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Reported-by: Michael Cree <mcree@orcon.net.nz>
+> ---
+>  arch/alpha/include/asm/core_marvel.h  |    1 -
+>  arch/alpha/include/asm/core_mcpcia.h  |    1 -
+>  arch/alpha/include/asm/core_titan.h   |    1 -
+>  arch/alpha/include/asm/core_tsunami.h |    1 -
+>  4 files changed, 0 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/alpha/include/asm/core_marvel.h b/arch/alpha/include/asm/core_marvel.h
+> index 30d55fe..dad300f 100644
+> --- a/arch/alpha/include/asm/core_marvel.h
+> +++ b/arch/alpha/include/asm/core_marvel.h
+> @@ -12,7 +12,6 @@
+>  #define __ALPHA_MARVEL__H__
+>
+>  #include <linux/types.h>
+> -#include <linux/pci.h>
+>  #include <linux/spinlock.h>
+>
+>  #include <asm/compiler.h>
+> diff --git a/arch/alpha/include/asm/core_mcpcia.h b/arch/alpha/include/asm/core_mcpcia.h
+> index acf55b4..21ac533 100644
+> --- a/arch/alpha/include/asm/core_mcpcia.h
+> +++ b/arch/alpha/include/asm/core_mcpcia.h
+> @@ -6,7 +6,6 @@
+>  #define MCPCIA_ONE_HAE_WINDOW 1
+>
+>  #include <linux/types.h>
+> -#include <linux/pci.h>
+>  #include <asm/compiler.h>
+>
+>  /*
+> diff --git a/arch/alpha/include/asm/core_titan.h b/arch/alpha/include/asm/core_titan.h
+> index a17f6f3..8cf79d1 100644
+> --- a/arch/alpha/include/asm/core_titan.h
+> +++ b/arch/alpha/include/asm/core_titan.h
+> @@ -2,7 +2,6 @@
+>  #define __ALPHA_TITAN__H__
+>
+>  #include <linux/types.h>
+> -#include <linux/pci.h>
+>  #include <asm/compiler.h>
+>
+>  /*
+> diff --git a/arch/alpha/include/asm/core_tsunami.h b/arch/alpha/include/asm/core_tsunami.h
+> index 58d4fe4..8e39ecf 100644
+> --- a/arch/alpha/include/asm/core_tsunami.h
+> +++ b/arch/alpha/include/asm/core_tsunami.h
+> @@ -2,7 +2,6 @@
+>  #define __ALPHA_TSUNAMI__H__
+>
+>  #include <linux/types.h>
+> -#include <linux/pci.h>
+>  #include <asm/compiler.h>
+>
+>  /*
+> --
+> 1.7.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-alpha" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-See my comment on [PATCH 2/4] Fix typo: udpate => update.
-  - "Retrieve"
-  - potential conflicts /if/ cleanups are underway in this staging code
--- 
-Stefan Richter
--=====-==-=- --== -====
-http://arcgraph.de/sr/
+Thanks for the fix. Will get this into my tree and to Linus ASAP.
+
+Matt
