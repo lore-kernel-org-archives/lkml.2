@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936817Ab0COVJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:09:31 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52043
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936744Ab0COVJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:09:29 -0400
-Date: Mon, 15 Mar 2010 14:09:51 -0700 (PDT)
-Message-Id: <20100315.140951.149828242.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: oleg@redhat.com, mingo@elte.hu, sergey.senozhatsky@gmail.com,
-       romieu@fr.zoreil.com, a.p.zijlstra@chello.nl, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: inconsistent lock state
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1268686865.2824.4.camel@edumazet-laptop>
-References: <20100307192305.GA598@elte.hu>
-	<20100308125122.GA11242@redhat.com>
-	<1268686865.2824.4.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S936828Ab0COVLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:11:40 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:38905 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932738Ab0COVLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 17:11:38 -0400
+Date: Mon, 15 Mar 2010 16:11:36 -0500
+From: Robin Holt <holt@sgi.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "Pallipadi, Venkatesh" <venkatesh.pallipadi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [Patch] x86,pat Update the page flags for memtype atomically
+ instead of using memtype_lock.
+Message-ID: <20100315211136.GD4920@sgi.com>
+References: <20100311161700.GC5685@sgi.com>
+ <1268439313.2793.148.camel@sbs-t61.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268439313.2793.148.camel@sbs-t61.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 15 Mar 2010 22:01:05 +0100
-
-> Also, this driver schedules a reset in case a fifo error is reported in
-> rtl8169_rx_interrupt()
+> >  static inline void set_page_memtype(struct page *pg, unsigned long memtype)
+> >  {
+> > +	unsigned long memtype_flags = _PGMT_DEFAULT;
+> > +	unsigned long old_flags;
+> > +	unsigned long new_flags;
+> > +
+> >  	switch (memtype) {
+> >  	case _PAGE_CACHE_WC:
+> > -		ClearPageUncached(pg);
+> > -		SetPageWC(pg);
+> > +		memtype_flags = _PGMT_WC;
+> >  		break;
+> >  	case _PAGE_CACHE_UC_MINUS:
+> > -		SetPageUncached(pg);
+> > -		ClearPageWC(pg);
+> > +		memtype_flags = _PGMT_UC_MINUS;
+> >  		break;
+> >  	case _PAGE_CACHE_WB:
+> > -		SetPageUncached(pg);
+> > -		SetPageWC(pg);
+> > -		break;
+> > -	default:
+> > -	case -1:
+> > -		ClearPageUncached(pg);
+> > -		ClearPageWC(pg);
+> > +		memtype_flags = _PGMT_WB;
 > 
->                 if (status & RxFOVF) {
->                         rtl8169_schedule_work(dev, rtl8169_reset_task);
->                         dev->stats.rx_fifo_errors++;
->                 }
+> For WB case it should be _PGMT_WB and for the case of "-1" this should
+> be _PGMT_DEFAULT, as in the case of free page we mark it _PGMT_DEFAULT
+> and when there is an explicit request to mark it WB, then we mark it
+> _PGMT_WB
 > 
-> 
-> This seems very strange too : In case of a RX spike, we reset card ?
+> Other than that it looks good to me.
 
-It's possible that this has been found to hang the card.
+This is easier to look at if you ignore the diff and just look at the
+fixed up code:
 
-If so, it should be documented because otherwise yes we
-should not be doing this.
+static inline void set_page_memtype(struct page *pg, unsigned long memtype)
+{
+	unsigned long memtype_flags = _PGMT_DEFAULT;
+	unsigned long old_flags;
+	unsigned long new_flags;
+
+	switch (memtype) {
+	case _PAGE_CACHE_WC:
+		memtype_flags = _PGMT_WC;
+		break;
+	case _PAGE_CACHE_UC_MINUS:
+		memtype_flags = _PGMT_UC_MINUS;
+		break;
+	case _PAGE_CACHE_WB:
+		memtype_flags = _PGMT_WB;
+		break;
+	}
+
+	do {
+		old_flags = pg->flags;
+		new_flags = (old_flags & _PGMT_CLEAR_MASK) | memtype_flags;
+	} while (cmpxchg(&pg->flags, old_flags, new_flags) != old_flags);
+}
+
+
+The memtype_flags start out cleared and only deviate when _WC, _UC_MINUS,
+or _WB is specified.
+
+Did I miss anything there?
+
+Thanks,
+Robin
