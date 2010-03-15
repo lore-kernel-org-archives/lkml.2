@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965590Ab0COSFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:05:54 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:36072 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965385Ab0COSFx (ORCPT
+	id S965594Ab0COSGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 14:06:36 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:45648 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965385Ab0COSGe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:05:53 -0400
-Date: Mon, 15 Mar 2010 20:06:15 +0200
-From: Felipe Balbi <me@felipebalbi.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
-       linux-kernel@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCHv2] USB: composite: allow optional removal of __init and
- __exit tags
-Message-ID: <20100315180615.GC3857@gandalf>
-Reply-To: me@felipebalbi.com
-References: <94ae17705a23aec612042afcc34c44f993088eca.1268307147.git.mina86@mina86.com>
- <1865d3ee9a5ca4e41844577fff9e01e63427ed71.1268656947.git.mina86@mina86.com>
+	Mon, 15 Mar 2010 14:06:34 -0400
+X-Greylist: delayed 807 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 14:06:33 EDT
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=CpvhwRDXMAX/nGl4O5wOYuK1fMVAij9Jb/6apWhh4Z61IGdbvh8m/9VnBhb6i5jba
+	v11YvlSlS2Pr02GGB5+YA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1865d3ee9a5ca4e41844577fff9e01e63427ed71.1268656947.git.mina86@mina86.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+In-Reply-To: <4B9DA778.7080305@cn.fujitsu.com>
+References: <4B9DA6E4.4020501@cn.fujitsu.com> <4B9DA778.7080305@cn.fujitsu.com>
+Date: Mon, 15 Mar 2010 10:53:01 -0700
+Message-ID: <6599ad831003151053jd4c267ck1500725f228a3230@mail.gmail.com>
+Subject: Re: [PATCH] cgroups: remove duplicate include
+From: Paul Menage <menage@google.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "containers@lists.osdl.org" <containers@lists.osdl.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 01:48:18PM +0100, Michal Nazarewicz wrote:
-> The composite framework has been written using __init and __exit tags
-> to mark init and exit functions as such.  This works with most of the
-> composite gadgets however some may need to call init/exit functions
-> during normal operations.  One example is mass storage gadget which
-> needs to call exit functions.
-> 
-> This patch allows gadgets to define USB_NO_INIT_SEGMENT or
-> USB_NO_EXIT_SEGMENT to remove the __init and __exit declarations
-> from composite framework.
+On Sun, Mar 14, 2010 at 8:20 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> commit e6a1105b ("cgroups: subsystem module loading interface")
+> and commit c50cc752 ("sched, cgroups: Fix module export")
+> result in duplicate including of module.h
+>
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-wouldn't it be the same as changing from __init to __devinit and __exit
-to __devexit ??
+Acked-by: Paul Menage <menage@google.com>
 
--- 
-balbi
+> ---
+>
+> Fix changelog...
+>
+> ---
+>  kernel/cgroup.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index ef909a3..e2769e1 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -27,7 +27,6 @@
+>  */
+>
+>  #include <linux/cgroup.h>
+> -#include <linux/module.h>
+>  #include <linux/ctype.h>
+>  #include <linux/errno.h>
+>  #include <linux/fs.h>
+> --
+> 1.6.3
+>
