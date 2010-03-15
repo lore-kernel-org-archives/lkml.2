@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965599Ab0COSHu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:07:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56574 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934859Ab0COSHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:07:49 -0400
-Date: Mon, 15 Mar 2010 19:08:00 +0100
-From: Jan Kara <jack@suse.cz>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [rfc][patch] mm: lockdep page lock
-Message-ID: <20100315180759.GA7744@quack.suse.cz>
-References: <20100315155859.GE2869@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315155859.GE2869@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965608Ab0COSIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 14:08:12 -0400
+Received: from mga05.intel.com ([192.55.52.89]:39172 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933721Ab0COSIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 14:08:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,644,1262592000"; 
+   d="scan'208";a="780967125"
+Date: Mon, 15 Mar 2010 17:43:59 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Jan Beulich <JBeulich@novell.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: pcmcia's use of IRQ_NOAUTOEN
+Message-ID: <20100315174359.7fa53d4b@linux.intel.com>
+In-Reply-To: <20100308194757.GB17628@isilmar.linta.de>
+References: <4B94DCB7020000780003337B@vpn.id2.novell.com>
+	<20100308194757.GB17628@isilmar.linta.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On Mon, 8 Mar 2010 20:47:57 +0100
+Dominik Brodowski <linux@dominikbrodowski.net> wrote:
 
-On Tue 16-03-10 02:58:59, Nick Piggin wrote:
-> This patch isn't totally complete. Needs some nesting annotations for
-> filesystems like ntfs, and some async lock release annotations for other
-> end-io handlers, also page migration code needs to set the page lock
-> class. But the core of it is working nicely and is a pretty small patch.
+> Hey,
 > 
-> It is a bit different to one Peter posted a while back, with differences.
-> I don't care so much about bloating struct page with a few more bytes.
-> lockdep can't run on a production kernel so I think it's preferable to be
-> catching more complex errors than avoiding overhead. I also set the page
-> lock class at the time it is added to pagecache when we have the mapping
-> pinned to the page.
+> On Mon, Mar 08, 2010 at 10:17:11AM +0000, Jan Beulich wrote:
+> > (re-sending to correct Alan's email address)
+> > 
+> > Commit 635416ef393e8cec5a89fc6c1de710ee9596a51e introduced
+> > this, but I can't see how it can take effect - the argument passed
+> > to request_irq() only affects action->flags (IRQF_*), whereas the
+> > flag in question is a desc->status one (IRQ_*). Am I overlooking
+> > something? If not, while currently this just should not work as
+> > expected, it's latently more significant (as soon as the IRQF_*
+> > definitions make use of the bit used by IRQ_NOAUTOEN).
 > 
-> One issue I wonder about is if the lock class is changed while some other
-> page locker is waiting to get the lock but has already called
-> lock_acquire for the old class. Possibly it could be solved if lockdep
-> has different primitives to say the caller is contending for a lock
-> versus if it has been granted the lock?
+> You're right, it seems to make no sense. Or less than that.
 > 
-> Do you think it would be useful?  --
-> 
-> Page lock has very complex dependencies, so it would be really nice to
-> add lockdep support for it.
-> 
-> For example: add_to_page_cache_locked(GFP_KERNEL) (called with page
-> locked) -> page reclaim performs a trylock_page -> page reclaim performs
-> a writepage -> writepage performs a get_block -> get_block reads
-> buffercache -> buffercache read requires grow_dev_page -> grow_dev_page
-> locks buffercache page -> if writepage fails, page reclaim calls
-> handle_write_error -> handle_write_error performs a lock_page
-> 
-> So before even considering any other locks or more complex nested
-> filesystems, we can hold at least 3 different page locks at once. Should
-> be safe because we have an fs->bdev page lock ordering, and because
-> add_to_page_cache* tend to be called on new (non-LRU) pages that can't be
-> locked elsewhere, however a notable exception is tmpfs which moves live
-> pages in and out of pagecache.
-> 
-> So lockdepify the page lock. Each filesystem type gets a unique key, to
-> handle inter-filesystem nesting (like regular filesystem -> buffercache,
-> or ecryptfs -> lower). Newly allocated pages get a default lock class,
-> and it is reassigned to their filesystem type when being added to page
-> cache.
-  You'll probably soon notice that quite some filesystems (ext4, xfs,
-ocfs2, ...) lock several pages at once in their writepages function. The
-locking rule here is that we always lock pages in index increasing order. I
-don't think lockdep will be able to handle something like that. Probably we
-can just avoid lockdep checking in these functions (or just acquire the
-page lock class for the first page) but definitely there will be some
-filesystem work needed. So it would be useful to allow filesystems to
-opt-out from page lock checking (until fs maintainers are able to audit
-their page locking) so that people can still use lockdep to verify other
-things (when lockdep detects some issue, it turns itself off so if people
-would hit pagelock problems with their fs, they'd be basically unable to
-use lockdep for anything).
+> Alan, what do you think?
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+It should be setting the correct NOAUTOEN bits so that the IRQ isn't
+randomly enabled as some hardware then crashes. How it ended up wrong
+upstream I don't know as it was tested and fixed the bug, so presumably
+the right version got tested or it happened to work back on the old irq
+code by luck.
+
+I don't think you are overlooking anything - there is no deep magic
+involved.
+
+Alan
