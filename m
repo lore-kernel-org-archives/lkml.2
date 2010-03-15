@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936945Ab0COWAb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:00:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52711 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936892Ab0COWA3 (ORCPT
+	id S936941Ab0COWKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:10:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34116 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936810Ab0COWKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:00:29 -0400
-Date: Mon, 15 Mar 2010 15:00:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "kirill@shutemov.name" <kirill@shutemov.name>
-Subject: Re: [PATCH 3/3] memcg: oom kill disable and oom status
-Message-Id: <20100315150020.0cc28341.akpm@linux-foundation.org>
-In-Reply-To: <20100312143753.420e7ae7.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100312143137.f4cf0a04.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100312143435.e648e361.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100312143753.420e7ae7.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 15 Mar 2010 18:10:09 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5921"; a="36356728"
+Subject: Re: [PATCH] Staging: dream:  generic_gpio: Use linux instead of
+ asm uaccess.h
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Chihau Chau <chihau@gmail.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100315053352.GC11552@elf.ucw.cz>
+References: <1268622355-9966-1-git-send-email-chihau@gmail.com>
+	 <20100315053352.GC11552@elf.ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Mar 2010 15:09:51 -0700
+Message-ID: <1268690991.10000.24.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Mar 2010 14:37:53 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Mon, 2010-03-15 at 06:33 +0100, Pavel Machek wrote:
+> On Mon 2010-03-15 00:05:55, Chihau Chau wrote:
+> > From: Chihau Chau <chihau@gmail.com>
+> > 
+> > This is moving toward using <linux/uaccess.h> instead of the old
+> > <asm/uaccess.h> file.
+> 
+> Changelog does not match the patch.
+> 
+> ...plus, was the patch actually tested?
+>                                                                         Pavel
+> 
+> > --- a/drivers/staging/dream/generic_gpio.c
+> > +++ b/drivers/staging/dream/generic_gpio.c 
 
-> 
-> I haven't get enough comment to this patch itself. But works well.
-> Feel free to request me if you want me to change some details.
-> 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> This adds a feature to disable oom-killer for memcg, if disabled,
-> of course, tasks under memcg will stop.
-> 
-> But now, we have oom-notifier for memcg. And the world around
-> memcg is not under out-of-memory. memcg's out-of-memory just
-> shows memcg hits limit. Then, administrator or
-> management daemon can recover the situation by
-> 	- kill some process
-> 	- enlarge limit, add more swap.
-> 	- migrate some tasks
-> 	- remove file cache on tmps (difficult ?)
-> 
-> Unlike OOM-Kill by the kernel, the users can take snapshot or coredump
-> of guilty process, cgroups.
-> 
+We need to do some sort of staging re-sync .. This file for instance
+doesn't exist in the Google's tree any longer .. They moved to gpiolib,
+although they still need cleanups on top of that.
 
-Looks complicated.
+Daniel
 
-> --- mmotm-2.6.34-Mar9.orig/mm/memcontrol.c
-> +++ mmotm-2.6.34-Mar9/mm/memcontrol.c
-> @@ -235,7 +235,8 @@ struct mem_cgroup {
->  	 * mem_cgroup ? And what type of charges should we move ?
->  	 */
->  	unsigned long 	move_charge_at_immigrate;
-> -
-> +	/* Disable OOM killer */
-> +	unsigned long	oom_kill_disable;
->  	/*
->  	 * percpu counter.
->  	 */
 
-Would have been better to make this `int' or `bool', and put it next to
-some other 32-bit value in this struct.
 
