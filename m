@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937205Ab0COXnN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:43:13 -0400
-Received: from mail-yw0-f176.google.com ([209.85.211.176]:65332 "EHLO
-	mail-yw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932779Ab0COXnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:43:10 -0400
-Message-ID: <4B9EC60A.2070101@codemonkey.ws>
-Date: Mon, 15 Mar 2010 18:43:06 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
+	id S937213Ab0COXpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:45:31 -0400
+Received: from kroah.org ([198.145.64.141]:45237 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932779Ab0COXp3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 19:45:29 -0400
+Date: Mon, 15 Mar 2010 16:20:05 -0700
+From: Greg KH <greg@kroah.com>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Peter Feuerer <peter@piie.net>,
+       Oliver Neukum <oliver@neukum.org>
+Subject: Re: [PATCH v2] USB: pl2303: switch to generic write implementation
+Message-ID: <20100315232004.GB21339@kroah.com>
+References: <201003031608.20277.oliver@neukum.org>
+ <1267701172-9549-1-git-send-email-jhovold@gmail.com>
 MIME-Version: 1.0
-To: Chris Webb <chris@arachsys.com>
-CC: Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com>
-In-Reply-To: <20100315202353.GJ3840@arachsys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1267701172-9549-1-git-send-email-jhovold@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 03:23 PM, Chris Webb wrote:
-> Avi Kivity<avi@redhat.com>  writes:
->
->    
->> On 03/15/2010 10:07 AM, Balbir Singh wrote:
->>
->>      
->>> Yes, it is a virtio call away, but is the cost of paying twice in
->>> terms of memory acceptable?
->>>        
->> Usually, it isn't, which is why I recommend cache=off.
->>      
-> Hi Avi. One observation about your recommendation for cache=none:
->
-> We run hosts of VMs accessing drives backed by logical volumes carved out
-> from md RAID1. Each host has 32GB RAM and eight cores, divided between (say)
-> twenty virtual machines, which pretty much fill the available memory on the
-> host. Our qemu-kvm is new enough that IDE and SCSI drives with writeback
-> caching turned on get advertised to the guest as having a write-cache, and
-> FLUSH gets translated to fsync() by qemu. (Consequently cache=writeback
-> isn't acting as cache=neverflush like it would have done a year ago. I know
-> that comparing performance for cache=none against that unsafe behaviour
-> would be somewhat unfair!)
->    
+On Thu, Mar 04, 2010 at 12:12:52PM +0100, Johan Hovold wrote:
+> Replace custom fifo-based write implementation with the generic
+> kfifo-based one.
 
-I knew someone would do this...
+What kernel is this patch against?  For some reason it doesn't apply to
+my tree right now :(
 
-This really gets down to your definition of "safe" behaviour.  As it 
-stands, if you suffer a power outage, it may lead to guest corruption.
+Care to respin it?
 
-While we are correct in advertising a write-cache, write-caches are 
-volatile and should a drive lose power, it could lead to data 
-corruption.  Enterprise disks tend to have battery backed write caches 
-to prevent this.
+thanks,
 
-In the set up you're emulating, the host is acting as a giant write 
-cache.  Should your host fail, you can get data corruption.
-
-cache=writethrough provides a much stronger data guarantee.  Even in the 
-event of a host failure, data integrity will be preserved.
-
-Regards,
-
-Anthony Liguori
-
+greg k-h
