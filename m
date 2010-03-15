@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965668Ab0COSvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:51:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37615 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965642Ab0COSvU (ORCPT
+	id S965676Ab0COSzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 14:55:08 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57535
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965653Ab0COSzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:51:20 -0400
-Date: Mon, 15 Mar 2010 11:47:53 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Wolfram Sang <w.sang@pengutronix.de>, linux-kernel@vger.kernel.org,
-       Grant Likely <grant.likely@secretlab.ca>,
-       kernel-janitors@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Ralf Baechle <ralf@linux-mips.org>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>, linux-mips@linux-mips.org,
-       rtc-linux@googlegroups.com
-Subject: Re: [PATCH] init dynamic bin_attribute structures
-In-Reply-To: <alpine.LRH.2.00.1003151055060.26353@twin.jikos.cz>
-Message-ID: <alpine.LFD.2.00.1003151144550.18017@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003141054050.3719@i5.linux-foundation.org> <1268612981-9009-1-git-send-email-w.sang@pengutronix.de> <alpine.LRH.2.00.1003151055060.26353@twin.jikos.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 15 Mar 2010 14:55:05 -0400
+Date: Mon, 15 Mar 2010 11:55:26 -0700 (PDT)
+Message-Id: <20100315.115526.52182155.davem@davemloft.net>
+To: acme@infradead.org
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, acme@redhat.com,
+       fweisbec@gmail.com, efault@gmx.de, a.p.zijlstra@chello.nl,
+       paulus@samba.org
+Subject: Re: [PATCH 2/2] perf top: Properly notify the user that vmlinux is
+ missing
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1268664418-28328-2-git-send-email-acme@infradead.org>
+References: <1268664418-28328-1-git-send-email-acme@infradead.org>
+	<1268664418-28328-2-git-send-email-acme@infradead.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Mon, 15 Mar 2010 11:46:58 -0300
 
-
-On Mon, 15 Mar 2010, Jiri Kosina wrote:
+> [root@doppio linux-2.6-tip]# perf top -s n_tty_write > /tmp/bla
+> objdump: '[kernel.kallsyms]': No such file
 > 
-> I don't understand how cocinelle works, but the resulting patch seems to 
-> be incomplete.
+> Now this is what the user gets:
 > 
-> The fix is needed at least in firmware loader (for which Greg has already 
-> queued patch), in ACPI thermal driver [1], etc).
+> [root@doppio linux-2.6-tip]# perf top -s n_tty_write
+> Can't annotate n_tty_write: No vmlinux file was found in the path:
+> [0] vmlinux
+> [1] /boot/vmlinux
+> [2] /boot/vmlinux-2.6.33-rc5
+> [3] /lib/modules/2.6.33-rc5/build/vmlinux
+> [4] /usr/lib/debug/lib/modules/2.6.33-rc5/vmlinux
+> [root@doppio linux-2.6-tip]#
 
-The firmware loader should be done differently:
+Arnaldo, if perf top can use the kallsyms to do it's normal task, why
+can't it use that for symbol annotations too?  Isn't there enough
+information available?
 
-	http://patchwork.kernel.org/patch/84814/
-
-and I suspect that Wolfram may have skipped the thermal one as having been 
-done by another patch (that I didn't merge, due to having questions about 
-the whole issue, but that I don't have any objections to)
-
-But maybe there is also some limitation to the coccinelle rule too.
-
-		Linus
