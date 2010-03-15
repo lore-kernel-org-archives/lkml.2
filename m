@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965405Ab0COQmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:42:23 -0400
-Received: from d112a2.x-mailer.de ([212.162.53.4]:46261 "EHLO
-	d112a2.x-mailer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964965Ab0COQmW (ORCPT
+	id S965423Ab0COQnf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 12:43:35 -0400
+Received: from bob75-7-88-160-5-175.fbx.proxad.net ([88.160.5.175]:58172 "EHLO
+	cerbere.dyndns.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964965Ab0COQnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:42:22 -0400
-X-Greylist: delayed 3163 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 12:42:22 EDT
-From: Karsten Keil <keil@b1-systems.de>
-Date: Mon, 15 Mar 2010 14:18:41 +0100
-Subject: [PATCH] ISDN: Add PCI ID for HFC-2S/4S Beronet Card PCIe
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>, netdev@vger.kernel.org,
-       Andreas Eversberg <andreas@eversberg.eu>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Message-Id: <1268668176.12629@pingi>
-X-Info: valid message
-X-Info: original Date
+	Mon, 15 Mar 2010 12:43:31 -0400
+From: Samir Bellabes <sam@synack.fr>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       netfilter-devel@vger.kernel.org, hadi@cyberus.ca, kaber@trash.net,
+       zbr@ioremap.net, nhorman@tuxdriver.com, root@localdomain.pl,
+       linux-security-module@vger.kernel.org
+Subject: Re: [RFC v2 00/10] snet: Security for NETwork syscalls
+References: <1267561394-13626-1-git-send-email-sam@synack.fr>
+	<201003030156.o231udx1023055@www262.sakura.ne.jp>
+	<m2vdd9p9r7.fsf@ssh.synack.fr>
+	<201003071445.FJB39029.QLSHtOFOJFOVMF@I-love.SAKURA.ne.jp>
+Date: Mon, 15 Mar 2010 17:43:29 +0100
+In-Reply-To: <201003071445.FJB39029.QLSHtOFOJFOVMF@I-love.SAKURA.ne.jp>
+	(Tetsuo Handa's message of "Sun, 7 Mar 2010 14:45:20 +0900")
+Message-ID: <m2wrxdilhq.fsf@ssh.synack.fr>
+User-Agent: Gnus/5.110003 (No Gnus v0.3) Emacs/21.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few subdevice IDs seem to have been dropped when hfc_multi was
-included upstream, just compare the list at
-http://www.openvox.cn/viewvc/misdn/trunk/hfc_multi.c?revision=75&view=annotate#l175
-with the IDs in drivers/isdn/hardware/mISDN/hfcmulti.c
+Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> writes:
 
-Added PCIe 2 Port card and LED settings (same as PCI) /KKe
+> Hello.
+>
+> Samir Bellabes wrote:
+>> Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> writes:
+>> 
+>> > Regarding [RFC v2 09/10] snet: introduce snet_ticket
+>> > +enum snet_verdict snet_ticket_check(struct snet_info *info)
+>> > +{
+>> > +       struct snet_ticket *st = NULL;
+>> > +       unsigned int h = 0, verdict = SNET_VERDICT_NONE;
+>> > +       struct list_head *l = NULL;
+>> > +       struct snet_task_security *tsec = NULL;
+>> > +
+>> > +       if (snet_ticket_mode == SNET_TICKET_OFF)
+>> > +               goto out;
+>> > +
+>> > +       tsec = (struct snet_task_security*) current_security();
+>> > +
+>> > +       h = jhash_2words(info->syscall, info->protocol, 0) % HSIZE;
+>> > +       l = &tsec->hash[h];
+>> > +
+>> > +       read_lock_bh(&tsec->lock);
+>> >
+>> > Credentials are allocated for copy-on-write basis.
+>> > Sharing "tsec" among multiple "struct task_struct" is what you intended?
+>> 
+>> No, there is no shared "tsec".
+>> snet_ticket_check() is called from the process context. So "tsec" is
+>> a pointer to the "void *security" pointer from its own "struct
+>> task_struct".
+>>
+> Until 2.6.28:
+>
+>   "void *security" is directory attached to "struct task_struct".
+>   copy_process() calls security_task_alloc().
+>
+>   Therefore, task1->security != task2->security is guaranteed as long as you do
+>
+>     task->security = kmalloc();
+>
+>   at security_task_alloc().
+>
+> Since 2.6.29:
+>
+>   "void *security" is attached to "struct cred", and "struct cred *" is
+>   attached to "struct task_struct". copy_process() calls copy_creds() and
+>   prepare_creds() calls security_prepare_creds(). But copy_creds() does not
+>   call prepare_creds() for clone(CLONE_THREAD) case.
+>
+>   Therefore, task1->cred->security != task2->cred->security is not guaranteed
+>   even if you do
+>
+>     cred->security = kmalloc();
+>
+>   at security_prepare_creds().
+>
+>> every task_struct have a "tsec" allocated to its "void *security"
+>> pointer. 
+>
+> You meant to have assigned "void *security" dedicated to "struct task_struct".
+> But "void *security" is no longer directly attached to "struct task_struct".
+> I couldn't find code that checks whether "current->cred" is used by only
+> current thread or not. "current->cred" being used by only current thread is
+> a requirement for having a "tsec" allocated to every "struct task_struct".
+>
+> Your code will share "tsec" among multiple threads if a process created
+> threads using clone(CLONE_THREAD | CLONE_SIGHAND | CLONE_VM). Each thread has
+> its own "struct task_struct" but they share "cred->security".
+> Sharing "tsec" among multiple threads is what you intended?
 
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Karsten Keil <keil@b1-systems.de>
----
- drivers/isdn/hardware/mISDN/hfcmulti.c |    6 ++++++
- include/linux/pci_ids.h                |    2 ++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+Hello Tetsuo,
 
-diff --git a/drivers/isdn/hardware/mISDN/hfcmulti.c b/drivers/isdn/hardware/mISDN/hfcmulti.c
-index ad36df9..751b34c 100644
---- a/drivers/isdn/hardware/mISDN/hfcmulti.c
-+++ b/drivers/isdn/hardware/mISDN/hfcmulti.c
-@@ -5265,6 +5265,8 @@ static const struct hm_map hfcm_map[] = {
- /*31*/	{VENDOR_CCD, "XHFC-4S Speech Design", 5, 4, 0, 0, 0, 0,
- 		HFC_IO_MODE_EMBSD, XHFC_IRQ},
- /*32*/	{VENDOR_JH, "HFC-8S (junghanns)", 8, 8, 1, 0, 0, 0, 0, 0},
-+/*33*/	{VENDOR_BN, "HFC-2S Beronet Card PCIe", 4, 2, 1, 3, 0, DIP_4S, 0, 0},
-+/*34*/	{VENDOR_BN, "HFC-4S Beronet Card PCIe", 4, 4, 1, 2, 0, DIP_4S, 0, 0},
- };
- 
- #undef H
-@@ -5300,6 +5302,10 @@ static struct pci_device_id hfmultipci_ids[] __devinitdata = {
- 		PCI_SUBDEVICE_ID_CCD_OV4S, 0, 0, H(28)}, /* OpenVox 4 */
- 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
- 		PCI_SUBDEVICE_ID_CCD_OV2S, 0, 0, H(29)}, /* OpenVox 2 */
-+	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
-+		PCI_SUBDEVICE_ID_CCD_BN2SE, 0, 0, H(33)}, /* BN2S PCIe */
-+	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
-+		PCI_SUBDEVICE_ID_CCD_BN4SE, 0, 0, H(34)}, /* BN4S PCIe */
- 
- 	/* Cards with HFC-8S Chip */
- 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC8S, PCI_VENDOR_ID_CCD,
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 9f688d2..a5cc675 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1923,6 +1923,8 @@
- #define PCI_SUBDEVICE_ID_CCD_HFC8S	0xB622
- #define PCI_DEVICE_ID_CCD_B700		0xb700
- #define PCI_DEVICE_ID_CCD_B701		0xb701
-+#define PCI_SUBDEVICE_ID_CCD_BN2SE	0xb761
-+#define PCI_SUBDEVICE_ID_CCD_BN4SE	0xb762
- #define PCI_SUBDEVICE_ID_CCD_HFCE1	0xC523
- #define PCI_SUBDEVICE_ID_CCD_OV2S	0xE884
- #define PCI_SUBDEVICE_ID_CCD_OV4S	0xE888
--- 
-1.6.0.2
+ok, I get your point now.
+It seems that this is the common behaviour of credentials, so yes, "tsec"
+will be shared between this kind of threads, and it makes sense.
 
+Maybe, I need to protect read-write access to this "tsec" structure.
+
+thank you for this comment Tetsuo,
+
+sam
