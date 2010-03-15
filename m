@@ -1,63 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965866Ab0COXzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:55:16 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:39572 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965839Ab0COXzN convert rfc822-to-8bit (ORCPT
+	id S937219Ab0COX5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:57:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42623 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804Ab0COX5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:55:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KsidK8Fu3awS3H8Sn4augJtgFtD+3lPyguUJUEb/AtmiNWtlCkRAtFY5kz2a4+p20u
-         ECZCr4cmC5VAkZjqwOPjcEL81RtTk0scZ7GwwRkANkTEYPs3ncJsakc0VS1jtCSXeQfm
-         lN/Cy6JULY//wjmgX0BaEbWuX6XKnfO1iAC9k=
-MIME-Version: 1.0
-In-Reply-To: <201003160040.01774.rjw@sisk.pl>
-References: <201002272143.22156.rjw@sisk.pl> <201003152227.11295.rjw@sisk.pl>
-	 <3f9a31f41003151634k5f8521c0l99179bcf02d9e551@mail.gmail.com>
-	 <201003160040.01774.rjw@sisk.pl>
-Date: Tue, 16 Mar 2010 05:25:11 +0530
-Message-ID: <3f9a31f41003151655l4b5d1a57nff18dcb0cf3060ab@mail.gmail.com>
-Subject: Re: [PATCH] Driver core: Reduce the level of request_firmware() 
-	messages
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg KH <greg@kroah.com>, Greg KH <gregkh@suse.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Mar 2010 19:57:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 16 Mar 2010 08:54:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: remove return value of putback_lru_pages
+Message-Id: <20100316085405.f2720f56.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1268658994.1889.8.camel@barrios-desktop>
+References: <1268658994.1889.8.camel@barrios-desktop>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rafael,
+On Mon, 15 Mar 2010 22:16:34 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-On Tue, Mar 16, 2010 at 5:10 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday 16 March 2010, Jaswinder Singh Rajput wrote:
->> Hello Rafael,
->>
->> On Tue, Mar 16, 2010 at 2:57 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >
->> > I still think it's a good idea.  The information about what firmware is being
->> > used doesn't seem to be very useful for anything but debugging, so I think
->> > KERN_DEBUG is actually the right level for these messages.
->> >
->>
->> Can we use printk_once()
->
-> Yes, I guess so.
->
-> OK, I'll rework the patch.
->
+> 
+> Now putback_lru_page never can fail.
+> So it doesn't matter count of "the number of pages put back".
+> 
+> In addition, users of this functions don't use return value.
+> 
+> Let's remove unnecessary code.
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-Good, so you need to prepare printk_once() with condition like in our
-case so that it prints once for a particular name.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks,
---
-Jaswinder Singh.
+> ---
+>  include/linux/migrate.h |    4 ++--
+>  mm/migrate.c            |    7 +------
+>  2 files changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+> index 7f085c9..7a07b17 100644
+> --- a/include/linux/migrate.h
+> +++ b/include/linux/migrate.h
+> @@ -9,7 +9,7 @@ typedef struct page *new_page_t(struct page *, unsigned long private, int **);
+>  #ifdef CONFIG_MIGRATION
+>  #define PAGE_MIGRATION 1
+>  
+> -extern int putback_lru_pages(struct list_head *l);
+> +extern void putback_lru_pages(struct list_head *l);
+>  extern int migrate_page(struct address_space *,
+>  			struct page *, struct page *);
+>  extern int migrate_pages(struct list_head *l, new_page_t x,
+> @@ -25,7 +25,7 @@ extern int migrate_vmas(struct mm_struct *mm,
+>  #else
+>  #define PAGE_MIGRATION 0
+>  
+> -static inline int putback_lru_pages(struct list_head *l) { return 0; }
+> +static inline void putback_lru_pages(struct list_head *l) {}
+>  static inline int migrate_pages(struct list_head *l, new_page_t x,
+>  		unsigned long private, int offlining) { return -ENOSYS; }
+>  
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 88000b8..6903abf 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -57,23 +57,18 @@ int migrate_prep(void)
+>  /*
+>   * Add isolated pages on the list back to the LRU under page lock
+>   * to avoid leaking evictable pages back onto unevictable list.
+> - *
+> - * returns the number of pages put back.
+>   */
+> -int putback_lru_pages(struct list_head *l)
+> +void putback_lru_pages(struct list_head *l)
+>  {
+>  	struct page *page;
+>  	struct page *page2;
+> -	int count = 0;
+>  
+>  	list_for_each_entry_safe(page, page2, l, lru) {
+>  		list_del(&page->lru);
+>  		dec_zone_page_state(page, NR_ISOLATED_ANON +
+>  				page_is_file_cache(page));
+>  		putback_lru_page(page);
+> -		count++;
+>  	}
+> -	return count;
+>  }
+>  
+>  /*
+> -- 
+> 1.6.5
+> 
+> 
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
