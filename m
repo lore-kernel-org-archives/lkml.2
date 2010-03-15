@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937203Ab0COXiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:38:55 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43980 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933017Ab0COXix (ORCPT
+	id S937205Ab0COXnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:43:13 -0400
+Received: from mail-yw0-f176.google.com ([209.85.211.176]:65332 "EHLO
+	mail-yw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932779Ab0COXnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:38:53 -0400
-Message-ID: <4B9EC50E.80702@linux.vnet.ibm.com>
-Date: Mon, 15 Mar 2010 16:38:54 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Mon, 15 Mar 2010 19:43:10 -0400
+Message-ID: <4B9EC60A.2070101@codemonkey.ws>
+Date: Mon, 15 Mar 2010 18:43:06 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC] [PATCH 1/1] perf: add support for arch-dependent symbolic
- event names to "perf stat"
-References: <4B8F1B58.5000702@linux.vnet.ibm.com> <4B8FFE55.5070008@linux.vnet.ibm.com> <20100311124608.GG31354@elte.hu> <4B993AAF.9050507@linux.vnet.ibm.com> <20100311191441.GA7593@elte.hu> <4B99568D.30608@linux.vnet.ibm.com>
-In-Reply-To: <4B99568D.30608@linux.vnet.ibm.com>
+To: Chris Webb <chris@arachsys.com>
+CC: Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com>
+In-Reply-To: <20100315202353.GJ3840@arachsys.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/11/2010 12:46 PM, Corey Ashford wrote:
+On 03/15/2010 03:23 PM, Chris Webb wrote:
+> Avi Kivity<avi@redhat.com>  writes:
 >
->
-> On 3/11/2010 11:14 AM, Ingo Molnar wrote:
+>    
+>> On 03/15/2010 10:07 AM, Balbir Singh wrote:
 >>
->> * Corey Ashford<cjashfor@linux.vnet.ibm.com> wrote:
-> [snip]
->>> I'm not sure how that would work. The issue I am trying to solve
->>> here is that Power arch chips have a large number of very
->>> hardware-specific events that are not generalizable. Many of these
->>> events not only have names, but other user-configurable bits as well
->>> that select or narrow the scope of which exact events are recorded.
->>> This issue is dealt with nicely in libpfm4, as it has mechanisms for
->>> parsing event names and attributes (aka modifiers or unit masks),
->>> and then produces a usable config field for the perf_events_attr
->>> struct.
->>>
->>> Should I take it from the above that you are completely against the
->>> idea of using an external library for hardware-specific event and
->>> attribute naming?
->>
->> Could you give a few relevant examples of events in question, and the
->> kind of
->> configurability/attributes they have on Power?
+>>      
+>>> Yes, it is a virtio call away, but is the cost of paying twice in
+>>> terms of memory acceptable?
+>>>        
+>> Usually, it isn't, which is why I recommend cache=off.
+>>      
+> Hi Avi. One observation about your recommendation for cache=none:
 >
-> Here are a few examples for the Power A2 processor. I've distorted the
-> names because PMU architecture isn't publicly released yet.
->
-> PM_DE_PMC_9:hrd_mask=0xff:hrd=0x22:pma_mask=0x3fff:pma=0x1b2d:culling_mode=3
->
-> PM_EX_0x03:lane=2:vlane=1
-> PM_OWE_ENG_MAC_FULL:usu=3
+> We run hosts of VMs accessing drives backed by logical volumes carved out
+> from md RAID1. Each host has 32GB RAM and eight cores, divided between (say)
+> twenty virtual machines, which pretty much fill the available memory on the
+> host. Our qemu-kvm is new enough that IDE and SCSI drives with writeback
+> caching turned on get advertised to the guest as having a write-cache, and
+> FLUSH gets translated to fsync() by qemu. (Consequently cache=writeback
+> isn't acting as cache=neverflush like it would have done a year ago. I know
+> that comparing performance for cache=none against that unsafe behaviour
+> would be somewhat unfair!)
+>    
 
-Just a follow-up note to this...
+I knew someone would do this...
 
-I learned that the much of the high-level architecture of the new chip that IBM 
-is working on has been publicly released recently, so I have "undistorted" the 
-event names below:
+This really gets down to your definition of "safe" behaviour.  As it 
+stands, if you suffer a power outage, it may lead to guest corruption.
 
-PM_DC_PMC_9:lpid_mask=0xff:lpid=0x22:pid_mask=0x3fff:pid=0x1b2d:marking_mode=3
-PM_REGX_0x03:lane=2:vlane=1
-PM_XML_ENG_MAC_FULL:sus=3
+While we are correct in advertising a write-cache, write-caches are 
+volatile and should a drive lose power, it could lead to data 
+corruption.  Enterprise disks tend to have battery backed write caches 
+to prevent this.
 
+In the set up you're emulating, the host is acting as a giant write 
+cache.  Should your host fail, you can get data corruption.
 
-DC = Decompression/Compression accelerator
-PMC_9 = Peformance monitoring event 9
-REGX = Regular eXpression accelerator
-XML = XML parsing accelerator
-pid = process id to match
-pid_mask = process id match mask
-lpid = logical partition id
-lpid_mask = logical partition id mask
-sus = source unit select
-lane, vlane = signal routing fields
-marking_mode = used to determine which accelerator work units to mark for 
-performance monitoring
+cache=writethrough provides a much stronger data guarantee.  Even in the 
+event of a host failure, data integrity will be preserved.
 
-- Corey
+Regards,
+
+Anthony Liguori
 
