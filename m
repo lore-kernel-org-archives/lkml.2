@@ -1,110 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155Ab0COPLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 11:11:40 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42450 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965070Ab0COPLj (ORCPT
+	id S965181Ab0COPLv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 11:11:51 -0400
+Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:42200 "EHLO
+	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965164Ab0COPLq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 11:11:39 -0400
-Date: Mon, 15 Mar 2010 11:11:36 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Eric Sandeen <sandeen@sandeen.net>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com
-Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
-	assfail+0x1b/0x20 SS:ESP 0068:f687bf14
-Message-ID: <20100315151136.GA1401@infradead.org>
-References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan> <4B9E46F9.8090209@sandeen.net> <alpine.DEB.2.00.1003151042390.9496@p34.internal.lan> <4B9E4863.80905@sandeen.net>
+	Mon, 15 Mar 2010 11:11:46 -0400
+Message-ID: <4B9E46F9.8090209@sandeen.net>
+Date: Mon, 15 Mar 2010 09:40:57 -0500
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Thunderbird 2.0.0.23 (Macintosh/20090812)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9E4863.80905@sandeen.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: 2.6.33 crash: invalid opcode: 0000 [#1] SMP: EIP: [<c11a018b>]
+ assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+References: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1003150528060.6999@p34.internal.lan>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 09:46:59AM -0500, Eric Sandeen wrote:
-> Ok, then you hit an ASSERT_ALWAYS
+Justin Piszcz wrote:
+> Specifications:
 > 
-> There are only a few:
+> 2.6.33
+> 32bit
+> Debian Testing
+> 
+> On Mar 14th, my server hung up:
+> 
+> Mar 14 00:00:22 server1 kernel: [488470.189675] ------------[ cut here
+> ]------------
+> Mar 14 00:00:22 server1 kernel: [488470.189679] invalid opcode: 0000
+> [#1] SMP
+> Mar 14 00:00:22 server1 kernel: [488470.189681] last sysfs file:
+> /sys/devices/pci0000:00/0000:00:0e.0/host0/target0:0:0/0:0:0:0/block/sda/uevent
+> 
+> Mar 14 00:00:22 server1 kernel: [488470.189704] Process xfssyncd (pid:
+> 584, ti=f687a000 task=f70fa400 task.ti=f687a000)
+> Mar 14 00:00:22 server1 kernel: [488470.189705] Stack:
+> Mar 14 00:00:22 server1 kernel: [488470.189721] Call Trace:
+> Mar 14 00:00:22 server1 kernel: [488470.189739] Code: 00 e8 ea e5 01 00
+> 83 c4 14 c3 8d b6 00 00 00 00 83 ec 10 89 4c 24 0c 89 54 24 08 89 44 24
+> 04 c7 04 24 30 ab 42 c1 e8 7c 11 1c 00 <0f> 0b eb fe 90 55 57 89 cf 56
+> 89 c6 b8 80 b0 52 c1 83 e6 07 53
+> Mar 14 00:00:22 server1 kernel: [488470.189739] EIP: [<c11a018b>]
+> assfail+0x1b/0x20 SS:ESP 0068:f687bf14
+> 
+> Is this a bug related to AMD (CPU) or XFS?
 
-If the box is a nfs server I suspect it's a reclaimable state one and
-the patch below should help:
+Hard to know without seeing the rest of the stack trace, is this all you got?
 
----
+You hit an assertion failure in xfs.
 
-From: Christoph Hellwig <hch@lst.de>
-Subject: xfs: fix locking for inode cache radix tree tag updates
+Are you running with CONFIG_XFS_DEBUG?
 
-The radix-tree code requires it's users to serialize tag updates against
-other updates to the tree.  While XFS protects tag updates against each
-other it does not serialize them against updates of the tree contents,
-which can lead to tag corruption.  Fix the inode cache to always take
-pag_ici_lock in exclusive mode when updating radix tree tags.
+-Eric
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reported-by: Patrick Schreurs <patrick@news-service.com>
-Tested-by: Patrick Schreurs <patrick@news-service.com>
+> Justin.
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
+> 
 
-Index: xfs/fs/xfs/linux-2.6/xfs_sync.c
-===================================================================
---- xfs.orig/fs/xfs/linux-2.6/xfs_sync.c	2010-02-10 13:08:41.000000000 +0100
-+++ xfs/fs/xfs/linux-2.6/xfs_sync.c	2010-02-10 15:53:28.739570272 +0100
-@@ -687,12 +687,12 @@ xfs_inode_set_reclaim_tag(
- 	struct xfs_perag *pag;
- 
- 	pag = xfs_perag_get(mp, XFS_INO_TO_AGNO(mp, ip->i_ino));
--	read_lock(&pag->pag_ici_lock);
-+	write_lock(&pag->pag_ici_lock);
- 	spin_lock(&ip->i_flags_lock);
- 	__xfs_inode_set_reclaim_tag(pag, ip);
- 	__xfs_iflags_set(ip, XFS_IRECLAIMABLE);
- 	spin_unlock(&ip->i_flags_lock);
--	read_unlock(&pag->pag_ici_lock);
-+	write_unlock(&pag->pag_ici_lock);
- 	xfs_perag_put(pag);
- }
- 
-Index: xfs/fs/xfs/xfs_iget.c
-===================================================================
---- xfs.orig/fs/xfs/xfs_iget.c	2010-02-04 17:28:35.000000000 +0100
-+++ xfs/fs/xfs/xfs_iget.c	2010-02-10 15:53:55.504284758 +0100
-@@ -190,13 +190,12 @@ xfs_iget_cache_hit(
- 		trace_xfs_iget_reclaim(ip);
- 
- 		/*
--		 * We need to set XFS_INEW atomically with clearing the
--		 * reclaimable tag so that we do have an indicator of the
--		 * inode still being initialized.
-+		 * We need to set XFS_IRECLAIM to prevent xfs_reclaim_inode
-+		 * from stomping over us while we recycle the inode.  We can't
-+		 * clear the radix tree reclaimable tag yet as it requires
-+		 * pag_ici_lock to be helt exclusive.
- 		 */
--		ip->i_flags |= XFS_INEW;
--		ip->i_flags &= ~XFS_IRECLAIMABLE;
--		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
-+		ip->i_flags |= XFS_IRECLAIM;
- 
- 		spin_unlock(&ip->i_flags_lock);
- 		read_unlock(&pag->pag_ici_lock);
-@@ -216,7 +215,15 @@ xfs_iget_cache_hit(
- 			trace_xfs_iget_reclaim(ip);
- 			goto out_error;
- 		}
-+
-+		write_lock(&pag->pag_ici_lock);
-+		spin_lock(&ip->i_flags_lock);
-+		ip->i_flags &= ~(XFS_IRECLAIMABLE | XFS_IRECLAIM);
-+		ip->i_flags |= XFS_INEW;
-+		__xfs_inode_clear_reclaim_tag(mp, pag, ip);
- 		inode->i_state = I_NEW;
-+		spin_unlock(&ip->i_flags_lock);
-+		write_unlock(&pag->pag_ici_lock);
- 	} else {
- 		/* If the VFS inode is being torn down, pause and try again. */
- 		if (!igrab(inode)) {
