@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965822Ab0COXqo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 19:46:44 -0400
-Received: from kroah.org ([198.145.64.141]:45240 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965013Ab0COXql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 19:46:41 -0400
-Date: Mon, 15 Mar 2010 16:46:25 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-       ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH] sysdev: the cpu probe/release attributes should be
- sysdev_class_attributes
-Message-ID: <20100315234625.GA12575@kroah.com>
-References: <20100316103332.ade0b5d9.sfr@canb.auug.org.au>
+	id S965847Ab0COXxS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 19:53:18 -0400
+Received: from zimbra.ccs.neu.edu ([129.10.116.59]:43320 "EHLO
+	zimbra.ccs.neu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965803Ab0COXxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 19:53:17 -0400
+Date: Mon, 15 Mar 2010 19:53:10 -0400 (EDT)
+From: Ari Entlich <atrigent@ccs.neu.edu>
+To: Greg KH <greg@kroah.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Message-ID: <2163366.511711268697190113.JavaMail.root@zimbra>
+In-Reply-To: <455171.511691268697128244.JavaMail.root@zimbra>
+Subject: Re: [PATCH 34/36] tty: Add a new VT mode which is like VT_PROCESS
+ but doesn't require a VT_RELDISP ioctl call
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316103332.ade0b5d9.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [129.10.223.178]
+X-Mailer: Zimbra 5.0.22_GA_3210.UBUNTU6 (ZimbraWebClient - FF3.0 (Linux)/5.0.22_GA_3210.UBUNTU6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 10:33:32AM +1100, Stephen Rothwell wrote:
-> This fixes these warnings:
-> 
-> drivers/base/cpu.c:264: warning: initialization from incompatible pointer type
-> drivers/base/cpu.c:265: warning: initialization from incompatible pointer type
-> 
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/base/cpu.c |   16 ++++++++--------
->  1 files changed, 8 insertions(+), 8 deletions(-)
-> 
-> Hi Greg,
-> 
-> Could you pleas send this on to Linuse as this is now a bug in mainline.
+----- "Greg KH" <greg@kroah.com> wrote:
+> So, are you happy with this in Linus's tree, or do you want it
+> reverted?
 
-Will do, thanks so much for fixing this up correctly.
+The problems with this patch include:
+1. There's at least one subtlety I overlooked - switching between X servers
+   (i.e. from one X VT to another) still requires the cooperation of both
+   X servers. I was assuming that KMS eliminated this.
+2. It hasn't been tested at all (no X server patch exists which uses the
+   new mode).
 
-greg k-h
+So yes, I think it would be wise to revert it. I'll resubmit the patch (in
+a changed form or otherwise) when I've resolved these issues.
+
+I apologize again for being late in telling you this stuff.
+
+Ari
