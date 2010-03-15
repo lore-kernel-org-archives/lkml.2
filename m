@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964922Ab0COOVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:21:43 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45983 "EHLO gir.skynet.ie"
+	id S964957Ab0COOYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:24:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48534 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935728Ab0COOVm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:21:42 -0400
-Date: Mon, 15 Mar 2010 14:21:24 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
-	anonymous pages
-Message-ID: <20100315142124.GL18274@csn.ul.ie>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie> <1268412087-13536-3-git-send-email-mel@csn.ul.ie> <28c262361003141728g4aa40901hb040144c5a4aeeed@mail.gmail.com> <20100315143420.6ec3bdf9.kamezawa.hiroyu@jp.fujitsu.com> <20100315112829.GI18274@csn.ul.ie> <1268657329.1889.4.camel@barrios-desktop>
+	id S935728Ab0COOYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:24:11 -0400
+Date: Mon, 15 Mar 2010 15:24:03 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Sonny Rao <sonnyrao@us.ibm.com>
+Cc: Jani Nikula <ext-jani.1.nikula@nokia.com>, linux-kernel@vger.kernel.org,
+       benh@kernel.crashing.org, tklauser@distanz.ch
+Subject: Re: [PATCH] powerpc/BSR: fix device_create() return value check
+In-Reply-To: <20100311212157.GD5204@us.ibm.com>
+Message-ID: <alpine.LNX.2.00.1003151523330.18642@pobox.suse.cz>
+References: <1268324153-30345-1-git-send-email-ext-jani.1.nikula@nokia.com> <20100311212157.GD5204@us.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1268657329.1889.4.camel@barrios-desktop>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 09:48:49PM +0900, Minchan Kim wrote:
-> On Mon, 2010-03-15 at 11:28 +0000, Mel Gorman wrote:
-> > The use after free looks like
+On Thu, 11 Mar 2010, Sonny Rao wrote:
+
+> > Use IS_ERR() instead of comparing to NULL.
 > > 
-> > 1. page_mapcount(page) was zero so anon_vma was no longer reliable
-> > 2. rcu lock taken but the anon_vma at this point can already be garbage because the
-> >    process exited
-> > 3. call try_to_unmap, looks up tha anon_vma and locks it. This causes problems
+> > Signed-off-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
 > > 
-> > I thought the race would be closed but there is still a very tiny window there all
-> > right. The following alternative should close it. What do you think?
+> > ---
 > > 
-> >         if (PageAnon(page)) {
-> > 		rcu_read_lock();
+> > NOTE: I'm afraid I'm unable to test this; please consider this more a
+> > bug report than a complete patch.
+> > ---
+> >  drivers/char/bsr.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > > 
-> >                 /*
-> >                  * If the page has no mappings any more, just bail. An
-> >                  * unmapped anon page is likely to be freed soon but worse,
-> >                  * it's possible its anon_vma disappeared between when
-> >                  * the page was isolated and when we reached here while
-> >                  * the RCU lock was not held
-> >                  */
-> >                 if (!page_mapcount(page)) {
-> > 			rcu_read_unlock();
-> >                         goto uncharge;
-> > 		}
+> > diff --git a/drivers/char/bsr.c b/drivers/char/bsr.c
+> > index c02db01..3b31f74 100644
+> > --- a/drivers/char/bsr.c
+> > +++ b/drivers/char/bsr.c
+> > @@ -252,7 +252,7 @@ static int bsr_add_node(struct device_node *bn)
 > > 
-> >                 rcu_locked = 1;
-> >                 anon_vma = page_anon_vma(page);
-> >                 atomic_inc(&anon_vma->external_refcount);
-> >         }
-> > 
-> > The rcu_unlock label is not used here because the reference counts were not taken in
-> > the case where page_mapcount == 0.
+> >  		cur->bsr_device = device_create(bsr_class, NULL, cur->bsr_dev,
+> >  						cur, cur->bsr_name);
+> > -		if (!cur->bsr_device) {
+> > +		if (IS_ERR(cur->bsr_device)) {
+> >  			printk(KERN_ERR "device_create failed for %s\n",
+> >  			       cur->bsr_name);
+> >  			cdev_del(&cur->bsr_cdev);
+> > -- 
+> > 1.6.5.2
 > > 
 > 
-> Please, repost above code with your use-after-free scenario comment.
+> This looks fine to me, good catch.
 > 
+> Acked-by: Sonny Rao <sonnyrao@us.ibm.com>
 
-This will be the replacement patch so.
+Doesn't seem to be present in linux-next as of today, so I have picked it 
+up.
 
-==== CUT HERE ====
-mm,migration: Do not try to migrate unmapped anonymous pages
+Thanks,
 
-rmap_walk_anon() was triggering errors in memory compaction that look like
-use-after-free errors. The problem is that between the page being isolated
-from the LRU and rcu_read_lock() being taken, the mapcount of the page
-dropped to 0 and the anon_vma gets freed. This can happen during memory
-compaction if pages being migrated belong to a process that exits before
-migration completes. Hence, the use-after-free race looks like
-
- 1. Page isolated for migration
- 2. Process exits
- 3. page_mapcount(page) drops to zero so anon_vma was no longer reliable
- 4. unmap_and_move() takes the rcu_lock but the anon_vma is already garbage
- 4. call try_to_unmap, looks up tha anon_vma and "locks" it but the lock
-    is garbage.
-
-This patch checks the mapcount after the rcu lock is taken. If the
-mapcount is zero, the anon_vma is assumed to be freed and no further
-action is taken.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- mm/migrate.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 98eaaf2..6eb1efe 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -603,6 +603,19 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 	 */
- 	if (PageAnon(page)) {
- 		rcu_read_lock();
-+
-+		/*
-+		 * If the page has no mappings any more, just bail. An
-+		 * unmapped anon page is likely to be freed soon but worse,
-+		 * it's possible its anon_vma disappeared between when
-+		 * the page was isolated and when we reached here while
-+		 * the RCU lock was not held
-+		 */
-+		if (!page_mapcount(page)) {
-+			rcu_read_unlock();
-+			goto uncharge;
-+		}
-+
- 		rcu_locked = 1;
- 		anon_vma = page_anon_vma(page);
- 		atomic_inc(&anon_vma->migrate_refcount);
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
