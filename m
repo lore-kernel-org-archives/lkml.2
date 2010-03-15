@@ -1,187 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936676Ab0COUDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 16:03:33 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59696 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936641Ab0COUDb (ORCPT
+	id S936681Ab0COUKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 16:10:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47322 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936641Ab0COUKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 16:03:31 -0400
-Message-ID: <4B9E929C.1030205@vlnb.net>
-Date: Mon, 15 Mar 2010 23:03:40 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-       scst-devel <scst-devel@lists.sourceforge.net>
-CC: James.Smart@Emulex.Com, devel@open-fcoe.org, Gal Rosen <galr@storwize.com>,
-       Andy Yan <ayan@marvell.com>, Bart Van Assche <bart.vanassche@gmail.com>,
-       Vu Pham <vuhuong@mellanox.com>
-Subject: [ANNOUNCE][RFC]: New SCST SysFS-based interface become fully usable
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Mar 2010 16:10:15 -0400
+Date: Mon, 15 Mar 2010 13:09:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
+ pressure
+Message-Id: <20100315130935.f8b0a2d7.akpm@linux-foundation.org>
+In-Reply-To: <4B9E296A.2010605@linux.vnet.ibm.com>
+References: <1268048904-19397-1-git-send-email-mel@csn.ul.ie>
+	<20100311154124.e1e23900.akpm@linux-foundation.org>
+	<4B99E19E.6070301@linux.vnet.ibm.com>
+	<20100312020526.d424f2a8.akpm@linux-foundation.org>
+	<20100312104712.GB18274@csn.ul.ie>
+	<4B9A3049.7010602@linux.vnet.ibm.com>
+	<20100312093755.b2393b33.akpm@linux-foundation.org>
+	<4B9E296A.2010605@linux.vnet.ibm.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+N159AF2AOA8wqR3nuNfuOz95jKCsScc5ABCj
- gXZFqz42bT4wdMqYIMzX72VK1VAu7U7FF1xNSjX3HO8AtWdQEJ
- YhrBK2ds4WfJh1crd6xWw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Mon, 15 Mar 2010 13:34:50 +0100
+Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
 
-I'm glad to announce that new SCST SysFS-based interface has become fully usable, so you can start migrating to it and update your target drivers, dev handlers and management utilities.
+> c) If direct reclaim did reasonable progress in try_to_free but did not
+> get a page, AND there is no write in flight at all then let it try again
+> to free up something.
+> This could be extended by some kind of max retry to avoid some weird
+> looping cases as well.
+> 
+> d) Another way might be as easy as letting congestion_wait return
+> immediately if there are no outstanding writes - this would keep the 
+> behavior for cases with write and avoid the "running always in full 
+> timeout" issue without writes.
 
->From now on the old ProcFS-based interface as well as iscsi-scst.conf config file and iscsi-scst-adm utility for iSCSI-SCST have become obsoleted.
+They're pretty much equivalent and would work.  But there are two
+things I still don't understand:
 
-To get the SysFS-enabled SCST you should download it by command:
+1: Why is direct reclaim calling congestion_wait() at all?  If no
+writes are going on there's lots of clean pagecache around so reclaim
+should trivially succeed.  What's preventing it from doing so?
 
-$ svn co https://scst.svn.sourceforge.net/svnroot/scst/trunk
-
-and then enable the SysFS build (the ProcFS build is going to be default until scstadmin will be updated for the SysFS interface) by:
-
-$ make disable_proc
-
-Here is an example how to configure an iSCSI-SCST target "iqn.2006-10.net.vlnb:tgt" with one virtual FILEIO disk "disk1" using file /disk1 as SCSI device with block size 4K on LUN 0:
-
-modprobe scst
-modprobe scst_vdisk
-
-echo "add_device disk1 filename=/disk1; blocksize=1" >/sys/kernel/scst_tgt/handlers/vdisk_fileio/mgmt
-
-service iscsi-scst start
-
-echo "add_target iqn.2006-10.net.vlnb:tgt" >/sys/kernel/scst_tgt/targets/iscsi/mgmt
-echo "add disk1 0" >/sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/luns/mgmt
-
-echo 1 >/sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/enabled
-echo 1 >/sys/kernel/scst_tgt/targets/iscsi/enabled
-
-The SCST sys/ tree for this example you can find in [2].
-
-The exceptional feature of the new SysFS interface is that it is self-documented, i.e. with it for any management utilities, like scstadmin, there's no need to know anymore how to configure each specific target driver and dev handler. In other words, the management will be made once and will work for all current and future targets and dev handlers, including implemented both in kernel and user spaces, without any internal changes. To achieve that all is necessary is that all target drivers and dev handlers should follow few several simple rules how to represent their internal configuration on the SysFS. Those rules are described in SysfsRules file, which you can see online at http://scst.svn.sourceforge.net/viewvc/scst/trunk/scst/SysfsRules. Any comments about it are welcome.
-
-The new SysFS interface is documented in READMEs of SCST core and updated target drivers. At the moment iSCSI-SCST, Qla2x00t, Fcst (FCoE target) and all standard dev handlers are fully SysFS ready. Work on other target drivers as well as work to make scst_user's user space targets match the Sysfs rules is carrying on.
-
-Basically, all target drivers will work as is with the SysFS interface, if they are built in the SysFS build. But they need to implement:
-
-1. "enable" target attribute, if they want race free initial configuration.
-
-2. "mgmt" interface, if they can create virtual targets. For example how to do it, you can see iSCSI-SCST.
-
-Home page of SCST and drivers is http://scst.sourceforge.net
-
-Vlad
-
-[1] Scstadmin is an utility, which allows doing SCST configuration using 
-a text config file. Among other, it has the following great facilities:
-
-1. A possibility to apply changes in the config file to currently 
-running system. Only changes applied, so there are no any unneeded 
-restarts and resets.
-
-2. Generate a config file for currently running system.
-
-[2] The sample SysFS tree with initiator iqn.2005-03.org.open-iscsi:cacdcd2520 connected will be:
-
-/sys/kernel/scst_tgt
-|-- devices
-|   |-- disk1
-|   |   |-- blocksize
-|   |   |-- exported
-|   |   |   `-- export0 -> ../../../targets/iscsi/iqn.2006-10.net.vlnb:tgt/luns/0
-|   |   |-- filename
-|   |   |-- handler -> ../../handlers/vdisk_fileio
-|   |   |-- nv_cache
-|   |   |-- o_direct
-|   |   |-- read_only
-|   |   |-- removable
-|   |   |-- resync_size
-|   |   |-- size_mb
-|   |   |-- t10_dev_id
-|   |   |-- type
-|   |   |-- usn
-|   |   `-- write_through
-|-- handlers
-|   |-- vcdrom
-|   |   |-- mgmt
-|   |   |-- trace_level
-|   |   `-- type
-|   |-- vdisk_blockio
-|   |   |-- mgmt
-|   |   |-- trace_level
-|   |   `-- type
-|   |-- vdisk_fileio
-|   |   |-- disk1 -> ../../devices/disk1
-|   |   |-- mgmt
-|   |   |-- trace_level
-|   |   `-- type
-|   `-- vdisk_nullio
-|       |-- mgmt
-|       |-- trace_level
-|       `-- type
-|-- sgv
-|   |-- global_stats
-|   |-- sgv
-|   |   `-- stats
-|   |-- sgv-clust
-|   |   `-- stats
-|   `-- sgv-dma
-|       `-- stats
-|-- targets
-|   `-- iscsi
-|       |-- enabled
-|       |-- iSNSServer
-|       |-- iqn.2006-10.net.vlnb:tgt
-|       |   |-- DataDigest
-|       |   |-- FirstBurstLength
-|       |   |-- HeaderDigest
-|       |   |-- ImmediateData
-|       |   |-- InitialR2T
-|       |   |-- MaxBurstLength
-|       |   |-- MaxOutstandingR2T
-|       |   |-- MaxRecvDataSegmentLength
-|       |   |-- MaxXmitDataSegmentLength
-|       |   |-- NopInInterval
-|       |   |-- QueuedCommands
-|       |   |-- RspTimeout
-|       |   |-- enabled
-|       |   |-- ini_groups
-|       |   |   `-- mgmt
-|       |   |-- luns
-|       |   |   |-- 0
-|       |   |   |   |-- device -> ../../../../../devices/disk1
-|       |   |   |   `-- read_only
-|       |   |   `-- mgmt
-|       |   |-- rel_tgt_id
-|       |   |-- sessions
-|       |   |   `-- iqn.2005-03.org.open-iscsi:cacdcd2520
-|       |   |       |-- 10.170.75.2
-|       |   |       |   |-- cid
-|       |   |       |   |-- ip
-|       |   |       |   `-- state
-|       |   |       |-- DataDigest
-|       |   |       |-- FirstBurstLength
-|       |   |       |-- HeaderDigest
-|       |   |       |-- ImmediateData
-|       |   |       |-- InitialR2T
-|       |   |       |-- MaxBurstLength
-|       |   |       |-- MaxOutstandingR2T
-|       |   |       |-- MaxRecvDataSegmentLength
-|       |   |       |-- MaxXmitDataSegmentLength
-|       |   |       |-- active_commands
-|       |   |       |-- commands
-|       |   |       |-- force_close
-|       |   |       |-- initiator_name
-|       |   |       |-- luns -> ../../luns
-|       |   |       |-- reinstating
-|       |   |       `-- sid
-|       |   `-- tid
-|       |-- mgmt
-|       |-- open_state
-|       |-- trace_level
-|       `-- version
-|-- threads
-|-- trace_level
-`-- version
-
+2: This is, I think, new behaviour.  A regression.  What caused it?
 
