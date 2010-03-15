@@ -1,100 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936938Ab0COVzA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 17:55:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52397 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936880Ab0COVy6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 17:54:58 -0400
-Date: Mon, 15 Mar 2010 14:54:20 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "kirill@shutemov.name" <kirill@shutemov.name>
-Subject: Re: [PATCH 2/3] memcg: oom notifier
-Message-Id: <20100315145420.07f2bbe5.akpm@linux-foundation.org>
-In-Reply-To: <20100312143435.e648e361.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100312143137.f4cf0a04.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100312143435.e648e361.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S936931Ab0COV7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 17:59:19 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59625 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936892Ab0COV7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 17:59:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,645,1262592000"; 
+   d="scan'208";a="500861263"
+Subject: Re: [patch] x86: handle legacy PIC interrupts on all the cpu's
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <4B9EABE8.1020203@kernel.org>
+References: <1268692386.3296.43.camel@sbs-t61.sc.intel.com>
+	 <4B9EABE8.1020203@kernel.org>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Mon, 15 Mar 2010 14:56:11 -0800
+Message-Id: <1268693771.3296.49.camel@sbs-t61.sc.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Mar 2010 14:34:35 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Mon, 2010-03-15 at 14:51 -0700, Yinghai Lu wrote:
+> > +	for (irq = 0; irq < legacy_pic->nr_legacy_irqs; irq++)
+> > +		if (!IO_APIC_IRQ(irq))
+> > +			per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
+> 
+> seems those three lines are not needed...
 
-> +static int mem_cgroup_oom_register_event(struct cgroup *cgrp,
-> +	struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)
-> +{
-> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
-> +	struct mem_cgroup_eventfd_list *event;
-> +	int type = MEMFILE_TYPE(cft->private);
-> +	int ret = -ENOMEM;
-> +
-> +	BUG_ON(type != _OOM_TYPE);
-> +
-> +	mutex_lock(&memcg_oom_mutex);
-> +
-> +	event = kmalloc(sizeof(*event),	GFP_KERNEL);
-> +	if (!event)
-> +		goto unlock;
-> +
-> +	event->eventfd = eventfd;
-> +	list_add(&event->list, &memcg->oom_notify);
-> +
-> +	/* already in OOM ? */
-> +	if (atomic_read(&memcg->oom_lock))
-> +		eventfd_signal(eventfd, 1);
-> +	ret = 0;
-> +unlock:
-> +	mutex_unlock(&memcg_oom_mutex);
-> +
-> +	return ret;
-> +}
+Those are needed for !CONFIG_X86_IO_APIC case.
 
-We can move that kmalloc() outside the lock.  It's more scalable and the
-code's cleaner.
-
---- a/mm/memcontrol.c~memcg-oom-notifier-fix
-+++ a/mm/memcontrol.c
-@@ -3603,27 +3603,23 @@ static int mem_cgroup_oom_register_event
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 	struct mem_cgroup_eventfd_list *event;
- 	int type = MEMFILE_TYPE(cft->private);
--	int ret = -ENOMEM;
- 
- 	BUG_ON(type != _OOM_TYPE);
- 
--	mutex_lock(&memcg_oom_mutex);
--
- 	event = kmalloc(sizeof(*event),	GFP_KERNEL);
- 	if (!event)
--		goto unlock;
-+		return -ENOMEM;
- 
-+	mutex_lock(&memcg_oom_mutex);
- 	event->eventfd = eventfd;
- 	list_add(&event->list, &memcg->oom_notify);
- 
- 	/* already in OOM ? */
- 	if (atomic_read(&memcg->oom_lock))
- 		eventfd_signal(eventfd, 1);
--	ret = 0;
--unlock:
- 	mutex_unlock(&memcg_oom_mutex);
- 
--	return ret;
-+	return 0;
- }
- 
- static int mem_cgroup_oom_unregister_event(struct cgroup *cgrp,
-_
+thanks,
+suresh
 
