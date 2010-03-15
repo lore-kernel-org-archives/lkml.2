@@ -1,100 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936719Ab0COUxR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 16:53:17 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48610 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932183Ab0COUxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 16:53:15 -0400
-Date: Mon, 15 Mar 2010 16:53:12 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
-       Chris Friesen <cfriesen@nortel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip] introduce sys_membarrier(): process-wide memory
-	barrier (v9)
-Message-ID: <20100315205312.GA31231@Krystal>
-References: <20100225232316.GA30196@Krystal> <20100304122304.GA6864@elte.hu> <alpine.LFD.2.00.1003040827100.7046@localhost.localdomain> <20100304175659.GA3255@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100304175659.GA3255@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:46:17 up 51 days, 23:23,  5 users,  load average: 0.07, 0.06,
-	0.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S936751Ab0COU6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 16:58:14 -0400
+Received: from mail.gmx.net ([213.165.64.20]:56819 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932260Ab0COU6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 16:58:10 -0400
+X-Authenticated: #5115406
+X-Provags-ID: V01U2FsdGVkX18eAwBE62Mea9zMHbL4ub40D/jRqQyph9csZ/tjKO
+	l/RWisZ+sPD3G1
+From: Thomas Weber <swirl@gmx.li>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Weber <swirl@gmx.li>
+Subject: [PATCH 2/4] Fix typo: udpate => update
+Date: Mon, 15 Mar 2010 21:58:56 +0100
+Message-Id: <1268686738-28293-3-git-send-email-swirl@gmx.li>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <1268686738-28293-1-git-send-email-swirl@gmx.li>
+References: <1268686738-28293-1-git-send-email-swirl@gmx.li>
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.42999999999999999
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> * Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> > >  - SA_RUNNING: a way to signal only running threads - as a way for user-space 
-> > >    based concurrency control mechanisms to deschedule running threads (or, like
-> > >    in your case, to implement barrier / garbage collection schemes).
-> > 
-> > Hmm. This sounds less fundamentally broken, but at the same time also 
-> > _way_ more invasive in the signal handling layer. It's already one of our 
-> > more "exciting" layers out there.
-> > 
-> 
-> Hrm, thinking about it a bit further, the only way I see we could provide a
-> usable SA_RUNNING flag would be to add hooks to the scheduler. These hooks would
-> somehow have to call user-space code (!) when scheduling in/out a thread. Yes,
-> this sounds utterly broken (since these hooks would have to be preemptable).
-> 
-> The idea is this: if we look, for instance, at the kernel preemptable RCU
-> implementations, they consist of two parts: one is iteration on all CPUs to
-> consider all active CPUs, and the other is a modification of the scheduler to
-> note all preempted tasks that were in a preemptable RCU C.S..
-> 
-> Just for the memory barrier we consider for sys_membarrier(), I had to ensure
-> that the scheduler issues memory barriers to order accesses to user-space memory
-> and mm_cpumask modifications. In reality, what we are doing is to ensure that
-> the operation required on the running thread is done by the scheduler too when
-> scheduling in/out the task.
-> 
-> As soon as we have signal handlers which perform more than a simple memory
-> barrier (e.g. something that has side-effects outside of the processor), I doubt
-> it would ever make sense to only run the handler on running threads unless we
-> have hooks in the scheduler too.
+Signed-off-by: Thomas Weber <swirl@gmx.li>
+---
+ Documentation/kbuild/kconfig.txt            |    2 +-
+ drivers/firewire/ohci.c                     |    2 +-
+ drivers/infiniband/hw/ipath/ipath_iba6110.c |    2 +-
+ drivers/infiniband/hw/ipath/ipath_iba6120.c |    4 ++--
+ drivers/infiniband/hw/ipath/ipath_iba7220.c |    2 +-
+ drivers/isdn/hisax/hfc4s8s_l1.c             |    2 +-
+ drivers/staging/rtl8187se/r8180_core.c      |    4 ++--
+ drivers/staging/rtl8187se/r8180_dm.c        |    2 +-
+ drivers/staging/rtl8187se/r8185b_init.c     |    2 +-
+ fs/jfs/jfs_dmap.c                           |    2 +-
+ 10 files changed, 12 insertions(+), 12 deletions(-)
 
-Unless this question is answered, Ingo's SA_RUNNING signal proposal, as
-appealing as it may look at a first glance, falls into the "fundamentally
-broken" category. I don't see any neat way to make the scheduler call into
-user-space hooks to deal with inherent synchronization required between
-iteration on active threads and scheduler activity. But who knows, maybe it's
-just a lack of imagination from my part.
-
-Thanks,
-
-Mathieu
-
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
-
+diff --git a/Documentation/kbuild/kconfig.txt b/Documentation/kbuild/kconfig.txt
+index 49efae7..b2cb16e 100644
+--- a/Documentation/kbuild/kconfig.txt
++++ b/Documentation/kbuild/kconfig.txt
+@@ -96,7 +96,7 @@ Environment variables for 'silentoldconfig'
+ KCONFIG_NOSILENTUPDATE
+ --------------------------------------------------
+ If this variable has a non-blank value, it prevents silent kernel
+-config udpates (requires explicit updates).
++config updates (requires explicit updates).
+ 
+ KCONFIG_AUTOCONFIG
+ --------------------------------------------------
+diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
+index 75dc698..8e180a2 100644
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -1342,7 +1342,7 @@ static void bus_reset_tasklet(unsigned long data)
+ 	 * was set up before this reset, the old one is now no longer
+ 	 * in use and we can free it. Update the config rom pointers
+ 	 * to point to the current config rom and clear the
+-	 * next_config_rom pointer so a new udpate can take place.
++	 * next_config_rom pointer so a new update can take place.
+ 	 */
+ 
+ 	if (ohci->next_config_rom != NULL) {
+diff --git a/drivers/infiniband/hw/ipath/ipath_iba6110.c b/drivers/infiniband/hw/ipath/ipath_iba6110.c
+index 37d12e5..1d7aea1 100644
+--- a/drivers/infiniband/hw/ipath/ipath_iba6110.c
++++ b/drivers/infiniband/hw/ipath/ipath_iba6110.c
+@@ -1474,7 +1474,7 @@ static void ipath_ht_quiet_serdes(struct ipath_devdata *dd)
+ /**
+  * ipath_pe_put_tid - write a TID in chip
+  * @dd: the infinipath device
+- * @tidptr: pointer to the expected TID (in chip) to udpate
++ * @tidptr: pointer to the expected TID (in chip) to update
+  * @tidtype: RCVHQ_RCV_TYPE_EAGER (1) for eager, RCVHQ_RCV_TYPE_EXPECTED (0) for expected
+  * @pa: physical address of in memory buffer; ipath_tidinvalid if freeing
+  *
+diff --git a/drivers/infiniband/hw/ipath/ipath_iba6120.c b/drivers/infiniband/hw/ipath/ipath_iba6120.c
+index fbf8c53..4b4a30b 100644
+--- a/drivers/infiniband/hw/ipath/ipath_iba6120.c
++++ b/drivers/infiniband/hw/ipath/ipath_iba6120.c
+@@ -1328,7 +1328,7 @@ bail:
+ /**
+  * ipath_pe_put_tid - write a TID in chip
+  * @dd: the infinipath device
+- * @tidptr: pointer to the expected TID (in chip) to udpate
++ * @tidptr: pointer to the expected TID (in chip) to update
+  * @tidtype: RCVHQ_RCV_TYPE_EAGER (1) for eager, RCVHQ_RCV_TYPE_EXPECTED (0) for expected
+  * @pa: physical address of in memory buffer; ipath_tidinvalid if freeing
+  *
+@@ -1394,7 +1394,7 @@ static void ipath_pe_put_tid(struct ipath_devdata *dd, u64 __iomem *tidptr,
+ /**
+  * ipath_pe_put_tid_2 - write a TID in chip, Revision 2 or higher
+  * @dd: the infinipath device
+- * @tidptr: pointer to the expected TID (in chip) to udpate
++ * @tidptr: pointer to the expected TID (in chip) to update
+  * @tidtype: RCVHQ_RCV_TYPE_EAGER (1) for eager, RCVHQ_RCV_TYPE_EXPECTED (0) for expected
+  * @pa: physical address of in memory buffer; ipath_tidinvalid if freeing
+  *
+diff --git a/drivers/infiniband/hw/ipath/ipath_iba7220.c b/drivers/infiniband/hw/ipath/ipath_iba7220.c
+index a805402..34b778e 100644
+--- a/drivers/infiniband/hw/ipath/ipath_iba7220.c
++++ b/drivers/infiniband/hw/ipath/ipath_iba7220.c
+@@ -1738,7 +1738,7 @@ bail:
+ /**
+  * ipath_7220_put_tid - write a TID to the chip
+  * @dd: the infinipath device
+- * @tidptr: pointer to the expected TID (in chip) to udpate
++ * @tidptr: pointer to the expected TID (in chip) to update
+  * @tidtype: 0 for eager, 1 for expected
+  * @pa: physical address of in memory buffer; ipath_tidinvalid if freeing
+  *
+diff --git a/drivers/isdn/hisax/hfc4s8s_l1.c b/drivers/isdn/hisax/hfc4s8s_l1.c
+index ab98e13..7ea0d07 100644
+--- a/drivers/isdn/hisax/hfc4s8s_l1.c
++++ b/drivers/isdn/hisax/hfc4s8s_l1.c
+@@ -309,7 +309,7 @@ wait_busy(hfc4s8s_hw * a)
+ 
+ /******************************************************/
+ /* function to read critical counter registers that   */
+-/* may be udpated by the chip during read             */
++/* may be updated by the chip during read             */
+ /******************************************************/
+ static u_char
+ Read_hfc8_stable(hfc4s8s_hw * hw, int reg)
+diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+index b1757ac..54bbf41 100644
+--- a/drivers/staging/rtl8187se/r8180_core.c
++++ b/drivers/staging/rtl8187se/r8180_core.c
+@@ -2364,7 +2364,7 @@ void rtl8180_wmm_param_update(struct work_struct * work)
+ 				u8		u1bAIFS;
+ 				u32		u4bAcParam;
+ 				pAcParam = (PAC_PARAM)(&AcParam);
+-				// Retrive paramters to udpate.
++				// Retrive paramters to update.
+ 				u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN *(((mode&IEEE_G) == IEEE_G)?9:20) + aSifsTime;
+ 				u4bAcParam = ((((u32)(pAcParam->f.TXOPLimit))<<AC_PARAM_TXOP_LIMIT_OFFSET)|
+ 					      (((u32)(pAcParam->f.Ecw.f.ECWmax))<<AC_PARAM_ECW_MAX_OFFSET)|
+@@ -2400,7 +2400,7 @@ void rtl8180_wmm_param_update(struct work_struct * work)
+ 			u8		u1bAIFS;
+ 			u32		u4bAcParam;
+ 
+-			// Retrive paramters to udpate.
++			// Retrive paramters to update.
+ 			eACI = pAcParam->f.AciAifsn.f.ACI;
+ 			//Mode G/A: slotTimeTimer = 9; Mode B: 20
+ 			u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN * (((mode&IEEE_G) == IEEE_G)?9:20) + aSifsTime;
+diff --git a/drivers/staging/rtl8187se/r8180_dm.c b/drivers/staging/rtl8187se/r8180_dm.c
+index fc49078..462f46a 100644
+--- a/drivers/staging/rtl8187se/r8180_dm.c
++++ b/drivers/staging/rtl8187se/r8180_dm.c
+@@ -35,7 +35,7 @@ bool CheckHighPower(struct net_device *dev)
+ //		See also DoRxHighPower() and SetTxPowerLevel8185() for reference.
+ //
+ //	Note:
+-//		The reason why we udpate Tx power level here instead of DoRxHighPower()
++//		The reason why we update Tx power level here instead of DoRxHighPower()
+ //		is the number of IO to change Tx power is much more than channel TR switch
+ //		and they are related to OFDM and MAC registers.
+ //		So, we don't want to update it so frequently in per-Rx packet base.
+diff --git a/drivers/staging/rtl8187se/r8185b_init.c b/drivers/staging/rtl8187se/r8185b_init.c
+index a0ece1f..519383e 100644
+--- a/drivers/staging/rtl8187se/r8185b_init.c
++++ b/drivers/staging/rtl8187se/r8185b_init.c
+@@ -1128,7 +1128,7 @@ ActUpdateChannelAccessSetting(
+ 				u8		u1bAIFS;
+ 				u32		u4bAcParam;
+ 
+-				// Retrive paramters to udpate.
++				// Retrive paramters to update.
+ 				eACI = pAcParam->f.AciAifsn.f.ACI;
+ 				u1bAIFS = pAcParam->f.AciAifsn.f.AIFSN * ChnlAccessSetting->SlotTimeTimer + aSifsTime;
+ 				u4bAcParam = (	(((u32)(pAcParam->f.TXOPLimit)) << AC_PARAM_TXOP_LIMIT_OFFSET)	|
+diff --git a/fs/jfs/jfs_dmap.c b/fs/jfs/jfs_dmap.c
+index d9b031c..d13b930 100644
+--- a/fs/jfs/jfs_dmap.c
++++ b/fs/jfs/jfs_dmap.c
+@@ -2437,7 +2437,7 @@ dbAdjCtl(struct bmap * bmp, s64 blkno, int newval, int alloc, int level)
+ 
+ 	/* check if this is a control page update for an allocation.
+ 	 * if so, update the leaf to reflect the new leaf value using
+-	 * dbSplit(); otherwise (deallocation), use dbJoin() to udpate
++	 * dbSplit(); otherwise (deallocation), use dbJoin() to update
+ 	 * the leaf with the new value.  in addition to updating the
+ 	 * leaf, dbSplit() will also split the binary buddy system of
+ 	 * the leaves, if required, and bubble new values within the
 -- 
-Mathieu Desnoyers
-Operating System Efficiency Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.6.4.4
+
