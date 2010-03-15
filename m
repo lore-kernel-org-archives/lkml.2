@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964957Ab0COOYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 10:24:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48534 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935728Ab0COOYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 10:24:11 -0400
-Date: Mon, 15 Mar 2010 15:24:03 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Sonny Rao <sonnyrao@us.ibm.com>
-Cc: Jani Nikula <ext-jani.1.nikula@nokia.com>, linux-kernel@vger.kernel.org,
-       benh@kernel.crashing.org, tklauser@distanz.ch
-Subject: Re: [PATCH] powerpc/BSR: fix device_create() return value check
-In-Reply-To: <20100311212157.GD5204@us.ibm.com>
-Message-ID: <alpine.LNX.2.00.1003151523330.18642@pobox.suse.cz>
-References: <1268324153-30345-1-git-send-email-ext-jani.1.nikula@nokia.com> <20100311212157.GD5204@us.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S936500Ab0COOYx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 10:24:53 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:46473 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935728Ab0COOYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 10:24:51 -0400
+Date: Mon, 15 Mar 2010 14:24:21 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       "Kreuzer, Michael (NSN - DE/Ulm)" <michael.kreuzer@nsn.com>,
+       linux-mtd@lists.infradead.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] fix MTD CFI/LPDDR flash driver huge latency bug
+Message-ID: <20100315142421.GB15133@shareable.org>
+References: <1267894137.18869.0.camel@wall-e> <20100312142344.174bd46f.akpm@linux-foundation.org> <20100312233820.GH6491@shareable.org> <1268483744.6339.25.camel@wall-e> <20100315030338.GR6491@shareable.org> <1268633754.6012.4.camel@wall-e.seibold.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268633754.6012.4.camel@wall-e.seibold.net>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Mar 2010, Sonny Rao wrote:
-
-> > Use IS_ERR() instead of comparing to NULL.
+Stefani Seibold wrote:
+> Am Montag, den 15.03.2010, 03:03 +0000 schrieb Jamie Lokier:
+> > Stefani Seibold wrote:
+> > > Am Freitag, den 12.03.2010, 23:38 +0000 schrieb Jamie Lokier:
+> > > > Andrew Morton wrote:
+> > > > > On Sat, 06 Mar 2010 17:48:57 +0100
+> > > > > Stefani Seibold <stefani@seibold.net> wrote:
+> > > > > 
+> > > 
+> > > 
+> > > > > > The patch change all the use of spin_lock operations for xxxx->mutex
+> > > > > > into mutex operations, which is exact what the name says and means.
+> > > > 
+> > > > It would be even better if it also split the critical sections into
+> > > > smaller ones with cond_resched() between, so that non-preemptible
+> > > > kernels benefit too.
+> > > 
+> > > The problem is the memcpy operation which is very slow. A cond_resched
+> > > wouldn't help, since the cpu bus is blocked during the transfer of the
+> > > word.
 > > 
-> > Signed-off-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
+> > I mean split the memcpy into multiple smaller memcpys, so that the
+> > total time in each memcpy is limited to something reasonable.
 > > 
-> > ---
+> > The check in cond_resched() is fast, especially once cached.  memcpy
+> > speed depends a lot on the attached flash and how everything's
+> > configured, varying from 2.5MB/s up to hundreds of MB/s.  So how about
+> > doing cond_resched() every 256 bytes?
 > > 
-> > NOTE: I'm afraid I'm unable to test this; please consider this more a
-> > bug report than a complete patch.
-> > ---
-> >  drivers/char/bsr.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/char/bsr.c b/drivers/char/bsr.c
-> > index c02db01..3b31f74 100644
-> > --- a/drivers/char/bsr.c
-> > +++ b/drivers/char/bsr.c
-> > @@ -252,7 +252,7 @@ static int bsr_add_node(struct device_node *bn)
-> > 
-> >  		cur->bsr_device = device_create(bsr_class, NULL, cur->bsr_dev,
-> >  						cur, cur->bsr_name);
-> > -		if (!cur->bsr_device) {
-> > +		if (IS_ERR(cur->bsr_device)) {
-> >  			printk(KERN_ERR "device_create failed for %s\n",
-> >  			       cur->bsr_name);
-> >  			cdev_del(&cur->bsr_cdev);
-> > -- 
-> > 1.6.5.2
-> > 
+> > -- Jamie
 > 
-> This looks fine to me, good catch.
-> 
-> Acked-by: Sonny Rao <sonnyrao@us.ibm.com>
+> I thoght about this aporoach and i don't like this idea. Why not using a
+> preemptible kernel?
 
-Doesn't seem to be present in linux-next as of today, so I have picked it 
-up.
+Because it introduces too many risks to enable CONFIG_PREEMPT in a
+stable rolled out device which isn't using it already.  Especially on
+devices where it's not well tested by other people, and with drivers
+that nobody ever used with CONFIG_PREEMPT before.
 
-Thanks,
+And because CONFIG_PREEMPT isn't always better.  (Why do you think
+it's a config option?)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+As a bug fix for observed high scheduling latency when a flash I/O is
+occurring, splitting the memcpys is a good choice.  I will be trying
+it on my kernels, even if it doesn't get mainlined.  Thanks for the idea ;-)
+
+-- Jamie
+
