@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965580Ab0COR0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 13:26:34 -0400
-Received: from mga14.intel.com ([143.182.124.37]:60465 "EHLO mga14.intel.com"
+	id S1756741Ab0CORgh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:36:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42385 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965510Ab0COR0a convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 13:26:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.49,644,1262592000"; 
-   d="scan'208";a="254859241"
-From: "Othman, Ossama" <ossama.othman@intel.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Mar 2010 10:26:28 -0700
-Subject: RE: [PATCH] Intel Restricted Access Region Handler
-Thread-Topic: [PATCH] Intel Restricted Access Region Handler
-Thread-Index: AcrEZGyOMW7jDlXtQE2yjqD5TUVE/QAABkvA
-Message-ID: <A5FE05C4C76E4C4CAB15D9962B96FC950C9A6D16EA@orsmsx510.amr.corp.intel.com>
-References: <1268558064-7973-1-git-send-email-ossama.othman@intel.com>
- <4B9E6CE1.3070202@oracle.com>
-In-Reply-To: <4B9E6CE1.3070202@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751444Ab0CORgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 13:36:33 -0400
+Date: Mon, 15 Mar 2010 18:34:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       andi@firstfloor.org
+Subject: Re: [PATCH 1/2] kmod: add init function to usermodehelper
+Message-ID: <20100315173454.GA7976@redhat.com>
+References: <20100315122908.GB16175@hmsreliant.think-freely.org> <20100315123355.GC16175@hmsreliant.think-freely.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315123355.GC16175@hmsreliant.think-freely.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On 03/15, Neil Horman wrote:
+>
+> --- a/kernel/kmod.c
+> +++ b/kernel/kmod.c
+> @@ -116,27 +116,16 @@ int __request_module(bool wait, const char *fmt, ...)
+>
+>  	trace_module_request(module_name, wait, _RET_IP_);
+>
+> -	ret = call_usermodehelper(modprobe_path, argv, envp,
+> -			wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC);
+> +	ret = call_usermodehelper_fns(modprobe_path, argv, envp,
+> +			wait ? UMH_WAIT_PROC : UMH_WAIT_EXEC,
+> +			NULL, NULL, NULL);
 
-> Don't use doxygen or whatever that is in the Linux kernel.
-> Use kernel-doc notation as described in Documentation/kernel-doc-nano-
-> HOWTO.txt.
-> 
-> In many places/multiple files.
+This change looks unnecessary, but doesn't hurt.
 
-I'll fix this immediately.
-
-Thanks!
--Ossama
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
 
