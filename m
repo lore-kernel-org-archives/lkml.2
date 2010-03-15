@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965622Ab0COSOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 14:14:38 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:56763 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965596Ab0COSOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 14:14:37 -0400
-Message-ID: <4B9E7903.30402@cs.helsinki.fi>
-Date: Mon, 15 Mar 2010 20:14:27 +0200
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.23 (Macintosh/20090812)
+	id S965635Ab0COSSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 14:18:32 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:33334 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965596Ab0COSSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 14:18:31 -0400
+Date: Mon, 15 Mar 2010 19:18:29 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jan Beulich <JBeulich@novell.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: pcmcia's use of IRQ_NOAUTOEN
+Message-ID: <20100315181829.GA26096@isilmar.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Alan Cox <alan@linux.intel.com>, Jan Beulich <JBeulich@novell.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <4B94DCB7020000780003337B@vpn.id2.novell.com> <20100308194757.GB17628@isilmar.linta.de> <20100315174359.7fa53d4b@linux.intel.com>
 MIME-Version: 1.0
-To: Lars Lindley <lindley@coyote.org>
-CC: Dan Carpenter <error27@gmail.com>, gregkh@suse.de, greg@kroah.com,
-       pavel@ucw.cz, diegoliz@gmail.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, stefanr@s5r6.in-berlin.de
-Subject: Re: [PATCH] staging: winbond: mds.c whitspace, indentation etc.
-References: <1268670973-6223-1-git-send-email-lindley@coyote.org> <20100315165052.GA2661@bicker> <4B9E65DE.7060409@cs.helsinki.fi> <4B9E6CA2.10602@coyote.org>
-In-Reply-To: <4B9E6CA2.10602@coyote.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315174359.7fa53d4b@linux.intel.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lars Lindley wrote:
-> On 2010-03-15 17:52, Pekka Enberg wrote:
->> Dan Carpenter wrote:
->>> On Mon, Mar 15, 2010 at 05:36:13PM +0100, Lars Lindley wrote:
->>>> I fixed most of the problems found by checkpatch.pl.
->>>> Some long lines are left and some KERN_..
->>>> This is a new revised patch against master with changes
->>>> after comments from Stefan Richter and Dan Carpenter.
->>>> Forget the old one.
->>>>
->>>> Signed-off-by: Lars Lindley <lindley@coyote.org>
->>>> Acked-by: Pavel Machek <pavel@ucw.cz>
->>> Acked-by: Dan Carpenter <error27@gmail.com>
->> It's pretty difficult to say if anything changed based on the diff so
->> would you mind posting before and after output of 'size mds.o', please?
->>
-> Hi Pekka.
-> 
-> Before:
-> lali@lazer2 ~/linux3/linux-2.6 $ size drivers/staging/winbond/mds.o
->    text	   data	    bss	    dec	    hex	filename
->    2804	      0	      0	   2804	    af4	drivers/staging/winbond/mds.o
-> 
-> After:
-> lali@lazer2 ~/linux2/linux-2.6 $ size drivers/staging/winbond/mds.o
->    text	   data	    bss	    dec	    hex	filename
->    2804	      0	      0	   2804	    af4	drivers/staging/winbond/mds.o
-> 
-> diff:
-> lali@lazer2 ~/linux2/linux-2.6 $ diff ../../linux3/linux-2.6/drivers/staging/winbond/mds.o drivers/staging/winbond/mds.o
-> lali@lazer2 ~/linux2/linux-2.6 $ 
-> 
-> linux3 is a clean tree and linux2 the one i'm working on..
+Hey,
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+On Mon, Mar 15, 2010 at 05:43:59PM +0000, Alan Cox wrote:
+> > You're right, it seems to make no sense. Or less than that.
+> > 
+> > Alan, what do you think?
+> 
+> It should be setting the correct NOAUTOEN bits so that the IRQ isn't
+> randomly enabled as some hardware then crashes. How it ended up wrong
+> upstream I don't know as it was tested and fixed the bug, so presumably
+> the right version got tested or it happened to work back on the old irq
+> code by luck.
 
-Greg, can you pick up my typedef cleanups and this patch to -staging?
+http://lkml.org/lkml/2007/4/5/127 and then
+http://lkml.org/lkml/2007/4/26/485 talk a different language :(
+
+> I don't think you are overlooking anything - there is no deep magic
+> involved.
+
+I'll just revert it.
+
+Best,
+	Dominik
