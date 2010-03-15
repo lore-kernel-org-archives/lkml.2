@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965480Ab0COQ6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 12:58:40 -0400
-Received: from mail.perches.com ([173.55.12.10]:1701 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965417Ab0COQ6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 12:58:36 -0400
-Subject: Re: [PATCH] net/netfilter/ipvs/ip_vs_ftp.c: Remove use of NIPQUAD
-From: Joe Perches <joe@perches.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-       Julian Anastasov <ja@ssi.bg>, "David S. Miller" <davem@davemloft.net>,
-       netdev@vger.kernel.org, lvs-devel <lvs-devel@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4B9E5E43.9060206@trash.net>
-References: <1268094699.1617.5.camel@Joe-Laptop.home>
-	 <4B9E5E43.9060206@trash.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Mar 2010 09:58:34 -0700
-Message-ID: <1268672314.4027.46.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S965476Ab0CORDQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 13:03:16 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50391 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965417Ab0CORDP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 13:03:15 -0400
+Date: Mon, 15 Mar 2010 13:03:11 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
+Cc: Changli Gao <xiaosuo@gmail.com>, Jens Axboe <jens.axboe@oracle.com>
+Subject: [RELEASE] LTTng 0.199 for Linux 2.6.33
+Message-ID: <20100315170311.GA390@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:53:48 up 51 days, 19:31,  8 users,  load average: 1.16, 0.77,
+	0.34
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-15 at 17:20 +0100, Patrick McHardy wrote:
-> Joe Perches wrote:
-> > NIPQUAD has very few uses left.
-> > Remove this use and make the code have the identical form of the only
-> > other use of "%u,%u,%u,%u,%u,%u" in net/ipv4/netfilter/nf_nat_ftp.c
-> 
-> Are we trying to remove NIPQUAD? 
+Hi everyone,
 
-That is a goal for me yes.
-Elimination of unnecessary stuff from kernel.h is useful.
+I just released an updated LTTng tree/tarball that is now based on the 2.6.33
+kernel. As always, comments and testing results are welcome.
 
-> In my opinion the current code is
-> preferrable to open-coding NIPQUAD.
+Website:
+http://lttng.org
 
-$ grep -r --include=*.[ch] NIPQUAD *
-include/linux/kernel.h:#define NIPQUAD(addr) \
-include/linux/kernel.h:#define NIPQUAD_FMT "%u.%u.%u.%u"
-net/netfilter/ipvs/ip_vs_ftp.c:		sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
+Kernel tree:
+http://git.kernel.org/?p=linux/kernel/git/compudj/linux-2.6-lttng.git
+git://git.kernel.org/pub/scm/linux/kernel/git/compudj/linux-2.6-lttng.git
 
-As of right now NIPQUAD_FMT is unused and
-could be removed from kernel.h
+Tarballs:
+http://lttng.org/files/lttng/patch-2.6.33-lttng-0.199.tar.bz2
 
-There's 1 use of NIPQUAD.
+There has been some changes in the way splice() works between 2.6.32 and 2.6.33
+(commit cc56f7de7f00d188c7c4da1e9861581853b9e92f). It now checks for NULL llseek
+fop in addition to check for the no_llseek. In LTTng, we use the offset value
+directly in our own implementation of the splice_read fop, so there is no point
+in having a llseek fop.  The solution I used to bypass this check is to create
+my own copy of "no_llseek" in ltt-relay-splice.c, which does basically nothing,
+but makes do_splice() happy.
 
-Maybe instead of removal the #define could be
-moved to netfilter.h or netfilter_ipv4.h
+Thanks,
 
-Another is to consolidate the two uses of
-"%u,%u,%u,%u,%u,%u"
+Mathieu
 
-$ grep -r --include=*.[ch] "%u,%u,%u,%u,%u,u%" *
-fs/cachefiles/bind.c:	_enter("{%u,%u,%u,%u,%u,%u},%s",
-net/ipv4/netfilter/nf_nat_ftp.c:		return snprintf(buffer, buflen, "%u,%u,%u,%u,%u,%u",
-net/netfilter/ipvs/ip_vs_ftp.c:		sprintf(buf, "%u,%u,%u,%u,%u,%u", NIPQUAD(from.ip),
-
-Maybe these 2 open coded sprintf/snprintf could be
-consolidated and moved to an appropriate include
-like netfilter_ipv4 or another.
-
-What do you suggest?
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency Consultant
+EfficiOS Inc.
+http://www.efficios.com
