@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936976Ab0COW0M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:26:12 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:36601 "EHLO mail.vyatta.com"
+	id S936983Ab0COW1l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:27:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51463 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936949Ab0COW0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:26:09 -0400
-Date: Mon, 15 Mar 2010 15:25:51 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: David Miller <davem@davemloft.net>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, stable@kernel.org,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       roger.oksanen@cs.helsinki.fi
-Subject: Re: [Stable-review] [19/39] e100: Use pci pool to work around
- GFP_ATOMIC order 5 memory allocation failure
-Message-ID: <20100315152551.3da75728@nehalam>
-In-Reply-To: <20100315.152037.32744329.davem@davemloft.net>
-References: <20100315.143225.212581877.davem@davemloft.net>
-	<20100315143653.294c0650@nehalam>
-	<20100315.143906.150716862.davem@davemloft.net>
-	<20100315.152037.32744329.davem@davemloft.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+	id S936949Ab0COW1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 18:27:39 -0400
+Date: Tue, 16 Mar 2010 09:27:34 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: linux-next: build warning after merge of the security-testing
+ tree
+Message-Id: <20100316092734.7bf780d2.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LRH.2.00.1003160850080.13724@tundra.namei.org>
+References: <20100310153116.291d4e6f.sfr@canb.auug.org.au>
+	<alpine.LRH.2.00.1003160850080.13724@tundra.namei.org>
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010 15:20:37 -0700 (PDT)
-David Miller <davem@davemloft.net> wrote:
+--Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From: David Miller <davem@davemloft.net>
-> Date: Mon, 15 Mar 2010 14:39:06 -0700 (PDT)
-> 
-> > From: Stephen Hemminger <shemminger@vyatta.com>
-> > Date: Mon, 15 Mar 2010 14:36:53 -0700
-> > 
-> >> The kernel has both fixes in it. The customer reported that if both
-> >> were reverted, the kernel panic went away.
-> > 
-> > Please recheck that as your backtrace matches exactly the
-> > crash signature fixed by the memset().
-> 
-> As an update, after some auditing I found that ring parameter changes
-> aren't handled correctly by the PCI pool changes and that might
-> explain the crash.
-> 
-> I'll push the following fix around as soon as possible:
-> 
-> diff --git a/drivers/net/e100.c b/drivers/net/e100.c
-> index a26ccab..b997e57 100644
-> --- a/drivers/net/e100.c
-> +++ b/drivers/net/e100.c
-> @@ -2858,7 +2858,7 @@ static int __devinit e100_probe(struct pci_dev *pdev,
->  	}
->  	nic->cbs_pool = pci_pool_create(netdev->name,
->  			   nic->pdev,
-> -			   nic->params.cbs.count * sizeof(struct cb),
-> +			   nic->params.cbs.max * sizeof(struct cb),
->  			   sizeof(u32),
->  			   0);
->  	DPRINTK(PROBE, INFO, "addr 0x%llx, irq %d, MAC addr %pM\n",
+Hi James,
 
-I will cherry pick it back into our kernel for validation.
+On Tue, 16 Mar 2010 08:50:32 +1100 (EST) James Morris <jmorris@namei.org> w=
+rote:
+>
+> Thanks, fix applied per below.
+>=20
+> commit 310de047eef6685274045db1e6b39c9f313df428
+> Author: James Morris <jmorris@namei.org>
+> Date:   Tue Mar 16 08:47:36 2010 +1100
+>=20
+>     selinux: fix warning in genheaders
+
+Thanks.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkuetFYACgkQjjKRsyhoI8yNpgCfZLg5vgAoIN5UH0jX8Ue9ChVb
+G9MAoKsxK0QBXtJFb461mgwYtQh0YbAv
+=IGQm
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Mar_2010_09_27_34_+1100_cClD17E/5iUj/FwB--
