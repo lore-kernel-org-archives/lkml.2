@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937000Ab0COWeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 18:34:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35986 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936990Ab0COWeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 18:34:03 -0400
-Date: Tue, 16 Mar 2010 09:33:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       "\\ \" H . Peter Anvin \\ \"" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux Next <linux-next@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH v2] perf: Fix unexported generic
- perf_arch_fetch_caller_regs
-Message-Id: <20100316093355.071fde51.sfr@canb.auug.org.au>
-In-Reply-To: <1268691442-8300-1-git-send-regression-fweisbec@gmail.com>
-References: <1268686806-7286-1-git-send-regression-fweisbec@gmail.com>
-	<1268691442-8300-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+	id S937005Ab0COWrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 18:47:04 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34465
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932386Ab0COWqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 18:46:54 -0400
+Date: Mon, 15 Mar 2010 15:47:14 -0700 (PDT)
+Message-Id: <20100315.154714.23695928.davem@davemloft.net>
+To: julia@diku.dk
+Cc: ram.vepa@neterion.com, santosh.rastapur@neterion.com,
+       sivakumar.subramani@neterion.com, sreenivasa.honnur@neterion.com,
+       anil.murthy@neterion.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/5] drivers/net: drop redundant memset
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.64.1003092213500.4974@ask.diku.dk>
+References: <Pine.LNX.4.64.1003092213500.4974@ask.diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__16_Mar_2010_09_33_55_+1100_p7_wCx_WonIxv6Np"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Mar_2010_09_33_55_+1100_p7_wCx_WonIxv6Np
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Julia Lawall <julia@diku.dk>
+Date: Tue, 9 Mar 2010 22:14:11 +0100 (CET)
 
-Hi Frederic,
+> From: Julia Lawall <julia@diku.dk>
+> 
+> The region set by the call to memset is immediately overwritten by the
+> subsequent call to memcpy.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e1,e2,e3,e4;
+> @@
+> 
+> - memset(e1,e2,e3);
+>   memcpy(e1,e4,e3);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-On Mon, 15 Mar 2010 23:17:22 +0100 Frederic Weisbecker <fweisbec@gmail.com>=
- wrote:
->
-> perf_arch_fetch_caller_regs() is exported for the overriden x86
-> version, but not for the generic weak version.
-> As a general rule, weak functions should have their symbol exported
-                                          ^
-"not"
-
-> in the same file they are defined.
->=20
-> So let's export it on trace_event_perf.c as it is used by trace
-> events only.
-
-Otherwise, looks good (though I haven't tested it).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__16_Mar_2010_09_33_55_+1100_p7_wCx_WonIxv6Np
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuetdMACgkQjjKRsyhoI8w7VgCglSfwgZB2ZWCVgNinzl987ayI
-tcYAniWINO7SIJquimGQPhYXvVkOtr2q
-=kKv0
------END PGP SIGNATURE-----
-
---Signature=_Tue__16_Mar_2010_09_33_55_+1100_p7_wCx_WonIxv6Np--
+Applied, thanks!
