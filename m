@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab0CPW55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 18:57:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47314 "EHLO hera.kernel.org"
+	id S1753175Ab0CPXCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 19:02:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59321 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab0CPW5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 18:57:55 -0400
-Message-ID: <4BA00CE4.1090108@kernel.org>
-Date: Wed, 17 Mar 2010 07:57:40 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752175Ab0CPXC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 19:02:28 -0400
+Message-ID: <4BA00DE5.80604@redhat.com>
+Date: Tue, 16 Mar 2010 19:01:57 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
-References: <4B990496.4020002@kernel.org> <alpine.DEB.2.00.1003161107070.2311@router.home>
-In-Reply-To: <alpine.DEB.2.00.1003161107070.2311@router.home>
+To: oerg Roedel <joro@8bytes.org>
+CC: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       sungho.kim.zd@hitachi.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <4B9F19F7.6000309@redhat.com> <20100316072449.GB11881@elte.hu> <4B9F4D74.4090403@redhat.com> <20100316095336.GI7961@elte.hu> <4B9F59DE.1060008@redhat.com> <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu> <20100316223040.GH13108@8bytes.org>
+In-Reply-To: <20100316223040.GH13108@8bytes.org>
 X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 22:57:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 03/17/2010 01:16 AM, Christoph Lameter wrote:
-> On Thu, 11 Mar 2010, Tejun Heo wrote:
+oerg Roedel wrote:
+> On Tue, Mar 16, 2010 at 12:25:00PM +0100, Ingo Molnar wrote:
+>> Hm, that sounds rather messy if we want to use it to basically expose kernel 
+>> functionality in a guest/host unified way. Is the qemu process discoverable in 
+>> some secure way? Can we trust it? Is there some proper tooling available to do 
+>> it, or do we have to push it through 2-3 packages to get such a useful feature 
+>> done?
 > 
->> Lee Schermerhorn was trying to use percpu from slab.h and ran into a
->> dependency loop.  percpu.h was using slab.h for UP inline
+> Since we want to implement a pmu usable for the guest anyway why we
+> don't just use a guests perf to get all information we want? If we get a
+> pmu-nmi from the guest we just re-inject it to the guest and perf in the
+> guest gives us all information we wand including kernel and userspace
+> symbols, stack traces, and so on.
+
+I guess this aims to get information from old environments running on
+kvm for life extension :)
+
+> In the previous thread we discussed about a direct trace channel between
+> guest and host kernel (which can be used for ftrace events for example).
+> This channel could be used to transport this information to the host
+> kernel.
+
+Interesting! I know the people who are trying to do that with systemtap.
+See, http://vesper.sourceforge.net/
+
 > 
-> The problem is that percpu.h includes slab.h for the UP case.
+> The only additional feature needed is a way for the host to start a perf
+> instance in the guest.
 
-Yes, that's the reason why slab.h is included in percpu.h
-unconditionally.
+# ssh localguest perf record --host-chanel ... ? B-)
 
-> slab.h does not use percpu.h. Lee was trying to have topology.h use
-> percpu.h which fails because percpu.h uses gfp.h which in turn uses
-> topology.h again.
+Thank you,
 
-But apparently a lot of files depend on getting slab.h through
-percpu.h and removing slab.h causes a lot of build breakages UP or
-SMP.
-
-> Did something change there or does the description need an update?
-
-I don't find anything too wrong about the description?
-
-Thanks.
+> 
+> Opinions?
+> 
+> 
+> 	Joerg
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-tejun
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
