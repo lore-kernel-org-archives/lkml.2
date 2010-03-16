@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab0CPQhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 12:37:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26466 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759115Ab0CPQhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 12:37:33 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1268744823.3155.15.camel@localhost.localdomain>
-References: <1268744823.3155.15.camel@localhost.localdomain> <20100316115130.25642.17789.stgit@warthog.procyon.org.uk>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: dhowells@redhat.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim()
-Date: Tue, 16 Mar 2010 16:37:05 +0000
-Message-ID: <16115.1268757425@redhat.com>
+	id S1759354Ab0CPQmZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 12:42:25 -0400
+Received: from mga12.intel.com ([143.182.124.36]:10181 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752857Ab0CPQmY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 12:42:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,650,1262592000"; 
+   d="scan'208";a="501084968"
+Message-ID: <4B9FB472.5060702@linux.intel.com>
+Date: Tue, 16 Mar 2010 09:40:18 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Thomas Renninger <trenn@suse.de>
+CC: =?ISO-8859-15?Q?Robert_Sch=F6ne?= <robert.schoene@tu-dresden.de>,
+       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
+ Intel x86 CPUs)
+References: <1268399863.3407.15.camel@localhost> <201003161159.24424.trenn@suse.de> <4B9F9361.6060208@linux.intel.com> <201003161550.18102.trenn@suse.de>
+In-Reply-To: <201003161550.18102.trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
+On 3/16/2010 7:50, Thomas Renninger wrote:
+> Still, as this is totally broken:
+>     - by design ->  only one of a dozen cpufreq drivers is supported
 
-> > +	rcu_read_lock();
-> >  	cred = rcu_dereference(delegation->cred);
-> >  	rcu_assign_pointer(delegation->cred, NULL);
-> > +	rcu_read_unlock();
-> >  	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
-> >  	if (cred)
-> >  		put_rpccred(cred);
-> 
-> That's bogus. We're in the process of freeing the delegation, so we
-> don't need to rely on rcu to read delegation->cred.
-> 
-> Better to just convert that rcu_dereference() into an ordinary pointer
-> dereference.
+the one I care about is supported. The others... anyone can add support for their favorite driver.
 
-Now that I take a second look at this code, it looks wrong.  You shouldn't
-really start dissassembling the delegation record until the RCU callback
-triggers as it may be in use by someone up to that point.  If you know it
-isn't in use at this point, why use call_rcu()?
 
-> The spinlock already provides protection. Again we can just convert the
-> rcu_dereference() into a pointer dereference.
+> please submit my patch and remove this again until a proper
+> implementation is provided.
 
-That seems reasonable.
 
-> We cannot hold the rcu read lock across the entire RPC call in
-> nfs_do_return_delegation(). All we want to do above is to check that
-> nfsi->delegation != NULL.
-
-Good point.
-
-However, that leads me to note that nfs_detach_delegation_locked() then must
-be using rcu_dereference() unnecessarily.  Also nfs_do_return_delegation()
-must be too.
-
-I think if all you're doing is checking the state of the pointer, you don't
-need the interpolated memory barrier, since you've no need to synchronise what
-the pointer points to.
-
-David
+how about not. it works right now, and is in active use right now.
+feel free to add support to other drivers if you care about those....
