@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966298Ab0CPOTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:19:19 -0400
-Received: from mga12.intel.com ([143.182.124.36]:42261 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S966283Ab0CPOTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:19:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.49,650,1262592000"; 
-   d="scan'208";a="255225107"
-Message-ID: <4B9F9361.6060208@linux.intel.com>
-Date: Tue, 16 Mar 2010 07:19:13 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Thomas Renninger <trenn@suse.de>
-CC: =?ISO-8859-15?Q?Robert_Sch=F6ne?= <robert.schoene@tu-dresden.de>,
-       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
- Intel x86 CPUs)
-References: <1268399863.3407.15.camel@localhost> <201003151151.05741.trenn@suse.de> <1268723628.3367.16.camel@localhost> <201003161159.24424.trenn@suse.de>
-In-Reply-To: <201003161159.24424.trenn@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S966291Ab0CPOVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:21:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33395 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966260Ab0CPOVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:21:54 -0400
+Subject: Re: ATA 4 KiB sector issues.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+In-Reply-To: <4B9F8E1A.2020608@kernel.org>
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
+	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
+	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
+	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
+	 <4B9F8E1A.2020608@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 07:21:37 -0700
+Message-ID: <1268749297.21384.15.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-03-16 at 22:56 +0900, Tejun Heo wrote:
+> Hello, James.
+> 
+> On 03/16/2010 10:24 PM, James Bottomley wrote:
+> > For msdos labels, it's embedded in the label ... for all other labels,
+> > it's made up on the spot.
+> 
+> Where in the label?
 
-> But something else...:
-> What exactly is the power tracer good for and what is it
-> capable of which cpufreq_stats is not capable to do?
+No idea ... I only know you can use fdisk expert mode to change the
+C/H/S layout and the change is preserved across reboots.
 
-look at timechart for example.....
-it's extremely useful to have this for us that do power tuning...
-cpufreq_stats is nice but not nearly good enough since you only get averages,
-not time behavior.
+James
+
+
