@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966281Ab0CPOTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:19:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33936 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966252Ab0CPOTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:19:12 -0400
-Date: Tue, 16 Mar 2010 15:19:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1003161402250.18642@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S966298Ab0CPOTT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:19:19 -0400
+Received: from mga12.intel.com ([143.182.124.36]:42261 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S966283Ab0CPOTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:19:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,650,1262592000"; 
+   d="scan'208";a="255225107"
+Message-ID: <4B9F9361.6060208@linux.intel.com>
+Date: Tue, 16 Mar 2010 07:19:13 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+To: Thomas Renninger <trenn@suse.de>
+CC: =?ISO-8859-15?Q?Robert_Sch=F6ne?= <robert.schoene@tu-dresden.de>,
+       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
+ Intel x86 CPUs)
+References: <1268399863.3407.15.camel@localhost> <201003151151.05741.trenn@suse.de> <1268723628.3367.16.camel@localhost> <201003161159.24424.trenn@suse.de>
+In-Reply-To: <201003161159.24424.trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-please pull from
+> But something else...:
+> What exactly is the power tracer good for and what is it
+> capable of which cpufreq_stats is not capable to do?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-
-to receive fixes for HID code. One oops fix, some device ID updates and 
-a few tiny fixes.
-
-Thanks!
-
-
-Andrej Gelenberg (1):
-      HID: add quirk for UC-Logik WP4030 tablet
-
-Bruno Prémont (1):
-      HID: avoid '\0' in hid debugfs events file
-
-Markus Rathgeb (1):
-      HID: Add RGT Clutch Wheel clutch device id
-
-Michael Poole (1):
-      HID: magicmouse: fix oops after device removal
-
-Rafi Rubin (1):
-      HID: ntrig: fix touch events
-
- drivers/hid/hid-core.c          |    1 +
- drivers/hid/hid-debug.c         |    6 +++---
- drivers/hid/hid-ids.h           |    1 +
- drivers/hid/hid-magicmouse.c    |    7 +++++--
- drivers/hid/hid-ntrig.c         |   11 +++++++++++
- drivers/hid/hid-tmff.c          |    2 ++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 7 files changed, 24 insertions(+), 5 deletions(-)
+look at timechart for example.....
+it's extremely useful to have this for us that do power tuning...
+cpufreq_stats is nice but not nearly good enough since you only get averages,
+not time behavior.
