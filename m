@@ -1,50 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0CPTSh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 15:18:37 -0400
-Received: from fg-out-1718.google.com ([72.14.220.153]:4080 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab0CPTSd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 15:18:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=kcM0VwvqunIBowUXI5C4OuHvUGB8yXOw/CiWJ8L6tvgEVrqywop2bAJuen+VDgMDiq
-         KDTp3AQFEfPWlT2jh6VZD0OwaYAj/e9tZGTz7jTloz/xo1yBNMFj/UBvo6psLcmxiS2J
-         NKT22L10TSDbGWTi9AJ+U/RIUpG7Mq6l9Jbhw=
-MIME-Version: 1.0
-In-Reply-To: <87ljdsibqe.fsf@macbook.be.48ers.dk>
-References: <87vdcwv139.fsf@tac.ki.iif.hu> <87ljdsibqe.fsf@macbook.be.48ers.dk>
-Date: Tue, 16 Mar 2010 22:18:31 +0300
-Message-ID: <acd2a5931003161218id7b0c4bp3b6dc366e4e56d5d@mail.gmail.com>
-Subject: Re: RFC: direct MTD support for SquashFS
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: Ferenc Wagner <wferi@niif.hu>,
-       Phillip Lougher <phillip@lougher.demon.co.uk>,
-       linux-fsdevel@vger.kernel.org, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755554Ab0CPTbN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 15:31:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47115 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753399Ab0CPTbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 15:31:09 -0400
+Cc: albert_herranz@yahoo.es, benh@kernel.crashing.org,
+       linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       linux-kernel@vger.kernel.org, x86@kernel.org,
+       linux-ia64@vger.kernel.org
+Message-Id: <C200C089-E6B9-4836-A7B5-3233EB2CE5FB@kernel.crashing.org>
+From: Becky Bruce <beckyb@kernel.crashing.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100316190805Z.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=US-ASCII; format=flowed; delsp=yes
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0 (Apple Message framework v936)
+Subject: Re: [PATCH v4 05/11] swiotlb: add swiotlb_set_default_size()
+Date: Tue, 16 Mar 2010 14:28:09 -0500
+References: <1268421166-4791-6-git-send-email-albert_herranz@yahoo.es> <20100316104440Y.fujita.tomonori@lab.ntt.co.jp> <4B9F1E11.80201@yahoo.es> <20100316190805Z.fujita.tomonori@lab.ntt.co.jp>
+X-Mailer: Apple Mail (2.936)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 5:26 PM, Peter Korsgaard <jacmet@sunsite.dk> wrote:
->>>>>> "Ferenc" == Ferenc Wagner <wferi@niif.hu> writes:
->  Ferenc> For now, 2.6.34 gained pluggable decompressors, so this patch
->  Ferenc> does not apply anymore, though the main idea holds.  My
->  Ferenc> questions: is the community interested in integrating something
->  Ferenc> like this, should this patch transformed into something
->  Ferenc> acceptable, or am I a total lunatic?  I don't know a thing
->  Ferenc> about filesystem development, but willing to learn and
->  Ferenc> refactor.  Comments welcome.
+
+On Mar 16, 2010, at 5:08 AM, FUJITA Tomonori wrote:
+
+> On Tue, 16 Mar 2010 06:58:41 +0100
+> Albert Herranz <albert_herranz@yahoo.es> wrote:
 >
-> Nice, I have been thinking about that as well. What kind of size savings
-> are you getting with this?
+>> FUJITA Tomonori wrote:
+>>> On Fri, 12 Mar 2010 20:12:40 +0100
+>>> Albert Herranz <albert_herranz@yahoo.es> wrote:
+>>>
+>>>> The current SWIOTLB code uses a default of 64MB for the IO TLB  
+>>>> area.
+>>>> This size can be influenced using a kernel command line parameter  
+>>>> "swiotlb".
+>>>> Unfortunately, the parsing of the kernel command line is done  
+>>>> _after_ the
+>>>> swiotlb is initialized on some architectures.
+>>>>
+>>>> This patch adds a new function swiotlb_set_default_size() which  
+>>>> can be used
+>>>> before swiotlb_init() to indicate the desired IO TLB area size in  
+>>>> bytes.
+>>>>
+>>>> This will be used later to implement a smaller IO TLB on the  
+>>>> Nintendo Wii
+>>>> video game console which just comes with 24MB + 64MB of RAM.
+>>>>
+>>>> CC: linuxppc-dev@lists.ozlabs.org
+>>>> CC: linux-kernel@vger.kernel.org
+>>>> CC: x86@kernel.org
+>>>> CC: linux-ia64@vger.kernel.org
+>>>> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
+>>>> ---
+>>>> include/linux/swiotlb.h |    2 ++
+>>>> lib/swiotlb.c           |   20 ++++++++++++++++++++
+>>>> 2 files changed, 22 insertions(+), 0 deletions(-)
+>>>
+>>> Please fix the powerpc swiotlb initialization instead.
+>>>
+>>> Calling swiotlb_init() before parsing kernel parameters sounds
+>>> wrong. Any reasons why you can't fix it?
+>>>
+>>
+>> I think that this would be better asked by a PowerPC maintainer. Ben?
+>>
+>> If this is really a problem the swiotlb late init may be a solution  
+>> too in this particular case.
+>
+> Hmm, why swiotlb_late_init_with_default_size()?
+>
+> Why can't you initialize swiotlb in mem_init() like this (only compile
+> tested)? Any time before freeing bootmem works for swiotlb.
 
-Yeah, I'm interested in that as well.
+This is an oops in the original patchset -  I think it should be fine  
+to move the swiotlb_init later as Fujita suggests, at least for 32-bit  
+powerpc.  I just booted this on mpc8641 and everything seems OK.
 
-~Vitaly
+-Becky
+
+>
+>
+> diff --git a/arch/powerpc/kernel/setup_32.c b/arch/powerpc/kernel/ 
+> setup_32.c
+> index b152de3..8f58986 100644
+> --- a/arch/powerpc/kernel/setup_32.c
+> +++ b/arch/powerpc/kernel/setup_32.c
+> @@ -39,7 +39,6 @@
+> #include <asm/serial.h>
+> #include <asm/udbg.h>
+> #include <asm/mmu_context.h>
+> -#include <asm/swiotlb.h>
+>
+> #include "setup.h"
+>
+> @@ -343,11 +342,6 @@ void __init setup_arch(char **cmdline_p)
+> 		ppc_md.setup_arch();
+> 	if ( ppc_md.progress ) ppc_md.progress("arch: exit", 0x3eab);
+>
+> -#ifdef CONFIG_SWIOTLB
+> -	if (ppc_swiotlb_enable)
+> -		swiotlb_init(1);
+> -#endif
+> -
+> 	paging_init();
+>
+> 	/* Initialize the MMU context management stuff */
+> diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/ 
+> setup_64.c
+> index 6354739..9143891 100644
+> --- a/arch/powerpc/kernel/setup_64.c
+> +++ b/arch/powerpc/kernel/setup_64.c
+> @@ -61,7 +61,6 @@
+> #include <asm/xmon.h>
+> #include <asm/udbg.h>
+> #include <asm/kexec.h>
+> -#include <asm/swiotlb.h>
+> #include <asm/mmu_context.h>
+>
+> #include "setup.h"
+> @@ -541,11 +540,6 @@ void __init setup_arch(char **cmdline_p)
+> 	if (ppc_md.setup_arch)
+> 		ppc_md.setup_arch();
+>
+> -#ifdef CONFIG_SWIOTLB
+> -	if (ppc_swiotlb_enable)
+> -		swiotlb_init(1);
+> -#endif
+> -
+> 	paging_init();
+>
+> 	/* Initialize the MMU context management stuff */
+> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+> index 311224c..448f972 100644
+> --- a/arch/powerpc/mm/mem.c
+> +++ b/arch/powerpc/mm/mem.c
+> @@ -48,6 +48,7 @@
+> #include <asm/sparsemem.h>
+> #include <asm/vdso.h>
+> #include <asm/fixmap.h>
+> +#include <asm/swiotlb.h>
+>
+> #include "mmu_decl.h"
+>
+> @@ -320,6 +321,11 @@ void __init mem_init(void)
+> 	struct page *page;
+> 	unsigned long reservedpages = 0, codesize, initsize, datasize,  
+> bsssize;
+>
+> +#ifdef CONFIG_SWIOTLB
+> +	if (ppc_swiotlb_enable)
+> +		swiotlb_init(1);
+> +#endif
+> +
+> 	num_physpages = lmb.memory.size >> PAGE_SHIFT;
+> 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux- 
+> kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
