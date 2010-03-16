@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966450Ab0CPPCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:02:37 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:15674 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966326Ab0CPPCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:02:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references
-         :mime-version:content-type:content-transfer-encoding;
-        b=fT10WBXmHQUM8iytxWowdt93Kn2oaImiXQZ3Wbi4tHoBQ8Lwgu6d/RpeVp7SG1iirY
-         rbxiDPobFV/hi9zmAulvprLtUACYQ6DzKlSRTmWR/qCVq/Uzhe3ZYHKIyxp3PLkag5pZ
-         4O1h7lp/v5jFYPSGrGPdWrrPiuU0lBlEjZXSE=
-From: =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org,
-       =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwintorok@gmail.com>
-Subject: [PATCH] perf: x86: fix callgraphs of 32-bit processes on 64-bit kernels V2.
-Date: Tue, 16 Mar 2010 17:02:14 +0200
-Message-Id: <1268751734-9167-1-git-send-email-edwintorok@gmail.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100316144906.GA5621@nowhere>
-References: <20100316144906.GA5621@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S966466Ab0CPPCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:02:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34767 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966452Ab0CPPCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:02:42 -0400
+Subject: Re: ATA 4 KiB sector issues.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+In-Reply-To: <4B9F9AAF.6080709@kernel.org>
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
+	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
+	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
+	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
+	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>
+	 <4B9F9AAF.6080709@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 08:02:28 -0700
+Message-ID: <1268751748.21384.18.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When profiling a 32-bit process on a 64-bit kernel, callgraph tracing
-stopped after the first function, because it has seen a garbage memory address
-(tried to interpret the frame pointer, and return address as a 64-bit pointer).
+On Tue, 2010-03-16 at 23:50 +0900, Tejun Heo wrote:
+> e.g.  If the first partition begins at CHS 0/32/33 and ends at
+> 12/233/19 and the corresponding LBA addresses are 2048 and 206848, you
+> can solve the equation and determine that the parameters gotta be 63
+> secs/trk and 255 heads/cyl to make those two pairs of addresses match
+> each other and in fact some BIOSs try to do this depending on
+> configuration (and sometimes falls into infinite loop or causes other
+> boot related problems if the parameters are too uncommon).
 
-Fix this by using a struct stack_frame with 32-bit pointers when the TIF_IA32 flag is set.
+for an msdos label, this is illegal, that was Arnd's point.  The
+partitions have to begin and end on cylinder boundaries*.  Knowing that,
+you can deduce the geometry from the last sector entry.
 
-Note that TIF_IA32 flag must be used, and not is_compat_task(), because the
-latter is only set when the 32-bit process is executing a syscall,
-which may not always be the case (when tracing page fault events for example).
+James
 
-Signed-off-by: Török Edwin <edwintorok@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c |   33 +++++++++++++++++++++++++++++++++
- 1 files changed, 33 insertions(+), 0 deletions(-)
+* at least if you want to preserve windows compatibility, which is what
+most of our partitioning tools seem to do.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 8c1c070..b85ea9f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -2401,6 +2401,20 @@ static int copy_stack_frame(const void __user *fp, struct stack_frame *frame)
- 	return bytes == sizeof(*frame);
- }
- 
-+struct stack_frame_ia32 {
-+    u32 next_frame;
-+    u32 return_address;
-+};
-+
-+static int copy_stack_frame_ia32(u32 fp, struct stack_frame_ia32 *frame)
-+{
-+	unsigned long bytes;
-+
-+	bytes = copy_from_user_nmi(frame, (const void __user*)(unsigned long)fp, sizeof(*frame));
-+
-+	return bytes == sizeof(*frame);
-+}
-+
- static void
- perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
- {
-@@ -2414,6 +2428,25 @@ perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 
- 	callchain_store(entry, PERF_CONTEXT_USER);
- 	callchain_store(entry, regs->ip);
-+	if (test_thread_flag(TIF_IA32)) {
-+	    /* 32-bit process in 64-bit kernel. */
-+	    u32 fp = regs->bp;
-+	    struct stack_frame_ia32 frame;
-+	    while (entry->nr < PERF_MAX_STACK_DEPTH) {
-+		frame.next_frame     = 0;
-+		frame.return_address = 0;
-+
-+		if (!copy_stack_frame_ia32(fp, &frame))
-+			break;
-+
-+		if (fp < (u32)regs->sp)
-+			break;
-+
-+		callchain_store(entry, frame.return_address);
-+		fp = frame.next_frame;
-+	    }
-+	    return;
-+	}
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
- 		frame.next_frame	     = NULL;
--- 
-1.7.0
 
