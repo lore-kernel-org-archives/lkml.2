@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937449Ab0CPGiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:38:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:1715 "EHLO mail.perches.com"
+	id S1756851Ab0CPGmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:42:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47493 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932407Ab0CPGiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:38:20 -0400
-Subject: Re: [RESEND][PATCH] intel_txt: add support for S3 memory integrity
- protection within Intel(R) TXT launched kernel (v3)
-From: Joe Perches <joe@perches.com>
-To: Shane Wang <shane.wang@intel.com>
-Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org, mingo@elte.hu, rjw@sisk.pl,
-       pavel@ucw.cz, joseph.cihula@intel.com
-In-Reply-To: <1268749871-2521-1-git-send-email-shane.wang@intel.com>
-References: <1268749871-2521-1-git-send-email-shane.wang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Mar 2010 23:38:18 -0700
-Message-ID: <1268721498.16849.5.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751621Ab0CPGmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:42:14 -0400
+Date: Tue, 16 Mar 2010 17:42:09 +1100
+From: Nick Piggin <npiggin@suse.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [rfc][patch] mm: lockdep page lock
+Message-ID: <20100316064209.GK2869@laptop>
+References: <20100315155859.GE2869@laptop>
+ <20100316062032.GB22651@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316062032.GB22651@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff -r d2911aa1461d MAINTAINERS
-> --- a/MAINTAINERS	Thu Mar 04 09:37:53 2010 -0500
-> +++ b/MAINTAINERS	Wed Mar 10 08:18:48 2010 -0500
-> @@ -2891,6 +2891,17 @@ F:	Documentation/networking/README.ipw22
->  F:	Documentation/networking/README.ipw2200
->  F:	drivers/net/wireless/ipw2x00/ipw2200.*
->  
-> +INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
-> +M:	Joseph Cihula <joseph.cihula@intel.com>
-> +M:	Shane Wang <shane.wang@intel.com>
-> +L:	tboot-devel@lists.sourceforge.net
-> +W:	http://tboot.sourceforge.net
-> +T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
+On Tue, Mar 16, 2010 at 07:20:32AM +0100, Ingo Molnar wrote:
+> 
+> * Nick Piggin <npiggin@suse.de> wrote:
+> 
+> > Page lock has very complex dependencies, so it would be really nice to add 
+> > lockdep support for it.
+> 
+> Just wondering - has your patch shown any suspect areas of code already, in 
+> the testing you did?
 
-The introductory documentation in MAINTAINERS has:
-	T: SCM tree type and location.  Type is one of: git, hg, quilt, stgit.
-So perhaps that's should be:
-T:	hg http://www.bughost.org/repos.hg/tboot.hg
+Not yet. Although I only did basic stress testing with tmpfs and ext3 so
+far. It would get even further useful for fs developers combined with
+annotating more bit locks like buffer lock.
 
+BTW. I tried adding a might_fault() under page lock to see the infamous
+old page_lock -> mmap_sem deadlock, but it didn't warn. Explicitly doing
+a down_write/up_write of mmap_sem did warn. But it took a while to build
+the required chains, so I may have just been unlucky.
+
+ 
+> Maybe it should be test-driven for a while, in a non-append-only tree such as 
+> -mm, to see whether it's finding real bugs.
+
+I think it should be very useful for filesystem developers. It doesn't
+seem too intrusive (and I will make it less so, by not open-coding the
+mutex_release/mutex_acquire pairs when changing page mapping).
+
+Filesystems and mm/vfs/fs lock interactions may be the most complex in
+the kernel...
+
+If you are worried about struct page bloat, it's already getting bloated
+by ptl spinlock in there. But it could always be configurable.
+
+No it isn't ready for -mm yet, let alone an append-only tree, I just
+wanted to get opinions from mm and fs (and lockdep) people.
+
+Thanks,
+Nick
 
