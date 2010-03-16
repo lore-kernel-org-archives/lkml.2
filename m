@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937915Ab0CPPiL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:38:11 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:22748 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100Ab0CPPiJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:38:09 -0400
-To: Tejun Heo <tj@kernel.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Denys Vlasenko <vda.linux@googlemail.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide\@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-Subject: Re: ATA 4 KiB sector issues.
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
-	<1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
-	<4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
-	<4B9F2388.2030803@kernel.org>
-	<1268745897.21384.14.camel@mulgrave.site>
-	<4B9F8E1A.2020608@kernel.org>
-	<1268749297.21384.15.camel@mulgrave.site>
-	<4B9F9AAF.6080709@kernel.org>
-	<1268751748.21384.18.camel@mulgrave.site>
-	<4B9FA1C6.7090305@kernel.org>
-Date: Tue, 16 Mar 2010 11:22:10 -0400
-In-Reply-To: <4B9FA1C6.7090305@kernel.org> (Tejun Heo's message of "Wed, 17
-	Mar 2010 00:20:38 +0900")
-Message-ID: <yq1634wp9zx.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S937919Ab0CPPkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:40:09 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:28210 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933095Ab0CPPkH (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 16 Mar 2010 11:40:07 -0400
+Date: Tue, 16 Mar 2010 08:45:56 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: ak@linux.intel.com, akataria@vmware.com, lenb@kernel.org, x86@kernel.org,
+       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       petr@vmware.com
+Subject: Re: [LKML] Re: [LKML] Re: swiotlb detection should be memory
+	hotplug aware ?
+Message-ID: <20100316124556.GA25340@phenom.dumpdata.com>
+References: <1268446032.13691.69.camel@ank32> <4B9B01F5.3000807@linux.intel.com> <20100316005140.GB7622@phenom.dumpdata.com> <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+Content-Disposition: inline
+In-Reply-To: <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4B9FA22D.0046:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4B9FA644.0047:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Tejun" == Tejun Heo <tj@kernel.org> writes:
+On Tue, Mar 16, 2010 at 10:33:20AM +0900, FUJITA Tomonori wrote:
+> On Mon, 15 Mar 2010 20:51:40 -0400
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> 
+> > On Fri, Mar 12, 2010 at 07:09:41PM -0800, Andi Kleen wrote:
+> > > , Alok Kataria wrote:
+> > >
+> > > Hi Alok,
+> > >
+> > >> Hi,
+> > >>
+> > >> Looking at the current code swiotlb is initialized for 64bit kernels
+> > >> only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
+> > >> So in cases when the initial memory is less than 4GB the kernel boots
+> > >> without enabling swiotlb, when we hotadd memory to such a kernel and go
+> > >> beyond the 4G limit, swiotlb is still disabled. As a result when any
+> > >> 32bit devices start using this newly added memory beyond 4G, the kernel
+> > >> starts spitting error messages like below or in some cases it causes
+> > >> kernel panics.
+> > >
+> > > Yes seems like a real problem.
+> > >
+> > >>
+> > >> 1. Enable swiotlb for all 64bit kernels which have memory hot-add
+> > >> support.
+> > >
+> > > I don't think that's a good idea. It would enable it everywhere on
+> > > distributions which compile with hotadd. Need (2)
+> > >
+> > >> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
+> > >> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
+> > >> value readily available. I could parse the SRAT and get hotplug memory
+> > >> information but that will make swiotlb detection logic a little too
+> > >> complex. A quick look around srat_xx.c files and the acpi_memhotplug
+> > >> module didn't find any useful API that could be used directly either.
+> > >> So was wondering if any of you are aware of an easy way to get such
+> > >> information ?
+> > >
+> > > I have a patchkit to revamp the SRAT parsing to store the hotadd information
+> > 
+> > There is a late mechanism to do kickoff the SWIOTLB. Perhaps the hot-add
+> > could use swiotlb_init_late and start up the SWIOTLB?
+> 
+> I guess that you are talking about
+> swiotlb_late_init_with_default_size(), which IA64 uses. However, you
+> can use swiotlb_late_init_with_default_size() only before we
+> initialize devices. Making it work after initializing devices is not
+> so easy, I think (that is, we need to change dma_ops).
 
-Tejun> * Anything remotely modern (>= XP) doesn't give a hoot about
-Tejun>   cylinder alignment.
+That is a good point. Especially if we have some outstanding DMA pages
+allocated via dma_alloc_coherent.
 
-Tejun> * Anything older (<= 2000) is very likely to get confused with
-Tejun>   custom geometry starting from the BIOS itself.  For those
-Tejun>   cases, the only thing we can do is aligning partitions to
-Tejun>   cylinders abiding BIOS supplied geometry parameters which will
-Tejun>   usually be 255/63.
+I thought that the machines that have hot-add memory they have their
+own fancy IOMMU. For example the IBM x3955 (and its family) utilize the
+Calgary IOMMU. The HP boxes utilize the Intel VT-D (or the AMD
+equivalant).
 
-Tejun> So, using custom geometry doesn't help compatibility at all.
-
-Great reads on this topic.  Might be worth linking to:
-
-	http://www.win.tue.nl/~aeb/partitions/partition_types.html
-
-	http://www.win.tue.nl/~aeb/linux/largedisk.html
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+So is this mostly specialized in the areas of virtualized guests? (Xen
+PV guests with PCI passthrough suffer the same problem, btw).
