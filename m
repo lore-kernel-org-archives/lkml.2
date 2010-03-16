@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966418Ab0CPOtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:49:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49076 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966317Ab0CPOtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:49:08 -0400
-Date: Tue, 16 Mar 2010 14:48:27 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Cc: linux-kernel@vger.kernel.org, justinmattock@gmail.com, hpa@zytor.com,
-       mingo@redhat.com, jbeulich@novell.com, JBeulich@novell.com,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, justinmattock@gmail.com,
-       linux-kernel@vger.kernel.org, jbeulich@novell.com, JBeulich@novell.com,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-References: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Fix placement of FIX_OHCI1394_BASE
-Message-ID: <tip-ff30a0543e9a6cd732582063e7cae951cdb7acf2@git.kernel.org>
-Git-Commit-ID: ff30a0543e9a6cd732582063e7cae951cdb7acf2
-X-Mailer: tip-git-log-daemon
+	id S966423Ab0CPOtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:49:24 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47199 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966419Ab0CPOtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:49:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=fCzJqsSxs/0RZ41Dk0BFRamyggAmP4jmqzAE90IFFHxJoYg+gkpAXyeYvZ2Cii5kYG
+         6CxY0DBX73IMscYMhhHkfmBNeJo2tBt8XTc/IAtUECArISBdDrFcun/KeFgJXFJaBdCs
+         b14KfdF0v6RoLrwuk990A20lEP+ePEI5zG4AQ=
+Date: Tue, 16 Mar 2010 15:49:10 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: =?iso-8859-1?B?VPZy9ms=?= Edwin <edwintorok@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: x86: fix callgraphs of 32-bit processes on
+	64-bit kernels.
+Message-ID: <20100316144906.GA5621@nowhere>
+References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com> <1268667260-5505-2-git-send-email-edwintorok@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 14:48:28 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1268667260-5505-2-git-send-email-edwintorok@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ff30a0543e9a6cd732582063e7cae951cdb7acf2
-Gitweb:     http://git.kernel.org/tip/ff30a0543e9a6cd732582063e7cae951cdb7acf2
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Mon, 15 Mar 2010 10:11:15 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 16 Mar 2010 11:16:27 +0100
+On Mon, Mar 15, 2010 at 05:34:20PM +0200, Török Edwin wrote:
+> When profiling a 32-bit process on a 64-bit kernel, callgraph tracing
+> stopped after the first function, because it has seen a garbage memory address
+> (tried to interpret the frame pointer, and return address as a 64-bit pointer).
+> 
+> Fix this by using a struct stack_frame with 32-bit pointers when the TIF_IA32 flag is set.
+> 
+> Note that TIF_IA32 flag must be used, and not is_compat_task(), because the
+> latter is only set when the 32-bit process is executing a syscall,
+> which may not always be the case (when tracing page fault events for example).
+> 
+> Signed-off-by: Török Edwin <edwintorok@gmail.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   33 +++++++++++++++++++++++++++++++++
+>  1 files changed, 33 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 8c1c070..13ee83a 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -2401,6 +2401,20 @@ static int copy_stack_frame(const void __user *fp, struct stack_frame *frame)
+>  	return bytes == sizeof(*frame);
+>  }
+>  
+> +struct stack_frame_ia32 {
+> +    u32 next_frame;
+> +    u32 return_address;
+> +};
+> +
+> +static int copy_stack_frame_ia32(u32 fp, struct stack_frame_ia32 *frame)
+> +{
+> +	unsigned long bytes;
+> +
+> +	bytes = copy_from_user_nmi(frame, (const void __user*)(unsigned long)fp, sizeof(*frame));
+> +
+> +	return bytes == sizeof(*frame);
+> +}
+> +
+>  static void
+>  perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>  {
+> @@ -2414,6 +2428,25 @@ perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>  
+>  	callchain_store(entry, PERF_CONTEXT_USER);
+>  	callchain_store(entry, regs->ip);
+> +	if (test_thread_flag(TIF_IA32)) {
+> +	    /* 32-bit process in 64-bit kernel. */
+> +	    u32 fp = regs->bp;
+> +	    struct stack_frame_ia32 frame;
+> +	    while (entry->nr < PERF_MAX_STACK_DEPTH) {
+> +		frame.next_frame     = 0;
+> +		frame.return_address = 0;
+> +
+> +		if (!copy_stack_frame_ia32(fp, &frame))
+> +			break;
+> +
+> +		if ((unsigned long)fp < regs->sp)
+> +			break;
 
-x86: Fix placement of FIX_OHCI1394_BASE
 
-Ever for 32-bit with sufficiently high NR_CPUS, and starting
-with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
-64-bit, the statically allocated early fixmap page tables were
-not covering FIX_OHCI1394_BASE, leading to a boot time crash
-when "ohci1394_dma=early" was used. Despite this entry not being
-a permanently used one, it needs to be moved into the permanent
-range since it has to be close to FIX_DBGP_BASE and
-FIX_EARLYCON_MEM_BASE.
 
-Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Cc: <stable@kernel.org> # [as far back as long as it still applies]
-LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/fixmap.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Shouldn't it be this?
 
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 635f03b..d07b44f 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -82,6 +82,9 @@ enum fixed_addresses {
- #endif
- 	FIX_DBGP_BASE,
- 	FIX_EARLYCON_MEM_BASE,
-+#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-+	FIX_OHCI1394_BASE,
-+#endif
- #ifdef CONFIG_X86_LOCAL_APIC
- 	FIX_APIC_BASE,	/* local (CPU) APIC) -- required for SMP or not */
- #endif
-@@ -132,9 +135,6 @@ enum fixed_addresses {
- 	   (__end_of_permanent_fixed_addresses & (TOTAL_FIX_BTMAPS - 1))
- 	 : __end_of_permanent_fixed_addresses,
- 	FIX_BTMAP_BEGIN = FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1,
--#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
--	FIX_OHCI1394_BASE,
--#endif
- #ifdef CONFIG_X86_32
- 	FIX_WP_TEST,
- #endif
+	if (fp < (u32)regs->sp)
+
+As the high part of fp is zeroed in the cast but
+the high part of regs->sp remains. I don't know what could be
+there, but since the user doesn't use it, perhaps just garbage?
+And that could messup the comparison.
+
+Otherwise the rest looks pretty good to me, nice catch.
+
