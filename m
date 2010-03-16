@@ -1,149 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966023Ab0CPGbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:31:24 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36716 "EHLO mga11.intel.com"
+	id S937440Ab0CPGiI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:38:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57264 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755380Ab0CPGbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:31:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.49,648,1262592000"; 
-   d="scan'208";a="781139848"
-From: Shane Wang <shane.wang@intel.com>
-To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       mingo@elte.hu, rjw@sisk.pl, pavel@ucw.cz, joseph.cihula@intel.com
-Subject: [RESEND][PATCH] intel_txt: add support for S3 memory integrity protection within Intel(R) TXT launched kernel (v3)
-Date: Tue, 16 Mar 2010 07:31:11 -0700
-Message-Id: <1268749871-2521-1-git-send-email-shane.wang@intel.com>
-X-Mailer: git-send-email 1.6.0
+	id S934545Ab0CPGiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:38:01 -0400
+Message-ID: <4B9F26C5.2060905@kernel.org>
+Date: Mon, 15 Mar 2010 23:35:49 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch] x86: handle legacy PIC interrupts on all the cpu's
+References: <1268692386.3296.43.camel@sbs-t61.sc.intel.com>	 <4B9EABE8.1020203@kernel.org>	 <1268693771.3296.49.camel@sbs-t61.sc.intel.com>	 <4B9EB185.3010400@kernel.org>  <20100316053717.GA10765@elte.hu> <1268722471.2948.3.camel@sbs-t61>
+In-Reply-To: <1268722471.2948.3.camel@sbs-t61>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3: Based on a complexity analysis and tradeoff, we moved all MAC'ing into
-tboot.
+On 03/15/2010 11:54 PM, Suresh Siddha wrote:
+> On Mon, 2010-03-15 at 22:37 -0700, Ingo Molnar wrote:
+>> * Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>> On 03/15/2010 03:56 PM, Suresh Siddha wrote:
+>>>> On Mon, 2010-03-15 at 14:51 -0700, Yinghai Lu wrote:
+>>>>>> +	for (irq = 0; irq < legacy_pic->nr_legacy_irqs; irq++)
+>>>>>> +		if (!IO_APIC_IRQ(irq))
+>>>>>> +			per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
+>>>>>
+>>>>> seems those three lines are not needed...
+>>>>
+>>>> Those are needed for !CONFIG_X86_IO_APIC case.
+>>>>
+>>> then we can have
+>>>
+>>> +#ifndef CONFIG_X86_IO_APIC
+>>> +	for (irq = 0; irq < legacy_pic->nr_legacy_irqs; irq++)
+>>> +		per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
+>>> +#endif
+>>>
+>>> then we don't punish most setup with ioapic controller.
+>>
+>> Ok - i've simplified the code with the above and have added your Acked-by - is 
+>> that is fine by you?
+> 
+> Ingo, Probably appended one is a better version. Yinghai can you please
+> Ack if it is ok. Thanks.
+> 
+> ---
+> From: Suresh Siddha <suresh.b.siddha@intel.com>
+> Subject: x86: handle legacy PIC interrupts on all the cpu's
+> 
+> Ingo Molnar reported that with the recent changes of not statically blocking
+> IRQ0_VECTOR..IRQ15_VECTOR's on all the cpu's, broke an AMD platform
+> (with Nvidia chipset) boot when "noapic" boot option is used.
+> 
+> On this platform, legacy PIC interrupts are getting delivered to all the
+> cpu's instead of just the boot cpu. Thus not initializing the vector to irq
+> mapping for the legacy irq's resulted in not handling certain interrupts
+> causing boot hang.
+> 
+> Fix this by initializing the vector to irq mapping on all the logical cpu's,
+> if the legacy IRQ is handled by the legacy PIC.
+> 
+> Reported-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> ---
+> 
+>  arch/x86/include/asm/hw_irq.h  |    3 +--
+>  arch/x86/kernel/apic/io_apic.c |    9 +++++++++
+>  arch/x86/kernel/irqinit.c      |   20 ++++++++++++++++++++
+>  3 files changed, 30 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+> index a929c9e..564a7a1 100644
+> --- a/arch/x86/include/asm/hw_irq.h
+> +++ b/arch/x86/include/asm/hw_irq.h
+> @@ -133,15 +133,14 @@ extern void (*__initconst interrupt[NR_VECTORS-FIRST_EXTERNAL_VECTOR])(void);
+>  
+>  typedef int vector_irq_t[NR_VECTORS];
+>  DECLARE_PER_CPU(vector_irq_t, vector_irq);
+> +extern void __setup_vector_irq(int cpu);
+>  
+>  #ifdef CONFIG_X86_IO_APIC
+>  extern void lock_vector_lock(void);
+>  extern void unlock_vector_lock(void);
+> -extern void __setup_vector_irq(int cpu);
+>  #else
+>  static inline void lock_vector_lock(void) {}
+>  static inline void unlock_vector_lock(void) {}
+> -static inline void __setup_vector_irq(int cpu) {}
+>  #endif
+>  
+>  #endif /* !ASSEMBLY_ */
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index e4e0ddc..fd3cecd 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1268,6 +1268,15 @@ void __setup_vector_irq(int cpu)
+>  	/* Mark the inuse vectors */
+>  	for_each_irq_desc(irq, desc) {
+>  		cfg = desc->chip_data;
+> +
+> +		/*
+> +		 * If it is a legacy IRQ handled by the legacy PIC, be ready
+> +		 * to handle it on any CPU, as the PIC interrupts are delivered
+> +		 * to multiple cpu's on some platforms.
+> +		 */
+> +		if (irq < legacy_pic->nr_legacy_irqs && !IO_APIC_IRQ(irq))
+> +			cpumask_set_cpu(cpu, cfg->domain);
+> +
+>  		if (!cpumask_test_cpu(cpu, cfg->domain))
+>  			continue;
+>  		vector = cfg->vector;
+> diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+> index ef257fc..afc3b31 100644
+> --- a/arch/x86/kernel/irqinit.c
+> +++ b/arch/x86/kernel/irqinit.c
+> @@ -141,6 +141,26 @@ void __init init_IRQ(void)
+>  	x86_init.irqs.intr_init();
+>  }
+>  
+> +#ifndef CONFIG_X86_IO_APIC
+> +/*
+> + * Setup the vector to irq mappings.
+> + */
+> +void __setup_vector_irq(int cpu)
+> +{
+> +	int irq;
+> +
+> +	/*
+> +	 * On most of the platforms, legacy PIC delivers the interrupts on the
+> +	 * boot cpu. But there are certain platforms where PIC interrupts are
+> +	 * delivered to multiple cpu's. For the new cpu that is coming online,
+> +	 * setup the static legacy vector to irq mapping.
+> +	 */
+> +	for (irq = 0; irq < legacy_pic->nr_legacy_irqs; irq++)
+> +		per_cpu(vector_irq, cpu)[IRQ0_VECTOR + irq] = irq;
+> +
+> +}
+> +#endif
+> +
+>  static void __init smp_intr_init(void)
+>  {
+>  #ifdef CONFIG_SMP
+> 
 
-This patch adds support for S3 memory integrity protection within an Intel(R)
-TXT launched kernel, for all kernel and userspace memory.  All RAM used by the
-kernel and userspace, as indicated by memory ranges of type E820_RAM and
-E820_RESERVED_KERN in the e820 table, will be integrity protected.
+yes, less one one function prototype.
 
-The MAINTAINERS file is also updated to reflect the maintainers of the
-TXT-related code.
+Acked-by: Yinghai Lu <yinghai@kernel.org>
 
-Signed-off-by: Shane Wang <shane.wang@intel.com>
-Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
-Acked-by: Pavel Machek <pavel@ucw.cz>
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/intel_txt.txt |   16 +++++++++-------
- MAINTAINERS                 |   11 +++++++++++
- arch/x86/include/asm/e820.h |    7 ++++++-
- arch/x86/kernel/tboot.c     |   20 +++++++++++---------
- 4 files changed, 37 insertions(+), 17 deletions(-)
+Yinghai
 
-diff -r d2911aa1461d Documentation/intel_txt.txt
---- a/Documentation/intel_txt.txt	Thu Mar 04 09:37:53 2010 -0500
-+++ b/Documentation/intel_txt.txt	Wed Mar 10 08:18:48 2010 -0500
-@@ -161,13 +161,15 @@ o  In order to put a system into any of 
-       has been restored, it will restore the TPM PCRs and then
-       transfer control back to the kernel's S3 resume vector.
-       In order to preserve system integrity across S3, the kernel
--      provides tboot with a set of memory ranges (kernel
--      code/data/bss, S3 resume code, and AP trampoline) that tboot
--      will calculate a MAC (message authentication code) over and then
--      seal with the TPM.  On resume and once the measured environment
--      has been re-established, tboot will re-calculate the MAC and
--      verify it against the sealed value.  Tboot's policy determines
--      what happens if the verification fails.
-+      provides tboot with a set of memory ranges (RAM and RESERVED_KERN
-+      in the e820 table, but not any memory that BIOS might alter over
-+      the S3 transition) that tboot will calculate a MAC (message
-+      authentication code) over and then seal with the TPM. On resume
-+      and once the measured environment has been re-established, tboot
-+      will re-calculate the MAC and verify it against the sealed value.
-+      Tboot's policy determines what happens if the verification fails.
-+      Note that the c/s 194 of tboot which has the new MAC code supports
-+      this.
- 
- That's pretty much it for TXT support.
- 
-diff -r d2911aa1461d MAINTAINERS
---- a/MAINTAINERS	Thu Mar 04 09:37:53 2010 -0500
-+++ b/MAINTAINERS	Wed Mar 10 08:18:48 2010 -0500
-@@ -2891,6 +2891,17 @@ F:	Documentation/networking/README.ipw22
- F:	Documentation/networking/README.ipw2200
- F:	drivers/net/wireless/ipw2x00/ipw2200.*
- 
-+INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
-+M:	Joseph Cihula <joseph.cihula@intel.com>
-+M:	Shane Wang <shane.wang@intel.com>
-+L:	tboot-devel@lists.sourceforge.net
-+W:	http://tboot.sourceforge.net
-+T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
-+S:	Supported
-+F:	Documentation/intel_txt.txt
-+F:	include/linux/tboot.h
-+F:	arch/x86/kernel/tboot.c
-+
- INTEL WIRELESS WIMAX CONNECTION 2400
- M:	Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
- M:	linux-wimax@intel.com
-diff -r d2911aa1461d arch/x86/include/asm/e820.h
---- a/arch/x86/include/asm/e820.h	Thu Mar 04 09:37:53 2010 -0500
-+++ b/arch/x86/include/asm/e820.h	Wed Mar 10 08:18:48 2010 -0500
-@@ -45,7 +45,12 @@
- #define E820_NVS	4
- #define E820_UNUSABLE	5
- 
--/* reserved RAM used by kernel itself */
-+/*
-+ * reserved RAM used by kernel itself
-+ * if CONFIG_INTEL_TXT is enabled, memory of this type will be
-+ * included in the S3 integrity calculation and so should not include
-+ * any memory that BIOS might alter over the S3 transition
-+ */
- #define E820_RESERVED_KERN        128
- 
- #ifndef __ASSEMBLY__
-diff -r d2911aa1461d arch/x86/kernel/tboot.c
---- a/arch/x86/kernel/tboot.c	Thu Mar 04 09:37:53 2010 -0500
-+++ b/arch/x86/kernel/tboot.c	Wed Mar 10 08:18:48 2010 -0500
-@@ -130,6 +130,9 @@ static void add_mac_region(phys_addr_t s
- 	struct tboot_mac_region *mr;
- 	phys_addr_t end = start + size;
- 
-+	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
-+		panic("tboot: Too many MAC regions\n");
-+
- 	if (start && size) {
- 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
- 		mr->start = round_down(start, PAGE_SIZE);
-@@ -139,18 +142,17 @@ static void add_mac_region(phys_addr_t s
- 
- static void __init tboot_setup_sleep(void)
- {
-+	int i;
-+
- 	tboot->num_mac_regions = 0;
- 
--	/* S3 resume code */
--	add_mac_region(acpi_wakeup_address, WAKEUP_SIZE);
-+	for (i = 0; i < e820.nr_map; i++) {
-+		if ((e820.map[i].type != E820_RAM)
-+		 && (e820.map[i].type != E820_RESERVED_KERN))
-+			continue;
- 
--#ifdef CONFIG_X86_TRAMPOLINE
--	/* AP trampoline code */
--	add_mac_region(virt_to_phys(trampoline_base), TRAMPOLINE_SIZE);
--#endif
--
--	/* kernel code + data + bss */
--	add_mac_region(virt_to_phys(_text), _end - _text);
-+		add_mac_region(e820.map[i].addr, e820.map[i].size);
-+	}
- 
- 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
- }
