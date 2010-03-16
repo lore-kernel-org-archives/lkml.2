@@ -1,110 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966447Ab0CPOy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:54:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51402 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966448Ab0CPOyX (ORCPT
+	id S966407Ab0CPOz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:55:29 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:61609 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966301Ab0CPOz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:54:23 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: howto combat highly pathologic latencies on a server?
-Date: Tue, 16 Mar 2010 15:54:16 +0100
-User-Agent: KMail/1.9.10
-Cc: Christoph Hellwig <hch@infradead.org>
-References: <201003101817.42812.hpj@urpla.net> <20100310181548.GA25684@infradead.org> <201003110115.14555.hpj@urpla.net>
-In-Reply-To: <201003110115.14555.hpj@urpla.net>
+	Tue, 16 Mar 2010 10:55:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IgIQIyOaAntziHjxtajUaF8sC1j80OuubdFXHhVQmD3qpBPXz3ntQ6l31Ul82gSf8c
+         qhqFs3kRg50L8NBfl2jxNWCeUL68E5lo0DHP+x4akyuI1sH66aGOSQLrbcIsgUsJw58E
+         qQaAvAYrwm3AYF7NFhFtyZz2I905iVzK/TLAA=
+Date: Tue, 16 Mar 2010 16:50:33 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+Message-ID: <20100316145033.GA3332@swordfish.minsk.epam.com>
+References: <20100307192305.GA598@elte.hu>
+ <20100308125122.GA11242@redhat.com>
+ <1268686865.2824.4.camel@edumazet-laptop>
+ <1268699602.2824.14.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
 Content-Disposition: inline
-Message-Id: <201003161554.16485.hpj@urpla.net>
-X-Provags-ID: V01U2FsdGVkX1/wQb2JWilBwb84PU32CyRG0ExenSS8vN2YBwS
- 4jSWEt0cNN8pnn4jTbfuVi7IC21W1NgKrfQwzGfkPQ/NePDkyX
- RsAkNPTtS9phC2DaIDFfg==
+In-Reply-To: <1268699602.2824.14.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 March 2010, 01:15:14 Hans-Peter Jansen wrote:
-> On Wednesday 10 March 2010, 19:15:48 Christoph Hellwig wrote:
-> > On Wed, Mar 10, 2010 at 06:17:42PM +0100, Hans-Peter Jansen wrote:
-> > > While this system usually operates fine, it suffers from delays, that
-> > > are displayed in latencytop as: "Writing page to disk:     8425,5
-> > > ms": ftp://urpla.net/lat-8.4sec.png, but we see them also in the
-> > > 1.7-4.8 sec range: ftp://urpla.net/lat-1.7sec.png,
-> > > ftp://urpla.net/lat-2.9sec.png, ftp://urpla.net/lat-4.6sec.png and
-> > > ftp://urpla.net/lat-4.8sec.png.
-> > >
-> > > >From other observations, this issue "feels" like it is induced by
-> > > > single
-> > >
-> > > syncronisation points in the block layer, eg. if I create heavy IO
-> > > load on one RAID array, say resizing a VMware disk image, it can take
-> > > up to a minute to log in by ssh, although the ssh login does not
-> > > touch this area at all (different RAID arrays). Note, that the
-> > > latencytop snapshots above are made during normal operation, not this
-> > > kind of load..
-> >
-> > I had very similar issues on various systems (mostly using xfs, but
-> > some with ext3, too) using kernels before ~ 2.6.30 when using the cfq
-> > I/O scheduler.  Switching to noop fixed that for me, or upgrading to a
-> > recent kernel where cfq behaves better again.
->
-> Christoph, thanks for this valuable suggestion: I've changed it to noop
-> right away, and also:
->
-> vm.dirty_ratio = 20
-> vm.dirty_background_ratio = 1
->
-> since the defaults of 40 and 10 seem to also not fit my needs. Even the
-> 20 might be still oversized with 8GB total mem.
 
-That was an bad idea. I've reverted the vm tweaks, as it turned things even 
-worser.
+--u3/rZRmxL6MmkK24
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-After switching to noop and activating lazy count on all filesystems, the 
-pathologic behavior with running io hooks seems to be relieved, but the 
-latency due to VMware-Server persists: 
+Hello,
 
-Cause                                                Maximum     Percentage
-Writing a page to disk                            435.8 msec          9.9 %
-Writing buffer to disk (synchronous)              295.3 msec          1.6 %
-Scheduler: waiting for cpu                         80.1 msec         11.7 %
-Reading from a pipe                                 9.3 msec          0.0 %
-Waiting for event (poll)                            5.0 msec         76.2 %
-Waiting for event (select)                          4.8 msec          0.4 %
-Waiting for event (epoll)                           4.7 msec          0.0 %
-Truncating file                                     4.3 msec          0.0 %
-Userspace lock contention                           3.3 msec          0.0 %
+Eric, I did pktgen testing (3 times).
 
-Process vmware-vmx (7907)                  Total: 7635.8 msec                                                           
-Writing a page to disk                            435.8 msec         43.8 %
-Scheduler: waiting for cpu                          9.1 msec         52.7 %
-Waiting for event (poll)                            5.0 msec          3.5 %
-[HostIF_SemaphoreWait]                              0.2 msec          0.0 %
+sudo cat /proc/net/pktgen/eth0=20
+Params: count 1000000000  min_pkt_size: 42  max_pkt_size: 42
+     frags: 0  delay: 0  clone_skb: 4000000  ifname: eth0
+     flows: 0 flowlen: 0
+     queue_map_min: 0  queue_map_max: 0
+     dst_min: 10.6.22.59  dst_max:=20
+        src_min:   src_max:=20
+     src_mac: 00:1a:92:c9:a0:68 dst_mac: 00:1a:92:c9:a0:68
+     udp_src_min: 9  udp_src_max: 9  udp_dst_min: 9  udp_dst_max: 9
+     src_mac_count: 0  dst_mac_count: 0
+     Flags:=20
+Current:
+     pkts-sofar: 1000000000  errors: 0
+     started: 9957912410us  stopped: 16682620361us idle: 1231us
+     seq_num: 1000000001  cur_dst_mac_offset: 0  cur_src_mac_offset: 0
+     cur_saddr: 0x3b16060a  cur_daddr: 0x3b16060a
+     cur_udp_dst: 9  cur_udp_src: 9
+     cur_queue_map: 0
+     flows: 0
+Result: OK: 6724707951(c6724706719+d1231) nsec, 1000000000 (42byte,0frags)
+  148705pps 49Mb/sec (49964880bps) errors: 0
 
-Although, I set writeThrough to "FALSE" on that VM, and it is operating on a 
-monolithic flat 24 GB "drive" file, it's not allowed to swap, and it's 
-itself only lightly used, it always writes (? whatever) synchronously and 
-trashes the latency of the whole system. (It's nearly always the one, that 
-latencytop shows, with combined latencies ranging from one to eigth secs.)
 
-I would love to migrate that stuff to a saner VM technology (e.g. kvm), but 
-unfortunately, the Opteron 285 cpus are socket 940 based, and thus not 
-supported by any current para-virtualisation. Correct me, if I'm wrong, 
-please.
+Without any errors from the r8169 side. Can we consider testing successful?
+If so, fell free to add Tested-by: Sergey Senozhatsky <sergey.senozhatsky@g=
+mail.com>
 
-This VMware Server 1.0.* stuff is also getting in the way on trying to 
-upgrade to a newer kernel. The only way getting up the kernel stairs might 
-be VMware Server 2, but without serious indications, that it works way 
-better, I won't take that route. Hints welcome.
 
-Upgrading the hardware combined with using ssd drives seems the only really 
-feasible approach, but given the economic preassure in the transport 
-industry, that's currently not possible, either. 
+	Sergey
 
-Anyway thanks for your suggestions,
-Pete
+
+
+On (03/16/10 01:33), Eric Dumazet wrote:
+> > Yes, this is wrong. In this context (process context, not softirq), we
+> > should use netif_rx() or just drop frames if we are in reset phase.
+> >=20
+>=20
+> Sergey,
+>=20
+> Here is a compiled but untested patch (I dont have the hardware), could
+> you please test it ?
+>=20
+> Thanks
+>=20
+> [PATCH] r8169: Fix rtl8169_rx_interrupt()
+>=20
+> In case a reset is performed, rtl8169_rx_interrupt() is called from
+> process context instead of softirq context. Special care must be taken
+> to call appropriate network core services (netif_rx() instead of
+> netif_receive_skb()). VLAN handling also corrected.
+>=20
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Diagnosed-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> index 9d3ebf3..d873639 100644
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+> @@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_d=
+evice *dev,
+>  }
+> =20
+>  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
+ *desc,
+> -			       struct sk_buff *skb)
+> +			       struct sk_buff *skb, int polling)
+>  {
+>  	u32 opts2 =3D le32_to_cpu(desc->opts2);
+>  	struct vlan_group *vlgrp =3D tp->vlgrp;
+>  	int ret;
+> =20
+>  	if (vlgrp && (opts2 & RxVlanTag)) {
+> -		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
+> +		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
+>  		ret =3D 0;
+>  	} else
+>  		ret =3D -1;
+> @@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl816=
+9_private *tp,
+>  }
+> =20
+>  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
+ *desc,
+> -			       struct sk_buff *skb)
+> +			       struct sk_buff *skb, int polling)
+>  {
+>  	return -1;
+>  }
+> @@ -4429,12 +4429,20 @@ out:
+>  	return done;
+>  }
+> =20
+> +/*
+> + * Warning : rtl8169_rx_interrupt() might be called :
+> + * 1) from NAPI (softirq) context
+> + *	(polling =3D 1 : we should call netif_receive_skb())
+> + * 2) from process context (rtl8169_reset_task())
+> + *	(polling =3D 0 : we must call netif_rx() instead)
+> + */	=09
+>  static int rtl8169_rx_interrupt(struct net_device *dev,
+>  				struct rtl8169_private *tp,
+>  				void __iomem *ioaddr, u32 budget)
+>  {
+>  	unsigned int cur_rx, rx_left;
+>  	unsigned int delta, count;
+> +	int polling =3D (budget !=3D ~(u32)0) ? 1 : 0;
+> =20
+>  	cur_rx =3D tp->cur_rx;
+>  	rx_left =3D NUM_RX_DESC + tp->dirty_rx - cur_rx;
+> @@ -4496,8 +4504,12 @@ static int rtl8169_rx_interrupt(struct net_device =
+*dev,
+>  			skb_put(skb, pkt_size);
+>  			skb->protocol =3D eth_type_trans(skb, dev);
+> =20
+> -			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
+> -				netif_receive_skb(skb);
+> +			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
+> +				if (likely(polling))
+> +					netif_receive_skb(skb);
+> +				else
+> +					netif_rx(skb);
+> +			}
+> =20
+>  			dev->stats.rx_bytes +=3D pkt_size;
+>  			dev->stats.rx_packets++;
+>=20
+>=20
+
+--u3/rZRmxL6MmkK24
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkufmrkACgkQfKHnntdSXjT0zgP/eycACnlxJzjDlrNqyFgb9hC/
+HOgxTL2+eVi7wqgrurxIwCDMiHmuyRd86Yrwk3xo5rRyAl3UbE/ysCriozw59Kwk
+Ag1LYov18AY//sEzSvWOE3veR0JGMymwEUBdnv8HxpDnyPXgp4ddQZFGHhGGzFp3
+SDgLfrU/yP8yzaefORk=
+=TrtZ
+-----END PGP SIGNATURE-----
+
+--u3/rZRmxL6MmkK24--
