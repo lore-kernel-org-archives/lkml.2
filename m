@@ -1,70 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab0CPTOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 15:14:11 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:63827 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab0CPTOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 15:14:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=blxnJvZwcp80MeUphm3FQ192xCUdEy5e7WArUV4vDkZqiy9bUdsBrLqCCKJS3VEw3Y
-         i6+0TcniFClflLnHQdbIfPYt2ZgvQMPBIGso0dSxrM0JLG+ya47RvGP3j7Q9x6qzsZ9f
-         TXgMjA7/fh1833Ji8I0RM1DAjm7j92L9Er4yM=
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Greg KH <greg@kroah.com>
-Cc: kay.sievers@vrfy.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-       linux-embedded@vger.kernel.org
-Subject: Re: [PATCH] devtmpfs: support !CONFIG_TMPFS
-References: <1268389504-22179-1-git-send-email-jacmet@sunsite.dk>
-	<20100316190005.GA32555@kroah.com>
-Date: Tue, 16 Mar 2010 20:14:05 +0100
-In-Reply-To: <20100316190005.GA32555@kroah.com> (Greg KH's message of "Tue, 16
-	Mar 2010 12:00:05 -0700")
-Message-ID: <87wrxcgjuq.fsf@macbook.be.48ers.dk>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
+	id S1755372Ab0CPTPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 15:15:32 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51208 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754097Ab0CPTPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 15:15:30 -0400
+Date: Tue, 16 Mar 2010 12:15:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: David Howells <dhowells@redhat.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+	nfs_inode_return_delegation_noreclaim()
+Message-ID: <20100316191529.GQ6709@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100316115130.25642.17789.stgit@warthog.procyon.org.uk> <20100316171738.GN6709@linux.vnet.ibm.com> <1268760954.3098.17.camel@localhost.localdomain> <20100316181053.GO6709@linux.vnet.ibm.com> <1268764995.3098.23.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268764995.3098.23.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Greg" == Greg KH <greg@kroah.com> writes:
+On Tue, Mar 16, 2010 at 02:43:15PM -0400, Trond Myklebust wrote:
+> On Tue, 2010-03-16 at 11:10 -0700, Paul E. McKenney wrote: 
+> > On Tue, Mar 16, 2010 at 01:35:54PM -0400, Trond Myklebust wrote:
+> > > On Tue, 2010-03-16 at 10:17 -0700, Paul E. McKenney wrote: 
+> > > > On Tue, Mar 16, 2010 at 11:51:30AM +0000, David Howells wrote:
+> > > > > diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> > > > > index 2563beb..a77c735 100644
+> > > > > --- a/fs/nfs/delegation.c
+> > > > > +++ b/fs/nfs/delegation.c
+> > > > > @@ -37,8 +37,10 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
+> > > > >  {
+> > > > >  	struct rpc_cred *cred;
+> > > > > 
+> > > > > +	rcu_read_lock();
+> > > > >  	cred = rcu_dereference(delegation->cred);
+> > > > >  	rcu_assign_pointer(delegation->cred, NULL);
+> > > > 
+> > > > The lock is probably held here, in which case something like the
+> > > > following would work well without needing the artificial rcu_read_lock()
+> > > > and rcu_read_unlock():
+> > > 
+> > > No. The lock is not held here. At this point, the delegation has been
+> > > detached from the inode that pointed to it, and so we can free up its
+> > > contents.
+> > 
+> > OK.  Is there some reference counter or pointer that can be checked to
+> > verify that this data structure really is in a state that prevents
+> > RCU readers from finding it?
+> 
+> Yes. The RCU readers are supposed to grab the delegation->lock and then
+> check the contents of the delegation->inode.
 
-Hi,
+So would something like the following work, then?
 
- >> config DEVTMPFS
- >> bool "Maintain a devtmpfs filesystem to mount at /dev"
- >> -	depends on HOTPLUG && SHMEM && TMPFS
- >> +	depends on HOTPLUG
- >> help
- >> This creates a tmpfs filesystem instance early at bootup.
- >> In this filesystem, the kernel driver core maintains device
+	cred = rcu_dereference_check(delegation->cred,
+				     delegation->inode == NULL);
 
- Greg> With this patch, the Kconfig help text now is incorrect.
+Or would some other check condition be more appropriate?
 
- Greg> Is there a way to explicitly call out in the Kconfig which way
- Greg> devtmpfs is being created?  How about a multiple selection that
- Greg> chooses either TMPFS or RAMFS, with the default being TMPFS?
-
-I don't think that's needed - If CONFIG_TMPFS isn't set, then ramfs
-pretends to be tmpfs anyway, see mm/shmem.c:
-
-static struct file_system_type tmpfs_fs_type = {
-	.name		= "tmpfs",
-	.get_sb		= ramfs_get_sb,
-	.kill_sb	= kill_litter_super,
-};
-
-So calling it tmpfs isn't really wrong.
-
- Greg> So care to redo this so that people can easily determine what is going
- Greg> to happen easier than this patch currently causes?
-
-We can change the help text to say tmpfs/ramfs if you prefer - OK?
-
--- 
-Bye, Peter Korsgaard
+							Thanx, Paul
