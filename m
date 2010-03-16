@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab0CPFlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 01:41:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753218Ab0CPFlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 01:41:36 -0400
-Message-ID: <4B9F19F7.6000309@redhat.com>
-Date: Tue, 16 Mar 2010 07:41:11 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1757287Ab0CPFrf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 01:47:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58340 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753218Ab0CPFrd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 01:47:33 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: kiran@scalex86.org
+Subject: Re: + tmpfs-fix-oops-on-remounts-with-mpol=default.patch added to -mm tree
+Cc: kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org,
+       hugh.dickins@tiscali.co.uk, lee.schermerhorn@hp.com, mel@csn.ul.ie,
+       stable@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, akpm@linux-foundation.org
+In-Reply-To: <201003122353.o2CNrC56015250@imap1.linux-foundation.org>
+References: <201003122353.o2CNrC56015250@imap1.linux-foundation.org>
+Message-Id: <20100316143406.4C45.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <1268717232.2813.36.camel@localhost>
-In-Reply-To: <1268717232.2813.36.camel@localhost>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 16 Mar 2010 14:47:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 07:27 AM, Zhang, Yanmin wrote:
-> From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
->
-> Based on the discussion in KVM community, I worked out the patch to support
-> perf to collect guest os statistics from host side. This patch is implemented
-> with Ingo, Peter and some other guys' kind help. Yang Sheng pointed out a
-> critical bug and provided good suggestions with other guys. I really appreciate
-> their kind help.
->
-> The patch adds new subcommand kvm to perf.
->
->    perf kvm top
->    perf kvm record
->    perf kvm report
->    perf kvm diff
->
-> The new perf could profile guest os kernel except guest os user space, but it
-> could summarize guest os user space utilization per guest os.
->
-> Below are some examples.
-> 1) perf kvm top
-> [root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
-> --guestmodules=/home/ymzhang/guest/modules top
->
->    
+> ------------------------------------------------------
+> Subject: tmpfs: fix oops on remounts with mpol=default
+> From: Ravikiran G Thirumalai <kiran@scalex86.org>
+> 
+> Fix an 'oops' when a tmpfs mount point is remounted with the 'default'
+> mempolicy.
+> 
+> Upon remounting a tmpfs mount point with 'mpol=default' option, the
+> remount code crashed with a null pointer dereference.  The initial problem
+> report was on 2.6.27, but the problem exists in mainline 2.6.34-rc as
+> well.  On examining the code, we see that mpol_new returns NULL if default
+> mempolicy was requested.  This 'NULL' mempolicy is accessed to store the
+> node mask resulting in oops.
+> 
+> The following patch fixes the oops by avoiding dereferencing NULL if the
+> new mempolicy is NULL.  The patch also sets 'err' to 0 if MPOL_DEFAULT is
+> passed (err is initialized to 1 initially at mpol_parse_str())
 
-Excellent, support for guest kernel != host kernel is critical (I can't 
-remember the last time I ran same kernels).
+Hi Ravikiran,
 
-How would we support multiple guests with different kernels?  Perhaps a 
-symbol server that perf can connect to (and that would connect to guests 
-in turn)?
+I'm glad to your contribution. Unfortunately I've found various related
+issue in mpol_parse_str() while reviewing your patch.
 
-> diff -Nraup linux-2.6_tipmaster0315/arch/x86/kvm/vmx.c linux-2.6_tipmaster0315_perfkvm/arch/x86/kvm/vmx.c
-> --- linux-2.6_tipmaster0315/arch/x86/kvm/vmx.c	2010-03-16 08:59:11.825295404 +0800
-> +++ linux-2.6_tipmaster0315_perfkvm/arch/x86/kvm/vmx.c	2010-03-16 09:01:09.976084492 +0800
-> @@ -26,6 +26,7 @@
->   #include<linux/sched.h>
->   #include<linux/moduleparam.h>
->   #include<linux/ftrace_event.h>
-> +#include<linux/perf_event.h>
->   #include "kvm_cache_regs.h"
->   #include "x86.h"
->
-> @@ -3632,6 +3633,43 @@ static void update_cr8_intercept(struct
->   	vmcs_write32(TPR_THRESHOLD, irr);
->   }
->
-> +DEFINE_PER_CPU(int, kvm_in_guest) = {0};
-> +
-> +static void kvm_set_in_guest(void)
-> +{
-> +	percpu_write(kvm_in_guest, 1);
-> +}
-> +
-> +static int kvm_is_in_guest(void)
-> +{
-> +	return percpu_read(kvm_in_guest);
-> +}
->    
+So, I'll post updated patches.
 
-There is already PF_VCPU for this.
+- kosaki
 
-> +static struct perf_guest_info_callbacks kvm_guest_cbs = {
-> +	.is_in_guest 		= kvm_is_in_guest,
-> +	.is_user_mode		= kvm_is_user_mode,
-> +	.get_guest_ip		= kvm_get_guest_ip,
-> +	.reset_in_guest		= kvm_reset_in_guest,
-> +};
->    
 
-Should be in common code, not vmx specific.
+> 
+> Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> Cc: <stable@kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/mempolicy.c |   10 +++++++---
+>  1 file changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff -puN mm/mempolicy.c~tmpfs-fix-oops-on-remounts-with-mpol=default mm/mempolicy.c
+> --- a/mm/mempolicy.c~tmpfs-fix-oops-on-remounts-with-mpol=default
+> +++ a/mm/mempolicy.c
+> @@ -2213,10 +2213,14 @@ int mpol_parse_str(char *str, struct mem
+>  			goto out;
+>  		mode = MPOL_PREFERRED;
+>  		break;
+> -
+> +	case MPOL_DEFAULT:
+> +		/*
+> +		 * mpol_new() enforces empty nodemask, ignores flags.
+> +		 */
+> +		err = 0;
+> +		break;
+>  	/*
+>  	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
+> -	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
+>  	 */
+>  	}
+>  
+> @@ -2250,7 +2254,7 @@ int mpol_parse_str(char *str, struct mem
+>  		if (ret) {
+>  			err = 1;
+>  			mpol_put(new);
+> -		} else if (no_context) {
+> +		} else if (no_context && new) {
+>  			/* save for contextualization */
+>  			new->w.user_nodemask = nodes;
+>  		}
+> _
+> 
+> Patches currently in -mm which might be from kiran@scalex86.org are
+> 
+> tmpfs-fix-oops-on-remounts-with-mpol=default.patch
+> slab-leaks3-default-y.patch
+> 
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
 
