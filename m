@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760042Ab0CPV27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:28:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38283 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760011Ab0CPV24 (ORCPT
+	id S1760057Ab0CPV3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:29:20 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48417
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760044Ab0CPV3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:28:56 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 1/1] perf top: Add missing initialization to zero
-Date: Tue, 16 Mar 2010 18:28:46 -0300
-Message-Id: <1268774926-27488-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 16 Mar 2010 17:29:16 -0400
+Date: Tue, 16 Mar 2010 14:29:37 -0700 (PDT)
+Message-Id: <20100316.142937.144445591.davem@davemloft.net>
+To: mpm@selenic.com
+Cc: jirislaby@gmail.com, jslaby@suse.cz, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, danborkmann@googlemail.com
+Subject: Re: [PATCH 1/1] NET: netpoll, fix potential NULL ptr dereference
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1268762160.25503.2988.camel@calx>
+References: <1268759527.25503.2980.camel@calx>
+	<4B9FBE49.6010709@gmail.com>
+	<1268762160.25503.2988.camel@calx>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+From: Matt Mackall <mpm@selenic.com>
+Date: Tue, 16 Mar 2010 12:56:00 -0500
 
-The dso_short_width has to start as zero, as we're calculating the
-maximum short DSO name length, somehow I missed this one.
+> On Tue, 2010-03-16 at 18:22 +0100, Jiri Slaby wrote:
+>> On 03/16/2010 06:12 PM, Matt Mackall wrote:
+>> > I don't get it. The source of the branch tests for !ndev->npinfo and the
+>> > original destination of the branch also tests for !ndev->npinfo. I don't
+>> > see how it gets dereferenced.
+>> 
+>> Let's look at more of the context:
+>>          if (!ndev->npinfo) {
+>>                  npinfo = kmalloc(sizeof(*npinfo), GFP_KERNEL);
+>>                  if (!npinfo) {         // npinfo is NULL
+>>                          err = -ENOMEM;
+>>                          goto release;
+>>                  }
+>> ...
+>> release:                           // npinfo is still NULL
+>>          if (!ndev->npinfo) {       // condition is the same (holds)
+>>               // dereference below: vvvvvvvvvvvvvvv
+>>                  spin_lock_irqsave(&npinfo->rx_lock, flags);
+>>                  list_for_each_entry_safe(npe, tmp, &npinfo->rx_np, rx) {
+>>                          npe->dev = NULL;
+>>                  }
+>>                  spin_unlock_irqrestore(&npinfo->rx_lock, flags);
+>> 
+>>                  kfree(npinfo);
+>>          }
+> 
+> Ok, you're correct, I read the second test backwards.
+> 
+> Acked-by: Matt Mackall <mpm@selenic.com>
 
-Reported-by: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-top.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 057f8b6..887ebbf 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -464,7 +464,7 @@ static void print_sym_table(void)
- 	struct sym_entry *syme, *n;
- 	struct rb_root tmp = RB_ROOT;
- 	struct rb_node *nd;
--	int sym_width = 0, dso_width = 0, dso_short_width;
-+	int sym_width = 0, dso_width = 0, dso_short_width = 0;
- 	const int win_width = winsize.ws_col - 1;
- 
- 	samples = userspace_samples = exact_samples = 0;
--- 
-1.6.2.5
-
+Applied, thanks everyone.
