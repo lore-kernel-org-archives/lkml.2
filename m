@@ -1,74 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966169Ab0CPLZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 07:25:51 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43416 "EHLO mx3.mail.elte.hu"
+	id S966171Ab0CPL2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 07:28:13 -0400
+Received: from cifronik.21th.com ([62.16.86.116]:41606 "EHLO cifronik.21th.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966133Ab0CPLZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 07:25:49 -0400
-Date: Tue, 16 Mar 2010 12:25:00 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100316112500.GA5337@elte.hu>
-References: <1268717232.2813.36.camel@localhost>
- <4B9F19F7.6000309@redhat.com>
- <20100316072449.GB11881@elte.hu>
- <4B9F4D74.4090403@redhat.com>
- <20100316095336.GI7961@elte.hu>
- <4B9F59DE.1060008@redhat.com>
- <20100316102052.GC10069@elte.hu>
- <4B9F603B.4080004@redhat.com>
- <20100316105021.GA14344@elte.hu>
- <4B9F671D.5060001@redhat.com>
+	id S966133Ab0CPL2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 07:28:11 -0400
+From: Sergey Temerkhanov <temerkhanov@cifronik.ru>
+Organization: =?utf-8?b?0JfQkNCe?= "=?utf-8?b?0KbQuNGE0YDQvtC90LjQug==?="
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] AIO: Change pr_debug statements to dprintk in fs/aio.c
+Date: Tue, 16 Mar 2010 14:29:15 +0300
+User-Agent: KMail/1.12.4 (Linux/2.6.31-gentoo-r6; KDE/4.3.5; x86_64; ; )
+References: <201003161418.16959.temerkhanov@cifronik.ru>
+In-Reply-To: <201003161418.16959.temerkhanov@cifronik.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F671D.5060001@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Multipart/Mixed;
+  boundary="Boundary-00=_Lu2nLuQiqxg1UO2"
+Message-Id: <201003161429.15926.temerkhanov@cifronik.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Boundary-00=_Lu2nLuQiqxg1UO2
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-* Avi Kivity <avi@redhat.com> wrote:
+Some functions in fs/aio.c use pr_debug and another use dprintk statements. 
+This patch makes it uniform.
 
-> On 03/16/2010 12:50 PM, Ingo Molnar wrote:
-> >
-> >>I'm confused - initrd seems to be guest-side.  I was talking about the host
-> >>side.
-> >host side doesnt need much support - just some client capability in perf
-> >itself. I suspect vmchannels are sufficiently flexible and configuration-free
-> >for such purposes? (i.e. like a filesystem in essence)
-> 
-> I haven't followed vmchannel closely, but I think it is.  vmchannel is 
-> terminated in qemu on the host side, not in the host kernel.  So perf would 
-> need to connect to qemu.
 
-Hm, that sounds rather messy if we want to use it to basically expose kernel 
-functionality in a guest/host unified way. Is the qemu process discoverable in 
-some secure way? Can we trust it? Is there some proper tooling available to do 
-it, or do we have to push it through 2-3 packages to get such a useful feature 
-done?
+Regards, Sergey Temerkhanov, Cifronic ZAO
 
-( That is the general thought process how many cross-discipline useful
-  desktop/server features hit the bit bucket before having had any chance of
-  being vetted by users, and why Linux sucks so much when it comes to feature
-  integration and application usability. )
+--Boundary-00=_Lu2nLuQiqxg1UO2
+Content-Type: text/x-patch;
+  charset="UTF-8";
+  name="aio-debug.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+	filename="aio-debug.patch"
 
-	Ingo
+diff -r 5bbe95a762e1 fs/aio.c
+--- a/fs/aio.c	Tue Mar 16 14:11:37 2010 +0300
++++ b/fs/aio.c	Tue Mar 16 14:11:44 2010 +0300
+@@ -76,7 +76,7 @@
+ 
+ 	aio_wq = create_workqueue("aio");
+ 
+-	pr_debug("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
++	dprintk("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
+ 
+ 	return 0;
+ }
+@@ -221,7 +221,7 @@
+ 	aio_free_ring(ctx);
+ 	mmdrop(ctx->mm);
+ 	ctx->mm = NULL;
+-	pr_debug("__put_ioctx: freeing %p\n", ctx);
++	dprintk("__put_ioctx: freeing %p\n", ctx);
+ 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
+ }
+ 
+@@ -247,7 +247,7 @@
+ 	/* Prevent overflows */
+ 	if ((nr_events > (0x10000000U / sizeof(struct io_event))) ||
+ 	    (nr_events > (0x10000000U / sizeof(struct kiocb)))) {
+-		pr_debug("ENOMEM: nr_events too high\n");
++		dprintk("ENOMEM: nr_events too high\n");
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+@@ -468,6 +468,7 @@
+ 		kfree(req->ki_iovec);
+ 	kmem_cache_free(kiocb_cachep, req);
+ 	ctx->reqs_active--;
++	dprintk("really_put_req: req->ki_users: %d\n", req->ki_users);
+ 
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+ 		wake_up(&ctx->wait);
+@@ -503,12 +504,14 @@
+  */
+ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ {
+-	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
++	dprintk("aio_put(%p): f_count=%ld\n",
+ 		req, atomic_long_read(&req->ki_filp->f_count));
+ 
+ 	assert_spin_locked(&ctx->ctx_lock);
+ 
+ 	req->ki_users--;
++	dprintk("__aio_put_req: req: %p, req->ki_users: %d\n",
++		req, req->ki_users);
+ 	BUG_ON(req->ki_users < 0);
+ 	if (likely(req->ki_users))
+ 		return 0;
+@@ -954,6 +957,7 @@
+ 	 * cancelled requests don't get events, userland was given one
+ 	 * when the event got cancelled.
+ 	 */
++	dprintk("kiocbIsCancelled(iocb): %d\n", kiocbIsCancelled(iocb));
+ 	if (kiocbIsCancelled(iocb))
+ 		goto put_rq;
+ 
+@@ -984,7 +988,7 @@
+ 	put_aio_ring_event(event, KM_IRQ0);
+ 	kunmap_atomic(ring, KM_IRQ1);
+ 
+-	pr_debug("added to ring %p at [%lu]\n", iocb, tail);
++	dprintk("added to ring %p at [%lu]\n", iocb, tail);
+ 
+ 	/*
+ 	 * Check if the user asked us to deliver the result through an
+@@ -1187,6 +1191,7 @@
+ 	}
+ 
+ 	while (likely(i < nr)) {
++		dprintk("aio: i: %d, nr: %ld\n", i, nr);
+ 		add_wait_queue_exclusive(&ctx->wait, &wait);
+ 		do {
+ 			set_task_state(tsk, TASK_INTERRUPTIBLE);
+@@ -1199,6 +1204,7 @@
+ 				ret = -EINVAL;
+ 				break;
+ 			}
++			dprintk("aio: to.timed_out: %d\n", to.timed_out);
+ 			if (to.timed_out)	/* Only check after read evt */
+ 				break;
+ 			/* Try to only show up in io wait if there are ops
+@@ -1294,7 +1300,7 @@
+ 
+ 	ret = -EINVAL;
+ 	if (unlikely(ctx || nr_events == 0)) {
+-		pr_debug("EINVAL: io_setup: ctx %lu nr_events %u\n",
++		dprintk("EINVAL: io_setup: ctx %lu nr_events %u\n",
+ 		         ctx, nr_events);
+ 		goto out;
+ 	}
+@@ -1327,7 +1333,7 @@
+ 		io_destroy(ioctx);
+ 		return 0;
+ 	}
+-	pr_debug("EINVAL: io_destroy: invalid context id\n");
++	dprintk("EINVAL: io_destroy: invalid context id\n");
+ 	return -EINVAL;
+ }
+ 
+@@ -1586,7 +1592,7 @@
+ 
+ 	/* enforce forwards compatibility on users */
+ 	if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
+-		pr_debug("EINVAL: io_submit: reserve field set\n");
++		dprintk("EINVAL: io_submit: reserve field set\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1596,7 +1602,7 @@
+ 	    (iocb->aio_nbytes != (size_t)iocb->aio_nbytes) ||
+ 	    ((ssize_t)iocb->aio_nbytes < 0)
+ 	   )) {
+-		pr_debug("EINVAL: io_submit: overflow check\n");
++		dprintk("EINVAL: io_submit: overflow check\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1690,7 +1696,7 @@
+ 
+ 	ctx = lookup_ioctx(ctx_id);
+ 	if (unlikely(!ctx)) {
+-		pr_debug("EINVAL: io_submit: invalid context id\n");
++		dprintk("EINVAL: io_submit: invalid context id\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1780,7 +1786,7 @@
+ 
+ 	if (NULL != cancel) {
+ 		struct io_event tmp;
+-		pr_debug("calling cancel\n");
++		dprintk("calling cancel\n");
+ 		memset(&tmp, 0, sizeof(tmp));
+ 		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+ 		tmp.data = kiocb->ki_user_data;
+
+--Boundary-00=_Lu2nLuQiqxg1UO2--
