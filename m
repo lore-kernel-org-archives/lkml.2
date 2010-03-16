@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937919Ab0CPPkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:40:09 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:28210 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab0CPPkH (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 16 Mar 2010 11:40:07 -0400
-Date: Tue, 16 Mar 2010 08:45:56 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: ak@linux.intel.com, akataria@vmware.com, lenb@kernel.org, x86@kernel.org,
-       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       petr@vmware.com
-Subject: Re: [LKML] Re: [LKML] Re: swiotlb detection should be memory
-	hotplug aware ?
-Message-ID: <20100316124556.GA25340@phenom.dumpdata.com>
-References: <1268446032.13691.69.camel@ank32> <4B9B01F5.3000807@linux.intel.com> <20100316005140.GB7622@phenom.dumpdata.com> <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
+	id S1757904Ab0CPPpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:45:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55249 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755855Ab0CPPpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:45:08 -0400
+Message-ID: <4B9FA810.5000605@kernel.org>
+Date: Wed, 17 Mar 2010 00:47:28 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-3.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4B9FA644.0047:SCFMA4539814,ss=1,fgs=0
+To: Denys Vlasenko <vda.linux@googlemail.com>
+CC: James Bottomley <James.Bottomley@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <4B947393.2050002@kernel.org>	 <1268745897.21384.14.camel@mulgrave.site>	 <4B9F8E1A.2020608@kernel.org>	 <201003161538.27015.vda.linux@googlemail.com>	 <4B9F9FD0.8040303@kernel.org> <1158166a1003160825j16ce6573h73e64d85b58bb202@mail.gmail.com>
+In-Reply-To: <1158166a1003160825j16ce6573h73e64d85b58bb202@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 15:44:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 10:33:20AM +0900, FUJITA Tomonori wrote:
-> On Mon, 15 Mar 2010 20:51:40 -0400
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Hello,
+
+On 03/17/2010 12:25 AM, Denys Vlasenko wrote:
+>> C/H/S of 1023/254/63 is a special marker indicating the value there is
+>> out-of-range.
 > 
-> > On Fri, Mar 12, 2010 at 07:09:41PM -0800, Andi Kleen wrote:
-> > > , Alok Kataria wrote:
-> > >
-> > > Hi Alok,
-> > >
-> > >> Hi,
-> > >>
-> > >> Looking at the current code swiotlb is initialized for 64bit kernels
-> > >> only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
-> > >> So in cases when the initial memory is less than 4GB the kernel boots
-> > >> without enabling swiotlb, when we hotadd memory to such a kernel and go
-> > >> beyond the 4G limit, swiotlb is still disabled. As a result when any
-> > >> 32bit devices start using this newly added memory beyond 4G, the kernel
-> > >> starts spitting error messages like below or in some cases it causes
-> > >> kernel panics.
-> > >
-> > > Yes seems like a real problem.
-> > >
-> > >>
-> > >> 1. Enable swiotlb for all 64bit kernels which have memory hot-add
-> > >> support.
-> > >
-> > > I don't think that's a good idea. It would enable it everywhere on
-> > > distributions which compile with hotadd. Need (2)
-> > >
-> > >> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
-> > >> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
-> > >> value readily available. I could parse the SRAT and get hotplug memory
-> > >> information but that will make swiotlb detection logic a little too
-> > >> complex. A quick look around srat_xx.c files and the acpi_memhotplug
-> > >> module didn't find any useful API that could be used directly either.
-> > >> So was wondering if any of you are aware of an easy way to get such
-> > >> information ?
-> > >
-> > > I have a patchkit to revamp the SRAT parsing to store the hotadd information
-> > 
-> > There is a late mechanism to do kickoff the SWIOTLB. Perhaps the hot-add
-> > could use swiotlb_init_late and start up the SWIOTLB?
+> You misunderstood my ^^^ markers. I was trying to highlight
+> the whole columns of "end head" and "end sector", not the
+> last partition's 1023/254/63 values.
+>
+> In the partition table like shown above it is obvious
+> that geometry is 255/63.
+
+Oh, if you have at least one partition contained under the CHS limit,
+you can definitely determine the parameters.  You need to know two
+params and there are two equations.  You don't even have to consider
+the alignment.
+
+>> We don't have to align to cylinders either.
 > 
-> I guess that you are talking about
-> swiotlb_late_init_with_default_size(), which IA64 uses. However, you
-> can use swiotlb_late_init_with_default_size() only before we
-> initialize devices. Making it work after initializing devices is not
-> so easy, I think (that is, we need to change dma_ops).
+> If neither the start nor the end is aligned to cylinder's end
+> and disk has just one partition and it's bigger than 8G,
+> there is not way to determine geometry.
+> 
+> If everybody adopts the convention of ending the partitions
+> at the cylinder end, geometry can be trivially determined by
+> looking at partition end values. Sans "no of cylinders" value,
+> which can be easily determined by other means.
 
-That is a good point. Especially if we have some outstanding DMA pages
-allocated via dma_alloc_coherent.
+But this is irrelevant because we don't and can't control everybody.
+Actually, nobody can.  Codes dealing with partition tables have
+already been out there for a very long time and there's no way to
+retroactively make them agree on anything.  The only reason why we
+care about CHS values at all is backward compatibility.  Going
+forward, we don't need them at all.
 
-I thought that the machines that have hot-add memory they have their
-own fancy IOMMU. For example the IBM x3955 (and its family) utilize the
-Calgary IOMMU. The HP boxes utilize the Intel VT-D (or the AMD
-equivalant).
+Thanks.
 
-So is this mostly specialized in the areas of virtualized guests? (Xen
-PV guests with PCI passthrough suffer the same problem, btw).
+-- 
+tejun
