@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937479Ab0CPHIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 03:08:11 -0400
-Received: from mx3.orcon.net.nz ([219.88.242.53]:48766 "EHLO mx3.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937469Ab0CPHII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 03:08:08 -0400
-Message-ID: <4B9F2E56.2060303@orcon.net.nz>
-Date: Tue, 16 Mar 2010 20:08:06 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100121 Lightning/1.0b2pre Shredder/3.0.1
-MIME-Version: 1.0
-To: Will L Givens <wlgivens@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
-Subject: Re: Will's kernel compilation error
-References: <b4198de61003151609je8a94ceyf6dd39acfd1a5876@mail.gmail.com> <001e01cac4cc$98072ce0$c81586a0$@com>
-In-Reply-To: <001e01cac4cc$98072ce0$c81586a0$@com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Check: by mx3.orcon.net.nz on Tue, 16 Mar 2010 20:08:06 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Tue Mar 16 20:08:07 2010
-X-DSPAM-Confidence: 0.7617
-X-DSPAM-Probability: 0.0000
+	id S937484Ab0CPHNI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 03:13:08 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:55788 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab0CPHNC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 03:13:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GEX7VlUxOdFD18veF1vhEgCKrj+hDtp/cwoRKuyslUS+BYpfPuOhD8aazvoRO1l3rK
+         TOc3n6lpSlsOuWXlQt9OJhMVb6yoZCOlSvfrodstE4OuAnEF7RxbS4YK6fmGaF3Dj2uZ
+         YA1rqeldxH8znRNVuIYm/es08nZjLeN3UbZ7o=
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100316065015.GA3336@swordfish.minsk.epam.com>
+References: <20100307192305.GA598@elte.hu>
+	 <20100308125122.GA11242@redhat.com>
+	 <1268686865.2824.4.camel@edumazet-laptop>
+	 <1268699602.2824.14.camel@edumazet-laptop>
+	 <20100316065015.GA3336@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 08:12:57 +0100
+Message-ID: <1268723577.2824.17.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/03/10 18:50, Will L Givens wrote:
-> It seems the problem, GPREL16, is pretty wide spread. I've tried building
-> the drivers as modules, since that doesn't appear to be a problem *knock on
-> wood* but one driver after another, after another, after another generates a
-> new GPREL16 error! Raid0 drivers, numerous NetFilter modules, IR drivers
-> (guess I can't use a Hauppauge card), and various other components. I'm
-> going to try a few more configurations... then hit the sack. I'm pretty sure
-> this is going to be a long process.
+Le mardi 16 mars 2010 à 08:50 +0200, Sergey Senozhatsky a écrit :
+> Hello,
+> 
+> Sure. Give me a couple of days. By the way, should I test against .34
+> or .33?
+> 
 
-As has been suggested your best bet for help is to post your .config. 
-If you don't want that publicly available then feel free to email it 
-privately to Matt and myself.
+It's an old bug anyway, so you can pick up whats is the best for you.
+My personal pref would be current kernel.
 
-FWIW, I have two Hauppauge cards (PVR350 card and a Nova-T-500 DVB-T 
-card) in my Alpha, and have had no problems compiling the kernel, the 
-ivtv modules, the DVB modules, and the IR modules.
+To trigger the original condition (fifo overflow), you might flood your
+machine from another one with small packets, for example using pktgen.
 
-If we cannot track down what you are doing differently than the rest of 
-us, then there is little chance we can help you.
+Thanks
 
-Cheers
-Michael.
+
