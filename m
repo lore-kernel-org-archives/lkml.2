@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab0CPK0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:26:04 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44311 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757793Ab0CPKZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:25:59 -0400
-Date: Tue, 16 Mar 2010 11:25:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: T??r??k Edwin <edwintorok@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf: install into /usr/local by default.
-Message-ID: <20100316102546.GE10069@elte.hu>
-References: <4B9F3EEC.7050104@gmail.com>
- <1268733435-30225-1-git-send-email-edwintorok@gmail.com>
- <20100316101031.GL7961@elte.hu>
- <4B9F5B6E.5040302@redhat.com>
+	id S1757768Ab0CPK03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:26:29 -0400
+Received: from mail-qy0-f199.google.com ([209.85.221.199]:42360 "EHLO
+	mail-qy0-f199.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab0CPK01 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:26:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Cs8FphKbpYWVGfFhkBHLmIw31m+JfxovY6EPGEXVUDB5w9NbtHBfGoVy7Nrfd2V6uc
+         kXXlKLPHUDNp+t0Sk4cNcIpC0HUvBybJFrmbGTMGXqmQ/w2oWaILD/JVdtf2Q1bRbnzF
+         yf77NPNxS85eVPiwiYbw9lkn9pVZVybIR5uuY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F5B6E.5040302@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+In-Reply-To: <1268649663.3154.9.camel@edumazet-laptop>
+References: <20100311134556.GA6344@linux.vnet.ibm.com>
+	 <1268401058.3141.9.camel@edumazet-laptop> <20100313053356.GC3704@hack>
+	 <20100313215838.GB6805@linux.vnet.ibm.com>
+	 <20100315010802.GB2735@hack>
+	 <2375c9f91003142010g61841666iad53c24f39036acf@mail.gmail.com>
+	 <2375c9f91003150239m1abc765bh59eb51c948eed592@mail.gmail.com>
+	 <1268647460.3154.1.camel@edumazet-laptop>
+	 <2375c9f91003150312u37dfd70fk55a4b8820e13590e@mail.gmail.com>
+	 <1268649663.3154.9.camel@edumazet-laptop>
+Date: Tue, 16 Mar 2010 18:26:26 +0800
+Message-ID: <2375c9f91003160326j4a088701y9f0b923a9776a39e@mail.gmail.com>
+Subject: Re: 2.6.34-rc1: rcu lockdep bug?
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       David Miller <davem@davemloft.net>, peterz@infradead.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 15, 2010 at 6:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 15 mars 2010 à 18:12 +0800, Américo Wang a écrit :
+>> On Mon, Mar 15, 2010 at 6:04 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> > Le lundi 15 mars 2010 à 17:39 +0800, Américo Wang a écrit :
+>> >
+>> >>
+>> >> Ok, I think I found what lockdep really complains about, it is that we took
+>> >> spin_lock in netpoll_poll_lock() which is in hardirq-enabled environment,
+>> >> later, we took another spin_lock with spin_lock_irqsave() in netpoll_rx(),
+>> >> so lockdep thought we broke the locking rule.
+>> >>
+>> >> I don't know why netpoll_rx() needs irq disabled, it looks like that no one
+>> >> takes rx_lock in hardirq context. So can we use spin_lock(&rx_lock)
+>> >> instead? Or am I missing something here? Eric? David?
+>> >
+>> > I am a bit lost.
+>> >
+>> > Could you give the complete picture, because I cannot find it in my
+>> > netdev archives.
+>> >
+>>
+>> Sure, sorry for this.
+>>
+>> Here is the whole thread:
+>>
+>> http://lkml.org/lkml/2010/3/11/100
+>
+> OK thanks
+>
+> netpoll_rx() can be called from hard irqs (netif_rx()), so rx_lock
+> definitly needs irq care.
+>
+> netpoll_poll_lock() does take a spinlock with irq enabled, but its not
+> rx_lock, its napi->poll_lock.
 
-* Avi Kivity <avi@redhat.com> wrote:
+Yeah, I knew, but besides rcu locks, these two locks are the only
+locks that can be taken in the call chain. I suspect lockdep got
+something wrong.
 
-> On 03/16/2010 12:10 PM, Ingo Molnar wrote:
-> >* T??r??k Edwin<edwintorok@gmail.com>  wrote:
-> >
-> >>It was confusing to install into $(HOME)/bin, especially since there was
-> >>no documentation mentioning where perf gets installed by default.
-> >>So install to /usr/local by default, as other programs do, and allow users to
-> >>override the install location by specifying the prefix explicitly.
-> >>
-> >>Signed-off-by: T??r??k Edwin<edwintorok@gmail.com>
-> >>---
-> >>  tools/perf/Makefile |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >>diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> >>index 2e7fa3a..8e8c199 100644
-> >>--- a/tools/perf/Makefile
-> >>+++ b/tools/perf/Makefile
-> >>@@ -216,7 +216,7 @@ STRIP ?= strip
-> >>  # runtime figures out where they are based on the path to the executable.
-> >>  # This can help installing the suite in a relocatable way.
-> >>
-> >>-prefix = $(HOME)
-> >>+prefix = /usr/local
-> >>  bindir_relative = bin
-> >>  bindir = $(prefix)/$(bindir_relative)
-> >>  mandir = share/man
-> >Btw., we inherited that default prefix from the Git project.
-> >
-> >Is there a way to get it into ~/bin/ if the user does not have permission to
-> >/usr/local ? (i.e. doesnt run it as root)
-> >
-> >That's a really convenient aspect of doing a 'make install' as user. (Which i
-> >tend to do in most cases)
-> 
-> What about people (like me) who do 'make && sudo make install'?
+>
+> I dont see what could be the problem, is it reproductible with vanilla
+> kernel ?
+>
 
-I'd like everyone to be happy :-)
+No. I don't know why, my patch doesn't touch any function in the
+call chain.
 
-In case of irreconcilable differences i prefer the creation of two parallel 
-universes, one for each variant. This does not seem to be such a case though:
+I already "fix" this in another way, so no need to worry this any more.
 
-> Can we make it position independent and derive the path from /proc/$$/exe?
-
-Sounds like a useful approach ...
-
-	Ingo
+Thanks for your help!
