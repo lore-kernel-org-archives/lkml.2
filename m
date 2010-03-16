@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975Ab0CPSaw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:30:52 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:65028 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759860Ab0CPSav (ORCPT
+	id S1759978Ab0CPSeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:34:07 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:48205 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752728Ab0CPSeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:30:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=mL66FU6SGeDbaTYb6gUrZw1dzm/p6CZK0+bLCTpWbd/wVWsofv4d2bQ/xj7sRYNniV
-         aLnTL/0RRBvXD06KeKQWel0rF0BigXUPAV6h4d64P71Z5t/8hQfNByN50NW5xUSP6cBH
-         zyUBjIX7APE7SkjRAOhvX6f3jyZCr6sq9cvZc=
+	Tue, 16 Mar 2010 14:34:04 -0400
+Date: Tue, 16 Mar 2010 21:34:00 +0300
+From: Anton Vorontsov <avorontsov@ru.mvista.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Vrabel <david.vrabel@csr.com>,
+       Richard =?utf-8?Q?R=C3=B6jfors?= 
+	<richard.rojfors.ext@mocean-labs.com>,
+       Pierre Ossman <pierre@ossman.eu>, Ben Dooks <ben@simtec.co.uk>,
+       linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH resend 0/3] sdhci-pltfm: Few additions and enhancements
+Message-ID: <20100316183400.GA24191@oksana.dev.rtsoft.ru>
+Reply-To: avorontsov@ru.mvista.com
 MIME-Version: 1.0
-In-Reply-To: <1cf6d37d1003161125n1b127d1av1bbce0b84ee00315@mail.gmail.com>
-References: <1cf6d37d1003161125n1b127d1av1bbce0b84ee00315@mail.gmail.com>
-Date: Tue, 16 Mar 2010 19:30:49 +0100
-Message-ID: <1cf6d37d1003161130r2a69b2ebnd159b7d9bf10edb2@mail.gmail.com>
-Subject: no kernel events
-From: kees schoenmakers <kslinux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=windows-1251
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Fri, Feb 19, 2010 at 11:11:00PM +0300, Anton Vorontsov wrote:
+> On Fri, Feb 19, 2010 at 07:55:30PM +0000, David Vrabel wrote:
+> > Anton Vorontsov wrote:
+> > > Some hosts (e.g. as found in CNS3xxx SOCs) report wrong value in
+> > > CLOCK_BASE capability field, and currently there is no way to
+> > > force the SDHCI core to use the platform-provided base clock value.
+> > 
+> > I don't think this needs a new quirk. Change the sdhci driver to check
+> > if the platform provides a value before reading the standard register.
+> 
+> Well, Pierre once said that by default we should conform to the
+> SDHCI spec, and any diviations from the spec should be handled by
+> the quirks:
+> 
+> http://linux.derkeiler.com/Mailing-Lists/Kernel/2009-02/msg03385.html
+> 
+> Spec clearly states that base clock == 0 is the case when we should
+> fall back to the platform-provided clocks.
 
-I'm puzzled by a machine where "udevadm monitor --kernel" reports
-nothing when items are connected/disconnected to USB. Only when I
-disconnect the USB-keyboard I get one disconnect event and nothing
-after. Reconnecting the keyboard leaves it unrecognised and
-dis-functional.
+No further comments, resending the patches...
 
-Kees
+Thanks,
+
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
