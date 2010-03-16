@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196Ab0CPVCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:02:40 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:40422 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932542Ab0CPVCj (ORCPT
+	id S1751748Ab0CPVFj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:05:39 -0400
+Received: from mail-pz0-f200.google.com ([209.85.222.200]:46635 "EHLO
+	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab0CPVFf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:02:39 -0400
-Date: Tue, 16 Mar 2010 17:01:50 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Btrfs updates
-Message-ID: <20100316210150.GA14886@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100315191807.GA3449@think>
+	Tue, 16 Mar 2010 17:05:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=DDAGtRD3JkOVHFNn/Jz7KxkCYhc7/hubbmynfvZwe2YVWUfdPlwtuc8yql5DVLwi+D
+         2Ns9YKnhEp2yQypIG12X7bk9986UlUdp5oOXA4CfakdCRqj5M8wMEDwz/8j/qIgYyEqf
+         14sZfwO9y94l/tCo53WSbziQW4FAi7iVJv9HA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315191807.GA3449@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4B9FF1C7.0283:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <tip-ff30a0543e9a6cd732582063e7cae951cdb7acf2@git.kernel.org>
+References: <4B9E15D30200007800034D23@vpn.id2.novell.com>
+	 <tip-ff30a0543e9a6cd732582063e7cae951cdb7acf2@git.kernel.org>
+Date: Tue, 16 Mar 2010 14:03:57 -0700
+Message-ID: <dd18b0c31003161403r56f9fd88kcc561a630be136a3@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86: Fix placement of FIX_OHCI1394_BASE
+From: Justin Mattock <justinmattock@gmail.com>
+To: mingo@redhat.com, hpa@zytor.com, justinmattock@gmail.com,
+       linux-kernel@vger.kernel.org, jbeulich@novell.com, tglx@linutronix.de,
+       mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 03:18:07PM -0400, Chris Mason wrote:
-> Hello everyone,
-> 
-> The master branch of the btrfs unstable tree has a collection of fixes
-> and features:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+On Tue, Mar 16, 2010 at 7:48 AM, tip-bot for Jan Beulich
+<JBeulich@novell.com> wrote:
+> Commit-ID:  ff30a0543e9a6cd732582063e7cae951cdb7acf2
+> Gitweb:     http://git.kernel.org/tip/ff30a0543e9a6cd732582063e7cae951cdb7acf2
+> Author:     Jan Beulich <JBeulich@novell.com>
+> AuthorDate: Mon, 15 Mar 2010 10:11:15 +0000
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Tue, 16 Mar 2010 11:16:27 +0100
+>
+> x86: Fix placement of FIX_OHCI1394_BASE
+>
+> Ever for 32-bit with sufficiently high NR_CPUS, and starting
+> with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
+> 64-bit, the statically allocated early fixmap page tables were
+> not covering FIX_OHCI1394_BASE, leading to a boot time crash
+> when "ohci1394_dma=early" was used. Despite this entry not being
+> a permanently used one, it needs to be moved into the permanent
+> range since it has to be close to FIX_DBGP_BASE and
+> FIX_EARLYCON_MEM_BASE.
+>
+> Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
+> Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: <stable@kernel.org> # [as far back as long as it still applies]
+> LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  arch/x86/include/asm/fixmap.h |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+> index 635f03b..d07b44f 100644
+> --- a/arch/x86/include/asm/fixmap.h
+> +++ b/arch/x86/include/asm/fixmap.h
+> @@ -82,6 +82,9 @@ enum fixed_addresses {
+>  #endif
+>        FIX_DBGP_BASE,
+>        FIX_EARLYCON_MEM_BASE,
+> +#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
+> +       FIX_OHCI1394_BASE,
+> +#endif
+>  #ifdef CONFIG_X86_LOCAL_APIC
+>        FIX_APIC_BASE,  /* local (CPU) APIC) -- required for SMP or not */
+>  #endif
+> @@ -132,9 +135,6 @@ enum fixed_addresses {
+>           (__end_of_permanent_fixed_addresses & (TOTAL_FIX_BTMAPS - 1))
+>         : __end_of_permanent_fixed_addresses,
+>        FIX_BTMAP_BEGIN = FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1,
+> -#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
+> -       FIX_OHCI1394_BASE,
+> -#endif
+>  #ifdef CONFIG_X86_32
+>        FIX_WP_TEST,
+>  #endif
+>
 
-I've updated the master tree with 3 small fixes.  Thanks to Sage for
-sending along a one liner for a bad cast in the searching ioctl, really
-not sure why my gcc isn't giving the same warnings his was.
+looks good over here..
 
-I fixed the new space info ioctl to avoid scheduling in a
-rcu_read_lock.  Sage also turned u64 to __u64 in the space_info ioctl
-args struct.
-
-Here is the corrected shortlog:
-
-Josef Bacik (10) commits (+517/-160):
-    Btrfs: make set/get functions for the super compat_ro flags use compat_ro (+1/-1)
-    Btrfs: change the ordered tree to use a spinlock instead of a mutex (+19/-19)
-    Btrfs: add ioctl and incompat flag to set the default mount subvol (+80/-1)
-    Btrfs: cache the extent state everywhere we possibly can V2 (+148/-90)
-    Btrfs: make subvolid=0 mount the original default root (+9/-3)
-    Btrfs: make df be a little bit more understandable (+26/-3)
-    Btrfs: cache extent state in find_delalloc_range (+8/-3)
-    Btrfs: cache ordered extent when completing io (+10/-5)
-    Btrfs: change how we mount subvolumes (+158/-34)
-    Btrfs: add a "df" ioctl for btrfs (+58/-1)
-
-Chris Mason (7) commits (+619/-67):
-    Btrfs: run the backing dev more often in the submit_bio helper (+10/-10)
-    Btrfs: finish read pages in the order they are submitted (+4/-3)
-    Btrfs: buffer results in the space_info ioctl (+46/-11)
-    Btrfs: don't look at bio flags after submit_bio (+3/-3)
-    Btrfs: be more selective in the defrag ioctl (+140/-10)
-    Btrfs: add search and inode lookup ioctls (+299/-16)
-    Btrfs: add new defrag-range ioctl. (+117/-14)
-
-Sage Weil (3) commits (+7/-10):
-    Btrfs: flush data on snapshot creation (+1/-4)
-    Btrfs: fix search_ioctl key advance (+1/-1)
-    Btrfs: use __u64 types in ioctl.h (+5/-5)
-
-TARUISI Hiroaki (2) commits (+99/-0):
-    Btrfs: add a function to lookup a directory path by following backrefs (+92/-0)
-    btrfs: Update existing btrfs_device for renaming device (+7/-0)
-
-Xiao Guangrong (1) commits (+3/-3):
-    btrfs: using btrfs_stack_device_id() get devid
-
-Akinobu Mita (1) commits (+4/-30):
-    btrfs: use memparse
-
-Miao Xie (1) commits (+1/-1):
-    btrfs: fix btrfs_mkdir goto for no free objectids
-
-Nick Piggin (1) commits (+1/-1):
-    Btrfs: fix gfp flags masking in the compression code
-
-Total: (26) commits
-
- fs/btrfs/ioctl.c        |  757 ++++++++++++++++++++++++++++++++++++++++++++----
- fs/btrfs/super.c        |  244 +++++++++++----
- fs/btrfs/inode.c        |  139 +++++---
- fs/btrfs/ioctl.h        |  123 +++++++
- fs/btrfs/extent_io.c    |   79 +++--
- fs/btrfs/ordered-data.c |   41 +-
- fs/btrfs/volumes.c      |   39 +-
- fs/btrfs/file.c         |   23 -
- fs/btrfs/disk-io.c      |   15 
- fs/btrfs/ctree.h        |   13 
- fs/btrfs/extent-tree.c  |   11 
- fs/btrfs/extent_io.h    |   10 
- fs/btrfs/ordered-data.h |    7 
- fs/btrfs/transaction.c  |    5 
- fs/btrfs/btrfs_inode.h  |    5 
- fs/btrfs/relocation.c   |    4 
- fs/btrfs/export.c       |    4 
- fs/btrfs/tree-log.c     |    2 
- fs/btrfs/compression.c  |    2 
- 19 files changed, 1251 insertions(+), 272 deletions(-)
-
-
+-- 
+Justin P. Mattock
