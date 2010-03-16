@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937681Ab0CPKKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:10:40 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50584 "EHLO mx3.mail.elte.hu"
+	id S937684Ab0CPKMI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:12:08 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58480 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937644Ab0CPKKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:10:38 -0400
-Date: Tue, 16 Mar 2010 11:10:31 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: T??r??k Edwin <edwintorok@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org,
-       =?unknown-8bit?B?RnLDqWTDqXJpYw==?= Weisbecker 
-	<fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] perf: install into /usr/local by default.
-Message-ID: <20100316101031.GL7961@elte.hu>
-References: <4B9F3EEC.7050104@gmail.com>
- <1268733435-30225-1-git-send-email-edwintorok@gmail.com>
+	id S937644Ab0CPKMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:12:06 -0400
+Date: Tue, 16 Mar 2010 10:11:46 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
+	pressure
+Message-ID: <20100316101146.GP18274@csn.ul.ie>
+References: <1268048904-19397-1-git-send-email-mel@csn.ul.ie> <20100311154124.e1e23900.akpm@linux-foundation.org> <4B99E19E.6070301@linux.vnet.ibm.com> <20100312020526.d424f2a8.akpm@linux-foundation.org> <20100312104712.GB18274@csn.ul.ie> <4B9A3049.7010602@linux.vnet.ibm.com> <20100312093755.b2393b33.akpm@linux-foundation.org> <4B9E296A.2010605@linux.vnet.ibm.com> <20100315130935.f8b0a2d7.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1268733435-30225-1-git-send-email-edwintorok@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100315130935.f8b0a2d7.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* T??r??k Edwin <edwintorok@gmail.com> wrote:
-
-> It was confusing to install into $(HOME)/bin, especially since there was
-> no documentation mentioning where perf gets installed by default.
-> So install to /usr/local by default, as other programs do, and allow users to
-> override the install location by specifying the prefix explicitly.
+On Mon, Mar 15, 2010 at 01:09:35PM -0700, Andrew Morton wrote:
+> On Mon, 15 Mar 2010 13:34:50 +0100
+> Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
 > 
-> Signed-off-by: T??r??k Edwin <edwintorok@gmail.com>
-> ---
->  tools/perf/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> > c) If direct reclaim did reasonable progress in try_to_free but did not
+> > get a page, AND there is no write in flight at all then let it try again
+> > to free up something.
+> > This could be extended by some kind of max retry to avoid some weird
+> > looping cases as well.
+> > 
+> > d) Another way might be as easy as letting congestion_wait return
+> > immediately if there are no outstanding writes - this would keep the 
+> > behavior for cases with write and avoid the "running always in full 
+> > timeout" issue without writes.
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 2e7fa3a..8e8c199 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -216,7 +216,7 @@ STRIP ?= strip
->  # runtime figures out where they are based on the path to the executable.
->  # This can help installing the suite in a relocatable way.
->  
-> -prefix = $(HOME)
-> +prefix = /usr/local
->  bindir_relative = bin
->  bindir = $(prefix)/$(bindir_relative)
->  mandir = share/man
+> They're pretty much equivalent and would work.  But there are two
+> things I still don't understand:
+> 
 
-Btw., we inherited that default prefix from the Git project.
+Unfortunately, this regression is very poorly understood. I haven't been able
+to reproduce it locally and while Christian has provided various debugging
+information, it still isn't clear why the problem occurs now.
 
-Is there a way to get it into ~/bin/ if the user does not have permission to 
-/usr/local ? (i.e. doesnt run it as root)
+> 1: Why is direct reclaim calling congestion_wait() at all?  If no
+> writes are going on there's lots of clean pagecache around so reclaim
+> should trivially succeed.  What's preventing it from doing so?
+> 
 
-That's a really convenient aspect of doing a 'make install' as user. (Which i 
-tend to do in most cases)
+Memory pressure I think. The workload involves 16 processes (see
+http://lkml.org/lkml/2009/12/7/237). I suspect they are all direct reclaimers
+and some processes are getting their pages stolen before they have a
+chance to allocate them. It's knowing that adding a small amount of
+memory "fixes" this problem.
 
-	Ingo
+> 2: This is, I think, new behaviour.  A regression.  What caused it?
+> 
+
+Short answer, I don't know.
+
+Longer answer. Initially, this was reported as being caused by commit e084b2d:
+page-allocator: preserve PFN ordering when __GFP_COLD is set but it was never
+established why and reverting it was unpalatable because it fixed another
+performance problem. According to Christian, the controller does nothing
+with the merging of IO requests and he was very sure about this. As all the
+patch does is change the order that pages are returned in and the timing
+slightly due to differences in cache hotness, although the fact that such
+a small change could make a big difference in reclaim later was surprising.
+There were other bugs that might have complicated this such as errors in free
+page counters but they were fixed up and the problem still did not go away.
+
+It was after much debugging that it was found that direct reclaim was
+returning, the subsequent allocation attempt failed and congestion_wait()
+was called but without dirty pages, congestion or writes, it waits for
+the full timeout.  congestion_wait() was also being called a lot more
+frequently so something was causing reclaim to fail more frequently
+(http://lkml.org/lkml/2009/12/18/150). Again, I couldn't figure out why
+e084b2d would make a difference.
+
+Later, it got even worse because patches e084b2d and 5f8dcc21 had to be
+reverted in 2.6.33 to "resolve" the problem. 5f8dcc21 was more plausible as it
+affected how many pages were on the per-cpu lists but making it behave like
+2.6.32 did not help the situation. Again, it looked like a very small timing
+problem but it could not be isolated exactly why reclaim would fail. Again,
+other bugs were found and fixed but made no difference.
+
+What lead to this patch was recognising we could enter congestion_wait()
+and wait the entire timeout because no writes were in progress or dirty
+pages to be cleaned. As what was really of interest was watermarks in
+this path, the patch intended to make the page allocator care about
+watermarks instead of congestion. We know it was treating symptoms
+rather than understanding the underlying problem but I was somewhat at a
+loss to explain why small changes in timing made such a large
+difference.
+
+Any new insight is welcome.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
