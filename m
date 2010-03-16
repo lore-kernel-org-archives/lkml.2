@@ -1,180 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab0CPUnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 16:43:23 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36947 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752915Ab0CPUnW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 16:43:22 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: linux-mtd@lists.infradead.org
-Cc: Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
-       David Brownell <david-b@pacbell.net>,
-       David Woodhouse <dwmw2@infradead.org>,
+	id S1758087Ab0CPUnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 16:43:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752915Ab0CPUnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 16:43:24 -0400
+Message-ID: <4B9FED32.6080400@redhat.com>
+Date: Tue, 16 Mar 2010 16:42:26 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: James Bottomley <James.Bottomley@suse.de>,
+       Denys Vlasenko <vda.linux@googlemail.com>,
+       Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
        Andrew Morton <akpm@linux-foundation.org>,
-       Bernd Schmidt <bernd.schmidt@analog.com>,
-       David Howells <dhowells@redhat.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Nicolas Pitre <nico@fluxnic.net>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
-Date: Tue, 16 Mar 2010 13:41:19 -0700
-Message-Id: <1268772081-6534-1-git-send-email-khilman@deeprootsystems.com>
-X-Mailer: git-send-email 1.7.0.2
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>	 <4B9FA1C6.7090305@kernel.org> <1268752993.21384.23.camel@mulgrave.site> <4B9FA59E.1000402@kernel.org>
+In-Reply-To: <4B9FA59E.1000402@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sudhakar Rajashekhara <sudhakar....@ti.com>
+On 03/16/2010 11:37 AM, Tejun Heo wrote:
+> Hello,
+>
+> On 03/17/2010 12:23 AM, James Bottomley wrote:
+>    
+>>> So, using custom geometry doesn't help compatibility at all.
+>>>        
+>> Our partitioning tool still obey the integral cylinder rule ... we can
+>> argue about whether they should, but what we need is a strategy for
+>> fixing what is rather than what should be.
+>>      
+> The updated ones don't anymore.  They just align to 1MiB + whatever
+> the drive requests for offset (the offset-by-one thing).  They will
+> basically behave the same as windows vista/7 ones, so it's already
+> fixed.  What we can argue is whether adding CHS tricks on top to make
+> those larger alignments somewhat meaningful w/ CHS interpretation too,
+> which I'm objecting on the ground that it doesn't help compatibility
+> at all.
+>
+> Thanks.
+>
+>    
 
-This patch implements memory accessor interface in the MTD
-layer which enables the kernel to access flash data.
+Dropping any mention of CHS seems to be the only sensible thing. Why 
+waste any time to continue some myth about drives that no modern 
+hardware supports (and then have the joy of explaining that to users)?
 
-This patch adds two new members to the mtd_partition structure,
-a function handler which will be called during setup of the
-partition and an argument to be passed to this setup function.
+Talking about it only confuses people and in the worst case, could cause 
+them to misalign their partitions by clinging to these pretend borders :-)
 
-Example:
-+static struct mtd_partition spi_flash_partitions[] = {
-+       [0] = {
-+               .name       = "U-Boot",
-+               .offset     = 0,
-+               .size       = SZ_256K,
-+               .mask_flags = MTD_WRITEABLE,
-+       },
-+       [1] = {
-+               .name       = "U-Boot Environment",
-+               .offset     = MTDPART_OFS_NXTBLK,
-+               .size       = SZ_64K,
-+               .mask_flags = MTD_WRITEABLE,
-+       },
-+       [2] = {
-+               .name       = "Linux",
-+               .offset     = MTDPART_OFS_NXTBLK,
-+               .size       = SZ_7M,
-+               .mask_flags = 0,
-+       },
-+       [3] = {
-+               .name       = "MAC Address",
-+               .offset     = MTDPART_OFS_NXTBLK,
-+               .size       = SZ_64K,
-+               .mask_flags = 0,
-+               .setup      = davinci_get_mac_addr,
-+               .context    = (void *)0,
-+       },
-+};
-
-The davinci_get_mac_addr function reads the MAC address from
-offset ZERO of last MTD partition.
-
-Signed-off-by: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
-Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: David Brownell <david-b@pacbell.net>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-I thought this had made it to -mm, but was dropped waiting
-for subsystem maintainer to pick it up.  Here it is againg for 2.6.35.
-
- drivers/mtd/mtdpart.c          |   40 ++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/partitions.h |    3 +++
- 2 files changed, 43 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
-index b8043a9..9f4d5f8 100644
---- a/drivers/mtd/mtdpart.c
-+++ b/drivers/mtd/mtdpart.c
-@@ -26,6 +26,7 @@ static LIST_HEAD(mtd_partitions);
- struct mtd_part {
- 	struct mtd_info mtd;
- 	struct mtd_info *master;
-+	struct memory_accessor macc;
- 	uint64_t offset;
- 	struct list_head list;
- };
-@@ -327,6 +328,39 @@ int del_mtd_partitions(struct mtd_info *master)
- }
- EXPORT_SYMBOL(del_mtd_partitions);
- 
-+/*
-+ * This lets other kernel code access the flash data. For example, it
-+ * might hold a board's Ethernet address, or board-specific calibration
-+ * data generated on the manufacturing floor.
-+ */
-+static ssize_t mtd_macc_read(struct memory_accessor *macc, char *buf,
-+			off_t offset, size_t count)
-+{
-+	struct mtd_part *part = container_of(macc, struct mtd_part, macc);
-+	ssize_t ret = -EIO;
-+	size_t retlen;
-+
-+	if (part_read((struct mtd_info *)part, offset, count,
-+			&retlen, buf) == 0)
-+		ret = retlen;
-+
-+	return ret;
-+}
-+
-+static ssize_t mtd_macc_write(struct memory_accessor *macc, const char *buf,
-+			off_t offset, size_t count)
-+{
-+	struct mtd_part *part = container_of(macc, struct mtd_part, macc);
-+	ssize_t ret = -EIO;
-+	size_t retlen;
-+
-+	if (part_write((struct mtd_info *)part, offset, count,
-+			&retlen, buf) == 0)
-+		ret = retlen;
-+
-+	return ret;
-+}
-+
- static struct mtd_part *add_one_partition(struct mtd_info *master,
- 		const struct mtd_partition *part, int partno,
- 		uint64_t cur_offset)
-@@ -364,6 +398,9 @@ static struct mtd_part *add_one_partition(struct mtd_info *master,
- 	slave->mtd.read = part_read;
- 	slave->mtd.write = part_write;
- 
-+	slave->macc.read = mtd_macc_read;
-+	slave->macc.write = mtd_macc_write;
-+
- 	if (master->panic_write)
- 		slave->mtd.panic_write = part_panic_write;
- 
-@@ -428,6 +465,9 @@ static struct mtd_part *add_one_partition(struct mtd_info *master,
- 	printk(KERN_NOTICE "0x%012llx-0x%012llx : \"%s\"\n", (unsigned long long)slave->offset,
- 		(unsigned long long)(slave->offset + slave->mtd.size), slave->mtd.name);
- 
-+	if (part->setup)
-+		part->setup(&slave->macc, (void *)part->context);
-+
- 	/* let's do some sanity checks */
- 	if (slave->offset >= master->size) {
- 		/* let's register it anyway to preserve ordering */
-diff --git a/include/linux/mtd/partitions.h b/include/linux/mtd/partitions.h
-index 274b619..39782a6 100644
---- a/include/linux/mtd/partitions.h
-+++ b/include/linux/mtd/partitions.h
-@@ -10,6 +10,7 @@
- #define MTD_PARTITIONS_H
- 
- #include <linux/types.h>
-+#include <linux/memory.h>
- 
- 
- /*
-@@ -40,6 +41,8 @@ struct mtd_partition {
- 	uint64_t offset;		/* offset within the master MTD space */
- 	uint32_t mask_flags;		/* master MTD flags to mask out for this partition */
- 	struct nand_ecclayout *ecclayout;	/* out of band layout for this partition (NAND only)*/
-+	void (*setup)(struct memory_accessor *, void *context);
-+	void *context;
- };
- 
- #define MTDPART_OFS_NXTBLK	(-2)
--- 
-1.7.0.2
+ric
 
