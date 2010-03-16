@@ -1,54 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937455Ab0CPGyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:54:00 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55959 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S937150Ab0CPGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:53:58 -0400
-Message-ID: <4B9F2A54.9020505@cn.fujitsu.com>
-Date: Tue, 16 Mar 2010 14:51:00 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S937473Ab0CPGyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:54:23 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:63037 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937447Ab0CPGyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:54:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ijCNW+A4JmakYfaXtkRL5tjLo+zhtUvN+y6l/SqpVy+2JUZ/PjlFf36xjIrljTd/sD
+         DjLJEin7j5dvu8Mg9O2IxvHKARhswIk0K/rQv8pbjUT+DpUxrQ7EeLx1IDI9r2MHkypI
+         YXRBqmuyqvZ4HqqODbaBCtg/17QL5lGrBVUFg=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Sheng Yang <sheng@linux.intel.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM MMU: check reserved bits only if CR4.PSE=1 or CR4.PAE=1
-References: <4B9FCC42.2080709@cn.fujitsu.com> <4B9F17BC.50108@redhat.com> <4B9F1F47.2040700@cn.fujitsu.com> <4B9F2204.7050302@redhat.com>
-In-Reply-To: <4B9F2204.7050302@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
+References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
+	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
+	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
+	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
+	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
+Date: Tue, 16 Mar 2010 07:54:17 +0100
+Message-ID: <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
+Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Fabio Comolli <fabio.comolli@gmail.com>
+Cc: ACPI mailing list <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 13, 2010 at 1:50 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
+> Well, I'm confused.
+>
+> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
+> the situation it's not like the one I described in the post I wrote 2
+> days ago. Actually the situation with the patch reverted is the same I
+> have with the patch applied.
+>
+> What I mean is that if I boot on AC power /proc/cpuinfo always reports
+> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
+> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
+> not change the situation. Only reboot does.
+>
+> But the cpufv interface does indeed seem to work, as glxgears and
+> stellarium show the frame rate change accordingly to the powersave /
+> performance selection.
+>
+> So my question is: what does really the cpufv interface do? Is it
+> supposed to change the processor frequency? Or does it change
+> something else?
+>
+> And if the answer to the latest question is affirmative, why
+> /proc/cpuinfo seems to ignore it?
+>
+> Sorry for the confusion.
+> Regards,
+> Fabio
+>
 
+Here is what I can read in your DSDT:
 
-Avi Kivity wrote:
-> On 03/16/2010 08:03 AM, Xiao Guangrong wrote:
->>
->>> I think the only change is that is !is_pse(vcpu) we ignore bit 7?
->>>      
->> If the vcpu is in PT32E_ROOT_LEVEL/PT64_ROOT_LEVEL mode, CR4.PAE
->> is aways enabled, so what we need do is ignore bit7 if !is_pse(vcpu)
->> under PT32_ROOT_LEVEL mode, right?
->>    
-> 
-> I think PAE will fault if bit7 is set and !is_pse(vcpu), but not sure.
+When INIT or _Q31 is called, the bios check the the battery is
+present, and call FSBA(0) or FSBA(1).
+_Q31 seems to be called by an hotkey, could you run "acpi_listen" and
+search the hotkey that generate 0x50 or 0x51 ?
 
-Quote AMD's specification:
-The size of large pages in PAE-paging mode is 2 Mbytes rather than 4 Mbytes. PAE uses
-the pagedirectory page-size bit (PDE.PS) to allow selection between 4-Kbyte and 2-Mbyte
-page sizes. PAE automatically uses the page-size bit, so the value of CR4.PSE is ignored
-by PAE paging.
+FSBA is the method called by CFVS. When you do "echo 1 > cpufv" it
+calls CFVS(1), then FSBA(1).
+FSBA got 2 presets on 900.
 
-Quote Intel's specification:
-When PAE is enabled, the 2-MByte page size is selected by setting the page size (PS)
-flag in a page-directory entry (see Figure 3-14). (As shown in Table 3-3, the PSE flag
-in control register CR4 has no affect on the page size when PAE is enabled.)
+Using these presets, is write some bytes to the EC and to something
+wich sounds like clock (RCLK, WCKB, WLCK)
+By the name it seems that it set the FSB, it may also surely change
+the CPU Clock.
 
-So i think PAE just ignore CR4.PSE
+Now, I don't know why cpuinfo always show the same value, maybe
+because the cpu clock is not changed
+by a cpufreq driver.
 
-Thanks,
-Xiao
+-- 
+Corentin Chary
+http://xf.iksaif.net
