@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937228Ab0CPAS4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 20:18:56 -0400
-Received: from kroah.org ([198.145.64.141]:45723 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932779Ab0CPASv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 20:18:51 -0400
-Date: Mon, 15 Mar 2010 17:18:37 -0700
-From: Greg KH <greg@kroah.com>
-To: Ari Entlich <atrigent@ccs.neu.edu>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 34/36] tty: Add a new VT mode which is like VT_PROCESS
- but doesn't require a VT_RELDISP ioctl call
-Message-ID: <20100316001837.GB32558@kroah.com>
-References: <455171.511691268697128244.JavaMail.root@zimbra>
- <2163366.511711268697190113.JavaMail.root@zimbra>
+	id S937233Ab0CPAVN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 20:21:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35194 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932779Ab0CPAVM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 20:21:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] mm: remove return value of putback_lru_pages
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+In-Reply-To: <1268658994.1889.8.camel@barrios-desktop>
+References: <1268658994.1889.8.camel@barrios-desktop>
+Message-Id: <20100316092041.4C34.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2163366.511711268697190113.JavaMail.root@zimbra>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 16 Mar 2010 09:21:05 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 07:53:10PM -0400, Ari Entlich wrote:
-> ----- "Greg KH" <greg@kroah.com> wrote:
-> > So, are you happy with this in Linus's tree, or do you want it
-> > reverted?
 > 
-> The problems with this patch include:
-> 1. There's at least one subtlety I overlooked - switching between X servers
->    (i.e. from one X VT to another) still requires the cooperation of both
->    X servers. I was assuming that KMS eliminated this.
-> 2. It hasn't been tested at all (no X server patch exists which uses the
->    new mode).
+> Now putback_lru_page never can fail.
+> So it doesn't matter count of "the number of pages put back".
 > 
-> So yes, I think it would be wise to revert it. I'll resubmit the patch (in
-> a changed form or otherwise) when I've resolved these issues.
+> In addition, users of this functions don't use return value.
 > 
-> I apologize again for being late in telling you this stuff.
+> Let's remove unnecessary code.
+> 
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
 
-No problem, I'll go queue up the revert.
+Thanks.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-thanks,
 
-greg k-h
+
+
