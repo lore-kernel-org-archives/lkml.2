@@ -1,45 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966589Ab0CPR5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 13:57:10 -0400
-Received: from kroah.org ([198.145.64.141]:54248 "EHLO coco.kroah.org"
+	id S966597Ab0CPSGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:06:53 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:57636 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966173Ab0CPR5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 13:57:08 -0400
-Date: Tue, 16 Mar 2010 10:54:23 -0700
-From: Greg KH <greg@kroah.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg KH <gregkh@suse.de>, Mimi Zohar <zohar@us.ibm.com>,
-       "Serge E . Hallyn" <serue@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kref: remove kref_set
-Message-ID: <20100316175423.GA23303@kroah.com>
-References: <19359.1467.612457.401272@notabene.brown>
+	id S966159Ab0CPSGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 14:06:50 -0400
+Message-ID: <4B9FC8B2.6070404@linux.vnet.ibm.com>
+Date: Tue, 16 Mar 2010 13:06:42 -0500
+From: Anthony Liguori <aliguori@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19359.1467.612457.401272@notabene.brown>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Frank Ch. Eigler" <fche@redhat.com>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com> <20100316133114.GB575@elte.hu> <y0mbpeo1f1y.fsf@fche.csb> <20100316155221.GA19699@elte.hu> <4B9FC11A.1070507@linux.vnet.ibm.com> <20100316175243.GC23859@elte.hu>
+In-Reply-To: <20100316175243.GC23859@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 03:14:51PM +1100, NeilBrown wrote:
-> 
-> 
-> Of the three uses of kref_set in the kernel:
-> 
->  One really should be kref_put as the code is letting go of a
->     reference,
->  Two really should be kref_init because the kref is being
->     initialised.
-> 
-> This suggests that making kref_set available encourages bad code.
-> So fix the three uses and remove kref_set completely.
+On 03/16/2010 12:52 PM, Ingo Molnar wrote:
+> * Anthony Liguori<aliguori@linux.vnet.ibm.com>  wrote:
+>
+>    
+>> On 03/16/2010 10:52 AM, Ingo Molnar wrote:
+>>      
+>>> You are quite mistaken: KVM isnt really a 'random unprivileged application' in
+>>> this context, it is clearly an extension of system/kernel services.
+>>>
+>>> ( Which can be seen from the simple fact that what started the discussion was
+>>>    'how do we get /proc/kallsyms from the guest'. I.e. an extension of the
+>>>    existing host-space /proc/kallsyms was desired. )
+>>>        
+>> Random tools (like perf) should not be able to do what you describe. It's a
+>> security nightmare.
+>>      
+> A security nightmare exactly how? Mind to go into details as i dont understand
+> your point.
+>    
 
-Yeah!
+Assume you're using SELinux to implement mandatory access control.  How 
+do you label this file system?
 
-I really didn't like kref_set at all anyway, and I thought that someone
-"required it" which is why it was added.  Oh well, I'm glad it is now
-gone, thanks so much for this patch.
+Generally speaking, we don't know the difference between /proc/kallsyms 
+vs. /dev/mem if we do generic passthrough.  While it might be safe to 
+have a relaxed label of kallsyms (since it's read only), it's clearly 
+not safe to do that for /dev/mem, /etc/shadow, or any file containing 
+sensitive information.
 
-greg k-h
+Rather, we ought to expose a higher level interface that we have more 
+confidence in with respect to understanding the ramifications of 
+exposing that guest data.
+
+>>
+>> No way.  The guest has sensitive data and exposing it widely on the host is
+>> a bad thing to do. [...]
+>>      
+> Firstly, you are putting words into my mouth, as i said nothing about
+> 'exposing it widely'. I suggest exposing it under the privileges of whoever
+> has access to the guest image.
+>    
+
+That doesn't work as nicely with SELinux.
+
+It's completely reasonable to have a user that can interact in a read 
+only mode with a VM via libvirt but cannot read the guest's disk images 
+or the guest's memory contents.
+
+> Secondly, regarding confidentiality, and this is guest security 101: whoever
+> can access the image on the host _already_ has access to all the guest data!
+>
+> A Linux image can generally be loopback mounted straight away:
+>
+>    losetup -o 32256 /dev/loop0 ./guest-image.img
+>    mount -o ro /dev/loop0 /mnt-guest
+>
+> (Or, if you are an unprivileged user who cannot mount, it can be read via ext2
+> tools.)
+>
+> There's nothing the guest can do about that. The host is in total control of
+> guest image data for heaven's sake!
+>    
+
+It's not that simple in a MAC environment.
+
+Regards,
+
+Anthony Liguori
+
+> All i'm suggesting is to make what is already possible more convenient.
+>
+> 	Ingo
+>    
+
