@@ -1,45 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937590Ab0CPJLP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:11:15 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:33241 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932662Ab0CPJLN (ORCPT
+	id S937601Ab0CPJPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:15:18 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54762 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932553Ab0CPJPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:11:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=E3fIQrspKRoYbTQQDycw5roMW/ZqD4ABJFVBRo1KnLIXXXiF6cb8ku7CM/UQvCUV1b
-         zGMYco46Cx7W9q/JKwoYoIOsJ8MHuvFmGwC9oToYl2h3g6UfcPmQrVoU8VErDBJgLuim
-         D5ejtSS+yA5CFJj13TcOAv1b6lLRBJG8yxHmg=
+	Tue, 16 Mar 2010 05:15:16 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] rtc/mc13783: fix use after free bug
+Date: Tue, 16 Mar 2010 10:15:11 +0100
+Message-Id: <1268730911-25296-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <20100307141459.GE6469@bicker>
+References: <20100307141459.GE6469@bicker>
 MIME-Version: 1.0
-In-Reply-To: <b6fcc0a1003160132m62b2b2a1x28dbe6b99e74abf5@mail.gmail.com>
-References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org>
-	 <20100316061718.GA22651@elte.hu> <4B9F2B0A.70507@kernel.org>
-	 <4B9F36C7.4020304@kernel.org> <20100316075726.GE18448@elte.hu>
-	 <b6fcc0a1003160132m62b2b2a1x28dbe6b99e74abf5@mail.gmail.com>
-Date: Tue, 16 Mar 2010 11:11:12 +0200
-X-Google-Sender-Auth: 61b3168c42fdb4ee
-Message-ID: <84144f021003160211tde2c641j478da44bdb8efe9c@mail.gmail.com>
-Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Christoph Lameter <cl@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 10:32 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
-> It's amazing to see how much sidework people are willing to create
-> to _not_ do simple and obvious thing -- just remove slab.h.
+This was introduced by v2.6.34-rc1~38:
 
-I'm not following your idea here. Where do you propose moving
-kmalloc() and friends to? kernel.h?
+	4c014e8 (rtc/mc13783: protect rtc {,un}registration by mc13783 lock)
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Reported-by: Dan Carpenter <error27@gmail.com>
+---
+ drivers/rtc/rtc-mc13783.c |   23 +++++++++++++----------
+ 1 files changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/rtc/rtc-mc13783.c b/drivers/rtc/rtc-mc13783.c
+index d60c81b..1379c7f 100644
+--- a/drivers/rtc/rtc-mc13783.c
++++ b/drivers/rtc/rtc-mc13783.c
+@@ -319,35 +319,38 @@ static int __devinit mc13783_rtc_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+ 	struct mc13783_rtc *priv;
++	struct mc13783 *mc13783;
+ 	int rtcrst_pending;
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	priv->mc13783 = dev_get_drvdata(pdev->dev.parent);
++	mc13783 = dev_get_drvdata(pdev->dev.parent);
++	priv->mc13783 = mc13783;
++
+ 	platform_set_drvdata(pdev, priv);
+ 
+-	mc13783_lock(priv->mc13783);
++	mc13783_lock(mc13783);
+ 
+-	ret = mc13783_irq_request(priv->mc13783, MC13783_IRQ_RTCRST,
++	ret = mc13783_irq_request(mc13783, MC13783_IRQ_RTCRST,
+ 			mc13783_rtc_reset_handler, DRIVER_NAME, priv);
+ 	if (ret)
+ 		goto err_reset_irq_request;
+ 
+-	ret = mc13783_irq_status(priv->mc13783, MC13783_IRQ_RTCRST,
++	ret = mc13783_irq_status(mc13783, MC13783_IRQ_RTCRST,
+ 			NULL, &rtcrst_pending);
+ 	if (ret)
+ 		goto err_reset_irq_status;
+ 
+ 	priv->valid = !rtcrst_pending;
+ 
+-	ret = mc13783_irq_request_nounmask(priv->mc13783, MC13783_IRQ_1HZ,
++	ret = mc13783_irq_request_nounmask(mc13783, MC13783_IRQ_1HZ,
+ 			mc13783_rtc_update_handler, DRIVER_NAME, priv);
+ 	if (ret)
+ 		goto err_update_irq_request;
+ 
+-	ret = mc13783_irq_request_nounmask(priv->mc13783, MC13783_IRQ_TODA,
++	ret = mc13783_irq_request_nounmask(mc13783, MC13783_IRQ_TODA,
+ 			mc13783_rtc_alarm_handler, DRIVER_NAME, priv);
+ 	if (ret)
+ 		goto err_alarm_irq_request;
+@@ -357,22 +360,22 @@ static int __devinit mc13783_rtc_probe(struct platform_device *pdev)
+ 	if (IS_ERR(priv->rtc)) {
+ 		ret = PTR_ERR(priv->rtc);
+ 
+-		mc13783_irq_free(priv->mc13783, MC13783_IRQ_TODA, priv);
++		mc13783_irq_free(mc13783, MC13783_IRQ_TODA, priv);
+ err_alarm_irq_request:
+ 
+-		mc13783_irq_free(priv->mc13783, MC13783_IRQ_1HZ, priv);
++		mc13783_irq_free(mc13783, MC13783_IRQ_1HZ, priv);
+ err_update_irq_request:
+ 
+ err_reset_irq_status:
+ 
+-		mc13783_irq_free(priv->mc13783, MC13783_IRQ_RTCRST, priv);
++		mc13783_irq_free(mc13783, MC13783_IRQ_RTCRST, priv);
+ err_reset_irq_request:
+ 
+ 		platform_set_drvdata(pdev, NULL);
+ 		kfree(priv);
+ 	}
+ 
+-	mc13783_unlock(priv->mc13783);
++	mc13783_unlock(mc13783);
+ 
+ 	return ret;
+ }
+-- 
+1.7.0
+
