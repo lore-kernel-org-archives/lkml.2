@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966495Ab0CPPFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:05:52 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:62594 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966326Ab0CPPFu (ORCPT
+	id S966500Ab0CPPHA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:07:00 -0400
+Received: from rcpt-expgw.biglobe.ne.jp ([133.205.19.66]:58419 "EHLO
+	rcpt-expgw.biglobe.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966326Ab0CPPG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:05:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=dWqDAztOdlHE7eQlcZKO9lEtD2seeqNn//sGriXDAxyS/b5N/ieWVGRWHeUqY0coaH
-         BeoFguwt1d1Gv1/N2Qx2X3swq/AWIdwVuQ87FthDEpjG8UL788rW7Mo2SPWQhhMDjob8
-         kCDwLdn0wqwUqKIkFEDmyuCliK09HktBBT0cM=
-Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100316145914.GB3332@swordfish.minsk.epam.com>
-References: <20100307192305.GA598@elte.hu>
-	 <20100308125122.GA11242@redhat.com>
-	 <1268686865.2824.4.camel@edumazet-laptop>
-	 <1268699602.2824.14.camel@edumazet-laptop>
-	 <20100316145914.GB3332@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 16:05:33 +0100
-Message-ID: <1268751933.3094.45.camel@edumazet-laptop>
+	Tue, 16 Mar 2010 11:06:59 -0400
+X-Biglobe-Sender: <d-nishimura@mtf.biglobe.ne.jp>
+Date: Wed, 17 Mar 2010 00:09:00 +0900
+From: Daisuke Nishimura <d-nishimura@mtf.biglobe.ne.jp>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrea Righi <arighi@develer.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -mmotm 4/5] memcg: dirty pages accounting and limiting
+ infrastructure
+Message-Id: <20100317000900.62e6492c.d-nishimura@mtf.biglobe.ne.jp>
+In-Reply-To: <20100316141150.GC9144@redhat.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-5-git-send-email-arighi@develer.com>
+	<20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
+	<20100316141150.GC9144@redhat.com>
+Reply-To: nishimura@mxp.nes.nec.co.jp
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 16 mars 2010 à 17:00 +0200, Sergey Senozhatsky a écrit :
-> Nope!
-> Here it is:
+On Tue, 16 Mar 2010 10:11:50 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> On Tue, Mar 16, 2010 at 11:32:38AM +0900, Daisuke Nishimura wrote:
 > 
+> [..]
+> > > + * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+> > > + * @item:	memory statistic item exported to the kernel
+> > > + *
+> > > + * Return the accounted statistic value, or a negative value in case of error.
+> > > + */
+> > > +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+> > > +{
+> > > +	struct mem_cgroup_page_stat stat = {};
+> > > +	struct mem_cgroup *mem;
+> > > +
+> > > +	rcu_read_lock();
+> > > +	mem = mem_cgroup_from_task(current);
+> > > +	if (mem && !mem_cgroup_is_root(mem)) {
+> > > +		/*
+> > > +		 * If we're looking for dirtyable pages we need to evaluate
+> > > +		 * free pages depending on the limit and usage of the parents
+> > > +		 * first of all.
+> > > +		 */
+> > > +		if (item == MEMCG_NR_DIRTYABLE_PAGES)
+> > > +			stat.value = memcg_get_hierarchical_free_pages(mem);
+> > > +		/*
+> > > +		 * Recursively evaluate page statistics against all cgroup
+> > > +		 * under hierarchy tree
+> > > +		 */
+> > > +		stat.item = item;
+> > > +		mem_cgroup_walk_tree(mem, &stat, mem_cgroup_page_stat_cb);
+> > > +	} else
+> > > +		stat.value = -EINVAL;
+> > > +	rcu_read_unlock();
+> > > +
+> > > +	return stat.value;
+> > > +}
+> > > +
+> > hmm, mem_cgroup_page_stat() can return negative value, but you place BUG_ON()
+> > in [5/5] to check it returns negative value. What happens if the current is moved
+> > to root between mem_cgroup_has_dirty_limit() and mem_cgroup_page_stat() ?
+> > How about making mem_cgroup_has_dirty_limit() return the target mem_cgroup, and
+> > passing the mem_cgroup to mem_cgroup_page_stat() ?
+> > 
 > 
-> [17250.998293] ------------[ cut here ]------------
-> [17250.998305] WARNING: at net/sched/sch_generic.c:255 dev_watchdog+0xc1/0x125()
-> [17250.998308] Hardware name: F3JC                
-> [17250.998312] NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> [17250.998315] Modules linked in: pktgen ppp_async crc_ccitt ipv6 ppp_generic slhc snd_hwdep snd_hda_codec_si3054 snd_hda_codec_realtek sdhci_pci sdhci asus_laptop sparse_keymap
-> mmc_core led_class snd_hda_intel snd_hda_codec snd_pcm snd_timer snd_page_alloc rng_core sg evdev i2c_i801 snd soundcore psmouse r8169 serio_raw mii uhci_hcd ehci_hcd sr_mod
-> usbcore cdrom sd_mod ata_piix
-> [17250.998371] Pid: 3985, comm: kpktgend_0 Tainted: G        W  2.6.34-rc1-dbg-git6-r8169 #46
-> [17250.998375] Call Trace:
-> [17250.998383]  [<c102e353>] warn_slowpath_common+0x65/0x7c
-> [17250.998388]  [<c126b654>] ? dev_watchdog+0xc1/0x125
-> [17250.998393]  [<c102e39e>] warn_slowpath_fmt+0x24/0x27
-> [17250.998398]  [<c126b654>] dev_watchdog+0xc1/0x125
-> [17250.998405]  [<c1036bbb>] ? run_timer_softirq+0x120/0x1eb
-> [17250.998411]  [<c1036c11>] run_timer_softirq+0x176/0x1eb
-> [17250.998416]  [<c1036bbb>] ? run_timer_softirq+0x120/0x1eb
-> [17250.998421]  [<c126b593>] ? dev_watchdog+0x0/0x125
-> [17250.998426]  [<c1032df9>] __do_softirq+0x8d/0x117
-> [17250.998431]  [<c1032eae>] do_softirq+0x2b/0x43
-> [17250.998436]  [<c1032fd3>] irq_exit+0x38/0x75
-> [17250.998442]  [<c1014e75>] smp_apic_timer_interrupt+0x66/0x74
-> [17250.998448]  [<c12c812a>] apic_timer_interrupt+0x36/0x3c
-> [17250.998457]  [<c1185d18>] ? do_raw_spin_trylock+0x28/0x37
-> [17250.998464]  [<c12c7101>] _raw_spin_lock+0x2f/0x58
-> [17250.998472]  [<f80855ca>] ? spin_lock+0x8/0xa [pktgen]
-> [17250.998478]  [<f80855ca>] spin_lock+0x8/0xa [pktgen]
-> [17250.998484]  [<f80873b6>] pktgen_thread_worker+0x9b/0x631 [pktgen]
-> [17250.998491]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
-> [17250.998497]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
-> [17250.998503]  [<f808731b>] ? pktgen_thread_worker+0x0/0x631 [pktgen]
-> [17250.998508]  [<c103f6ce>] kthread+0x6a/0x6f
-> [17250.998514]  [<c103f664>] ? kthread+0x0/0x6f
-> [17250.998520]  [<c1002e42>] kernel_thread_helper+0x6/0x1a
-> [17250.998523] ---[ end trace a22d306b065d4a68 ]---
-> [17251.011663] r8169 0000:02:00.0: eth0: link up
+> Hmm, if mem_cgroup_has_dirty_limit() retrun pointer to memcg, then one
+> shall have to use rcu_read_lock() and that will look ugly.
 > 
-> [17419.011748] NOHZ: local_softirq_pending 08
+agreed.
+
+> Why don't we simply look at the return value and if it is negative, we
+> fall back to using global stats and get rid of BUG_ON()?
 > 
+> Or, modify mem_cgroup_page_stat() to return global stats if it can't
+> determine per cgroup stat for some reason. (mem=NULL or root cgroup etc).
+> 
+I don't have any objection as long as we don't hit BUG_ON.
+
+
+Thanks,
+Daisuke Nishimura.
+
+> Vivek
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
 
-But this stack trace is on pktgen side (the sender), and my patch was
-about the receiver ?
-
-I wonder if you dont hit another problem :)
 
 
