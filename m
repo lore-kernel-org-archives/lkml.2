@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab0CPXd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 19:33:27 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:35574 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab0CPXd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 19:33:26 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201003162333.o2GNXIvb022464@stout.americas.sgi.com>
-Date: Tue, 16 Mar 2010 18:33:17 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.34-rc1
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751411Ab0CPXk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 19:40:27 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52531
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751025Ab0CPXkZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 19:40:25 -0400
+Date: Tue, 16 Mar 2010 16:40:47 -0700 (PDT)
+Message-Id: <20100316.164047.00470829.davem@davemloft.net>
+To: hancockrwd@gmail.com
+Cc: joern@dublin.logfs.org, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       romieu@fr.zoreil.com
+Subject: Re: [Regression] r8169: enable 64-bit DMA by default for PCI
+ Express devices (v2)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51f3faa71003161630g69160ea9tc1a2d448682632e5@mail.gmail.com>
+References: <51f3faa71003151628g5edc4d7av8916ac76cb337bfe@mail.gmail.com>
+	<20100316083501.GA3489@Dublin.logfs.org>
+	<51f3faa71003161630g69160ea9tc1a2d448682632e5@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I hope you'll accept the following for 2.6.34-rc3, if not -rc2.
+From: Robert Hancock <hancockrwd@gmail.com>
+Date: Tue, 16 Mar 2010 17:30:53 -0600
 
-The first two are patches I neglected to include in my first batch
-for 2.6.34.  The second is minor, but gets rid of some bogus warning
-messages in the event of a forced shutdown.
+> In the meantime, I don't object to reverting the patch for now unless
+> we get this sorted out quickly..
 
-					-Alex
-
-The following changes since commit 57d54889cd00db2752994b389ba714138652e60c:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc1
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Alex Elder (2):
-      xfs: remove old vmap cache
-      xfs: use scalable vmap API
-
-Dave Chinner (1):
-      xfs: don't warn about page discards on shutdown
-
- fs/xfs/linux-2.6/xfs_aops.c |   13 +++++--
- fs/xfs/linux-2.6/xfs_buf.c  |   81 ++----------------------------------------
- 2 files changed, 14 insertions(+), 80 deletions(-)
+Yes if we can't sort this out soon, that's exactly what we should
+do.
