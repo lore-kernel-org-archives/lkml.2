@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab0CPPSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:18:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38950 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab0CPPSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:18:21 -0400
-Message-ID: <4B9FA1C6.7090305@kernel.org>
-Date: Wed, 17 Mar 2010 00:20:38 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-3.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-Subject: Re: ATA 4 KiB sector issues.
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>
-In-Reply-To: <1268751748.21384.18.camel@mulgrave.site>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 15:17:33 +0000 (UTC)
+	id S1758057Ab0CPPUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:20:33 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:55158 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab0CPPUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:20:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=dcvdEr2XZlS2iLUtCxBYIrpwdINGEE8qo8oC+SoXucQKO6TNW5sif2mvT/83gE8AF9
+         hMuVsYOW2bACqQOpI7/ktqHUhI5oXFyOfNi1mphE03gAEuKOIpXkS0qbv1npe3IwbZgT
+         U9SflcF2nrZswOzgIJQ/CtIVvL0fvhI2ejfJY=
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100316151023.GC3332@swordfish.minsk.epam.com>
+References: <20100307192305.GA598@elte.hu>
+	 <20100308125122.GA11242@redhat.com>
+	 <1268686865.2824.4.camel@edumazet-laptop>
+	 <1268699602.2824.14.camel@edumazet-laptop>
+	 <20100316145914.GB3332@swordfish.minsk.epam.com>
+	 <1268751933.3094.45.camel@edumazet-laptop>
+	 <20100316151023.GC3332@swordfish.minsk.epam.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 16:20:26 +0100
+Message-ID: <1268752826.3094.48.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 12:02 AM, James Bottomley wrote:
-> On Tue, 2010-03-16 at 23:50 +0900, Tejun Heo wrote:
->> e.g.  If the first partition begins at CHS 0/32/33 and ends at
->> 12/233/19 and the corresponding LBA addresses are 2048 and 206848, you
->> can solve the equation and determine that the parameters gotta be 63
->> secs/trk and 255 heads/cyl to make those two pairs of addresses match
->> each other and in fact some BIOSs try to do this depending on
->> configuration (and sometimes falls into infinite loop or causes other
->> boot related problems if the parameters are too uncommon).
+Le mardi 16 mars 2010 à 17:10 +0200, Sergey Senozhatsky a écrit :
+
+> [...]
+> >> NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+> Isn't it r8169 related?
 > 
-> for an msdos label, this is illegal, that was Arnd's point.  The
-> partitions have to begin and end on cylinder boundaries*.  Knowing that,
-> you can deduce the geometry from the last sector entry.
->
-> * at least if you want to preserve windows compatibility, which is what
-> most of our partitioning tools seem to do.
 
-Well, the thing is that
+This is tx side which seems blocked for more than 6 seconds.
 
-* Anything remotely modern (>= XP) doesn't give a hoot about cylinder
-  alignment.
+To really test the patch, you need following setup :
 
-* Anything older (<= 2000) is very likely to get confused with custom
-  geometry starting from the BIOS itself.  For those cases, the only
-  thing we can do is aligning partitions to cylinders abiding BIOS
-  supplied geometry parameters which will usually be 255/63.
+machine A with r8169 NIC, patch applied, receiver of pktgen flood.
 
-So, using custom geometry doesn't help compatibility at all.
+machine B with any NIC, preferably a not buggy one, doing the pktgen
+flood to machine A
 
-Thanks.
+If machine A survives, my patch is tested and ok.
 
--- 
-tejun
+If machine B crashes, we have another problem to investigate
+
+
