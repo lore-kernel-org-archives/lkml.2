@@ -1,110 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965731Ab0CPJkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:40:52 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49053 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752212Ab0CPJku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:40:50 -0400
-Date: Tue, 16 Mar 2010 10:40:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [RFC] [PATCH 1/1] perf: add support for arch-dependent symbolic
- event names to "perf stat"
-Message-ID: <20100316094037.GF7961@elte.hu>
-References: <4B8F1B58.5000702@linux.vnet.ibm.com>
- <4B8FFE55.5070008@linux.vnet.ibm.com>
- <20100311124608.GG31354@elte.hu>
- <4B993AAF.9050507@linux.vnet.ibm.com>
- <20100311191441.GA7593@elte.hu>
- <4B99568D.30608@linux.vnet.ibm.com>
- <4B9EC50E.80702@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9EC50E.80702@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S935356Ab0CPJnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:43:32 -0400
+Received: from av6-1-sn3.vrr.skanova.net ([81.228.9.179]:47988 "EHLO
+	av6-1-sn3.vrr.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827Ab0CPJnb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:43:31 -0400
+Subject: [PATCH] mfd: Add in XIIC to some configurations of timberdale
+From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 10:43:28 +0100
+Message-ID: <1268732608.2020.10.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds in the Xilinx I2C bus driver to some of the
+configurations of the timberdale MFD.
 
-* Corey Ashford <cjashfor@linux.vnet.ibm.com> wrote:
+It provides the I2C devices to the XIIC via platform data in a
+similar way as done to the ocores driver.
 
-> On 3/11/2010 12:46 PM, Corey Ashford wrote:
-> >
-> >
-> >On 3/11/2010 11:14 AM, Ingo Molnar wrote:
-> >>
-> >>* Corey Ashford<cjashfor@linux.vnet.ibm.com> wrote:
-> >[snip]
-> >>>I'm not sure how that would work. The issue I am trying to solve
-> >>>here is that Power arch chips have a large number of very
-> >>>hardware-specific events that are not generalizable. Many of these
-> >>>events not only have names, but other user-configurable bits as well
-> >>>that select or narrow the scope of which exact events are recorded.
-> >>>This issue is dealt with nicely in libpfm4, as it has mechanisms for
-> >>>parsing event names and attributes (aka modifiers or unit masks),
-> >>>and then produces a usable config field for the perf_events_attr
-> >>>struct.
-> >>>
-> >>>Should I take it from the above that you are completely against the
-> >>>idea of using an external library for hardware-specific event and
-> >>>attribute naming?
-> >>
-> >>Could you give a few relevant examples of events in question, and the
-> >>kind of
-> >>configurability/attributes they have on Power?
-> >
-> >Here are a few examples for the Power A2 processor. I've distorted the
-> >names because PMU architecture isn't publicly released yet.
-> >
-> >PM_DE_PMC_9:hrd_mask=0xff:hrd=0x22:pma_mask=0x3fff:pma=0x1b2d:culling_mode=3
-> >
-> >PM_EX_0x03:lane=2:vlane=1
-> >PM_OWE_ENG_MAC_FULL:usu=3
-> 
-> Just a follow-up note to this...
-> 
-> I learned that the much of the high-level architecture of the new
-> chip that IBM is working on has been publicly released recently, so
-> I have "undistorted" the event names below:
-> 
-> PM_DC_PMC_9:lpid_mask=0xff:lpid=0x22:pid_mask=0x3fff:pid=0x1b2d:marking_mode=3
-> PM_REGX_0x03:lane=2:vlane=1
-> PM_XML_ENG_MAC_FULL:sus=3
-> 
-> 
-> DC = Decompression/Compression accelerator
-> PMC_9 = Peformance monitoring event 9
-> REGX = Regular eXpression accelerator
-> XML = XML parsing accelerator
-> pid = process id to match
-> pid_mask = process id match mask
-> lpid = logical partition id
-> lpid_mask = logical partition id mask
-> sus = source unit select
-> lane, vlane = signal routing fields
-> marking_mode = used to determine which accelerator work units to
-> mark for performance monitoring
+Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+---
+diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+index 1ed44d2..1d52349 100644
+--- a/drivers/mfd/timberdale.c
++++ b/drivers/mfd/timberdale.c
+@@ -30,6 +30,7 @@
+ 
+ #include <linux/i2c.h>
+ #include <linux/i2c-ocores.h>
++#include <linux/i2c-xiic.h>
+ #include <linux/i2c/tsc2007.h>
+ 
+ #include <linux/spi/spi.h>
+@@ -68,6 +69,12 @@ static struct i2c_board_info timberdale_i2c_board_info[] = {
+ 	},
+ };
+ 
++static __devinitdata struct xiic_i2c_platform_data
++timberdale_xiic_platform_data = {
++	.devices = timberdale_i2c_board_info,
++	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
++};
++
+ static __devinitdata struct ocores_i2c_platform_data
+ timberdale_ocores_platform_data = {
+ 	.regstep = 4,
+@@ -76,6 +83,19 @@ timberdale_ocores_platform_data = {
+ 	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
+ };
+ 
++const static __devinitconst struct resource timberdale_xiic_resources[] = {
++	{
++		.start	= XIICOFFSET,
++		.end	= XIICEND,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= IRQ_TIMBERDALE_I2C,
++		.end	= IRQ_TIMBERDALE_I2C,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
+ const static __devinitconst struct resource timberdale_ocores_resources[] = {
+ 	{
+ 		.start	= OCORESOFFSET,
+@@ -269,6 +289,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
+ 		.resources = timberdale_uart_resources,
+ 	},
+ 	{
++		.name = "xiic-i2c",
++		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
++		.resources = timberdale_xiic_resources,
++		.platform_data = &timberdale_xiic_platform_data,
++		.data_size = sizeof(timberdale_xiic_platform_data),
++	},
++	{
+ 		.name = "timb-gpio",
+ 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+ 		.resources = timberdale_gpio_resources,
+@@ -313,6 +340,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
+ 		.resources = timberdale_uartlite_resources,
+ 	},
+ 	{
++		.name = "xiic-i2c",
++		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
++		.resources = timberdale_xiic_resources,
++		.platform_data = &timberdale_xiic_platform_data,
++		.data_size = sizeof(timberdale_xiic_platform_data),
++	},
++	{
+ 		.name = "timb-gpio",
+ 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+ 		.resources = timberdale_gpio_resources,
+@@ -357,6 +391,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
+ 		.resources = timberdale_uart_resources,
+ 	},
+ 	{
++		.name = "xiic-i2c",
++		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
++		.resources = timberdale_xiic_resources,
++		.platform_data = &timberdale_xiic_platform_data,
++		.data_size = sizeof(timberdale_xiic_platform_data),
++	},
++	{
+ 		.name = "timb-gpio",
+ 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+ 		.resources = timberdale_gpio_resources,
 
-Are these special-purpose instructions for compression/regex/xml-parsing 
-speedups?
-
-I think it would be rather useful to merge the hw (and sw) perf events with 
-the ftrace/tracepoints symbolic events space. That would be a one-stop-shop 
-for both perf and other tools to figure out the events we offer, their 
-characteristics, format, relationship to other events, etc.
-
-	Ingo
