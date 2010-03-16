@@ -1,184 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934218Ab0CPSsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:48:14 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:42965 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933104Ab0CPSsM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:48:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=DPg5Xh6ZFD4vuRXvWbDJo2XxeR523sZEQWxH8l8KhNGHlCUI7s+CV0uU0n8MXUNpes
-         cuoRdcCE80f9QHrvCUV5hi6UG9jIqNUxLYQ5HwpjLFQLJM8+BMWLstnUmpC7FErJyQDl
-         WrsYK9JpV34StiY1YfbUOPuR5lICgtw6OMw4k=
-Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100316182619.GA3451@swordfish>
-References: <20100307192305.GA598@elte.hu>
-	 <20100308125122.GA11242@redhat.com>
-	 <1268686865.2824.4.camel@edumazet-laptop>
-	 <1268699602.2824.14.camel@edumazet-laptop>
-	 <20100316145914.GB3332@swordfish.minsk.epam.com>
-	 <1268751933.3094.45.camel@edumazet-laptop>
-	 <20100316151023.GC3332@swordfish.minsk.epam.com>
-	 <1268752826.3094.48.camel@edumazet-laptop>
-	 <20100316182619.GA3451@swordfish>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 19:48:04 +0100
-Message-ID: <1268765284.2932.17.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S934237Ab0CPSwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:52:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933677Ab0CPSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 14:52:37 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: linux-aio@kvack.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: aio: compat_ioctl issue?
+References: <4B956E5B.9020302@msgid.tls.msk.ru>
+	<x497hpm8p69.fsf@segfault.boston.devel.redhat.com>
+	<4B957122.4060007@msgid.tls.msk.ru>
+	<x49mxyi78ob.fsf@segfault.boston.devel.redhat.com>
+	<4B957AF3.6040801@msgid.tls.msk.ru>
+	<4B957D20.4010904@msgid.tls.msk.ru>
+	<x49wrxij11s.fsf@segfault.boston.devel.redhat.com>
+	<4B994022.6030703@msgid.tls.msk.ru>
+	<4B994888.8020007@msgid.tls.msk.ru>
+	<x49eijqiqcd.fsf@segfault.boston.devel.redhat.com>
+	<4B994EFE.70005@msgid.tls.msk.ru>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Mar 2010 14:52:26 -0400
+In-Reply-To: <4B994EFE.70005@msgid.tls.msk.ru> (Michael Tokarev's message of
+	"Thu, 11 Mar 2010 23:13:50 +0300")
+Message-ID: <x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 16 mars 2010 à 20:26 +0200, Sergey Senozhatsky a écrit :
-> Hello,
-> Got it right now.
-> 
-> System completely froze. Even SysRq didn't work.
-> /*spin_lock deadlock?*/
-> 
-> NOTE: I'm losing network constantly with pktgen tests
+Michael Tokarev <mjt@tls.msk.ru> writes:
 
-yes, every 12 seconds there is a reset because of fifo overflow
+> Jeff Moyer wrote:
+>> Michael Tokarev <mjt@tls.msk.ru> writes:
+> []
+>>> And when running real thing it crashes.   I tested it
+>>> on 2.6.32 (trivial corrections to the patch required).
+>> 
+>> Could you just post your version of the patch so I can have a look?
+>
+> I think there's no need since in 2.6.33 (where your patch applies
+> without any offsets) it crashes in exactly the same way:
 
-> [24208.010980] r8169 0000:02:00.0: eth0: link up
-> [24220.010980] r8169 0000:02:00.0: eth0: link up
-> [24232.011030] r8169 0000:02:00.0: eth0: link up
-> [24340.010980] r8169 0000:02:00.0: eth0: link up
-> [24352.010966] r8169 0000:02:00.0: eth0: link up
-> [24364.010966] r8169 0000:02:00.0: eth0: link up
-> [24376.010964] r8169 0000:02:00.0: eth0: link up
-> [24388.010961] r8169 0000:02:00.0: eth0: link up
-> [24400.010959] r8169 0000:02:00.0: eth0: link up
-> [24412.010963] r8169 0000:02:00.0: eth0: link up
-> 
-> 
-> Traces:
-> [24600.625078] INFO: task events/0:9 blocked for more than 120 seconds.
-> [24600.625083] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [24600.625087] events/0      D 00001636     0     9      2 0x00000000
-> [24600.625096]  f7085ebc 00000046 a87e9490 00001636 c1617cc0 c1617cc0 c1617cc0 c1617cc0
-> [24600.625109]  f707c250 c1617cc0 c1617cc0 00000000 00000000 00000000 00000000 f707bfc0
-> [24600.625122]  c14745c8 c14745c8 f707bfc0 00000202 f7085efc c12c6449 00000000 00085edc
-> [24600.625135] Call Trace:
-> [24600.625148]  [<c12c6449>] __mutex_lock_common+0x233/0x3af
-> [24600.625155]  [<c12c65ff>] mutex_lock_nested+0x12/0x15
-> [24600.625163]  [<c1265e0f>] ? rtnl_lock+0xf/0x11
-> [24600.625168]  [<c1265e0f>] rtnl_lock+0xf/0x11
-> [24600.625183]  [<f9174acd>] rtl8169_reset_task+0x16/0xee [r8169]
-> [24600.625191]  [<c103c887>] worker_thread+0x161/0x233
-> [24600.625196]  [<c103c845>] ? worker_thread+0x11f/0x233
-> [24600.625205]  [<f9174ab7>] ? rtl8169_reset_task+0x0/0xee [r8169]
-> [24600.625214]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
-> [24600.625220]  [<c103c726>] ? worker_thread+0x0/0x233
-> [24600.625225]  [<c103f6ce>] kthread+0x6a/0x6f
-> [24600.625232]  [<c103f664>] ? kthread+0x0/0x6f
-> [24600.625238]  [<c1002e42>] kernel_thread_helper+0x6/0x1a
-> [24600.625242] INFO: lockdep is turned off.
-> [24600.625259] INFO: task X:3176 blocked for more than 120 seconds.
-> [24600.625262] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [24600.625266] X             D 00000000     0  3176   3175 0x00400004
-> [24600.625273]  f6435a10 00003046 00025709 00000000 c1617cc0 c1617cc0 c1617cc0 c1617cc0
-> [24600.625286]  f60897d0 c1617c  ... 
-> /*THE REST IS LOST*/
-> 
-> 
+Sorry for taking so long on this.  I only tested the case where niovs >
+fast_segs, and I missed an obvious thing: I didn't assign the return
+pointer to the proper iovec.
 
-OK thanks for the report, this rtl8169_reset_task() seems pretty buggy,
-or multiple invocation...
+So, this patch should get you going.
 
-Did you tried removing the rtl8169_schedule_work() call from
-rtl8169_rx_interrupt() ?
+Cheers,
+Jeff
 
-Maybe the reset is not necessary at all in case of fifo overflow..
-
-Cumulative patch :
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 9d3ebf3..d6ef4dd 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_device *dev,
+diff --git a/fs/aio.c b/fs/aio.c
+index 1cf12b3..5a38805 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -36,6 +36,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/mempool.h>
+ #include <linux/hash.h>
++#include <linux/compat.h>
+ 
+ #include <asm/kmap_types.h>
+ #include <asm/uaccess.h>
+@@ -1384,13 +1385,20 @@ static ssize_t aio_fsync(struct kiocb *iocb)
+ 	return ret;
  }
  
- static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc *desc,
--			       struct sk_buff *skb)
-+			       struct sk_buff *skb, int polling)
+-static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb)
++static ssize_t aio_setup_vectored_rw(int type, struct kiocb *kiocb, bool compat)
  {
- 	u32 opts2 = le32_to_cpu(desc->opts2);
- 	struct vlan_group *vlgrp = tp->vlgrp;
- 	int ret;
+ 	ssize_t ret;
  
- 	if (vlgrp && (opts2 & RxVlanTag)) {
--		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
-+		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
- 		ret = 0;
- 	} else
- 		ret = -1;
-@@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl8169_private *tp,
- }
+-	ret = rw_copy_check_uvector(type, (struct iovec __user *)kiocb->ki_buf,
+-				    kiocb->ki_nbytes, 1,
+-				    &kiocb->ki_inline_vec, &kiocb->ki_iovec);
++	if (compat)
++		ret = compat_rw_copy_check_uvector(type,
++				(struct compat_iovec __user *)kiocb->ki_buf,
++				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
++				&kiocb->ki_iovec);
++	else
++		ret = rw_copy_check_uvector(type,
++				(struct iovec __user *)kiocb->ki_buf,
++				kiocb->ki_nbytes, 1, &kiocb->ki_inline_vec,
++				&kiocb->ki_iovec);
+ 	if (ret < 0)
+ 		goto out;
  
- static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc *desc,
--			       struct sk_buff *skb)
-+			       struct sk_buff *skb, int polling)
+@@ -1420,7 +1428,7 @@ static ssize_t aio_setup_single_vector(struct kiocb *kiocb)
+  *	Performs the initial checks and aio retry method
+  *	setup for the kiocb at the time of io submission.
+  */
+-static ssize_t aio_setup_iocb(struct kiocb *kiocb)
++static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
  {
- 	return -1;
- }
-@@ -4429,12 +4429,20 @@ out:
- 	return done;
+ 	struct file *file = kiocb->ki_filp;
+ 	ssize_t ret = 0;
+@@ -1469,7 +1477,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
+ 		ret = security_file_permission(file, MAY_READ);
+ 		if (unlikely(ret))
+ 			break;
+-		ret = aio_setup_vectored_rw(READ, kiocb);
++		ret = aio_setup_vectored_rw(READ, kiocb, compat);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1483,7 +1491,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb)
+ 		ret = security_file_permission(file, MAY_WRITE);
+ 		if (unlikely(ret))
+ 			break;
+-		ret = aio_setup_vectored_rw(WRITE, kiocb);
++		ret = aio_setup_vectored_rw(WRITE, kiocb, compat);
+ 		if (ret)
+ 			break;
+ 		ret = -EINVAL;
+@@ -1548,7 +1556,8 @@ static void aio_batch_free(struct hlist_head *batch_hash)
  }
  
-+/*
-+ * Warning : rtl8169_rx_interrupt() might be called :
-+ * 1) from NAPI (softirq) context
-+ *	(polling = 1 : we should call netif_receive_skb())
-+ * 2) from process context (rtl8169_reset_task())
-+ *	(polling = 0 : we must call netif_rx() instead)
-+ */		
- static int rtl8169_rx_interrupt(struct net_device *dev,
- 				struct rtl8169_private *tp,
- 				void __iomem *ioaddr, u32 budget)
+ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+-			 struct iocb *iocb, struct hlist_head *batch_hash)
++			 struct iocb *iocb, struct hlist_head *batch_hash,
++			 bool compat)
  {
- 	unsigned int cur_rx, rx_left;
- 	unsigned int delta, count;
-+	int polling = (budget != ~(u32)0) ? 1 : 0;
+ 	struct kiocb *req;
+ 	struct file *file;
+@@ -1609,7 +1618,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	req->ki_left = req->ki_nbytes = iocb->aio_nbytes;
+ 	req->ki_opcode = iocb->aio_lio_opcode;
  
- 	cur_rx = tp->cur_rx;
- 	rx_left = NUM_RX_DESC + tp->dirty_rx - cur_rx;
-@@ -4459,7 +4467,6 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
- 			if (status & RxCRC)
- 				dev->stats.rx_crc_errors++;
- 			if (status & RxFOVF) {
--				rtl8169_schedule_work(dev, rtl8169_reset_task);
- 				dev->stats.rx_fifo_errors++;
- 			}
- 			rtl8169_mark_to_asic(desc, tp->rx_buf_sz);
-@@ -4496,8 +4503,12 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
- 			skb_put(skb, pkt_size);
- 			skb->protocol = eth_type_trans(skb, dev);
+-	ret = aio_setup_iocb(req);
++	ret = aio_setup_iocb(req, compat);
  
--			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
--				netif_receive_skb(skb);
-+			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
-+				if (likely(polling))
-+					netif_receive_skb(skb);
-+				else
-+					netif_rx(skb);
-+			}
+ 	if (ret)
+ 		goto out_put_req;
+@@ -1637,20 +1646,8 @@ out_put_req:
+ 	return ret;
+ }
  
- 			dev->stats.rx_bytes += pkt_size;
- 			dev->stats.rx_packets++;
-
-
-
+-/* sys_io_submit:
+- *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
+- *	the number of iocbs queued.  May return -EINVAL if the aio_context
+- *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
+- *	*iocbpp[0] is not properly initialized, if the operation specified
+- *	is invalid for the file descriptor in the iocb.  May fail with
+- *	-EFAULT if any of the data structures point to invalid data.  May
+- *	fail with -EBADF if the file descriptor specified in the first
+- *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
+- *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
+- *	fail with -ENOSYS if not implemented.
+- */
+-SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+-		struct iocb __user * __user *, iocbpp)
++long do_io_submit(aio_context_t ctx_id, long nr,
++		  struct iocb __user *__user * iocbpp, bool compat)
+ {
+ 	struct kioctx *ctx;
+ 	long ret = 0;
+@@ -1687,7 +1684,7 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+ 			break;
+ 		}
+ 
+-		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash);
++		ret = io_submit_one(ctx, user_iocb, &tmp, batch_hash, compat);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -1696,6 +1693,24 @@ SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
+ 	put_ioctx(ctx);
+ 	return i ? i : ret;
+ }
++		  
++/* sys_io_submit:
++ *	Queue the nr iocbs pointed to by iocbpp for processing.  Returns
++ *	the number of iocbs queued.  May return -EINVAL if the aio_context
++ *	specified by ctx_id is invalid, if nr is < 0, if the iocb at
++ *	*iocbpp[0] is not properly initialized, if the operation specified
++ *	is invalid for the file descriptor in the iocb.  May fail with
++ *	-EFAULT if any of the data structures point to invalid data.  May
++ *	fail with -EBADF if the file descriptor specified in the first
++ *	iocb is invalid.  May fail with -EAGAIN if insufficient resources
++ *	are available to queue any iocbs.  Will return 0 if nr is 0.  Will
++ *	fail with -ENOSYS if not implemented.
++ */
++SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, long, nr,
++		struct iocb __user * __user *, iocbpp)
++{
++	return do_io_submit(ctx_id, nr, iocbpp, 0);
++}
+ 
+ /* lookup_kiocb
+  *	Finds a given iocb for cancellation.
+diff --git a/fs/compat.c b/fs/compat.c
+index 00d90c2..efbcb31 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -567,6 +567,61 @@ out:
+ 	return ret;
+ }
+ 
++/* A write operation does a read from user space and vice versa */
++#define vrfy_dir(type) ((type) == READ ? VERIFY_WRITE : VERIFY_READ)
++
++ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uiov32, unsigned long niov,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer)
++{
++	ssize_t tot_len = 0;
++	struct iovec *kiov = fast_pointer;
++
++	if (niov == 0)
++		goto out;
++	if (niov > UIO_MAXIOV) {
++		tot_len = -EINVAL;
++		goto out;
++	}
++	if (niov > fast_segs) {
++		kiov = kmalloc(niov*sizeof(struct iovec), GFP_KERNEL);
++		if (kiov == NULL) {
++			tot_len = -ENOMEM;
++			goto out;
++		}
++	}
++	*ret_pointer = kiov;
++
++	while (niov > 0) {
++		compat_uptr_t buf;
++		compat_size_t len;
++
++		if (get_user(len, &uiov32->iov_len) ||
++		   get_user(buf, &uiov32->iov_base)) {
++			tot_len = -EFAULT;
++			goto out;
++		}
++		if (len < 0 || (tot_len + len < tot_len)) {
++			tot_len = -EINVAL;
++			goto out;
++		}
++		if (!access_ok(vrfy_dir(type), buf, len)) {
++			tot_len = -EFAULT;
++			goto out;
++		}
++		tot_len += len;
++		kiov->iov_base = compat_ptr(buf);
++		kiov->iov_len = (__kernel_size_t) len;
++		uiov32++;
++		kiov++;
++		niov--;
++	}
++
++out:
++	return tot_len;
++}
++
+ static inline long
+ copy_iocb(long nr, u32 __user *ptr32, struct iocb __user * __user *ptr64)
+ {
+@@ -599,7 +654,7 @@ compat_sys_io_submit(aio_context_t ctx_id, int nr, u32 __user *iocb)
+ 	iocb64 = compat_alloc_user_space(nr * sizeof(*iocb64));
+ 	ret = copy_iocb(nr, iocb, iocb64);
+ 	if (!ret)
+-		ret = sys_io_submit(ctx_id, nr, iocb64);
++		ret = do_io_submit(ctx_id, nr, iocb64, 1);
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 811dbb3..54b6ef8 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -212,6 +212,8 @@ extern void kick_iocb(struct kiocb *iocb);
+ extern int aio_complete(struct kiocb *iocb, long res, long res2);
+ struct mm_struct;
+ extern void exit_aio(struct mm_struct *mm);
++extern long do_io_submit(aio_context_t ctx_id, long nr,
++			 struct iocb __user *__user * iocbpp, bool compat);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+ static inline int aio_put_req(struct kiocb *iocb) { return 0; }
+@@ -219,6 +221,9 @@ static inline void kick_iocb(struct kiocb *iocb) { }
+ static inline int aio_complete(struct kiocb *iocb, long res, long res2) { return 0; }
+ struct mm_struct;
+ static inline void exit_aio(struct mm_struct *mm) { }
++static inline long do_io_submit(aio_context_t ctx_id, long nr,
++				struct iocb __user * __user * iocbpp,
++				bool compat) { }
+ #endif /* CONFIG_AIO */
+ 
+ static inline struct kiocb *list_kiocb(struct list_head *h)
+diff --git a/include/linux/compat.h b/include/linux/compat.h
+index ef68119..8251f61 100644
+--- a/include/linux/compat.h
++++ b/include/linux/compat.h
+@@ -353,5 +353,9 @@ asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user * filename,
+ asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
+ 				  int flags, int mode);
+ 
++extern ssize_t compat_rw_copy_check_uvector(int type,
++		const struct compat_iovec __user *uiov32, unsigned long niov,
++		unsigned long fast_segs, struct iovec *fast_pointer,
++		struct iovec **ret_pointer);
+ #endif /* CONFIG_COMPAT */
+ #endif /* _LINUX_COMPAT_H */
