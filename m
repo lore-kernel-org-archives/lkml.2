@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965886Ab0CPAFG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 20:05:06 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:35843 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965842Ab0CPAE7 (ORCPT
+	id S965890Ab0CPAGx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 20:06:53 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43177 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965811Ab0CPAGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 20:04:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=B8cb9MbS8gYGpcVoXlW4sEDK+V5SZ5LiKt9o6VuMo305PBe6/DrC5dyENJevw8fyh+
-         DEdoiO0duhdNKkzZANLgFuZi4r46C5RoTSWbBJI58I7MpykJfXUO/AVLHrLLIYvr5Onl
-         Nb7WHKFmErGnZ0IV7z0kzQZJ2U0HkwECz+dcM=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "\\ \" H . Peter Anvin \\ \"" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux Next <linux-next@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH v3] perf: Fix unexported generic perf_arch_fetch_caller_regs
-Date: Tue, 16 Mar 2010 01:05:02 +0100
-Message-Id: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
-In-Reply-To: <20100316093355.071fde51.sfr@canb.auug.org.au>
-References: <20100316093355.071fde51.sfr@canb.auug.org.au>
+	Mon, 15 Mar 2010 20:06:49 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 16 Mar 2010 09:03:09 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+       "kirill@shutemov.name" <kirill@shutemov.name>
+Subject: Re: [PATCH 3/3] memcg: oom kill disable and oom status
+Message-Id: <20100316090309.22493838.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100315150020.0cc28341.akpm@linux-foundation.org>
+References: <20100312143137.f4cf0a04.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100312143435.e648e361.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100312143753.420e7ae7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100315150020.0cc28341.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_arch_fetch_caller_regs() is exported for the overriden x86
-version, but not for the generic weak version.
-As a general rule, weak functions should not have their symbol
-exported in the same file they are defined.
+On Mon, 15 Mar 2010 15:00:20 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-So let's export it on trace_event_perf.c as it is used by trace
-events only.
+> On Fri, 12 Mar 2010 14:37:53 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > 
+> > I haven't get enough comment to this patch itself. But works well.
+> > Feel free to request me if you want me to change some details.
+> > 
+> > ==
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > This adds a feature to disable oom-killer for memcg, if disabled,
+> > of course, tasks under memcg will stop.
+> > 
+> > But now, we have oom-notifier for memcg. And the world around
+> > memcg is not under out-of-memory. memcg's out-of-memory just
+> > shows memcg hits limit. Then, administrator or
+> > management daemon can recover the situation by
+> > 	- kill some process
+> > 	- enlarge limit, add more swap.
+> > 	- migrate some tasks
+> > 	- remove file cache on tmps (difficult ?)
+> > 
+> > Unlike OOM-Kill by the kernel, the users can take snapshot or coredump
+> > of guilty process, cgroups.
+> > 
+> 
+> Looks complicated.
+> 
+In code, hooks are in
+	- usage is reduced.
+	- limit is enlarged.
 
-This fixes:
-	ERROR: ".perf_arch_fetch_caller_regs" [fs/xfs/xfs.ko] undefined!
-	ERROR: ".perf_arch_fetch_caller_regs" [arch/powerpc/platforms/cell/spufs/spufs.ko] undefined!
+Maybe my explanation is bad. It's simpler than it sounds.
 
-v2: And also only build it if trace events are enabled.
-v3: Fix changelog mistake
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Paul Mackerras <paulus@samba.org>
----
- arch/x86/kernel/cpu/perf_event.c |    3 ++-
- kernel/perf_event.c              |    2 ++
- kernel/trace/trace_event_perf.c  |    2 ++
- 3 files changed, 6 insertions(+), 1 deletions(-)
+> > --- mmotm-2.6.34-Mar9.orig/mm/memcontrol.c
+> > +++ mmotm-2.6.34-Mar9/mm/memcontrol.c
+> > @@ -235,7 +235,8 @@ struct mem_cgroup {
+> >  	 * mem_cgroup ? And what type of charges should we move ?
+> >  	 */
+> >  	unsigned long 	move_charge_at_immigrate;
+> > -
+> > +	/* Disable OOM killer */
+> > +	unsigned long	oom_kill_disable;
+> >  	/*
+> >  	 * percpu counter.
+> >  	 */
+> 
+> Would have been better to make this `int' or `bool', and put it next to
+> some other 32-bit value in this struct.
+> 
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 7645fae..60398a0 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1702,6 +1702,7 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return entry;
- }
- 
-+#ifdef CONFIG_EVENT_TRACING
- void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
- {
- 	regs->ip = ip;
-@@ -1713,4 +1714,4 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
- 	regs->cs = __KERNEL_CS;
- 	local_save_flags(regs->flags);
- }
--EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-+#endif
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index fb3031c..574ee58 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2786,10 +2786,12 @@ __weak struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return NULL;
- }
- 
-+#ifdef CONFIG_EVENT_TRACING
- __weak
- void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
- {
- }
-+#endif
- 
- /*
-  * Output
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0709e4f..7d79a10 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -12,6 +12,8 @@
- DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
- EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
- 
-+EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-+
- static char *perf_trace_buf;
- static char *perf_trace_buf_nmi;
- 
--- 
-1.6.2.3
+Sure, will fix.
+
+-Kame
+
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
