@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937463Ab0CPGyV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:54:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42220 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937150Ab0CPGyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:54:16 -0400
-Message-ID: <4B9F2B0A.70507@kernel.org>
-Date: Tue, 16 Mar 2010 15:54:02 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S937460Ab0CPG6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:58:33 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:45448 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab0CPG6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:58:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=gwO6SzH+njGT8QuI3ty3oJUHuB4kDEEKpJnzrnQpCJiyOJH4bTRJYSKSvQ5m1tTSIO
+         A5omVCt/V76C7O5jf8Y7ddlOI7Z/+JZGMPBduaP4M36ihmY5g8dOYU+ju7tov34N29Jy
+         zpqHvC3YbtuE8C2XCwu6mWvH1Hws3SoXt4giE=
 MIME-Version: 1.0
+In-Reply-To: <20100316061718.GA22651@elte.hu>
+References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org>
+	 <20100316061718.GA22651@elte.hu>
+Date: Tue, 16 Mar 2010 08:58:31 +0200
+X-Google-Sender-Auth: cf183fc80eb58f9d
+Message-ID: <84144f021003152358r41a79ccaxb18cf6368911266@mail.gmail.com>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+From: Pekka Enberg <penberg@cs.helsinki.fi>
 To: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        lkml <linux-kernel@vger.kernel.org>,
        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
-References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org> <20100316061718.GA22651@elte.hu>
-In-Reply-To: <20100316061718.GA22651@elte.hu>
-X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 06:54:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
-
-On 03/16/2010 03:17 PM, Ingo Molnar wrote:
-> ( /me mumbles something about not having a patch in the email to review and
->   pulling the tree. 200k patch is just fine for lkml - i've attached it below
->   for easier review. percpu.h and percpu.c has the meat of the changes. )
-
-I wanted to keep the discussion high level while giving a general idea
-about the extent of necessary changes.  I'll include the patch from
-now on.
-
-> i like the dependency reduction. Noticed one small detail:
-> 
-> this new 2000-lines #ifdef block percpu.c:
-> 
->  +#ifdef CONFIG_SMP
->  +#else  /* CONFIG_SMP */
->  +#endif /* CONFIG_SMP */
-> 
-> feels a bit lame. A separate percpu_up.c file would be nicer i suppose?
-
-Sure.
-
-> Also, why should we make this opt-in and expose a wide range of configs to 
-> build breakages? A more gradual approach would be to write a simple script 
-> that adds a slab.h include to all .c's that include percpu.h, directly or 
+On Tue, Mar 16, 2010 at 8:17 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> Also, why should we make this opt-in and expose a wide range of configs to
+> build breakages? A more gradual approach would be to write a simple script
+> that adds a slab.h include to all .c's that include percpu.h, directly or
 > indirectly.
->
-> You can map the pattern experimentally: the insertion pattern could be built 
-> from the x86 allmodconfig build you did [i.e. extend the pattern until you 
-> make it build on allmodconfig] - that would cover most cases in practice (not 
-> just allmodconfig) - and would cover most architectures as well.
 
-I don't really get the 'experimental' part but if I count all the
-files which ends up including percpu.h directly or indirectly on
-allmodconfig it ends up including much more .c files than necessasry -
-11203 to be exact, ~20 times more than necessary.  Inclusions from .c
-files definitely are much less troublesome so the situation would be
-better than now but we'll still end up with a LOT of bogus inclusions
-without any good way to eventually remove them.
+I am all for untangling the #include mess in slab.h and friends and I
+think Ingo's suggestion is probably the best way forward. We should
+avoid creating tree-wide breakage for this kind of cleanups.
 
-Maybe a better way is to grab for slab API usages in .c files which
-don't have slab.h inclusion.  If breaking the dependency is the way to
-go, I can definitely write up some scripts and do test builds on some
-archs.  There sure will be some fallouts but I think it won't be too
-bad.
-
-Thanks.
-
--- 
-tejun
+                        Pekka
