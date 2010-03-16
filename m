@@ -1,112 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab0CPVGI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:06:08 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62111 "EHLO
+	id S1758095Ab0CPVGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:06:30 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62149 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab0CPVGE (ORCPT
+	with ESMTP id S1752186Ab0CPVGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:06:04 -0400
+	Tue, 16 Mar 2010 17:06:12 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: gregkh@suse.de, Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] V2 usb console improvements series
-Date: Tue, 16 Mar 2010 16:05:41 -0500
-Message-Id: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jason Wessel <jason.wessel@windriver.com>,
+       Alan Cox <alan@linux.intel.com>, Alan Stern <stern@rowland.harvard.edu>,
+       Oliver Neukum <oliver@neukum.org>
+Subject: [PATCH 4/5] usb-hcd,usb-console: poll hcd device to force usb console writes
+Date: Tue, 16 Mar 2010 16:05:45 -0500
+Message-Id: <1268773546-12457-5-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 16 Mar 2010 21:05:56.0807 (UTC) FILETIME=[78C87570:01CAC54C]
+In-Reply-To: <1268773546-12457-4-git-send-email-jason.wessel@windriver.com>
+References: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com>
+ <1268773546-12457-2-git-send-email-jason.wessel@windriver.com>
+ <1268773546-12457-3-git-send-email-jason.wessel@windriver.com>
+ <1268773546-12457-4-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 16 Mar 2010 21:06:01.0323 (UTC) FILETIME=[7B798BB0:01CAC54C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I aggregated and ported all usb patches I have previously posted which
-are not mainlined into a single series aimed at providing a stable usb
-console.
+This patch tries to solve the problem that data is lost because there
+are too many outstanding transmit urb's while trying to execute
+printk's to a console.  The same is true if you try something like
+"echo t > /proc/sysrq-trigger".
 
-Greg Kroah-Hartman already picked up the first 2 patches in the
-series, but for completeness they are provided here because one of the
-other patches requires the context changes.
+This patch takes the route of forcibly polling the hcd device to drain
+the urb queue in order to initiate the bulk write call backs.  This
+only happens if the device is a usb serial console device that sets
+the max_in_flight_urbs to a non zero value in the serial device
+structure.
 
-Differences in V2 vs V1 patch set
-  * The optimize usb sysrq was dropped entirely
-  * Removed the unused export symbol per Alan Stern's comments
-  * Updated the definition of usb_poll_irq() per Alan Stern's comments
+A few millisecond penalty will get incurred to allow the hcd controller
+to complete a write urb, else the console data is thrown away.
 
+The max_in_flight_urbs was reduced in the usb_debug driver because it
+is highly desired to push things out to the console in a timely
+fashion and there is no need to have a queue that large for the
+interrupt driven mode of operation when used through the tty
+interface.
 
-Thanks,
-Jason.
-
-
--- The recap about synchronous usb serial consoles --
-
-This is picking up where Alan Stern and I left off after a discussion
-in September 2009.
-
-The serial uart code implements the console writes synchronously such
-that you get the data right away and "pay the toll" in terms of system
-performance loss if you do lots of printk's to the console.  The usb
-serial console code just eats the data if there is no room left in the
-queue, and you do not see the data until the interrupts are restored.
-
-If we assume the main reason you would use a usb console device is to
-get printk's then every effort should be made to be able to see the
-printk's on the usb console device.  In this patch series, two
-conditions must be met before the hcd device would get polled.
-
-1) The data write is a usb serial console write
-2) The usb serial driver has set the variable max_in_flight_urbs
-
-Based on Alan's comments about the 1ms minimum response time for the
-hcd device I ended up using a maximum 3ms delay loop.  The 3ms was
-selected based on testing the usb_debug device and the ftdi usb rs232
-port.  I found the usb_debug device needed the 1ms and the ftdi device
-required slightly more than 2ms in the worst case else there was some
-sporadic data loss.
-
-I also tested incurring the penalty 3ms for each write with the device
-in a "failed" capacity.  In that case it introduced a 3ms delay for
-each printk() which only showed any noticeable delay with the "SysRq t"
-packet.
-
-Part of having the console stable requires that usb sysrq handler get
-executed in a tasklet.  The hcd device lock is always held while the
-driver call backs are executed.  The means you cannot get the sysrq
-printk's out to the usb console device after the in_flight urb queue
-is filled.
-
-Thanks,
-Jason.
-
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Alan Cox <alan@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>
+CC: Oliver Neukum <oliver@neukum.org>
+CC: linux-usb@vger.kernel.org
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
+ drivers/usb/core/hcd.c         |   10 +++++++++
+ drivers/usb/serial/console.c   |   42 +++++++++++++++++++++++++--------------
+ drivers/usb/serial/ftdi_sio.c  |    7 +++--
+ drivers/usb/serial/pl2303.c    |    6 +++-
+ drivers/usb/serial/usb_debug.c |    2 +-
+ include/linux/usb.h            |    3 ++
+ 6 files changed, 49 insertions(+), 21 deletions(-)
 
-The following changes since commit a3d3203e4bb40f253b1541e310dc0f9305be7c84:
-  Linus Torvalds (1):
-        Merge branch 'release' of git://git.kernel.org/.../lenb/linux-acpi-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_gregkh
-
-Jason Wessel (5):
-      tty_port,usb-console: Fix usb serial console open/close regression
-      usb-serial: Use tty_port version of console instead of the usb_serial_port version
-      usb-console: pass baud from console to the initial tty open
-      usb-hcd,usb-console: poll hcd device to force usb console writes
-      usb-serialy,sysrq: Run the sysrq handler in a tasklet
-
- drivers/char/sysrq.c            |   29 ++++++++++++++++
- drivers/char/tty_port.c         |    2 +-
- drivers/usb/core/hcd.c          |   10 +++++
- drivers/usb/serial/console.c    |   70 ++++++++++++++++++++++----------------
- drivers/usb/serial/ftdi_sio.c   |    9 +++--
- drivers/usb/serial/generic.c    |    6 ++--
- drivers/usb/serial/pl2303.c     |    8 +++--
- drivers/usb/serial/usb-serial.c |    4 +-
- drivers/usb/serial/usb_debug.c  |    2 +-
- include/linux/sysrq.h           |    4 ++
- include/linux/tty.h             |    1 +
- include/linux/usb.h             |    3 ++
- include/linux/usb/serial.h      |    2 -
- 13 files changed, 104 insertions(+), 46 deletions(-)
-
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 2f8cedd..dd710d7 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2271,6 +2271,16 @@ usb_hcd_platform_shutdown(struct platform_device* dev)
+ }
+ EXPORT_SYMBOL_GPL(usb_hcd_platform_shutdown);
+ 
++void
++usb_poll_irq(struct usb_device *udev)
++{
++	struct usb_hcd *hcd;
++
++	hcd = bus_to_hcd(udev->bus);
++	usb_hcd_irq(0, hcd);
++}
++EXPORT_SYMBOL_GPL(usb_poll_irq);
++
+ /*-------------------------------------------------------------------------*/
+ 
+ #if defined(CONFIG_USB_MON) || defined(CONFIG_USB_MON_MODULE)
+diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+index 1ee6b2a..b6b96ff 100644
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -197,13 +197,37 @@ static int usb_console_setup(struct console *co, char *options)
+ 	return retval;
+ }
+ 
++static void usb_do_console_write(struct usb_serial *serial,
++				 struct usb_serial_port *port,
++				 const char *buf, unsigned count)
++{
++	int retval;
++	int loops = 100;
++try_again:
++	/* pass on to the driver specific version of this function if
++	   it is available */
++	if (serial->type->write)
++		retval = serial->type->write(NULL, port, buf, count);
++	else
++		retval = usb_serial_generic_write(NULL, port, buf, count);
++	if (retval < count && retval >= 0 &&
++	    serial->type->max_in_flight_urbs != 0 && loops--) {
++		/* poll the hcd device because the queue is full */
++		count -= retval;
++		buf += retval;
++		udelay(100);
++		usb_poll_irq(serial->dev);
++		goto try_again;
++	}
++	dbg("%s - return value : %d", __func__, retval);
++}
++
+ static void usb_console_write(struct console *co,
+ 					const char *buf, unsigned count)
+ {
+ 	static struct usbcons_info *info = &usbcons_info;
+ 	struct usb_serial_port *port = info->port;
+ 	struct usb_serial *serial;
+-	int retval = -ENODEV;
+ 
+ 	if (!port || port->serial->dev->state == USB_STATE_NOTATTACHED)
+ 		return;
+@@ -230,23 +254,11 @@ static void usb_console_write(struct console *co,
+ 				break;
+ 			}
+ 		}
+-		/* pass on to the driver specific version of this function if
+-		   it is available */
+-		if (serial->type->write)
+-			retval = serial->type->write(NULL, port, buf, i);
+-		else
+-			retval = usb_serial_generic_write(NULL, port, buf, i);
+-		dbg("%s - return value : %d", __func__, retval);
++		usb_do_console_write(serial, port, buf, i);
+ 		if (lf) {
+ 			/* append CR after LF */
+ 			unsigned char cr = 13;
+-			if (serial->type->write)
+-				retval = serial->type->write(NULL,
+-								port, &cr, 1);
+-			else
+-				retval = usb_serial_generic_write(NULL,
+-								port, &cr, 1);
+-			dbg("%s - return value : %d", __func__, retval);
++			usb_do_console_write(serial, port, &cr, 1);
+ 		}
+ 		buf += i;
+ 		count -= i;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 95ec748..c7f559c 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -53,6 +53,9 @@
+ #define DRIVER_AUTHOR "Greg Kroah-Hartman <greg@kroah.com>, Bill Ryder <bryder@sgi.com>, Kuba Ober <kuba@mareimbrium.org>, Andreas Mohr"
+ #define DRIVER_DESC "USB FTDI Serial Converters Driver"
+ 
++/* number of outstanding urbs to prevent userspace DoS from happening */
++#define URB_UPPER_LIMIT	42
++
+ static int debug;
+ static __u16 vendor = FTDI_VID;
+ static __u16 product;
+@@ -838,6 +841,7 @@ static struct usb_serial_driver ftdi_sio_device = {
+ 	.ioctl =		ftdi_ioctl,
+ 	.set_termios =		ftdi_set_termios,
+ 	.break_ctl =		ftdi_break_ctl,
++	.max_in_flight_urbs =	URB_UPPER_LIMIT,
+ };
+ 
+ 
+@@ -848,9 +852,6 @@ static struct usb_serial_driver ftdi_sio_device = {
+ #define HIGH 1
+ #define LOW 0
+ 
+-/* number of outstanding urbs to prevent userspace DoS from happening */
+-#define URB_UPPER_LIMIT	42
+-
+ /*
+  * ***************************************************************************
+  * Utility functions
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index 1891cfb..2615fe1 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -453,8 +453,9 @@ static void pl2303_send(struct usb_serial_port *port)
+ 	port->write_urb->transfer_buffer_length = count;
+ 	result = usb_submit_urb(port->write_urb, GFP_ATOMIC);
+ 	if (result) {
+-		dev_err(&port->dev, "%s - failed submitting write urb,"
+-			" error %d\n", __func__, result);
++		if (!(port->port.console))
++			dev_err(&port->dev, "%s - failed submitting write urb,"
++				" error %d\n", __func__, result);
+ 		priv->write_urb_in_use = 0;
+ 		/* TODO: reschedule pl2303_send */
+ 	}
+@@ -1185,6 +1186,7 @@ static struct usb_serial_driver pl2303_device = {
+ 	.chars_in_buffer =	pl2303_chars_in_buffer,
+ 	.attach =		pl2303_startup,
+ 	.release =		pl2303_release,
++	.max_in_flight_urbs =	-1,
+ };
+ 
+ static int __init pl2303_init(void)
+diff --git a/drivers/usb/serial/usb_debug.c b/drivers/usb/serial/usb_debug.c
+index 252cc2d..4a04552 100644
+--- a/drivers/usb/serial/usb_debug.c
++++ b/drivers/usb/serial/usb_debug.c
+@@ -15,7 +15,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/serial.h>
+ 
+-#define URB_DEBUG_MAX_IN_FLIGHT_URBS	4000
++#define URB_DEBUG_MAX_IN_FLIGHT_URBS	42
+ #define USB_DEBUG_MAX_PACKET_SIZE	8
+ #define USB_DEBUG_BRK_SIZE		8
+ static char USB_DEBUG_BRK[USB_DEBUG_BRK_SIZE] = {
+diff --git a/include/linux/usb.h b/include/linux/usb.h
+index 8c9f053..a7d6cf7 100644
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -569,6 +569,9 @@ static inline void usb_mark_last_busy(struct usb_device *udev)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
++/* for polling the hcd device */
++extern void usb_poll_irq(struct usb_device *udev);
++
+ /* for drivers using iso endpoints */
+ extern int usb_get_current_frame_number(struct usb_device *usb_dev);
+ 
+-- 
+1.6.4.rc1
 
