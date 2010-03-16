@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210Ab0CPXQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 19:16:40 -0400
-Received: from sh.osrg.net ([192.16.179.4]:49622 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab0CPXQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 19:16:35 -0400
-Date: Wed, 17 Mar 2010 08:16:23 +0900
-To: beckyb@kernel.crashing.org
-Cc: fujita.tomonori@lab.ntt.co.jp, albert_herranz@yahoo.es,
-       benh@kernel.crashing.org, linux-usb@vger.kernel.org,
-       linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-       x86@kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH v4 05/11] swiotlb: add swiotlb_set_default_size()
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <C200C089-E6B9-4836-A7B5-3233EB2CE5FB@kernel.crashing.org>
-References: <4B9F1E11.80201@yahoo.es>
-	<20100316190805Z.fujita.tomonori@lab.ntt.co.jp>
-	<C200C089-E6B9-4836-A7B5-3233EB2CE5FB@kernel.crashing.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751228Ab0CPXXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 19:23:45 -0400
+Received: from qmta10.westchester.pa.mail.comcast.net ([76.96.62.17]:36315
+	"EHLO qmta10.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750883Ab0CPXXn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 19:23:43 -0400
+X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 19:23:43 EDT
+Message-ID: <4BA011A0.5020302@users.sourceforge.net>
+Date: Tue, 16 Mar 2010 19:17:52 -0400
+From: Brian Lindholm <brian_lindholm@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100302 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org
+CC: linux-kernel@vger.kernel.org
+Subject: PATCH:  Fix snd-hda-intel boot hang on ASUS A8N-VM
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100317081003G.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 17 Mar 2010 08:16:25 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010 14:28:09 -0500
-Becky Bruce <beckyb@kernel.crashing.org> wrote:
+This patch fixes a regression in 2.6.33.x.  Was working in 2.6.32.x.
 
-> 
-> On Mar 16, 2010, at 5:08 AM, FUJITA Tomonori wrote:
-> 
-> > On Tue, 16 Mar 2010 06:58:41 +0100
-> > Albert Herranz <albert_herranz@yahoo.es> wrote:
-> >
-> >> FUJITA Tomonori wrote:
-> >>> On Fri, 12 Mar 2010 20:12:40 +0100
-> >>> Albert Herranz <albert_herranz@yahoo.es> wrote:
-> >>>
-> >>>> The current SWIOTLB code uses a default of 64MB for the IO TLB  
-> >>>> area.
-> >>>> This size can be influenced using a kernel command line parameter  
-> >>>> "swiotlb".
-> >>>> Unfortunately, the parsing of the kernel command line is done  
-> >>>> _after_ the
-> >>>> swiotlb is initialized on some architectures.
-> >>>>
-> >>>> This patch adds a new function swiotlb_set_default_size() which  
-> >>>> can be used
-> >>>> before swiotlb_init() to indicate the desired IO TLB area size in  
-> >>>> bytes.
-> >>>>
-> >>>> This will be used later to implement a smaller IO TLB on the  
-> >>>> Nintendo Wii
-> >>>> video game console which just comes with 24MB + 64MB of RAM.
-> >>>>
-> >>>> CC: linuxppc-dev@lists.ozlabs.org
-> >>>> CC: linux-kernel@vger.kernel.org
-> >>>> CC: x86@kernel.org
-> >>>> CC: linux-ia64@vger.kernel.org
-> >>>> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
-> >>>> ---
-> >>>> include/linux/swiotlb.h |    2 ++
-> >>>> lib/swiotlb.c           |   20 ++++++++++++++++++++
-> >>>> 2 files changed, 22 insertions(+), 0 deletions(-)
-> >>>
-> >>> Please fix the powerpc swiotlb initialization instead.
-> >>>
-> >>> Calling swiotlb_init() before parsing kernel parameters sounds
-> >>> wrong. Any reasons why you can't fix it?
-> >>>
-> >>
-> >> I think that this would be better asked by a PowerPC maintainer. Ben?
-> >>
-> >> If this is really a problem the swiotlb late init may be a solution  
-> >> too in this particular case.
-> >
-> > Hmm, why swiotlb_late_init_with_default_size()?
-> >
-> > Why can't you initialize swiotlb in mem_init() like this (only compile
-> > tested)? Any time before freeing bootmem works for swiotlb.
-> 
-> This is an oops in the original patchset -  I think it should be fine  
-> to move the swiotlb_init later as Fujita suggests, at least for 32-bit  
-> powerpc.  I just booted this on mpc8641 and everything seems OK.
+   Symptom:  Hang on boot at "HDA Intel".  Boots only if on-board sound 
+is disabled or if "snd-hda-intel.enable_msi=0" is appended to boot 
+parameters.
 
-Thanks!
+   Machine:  ASUS A8N-VM with Athlon-X2 processor.
 
-I'll resend this patch in the proper format. This patch fixes the
-problem that powerpc ignores swiotlb boot options so we can merge it
-independent of Albert's patchset.
+   Relevant output from lspci -nn:
+
+00:10.1 Audio device [0403]: nVidia Corporation MCP51 High Definition 
+Audio [10de:026c] (rev a2)
+
+   Relevant output from alsa-info.sh:
+
+00:10.1 Audio device: nVidia Corporation MCP51 High Definition Audio 
+(rev a2)
+00:10.1 0403: 10de:026c (rev a2)
+         Subsystem: 10de:cb84
+
+   Proposed patch (which has been confirmed to allow boot, with sound 
+active):
+
+diff -dru linux-2.6.33-orig/sound/pci/hda/hda_intel.c 
+linux-2.6.33/sound/pci/hda/hda_intel.c
+--- linux-2.6.33-orig/sound/pci/hda/hda_intel.c        2010-03-16 
+17:33:23.487938000 -0400
++++ linux-2.6.33/sound/pci/hda/hda_intel.c      2010-03-16 
+17:40:36.141225010 -0400
+@@ -2354,6 +2354,7 @@ static void __devinit check_probe_mask(s
+  static struct snd_pci_quirk msi_black_list[] __devinitdata = {
+         SND_PCI_QUIRK(0x1043, 0x81f2, "ASUS", 0), /* Athlon64 X2 + 
+nvidia */
+         SND_PCI_QUIRK(0x1043, 0x81f6, "ASUS", 0), /* nvidia */
++       SND_PCI_QUIRK(0x10de, 0xcb84, "ASUS", 0), /* nvidia */
+         {}
+  };
+
+Signed-off-by: Brian E Lindholm <brian_lindholm@users.sourceforge.net>
+
