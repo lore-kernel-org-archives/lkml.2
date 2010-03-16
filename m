@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab0CPM4A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 08:56:00 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:45380 "EHLO tac.ki.iif.hu"
+	id S932648Ab0CPM6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 08:58:18 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58690 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab0CPMz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 08:55:59 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: CONFIG_MTD_DEBUG vs generic DEBUG support in kernel.h
-Date: Tue, 16 Mar 2010 13:55:56 +0100
-Message-ID: <878w9swhlv.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1755528Ab0CPM6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 08:58:16 -0400
+Date: Tue, 16 Mar 2010 13:58:15 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: avoid '\0' in hid debugfs events file
+In-Reply-To: <20100315190027.752c82ea@neptune.home>
+Message-ID: <alpine.LNX.2.00.1003161354380.18642@pobox.suse.cz>
+References: <20100315190027.752c82ea@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 15 Mar 2010, Bruno Prémont wrote:
 
-include/linux/mtd/mtd.h contains the following snippet:
+> When dumping /sys/kernel/debug/hid/$device/events '\0' characters show up
+> (invisible if cat to console but shown by less or while looking at a dump
+> file).
+> These are due to hid_debug_event() adding strlen()+1 bytes to the ring
+> buffer (e.g. including the trailing '\0').
+> Any roll-over causes a '\0' as well as hid_debug_event() handles the ring
+> buffers with HID_DEBUG_BUFSIZE-1 size while hid_debug_events_read() handles
+> it with full HID_DEBUG_BUFSIZE size.
 
-#ifdef CONFIG_MTD_DEBUG
-#define DEBUG(n, args...)                               \
-        do {                                            \
-                if (n <= CONFIG_MTD_DEBUG_VERBOSE)      \
-                        printk(KERN_INFO args);         \
-        } while(0)
+Applied, thanks.
 
-which conflicts with the generic debugging support in
-include/linux/kernel.h:
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+> Note:
+> The ring buffer overflow case (when tail crosses head) seems to be
+> suboptimal at best.
+> Would there be a good way to mark those cases so reader can know where
+> data got lost. (though this might not be easy keeping the lockless
+> design)
 
-#ifdef DEBUG
-#define pr_devel(fmt, ...) \
-        printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+I agree that there might be better implementation. The circular buffer is 
+merely the same to what we use in other userspace interfaces already (see 
+original hiddev, for example). Plus this is only debugging interface, and 
+with SIZE being 512, it's very unlikely that events will get lost.
 
-(that is, gcc emits redefinition warnings on modules which
-#define DEBUG on their own and also include mtd.h)
-Unfortunately, the DEBUG macro is used rather heavily under
-drivers/mtd.  Should we resolve this somehow or is it better
-to just live with it?
+But I don't think the lockless design is that important here, so if you 
+are motivated to rewrite it to something better, I wouldn't object.
 
-(Please keep me on Cc, I'm not subscribed.)
--- 
 Thanks,
-Feri.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
