@@ -1,176 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966017Ab0CPG0a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:26:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:45638 "EHLO mga14.intel.com"
+	id S966023Ab0CPGbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:31:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:36716 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab0CPG03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:26:29 -0400
+	id S1755380Ab0CPGbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:31:21 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.49,648,1262592000"; 
-   d="scan'208";a="255088581"
+   d="scan'208";a="781139848"
 From: Shane Wang <shane.wang@intel.com>
 To: hpa@zytor.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, joseph.cihula@intel.com
-Subject: [RESEND][PATCH] intel_txt: fix section warning messages from tboot (v2)
-Date: Tue, 16 Mar 2010 07:26:12 -0700
-Message-Id: <1268749572-2454-1-git-send-email-shane.wang@intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+       mingo@elte.hu, rjw@sisk.pl, pavel@ucw.cz, joseph.cihula@intel.com
+Subject: [RESEND][PATCH] intel_txt: add support for S3 memory integrity protection within Intel(R) TXT launched kernel (v3)
+Date: Tue, 16 Mar 2010 07:31:11 -0700
+Message-Id: <1268749871-2521-1-git-send-email-shane.wang@intel.com>
 X-Mailer: git-send-email 1.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is to fix the warning messages related to tboot when "allyesconfig"
-is set on i386.
+v3: Based on a complexity analysis and tradeoff, we moved all MAC'ing into
+tboot.
+
+This patch adds support for S3 memory integrity protection within an Intel(R)
+TXT launched kernel, for all kernel and userspace memory.  All RAM used by the
+kernel and userspace, as indicated by memory ranges of type E820_RAM and
+E820_RESERVED_KERN in the e820 table, will be integrity protected.
+
+The MAINTAINERS file is also updated to reflect the maintainers of the
+TXT-related code.
 
 Signed-off-by: Shane Wang <shane.wang@intel.com>
-Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- arch/x86/kernel/tboot.c |  108 +++++++++++++++++---------------------
- 1 file changed, 49 insertions(+), 59 deletions(-)
+ Documentation/intel_txt.txt |   16 +++++++++-------
+ MAINTAINERS                 |   11 +++++++++++
+ arch/x86/include/asm/e820.h |    7 ++++++-
+ arch/x86/kernel/tboot.c     |   20 +++++++++++---------
+ 4 files changed, 37 insertions(+), 17 deletions(-)
 
-diff -r d5d64753146c arch/x86/kernel/tboot.c
---- a/arch/x86/kernel/tboot.c	Mon Mar 01 09:47:50 2010 -0500
-+++ b/arch/x86/kernel/tboot.c	Thu Mar 04 09:36:37 2010 -0500
-@@ -54,51 +54,6 @@ struct tboot *tboot __read_mostly;
- #define pr_fmt(fmt)	"tboot: " fmt
+diff -r d2911aa1461d Documentation/intel_txt.txt
+--- a/Documentation/intel_txt.txt	Thu Mar 04 09:37:53 2010 -0500
++++ b/Documentation/intel_txt.txt	Wed Mar 10 08:18:48 2010 -0500
+@@ -161,13 +161,15 @@ o  In order to put a system into any of 
+       has been restored, it will restore the TPM PCRs and then
+       transfer control back to the kernel's S3 resume vector.
+       In order to preserve system integrity across S3, the kernel
+-      provides tboot with a set of memory ranges (kernel
+-      code/data/bss, S3 resume code, and AP trampoline) that tboot
+-      will calculate a MAC (message authentication code) over and then
+-      seal with the TPM.  On resume and once the measured environment
+-      has been re-established, tboot will re-calculate the MAC and
+-      verify it against the sealed value.  Tboot's policy determines
+-      what happens if the verification fails.
++      provides tboot with a set of memory ranges (RAM and RESERVED_KERN
++      in the e820 table, but not any memory that BIOS might alter over
++      the S3 transition) that tboot will calculate a MAC (message
++      authentication code) over and then seal with the TPM. On resume
++      and once the measured environment has been re-established, tboot
++      will re-calculate the MAC and verify it against the sealed value.
++      Tboot's policy determines what happens if the verification fails.
++      Note that the c/s 194 of tboot which has the new MAC code supports
++      this.
  
- static u8 tboot_uuid[16] __initdata = TBOOT_UUID;
--
--void __init tboot_probe(void)
--{
--	/* Look for valid page-aligned address for shared page. */
--	if (!boot_params.tboot_addr)
--		return;
--	/*
--	 * also verify that it is mapped as we expect it before calling
--	 * set_fixmap(), to reduce chance of garbage value causing crash
--	 */
--	if (!e820_any_mapped(boot_params.tboot_addr,
--			     boot_params.tboot_addr, E820_RESERVED)) {
--		pr_warning("non-0 tboot_addr but it is not of type E820_RESERVED\n");
--		return;
--	}
--
--	/* only a natively booted kernel should be using TXT */
--	if (paravirt_enabled()) {
--		pr_warning("non-0 tboot_addr but pv_ops is enabled\n");
--		return;
--	}
--
--	/* Map and check for tboot UUID. */
--	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
--	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
--	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
--		pr_warning("tboot at 0x%llx is invalid\n",
--			   boot_params.tboot_addr);
--		tboot = NULL;
--		return;
--	}
--	if (tboot->version < 5) {
--		pr_warning("tboot version is invalid: %u\n", tboot->version);
--		tboot = NULL;
--		return;
--	}
--
--	pr_info("found shared page at phys addr 0x%llx:\n",
--		boot_params.tboot_addr);
--	pr_debug("version: %d\n", tboot->version);
--	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
--	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
--	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
--	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
--}
+ That's pretty much it for TXT support.
  
- static pgd_t *tboot_pg_dir;
- static struct mm_struct tboot_mm = {
-@@ -182,7 +137,7 @@ static void add_mac_region(phys_addr_t s
- 	}
- }
+diff -r d2911aa1461d MAINTAINERS
+--- a/MAINTAINERS	Thu Mar 04 09:37:53 2010 -0500
++++ b/MAINTAINERS	Wed Mar 10 08:18:48 2010 -0500
+@@ -2891,6 +2891,17 @@ F:	Documentation/networking/README.ipw22
+ F:	Documentation/networking/README.ipw2200
+ F:	drivers/net/wireless/ipw2x00/ipw2200.*
  
--static int tboot_setup_sleep(void)
-+static void __init tboot_setup_sleep(void)
++INTEL(R) TRUSTED EXECUTION TECHNOLOGY (TXT)
++M:	Joseph Cihula <joseph.cihula@intel.com>
++M:	Shane Wang <shane.wang@intel.com>
++L:	tboot-devel@lists.sourceforge.net
++W:	http://tboot.sourceforge.net
++T:	Mercurial http://www.bughost.org/repos.hg/tboot.hg
++S:	Supported
++F:	Documentation/intel_txt.txt
++F:	include/linux/tboot.h
++F:	arch/x86/kernel/tboot.c
++
+ INTEL WIRELESS WIMAX CONNECTION 2400
+ M:	Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+ M:	linux-wimax@intel.com
+diff -r d2911aa1461d arch/x86/include/asm/e820.h
+--- a/arch/x86/include/asm/e820.h	Thu Mar 04 09:37:53 2010 -0500
++++ b/arch/x86/include/asm/e820.h	Wed Mar 10 08:18:48 2010 -0500
+@@ -45,7 +45,12 @@
+ #define E820_NVS	4
+ #define E820_UNUSABLE	5
+ 
+-/* reserved RAM used by kernel itself */
++/*
++ * reserved RAM used by kernel itself
++ * if CONFIG_INTEL_TXT is enabled, memory of this type will be
++ * included in the S3 integrity calculation and so should not include
++ * any memory that BIOS might alter over the S3 transition
++ */
+ #define E820_RESERVED_KERN        128
+ 
+ #ifndef __ASSEMBLY__
+diff -r d2911aa1461d arch/x86/kernel/tboot.c
+--- a/arch/x86/kernel/tboot.c	Thu Mar 04 09:37:53 2010 -0500
++++ b/arch/x86/kernel/tboot.c	Wed Mar 10 08:18:48 2010 -0500
+@@ -130,6 +130,9 @@ static void add_mac_region(phys_addr_t s
+ 	struct tboot_mac_region *mr;
+ 	phys_addr_t end = start + size;
+ 
++	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
++		panic("tboot: Too many MAC regions\n");
++
+ 	if (start && size) {
+ 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
+ 		mr->start = round_down(start, PAGE_SIZE);
+@@ -139,18 +142,17 @@ static void add_mac_region(phys_addr_t s
+ 
+ static void __init tboot_setup_sleep(void)
  {
++	int i;
++
  	tboot->num_mac_regions = 0;
  
-@@ -198,20 +153,60 @@ static int tboot_setup_sleep(void)
- 	add_mac_region(virt_to_phys(_text), _end - _text);
+-	/* S3 resume code */
+-	add_mac_region(acpi_wakeup_address, WAKEUP_SIZE);
++	for (i = 0; i < e820.nr_map; i++) {
++		if ((e820.map[i].type != E820_RAM)
++		 && (e820.map[i].type != E820_RESERVED_KERN))
++			continue;
+ 
+-#ifdef CONFIG_X86_TRAMPOLINE
+-	/* AP trampoline code */
+-	add_mac_region(virt_to_phys(trampoline_base), TRAMPOLINE_SIZE);
+-#endif
+-
+-	/* kernel code + data + bss */
+-	add_mac_region(virt_to_phys(_text), _end - _text);
++		add_mac_region(e820.map[i].addr, e820.map[i].size);
++	}
  
  	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
--
--	return 0;
  }
- 
- #else /* no CONFIG_ACPI_SLEEP */
- 
--static int tboot_setup_sleep(void)
--{
--	/* S3 shutdown requested, but S3 not supported by the kernel... */
--	BUG();
--	return -1;
--}
-+static void tboot_setup_sleep(void)     {}
- 
- #endif
-+
-+void __init tboot_probe(void)
-+{
-+	/* Look for valid page-aligned address for shared page. */
-+	if (!boot_params.tboot_addr)
-+		return;
-+	/*
-+	 * also verify that it is mapped as we expect it before calling
-+	 * set_fixmap(), to reduce chance of garbage value causing crash
-+	 */
-+	if (!e820_any_mapped(boot_params.tboot_addr,
-+			boot_params.tboot_addr, E820_RESERVED)) {
-+		pr_warning("non-0 tboot_addr but it is not of type E820_RESERVED\n");
-+		return;
-+	}
-+
-+	/* only a natively booted kernel should be using TXT */
-+	if (paravirt_enabled()) {
-+		pr_warning("non-0 tboot_addr but pv_ops is enabled\n");
-+		return;
-+	}
-+
-+	/* Map and check for tboot UUID. */
-+	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
-+	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
-+	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
-+		pr_warning("tboot at 0x%llx is invalid\n",
-+			boot_params.tboot_addr);
-+		tboot = NULL;
-+		return;
-+	}
-+	if (tboot->version < 5) {
-+		pr_warning("tboot version is invalid: %u\n", tboot->version);
-+		tboot = NULL;
-+		return;
-+	}
-+
-+	pr_info("found shared page at phys addr 0x%llx:\n",
-+		boot_params.tboot_addr);
-+	pr_debug("version: %d\n", tboot->version);
-+	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
-+	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
-+	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
-+	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
-+
-+	tboot_setup_sleep();
-+}
- 
- void tboot_shutdown(u32 shutdown_type)
- {
-@@ -227,11 +222,6 @@ void tboot_shutdown(u32 shutdown_type)
- 	 */
- 	if (!tboot_pg_dir)
- 		return;
--
--	/* if this is S3 then set regions to MAC */
--	if (shutdown_type == TB_SHUTDOWN_S3)
--		if (tboot_setup_sleep())
--			return;
- 
- 	tboot->shutdown_type = shutdown_type;
- 
