@@ -1,143 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966204Ab0CPNbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:31:09 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44557 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965058Ab0CPNbG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:31:06 -0400
-Date: Tue, 16 Mar 2010 08:31:03 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Greg KH <gregkh@suse.de>, Mimi Zohar <zohar@us.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kref: remove kref_set
-Message-ID: <20100316133103.GA29543@us.ibm.com>
-References: <19359.1467.612457.401272@notabene.brown>
+	id S966219Ab0CPNbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:31:24 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:54333 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965058Ab0CPNbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:31:22 -0400
+Date: Tue, 16 Mar 2010 06:31:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] rcu: fix lockdep for tracepoint
+Message-ID: <20100316133115.GE6709@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4B9F48AD.4000404@cn.fujitsu.com> <20100316130814.GA32375@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <19359.1467.612457.401272@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100316130814.GA32375@Krystal>
+User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting NeilBrown (neilb@suse.de):
+On Tue, Mar 16, 2010 at 09:08:14AM -0400, Mathieu Desnoyers wrote:
+> * Lai Jiangshan (laijs@cn.fujitsu.com) wrote:
+> > tracepoint.h use rcu_dereference(), it triggers this warning:
+> > 
+> > [    0.701161] ===================================================
+> > [    0.702211] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [    0.702716] ---------------------------------------------------
+> > [    0.703203] include/trace/events/workqueue.h:68 invoked rcu_dereference_check() without protection!
+> > [    0.703971]
+> > [    0.703990] other info that might help us debug this:
+> > [    0.703993]
+> > [    0.705590]
+> > [    0.705604] rcu_scheduler_active = 1, debug_locks = 0
+> > [    0.706712] 1 lock held by swapper/1:
+> > [    0.707229]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<c0142f54>] cpu_maps_update_begin+0x14/0x20
+> > [    0.710097]
+> > [    0.710106] stack backtrace:
+> > [    0.712602] Pid: 1, comm: swapper Not tainted 2.6.34-rc1-tip-01613-g72662bb #168
+> > [    0.713231] Call Trace:
+> > [    0.713997]  [<c017174d>] lockdep_rcu_dereference+0x9d/0xb0
+> > [    0.714746]  [<c015a117>] create_workqueue_thread+0x107/0x110
+> > [    0.715353]  [<c015aee0>] ? worker_thread+0x0/0x340
+> > [    0.715845]  [<c015a8e8>] __create_workqueue_key+0x138/0x240
+> > [    0.716427]  [<c0142f92>] ? cpu_maps_update_done+0x12/0x20
+> > [    0.717012]  [<c086b12f>] init_workqueues+0x6f/0x80
+> > [    0.717530]  [<c08576d2>] kernel_init+0x102/0x1f0
+> > [    0.717570]  [<c08575d0>] ? kernel_init+0x0/0x1f0
+> > [    0.718944]  [<c01030fa>] kernel_thread_helper+0x6/0x10
+> > 
+> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 > 
+> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 > 
-> Of the three uses of kref_set in the kernel:
-> 
->  One really should be kref_put as the code is letting go of a
->     reference,
->  Two really should be kref_init because the kref is being
->     initialised.
-> 
-> This suggests that making kref_set available encourages bad code.
-> So fix the three uses and remove kref_set completely.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+> Thanks Lai,
 
-No objection to the user_namespace.c hunk - haven't tested it
-but it certainly had better work with what you have.
+Me too!
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-thanks,
--serge
-
-> --
+> Mathieu
 > 
-> The two 'kref_init' calls in ima_iint.c could equally be a single
-> call after the kmem_cache_alloc in ima_inode_alloc, but this version
-> was the minimal code change.
+> > ---
+> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> > index f59604e..78b4bd3 100644
+> > --- a/include/linux/tracepoint.h
+> > +++ b/include/linux/tracepoint.h
+> > @@ -49,7 +49,7 @@ struct tracepoint {
+> >  		void **it_func;						\
+> >  									\
+> >  		rcu_read_lock_sched_notrace();				\
+> > -		it_func = rcu_dereference((tp)->funcs);			\
+> > +		it_func = rcu_dereference_sched((tp)->funcs);		\
+> >  		if (it_func) {						\
+> >  			do {						\
+> >  				((void(*)(proto))(*it_func))(args);	\
+> > 
 > 
-> 
-> diff --git a/include/linux/kref.h b/include/linux/kref.h
-> index b0cb0eb..13003ee 100644
-> --- a/include/linux/kref.h
-> +++ b/include/linux/kref.h
-> @@ -21,7 +21,6 @@ struct kref {
->  	atomic_t refcount;
->  };
-> 
-> -void kref_set(struct kref *kref, int num);
->  void kref_init(struct kref *kref);
->  void kref_get(struct kref *kref);
->  int kref_put(struct kref *kref, void (*release) (struct kref *kref));
-> diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-> index 076c7c8..b2d70d3 100644
-> --- a/kernel/user_namespace.c
-> +++ b/kernel/user_namespace.c
-> @@ -54,8 +54,8 @@ int create_user_ns(struct cred *new)
->  #endif
->  	/* tgcred will be cleared in our caller bc CLONE_THREAD won't be set */
-> 
-> -	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
-> -	kref_set(&ns->kref, 1);
-> +	/* root_user holds a reference to ns, our reference can be dropped */
-> +	put_user_ns(ns);
-> 
->  	return 0;
->  }
-> diff --git a/lib/kref.c b/lib/kref.c
-> index 9ecd6e8..69761d3 100644
-> --- a/lib/kref.c
-> +++ b/lib/kref.c
-> @@ -15,23 +15,13 @@
->  #include <linux/module.h>
-> 
->  /**
-> - * kref_set - initialize object and set refcount to requested number.
-> - * @kref: object in question.
-> - * @num: initial reference counter
-> - */
-> -void kref_set(struct kref *kref, int num)
-> -{
-> -	atomic_set(&kref->refcount, num);
-> -	smp_mb();
-> -}
-> -
-> -/**
->   * kref_init - initialize object.
->   * @kref: object in question.
->   */
->  void kref_init(struct kref *kref)
->  {
-> -	kref_set(kref, 1);
-> +	atomic_set(&kref->refcount, 1);
-> +	smp_mb();
->  }
-> 
->  /**
-> @@ -71,7 +61,6 @@ int kref_put(struct kref *kref, void (*release)(struct kref *kref))
->  	return 0;
->  }
-> 
-> -EXPORT_SYMBOL(kref_set);
->  EXPORT_SYMBOL(kref_init);
->  EXPORT_SYMBOL(kref_get);
->  EXPORT_SYMBOL(kref_put);
-> diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-> index 2d4d05d..91c31d8 100644
-> --- a/security/integrity/ima/ima_iint.c
-> +++ b/security/integrity/ima/ima_iint.c
-> @@ -93,7 +93,7 @@ void iint_free(struct kref *kref)
->  		       iint->opencount);
->  		iint->opencount = 0;
->  	}
-> -	kref_set(&iint->refcount, 1);
-> +	kref_init(&iint->refcount);
->  	kmem_cache_free(iint_cache, iint);
->  }
-> 
-> @@ -132,7 +132,7 @@ static void init_once(void *foo)
->  	iint->readcount = 0;
->  	iint->writecount = 0;
->  	iint->opencount = 0;
-> -	kref_set(&iint->refcount, 1);
-> +	kref_init(&iint->refcount);
->  }
-> 
->  static int __init ima_iintcache_init(void)
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
