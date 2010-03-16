@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937629Ab0CPJzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:55:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38140 "EHLO mx1.redhat.com"
+	id S937640Ab0CPJzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:55:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54296 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488Ab0CPJzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:55:35 -0400
-Message-ID: <4B9F5556.7060103@redhat.com>
-Date: Tue, 16 Mar 2010 10:54:30 +0100
-From: Kevin Wolf <kwolf@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
+	id S937631Ab0CPJzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:55:37 -0400
+Date: Tue, 16 Mar 2010 10:55:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       efault@gmx.de, a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: [PATCH 2/2] perf top: Properly notify the user that vmlinux is
+ missing
+Message-ID: <20100316095523.GJ7961@elte.hu>
+References: <20100315192125.GL6965@ghostprotocols.net>
+ <20100315.122605.124976085.davem@davemloft.net>
+ <20100316094611.GG7961@elte.hu>
+ <20100316.025134.196872789.davem@davemloft.net>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com>
-In-Reply-To: <4B9F4CBD.3020805@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316.025134.196872789.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.03.2010 10:17, schrieb Avi Kivity:
-> On 03/15/2010 10:23 PM, Chris Webb wrote:
->> Avi Kivity<avi@redhat.com>  writes:
->>
->>    
->>> On 03/15/2010 10:07 AM, Balbir Singh wrote:
->>>
->>>      
->>>> Yes, it is a virtio call away, but is the cost of paying twice in
->>>> terms of memory acceptable?
->>>>        
->>> Usually, it isn't, which is why I recommend cache=off.
->>>      
->> Hi Avi. One observation about your recommendation for cache=none:
->>
->> We run hosts of VMs accessing drives backed by logical volumes carved out
->> from md RAID1. Each host has 32GB RAM and eight cores, divided between (say)
->> twenty virtual machines, which pretty much fill the available memory on the
->> host. Our qemu-kvm is new enough that IDE and SCSI drives with writeback
->> caching turned on get advertised to the guest as having a write-cache, and
->> FLUSH gets translated to fsync() by qemu. (Consequently cache=writeback
->> isn't acting as cache=neverflush like it would have done a year ago. I know
->> that comparing performance for cache=none against that unsafe behaviour
->> would be somewhat unfair!)
->>
->> Wasteful duplication of page cache between guest and host notwithstanding,
->> turning on cache=writeback is a spectacular performance win for our guests.
->> For example, even IDE with cache=writeback easily beats virtio with
->> cache=none in most of the guest filesystem performance tests I've tried. The
->> anecdotal feedback from clients is also very strongly in favour of
->> cache=writeback.
->>    
-> 
-> Is this with qcow2, raw file, or direct volume access?
-> 
-> I can understand it for qcow2, but for direct volume access this 
-> shouldn't happen.  The guest schedules as many writes as it can, 
-> followed by a sync.  The host (and disk) can then reschedule them 
-> whether they are in the writeback cache or in the block layer, and must 
-> sync in the same way once completed.
-> 
-> Perhaps what we need is bdrv_aio_submit() which can take a number of 
-> requests.  For direct volume access, this allows easier reordering 
-> (io_submit() should plug the queues before it starts processing and 
-> unplug them when done, though I don't see the code for this?).  For 
-> qcow2, we can coalesce metadata updates for multiple requests into one 
-> RMW (for example, a sequential write split into multiple 64K-256K write 
-> requests).
 
-We already do merge sequential writes back into one larger request. So
-this is in fact a case that wouldn't benefit from such changes. It may
-help for other cases. But even if it did, coalescing metadata writes in
-qcow2 sounds like a good way to mess up, so I'd stay with doing it only
-for the data itself.
+* David Miller <davem@davemloft.net> wrote:
 
-Apart from that, wouldn't your points apply to writeback as well?
+> From: Ingo Molnar <mingo@elte.hu>
+> Date: Tue, 16 Mar 2010 10:46:11 +0100
+> 
+> > i'd really like that to happen - i.e. if we had the kernel (and modules) image 
+> > exposed as a (almost-)standard ELF object via /sys or so.
+> > 
+> > We already have some aspects of that, via /sys/kernel/notes, but it should be 
+> > done for real. That would also make build-id support less of a hack.
+> > 
+> > ( I'd not include CFI debuginfo in there though - that would be way too large.
+> >   More compressed debuginfo could be included perhaps. )
+> 
+> That's interesting and useful, but wouldn't help my case as the images I'm 
+> usually booting are completely stripped.
 
-Kevin
+/me too
+
+> That's why I end up with "[kernel.kallsyms]" for kernel profiling :-)
+
+The kernel image itself is still present in RAM, obviously. So are the symbols 
+(packed for kallsyms).
+
+So exposing a virtual ELF image via /sys (or /proc/kernel.so) wouldnt take up 
+much more RAM and would be rather useful, right?
+
+	Ingo
