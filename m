@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759296Ab0CPQ3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 12:29:45 -0400
-Received: from cifronik.21th.com ([62.16.86.116]:32833 "EHLO cifronik.21th.com"
+	id S1759429Ab0CPQgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 12:36:04 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55824 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759112Ab0CPQ3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 12:29:43 -0400
-From: =?utf-8?b?0KHQtdGA0LPQtdC5INCi0LXQvNC10YDRhdCw0L3QvtCy?= 
-	<temerkhanov@cifronik.ru>
-Organization: =?utf-8?b?0JfQkNCe?= "=?utf-8?b?0KbQuNGE0YDQvtC90LjQug==?="
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resubmit 2/3] AIO: Fix reference counting in io_cancel and aio_cancel_all
-Date: Tue, 16 Mar 2010 19:26:04 +0300
-User-Agent: KMail/1.12.4 (Linux/2.6.31-gentoo-r6; KDE/4.3.5; x86_64; ; )
-References: <201003161418.16959.temerkhanov@cifronik.ru> <x494okguxxp.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x494okguxxp.fsf@segfault.boston.devel.redhat.com>
+	id S1759314Ab0CPQgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 12:36:00 -0400
+Date: Tue, 16 Mar 2010 17:35:37 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Message-ID: <20100316163537.GA17537@elte.hu>
+References: <20100316112500.GA5337@elte.hu>
+ <4B9F77E7.2060101@redhat.com>
+ <20100316122903.GA8831@elte.hu>
+ <4B9F7C6A.3070207@redhat.com>
+ <20100316130840.GA24808@elte.hu>
+ <4B9F84C0.70706@redhat.com>
+ <20100316133114.GB575@elte.hu>
+ <y0mbpeo1f1y.fsf@fche.csb>
+ <20100316155221.GA19699@elte.hu>
+ <20100316160822.GE9841@redhat.com>
 MIME-Version: 1.0
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_cE7nL+Ahviv78y7"
-Message-Id: <201003161926.04434.temerkhanov@cifronik.ru>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316160822.GE9841@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_cE7nL+Ahviv78y7
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
 
-On Tuesday 16 March 2010 17:46:10 Jeff Moyer wrote:
-> Sergey Temerkhanov <temerkhanov@cifronik.ru> writes:
-> > io_cancel() and aio_cancel_all() have inconsistent reference counting
-> > (ki_users field of struct kiocb) which leads to unkillable processes upon
-> > io_cancel() or io_destroy() syscalls. This patch fixes the undesired
-> > behavior.
+* Frank Ch. Eigler <fche@redhat.com> wrote:
+
+> Hi -
 > 
-> Hi, Sergey,
+> On Tue, Mar 16, 2010 at 04:52:21PM +0100, Ingo Molnar wrote:
+> > [...]
+> > > Perhaps the fact that kvm happens to deal with an interesting application 
+> > > area (virtualization) is misleading here.  As far as the host kernel or 
+> > > other host userspace is concerned, qemu is just some random unprivileged 
+> > > userspace program [...]
 > 
-> Thanks for the patch.  Would you mind resubmitting it to make it a bit
-> easier to review?  The way you've done things, it is difficult to tell
-> if you just moved the aio_cancel_all function or if you moved it and
-> made changes.  Please have the patch that moves it separated out from
-> other changes, or at least mention in the changelog that the function
-> was unchanged.  Next, if you could tell what sorts of testing you've
-> performed, that would be great.  Finally, it would be a good idea to CC
-> linux-aio@kvack.org on aio patches.
+> > You are quite mistaken: KVM isnt really a 'random unprivileged
+> > application' in this context, it is clearly an extension of
+> > system/kernel services.
 > 
-> Thanks!
-> Jeff
+> I don't know what "extension of system/kernel services" means in this 
+> context, beyond something running on the system/kernel, like every other 
+> process. [...]
+
+It means something like my example of 'extended to guest space' 
+/proc/kallsyms:
+
+> > [...]
+> >
+> > ( Which can be seen from the simple fact that what started the
+> >   discussion was 'how do we get /proc/kallsyms from the guest'. I.e. an 
+> >   extension of the existing host-space /proc/kallsyms was desired. )
 > 
+> (Sorry, that smacks of circular reasoning.)
 
-This patch fixes reference counting in io_cancel() and aio_cancel_all()
+To me it sounds like an example supporting my point. /proc/kallsyms is a 
+service by the kernel, and 'perf kvm' desires this to be extended to guest 
+space as well.
 
-Regards, Sergey Temerkhanov, Cifronic ZAO
+Thanks,
 
---Boundary-00=_cE7nL+Ahviv78y7
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="aio-fix.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="aio-fix.patch"
-
-diff -r 74c172a99cdb fs/aio.c
---- a/fs/aio.c	Tue Mar 16 18:55:59 2010 +0300
-+++ b/fs/aio.c	Tue Mar 16 19:08:49 2010 +0300
-@@ -1035,7 +1035,9 @@
- 			spin_unlock_irq(&ctx->ctx_lock);
- 			cancel(iocb, &res);
- 			spin_lock_irq(&ctx->ctx_lock);
-+			__aio_put_req(req);
- 		}
-+		__aio_put_req(req);
- 	}
- 	spin_unlock_irq(&ctx->ctx_lock);
- }
-@@ -1789,9 +1791,11 @@
- 			if (copy_to_user(result, &tmp, sizeof(tmp)))
- 				ret = -EFAULT;
- 		}
-+		aio_put_req(req);
- 	} else
- 		ret = -EINVAL;
- 
-+	aio_put_req(req);
- 	put_ioctx(ctx);
- 
- 	return ret;
-
---Boundary-00=_cE7nL+Ahviv78y7--
+	Ingo
