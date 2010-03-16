@@ -1,169 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937438Ab0CPGt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:49:29 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54755 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab0CPGt0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:49:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qWKNkilO0K8j3wiD4rWggg08yT7Rrh8qY4dmumyRUV4AGZOHV82Y0P2I4uqeG2Zpa+
-         71JmplO9jmm/HFrihv0xLZxuxW7acpXL2tYZ+mQXzmZSyAiHBDiS+9jzdpIFE/+UOB3D
-         H41qbbudYtTDmDEDONNQYgiAO0fjbPmRw06wM=
-Date: Tue, 16 Mar 2010 08:50:15 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>,
-       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-       Francois Romieu <romieu@fr.zoreil.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
-Message-ID: <20100316065015.GA3336@swordfish.minsk.epam.com>
-References: <20100307192305.GA598@elte.hu>
- <20100308125122.GA11242@redhat.com>
- <1268686865.2824.4.camel@edumazet-laptop>
- <1268699602.2824.14.camel@edumazet-laptop>
+	id S937455Ab0CPGyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:54:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55959 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S937150Ab0CPGx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:53:58 -0400
+Message-ID: <4B9F2A54.9020505@cn.fujitsu.com>
+Date: Tue, 16 Mar 2010 14:51:00 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
-Content-Disposition: inline
-In-Reply-To: <1268699602.2824.14.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Sheng Yang <sheng@linux.intel.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM MMU: check reserved bits only if CR4.PSE=1 or CR4.PAE=1
+References: <4B9FCC42.2080709@cn.fujitsu.com> <4B9F17BC.50108@redhat.com> <4B9F1F47.2040700@cn.fujitsu.com> <4B9F2204.7050302@redhat.com>
+In-Reply-To: <4B9F2204.7050302@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ew6BAiZeqk4r7MaW
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hello,
+Avi Kivity wrote:
+> On 03/16/2010 08:03 AM, Xiao Guangrong wrote:
+>>
+>>> I think the only change is that is !is_pse(vcpu) we ignore bit 7?
+>>>      
+>> If the vcpu is in PT32E_ROOT_LEVEL/PT64_ROOT_LEVEL mode, CR4.PAE
+>> is aways enabled, so what we need do is ignore bit7 if !is_pse(vcpu)
+>> under PT32_ROOT_LEVEL mode, right?
+>>    
+> 
+> I think PAE will fault if bit7 is set and !is_pse(vcpu), but not sure.
 
-Sure. Give me a couple of days. By the way, should I test against .34
-or .33?
+Quote AMD's specification:
+The size of large pages in PAE-paging mode is 2 Mbytes rather than 4 Mbytes. PAE uses
+the pagedirectory page-size bit (PDE.PS) to allow selection between 4-Kbyte and 2-Mbyte
+page sizes. PAE automatically uses the page-size bit, so the value of CR4.PSE is ignored
+by PAE paging.
 
-	Sergey
+Quote Intel's specification:
+When PAE is enabled, the 2-MByte page size is selected by setting the page size (PS)
+flag in a page-directory entry (see Figure 3-14). (As shown in Table 3-3, the PSE flag
+in control register CR4 has no affect on the page size when PAE is enabled.)
 
+So i think PAE just ignore CR4.PSE
 
-On (03/16/10 01:33), Eric Dumazet wrote:
-> Le lundi 15 mars 2010 =E0 22:01 +0100, Eric Dumazet a =E9crit :
->=20
-> > Yes, this is wrong. In this context (process context, not softirq), we
-> > should use netif_rx() or just drop frames if we are in reset phase.
-> >=20
->=20
-> Sergey,
->=20
-> Here is a compiled but untested patch (I dont have the hardware), could
-> you please test it ?
->=20
-> Thanks
->=20
-> [PATCH] r8169: Fix rtl8169_rx_interrupt()
->=20
-> In case a reset is performed, rtl8169_rx_interrupt() is called from
-> process context instead of softirq context. Special care must be taken
-> to call appropriate network core services (netif_rx() instead of
-> netif_receive_skb()). VLAN handling also corrected.
->=20
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Diagnosed-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
-> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-> index 9d3ebf3..d873639 100644
-> --- a/drivers/net/r8169.c
-> +++ b/drivers/net/r8169.c
-> @@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_d=
-evice *dev,
->  }
-> =20
->  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
- *desc,
-> -			       struct sk_buff *skb)
-> +			       struct sk_buff *skb, int polling)
->  {
->  	u32 opts2 =3D le32_to_cpu(desc->opts2);
->  	struct vlan_group *vlgrp =3D tp->vlgrp;
->  	int ret;
-> =20
->  	if (vlgrp && (opts2 & RxVlanTag)) {
-> -		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
-> +		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
->  		ret =3D 0;
->  	} else
->  		ret =3D -1;
-> @@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl816=
-9_private *tp,
->  }
-> =20
->  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
- *desc,
-> -			       struct sk_buff *skb)
-> +			       struct sk_buff *skb, int polling)
->  {
->  	return -1;
->  }
-> @@ -4429,12 +4429,20 @@ out:
->  	return done;
->  }
-> =20
-> +/*
-> + * Warning : rtl8169_rx_interrupt() might be called :
-> + * 1) from NAPI (softirq) context
-> + *	(polling =3D 1 : we should call netif_receive_skb())
-> + * 2) from process context (rtl8169_reset_task())
-> + *	(polling =3D 0 : we must call netif_rx() instead)
-> + */	=09
->  static int rtl8169_rx_interrupt(struct net_device *dev,
->  				struct rtl8169_private *tp,
->  				void __iomem *ioaddr, u32 budget)
->  {
->  	unsigned int cur_rx, rx_left;
->  	unsigned int delta, count;
-> +	int polling =3D (budget !=3D ~(u32)0) ? 1 : 0;
-> =20
->  	cur_rx =3D tp->cur_rx;
->  	rx_left =3D NUM_RX_DESC + tp->dirty_rx - cur_rx;
-> @@ -4496,8 +4504,12 @@ static int rtl8169_rx_interrupt(struct net_device =
-*dev,
->  			skb_put(skb, pkt_size);
->  			skb->protocol =3D eth_type_trans(skb, dev);
-> =20
-> -			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
-> -				netif_receive_skb(skb);
-> +			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
-> +				if (likely(polling))
-> +					netif_receive_skb(skb);
-> +				else
-> +					netif_rx(skb);
-> +			}
-> =20
->  			dev->stats.rx_bytes +=3D pkt_size;
->  			dev->stats.rx_packets++;
->=20
->=20
-
---ew6BAiZeqk4r7MaW
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkufKicACgkQfKHnntdSXjTDyAQAs7YJYfZNOlIVlYwzqk6HJC6W
-gokxXZMA2U/0OFfRZTAaItL54aPd6WXdbKCuaLz2wpD6m+15TeQHDL6Tqkyd8Fr8
-0M5N3LQTUB3BLa0NEsRXqnZGQjcnwHesXEdg4247Y9ZtzrNwXhHEHYJDwryZZv81
-EhScS0B0FVmT5uaEeaQ=
-=VK+s
------END PGP SIGNATURE-----
-
---ew6BAiZeqk4r7MaW--
+Thanks,
+Xiao
