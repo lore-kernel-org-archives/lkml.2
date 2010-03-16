@@ -1,193 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966407Ab0CPOz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:55:29 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:61609 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966301Ab0CPOz1 (ORCPT
+	id S1757925Ab0CPO6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:58:06 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:55719 "EHLO
+	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755761Ab0CPO6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:55:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IgIQIyOaAntziHjxtajUaF8sC1j80OuubdFXHhVQmD3qpBPXz3ntQ6l31Ul82gSf8c
-         qhqFs3kRg50L8NBfl2jxNWCeUL68E5lo0DHP+x4akyuI1sH66aGOSQLrbcIsgUsJw58E
-         qQaAvAYrwm3AYF7NFhFtyZz2I905iVzK/TLAA=
-Date: Tue, 16 Mar 2010 16:50:33 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
-Message-ID: <20100316145033.GA3332@swordfish.minsk.epam.com>
-References: <20100307192305.GA598@elte.hu>
- <20100308125122.GA11242@redhat.com>
- <1268686865.2824.4.camel@edumazet-laptop>
- <1268699602.2824.14.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="u3/rZRmxL6MmkK24"
-Content-Disposition: inline
-In-Reply-To: <1268699602.2824.14.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Mar 2010 10:58:04 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: linux@dominikbrodowski.net
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org,
+       jirislaby@gmail.com
+Subject: [PATCH 1/1] PCMCIA: resource, fix lock imbalance
+Date: Tue, 16 Mar 2010 15:57:44 +0100
+Message-Id: <1268751464-15168-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Stanse found that one error path (when alloc_skb fails) in netdev_tx
+omits to unlock hw_priv->hwlock. Fix that by moving away from unlock in
+each fail path. Unlock at one place instead.
 
---u3/rZRmxL6MmkK24
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Introduced in 94a819f80297e1f635a7cde4ed5317612e512ba7
+(pcmcia: assert locking to struct pcmcia_device)
 
-Hello,
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>
+---
+ drivers/pcmcia/pcmcia_resource.c |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
 
-Eric, I did pktgen testing (3 times).
+diff --git a/drivers/pcmcia/pcmcia_resource.c b/drivers/pcmcia/pcmcia_resource.c
+index b2df041..add962a 100644
+--- a/drivers/pcmcia/pcmcia_resource.c
++++ b/drivers/pcmcia/pcmcia_resource.c
+@@ -256,6 +256,7 @@ int pcmcia_modify_configuration(struct pcmcia_device *p_dev,
+ {
+ 	struct pcmcia_socket *s;
+ 	config_t *c;
++	int ret;
+ 
+ 	s = p_dev->socket;
+ 
+@@ -264,13 +265,13 @@ int pcmcia_modify_configuration(struct pcmcia_device *p_dev,
+ 
+ 	if (!(s->state & SOCKET_PRESENT)) {
+ 		dev_dbg(&s->dev, "No card present\n");
+-		mutex_unlock(&s->ops_mutex);
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto unlock;
+ 	}
+ 	if (!(c->state & CONFIG_LOCKED)) {
+ 		dev_dbg(&s->dev, "Configuration isnt't locked\n");
+-		mutex_unlock(&s->ops_mutex);
+-		return -EACCES;
++		ret = -EACCES;
++		goto unlock;
+ 	}
+ 
+ 	if (mod->Attributes & CONF_IRQ_CHANGE_VALID) {
+@@ -286,7 +287,8 @@ int pcmcia_modify_configuration(struct pcmcia_device *p_dev,
+ 
+ 	if (mod->Attributes & CONF_VCC_CHANGE_VALID) {
+ 		dev_dbg(&s->dev, "changing Vcc is not allowed at this time\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto unlock;
+ 	}
+ 
+ 	/* We only allow changing Vpp1 and Vpp2 to the same value */
+@@ -294,21 +296,21 @@ int pcmcia_modify_configuration(struct pcmcia_device *p_dev,
+ 	    (mod->Attributes & CONF_VPP2_CHANGE_VALID)) {
+ 		if (mod->Vpp1 != mod->Vpp2) {
+ 			dev_dbg(&s->dev, "Vpp1 and Vpp2 must be the same\n");
+-			mutex_unlock(&s->ops_mutex);
+-			return -EINVAL;
++			ret = -EINVAL;
++			goto unlock;
+ 		}
+ 		s->socket.Vpp = mod->Vpp1;
+ 		if (s->ops->set_socket(s, &s->socket)) {
+-			mutex_unlock(&s->ops_mutex);
+ 			dev_printk(KERN_WARNING, &s->dev,
+ 				   "Unable to set VPP\n");
+-			return -EIO;
++			ret = -EIO;
++			goto unlock;
+ 		}
+ 	} else if ((mod->Attributes & CONF_VPP1_CHANGE_VALID) ||
+ 		   (mod->Attributes & CONF_VPP2_CHANGE_VALID)) {
+ 		dev_dbg(&s->dev, "changing Vcc is not allowed at this time\n");
+-		mutex_unlock(&s->ops_mutex);
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto unlock;
+ 	}
+ 
+ 	if (mod->Attributes & CONF_IO_CHANGE_WIDTH) {
+@@ -332,9 +334,11 @@ int pcmcia_modify_configuration(struct pcmcia_device *p_dev,
+ 			s->ops->set_io_map(s, &io_on);
+ 		}
+ 	}
++	ret = 0;
++unlock:
+ 	mutex_unlock(&s->ops_mutex);
+ 
+-	return 0;
++	return ret;
+ } /* modify_configuration */
+ EXPORT_SYMBOL(pcmcia_modify_configuration);
+ 
+-- 
+1.7.0.1
 
-sudo cat /proc/net/pktgen/eth0=20
-Params: count 1000000000  min_pkt_size: 42  max_pkt_size: 42
-     frags: 0  delay: 0  clone_skb: 4000000  ifname: eth0
-     flows: 0 flowlen: 0
-     queue_map_min: 0  queue_map_max: 0
-     dst_min: 10.6.22.59  dst_max:=20
-        src_min:   src_max:=20
-     src_mac: 00:1a:92:c9:a0:68 dst_mac: 00:1a:92:c9:a0:68
-     udp_src_min: 9  udp_src_max: 9  udp_dst_min: 9  udp_dst_max: 9
-     src_mac_count: 0  dst_mac_count: 0
-     Flags:=20
-Current:
-     pkts-sofar: 1000000000  errors: 0
-     started: 9957912410us  stopped: 16682620361us idle: 1231us
-     seq_num: 1000000001  cur_dst_mac_offset: 0  cur_src_mac_offset: 0
-     cur_saddr: 0x3b16060a  cur_daddr: 0x3b16060a
-     cur_udp_dst: 9  cur_udp_src: 9
-     cur_queue_map: 0
-     flows: 0
-Result: OK: 6724707951(c6724706719+d1231) nsec, 1000000000 (42byte,0frags)
-  148705pps 49Mb/sec (49964880bps) errors: 0
 
-
-Without any errors from the r8169 side. Can we consider testing successful?
-If so, fell free to add Tested-by: Sergey Senozhatsky <sergey.senozhatsky@g=
-mail.com>
-
-
-	Sergey
-
-
-
-On (03/16/10 01:33), Eric Dumazet wrote:
-> > Yes, this is wrong. In this context (process context, not softirq), we
-> > should use netif_rx() or just drop frames if we are in reset phase.
-> >=20
->=20
-> Sergey,
->=20
-> Here is a compiled but untested patch (I dont have the hardware), could
-> you please test it ?
->=20
-> Thanks
->=20
-> [PATCH] r8169: Fix rtl8169_rx_interrupt()
->=20
-> In case a reset is performed, rtl8169_rx_interrupt() is called from
-> process context instead of softirq context. Special care must be taken
-> to call appropriate network core services (netif_rx() instead of
-> netif_receive_skb()). VLAN handling also corrected.
->=20
-> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> Diagnosed-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
-> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-> index 9d3ebf3..d873639 100644
-> --- a/drivers/net/r8169.c
-> +++ b/drivers/net/r8169.c
-> @@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_d=
-evice *dev,
->  }
-> =20
->  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
- *desc,
-> -			       struct sk_buff *skb)
-> +			       struct sk_buff *skb, int polling)
->  {
->  	u32 opts2 =3D le32_to_cpu(desc->opts2);
->  	struct vlan_group *vlgrp =3D tp->vlgrp;
->  	int ret;
-> =20
->  	if (vlgrp && (opts2 & RxVlanTag)) {
-> -		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
-> +		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
->  		ret =3D 0;
->  	} else
->  		ret =3D -1;
-> @@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl816=
-9_private *tp,
->  }
-> =20
->  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
- *desc,
-> -			       struct sk_buff *skb)
-> +			       struct sk_buff *skb, int polling)
->  {
->  	return -1;
->  }
-> @@ -4429,12 +4429,20 @@ out:
->  	return done;
->  }
-> =20
-> +/*
-> + * Warning : rtl8169_rx_interrupt() might be called :
-> + * 1) from NAPI (softirq) context
-> + *	(polling =3D 1 : we should call netif_receive_skb())
-> + * 2) from process context (rtl8169_reset_task())
-> + *	(polling =3D 0 : we must call netif_rx() instead)
-> + */	=09
->  static int rtl8169_rx_interrupt(struct net_device *dev,
->  				struct rtl8169_private *tp,
->  				void __iomem *ioaddr, u32 budget)
->  {
->  	unsigned int cur_rx, rx_left;
->  	unsigned int delta, count;
-> +	int polling =3D (budget !=3D ~(u32)0) ? 1 : 0;
-> =20
->  	cur_rx =3D tp->cur_rx;
->  	rx_left =3D NUM_RX_DESC + tp->dirty_rx - cur_rx;
-> @@ -4496,8 +4504,12 @@ static int rtl8169_rx_interrupt(struct net_device =
-*dev,
->  			skb_put(skb, pkt_size);
->  			skb->protocol =3D eth_type_trans(skb, dev);
-> =20
-> -			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
-> -				netif_receive_skb(skb);
-> +			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
-> +				if (likely(polling))
-> +					netif_receive_skb(skb);
-> +				else
-> +					netif_rx(skb);
-> +			}
-> =20
->  			dev->stats.rx_bytes +=3D pkt_size;
->  			dev->stats.rx_packets++;
->=20
->=20
-
---u3/rZRmxL6MmkK24
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkufmrkACgkQfKHnntdSXjT0zgP/eycACnlxJzjDlrNqyFgb9hC/
-HOgxTL2+eVi7wqgrurxIwCDMiHmuyRd86Yrwk3xo5rRyAl3UbE/ysCriozw59Kwk
-Ag1LYov18AY//sEzSvWOE3veR0JGMymwEUBdnv8HxpDnyPXgp4ddQZFGHhGGzFp3
-SDgLfrU/yP8yzaefORk=
-=TrtZ
------END PGP SIGNATURE-----
-
---u3/rZRmxL6MmkK24--
