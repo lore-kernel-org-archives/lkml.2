@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937402Ab0CPBms (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 21:42:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12660 "EHLO mga09.intel.com"
+	id S965944Ab0CPBpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 21:45:11 -0400
+Received: from sh.osrg.net ([192.16.179.4]:53816 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932367Ab0CPBmp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 21:42:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.49,647,1262592000"; 
-   d="scan'208";a="604702393"
-Message-Id: <20100316013841.269383897@intel.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 16 Mar 2010 09:36:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-       Andreas Dilger <adilger@sun.com>
-Subject: [PATCH 2/3] vfs: O_* bit numbers uniqueness check fix
-References: <20100316013653.367442879@intel.com>
-Content-Disposition: inline; filename=fcntl_init-O_RDONLY-2
+	id S965901Ab0CPBpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Mar 2010 21:45:08 -0400
+Date: Tue, 16 Mar 2010 10:44:59 +0900
+To: albert_herranz@yahoo.es
+Cc: linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       linux-kernel@vger.kernel.org, x86@kernel.org,
+       linux-ia64@vger.kernel.org
+Subject: Re: [PATCH v4 05/11] swiotlb: add swiotlb_set_default_size()
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1268421166-4791-6-git-send-email-albert_herranz@yahoo.es>
+References: <1268421166-4791-1-git-send-email-albert_herranz@yahoo.es>
+	<1268421166-4791-6-git-send-email-albert_herranz@yahoo.es>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100316104440Y.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 16 Mar 2010 10:45:00 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Follow the comment by Andreas:
+On Fri, 12 Mar 2010 20:12:40 +0100
+Albert Herranz <albert_herranz@yahoo.es> wrote:
 
-	It's non-obvious why there are 18 flags listed here, but the hweight
-	is only 17?  Presumably this is because O_RDONLY has value 0, but that
-	should at least be
-	listed in a comment, or the test could be written more explicitly, like:
+> The current SWIOTLB code uses a default of 64MB for the IO TLB area.
+> This size can be influenced using a kernel command line parameter "swiotlb".
+> Unfortunately, the parsing of the kernel command line is done _after_ the
+> swiotlb is initialized on some architectures.
+> 
+> This patch adds a new function swiotlb_set_default_size() which can be used
+> before swiotlb_init() to indicate the desired IO TLB area size in bytes.
+> 
+> This will be used later to implement a smaller IO TLB on the Nintendo Wii
+> video game console which just comes with 24MB + 64MB of RAM.
+> 
+> CC: linuxppc-dev@lists.ozlabs.org
+> CC: linux-kernel@vger.kernel.org
+> CC: x86@kernel.org
+> CC: linux-ia64@vger.kernel.org
+> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
+> ---
+>  include/linux/swiotlb.h |    2 ++
+>  lib/swiotlb.c           |   20 ++++++++++++++++++++
+>  2 files changed, 22 insertions(+), 0 deletions(-)
 
-		  BUILD_BUG_ON(18 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+Please fix the powerpc swiotlb initialization instead.
 
-
-CC: Andreas Dilger <adilger@sun.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fcntl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-mm.orig/fs/fcntl.c	2010-03-16 09:35:47.000000000 +0800
-+++ linux-mm/fs/fcntl.c	2010-03-16 09:36:01.000000000 +0800
-@@ -742,7 +742,7 @@ EXPORT_SYMBOL(kill_fasync);
- static int __init fcntl_init(void)
- {
- 	/* please add new bits here to ensure allocation uniqueness */
--	BUILD_BUG_ON(17 != HWEIGHT32(
-+	BUILD_BUG_ON(18 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| O_NONBLOCK	|
-
-
+Calling swiotlb_init() before parsing kernel parameters sounds
+wrong. Any reasons why you can't fix it?
