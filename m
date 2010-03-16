@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966141Ab0CPKZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:25:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60111 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966116Ab0CPKZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:25:41 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: linux-kernel@vger.kernel.org, Abhishek Sagar <sagar.abhishek@gmail.com>,
-       Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 06/10] ARM: ftrace: add Thumb-2 support
-References: <1268462987-8271-1-git-send-email-rabin@rab.in>
-	<1268462987-8271-7-git-send-email-rabin@rab.in>
-Date: Tue, 16 Mar 2010 10:23:54 +0000
-In-Reply-To: <1268462987-8271-7-git-send-email-rabin@rab.in> (Rabin Vincent's
-	message of "Sat, 13 Mar 2010 12:19:43 +0530")
-Message-ID: <tnxsk80r2dh.fsf@e102109-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752436Ab0CPK0E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:26:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44311 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757793Ab0CPKZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:25:59 -0400
+Date: Tue, 16 Mar 2010 11:25:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: T??r??k Edwin <edwintorok@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] perf: install into /usr/local by default.
+Message-ID: <20100316102546.GE10069@elte.hu>
+References: <4B9F3EEC.7050104@gmail.com>
+ <1268733435-30225-1-git-send-email-edwintorok@gmail.com>
+ <20100316101031.GL7961@elte.hu>
+ <4B9F5B6E.5040302@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-OriginalArrivalTime: 16 Mar 2010 10:24:00.0023 (UTC) FILETIME=[CAFDA270:01CAC4F2]
+Content-Disposition: inline
+In-Reply-To: <4B9F5B6E.5040302@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
 
-Rabin Vincent <rabin@rab.in> wrote:
-> Fix the mcount routines to build and run on a kernel built with the
-> Thumb-2 instruction set:
->
->  - Without the BSYM, the following assembler errors appear:
->
->    entry-common.S: Assembler messages:
->    entry-common.S:179: Error: invalid immediate for address calculation (value = 0x00000004)
+* Avi Kivity <avi@redhat.com> wrote:
 
-I'm still confused by this. I think that's a compiler problem but need
-to get some feedback from toolchain people.
+> On 03/16/2010 12:10 PM, Ingo Molnar wrote:
+> >* T??r??k Edwin<edwintorok@gmail.com>  wrote:
+> >
+> >>It was confusing to install into $(HOME)/bin, especially since there was
+> >>no documentation mentioning where perf gets installed by default.
+> >>So install to /usr/local by default, as other programs do, and allow users to
+> >>override the install location by specifying the prefix explicitly.
+> >>
+> >>Signed-off-by: T??r??k Edwin<edwintorok@gmail.com>
+> >>---
+> >>  tools/perf/Makefile |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >>diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> >>index 2e7fa3a..8e8c199 100644
+> >>--- a/tools/perf/Makefile
+> >>+++ b/tools/perf/Makefile
+> >>@@ -216,7 +216,7 @@ STRIP ?= strip
+> >>  # runtime figures out where they are based on the path to the executable.
+> >>  # This can help installing the suite in a relocatable way.
+> >>
+> >>-prefix = $(HOME)
+> >>+prefix = /usr/local
+> >>  bindir_relative = bin
+> >>  bindir = $(prefix)/$(bindir_relative)
+> >>  mandir = share/man
+> >Btw., we inherited that default prefix from the Git project.
+> >
+> >Is there a way to get it into ~/bin/ if the user does not have permission to
+> >/usr/local ? (i.e. doesnt run it as root)
+> >
+> >That's a really convenient aspect of doing a 'make install' as user. (Which i
+> >tend to do in most cases)
+> 
+> What about people (like me) who do 'make && sudo make install'?
 
-> --- a/arch/arm/kernel/entry-common.S
-> +++ b/arch/arm/kernel/entry-common.S
-> @@ -167,7 +167,8 @@ ENTRY(__gnu_mcount_nc)
->  	stmdb	sp!, {r0-r3, lr}
->  	ldr	r0, =ftrace_trace_function
->  	ldr	r2, [r0]
-> -	adr	r0, ftrace_stub
-> + THUMB(	orr	r2, r2, #1		)
-> +	adr	r0, BSYM(ftrace_stub)
+I'd like everyone to be happy :-)
 
-If the ftrace_stub isn't .globl, the code compiles fine. My approach
-would be something like this:
+In case of irreconcilable differences i prefer the creation of two parallel 
+universes, one for each variant. This does not seem to be such a case though:
 
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index d085033..5f5aef6 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -122,7 +122,7 @@ ENTRY(__gnu_mcount_nc)
- 	stmdb sp!, {r0-r3, lr}
- 	ldr r0, =ftrace_trace_function
- 	ldr r2, [r0]
--	adr r0, ftrace_stub
-+	adr r0, 1f
- 	cmp r0, r2
- 	bne gnu_trace
- 	ldmia sp!, {r0-r3, ip, lr}
-@@ -132,8 +132,9 @@ gnu_trace:
- 	ldr r1, [sp, #20]			@ lr of instrumented routine
- 	mov r0, lr
- 	sub r0, r0, #MCOUNT_INSN_SIZE
--	mov lr, pc
-+	adr lr, BSYM(2f)
- 	mov pc, r2
-+2:
- 	ldmia sp!, {r0-r3, ip, lr}
- 	mov pc, ip
- 
-@@ -141,7 +142,7 @@ ENTRY(mcount)
- 	stmdb sp!, {r0-r3, lr}
- 	ldr r0, =ftrace_trace_function
- 	ldr r2, [r0]
--	adr r0, ftrace_stub
-+	adr r0, 1f
- 	cmp r0, r2
- 	bne trace
- 	ldr lr, [fp, #-4]			@ restore lr
-@@ -160,6 +161,7 @@ trace:
- 
- 	.globl ftrace_stub
- ftrace_stub:
-+1:
- 	mov pc, lr
- 
- #endif /* CONFIG_FUNCTION_TRACER */
+> Can we make it position independent and derive the path from /proc/$$/exe?
 
--- 
-Catalin
+Sounds like a useful approach ...
+
+	Ingo
