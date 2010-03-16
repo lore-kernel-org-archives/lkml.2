@@ -1,115 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab0CPUbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 16:31:41 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:53678 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757635Ab0CPUbj (ORCPT
+	id S1758020Ab0CPUc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 16:32:27 -0400
+Received: from mail-qy0-f194.google.com ([209.85.221.194]:59473 "EHLO
+	mail-qy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669Ab0CPUcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 16:31:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Bvp+7TYWqojoweD+MQ8pByL6aXUN2fwM2nkUOvfxdDMHVvjwLGE4muSOfvcHwSc9g8
-         M8SQj1OAmpqDzu4Dit+72O6eY9kEH65IqpsxuaaEwZt4RPDa1ssjSi49d5C1F3IE8zqz
-         1UNNT2NhxHqdeF05pH07Yf/fNz7sa5l+LPJK4=
-MIME-Version: 1.0
-In-Reply-To: <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
-References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
-	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
-	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
-	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
-	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
-	 <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
-Date: Tue, 16 Mar 2010 21:31:14 +0100
-Message-ID: <b637ec0b1003161331y680418e0p6549504165a45701@mail.gmail.com>
-Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
-From: Fabio Comolli <fabio.comolli@gmail.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: ACPI mailing list <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Mar 2010 16:32:25 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 16:32:25 EDT
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: rtc-linux@googlegroups.com
+Cc: Sekhar Nori <nsekhar@ti.com>, Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] rtc: omap: let device wakeup capability be configured from chip init logic
+Date: Tue, 16 Mar 2010 13:20:54 -0700
+Message-Id: <1268770854-5530-1-git-send-email-khilman@deeprootsystems.com>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+From: Sekhar Nori <nsekhar@ti.com>
 
-On Tue, Mar 16, 2010 at 7:54 AM, Corentin Chary
-<corentin.chary@gmail.com> wrote:
-> On Sat, Mar 13, 2010 at 1:50 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
->> Well, I'm confused.
->>
->> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
->> the situation it's not like the one I described in the post I wrote 2
->> days ago. Actually the situation with the patch reverted is the same I
->> have with the patch applied.
->>
->> What I mean is that if I boot on AC power /proc/cpuinfo always reports
->> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
->> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
->> not change the situation. Only reboot does.
->>
->> But the cpufv interface does indeed seem to work, as glxgears and
->> stellarium show the frame rate change accordingly to the powersave /
->> performance selection.
->>
->> So my question is: what does really the cpufv interface do? Is it
->> supposed to change the processor frequency? Or does it change
->> something else?
->>
->> And if the answer to the latest question is affirmative, why
->> /proc/cpuinfo seems to ignore it?
->>
->> Sorry for the confusion.
->> Regards,
->> Fabio
->>
->
-> Here is what I can read in your DSDT:
->
-> When INIT or _Q31 is called, the bios check the the battery is
-> present, and call FSBA(0) or FSBA(1).
-> _Q31 seems to be called by an hotkey, could you run "acpi_listen" and
-> search the hotkey that generate 0x50 or 0x51 ?
+The rtc-omap driver currently hardcodes the RTC wakeup capability
+to be "not capable". While this seems to be true for existing OMAP1
+boards which are not wired for this, the DA850/OMAP-L138 SoC, the
+RTC can always be wake up source from its "deep sleep" mode.
 
-This is the output requested.
+This patch lets the wakeup capability to be set from platform data and
+does not override the setting from the driver. For DA850/OMAP-L138, this
+is done from arch/arm/mach-davinci/devices-da8xx.c:da8xx_register_rtc()
 
-hotkey ATKD 0000002e 00000000
-hotkey ATKD 0000002f 00000000
-hotkey ATKD 00000030 00000000
-hotkey ATKD 00000012 00000000
-hotkey ATKD 00000013 00000000
-hotkey ATKD 00000014 00000000
-hotkey ATKD 00000015 00000000
-hotkey ATKD 00000010 00000000
-button/sleep SLPB 00000080 00000001
-hotkey ATKD 00000010 00000001
+Note that this patch does not change the behavior on any existing OMAP1
+board since the platform device registration sets the wakeup capability
+to 0 by default.
 
->
-> FSBA is the method called by CFVS. When you do "echo 1 > cpufv" it
-> calls CFVS(1), then FSBA(1).
-> FSBA got 2 presets on 900.
->
-> Using these presets, is write some bytes to the EC and to something
-> wich sounds like clock (RCLK, WCKB, WLCK)
-> By the name it seems that it set the FSB, it may also surely change
-> the CPU Clock.
->
-> Now, I don't know why cpuinfo always show the same value, maybe
-> because the cpu clock is not changed
-> by a cpufreq driver.
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
 
-Well, the cpuinfo frequency value seems to be set only at boot: 630 if
-booting from battery, 900 from AC.
+Alessandro, with your ack, I can merge this one as well via the davinci 
+tree.
 
->
-> --
-> Corentin Chary
-> http://xf.iksaif.net
->
+ drivers/rtc/rtc-omap.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-Thanks,
-Fabio
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index 64d9727..73377b0 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -34,7 +34,8 @@
+  * Board-specific wiring options include using split power mode with
+  * RTC_OFF_NOFF used as the reset signal (so the RTC won't be reset),
+  * and wiring RTC_WAKE_INT (so the RTC alarm can wake the system from
+- * low power modes).  See the BOARD-SPECIFIC CUSTOMIZATION comment.
++ * low power modes) for OMAP1 boards (OMAP-L138 has this built into
++ * the SoC). See the BOARD-SPECIFIC CUSTOMIZATION comment.
+  */
+ 
+ #define OMAP_RTC_BASE			0xfffb4800
+@@ -401,16 +402,17 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+ 
+ 	/* BOARD-SPECIFIC CUSTOMIZATION CAN GO HERE:
+ 	 *
+-	 *  - Boards wired so that RTC_WAKE_INT does something, and muxed
+-	 *    right (W13_1610_RTC_WAKE_INT is the default after chip reset),
+-	 *    should initialize the device wakeup flag appropriately.
++	 *  - Device wake-up capability setting should come through chip
++	 *    init logic. OMAP1 boards should initialize the "wakeup capable"
++	 *    flag in the platform device if the board is wired right for
++	 *    being woken up by RTC alarm. For OMAP-L138, this capability
++	 *    is built into the SoC by the "Deep Sleep" capability.
+ 	 *
+ 	 *  - Boards wired so RTC_ON_nOFF is used as the reset signal,
+ 	 *    rather than nPWRON_RESET, should forcibly enable split
+ 	 *    power mode.  (Some chip errata report that RTC_CTRL_SPLIT
+ 	 *    is write-only, and always reads as zero...)
+ 	 */
+-	device_init_wakeup(&pdev->dev, 0);
+ 
+ 	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
+ 		pr_info("%s: split power mode\n", pdev->name);
+-- 
+1.7.0.2
+
