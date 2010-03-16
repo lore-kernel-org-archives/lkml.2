@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937558Ab0CPIS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 04:18:59 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:56401 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937533Ab0CPIS4 (ORCPT
+	id S937567Ab0CPITc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 04:19:32 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36198 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936515Ab0CPITa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 04:18:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:openpgp:content-type
-         :content-transfer-encoding;
-        b=H2FGfyXk7xT+kOCOG8+jbOnrvn7kDwQt3Onld7PN+F5A5Dco3BQxevAgKdu3vnsevy
-         90cUbCRO7z6kofTcigEvMSPXz+mmSZ7V7PmUPZ1VHG5RekMwFYwXtCdgpVnUneWDRQBQ
-         lin/8ND0QOGm2M+a9PROY9V3HmNkRKIYvInNQ=
-Message-ID: <4B9F3EEC.7050104@gmail.com>
-Date: Tue, 16 Mar 2010 10:18:52 +0200
-From: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	Tue, 16 Mar 2010 04:19:30 -0400
+Date: Tue, 16 Mar 2010 04:19:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Christoph Hellwig <hch@infradead.org>, Chris Webb <chris@arachsys.com>,
+       Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+	parameter
+Message-ID: <20100316081919.GA4258@infradead.org>
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9EC60A.2070101@codemonkey.ws> <20100316004307.GA19470@infradead.org> <4B9EDE7D.4040809@codemonkey.ws>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: fix callgraphs of 32-bit processes on 64-bit kernels.
-References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com> <4B9E5EFF.1080308@gmail.com>
-In-Reply-To: <4B9E5EFF.1080308@gmail.com>
-X-Enigmail-Version: 0.95.0
-OpenPGP: id=5379965D
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B9EDE7D.4040809@codemonkey.ws>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/15/2010 06:23 PM, Török Edwin wrote:
-> On 03/15/2010 05:34 PM, Török Edwin wrote:
->>
->> It would be good if perf knew how to lookup symbols in kernel modules!
-> 
-> BTW perf report -m -k /home/edwin/builds/linux-2.6/vmlinux doesn't show
-> the symbols either.
+On Mon, Mar 15, 2010 at 08:27:25PM -0500, Anthony Liguori wrote:
+>> Actually cache=writeback is as safe as any normal host is with a
+>> volatile disk cache, except that in this case the disk cache is
+>> actually a lot larger.  With a properly implemented filesystem this
+>> will never cause corruption.
+>
+> Metadata corruption, not necessarily corruption of data stored in a file.
 
-I always forget that, unlike every other program, perf doesn't install
-by default to /usr/local!
-So I was running the wrong version of perf (from an older kernel), since
-perf was installed to $HOME/bin (which of course isn't in sudo's path).
+Again, this will not cause metadata corruption either if the filesystem
+loses barriers, although we may lose up to the cache size of new (data
+or metadata operations).  The consistency of the filesystem is still
+guaranteed.
 
-Sorry for the confusion, the 2.6.33 perf DOES know how to lookup the
-symbols:
-    9.92%  glxgears  [radeon]                           [k]
-r600_packet3_check
-            |
-            --- r600_packet3_check
-               |
-               |--96.80%-- r600_cs_parse
-               |          radeon_cs_ioctl
-               |          drm_ioctl
-               |          radeon_kms_compat_ioctl
-               |          compat_sys_ioctl
-               |          sysenter_dispatch
-               |          0xf7759430
-               |          drmCommandWriteRead
-               |          cs_gem_emit
-               |          radeon_cs_emit
-               |          rcommonFlushCmdBufLocked
-               |          rcommonFlushCmdBuf
-               |          radeonFlush
-               |          _mesa_flush
-               |          _mesa_Flush
-               |          0xf76ee270
-               |          0x804a6d5
-               |          __libc_start_main
-               |          0x8049111
-[...]
+> Not all software uses fsync as much as they should.  And often times,  
+> it's for good reason (like ext3).
 
-Best regards,
---Edwin
+If an application needs data on disk it must call fsync, or there
+is no guaranteed at all, even on ext3.  And with growing disk caches
+these issues show up on normal disks often enough that people have
+realized it by now.
+
+
+> IIUC, an O_DIRECT write using cache=writeback is not actually on the  
+> spindle when the write() completes.  Rather, an explicit fsync() would  
+> be required.  That will cause data corruption in many applications (like  
+> databases) regardless of whether the fs gets metadata corruption.
+
+It's neither for O_DIRECT without qemu involved.  The O_DIRECT write
+goes through the disk cache and requires and explicit fsync or O_SYNC
+open flag to make sure it goes to disk.
+
