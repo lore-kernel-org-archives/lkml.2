@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966597Ab0CPSGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:06:53 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:57636 "EHLO e8.ny.us.ibm.com"
+	id S966605Ab0CPSHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:07:30 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:52750 "EHLO sabe.cs.wisc.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966159Ab0CPSGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:06:50 -0400
-Message-ID: <4B9FC8B2.6070404@linux.vnet.ibm.com>
-Date: Tue, 16 Mar 2010 13:06:42 -0500
-From: Anthony Liguori <aliguori@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
+	id S933063Ab0CPSH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 14:07:28 -0400
+Message-ID: <4B9FC9AD.3000409@cs.wisc.edu>
+Date: Tue, 16 Mar 2010 13:10:53 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "Frank Ch. Eigler" <fche@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com> <20100316133114.GB575@elte.hu> <y0mbpeo1f1y.fsf@fche.csb> <20100316155221.GA19699@elte.hu> <4B9FC11A.1070507@linux.vnet.ibm.com> <20100316175243.GC23859@elte.hu>
-In-Reply-To: <20100316175243.GC23859@elte.hu>
+To: Jiri Slaby <jslaby@suse.cz>
+CC: James.Bottomley@suse.de, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+       Jayamohan Kallickal <jayamohank@serverengines.com>
+Subject: Re: [PATCH 1/3] SCSI: be2iscsi, fix lock imbalance
+References: <1268753039-17214-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1268753039-17214-1-git-send-email-jslaby@suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 12:52 PM, Ingo Molnar wrote:
-> * Anthony Liguori<aliguori@linux.vnet.ibm.com>  wrote:
+On 03/16/2010 10:23 AM, Jiri Slaby wrote:
+> Stanse found that one error path in mgmt_invalidate_icds omits to unlock
+> ctrl->mbox_lock. Fix that.
 >
->    
->> On 03/16/2010 10:52 AM, Ingo Molnar wrote:
->>      
->>> You are quite mistaken: KVM isnt really a 'random unprivileged application' in
->>> this context, it is clearly an extension of system/kernel services.
->>>
->>> ( Which can be seen from the simple fact that what started the discussion was
->>>    'how do we get /proc/kallsyms from the guest'. I.e. an extension of the
->>>    existing host-space /proc/kallsyms was desired. )
->>>        
->> Random tools (like perf) should not be able to do what you describe. It's a
->> security nightmare.
->>      
-> A security nightmare exactly how? Mind to go into details as i dont understand
-> your point.
->    
-
-Assume you're using SELinux to implement mandatory access control.  How 
-do you label this file system?
-
-Generally speaking, we don't know the difference between /proc/kallsyms 
-vs. /dev/mem if we do generic passthrough.  While it might be safe to 
-have a relaxed label of kallsyms (since it's read only), it's clearly 
-not safe to do that for /dev/mem, /etc/shadow, or any file containing 
-sensitive information.
-
-Rather, we ought to expose a higher level interface that we have more 
-confidence in with respect to understanding the ramifications of 
-exposing that guest data.
-
->>
->> No way.  The guest has sensitive data and exposing it widely on the host is
->> a bad thing to do. [...]
->>      
-> Firstly, you are putting words into my mouth, as i said nothing about
-> 'exposing it widely'. I suggest exposing it under the privileges of whoever
-> has access to the guest image.
->    
-
-That doesn't work as nicely with SELinux.
-
-It's completely reasonable to have a user that can interact in a read 
-only mode with a VM via libvirt but cannot read the guest's disk images 
-or the guest's memory contents.
-
-> Secondly, regarding confidentiality, and this is guest security 101: whoever
-> can access the image on the host _already_ has access to all the guest data!
+> Added in 756d29c8c7ed8887ed7d752371ce2f (Enable async mode for mcc rings)
+> where the spinlock was moved.
 >
-> A Linux image can generally be loopback mounted straight away:
+> Signed-off-by: Jiri Slaby<jslaby@suse.cz>
+> Cc: Jayamohan Kallickal<jayamohank@serverengines.com>
+> Cc: James Bottomley<James.Bottomley@suse.de>
+> ---
+>   drivers/scsi/be2iscsi/be_mgmt.c |    1 +
+>   1 files changed, 1 insertions(+), 0 deletions(-)
 >
->    losetup -o 32256 /dev/loop0 ./guest-image.img
->    mount -o ro /dev/loop0 /mnt-guest
->
-> (Or, if you are an unprivileged user who cannot mount, it can be read via ext2
-> tools.)
->
-> There's nothing the guest can do about that. The host is in total control of
-> guest image data for heaven's sake!
->    
+> diff --git a/drivers/scsi/be2iscsi/be_mgmt.c b/drivers/scsi/be2iscsi/be_mgmt.c
+> index 72617b6..e641922 100644
+> --- a/drivers/scsi/be2iscsi/be_mgmt.c
+> +++ b/drivers/scsi/be2iscsi/be_mgmt.c
+> @@ -169,6 +169,7 @@ unsigned char mgmt_invalidate_icds(struct beiscsi_hba *phba,
+>   		SE_DEBUG(DBG_LVL_1,
+>   			 "Failed to allocate memory for"
+>   			 "mgmt_invalidate_icds \n");
+> +		spin_unlock(&ctrl->mbox_lock);
+>   		return -1;
+>   	}
+>   	nonemb_cmd.size = sizeof(struct invalidate_commands_params_in);
 
-It's not that simple in a MAC environment.
+Looks good.
 
-Regards,
-
-Anthony Liguori
-
-> All i'm suggesting is to make what is already possible more convenient.
->
-> 	Ingo
->    
-
+Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
