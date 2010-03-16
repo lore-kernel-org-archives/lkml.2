@@ -1,62 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760008Ab0CPSq6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:46:58 -0400
-Received: from mta1.srv.hcvlny.cv.net ([167.206.4.196]:60428 "EHLO
-	mta1.srv.hcvlny.cv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757534Ab0CPSqy (ORCPT
+	id S934218Ab0CPSsO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:48:14 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:42965 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933104Ab0CPSsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:46:54 -0400
-Date: Tue, 16 Mar 2010 14:46:49 -0400
-From: Michael Breuer <mbreuer@majjas.com>
-Subject: Re: [Regression] 2.6.34-rc1 sky2 mtu on second port defaults to 576
-In-reply-to: <4B9FAF10.8000707@majjas.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       netdev@vger.kernel.org
-Message-id: <4B9FD219.4050209@majjas.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7BIT
-References: <4B9F9DAD.7060308@majjas.com> <4B9FAF10.8000707@majjas.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.2pre)
- Gecko/20100302 Lightning/1.0b2pre Lanikai/3.1b1
+	Tue, 16 Mar 2010 14:48:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=DPg5Xh6ZFD4vuRXvWbDJo2XxeR523sZEQWxH8l8KhNGHlCUI7s+CV0uU0n8MXUNpes
+         cuoRdcCE80f9QHrvCUV5hi6UG9jIqNUxLYQ5HwpjLFQLJM8+BMWLstnUmpC7FErJyQDl
+         WrsYK9JpV34StiY1YfbUOPuR5lICgtw6OMw4k=
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100316182619.GA3451@swordfish>
+References: <20100307192305.GA598@elte.hu>
+	 <20100308125122.GA11242@redhat.com>
+	 <1268686865.2824.4.camel@edumazet-laptop>
+	 <1268699602.2824.14.camel@edumazet-laptop>
+	 <20100316145914.GB3332@swordfish.minsk.epam.com>
+	 <1268751933.3094.45.camel@edumazet-laptop>
+	 <20100316151023.GC3332@swordfish.minsk.epam.com>
+	 <1268752826.3094.48.camel@edumazet-laptop>
+	 <20100316182619.GA3451@swordfish>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 19:48:04 +0100
+Message-ID: <1268765284.2932.17.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 3/16/2010 12:17 PM, Michael Breuer wrote:
->  On 3/16/2010 11:03 AM, Michael Breuer wrote:
->> Haven't bisected - problem seemed to have started around 
->> 2.6.34-rc1-0933 (not seen before the rc1 tag).
->>
->> On boot, eth1 ends up with MTU of 576 (eth0 is 1500). My f12 startup 
->> scripts are not setting MTU (never have).
->>
->>
->> Nothing of note in dmesg
->> No change to .config
->> No mtu change reported in log.
->>
->> Basically, sky2 reports eth1 up... and within the same second begins 
->> reporting receive length errors. Most network functions via eth1 fail.
->>
->> ifconfig eth1 reveals mtu of 576, setting mtu to 1500 restores 
->> network functionality.
->>
->> Booting back to 2.6.33-06233 (git from March 8) the problem does not 
->> manifest.
->>
->> I'll bisect if this isn't obvious to someone.
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe 
->> linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> Never mind... Cablevision changed my cable modem... dhcp is setting 
-> the mtu option to 576 (never did before). grrrr. My one fallback test 
-> seems to have been a fluke.
-And one last update... turns out not Cablevision either. There was an 
-F12 update to dhcp client over the weekend to enable request (and set) 
-of interface.mtu by default. Previously, dhcp client was not requesting 
-or setting the mtu.
+Le mardi 16 mars 2010 à 20:26 +0200, Sergey Senozhatsky a écrit :
+> Hello,
+> Got it right now.
+> 
+> System completely froze. Even SysRq didn't work.
+> /*spin_lock deadlock?*/
+> 
+> NOTE: I'm losing network constantly with pktgen tests
+
+yes, every 12 seconds there is a reset because of fifo overflow
+
+> [24208.010980] r8169 0000:02:00.0: eth0: link up
+> [24220.010980] r8169 0000:02:00.0: eth0: link up
+> [24232.011030] r8169 0000:02:00.0: eth0: link up
+> [24340.010980] r8169 0000:02:00.0: eth0: link up
+> [24352.010966] r8169 0000:02:00.0: eth0: link up
+> [24364.010966] r8169 0000:02:00.0: eth0: link up
+> [24376.010964] r8169 0000:02:00.0: eth0: link up
+> [24388.010961] r8169 0000:02:00.0: eth0: link up
+> [24400.010959] r8169 0000:02:00.0: eth0: link up
+> [24412.010963] r8169 0000:02:00.0: eth0: link up
+> 
+> 
+> Traces:
+> [24600.625078] INFO: task events/0:9 blocked for more than 120 seconds.
+> [24600.625083] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [24600.625087] events/0      D 00001636     0     9      2 0x00000000
+> [24600.625096]  f7085ebc 00000046 a87e9490 00001636 c1617cc0 c1617cc0 c1617cc0 c1617cc0
+> [24600.625109]  f707c250 c1617cc0 c1617cc0 00000000 00000000 00000000 00000000 f707bfc0
+> [24600.625122]  c14745c8 c14745c8 f707bfc0 00000202 f7085efc c12c6449 00000000 00085edc
+> [24600.625135] Call Trace:
+> [24600.625148]  [<c12c6449>] __mutex_lock_common+0x233/0x3af
+> [24600.625155]  [<c12c65ff>] mutex_lock_nested+0x12/0x15
+> [24600.625163]  [<c1265e0f>] ? rtnl_lock+0xf/0x11
+> [24600.625168]  [<c1265e0f>] rtnl_lock+0xf/0x11
+> [24600.625183]  [<f9174acd>] rtl8169_reset_task+0x16/0xee [r8169]
+> [24600.625191]  [<c103c887>] worker_thread+0x161/0x233
+> [24600.625196]  [<c103c845>] ? worker_thread+0x11f/0x233
+> [24600.625205]  [<f9174ab7>] ? rtl8169_reset_task+0x0/0xee [r8169]
+> [24600.625214]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
+> [24600.625220]  [<c103c726>] ? worker_thread+0x0/0x233
+> [24600.625225]  [<c103f6ce>] kthread+0x6a/0x6f
+> [24600.625232]  [<c103f664>] ? kthread+0x0/0x6f
+> [24600.625238]  [<c1002e42>] kernel_thread_helper+0x6/0x1a
+> [24600.625242] INFO: lockdep is turned off.
+> [24600.625259] INFO: task X:3176 blocked for more than 120 seconds.
+> [24600.625262] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [24600.625266] X             D 00000000     0  3176   3175 0x00400004
+> [24600.625273]  f6435a10 00003046 00025709 00000000 c1617cc0 c1617cc0 c1617cc0 c1617cc0
+> [24600.625286]  f60897d0 c1617c  ... 
+> /*THE REST IS LOST*/
+> 
+> 
+
+OK thanks for the report, this rtl8169_reset_task() seems pretty buggy,
+or multiple invocation...
+
+Did you tried removing the rtl8169_schedule_work() call from
+rtl8169_rx_interrupt() ?
+
+Maybe the reset is not necessary at all in case of fifo overflow..
+
+Cumulative patch :
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 9d3ebf3..d6ef4dd 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_device *dev,
+ }
+ 
+ static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc *desc,
+-			       struct sk_buff *skb)
++			       struct sk_buff *skb, int polling)
+ {
+ 	u32 opts2 = le32_to_cpu(desc->opts2);
+ 	struct vlan_group *vlgrp = tp->vlgrp;
+ 	int ret;
+ 
+ 	if (vlgrp && (opts2 & RxVlanTag)) {
+-		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
++		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
+ 		ret = 0;
+ 	} else
+ 		ret = -1;
+@@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl8169_private *tp,
+ }
+ 
+ static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc *desc,
+-			       struct sk_buff *skb)
++			       struct sk_buff *skb, int polling)
+ {
+ 	return -1;
+ }
+@@ -4429,12 +4429,20 @@ out:
+ 	return done;
+ }
+ 
++/*
++ * Warning : rtl8169_rx_interrupt() might be called :
++ * 1) from NAPI (softirq) context
++ *	(polling = 1 : we should call netif_receive_skb())
++ * 2) from process context (rtl8169_reset_task())
++ *	(polling = 0 : we must call netif_rx() instead)
++ */		
+ static int rtl8169_rx_interrupt(struct net_device *dev,
+ 				struct rtl8169_private *tp,
+ 				void __iomem *ioaddr, u32 budget)
+ {
+ 	unsigned int cur_rx, rx_left;
+ 	unsigned int delta, count;
++	int polling = (budget != ~(u32)0) ? 1 : 0;
+ 
+ 	cur_rx = tp->cur_rx;
+ 	rx_left = NUM_RX_DESC + tp->dirty_rx - cur_rx;
+@@ -4459,7 +4467,6 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
+ 			if (status & RxCRC)
+ 				dev->stats.rx_crc_errors++;
+ 			if (status & RxFOVF) {
+-				rtl8169_schedule_work(dev, rtl8169_reset_task);
+ 				dev->stats.rx_fifo_errors++;
+ 			}
+ 			rtl8169_mark_to_asic(desc, tp->rx_buf_sz);
+@@ -4496,8 +4503,12 @@ static int rtl8169_rx_interrupt(struct net_device *dev,
+ 			skb_put(skb, pkt_size);
+ 			skb->protocol = eth_type_trans(skb, dev);
+ 
+-			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
+-				netif_receive_skb(skb);
++			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
++				if (likely(polling))
++					netif_receive_skb(skb);
++				else
++					netif_rx(skb);
++			}
+ 
+ 			dev->stats.rx_bytes += pkt_size;
+ 			dev->stats.rx_packets++;
+
+
+
