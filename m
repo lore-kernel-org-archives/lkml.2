@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966386Ab0CPPX3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:23:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35491 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757904Ab0CPPX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:23:27 -0400
-Subject: Re: ATA 4 KiB sector issues.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-In-Reply-To: <4B9FA1C6.7090305@kernel.org>
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
-	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
-	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
-	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
-	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>
-	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>
-	 <4B9FA1C6.7090305@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 08:23:13 -0700
-Message-ID: <1268752993.21384.23.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S966489Ab0CPPYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:24:09 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:55169 "EHLO
+	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S966362Ab0CPPYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:24:05 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: James.Bottomley@suse.de
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jirislaby@gmail.com, Jayamohan Kallickal <jayamohank@serverengines.com>
+Subject: [PATCH 1/3] SCSI: be2iscsi, fix lock imbalance
+Date: Tue, 16 Mar 2010 16:23:57 +0100
+Message-Id: <1268753039-17214-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 00:20 +0900, Tejun Heo wrote:
-> On 03/17/2010 12:02 AM, James Bottomley wrote:
-> > On Tue, 2010-03-16 at 23:50 +0900, Tejun Heo wrote:
-> >> e.g.  If the first partition begins at CHS 0/32/33 and ends at
-> >> 12/233/19 and the corresponding LBA addresses are 2048 and 206848, you
-> >> can solve the equation and determine that the parameters gotta be 63
-> >> secs/trk and 255 heads/cyl to make those two pairs of addresses match
-> >> each other and in fact some BIOSs try to do this depending on
-> >> configuration (and sometimes falls into infinite loop or causes other
-> >> boot related problems if the parameters are too uncommon).
-> > 
-> > for an msdos label, this is illegal, that was Arnd's point.  The
-> > partitions have to begin and end on cylinder boundaries*.  Knowing that,
-> > you can deduce the geometry from the last sector entry.
-> >
-> > * at least if you want to preserve windows compatibility, which is what
-> > most of our partitioning tools seem to do.
-> 
-> Well, the thing is that
-> 
-> * Anything remotely modern (>= XP) doesn't give a hoot about cylinder
->   alignment.
-> 
-> * Anything older (<= 2000) is very likely to get confused with custom
->   geometry starting from the BIOS itself.  For those cases, the only
->   thing we can do is aligning partitions to cylinders abiding BIOS
->   supplied geometry parameters which will usually be 255/63.
-> 
-> So, using custom geometry doesn't help compatibility at all.
+Stanse found that one error path in mgmt_invalidate_icds omits to unlock
+ctrl->mbox_lock. Fix that.
 
-Our partitioning tool still obey the integral cylinder rule ... we can
-argue about whether they should, but what we need is a strategy for
-fixing what is rather than what should be.
+Added in 756d29c8c7ed8887ed7d752371ce2f (Enable async mode for mcc rings)
+where the spinlock was moved.
 
-James
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Jayamohan Kallickal <jayamohank@serverengines.com>
+Cc: James Bottomley <James.Bottomley@suse.de>
+---
+ drivers/scsi/be2iscsi/be_mgmt.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/scsi/be2iscsi/be_mgmt.c b/drivers/scsi/be2iscsi/be_mgmt.c
+index 72617b6..e641922 100644
+--- a/drivers/scsi/be2iscsi/be_mgmt.c
++++ b/drivers/scsi/be2iscsi/be_mgmt.c
+@@ -169,6 +169,7 @@ unsigned char mgmt_invalidate_icds(struct beiscsi_hba *phba,
+ 		SE_DEBUG(DBG_LVL_1,
+ 			 "Failed to allocate memory for"
+ 			 "mgmt_invalidate_icds \n");
++		spin_unlock(&ctrl->mbox_lock);
+ 		return -1;
+ 	}
+ 	nonemb_cmd.size = sizeof(struct invalidate_commands_params_in);
+-- 
+1.7.0.1
+
 
