@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab0CPV5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:57:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1040 "EHLO mx1.redhat.com"
+	id S1752000Ab0CPV6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:58:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36524 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab0CPV5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:57:48 -0400
+	id S1751965Ab0CPV6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 17:58:00 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 04/10] perf probe: Rename session to param
+Subject: [PATCH -tip 05/10] perf probe: Rename some die_get_* functions
 To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
        DLE <dle-develop@lists.sourceforge.net>,
@@ -16,8 +16,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>, Mike Galbraith <efault@gmx.de>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue, 16 Mar 2010 18:05:44 -0400
-Message-ID: <20100316220544.32050.8788.stgit@localhost6.localdomain6>
+Date: Tue, 16 Mar 2010 18:05:51 -0400
+Message-ID: <20100316220551.32050.36181.stgit@localhost6.localdomain6>
 In-Reply-To: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
 References: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -28,8 +28,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this name 'session' conflicts with 'perf_session', and
-this structure just holds parameters anymore.
+Rename die_get_real_subprogram and die_get_inlinefunc to
+die_find_real_subprogram and die_find_inlinefunc respectively,
+because these functions search its children. After that,
+'die_get_' means getting a property of that die, and
+'die_find_' means searching DIE-tree to get an appropriate
+child die.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -40,145 +44,70 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
 
- tools/perf/builtin-probe.c |   54 ++++++++++++++++++++++----------------------
- 1 files changed, 27 insertions(+), 27 deletions(-)
+ tools/perf/util/probe-finder.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 2087034..f577e14 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -56,20 +56,20 @@ static struct {
- 	struct probe_point probes[MAX_PROBES];
- 	struct strlist *dellist;
- 	struct line_range line_range;
--} session;
-+} params;
- 
- 
- /* Parse an event definition. Note that any error must die. */
- static void parse_probe_event(const char *str)
- {
--	struct probe_point *pp = &session.probes[session.nr_probe];
-+	struct probe_point *pp = &params.probes[params.nr_probe];
- 
--	pr_debug("probe-definition(%d): %s\n", session.nr_probe, str);
--	if (++session.nr_probe == MAX_PROBES)
-+	pr_debug("probe-definition(%d): %s\n", params.nr_probe, str);
-+	if (++params.nr_probe == MAX_PROBES)
- 		die("Too many probes (> %d) are specified.", MAX_PROBES);
- 
- 	/* Parse perf-probe event into probe_point */
--	parse_perf_probe_event(str, pp, &session.need_dwarf);
-+	parse_perf_probe_event(str, pp, &params.need_dwarf);
- 
- 	pr_debug("%d arguments\n", pp->nr_args);
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index e887bb6..c91a960 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -204,8 +204,8 @@ static int __die_search_func_cb(Dwarf_Die *fn_die, void *data)
  }
-@@ -103,9 +103,9 @@ static int opt_del_probe_event(const struct option *opt __used,
- 			       const char *str, int unset __used)
+ 
+ /* Search a real subprogram including this line, */
+-static Dwarf_Die *die_get_real_subprogram(Dwarf_Die *cu_die, Dwarf_Addr addr,
+-					  Dwarf_Die *die_mem)
++static Dwarf_Die *die_find_real_subprogram(Dwarf_Die *cu_die, Dwarf_Addr addr,
++					   Dwarf_Die *die_mem)
  {
- 	if (str) {
--		if (!session.dellist)
--			session.dellist = strlist__new(true, NULL);
--		strlist__add(session.dellist, str);
-+		if (!params.dellist)
-+			params.dellist = strlist__new(true, NULL);
-+		strlist__add(params.dellist, str);
- 	}
- 	return 0;
+ 	struct __addr_die_search_param ad;
+ 	ad.addr = addr;
+@@ -218,8 +218,8 @@ static Dwarf_Die *die_get_real_subprogram(Dwarf_Die *cu_die, Dwarf_Addr addr,
  }
-@@ -115,9 +115,9 @@ static int opt_show_lines(const struct option *opt __used,
- 			  const char *str, int unset __used)
+ 
+ /* Similar to dwarf_getfuncs, but returns inlined_subroutine if exists. */
+-static Dwarf_Die *die_get_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+-				     Dwarf_Die *die_mem)
++static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
++				      Dwarf_Die *die_mem)
  {
- 	if (str)
--		parse_line_range_desc(str, &session.line_range);
--	INIT_LIST_HEAD(&session.line_range.line_list);
--	session.show_lines = true;
-+		parse_line_range_desc(str, &params.line_range);
-+	INIT_LIST_HEAD(&params.line_range.line_list);
-+	params.show_lines = true;
- 	return 0;
- }
- #endif
-@@ -140,7 +140,7 @@ static const struct option options[] = {
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
- #endif
--	OPT_BOOLEAN('l', "list", &session.list_events,
-+	OPT_BOOLEAN('l', "list", &params.list_events,
- 		    "list up current probe events"),
- 	OPT_CALLBACK('d', "del", NULL, "[GROUP:]EVENT", "delete a probe event.",
- 		opt_del_probe_event),
-@@ -168,7 +168,7 @@ static const struct option options[] = {
- #endif
- 		"\t\t\tkprobe-tracer argument format.)\n",
- 		opt_add_probe_event),
--	OPT_BOOLEAN('f', "force", &session.force_add, "forcibly add events"
-+	OPT_BOOLEAN('f', "force", &params.force_add, "forcibly add events"
- 		    " with existing name"),
- #ifndef NO_DWARF_SUPPORT
- 	OPT_CALLBACK('L', "line", NULL,
-@@ -190,20 +190,20 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 		parse_probe_event_argv(argc, argv);
- 	}
+ 	Dwarf_Die child_die;
+ 	int ret;
+@@ -233,7 +233,7 @@ static Dwarf_Die *die_get_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
+ 		    dwarf_haspc(die_mem, addr))
+ 			return die_mem;
  
--	if ((!session.nr_probe && !session.dellist && !session.list_events &&
--	     !session.show_lines))
-+	if ((!params.nr_probe && !params.dellist && !params.list_events &&
-+	     !params.show_lines))
- 		usage_with_options(probe_usage, options);
- 
- 	if (debugfs_valid_mountpoint(debugfs_path) < 0)
- 		die("Failed to find debugfs path.");
- 
--	if (session.list_events) {
--		if (session.nr_probe != 0 || session.dellist) {
-+	if (params.list_events) {
-+		if (params.nr_probe != 0 || params.dellist) {
- 			pr_warning("  Error: Don't use --list with"
- 				   " --add/--del.\n");
- 			usage_with_options(probe_usage, options);
+-		if (die_get_inlinefunc(die_mem, addr, &child_die)) {
++		if (die_find_inlinefunc(die_mem, addr, &child_die)) {
+ 			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
+ 			return die_mem;
  		}
--		if (session.show_lines) {
-+		if (params.show_lines) {
- 			pr_warning("  Error: Don't use --list with --line.\n");
- 			usage_with_options(probe_usage, options);
- 		}
-@@ -212,27 +212,27 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 	}
+@@ -401,7 +401,7 @@ static void show_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
  
- #ifndef NO_DWARF_SUPPORT
--	if (session.show_lines) {
--		if (session.nr_probe != 0 || session.dellist) {
-+	if (params.show_lines) {
-+		if (params.nr_probe != 0 || params.dellist) {
- 			pr_warning("  Error: Don't use --line with"
- 				   " --add/--del.\n");
- 			usage_with_options(probe_usage, options);
+ 	/* If no real subprogram, find a real one */
+ 	if (!sp_die || dwarf_tag(sp_die) != DW_TAG_subprogram) {
+-		sp_die = die_get_real_subprogram(&pf->cu_die,
++		sp_die = die_find_real_subprogram(&pf->cu_die,
+ 						 pf->addr, &die_mem);
+ 		if (!sp_die)
+ 			die("Probe point is not found in subprograms.");
+@@ -564,7 +564,7 @@ static void find_probe_point_lazy(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 			if (!dwarf_haspc(sp_die, addr))
+ 				continue;
+ 			/* Address filtering 2: No child include addr? */
+-			if (die_get_inlinefunc(sp_die, addr, &die_mem))
++			if (die_find_inlinefunc(sp_die, addr, &die_mem))
+ 				continue;
  		}
  
--		show_line_range(&session.line_range);
-+		show_line_range(&params.line_range);
- 		return 0;
- 	}
- #endif
+@@ -714,7 +714,7 @@ static void find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+ 				continue;
  
--	if (session.dellist) {
--		del_trace_kprobe_events(session.dellist);
--		strlist__delete(session.dellist);
--		if (session.nr_probe == 0)
-+	if (params.dellist) {
-+		del_trace_kprobe_events(params.dellist);
-+		strlist__delete(params.dellist);
-+		if (params.nr_probe == 0)
- 			return 0;
- 	}
- 
--	add_trace_kprobe_events(session.probes, session.nr_probe,
--				session.force_add, session.need_dwarf);
-+	add_trace_kprobe_events(params.probes, params.nr_probe,
-+				params.force_add, params.need_dwarf);
- 	return 0;
- }
+ 			/* Address filtering 2: No child include addr? */
+-			if (die_get_inlinefunc(sp_die, addr, &die_mem))
++			if (die_find_inlinefunc(sp_die, addr, &die_mem))
+ 				continue;
+ 		}
  
 
 
