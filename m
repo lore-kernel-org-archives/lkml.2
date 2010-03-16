@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937898Ab0CPPbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:31:16 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:36618 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933060Ab0CPPbO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:31:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:to:cc:subject;
-        b=TXuFkD33d/+c0+Mu6h0TBrpqsb7iSfvRnLUB3YvRVqiSJeHtW61QKI9uLWfwZB8eHe
-         owOjzD3TwsuI4m/8zlX3sgGRS9oZ7WoMQEcaLLTxtsmVA3TNHg1CYTQZWzOgwrE0tFV2
-         f4FIELwGhOtfHPtn4Y31zGMQVwfFS2ofYINGo=
-Message-ID: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
-Date: Tue, 16 Mar 2010 08:31:12 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Olly Betts <olly@survex.com>, martin f krafft <madduck@madduck.net>
-Subject: Poor interactive performance with I/O loads with fsync()ing
+	id S937913Ab0CPPfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:35:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52702 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933100Ab0CPPfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:35:09 -0400
+Message-ID: <4B9FA59E.1000402@kernel.org>
+Date: Wed, 17 Mar 2010 00:37:02 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-3.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>	 <4B9FA1C6.7090305@kernel.org> <1268752993.21384.23.camel@mulgrave.site>
+In-Reply-To: <1268752993.21384.23.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 15:33:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey all,
+Hello,
 
-Recently I started using the Xapian-based notmuch mail client for everyday
-use.  One of the things I was quite surprised by after the switch was the
-incredible hit in interactive performance that is observed during database
-updates. Things are particularly bad during runs of 'notmuch new,' which scans
-the file system looking for new messages and adds them to the database.
-Specifically, the worst of the performance hit appears to occur when the
-database is being updated.
+On 03/17/2010 12:23 AM, James Bottomley wrote:
+>> So, using custom geometry doesn't help compatibility at all.
+> 
+> Our partitioning tool still obey the integral cylinder rule ... we can
+> argue about whether they should, but what we need is a strategy for
+> fixing what is rather than what should be.
 
-During these periods, even small chunks of I/O can become minute-long ordeals.
-It is common for latencytop to show 30 second long latencies for page faults
-and writing pages.  Interactive performance is absolutely abysmal, with other
-unrelated processes feeling horrible latencies, causing media players,
-editors, and even terminals to grind to a halt.
+The updated ones don't anymore.  They just align to 1MiB + whatever
+the drive requests for offset (the offset-by-one thing).  They will
+basically behave the same as windows vista/7 ones, so it's already
+fixed.  What we can argue is whether adding CHS tricks on top to make
+those larger alignments somewhat meaningful w/ CHS interpretation too,
+which I'm objecting on the ground that it doesn't help compatibility
+at all.
 
-Despite the system being clearly I/O bound, iostat shows pitiful disk
-throughput (700kByte/second read, 300 kByte/second write). Certainly this poor
-performance can, at least to some degree, be attributable to the fact that
-Xapian uses fdatasync() to ensure data consistency. That being said, it seems
-like Xapian's page usage causes horrible thrashing, hence the performance hit
-on unrelated processes. Moreover, the hit on unrelated processes is so bad
-that I would almost suspect that swap I/O is being serialized by fsync() as
-well, despite being on a separate swap partition beyond the control of the
-filesystem.
+Thanks.
 
-Xapian, however, is far from the first time I have seen this sort of
-performance cliff. Rsync, which also uses fsync(), can also trigger this sort
-of thrashing during system backups, as can rdiff. slocate's updatedb
-absolutely kills interactive performance as well.
-
-Issues similar to this have been widely reported[1-5] in the past, and despite
-many attempts[5-8] within both I/O and memory managements subsystems to fix
-it, the problem certainly remains. I have tried reducing swappiness from 60 to
-40, with some small improvement and it has been reported[20] that these sorts
-of symptoms can be negated through use of memory control groups to prevent
-interactive process pages from being evicted.
-
-I would really like to see this issue finally fixed. I have tried
-several[2][3] times to organize the known data about this bug, although in all
-cases discussion has stopped with claims of insufficient data (which is fair,
-admittedly, it's a very difficult issue to tackle). However, I do think that
-_something_ has to be done to alleviate the thrashing and poor interactive
-performance that these work-loads cause.
-
-Thanks,
-
-- Ben
-
-
-[1] http://bugzilla.kernel.org/show_bug.cgi?id=5900
-[2] http://bugzilla.kernel.org/show_bug.cgi?id=7372
-[3] http://bugzilla.kernel.org/show_bug.cgi?id=12309
-[4] http://lkml.org/lkml/2009/4/28/24
-[5] http://lkml.org/lkml/2009/3/26/72
-[6] http://notmuchmail.org/pipermail/notmuch/2010/001868.html
-
-[10] http://lkml.org/lkml/2009/5/16/225
-[11] http://lkml.org/lkml/2007/7/21/219
-[12] http://lwn.net/Articles/328363/
-[13] http://lkml.org/lkml/2009/4/6/114
-
-[20] http://lkml.org/lkml/2009/4/28/68
-
+-- 
+tejun
