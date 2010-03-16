@@ -1,144 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966346Ab0CPOqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:46:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10622 "EHLO mx1.redhat.com"
+	id S966348Ab0CPOqi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:46:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44474 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966334Ab0CPOqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:46:33 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Sergey Temerkhanov <temerkhanov@cifronik.ru>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-aio <linux-aio@kvack.org>
-Subject: Re: [PATCH 1/2] AIO: Fix reference counting in io_cancel and aio_cancel_all
-References: <201003161418.16959.temerkhanov@cifronik.ru>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 16 Mar 2010 10:46:10 -0400
-In-Reply-To: <201003161418.16959.temerkhanov@cifronik.ru> (Sergey
-	Temerkhanov's message of "Tue, 16 Mar 2010 14:18:16 +0300")
-Message-ID: <x494okguxxp.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S966333Ab0CPOqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:46:32 -0400
+Date: Tue, 16 Mar 2010 14:45:55 GMT
+From: tip-bot for Lin Ming <ming.m.lin@intel.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, gorcunov@openvz.org,
+       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, gorcunov@openvz.org,
+       a.p.zijlstra@chello.nl, efault@gmx.de, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1268705556.3379.8.camel@minggr.sh.intel.com>
+References: <1268705556.3379.8.camel@minggr.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86, perf: Fix comments in Pentium-4 PMU definitions
+Message-ID: <tip-8ea7f544100844307072cae2f5fc108afdef999a@git.kernel.org>
+Git-Commit-ID: 8ea7f544100844307072cae2f5fc108afdef999a
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 14:45:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sergey Temerkhanov <temerkhanov@cifronik.ru> writes:
+Commit-ID:  8ea7f544100844307072cae2f5fc108afdef999a
+Gitweb:     http://git.kernel.org/tip/8ea7f544100844307072cae2f5fc108afdef999a
+Author:     Lin Ming <ming.m.lin@intel.com>
+AuthorDate: Tue, 16 Mar 2010 10:12:36 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 16 Mar 2010 09:37:46 +0100
 
-> io_cancel() and aio_cancel_all() have inconsistent reference counting 
-> (ki_users field of struct kiocb) which leads to unkillable processes upon  
-> io_cancel() or io_destroy() syscalls. This patch fixes the undesired behavior.
+x86, perf: Fix comments in Pentium-4 PMU definitions
 
-Hi, Sergey,
+Reported-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <1268705556.3379.8.camel@minggr.sh.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/perf_event_p4.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-Thanks for the patch.  Would you mind resubmitting it to make it a bit
-easier to review?  The way you've done things, it is difficult to tell
-if you just moved the aio_cancel_all function or if you moved it and
-made changes.  Please have the patch that moves it separated out from
-other changes, or at least mention in the changelog that the function
-was unchanged.  Next, if you could tell what sorts of testing you've
-performed, that would be great.  Finally, it would be a good idea to CC
-linux-aio@kvack.org on aio patches.
-
-Thanks!
-Jeff
-
->
-> Regards, Sergey Temerkhanov, Cifronic ZAO
-> diff -r b290b47c0880 fs/aio.c
-> --- a/fs/aio.c	Tue Mar 16 13:51:13 2010 +0300
-> +++ b/fs/aio.c	Tue Mar 16 14:11:36 2010 +0300
-> @@ -63,6 +63,8 @@
->  static void aio_kick_handler(struct work_struct *);
->  static void aio_queue_work(struct kioctx *);
->  
-> +static void aio_cancel_all(struct kioctx *ctx);
-> +
->  /* aio_setup
->   *	Creates the slab caches used by the aio routines, panic on
->   *	failure as this is done early during the boot sequence.
-> @@ -315,33 +317,6 @@
->  	return ctx;
->  }
->  
-> -/* aio_cancel_all
-> - *	Cancels all outstanding aio requests on an aio context.  Used 
-> - *	when the processes owning a context have all exited to encourage 
-> - *	the rapid destruction of the kioctx.
-> - */
-> -static void aio_cancel_all(struct kioctx *ctx)
-> -{
-> -	int (*cancel)(struct kiocb *, struct io_event *);
-> -	struct io_event res;
-> -	spin_lock_irq(&ctx->ctx_lock);
-> -	ctx->dead = 1;
-> -	while (!list_empty(&ctx->active_reqs)) {
-> -		struct list_head *pos = ctx->active_reqs.next;
-> -		struct kiocb *iocb = list_kiocb(pos);
-> -		list_del_init(&iocb->ki_list);
-> -		cancel = iocb->ki_cancel;
-> -		kiocbSetCancelled(iocb);
-> -		if (cancel) {
-> -			iocb->ki_users++;
-> -			spin_unlock_irq(&ctx->ctx_lock);
-> -			cancel(iocb, &res);
-> -			spin_lock_irq(&ctx->ctx_lock);
-> -		}
-> -	}
-> -	spin_unlock_irq(&ctx->ctx_lock);
-> -}
-> -
->  static void wait_for_all_aios(struct kioctx *ctx)
->  {
->  	struct task_struct *tsk = current;
-> @@ -1038,6 +1013,36 @@
->  	return ret;
->  }
->  
-> +/* aio_cancel_all
-> + *	Cancels all outstanding aio requests on an aio context.  Used 
-> + *	when the processes owning a context have all exited to encourage 
-> + *	the rapid destruction of the kioctx.
-> + */
-> +static void aio_cancel_all(struct kioctx *ctx)
-> +{
-> +	int (*cancel)(struct kiocb *, struct io_event *);
-> +	struct io_event res;
-> +	spin_lock_irq(&ctx->ctx_lock);
-> +	ctx->dead = 1;
-> +	while (!list_empty(&ctx->active_reqs)) {
-> +		struct list_head *pos = ctx->active_reqs.next;
-> +		struct kiocb *iocb = list_kiocb(pos);
-> +		list_del_init(&iocb->ki_list);
-> +		cancel = iocb->ki_cancel;
-> +		kiocbSetCancelled(iocb);
-> +		if (cancel) {
-> +			iocb->ki_users++;
-> +			spin_unlock_irq(&ctx->ctx_lock);
-> +			cancel(iocb, &res);
-> +			spin_lock_irq(&ctx->ctx_lock);
-> +			dprintk("aio_cancel_all: iocb->ki_users: %d\n", iocb->ki_users);
-> +			__aio_put_req(ctx, iocb);
-> +		}
-> +		__aio_put_req(ctx, iocb);
-> +	}
-> +	spin_unlock_irq(&ctx->ctx_lock);
-> +}
-> +
->  /* aio_read_evt
->   *	Pull an event off of the ioctx's event ring.  Returns the number of 
->   *	events fetched (0 or 1 ;-)
-> @@ -1787,9 +1792,11 @@
->  			if (copy_to_user(result, &tmp, sizeof(tmp)))
->  				ret = -EFAULT;
->  		}
-> +		aio_put_req(kiocb);
->  	} else
->  		ret = -EINVAL;
->  
-> +	aio_put_req(kiocb);
->  	put_ioctx(ctx);
->  
->  	return ret;
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index b47b9e9..b842b32 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -319,6 +319,7 @@ static inline u32 p4_default_escr_conf(int cpu, int exclude_os, int exclude_usr)
+ 
+ #define P4_BSQ_ACTIVE_ENTRIES		P4_EVENT_PACK(0x06, 0x07)
+ 	/*
++	 * NOTE: no ESCR name in docs, it's guessed
+ 	 * MSR_P4_BSU_ESCR1:	2, 3
+ 	 */
+ 
+@@ -468,8 +469,8 @@ static inline u32 p4_default_escr_conf(int cpu, int exclude_os, int exclude_usr)
+ 
+ #define P4_UOPS_RETIRED			P4_EVENT_PACK(0x01, 0x04)
+ 	/*
+-	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+-	 * MSR_P4_CRU_ESCR3:	14, 15, 17
++	 * MSR_P4_CRU_ESCR0:	12, 13, 16
++	 * MSR_P4_CRU_ESCR1:	14, 15, 17
+ 	 */
+ 
+ #define P4_UOP_TYPE			P4_EVENT_PACK(0x02, 0x02)
