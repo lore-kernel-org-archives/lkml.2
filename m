@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966266Ab0CPOIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:08:54 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:64415 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966027Ab0CPOIx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:08:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=ZhToIf4I/5M3eoETvDvdacRrygGkuuxzmqESMBgknUnbIrVJZLqe8/iQoj0J55gEB1
-         dNbrjnQ+092m3wySdGx0CTI2GFuawQsIQm01YFUGDqL5M+422RHHNdvSFtgkinu3SsxR
-         O7MIeM1oKislw9n1D3m97YDzeZA85dzdb0wkA=
+	id S1757863Ab0CPOMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:12:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55082 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752728Ab0CPOMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:12:45 -0400
+Date: Tue, 16 Mar 2010 10:11:50 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrea Righi <arighi@develer.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 4/5] memcg: dirty pages accounting and limiting
+	infrastructure
+Message-ID: <20100316141150.GC9144@redhat.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com> <1268609202-15581-5-git-send-email-arighi@develer.com> <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-Date: Tue, 16 Mar 2010 15:08:51 +0100
-Message-ID: <79c603601003160708s7fb45682rdec739776d0f5e81@mail.gmail.com>
-Subject: [PATCH] oom_kill: set default process to kill
-From: Bob Sleigh <bobslgh@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- mm/Kconfig    |    9 +++++++++
- mm/oom_kill.c |   10 ++++++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
+On Tue, Mar 16, 2010 at 11:32:38AM +0900, Daisuke Nishimura wrote:
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index 9c61158..3911730 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -287,3 +287,12 @@ config NOMMU_INITIAL_TRIM_EXCESS
-          of 1 says that all excess pages should be trimmed.
+[..]
+> > + * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+> > + * @item:	memory statistic item exported to the kernel
+> > + *
+> > + * Return the accounted statistic value, or a negative value in case of error.
+> > + */
+> > +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+> > +{
+> > +	struct mem_cgroup_page_stat stat = {};
+> > +	struct mem_cgroup *mem;
+> > +
+> > +	rcu_read_lock();
+> > +	mem = mem_cgroup_from_task(current);
+> > +	if (mem && !mem_cgroup_is_root(mem)) {
+> > +		/*
+> > +		 * If we're looking for dirtyable pages we need to evaluate
+> > +		 * free pages depending on the limit and usage of the parents
+> > +		 * first of all.
+> > +		 */
+> > +		if (item == MEMCG_NR_DIRTYABLE_PAGES)
+> > +			stat.value = memcg_get_hierarchical_free_pages(mem);
+> > +		/*
+> > +		 * Recursively evaluate page statistics against all cgroup
+> > +		 * under hierarchy tree
+> > +		 */
+> > +		stat.item = item;
+> > +		mem_cgroup_walk_tree(mem, &stat, mem_cgroup_page_stat_cb);
+> > +	} else
+> > +		stat.value = -EINVAL;
+> > +	rcu_read_unlock();
+> > +
+> > +	return stat.value;
+> > +}
+> > +
+> hmm, mem_cgroup_page_stat() can return negative value, but you place BUG_ON()
+> in [5/5] to check it returns negative value. What happens if the current is moved
+> to root between mem_cgroup_has_dirty_limit() and mem_cgroup_page_stat() ?
+> How about making mem_cgroup_has_dirty_limit() return the target mem_cgroup, and
+> passing the mem_cgroup to mem_cgroup_page_stat() ?
+> 
 
-          See Documentation/nommu-mmap.txt for more information.
-+
-+config MM_USUAL_SUSPECT
-+       string "Default executable name to be killed by the OOM killer"
-+       default ""
-+       help
-+         This option sets the default executable name to be killed when we run
-+         out of memory.
-+
-+         If unsure, set to "firefox-bin".
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 35755a4..333fa46 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -300,6 +300,16 @@ static struct task_struct
-*select_bad_process(unsigned long *ppoints,
-                if (p->signal->oom_adj == OOM_DISABLE)
-                        continue;
+Hmm, if mem_cgroup_has_dirty_limit() retrun pointer to memcg, then one
+shall have to use rcu_read_lock() and that will look ugly.
 
-+#ifdef CONFIG_MM_USUAL_SUSPECT
-+               /*
-+                * Select the task if matching the usual suspect.
-+                */
-+               if (strcmp(p->comm, CONFIG_MM_USUAL_SUSPECT)) {
-+                       chosen = p;
-+                       continue;
-+               }
-+#endif
-+
-                points = badness(p, uptime.tv_sec);
-                if (points > *ppoints || !chosen) {
-                        chosen = p;
+Why don't we simply look at the return value and if it is negative, we
+fall back to using global stats and get rid of BUG_ON()?
+
+Or, modify mem_cgroup_page_stat() to return global stats if it can't
+determine per cgroup stat for some reason. (mem=NULL or root cgroup etc).
+
+Vivek
