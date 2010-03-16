@@ -1,145 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966557Ab0CPS3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:29:08 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:37169 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937482Ab0CPS3G (ORCPT
+	id S1759975Ab0CPSaw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:30:52 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:65028 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759860Ab0CPSav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:29:06 -0400
-X-Greylist: delayed 13159 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 14:29:05 EDT
+	Tue, 16 Mar 2010 14:30:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=DStZfjztF8AoL5w60I2Dl+O5XrDk47FpAYK3EoLrFQFhWvpnevhv/aps2wk3nByu9x
-         5KsY4WXe39Y+SXZ1W+Fz3DpGCIlh9Mi+o68DNZ8c3I3jQsRZX8ysKtjAy7yL/vMyNBJH
-         UHJtNqzxLMhYVhxBIVVpbBLkUHXKd3XRCYO4w=
-Date: Tue, 16 Mar 2010 20:26:19 +0200
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
-       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
-Message-ID: <20100316182619.GA3451@swordfish>
-References: <20100307192305.GA598@elte.hu>
- <20100308125122.GA11242@redhat.com>
- <1268686865.2824.4.camel@edumazet-laptop>
- <1268699602.2824.14.camel@edumazet-laptop>
- <20100316145914.GB3332@swordfish.minsk.epam.com>
- <1268751933.3094.45.camel@edumazet-laptop>
- <20100316151023.GC3332@swordfish.minsk.epam.com>
- <1268752826.3094.48.camel@edumazet-laptop>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=mL66FU6SGeDbaTYb6gUrZw1dzm/p6CZK0+bLCTpWbd/wVWsofv4d2bQ/xj7sRYNniV
+         aLnTL/0RRBvXD06KeKQWel0rF0BigXUPAV6h4d64P71Z5t/8hQfNByN50NW5xUSP6cBH
+         zyUBjIX7APE7SkjRAOhvX6f3jyZCr6sq9cvZc=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
-Content-Disposition: inline
-In-Reply-To: <1268752826.3094.48.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1cf6d37d1003161125n1b127d1av1bbce0b84ee00315@mail.gmail.com>
+References: <1cf6d37d1003161125n1b127d1av1bbce0b84ee00315@mail.gmail.com>
+Date: Tue, 16 Mar 2010 19:30:49 +0100
+Message-ID: <1cf6d37d1003161130r2a69b2ebnd159b7d9bf10edb2@mail.gmail.com>
+Subject: no kernel events
+From: kees schoenmakers <kslinux@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi All,
 
---YZ5djTAD1cGYuMQK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm puzzled by a machine where "udevadm monitor --kernel" reports
+nothing when items are connected/disconnected to USB. Only when I
+disconnect the USB-keyboard I get one disconnect event and nothing
+after. Reconnecting the keyboard leaves it unrecognised and
+dis-functional.
 
-Hello,
-Got it right now.
-
-System completely froze. Even SysRq didn't work.
-/*spin_lock deadlock?*/
-
-NOTE: I'm losing network constantly with pktgen tests
-[24208.010980] r8169 0000:02:00.0: eth0: link up
-[24220.010980] r8169 0000:02:00.0: eth0: link up
-[24232.011030] r8169 0000:02:00.0: eth0: link up
-[24340.010980] r8169 0000:02:00.0: eth0: link up
-[24352.010966] r8169 0000:02:00.0: eth0: link up
-[24364.010966] r8169 0000:02:00.0: eth0: link up
-[24376.010964] r8169 0000:02:00.0: eth0: link up
-[24388.010961] r8169 0000:02:00.0: eth0: link up
-[24400.010959] r8169 0000:02:00.0: eth0: link up
-[24412.010963] r8169 0000:02:00.0: eth0: link up
-
-
-Traces:
-[24600.625078] INFO: task events/0:9 blocked for more than 120 seconds.
-[24600.625083] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[24600.625087] events/0      D 00001636     0     9      2 0x00000000
-[24600.625096]  f7085ebc 00000046 a87e9490 00001636 c1617cc0 c1617cc0 c1617=
-cc0 c1617cc0
-[24600.625109]  f707c250 c1617cc0 c1617cc0 00000000 00000000 00000000 00000=
-000 f707bfc0
-[24600.625122]  c14745c8 c14745c8 f707bfc0 00000202 f7085efc c12c6449 00000=
-000 00085edc
-[24600.625135] Call Trace:
-[24600.625148]  [<c12c6449>] __mutex_lock_common+0x233/0x3af
-[24600.625155]  [<c12c65ff>] mutex_lock_nested+0x12/0x15
-[24600.625163]  [<c1265e0f>] ? rtnl_lock+0xf/0x11
-[24600.625168]  [<c1265e0f>] rtnl_lock+0xf/0x11
-[24600.625183]  [<f9174acd>] rtl8169_reset_task+0x16/0xee [r8169]
-[24600.625191]  [<c103c887>] worker_thread+0x161/0x233
-[24600.625196]  [<c103c845>] ? worker_thread+0x11f/0x233
-[24600.625205]  [<f9174ab7>] ? rtl8169_reset_task+0x0/0xee [r8169]
-[24600.625214]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
-[24600.625220]  [<c103c726>] ? worker_thread+0x0/0x233
-[24600.625225]  [<c103f6ce>] kthread+0x6a/0x6f
-[24600.625232]  [<c103f664>] ? kthread+0x0/0x6f
-[24600.625238]  [<c1002e42>] kernel_thread_helper+0x6/0x1a
-[24600.625242] INFO: lockdep is turned off.
-[24600.625259] INFO: task X:3176 blocked for more than 120 seconds.
-[24600.625262] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
-this message.
-[24600.625266] X             D 00000000     0  3176   3175 0x00400004
-[24600.625273]  f6435a10 00003046 00025709 00000000 c1617cc0 c1617cc0 c1617=
-cc0 c1617cc0
-[24600.625286]  f60897d0 c1617c  ...=20
-/*THE REST IS LOST*/
-
-
-
-	Sergey
-
-
-On (03/16/10 16:20), Eric Dumazet wrote:
-> > [...]
-> > >> NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
-> > Isn't it r8169 related?
-> >=20
->=20
-> This is tx side which seems blocked for more than 6 seconds.
->=20
-> To really test the patch, you need following setup :
->=20
-> machine A with r8169 NIC, patch applied, receiver of pktgen flood.
->=20
-> machine B with any NIC, preferably a not buggy one, doing the pktgen
-> flood to machine A
->=20
-> If machine A survives, my patch is tested and ok.
->=20
-> If machine B crashes, we have another problem to investigate
->=20
->=20
-
---YZ5djTAD1cGYuMQK
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkufzUsACgkQfKHnntdSXjRc5gQAuDdhfGviPj3Tf+eDItjtPrmN
-cMWWCisPhaSMNdwNoS9KM27iDA0P5zELuY7eHC8MVn7qCIabfq57oSjMW6JaS7dq
-ArrlouIyitxYDxN7byj6izpd8ipqRSvTWkVwF1D5snKqlAGgQLkS0e8klXh4Qq6h
-Q42cPo/hAu231M9vDP8=
-=jIfk
------END PGP SIGNATURE-----
-
---YZ5djTAD1cGYuMQK--
+Kees
