@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937610Ab0CPJTG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:19:06 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:44696 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932553Ab0CPJTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:19:01 -0400
-To: Eric Miao <eric.y.miao@gmail.com>
-Subject: [PATCH] gpio: max732x: fix input configuration for open-drain pins
+	id S965796Ab0CPJVW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:21:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932553Ab0CPJVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:21:20 -0400
+Message-ID: <4B9F4D74.4090403@redhat.com>
+Date: Tue, 16 Mar 2010 11:20:52 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Date: Tue, 16 Mar 2010 10:19:00 +0100
-From: Marc Zyngier <maz@misterjones.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Organization: Metropolis
-Message-ID: <c2d04a7116b74b3717366148db5f7e54@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Type: multipart/mixed;
-	boundary="=_6d0deb0e9a11be98ffdbe8b3755a8bb5"
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: eric.y.miao@gmail.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <1268717232.2813.36.camel@localhost> <4B9F19F7.6000309@redhat.com> <20100316072449.GB11881@elte.hu>
+In-Reply-To: <20100316072449.GB11881@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2010 09:24 AM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+>    
+>> On 03/16/2010 07:27 AM, Zhang, Yanmin wrote:
+>>      
+>>> From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
+>>>
+>>> Based on the discussion in KVM community, I worked out the patch to support
+>>> perf to collect guest os statistics from host side. This patch is implemented
+>>> with Ingo, Peter and some other guys' kind help. Yang Sheng pointed out a
+>>> critical bug and provided good suggestions with other guys. I really appreciate
+>>> their kind help.
+>>>
+>>> The patch adds new subcommand kvm to perf.
+>>>
+>>>    perf kvm top
+>>>    perf kvm record
+>>>    perf kvm report
+>>>    perf kvm diff
+>>>
+>>> The new perf could profile guest os kernel except guest os user space, but it
+>>> could summarize guest os user space utilization per guest os.
+>>>
+>>> Below are some examples.
+>>> 1) perf kvm top
+>>> [root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+>>> --guestmodules=/home/ymzhang/guest/modules top
+>>>
+>>>        
+>> Excellent, support for guest kernel != host kernel is critical (I
+>> can't remember the last time I ran same kernels).
+>>
+>> How would we support multiple guests with different kernels? Perhaps a
+>> symbol server that perf can connect to (and that would connect to guests in
+>> turn)?
+>>      
+> The highest quality solution would be if KVM offered a 'guest extension' to
+> the guest kernel's /proc/kallsyms that made it easy for user-space to get this
+> information from an authorative source.
+>
+> That's the main reason why the host side /proc/kallsyms is so popular and so
+> useful: while in theory it's mostly redundant information which can be gleaned
+> from the System.map and other sources of symbol information, it's easily
+> available and is _always_ trustable to come from the host kernel.
+>
+> Separate System.map's have a tendency to go out of sync (or go missing when a
+> devel kernel gets rebuilt, or if a devel package is not installed), and server
+> ports (be that a TCP port space server or an UDP port space mount-point) are
+> both a configuration hassle and are not guest-transparent.
+>
+> So for instrumentation infrastructure (such as perf) we have a large and well
+> founded preference for intrinsic, built-in, kernel-provided information: i.e.
+> a largely 'built-in' and transparent mechanism to get to guest symbols.
+>    
 
---=_6d0deb0e9a11be98ffdbe8b3755a8bb5
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+The symbol server's client can certainly access the bits through vmchannel.
 
-Eric,
-
-The attached patch tries to fix a bug I noticed while hacking on the
-max732x driver for interrupt support.
-According to the datasheets, open-drain pins have to be configured as
-output-high (which in that case is actually high impedance) to be used as
-input.
-
-Note that this patch has only been compile tested, as I still have to
-solder the actual chip to one of my boards...
-
-Thanks,
-
-        M.
 -- 
-Who you jivin' with that Cosmik Debris?
---=_6d0deb0e9a11be98ffdbe8b3755a8bb5
-Content-Transfer-Encoding: base64
-Content-Type: text/plain;
- name*0*="UTF-8''0002-gpio-max732x-fix-input-configuration-for-open-drain"
- name*1*="-.patch";
-Content-Disposition: attachment;
- filename*0*="UTF-8''0002-gpio-max732x-fix-input-configuration-for-open-d"
- filename*1*="rain-.patch";
-
-RnJvbSAwNTllYjliNjFiMjc2YTY4MWQ2MzQ3ODFhYmFhMTE1OWRmYjU0N2JjIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFp5bmdpZXIgPG1hekBtaXN0ZXJqb25lcy5vcmc+CkRh
-dGU6IE1vbiwgMTUgTWFyIDIwMTAgMjI6MTQ6NTEgKzAwMDAKU3ViamVjdDogW1BBVENIXSBncGlv
-OiBtYXg3MzJ4OiBmaXggaW5wdXQgY29uZmlndXJhdGlvbiBmb3Igb3Blbi1kcmFpbiBwaW5zCgpt
-YXg3MzJ4IGRhdGFzaGVldHMgaW5kaWNhdGUgdGhhdCBvcGVuLWRyYWluIHBpbnMgbXVzdCBiZQpj
-b25maWd1cmVkIGFzIG91dHB1dC1oaWdoIHRvIGJlIHVzZWQgYXMgaW5wdXQuLi4KClNpZ25lZC1v
-ZmYtYnk6IE1hcmMgWnluZ2llciA8bWF6QG1pc3RlcmpvbmVzLm9yZz4KLS0tCiBkcml2ZXJzL2dw
-aW8vbWF4NzMyeC5jIHwgICAxMiArKysrKysrKysrKy0KIDEgZmlsZXMgY2hhbmdlZCwgMTEgaW5z
-ZXJ0aW9ucygrKSwgMSBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dwaW8vbWF4
-NzMyeC5jIGIvZHJpdmVycy9ncGlvL21heDczMnguYwppbmRleCBmNzg2ODI0Li4zNjE4ZmViIDEw
-MDY0NAotLS0gYS9kcml2ZXJzL2dwaW8vbWF4NzMyeC5jCisrKyBiL2RyaXZlcnMvZ3Bpby9tYXg3
-MzJ4LmMKQEAgLTE3OSwxNSArMTc5LDI1IEBAIHN0YXRpYyBpbnQgbWF4NzMyeF9ncGlvX2RpcmVj
-dGlvbl9pbnB1dChzdHJ1Y3QgZ3Bpb19jaGlwICpnYywgdW5zaWduZWQgb2ZmKQogewogCXN0cnVj
-dCBtYXg3MzJ4X2NoaXAgKmNoaXA7CiAJdW5zaWduZWQgaW50IG1hc2sgPSAxdSA8PCBvZmY7CisJ
-dW5zaWduZWQgaW50IGlzX2lucHV0OwogCiAJY2hpcCA9IGNvbnRhaW5lcl9vZihnYywgc3RydWN0
-IG1heDczMnhfY2hpcCwgZ3Bpb19jaGlwKTsKIAotCWlmICgobWFzayAmIGNoaXAtPmRpcl9pbnB1
-dCkgPT0gMCkgeworCWlzX2lucHV0ID0gbWFzayAmIGNoaXAtPmRpcl9pbnB1dDsKKworCWlmICgh
-aXNfaW5wdXQpIHsKIAkJZGV2X2RiZygmY2hpcC0+Y2xpZW50LT5kZXYsICIlcyBwb3J0ICVkIGlz
-IG91dHB1dCBvbmx5XG4iLAogCQkJY2hpcC0+Y2xpZW50LT5uYW1lLCBvZmYpOwogCQlyZXR1cm4g
-LUVBQ0NFUzsKIAl9CiAKKwkvKgorCSAqIE9wZW4tZHJhaW4gcGlucyBtdXN0IGJlIHNldCB0byBo
-aWdoIGltcGVkYW5jZSAod2hpY2ggaXMKKwkgKiBlcXVpdmFsZW50IHRvIG91dHB1dC1oaWdoKSB0
-byBiZSB0dXJuZWQgaW50byBhbiBpbnB1dC4KKwkgKi8KKwlpZiAoKGlzX2lucHV0ICYgY2hpcC0+
-ZGlyX291dHB1dCkpCisJCW1heDczMnhfZ3Bpb19zZXRfdmFsdWUoZ2MsIG9mZiwgMSk7CisKIAly
-ZXR1cm4gMDsKIH0KIAotLSAKMS43LjAuMgoK
---=_6d0deb0e9a11be98ffdbe8b3755a8bb5--
+error compiling committee.c: too many arguments to function
 
