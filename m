@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937791Ab0CPLGi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 07:06:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55306 "EHLO mx1.suse.de"
+	id S937802Ab0CPLJA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 07:09:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26363 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937756Ab0CPLGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 07:06:36 -0400
-Date: Tue, 16 Mar 2010 12:06:35 +0100
-From: Petr Uzel <petr.uzel@suse.cz>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: sys_umount() returns EBUSY when doing: sh -c "mount /dev/sdc1
- /mnt; umount /mnt"
-Message-ID: <20100316110635.GB23066@foxbat.suse.cz>
-Mail-Followup-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <38b2ab8a1003130056u4b025839i556a797ccad894de@mail.gmail.com>
- <4B9D0D1E.3010404@gmail.com>
- <38b2ab8a1003150509i4a9e7e1dqce2bfb11557d403d@mail.gmail.com>
+	id S937749Ab0CPLI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 07:08:58 -0400
+Message-ID: <4B9F66AC.5080400@redhat.com>
+Date: Tue, 16 Mar 2010 13:08:28 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
-Content-Disposition: inline
-In-Reply-To: <38b2ab8a1003150509i4a9e7e1dqce2bfb11557d403d@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Hellwig <hch@lst.de>
+CC: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100316102637.GA23584@lst.de> <4B9F5F2F.8020501@redhat.com> <20100316104422.GA24258@lst.de>
+In-Reply-To: <20100316104422.GA24258@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2010 12:44 PM, Christoph Hellwig wrote:
+> On Tue, Mar 16, 2010 at 12:36:31PM +0200, Avi Kivity wrote:
+>    
+>> Are you talking about direct volume access or qcow2?
+>>      
+> Doesn't matter.
+>
+>    
+>> For direct volume access, I still don't get it.  The number of barriers
+>> issues by the host must equal (or exceed, but that's pointless) the
+>> number of barriers issued by the guest.  cache=writeback allows the host
+>> to reorder writes, but so does cache=none.  Where does the difference
+>> come from?
+>>
+>> Put it another way.  In an unvirtualized environment, if you implement a
+>> write cache in a storage driver (not device), and sync it on a barrier
+>> request, would you expect to see a performance improvement?
+>>      
+> cache=none only allows very limited reorderning in the host.  O_DIRECT
+> is synchronous on the host, so there's just some very limited reordering
+> going on in the elevator if we have other I/O going on in parallel.
+>    
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Presumably there is lots of I/O going on, or we wouldn't be having this 
+conversation.
 
-On Mon, Mar 15, 2010 at 01:09:30PM +0100, Francis Moreau wrote:
-> On Sun, Mar 14, 2010 at 5:21 PM, Robert Hancock <hancockrwd@gmail.com> wr=
-ote:
-> > On 03/13/2010 02:56 AM, Francis Moreau wrote:
-> >> Hello
-> >>
-> >> I've some shell scripts which try to find out the filesystem hosted by
-> >> a block device.
-> >>
-> >> They basically do this:
-> >>
-> >> =A0 =A0 mount /dev/sdc1 /mnt
-> >> =A0 =A0 fs=3D$(stat -f -c %T $mount_point)
-> >> =A0 =A0 umount /mnt
-> >>
-> >> It happens to work but since an unknown upgrade (kernel, libs or tools
-> >> upgrade), umount(8) returns -EBUSY.
-> >>
-> >> I found that it's actually the sys_umount() which return -EBUSY.
-> >>
-> >> So the question, is this expected or is this a regression ?
-> >>
-> >> If it's expected then which operation should I add between the
-> >> mount(8) and umount(8) to make the mount operation completely finish
-> >> (inside the kernel) so the next umount won't return -EBUSY ?
-> >
-> > If no other process were involved I would say it's likely a bug. Howeve=
-r, my
-> > guess is that some other process (HAL, something in GNOME, etc.) detect=
-s the
-> > mount and decides to start accessing the drive. Then when you immediate=
-ly
-> > try to unmount, it fails because it's busy. I suspect if you try this in
-> > single-user mode with no unnecessary processes running you won't see th=
-is.
-> >
+> In addition to that the disk writecache can perform limited reodering
+> and caching, but the disk cache has a rather limited size.  The host
+> pagecache gives a much wieder opportunity to reorder, especially if
+> the guest workload is not cache flush heavy.  If the guest workload
+> is extremly cache flush heavy the usefulness of the pagecache is rather
+> limited, as we'll only use very little of it, but pay by having to do
+> a data copy.  If the workload is not cache flush heavy, and we have
+> multiple guests doing I/O to the same spindles it will allow the host
+> do do much more efficient data writeout by beeing able to do better
+> ordered (less seeky) and bigger I/O (especially if the host has real
+> storage compared to ide for the guest).
+>    
 
-I have experienced something similar when I did addpart, immediately
-followed by delpart. The delpart command failed with EBUSY, because
-the first command triggered some hal subprocess that accessed the
-device.
+Let's assume the guest has virtio (I agree with IDE we need reordering 
+on the host).  The guest sends batches of I/O separated by cache 
+flushes.  If the batches are smaller than the virtio queue length, 
+ideally things look like:
 
-> You're right, I don't see this anymore if I'm booting in a single user mo=
-de.
+  io_submit(..., batch_size_1);
+  io_getevents(..., batch_size_1);
+  fdatasync();
+  io_submit(..., batch_size_2);
+   io_getevents(..., batch_size_2);
+   fdatasync();
+   io_submit(..., batch_size_3);
+   io_getevents(..., batch_size_3);
+   fdatasync();
 
-You can try to put 'lsof /dev/sdc1' between mount and umount to see
-what (if anything) is accessing the device.
+(certainly that won't happen today, but it could in principle).
 
->=20
-> So I need to find out how to wait until these other processes stop
-> accessing the drive.
+How does a write cache give any advantage?  The host kernel sees 
+_exactly_ the same information as it would from a bunch of threaded 
+pwritev()s followed by fdatasync().
 
-If it is hal what causes EBUSY, you could 'killall -SIGSTOP haldaemon'
-before mount and SIGCONT after umount.
+(wish: IO_CMD_ORDERED_FDATASYNC)
 
+If the batch size is larger than the virtio queue size, or if there are 
+no flushes at all, then yes the huge write cache gives more opportunity 
+for reordering.  But we're already talking hundreds of requests here.
 
-Petr
+Let's say the virtio queue size was unlimited.  What merging/reordering 
+opportunity are we missing on the host?  Again we have exactly the same 
+information: either the pagecache lru + radix tree that identifies all 
+dirty pages in disk order, or the block queue with pending requests that 
+contains exactly the same information.
 
---
-Petr Uzel, openSUSE Boosters Team
-IRC: ptr_uzl @ freenode
+Something is wrong.  Maybe it's my understanding, but on the other hand 
+it may be a piece of kernel code.
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+-- 
+error compiling committee.c: too many arguments to function
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.13 (GNU/Linux)
-
-iEYEARECAAYFAkufZjsACgkQnZxG0T6qDD2XUwCfVZpNFtVAW3WBxJwT/a09DVu7
-MuIAnAoD82YlG73pgKnUPEWFQVKGcFdy
-=7qtr
------END PGP SIGNATURE-----
-
---Fba/0zbH8Xs+Fj9o--
