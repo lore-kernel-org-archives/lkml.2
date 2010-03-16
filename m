@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750999Ab0CPVmJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:42:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:42107 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750726Ab0CPVl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:41:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [RFC][PATCH] PM: Update device power management document
-Date: Tue, 16 Mar 2010 22:44:42 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1003161557560.1307-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1003161557560.1307-100000@iolanthe.rowland.org>
+	id S1751251Ab0CPVmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:42:43 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:41236 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750794Ab0CPVml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 17:42:41 -0400
+X-Greylist: delayed 833 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 17:42:39 EDT
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=Q/QpA85xJaQIFIiYMFSYVSCzp7tgWV6aQfuKlWs9+dXp1PLVm4TS4LD4nzOcLbh7t
+	52DIJtl8CLtnF2IMSybgA==
+Date: Tue, 16 Mar 2010 14:26:17 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Miao Xie <miaox@cn.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Nick Piggin <npiggin@suse.de>,
+       Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [RESEND][PATCH 2/2] cpuset: alloc nodemask_t at heap not stack
+ (v2)
+In-Reply-To: <4B9F759C.8090300@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1003161426050.10930@chino.kir.corp.google.com>
+References: <4B9F759C.8090300@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003162244.42802.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 March 2010, Alan Stern wrote:
-> On Mon, 15 Mar 2010, Rafael J. Wysocki wrote:
-> 
-> > Thanks for the comments, I did my best to address them all.
-> > 
-> > Updated patch is appended.
-> 
-> I'm making some updates too.  They're pretty extensive, so they won't 
-> be ready for a day or two.
+On Tue, 16 Mar 2010, Miao Xie wrote:
 
-Do they interfere a lot with this doc?
+> Allocating nodemask_t at heap instead of stack.
+> 
+> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
 
-Rafael
+Acked-by: David Rientjes <rientjes@google.com>
