@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966303Ab0CPOau (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:30:50 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56526 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752678Ab0CPOat (ORCPT
+	id S966309Ab0CPOc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:32:27 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:57895 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab0CPOcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:30:49 -0400
-Date: Tue, 16 Mar 2010 10:30:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: dma_sync_sg_for_cpu applied to a single scatterlist element
-In-Reply-To: <1268693985.2853.62.camel@mulgrave.site>
-Message-ID: <Pine.LNX.4.44L0.1003161022020.1329-100000@iolanthe.rowland.org>
+	Tue, 16 Mar 2010 10:32:25 -0400
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 10:32:24 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=xAndz4fh9BYWSKLtX0lpAXrqtzybxDA8zyBkxvu0w2GMlsrb52aaiWDQFQfg1eJg4n
+         PQPqwPUcWXjseRURovzWVmyy3Vx0xqWKBKIlAPUnSoppyq17mikEBK2MTFJS2EuAkGaX
+         NXoPJEfX7ertY4h8X++PcaFc4If27YKiqT1tE=
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: Ferenc Wagner <wferi@niif.hu>
+Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
+       linux-fsdevel@vger.kernel.org, linux-mtd@lists.infradead.org,
+       linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
+Subject: Re: RFC: direct MTD support for SquashFS
+References: <87vdcwv139.fsf@tac.ki.iif.hu>
+Date: Tue, 16 Mar 2010 15:26:33 +0100
+In-Reply-To: <87vdcwv139.fsf@tac.ki.iif.hu> (Ferenc Wagner's message of "Tue,
+	16 Mar 2010 14:38:02 +0100")
+Message-ID: <87ljdsibqe.fsf@macbook.be.48ers.dk>
+User-Agent: Gnus/5.110009 (No Gnus v0.9) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010, James Bottomley wrote:
+>>>>> "Ferenc" == Ferenc Wagner <wferi@niif.hu> writes:
 
-> On Mon, 2010-03-15 at 17:30 -0400, Alan Stern wrote:
-> > This is addressed to James Bottomley as he is the author of
-> > Documentation/DMA-API.txt, but anyone else who can contribute is
-> > invited to do so.
-> > 
-> > Suppose a scatter-gather transfer with multiple scatterlist elements
-> > has been mapped via dma_map_sg().  Is it then valid to call 
-> > dma_sync_sg_for_cpu() with the "sg" argument pointing to one of the 
-> > mapped scatterlist elements (not necessarily the first one) and the 
-> > "nelems" argument set to 1?
-> 
-> It's not the design of the API, but I'm guessing, given the way the API
-> works on most arch's that it will work.  However, if you just want a
-> single element sync'd, won't dma_sync_single_for_cpu do that
-> transparently (as in just feed in the address and length from the sg
-> list), without mucking with the sg API?
+ Ferenc> Hi,
 
-On Tue, 16 Mar 2010, FUJITA Tomonori wrote:
+ Ferenc> In embedded systems, SquashFS over MTD would be a considerable
+ Ferenc> win, as that would permit configuring without CONFIG_BLOCK.
+ Ferenc> Please find attached a naive patch against 2.6.33 for this.  It
+ Ferenc> does not handle bad MTD blocks, that could be handled by gluebi
+ Ferenc> (once you're willing to take the UBI overhead), or by a custom
+ Ferenc> solution later.
 
-> As James said, probably it works. As long as passed scatterlist
-> elements points to mapped regions, it works.
-> 
-> However, I think that the latest DMA-API.txt makes it clear that only
-> dma_sync_single_for_{cpu|device} supports a partial sync. So it's not
-> recommended, I guess.
+ Ferenc> For now, 2.6.34 gained pluggable decompressors, so this patch
+ Ferenc> does not apply anymore, though the main idea holds.  My
+ Ferenc> questions: is the community interested in integrating something
+ Ferenc> like this, should this patch transformed into something
+ Ferenc> acceptable, or am I a total lunatic?  I don't know a thing
+ Ferenc> about filesystem development, but willing to learn and
+ Ferenc> refactor.  Comments welcome.
 
-What the documentation actually says about the dma_sync_* functions is:
+Nice, I have been thinking about that as well. What kind of size savings
+are you getting with this?
 
-	All the parameters must be the same as those passed into the 
-	single mapping API.
+CC'ing linux-embedded as this might be of interest there as well.
 
-So it isn't clear that dma_sync_sg_for_cpu(dev, sg, 1, dir) can be used
-on a mapping created by dma_map_sg(dev, sg, n, dir), and it isn't 
-clear that dma_sync_single_for_cpu() can be used on a mapping created 
-by dma_map_sg().
-
-But if you guys say it will work, I'll go ahead and use
-dma_sync_single_for_cpu().
-
-Thanks,
-
-Alan Stern
-
+-- 
+Bye, Peter Korsgaard
