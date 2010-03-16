@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966131Ab0CPKXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:23:25 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57155 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966104Ab0CPKXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:23:24 -0400
-Date: Tue, 16 Mar 2010 11:23:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: T?r?k Edwin <edwintorok@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: fix callgraphs of 32-bit processes on 64-bit kernels.
-Message-ID: <20100316102313.GD10069@elte.hu>
-References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
- <4B9E5EFF.1080308@gmail.com>
- <4B9F3EEC.7050104@gmail.com>
- <20100316084714.GB7961@elte.hu>
- <4B9F5ABE.7040705@gmail.com>
+	id S966135Ab0CPKYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:24:42 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:53425 "EHLO
+	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966062Ab0CPKYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:24:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:openpgp:content-type
+         :content-transfer-encoding;
+        b=s7mdlihZsIk+7gKScYaPwAfCE8JGuShjnvQtoiNYXMuCs551D05uIisKw8jKT3mK2Q
+         MFS6kVos6bxrU2WGGFbYSPSufiWJSRWulkvkFqFNWDCqgnIrL2wE1vgYmBWUg1WTnrqY
+         n14CUjJvwFB6E78l9YKT2LMCXDrGeyByD7/wc=
+Message-ID: <4B9F5C64.4020807@gmail.com>
+Date: Tue, 16 Mar 2010 12:24:36 +0200
+From: =?ISO-8859-1?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F5ABE.7040705@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org,
+       =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] perf: install into /usr/local by default.
+References: <4B9F3EEC.7050104@gmail.com> <1268733435-30225-1-git-send-email-edwintorok@gmail.com> <20100316101031.GL7961@elte.hu>
+In-Reply-To: <20100316101031.GL7961@elte.hu>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=5379965D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* T?r?k Edwin <edwintorok@gmail.com> wrote:
-
-> On 03/16/2010 10:47 AM, Ingo Molnar wrote:
-> > * T??r??k Edwin <edwintorok@gmail.com> wrote:
-> > 
-> >> On 03/15/2010 06:23 PM, T??r??k Edwin wrote:
-> >>> On 03/15/2010 05:34 PM, T??r??k Edwin wrote:
-> >>>> It would be good if perf knew how to lookup symbols in kernel modules!
-> >>> BTW perf report -m -k /home/edwin/builds/linux-2.6/vmlinux doesn't show
-> >>> the symbols either.
-> >> I always forget that, unlike every other program, perf doesn't install
-> >> by default to /usr/local!
-> >> So I was running the wrong version of perf (from an older kernel), since
-> >> perf was installed to $HOME/bin (which of course isn't in sudo's path).
-> >>
-> >> Sorry for the confusion, the 2.6.33 perf DOES know how to lookup the
-> >> symbols:
-> >>     9.92%  glxgears  [radeon]                           [k]
-> >> r600_packet3_check
-> >>             |
-> >>             --- r600_packet3_check
-> >>                |
-> >>                |--96.80%-- r600_cs_parse
-> > 
-> > Ok, great!
+On 03/16/2010 12:10 PM, Ingo Molnar wrote:
+> * T??r??k Edwin <edwintorok@gmail.com> wrote:
 > 
-> BTW the patch I sent yesterday for tracing 32-bit apps is still needed, 
-> since that is a kernel patch, and it wasn't due to using the wrong perf.
-
-I've Cc:-ed Frederic for that bug. (Frederic has written a good deal of that 
-code)
-
-> > I suspect we could install into /usr/local too. Do you want to send a patch 
-> > for that?
+>> It was confusing to install into $(HOME)/bin, especially since there was
+>> no documentation mentioning where perf gets installed by default.
+>> So install to /usr/local by default, as other programs do, and allow users to
+>> override the install location by specifying the prefix explicitly.
+>>
+>> Signed-off-by: T??r??k Edwin <edwintorok@gmail.com>
+>> ---
+>>  tools/perf/Makefile |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+>> index 2e7fa3a..8e8c199 100644
+>> --- a/tools/perf/Makefile
+>> +++ b/tools/perf/Makefile
+>> @@ -216,7 +216,7 @@ STRIP ?= strip
+>>  # runtime figures out where they are based on the path to the executable.
+>>  # This can help installing the suite in a relocatable way.
+>>  
+>> -prefix = $(HOME)
+>> +prefix = /usr/local
+>>  bindir_relative = bin
+>>  bindir = $(prefix)/$(bindir_relative)
+>>  mandir = share/man
 > 
-> Sent.
+> Btw., we inherited that default prefix from the Git project.
 > 
-> BTW I think perf would need some documentation on how to install, and what 
-> packages you need to build everything, what permissions it needs to run, 
-> etc.
+> Is there a way to get it into ~/bin/ if the user does not have permission to 
+> /usr/local ? (i.e. doesnt run it as root)
 
-Agreed. (I've Cc:-ed Arnaldo who has a pending fix in this area.)
+That is complicated, I usually run make as a normal user, and only do
+make install as root (or sudo make install).
+I do that for the kernel itself, and usually every program I build (I
+don't like compiling as root).
 
-	Ingo
+> 
+> That's a really convenient aspect of doing a 'make install' as user. (Which i 
+> tend to do in most cases)
+
+On 03/16/2010 12:20 PM, Avi Kivity wrote:
+> What about people (like me) who do 'make && sudo make install'?
+>
+> Can we make it position independent and derive the path from /proc/$$/exe?
+>
+
+There is a RUNTIME_PREFIX define (undocumented...) that seems to do
+something like that.
+Are there any security implications of using that by default?
+
+Best regards,
+--Edwin
