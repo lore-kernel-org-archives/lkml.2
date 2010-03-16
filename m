@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965358Ab0CPGPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:15:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936261Ab0CPGPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:15:38 -0400
-Message-ID: <4B9F2204.7050302@redhat.com>
-Date: Tue, 16 Mar 2010 08:15:32 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S965713Ab0CPGRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:17:50 -0400
+Received: from smtp120.mail.ukl.yahoo.com ([77.238.184.51]:47211 "HELO
+	smtp120.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S965206Ab0CPGRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:17:48 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.es;
+  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
+  b=AegPuygl1f7OMMoNErDBl/M9raTlx8Xol4oSXYd8CKgySE0GUu1ELX31U3exfLLJlQlKrfbguJZox6/uyspXS4UsyVYMxN0zgRDRes7lXKqOJRbo8TYKXhXxYdPRa5GOmOfjk76+PFzKwMfMry2XSRh/mxo4iR4ljNwQEBGGsKw=  ;
+X-Yahoo-SMTP: czee06uswBAtfIYshc.kP27UlfEXaxwWNSjJ
+X-YMail-OSG: zNckvGcVM1nbQjlRLj._SRULegJUV.qm1bkA1nuKK.CYh3HBvTHSrs7OPyIr6vWrGoDFU37J8K0kgmI.OtwQ1V30a7TCjgLWkUKbMcQ1Xk2tGd6oAq._jFrUvUKkDKEh34YY0BNwQD82BIFXSVzXHNzet6CPszTQwq6vpIVXOQtoP4enTlDp.PIxiioPfKC6Dg.MN6hyy1m7fmQV_O5PJIn3VQPt
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4B9F228A.8030005@yahoo.es>
+Date: Tue, 16 Mar 2010 07:17:46 +0100
+From: Albert Herranz <albert_herranz@yahoo.es>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Sheng Yang <sheng@linux.intel.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM MMU: check reserved bits only if CR4.PSE=1 or CR4.PAE=1
-References: <4B9FCC42.2080709@cn.fujitsu.com> <4B9F17BC.50108@redhat.com> <4B9F1F47.2040700@cn.fujitsu.com>
-In-Reply-To: <4B9F1F47.2040700@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       linux-kernel@vger.kernel.org, x86@kernel.org,
+       linux-ia64@vger.kernel.org
+Subject: Re: [PATCH v4 04/11] swiotlb: support NOT_COHERENT_CACHE PowerPC
+ platforms
+References: <1268421166-4791-1-git-send-email-albert_herranz@yahoo.es>	<1268421166-4791-5-git-send-email-albert_herranz@yahoo.es>	<20100316105423B.fujita.tomonori@lab.ntt.co.jp> <20100316112444D.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100316112444D.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 08:03 AM, Xiao Guangrong wrote:
->
->> I think the only change is that is !is_pse(vcpu) we ignore bit 7?
->>      
-> If the vcpu is in PT32E_ROOT_LEVEL/PT64_ROOT_LEVEL mode, CR4.PAE
-> is aways enabled, so what we need do is ignore bit7 if !is_pse(vcpu)
-> under PT32_ROOT_LEVEL mode, right?
->    
+FUJITA Tomonori wrote:
+> If we want to make swiotlb generic (make on any architectures), we
+> need to handle more cache issues here, I think. So it's better to have
+> more generic ways instead of adding hooks to some archs.
+> 
 
-I think PAE will fault if bit7 is set and !is_pse(vcpu), but not sure.
+Ok. So what would be an acceptable way of handling this in a generic way?
+Should we for example have 2 levels of DMA ops in the swiotlb case (swiotlb and "actual") and call the 2nd level ("actual") from the swiotlb code whenever we need to act on non-bounced buffers?
+Any other ideas?
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Thanks,
+Albert
 
