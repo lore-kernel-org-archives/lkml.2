@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966192Ab0CPNZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:25:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59721 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966007Ab0CPNZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:25:13 -0400
-Subject: Re: ATA 4 KiB sector issues.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-In-Reply-To: <4B9F2388.2030803@kernel.org>
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
-	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
-	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
-	 <4B9F2388.2030803@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 06:24:57 -0700
-Message-ID: <1268745897.21384.14.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1757813Ab0CPN0K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:26:10 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:53933 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab0CPN0F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:26:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=jPQ1Uqjax2YhlSR3DTWQd1wxt8FOLwkIuxMWjdkEdFhvpBKRu3wtReHNtJ6jmqmMpB
+         FRB8AOKOStV/aB4ZG1q3hOwd47ryfozmOjqLPtV5rTiRBNUM+trmniWWy9Ag7fwWr1T0
+         hdCSctLA+hK0uSv2Pwkv+b2ZibsDov9iFjOz4=
+Message-ID: <4B9F86E9.2030702@gmail.com>
+Date: Tue, 16 Mar 2010 14:26:01 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-5.4 Thunderbird/3.1b1
+MIME-Version: 1.0
+To: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: regd: sleeping in atomic
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 15:22 +0900, Tejun Heo wrote:
-> Hello, James.
-> 
-> On 03/16/2010 03:14 PM, James Bottomley wrote:
-> > So, it is true to say that picking a certain H/S geometry (which is
-> > entirely withing the gift of the partitioner) will align msdos label
-> > partitions, but will be don't care for all other labels: all other
-> > partition labels (like gpt) use block as offset and don't have any truck
-> > with the fictitious C/H/S stuff.
-> 
-> For any modern Linux and Windows, CHS simply doesn't matter.  They
-> don't look at it at all.
+Hi,
 
-If they have a msdos label, they do.
+Stanse found an atomic error in reg_copy_regd:
 
-> > The big problem is that 99% of the x86 systems out there still use the
-> > ancient msdos label for their boot disks, so aligning H/S going forwards
-> > will give us a nice "just works" for x86 boxes.
-> 
-> What I don't get is that how picking up a custom geometry can make
-> things work when there is *no* reliable way to determine which
-> geometry was used during partitioning once the partitioning is
-> complete.
+static int reg_copy_regd(const struct ieee80211_regdomain **dst_regd,
+                          const struct ieee80211_regdomain *src_regd)
+{
+         struct ieee80211_regdomain *regd;
+         int size_of_regd = 0;
+         unsigned int i;
 
-For msdos labels, it's embedded in the label ... for all other labels,
-it's made up on the spot.
+         size_of_regd = sizeof(struct ieee80211_regdomain) +
+           ((src_regd->n_reg_rules + 1) * sizeof(struct 
+ieee80211_reg_rule));
 
->   Most BIOSs these days will simply report the geometry as
-> being 255/63 regardless of the geometry used during partitioning.  So,
-> how can using a custom geometry give that nice "just works" for x86
-> boxes when nobody knows what geometry is in use?
+         regd = kzalloc(size_of_regd, GFP_KERNEL);       <---- here
 
-Because the msdos label can only partition in units of cylinders.  If
-you're using an msdos label, picking the right H/S gets you alignment.
+Called from:
 
-James
+static void reg_regdb_search(struct work_struct *work)
+{
+         spin_lock(&reg_regdb_search_lock);
+         while (!list_empty(&reg_regdb_search_list)) {
+...
+                 for (i=0; i<reg_regdb_size; i++) {
+                         curdom = reg_regdb[i];
 
+                         if (!memcmp(request->alpha2, curdom->alpha2, 2)) {
+                                 r = reg_copy_regd(&regdom, curdom);
+...
+         spin_unlock(&reg_regdb_search_lock);
+}
 
+Whole error temporarily available at:
+http://decibel.fi.muni.cz/~xslaby/stanse/error.cgi?db=34-rc&id=578
+
+It is introduced by 3b377ea9d4efc94dc52fe41b4dfdb463635ab298.
+
+Do you plan to extend it somehow or may the spinlock be converted to 
+mutex? If not how much may size_of_regd be -- can we safely switch to 
+GFP_ATOMIC?
+
+-- 
+js
