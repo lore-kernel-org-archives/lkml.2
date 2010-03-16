@@ -1,176 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937581Ab0CPIhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 04:37:17 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:42328 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751462Ab0CPIhO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 04:37:14 -0400
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [patch 3/3] genirq: introduce =?UTF-8?Q?IRQF=5FALLOW=5FNESTED=20flag?=
- =?UTF-8?Q?=20for=20request=5Firq=28=29?=
+	id S1757733Ab0CPIrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 04:47:31 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59410 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751696Ab0CPIr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 04:47:29 -0400
+Date: Tue, 16 Mar 2010 09:47:14 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: T??r??k Edwin <edwintorok@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: fix callgraphs of 32-bit processes on 64-bit kernels.
+Message-ID: <20100316084714.GB7961@elte.hu>
+References: <1268667260-5505-1-git-send-email-edwintorok@gmail.com>
+ <4B9E5EFF.1080308@gmail.com>
+ <4B9F3EEC.7050104@gmail.com>
 MIME-Version: 1.0
-Date: Tue, 16 Mar 2010 09:36:59 +0100
-From: Marc Zyngier <maz@misterjones.org>
-Cc: <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       <joachim.eastwood@jotron.com>, LKML <linux-kernel@vger.kernel.org>
-Organization: Metropolis
-In-Reply-To: <alpine.LFD.2.00.1003132039110.22855@localhost.localdomain>
-References: <201003112209.o2BM91oQ013581@imap1.linux-foundation.org> <alpine.LFD.2.00.1003132039110.22855@localhost.localdomain>
-Message-ID: <927ea285bd0c68934ddae1a47e44a9ba@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Type: multipart/mixed;
-	boundary="=_af9cb919324bb40b463e34745e23f529"
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: tglx@linutronix.de, akpm@linux-foundation.org, mingo@elte.hu, joachim.eastwood@jotron.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B9F3EEC.7050104@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=_af9cb919324bb40b463e34745e23f529
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
+* T??r??k Edwin <edwintorok@gmail.com> wrote:
 
-On Sat, 13 Mar 2010 20:56:19 +0100 (CET), Thomas Gleixner
-<tglx@linutronix.de> wrote:
-
-Hi Thomas,
-
-> In general I have no objections, but one thing bothers me. We have no
-> way to let a driver know whether it runs in a nested threaded context
-> or in hard irq context. There might be (future) drivers which would be
-> happy to know that to apply context dependent optimizations etc.
+> On 03/15/2010 06:23 PM, T??r??k Edwin wrote:
+> > On 03/15/2010 05:34 PM, T??r??k Edwin wrote:
+> >>
+> >> It would be good if perf knew how to lookup symbols in kernel modules!
+> > 
+> > BTW perf report -m -k /home/edwin/builds/linux-2.6/vmlinux doesn't show
+> > the symbols either.
 > 
-> What about a new function which solves your problem and returns that
-> information ? Something along the line:
+> I always forget that, unlike every other program, perf doesn't install
+> by default to /usr/local!
+> So I was running the wrong version of perf (from an older kernel), since
+> perf was installed to $HOME/bin (which of course isn't in sudo's path).
 > 
-> int request_any_context_irq(....)
-> {
-> 	...
-> 	if (desc->status & IRQ_NESTED_THREAD) {
-> 	   	ret = request_threaded_irq();
-> 		if (!ret)
-> 			ret = IRQ_IS_NESTED;
-> 
-> 	} else {
-> 		.....
-> 			ret = IRQ_IS_NONTHREADED;
-> 		else
-> 			ret = IRQ_IS_THREADED;
-> 
-> 	}
-> 	...
-> 	return ret;
-> }
-> 
-> You get the idea, right ?
-> 
-> It's a bit more code, but less magic and more flexible for further use
-> cases.
+> Sorry for the confusion, the 2.6.33 perf DOES know how to lookup the
+> symbols:
+>     9.92%  glxgears  [radeon]                           [k]
+> r600_packet3_check
+>             |
+>             --- r600_packet3_check
+>                |
+>                |--96.80%-- r600_cs_parse
 
-What about the attached (sorry, webmail crap) patch? I deliberately left
-IS_THREADED out of the picture, as I have the feeling that the caller has
-to know if it really wants a threaded handler, and I couldn't see a way to
-guess its intent.
+Ok, great!
 
-Please note that this patch has only been compile-tested, as I'm traveling
-for the rest of the week and don't have access to my boards.
+I suspect we could install into /usr/local too. Do you want to send a patch 
+for that?
 
-Thanks,
-
-        M.
--- 
-Who you jivin' with that Cosmik Debris?
---=_af9cb919324bb40b463e34745e23f529
-Content-Transfer-Encoding: base64
-Content-Type: text/plain;
- name*="UTF-8''0001-genirq-introduce-request_any_context_irq.patch"; 
-Content-Disposition: attachment;
- filename*="UTF-8''0001-genirq-introduce-request_any_context_irq.patch"; 
-
-RnJvbSBiNzc2NTI2ZjFhMGYwYjNmN2IyZThmZDFiOWNmYWQ0OTk4NTYzNWUyIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBNYXJjIFp5bmdpZXIgPG1hekBtaXN0ZXJqb25lcy5vcmc+CkRh
-dGU6IE1vbiwgMTUgTWFyIDIwMTAgMjI6NTY6MzMgKzAwMDAKU3ViamVjdDogW1BBVENIXSBnZW5p
-cnE6IGludHJvZHVjZSByZXF1ZXN0X2FueV9jb250ZXh0X2lycSgpCgpOb3cgdGhhdCB3ZSBlbmpv
-eSB0aHJlYWRlZCBpbnRlcnJ1cHRzLCB3ZSdyZSBzdGFydGluZyB0byBzZWUgaXJxX2NoaXAKaW1w
-bGVtZW50YXRpb25zICh3bTgzMXgsIHBjYTk1M3gpIHRoYXQgbWFrZSB1c2Ugb2YgdGhyZWFkZWQg
-aW50ZXJydXB0cwpmb3IgdGhlIGNvbnRyb2xsZXIsIGFuZCBuZXN0ZWQgaW50ZXJydXB0cyBmb3Ig
-dGhlIGNsaWVudCBpbnRlcnJ1cHQuIEl0CmFsbCB3b3JrcyB2ZXJ5IHdlbGwsIHdpdGggb25lIGRy
-YXdiYWNrOgoKRHJpdmVycyByZXF1ZXN0aW5nIGFuIElSUSBtdXN0IG5vdyBrbm93IHdoZXRoZXIg
-dGhlIGhhbmRsZXIgd2lsbApydW4gaW4gYSB0aHJlYWQgY29udGV4dCBvZiBub3QsIGFuZCBjYWxs
-IHJlcXVlc3RfdGhyZWFkZWRfaXJxKCkgb3IKcmVxdWVzdF9pcnEoKSBhY2NvcmRpbmdseS4KClRo
-ZSBwcm9ibGVtIGlzIHRoYXQgdGhlIHJlcXVlc3RpbmcgZHJpdmVyIHNvbWV0aW1lcyBkb2Vzbid0
-IGtub3cKYWJvdXQgdGhlIG5hdHVyZSBvZiB0aGUgaW50ZXJydXB0LCBzcGVjaWFsbHkgd2hlbiB0
-aGUgaW50ZXJydXB0CmNvbnRyb2xsZXIgaXMgYSBkaXNjcmV0ZSBjaGlwICh0eXBpY2FsbHkgYSBH
-UElPIGV4cGFuZGVyIGNvbm5lY3RlZApvdmVyIEkyQykgdGhhdCBjYW4gYmUgY29ubmVjdGVkIHRv
-IGEgd2lkZSB2YXJpZXR5IG9mIG90aGVyd2lzZSBwZXJmZWN0bHkKc3VwcG9ydGVkIGhhcmR3YXJl
-LgoKVGhpcyBwYXRjaCBpbnRyb2R1Y2UgdGhlIHJlcXVlc3RfYW55X2NvbnRleHRfaXJxKCkgZnVu
-Y3Rpb24gdGhhdCBtb3N0bHkKbWltaWNzIHRoZSB1c3VhbCByZXF1ZXN0X2lycSgpLCBleGNlcHQg
-dGhhdCBpdCBjaGVja3Mgd2hldGhlciB0aGUgaXJxCmxldmVsIGlzIGNvbmZpZ3VyZWQgYXMgbmVz
-dGVkIG9yIG5vdCwgYW5kIGNhbGxzIHRoZSByaWdodCBiYWNrZW5kLgpPbiBzdWNjZXNzLCBpdCBh
-bHNvIHJldHVybnMgZWl0aGVyIElSUUNfSVNfSEFSRElSUSBvciBJUlFDX0lTX05FU1RFRC4KClNp
-Z25lZC1vZmYtYnk6IE1hcmMgWnluZ2llciA8bWF6QG1pc3RlcmpvbmVzLm9yZz4KLS0tCiBpbmNs
-dWRlL2xpbnV4L2ludGVycnVwdC5oIHwgICAyNiArKysrKysrKysrKysrKysrKysrKysrKysrKwog
-a2VybmVsL2lycS9tYW5hZ2UuYyAgICAgICB8ICAgNDUgKysrKysrKysrKysrKysrKysrKysrKysr
-KysrKysrKysrKysrKysrKysrKysrCiAyIGZpbGVzIGNoYW5nZWQsIDcxIGluc2VydGlvbnMoKyks
-IDAgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9pbnRlcnJ1cHQuaCBi
-L2luY2x1ZGUvbGludXgvaW50ZXJydXB0LmgKaW5kZXggNzVmM2YwMC4uODA4MWU0MCAxMDA2NDQK
-LS0tIGEvaW5jbHVkZS9saW51eC9pbnRlcnJ1cHQuaAorKysgYi9pbmNsdWRlL2xpbnV4L2ludGVy
-cnVwdC5oCkBAIC0xMDcsNiArMTA3LDE2IEBAIHN0cnVjdCBpcnFhY3Rpb24gewogCiBleHRlcm4g
-aXJxcmV0dXJuX3Qgbm9fYWN0aW9uKGludCBjcGwsIHZvaWQgKmRldl9pZCk7CiAKKy8qKgorICog
-VGhlc2UgZmxhZ3MgY2FuIGJlIHJldHVybmVkIGJ5IHJlcXVlc3RfYW55X2NvbnRleHRfaXJxKCkg
-YW5kCisgKiBkZXNjcmliZSB0aGUgY29udGV4dCB0aGUgaW50ZXJydXB0IHdpbGwgYmUgcnVuIGlu
-LgorICoKKyAqIElSUUNfSVNfSEFSRElSUSAtIGludGVycnVwdCBydW5zIGluIGhhcmRpcnEgY29u
-dGV4dAorICogSVJRQ19JU19ORVNURUQgLSBpbnRlcnJ1cHQgcnVucyBpbiBhIG5lc3RlZCB0aHJl
-YWRlZCBjb250ZXh0CisgKi8KKyNkZWZpbmUgSVJRQ19JU19IQVJESVJRCQkweDAwMDAwMDAwCisj
-ZGVmaW5lIElSUUNfSVNfTkVTVEVECQkweDAwMDAwMDAxCisKICNpZmRlZiBDT05GSUdfR0VORVJJ
-Q19IQVJESVJRUwogZXh0ZXJuIGludCBfX211c3RfY2hlY2sKIHJlcXVlc3RfdGhyZWFkZWRfaXJx
-KHVuc2lnbmVkIGludCBpcnEsIGlycV9oYW5kbGVyX3QgaGFuZGxlciwKQEAgLTEyMCw2ICsxMzAs
-MTAgQEAgcmVxdWVzdF9pcnEodW5zaWduZWQgaW50IGlycSwgaXJxX2hhbmRsZXJfdCBoYW5kbGVy
-LCB1bnNpZ25lZCBsb25nIGZsYWdzLAogCXJldHVybiByZXF1ZXN0X3RocmVhZGVkX2lycShpcnEs
-IGhhbmRsZXIsIE5VTEwsIGZsYWdzLCBuYW1lLCBkZXYpOwogfQogCitleHRlcm4gaW50IF9fbXVz
-dF9jaGVjaworcmVxdWVzdF9hbnlfY29udGV4dF9pcnEodW5zaWduZWQgaW50IGlycSwgaXJxX2hh
-bmRsZXJfdCBoYW5kbGVyLAorCQkJdW5zaWduZWQgbG9uZyBmbGFncywgY29uc3QgY2hhciAqbmFt
-ZSwgdm9pZCAqZGV2X2lkKTsKKwogZXh0ZXJuIHZvaWQgZXhpdF9pcnFfdGhyZWFkKHZvaWQpOwog
-I2Vsc2UKIApAQCAtMTQxLDYgKzE1NSwxOCBAQCByZXF1ZXN0X3RocmVhZGVkX2lycSh1bnNpZ25l
-ZCBpbnQgaXJxLCBpcnFfaGFuZGxlcl90IGhhbmRsZXIsCiAJcmV0dXJuIHJlcXVlc3RfaXJxKGly
-cSwgaGFuZGxlciwgZmxhZ3MsIG5hbWUsIGRldik7CiB9CiAKK3N0YXRpYyBpbmxpbmUgaW50IF9f
-bXVzdF9jaGVjaworcmVxdWVzdF9hbnlfY29udGV4dF9pcnEodW5zaWduZWQgaW50IGlycSwgaXJx
-X2hhbmRsZXJfdCBoYW5kbGVyLAorCQkJdW5zaWduZWQgbG9uZyBmbGFncywgY29uc3QgY2hhciAq
-bmFtZSwgdm9pZCAqZGV2X2lkKQoreworCWludCByZXQgPSByZXF1ZXN0X2lycShpcnEsIGhhbmRs
-ZXIsIGZsYWdzLCBuYW1lLCBkZXZfaWQpOworCisJaWYgKCFyZXQpCisJCXJldCA9IElSUUNfSVNf
-SEFSRElSUTsKKworCXJldHVybiByZXQ7Cit9CisKIHN0YXRpYyBpbmxpbmUgdm9pZCBleGl0X2ly
-cV90aHJlYWQodm9pZCkgeyB9CiAjZW5kaWYKIApkaWZmIC0tZ2l0IGEva2VybmVsL2lycS9tYW5h
-Z2UuYyBiL2tlcm5lbC9pcnEvbWFuYWdlLmMKaW5kZXggZWI2MDc4Yy4uNjBiMzNiZiAxMDA2NDQK
-LS0tIGEva2VybmVsL2lycS9tYW5hZ2UuYworKysgYi9rZXJuZWwvaXJxL21hbmFnZS5jCkBAIC0x
-MDg4LDMgKzEwODgsNDggQEAgaW50IHJlcXVlc3RfdGhyZWFkZWRfaXJxKHVuc2lnbmVkIGludCBp
-cnEsIGlycV9oYW5kbGVyX3QgaGFuZGxlciwKIAlyZXR1cm4gcmV0dmFsOwogfQogRVhQT1JUX1NZ
-TUJPTChyZXF1ZXN0X3RocmVhZGVkX2lycSk7CisKKy8qKgorICoJcmVxdWVzdF9hbnlfY29udGV4
-dF9pcnEgLSBhbGxvY2F0ZSBhbiBpbnRlcnJ1cHQgbGluZQorICoJQGlycTogSW50ZXJydXB0IGxp
-bmUgdG8gYWxsb2NhdGUKKyAqCUBoYW5kbGVyOiBGdW5jdGlvbiB0byBiZSBjYWxsZWQgd2hlbiB0
-aGUgSVJRIG9jY3Vycy4KKyAqCQkgIFRocmVhZGVkIGhhbmRsZXIgZm9yIHRocmVhZGVkIGludGVy
-cnVwdHMuCisgKglAZmxhZ3M6IEludGVycnVwdCB0eXBlIGZsYWdzCisgKglAbmFtZTogQW4gYXNj
-aWkgbmFtZSBmb3IgdGhlIGNsYWltaW5nIGRldmljZQorICoJQGRldl9pZDogQSBjb29raWUgcGFz
-c2VkIGJhY2sgdG8gdGhlIGhhbmRsZXIgZnVuY3Rpb24KKyAqCisgKglUaGlzIGNhbGwgYWxsb2Nh
-dGVzIGludGVycnVwdCByZXNvdXJjZXMgYW5kIGVuYWJsZXMgdGhlCisgKglpbnRlcnJ1cHQgbGlu
-ZSBhbmQgSVJRIGhhbmRsaW5nLiBJdCBzZWxlY3RzIGVpdGhlciBhCisgKgloYXJkaXJxIG9yIHRo
-cmVhZGVkIGhhbmRsaW5nIG1ldGhvZCBkZXBlbmRpbmcgb24gdGhlCisgKgljb250ZXh0LgorICoK
-KyAqCU9uIGZhaWx1cmUsIGl0IHJldHVybnMgYSBuZWdhdGl2ZSB2YWx1ZS4gT24gc3VjY2VzcywK
-KyAqCWl0IHJldHVybnMgZWl0aGVyIElSUUNfSVNfSEFSRElSUSBvciBJUlFDX0lTX05FU1RFRC4K
-KyAqCisgKi8KK2ludCByZXF1ZXN0X2FueV9jb250ZXh0X2lycSh1bnNpZ25lZCBpbnQgaXJxLCBp
-cnFfaGFuZGxlcl90IGhhbmRsZXIsCisJCQkgICAgdW5zaWduZWQgbG9uZyBmbGFncywgY29uc3Qg
-Y2hhciAqbmFtZSwgdm9pZCAqZGV2X2lkKQoreworCXN0cnVjdCBpcnFfZGVzYyAqZGVzYzsKKwlp
-bnQgcmV0OworCisJZGVzYyA9IGlycV90b19kZXNjKGlycSk7CisJaWYgKCFkZXNjKQorCQlyZXR1
-cm4gLUVJTlZBTDsKKworCWlmIChkZXNjLT5zdGF0dXMgJiBJUlFfTkVTVEVEX1RIUkVBRCkgewor
-CQlyZXQgPSByZXF1ZXN0X3RocmVhZGVkX2lycShpcnEsIE5VTEwsIGhhbmRsZXIsCisJCQkJCSAg
-IGZsYWdzLCBuYW1lLCBkZXZfaWQpOworCQlpZiAoIXJldCkKKwkJCXJldCA9IElSUUNfSVNfTkVT
-VEVEOworCisJCXJldHVybiByZXQ7CisJfQorCisJcmV0ID0gcmVxdWVzdF9pcnEoaXJxLCBoYW5k
-bGVyLCBmbGFncywgbmFtZSwgZGV2X2lkKTsKKwlpZiAoIXJldCkKKwkJcmV0ID0gSVJRQ19JU19I
-QVJESVJROworCisJcmV0dXJuIHJldDsKK30KK0VYUE9SVF9TWU1CT0wocmVxdWVzdF9hbnlfY29u
-dGV4dF9pcnEpOwotLSAKMS43LjAuMgoK
---=_af9cb919324bb40b463e34745e23f529--
-
+	Ingo
