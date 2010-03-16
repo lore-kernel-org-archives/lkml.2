@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966213Ab0CPNfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:35:37 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51655 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754674Ab0CPNfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:35:36 -0400
-Date: Tue, 16 Mar 2010 09:35:34 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Nick Piggin <npiggin@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, Chris Friesen <cfriesen@nortel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip] introduce sys_membarrier(): process-wide memory
-	barrier (v9)
-Message-ID: <20100316133534.GB22578@Krystal>
-References: <20100225232316.GA30196@Krystal> <20100304122304.GA6864@elte.hu> <alpine.LFD.2.00.1003040827100.7046@localhost.localdomain> <20100304175659.GA3255@Krystal> <20100315205312.GA31231@Krystal> <20100316073635.GC18448@elte.hu> <20100316075709.GL2869@laptop> <20100316131336.GB24808@elte.hu>
+	id S966227Ab0CPNhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:37:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966183Ab0CPNhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:37:52 -0400
+Message-ID: <4B9F8991.3030700@redhat.com>
+Date: Tue, 16 Mar 2010 15:37:21 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316131336.GB24808@elte.hu>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:30:00 up 52 days, 16:07,  5 users,  load average: 0.08, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com> <20100316133114.GB575@elte.hu>
+In-Reply-To: <20100316133114.GB575@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ingo Molnar (mingo@elte.hu) wrote:
-> 
-> * Nick Piggin <npiggin@suse.de> wrote:
-> 
-> > On Tue, Mar 16, 2010 at 08:36:35AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > > 
-> > > > Unless this question is answered, Ingo's SA_RUNNING signal proposal, as 
-> > > > appealing as it may look at a first glance, falls into the 
-> > > > "fundamentally broken" category. [...]
-> > > 
-> > > How is it different from your syscall? I.e. which lines of code make the 
-> > > difference? We could certainly apply the (trivial) barrier change to 
-> > > context_switch().
-> > 
-> > I think it is just easy for userspace to misuse or think it does something 
-> > that it doesn't (because of races).
-> 
-> That wasnt my question though. The question i asked Mathieu was to show how 
-> SA_RUNNING is "fundamentally broken" for librcu use while sys_membarrier() is 
-> not?
-> 
-> This is really what he claims above. (i preserved the quote)
-> 
-> It must be a misunderstanding either on my side or on his side. (Once that is 
-> cleared we can discuss further usecases for SA_RUNNING.)
+On 03/16/2010 03:31 PM, Ingo Molnar wrote:
+>
+>> You can do that through libvirt, but that only works for guests started
+>> through libvirt.  libvirt provides command-line tools to list and manage
+>> guests (for example autostarting them on startup), and tools built on top of
+>> libvirt can manage guests graphically.
+>>
+>> Looks like we have a layer inversion here.  Maybe we need a plugin system -
+>> libvirt drops a .so into perf that teaches it how to list guests and get
+>> their symbols.
+>>      
+> Is libvirt used to start up all KVM guests? If not, if it's only used on some
+> distros while other distros have other solutions then there's apparently no
+> good way to get to such information, and the kernel bits of KVM do not provide
+> it.
+>    
 
-Well, it's not broken for sys_membarrier() specifically if we add the proper
-memory barriers to the scheduler, but it's broken when we try to use it for
-anything else. What makes it broken is that it requires that the scheduler
-switch guarantee to have the same side-effect on a running thread than execution
-on the per-running-thread signal handler.
+Developers tend to start qemu from the command line, but the majority of 
+users and all distros I know of use libvirt.  Some users cobble up their 
+own scripts.
 
-What's different with the sys_membarrier system call is that it does not try to
-make generic something that should probably stay case-specific due to its
-close coupling with the scheduler.
+> To the user (and to me) this looks like a KVM bug / missing feature. (and the
+> user doesnt care where the blame is) If that is true then apparently the
+> current KVM design has no technically actionable solution for certain
+> categories of features!
+>    
 
-Thanks,
+A plugin system allows anyone who is interested to provide the 
+information; they just need to write a plugin for their management tool.
 
-Mathieu
-
-> 
-> Thanks,
-> 
-> 	Ingo
+Since we can't prevent people from writing management tools, I don't see 
+what else we can do.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency Consultant
-EfficiOS Inc.
-http://www.efficios.com
+error compiling committee.c: too many arguments to function
+
