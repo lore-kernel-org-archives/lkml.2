@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966144Ab0CPK1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:27:24 -0400
-Received: from verein.lst.de ([213.95.11.210]:38529 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752674Ab0CPK1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:27:22 -0400
-Date: Tue, 16 Mar 2010 11:26:37 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Avi Kivity <avi@redhat.com>
-Cc: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-Message-ID: <20100316102637.GA23584@lst.de>
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F4CBD.3020805@redhat.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S966124Ab0CPKer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:34:47 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:53492 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752366Ab0CPKeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:34:46 -0400
+X-IronPort-AV: E=Sophos;i="4.49,649,1262581200"; 
+   d="scan'208";a="14130921"
+Subject: [PATCH] Timekeeping: Fix dead lock in update_wall_time by correct
+	shift convertion.
+From: sonic zhang <sonic.adi@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>,
+       john stultz <johnstul@us.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain
+Date: Tue, 16 Mar 2010 18:43:45 +0800
+Message-ID: <1268736225.5075.10.camel@eight.analog.com>
+MIME-Version: 1.0
+X-Mailer: Evolution 2.8.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi,
+update_wall_time() runs into dead lock after kernel traps into kgdb and exits
+per user's request some seconds layer. This is root caused to be wrong
+calculation of maxshift in update_wall_time().
 
-cache=writeback can be faster than cache=none for the same reasons
-a disk cache speeds up access.  As long as the I/O mix contains more
-asynchronous then synchronous writes it allows the host to do much
-more reordering, only limited by the cache size (which can be quite
-huge when using the host pagecache) and the amount of cache flushes
-coming from the host.  If you have a fsync heavy workload or metadata
-operation with a filesystem like the current XFS you will get lots
-of cache flushes that make the use of the additional cache limits.
+The shift in update_wall_time() and logarithmic_accumulation() is
+clock shift. In order to generate ntp_error and maxshift correctly,
+shift convertion between clock and ntp should be done properly.
 
-If you don't have a of lot of cache flushes, e.g. due to dumb
-applications that do not issue fsync, or even run ext3 in it's default
-mode never issues cache flushes the benefit will be enormous, but the
-data loss and possible corruption will be enormous.
 
-But even for something like btrfs that does provide data integrity
-but issues cache flushes fairly effeciently data=writeback may
-provide a quite nice speedup, especially if using multiple guest
-accessing the same spindle(s).
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ kernel/time/timekeeping.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
-But I wouldn't be surprised if IBM's exteme differences are indeed due
-to the extremly unsafe ext3 default behaviour.
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 1673637..5b47c9e 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -770,10 +770,14 @@ static cycle_t logarithmic_accumulation(cycle_t
+offset, int shift)
+                raw_time.tv_sec++;
+        }
+ 
+-       /* Accumulate error between NTP and clock interval */
+-       timekeeper.ntp_error += tick_length << shift;
+-       timekeeper.ntp_error -= timekeeper.xtime_interval <<
+-                               (timekeeper.ntp_error_shift + shift);
++       /*
++        * Accumulate error between NTP and clock interval.
++        * Paramter shift is clock shift. It should minus shift
++        * conversion between clock and ntp to generate ntp shift.
++        */
++       timekeeper.ntp_error += tick_length <<
++                               (shift - timekeeper.ntp_error_shift);
++       timekeeper.ntp_error -= timekeeper.xtime_interval << shift;
+ 
+        return offset;
+ }
+@@ -813,8 +817,12 @@ void update_wall_time(void)
+         */
+        shift = ilog2(offset) - ilog2(timekeeper.cycle_interval);
+        shift = max(0, shift);
+-       /* Bound shift to one less then what overflows tick_length */
+-       maxshift = (8*sizeof(tick_length) - (ilog2(tick_length)+1)) - 1;
++       /*
++        * Bound shift to one less then what overflows tick_length.
++        * Should plus shift conversion between clock and ntp.
++        */
++       maxshift = (8*sizeof(tick_length) - (ilog2(tick_length)+1)) - 1
++                       + timekeeper.ntp_error_shift;
+        shift = min(shift, maxshift);
+        while (offset >= timekeeper.cycle_interval) {
+                offset = logarithmic_accumulation(offset, shift);
+-- 
+1.6.0
+
+
+
+
