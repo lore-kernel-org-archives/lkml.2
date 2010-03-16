@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692Ab0CPH40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 03:56:26 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:54564 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab0CPH4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 03:56:24 -0400
-Date: Tue, 16 Mar 2010 08:56:23 +0100
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Gui Jianfeng <GuiJianfeng@cn.fujitsu.com>,
-       Ben Blum <bblum@andrew.cmu.edu>, LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>
-Subject: Re: [PATCH] block: make CONFIG_BLK_CGROUP visible
-Message-ID: <20100316075623.GV5768@kernel.dk>
-References: <4B9DA6F5.3070606@cn.fujitsu.com> <20100315115724.GK5768@kernel.dk> <4B9EE223.7020302@cn.fujitsu.com>
+	id S1757712Ab0CPH4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 03:56:50 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:48788 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab0CPH4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 03:56:48 -0400
+Message-ID: <4B9F39BE.40502@cs.helsinki.fi>
+Date: Tue, 16 Mar 2010 09:56:46 +0200
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.23 (Macintosh/20090812)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9EE223.7020302@cn.fujitsu.com>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org>	 <20100316061718.GA22651@elte.hu>	 <84144f021003152358r41a79ccaxb18cf6368911266@mail.gmail.com> <b6fcc0a1003160015j2926b2a2w4e7808939c4144d6@mail.gmail.com>
+In-Reply-To: <b6fcc0a1003160015j2926b2a2w4e7808939c4144d6@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16 2010, Li Zefan wrote:
-> Jens Axboe wrote:
-> > On Mon, Mar 15 2010, Li Zefan wrote:
-> >> Make the config visible, so we can choose from CONFIG_BLK_CGROUP=y
-> >> and CONFIG_BLK_CGROUP=m when CONFIG_IOSCHED_CFQ=m.
-> >>
-> >> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> > 
-> > What kernel is this against?
-> > 
+Alexey Dobriyan kirjoitti:
+> On Tue, Mar 16, 2010 at 8:58 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+>> We should avoid creating tree-wide breakage for this kind of cleanups.
 > 
-> It's against linus' tree. I've just checked the block tree, and found
-> it needs to be synced, otherwise this patch can't be applied on it.
+> This is done by compile testing, not by being smartass.
 
-OK, I'll hand apply it.
+I don't think compile testing is going to scale here because slab is 
+used is so many places of the kernel.
 
--- 
-Jens Axboe
-
+			Pekka
