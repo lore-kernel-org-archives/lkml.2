@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937617Ab0CPJxG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:53:06 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56372 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab0CPJxB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:53:01 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-media@vger.kernel.org, Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Antonio Ospite <ospite@studenti.unina.it>,
-       Sascha Hauer <s.hauer@pengutronix.de>,
-       Hans Verkuil <hverkuil@xs4all.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH] V4L/DVB: mx1-camera: compile fix
-Date: Tue, 16 Mar 2010 10:52:52 +0100
-Message-Id: <1268733172-17059-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <Pine.LNX.4.64.1003121057090.4385@axis700.grange>
-References: <Pine.LNX.4.64.1003121057090.4385@axis700.grange>
+	id S937624Ab0CPJxr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:53:47 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35700 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932488Ab0CPJxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:53:45 -0400
+Date: Tue, 16 Mar 2010 10:53:36 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Message-ID: <20100316095336.GI7961@elte.hu>
+References: <1268717232.2813.36.camel@localhost>
+ <4B9F19F7.6000309@redhat.com>
+ <20100316072449.GB11881@elte.hu>
+ <4B9F4D74.4090403@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B9F4D74.4090403@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a regression of
 
-	7d58289 (mx1: prefix SOC specific defines with MX1_ and deprecate old names)
+* Avi Kivity <avi@redhat.com> wrote:
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h |    4 +++-
- drivers/media/video/mx1_camera.c             |    8 +++-----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+> On 03/16/2010 09:24 AM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >>On 03/16/2010 07:27 AM, Zhang, Yanmin wrote:
+> >>>From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
+> >>>
+> >>>Based on the discussion in KVM community, I worked out the patch to support
+> >>>perf to collect guest os statistics from host side. This patch is implemented
+> >>>with Ingo, Peter and some other guys' kind help. Yang Sheng pointed out a
+> >>>critical bug and provided good suggestions with other guys. I really appreciate
+> >>>their kind help.
+> >>>
+> >>>The patch adds new subcommand kvm to perf.
+> >>>
+> >>>   perf kvm top
+> >>>   perf kvm record
+> >>>   perf kvm report
+> >>>   perf kvm diff
+> >>>
+> >>>The new perf could profile guest os kernel except guest os user space, but it
+> >>>could summarize guest os user space utilization per guest os.
+> >>>
+> >>>Below are some examples.
+> >>>1) perf kvm top
+> >>>[root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+> >>>--guestmodules=/home/ymzhang/guest/modules top
+> >>>
+> >>Excellent, support for guest kernel != host kernel is critical (I
+> >>can't remember the last time I ran same kernels).
+> >>
+> >>How would we support multiple guests with different kernels? Perhaps a
+> >>symbol server that perf can connect to (and that would connect to guests in
+> >>turn)?
+> >The highest quality solution would be if KVM offered a 'guest extension' to
+> >the guest kernel's /proc/kallsyms that made it easy for user-space to get this
+> >information from an authorative source.
+> >
+> >That's the main reason why the host side /proc/kallsyms is so popular and so
+> >useful: while in theory it's mostly redundant information which can be gleaned
+> >from the System.map and other sources of symbol information, it's easily
+> >available and is _always_ trustable to come from the host kernel.
+> >
+> >Separate System.map's have a tendency to go out of sync (or go missing when a
+> >devel kernel gets rebuilt, or if a devel package is not installed), and server
+> >ports (be that a TCP port space server or an UDP port space mount-point) are
+> >both a configuration hassle and are not guest-transparent.
+> >
+> >So for instrumentation infrastructure (such as perf) we have a large and well
+> >founded preference for intrinsic, built-in, kernel-provided information: i.e.
+> >a largely 'built-in' and transparent mechanism to get to guest symbols.
+> 
+> The symbol server's client can certainly access the bits through vmchannel.
 
-diff --git a/arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h b/arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h
-index 07be8ad..d25a65f 100644
---- a/arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h
-+++ b/arch/arm/plat-mxc/include/mach/dma-mx1-mx2.h
-@@ -31,7 +31,9 @@
- #define DMA_MODE_WRITE		1
- #define DMA_MODE_MASK		1
- 
--#define DMA_BASE IO_ADDRESS(DMA_BASE_ADDR)
-+#define MX1_DMA_REG(offset)	MX1_IO_ADDRESS(MX1_DMA_BASE_ADDR + offset)
-+#define MX1_DMA_CCR(x)		MX1_DMA_REG(0x8c + ((x) << 6))
-+#define MX1_DMA_DIMR		MX1_DMA_REG(0x08)
- 
- #define IMX_DMA_MEMSIZE_32	(0 << 4)
- #define IMX_DMA_MEMSIZE_8	(1 << 4)
-diff --git a/drivers/media/video/mx1_camera.c b/drivers/media/video/mx1_camera.c
-index c167cc3..aa81acd 100644
---- a/drivers/media/video/mx1_camera.c
-+++ b/drivers/media/video/mx1_camera.c
-@@ -48,8 +48,6 @@
- /*
-  * CSI registers
-  */
--#define DMA_CCR(x)	(0x8c + ((x) << 6))	/* Control Registers */
--#define DMA_DIMR	0x08			/* Interrupt mask Register */
- #define CSICR1		0x00			/* CSI Control Register 1 */
- #define CSISR		0x08			/* CSI Status Register */
- #define CSIRXR		0x10			/* CSI RxFIFO Register */
-@@ -783,7 +781,7 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
- 			       pcdev);
- 
- 	imx_dma_config_channel(pcdev->dma_chan, IMX_DMA_TYPE_FIFO,
--			       IMX_DMA_MEMSIZE_32, DMA_REQ_CSI_R, 0);
-+			       IMX_DMA_MEMSIZE_32, MX1_DMA_REQ_CSI_R, 0);
- 	/* burst length : 16 words = 64 bytes */
- 	imx_dma_config_burstlen(pcdev->dma_chan, 0);
- 
-@@ -797,8 +795,8 @@ static int __init mx1_camera_probe(struct platform_device *pdev)
- 	set_fiq_handler(&mx1_camera_sof_fiq_start, &mx1_camera_sof_fiq_end -
- 						   &mx1_camera_sof_fiq_start);
- 
--	regs.ARM_r8 = DMA_BASE + DMA_DIMR;
--	regs.ARM_r9 = DMA_BASE + DMA_CCR(pcdev->dma_chan);
-+	regs.ARM_r8 = (long)MX1_DMA_DIMR;
-+	regs.ARM_r9 = (long)MX1_DMA_CCR(pcdev->dma_chan);
- 	regs.ARM_r10 = (long)pcdev->base + CSICR1;
- 	regs.ARM_fp = (long)pcdev->base + CSISR;
- 	regs.ARM_sp = 1 << pcdev->dma_chan;
--- 
-1.7.0
+Ok, that would work i suspect.
 
+Would be nice to have the symbol server in tools/perf/ and also make it easy 
+to add it to the initrd via a .config switch or so.
+
+That would have basically all of the advantages of being built into the kernel 
+(availability, configurability, transparency, hackability), while having all 
+the advantages of a user-space approach as well (flexibility, extensibility, 
+robustness, ease of maintenance, etc.).
+
+If only we had tools/xorg/ integrated via the initrd that way ;-)
+
+Thanks,
+
+	Ingo
