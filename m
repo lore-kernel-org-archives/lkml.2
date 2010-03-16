@@ -1,67 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab0CPGmP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:42:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47493 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621Ab0CPGmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:42:14 -0400
-Date: Tue, 16 Mar 2010 17:42:09 +1100
-From: Nick Piggin <npiggin@suse.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [rfc][patch] mm: lockdep page lock
-Message-ID: <20100316064209.GK2869@laptop>
-References: <20100315155859.GE2869@laptop>
- <20100316062032.GB22651@elte.hu>
+	id S937438Ab0CPGt3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:49:29 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:54755 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab0CPGt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:49:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qWKNkilO0K8j3wiD4rWggg08yT7Rrh8qY4dmumyRUV4AGZOHV82Y0P2I4uqeG2Zpa+
+         71JmplO9jmm/HFrihv0xLZxuxW7acpXL2tYZ+mQXzmZSyAiHBDiS+9jzdpIFE/+UOB3D
+         H41qbbudYtTDmDEDONNQYgiAO0fjbPmRw06wM=
+Date: Tue, 16 Mar 2010 08:50:15 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>,
+       Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+       Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+Message-ID: <20100316065015.GA3336@swordfish.minsk.epam.com>
+References: <20100307192305.GA598@elte.hu>
+ <20100308125122.GA11242@redhat.com>
+ <1268686865.2824.4.camel@edumazet-laptop>
+ <1268699602.2824.14.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ew6BAiZeqk4r7MaW"
 Content-Disposition: inline
-In-Reply-To: <20100316062032.GB22651@elte.hu>
+In-Reply-To: <1268699602.2824.14.camel@edumazet-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 07:20:32AM +0100, Ingo Molnar wrote:
-> 
-> * Nick Piggin <npiggin@suse.de> wrote:
-> 
-> > Page lock has very complex dependencies, so it would be really nice to add 
-> > lockdep support for it.
-> 
-> Just wondering - has your patch shown any suspect areas of code already, in 
-> the testing you did?
 
-Not yet. Although I only did basic stress testing with tmpfs and ext3 so
-far. It would get even further useful for fs developers combined with
-annotating more bit locks like buffer lock.
+--ew6BAiZeqk4r7MaW
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW. I tried adding a might_fault() under page lock to see the infamous
-old page_lock -> mmap_sem deadlock, but it didn't warn. Explicitly doing
-a down_write/up_write of mmap_sem did warn. But it took a while to build
-the required chains, so I may have just been unlucky.
+Hello,
 
- 
-> Maybe it should be test-driven for a while, in a non-append-only tree such as 
-> -mm, to see whether it's finding real bugs.
+Sure. Give me a couple of days. By the way, should I test against .34
+or .33?
 
-I think it should be very useful for filesystem developers. It doesn't
-seem too intrusive (and I will make it less so, by not open-coding the
-mutex_release/mutex_acquire pairs when changing page mapping).
+	Sergey
 
-Filesystems and mm/vfs/fs lock interactions may be the most complex in
-the kernel...
 
-If you are worried about struct page bloat, it's already getting bloated
-by ptl spinlock in there. But it could always be configurable.
+On (03/16/10 01:33), Eric Dumazet wrote:
+> Le lundi 15 mars 2010 =E0 22:01 +0100, Eric Dumazet a =E9crit :
+>=20
+> > Yes, this is wrong. In this context (process context, not softirq), we
+> > should use netif_rx() or just drop frames if we are in reset phase.
+> >=20
+>=20
+> Sergey,
+>=20
+> Here is a compiled but untested patch (I dont have the hardware), could
+> you please test it ?
+>=20
+> Thanks
+>=20
+> [PATCH] r8169: Fix rtl8169_rx_interrupt()
+>=20
+> In case a reset is performed, rtl8169_rx_interrupt() is called from
+> process context instead of softirq context. Special care must be taken
+> to call appropriate network core services (netif_rx() instead of
+> netif_receive_skb()). VLAN handling also corrected.
+>=20
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Diagnosed-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+> diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+> index 9d3ebf3..d873639 100644
+> --- a/drivers/net/r8169.c
+> +++ b/drivers/net/r8169.c
+> @@ -1038,14 +1038,14 @@ static void rtl8169_vlan_rx_register(struct net_d=
+evice *dev,
+>  }
+> =20
+>  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
+ *desc,
+> -			       struct sk_buff *skb)
+> +			       struct sk_buff *skb, int polling)
+>  {
+>  	u32 opts2 =3D le32_to_cpu(desc->opts2);
+>  	struct vlan_group *vlgrp =3D tp->vlgrp;
+>  	int ret;
+> =20
+>  	if (vlgrp && (opts2 & RxVlanTag)) {
+> -		vlan_hwaccel_receive_skb(skb, vlgrp, swab16(opts2 & 0xffff));
+> +		__vlan_hwaccel_rx(skb, vlgrp, swab16(opts2 & 0xffff), polling);
+>  		ret =3D 0;
+>  	} else
+>  		ret =3D -1;
+> @@ -1062,7 +1062,7 @@ static inline u32 rtl8169_tx_vlan_tag(struct rtl816=
+9_private *tp,
+>  }
+> =20
+>  static int rtl8169_rx_vlan_skb(struct rtl8169_private *tp, struct RxDesc=
+ *desc,
+> -			       struct sk_buff *skb)
+> +			       struct sk_buff *skb, int polling)
+>  {
+>  	return -1;
+>  }
+> @@ -4429,12 +4429,20 @@ out:
+>  	return done;
+>  }
+> =20
+> +/*
+> + * Warning : rtl8169_rx_interrupt() might be called :
+> + * 1) from NAPI (softirq) context
+> + *	(polling =3D 1 : we should call netif_receive_skb())
+> + * 2) from process context (rtl8169_reset_task())
+> + *	(polling =3D 0 : we must call netif_rx() instead)
+> + */	=09
+>  static int rtl8169_rx_interrupt(struct net_device *dev,
+>  				struct rtl8169_private *tp,
+>  				void __iomem *ioaddr, u32 budget)
+>  {
+>  	unsigned int cur_rx, rx_left;
+>  	unsigned int delta, count;
+> +	int polling =3D (budget !=3D ~(u32)0) ? 1 : 0;
+> =20
+>  	cur_rx =3D tp->cur_rx;
+>  	rx_left =3D NUM_RX_DESC + tp->dirty_rx - cur_rx;
+> @@ -4496,8 +4504,12 @@ static int rtl8169_rx_interrupt(struct net_device =
+*dev,
+>  			skb_put(skb, pkt_size);
+>  			skb->protocol =3D eth_type_trans(skb, dev);
+> =20
+> -			if (rtl8169_rx_vlan_skb(tp, desc, skb) < 0)
+> -				netif_receive_skb(skb);
+> +			if (rtl8169_rx_vlan_skb(tp, desc, skb, polling) < 0) {
+> +				if (likely(polling))
+> +					netif_receive_skb(skb);
+> +				else
+> +					netif_rx(skb);
+> +			}
+> =20
+>  			dev->stats.rx_bytes +=3D pkt_size;
+>  			dev->stats.rx_packets++;
+>=20
+>=20
 
-No it isn't ready for -mm yet, let alone an append-only tree, I just
-wanted to get opinions from mm and fs (and lockdep) people.
+--ew6BAiZeqk4r7MaW
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-Thanks,
-Nick
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iJwEAQECAAYFAkufKicACgkQfKHnntdSXjTDyAQAs7YJYfZNOlIVlYwzqk6HJC6W
+gokxXZMA2U/0OFfRZTAaItL54aPd6WXdbKCuaLz2wpD6m+15TeQHDL6Tqkyd8Fr8
+0M5N3LQTUB3BLa0NEsRXqnZGQjcnwHesXEdg4247Y9ZtzrNwXhHEHYJDwryZZv81
+EhScS0B0FVmT5uaEeaQ=
+=VK+s
+-----END PGP SIGNATURE-----
+
+--ew6BAiZeqk4r7MaW--
