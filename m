@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966091Ab0CPJeA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:34:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5058 "EHLO mx1.redhat.com"
+	id S966095Ab0CPJe5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:34:57 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39626 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966065Ab0CPJd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:33:59 -0400
-Message-ID: <4B9F5078.10902@redhat.com>
-Date: Tue, 16 Mar 2010 11:33:44 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S966075Ab0CPJez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:34:55 -0400
+Date: Tue, 16 Mar 2010 10:34:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [RFC] [PATCH 1/1] perf: add support for arch-dependent symbolic
+ event names to "perf stat"
+Message-ID: <20100316093440.GE7961@elte.hu>
+References: <4B8F1B58.5000702@linux.vnet.ibm.com>
+ <4B8FFE55.5070008@linux.vnet.ibm.com>
+ <20100311124608.GG31354@elte.hu>
+ <20100312024100.GA2734@brick.ozlabs.ibm.com>
 MIME-Version: 1.0
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       zhiteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <1268717232.2813.36.camel@localhost>	 <4B9F19F7.6000309@redhat.com>  <1268725724.2813.48.camel@localhost> <1268731733.2813.54.camel@localhost>
-In-Reply-To: <1268731733.2813.54.camel@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100312024100.GA2734@brick.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 11:28 AM, Zhang, Yanmin wrote:
-> Sorry. I found currently --pid isn't process but a thread (main thread).
->
-> Ingo,
->
-> Is it possible to support a new parameter or extend --inherit, so 'perf record' and
-> 'perf top' could collect data on all threads of a process when the process is running?
->    
 
-That seems like a worthwhile addition regardless of this thread.  
-Profile all current threads and any new ones.  It probably makes sense 
-to call this --pid and rename the existing --pid to --thread.
+* Paul Mackerras <paulus@samba.org> wrote:
 
--- 
-error compiling committee.c: too many arguments to function
+> On Thu, Mar 11, 2010 at 01:46:08PM +0100, Ingo Molnar wrote:
+> > 
+> > * Corey Ashford <cjashfor@linux.vnet.ibm.com> wrote:
+> > 
+> > > On 3/3/2010 6:30 PM, Corey Ashford wrote:
+> > > >For your review, this patch adds support for arch-dependent symbolic
+> > > >event names to the "perf stat" tool, and could be expanded to other
+> > > >"perf *" commands fairly easily, I suspect.
+> 
+> > I'm quite much against stop-gap measures like this - they tend to become 
+> > tomorrow's impossible-to-remove quirk.
+> > 
+> > If you want extensible events you can already do it by providing an ftrace 
+> > tracepoint event via TRACE_EVENT. They are easy to add and ad-hoc, and are 
+> > supported throughout by perf.
+> 
+> If I've understood correctly what Corey is doing, I think you're missing the 
+> point.  The idea, I thought, was to provide a way to be able to use symbolic 
+> names for raw hardware events rather than just numbers.  I don't see how 
+> ftrace tracepoint events are relevant to that.
 
+tracepoints are relevant because they are the currently best way of how we 
+assign symbolic names to various kernel-internal events. For ad-hoc usecases 
+like this:
+
+   http://dri.freedesktop.org/wiki/IntelPerformanceTuning
+
+I'd much rather see that facility used (and, to the extent needed, extended) 
+to provide support for rare arch events that we dont want to enumerate in a 
+generic way.
+
+Or, if the events are important enough to be hardcoded into the perf ABI 
+itself, they should be generalized in a meaningful way - even if you dont 
+expect them to show up on other CPUs.
+
+	Ingo
