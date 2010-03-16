@@ -1,91 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757768Ab0CPK03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 06:26:29 -0400
-Received: from mail-qy0-f199.google.com ([209.85.221.199]:42360 "EHLO
-	mail-qy0-f199.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab0CPK01 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 06:26:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Cs8FphKbpYWVGfFhkBHLmIw31m+JfxovY6EPGEXVUDB5w9NbtHBfGoVy7Nrfd2V6uc
-         kXXlKLPHUDNp+t0Sk4cNcIpC0HUvBybJFrmbGTMGXqmQ/w2oWaILD/JVdtf2Q1bRbnzF
-         yf77NPNxS85eVPiwiYbw9lkn9pVZVybIR5uuY=
-MIME-Version: 1.0
-In-Reply-To: <1268649663.3154.9.camel@edumazet-laptop>
-References: <20100311134556.GA6344@linux.vnet.ibm.com>
-	 <1268401058.3141.9.camel@edumazet-laptop> <20100313053356.GC3704@hack>
-	 <20100313215838.GB6805@linux.vnet.ibm.com>
-	 <20100315010802.GB2735@hack>
-	 <2375c9f91003142010g61841666iad53c24f39036acf@mail.gmail.com>
-	 <2375c9f91003150239m1abc765bh59eb51c948eed592@mail.gmail.com>
-	 <1268647460.3154.1.camel@edumazet-laptop>
-	 <2375c9f91003150312u37dfd70fk55a4b8820e13590e@mail.gmail.com>
-	 <1268649663.3154.9.camel@edumazet-laptop>
-Date: Tue, 16 Mar 2010 18:26:26 +0800
-Message-ID: <2375c9f91003160326j4a088701y9f0b923a9776a39e@mail.gmail.com>
-Subject: Re: 2.6.34-rc1: rcu lockdep bug?
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       David Miller <davem@davemloft.net>, peterz@infradead.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S966144Ab0CPK1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 06:27:24 -0400
+Received: from verein.lst.de ([213.95.11.210]:38529 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752674Ab0CPK1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 06:27:22 -0400
+Date: Tue, 16 Mar 2010 11:26:37 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Avi Kivity <avi@redhat.com>
+Cc: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
+Message-ID: <20100316102637.GA23584@lst.de>
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B9F4CBD.3020805@redhat.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 6:41 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le lundi 15 mars 2010 à 18:12 +0800, Américo Wang a écrit :
->> On Mon, Mar 15, 2010 at 6:04 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> > Le lundi 15 mars 2010 à 17:39 +0800, Américo Wang a écrit :
->> >
->> >>
->> >> Ok, I think I found what lockdep really complains about, it is that we took
->> >> spin_lock in netpoll_poll_lock() which is in hardirq-enabled environment,
->> >> later, we took another spin_lock with spin_lock_irqsave() in netpoll_rx(),
->> >> so lockdep thought we broke the locking rule.
->> >>
->> >> I don't know why netpoll_rx() needs irq disabled, it looks like that no one
->> >> takes rx_lock in hardirq context. So can we use spin_lock(&rx_lock)
->> >> instead? Or am I missing something here? Eric? David?
->> >
->> > I am a bit lost.
->> >
->> > Could you give the complete picture, because I cannot find it in my
->> > netdev archives.
->> >
->>
->> Sure, sorry for this.
->>
->> Here is the whole thread:
->>
->> http://lkml.org/lkml/2010/3/11/100
->
-> OK thanks
->
-> netpoll_rx() can be called from hard irqs (netif_rx()), so rx_lock
-> definitly needs irq care.
->
-> netpoll_poll_lock() does take a spinlock with irq enabled, but its not
-> rx_lock, its napi->poll_lock.
+Avi,
 
-Yeah, I knew, but besides rcu locks, these two locks are the only
-locks that can be taken in the call chain. I suspect lockdep got
-something wrong.
+cache=writeback can be faster than cache=none for the same reasons
+a disk cache speeds up access.  As long as the I/O mix contains more
+asynchronous then synchronous writes it allows the host to do much
+more reordering, only limited by the cache size (which can be quite
+huge when using the host pagecache) and the amount of cache flushes
+coming from the host.  If you have a fsync heavy workload or metadata
+operation with a filesystem like the current XFS you will get lots
+of cache flushes that make the use of the additional cache limits.
 
->
-> I dont see what could be the problem, is it reproductible with vanilla
-> kernel ?
->
+If you don't have a of lot of cache flushes, e.g. due to dumb
+applications that do not issue fsync, or even run ext3 in it's default
+mode never issues cache flushes the benefit will be enormous, but the
+data loss and possible corruption will be enormous.
 
-No. I don't know why, my patch doesn't touch any function in the
-call chain.
+But even for something like btrfs that does provide data integrity
+but issues cache flushes fairly effeciently data=writeback may
+provide a quite nice speedup, especially if using multiple guest
+accessing the same spindle(s).
 
-I already "fix" this in another way, so no need to worry this any more.
-
-Thanks for your help!
+But I wouldn't be surprised if IBM's exteme differences are indeed due
+to the extremly unsafe ext3 default behaviour.
