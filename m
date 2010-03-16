@@ -1,125 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab0CPVGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:06:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62121 "EHLO
+	id S1753805Ab0CPVGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:06:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62111 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab0CPVGH (ORCPT
+	with ESMTP id S1751157Ab0CPVGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:06:07 -0400
+	Tue, 16 Mar 2010 17:06:04 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: gregkh@suse.de, Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jason Wessel <jason.wessel@windriver.com>,
-       Alan Cox <alan@linux.intel.com>, Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 5/5] usb-serialy,sysrq: Run the sysrq handler in a tasklet
-Date: Tue, 16 Mar 2010 16:05:46 -0500
-Message-Id: <1268773546-12457-6-git-send-email-jason.wessel@windriver.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] V2 usb console improvements series
+Date: Tue, 16 Mar 2010 16:05:41 -0500
+Message-Id: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1268773546-12457-5-git-send-email-jason.wessel@windriver.com>
-References: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com>
- <1268773546-12457-2-git-send-email-jason.wessel@windriver.com>
- <1268773546-12457-3-git-send-email-jason.wessel@windriver.com>
- <1268773546-12457-4-git-send-email-jason.wessel@windriver.com>
- <1268773546-12457-5-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 16 Mar 2010 21:06:02.0510 (UTC) FILETIME=[7C2EAAE0:01CAC54C]
+X-OriginalArrivalTime: 16 Mar 2010 21:05:56.0807 (UTC) FILETIME=[78C87570:01CAC54C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a sysrq is processed on the while holding the usb hcd lock, it is
-impossible to drain the queue of urbs via the polling interface and
-all the printk output is lost.
+I aggregated and ported all usb patches I have previously posted which
+are not mainlined into a single series aimed at providing a stable usb
+console.
 
-Using a tasklet to schedule the sysrq allows the hcd device lock to
-free up, and you can issue a sysrq-t to get the task list.
+Greg Kroah-Hartman already picked up the first 2 patches in the
+series, but for completeness they are provided here because one of the
+other patches requires the context changes.
 
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Alan Cox <alan@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>
-CC: linux-usb@vger.kernel.org
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Differences in V2 vs V1 patch set
+  * The optimize usb sysrq was dropped entirely
+  * Removed the unused export symbol per Alan Stern's comments
+  * Updated the definition of usb_poll_irq() per Alan Stern's comments
+
+
+Thanks,
+Jason.
+
+
+-- The recap about synchronous usb serial consoles --
+
+This is picking up where Alan Stern and I left off after a discussion
+in September 2009.
+
+The serial uart code implements the console writes synchronously such
+that you get the data right away and "pay the toll" in terms of system
+performance loss if you do lots of printk's to the console.  The usb
+serial console code just eats the data if there is no room left in the
+queue, and you do not see the data until the interrupts are restored.
+
+If we assume the main reason you would use a usb console device is to
+get printk's then every effort should be made to be able to see the
+printk's on the usb console device.  In this patch series, two
+conditions must be met before the hcd device would get polled.
+
+1) The data write is a usb serial console write
+2) The usb serial driver has set the variable max_in_flight_urbs
+
+Based on Alan's comments about the 1ms minimum response time for the
+hcd device I ended up using a maximum 3ms delay loop.  The 3ms was
+selected based on testing the usb_debug device and the ftdi usb rs232
+port.  I found the usb_debug device needed the 1ms and the ftdi device
+required slightly more than 2ms in the worst case else there was some
+sporadic data loss.
+
+I also tested incurring the penalty 3ms for each write with the device
+in a "failed" capacity.  In that case it introduced a 3ms delay for
+each printk() which only showed any noticeable delay with the "SysRq t"
+packet.
+
+Part of having the console stable requires that usb sysrq handler get
+executed in a tasklet.  The hcd device lock is always held while the
+driver call backs are executed.  The means you cannot get the sysrq
+printk's out to the usb console device after the in_flight urb queue
+is filled.
+
+Thanks,
+Jason.
+
 ---
- drivers/char/sysrq.c         |   29 +++++++++++++++++++++++++++++
- drivers/usb/serial/generic.c |    2 +-
- include/linux/sysrq.h        |    4 ++++
- 3 files changed, 34 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-index 1ae2de7..ad62e53 100644
---- a/drivers/char/sysrq.c
-+++ b/drivers/char/sysrq.c
-@@ -584,6 +584,35 @@ int unregister_sysrq_key(int key, struct sysrq_key_op *op_p)
- }
- EXPORT_SYMBOL(unregister_sysrq_key);
- 
-+/* The sysrq tasklet is used only in the rare case that an
-+ * input/output character device processes a sysrq in its input
-+ * routine while holding a lock required for the output routine for
-+ * the console device.
-+ */
-+static struct sysrq_tasklet_data {
-+	struct tty_struct *tty;
-+	unsigned int key;
-+	int pending;
-+} priv_sysrq_data;
-+
-+static void sysrq_task(unsigned long args)
-+{
-+	handle_sysrq(priv_sysrq_data.key, priv_sysrq_data.tty);
-+	priv_sysrq_data.pending = 0;
-+}
-+static DECLARE_TASKLET(sysrq_tasklet, sysrq_task, 0);
-+
-+void handle_sysrq_tasklet(int key, struct tty_struct *tty)
-+{
-+	if (priv_sysrq_data.pending)
-+		return;
-+	priv_sysrq_data.pending = 1;
-+	priv_sysrq_data.key = key;
-+	priv_sysrq_data.tty = tty;
-+	tasklet_schedule(&sysrq_tasklet);
-+}
-+EXPORT_SYMBOL(handle_sysrq_tasklet);
-+
- #ifdef CONFIG_PROC_FS
- /*
-  * writing 'C' to /proc/sysrq-trigger is like sysrq-C
-diff --git a/drivers/usb/serial/generic.c b/drivers/usb/serial/generic.c
-index 4dea9d7..206f181 100644
---- a/drivers/usb/serial/generic.c
-+++ b/drivers/usb/serial/generic.c
-@@ -558,7 +558,7 @@ int usb_serial_handle_sysrq_char(struct tty_struct *tty,
- {
- 	if (port->sysrq && port->port.console) {
- 		if (ch && time_before(jiffies, port->sysrq)) {
--			handle_sysrq(ch, tty);
-+			handle_sysrq_tasklet(ch, tty);
- 			port->sysrq = 0;
- 			return 1;
- 		}
-diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
-index 99adcdc..0ff5fb4 100644
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -52,6 +52,7 @@ extern int __sysrq_enabled;
-  */
- 
- void handle_sysrq(int key, struct tty_struct *tty);
-+void handle_sysrq_tasklet(int key, struct tty_struct *tty);
- void __handle_sysrq(int key, struct tty_struct *tty, int check_mask);
- int register_sysrq_key(int key, struct sysrq_key_op *op);
- int unregister_sysrq_key(int key, struct sysrq_key_op *op);
-@@ -70,6 +71,9 @@ static inline int __reterr(void)
- static inline void handle_sysrq(int key, struct tty_struct *tty)
- {
- }
-+static inline void handle_sysrq_tasklet(int key, struct tty_struct *tty)
-+{
-+}
- 
- #define register_sysrq_key(ig,nore) __reterr()
- #define unregister_sysrq_key(ig,nore) __reterr()
--- 
-1.6.4.rc1
+The following changes since commit a3d3203e4bb40f253b1541e310dc0f9305be7c84:
+  Linus Torvalds (1):
+        Merge branch 'release' of git://git.kernel.org/.../lenb/linux-acpi-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_gregkh
+
+Jason Wessel (5):
+      tty_port,usb-console: Fix usb serial console open/close regression
+      usb-serial: Use tty_port version of console instead of the usb_serial_port version
+      usb-console: pass baud from console to the initial tty open
+      usb-hcd,usb-console: poll hcd device to force usb console writes
+      usb-serialy,sysrq: Run the sysrq handler in a tasklet
+
+ drivers/char/sysrq.c            |   29 ++++++++++++++++
+ drivers/char/tty_port.c         |    2 +-
+ drivers/usb/core/hcd.c          |   10 +++++
+ drivers/usb/serial/console.c    |   70 ++++++++++++++++++++++----------------
+ drivers/usb/serial/ftdi_sio.c   |    9 +++--
+ drivers/usb/serial/generic.c    |    6 ++--
+ drivers/usb/serial/pl2303.c     |    8 +++--
+ drivers/usb/serial/usb-serial.c |    4 +-
+ drivers/usb/serial/usb_debug.c  |    2 +-
+ include/linux/sysrq.h           |    4 ++
+ include/linux/tty.h             |    1 +
+ include/linux/usb.h             |    3 ++
+ include/linux/usb/serial.h      |    2 -
+ 13 files changed, 104 insertions(+), 46 deletions(-)
+
 
