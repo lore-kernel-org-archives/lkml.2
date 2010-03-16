@@ -1,185 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751514Ab0CPVs4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:48:56 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:1206 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751036Ab0CPVsz (ORCPT
+	id S1751706Ab0CPVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:54:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48627
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751332Ab0CPVyX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:48:55 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAOaZn0vCTtAn/2dsb2JhbACbBXO6boR2BA
-Date: Tue, 16 Mar 2010 22:48:50 +0100
-From: Philippe De Muyter <phdm@macqel.be>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH vfat] fix access to IOMEGA USB+network disks
-Message-ID: <20100316214849.GA11342@frolo.macqel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-09)
+	Tue, 16 Mar 2010 17:54:23 -0400
+Date: Tue, 16 Mar 2010 14:54:44 -0700 (PDT)
+Message-Id: <20100316.145444.71951587.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT]: Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ogawa,
 
-This is a better fix to accessing vfat entries with trailing dots created
-by an external vfat driver (like the one in IOMEGA home network hard drives).
-The approach here is to forbid removing those entries and to allow accessing
-them and differentiating from their eventual trailing-dots-less counterparts.
+1) Several bridging fixes from YOSHIFUJI Hideaki, Herbert Xu,
+   and Michael Braun.
 
-Philippe
+2) Gigaset ISDN driver fixes from Tilman Schmidt.
 
---
+3) Several fixes via Andrew Morton including:
 
-Some vfat-formatted network disks that are also usb disk do not discard
-trailing dots when creating files or directories via ftp.
-Connecting afterwards this drive via usb to a linux machine leads to many
-problems, because getdents reports files where open, stat and the likes
-will fail, and one could even access/remove the wrong file if there happens
-to be two files in the same directory whose names differ only by the
-absence/presence of trailing dots.
+	Two Isdn4Linux fixes from Ian Munsie.
+	Remove obsolete kconfig references from Christoph Egger
+	Use for_each_set_bit() in phonet and atm from Akinobu Mita
 
-Avoid treating such entries the same as their trailing-dots-less counterparts,
-and forbid removing/renaming/creating them.
+4) L2TP OOPS and socket refcount bug fixes from James Chapman.
 
-This is done by by first trying to retrieve the entry with the full name,
-and only if that fails and there are trailing dots in the searched name,
-try then to find the truncated name.  When called with a name with trailing
-dots by vfat_rmdir, vfat_rename, and vfat_unlink, pretend we did not find it
-and return ENAMETOOLONG.  When called by vfat_lookup, which is not used to
-remove the entry, succeed.
+5) procfs rejects slashes in request_irq() names, fix for NE
+   driver from Atsushi Nemoto.
 
-getdents users will now be able to open, stat, chdir those files;
-rm, rmdir and mv will now explicitly fail;
-and opening the file for reading and even truncating and writing will succeed.
+6) Remove dead code in myri driver, from Dan Carpenter.
 
-some tests results :
+7) DCCP oopses if initialization fails, fix from Gerrit Renker.
 
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> ls -l
-total 384
--rwxr-xr-x 1 phdm root   910 2010-03-14 17:03 123456789
--rwxr-xr-x 1 phdm root   658 2010-03-15 22:54 123456789.
-drwxr-xr-x 2 phdm root 32768 2010-03-15 21:02 Claude_Francois-Hommage...
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> rm 123456789.
-rm: cannot remove `123456789.': File name too long
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> mv 123456789. xxx
-mv: cannot move `123456789.' to `xxx': File name too long
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> ls Claude_Francois-Hommage.../
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> rmdir Claude_Francois-Hommage.../
-rmdir: failed to remove `Claude_Francois-Hommage.../': File name too long
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> > 123456789.
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots> ls -l
-total 352
--rwxr-xr-x 1 phdm root   910 2010-03-14 17:03 123456789
--rwxr-xr-x 1 phdm root     0 2010-03-16 22:28 123456789.
-drwxr-xr-x 2 phdm root 32768 2010-03-15 21:02 Claude_Francois-Hommage...
-phdm@linux-ellu:/media/IOMEGA_HDD/PUBLIC/trailing_dots>
+8) Fix lock imbalance in ksz884x and NULL deref fix in netpoll
+   from Jiri Slaby.
 
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+9) be2net big-endian bug fix from Ajit Khaparde.
 
-diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
-index c1ef501..cb1dfa2 100644
---- a/fs/fat/namei_vfat.c
-+++ b/fs/fat/namei_vfat.c
-@@ -138,9 +138,12 @@ static int vfat_cmpi(struct dentry *dentry, struct qstr *a, struct qstr *b)
- 	struct nls_table *t = MSDOS_SB(dentry->d_inode->i_sb)->nls_io;
- 	unsigned int alen, blen;
- 
--	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = vfat_striptail_len(a);
--	blen = vfat_striptail_len(b);
-+	/*
-+	 * Do not remove trailing '.'s here, because we accept disks with
-+	 * such entries
-+	 */
-+	alen = a->len;
-+	blen = b->len;
- 	if (alen == blen) {
- 		if (nls_strnicmp(t, a->name, b->name, alen) == 0)
- 			return 0;
-@@ -155,9 +158,12 @@ static int vfat_cmp(struct dentry *dentry, struct qstr *a, struct qstr *b)
- {
- 	unsigned int alen, blen;
- 
--	/* A filename cannot end in '.' or we treat it like it has none */
--	alen = vfat_striptail_len(a);
--	blen = vfat_striptail_len(b);
-+	/*
-+	 * Do not remove trailing '.'s here, because we accept disks with
-+	 * such entries
-+	 */
-+	alen = a->len;
-+	blen = b->len;
- 	if (alen == blen) {
- 		if (strncmp(a->name, b->name, alen) == 0)
- 			return 0;
-@@ -693,11 +699,29 @@ cleanup:
- }
- 
- static int vfat_find(struct inode *dir, struct qstr *qname,
--		     struct fat_slot_info *sinfo)
-+		     struct fat_slot_info *sinfo, int for_removal)
- {
-+	int err;
- 	unsigned int len = vfat_striptail_len(qname);
-+
- 	if (len == 0)
- 		return -ENOENT;
-+	/* Some combined ethernet + usb external hard drive do not
-+	 * remove the trailing dots when creating entries using the
-+	 * ethernet interface.  (e.g. Iomega Home Network Hard Drive)
-+	 * Make accessing those entries possible, but disallow removing them.
-+	 */
-+	/* Search for the name given by the user, not truncated */
-+	err = fat_search_long(dir, qname->name, qname->len, sinfo);
-+	if (!err) {
-+		if (!for_removal || (len == qname->len))
-+			return 0;
-+		return -ENAMETOOLONG;
-+	}
-+	/* If truncated name is equal to original name, we have finished */
-+	if (len == qname->len)
-+		return err;
-+	/* Search for the truncated name */
- 	return fat_search_long(dir, qname->name, len, sinfo);
- }
- 
-@@ -721,7 +745,7 @@ static struct dentry *vfat_lookup(struct inode *dir, struct dentry *dentry,
- 
- 	lock_super(sb);
- 
--	err = vfat_find(dir, &dentry->d_name, &sinfo);
-+	err = vfat_find(dir, &dentry->d_name, &sinfo, 0);
- 	if (err) {
- 		if (err == -ENOENT) {
- 			inode = NULL;
-@@ -817,7 +841,7 @@ static int vfat_rmdir(struct inode *dir, struct dentry *dentry)
- 	err = fat_dir_empty(inode);
- 	if (err)
- 		goto out;
--	err = vfat_find(dir, &dentry->d_name, &sinfo);
-+	err = vfat_find(dir, &dentry->d_name, &sinfo, 1);
- 	if (err)
- 		goto out;
- 
-@@ -844,7 +868,7 @@ static int vfat_unlink(struct inode *dir, struct dentry *dentry)
- 
- 	lock_super(sb);
- 
--	err = vfat_find(dir, &dentry->d_name, &sinfo);
-+	err = vfat_find(dir, &dentry->d_name, &sinfo, 1);
- 	if (err)
- 		goto out;
- 
-@@ -923,7 +947,7 @@ static int vfat_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	old_inode = old_dentry->d_inode;
- 	new_inode = new_dentry->d_inode;
- 	lock_super(sb);
--	err = vfat_find(old_dir, &old_dentry->d_name, &old_sinfo);
-+	err = vfat_find(old_dir, &old_dentry->d_name, &old_sinfo, 1);
- 	if (err)
- 		goto out;
- 
+10) Add SMSC97xx USB gigabit driver from Steve Glandinning.
+
+    Fix PHY reset completion in SMSX95xx driver, also from Steve.
+
+11) davinci driver build broke due to removal of deprecated
+    DMA cache flushing interfaces, use dma_{map,unmap}_*() instead.
+    From Sekhar Nori.
+
+12) Add missing ISDN PCI device IDs, from Lars Ellenberg.
+
+13) bnx2x memory barrier fixes from Stanislaw Gruszka.
+
+14) Routing cache timer can crash in timer code due to missed
+    synchronization, fix by using mod_timer(), from Vitaliy Gusev.
+
+Please pull, thanks a lot!
+
+The following changes since commit a3d3203e4bb40f253b1541e310dc0f9305be7c84:
+  Linus Torvalds (1):
+        Merge branch 'release' of git://git.kernel.org/.../lenb/linux-acpi-2.6
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Ajit Khaparde (1):
+      be2net: fix mccq create for big endian architectures
+
+Akinobu Mita (2):
+      phonet: use for_each_set_bit()
+      atm: use for_each_set_bit()
+
+Atsushi Nemoto (1):
+      ne: Do not use slashes in irq name string
+
+Christoph Egger (2):
+      obsolete config in kernel source: USE_INTERNAL_TIMER
+      obsolete config in kernel source: HSO_AUTOPM
+
+Dan Carpenter (1):
+      myri: remove dead code
+
+David S. Miller (3):
+      e100: Fix ring parameter change handling regression.
+      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+      bridge: Make first arg to deliver_clone const.
+
+Gerrit Renker (1):
+      net-2.6 [Bug-Fix][dccp]: fix oops caused after failed initialisation
+
+Herbert Xu (1):
+      bridge: Move NULL mdb check into br_mdb_ip_get
+
+Ian Munsie (2):
+      i4l: silence compiler warnings for array access in Eicon DIVA ISDN driver
+      i4l: change magic numbers in Eicon DIVA ISDN driver to symbolic names
+
+James Chapman (2):
+      l2tp: Fix oops in pppol2tp_xmit
+      l2tp: Fix UDP socket reference count bugs in the pppol2tp driver
+
+Jiri Slaby (2):
+      NET: ksz884x, fix lock imbalance
+      NET: netpoll, fix potential NULL ptr dereference
+
+Julia Lawall (1):
+      drivers/net: drop redundant memset
+
+Lars Ellenberg (1):
+      ISDN: Add PCI ID for HFC-2S/4S Beronet Card PCIe
+
+Michael Braun (1):
+      bridge: Fix br_forward crash in promiscuous mode
+
+Neil Horman (1):
+      tipc: fix lockdep warning on address assignment
+
+Randy Dunlap (1):
+      timestamping: fix example build
+
+Roel Kluin (1):
+      isdn: misplaced parenthesis in pof_handle_data()
+
+Sekhar Nori (1):
+      net: davinci emac: use dma_{map, unmap}_single API for cache coherency
+
+Stanislaw Gruszka (3):
+      bnx2x: use smp_mb() to keep ordering of read write operations
+      bnx2x: remove not necessary compiler barrier
+      bnx2x: change smp_mb() comment to conform the true
+
+Steve Glendinning (2):
+      smsc75xx: SMSC LAN75xx USB gigabit ethernet adapter driver
+      smsc95xx: wait for PHY to complete reset during init
+
+Tilman Schmidt (4):
+      gigaset: avoid registering CAPI driver more than once
+      gigaset: correct clearing of at_state strings on RING
+      gigaset: prune use of tty_buffer_request_room
+      gigaset: correct range checking off by one error
+
+Vitaliy Gusev (1):
+      route: Fix caught BUG_ON during rt_secret_rebuild_oneshot()
+
+YOSHIFUJI Hideaki (3):
+      bridge br_multicast: Fix handling of Max Response Code in IGMPv3 message.
+      bridge br_multicast: Fix skb leakage in error path.
+      bridge br_multicast: Don't refer to BR_INPUT_SKB_CB(skb)->mrouters_only without IGMP snooping.
+
+chaithrika@ti.com (1):
+      TI DaVinci EMAC: Convert to dev_pm_ops
+
+ Documentation/networking/Makefile                  |    2 +
+ Documentation/networking/timestamping/Makefile     |   11 +-
+ .../networking/timestamping/timestamping.c         |   10 +-
+ drivers/atm/lanai.c                                |    7 +-
+ drivers/isdn/gigaset/capi.c                        |   46 +-
+ drivers/isdn/gigaset/common.c                      |    6 +-
+ drivers/isdn/gigaset/ev-layer.c                    |   12 +-
+ drivers/isdn/gigaset/gigaset.h                     |    6 +-
+ drivers/isdn/gigaset/i4l.c                         |   28 +-
+ drivers/isdn/gigaset/interface.c                   |    1 -
+ drivers/isdn/hardware/eicon/message.c              |   35 +-
+ drivers/isdn/hardware/mISDN/hfcmulti.c             |    6 +
+ drivers/isdn/hysdn/hysdn_boot.c                    |    2 +-
+ drivers/net/benet/be_cmds.c                        |    2 +-
+ drivers/net/bnx2x_main.c                           |   10 +-
+ drivers/net/davinci_emac.c                         |   72 +-
+ drivers/net/e100.c                                 |    2 +-
+ drivers/net/irda/w83977af_ir.c                     |   36 -
+ drivers/net/ksz884x.c                              |    8 +-
+ drivers/net/myri10ge/myri10ge.c                    |    1 -
+ drivers/net/ne.c                                   |    2 +-
+ drivers/net/pppol2tp.c                             |    6 +-
+ drivers/net/s2io.c                                 |    4 +-
+ drivers/net/usb/Kconfig                            |    8 +
+ drivers/net/usb/Makefile                           |    1 +
+ drivers/net/usb/hso.c                              |    3 -
+ drivers/net/usb/smsc75xx.c                         | 1288 ++++++++++++++++++++
+ drivers/net/usb/smsc75xx.h                         |  421 +++++++
+ drivers/net/usb/smsc95xx.c                         |   15 +
+ net/bridge/br_device.c                             |    2 +-
+ net/bridge/br_forward.c                            |   18 +-
+ net/bridge/br_input.c                              |    4 +-
+ net/bridge/br_multicast.c                          |   18 +-
+ net/bridge/br_private.h                            |   10 +-
+ net/core/netpoll.c                                 |    4 +-
+ net/dccp/ipv4.c                                    |    8 +-
+ net/dccp/ipv6.c                                    |    8 +-
+ net/dccp/proto.c                                   |   16 +-
+ net/ipv4/route.c                                   |   16 +-
+ net/phonet/pn_dev.c                                |    3 +-
+ net/phonet/pn_netlink.c                            |    3 +-
+ net/tipc/ref.c                                     |   26 +-
+ 42 files changed, 1975 insertions(+), 212 deletions(-)
+ create mode 100644 drivers/net/usb/smsc75xx.c
+ create mode 100644 drivers/net/usb/smsc75xx.h
