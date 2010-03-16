@@ -1,142 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966234Ab0CPS2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:28:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38385 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753321Ab0CPS2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:28:19 -0400
-Date: Tue, 16 Mar 2010 19:28:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100316182809.GA26602@elte.hu>
-References: <20100316122903.GA8831@elte.hu>
- <4B9F7C6A.3070207@redhat.com>
- <20100316130840.GA24808@elte.hu>
- <4B9F84C0.70706@redhat.com>
- <20100316133114.GB575@elte.hu>
- <y0mbpeo1f1y.fsf@fche.csb>
- <20100316155221.GA19699@elte.hu>
- <4B9FC11A.1070507@linux.vnet.ibm.com>
- <20100316175243.GC23859@elte.hu>
- <4B9FC8B2.6070404@linux.vnet.ibm.com>
+	id S966557Ab0CPS3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:29:08 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:37169 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937482Ab0CPS3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 14:29:06 -0400
+X-Greylist: delayed 13159 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 14:29:05 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DStZfjztF8AoL5w60I2Dl+O5XrDk47FpAYK3EoLrFQFhWvpnevhv/aps2wk3nByu9x
+         5KsY4WXe39Y+SXZ1W+Fz3DpGCIlh9Mi+o68DNZ8c3I3jQsRZX8ysKtjAy7yL/vMyNBJH
+         UHJtNqzxLMhYVhxBIVVpbBLkUHXKd3XRCYO4w=
+Date: Tue, 16 Mar 2010 20:26:19 +0200
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, David Miller <davem@davemloft.net>,
+       Ingo Molnar <mingo@elte.hu>, Francois Romieu <romieu@fr.zoreil.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, netdev@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] r8169: Fix rtl8169_rx_interrupt()
+Message-ID: <20100316182619.GA3451@swordfish>
+References: <20100307192305.GA598@elte.hu>
+ <20100308125122.GA11242@redhat.com>
+ <1268686865.2824.4.camel@edumazet-laptop>
+ <1268699602.2824.14.camel@edumazet-laptop>
+ <20100316145914.GB3332@swordfish.minsk.epam.com>
+ <1268751933.3094.45.camel@edumazet-laptop>
+ <20100316151023.GC3332@swordfish.minsk.epam.com>
+ <1268752826.3094.48.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YZ5djTAD1cGYuMQK"
 Content-Disposition: inline
-In-Reply-To: <4B9FC8B2.6070404@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1268752826.3094.48.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Anthony Liguori <aliguori@linux.vnet.ibm.com> wrote:
+--YZ5djTAD1cGYuMQK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 03/16/2010 12:52 PM, Ingo Molnar wrote:
-> >* Anthony Liguori<aliguori@linux.vnet.ibm.com>  wrote:
-> >
-> >>On 03/16/2010 10:52 AM, Ingo Molnar wrote:
-> >>>You are quite mistaken: KVM isnt really a 'random unprivileged application' in
-> >>>this context, it is clearly an extension of system/kernel services.
-> >>>
-> >>>( Which can be seen from the simple fact that what started the discussion was
-> >>>   'how do we get /proc/kallsyms from the guest'. I.e. an extension of the
-> >>>   existing host-space /proc/kallsyms was desired. )
-> >>Random tools (like perf) should not be able to do what you describe. It's a
-> >>security nightmare.
-> >A security nightmare exactly how? Mind to go into details as i dont understand
-> >your point.
-> 
-> Assume you're using SELinux to implement mandatory access control.
-> How do you label this file system?
->
-> Generally speaking, we don't know the difference between /proc/kallsyms vs. 
-> /dev/mem if we do generic passthrough.  While it might be safe to have a 
-> relaxed label of kallsyms (since it's read only), it's clearly not safe to 
-> do that for /dev/mem, /etc/shadow, or any file containing sensitive 
-> information.
+Hello,
+Got it right now.
 
-What's your _point_? Please outline a threat model, a vector of attack, 
-_anything_ that substantiates your "it's a security nightmare" claim.
+System completely froze. Even SysRq didn't work.
+/*spin_lock deadlock?*/
 
-> Rather, we ought to expose a higher level interface that we have more 
-> confidence in with respect to understanding the ramifications of exposing 
-> that guest data.
+NOTE: I'm losing network constantly with pktgen tests
+[24208.010980] r8169 0000:02:00.0: eth0: link up
+[24220.010980] r8169 0000:02:00.0: eth0: link up
+[24232.011030] r8169 0000:02:00.0: eth0: link up
+[24340.010980] r8169 0000:02:00.0: eth0: link up
+[24352.010966] r8169 0000:02:00.0: eth0: link up
+[24364.010966] r8169 0000:02:00.0: eth0: link up
+[24376.010964] r8169 0000:02:00.0: eth0: link up
+[24388.010961] r8169 0000:02:00.0: eth0: link up
+[24400.010959] r8169 0000:02:00.0: eth0: link up
+[24412.010963] r8169 0000:02:00.0: eth0: link up
 
-Exactly, we want something that has a flexible namespace and works well with 
-Linux tools in general. Preferably that namespace should be human readable, 
-and it should be hierarchic, and it should have a well-known permission model.
 
-This concept exists in Linux and is generally called a 'filesystem'.
+Traces:
+[24600.625078] INFO: task events/0:9 blocked for more than 120 seconds.
+[24600.625083] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[24600.625087] events/0      D 00001636     0     9      2 0x00000000
+[24600.625096]  f7085ebc 00000046 a87e9490 00001636 c1617cc0 c1617cc0 c1617=
+cc0 c1617cc0
+[24600.625109]  f707c250 c1617cc0 c1617cc0 00000000 00000000 00000000 00000=
+000 f707bfc0
+[24600.625122]  c14745c8 c14745c8 f707bfc0 00000202 f7085efc c12c6449 00000=
+000 00085edc
+[24600.625135] Call Trace:
+[24600.625148]  [<c12c6449>] __mutex_lock_common+0x233/0x3af
+[24600.625155]  [<c12c65ff>] mutex_lock_nested+0x12/0x15
+[24600.625163]  [<c1265e0f>] ? rtnl_lock+0xf/0x11
+[24600.625168]  [<c1265e0f>] rtnl_lock+0xf/0x11
+[24600.625183]  [<f9174acd>] rtl8169_reset_task+0x16/0xee [r8169]
+[24600.625191]  [<c103c887>] worker_thread+0x161/0x233
+[24600.625196]  [<c103c845>] ? worker_thread+0x11f/0x233
+[24600.625205]  [<f9174ab7>] ? rtl8169_reset_task+0x0/0xee [r8169]
+[24600.625214]  [<c103f9f1>] ? autoremove_wake_function+0x0/0x2f
+[24600.625220]  [<c103c726>] ? worker_thread+0x0/0x233
+[24600.625225]  [<c103f6ce>] kthread+0x6a/0x6f
+[24600.625232]  [<c103f664>] ? kthread+0x0/0x6f
+[24600.625238]  [<c1002e42>] kernel_thread_helper+0x6/0x1a
+[24600.625242] INFO: lockdep is turned off.
+[24600.625259] INFO: task X:3176 blocked for more than 120 seconds.
+[24600.625262] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables =
+this message.
+[24600.625266] X             D 00000000     0  3176   3175 0x00400004
+[24600.625273]  f6435a10 00003046 00025709 00000000 c1617cc0 c1617cc0 c1617=
+cc0 c1617cc0
+[24600.625286]  f60897d0 c1617c  ...=20
+/*THE REST IS LOST*/
 
-> >> No way.  The guest has sensitive data and exposing it widely on the host 
-> >> is a bad thing to do. [...]
-> >
-> > Firstly, you are putting words into my mouth, as i said nothing about 
-> > 'exposing it widely'. I suggest exposing it under the privileges of 
-> > whoever has access to the guest image.
-> 
-> That doesn't work as nicely with SELinux.
-> 
-> It's completely reasonable to have a user that can interact in a read only 
-> mode with a VM via libvirt but cannot read the guest's disk images or the 
-> guest's memory contents.
 
-If a user cannot read the image file then the user has no access to its 
-contents via other namespaces either. That is, of course, a basic security 
-aspect.
 
-( That is perfectly true with a non-SELinux Unix permission model as well, and
-  is true in the SELinux case as well. )
+	Sergey
 
-> > Secondly, regarding confidentiality, and this is guest security 101: whoever
-> > can access the image on the host _already_ has access to all the guest data!
-> >
-> > A Linux image can generally be loopback mounted straight away:
-> >
-> >   losetup -o 32256 /dev/loop0 ./guest-image.img
-> >   mount -o ro /dev/loop0 /mnt-guest
-> >
-> >(Or, if you are an unprivileged user who cannot mount, it can be read via ext2
-> >tools.)
-> >
-> > There's nothing the guest can do about that. The host is in total control of
-> > guest image data for heaven's sake!
-> 
-> It's not that simple in a MAC environment.
 
-Erm. Please explain to me, what exactly is 'not that simple' in a MAC 
-environment?
+On (03/16/10 16:20), Eric Dumazet wrote:
+> > [...]
+> > >> NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+> > Isn't it r8169 related?
+> >=20
+>=20
+> This is tx side which seems blocked for more than 6 seconds.
+>=20
+> To really test the patch, you need following setup :
+>=20
+> machine A with r8169 NIC, patch applied, receiver of pktgen flood.
+>=20
+> machine B with any NIC, preferably a not buggy one, doing the pktgen
+> flood to machine A
+>=20
+> If machine A survives, my patch is tested and ok.
+>=20
+> If machine B crashes, we have another problem to investigate
+>=20
+>=20
 
-Also, i'd like to note that the 'restrictive SELinux setups' usecases are 
-pretty secondary.
+--YZ5djTAD1cGYuMQK
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-To demonstrate that, i'd like every KVM developer on this list who reads this 
-mail and who has their home development system where they produce their 
-patches set up in a restrictive MAC environment, in that you cannot even read 
-the images you are using, to chime in with a "I'm doing that" reply.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-If there's just a _single_ KVM developer amongst dozens and dozens of 
-developers on this list who develops in an environment like that i'd be 
-surprised. That result should pretty much tell you where the weight of 
-instrumentation focus should lie - and it isnt on restrictive MAC environments 
-...
+iJwEAQECAAYFAkufzUsACgkQfKHnntdSXjRc5gQAuDdhfGviPj3Tf+eDItjtPrmN
+cMWWCisPhaSMNdwNoS9KM27iDA0P5zELuY7eHC8MVn7qCIabfq57oSjMW6JaS7dq
+ArrlouIyitxYDxN7byj6izpd8ipqRSvTWkVwF1D5snKqlAGgQLkS0e8klXh4Qq6h
+Q42cPo/hAu231M9vDP8=
+=jIfk
+-----END PGP SIGNATURE-----
 
-	Ingo
+--YZ5djTAD1cGYuMQK--
