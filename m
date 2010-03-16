@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937978Ab0CPQXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 12:23:22 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:56452 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937964Ab0CPQXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 12:23:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JnthjuzOWdRAk9QYc+D2beAm0sPlaAOIKhFLd0hC60LVopcWyhzU3Mw40TQrHEmNwW
-         et12akscSatuntfWKny8780xWZWVb9svFlfwML2hxtSzYnWnvWHHlhQmZzUG32zyfm2V
-         uUfk4aGNEbm+pW1POv9fc9pteeNCZF8j0z7uc=
-Date: Tue, 16 Mar 2010 19:23:14 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-       linux-kernel@vger.kernel.org, peterz@infradead.org, fweisbec@gmail.com,
-       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu,
-       linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/x86] perf, x86: Implement initial P4 PMU driver
-Message-ID: <20100316162314.GG5206@lenovo>
-References: <20100311165439.GB5129@lenovo> <tip-a072738e04f0eb26370e39ec679e9a0d65e49aea@git.kernel.org> <20100316160733.GR1585@erda.amd.com>
+	id S1759143Ab0CPQ0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 12:26:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38466 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756588Ab0CPQ0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 12:26:05 -0400
+Date: Tue, 16 Mar 2010 17:26:01 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Rupjyoti Sarmah <rsarmah@amcc.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: RE: Failure with the 2.6.34-rc1 kernel
+In-Reply-To: <AC311A8E81420D4EBC1F26E6479848FE065B7D5B@SDCEXCHANGE01.ad.amcc.com>
+Message-ID: <alpine.LNX.2.00.1003161725310.18642@pobox.suse.cz>
+References: <AC311A8E81420D4EBC1F26E6479848FE065B7D3D@SDCEXCHANGE01.ad.amcc.com> <alpine.LRH.2.00.1003161646590.26353@twin.jikos.cz> <AC311A8E81420D4EBC1F26E6479848FE065B7D5B@SDCEXCHANGE01.ad.amcc.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316160733.GR1585@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 05:07:33PM +0100, Robert Richter wrote:
-[...]
-> --
-> 
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Tue, 16 Mar 2010 16:38:19 +0100
-> Subject: [PATCH] perf, x86: reporting error code that returns from x86_pmu.hw_config()
-> 
-> If x86_pmu.hw_config() fails a fixed error code (-EOPNOTSUPP) is
-> return even if a different error was reported. This patch fixes this.
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/kernel/cpu/perf_event.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 4e2480f..8982d92 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -467,8 +467,9 @@ static int __hw_perf_event_init(struct perf_event *event)
->  	hwc->last_tag = ~0ULL;
->  
->  	/* Processor specifics */
-> -	if (x86_pmu.hw_config(attr, hwc))
-> -		return -EOPNOTSUPP;
-> +	err = x86_pmu.hw_config(attr, hwc);
-> +	if (err)
-> +		return err;
->  
->  	if (!hwc->sample_period) {
->  		hwc->sample_period = x86_pmu.max_period;
-> -- 
-> 1.7.0
->
+On Tue, 16 Mar 2010, Rupjyoti Sarmah wrote:
 
-Though at moment all hw_config callees return 0, it's better
-to be ready if one day we may start returning some particular
-errors. Looks good to me. Objections?
+> -----Original Message-----
+> From: Jiri Kosina [mailto:jkosina@suse.cz] 
+> Sent: Tuesday, March 16, 2010 9:18 PM
+> To: Rupjyoti Sarmah
+> Cc: linux-kernel@vger.kernel.org
+> Subject: Re: Failure with the 2.6.34-rc1 kernel
+> 
+> On Tue, 16 Mar 2010, Rupjyoti Sarmah wrote:
+> 
+> > We are seeing issues in booting some of our boards with this new
+> kernel.
+> > Kernel version upto 2.6.33 works fine on the boards like Canyonlands,
+> > Katmai, Glacier etc.
+> > These boards are not booting with kernel later than 2.6.33. Please let
+> > me know how about fixing these issues ?
+> 
+> You'd need to provide at least dmesg from the working and non-working 
+> cases.
+> 
+> Also git-bisect between 2.6.33 and 2.6.34-rc1 might help you identify
+> the 
+> commit that broke your hardware.
 
-	-- Cyrill
+> It has been failing from this commit.
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commi
+> t;h=ef1a8de8ea004a689b2aa9f5cefcba2b1a0262f2 .
+> 
+> Also, the u-boot restarts the board very quickly. It does not go to the
+> kernel prompt at all. 
+> 
+
+That is a merge commit. There must be actuall non-merge commit that
+introduced the change.
+
+If you are sure that this particular commit brought in the change that
+broke your system, you can do git bisect between
+00ebfe58b002f0ff387f60c7cd23bc2b274fce1a and
+ef1a8de8ea004a689b2aa9f5cefcba2b1a0262f2 to see which of the 88 commits
+merged as part of ef1a8de8ea004a689b2aa9f5cefcba2b1a0262f2 is the actual
+culprit.
+
+Also adding linuxpcc-dev@ to CC.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
