@@ -1,93 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab0CPVXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:23:36 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:36930 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab0CPVXc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:23:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:references:in-reply-to:subject:date:message-id
-         :mime-version:content-type:content-transfer-encoding:x-mailer
-         :thread-index:content-language;
-        b=X5OfM++9RJYt1esTyC0s1wci70pg1CTAzgdnWeyXlO89amaSIumHxHTM6cOpVNs1vd
-         wu0APtHC6kOgeczUc+eDNeIlruU6zWbKjnB8+LPXsTS5qt2c96Ruj0EpqDQkLpiMlgF/
-         ybwJZQKWkTduX8GlCGL13f2uNPRMOgUGK+IhQ=
-From: "Will L Givens" <wlgivens@gmail.com>
-To: <dl8bcu@dl8bcu.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-alpha@vger.kernel.org>
-References: <b4198de61003151609je8a94ceyf6dd39acfd1a5876@mail.gmail.com> <001e01cac4cc$98072ce0$c81586a0$@com> <20100316182534.GA818@ds20.borg.net>
-In-Reply-To: <20100316182534.GA818@ds20.borg.net>
-Subject: RE: Will's kernel compilation error
-Date: Tue, 16 Mar 2010 16:23:01 -0500
-Message-ID: <006e01cac54e$dd6b7b10$98427130$@com>
+	id S1758188Ab0CPVY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:24:26 -0400
+Received: from kroah.org ([198.145.64.141]:49024 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab0CPVYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 17:24:22 -0400
+Date: Tue, 16 Mar 2010 14:23:37 -0700
+From: Greg KH <greg@kroah.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: gregkh@suse.de, Alan Stern <stern@rowland.harvard.edu>,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@linux.intel.com>, Oliver Neukum <oliver@neukum.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] tty_port,usb-console: Fix usb serial console
+	open/close regression
+Message-ID: <20100316212337.GB31739@kroah.com>
+References: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com> <1268773546-12457-2-git-send-email-jason.wessel@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcrFNhl8KrkdG7LvSKK2DGZm4H05nQAFxZlg
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268773546-12457-2-git-send-email-jason.wessel@windriver.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> > It seems the problem, GPREL16, is pretty wide spread. I've tried
-> building
-> > the drivers as modules, since that doesn't appear to be a problem
-> *knock on
-> > wood* but one driver after another, after another, after another
-> generates a
-> > new GPREL16 error! Raid0 drivers, numerous NetFilter modules, IR
-> drivers
-> > (guess I can't use a Hauppauge card), and various other components.
-> I'm
-> > going to try a few more configurations... then hit the sack. I'm
-> pretty sure
-> > this is going to be a long process.
+On Tue, Mar 16, 2010 at 04:05:42PM -0500, Jason Wessel wrote:
+> Commit e1108a63e10d344284011cccc06328b2cd3e5da3 ("usb_serial: Use the
+> shutdown() operation") breaks the ability to use a usb console
+> starting in 2.6.33.  This was observed when using
+> console=ttyUSB0,115200 as a boot argument with an FTDI device.  The
+> error is:
 > 
-> when I hit the relocation overflow a couple of releases before, I
-> locally
-> applied this patch, which fixes it for me. I assume the kernel is
-> slightly
-> bigger this way, but I didn't measure it.
+> ftdi_sio ttyUSB0: ftdi_submit_read_urb - failed submitting read urb, error -22
 > 
-> ev6, everything built in, gcc 4.4 I think
-> 
-> Thorsten
-> 
-> 
-> diff --git a/arch/alpha/Makefile b/arch/alpha/Makefile
-> index 4759fe7..2cc3cc5 100644
-> --- a/arch/alpha/Makefile
-> +++ b/arch/alpha/Makefile
-> @@ -12,7 +12,7 @@ NM := $(NM) -B
-> 
->  LDFLAGS_vmlinux	:= -static -N #-relax
->  CHECKFLAGS	+= -D__alpha__ -m64
-> -cflags-y	:= -pipe -mno-fp-regs -ffixed-8 -msmall-data
-> +cflags-y	:= -pipe -mno-fp-regs -ffixed-8
->  cflags-y	+= $(call cc-option, -fno-jump-tables)
-> 
->  cpuflags-$(CONFIG_ALPHA_EV4)		:= -mcpu=ev4
-> 
-> 
-> --
-> | Thorsten Kranzkowski        Internet: dl8bcu@dl8bcu.de
-> |
-> | Mobile: ++49 170 1876134       Snail: Kiebitzstr. 14, 49324 Melle,
-> Germany  |
-> | Ampr: dl8bcu@db0lj.#rpl.deu.eu, dl8bcu@marvin.dl8bcu.ampr.org
-> [44.130.8.19] |
+> The handling of the ASYNCB_INITIALIZED changed in 2.6.32 such that in
+> tty_port_shutdown() it always clears the flag if it is set.  The fix
+> is to add a variable to the tty_port struct to indicate when the tty
+> port is a console.
 
-That patch did the trick!!!! Everything built without issue... I'll post
-your patch at bugzilla.kernel.org. Now, just have to test the AIC7xxx driver
-and see if it works!  Nope it doesn't, same error as before... aic7xxx
-unable to handle kernel paging address at 036b***** I'm going to try
-swapping some memory around and see what happens if anything.
+I've already applied this to my trees, right?
 
 
+thanks,
 
+greg k-h
