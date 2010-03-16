@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933143Ab0CPSLO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:11:14 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:36784 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756636Ab0CPSLN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:11:13 -0400
-Date: Tue, 16 Mar 2010 11:10:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: David Howells <dhowells@redhat.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
-	nfs_inode_return_delegation_noreclaim()
-Message-ID: <20100316181053.GO6709@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100316115130.25642.17789.stgit@warthog.procyon.org.uk> <20100316171738.GN6709@linux.vnet.ibm.com> <1268760954.3098.17.camel@localhost.localdomain>
+	id S937985Ab0CPSQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:16:57 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:36868 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756636Ab0CPSQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 14:16:55 -0400
+Date: Tue, 16 Mar 2010 19:16:47 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org, akpm@osdl.org
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA bugfixes for 2.6.34-rc2
+Message-ID: <20100316181647.GA3464@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1268760954.3098.17.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 01:35:54PM -0400, Trond Myklebust wrote:
-> On Tue, 2010-03-16 at 10:17 -0700, Paul E. McKenney wrote: 
-> > On Tue, Mar 16, 2010 at 11:51:30AM +0000, David Howells wrote:
-> > > diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-> > > index 2563beb..a77c735 100644
-> > > --- a/fs/nfs/delegation.c
-> > > +++ b/fs/nfs/delegation.c
-> > > @@ -37,8 +37,10 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
-> > >  {
-> > >  	struct rpc_cred *cred;
-> > > 
-> > > +	rcu_read_lock();
-> > >  	cred = rcu_dereference(delegation->cred);
-> > >  	rcu_assign_pointer(delegation->cred, NULL);
-> > 
-> > The lock is probably held here, in which case something like the
-> > following would work well without needing the artificial rcu_read_lock()
-> > and rcu_read_unlock():
-> 
-> No. The lock is not held here. At this point, the delegation has been
-> detached from the inode that pointed to it, and so we can free up its
-> contents.
+Linus,
 
-OK.  Is there some reference counter or pointer that can be checked to
-verify that this data structure really is in a state that prevents
-RCU readers from finding it?
+some PCMCIA bugfixes for 2.6.34-rc2 are available in the git repository at:
 
-> We still need the call_rcu() to free up the allocated memory in order to
-> ensure that some process doing lockless traversal of the
-> clp->cl_delegations list doesn't crash.
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
-OK.
+Please pull from that location. The diffstat and list of changes follows,
+the individual diffs were sent (at least) to the linux-pcmcia list.
 
-> > 	cred = rcu_dereference_check(delegation->cred,
-> > 				     lockdep_is_held(&delegation->lock));
-> > 
-> > > +	rcu_read_unlock();
-> > >  	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
-> > >  	if (cred)
-> > >  		put_rpccred(cred);
-> > > @@ -212,10 +214,12 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
-> > >  	spin_lock_init(&delegation->lock);
-> > > 
-> > >  	spin_lock(&clp->cl_lock);
-> > > +	rcu_read_lock();
-> > >  	if (rcu_dereference(nfsi->delegation) != NULL) {
-> > 
-> > Same here, though I am not sure whether clp->cl_lock or something in
-> > nfs_inode should be used.
-> 
-> Yes. As I indicated to David in another email, the clp->cl_lock protects
-> us here, so it looks as if your suggestion above would be perfect.
+Thanks,
+	Dominik
 
-Sounds good!
+----
 
-							Thanx, Paul
+Dan Carpenter (1):
+      pcmcia: add important if statement
 
-> > >  		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
-> > >  					sizeof(delegation->stateid)) == 0 &&
-> > >  				delegation->type == nfsi->delegation->type) {
-> > > +			rcu_read_unlock();
-> > >  			goto out;
-> > >  		}
-> > >  		/*
-> > > @@ -228,6 +232,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
-> > >  		if (delegation->type <= nfsi->delegation->type) {
-> > >  			freeme = delegation;
-> > >  			delegation = NULL;
-> > > +			rcu_read_lock();
-> > >  			goto out;
-> > >  		}
-> > >  		freeme = nfs_detach_delegation_locked(nfsi, NULL);
-> 
+Dominik Brodowski (2):
+      pcmcia: pd6729, i82092: use parent (PCI) resources
+      pcmcia: revert "irq probe can be done without risking an IRQ storm"
+
+Jens Künzer (3):
+      pcmcia: honor saved flags in yenta_socket's I365_CSCINT register
+      pcmcia: allow for cb_irq to differ from pci_dev's irq in yenta_socket
+      pcmcia: re-route Cardbus IRQ to ISA on ti1130 bridges if necessary
+
+Jiri Slaby (1):
+      PCMCIA: resource, fix lock imbalance
+
+Yoichi Yuasa (1):
+      pcmcia/vrc4171: use local spinlock for device local lock.
+
+ drivers/pcmcia/i82092.c          |    1 +
+ drivers/pcmcia/i82365.h          |    1 +
+ drivers/pcmcia/pcmcia_resource.c |   36 +++++++++++++----------------
+ drivers/pcmcia/pd6729.c          |    1 +
+ drivers/pcmcia/ti113x.h          |   37 ++++++++++++++++++++++++++++-
+ drivers/pcmcia/vrc4171_card.c    |    5 ++-
+ drivers/pcmcia/yenta_socket.c    |   46 +++++++++++++++++++++++--------------
+ drivers/scsi/pcmcia/nsp_cs.c     |    1 +
+ 8 files changed, 86 insertions(+), 42 deletions(-)
