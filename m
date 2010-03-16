@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937869Ab0CPNOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:14:31 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:50523 "EHLO mx2.mail.elte.hu"
+	id S937891Ab0CPNRJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:17:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24156 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756638Ab0CPNOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:14:30 -0400
-Date: Tue, 16 Mar 2010 14:13:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, Chris Friesen <cfriesen@nortel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip] introduce sys_membarrier(): process-wide memory
- barrier (v9)
-Message-ID: <20100316131336.GB24808@elte.hu>
-References: <20100225232316.GA30196@Krystal>
- <20100304122304.GA6864@elte.hu>
- <alpine.LFD.2.00.1003040827100.7046@localhost.localdomain>
- <20100304175659.GA3255@Krystal>
- <20100315205312.GA31231@Krystal>
- <20100316073635.GC18448@elte.hu>
- <20100316075709.GL2869@laptop>
+	id S937687Ab0CPNRG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:17:06 -0400
+Message-ID: <4B9F84C0.70706@redhat.com>
+Date: Tue, 16 Mar 2010 15:16:48 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316075709.GL2869@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <20100316095336.GI7961@elte.hu> <4B9F59DE.1060008@redhat.com> <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu>
+In-Reply-To: <20100316130840.GA24808@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2010 03:08 PM, Ingo Molnar wrote:
+>
+>>> I mean, i can trust a kernel service and i can trust /proc/kallsyms.
+>>>
+>>> Can perf trust a random process claiming to be Qemu? What's the trust
+>>> mechanism here?
+>>>        
+>> Obviously you can't trust anything you get from a guest, no matter how you
+>> get it.
+>>      
+> I'm not talking about the symbol strings and addresses, and the object
+> contents for allocation (or debuginfo). I'm talking about the basic protocol
+> of establishing which guest is which.
+>    
 
-* Nick Piggin <npiggin@suse.de> wrote:
+There is none.  So far, qemu only dealt with managing just its own 
+guest, and left all multiple guest management to higher levels up the 
+stack (like libvirt).
 
-> On Tue, Mar 16, 2010 at 08:36:35AM +0100, Ingo Molnar wrote:
-> > 
-> > * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> > 
-> > > Unless this question is answered, Ingo's SA_RUNNING signal proposal, as 
-> > > appealing as it may look at a first glance, falls into the 
-> > > "fundamentally broken" category. [...]
-> > 
-> > How is it different from your syscall? I.e. which lines of code make the 
-> > difference? We could certainly apply the (trivial) barrier change to 
-> > context_switch().
-> 
-> I think it is just easy for userspace to misuse or think it does something 
-> that it doesn't (because of races).
+> I.e. we really want to be able users to:
+>
+>   1) have it all working with a single guest, without having to specify 'which'
+>      guest (qemu PID) to work with. That is the dominant usecase both for
+>      developers and for a fair portion of testers.
+>    
 
-That wasnt my question though. The question i asked Mathieu was to show how 
-SA_RUNNING is "fundamentally broken" for librcu use while sys_membarrier() is 
-not?
+That's reasonable if we can get it working simply.
 
-This is really what he claims above. (i preserved the quote)
+>   2) Have some reasonable symbolic identification for guests. For example a
+>      usable approach would be to have 'perf kvm list', which would list all
+>      currently active guests:
+>
+>       $ perf kvm list
+>         [1] Fedora
+>         [2] OpenSuse
+>         [3] Windows-XP
+>         [4] Windows-7
+>
+>      And from that point on 'perf kvm -g OpenSuse record' would do the obvious
+>      thing. Users will be able to just use the 'OpenSuse' symbolic name for
+>      that guest, even if the guest got restarted and switched its main PID.
+>
+> Any such facility needs trusted enumeration and a protocol where i can trust
+> that the information i got is authorative. (I.e. 'OpenSuse' truly matches to
+> the OpenSuse session - not to some local user starting up a Qemu instance that
+> claims to be 'OpenSuse'.)
+>
+> Is such a scheme possible/available? I suspect all the KVM configuration tools
+> (i havent used them in some time - gui and command-line tools alike) use
+> similar methods to ease guest management?
+>    
 
-It must be a misunderstanding either on my side or on his side. (Once that is 
-cleared we can discuss further usecases for SA_RUNNING.)
+You can do that through libvirt, but that only works for guests started 
+through libvirt.  libvirt provides command-line tools to list and manage 
+guests (for example autostarting them on startup), and tools built on 
+top of libvirt can manage guests graphically.
 
-Thanks,
+Looks like we have a layer inversion here.  Maybe we need a plugin 
+system - libvirt drops a .so into perf that teaches it how to list 
+guests and get their symbols.
 
-	Ingo
+-- 
+error compiling committee.c: too many arguments to function
+
