@@ -1,39 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758352Ab0CPPWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:22:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49985 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756383Ab0CPPWt (ORCPT
+	id S1758782Ab0CPPXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:23:00 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:53912 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758628Ab0CPPW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:22:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=Mzc+w5mlaKBL6eP8uWwy4qc98i53jDXDEl26nby/dFEJKGyZ8SzFB29nEFIXTxHGqC
-         OyL3iOIRYXSP5nxBjA5xreGkN+QaRDM1fzVwQeYnipsTbzNGHB/KV0VpBMLmGaUbr6s8
-         dLJyuAUeVv3Beumy0h3IGDeUinwJmqs/43tv4=
-MIME-Version: 1.0
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Tue, 16 Mar 2010 08:19:36 -0700
-Message-ID: <a36005b51003160819p21871af4t48a08a502afb67b5@mail.gmail.com>
-Subject: ACPI spam
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Mar 2010 11:22:58 -0400
+X-Spam-Processed: digidescorp.com, Tue, 16 Mar 2010 10:22:59 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1691ec8f39=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+       "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH] NET_DMA: free skbs periodically
+Date: Tue, 16 Mar 2010 10:22:44 -0500
+Message-Id: <1268752964-4397-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On one machine I've used using a recent kernel I see tons of messages like
+Under NET_DMA, data transfer can grind to a halt when userland issues a
+large read on a socket with a high RCVLOWAT (i.e., 512 KB for both).
+This appears to be because the NET_DMA design queues up lots of memcpy 
+operations, but doesn't issue or wait for them (and thus free the 
+associated skbs) until it is time for tcp_recvmesg() to return. 
+The socket hangs when its TCP window goes to zero before enough data is 
+available to satisfy the read.
 
-Mar 16 10:54:52 intel-d3cf1-01 kernel: ACPI Exception: AE_NOT_EXIST,
-while evaluating GPE method [_L01] (20090903/evgpe-568)
-Mar 16 10:54:53 intel-d3cf1-01 kernel: ACPI Error: No handler for
-Region [ECF2] (ffff88013b69c978) [EmbeddedControl]
-(20090903/evregion-319)
-Mar 16 10:54:53 intel-d3cf1-01 kernel: ACPI Error: Region
-EmbeddedControl(3) has no handler (20090903/exfldio-295)
+Periodically issue asynchronous memcpy operations, and free skbs for ones 
+that have completed, to prevent sockets from going into zero-window mode.
 
-This is reported hundreds of times.
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+--- a/net/ipv4/tcp.c	2010-03-16 09:15:31.000000000 -0500
++++ b/net/ipv4/tcp.c	2010-03-16 09:59:06.000000000 -0500
+@@ -1254,6 +1254,39 @@ static void tcp_prequeue_process(struct 
+ 	tp->ucopy.memory = 0;
+ }
+ 
++#ifdef CONFIG_NET_DMA
++static void tcp_service_net_dma(struct sock *sk, bool wait)
++{
++	dma_cookie_t done, used;
++	dma_cookie_t last_issued;
++	struct tcp_sock *tp = tcp_sk(sk);
++
++	if (!tp->ucopy.dma_chan)
++		return;
++
++	last_issued = tp->ucopy.dma_cookie;
++	dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++
++	do {
++		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
++					      last_issued, &done,
++					      &used) == DMA_SUCCESS) {
++			/* Safe to free early-copied skbs now */
++			__skb_queue_purge(&sk->sk_async_wait_queue);
++			break;
++		} else {
++			struct sk_buff *skb;
++			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
++			       (dma_async_is_complete(skb->dma_cookie, done,
++						      used) == DMA_SUCCESS)) {
++				__skb_dequeue(&sk->sk_async_wait_queue);
++				kfree_skb(skb);
++			}
++		}
++	} while (wait);
++}
++#endif
++
+ static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
+ {
+ 	struct sk_buff *skb;
+@@ -1546,6 +1579,10 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 			/* __ Set realtime policy in scheduler __ */
+ 		}
+ 
++#ifdef CONFIG_NET_DMA
++		if (tp->ucopy.dma_chan)
++			dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++#endif
+ 		if (copied >= target) {
+ 			/* Do not sleep, just process backlog. */
+ 			release_sock(sk);
+@@ -1554,6 +1591,7 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 			sk_wait_data(sk, &timeo);
+ 
+ #ifdef CONFIG_NET_DMA
++		tcp_service_net_dma(sk, false);  /* Don't block */
+ 		tp->ucopy.wakeup = 0;
+ #endif
+ 
+@@ -1633,6 +1671,9 @@ do_prequeue:
+ 						copied = -EFAULT;
+ 					break;
+ 				}
++
++				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++
+ 				if ((offset + used) == skb->len)
+ 					copied_early = 1;
+ 
+@@ -1702,27 +1743,9 @@ skip_copy:
+ 	}
+ 
+ #ifdef CONFIG_NET_DMA
+-	if (tp->ucopy.dma_chan) {
+-		dma_cookie_t done, used;
+-
+-		dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
+-
+-		while (dma_async_memcpy_complete(tp->ucopy.dma_chan,
+-						 tp->ucopy.dma_cookie, &done,
+-						 &used) == DMA_IN_PROGRESS) {
+-			/* do partial cleanup of sk_async_wait_queue */
+-			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
+-			       (dma_async_is_complete(skb->dma_cookie, done,
+-						      used) == DMA_SUCCESS)) {
+-				__skb_dequeue(&sk->sk_async_wait_queue);
+-				kfree_skb(skb);
+-			}
+-		}
++	tcp_service_net_dma(sk, true);  /* Wait for queue to drain */
++	tp->ucopy.dma_chan = NULL;
+ 
+-		/* Safe to free early-copied skbs now */
+-		__skb_queue_purge(&sk->sk_async_wait_queue);
+-		tp->ucopy.dma_chan = NULL;
+-	}
+ 	if (tp->ucopy.pinned_list) {
+ 		dma_unpin_iovec_pages(tp->ucopy.pinned_list);
+ 		tp->ucopy.pinned_list = NULL;
 
-Shouldn't these messages be rate-limited?  Aside from the reason being fixed.
