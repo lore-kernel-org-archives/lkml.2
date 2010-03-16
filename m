@@ -1,113 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0CPEJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 00:09:53 -0400
-Received: from mail-yw0-f189.google.com ([209.85.211.189]:56816 "EHLO
-	mail-yw0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab0CPEJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 00:09:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DqDznEN2mYbybmi09gv/qVDTiO3HOGnofo/c/SEjN3UrkBK5OPr0PalyNe0KQaKtW1
-         VQhHQFlF7mG5Rwg73ubZfgCx6SVxF3WlnuE6JHqKAQeLEZa+xUUETbBdoXoCYUmTVZdi
-         pEVSClRW1ozlnHxI62ymn5ox0MI1Tp64UkfFk=
-From: tsg321@gmail.com
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging:cx25821: fixes coding styles issues in cx25821-gpio.c This patch is to the cx25821-gpio.c file that fixes up warning and error found by the checkpatch.pl tool Signed-off-by: sai <tsg321@gmail.com>
-Date: Tue, 16 Mar 2010 09:39:38 +0530
-Message-Id: <1268712578-3391-1-git-send-email-tsg321@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S933292Ab0CPEPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 00:15:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44322 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750698Ab0CPEPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 00:15:00 -0400
+From: NeilBrown <neilb@suse.de>
+To: Greg KH <gregkh@suse.de>
+Date: Tue, 16 Mar 2010 15:14:51 +1100
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19359.1467.612457.401272@notabene.brown>
+Subject: [PATCH] kref: remove kref_set
+Cc: Mimi Zohar <zohar@us.ibm.com>
+Cc: Serge E "." Hallyn <serue@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+X-Mailer: VM 7.19 under Emacs 21.4.1
+X-face: [Gw_3E*Gng}4rRrKRYotwlE?.2|**#s9D<ml'fY1Vw+@XfR[fRCsUoP?K6bt3YD\ui5Fh?f
+	LONpR';(ql)VM_TQ/<l_^D3~B:z$\YC7gUCuC=sYm/80G=$tt"98mr8(l))QzVKCk$6~gldn~*FK9x
+	8`;pM{3S8679sP+MbP,72<3_PIH-$I&iaiIb|hV1d%cYg))BmI)AZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: sai <sai@sai-desktop.(none)>
 
----
- drivers/staging/cx25821/cx25821-gpio.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/cx25821/cx25821-gpio.c b/drivers/staging/cx25821/cx25821-gpio.c
-index e8a37b4..cefa091 100644
---- a/drivers/staging/cx25821/cx25821-gpio.c
-+++ b/drivers/staging/cx25821/cx25821-gpio.c
-@@ -31,7 +31,7 @@ void cx25821_set_gpiopin_direction(struct cx25821_dev *dev,
- 	u32 gpio_register = 0;
- 	u32 value = 0;
+Of the three uses of kref_set in the kernel:
+
+ One really should be kref_put as the code is letting go of a
+    reference,
+ Two really should be kref_init because the kref is being
+    initialised.
+
+This suggests that making kref_set available encourages bad code.
+So fix the three uses and remove kref_set completely.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+--
+
+The two 'kref_init' calls in ima_iint.c could equally be a single
+call after the kmem_cache_alloc in ima_inode_alloc, but this version
+was the minimal code change.
+
+
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index b0cb0eb..13003ee 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -21,7 +21,6 @@ struct kref {
+ 	atomic_t refcount;
+ };
  
--	// Check for valid pinNumber
-+	/* Check for valid pinNumber */
- 	if (pin_number >= 47)
- 		return;
+-void kref_set(struct kref *kref, int num);
+ void kref_init(struct kref *kref);
+ void kref_get(struct kref *kref);
+ int kref_put(struct kref *kref, void (*release) (struct kref *kref));
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 076c7c8..b2d70d3 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -54,8 +54,8 @@ int create_user_ns(struct cred *new)
+ #endif
+ 	/* tgcred will be cleared in our caller bc CLONE_THREAD won't be set */
  
-@@ -39,14 +39,15 @@ void cx25821_set_gpiopin_direction(struct cx25821_dev *dev,
- 		bit = pin_number - 31;
- 		gpio_oe_reg = GPIO_HI_OE;
- 	}
--	// Here we will make sure that the GPIOs 0 and 1 are output. keep the rest as is
-+	/* Here we will make sure that the GPIOs 0 and 1 are output. keep the
-+	 * rest as is
-+	 */
- 	gpio_register = cx_read(gpio_oe_reg);
+-	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
+-	kref_set(&ns->kref, 1);
++	/* root_user holds a reference to ns, our reference can be dropped */
++	put_user_ns(ns);
  
--	if (pin_logic_value == 1) {
-+	if (pin_logic_value == 1)
- 		value = gpio_register | Set_GPIO_Bit(bit);
--	} else {
-+	else
- 		value = gpio_register & Clear_GPIO_Bit(bit);
--	}
- 
- 	cx_write(gpio_oe_reg, value);
+ 	return 0;
  }
-@@ -58,11 +59,12 @@ static void cx25821_set_gpiopin_logicvalue(struct cx25821_dev *dev,
- 	u32 gpio_reg = GPIO_LO;
- 	u32 value = 0;
+diff --git a/lib/kref.c b/lib/kref.c
+index 9ecd6e8..69761d3 100644
+--- a/lib/kref.c
++++ b/lib/kref.c
+@@ -15,23 +15,13 @@
+ #include <linux/module.h>
  
--	// Check for valid pinNumber
-+	/* Check for valid pinNumber */
- 	if (pin_number >= 47)
- 		return;
- 
--	cx25821_set_gpiopin_direction(dev, pin_number, 0);	// change to output direction
-+	cx25821_set_gpiopin_direction(dev, pin_number, 0); /* change to output
-+							      direction */
- 
- 	if (pin_number > 31) {
- 		bit = pin_number - 31;
-@@ -71,25 +73,23 @@ static void cx25821_set_gpiopin_logicvalue(struct cx25821_dev *dev,
- 
- 	value = cx_read(gpio_reg);
- 
--	if (pin_logic_value == 0) {
-+	if (pin_logic_value == 0)
- 		value &= Clear_GPIO_Bit(bit);
--	} else {
-+	else
- 		value |= Set_GPIO_Bit(bit);
--	}
- 
- 	cx_write(gpio_reg, value);
- }
- 
- void cx25821_gpio_init(struct cx25821_dev *dev)
+ /**
+- * kref_set - initialize object and set refcount to requested number.
+- * @kref: object in question.
+- * @num: initial reference counter
+- */
+-void kref_set(struct kref *kref, int num)
+-{
+-	atomic_set(&kref->refcount, num);
+-	smp_mb();
+-}
+-
+-/**
+  * kref_init - initialize object.
+  * @kref: object in question.
+  */
+ void kref_init(struct kref *kref)
  {
--	if (dev == NULL) {
-+	if (dev == NULL)
- 		return;
--	}
+-	kref_set(kref, 1);
++	atomic_set(&kref->refcount, 1);
++	smp_mb();
+ }
  
- 	switch (dev->board) {
- 	case CX25821_BOARD_CONEXANT_ATHENA10:
- 	default:
--		//set GPIO 5 to select the path for Medusa/Athena
-+		/* set GPIO 5 to select the path for Medusa/Athena */
- 		cx25821_set_gpiopin_logicvalue(dev, 5, 1);
- 		mdelay(20);
- 		break;
--- 
-1.6.3.3
-
+ /**
+@@ -71,7 +61,6 @@ int kref_put(struct kref *kref, void (*release)(struct kref *kref))
+ 	return 0;
+ }
+ 
+-EXPORT_SYMBOL(kref_set);
+ EXPORT_SYMBOL(kref_init);
+ EXPORT_SYMBOL(kref_get);
+ EXPORT_SYMBOL(kref_put);
+diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+index 2d4d05d..91c31d8 100644
+--- a/security/integrity/ima/ima_iint.c
++++ b/security/integrity/ima/ima_iint.c
+@@ -93,7 +93,7 @@ void iint_free(struct kref *kref)
+ 		       iint->opencount);
+ 		iint->opencount = 0;
+ 	}
+-	kref_set(&iint->refcount, 1);
++	kref_init(&iint->refcount);
+ 	kmem_cache_free(iint_cache, iint);
+ }
+ 
+@@ -132,7 +132,7 @@ static void init_once(void *foo)
+ 	iint->readcount = 0;
+ 	iint->writecount = 0;
+ 	iint->opencount = 0;
+-	kref_set(&iint->refcount, 1);
++	kref_init(&iint->refcount);
+ }
+ 
+ static int __init ima_iintcache_init(void)
