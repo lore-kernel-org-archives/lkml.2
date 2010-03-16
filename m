@@ -1,127 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811Ab0CPU43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 16:56:29 -0400
-Received: from mail-iw0-f176.google.com ([209.85.223.176]:51007 "EHLO
-	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754423Ab0CPU41 (ORCPT
+	id S933196Ab0CPVCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:02:40 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:40422 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932542Ab0CPVCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 16:56:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QzBlz+2YELAGQgIG8VpRNhUSY+BOWH52VU6VbcfVACTwNDHvPtL868VGoHzi74r622
-         G3EVqQ7CDC9MSUJYfn/vfNFthhGBL+MIi/aa6TK74H6BLa0SGRvck5TqkitCXZvyG8ge
-         ikqoESBXyFUtRKleU+Jxc1D8QeiBjnIMT9i1M=
-Date: Tue, 16 Mar 2010 21:56:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       benh@kernel.crashing.org, linux-kernel@vger.kernel.org, anton@samba.org,
-       linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH] powerpc/perf_events: Implement
-	perf_arch_fetch_caller_regs for powerpc
-Message-ID: <20100316205609.GA6822@nowhere>
-References: <20100315054615.GA6245@drongo> <20100315210450.GF5082@nowhere> <20100316032213.GA3656@drongo>
+	Tue, 16 Mar 2010 17:02:39 -0400
+Date: Tue, 16 Mar 2010 17:01:50 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+Message-ID: <20100316210150.GA14886@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100315191807.GA3449@think>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100316032213.GA3656@drongo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100315191807.GA3449@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4B9FF1C7.0283:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 02:22:13PM +1100, Paul Mackerras wrote:
-> On Mon, Mar 15, 2010 at 10:04:54PM +0100, Frederic Weisbecker wrote:
-> > On Mon, Mar 15, 2010 at 04:46:15PM +1100, Paul Mackerras wrote:
+On Mon, Mar 15, 2010 at 03:18:07PM -0400, Chris Mason wrote:
+> Hello everyone,
 > 
-> > >     14.99%            perf  [kernel.kallsyms]  [k] ._raw_spin_lock
-> > >                       |
-> > >                       --- ._raw_spin_lock
-> > >                          |          
-> > >                          |--25.00%-- .alloc_fd
-> > >                          |          (nil)
-> > >                          |          |          
-> > >                          |          |--50.00%-- .anon_inode_getfd
-> > >                          |          |          .sys_perf_event_open
-> > >                          |          |          syscall_exit
-> > >                          |          |          syscall
-> > >                          |          |          create_counter
-> > >                          |          |          __cmd_record
-> > >                          |          |          run_builtin
-> > >                          |          |          main
-> > >                          |          |          0xfd2e704
-> > >                          |          |          0xfd2e8c0
-> > >                          |          |          (nil)
-> > > 
-> > > ... etc.
-> > > 
-> > > Signed-off-by: Paul Mackerras <paulus@samba.org>
-> > 
-> > 
-> > Cool!
+> The master branch of the btrfs unstable tree has a collection of fixes
+> and features:
 > 
-> By the way, I notice that gcc tends to inline the tracing functions,
-> which means that by going up 2 stack frames we miss some of the
-> functions.  For example, for the lock:lock_acquire event, we have
-> _raw_spin_lock() -> lock_acquire() -> trace_lock_acquire() ->
-> perf_trace_lock_acquire() -> perf_trace_templ_lock_acquire() ->
-> perf_fetch_caller_regs() -> perf_arch_fetch_caller_regs().
-> 
-> But in the ppc64 kernel binary I just built, gcc inlined
-> trace_lock_acquire in lock_acquire, and perf_trace_templ_lock_acquire
-> in perf_trace_lock_acquire.  Given that perf_fetch_caller_regs is
-> explicitly inlined, going up two levels from perf_fetch_caller_regs
-> gets us to _raw_spin_lock, whereas I think you intended it to get us
-> to trace_lock_acquire.  I'm not sure what to do about that - any
-> thoughts?
+> git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
+I've updated the master tree with 3 small fixes.  Thanks to Sage for
+sending along a one liner for a bad cast in the searching ioctl, really
+not sure why my gcc isn't giving the same warnings his was.
 
+I fixed the new space info ioctl to avoid scheduling in a
+rcu_read_lock.  Sage also turned u64 to __u64 in the space_info ioctl
+args struct.
 
-Yeah I've indeed seen this, and the problem is especially
-the fact perf_trace_templ_lock_acquire may or may not be
-inlined.
+Here is the corrected shortlog:
 
-It is used for trace events that use the TRACE_EVENT_CLASS
-thing. We define a pattern of event structure that is shared
-among several events.
+Josef Bacik (10) commits (+517/-160):
+    Btrfs: make set/get functions for the super compat_ro flags use compat_ro (+1/-1)
+    Btrfs: change the ordered tree to use a spinlock instead of a mutex (+19/-19)
+    Btrfs: add ioctl and incompat flag to set the default mount subvol (+80/-1)
+    Btrfs: cache the extent state everywhere we possibly can V2 (+148/-90)
+    Btrfs: make subvolid=0 mount the original default root (+9/-3)
+    Btrfs: make df be a little bit more understandable (+26/-3)
+    Btrfs: cache extent state in find_delalloc_range (+8/-3)
+    Btrfs: cache ordered extent when completing io (+10/-5)
+    Btrfs: change how we mount subvolumes (+158/-34)
+    Btrfs: add a "df" ioctl for btrfs (+58/-1)
 
-For example event A and event B share perf_trace_templ_foo.
-Both will have a different perf_trace_blah but those
-perf_trace_blah will both call the same perf_trace_templ_foo(),
-in this case, it won't be inlined.
+Chris Mason (7) commits (+619/-67):
+    Btrfs: run the backing dev more often in the submit_bio helper (+10/-10)
+    Btrfs: finish read pages in the order they are submitted (+4/-3)
+    Btrfs: buffer results in the space_info ioctl (+46/-11)
+    Btrfs: don't look at bio flags after submit_bio (+3/-3)
+    Btrfs: be more selective in the defrag ioctl (+140/-10)
+    Btrfs: add search and inode lookup ioctls (+299/-16)
+    Btrfs: add new defrag-range ioctl. (+117/-14)
 
-Events that don't share a pattern will have their
-perf_trace_templ inlined, because there will be an exclusive 1:1
-relationship between both.
+Sage Weil (3) commits (+7/-10):
+    Btrfs: flush data on snapshot creation (+1/-4)
+    Btrfs: fix search_ioctl key advance (+1/-1)
+    Btrfs: use __u64 types in ioctl.h (+5/-5)
 
-The rewind of 2 is well suited for events sharing a pattern, ip
-will match the right event source, and not one of its callers.
+TARUISI Hiroaki (2) commits (+99/-0):
+    Btrfs: add a function to lookup a directory path by following backrefs (+92/-0)
+    btrfs: Update existing btrfs_device for renaming device (+7/-0)
 
-Unfortunately, the others are more unlucky.
-I didn't mind much about this yet because it  had no bad effect
-on lock events. Quite the opposite actually. It's not very interesting
-to have lock_acquire as the event source unless you have a callchain.
+Xiao Guangrong (1) commits (+3/-3):
+    btrfs: using btrfs_stack_device_id() get devid
 
-If you have no callchain, you'll see a lot of such in perf report:
+Akinobu Mita (1) commits (+4/-30):
+    btrfs: use memparse
 
-sym1	lock_aquire
-sym2	lock_acquire
-sym3	lock_acquire
+Miao Xie (1) commits (+1/-1):
+    btrfs: fix btrfs_mkdir goto for no free objectids
 
-What you want here is the function that called lock_acquire.
+Nick Piggin (1) commits (+1/-1):
+    Btrfs: fix gfp flags masking in the compression code
 
-But if you have a callchain it's fine, because you have the nature
-of the event (lock_aquire) and the origin as well.
+Total: (26) commits
 
-That said, lock events are an exception where the mistake
-has a lucky result. Other inlined events are harmed as we lose
-their most important caller. So I'm going to fix that.
+ fs/btrfs/ioctl.c        |  757 ++++++++++++++++++++++++++++++++++++++++++++----
+ fs/btrfs/super.c        |  244 +++++++++++----
+ fs/btrfs/inode.c        |  139 +++++---
+ fs/btrfs/ioctl.h        |  123 +++++++
+ fs/btrfs/extent_io.c    |   79 +++--
+ fs/btrfs/ordered-data.c |   41 +-
+ fs/btrfs/volumes.c      |   39 +-
+ fs/btrfs/file.c         |   23 -
+ fs/btrfs/disk-io.c      |   15 
+ fs/btrfs/ctree.h        |   13 
+ fs/btrfs/extent-tree.c  |   11 
+ fs/btrfs/extent_io.h    |   10 
+ fs/btrfs/ordered-data.h |    7 
+ fs/btrfs/transaction.c  |    5 
+ fs/btrfs/btrfs_inode.h  |    5 
+ fs/btrfs/relocation.c   |    4 
+ fs/btrfs/export.c       |    4 
+ fs/btrfs/tree-log.c     |    2 
+ fs/btrfs/compression.c  |    2 
+ 19 files changed, 1251 insertions(+), 272 deletions(-)
 
-I can just fetch the regs from perf_trace_foo() and pass them
-to perf_trace_templ_foo() and here we are.
-
-Thanks.
 
