@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965920Ab0CPB2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Mar 2010 21:28:08 -0400
-Received: from d112a2.x-mailer.de ([212.162.53.4]:56075 "EHLO
-	d112a2.x-mailer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937327Ab0CPB2E (ORCPT
+	id S937349Ab0CPBa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Mar 2010 21:30:58 -0400
+Received: from www.wytron.com.tw ([211.75.82.101]:41201 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937335Ab0CPBaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Mar 2010 21:28:04 -0400
-From: Karsten Keil <keil@b1-systems.de>
-Date: Mon, 15 Mar 2010 14:18:41 +0100
-Subject: [PATCH V2] ISDN: Add PCI ID for HFC-2S/4S Beronet Card PCIe
-References: <1268668176.12629@pingi>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>, netdev@vger.kernel.org,
-       Andreas Eversberg <andreas@eversberg.eu>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Message-Id: <1268702879.31146@pingi>
-X-Info: valid message
-X-Info: original Date
+	Mon, 15 Mar 2010 21:30:55 -0400
+X-Greylist: delayed 2761 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Mar 2010 21:30:54 EDT
+Message-ID: <4B9ED52F.6050407@wytron.com.tw>
+Date: Tue, 16 Mar 2010 08:47:43 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: nios2-dev@sopc.et.ntust.edu.tw, Tobias Klauser <tklauser@distanz.ch>,
+       gregkh@suse.de, linux-kernel@vger.kernel.org,
+       linux-serial@vger.kernel.org
+Subject: Re: [Nios2-dev] [PATCHv3 1/2] serial: Add driver for the Altera 
+ JTAG UART
+References: <cover.1267807169.git.klto@zhaw.ch>	<15dc056891fb785001073bab4f9a0d0f3bf99af1.1267807169.git.klto@zhaw.ch> <20100312124835.724eb806.akpm@linux-foundation.org>
+In-Reply-To: <20100312124835.724eb806.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.18
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
+On 03/13/2010 04:48 AM, Andrew Morton wrote:
+>> +config SERIAL_ALTERA_JTAGUART
+>> +	bool "Altera JTAG UART support"
+>> +	select SERIAL_CORE
+>> +	help
+>> +	  This driver supports the Altera JTAG UART port.
+>> +
+> So this driver will be available on all CPU architectures.
+>
+> I'm guessing that the hardware _isn't_ available on all CPU
+> architectures?  Maybe that's wrong.
+>
+>    
+It is true that this driver is used mostly with nios2, soft-core 
+coldfire and arm. But peripherals on FPGA can be made available to 
+almost any CPU architecture. So I think it might make sense to let it 
+available to all. Or should we put a "default n" ?
 
-A few subdevice IDs seem to have been dropped when hfc_multi was
-included upstream, just compare the list at
-http://www.openvox.cn/viewvc/misdn/trunk/hfc_multi.c?revision=75&view=annotate#l175
-with the IDs in drivers/isdn/hardware/mISDN/hfcmulti.c
+>> +#include<linux/platform_device.h>
+>> +#include<linux/io.h>
+>> +#include<linux/altera_jtaguart.h>
+>>      
+>
+> Does it make sense to put altera_jtaguart.h into include/linux?  Could
+> we put it in drivers/serial/?
+>
+>
+>    
+There is only a platform data structure declaration in the header, which 
+should be passed through platform device data to the driver. If we put 
+it in drivers/serial/, then we will need to include 
+"../../../drivers/serial/altera_jtaguart.h" .
 
-Added PCIe 2 Port card and LED settings (same as PCI)
-Do not use <linux/pci_ids.h> /KKe
+I have written this driver in parallel with the altera_uart driver. We 
+could have passed the data ( base, irq, freq ) using platform resources. 
+But I don't know if there is a way to pass ( freq )? Please let me know 
+if you have any suggestions.
 
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Karsten Keil <keil@b1-systems.de>
----
- drivers/isdn/hardware/mISDN/hfcmulti.c |    6 ++++++
- include/linux/pci_ids.h                |    2 ++
- 2 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/isdn/hardware/mISDN/hfcmulti.c b/drivers/isdn/hardware/mISDN/hfcmulti.c
-index ad36df9..751b34c 100644
---- a/drivers/isdn/hardware/mISDN/hfcmulti.c
-+++ b/drivers/isdn/hardware/mISDN/hfcmulti.c
-@@ -5265,6 +5265,8 @@ static const struct hm_map hfcm_map[] = {
- /*31*/	{VENDOR_CCD, "XHFC-4S Speech Design", 5, 4, 0, 0, 0, 0,
- 		HFC_IO_MODE_EMBSD, XHFC_IRQ},
- /*32*/	{VENDOR_JH, "HFC-8S (junghanns)", 8, 8, 1, 0, 0, 0, 0, 0},
-+/*33*/	{VENDOR_BN, "HFC-2S Beronet Card PCIe", 4, 2, 1, 3, 0, DIP_4S, 0, 0},
-+/*34*/	{VENDOR_BN, "HFC-4S Beronet Card PCIe", 4, 4, 1, 2, 0, DIP_4S, 0, 0},
- };
- 
- #undef H
-@@ -5300,6 +5302,10 @@ static struct pci_device_id hfmultipci_ids[] __devinitdata = {
- 		PCI_SUBDEVICE_ID_CCD_OV4S, 0, 0, H(28)}, /* OpenVox 4 */
- 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
- 		PCI_SUBDEVICE_ID_CCD_OV2S, 0, 0, H(29)}, /* OpenVox 2 */
-+	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
-+		0xb761, 0, 0, H(33)}, /* BN2S PCIe */
-+	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC4S, PCI_VENDOR_ID_CCD,
-+		0xb762, 0, 0, H(34)}, /* BN4S PCIe */
- 
- 	/* Cards with HFC-8S Chip */
- 	{ PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_HFC8S, PCI_VENDOR_ID_CCD,
-
--- 
-1.6.0.2
-
+- Thomas
