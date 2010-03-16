@@ -1,90 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966052Ab0CPHhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 03:37:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40128 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966026Ab0CPHho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 03:37:44 -0400
-Date: Tue, 16 Mar 2010 08:36:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Nicholas Miell <nmiell@comcast.net>, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
-       Chris Friesen <cfriesen@nortel.com>,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip] introduce sys_membarrier(): process-wide memory
- barrier (v9)
-Message-ID: <20100316073635.GC18448@elte.hu>
-References: <20100225232316.GA30196@Krystal>
- <20100304122304.GA6864@elte.hu>
- <alpine.LFD.2.00.1003040827100.7046@localhost.localdomain>
- <20100304175659.GA3255@Krystal>
- <20100315205312.GA31231@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315205312.GA31231@Krystal>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1757666Ab0CPHoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 03:44:15 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47999 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755391Ab0CPHoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 03:44:14 -0400
+Date: Tue, 16 Mar 2010 16:41:21 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrea Righi <arighi@develer.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -mmotm 2/5] memcg: dirty memory documentation
+Message-Id: <20100316164121.024e35d8.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1268609202-15581-3-git-send-email-arighi@develer.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-3-git-send-email-arighi@develer.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> > * Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> > > >  - SA_RUNNING: a way to signal only running threads - as a way for user-space 
-> > > >    based concurrency control mechanisms to deschedule running threads (or, like
-> > > >    in your case, to implement barrier / garbage collection schemes).
-> > > 
-> > > Hmm. This sounds less fundamentally broken, but at the same time also 
-> > > _way_ more invasive in the signal handling layer. It's already one of our 
-> > > more "exciting" layers out there.
-> > > 
-> > 
-> > Hrm, thinking about it a bit further, the only way I see we could provide a
-> > usable SA_RUNNING flag would be to add hooks to the scheduler. These hooks would
-> > somehow have to call user-space code (!) when scheduling in/out a thread. Yes,
-> > this sounds utterly broken (since these hooks would have to be preemptable).
-> > 
-> > The idea is this: if we look, for instance, at the kernel preemptable RCU
-> > implementations, they consist of two parts: one is iteration on all CPUs to
-> > consider all active CPUs, and the other is a modification of the scheduler to
-> > note all preempted tasks that were in a preemptable RCU C.S..
-> > 
-> > Just for the memory barrier we consider for sys_membarrier(), I had to ensure
-> > that the scheduler issues memory barriers to order accesses to user-space memory
-> > and mm_cpumask modifications. In reality, what we are doing is to ensure that
-> > the operation required on the running thread is done by the scheduler too when
-> > scheduling in/out the task.
-> > 
-> > As soon as we have signal handlers which perform more than a simple memory 
-> > barrier (e.g. something that has side-effects outside of the processor), I 
-> > doubt it would ever make sense to only run the handler on running threads 
-> > unless we have hooks in the scheduler too.
+On Mon, 15 Mar 2010 00:26:39 +0100, Andrea Righi <arighi@develer.com> wrote:
+> Document cgroup dirty memory interfaces and statistics.
 > 
-> Unless this question is answered, Ingo's SA_RUNNING signal proposal, as 
-> appealing as it may look at a first glance, falls into the "fundamentally 
-> broken" category. [...]
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  Documentation/cgroups/memory.txt |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 49f86f3..38ca499 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -310,6 +310,11 @@ cache		- # of bytes of page cache memory.
+>  rss		- # of bytes of anonymous and swap cache memory.
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+> +filedirty	- # of pages that are waiting to get written back to the disk.
+> +writeback	- # of pages that are actively being written back to the disk.
+> +writeback_tmp	- # of pages used by FUSE for temporary writeback buffers.
+> +nfs		- # of NFS pages sent to the server, but not yet committed to
+> +		  the actual storage.
+>  active_anon	- # of bytes of anonymous and  swap cache memory on active
+>  		  lru list.
+>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+> @@ -345,6 +350,37 @@ Note:
+>    - a cgroup which uses hierarchy and it has child cgroup.
+>    - a cgroup which uses hierarchy and not the root of hierarchy.
+>  
+> +5.4 dirty memory
+> +
+> +  Control the maximum amount of dirty pages a cgroup can have at any given time.
+> +
+> +  Limiting dirty memory is like fixing the max amount of dirty (hard to
+> +  reclaim) page cache used by any cgroup. So, in case of multiple cgroup writers,
+> +  they will not be able to consume more than their designated share of dirty
+> +  pages and will be forced to perform write-out if they cross that limit.
+> +
+> +  The interface is equivalent to the procfs interface: /proc/sys/vm/dirty_*.
+> +  It is possible to configure a limit to trigger both a direct writeback or a
+> +  background writeback performed by per-bdi flusher threads.
+> +
+> +  Per-cgroup dirty limits can be set using the following files in the cgroupfs:
+> +
+> +  - memory.dirty_ratio: contains, as a percentage of cgroup memory, the
+> +    amount of dirty memory at which a process which is generating disk writes
+> +    inside the cgroup will start itself writing out dirty data.
+> +
+> +  - memory.dirty_bytes: the amount of dirty memory of the cgroup (expressed in
+> +    bytes) at which a process generating disk writes will start itself writing
+> +    out dirty data.
+> +
+> +  - memory.dirty_background_ratio: contains, as a percentage of the cgroup
+> +    memory, the amount of dirty memory at which background writeback kernel
+> +    threads will start writing out dirty data.
+> +
+> +  - memory.dirty_background_bytes: the amount of dirty memory of the cgroup (in
+> +    bytes) at which background writeback kernel threads will start writing out
+> +    dirty data.
+> +
+>  
+It would be better to note that what those files of root cgroup mean.
+We cannot write any value to them, IOW, we cannot control dirty limit about root cgroup.
+And they show the same value as the global one(strictly speaking, it's not true
+because global values can change. We need a hook in mem_cgroup_dirty_read()?).
 
-How is it different from your syscall? I.e. which lines of code make the 
-difference? We could certainly apply the (trivial) barrier change to 
-context_switch().
+Thanks,
+Daisuke Nishimura.
 
-	Ingo
+>  6. Hierarchy support
+>  
+> -- 
+> 1.6.3.3
+> 
