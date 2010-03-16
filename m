@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab0CPVFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:05:39 -0400
-Received: from mail-pz0-f200.google.com ([209.85.222.200]:46635 "EHLO
-	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0CPVFf convert rfc822-to-8bit (ORCPT
+	id S1755408Ab0CPVGM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 17:06:12 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62120 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab0CPVGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:05:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DDAGtRD3JkOVHFNn/Jz7KxkCYhc7/hubbmynfvZwe2YVWUfdPlwtuc8yql5DVLwi+D
-         2Ns9YKnhEp2yQypIG12X7bk9986UlUdp5oOXA4CfakdCRqj5M8wMEDwz/8j/qIgYyEqf
-         14sZfwO9y94l/tCo53WSbziQW4FAi7iVJv9HA=
-MIME-Version: 1.0
-In-Reply-To: <tip-ff30a0543e9a6cd732582063e7cae951cdb7acf2@git.kernel.org>
-References: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-	 <tip-ff30a0543e9a6cd732582063e7cae951cdb7acf2@git.kernel.org>
-Date: Tue, 16 Mar 2010 14:03:57 -0700
-Message-ID: <dd18b0c31003161403r56f9fd88kcc561a630be136a3@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86: Fix placement of FIX_OHCI1394_BASE
-From: Justin Mattock <justinmattock@gmail.com>
-To: mingo@redhat.com, hpa@zytor.com, justinmattock@gmail.com,
-       linux-kernel@vger.kernel.org, jbeulich@novell.com, tglx@linutronix.de,
-       mingo@elte.hu
-Cc: linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Mar 2010 17:06:05 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: gregkh@suse.de, Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jason Wessel <jason.wessel@windriver.com>,
+       Alan Cox <alan@linux.intel.com>, Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 3/5] usb-console: pass baud from console to the initial tty open
+Date: Tue, 16 Mar 2010 16:05:44 -0500
+Message-Id: <1268773546-12457-4-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1268773546-12457-3-git-send-email-jason.wessel@windriver.com>
+References: <1268773546-12457-1-git-send-email-jason.wessel@windriver.com>
+ <1268773546-12457-2-git-send-email-jason.wessel@windriver.com>
+ <1268773546-12457-3-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 16 Mar 2010 21:06:00.0104 (UTC) FILETIME=[7ABF8A80:01CAC54C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 7:48 AM, tip-bot for Jan Beulich
-<JBeulich@novell.com> wrote:
-> Commit-ID:  ff30a0543e9a6cd732582063e7cae951cdb7acf2
-> Gitweb:     http://git.kernel.org/tip/ff30a0543e9a6cd732582063e7cae951cdb7acf2
-> Author:     Jan Beulich <JBeulich@novell.com>
-> AuthorDate: Mon, 15 Mar 2010 10:11:15 +0000
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Tue, 16 Mar 2010 11:16:27 +0100
->
-> x86: Fix placement of FIX_OHCI1394_BASE
->
-> Ever for 32-bit with sufficiently high NR_CPUS, and starting
-> with commit 789d03f584484af85dbdc64935270c8e45f36ef7 also for
-> 64-bit, the statically allocated early fixmap page tables were
-> not covering FIX_OHCI1394_BASE, leading to a boot time crash
-> when "ohci1394_dma=early" was used. Despite this entry not being
-> a permanently used one, it needs to be moved into the permanent
-> range since it has to be close to FIX_DBGP_BASE and
-> FIX_EARLYCON_MEM_BASE.
->
-> Reported-bisected-and-tested-by: Justin P. Mattock <justinmattock@gmail.com>
-> Fixes-bug: http://bugzilla.kernel.org/show_bug.cgi?id=14487
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> Cc: <stable@kernel.org> # [as far back as long as it still applies]
-> LKML-Reference: <4B9E15D30200007800034D23@vpn.id2.novell.com>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  arch/x86/include/asm/fixmap.h |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-> index 635f03b..d07b44f 100644
-> --- a/arch/x86/include/asm/fixmap.h
-> +++ b/arch/x86/include/asm/fixmap.h
-> @@ -82,6 +82,9 @@ enum fixed_addresses {
->  #endif
->        FIX_DBGP_BASE,
->        FIX_EARLYCON_MEM_BASE,
-> +#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-> +       FIX_OHCI1394_BASE,
-> +#endif
->  #ifdef CONFIG_X86_LOCAL_APIC
->        FIX_APIC_BASE,  /* local (CPU) APIC) -- required for SMP or not */
->  #endif
-> @@ -132,9 +135,6 @@ enum fixed_addresses {
->           (__end_of_permanent_fixed_addresses & (TOTAL_FIX_BTMAPS - 1))
->         : __end_of_permanent_fixed_addresses,
->        FIX_BTMAP_BEGIN = FIX_BTMAP_END + TOTAL_FIX_BTMAPS - 1,
-> -#ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-> -       FIX_OHCI1394_BASE,
-> -#endif
->  #ifdef CONFIG_X86_32
->        FIX_WP_TEST,
->  #endif
->
+The usb console code has had a long standing problem of not being able
+to pass the baud rate from the kernel argument console=ttyUSB0,BAUD
+down to the initial tty open, unless you were willing to settle for
+9600 baud.
 
-looks good over here..
+The solution is to directly use tty_init_termios() in
+usb_console_setup() as this will preserve any changes to the initial
+termios setting on future opens.
 
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Alan Cox <alan@linux.intel.com>
+CC: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-usb@vger.kernel.org
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ drivers/usb/serial/console.c |   22 ++++++++++------------
+ 1 files changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
+index 4ea64fe..1ee6b2a 100644
+--- a/drivers/usb/serial/console.c
++++ b/drivers/usb/serial/console.c
+@@ -66,7 +66,7 @@ static int usb_console_setup(struct console *co, char *options)
+ 	struct usb_serial_port *port;
+ 	int retval;
+ 	struct tty_struct *tty = NULL;
+-	struct ktermios *termios = NULL, dummy;
++	struct ktermios dummy;
+ 
+ 	dbg("%s", __func__);
+ 
+@@ -141,15 +141,14 @@ static int usb_console_setup(struct console *co, char *options)
+ 				goto reset_open_count;
+ 			}
+ 			kref_init(&tty->kref);
+-			termios = kzalloc(sizeof(*termios), GFP_KERNEL);
+-			if (!termios) {
++			tty_port_tty_set(&port->port, tty);
++			tty->driver = usb_serial_tty_driver;
++			tty->index = co->index;
++			if (tty_init_termios(tty)) {
+ 				retval = -ENOMEM;
+ 				err("no more memory");
+ 				goto free_tty;
+ 			}
+-			memset(&dummy, 0, sizeof(struct ktermios));
+-			tty->termios = termios;
+-			tty_port_tty_set(&port->port, tty);
+ 		}
+ 
+ 		/* only call the device specific open if this
+@@ -161,16 +160,16 @@ static int usb_console_setup(struct console *co, char *options)
+ 
+ 		if (retval) {
+ 			err("could not open USB console port");
+-			goto free_termios;
++			goto fail;
+ 		}
+ 
+ 		if (serial->type->set_termios) {
+-			termios->c_cflag = cflag;
+-			tty_termios_encode_baud_rate(termios, baud, baud);
++			tty->termios->c_cflag = cflag;
++			tty_termios_encode_baud_rate(tty->termios, baud, baud);
++			memset(&dummy, 0, sizeof(struct ktermios));
+ 			serial->type->set_termios(tty, port, &dummy);
+ 
+ 			tty_port_tty_set(&port->port, NULL);
+-			kfree(termios);
+ 			kfree(tty);
+ 		}
+ 		set_bit(ASYNCB_INITIALIZED, &port->port.flags);
+@@ -185,8 +184,7 @@ static int usb_console_setup(struct console *co, char *options)
+ 	mutex_unlock(&serial->disc_mutex);
+ 	return retval;
+ 
+- free_termios:
+-	kfree(termios);
++ fail:
+ 	tty_port_tty_set(&port->port, NULL);
+  free_tty:
+ 	kfree(tty);
 -- 
-Justin P. Mattock
+1.6.4.rc1
+
