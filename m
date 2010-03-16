@@ -1,49 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966013Ab0CPGZE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:25:04 -0400
-Received: from www.wytron.com.tw ([211.75.82.101]:40705 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965916Ab0CPGZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:25:01 -0400
-Message-ID: <4B9F24BE.3070401@wytron.com.tw>
-Date: Tue, 16 Mar 2010 14:27:10 +0800
-From: Thomas Chou <thomas@wytron.com.tw>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Tejun Heo <tj@kernel.org>, Denys Vlasenko <vda.linux@googlemail.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
-       jdelvare@suse.de
-Subject: Re: ATA 4 KiB sector issues.
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
-In-Reply-To: <1268720060.21384.10.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.1.18
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	id S966017Ab0CPG0a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:26:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45638 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754837Ab0CPG03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:26:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,648,1262592000"; 
+   d="scan'208";a="255088581"
+From: Shane Wang <shane.wang@intel.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, joseph.cihula@intel.com
+Subject: [RESEND][PATCH] intel_txt: fix section warning messages from tboot (v2)
+Date: Tue, 16 Mar 2010 07:26:12 -0700
+Message-Id: <1268749572-2454-1-git-send-email-shane.wang@intel.com>
+X-Mailer: git-send-email 1.6.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 02:14 PM, James Bottomley wrote:
->
-> The big problem is that 99% of the x86 systems out there still use the
-> ancient msdos label for their boot disks, so aligning H/S going forwards
-> will give us a nice "just works" for x86 boxes.
->
->    
-The key issue is not "just work", but "performance". When unaligned, the 
-write performance can be lower than 50% of the expected rate.
+This patch is to fix the warning messages related to tboot when "allyesconfig"
+is set on i386.
 
-- Thomas
+Signed-off-by: Shane Wang <shane.wang@intel.com>
+Acked-by: Joseph Cihula <joseph.cihula@intel.com>
+---
+ arch/x86/kernel/tboot.c |  108 +++++++++++++++++---------------------
+ 1 file changed, 49 insertions(+), 59 deletions(-)
+
+diff -r d5d64753146c arch/x86/kernel/tboot.c
+--- a/arch/x86/kernel/tboot.c	Mon Mar 01 09:47:50 2010 -0500
++++ b/arch/x86/kernel/tboot.c	Thu Mar 04 09:36:37 2010 -0500
+@@ -54,51 +54,6 @@ struct tboot *tboot __read_mostly;
+ #define pr_fmt(fmt)	"tboot: " fmt
+ 
+ static u8 tboot_uuid[16] __initdata = TBOOT_UUID;
+-
+-void __init tboot_probe(void)
+-{
+-	/* Look for valid page-aligned address for shared page. */
+-	if (!boot_params.tboot_addr)
+-		return;
+-	/*
+-	 * also verify that it is mapped as we expect it before calling
+-	 * set_fixmap(), to reduce chance of garbage value causing crash
+-	 */
+-	if (!e820_any_mapped(boot_params.tboot_addr,
+-			     boot_params.tboot_addr, E820_RESERVED)) {
+-		pr_warning("non-0 tboot_addr but it is not of type E820_RESERVED\n");
+-		return;
+-	}
+-
+-	/* only a natively booted kernel should be using TXT */
+-	if (paravirt_enabled()) {
+-		pr_warning("non-0 tboot_addr but pv_ops is enabled\n");
+-		return;
+-	}
+-
+-	/* Map and check for tboot UUID. */
+-	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
+-	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
+-	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
+-		pr_warning("tboot at 0x%llx is invalid\n",
+-			   boot_params.tboot_addr);
+-		tboot = NULL;
+-		return;
+-	}
+-	if (tboot->version < 5) {
+-		pr_warning("tboot version is invalid: %u\n", tboot->version);
+-		tboot = NULL;
+-		return;
+-	}
+-
+-	pr_info("found shared page at phys addr 0x%llx:\n",
+-		boot_params.tboot_addr);
+-	pr_debug("version: %d\n", tboot->version);
+-	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
+-	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
+-	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
+-	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
+-}
+ 
+ static pgd_t *tboot_pg_dir;
+ static struct mm_struct tboot_mm = {
+@@ -182,7 +137,7 @@ static void add_mac_region(phys_addr_t s
+ 	}
+ }
+ 
+-static int tboot_setup_sleep(void)
++static void __init tboot_setup_sleep(void)
+ {
+ 	tboot->num_mac_regions = 0;
+ 
+@@ -198,20 +153,60 @@ static int tboot_setup_sleep(void)
+ 	add_mac_region(virt_to_phys(_text), _end - _text);
+ 
+ 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
+-
+-	return 0;
+ }
+ 
+ #else /* no CONFIG_ACPI_SLEEP */
+ 
+-static int tboot_setup_sleep(void)
+-{
+-	/* S3 shutdown requested, but S3 not supported by the kernel... */
+-	BUG();
+-	return -1;
+-}
++static void tboot_setup_sleep(void)     {}
+ 
+ #endif
++
++void __init tboot_probe(void)
++{
++	/* Look for valid page-aligned address for shared page. */
++	if (!boot_params.tboot_addr)
++		return;
++	/*
++	 * also verify that it is mapped as we expect it before calling
++	 * set_fixmap(), to reduce chance of garbage value causing crash
++	 */
++	if (!e820_any_mapped(boot_params.tboot_addr,
++			boot_params.tboot_addr, E820_RESERVED)) {
++		pr_warning("non-0 tboot_addr but it is not of type E820_RESERVED\n");
++		return;
++	}
++
++	/* only a natively booted kernel should be using TXT */
++	if (paravirt_enabled()) {
++		pr_warning("non-0 tboot_addr but pv_ops is enabled\n");
++		return;
++	}
++
++	/* Map and check for tboot UUID. */
++	set_fixmap(FIX_TBOOT_BASE, boot_params.tboot_addr);
++	tboot = (struct tboot *)fix_to_virt(FIX_TBOOT_BASE);
++	if (memcmp(&tboot_uuid, &tboot->uuid, sizeof(tboot->uuid))) {
++		pr_warning("tboot at 0x%llx is invalid\n",
++			boot_params.tboot_addr);
++		tboot = NULL;
++		return;
++	}
++	if (tboot->version < 5) {
++		pr_warning("tboot version is invalid: %u\n", tboot->version);
++		tboot = NULL;
++		return;
++	}
++
++	pr_info("found shared page at phys addr 0x%llx:\n",
++		boot_params.tboot_addr);
++	pr_debug("version: %d\n", tboot->version);
++	pr_debug("log_addr: 0x%08x\n", tboot->log_addr);
++	pr_debug("shutdown_entry: 0x%x\n", tboot->shutdown_entry);
++	pr_debug("tboot_base: 0x%08x\n", tboot->tboot_base);
++	pr_debug("tboot_size: 0x%x\n", tboot->tboot_size);
++
++	tboot_setup_sleep();
++}
+ 
+ void tboot_shutdown(u32 shutdown_type)
+ {
+@@ -227,11 +222,6 @@ void tboot_shutdown(u32 shutdown_type)
+ 	 */
+ 	if (!tboot_pg_dir)
+ 		return;
+-
+-	/* if this is S3 then set regions to MAC */
+-	if (shutdown_type == TB_SHUTDOWN_S3)
+-		if (tboot_setup_sleep())
+-			return;
+ 
+ 	tboot->shutdown_type = shutdown_type;
+ 
