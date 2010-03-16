@@ -1,129 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937493Ab0CPHN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 03:13:58 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:47381 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756111Ab0CPHN4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 03:13:56 -0400
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
- Intel x86 CPUs)
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Dave Jones <davej@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-In-Reply-To: <201003151151.05741.trenn@suse.de>
-References: <1268399863.3407.15.camel@localhost>
-	 <4B9A552D.6080103@linux.intel.com> <1268408506.3407.17.camel@localhost>
-	 <201003151151.05741.trenn@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 08:13:48 +0100
-Message-ID: <1268723628.3367.16.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
+	id S937503Ab0CPHOR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 03:14:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38271 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab0CPHOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 03:14:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=NirlvPTop92Esq9TTXcNNlMJnXslD8wMvvNgkKz/mbETQZIZJPNRL0PGwNVzEsXx+i
+         lQ67YRK7e/yNSCNjsaGHQEdfG9Frj5ipjdX3rKxWmHtqowVtgXM130BY+WJyrXoEgXXe
+         CByRFPyZCRvUS0EGgy4KgqwKZoAidKsAhLie0=
+MIME-Version: 1.0
+In-Reply-To: <20100316061718.GA22651@elte.hu>
+References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org>
+	 <20100316061718.GA22651@elte.hu>
+Date: Tue, 16 Mar 2010 09:14:12 +0200
+Message-ID: <b6fcc0a1003160014h79098b50t87a448285350b3e@mail.gmail.com>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 15.03.2010, 11:51 +0100 schrieb Thomas Renninger:
-> On Friday 12 March 2010 16:41:46 Robert Schöne wrote:
-> > Am Freitag, den 12.03.2010, 06:52 -0800 schrieb Arjan van de Ven:
-> > > On 3/12/2010 5:17, Robert Schöne wrote:
-> > > > This patch fixes the following behaviour:
-> > > > Currently, the power_frequency event is reported for the cpu (core) which initiated the frequency change.
-> > > > It should be reported for the cpu that actually changes its frequency.
-> > > >
-> > > > Example: when using
-> > > >   taskset -c 0 echo<new_frequency>  >  /sys/devices/system/cpu/cpu1/cpufreq/scaling_setspeed
-> > > > cpu 0 is traced, instead of cpu 1
-> > > >
-> > > > Signed of by Robert Schoene<robert.schoene@tu-dresden.de>
-> > > >
-> > > >
-> > > > diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> > > > index 1b1920f..0a47f10 100644
-> > > > --- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> > > > +++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-> > > > @@ -174,6 +174,7 @@ static void do_drv_write(void *_cmd)
-> > > >
-> > > >          switch (cmd->type) {
-> > > >          case SYSTEM_INTEL_MSR_CAPABLE:
-> > > > +               trace_power_frequency(POWER_PSTATE, cmd->val);
-> > > >                  rdmsr(cmd->addr.msr.reg, lo, hi);
-> > > >                  lo = (lo&  ~INTEL_MSR_RANGE) | (cmd->val&  INTEL_MSR_RANGE);
-> > > >                  wrmsr(cmd->addr.msr.reg, lo, hi);
-> > > > @@ -363,7 +364,6 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
-> > > >                  }
-> > > >          }
-> > > >
-> > > > -       trace_power_frequency(POWER_PSTATE, data->freq_table[next_state].frequency);
-> > > >
-> > > >          switch (data->cpu_feature) {
-> > > >          case SYSTEM_INTEL_MSR_CAPABLE:
-> > > >
-> > > >
-> > > 
-> > > are you sure this is right?
-> > > it's moving something from outside a switch statement to inside only one prong of a switch statement...
-You are right, it should be in all cases, which execute a frequency change.
-> > 
-> > I'm pretty sure, since I'm moving it from function acpi_cpufreq_target(...) to do_drv_write(...)
-> What exactly is the argument you are pretty sure this is correct?
-> 
-> I expect Arjan is right.
-> You now only trace MSR based and not IO based frequency switching.
-> 
-> I don't know the tracing stuff, but it seems the cpu that executes
-> trace_power_frequency shows up in the statistics as the one on which the
-> frequency change happened which currently is wrong and you try to fix this?
-Yes
-> 
-> What exactly is the reason you do not add
-> trace_power_frequency(..);
-> also in the
-> SYSTEM_IO_CAPABLE:
-> branch in do_drv_write()?
-I don't know system io capable systems and what they are doing, so I ignored it to prevent reporting wrong "frequencies". 
-> 
->     Thomas
-> 
-> 
-> 
->    Thomas
-I stand corrected and appended the new patch (with an additional trace command for io capable systems)
-Robert
+On Tue, Mar 16, 2010 at 8:17 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> Also, why should we make this opt-in and expose a wide range of configs to
+> build breakages?
 
+Because we want to #include less, not the same amount.
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-index 1b1920f..4803883 100644
---- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
-@@ -174,11 +174,13 @@ static void do_drv_write(void *_cmd)
- 
-        switch (cmd->type) {
-        case SYSTEM_INTEL_MSR_CAPABLE:
-+               trace_power_frequency(POWER_PSTATE, cmd->val);
-                rdmsr(cmd->addr.msr.reg, lo, hi);
-                lo = (lo & ~INTEL_MSR_RANGE) | (cmd->val & INTEL_MSR_RANGE);
-                wrmsr(cmd->addr.msr.reg, lo, hi);
-                break;
-        case SYSTEM_IO_CAPABLE:
-+               trace_power_frequency(POWER_PSTATE, cmd->val);
-                acpi_os_write_port((acpi_io_address)cmd->addr.io.port,
-                                cmd->val,
-                                (u32)cmd->addr.io.bit_width);
-@@ -363,7 +365,6 @@ static int acpi_cpufreq_target(struct cpufreq_policy *policy,
-                }
-        }
- 
--       trace_power_frequency(POWER_PSTATE, data->freq_table[next_state].frequency);
- 
-        switch (data->cpu_feature) {
-        case SYSTEM_INTEL_MSR_CAPABLE:
+> A more gradual approach would be to write a simple script
+> that adds a slab.h include to all .c's that include percpu.h, directly or
+> indirectly.
 
+As a defensive measure, one can explicitly add slab.h to every file
+which uses kmalloc/kfree.
 
+But, who cares, since one still has to compile test regardless.
