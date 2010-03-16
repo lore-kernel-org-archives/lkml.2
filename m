@@ -1,673 +1,1818 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964839Ab0CPFYI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 01:24:08 -0400
-Received: from complete.lackof.org ([198.49.126.79]:34151 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659Ab0CPFYG (ORCPT
+	id S934332Ab0CPFZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 01:25:09 -0400
+Received: from mga12.intel.com ([143.182.124.36]:36315 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752659Ab0CPFZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 01:24:06 -0400
-Date: Mon, 15 Mar 2010 23:24:03 -0600
-From: Grant Grundler <grundler@parisc-linux.org>
-To: Manu Abraham <abraham.manu@gmail.com>
-Cc: Grant Grundler <grundler@parisc-linux.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-pci@vger.kernel.org
-Subject: Re: PCI express switch handling ..
-Message-ID: <20100316052403.GB31551@lackof.org>
-References: <1a297b361003141218g783d1880p98b15749d01bd813@mail.gmail.com> <20100315053209.GC28926@lackof.org> <1a297b361003142315y23619cc9v94184161a2380f9f@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1a297b361003142315y23619cc9v94184161a2380f9f@mail.gmail.com>
-X-Home-Page: http://www.parisc-linux.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 16 Mar 2010 01:25:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,648,1262592000"; 
+   d="scan'208";a="255074387"
+Subject: [PATCH] Enhance perf to collect KVM guest os statistics from host
+ side
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 16 Mar 2010 13:27:12 +0800
+Message-Id: <1268717232.2813.36.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 10:15:55AM +0400, Manu Abraham wrote:
-> > Can you post "lspci -vt" and "lspci -v" output?
-> > It will tell us alot more about the heirarchy and address space routing.
-> 
-> 
-> Sure, I have added both to this mail.
+From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
 
-Thanks!
+Based on the discussion in KVM community, I worked out the patch to support
+perf to collect guest os statistics from host side. This patch is implemented
+with Ingo, Peter and some other guys' kind help. Yang Sheng pointed out a
+critical bug and provided good suggestions with other guys. I really appreciate
+their kind help.
 
-> >> I am wondering if i need to access or address the switch specifically
-> >> to forward data specifically to one of the bridges behind the switch.
-> >
-> > No. MMIO routing is handling by MMIO "window" register in the bridge.
-> 
-> 
-> 
-> 
-> To clarify, do you mean the window register in the
-> 
-> PCI bridge (PEX 8604)
-> or
-> Multimedia controller (7231)
+The patch adds new subcommand kvm to perf.
 
-PCI Bridge.
-The BAR range shown by the Multimedia controller isn't really a "window"
-in the same sense since it's only used to route MMIO traffic down stream. 
-Bridge windows typically imply negative decoding for upstream MMIO
-transactions.
+  perf kvm top
+  perf kvm record
+  perf kvm report
+  perf kvm diff
 
-> Since both show memory regions.
-> 
-> 06:00.0 PCI bridge: PLX Technology, Inc. Device 8604 (rev ba)
->         Flags: bus master, fast devsel, latency 0
->         Memory at fb3e0000 (32-bit, non-prefetchable) [size=128K]
->         Bus: primary=06, secondary=07, subordinate=0a, sec-latency=0
->         Memory behind bridge: fa000000-faffffff
+The new perf could profile guest os kernel except guest os user space, but it
+could summarize guest os user space utilization per guest os.
 
-"Memory behind Bridge" is the "window" register I'm talking about (16MB).
+Below are some examples.
+1) perf kvm top
+[root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+--guestmodules=/home/ymzhang/guest/modules top
 
-"Memory at" isn't routed anywhere else - ie Bridge itself will respond
-to 0xfb3e0000 range (128K size).
+--------------------------------------------------------------------------------------------------------------------------
+   PerfTop:   16010 irqs/sec  kernel:59.1% us: 1.5% guest kernel:31.9% guest us: 7.5% exact:  0.0% [1000Hz cycles],  (all, 16 CPUs)
+--------------------------------------------------------------------------------------------------------------------------
+
+             samples  pcnt function                  DSO
+             _______ _____ _________________________ _______________________
+
+            38770.00 20.4% __ticket_spin_lock        [guest.kernel.kallsyms]
+            22560.00 11.9% ftrace_likely_update      [kernel.kallsyms]
+             9208.00  4.8% __lock_acquire            [kernel.kallsyms]
+             5473.00  2.9% trace_hardirqs_off_caller [kernel.kallsyms]
+             5222.00  2.7% copy_user_generic_string  [guest.kernel.kallsyms]
+             4450.00  2.3% validate_chain            [kernel.kallsyms]
+             4262.00  2.2% trace_hardirqs_on_caller  [kernel.kallsyms]
+             4239.00  2.2% do_raw_spin_lock          [kernel.kallsyms]
+             3548.00  1.9% do_raw_spin_unlock        [kernel.kallsyms]
+             2487.00  1.3% lock_release              [kernel.kallsyms]
+             2165.00  1.1% __local_bh_disable        [kernel.kallsyms]
+             1905.00  1.0% check_chain_key           [kernel.kallsyms]
+             1737.00  0.9% lock_acquire              [kernel.kallsyms]
+             1604.00  0.8% tcp_recvmsg               [kernel.kallsyms]
+             1524.00  0.8% mark_lock                 [kernel.kallsyms]
+             1464.00  0.8% schedule                  [kernel.kallsyms]
+             1423.00  0.7% __d_lookup                [guest.kernel.kallsyms]
+
+If you want to just show host data, pls. don't use parameter --guest.
+The headline includes guest os kernel and userspace percentage.
+
+2) perf kvm record
+[root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+--guestmodules=/home/ymzhang/guest/modules record -f -a sleep 60
+[ perf record: Woken up 15 times to write data ]
+[ perf record: Captured and wrote 29.385 MB perf.data.kvm (~1283837 samples) ]
+
+3) perf kvm report
+	3.1) [root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+--guestmodules=/home/ymzhang/guest/modules report --sort pid --showcpuutilization>norm.host.guest.report.pid
+# Samples: 2453796285126
+#
+# Overhead  sys    us    guest sys    guest us            Command:  Pid
+# ........  .....................
+#
+    43.67%     1.35%     0.01%    39.06%     3.26%  qemu-system-x86: 3913
+     3.78%     3.58%     0.20%     0.00%     0.00%           tbench:13519
+     3.69%     3.66%     0.03%     0.00%     0.00%       tbench_srv:13526
+
+Some performance guys require perf to show sys/us/guest_sys/guest_us per KVM guest
+instance which is actually just a multi-threaded process. Above sub parameter --showcpuutilization
+does so.
+
+	3.2) [root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
+--guestmodules=/home/ymzhang/guest/modules report >norm.host.guest.report
+# Samples: 2466991384118
+#
+# Overhead          Command                                                             Shared Object  Symbol
+# ........  ...............  ........................................................................  ......
+#
+    29.11%  qemu-system-x86  [guest.kernel.kallsyms]                                                   [g] __ticket_spin_lock
+     5.88%       tbench_srv  [kernel.kallsyms]                                                         [k] ftrace_likely_update
+     5.76%           tbench  [kernel.kallsyms]                                                         [k] ftrace_likely_update
+     3.88%  qemu-system-x86                                                                34c3255482  [u] 0x000034c3255482
+     1.83%           tbench  [kernel.kallsyms]                                                         [k] __lock_acquire
+     1.81%       tbench_srv  [kernel.kallsyms]                                                         [k] __lock_acquire
+     1.38%       tbench_srv  [kernel.kallsyms]                                                         [k] trace_hardirqs_off_caller
+     1.37%           tbench  [kernel.kallsyms]                                                         [k] trace_hardirqs_off_caller
+     1.13%  qemu-system-x86  [guest.kernel.kallsyms]                                                   [g] copy_user_generic_string
+     1.04%       tbench_srv  [kernel.kallsyms]                                                         [k] validate_chain
+     1.00%           tbench  [kernel.kallsyms]                                                         [k] trace_hardirqs_on_caller
+     1.00%       tbench_srv  [kernel.kallsyms]                                                         [k] trace_hardirqs_on_caller
+     0.95%           tbench  [kernel.kallsyms]                                                         [k] do_raw_spin_lock
+
+
+[u] means it's in guest os user space. [g] means in guest os kernel. Other info is very direct.
+If it shows a module such like [ext4], it means guest kernel module, because native host kernel's
+modules are start from something like /lib/modules/XXX.
+
+
+Below is the patch against tip/master tree of 15th March.
+
+Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+
+---
+
+diff -Nraup linux-2.6_tipmaster0315/arch/x86/include/asm/perf_event.h linux-2.6_tipmaster0315_perfkvm/arch/x86/include/asm/perf_event.h
+--- linux-2.6_tipmaster0315/arch/x86/include/asm/perf_event.h	2010-03-16 08:59:11.533288951 +0800
++++ linux-2.6_tipmaster0315_perfkvm/arch/x86/include/asm/perf_event.h	2010-03-16 09:01:09.972117272 +0800
+@@ -143,17 +143,10 @@ extern void perf_events_lapic_init(void)
+  */
+ #define PERF_EFLAGS_EXACT	(1UL << 3)
  
-> 09:00.0 Multimedia controller: Philips Semiconductors Device 7231 (rev aa)
->         Subsystem: Modular Technology Holdings Ltd Device 3595
->         Flags: bus master, fast devsel, latency 0, IRQ 16
->         Memory at fac00000 (64-bit, non-prefetchable) [size=4M]
->         Memory at fa800000 (64-bit, non-prefetchable) [size=4M]
-> 
-> 0a:00.0 Multimedia controller: Philips Semiconductors Device 7231 (rev aa)
->         Subsystem: Modular Technology Holdings Ltd Device 3585
->         Flags: bus master, fast devsel, latency 0, IRQ 17
->         Memory at fa400000 (64-bit, non-prefetchable) [size=4M]
->         Memory at fa000000 (64-bit, non-prefetchable) [size=4M]
-> 
-> If it is the memory region on the PEX8604, it implies that I do have
-> to handle that memory region in the driver for the card as well ?
+-#define perf_misc_flags(regs)				\
+-({	int misc = 0;					\
+-	if (user_mode(regs))				\
+-		misc |= PERF_RECORD_MISC_USER;		\
+-	else						\
+-		misc |= PERF_RECORD_MISC_KERNEL;	\
+-	if (regs->flags & PERF_EFLAGS_EXACT)		\
+-		misc |= PERF_RECORD_MISC_EXACT;		\
+-	misc; })
+-
+-#define perf_instruction_pointer(regs)	((regs)->ip)
++struct pt_regs;
++extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
++extern unsigned long perf_misc_flags(struct pt_regs *regs);
++#define perf_misc_flags(regs)	perf_misc_flags(regs)
+ 
+ #else
+ static inline void init_hw_perf_events(void)		{ }
+diff -Nraup linux-2.6_tipmaster0315/arch/x86/include/asm/ptrace.h linux-2.6_tipmaster0315_perfkvm/arch/x86/include/asm/ptrace.h
+--- linux-2.6_tipmaster0315/arch/x86/include/asm/ptrace.h	2010-03-16 08:59:11.701271925 +0800
++++ linux-2.6_tipmaster0315_perfkvm/arch/x86/include/asm/ptrace.h	2010-03-16 09:01:09.972117272 +0800
+@@ -167,6 +167,15 @@ static inline int user_mode(struct pt_re
+ #endif
+ }
+ 
++static inline int user_mode_cs(u16 cs)
++{
++#ifdef CONFIG_X86_32
++	return (cs & SEGMENT_RPL_MASK) == USER_RPL;
++#else
++	return !!(cs & 3);
++#endif
++}
++
+ static inline int user_mode_vm(struct pt_regs *regs)
+ {
+ #ifdef CONFIG_X86_32
+diff -Nraup linux-2.6_tipmaster0315/arch/x86/kernel/cpu/perf_event.c linux-2.6_tipmaster0315_perfkvm/arch/x86/kernel/cpu/perf_event.c
+--- linux-2.6_tipmaster0315/arch/x86/kernel/cpu/perf_event.c	2010-03-16 08:59:12.225267457 +0800
++++ linux-2.6_tipmaster0315_perfkvm/arch/x86/kernel/cpu/perf_event.c	2010-03-16 09:03:02.343617673 +0800
+@@ -1707,3 +1707,30 @@ void perf_arch_fetch_caller_regs(struct 
+ 	local_save_flags(regs->flags);
+ }
+ EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
++
++unsigned long perf_instruction_pointer(struct pt_regs *regs)
++{
++	unsigned long ip;
++	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
++		ip = perf_guest_cbs->get_guest_ip();
++	} else
++		ip = instruction_pointer(regs);
++	return ip;
++}
++
++unsigned long perf_misc_flags(struct pt_regs *regs)
++{
++	int misc = 0;
++	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
++		misc |= perf_guest_cbs->is_user_mode() ?
++			PERF_RECORD_MISC_GUEST_USER :
++			PERF_RECORD_MISC_GUEST_KERNEL;
++	} else
++		misc |= user_mode(regs) ? PERF_RECORD_MISC_USER :
++			PERF_RECORD_MISC_KERNEL;
++	if (regs->flags & PERF_EFLAGS_EXACT)
++		misc |= PERF_RECORD_MISC_EXACT;
++
++	return misc;
++}
++
+diff -Nraup linux-2.6_tipmaster0315/arch/x86/kvm/vmx.c linux-2.6_tipmaster0315_perfkvm/arch/x86/kvm/vmx.c
+--- linux-2.6_tipmaster0315/arch/x86/kvm/vmx.c	2010-03-16 08:59:11.825295404 +0800
++++ linux-2.6_tipmaster0315_perfkvm/arch/x86/kvm/vmx.c	2010-03-16 09:01:09.976084492 +0800
+@@ -26,6 +26,7 @@
+ #include <linux/sched.h>
+ #include <linux/moduleparam.h>
+ #include <linux/ftrace_event.h>
++#include <linux/perf_event.h>
+ #include "kvm_cache_regs.h"
+ #include "x86.h"
+ 
+@@ -3632,6 +3633,43 @@ static void update_cr8_intercept(struct 
+ 	vmcs_write32(TPR_THRESHOLD, irr);
+ }
+ 
++DEFINE_PER_CPU(int, kvm_in_guest) = {0};
++
++static void kvm_set_in_guest(void)
++{
++	percpu_write(kvm_in_guest, 1);
++}
++
++static int kvm_is_in_guest(void)
++{
++	return percpu_read(kvm_in_guest);
++}
++
++static int kvm_is_user_mode(void)
++{
++	int user_mode;
++	user_mode = user_mode_cs(vmcs_read16(GUEST_CS_SELECTOR));
++	return user_mode;
++}
++
++static unsigned long kvm_get_guest_ip(void)
++{
++	return vmcs_readl(GUEST_RIP);
++}
++
++static void kvm_reset_in_guest(void)
++{
++	if (percpu_read(kvm_in_guest))
++		percpu_write(kvm_in_guest, 0);
++}
++
++static struct perf_guest_info_callbacks kvm_guest_cbs = {
++	.is_in_guest 		= kvm_is_in_guest,
++	.is_user_mode		= kvm_is_user_mode,
++	.get_guest_ip		= kvm_get_guest_ip,
++	.reset_in_guest		= kvm_reset_in_guest,
++};
++
+ static void vmx_complete_interrupts(struct vcpu_vmx *vmx)
+ {
+ 	u32 exit_intr_info;
+@@ -3653,8 +3691,11 @@ static void vmx_complete_interrupts(stru
+ 
+ 	/* We need to handle NMIs before interrupts are enabled */
+ 	if ((exit_intr_info & INTR_INFO_INTR_TYPE_MASK) == INTR_TYPE_NMI_INTR &&
+-	    (exit_intr_info & INTR_INFO_VALID_MASK))
++		(exit_intr_info & INTR_INFO_VALID_MASK)) {
++		kvm_set_in_guest();
+ 		asm("int $2");
++		kvm_reset_in_guest();
++	}
+ 
+ 	idtv_info_valid = idt_vectoring_info & VECTORING_INFO_VALID_MASK;
+ 
+@@ -4251,6 +4292,8 @@ static int __init vmx_init(void)
+ 	if (bypass_guest_pf)
+ 		kvm_mmu_set_nonpresent_ptes(~0xffeull, 0ull);
+ 
++	perf_register_guest_info_callbacks(&kvm_guest_cbs);
++
+ 	return 0;
+ 
+ out3:
+@@ -4266,6 +4309,8 @@ out:
+ 
+ static void __exit vmx_exit(void)
+ {
++	perf_unregister_guest_info_callbacks(&kvm_guest_cbs);
++
+ 	free_page((unsigned long)vmx_msr_bitmap_legacy);
+ 	free_page((unsigned long)vmx_msr_bitmap_longmode);
+ 	free_page((unsigned long)vmx_io_bitmap_b);
+diff -Nraup linux-2.6_tipmaster0315/include/linux/perf_event.h linux-2.6_tipmaster0315_perfkvm/include/linux/perf_event.h
+--- linux-2.6_tipmaster0315/include/linux/perf_event.h	2010-03-16 08:59:21.940168828 +0800
++++ linux-2.6_tipmaster0315_perfkvm/include/linux/perf_event.h	2010-03-16 09:01:09.976084492 +0800
+@@ -288,11 +288,13 @@ struct perf_event_mmap_page {
+ 	__u64	data_tail;		/* user-space written tail */
+ };
+ 
+-#define PERF_RECORD_MISC_CPUMODE_MASK		(3 << 0)
++#define PERF_RECORD_MISC_CPUMODE_MASK		(7 << 0)
+ #define PERF_RECORD_MISC_CPUMODE_UNKNOWN	(0 << 0)
+ #define PERF_RECORD_MISC_KERNEL			(1 << 0)
+ #define PERF_RECORD_MISC_USER			(2 << 0)
+ #define PERF_RECORD_MISC_HYPERVISOR		(3 << 0)
++#define PERF_RECORD_MISC_GUEST_KERNEL		(4 << 0)
++#define PERF_RECORD_MISC_GUEST_USER		(5 << 0)
+ 
+ #define PERF_RECORD_MISC_EXACT			(1 << 14)
+ /*
+@@ -446,6 +448,13 @@ enum perf_callchain_context {
+ # include <asm/perf_event.h>
+ #endif
+ 
++struct perf_guest_info_callbacks {
++	int (*is_in_guest) (void);
++	int (*is_user_mode) (void);
++	unsigned long (*get_guest_ip) (void);
++	void (*reset_in_guest) (void);
++};
++
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
+ #include <asm/hw_breakpoint.h>
+ #endif
+@@ -913,6 +922,12 @@ static inline void perf_event_mmap(struc
+ 		__perf_event_mmap(vma);
+ }
+ 
++extern struct perf_guest_info_callbacks *perf_guest_cbs;
++extern int perf_register_guest_info_callbacks(
++		struct perf_guest_info_callbacks *);
++extern int perf_unregister_guest_info_callbacks(
++		struct perf_guest_info_callbacks *);
++
+ extern void perf_event_comm(struct task_struct *tsk);
+ extern void perf_event_fork(struct task_struct *tsk);
+ 
+@@ -982,6 +997,11 @@ perf_sw_event(u32 event_id, u64 nr, int 
+ static inline void
+ perf_bp_event(struct perf_event *event, void *data)			{ }
+ 
++static inline int perf_register_guest_info_callbacks
++(struct perf_guest_info_callbacks *)   {return 0; }
++static inline int perf_unregister_guest_info_callbacks
++(struct perf_guest_info_callbacks *)   {return 0; }
++
+ static inline void perf_event_mmap(struct vm_area_struct *vma)		{ }
+ static inline void perf_event_comm(struct task_struct *tsk)		{ }
+ static inline void perf_event_fork(struct task_struct *tsk)		{ }
+diff -Nraup linux-2.6_tipmaster0315/kernel/perf_event.c linux-2.6_tipmaster0315_perfkvm/kernel/perf_event.c
+--- linux-2.6_tipmaster0315/kernel/perf_event.c	2010-03-16 08:59:55.108431543 +0800
++++ linux-2.6_tipmaster0315_perfkvm/kernel/perf_event.c	2010-03-16 09:01:09.980084394 +0800
+@@ -2796,6 +2796,27 @@ void perf_arch_fetch_caller_regs(struct 
+ }
+ 
+ /*
++ * We assume there is only KVM supporting the callbacks.
++ * Later on, we might change it to a list if there is
++ * another virtualization implementation supporting the callbacks.
++ */
++struct perf_guest_info_callbacks *perf_guest_cbs;
++
++int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks * cbs)
++{
++	perf_guest_cbs = cbs;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(perf_register_guest_info_callbacks);
++
++int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks * cbs)
++{
++	perf_guest_cbs = NULL;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(perf_unregister_guest_info_callbacks);
++
++/*
+  * Output
+  */
+ static bool perf_output_space(struct perf_mmap_data *data, unsigned long tail,
+@@ -3738,7 +3759,7 @@ void __perf_event_mmap(struct vm_area_st
+ 		.event_id  = {
+ 			.header = {
+ 				.type = PERF_RECORD_MMAP,
+-				.misc = 0,
++				.misc = PERF_RECORD_MISC_USER,
+ 				/* .size */
+ 			},
+ 			/* .pid */
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin-diff.c linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-diff.c
+--- linux-2.6_tipmaster0315/tools/perf/builtin-diff.c	2010-03-16 08:59:54.736473543 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-diff.c	2010-03-16 10:13:14.620371938 +0800
+@@ -33,7 +33,7 @@ static int perf_session__add_hist_entry(
+ 		return -ENOMEM;
+ 
+ 	if (hit)
+-		he->count += count;
++		__perf_session__add_count(he, al, count);
+ 
+ 	return 0;
+ }
+@@ -225,6 +225,9 @@ int cmd_diff(int argc, const char **argv
+ 			input_new = argv[1];
+ 		} else
+ 			input_new = argv[0];
++	} else if (symbol_conf.guest_vmlinux_name || symbol_conf.guest_kallsyms) {
++		input_old = "perf.data.host";
++		input_new = "perf.data.guest";
+ 	}
+ 
+ 	symbol_conf.exclude_other = false;
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin.h linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin.h
+--- linux-2.6_tipmaster0315/tools/perf/builtin.h	2010-03-16 08:59:54.692509868 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin.h	2010-03-16 09:01:09.980084394 +0800
+@@ -32,5 +32,6 @@ extern int cmd_version(int argc, const c
+ extern int cmd_probe(int argc, const char **argv, const char *prefix);
+ extern int cmd_kmem(int argc, const char **argv, const char *prefix);
+ extern int cmd_lock(int argc, const char **argv, const char *prefix);
++extern int cmd_kvm(int argc, const char **argv, const char *prefix);
+ 
+ #endif
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin-kvm.c linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-kvm.c
+--- linux-2.6_tipmaster0315/tools/perf/builtin-kvm.c	1970-01-01 08:00:00.000000000 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-kvm.c	2010-03-16 09:01:09.980084394 +0800
+@@ -0,0 +1,123 @@
++#include "builtin.h"
++#include "perf.h"
++
++#include "util/util.h"
++#include "util/cache.h"
++#include "util/symbol.h"
++#include "util/thread.h"
++#include "util/header.h"
++#include "util/session.h"
++
++#include "util/parse-options.h"
++#include "util/trace-event.h"
++
++#include "util/debug.h"
++
++#include <sys/prctl.h>
++
++#include <semaphore.h>
++#include <pthread.h>
++#include <math.h>
++
++static char			*file_name = NULL;
++static char			name_buffer[256];
++
++int				perf_host = 1;
++int				perf_guest = 0;
++
++static const char * const kvm_usage[] = {
++	"perf kvm [<options>] {top|record|report|diff}",
++	NULL
++};
++
++static const struct option kvm_options[] = {
++	OPT_STRING('i', "input", &file_name, "file",
++		    "Input file name"),
++	OPT_STRING('o', "output", &file_name, "file",
++		    "Output file name"),
++	OPT_BOOLEAN(0, "guest", &perf_guest,
++		    "Collect guest os data"),
++	OPT_BOOLEAN(0, "host", &perf_host,
++		    "Collect guest os data"),
++	OPT_STRING(0, "guestvmlinux", &symbol_conf.guest_vmlinux_name, "file",
++		    "file saving guest os vmlinux"),
++	OPT_STRING(0, "guestkallsyms", &symbol_conf.guest_kallsyms, "file",
++		    "file saving guest os /proc/kallsyms"),
++	OPT_STRING(0, "guestmodules", &symbol_conf.guest_modules, "file",
++		    "file saving guest os /proc/modules"),
++	OPT_END()
++};
++
++static int __cmd_record(int argc, const char **argv)
++{
++	int rec_argc, i = 0, j;
++	const char **rec_argv;
++
++	rec_argc = argc + 2;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++	rec_argv[i++] = strdup("record");
++	rec_argv[i++] = strdup("-o");
++	rec_argv[i++] = strdup(file_name);
++	for (j = 1; j < argc; j++, i++)
++		rec_argv[i] = argv[j];
++
++	BUG_ON(i != rec_argc);
++
++	return cmd_record(i, rec_argv, NULL);
++}
++
++static int __cmd_report(int argc, const char **argv)
++{
++	int rec_argc, i = 0, j;
++	const char **rec_argv;
++
++	rec_argc = argc + 2;
++	rec_argv = calloc(rec_argc + 1, sizeof(char *));
++	rec_argv[i++] = strdup("report");
++	rec_argv[i++] = strdup("-i");
++	rec_argv[i++] = strdup(file_name);
++	for (j = 1; j < argc; j++, i++)
++		rec_argv[i] = argv[j];
++
++	BUG_ON(i != rec_argc);
++
++	return cmd_report(i, rec_argv, NULL);
++}
++
++int cmd_kvm(int argc, const char **argv, const char *prefix __used)
++{
++	perf_host = perf_guest = 0;
++
++	argc = parse_options(argc, argv, kvm_options, kvm_usage,
++			PARSE_OPT_STOP_AT_NON_OPTION);
++	if (!argc)
++		usage_with_options(kvm_usage, kvm_options);
++
++	if (!perf_host)
++		perf_guest = 1;
++
++	if (!file_name) {
++		if (perf_host && !perf_guest)
++			sprintf(name_buffer, "perf.data.host");
++		else if (!perf_host && perf_guest)
++			sprintf(name_buffer, "perf.data.guest");
++		else
++			sprintf(name_buffer, "perf.data.kvm");
++		file_name = name_buffer;
++	}
++
++	if (!strncmp(argv[0], "rec", 3)) {
++		return __cmd_record(argc, argv);
++	} else if (!strncmp(argv[0], "rep", 3)) {
++		return __cmd_report(argc, argv);
++	} else if (!strncmp(argv[0], "diff", 4)) {
++		return cmd_diff(argc, argv, NULL);
++	} else if (!strncmp(argv[0], "top", 3)) {
++		return cmd_top(argc, argv, NULL);
++	} else {
++		usage_with_options(kvm_usage, kvm_options);
++	}
++
++	return 0;
++}
++
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin-record.c linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-record.c
+--- linux-2.6_tipmaster0315/tools/perf/builtin-record.c	2010-03-16 08:59:54.896488489 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-record.c	2010-03-16 09:01:09.980084394 +0800
+@@ -566,18 +566,58 @@ static int __cmd_record(int argc, const 
+ 	post_processing_offset = lseek(output, 0, SEEK_CUR);
+ 
+ 	err = event__synthesize_kernel_mmap(process_synthesized_event,
+-					    session, "_text");
++					    session, "/proc/kallsyms",
++					    "kernel.kallsyms",
++					    session->vmlinux_maps,
++					    "_text", PERF_RECORD_MISC_KERNEL);
+ 	if (err < 0) {
+ 		pr_err("Couldn't record kernel reference relocation symbol.\n");
+ 		return err;
+ 	}
+ 
+-	err = event__synthesize_modules(process_synthesized_event, session);
++	err = event__synthesize_modules(process_synthesized_event,
++				session,
++				&session->kmaps,
++				PERF_RECORD_MISC_KERNEL);
+ 	if (err < 0) {
+ 		pr_err("Couldn't record kernel reference relocation symbol.\n");
+ 		return err;
+ 	}
+ 
++	if (perf_guest) {
++		/*
++		 *As for guest kernel when processing subcommand record&report,
++		 *we arrange module mmap prior to guest kernel mmap and trigger
++		 *a preload dso because guest module symbols are loaded from guest
++		 *kallsyms instead of /lib/modules/XXX/XXX. This method is used to
++		 *avoid symbol missing when the first addr is in module instead of
++		 *in guest kernel
++		 */
++		err = event__synthesize_modules(process_synthesized_event,
++				session,
++				&session->guest_kmaps,
++				PERF_RECORD_MISC_GUEST_KERNEL);
++		if (err < 0) {
++			pr_err("Couldn't record guest kernel reference relocation symbol.\n");
++			return err;
++		}
++
++		/*
++		 * We use _stext for guest kernel because guest kernel's /proc/kallsyms
++		 * have no _text.
++		 */
++		err = event__synthesize_kernel_mmap(process_synthesized_event,
++				session, symbol_conf.guest_kallsyms,
++				"guest.kernel.kallsyms",
++				session->guest_vmlinux_maps,
++				"_stext",
++				PERF_RECORD_MISC_GUEST_KERNEL);
++		if (err < 0) {
++			pr_err("Couldn't record guest kernel reference relocation symbol.\n");
++			return err;
++		}
++	}
++
+ 	if (!system_wide && profile_cpu == -1)
+ 		event__synthesize_thread(target_pid, process_synthesized_event,
+ 					 session);
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin-report.c linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-report.c
+--- linux-2.6_tipmaster0315/tools/perf/builtin-report.c	2010-03-16 08:59:54.760470652 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-report.c	2010-03-16 10:40:24.102800324 +0800
+@@ -104,7 +104,7 @@ static int perf_session__add_hist_entry(
+ 		return -ENOMEM;
+ 
+ 	if (hit)
+-		he->count += data->period;
++		__perf_session__add_count(he, al,  data->period);
+ 
+ 	if (symbol_conf.use_callchain) {
+ 		if (!hit)
+@@ -428,6 +428,8 @@ static const struct option options[] = {
+ 		   "sort by key(s): pid, comm, dso, symbol, parent"),
+ 	OPT_BOOLEAN('P', "full-paths", &symbol_conf.full_paths,
+ 		    "Don't shorten the pathnames taking into account the cwd"),
++	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
++		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
+ 		   "regex filter to identify parent, see: '--sort parent'"),
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/builtin-top.c linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-top.c
+--- linux-2.6_tipmaster0315/tools/perf/builtin-top.c	2010-03-16 08:59:54.760470652 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/builtin-top.c	2010-03-16 09:01:09.984084103 +0800
+@@ -417,8 +417,9 @@ static double sym_weight(const struct sy
+ }
+ 
+ static long			samples;
+-static long			userspace_samples;
++static long			kernel_samples, userspace_samples;
+ static long			exact_samples;
++static long			guest_us_samples, guest_kernel_samples;
+ static const char		CONSOLE_CLEAR[] = "[H[2J";
+ 
+ static void __list_insert_active_sym(struct sym_entry *syme)
+@@ -458,7 +459,10 @@ static void print_sym_table(void)
+ 	int printed = 0, j;
+ 	int counter, snap = !display_weighted ? sym_counter : 0;
+ 	float samples_per_sec = samples/delay_secs;
+-	float ksamples_per_sec = (samples-userspace_samples)/delay_secs;
++	float ksamples_per_sec = kernel_samples/delay_secs;
++	float userspace_samples_per_sec = (userspace_samples)/delay_secs;
++	float guest_kernel_samples_per_sec = (guest_kernel_samples)/delay_secs;
++	float guest_us_samples_per_sec = (guest_us_samples)/delay_secs;
+ 	float esamples_percent = (100.0*exact_samples)/samples;
+ 	float sum_ksamples = 0.0;
+ 	struct sym_entry *syme, *n;
+@@ -467,7 +471,8 @@ static void print_sym_table(void)
+ 	int sym_width = 0, dso_width = 0, max_dso_width;
+ 	const int win_width = winsize.ws_col - 1;
+ 
+-	samples = userspace_samples = exact_samples = 0;
++	samples = userspace_samples = kernel_samples = exact_samples = 0;
++	guest_kernel_samples = guest_us_samples = 0;
+ 
+ 	/* Sort the active symbols */
+ 	pthread_mutex_lock(&active_symbols_lock);
+@@ -498,10 +503,21 @@ static void print_sym_table(void)
+ 	puts(CONSOLE_CLEAR);
+ 
+ 	printf("%-*.*s\n", win_width, win_width, graph_dotted_line);
+-	printf( "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%  exact: %4.1f%% [",
+-		samples_per_sec,
+-		100.0 - (100.0*((samples_per_sec-ksamples_per_sec)/samples_per_sec)),
+-		esamples_percent);
++	if (!perf_guest) {
++		printf( "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%%  exact: %4.1f%% [",
++			samples_per_sec,
++			100.0 - (100.0*((samples_per_sec-ksamples_per_sec)/samples_per_sec)),
++			esamples_percent);
++	} else {
++		printf( "   PerfTop:%8.0f irqs/sec  kernel:%4.1f%% us:%4.1f%%"
++			" guest kernel:%4.1f%% guest us:%4.1f%% exact: %4.1f%% [",
++			samples_per_sec,
++			100.0 - (100.0*((samples_per_sec-ksamples_per_sec)/samples_per_sec)),
++			100.0 - (100.0*((samples_per_sec-userspace_samples_per_sec)/samples_per_sec)),
++			100.0 - (100.0*((samples_per_sec-guest_kernel_samples_per_sec)/samples_per_sec)),
++			100.0 - (100.0*((samples_per_sec-guest_us_samples_per_sec)/samples_per_sec)),
++			esamples_percent);
++	}
+ 
+ 	if (nr_counters == 1 || !display_weighted) {
+ 		printf("%Ld", (u64)attrs[0].sample_period);
+@@ -958,9 +974,20 @@ static void event__process_sample(const 
+ 			return;
+ 		break;
+ 	case PERF_RECORD_MISC_KERNEL:
++		++kernel_samples;
+ 		if (hide_kernel_symbols)
+ 			return;
+ 		break;
++	case PERF_RECORD_MISC_GUEST_KERNEL:
++		++guest_kernel_samples;
++		break;
++	case PERF_RECORD_MISC_GUEST_USER:
++		++guest_us_samples;
++		/*
++		 * TODO: we don't process guest user from host side
++		 * except simple counting 
++		 */
++		return;
+ 	default:
+ 		return;
+ 	}
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/Makefile linux-2.6_tipmaster0315_perfkvm/tools/perf/Makefile
+--- linux-2.6_tipmaster0315/tools/perf/Makefile	2010-03-16 08:59:54.892460680 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/Makefile	2010-03-16 10:45:19.503860691 +0800
+@@ -462,6 +462,7 @@ BUILTIN_OBJS += builtin-trace.o
+ BUILTIN_OBJS += builtin-probe.o
+ BUILTIN_OBJS += builtin-kmem.o
+ BUILTIN_OBJS += builtin-lock.o
++BUILTIN_OBJS += builtin-kvm.o
+ 
+ PERFLIBS = $(LIB_FILE)
+ 
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/perf.c linux-2.6_tipmaster0315_perfkvm/tools/perf/perf.c
+--- linux-2.6_tipmaster0315/tools/perf/perf.c	2010-03-16 08:59:54.764469663 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/perf.c	2010-03-16 09:01:09.984084103 +0800
+@@ -308,6 +308,7 @@ static void handle_internal_command(int 
+ 		{ "probe",	cmd_probe,	0 },
+ 		{ "kmem",	cmd_kmem,	0 },
+ 		{ "lock",	cmd_lock,	0 },
++		{ "kvm",	cmd_kvm,	0 },
+ 	};
+ 	unsigned int i;
+ 	static const char ext[] = STRIP_EXTENSION;
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/perf.h linux-2.6_tipmaster0315_perfkvm/tools/perf/perf.h
+--- linux-2.6_tipmaster0315/tools/perf/perf.h	2010-03-16 08:59:54.896488489 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/perf.h	2010-03-16 09:01:10.000116335 +0800
+@@ -133,4 +133,6 @@ struct ip_callchain {
+ 	u64 ips[0];
+ };
+ 
++extern int perf_host, perf_guest;
++
+ #endif
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/event.c linux-2.6_tipmaster0315_perfkvm/tools/perf/util/event.c
+--- linux-2.6_tipmaster0315/tools/perf/util/event.c	2010-03-16 08:59:54.864459297 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/event.c	2010-03-16 09:45:19.660852164 +0800
+@@ -112,7 +112,7 @@ static int event__synthesize_mmap_events
+ 		event_t ev = {
+ 			.header = {
+ 				.type = PERF_RECORD_MMAP,
+-				.misc = 0, /* Just like the kernel, see kernel/perf_event.c __perf_event_mmap */
++				.misc = PERF_RECORD_MISC_USER, /* Just like the kernel, see kernel/perf_event.c __perf_event_mmap */
+ 			 },
+ 		};
+ 		int n;
+@@ -158,11 +158,13 @@ static int event__synthesize_mmap_events
+ }
+ 
+ int event__synthesize_modules(event__handler_t process,
+-			      struct perf_session *session)
++			      struct perf_session *session,
++			      struct map_groups *kmaps,
++			      unsigned int misc)
+ {
+ 	struct rb_node *nd;
+ 
+-	for (nd = rb_first(&session->kmaps.maps[MAP__FUNCTION]);
++	for (nd = rb_first(&kmaps->maps[MAP__FUNCTION]);
+ 	     nd; nd = rb_next(nd)) {
+ 		event_t ev;
+ 		size_t size;
+@@ -173,7 +175,7 @@ int event__synthesize_modules(event__han
+ 
+ 		size = ALIGN(pos->dso->long_name_len + 1, sizeof(u64));
+ 		memset(&ev, 0, sizeof(ev));
+-		ev.mmap.header.misc = 1; /* kernel uses 0 for user space maps, see kernel/perf_event.c __perf_event_mmap */
++		ev.mmap.header.misc = misc; /* kernel uses 0 for user space maps, see kernel/perf_event.c __perf_event_mmap */
+ 		ev.mmap.header.type = PERF_RECORD_MMAP;
+ 		ev.mmap.header.size = (sizeof(ev.mmap) -
+ 				        (sizeof(ev.mmap.filename) - size));
+@@ -241,13 +243,17 @@ static int find_symbol_cb(void *arg, con
+ 
+ int event__synthesize_kernel_mmap(event__handler_t process,
+ 				  struct perf_session *session,
+-				  const char *symbol_name)
++				  const char *kallsyms_name,
++				  const char *mmap_name,
++				  struct map **maps,
++				  const char *symbol_name,
++				  unsigned int misc)
+ {
+ 	size_t size;
+ 	event_t ev = {
+ 		.header = {
+ 			.type = PERF_RECORD_MMAP,
+-			.misc = 1, /* kernel uses 0 for user space maps, see kernel/perf_event.c __perf_event_mmap */
++			.misc = misc, /* kernel uses PERF_RECORD_MISC_USER for user space maps, see kernel/perf_event.c __perf_event_mmap */
+ 		},
+ 	};
+ 	/*
+@@ -257,16 +263,16 @@ int event__synthesize_kernel_mmap(event_
+ 	 */
+ 	struct process_symbol_args args = { .name = symbol_name, };
+ 
+-	if (kallsyms__parse("/proc/kallsyms", &args, find_symbol_cb) <= 0)
++	if (kallsyms__parse(kallsyms_name, &args, find_symbol_cb) <= 0)
+ 		return -ENOENT;
+ 
+ 	size = snprintf(ev.mmap.filename, sizeof(ev.mmap.filename),
+-			"[kernel.kallsyms.%s]", symbol_name) + 1;
++			"[%s.%s]", mmap_name, symbol_name) + 1;
+ 	size = ALIGN(size, sizeof(u64));
+ 	ev.mmap.header.size = (sizeof(ev.mmap) - (sizeof(ev.mmap.filename) - size));
+ 	ev.mmap.pgoff = args.start;
+-	ev.mmap.start = session->vmlinux_maps[MAP__FUNCTION]->start;
+-	ev.mmap.len   = session->vmlinux_maps[MAP__FUNCTION]->end - ev.mmap.start ;
++	ev.mmap.start = maps[MAP__FUNCTION]->start;
++	ev.mmap.len   = maps[MAP__FUNCTION]->end - ev.mmap.start ;
+ 
+ 	return process(&ev, session);
+ }
+@@ -320,19 +326,25 @@ int event__process_lost(event_t *self, s
+ 	return 0;
+ }
+ 
+-int event__process_mmap(event_t *self, struct perf_session *session)
++static void event_set_kernel_mmap_len(struct map **maps, event_t *self)
+ {
+-	struct thread *thread;
+-	struct map *map;
++	maps[MAP__FUNCTION]->start = self->mmap.start;
++	maps[MAP__FUNCTION]->end   = self->mmap.start + self->mmap.len;
++	/*
++	 * Be a bit paranoid here, some perf.data file came with
++	 * a zero sized synthesized MMAP event for the kernel.
++	 */
++	if (maps[MAP__FUNCTION]->end == 0)
++		maps[MAP__FUNCTION]->end = ~0UL;
++}
+ 
+-	dump_printf(" %d/%d: [%#Lx(%#Lx) @ %#Lx]: %s\n",
+-		    self->mmap.pid, self->mmap.tid, self->mmap.start,
+-		    self->mmap.len, self->mmap.pgoff, self->mmap.filename);
++static int __event__process_mmap(event_t *self, struct perf_session *session)
++{
++	struct map *map;
++	static const char kmmap_prefix[] = "[kernel.kallsyms.";
+ 
+-	if (self->mmap.pid == 0) {
+-		static const char kmmap_prefix[] = "[kernel.kallsyms.";
++	if (self->mmap.filename[0] == '/') {
+ 
+-		if (self->mmap.filename[0] == '/') {
+ 			char short_module_name[1024];
+ 			char *name = strrchr(self->mmap.filename, '/'), *dot;
+ 
+@@ -348,9 +360,10 @@ int event__process_mmap(event_t *self, s
+ 				 "[%.*s]", (int)(dot - name), name);
+ 			strxfrchar(short_module_name, '-', '_');
+ 
+-			map = perf_session__new_module_map(session,
++			map = map_groups__new_module(&session->kmaps,
+ 							   self->mmap.start,
+-							   self->mmap.filename);
++							   self->mmap.filename,
++							   0);
+ 			if (map == NULL)
+ 				goto out_problem;
+ 
+@@ -373,22 +386,94 @@ int event__process_mmap(event_t *self, s
+ 			if (kernel == NULL)
+ 				goto out_problem;
+ 
+-			kernel->kernel = 1;
+-			if (__perf_session__create_kernel_maps(session, kernel) < 0)
++			kernel->kernel = DSO_TYPE_KERNEL;
++			if (__map_groups__create_kernel_maps(&session->kmaps,
++						session->vmlinux_maps, kernel) < 0)
+ 				goto out_problem;
+ 
+-			session->vmlinux_maps[MAP__FUNCTION]->start = self->mmap.start;
+-			session->vmlinux_maps[MAP__FUNCTION]->end   = self->mmap.start + self->mmap.len;
+-			/*
+-			 * Be a bit paranoid here, some perf.data file came with
+-			 * a zero sized synthesized MMAP event for the kernel.
+-			 */
+-			if (session->vmlinux_maps[MAP__FUNCTION]->end == 0)
+-				session->vmlinux_maps[MAP__FUNCTION]->end = ~0UL;
+-
+-			perf_session__set_kallsyms_ref_reloc_sym(session, symbol_name,
+-								 self->mmap.pgoff);
++			event_set_kernel_mmap_len(session->vmlinux_maps, self);
++			perf_session__set_kallsyms_ref_reloc_sym(session->vmlinux_maps,
++							symbol_name,
++							self->mmap.pgoff);
+ 		}
++	return 0;
++
++out_problem:
++	return -1;
++}
++
++static int __event__process_guest_mmap(event_t *self, struct perf_session *session)
++{
++	struct map *map;
++
++	static const char kmmap_prefix[] = "[guest.kernel.kallsyms.";
++
++	if (memcmp(self->mmap.filename, kmmap_prefix,
++				sizeof(kmmap_prefix) - 1) == 0) {
++		const char *symbol_name = (self->mmap.filename +
++				sizeof(kmmap_prefix) - 1);
++		/*
++		 * Should be there already, from the build-id table in
++		 * the header.
++		 */
++		struct dso *kernel = __dsos__findnew(&dsos__guest_kernel,
++				"[guest.kernel.kallsyms]");
++		if (kernel == NULL)
++			goto out_problem;
++
++		kernel->kernel = DSO_TYPE_GUEST_KERNEL;
++		if (__map_groups__create_kernel_maps(&session->guest_kmaps,
++				session->guest_vmlinux_maps, kernel) < 0)
++			goto out_problem;
++
++		event_set_kernel_mmap_len(session->guest_vmlinux_maps, self);
++		perf_session__set_kallsyms_ref_reloc_sym(session->guest_vmlinux_maps,
++				symbol_name,
++				self->mmap.pgoff);
++		/*
++		 * preload dso of guest kernel and modules
++		 */
++		dso__load(kernel, session->guest_vmlinux_maps[MAP__FUNCTION], NULL);
++	} else if (self->mmap.filename[0] == '[') {
++		char *name;
++
++		map = map_groups__new_module(&session->guest_kmaps,
++				self->mmap.start,
++				self->mmap.filename,
++				1);
++		if (map == NULL)
++			goto out_problem;
++		name = strdup(self->mmap.filename);
++		if (name == NULL)
++			goto out_problem;
++
++		map->dso->short_name = name;
++		map->end = map->start + self->mmap.len;
++	}
++
++	return 0;
++out_problem:
++	return -1;
++}
++
++int event__process_mmap(event_t *self, struct perf_session *session)
++{
++	struct thread *thread;
++	struct map *map;
++	u8 cpumode = self->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	int ret;
++
++	dump_printf(" %d/%d: [%#Lx(%#Lx) @ %#Lx]: %s\n",
++			self->mmap.pid, self->mmap.tid, self->mmap.start,
++			self->mmap.len, self->mmap.pgoff, self->mmap.filename);
++
++	if (self->mmap.pid == 0) {
++		if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL)
++			ret = __event__process_guest_mmap(self, session);
++		else
++			ret = __event__process_mmap(self, session);
++		if (ret < 0)
++			goto out_problem;
+ 		return 0;
+ 	}
+ 
+@@ -441,15 +526,33 @@ void thread__find_addr_map(struct thread
+ 
+ 	al->thread = self;
+ 	al->addr = addr;
++	al->cpumode = cpumode;
+ 
+-	if (cpumode == PERF_RECORD_MISC_KERNEL) {
++	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
+ 		al->level = 'k';
+ 		mg = &session->kmaps;
+-	} else if (cpumode == PERF_RECORD_MISC_USER)
++	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
+ 		al->level = '.';
+-	else {
+-		al->level = 'H';
++	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
++		al->level = 'g';
++		mg = &session->guest_kmaps;
++	} else {
++		/* TODO: We don't support guest user space. Might support late */
++		if (cpumode == PERF_RECORD_MISC_GUEST_USER && perf_guest)
++			al->level = 'u';
++		else
++			al->level = 'H';
+ 		al->map = NULL;
++
++		if ((cpumode == PERF_RECORD_MISC_GUEST_USER ||
++			cpumode == PERF_RECORD_MISC_GUEST_KERNEL) &&
++			!perf_guest)
++			al->filtered = true;
++		if ((cpumode == PERF_RECORD_MISC_USER ||
++			cpumode == PERF_RECORD_MISC_KERNEL) &&
++			!perf_host)
++			al->filtered = true;
++
+ 		return;
+ 	}
+ try_again:
+@@ -464,10 +567,18 @@ try_again:
+ 		 * "[vdso]" dso, but for now lets use the old trick of looking
+ 		 * in the whole kernel symbol list.
+ 		 */
+-		if ((long long)al->addr < 0 && mg != &session->kmaps) {
++		if ((long long)al->addr < 0 &&
++			mg != &session->kmaps &&
++			cpumode == PERF_RECORD_MISC_KERNEL) {
+ 			mg = &session->kmaps;
+ 			goto try_again;
+ 		}
++		if ((long long)al->addr < 0 &&
++				mg != &session->guest_kmaps &&
++				cpumode == PERF_RECORD_MISC_GUEST_KERNEL) {
++			mg = &session->guest_kmaps;
++			goto try_again;
++		}
+ 	} else
+ 		al->addr = al->map->map_ip(al->map, al->addr);
+ }
+@@ -513,6 +624,7 @@ int event__preprocess_sample(const event
+ 
+ 	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
+ 
++	al->filtered = false;
+ 	thread__find_addr_location(thread, session, cpumode, MAP__FUNCTION,
+ 				   self->ip.ip, al, filter);
+ 	dump_printf(" ...... dso: %s\n",
+@@ -536,7 +648,6 @@ int event__preprocess_sample(const event
+ 	    !strlist__has_entry(symbol_conf.sym_list, al->sym->name))
+ 		goto out_filtered;
+ 
+-	al->filtered = false;
+ 	return 0;
+ 
+ out_filtered:
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/event.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/event.h
+--- linux-2.6_tipmaster0315/tools/perf/util/event.h	2010-03-16 08:59:54.856460879 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/event.h	2010-03-16 09:01:10.000116335 +0800
+@@ -119,10 +119,17 @@ int event__synthesize_thread(pid_t pid, 
+ void event__synthesize_threads(event__handler_t process,
+ 			       struct perf_session *session);
+ int event__synthesize_kernel_mmap(event__handler_t process,
+-				  struct perf_session *session,
+-				  const char *symbol_name);
++				struct perf_session *session,
++				const char *kallsyms_name,
++				const char *mmap_name,
++				struct map **maps,
++				const char *symbol_name,
++				unsigned int misc);
++
+ int event__synthesize_modules(event__handler_t process,
+-			      struct perf_session *session);
++			      struct perf_session *session,
++			      struct map_groups *kmaps,
++			      unsigned int misc);
+ 
+ int event__process_comm(event_t *self, struct perf_session *session);
+ int event__process_lost(event_t *self, struct perf_session *session);
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/hist.c linux-2.6_tipmaster0315_perfkvm/tools/perf/util/hist.c
+--- linux-2.6_tipmaster0315/tools/perf/util/hist.c	2010-03-16 08:59:54.880462306 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/hist.c	2010-03-16 10:44:18.228997471 +0800
+@@ -8,6 +8,30 @@ struct callchain_param	callchain_param =
+ 	.min_percent = 0.5
+ };
+ 
++void __perf_session__add_count(struct hist_entry *he,
++			struct addr_location *al,
++			u64 count)
++{
++	he->count += count;
++
++	switch (al->cpumode) {
++	case PERF_RECORD_MISC_KERNEL:
++		he->count_sys += count;
++		break;
++	case PERF_RECORD_MISC_USER:
++		he->count_us += count;
++		break;
++	case PERF_RECORD_MISC_GUEST_KERNEL:
++		he->count_guest_sys += count;
++		break;
++	case PERF_RECORD_MISC_GUEST_USER:
++		he->count_guest_us += count;
++		break;
++	default:
++		break;
++	}
++}
++
+ /*
+  * histogram, sorted on item, collects counts
+  */
+@@ -26,7 +50,6 @@ struct hist_entry *__perf_session__add_h
+ 		.sym	= al->sym,
+ 		.ip	= al->addr,
+ 		.level	= al->level,
+-		.count	= count,
+ 		.parent = sym_parent,
+ 	};
+ 	int cmp;
+@@ -48,6 +71,8 @@ struct hist_entry *__perf_session__add_h
+ 			p = &(*p)->rb_right;
+ 	}
+ 
++	__perf_session__add_count(&entry, al, count);
++
+ 	he = malloc(sizeof(*he));
+ 	if (!he)
+ 		return NULL;
+@@ -462,7 +487,7 @@ size_t hist_entry__fprintf(struct hist_e
+ 			   u64 session_total)
+ {
+ 	struct sort_entry *se;
+-	u64 count, total;
++	u64 count, total, count_sys, count_us, count_guest_sys, count_guest_us;
+ 	const char *sep = symbol_conf.field_sep;
+ 	size_t ret;
+ 
+@@ -472,15 +497,35 @@ size_t hist_entry__fprintf(struct hist_e
+ 	if (pair_session) {
+ 		count = self->pair ? self->pair->count : 0;
+ 		total = pair_session->events_stats.total;
++		count_sys = self->pair ? self->pair->count_sys : 0;
++		count_us = self->pair ? self->pair->count_us : 0;
++		count_guest_sys = self->pair ? self->pair->count_guest_sys : 0;
++		count_guest_us = self->pair ? self->pair->count_guest_us : 0;
+ 	} else {
+ 		count = self->count;
+ 		total = session_total;
++		count_sys = self->count_sys;
++		count_us = self->count_us;
++		count_guest_sys = self->count_guest_sys;
++		count_guest_us = self->count_guest_us;
+ 	}
+ 
+-	if (total)
++	if (total) {
+ 		ret = percent_color_fprintf(fp, sep ? "%.2f" : "   %6.2f%%",
+ 					    (count * 100.0) / total);
+-	else
++		if (symbol_conf.show_cpu_utilization) {
++			ret += percent_color_fprintf(fp, sep ? "%.2f" : "   %6.2f%%",
++					(count_sys * 100.0) / total);
++			ret += percent_color_fprintf(fp, sep ? "%.2f" : "   %6.2f%%",
++					(count_us * 100.0) / total);
++			if (perf_guest) {
++				ret += percent_color_fprintf(fp, sep ? "%.2f" : "   %6.2f%%",
++						(count_guest_sys * 100.0) / total);
++				ret += percent_color_fprintf(fp, sep ? "%.2f" : "   %6.2f%%",
++						(count_guest_us * 100.0) / total);
++			}
++		}
++	} else
+ 		ret = fprintf(fp, sep ? "%lld" : "%12lld ", count);
+ 
+ 	if (symbol_conf.show_nr_samples) {
+@@ -576,6 +621,20 @@ size_t perf_session__fprintf_hists(struc
+ 			fputs("  Samples  ", fp);
+ 	}
+ 
++	if (symbol_conf.show_cpu_utilization) {
++		if (sep) {
++			ret += fprintf(fp, "%csys", *sep);
++			ret += fprintf(fp, "%cus", *sep);
++			ret += fprintf(fp, "%cguest sys", *sep);
++			ret += fprintf(fp, "%cguest us", *sep);
++		} else {
++			ret += fprintf(fp, "  sys  ");
++			ret += fprintf(fp, "  us  ");
++			ret += fprintf(fp, "  guest sys  ");
++			ret += fprintf(fp, "  guest us  ");
++		}
++	}
++
+ 	if (pair) {
+ 		if (sep)
+ 			ret += fprintf(fp, "%cDelta", *sep);
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/hist.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/hist.h
+--- linux-2.6_tipmaster0315/tools/perf/util/hist.h	2010-03-16 08:59:54.868491838 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/hist.h	2010-03-16 10:11:24.744056043 +0800
+@@ -12,6 +12,9 @@ struct addr_location;
+ struct symbol;
+ struct rb_root;
+ 
++void __perf_session__add_count(struct hist_entry *he,
++			struct addr_location *al,
++			u64 count);
+ struct hist_entry *__perf_session__add_hist_entry(struct rb_root *hists,
+ 						  struct addr_location *al,
+ 						  struct symbol *parent,
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/session.c linux-2.6_tipmaster0315_perfkvm/tools/perf/util/session.c
+--- linux-2.6_tipmaster0315/tools/perf/util/session.c	2010-03-16 08:59:54.888458734 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/session.c	2010-03-16 09:01:10.000116335 +0800
+@@ -54,7 +54,12 @@ out_close:
+ 
+ static inline int perf_session__create_kernel_maps(struct perf_session *self)
+ {
+-	return map_groups__create_kernel_maps(&self->kmaps, self->vmlinux_maps);
++	int ret;
++	ret = map_groups__create_kernel_maps(&self->kmaps, self->vmlinux_maps);
++	if (ret >= 0)
++		ret = map_groups__create_guest_kernel_maps(&self->guest_kmaps,
++				self->guest_vmlinux_maps);
++	return ret;
+ }
+ 
+ struct perf_session *perf_session__new(const char *filename, int mode, bool force)
+@@ -77,6 +82,7 @@ struct perf_session *perf_session__new(c
+ 	self->cwdlen = 0;
+ 	self->unknown_events = 0;
+ 	map_groups__init(&self->kmaps);
++	map_groups__init(&self->guest_kmaps);
+ 
+ 	if (mode == O_RDONLY) {
+ 		if (perf_session__open(self, force) < 0)
+@@ -356,7 +362,8 @@ int perf_header__read_build_ids(struct p
+ 		if (read(input, filename, len) != len)
+ 			goto out;
+ 
+-		if (bev.header.misc & PERF_RECORD_MISC_KERNEL)
++		if ((bev.header.misc & PERF_RECORD_MISC_CPUMODE_MASK)
++			==  PERF_RECORD_MISC_KERNEL)
+ 			head = &dsos__kernel;
+ 
+ 		dso = __dsos__findnew(head, filename);
+@@ -519,26 +526,33 @@ bool perf_session__has_traces(struct per
+ 	return true;
+ }
+ 
+-int perf_session__set_kallsyms_ref_reloc_sym(struct perf_session *self,
++int perf_session__set_kallsyms_ref_reloc_sym(struct map ** maps,
+ 					     const char *symbol_name,
+ 					     u64 addr)
+ {
+ 	char *bracket;
+ 	enum map_type i;
++	struct ref_reloc_sym *ref;
+ 
+-	self->ref_reloc_sym.name = strdup(symbol_name);
+-	if (self->ref_reloc_sym.name == NULL)
++	ref = zalloc(sizeof(struct ref_reloc_sym));
++	if (ref == NULL)
+ 		return -ENOMEM;
+ 
+-	bracket = strchr(self->ref_reloc_sym.name, ']');
++	ref->name = strdup(symbol_name);
++	if (ref->name == NULL) {
++		free(ref);
++		return -ENOMEM;
++	}
++
++	bracket = strchr(ref->name, ']');
+ 	if (bracket)
+ 		*bracket = '\0';
+ 
+-	self->ref_reloc_sym.addr = addr;
++	ref->addr = addr;
+ 
+ 	for (i = 0; i < MAP__NR_TYPES; ++i) {
+-		struct kmap *kmap = map__kmap(self->vmlinux_maps[i]);
+-		kmap->ref_reloc_sym = &self->ref_reloc_sym;
++		struct kmap *kmap = map__kmap(maps[i]);
++		kmap->ref_reloc_sym = ref;
+ 	}
+ 
+ 	return 0;
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/session.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/session.h
+--- linux-2.6_tipmaster0315/tools/perf/util/session.h	2010-03-16 08:59:54.768472278 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/session.h	2010-03-16 09:04:50.827525867 +0800
+@@ -16,16 +16,17 @@ struct perf_session {
+ 	unsigned long		size;
+ 	unsigned long		mmap_window;
+ 	struct map_groups	kmaps;
++	struct map_groups	guest_kmaps;
+ 	struct rb_root		threads;
+ 	struct thread		*last_match;
+ 	struct map		*vmlinux_maps[MAP__NR_TYPES];
++	struct map		*guest_vmlinux_maps[MAP__NR_TYPES];
+ 	struct events_stats	events_stats;
+ 	struct rb_root		stats_by_id;
+ 	unsigned long		event_total[PERF_RECORD_MAX];
+ 	unsigned long		unknown_events;
+ 	struct rb_root		hists;
+ 	u64			sample_type;
+-	struct ref_reloc_sym	ref_reloc_sym;
+ 	int			fd;
+ 	int			cwdlen;
+ 	char			*cwd;
+@@ -67,26 +68,12 @@ bool perf_session__has_traces(struct per
+ int perf_header__read_build_ids(struct perf_header *self, int input,
+ 				u64 offset, u64 file_size);
+ 
+-int perf_session__set_kallsyms_ref_reloc_sym(struct perf_session *self,
++int perf_session__set_kallsyms_ref_reloc_sym(struct map ** maps,
+ 					     const char *symbol_name,
+ 					     u64 addr);
+ 
+ void mem_bswap_64(void *src, int byte_size);
+ 
+-static inline int __perf_session__create_kernel_maps(struct perf_session *self,
+-						struct dso *kernel)
+-{
+-	return __map_groups__create_kernel_maps(&self->kmaps,
+-						self->vmlinux_maps, kernel);
+-}
+-
+-static inline struct map *
+-	perf_session__new_module_map(struct perf_session *self,
+-				     u64 start, const char *filename)
+-{
+-	return map_groups__new_module(&self->kmaps, start, filename);
+-}
+-
+ #ifdef NO_NEWT_SUPPORT
+ static inline void perf_session__browse_hists(struct rb_root *hists __used,
+ 					      u64 session_total __used,
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/sort.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/sort.h
+--- linux-2.6_tipmaster0315/tools/perf/util/sort.h	2010-03-16 08:59:54.780505450 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/sort.h	2010-03-16 09:46:38.997734739 +0800
+@@ -44,6 +44,10 @@ extern enum sort_type sort__first_dimens
+ struct hist_entry {
+ 	struct rb_node		rb_node;
+ 	u64			count;
++	u64			count_sys;
++	u64			count_us;
++	u64			count_guest_sys;
++	u64			count_guest_us;
+ 	struct thread		*thread;
+ 	struct map		*map;
+ 	struct symbol		*sym;
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/symbol.c linux-2.6_tipmaster0315_perfkvm/tools/perf/util/symbol.c
+--- linux-2.6_tipmaster0315/tools/perf/util/symbol.c	2010-03-16 08:59:54.784503211 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/symbol.c	2010-03-16 10:47:03.587519946 +0800
+@@ -22,6 +22,8 @@ static void dsos__add(struct list_head *
+ static struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
+ static int dso__load_kernel_sym(struct dso *self, struct map *map,
+ 				symbol_filter_t filter);
++static int dso__load_guest_kernel_sym(struct dso *self, struct map *map,
++			symbol_filter_t filter);
+ static int vmlinux_path__nr_entries;
+ static char **vmlinux_path;
+ 
+@@ -172,6 +174,7 @@ struct dso *dso__new(const char *name)
+ 		self->loaded = 0;
+ 		self->sorted_by_name = 0;
+ 		self->has_build_id = 0;
++		self->kernel = DSO_TYPE_USER;
+ 	}
+ 
+ 	return self;
+@@ -388,12 +391,9 @@ int kallsyms__parse(const char *filename
+ 		char *symbol_name;
+ 
+ 		line_len = getline(&line, &n, file);
+-		if (line_len < 0)
++		if (line_len < 0 || !line)
+ 			break;
+ 
+-		if (!line)
+-			goto out_failure;
+-
+ 		line[--line_len] = '\0'; /* \n */
+ 
+ 		len = hex2u64(line, &start);
+@@ -445,6 +445,7 @@ static int map__process_kallsym_symbol(v
+ 	 * map__split_kallsyms, when we have split the maps per module
+ 	 */
+ 	symbols__insert(root, sym);
++
+ 	return 0;
+ }
+ 
+@@ -490,6 +491,15 @@ static int dso__split_kallsyms(struct ds
+ 			*module++ = '\0';
+ 
+ 			if (strcmp(curr_map->dso->short_name, module)) {
++				if (curr_map != map &&
++					self->kernel == DSO_TYPE_GUEST_KERNEL) {
++					/*
++					 * We assume all symbols of a module are continuous in
++					 * kallsyms, so curr_map points to a module and all its
++					 * symbols are in its kmap. Mark it as loaded.
++					 */
++					dso__set_loaded(curr_map->dso, curr_map->type);
++				}
+ 				curr_map = map_groups__find_by_name(kmaps, map->type, module);
+ 				if (curr_map == NULL) {
+ 					pr_debug("/proc/{kallsyms,modules} "
+@@ -511,13 +521,19 @@ static int dso__split_kallsyms(struct ds
+ 			char dso_name[PATH_MAX];
+ 			struct dso *dso;
+ 
+-			snprintf(dso_name, sizeof(dso_name), "[kernel].%d",
+-				 kernel_range++);
++			if (self->kernel == DSO_TYPE_GUEST_KERNEL)
++				snprintf(dso_name, sizeof(dso_name), "[guest.kernel].%d",
++						kernel_range++);
++			else
++				snprintf(dso_name, sizeof(dso_name), "[kernel].%d",
++						kernel_range++);
+ 
+ 			dso = dso__new(dso_name);
+ 			if (dso == NULL)
+ 				return -1;
+ 
++			dso->kernel = self->kernel;
++
+ 			curr_map = map__new2(pos->start, dso, map->type);
+ 			if (curr_map == NULL) {
+ 				dso__delete(dso);
+@@ -541,6 +557,10 @@ discard_symbol:		rb_erase(&pos->rb_node,
+ 		}
+ 	}
+ 
++	if (curr_map != map &&
++		self->kernel == DSO_TYPE_GUEST_KERNEL)
++		dso__set_loaded(curr_map->dso, curr_map->type);
++
+ 	return count;
+ }
+ 
+@@ -551,7 +571,10 @@ int dso__load_kallsyms(struct dso *self,
+ 		return -1;
+ 
+ 	symbols__fixup_end(&self->symbols[map->type]);
+-	self->origin = DSO__ORIG_KERNEL;
++	if (self->kernel == DSO_TYPE_GUEST_KERNEL)
++		self->origin = DSO__ORIG_GUEST_KERNEL;
++	else
++		self->origin = DSO__ORIG_KERNEL;
+ 
+ 	return dso__split_kallsyms(self, map, filter);
+ }
+@@ -939,7 +962,7 @@ static int dso__load_sym(struct dso *sel
+ 	nr_syms = shdr.sh_size / shdr.sh_entsize;
+ 
+ 	memset(&sym, 0, sizeof(sym));
+-	if (!self->kernel) {
++	if (self->kernel == DSO_TYPE_USER) {
+ 		self->adjust_symbols = (ehdr.e_type == ET_EXEC ||
+ 				elf_section_by_name(elf, &ehdr, &shdr,
+ 						     ".gnu.prelink_undo",
+@@ -971,7 +994,7 @@ static int dso__load_sym(struct dso *sel
+ 
+ 		section_name = elf_sec__name(&shdr, secstrs);
+ 
+-		if (self->kernel || kmodule) {
++		if (self->kernel != DSO_TYPE_USER || kmodule) {
+ 			char dso_name[PATH_MAX];
+ 
+ 			if (strcmp(section_name,
+@@ -997,6 +1020,7 @@ static int dso__load_sym(struct dso *sel
+ 				curr_dso = dso__new(dso_name);
+ 				if (curr_dso == NULL)
+ 					goto out_elf_end;
++				curr_dso->kernel = self->kernel;
+ 				curr_map = map__new2(start, curr_dso,
+ 						     map->type);
+ 				if (curr_map == NULL) {
+@@ -1007,7 +1031,10 @@ static int dso__load_sym(struct dso *sel
+ 				curr_map->unmap_ip = identity__map_ip;
+ 				curr_dso->origin = self->origin;
+ 				map_groups__insert(kmap->kmaps, curr_map);
+-				dsos__add(&dsos__kernel, curr_dso);
++				if (curr_dso->kernel == DSO_TYPE_GUEST_KERNEL)
++					dsos__add(&dsos__guest_kernel, curr_dso);
++				else
++					dsos__add(&dsos__kernel, curr_dso);
+ 				dso__set_loaded(curr_dso, map->type);
+ 			} else
+ 				curr_dso = curr_map->dso;
+@@ -1228,6 +1255,8 @@ char dso__symtab_origin(const struct dso
+ 		[DSO__ORIG_BUILDID] =  'b',
+ 		[DSO__ORIG_DSO] =      'd',
+ 		[DSO__ORIG_KMODULE] =  'K',
++		[DSO__ORIG_GUEST_KERNEL] =  'g',
++		[DSO__ORIG_GUEST_KMODULE] =  'G',
+ 	};
+ 
+ 	if (self == NULL || self->origin == DSO__ORIG_NOT_FOUND)
+@@ -1246,8 +1275,10 @@ int dso__load(struct dso *self, struct m
+ 
+ 	dso__set_loaded(self, map->type);
+ 
+-	if (self->kernel)
++	if (self->kernel == DSO_TYPE_KERNEL)
+ 		return dso__load_kernel_sym(self, map, filter);
++	else if (self->kernel == DSO_TYPE_GUEST_KERNEL)
++		return dso__load_guest_kernel_sym(self, map, filter);
+ 
+ 	name = malloc(size);
+ 	if (!name)
+@@ -1451,7 +1482,7 @@ static int map_groups__set_modules_path(
+ static struct map *map__new2(u64 start, struct dso *dso, enum map_type type)
+ {
+ 	struct map *self = zalloc(sizeof(*self) +
+-				  (dso->kernel ? sizeof(struct kmap) : 0));
++			  (dso->kernel != DSO_TYPE_USER ? sizeof(struct kmap) : 0));
+ 	if (self != NULL) {
+ 		/*
+ 		 * ->end will be filled after we load all the symbols
+@@ -1463,11 +1494,15 @@ static struct map *map__new2(u64 start, 
+ }
+ 
+ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+-				   const char *filename)
++				   const char *filename, int guest)
+ {
+ 	struct map *map;
+-	struct dso *dso = __dsos__findnew(&dsos__kernel, filename);
++	struct dso *dso;
+ 
++	if (!guest)
++		dso = __dsos__findnew(&dsos__kernel, filename);
++	else
++		dso = __dsos__findnew(&dsos__guest_kernel, filename);
+ 	if (dso == NULL)
+ 		return NULL;
+ 
+@@ -1475,16 +1510,20 @@ struct map *map_groups__new_module(struc
+ 	if (map == NULL)
+ 		return NULL;
+ 
+-	dso->origin = DSO__ORIG_KMODULE;
++	if (guest)
++		dso->origin = DSO__ORIG_GUEST_KMODULE;
++	else
++		dso->origin = DSO__ORIG_KMODULE;
+ 	map_groups__insert(self, map);
+ 	return map;
+ }
+ 
+-static int map_groups__create_modules(struct map_groups *self)
++static int __map_groups__create_modules(struct map_groups *self,
++			const char * filename, int guest)
+ {
+ 	char *line = NULL;
+ 	size_t n;
+-	FILE *file = fopen("/proc/modules", "r");
++	FILE *file = fopen(filename, "r");
+ 	struct map *map;
+ 
+ 	if (file == NULL)
+@@ -1518,16 +1557,17 @@ static int map_groups__create_modules(st
+ 		*sep = '\0';
+ 
+ 		snprintf(name, sizeof(name), "[%s]", line);
+-		map = map_groups__new_module(self, start, name);
++		map = map_groups__new_module(self, start, name, guest);
+ 		if (map == NULL)
+ 			goto out_delete_line;
+-		dso__kernel_module_get_build_id(map->dso);
++		if (!guest)
++			dso__kernel_module_get_build_id(map->dso);
+ 	}
+ 
+ 	free(line);
+ 	fclose(file);
+ 
+-	return map_groups__set_modules_path(self);
++	return 0;
+ 
+ out_delete_line:
+ 	free(line);
+@@ -1535,6 +1575,21 @@ out_failure:
+ 	return -1;
+ }
+ 
++static int map_groups__create_modules(struct map_groups *self)
++{
++	int ret;
++
++	ret = __map_groups__create_modules(self, "/proc/modules", 0);
++	if (ret >= 0)
++		ret = map_groups__set_modules_path(self);
++	return ret;
++}
++
++static int map_groups__create_guest_modules(struct map_groups *self)
++{
++	return  __map_groups__create_modules(self, symbol_conf.guest_modules, 1);
++}
++
+ static int dso__load_vmlinux(struct dso *self, struct map *map,
+ 			     const char *vmlinux, symbol_filter_t filter)
+ {
+@@ -1694,8 +1749,44 @@ out_fixup:
+ 	return err;
+ }
+ 
++static int dso__load_guest_kernel_sym(struct dso *self, struct map *map,
++				symbol_filter_t filter)
++{
++	int err;
++	const char *kallsyms_filename;
++	/*
++	 * if the user specified a vmlinux filename, use it and only
++	 * it, reporting errors to the user if it cannot be used.
++	 * Or use file guest_kallsyms inputted by user on commandline
++	 */
++	if (symbol_conf.guest_vmlinux_name != NULL) {
++		err = dso__load_vmlinux(self, map,
++					symbol_conf.guest_vmlinux_name, filter);
++		goto out_try_fixup;
++	}
++
++	kallsyms_filename = symbol_conf.guest_kallsyms;
++	if (!kallsyms_filename)
++		return -1;
++	err = dso__load_kallsyms(self, kallsyms_filename, map, filter);
++	if (err > 0)
++		pr_debug("Using %s for symbols\n", kallsyms_filename);
++
++out_try_fixup:
++	if (err > 0) {
++		if (kallsyms_filename != NULL)
++			dso__set_long_name(self, strdup("[guest.kernel.kallsyms]"));
++		map__fixup_start(map);
++		map__fixup_end(map);
++	}
++
++	return err;
++}
++
+ LIST_HEAD(dsos__user);
+ LIST_HEAD(dsos__kernel);
++LIST_HEAD(dsos__guest_user);
++LIST_HEAD(dsos__guest_kernel);
+ 
+ static void dsos__add(struct list_head *head, struct dso *dso)
+ {
+@@ -1742,6 +1833,8 @@ void dsos__fprintf(FILE *fp)
+ {
+ 	__dsos__fprintf(&dsos__kernel, fp);
+ 	__dsos__fprintf(&dsos__user, fp);
++	__dsos__fprintf(&dsos__guest_kernel, fp);
++	__dsos__fprintf(&dsos__guest_user, fp);
+ }
+ 
+ static size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
+@@ -1771,7 +1864,19 @@ struct dso *dso__new_kernel(const char *
+ 
+ 	if (self != NULL) {
+ 		self->short_name = "[kernel]";
+-		self->kernel	 = 1;
++		self->kernel	 = DSO_TYPE_KERNEL;
++	}
++
++	return self;
++}
++
++struct dso *dso__new_guest_kernel(const char *name)
++{
++	struct dso *self = dso__new(name ?: "[guest.kernel.kallsyms]");
++
++	if (self != NULL) {
++		self->short_name = "[guest.kernel]";
++		self->kernel	 = DSO_TYPE_GUEST_KERNEL;
+ 	}
+ 
+ 	return self;
+@@ -1796,6 +1901,15 @@ static struct dso *dsos__create_kernel(c
+ 	return kernel;
+ }
+ 
++static struct dso *dsos__create_guest_kernel(const char *vmlinux)
++{
++	struct dso *kernel = dso__new_guest_kernel(vmlinux);
++
++	if (kernel != NULL)
++		dsos__add(&dsos__guest_kernel, kernel);
++	return kernel;
++}
++
+ int __map_groups__create_kernel_maps(struct map_groups *self,
+ 				     struct map *vmlinux_maps[MAP__NR_TYPES],
+ 				     struct dso *kernel)
+@@ -1955,3 +2069,24 @@ int map_groups__create_kernel_maps(struc
+ 	map_groups__fixup_end(self);
+ 	return 0;
+ }
++
++int map_groups__create_guest_kernel_maps(struct map_groups *self,
++				   struct map *vmlinux_maps[MAP__NR_TYPES])
++{
++	struct dso *kernel = dsos__create_guest_kernel(symbol_conf.guest_vmlinux_name);
++
++	if (kernel == NULL)
++		return -1;
++
++	if (__map_groups__create_kernel_maps(self, vmlinux_maps, kernel) < 0)
++		return -1;
++
++	if (symbol_conf.use_modules && map_groups__create_guest_modules(self) < 0)
++		pr_debug("Problems creating module maps, continuing anyway...\n");
++	/*
++	 * Now that we have all the maps created, just set the ->end of them:
++	 */
++	map_groups__fixup_end(self);
++	return 0;
++}
++
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/symbol.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/symbol.h
+--- linux-2.6_tipmaster0315/tools/perf/util/symbol.h	2010-03-16 08:59:54.880462306 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/symbol.h	2010-03-16 10:37:03.880361568 +0800
+@@ -63,10 +63,14 @@ struct symbol_conf {
+ 			show_nr_samples,
+ 			use_callchain,
+ 			exclude_other,
+-			full_paths;
++			full_paths,
++			show_cpu_utilization;
+ 	const char	*vmlinux_name,
+ 			*field_sep;
+-	char            *dso_list_str,
++	const char	*guest_vmlinux_name,
++			*guest_kallsyms,
++			*guest_modules;
++	char		*dso_list_str,
+ 			*comm_list_str,
+ 			*sym_list_str,
+ 			*col_width_list_str;
+@@ -95,6 +99,13 @@ struct addr_location {
+ 	u64	      addr;
+ 	char	      level;
+ 	bool	      filtered;
++	unsigned int  cpumode;
++};
++
++enum dso_kernel_type {
++	DSO_TYPE_USER = 0,
++	DSO_TYPE_KERNEL,
++	DSO_TYPE_GUEST_KERNEL
+ };
+ 
+ struct dso {
+@@ -104,7 +115,7 @@ struct dso {
+ 	u8		 adjust_symbols:1;
+ 	u8		 slen_calculated:1;
+ 	u8		 has_build_id:1;
+-	u8		 kernel:1;
++	enum dso_kernel_type	kernel;
+ 	u8		 hit:1;
+ 	u8		 annotate_warned:1;
+ 	unsigned char	 origin;
+@@ -119,6 +130,7 @@ struct dso {
+ 
+ struct dso *dso__new(const char *name);
+ struct dso *dso__new_kernel(const char *name);
++struct dso *dso__new_guest_kernel(const char *name);
+ void dso__delete(struct dso *self);
+ 
+ bool dso__loaded(const struct dso *self, enum map_type type);
+@@ -131,7 +143,7 @@ static inline void dso__set_loaded(struc
+ 
+ void dso__sort_by_name(struct dso *self, enum map_type type);
+ 
+-extern struct list_head dsos__user, dsos__kernel;
++extern struct list_head dsos__user, dsos__kernel, dsos__guest_user, dsos__guest_kernel;
+ 
+ struct dso *__dsos__findnew(struct list_head *head, const char *name);
+ 
+@@ -160,6 +172,8 @@ enum dso_origin {
+ 	DSO__ORIG_BUILDID,
+ 	DSO__ORIG_DSO,
+ 	DSO__ORIG_KMODULE,
++	DSO__ORIG_GUEST_KERNEL,
++	DSO__ORIG_GUEST_KMODULE,
+ 	DSO__ORIG_NOT_FOUND,
+ };
+ 
+diff -Nraup linux-2.6_tipmaster0315/tools/perf/util/thread.h linux-2.6_tipmaster0315_perfkvm/tools/perf/util/thread.h
+--- linux-2.6_tipmaster0315/tools/perf/util/thread.h	2010-03-16 08:59:54.764469663 +0800
++++ linux-2.6_tipmaster0315_perfkvm/tools/perf/util/thread.h	2010-03-16 09:01:10.004081483 +0800
+@@ -82,6 +82,9 @@ int __map_groups__create_kernel_maps(str
+ int map_groups__create_kernel_maps(struct map_groups *self,
+ 				   struct map *vmlinux_maps[MAP__NR_TYPES]);
+ 
++int map_groups__create_guest_kernel_maps(struct map_groups *self,
++				   struct map *vmlinux_maps[MAP__NR_TYPES]);
++
+ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+-				   const char *filename);
++				   const char *filename, int guest);
+ #endif	/* __PERF_THREAD_H */
 
-Each Multimedia device above has two 4MB ranges that effectively uses
-*all* of the MMIO space routed "down stream" by the parent bridge.
 
-The multimedia device driver has to (a) "claim" and (b) enable the
-decoding of those 4MB ranges using linux kernel interfaces described
-by Documentation/PCI/pci.txt .
-
-> The rationale for that thought was the vague feeling, that the PCIe
-> switch would be somehow supported in the kernel, ie the pcieport
-> driver in use by the hardware also made me feel more to think that
-> way.
-
-For "normal" use (your use), the kernel already knows how to configure
-the PCI-E bridge windows and assign bus numbers already since the PLX
-devices comply with PCI Local Bus Spec for Configuration Header type 0.
-Generally, BIOS is doing that already and the kernel tries to play
-along nicely if the BIOS isn't obviously buggy in it's PCI config handling.
-
-The PLX chips have some special modes that would require additional
-kernel support to use. I've "encouraged" the PLX folks to submit drivers
-to kernel.org to support those modes but my guess is they don't have a
-business case to do so. Or I've completely missed it. Anyone who wants
-to know more will have to talk directly with PLX.
-
-
-> > While it's called a "switch" because it can route MMIO transactions
-> > from one downstream PCI-e link to any other.
-> >
-> >> At present I can access one of the Multimedia controllers (09:00.0) ,
-> >> but it seems I can't access the other one and hence my question as to
-> >> determine whether it is something else.
-> >
-> > "lspci -vt" will show what is visible in PCI Config space.
-> 
-> manu@manu-04:~$ lspci -vt
-> -[0000:00]-+-00.0  Intel Corporation X58 I/O Hub to ESI Port
->            +-01.0-[0000:01]----00.0  Device 1b4b:91a3
->            +-02.0-[0000:02]----00.0  NEC Corporation Device 0194
->            +-03.0-[0000:03]----00.0  nVidia Corporation G96 [GeForce 9500 GT]
->            +-05.0-[0000:04]----00.0  Philips Semiconductors Device 7160
->            +-07.0-[0000:05]----00.0  Philips Semiconductors Pinnacle PCTV 7010iX
->            +-09.0-[0000:06-0a]----00.0-[0000:07-0a]--+-01.0-[0000:08]--
->            |
-> +-04.0-[0000:09]----00.0  Philips Semiconductors Device 7231
->            |
-> \-05.0-[0000:0a]----00.0  Philips Semiconductors Device 7231
-
-Urgh.  The point of "-vt" is to have indentation and your mailer "fixed it".
-Don't need to resend since I can explain (I think).
-
-00:09.0 is Intel Host Bridge.
-   06:00.0 is PLX upstream port
-   07:01.0 is PLX downstream port
-        08:   no connection
-        09:00.0 Multimedia device #1
-        0a:00.0 Multimedia device #2
-
-...
-> > "lspci -v" will tell us how the bridge is configured.
-> 
-> manu@manu-04:~$ sudo lspci -v
-...
-> 00:09.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI
-> Express Root Port 9 (rev 13)
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=06, subordinate=0a, sec-latency=0
->         Memory behind bridge: fa000000-fb3fffff
-
-That's routing total 20MB of MMIO address space.
-
->         Capabilities: [40] Subsystem: Giga-byte Technology Device 5001
->         Capabilities: [60] Message Signalled Interrupts: Mask+ 64bit-
-> Queue=0/1 Enable+
->         Capabilities: [90] Express Root Port (Slot+), MSI 00
->         Capabilities: [e0] Power Management version 3
->         Capabilities: [100] Advanced Error Reporting <?>
->         Capabilities: [150] Access Controls <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 00:10.0 PIC: Intel Corporation 5520/5500/X58 Physical and Link Layer
-> Registers Port 0 (rev 13)
->         Flags: fast devsel
->         Capabilities: [50] Vendor Specific Information <?>
-> 
-> 00:10.1 PIC: Intel Corporation 5520/5500/X58 Routing and Protocol
-> Layer Registers Port 0 (rev 13)
->         Flags: fast devsel
-> 
-> 00:11.0 PIC: Intel Corporation 5520/5500 Physical and Link Layer
-> Registers Port 1 (rev 13)
->         Flags: fast devsel
->         Capabilities: [50] #00 [0000]
-> 
-> 00:11.1 PIC: Intel Corporation 5520/5500 Routing & Protocol Layer
-> Register Port 1 (rev 13)
->         Flags: fast devsel
-> 
-> 00:13.0 PIC: Intel Corporation 5520/5500/X58 I/O Hub I/OxAPIC
-> Interrupt Controller (rev 13) (prog-if 20)
->         Flags: bus master, fast devsel, latency 0
->         Memory at fbfff000 (32-bit, non-prefetchable) [size=4K]
->         Capabilities: [6c] Power Management version 3
-> 
-> 00:14.0 PIC: Intel Corporation 5520/5500/X58 I/O Hub System Management
-> Registers (rev 13)
->         Flags: fast devsel
->         Capabilities: [40] Express Root Complex Integrated Endpoint,
-> MSI 00
-> 
-> 00:14.1 PIC: Intel Corporation 5520/5500/X58 I/O Hub GPIO and Scratch
-> Pad Registers (rev 13)
->         Flags: fast devsel
->         Capabilities: [40] Express Root Complex Integrated Endpoint,
-> MSI 00
-> 
-> 00:14.2 PIC: Intel Corporation 5520/5500/X58 I/O Hub Control Status
-> and RAS Registers (rev 13)
->         Flags: fast devsel
->         Capabilities: [40] Express Root Complex Integrated Endpoint,
-> MSI 00
-> 
-> 00:15.0 PIC: Intel Corporation 5520/5500/X58 Trusted Execution
-> Technology Registers (rev 13) (prog-if 20)
->         Flags: fast devsel
-> 
-> 00:1a.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #4
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 16
->         I/O ports at ff00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1a.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #5
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 21
->         I/O ports at fe00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1a.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #6
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 18
->         I/O ports at fd00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1a.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2
-> EHCI Controller #2 (prog-if 20)
->         Subsystem: Giga-byte Technology Device 5006
->         Flags: bus master, medium devsel, latency 0, IRQ 18
->         Memory at fbffe000 (32-bit, non-prefetchable) [size=1K]
->         Capabilities: [50] Power Management version 2
->         Capabilities: [58] Debug port: BAR=1 offset=00a0
->         Capabilities: [98] PCIe advanced features <?>
->         Kernel driver in use: ehci_hcd
-> 
-> 00:1b.0 Audio device: Intel Corporation 82801JI (ICH10 Family) HD
-> Audio Controller
->         Subsystem: Giga-byte Technology Device a102
->         Flags: bus master, fast devsel, latency 0, IRQ 22
->         Memory at fbff4000 (64-bit, non-prefetchable) [size=16K]
->         Capabilities: [50] Power Management version 2
->         Capabilities: [60] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/0 Enable-
->         Capabilities: [70] Express Root Complex Integrated Endpoint,
-> MSI 00
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [130] Root Complex Link <?>
->         Kernel driver in use: HDA Intel
->         Kernel modules: snd-hda-intel
-> 
-> 00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Port 1
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=0b, subordinate=0b, sec-latency=0
->         Capabilities: [40] Express Root Port (Slot+), MSI 00
->         Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/0 Enable+
->         Capabilities: [90] Subsystem: Giga-byte Technology Device 5001
->         Capabilities: [a0] Power Management version 2
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [180] Root Complex Link <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 00:1c.1 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Port 2
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=0c, subordinate=0c, sec-latency=0
->         I/O behind bridge: 0000b000-0000bfff
->         Memory behind bridge: fbd00000-fbdfffff
->         Capabilities: [40] Express Root Port (Slot+), MSI 00
->         Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/0 Enable+
->         Capabilities: [90] Subsystem: Giga-byte Technology Device 5001
->         Capabilities: [a0] Power Management version 2
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [180] Root Complex Link <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 00:1c.4 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Port 5
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=0d, subordinate=0d, sec-latency=0
->         I/O behind bridge: 0000a000-0000afff
->         Memory behind bridge: fbc00000-fbcfffff
->         Prefetchable memory behind bridge: 00000000fbb00000-00000000fbbfffff
->         Capabilities: [40] Express Root Port (Slot+), MSI 00
->         Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/0 Enable+
->         Capabilities: [90] Subsystem: Giga-byte Technology Device 5001
->         Capabilities: [a0] Power Management version 2
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [180] Root Complex Link <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 00:1c.5 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Port 6
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=0e, subordinate=0e, sec-latency=0
->         I/O behind bridge: 0000e000-0000efff
->         Memory behind bridge: fba00000-fbafffff
->         Prefetchable memory behind bridge: 00000000fb900000-00000000fb9fffff
->         Capabilities: [40] Express Root Port (Slot+), MSI 00
->         Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/0 Enable+
->         Capabilities: [90] Subsystem: Giga-byte Technology Device 5001
->         Capabilities: [a0] Power Management version 2
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [180] Root Complex Link <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 00:1d.0 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #1
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 23
->         I/O ports at fc00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1d.1 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #2
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 19
->         I/O ports at fb00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1d.2 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB
-> UHCI Controller #3
->         Subsystem: Giga-byte Technology Device 5004
->         Flags: bus master, medium devsel, latency 0, IRQ 18
->         I/O ports at fa00 [size=32]
->         Capabilities: [50] PCIe advanced features <?>
->         Kernel driver in use: uhci_hcd
-> 
-> 00:1d.7 USB Controller: Intel Corporation 82801JI (ICH10 Family) USB2
-> EHCI Controller #1 (prog-if 20)
->         Subsystem: Giga-byte Technology Device 5006
->         Flags: bus master, medium devsel, latency 0, IRQ 23
->         Memory at fbffd000 (32-bit, non-prefetchable) [size=1K]
->         Capabilities: [50] Power Management version 2
->         Capabilities: [58] Debug port: BAR=1 offset=00a0
->         Capabilities: [98] PCIe advanced features <?>
->         Kernel driver in use: ehci_hcd
-> 
-> 00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90) (prog-if 01)
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=00, secondary=0f, subordinate=0f, sec-latency=32
->         Memory behind bridge: fb700000-fb7fffff
->         Prefetchable memory behind bridge: 00000000fb600000-00000000fb6fffff
->         Capabilities: [50] Subsystem: Giga-byte Technology Device 5000
-> 
-> 00:1f.0 ISA bridge: Intel Corporation 82801JIR (ICH10R) LPC Interface Controller
->         Subsystem: Giga-byte Technology Device 5001
->         Flags: bus master, medium devsel, latency 0
->         Capabilities: [e0] Vendor Specific Information <?>
->         Kernel modules: iTCO_wdt
-> 
-> 00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA
-> AHCI Controller (prog-if 01)
->         Subsystem: Giga-byte Technology Device b005
->         Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 38
->         I/O ports at f900 [size=8]
->         I/O ports at f800 [size=4]
->         I/O ports at f700 [size=8]
->         I/O ports at f600 [size=4]
->         I/O ports at f500 [size=32]
->         Memory at fbffc000 (32-bit, non-prefetchable) [size=2K]
->         Capabilities: [80] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/4 Enable+
->         Capabilities: [70] Power Management version 3
->         Capabilities: [a8] SATA HBA <?>
->         Capabilities: [b0] PCIe advanced features <?>
->         Kernel driver in use: ahci
-> 
-> 00:1f.3 SMBus: Intel Corporation 82801JI (ICH10 Family) SMBus Controller
->         Subsystem: Giga-byte Technology Device 5001
->         Flags: medium devsel, IRQ 7
->         Memory at fbffb000 (64-bit, non-prefetchable) [size=256]
->         I/O ports at 0500 [size=32]
->         Kernel modules: i2c-i801
-> 
-> 01:00.0 IDE interface: Device 1b4b:91a3 (rev 11) (prog-if 85 [Master SecO PriO])
->         Subsystem: Giga-byte Technology Device b000
->         Flags: bus master, fast devsel, latency 0, IRQ 11
->         I/O ports at cf00 [size=8]
->         I/O ports at ce00 [size=4]
->         I/O ports at cd00 [size=8]
->         I/O ports at cc00 [size=4]
->         I/O ports at cb00 [size=16]
->         Memory at fb5ff000 (32-bit, non-prefetchable) [size=2K]
->         [virtual] Expansion ROM at f4000000 [disabled] [size=64K]
->         Capabilities: [40] Power Management version 3
->         Capabilities: [50] Message Signalled Interrupts: Mask- 64bit-
-> Queue=0/0 Enable-
->         Capabilities: [70] Express Legacy Endpoint, MSI 00
->         Capabilities: [100] Advanced Error Reporting <?>
-> 
-> 02:00.0 USB Controller: NEC Corporation Device 0194 (rev 03) (prog-if 30)
->         Subsystem: Giga-byte Technology Device 5007
->         Flags: bus master, fast devsel, latency 0, IRQ 16
->         Memory at fb4fe000 (64-bit, non-prefetchable) [size=8K]
->         Capabilities: [50] Power Management version 3
->         Capabilities: [70] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/3 Enable-
->         Capabilities: [90] MSI-X: Enable- Mask- TabSize=8
->         Capabilities: [a0] Express Endpoint, MSI 00
->         Capabilities: [100] Advanced Error Reporting <?>
->         Capabilities: [140] Device Serial Number
-> ff-ff-ff-ff-ff-ff-ff-ff
->         Capabilities: [150] #18
->         Kernel driver in use: xhci_hcd
->         Kernel modules: xhci
-> 
-> 03:00.0 VGA compatible controller: nVidia Corporation G96 [GeForce
-> 9500 GT] (rev a1)
->         Subsystem: XFX Pine Group Inc. Device 400a
->         Flags: bus master, fast devsel, latency 0, IRQ 16
->         Memory at f8000000 (32-bit, non-prefetchable) [size=16M]
->         Memory at e0000000 (64-bit, prefetchable) [size=256M]
->         Memory at f6000000 (64-bit, non-prefetchable) [size=32M]
->         I/O ports at df00 [size=128]
->         [virtual] Expansion ROM at f9000000 [disabled] [size=512K]
->         Capabilities: [60] Power Management version 3
->         Capabilities: [68] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/0 Enable-
->         Capabilities: [78] Express Endpoint, MSI 00
->         Capabilities: [b4] Vendor Specific Information <?>
->         Capabilities: [100] Virtual Channel <?>
->         Capabilities: [128] Power Budgeting <?>
->         Capabilities: [600] Vendor Specific Information <?>
->         Kernel driver in use: nvidia
->         Kernel modules: nvidia, nvidiafb
-> 
-> 04:00.0 Multimedia controller: Philips Semiconductors Device 7160 (rev 01)
->         Subsystem: Philips Semiconductors Device 0000
->         Flags: bus master, fast devsel, latency 0, IRQ 11
->         Memory at fbe00000 (64-bit, non-prefetchable) [size=1M]
->         Capabilities: [40] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/5 Enable-
->         Capabilities: [50] Express Endpoint, MSI 00
->         Capabilities: [74] Power Management version 2
->         Capabilities: [80] Vendor Specific Information <?>
->         Capabilities: [100] Vendor Specific Information <?>
-> 
-> 05:00.0 Multimedia controller: Philips Semiconductors Pinnacle PCTV 7010iX
->         Subsystem: Pinnacle Systems Inc. Device 0101
->         Flags: bus master, fast devsel, latency 0, IRQ 11
->         Memory at fb800000 (64-bit, non-prefetchable) [size=1M]
->         Capabilities: [40] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/5 Enable-
->         Capabilities: [50] Express Endpoint, MSI 00
->         Capabilities: [74] Power Management version 2
->         Capabilities: [80] Vendor Specific Information <?>
->         Capabilities: [100] Vendor Specific Information <?>
-
-The above two Multimedia devices are NOT below the PLX bridge.
-
-> 06:00.0 PCI bridge: PLX Technology, Inc. Device 8604 (rev ba)
->         Flags: bus master, fast devsel, latency 0
->         Memory at fb3e0000 (32-bit, non-prefetchable) [size=128K]
->         Bus: primary=06, secondary=07, subordinate=0a, sec-latency=0
->         Memory behind bridge: fa000000-faffffff
-
-PLX "upstream" Bridge port.
-0xfa000000-0xfaffffff is 16 of 20MB routed to downstream devices.
-
-The 0xfb3e0000 range is part of the 4MB assigned to bus 06
-
->         Capabilities: [40] Power Management version 3
->         Capabilities: [48] Message Signalled Interrupts: Mask+ 64bit+
-> Queue=0/2 Enable+
->         Capabilities: [68] Express Upstream Port, MSI 00
->         Capabilities: [a4] Subsystem: PLX Technology, Inc. Device 8604
->         Capabilities: [100] Device Serial Number
-> 00-0e-df-b5-10-01-86-ba
->         Capabilities: [fb4] Advanced Error Reporting <?>
->         Capabilities: [138] Power Budgeting <?>
->         Capabilities: [148] Virtual Channel <?>
->         Capabilities: [448] Vendor Specific Information <?>
->         Capabilities: [950] Vendor Specific Information <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 07:01.0 PCI bridge: PLX Technology, Inc. Device 8604 (rev ba)
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=07, secondary=08, subordinate=08, sec-latency=0
-
-Downstream PLX port #1.
-Note there is no "local" MMIO address associated.
-
->         Capabilities: [40] Power Management version 3
->         Capabilities: [48] Message Signalled Interrupts: Mask+ 64bit+
-> Queue=0/2 Enable+
->         Capabilities: [68] Express Downstream Port (Slot+), MSI 00
->         Capabilities: [a4] Subsystem: PLX Technology, Inc. Device 8604
->         Capabilities: [100] Device Serial Number
-> 00-0e-df-b5-10-01-86-ba
->         Capabilities: [fb4] Advanced Error Reporting <?>
->         Capabilities: [148] Virtual Channel <?>
->         Capabilities: [520] Access Controls <?>
->         Capabilities: [950] Vendor Specific Information <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 07:04.0 PCI bridge: PLX Technology, Inc. Device 8604 (rev ba)
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=07, secondary=09, subordinate=09, sec-latency=0
->         Memory behind bridge: fa800000-faffffff
-
-Downstream PLX port #2.
-One 8MB range is routed to downstream "09:00.0 Multimedia controller".
-
->         Capabilities: [40] Power Management version 3
->         Capabilities: [48] Message Signalled Interrupts: Mask+ 64bit+
-> Queue=0/2 Enable+
->         Capabilities: [68] Express Downstream Port (Slot+), MSI 00
->         Capabilities: [a4] Subsystem: PLX Technology, Inc. Device 8604
->         Capabilities: [100] Device Serial Number
-> 00-0e-df-b5-10-01-86-ba
->         Capabilities: [fb4] Advanced Error Reporting <?>
->         Capabilities: [148] Virtual Channel <?>
->         Capabilities: [520] Access Controls <?>
->         Capabilities: [950] Vendor Specific Information <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 07:05.0 PCI bridge: PLX Technology, Inc. Device 8604 (rev ba)
->         Flags: bus master, fast devsel, latency 0
->         Bus: primary=07, secondary=0a, subordinate=0a, sec-latency=0
->         Memory behind bridge: fa000000-fa7fffff
-
-Downstream PLX port #3.
-One 8MB range is routed to downstream "0a:00.0 Multimedia controller".
-
->         Capabilities: [40] Power Management version 3
->         Capabilities: [48] Message Signalled Interrupts: Mask+ 64bit+
-> Queue=0/2 Enable+
->         Capabilities: [68] Express Downstream Port (Slot+), MSI 00
->         Capabilities: [a4] Subsystem: PLX Technology, Inc. Device 8604
->         Capabilities: [100] Device Serial Number
-> 00-0e-df-b5-10-01-86-ba
->         Capabilities: [fb4] Advanced Error Reporting <?>
->         Capabilities: [148] Virtual Channel <?>
->         Capabilities: [520] Access Controls <?>
->         Capabilities: [950] Vendor Specific Information <?>
->         Kernel driver in use: pcieport-driver
->         Kernel modules: shpchp
-> 
-> 09:00.0 Multimedia controller: Philips Semiconductors Device 7231 (rev aa)
->         Subsystem: Modular Technology Holdings Ltd Device 3595
->         Flags: bus master, fast devsel, latency 0, IRQ 16
->         Memory at fac00000 (64-bit, non-prefetchable) [size=4M]
->         Memory at fa800000 (64-bit, non-prefetchable) [size=4M]
->         Capabilities: [40] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/4 Enable-
->         Capabilities: [50] Express Endpoint, MSI 00
->         Capabilities: [74] Power Management version 3
->         Capabilities: [7c] Vendor Specific Information <?>
->         Capabilities: [100] Vendor Specific Information <?>
->         Kernel driver in use: SAA7231 Drv
-> 
-> 0a:00.0 Multimedia controller: Philips Semiconductors Device 7231 (rev aa)
->         Subsystem: Modular Technology Holdings Ltd Device 3585
->         Flags: bus master, fast devsel, latency 0, IRQ 17
->         Memory at fa400000 (64-bit, non-prefetchable) [size=4M]
->         Memory at fa000000 (64-bit, non-prefetchable) [size=4M]
->         Capabilities: [40] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/4 Enable-
->         Capabilities: [50] Express Endpoint, MSI 00
->         Capabilities: [74] Power Management version 3
->         Capabilities: [7c] Vendor Specific Information <?>
->         Capabilities: [100] Vendor Specific Information <?>
->         Kernel driver in use: SAA7231 Drv
-
-So it looks like SAA7231 Driver is already claiming this device.
-That's the driver that needs to use APIs described in pci.txt.
-
-So the PCI MMIO configuration/routing all looks kosher to me.
-
-hth,
-grant
-
-> 
-> 0c:00.0 SATA controller: JMicron Technology Corp. JMB362/JMB363 AHCI
-> Controller (rev 02) (prog-if 01)
->         Subsystem: Giga-byte Technology Device b000
->         Flags: bus master, fast devsel, latency 0, IRQ 17
->         Memory at fbdfe000 (32-bit, non-prefetchable) [size=8K]
->         Capabilities: [68] Power Management version 2
->         Capabilities: [50] Express Legacy Endpoint, MSI 01
->         Kernel driver in use: ahci
-> 
-> 0c:00.1 IDE interface: JMicron Technology Corp. JMB362/JMB363 AHCI
-> Controller (rev 02) (prog-if 85 [Master SecO PriO])
->         Subsystem: Giga-byte Technology Device b000
->         Flags: bus master, fast devsel, latency 0, IRQ 18
->         I/O ports at bf00 [size=8]
->         I/O ports at be00 [size=4]
->         I/O ports at bd00 [size=8]
->         I/O ports at bc00 [size=4]
->         I/O ports at bb00 [size=16]
->         Capabilities: [68] Power Management version 2
->         Kernel driver in use: pata_jmicron
-> 
-> 0d:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
->         Subsystem: Giga-byte Technology Device e000
->         Flags: bus master, fast devsel, latency 0, IRQ 39
->         I/O ports at ae00 [size=256]
->         Memory at fbbff000 (64-bit, prefetchable) [size=4K]
->         Memory at fbbf8000 (64-bit, prefetchable) [size=16K]
->         [virtual] Expansion ROM at fbb00000 [disabled] [size=128K]
->         Capabilities: [40] Power Management version 3
->         Capabilities: [50] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/0 Enable+
->         Capabilities: [70] Express Endpoint, MSI 01
->         Capabilities: [ac] MSI-X: Enable- Mask- TabSize=4
->         Capabilities: [cc] Vital Product Data <?>
->         Capabilities: [100] Advanced Error Reporting <?>
->         Capabilities: [140] Virtual Channel <?>
->         Capabilities: [160] Device Serial Number 00-e0-4c-68-00-00-00-04
->         Kernel driver in use: r8169
->         Kernel modules: r8169
-> 
-> 0e:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd.
-> RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 03)
->         Subsystem: Giga-byte Technology Device e000
->         Flags: bus master, fast devsel, latency 0, IRQ 40
->         I/O ports at ee00 [size=256]
->         Memory at fb9ff000 (64-bit, prefetchable) [size=4K]
->         Memory at fb9f8000 (64-bit, prefetchable) [size=16K]
->         [virtual] Expansion ROM at fb900000 [disabled] [size=128K]
->         Capabilities: [40] Power Management version 3
->         Capabilities: [50] Message Signalled Interrupts: Mask- 64bit+
-> Queue=0/0 Enable+
->         Capabilities: [70] Express Endpoint, MSI 01
->         Capabilities: [ac] MSI-X: Enable- Mask- TabSize=4
->         Capabilities: [cc] Vital Product Data <?>
->         Capabilities: [100] Advanced Error Reporting <?>
->         Capabilities: [140] Virtual Channel <?>
->         Capabilities: [160] Device Serial Number 00-e0-4c-68-00-00-00-04
->         Kernel driver in use: r8169
->         Kernel modules: r8169
-> 
-> 0f:00.0 Multimedia controller: Twinhan Technology Co. Ltd Mantis DTV
-> PCI Bridge Controller [Ver 1.0] (rev 01)
->         Subsystem: Twinhan Technology Co. Ltd Device 0031
->         Flags: bus master, medium devsel, latency 32
->         Memory at fb6ff000 (32-bit, prefetchable) [size=4K]
-> 
-> 0f:06.0 FireWire (IEEE 1394): Texas Instruments TSB43AB23
-> IEEE-1394a-2000 Controller (PHY/Link) (prog-if 10)
->         Subsystem: Giga-byte Technology Device 1000
->         Flags: bus master, medium devsel, latency 32, IRQ 18
->         Memory at fb7ff000 (32-bit, non-prefetchable) [size=2K]
->         Memory at fb7f8000 (32-bit, non-prefetchable) [size=16K]
->         Capabilities: [44] Power Management version 2
->         Kernel driver in use: ohci1394
->         Kernel modules: firewire-ohci, ohci1394
-> 
-> 
-> Thanks,
-> Manu
