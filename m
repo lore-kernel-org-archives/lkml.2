@@ -1,127 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S938011Ab0CPRNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 13:13:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15950 "EHLO mx1.redhat.com"
+	id S938015Ab0CPRRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 13:17:42 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37635 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S938001Ab0CPRNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 13:13:34 -0400
-Date: Tue, 16 Mar 2010 19:08:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: cl@linux-foundation.org, lee.schermerhorn@hp.com, rientjes@google.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-mm@kvack.org,
+	id S933213Ab0CPRRk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 13:17:40 -0400
+Date: Tue, 16 Mar 2010 10:17:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] exit: fix oops in sync_mm_rss
-Message-ID: <20100316170808.GA29400@redhat.com>
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+	nfs_inode_return_delegation_noreclaim()
+Message-ID: <20100316171738.GN6709@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100316115130.25642.17789.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100316115130.25642.17789.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 2.6.34-rc1, removing vhost_net module causes an oops in sync_mm_rss
-(called from do_exit) when workqueue is destroyed. This does not happen on
-net-next, or with vhost on top of to 2.6.33.
+On Tue, Mar 16, 2010 at 11:51:30AM +0000, David Howells wrote:
+> Fix a number of RCU warnings in nfs_inode_return_delegation_noreclaim().  They
+> look like simple cases of missing rcu_read_lock/unlock() calls.
+> 
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> fs/nfs/delegation.c:332 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
 
-The issue seems to be introduced by
-34e55232e59f7b19050267a05ff1226e5cd122a5: that commit added function
-sync_mm_rss that is passed task->mm, and dereferences it without
-checking. If task is a kernel thread, mm might be NULL.
-I think this might also happen e.g. with aio.
+Some thoughts on accounting for the update-side locks below.
 
-This patch fixes the oops by calling sync_mm_rss when task->mm
-is set to NULL. I also added BUG_ON to detect any other cases
-where counters get incremented while mm is NULL.
+							Thanx, Paul
 
-The oops I observed looks like this:
+> rcu_scheduler_active = 1, debug_locks = 0
+> 2 locks held by mount.nfs4/2281:
+>  #0:  (&type->s_umount_key#34){+.+...}, at: [<ffffffff810b25b4>] deactivate_super+0x60/0x80
+>  #1:  (iprune_sem){+.+...}, at: [<ffffffff810c332a>] invalidate_inodes+0x39/0x13a
+> 
+> stack backtrace:
+> Pid: 2281, comm: mount.nfs4 Not tainted 2.6.34-rc1-cachefs #110
+> Call Trace:
+>  [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+>  [<ffffffffa00b4591>] nfs_inode_return_delegation_noreclaim+0x5b/0xa0 [nfs]
+>  [<ffffffffa0095d63>] nfs4_clear_inode+0x11/0x1e [nfs]
+>  [<ffffffff810c2d92>] clear_inode+0x9e/0xf8
+>  [<ffffffff810c3028>] dispose_list+0x67/0x10e
+>  [<ffffffff810c340d>] invalidate_inodes+0x11c/0x13a
+>  [<ffffffff810b1dc1>] generic_shutdown_super+0x42/0xf4
+>  [<ffffffff810b1ebe>] kill_anon_super+0x11/0x4f
+>  [<ffffffffa009893c>] nfs4_kill_super+0x3f/0x72 [nfs]
+>  [<ffffffff810b25bc>] deactivate_super+0x68/0x80
+>  [<ffffffff810c6744>] mntput_no_expire+0xbb/0xf8
+>  [<ffffffff810c681b>] release_mounts+0x9a/0xb0
+>  [<ffffffff810c689b>] put_mnt_ns+0x6a/0x79
+>  [<ffffffffa00983a1>] nfs_follow_remote_path+0x5a/0x146 [nfs]
+>  [<ffffffffa0098334>] ? nfs_do_root_mount+0x82/0x95 [nfs]
+>  [<ffffffffa00985a9>] nfs4_try_mount+0x75/0xaf [nfs]
+>  [<ffffffffa0098874>] nfs4_get_sb+0x291/0x31a [nfs]
+>  [<ffffffff810b2059>] vfs_kern_mount+0xb8/0x177
+>  [<ffffffff810b2176>] do_kern_mount+0x48/0xe8
+>  [<ffffffff810c810b>] do_mount+0x782/0x7f9
+>  [<ffffffff810c8205>] sys_mount+0x83/0xbe
+>  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+> 
+> Also on:
+> 
+> fs/nfs/delegation.c:215 invoked rcu_dereference_check() without protection!
+>  [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+>  [<ffffffffa00b4223>] nfs_inode_set_delegation+0xfe/0x219 [nfs]
+>  [<ffffffffa00a9c6f>] nfs4_opendata_to_nfs4_state+0x2c2/0x30d [nfs]
+>  [<ffffffffa00aa15d>] nfs4_do_open+0x2a6/0x3a6 [nfs]
+>  ...
+> 
+> And:
+> 
+> fs/nfs/delegation.c:40 invoked rcu_dereference_check() without protection!
+>  [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+>  [<ffffffffa00b3bef>] nfs_free_delegation+0x3d/0x6e [nfs]
+>  [<ffffffffa00b3e71>] nfs_do_return_delegation+0x26/0x30 [nfs]
+>  [<ffffffffa00b406a>] __nfs_inode_return_delegation+0x1ef/0x1fe [nfs]
+>  [<ffffffffa00b448a>] nfs_client_return_marked_delegations+0xc9/0x124 [nfs]
+>  ...
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+> 
+>  fs/nfs/delegation.c |   15 ++++++++++++---
+>  1 files changed, 12 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> index 2563beb..a77c735 100644
+> --- a/fs/nfs/delegation.c
+> +++ b/fs/nfs/delegation.c
+> @@ -37,8 +37,10 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
+>  {
+>  	struct rpc_cred *cred;
+> 
+> +	rcu_read_lock();
+>  	cred = rcu_dereference(delegation->cred);
+>  	rcu_assign_pointer(delegation->cred, NULL);
 
-BUG: unable to handle kernel NULL pointer dereference at 00000000000002a8
-IP: [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
-PGD 0
-Oops: 0002 [#1] SMP
-last sysfs file: /sys/devices/system/cpu/cpu7/cache/index2/shared_cpu_map
-CPU 2
-Modules linked in: vhost_net(-) tun bridge stp sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table kvm_intel kvm i5000_edac edac_core rtc_cmos bnx2 button i2c_i801 i2c_core rtc_core e1000e sg joydev ide_cd_mod serio_raw pcspkr rtc_lib cdrom virtio_net virtio_blk virtio_pci virtio_ring virtio af_packet e1000 shpchp aacraid uhci_hcd ohci_hcd ehci_hcd [last unloaded: microcode]
+The lock is probably held here, in which case something like the
+following would work well without needing the artificial rcu_read_lock()
+and rcu_read_unlock():
 
-Pid: 2046, comm: vhost Not tainted 2.6.34-rc1-vhost #25 System Planar/IBM System x3550 -[7978B3G]-
-RIP: 0010:[<ffffffff810b436d>]  [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
-RSP: 0018:ffff8802379b7e60  EFLAGS: 00010202
-RAX: 0000000000000008 RBX: ffff88023f2390c0 RCX: 0000000000000000
-RDX: ffff88023f2396b0 RSI: 0000000000000000 RDI: ffff88023f2390c0
-RBP: ffff8802379b7e60 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff88023aecfbc0 R11: 0000000000013240 R12: 0000000000000000
-R13: ffffffff81051a6c R14: ffffe8ffffc0f540 R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff880001e80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000000000002a8 CR3: 000000023af23000 CR4: 00000000000406e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process vhost (pid: 2046, threadinfo ffff8802379b6000, task ffff88023f2390c0)
-Stack:
- ffff8802379b7ee0 ffffffff81040687 ffffe8ffffc0f558 ffffffffa00a3e2d
-<0> 0000000000000000 ffff88023f2390c0 ffffffff81055817 ffff8802379b7e98
-<0> ffff8802379b7e98 0000000100000286 ffff8802379b7ee0 ffff88023ad47d78
-Call Trace:
- [<ffffffff81040687>] do_exit+0x147/0x6c4
- [<ffffffffa00a3e2d>] ? handle_rx_net+0x0/0x17 [vhost_net]
- [<ffffffff81055817>] ? autoremove_wake_function+0x0/0x39
- [<ffffffff81051a6c>] ? worker_thread+0x0/0x229
- [<ffffffff810553c9>] kthreadd+0x0/0xf2
- [<ffffffff810038d4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81055342>] ? kthread+0x0/0x87
- [<ffffffff810038d0>] ? kernel_thread_helper+0x0/0x10
-Code: 00 8b 87 6c 02 00 00 85 c0 74 14 48 98 f0 48 01 86 a0 02 00 00 c7 87 6c 02 00 00 00 00 00 00 8b 87 70 02 00 00 85 c0 74 14 48 98 <f0> 48 01 86 a8 02 00 00 c7 87 70 02 00 00 00 00 00 00 8b 87 74
-RIP  [<ffffffff810b436d>] sync_mm_rss+0x33/0x6f
- RSP <ffff8802379b7e60>
-CR2: 00000000000002a8
----[ end trace 41603ba922beddd2 ]---
-Fixing recursive fault but reboot is needed!
+	cred = rcu_dereference_check(delegation->cred,
+				     lockdep_is_held(&delegation->lock));
 
-(note: handle_rx_net is a work item using workqueue in question).
-sync_mm_rss+0x33/0x6f gave me a hint. I also tried reverting
-34e55232e59f7b19050267a05ff1226e5cd122a5 and the oops goes away.
+> +	rcu_read_unlock();
+>  	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
+>  	if (cred)
+>  		put_rpccred(cred);
+> @@ -212,10 +214,12 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+>  	spin_lock_init(&delegation->lock);
+> 
+>  	spin_lock(&clp->cl_lock);
+> +	rcu_read_lock();
+>  	if (rcu_dereference(nfsi->delegation) != NULL) {
 
-The module in question calls use_mm and later unuse_mm from a kernel
-thread.  It is when this kernel thread is destroyed that the crash
-happens.
+Same here, though I am not sure whether clp->cl_lock or something in
+nfs_inode should be used.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- mm/memory.c      |    1 +
- mm/mmu_context.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+>  		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
+>  					sizeof(delegation->stateid)) == 0 &&
+>  				delegation->type == nfsi->delegation->type) {
+> +			rcu_read_unlock();
+>  			goto out;
+>  		}
+>  		/*
+> @@ -228,6 +232,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+>  		if (delegation->type <= nfsi->delegation->type) {
+>  			freeme = delegation;
+>  			delegation = NULL;
+> +			rcu_read_lock();
+>  			goto out;
+>  		}
+>  		freeme = nfs_detach_delegation_locked(nfsi, NULL);
+> @@ -236,6 +241,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+>  	nfsi->delegation_state = delegation->type;
+>  	rcu_assign_pointer(nfsi->delegation, delegation);
+>  	delegation = NULL;
+> +	rcu_read_unlock();
+> 
+>  	/* Ensure we revalidate the attributes and page cache! */
+>  	spin_lock(&inode->i_lock);
+> @@ -327,15 +333,18 @@ void nfs_inode_return_delegation_noreclaim(struct inode *inode)
+>  {
+>  	struct nfs_client *clp = NFS_SERVER(inode)->nfs_client;
+>  	struct nfs_inode *nfsi = NFS_I(inode);
+> -	struct nfs_delegation *delegation;
+> +	struct nfs_delegation *delegation = NULL;
+> 
+> +	rcu_read_lock();
+>  	if (rcu_dereference(nfsi->delegation) != NULL) {
 
-diff --git a/mm/memory.c b/mm/memory.c
-index d1153e3..27022b3 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -130,6 +130,7 @@ void __sync_task_rss_stat(struct task_struct *task, struct mm_struct *mm)
- 
- 	for (i = 0; i < NR_MM_COUNTERS; i++) {
- 		if (task->rss_stat.count[i]) {
-+			BUG_ON(!mm);
- 			add_mm_counter(mm, i, task->rss_stat.count[i]);
- 			task->rss_stat.count[i] = 0;
- 		}
-diff --git a/mm/mmu_context.c b/mm/mmu_context.c
-index 0777654..9e82e93 100644
---- a/mm/mmu_context.c
-+++ b/mm/mmu_context.c
-@@ -53,6 +53,7 @@ void unuse_mm(struct mm_struct *mm)
- 	struct task_struct *tsk = current;
- 
- 	task_lock(tsk);
-+	sync_mm_rss(tsk, mm);
- 	tsk->mm = NULL;
- 	/* active_mm is still 'mm' */
- 	enter_lazy_tlb(mm, tsk);
--- 
-1.7.0.18.g0d53a5
+Same here.
+
+>  		spin_lock(&clp->cl_lock);
+>  		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+>  		spin_unlock(&clp->cl_lock);
+> -		if (delegation != NULL)
+> -			nfs_do_return_delegation(inode, delegation, 0);
+>  	}
+> +	rcu_read_unlock();
+> +
+> +	if (delegation)
+> +		nfs_do_return_delegation(inode, delegation, 0);
+>  }
+> 
+>  int nfs_inode_return_delegation(struct inode *inode)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
