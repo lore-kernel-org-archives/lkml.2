@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937958Ab0CPQSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 12:18:55 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56606 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937992Ab0CPQSx convert rfc822-to-8bit (ORCPT
+	id S937947Ab0CPQTl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 12:19:41 -0400
+Received: from sdcmail01.amcc.com ([198.137.200.72]:60215 "EHLO
+	sdcmail01.amcc.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937904Ab0CPQTj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 12:18:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=xsehMQoaNSojXi6MFsTsXhXlNPA/KFPxbEcbyXqI9yYU6A2/PNnurEXqWeenDya7KK
-         9wcwIQihl9wgKwD1/XpHJkXlgRQB0S+n9eIaK3K+0Q71L40+pcH2dOo2y9dT61H/cgb0
-         pvSA+4eu2G5l87Wrn/I8fAeTIUUjBLEkYnYUQ=
+	Tue, 16 Mar 2010 12:19:39 -0400
+X-IronPort-AV: E=Sophos;i="4.49,650,1262592000"; 
+   d="scan'208";a="25410422"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <4B9F86E9.2030702@gmail.com>
-References: <4B9F86E9.2030702@gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 16 Mar 2010 09:18:31 -0700
-Message-ID: <43e72e891003160918x3b7e3c9asf4fc8a9db35ccd8a@mail.gmail.com>
-Subject: Re: regd: sleeping in atomic
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: Failure with the 2.6.34-rc1 kernel
+Date: Tue, 16 Mar 2010 09:19:21 -0700
+Message-ID: <AC311A8E81420D4EBC1F26E6479848FE065B7D5B@SDCEXCHANGE01.ad.amcc.com>
+In-Reply-To: <alpine.LRH.2.00.1003161646590.26353@twin.jikos.cz>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: Failure with the 2.6.34-rc1 kernel
+Thread-Index: AcrFIBDephghYQAWT/CuZ2gwtDYRNQAA50mA
+References: <AC311A8E81420D4EBC1F26E6479848FE065B7D3D@SDCEXCHANGE01.ad.amcc.com> <alpine.LRH.2.00.1003161646590.26353@twin.jikos.cz>
+From: "Rupjyoti Sarmah" <rsarmah@amcc.com>
+To: "Jiri Kosina" <jkosina@suse.cz>
+Cc: <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/16 Jiri Slaby <jirislaby@gmail.com>:
-> Hi,
->
-> Stanse found an atomic error in reg_copy_regd:
->
-> static int reg_copy_regd(const struct ieee80211_regdomain **dst_regd,
->                         const struct ieee80211_regdomain *src_regd)
-> {
->        struct ieee80211_regdomain *regd;
->        int size_of_regd = 0;
->        unsigned int i;
->
->        size_of_regd = sizeof(struct ieee80211_regdomain) +
->          ((src_regd->n_reg_rules + 1) * sizeof(struct ieee80211_reg_rule));
->
->        regd = kzalloc(size_of_regd, GFP_KERNEL);       <---- here
->
-> Called from:
->
-> static void reg_regdb_search(struct work_struct *work)
-> {
->        spin_lock(&reg_regdb_search_lock);
->        while (!list_empty(&reg_regdb_search_list)) {
-> ...
->                for (i=0; i<reg_regdb_size; i++) {
->                        curdom = reg_regdb[i];
->
->                        if (!memcmp(request->alpha2, curdom->alpha2, 2)) {
->                                r = reg_copy_regd(&regdom, curdom);
-> ...
->        spin_unlock(&reg_regdb_search_lock);
-> }
->
-> Whole error temporarily available at:
-> http://decibel.fi.muni.cz/~xslaby/stanse/error.cgi?db=34-rc&id=578
->
-> It is introduced by 3b377ea9d4efc94dc52fe41b4dfdb463635ab298.
->
-> Do you plan to extend it somehow or may the spinlock be converted to mutex?
+It has been failing from this commit.
 
-I don't think you can convert this directly to a mutex. The spin_lock
-in question (&reg_regdb_search_lock) gets also used by
-reg_regdb_query() which in turn gets called by call_crda(). There is
-one iteration of call_crda() which happens during module
-initialization and from what I gather I don't think the kernel is
-happy when you mutex_lock on load routines, please correct my foggy
-memory if I am mistaken. So during module load we directly end up
-hitting the spin_lock in question, prior to the workqueue using it.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commi
+t;h=ef1a8de8ea004a689b2aa9f5cefcba2b1a0262f2 .
 
-Not sure yet how to address this, any ideas John?
+Also, the u-boot restarts the board very quickly. It does not go to the
+kernel prompt at all. 
 
-> If not how much may size_of_regd be -- can we safely switch to GFP_ATOMIC?
+Regards,
+Rup
 
-The count is up to 117 right now. It should be around the number of
-countries of the world today, tomorrow even different countries could
-have different regulatory domains. This happened with Japan a while
-back when they required manufacturers to apply certification rules
-depending on the year the product went out.. and this changed many
-times in that country. But another reason why this number may also
-increase in any given country without regards to silly legislation is
-for experimenters who want to enhance the use of the spectrum in
-certain areas and would use sha1sums instead of alpha2s for the
-regdomains. But we're light years away from that happening.
 
-  Luis
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz] 
+Sent: Tuesday, March 16, 2010 9:18 PM
+To: Rupjyoti Sarmah
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Failure with the 2.6.34-rc1 kernel
+
+On Tue, 16 Mar 2010, Rupjyoti Sarmah wrote:
+
+> We are seeing issues in booting some of our boards with this new
+kernel.
+> Kernel version upto 2.6.33 works fine on the boards like Canyonlands,
+> Katmai, Glacier etc.
+> These boards are not booting with kernel later than 2.6.33. Please let
+> me know how about fixing these issues ?
+
+You'd need to provide at least dmesg from the working and non-working 
+cases.
+
+Also git-bisect between 2.6.33 and 2.6.34-rc1 might help you identify
+the 
+commit that broke your hardware.
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
+
