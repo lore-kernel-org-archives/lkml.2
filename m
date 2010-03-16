@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937624Ab0CPJxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:53:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35700 "EHLO mx3.mail.elte.hu"
+	id S937629Ab0CPJzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:55:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932488Ab0CPJxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:53:45 -0400
-Date: Tue, 16 Mar 2010 10:53:36 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100316095336.GI7961@elte.hu>
-References: <1268717232.2813.36.camel@localhost>
- <4B9F19F7.6000309@redhat.com>
- <20100316072449.GB11881@elte.hu>
- <4B9F4D74.4090403@redhat.com>
+	id S932488Ab0CPJzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:55:35 -0400
+Message-ID: <4B9F5556.7060103@redhat.com>
+Date: Tue, 16 Mar 2010 10:54:30 +0100
+From: Kevin Wolf <kwolf@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F4D74.4090403@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Avi Kivity <avi@redhat.com>
+CC: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com>
+In-Reply-To: <4B9F4CBD.3020805@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
-> On 03/16/2010 09:24 AM, Ingo Molnar wrote:
-> >* Avi Kivity<avi@redhat.com>  wrote:
-> >
-> >>On 03/16/2010 07:27 AM, Zhang, Yanmin wrote:
-> >>>From: Zhang, Yanmin<yanmin_zhang@linux.intel.com>
-> >>>
-> >>>Based on the discussion in KVM community, I worked out the patch to support
-> >>>perf to collect guest os statistics from host side. This patch is implemented
-> >>>with Ingo, Peter and some other guys' kind help. Yang Sheng pointed out a
-> >>>critical bug and provided good suggestions with other guys. I really appreciate
-> >>>their kind help.
-> >>>
-> >>>The patch adds new subcommand kvm to perf.
-> >>>
-> >>>   perf kvm top
-> >>>   perf kvm record
-> >>>   perf kvm report
-> >>>   perf kvm diff
-> >>>
-> >>>The new perf could profile guest os kernel except guest os user space, but it
-> >>>could summarize guest os user space utilization per guest os.
-> >>>
-> >>>Below are some examples.
-> >>>1) perf kvm top
-> >>>[root@lkp-ne01 norm]# perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms
-> >>>--guestmodules=/home/ymzhang/guest/modules top
-> >>>
-> >>Excellent, support for guest kernel != host kernel is critical (I
-> >>can't remember the last time I ran same kernels).
-> >>
-> >>How would we support multiple guests with different kernels? Perhaps a
-> >>symbol server that perf can connect to (and that would connect to guests in
-> >>turn)?
-> >The highest quality solution would be if KVM offered a 'guest extension' to
-> >the guest kernel's /proc/kallsyms that made it easy for user-space to get this
-> >information from an authorative source.
-> >
-> >That's the main reason why the host side /proc/kallsyms is so popular and so
-> >useful: while in theory it's mostly redundant information which can be gleaned
-> >from the System.map and other sources of symbol information, it's easily
-> >available and is _always_ trustable to come from the host kernel.
-> >
-> >Separate System.map's have a tendency to go out of sync (or go missing when a
-> >devel kernel gets rebuilt, or if a devel package is not installed), and server
-> >ports (be that a TCP port space server or an UDP port space mount-point) are
-> >both a configuration hassle and are not guest-transparent.
-> >
-> >So for instrumentation infrastructure (such as perf) we have a large and well
-> >founded preference for intrinsic, built-in, kernel-provided information: i.e.
-> >a largely 'built-in' and transparent mechanism to get to guest symbols.
+Am 16.03.2010 10:17, schrieb Avi Kivity:
+> On 03/15/2010 10:23 PM, Chris Webb wrote:
+>> Avi Kivity<avi@redhat.com>  writes:
+>>
+>>    
+>>> On 03/15/2010 10:07 AM, Balbir Singh wrote:
+>>>
+>>>      
+>>>> Yes, it is a virtio call away, but is the cost of paying twice in
+>>>> terms of memory acceptable?
+>>>>        
+>>> Usually, it isn't, which is why I recommend cache=off.
+>>>      
+>> Hi Avi. One observation about your recommendation for cache=none:
+>>
+>> We run hosts of VMs accessing drives backed by logical volumes carved out
+>> from md RAID1. Each host has 32GB RAM and eight cores, divided between (say)
+>> twenty virtual machines, which pretty much fill the available memory on the
+>> host. Our qemu-kvm is new enough that IDE and SCSI drives with writeback
+>> caching turned on get advertised to the guest as having a write-cache, and
+>> FLUSH gets translated to fsync() by qemu. (Consequently cache=writeback
+>> isn't acting as cache=neverflush like it would have done a year ago. I know
+>> that comparing performance for cache=none against that unsafe behaviour
+>> would be somewhat unfair!)
+>>
+>> Wasteful duplication of page cache between guest and host notwithstanding,
+>> turning on cache=writeback is a spectacular performance win for our guests.
+>> For example, even IDE with cache=writeback easily beats virtio with
+>> cache=none in most of the guest filesystem performance tests I've tried. The
+>> anecdotal feedback from clients is also very strongly in favour of
+>> cache=writeback.
+>>    
 > 
-> The symbol server's client can certainly access the bits through vmchannel.
+> Is this with qcow2, raw file, or direct volume access?
+> 
+> I can understand it for qcow2, but for direct volume access this 
+> shouldn't happen.  The guest schedules as many writes as it can, 
+> followed by a sync.  The host (and disk) can then reschedule them 
+> whether they are in the writeback cache or in the block layer, and must 
+> sync in the same way once completed.
+> 
+> Perhaps what we need is bdrv_aio_submit() which can take a number of 
+> requests.  For direct volume access, this allows easier reordering 
+> (io_submit() should plug the queues before it starts processing and 
+> unplug them when done, though I don't see the code for this?).  For 
+> qcow2, we can coalesce metadata updates for multiple requests into one 
+> RMW (for example, a sequential write split into multiple 64K-256K write 
+> requests).
 
-Ok, that would work i suspect.
+We already do merge sequential writes back into one larger request. So
+this is in fact a case that wouldn't benefit from such changes. It may
+help for other cases. But even if it did, coalescing metadata writes in
+qcow2 sounds like a good way to mess up, so I'd stay with doing it only
+for the data itself.
 
-Would be nice to have the symbol server in tools/perf/ and also make it easy 
-to add it to the initrd via a .config switch or so.
+Apart from that, wouldn't your points apply to writeback as well?
 
-That would have basically all of the advantages of being built into the kernel 
-(availability, configurability, transparency, hackability), while having all 
-the advantages of a user-space approach as well (flexibility, extensibility, 
-robustness, ease of maintenance, etc.).
-
-If only we had tools/xorg/ integrated via the initrd that way ;-)
-
-Thanks,
-
-	Ingo
+Kevin
