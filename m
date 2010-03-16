@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966037Ab0CPNWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:22:00 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:34020 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964982Ab0CPNV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:21:59 -0400
-Date: Tue, 16 Mar 2010 06:21:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] rcu: local_irq_disable() also delimits RCU_SCHED
-	read-site critical sections
-Message-ID: <20100316132156.GC6709@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4B9F66E1.2060309@cn.fujitsu.com>
+	id S966155Ab0CPNYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:24:00 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:51413 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964979Ab0CPNX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:23:58 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Oliver Neukum <oliver@neukum.org>
+Subject: usbtouchscreen: support bigger iNexio touchscreens
+Date: Tue, 16 Mar 2010 14:23:53 +0100
+User-Agent: KMail/1.9.10
+Cc: linux-usb@vger.kernel.org, daniel.ritz@gmx.ch,
+       linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4B9F66E1.2060309@cn.fujitsu.com>
-User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
+Message-Id: <201003161423.54495.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 07:09:21PM +0800, Lai Jiangshan wrote:
-> It is documented that local_irq_disable() also delimits
-> RCU_SCHED read-site critical sections.
-> See the document of synchronize_sched() or
-> Documentation/RCU/whatisRCU.txt.
-> 
-> So we have to test irqs_disabled() in rcu_read_lock_sched_held().
-> Otherwise rcu-lockdep brings incorrect complaint.
+Bigger Nexio touchscreens not only send more data but also the header values
+are modified somehow. Fix the header somehow (it's a guesswork but it works
+at least on one 46" touchscreen with 2.00SMS firmware) and also increase
+rept_size.
 
-Interesting -- I was under the impression that preempt_count() covered
-this as well, due to the following in include/linux/hardirq.h:
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-	#define PREEMPT_MASK    (__IRQ_MASK(PREEMPT_BITS) << PREEMPT_SHIFT)
-	#define SOFTIRQ_MASK    (__IRQ_MASK(SOFTIRQ_BITS) << SOFTIRQ_SHIFT)
-	#define HARDIRQ_MASK    (__IRQ_MASK(HARDIRQ_BITS) << HARDIRQ_SHIFT)
-	#define NMI_MASK        (__IRQ_MASK(NMI_BITS)     << NMI_SHIFT)
+--- linux-2.6.34-rc1-orig/drivers/input/touchscreen/usbtouchscreen.c	2010-03-16 13:34:51.000000000 +0100
++++ linux-2.6.34-rc1/drivers/input/touchscreen/usbtouchscreen.c	2010-03-16 13:46:15.000000000 +0100
+@@ -858,6 +858,11 @@
+ 	if ((pkt[0] & 0xe0) != 0xe0)
+ 		return 0;
+ 
++	if (be16_to_cpu(packet->data_len) > 0xff)
++		packet->data_len = cpu_to_be16(be16_to_cpu(packet->data_len) - 0x100);
++	if (be16_to_cpu(packet->x_len) > 0xff)
++		packet->x_len = cpu_to_be16(be16_to_cpu(packet->x_len) - 0x80);
++
+ 	/* send ACK */
+ 	ret = usb_submit_urb(priv->ack, GFP_ATOMIC);
+ 
+@@ -1113,7 +1118,7 @@
+ 
+ #ifdef CONFIG_TOUCHSCREEN_USB_NEXIO
+ 	[DEVTYPE_NEXIO] = {
+-		.rept_size	= 128,
++		.rept_size	= 1024,
+ 		.irq_always	= true,
+ 		.read_data	= nexio_read_data,
+ 		.init		= nexio_init,
 
-But irqs_disabled() does look to sample the actual interrupt hardware.
 
-So, if there are cases where RCU is used where the interrupt hardware
-is disabled, but preempt_count() has not been updated, this patch is
-the right thing to do.
-
-							Thanx, Paul
-
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 3024050..2ce5674 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -160,7 +160,7 @@ static inline int rcu_read_lock_sched_held(void)
->  		return 1;
->  	if (debug_locks)
->  		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
-> -	return lockdep_opinion || preempt_count() != 0;
-> +	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
->  }
->  #else /* #ifdef CONFIG_PREEMPT */
->  static inline int rcu_read_lock_sched_held(void)
-> @@ -191,7 +191,7 @@ static inline int rcu_read_lock_bh_held(void)
->  #ifdef CONFIG_PREEMPT
->  static inline int rcu_read_lock_sched_held(void)
->  {
-> -	return !rcu_scheduler_active || preempt_count() != 0;
-> +	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
->  }
->  #else /* #ifdef CONFIG_PREEMPT */
->  static inline int rcu_read_lock_sched_held(void)
-> 
+-- 
+Ondrej Zary
