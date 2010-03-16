@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab0CPPXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:23:00 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:53912 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758628Ab0CPPW6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:22:58 -0400
-X-Spam-Processed: digidescorp.com, Tue, 16 Mar 2010 10:22:59 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1691ec8f39=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: netdev@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-       James Morris <jmorris@namei.org>,
-       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-       Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH] NET_DMA: free skbs periodically
-Date: Tue, 16 Mar 2010 10:22:44 -0500
-Message-Id: <1268752964-4397-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S966386Ab0CPPX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:23:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35491 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757904Ab0CPPX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:23:27 -0400
+Subject: Re: ATA 4 KiB sector issues.
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+In-Reply-To: <4B9FA1C6.7090305@kernel.org>
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
+	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
+	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
+	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
+	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>
+	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>
+	 <4B9FA1C6.7090305@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Mar 2010 08:23:13 -0700
+Message-ID: <1268752993.21384.23.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Under NET_DMA, data transfer can grind to a halt when userland issues a
-large read on a socket with a high RCVLOWAT (i.e., 512 KB for both).
-This appears to be because the NET_DMA design queues up lots of memcpy 
-operations, but doesn't issue or wait for them (and thus free the 
-associated skbs) until it is time for tcp_recvmesg() to return. 
-The socket hangs when its TCP window goes to zero before enough data is 
-available to satisfy the read.
+On Wed, 2010-03-17 at 00:20 +0900, Tejun Heo wrote:
+> On 03/17/2010 12:02 AM, James Bottomley wrote:
+> > On Tue, 2010-03-16 at 23:50 +0900, Tejun Heo wrote:
+> >> e.g.  If the first partition begins at CHS 0/32/33 and ends at
+> >> 12/233/19 and the corresponding LBA addresses are 2048 and 206848, you
+> >> can solve the equation and determine that the parameters gotta be 63
+> >> secs/trk and 255 heads/cyl to make those two pairs of addresses match
+> >> each other and in fact some BIOSs try to do this depending on
+> >> configuration (and sometimes falls into infinite loop or causes other
+> >> boot related problems if the parameters are too uncommon).
+> > 
+> > for an msdos label, this is illegal, that was Arnd's point.  The
+> > partitions have to begin and end on cylinder boundaries*.  Knowing that,
+> > you can deduce the geometry from the last sector entry.
+> >
+> > * at least if you want to preserve windows compatibility, which is what
+> > most of our partitioning tools seem to do.
+> 
+> Well, the thing is that
+> 
+> * Anything remotely modern (>= XP) doesn't give a hoot about cylinder
+>   alignment.
+> 
+> * Anything older (<= 2000) is very likely to get confused with custom
+>   geometry starting from the BIOS itself.  For those cases, the only
+>   thing we can do is aligning partitions to cylinders abiding BIOS
+>   supplied geometry parameters which will usually be 255/63.
+> 
+> So, using custom geometry doesn't help compatibility at all.
 
-Periodically issue asynchronous memcpy operations, and free skbs for ones 
-that have completed, to prevent sockets from going into zero-window mode.
+Our partitioning tool still obey the integral cylinder rule ... we can
+argue about whether they should, but what we need is a strategy for
+fixing what is rather than what should be.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/net/ipv4/tcp.c b/net/ipv4/tcp.c
---- a/net/ipv4/tcp.c	2010-03-16 09:15:31.000000000 -0500
-+++ b/net/ipv4/tcp.c	2010-03-16 09:59:06.000000000 -0500
-@@ -1254,6 +1254,39 @@ static void tcp_prequeue_process(struct 
- 	tp->ucopy.memory = 0;
- }
- 
-+#ifdef CONFIG_NET_DMA
-+static void tcp_service_net_dma(struct sock *sk, bool wait)
-+{
-+	dma_cookie_t done, used;
-+	dma_cookie_t last_issued;
-+	struct tcp_sock *tp = tcp_sk(sk);
-+
-+	if (!tp->ucopy.dma_chan)
-+		return;
-+
-+	last_issued = tp->ucopy.dma_cookie;
-+	dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
-+
-+	do {
-+		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
-+					      last_issued, &done,
-+					      &used) == DMA_SUCCESS) {
-+			/* Safe to free early-copied skbs now */
-+			__skb_queue_purge(&sk->sk_async_wait_queue);
-+			break;
-+		} else {
-+			struct sk_buff *skb;
-+			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
-+			       (dma_async_is_complete(skb->dma_cookie, done,
-+						      used) == DMA_SUCCESS)) {
-+				__skb_dequeue(&sk->sk_async_wait_queue);
-+				kfree_skb(skb);
-+			}
-+		}
-+	} while (wait);
-+}
-+#endif
-+
- static inline struct sk_buff *tcp_recv_skb(struct sock *sk, u32 seq, u32 *off)
- {
- 	struct sk_buff *skb;
-@@ -1546,6 +1579,10 @@ int tcp_recvmsg(struct kiocb *iocb, stru
- 			/* __ Set realtime policy in scheduler __ */
- 		}
- 
-+#ifdef CONFIG_NET_DMA
-+		if (tp->ucopy.dma_chan)
-+			dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
-+#endif
- 		if (copied >= target) {
- 			/* Do not sleep, just process backlog. */
- 			release_sock(sk);
-@@ -1554,6 +1591,7 @@ int tcp_recvmsg(struct kiocb *iocb, stru
- 			sk_wait_data(sk, &timeo);
- 
- #ifdef CONFIG_NET_DMA
-+		tcp_service_net_dma(sk, false);  /* Don't block */
- 		tp->ucopy.wakeup = 0;
- #endif
- 
-@@ -1633,6 +1671,9 @@ do_prequeue:
- 						copied = -EFAULT;
- 					break;
- 				}
-+
-+				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
-+
- 				if ((offset + used) == skb->len)
- 					copied_early = 1;
- 
-@@ -1702,27 +1743,9 @@ skip_copy:
- 	}
- 
- #ifdef CONFIG_NET_DMA
--	if (tp->ucopy.dma_chan) {
--		dma_cookie_t done, used;
--
--		dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
--
--		while (dma_async_memcpy_complete(tp->ucopy.dma_chan,
--						 tp->ucopy.dma_cookie, &done,
--						 &used) == DMA_IN_PROGRESS) {
--			/* do partial cleanup of sk_async_wait_queue */
--			while ((skb = skb_peek(&sk->sk_async_wait_queue)) &&
--			       (dma_async_is_complete(skb->dma_cookie, done,
--						      used) == DMA_SUCCESS)) {
--				__skb_dequeue(&sk->sk_async_wait_queue);
--				kfree_skb(skb);
--			}
--		}
-+	tcp_service_net_dma(sk, true);  /* Wait for queue to drain */
-+	tp->ucopy.dma_chan = NULL;
- 
--		/* Safe to free early-copied skbs now */
--		__skb_queue_purge(&sk->sk_async_wait_queue);
--		tp->ucopy.dma_chan = NULL;
--	}
- 	if (tp->ucopy.pinned_list) {
- 		dma_unpin_iovec_pages(tp->ucopy.pinned_list);
- 		tp->ucopy.pinned_list = NULL;
+James
 
