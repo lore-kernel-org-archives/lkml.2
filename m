@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966043Ab0CPHdv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 03:33:51 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33959
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966027Ab0CPHdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 03:33:49 -0400
-Date: Tue, 16 Mar 2010 00:34:10 -0700 (PDT)
-Message-Id: <20100316.003410.232587710.davem@davemloft.net>
-To: julia@diku.dk
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-       sparclinux@vger.kernel.org
-Subject: Re: [PATCH] drivers/serial/sunsab.c: adjust the constant used to
- initialize the interrupt_mask0 fields
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1003121816500.3043@ask.diku.dk>
-References: <Pine.LNX.4.64.1003121816500.3043@ask.diku.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S966052Ab0CPHhq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 03:37:46 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40128 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966026Ab0CPHho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 03:37:44 -0400
+Date: Tue, 16 Mar 2010 08:36:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Nicholas Miell <nmiell@comcast.net>, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>,
+       Chris Friesen <cfriesen@nortel.com>,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip] introduce sys_membarrier(): process-wide memory
+ barrier (v9)
+Message-ID: <20100316073635.GC18448@elte.hu>
+References: <20100225232316.GA30196@Krystal>
+ <20100304122304.GA6864@elte.hu>
+ <alpine.LFD.2.00.1003040827100.7046@localhost.localdomain>
+ <20100304175659.GA3255@Krystal>
+ <20100315205312.GA31231@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315205312.GA31231@Krystal>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Fri, 12 Mar 2010 18:17:13 +0100 (CET)
 
-> From: Julia Lawall <julia@diku.dk>
-> 
-> SAB82532_ISR0_TCD is declared in drivers/serial/subsab.h as relating to a
-> status register, while SAB82532_IMR0_TCD is declared in the same file as
-> relating to a mask register.  The latter seems more appropriate for the
-> interrupt_mask0 field, and follows the strategy for initializing this field
-> elsewhere in the same file.
-> 
-> Both SAB82532_ISR0_TCD and SAB82532_IMR0_TCD have the same value.
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-Applied, thanks Julia.
-
-I'll add some entries to MAINTAINERS so that you know to
-CC: sparclinux for these sparc serial drivers in the future.
-
+> * Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> > * Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> > > >  - SA_RUNNING: a way to signal only running threads - as a way for user-space 
+> > > >    based concurrency control mechanisms to deschedule running threads (or, like
+> > > >    in your case, to implement barrier / garbage collection schemes).
+> > > 
+> > > Hmm. This sounds less fundamentally broken, but at the same time also 
+> > > _way_ more invasive in the signal handling layer. It's already one of our 
+> > > more "exciting" layers out there.
+> > > 
+> > 
+> > Hrm, thinking about it a bit further, the only way I see we could provide a
+> > usable SA_RUNNING flag would be to add hooks to the scheduler. These hooks would
+> > somehow have to call user-space code (!) when scheduling in/out a thread. Yes,
+> > this sounds utterly broken (since these hooks would have to be preemptable).
+> > 
+> > The idea is this: if we look, for instance, at the kernel preemptable RCU
+> > implementations, they consist of two parts: one is iteration on all CPUs to
+> > consider all active CPUs, and the other is a modification of the scheduler to
+> > note all preempted tasks that were in a preemptable RCU C.S..
+> > 
+> > Just for the memory barrier we consider for sys_membarrier(), I had to ensure
+> > that the scheduler issues memory barriers to order accesses to user-space memory
+> > and mm_cpumask modifications. In reality, what we are doing is to ensure that
+> > the operation required on the running thread is done by the scheduler too when
+> > scheduling in/out the task.
+> > 
+> > As soon as we have signal handlers which perform more than a simple memory 
+> > barrier (e.g. something that has side-effects outside of the processor), I 
+> > doubt it would ever make sense to only run the handler on running threads 
+> > unless we have hooks in the scheduler too.
 > 
-> ---
->  drivers/serial/sunsab.c             |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/serial/sunsab.c b/drivers/serial/sunsab.c
-> index d514e28..d2e0321 100644
-> --- a/drivers/serial/sunsab.c
-> +++ b/drivers/serial/sunsab.c
-> @@ -474,7 +474,7 @@ static void sunsab_stop_rx(struct uart_port *port)
->  {
->  	struct uart_sunsab_port *up = (struct uart_sunsab_port *) port;
->  
-> -	up->interrupt_mask0 |= SAB82532_ISR0_TCD;
-> +	up->interrupt_mask0 |= SAB82532_IMR0_TCD;
->  	writeb(up->interrupt_mask1, &up->regs->w.imr0);
->  }
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Unless this question is answered, Ingo's SA_RUNNING signal proposal, as 
+> appealing as it may look at a first glance, falls into the "fundamentally 
+> broken" category. [...]
+
+How is it different from your syscall? I.e. which lines of code make the 
+difference? We could certainly apply the (trivial) barrier change to 
+context_switch().
+
+	Ingo
