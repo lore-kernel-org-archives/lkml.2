@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab0CPWan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 18:30:43 -0400
-Received: from 8bytes.org ([88.198.83.132]:40202 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104Ab0CPWam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 18:30:42 -0400
-Date: Tue, 16 Mar 2010 23:30:40 +0100
-From: oerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
-	host side
-Message-ID: <20100316223040.GH13108@8bytes.org>
-References: <4B9F19F7.6000309@redhat.com> <20100316072449.GB11881@elte.hu> <4B9F4D74.4090403@redhat.com> <20100316095336.GI7961@elte.hu> <4B9F59DE.1060008@redhat.com> <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316112500.GA5337@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752836Ab0CPWhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 18:37:32 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:35372 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab0CPWha (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 18:37:30 -0400
+X-SENDER-IP: [83.226.251.83]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnI+AG+ln0tT4vtTPGdsb2JhbACHYJMjDAEBAQE3LaxEjXCEdgQ
+X-IronPort-AV: E=Sophos;i="4.49,652,1262559600"; 
+   d="scan'208";a="51383647"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
+       diegoliz@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: mds.c: converted long if-else to switch
+Date: Tue, 16 Mar 2010 23:37:28 +0100
+Message-Id: <1268779048-21397-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 12:25:00PM +0100, Ingo Molnar wrote:
-> Hm, that sounds rather messy if we want to use it to basically expose kernel 
-> functionality in a guest/host unified way. Is the qemu process discoverable in 
-> some secure way? Can we trust it? Is there some proper tooling available to do 
-> it, or do we have to push it through 2-3 packages to get such a useful feature 
-> done?
+I converted the long if-else in function Mds_HeaderCopy() to a switch
+instead. It compiles fine but i don't have the hardware to test.
+Please check that I didn't do anything bad to it..
+The patch applies on top of this patch:
+Message-Id: <1268670973-6223-1-git-send-email-lindley@coyote.org>
 
-Since we want to implement a pmu usable for the guest anyway why we
-don't just use a guests perf to get all information we want? If we get a
-pmu-nmi from the guest we just re-inject it to the guest and perf in the
-guest gives us all information we wand including kernel and userspace
-symbols, stack traces, and so on.
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/mds.c |   38 +++++++++++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 15 deletions(-)
 
-In the previous thread we discussed about a direct trace channel between
-guest and host kernel (which can be used for ftrace events for example).
-This channel could be used to transport this information to the host
-kernel.
-
-The only additional feature needed is a way for the host to start a perf
-instance in the guest.
-
-Opinions?
-
-
-	Joerg
+diff --git a/drivers/staging/winbond/mds.c b/drivers/staging/winbond/mds.c
+index ef08b51..6082fa8 100644
+--- a/drivers/staging/winbond/mds.c
++++ b/drivers/staging/winbond/mds.c
+@@ -400,30 +400,38 @@ static void Mds_HeaderCopy(struct wbsoft_priv *adapter,
+ 							       * back rate
+ 							       */
+ 
+-		if (ctmp1 == 108)
++		switch (ctmp1) {
++		case 108:
+ 			ctmp2 = 7;
+-		else if (ctmp1 == 96)
++			break;
++		case 96:
+ 			ctmp2 = 6;	/* Rate convert for USB */
+-		else if (ctmp1 == 72)
++			break;
++		case 72:
+ 			ctmp2 = 5;
+-		else if (ctmp1 == 48)
++			break;
++		case 48:
+ 			ctmp2 = 4;
+-		else if (ctmp1 == 36)
++			break;
++		case 36:
++		case 22:
+ 			ctmp2 = 3;
+-		else if (ctmp1 == 24)
++			break;
++		case 24:
++		case 11:
+ 			ctmp2 = 2;
+-		else if (ctmp1 == 18)
++			break;
++		case 18:
++		case 4:
+ 			ctmp2 = 1;
+-		else if (ctmp1 == 12)
++			break;
++		case 12:
+ 			ctmp2 = 0;
+-		else if (ctmp1 == 22)
+-			ctmp2 = 3;
+-		else if (ctmp1 == 11)
+-			ctmp2 = 2;
+-		else if (ctmp1 == 4)
+-			ctmp2 = 1;
+-		else
++			break;
++		default:
+ 			ctmp2 = 0;	/* if (ctmp1 == 2) or default */
++			break;
++		}
+ 
+ 		if (i == 0)
+ 			pT01->T01_transmit_rate = ctmp2;
+-- 
+1.7.0.2
 
