@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab0CPSm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 14:42:29 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:3432 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752818Ab0CPSm1 convert rfc822-to-8bit (ORCPT
+	id S1759999Ab0CPSmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 14:42:51 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:60331 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752818Ab0CPSms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 14:42:27 -0400
-X-IronPort-AV: E=Sophos;i="4.49,651,1262592000"; 
-   d="scan'208";a="331681437"
-Subject: Re: [PATCH] NFS: Fix RCU warnings in
- nfs_inode_return_delegation_noreclaim()
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: David Howells <dhowells@redhat.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <19197.1268761204@redhat.com>
-References: <1268760954.3098.17.camel@localhost.localdomain>
-	 <20100316115130.25642.17789.stgit@warthog.procyon.org.uk>
-	 <20100316171738.GN6709@linux.vnet.ibm.com>  <19197.1268761204@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 16 Mar 2010 14:41:44 -0400
-Message-ID: <1268764904.3098.21.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-X-OriginalArrivalTime: 16 Mar 2010 18:42:23.0679 (UTC) FILETIME=[6AF56CF0:01CAC538]
+	Tue, 16 Mar 2010 14:42:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Cj98KDSeVoT7+94ZDKW5bPfCdf76vp+W9fclx7qmiAfrN2bsyqWD1SQVWuWCiOrBjI
+         BtX4Z5jqmjvwYYEgQBnSNvGOzWyXtrab0p//dvo3WpalPZzvCIJE5+6fBvJcBdvAjnO8
+         LN/k4VAL2o6AvObJV69JzgUPLuzbgRTuKxFac=
+Message-ID: <4B9FD11E.5050108@gmail.com>
+Date: Tue, 16 Mar 2010 19:42:38 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-5.4 Thunderbird/3.1b1
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: regd: sleeping in atomic
+References: <4B9F86E9.2030702@gmail.com> <43e72e891003160918x3b7e3c9asf4fc8a9db35ccd8a@mail.gmail.com>
+In-Reply-To: <43e72e891003160918x3b7e3c9asf4fc8a9db35ccd8a@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 17:40 +0000, David Howells wrote: 
-> Trond Myklebust <Trond.Myklebust@netapp.com> wrote:
-> 
-> > > The lock is probably held here, in which case something like the
-> > > following would work well without needing the artificial rcu_read_lock()
-> > > and rcu_read_unlock():
-> > 
-> > No. The lock is not held here. At this point, the delegation has been
-> > detached from the inode that pointed to it, and so we can free up its
-> > contents.
-> > 
-> > We still need the call_rcu() to free up the allocated memory in order to
-> > ensure that some process doing lockless traversal of the
-> > clp->cl_delegations list doesn't crash.
-> 
-> In that case, surely you can't detach the credentials pointer until the
-> callback is invoked?
+On 03/16/2010 05:18 PM, Luis R. Rodriguez wrote:
+> one iteration of call_crda() which happens during module
+> initialization and from what I gather I don't think the kernel is
+> happy when you mutex_lock on load routines, please correct my foggy
+> memory if I am mistaken.
 
-We can, because the process that is traversing the list has to lock the
-delegation and test whether it is still attached or not before it can
-dereference and use the contents.
-
-In fact, that credential pointer is only really meant to be used when we
-need to return the delegation. Once we get to the nfs_free_delegation()
-bit, it is no longer needed.
-
-Cheers
-  Trond
+No, using mutex in init/exit module routines is fine. Where do you have 
+the information from? There might be problems only with request_module, 
+flush_scheduled_work or similar.
