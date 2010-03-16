@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab0CPPwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:52:37 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37636 "EHLO mx2.mail.elte.hu"
+	id S1758981Ab0CPQBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 12:01:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29317 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549Ab0CPPwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:52:34 -0400
-Date: Tue, 16 Mar 2010 16:52:21 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100316155221.GA19699@elte.hu>
-References: <20100316105021.GA14344@elte.hu>
- <4B9F671D.5060001@redhat.com>
- <20100316112500.GA5337@elte.hu>
- <4B9F77E7.2060101@redhat.com>
- <20100316122903.GA8831@elte.hu>
- <4B9F7C6A.3070207@redhat.com>
- <20100316130840.GA24808@elte.hu>
- <4B9F84C0.70706@redhat.com>
- <20100316133114.GB575@elte.hu>
- <y0mbpeo1f1y.fsf@fche.csb>
+	id S1756662Ab0CPQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 12:01:17 -0400
+Message-ID: <4B9FAAEC.1040604@redhat.com>
+Date: Tue, 16 Mar 2010 17:59:40 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <y0mbpeo1f1y.fsf@fche.csb>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+To: balbir@linux.vnet.ibm.com
+CC: Christoph Hellwig <hch@lst.de>, Chris Webb <chris@arachsys.com>,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100316102637.GA23584@lst.de> <4B9F5F2F.8020501@redhat.com> <20100316104422.GA24258@lst.de> <4B9F66AC.5080400@redhat.com> <20100316142739.GM18054@balbir.in.ibm.com>
+In-Reply-To: <20100316142739.GM18054@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/16/2010 04:27 PM, Balbir Singh wrote:
+>
+>> Let's assume the guest has virtio (I agree with IDE we need
+>> reordering on the host).  The guest sends batches of I/O separated
+>> by cache flushes.  If the batches are smaller than the virtio queue
+>> length, ideally things look like:
+>>
+>>   io_submit(..., batch_size_1);
+>>   io_getevents(..., batch_size_1);
+>>   fdatasync();
+>>   io_submit(..., batch_size_2);
+>>    io_getevents(..., batch_size_2);
+>>    fdatasync();
+>>    io_submit(..., batch_size_3);
+>>    io_getevents(..., batch_size_3);
+>>    fdatasync();
+>>
+>> (certainly that won't happen today, but it could in principle).
+>>
+>> How does a write cache give any advantage?  The host kernel sees
+>> _exactly_ the same information as it would from a bunch of threaded
+>> pwritev()s followed by fdatasync().
+>>
+>>      
+> Are you suggesting that the model with cache=writeback gives us the
+> same I/O pattern as cache=none, so there are no opportunities for
+> optimization?
+>    
 
-* Frank Ch. Eigler <fche@redhat.com> wrote:
+Yes.  The guest also has a large cache with the same optimization algorithm.
 
-> 
-> Ingo Molnar <mingo@elte.hu> writes:
-> 
-> > [...]
-> >> >I.e. we really want to be able users to:
-> >> >
-> >> >  1) have it all working with a single guest, without having to specify 'which'
-> >> >     guest (qemu PID) to work with. That is the dominant usecase both for
-> >> >     developers and for a fair portion of testers.
-> >> 
-> >> That's reasonable if we can get it working simply.
-> >
-> > IMO such ease of use is reasonable and required, full stop.
-> > If it cannot be gotten simply then that's a bug: either in the code, or in the 
-> > design, or in the development process that led to the design. Bugs need 
-> > fixing. [...]
-> 
-> Perhaps the fact that kvm happens to deal with an interesting application 
-> area (virtualization) is misleading here.  As far as the host kernel or 
-> other host userspace is concerned, qemu is just some random unprivileged 
-> userspace program (with some *optional* /dev/kvm services that might happen 
-> to require temporary root).
-> 
-> As such, perf trying to instrument qemu is no different than perf trying to 
-> instrument any other userspace widget.  Therefore, expecting 'trusted 
-> enumeration' of instances is just as sensible as using 'trusted ps' and 
-> 'trusted /var/run/FOO.pid files'.
+>
+>    
+>> (wish: IO_CMD_ORDERED_FDATASYNC)
+>>
+>> If the batch size is larger than the virtio queue size, or if there
+>> are no flushes at all, then yes the huge write cache gives more
+>> opportunity for reordering.  But we're already talking hundreds of
+>> requests here.
+>>
+>> Let's say the virtio queue size was unlimited.  What
+>> merging/reordering opportunity are we missing on the host?  Again we
+>> have exactly the same information: either the pagecache lru + radix
+>> tree that identifies all dirty pages in disk order, or the block
+>> queue with pending requests that contains exactly the same
+>> information.
+>>
+>> Something is wrong.  Maybe it's my understanding, but on the other
+>> hand it may be a piece of kernel code.
+>>
+>>      
+> I assume you are talking of dedicated disk partitions and not
+> individual disk images residing on the same partition.
+>    
 
-You are quite mistaken: KVM isnt really a 'random unprivileged application' in 
-this context, it is clearly an extension of system/kernel services.
+Correct. Images in files introduce new writes which can be optimized.
 
-( Which can be seen from the simple fact that what started the discussion was 
-  'how do we get /proc/kallsyms from the guest'. I.e. an extension of the 
-  existing host-space /proc/kallsyms was desired. )
+-- 
+error compiling committee.c: too many arguments to function
 
-In that sense the most natural 'extension' would be the solution i mentioned a 
-week or two ago: to have a (read only) mount of all guest filesystems, plus a 
-channel for profiling/tracing data. That would make symbol parsing easier and 
-it's what extends the existing 'host space' abstraction in the most natural 
-way.
-
-( It doesnt even have to be done via the kernel - Qemu could implement that
-  via FUSE for example. )
-
-As a second best option a 'symbol server' might be used too.
-
-Thanks,
-
-	Ingo
