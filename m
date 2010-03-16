@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937431Ab0CPGGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:06:51 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56120 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S935659Ab0CPGGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:06:50 -0400
-Message-ID: <4B9F1F47.2040700@cn.fujitsu.com>
-Date: Tue, 16 Mar 2010 14:03:51 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S937435Ab0CPGJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:09:49 -0400
+Received: from smtp124.mail.ukl.yahoo.com ([77.238.184.55]:24961 "HELO
+	smtp124.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S935545Ab0CPGJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:09:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.es;
+  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
+  b=325BtjKYlNLN+BcXCt6tD+hJfjvkECcrkeU5TQz2jrdl3FvP7WGacrjLl8BiwjwT9vklzQ+LtBR33GBRizsHkuSNomG1rMQUrwrmp18x/T7jEX91YZMFOkiFzFFfiSOQNpXOjlynt3/XVcVlNfiQ0xeHUCD1hBdNc3w8mzRKiDw=  ;
+X-Yahoo-SMTP: czee06uswBAtfIYshc.kP27UlfEXaxwWNSjJ
+X-YMail-OSG: et4YdXYVM1mTkJd9Wze8.N_1x6RpRtv2WQgOCRjwqeLU8nGZ3_J07DsuM9zBVA4EdM.z5mK95QU8EFFfHb74FbJu4Hmqzh4sGj3iBq6ZN7jEA1MiX9MR6_.a2xEErmu0KH69CAvCfmw3KotnYP43RA5wDpu8.VasNPzaKhh8UM6pcqXON8EOGh16p3JfGKnl08AO55uT0fWqJdg0xJDYRjw11d2ifRRVyiLtvU32I0Tgyh73K1BbLXL8xU8anUVgSjFV9L71qJtS3JQ1qzCkDTy3.It9UPKSIQ--
+X-Yahoo-Newman-Property: ymail-3
+Message-ID: <4B9F20A7.4040708@yahoo.es>
+Date: Tue, 16 Mar 2010 07:09:43 +0100
+From: Albert Herranz <albert_herranz@yahoo.es>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Sheng Yang <sheng@linux.intel.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] KVM MMU: check reserved bits only if CR4.PSE=1 or CR4.PAE=1
-References: <4B9FCC42.2080709@cn.fujitsu.com> <4B9F17BC.50108@redhat.com>
-In-Reply-To: <4B9F17BC.50108@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       linux-kernel@vger.kernel.org, x86@kernel.org,
+       linux-ia64@vger.kernel.org
+Subject: Re: [PATCH v4 04/11] swiotlb: support NOT_COHERENT_CACHE PowerPC
+ platforms
+References: <1268421166-4791-1-git-send-email-albert_herranz@yahoo.es>	<1268421166-4791-5-git-send-email-albert_herranz@yahoo.es> <20100316105423B.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100316105423B.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-> On 03/16/2010 08:21 PM, Xiao Guangrong wrote:
->> The RSV bit is possibility set in error code when #PF occurred
->> only if CR4.PSE=1 or CR4.PAE=1
+FUJITA Tomonori wrote:
+> On Fri, 12 Mar 2010 20:12:39 +0100
+> Albert Herranz <albert_herranz@yahoo.es> wrote:
+> 
+>> The current SWIOTLB code does not support NOT_COHERENT_CACHE platforms.
+>> This patch adds support for NOT_COHERENT_CACHE platforms to SWIOTLB by
+>> adding two platform specific functions swiotlb_dma_sync_page() and
+>> swiotlb_dma_sync() which can be used to explicitly manage cache coherency.
 >>
->> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+>> On PowerPC these functions are mapped to their corresponding
+>> __dma_sync_page() and __dma_sync() functions.
+>> On other architectures using SWIOTLB these functions are optimized out.
+>>
+>> This will be used later to support SWIOTLB on the Nintendo Wii video game
+>> console.
+>>
+>> CC: linuxppc-dev@lists.ozlabs.org
+>> CC: linux-kernel@vger.kernel.org
+>> CC: x86@kernel.org
+>> CC: linux-ia64@vger.kernel.org
+>> Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
 >> ---
->>   arch/x86/kvm/mmu.c |    3 +++
->>   1 files changed, 3 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 741373e..36e50ab 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2270,6 +2270,9 @@ static bool is_rsvd_bits_set(struct kvm_vcpu
->> *vcpu, u64 gpte, int level)
->>   {
->>       int bit7;
->>
->> +    if (!is_pae(vcpu)&&  !is_pse(vcpu))
->> +        return 0;
->> +
->>       bit7 = (gpte>>  7)&  1;
->>       return (gpte&  vcpu->arch.mmu.rsvd_bits_mask[bit7][level-1]) != 0;
->>   }
->>    
+>>  arch/ia64/include/asm/swiotlb.h    |   10 ++++++++++
+>>  arch/powerpc/include/asm/swiotlb.h |    3 +++
+>>  arch/x86/include/asm/swiotlb.h     |   10 ++++++++++
+>>  lib/swiotlb.c                      |   30 ++++++++++++++++++++++++------
+>>  4 files changed, 47 insertions(+), 6 deletions(-)
 > 
-> Should be handled by reset_rsvd_bits_mask(), so that all reserved bit
-> handling happens in one place.
+> Why can't you use dma_sync_single_* instead of inventing new
+> swiotlb sync functions?
 > 
 
-OK, will fix it.
-
-> I think the only change is that is !is_pse(vcpu) we ignore bit 7?
-
-If the vcpu is in PT32E_ROOT_LEVEL/PT64_ROOT_LEVEL mode, CR4.PAE
-is aways enabled, so what we need do is ignore bit7 if !is_pse(vcpu)
-under PT32_ROOT_LEVEL mode, right?
+At least on PowerPC, the DMA ops are per-device hooks. We attach the swiotlb DMA ops functions to those hooks when we are using swiotlb.
+So calling dma_sync_single_*() would end up calling swiotlb_sync_single_*() which is not what we want.
 
 Thanks,
-Xiao
+Albert
+
