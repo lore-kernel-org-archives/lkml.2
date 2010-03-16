@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935356Ab0CPJnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:43:32 -0400
-Received: from av6-1-sn3.vrr.skanova.net ([81.228.9.179]:47988 "EHLO
-	av6-1-sn3.vrr.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753827Ab0CPJnb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:43:31 -0400
-Subject: [PATCH] mfd: Add in XIIC to some configurations of timberdale
-From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 10:43:28 +0100
-Message-ID: <1268732608.2020.10.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S937322Ab0CPJq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:46:26 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37864 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932488Ab0CPJqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 05:46:25 -0400
+Date: Tue, 16 Mar 2010 10:46:11 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       efault@gmx.de, a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: [PATCH 2/2] perf top: Properly notify the user that vmlinux is
+ missing
+Message-ID: <20100316094611.GG7961@elte.hu>
+References: <1268664418-28328-2-git-send-email-acme@infradead.org>
+ <20100315.115526.52182155.davem@davemloft.net>
+ <20100315192125.GL6965@ghostprotocols.net>
+ <20100315.122605.124976085.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315.122605.124976085.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds in the Xilinx I2C bus driver to some of the
-configurations of the timberdale MFD.
 
-It provides the I2C devices to the XIIC via platform data in a
-similar way as done to the ocores driver.
+* David Miller <davem@davemloft.net> wrote:
 
-Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
----
-diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
-index 1ed44d2..1d52349 100644
---- a/drivers/mfd/timberdale.c
-+++ b/drivers/mfd/timberdale.c
-@@ -30,6 +30,7 @@
- 
- #include <linux/i2c.h>
- #include <linux/i2c-ocores.h>
-+#include <linux/i2c-xiic.h>
- #include <linux/i2c/tsc2007.h>
- 
- #include <linux/spi/spi.h>
-@@ -68,6 +69,12 @@ static struct i2c_board_info timberdale_i2c_board_info[] = {
- 	},
- };
- 
-+static __devinitdata struct xiic_i2c_platform_data
-+timberdale_xiic_platform_data = {
-+	.devices = timberdale_i2c_board_info,
-+	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
-+};
-+
- static __devinitdata struct ocores_i2c_platform_data
- timberdale_ocores_platform_data = {
- 	.regstep = 4,
-@@ -76,6 +83,19 @@ timberdale_ocores_platform_data = {
- 	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
- };
- 
-+const static __devinitconst struct resource timberdale_xiic_resources[] = {
-+	{
-+		.start	= XIICOFFSET,
-+		.end	= XIICEND,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.start	= IRQ_TIMBERDALE_I2C,
-+		.end	= IRQ_TIMBERDALE_I2C,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
- const static __devinitconst struct resource timberdale_ocores_resources[] = {
- 	{
- 		.start	= OCORESOFFSET,
-@@ -269,6 +289,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.resources = timberdale_uart_resources,
- 	},
- 	{
-+		.name = "xiic-i2c",
-+		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
-+		.resources = timberdale_xiic_resources,
-+		.platform_data = &timberdale_xiic_platform_data,
-+		.data_size = sizeof(timberdale_xiic_platform_data),
-+	},
-+	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
-@@ -313,6 +340,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.resources = timberdale_uartlite_resources,
- 	},
- 	{
-+		.name = "xiic-i2c",
-+		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
-+		.resources = timberdale_xiic_resources,
-+		.platform_data = &timberdale_xiic_platform_data,
-+		.data_size = sizeof(timberdale_xiic_platform_data),
-+	},
-+	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
-@@ -357,6 +391,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.resources = timberdale_uart_resources,
- 	},
- 	{
-+		.name = "xiic-i2c",
-+		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
-+		.resources = timberdale_xiic_resources,
-+		.platform_data = &timberdale_xiic_platform_data,
-+		.data_size = sizeof(timberdale_xiic_platform_data),
-+	},
-+	{
- 		.name = "timb-gpio",
- 		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
- 		.resources = timberdale_gpio_resources,
+> From: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Date: Mon, 15 Mar 2010 16:21:26 -0300
+> 
+> > Em Mon, Mar 15, 2010 at 11:55:26AM -0700, David Miller escreveu:
+> >> Arnaldo, if perf top can use the kallsyms to do it's normal task, why
+> >> can't it use that for symbol annotations too?  Isn't there enough
+> >> information available?
+> > 
+> > Annotation is done by objdump -dS, that requires an executable file to do 
+> > ASM annotation, and one with DWARF info for source code annotation. What 
+> > we have with /proc/kallsyms is just the symtab.
+> 
+> Ok, I really think we should link with libopcodes or similar so we can 
+> handle the simple assembler annotation case without requiring the kernel 
+> image being available.
+> 
+> That's what I was trying to achieve when I sent you the report
+> :-)
 
+i'd really like that to happen - i.e. if we had the kernel (and modules) image 
+exposed as a (almost-)standard ELF object via /sys or so.
+
+We already have some aspects of that, via /sys/kernel/notes, but it should be 
+done for real. That would also make build-id support less of a hack.
+
+( I'd not include CFI debuginfo in there though - that would be way too large.
+  More compressed debuginfo could be included perhaps. )
+
+	Ingo
