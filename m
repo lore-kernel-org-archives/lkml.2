@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S938031Ab0CPRgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 13:36:04 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:34720 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S938018Ab0CPRgB convert rfc822-to-8bit (ORCPT
+	id S966525Ab0CPRgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 13:36:19 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:63928 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S938034Ab0CPRgQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 13:36:01 -0400
-Date: Tue, 16 Mar 2010 18:35:18 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hid: avoid '\0' in hid debugfs events file
-Message-ID: <20100316183518.3b631b73@neptune.home>
-In-Reply-To: <alpine.LNX.2.00.1003161354380.18642@pobox.suse.cz>
-References: <20100315190027.752c82ea@neptune.home>
-	<alpine.LNX.2.00.1003161354380.18642@pobox.suse.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Mar 2010 13:36:16 -0400
+X-IronPort-AV: E=Sophos;i="4.49,651,1262592000"; 
+   d="scan'208";a="331657586"
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim()
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: David Howells <dhowells@redhat.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100316171738.GN6709@linux.vnet.ibm.com>
+References: <20100316115130.25642.17789.stgit@warthog.procyon.org.uk>
+	 <20100316171738.GN6709@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Tue, 16 Mar 2010 13:35:54 -0400
+Message-ID: <1268760954.3098.17.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 16 Mar 2010 17:35:59.0841 (UTC) FILETIME=[2467FD10:01CAC52F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 March 2010 Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 15 Mar 2010, Bruno Prémont wrote:
-> > The ring buffer overflow case (when tail crosses head) seems to be
-> > suboptimal at best.
-> > Would there be a good way to mark those cases so reader can know where
-> > data got lost. (though this might not be easy keeping the lockless
-> > design)
+On Tue, 2010-03-16 at 10:17 -0700, Paul E. McKenney wrote: 
+> On Tue, Mar 16, 2010 at 11:51:30AM +0000, David Howells wrote:
+> > diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+> > index 2563beb..a77c735 100644
+> > --- a/fs/nfs/delegation.c
+> > +++ b/fs/nfs/delegation.c
+> > @@ -37,8 +37,10 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
+> >  {
+> >  	struct rpc_cred *cred;
+> > 
+> > +	rcu_read_lock();
+> >  	cred = rcu_dereference(delegation->cred);
+> >  	rcu_assign_pointer(delegation->cred, NULL);
 > 
-> I agree that there might be better implementation. The circular buffer is 
-> merely the same to what we use in other userspace interfaces already (see 
-> original hiddev, for example). Plus this is only debugging interface, and 
-> with SIZE being 512, it's very unlikely that events will get lost.
+> The lock is probably held here, in which case something like the
+> following would work well without needing the artificial rcu_read_lock()
+> and rcu_read_unlock():
 
-Well, 512 is not that large, considering that a single event may well
-fill half of it (e.g. 64byte HID event * 3 for hex dump, adding decoded
-event to it). For basic keyboard events it's definitely sufficient.
+No. The lock is not held here. At this point, the delegation has been
+detached from the inode that pointed to it, and so we can free up its
+contents.
 
-In my case I was seeing overflow with outbound reports I dumped there
-too, where it's pretty common to have more than a single report sent
-back to device in a row.
-Sure it's just an aid for debugging so loosing data is not an issue,
-just having a hard time to understand output when things got lost would
-be nice to avoid.
+We still need the call_rcu() to free up the allocated memory in order to
+ensure that some process doing lockless traversal of the
+clp->cl_delegations list doesn't crash.
 
-> But I don't think the lockless design is that important here, so if you 
-> are motivated to rewrite it to something better, I wouldn't object.
+> 	cred = rcu_dereference_check(delegation->cred,
+> 				     lockdep_is_held(&delegation->lock));
+> 
+> > +	rcu_read_unlock();
+> >  	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
+> >  	if (cred)
+> >  		put_rpccred(cred);
+> > @@ -212,10 +214,12 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+> >  	spin_lock_init(&delegation->lock);
+> > 
+> >  	spin_lock(&clp->cl_lock);
+> > +	rcu_read_lock();
+> >  	if (rcu_dereference(nfsi->delegation) != NULL) {
+> 
+> Same here, though I am not sure whether clp->cl_lock or something in
+> nfs_inode should be used.
 
-The easy way to keep output consistent would be to stop appending new
-data when the ring buffer is full. (and maybe adding a single '\0' or
-equivalent just before head if more data has to be written than space is
-available so there is an overflow marker).
-This way reader would not risk reading old data a second time.
+Yes. As I indicated to David in another email, the clp->cl_lock protects
+us here, so it looks as if your suggestion above would be perfect.
 
-Dropping old data looks more complicated to get race-free or it would
-have to be a bigger change (with new locking).
+> >  		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
+> >  					sizeof(delegation->stateid)) == 0 &&
+> >  				delegation->type == nfsi->delegation->type) {
+> > +			rcu_read_unlock();
+> >  			goto out;
+> >  		}
+> >  		/*
+> > @@ -228,6 +232,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+> >  		if (delegation->type <= nfsi->delegation->type) {
+> >  			freeme = delegation;
+> >  			delegation = NULL;
+> > +			rcu_read_lock();
+> >  			goto out;
+> >  		}
+> >  		freeme = nfs_detach_delegation_locked(nfsi, NULL);
 
-
-The optimal case would be to have a single ring-buffer implementation
-for use by anyone needing it (I don't know if such one exists nor
-how many ring-buffers are being used around the kernel)...
-This is for a later time when I'm happy with my PicoLCD driver!
-
-Bruno
