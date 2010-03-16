@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965975Ab0CPGUu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:20:50 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35140 "EHLO mx3.mail.elte.hu"
+	id S966009Ab0CPGWc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:22:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39881 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965551Ab0CPGUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:20:47 -0400
-Date: Tue, 16 Mar 2010 07:20:32 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [rfc][patch] mm: lockdep page lock
-Message-ID: <20100316062032.GB22651@elte.hu>
-References: <20100315155859.GE2869@laptop>
+	id S965305Ab0CPGWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:22:30 -0400
+Message-ID: <4B9F2388.2030803@kernel.org>
+Date: Tue, 16 Mar 2010 15:22:00 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100315155859.GE2869@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
+In-Reply-To: <1268720060.21384.10.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 06:22:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, James.
 
-* Nick Piggin <npiggin@suse.de> wrote:
+On 03/16/2010 03:14 PM, James Bottomley wrote:
+> So, it is true to say that picking a certain H/S geometry (which is
+> entirely withing the gift of the partitioner) will align msdos label
+> partitions, but will be don't care for all other labels: all other
+> partition labels (like gpt) use block as offset and don't have any truck
+> with the fictitious C/H/S stuff.
 
-> Page lock has very complex dependencies, so it would be really nice to add 
-> lockdep support for it.
+For any modern Linux and Windows, CHS simply doesn't matter.  They
+don't look at it at all.
 
-Just wondering - has your patch shown any suspect areas of code already, in 
-the testing you did?
+> The big problem is that 99% of the x86 systems out there still use the
+> ancient msdos label for their boot disks, so aligning H/S going forwards
+> will give us a nice "just works" for x86 boxes.
 
-Maybe it should be test-driven for a while, in a non-append-only tree such as 
--mm, to see whether it's finding real bugs.
+What I don't get is that how picking up a custom geometry can make
+things work when there is *no* reliable way to determine which
+geometry was used during partitioning once the partitioning is
+complete.  Most BIOSs these days will simply report the geometry as
+being 255/63 regardless of the geometry used during partitioning.  So,
+how can using a custom geometry give that nice "just works" for x86
+boxes when nobody knows what geometry is in use?
 
-	Ingo
+Thanks.
+
+-- 
+tejun
