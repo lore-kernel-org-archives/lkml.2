@@ -1,133 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937872Ab0CPMhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 08:37:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57620 "EHLO mx2.suse.de"
+	id S1753386Ab0CPMma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 08:42:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49682 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937858Ab0CPMhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 08:37:54 -0400
-Date: Tue, 16 Mar 2010 23:37:50 +1100
-From: Nick Piggin <npiggin@suse.de>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>, Paul Menage <menage@google.com>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>, stable@kernel.org
-Subject: Re: [RESEND][PATCH 1/2] cpuset: fix the problem that
- cpuset_mem_spread_node() returns an offline node (v2)
-Message-ID: <20100316123750.GS2869@laptop>
-References: <4B9F7543.7040107@cn.fujitsu.com>
+	id S1751652Ab0CPMm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 08:42:29 -0400
+Message-ID: <4B9F7C6A.3070207@redhat.com>
+Date: Tue, 16 Mar 2010 14:41:14 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9F7543.7040107@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <20100316072449.GB11881@elte.hu> <4B9F4D74.4090403@redhat.com> <20100316095336.GI7961@elte.hu> <4B9F59DE.1060008@redhat.com> <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu>
+In-Reply-To: <20100316122903.GA8831@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This one fixed the oops for me, thanks for working on it.
+On 03/16/2010 02:29 PM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+>    
+>> On 03/16/2010 01:25 PM, Ingo Molnar wrote:
+>>      
+>>>        
+>>>> I haven't followed vmchannel closely, but I think it is.  vmchannel is
+>>>> terminated in qemu on the host side, not in the host kernel.  So perf would
+>>>> need to connect to qemu.
+>>>>          
+>>> Hm, that sounds rather messy if we want to use it to basically expose kernel
+>>> functionality in a guest/host unified way. Is the qemu process discoverable in
+>>> some secure way?
+>>>        
+>> We know its pid.
+>>      
+> How do i get a list of all 'guest instance PIDs',
 
-Reported-and-tested-by: Nick Piggin <npiggin@suse.de>
+Libvirt manages all qemus, but this should be implemented independently 
+of libvirt.
 
-It could be a stable@ candidate because it trivially oopses
-when the cpuset_mem_spread_node option is used.
+> and what is the way to talk
+> to Qemu?
+>    
 
-On Tue, Mar 16, 2010 at 08:10:43PM +0800, Miao Xie wrote:
-> cpuset_mem_spread_node() returns an offline node, and causes an oops.
-> 
-> This patch fixes it by initializing task->mems_allowed to
-> node_states[N_HIGH_MEMORY], and updating task->mems_allowed when doing
-> memory hotplug.
-> 
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> ---
->  init/main.c      |    2 +-
->  kernel/cpuset.c  |   20 ++++++++++++--------
->  kernel/kthread.c |    2 +-
->  3 files changed, 14 insertions(+), 10 deletions(-)
-> 
-> diff --git a/init/main.c b/init/main.c
-> index a1ab78c..cbead27 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -858,7 +858,7 @@ static int __init kernel_init(void * unused)
->  	/*
->  	 * init can allocate pages on any node
->  	 */
-> -	set_mems_allowed(node_possible_map);
-> +	set_mems_allowed(node_states[N_HIGH_MEMORY]);
->  	/*
->  	 * init can run on any cpu.
->  	 */
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index ba401fa..5d38bd7 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -920,9 +920,6 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
->   *    call to guarantee_online_mems(), as we know no one is changing
->   *    our task's cpuset.
->   *
-> - *    Hold callback_mutex around the two modifications of our tasks
-> - *    mems_allowed to synchronize with cpuset_mems_allowed().
-> - *
->   *    While the mm_struct we are migrating is typically from some
->   *    other task, the task_struct mems_allowed that we are hacking
->   *    is for our current task, which must allocate new pages for that
-> @@ -1391,11 +1388,10 @@ static void cpuset_attach(struct cgroup_subsys *ss, struct cgroup *cont,
->  
->  	if (cs == &top_cpuset) {
->  		cpumask_copy(cpus_attach, cpu_possible_mask);
-> -		to = node_possible_map;
->  	} else {
->  		guarantee_online_cpus(cs, cpus_attach);
-> -		guarantee_online_mems(cs, &to);
->  	}
-> +	guarantee_online_mems(cs, &to);
->  
->  	/* do per-task migration stuff possibly for each in the threadgroup */
->  	cpuset_attach_task(tsk, &to, cs);
-> @@ -2090,15 +2086,23 @@ static int cpuset_track_online_cpus(struct notifier_block *unused_nb,
->  static int cpuset_track_online_nodes(struct notifier_block *self,
->  				unsigned long action, void *arg)
->  {
-> +	nodemask_t oldmems;
-> +
->  	cgroup_lock();
->  	switch (action) {
->  	case MEM_ONLINE:
-> -	case MEM_OFFLINE:
-> +		oldmems = top_cpuset.mems_allowed;
->  		mutex_lock(&callback_mutex);
->  		top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
->  		mutex_unlock(&callback_mutex);
-> -		if (action == MEM_OFFLINE)
-> -			scan_for_empty_cpusets(&top_cpuset);
-> +		update_tasks_nodemask(&top_cpuset, &oldmems, NULL);
-> +		break;
-> +	case MEM_OFFLINE:
-> +		/*
-> +		 * needn't update top_cpuset.mems_allowed explicitly because
-> +		 * scan_for_empty_cpusets() will update it.
-> +		 */
-> +		scan_for_empty_cpusets(&top_cpuset);
->  		break;
->  	default:
->  		break;
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index 82ed0ea..83911c7 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -219,7 +219,7 @@ int kthreadd(void *unused)
->  	set_task_comm(tsk, "kthreadd");
->  	ignore_signals(tsk);
->  	set_cpus_allowed_ptr(tsk, cpu_all_mask);
-> -	set_mems_allowed(node_possible_map);
-> +	set_mems_allowed(node_states[N_HIGH_MEMORY]);
->  
->  	current->flags |= PF_NOFREEZE | PF_FREEZER_NOSIG;
->  
-> -- 
-> 1.6.5.2
-> 
+In general qemu exposes communication channels (such as the monitor) as 
+tcp connections, unix-domain sockets, stdio, etc.  It's very flexible.
+
+>>> Can we trust it?
+>>>        
+>> No choice, it contains the guest address space.
+>>      
+> I mean, i can trust a kernel service and i can trust /proc/kallsyms.
+>
+> Can perf trust a random process claiming to be Qemu? What's the trust
+> mechanism here?
+>    
+
+Obviously you can't trust anything you get from a guest, no matter how 
+you get it.
+
+How do you trust a userspace program's symbols?  you don't.  How do you 
+get them?  they're on a well-known location.
+
+>>> Is there some proper tooling available to do it, or do we have to push it
+>>> through 2-3 packages to get such a useful feature done?
+>>>        
+>> libvirt manages qemu processes, but I don't think this should go through
+>> libvirt.  qemu can do this directly by opening a unix domain socket in a
+>> well-known place.
+>>      
+> So Qemu has never run into such problems before?
+>
+> ( Sounds weird - i think Qemu configuration itself should be done via a
+>    unix domain socket driven configuration protocol as well. )
+>    
+
+That's exactly what happens.  You invoke qemu with -monitor 
+unix:blah,server (or -qmp for a machine-readable format) and have your 
+management application connect to that.  You can redirect guest serial 
+ports, console, parallel port, etc. to unix-domain or tcp sockets.  
+vmchannel is an extension of that mechanism.
+
+
+>>> ( That is the general thought process how many cross-discipline useful
+>>>    desktop/server features hit the bit bucket before having had any chance of
+>>>    being vetted by users, and why Linux sucks so much when it comes to feature
+>>>    integration and application usability. )
+>>>        
+>> You can't solve everything in the kernel, even with a well populated tools/.
+>>      
+> Certainly not, but this is a technical problem in the kernel's domain, so it's
+> a fair (and natural) expectation to be able to solve this within the kernel
+> project.
+>    
+
+Someone writing perf-gui outside the kernel would have the same 
+problems, no?
+
+-- 
+error compiling committee.c: too many arguments to function
+
