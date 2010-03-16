@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937592Ab0CPJIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 05:08:34 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42171 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937082Ab0CPJIc (ORCPT
+	id S937590Ab0CPJLP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 05:11:15 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:33241 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932662Ab0CPJLN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 05:08:32 -0400
+	Tue, 16 Mar 2010 05:11:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:organization:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=fy5aygL/lsWEvHwivxHJTnR/fHT3Tw5pWDMTaUm1OfjPDrJndiTWClAcifs6FNglnn
-         /VGGllg0ppPiI+8Jb3lX2xPbTAGioses3RoCHoYHzWENVAROk9ATP/lmlyM7C30DrlCS
-         rHq25eFfVSJOhIempqKqGEXnWQVIcXWtWCUrU=
-Subject: Why we need to call cpu_idle() with preemption disabled
-From: Wu Zhangjin <wuzhangjin@gmail.com>
-Reply-To: wuzhangjin@gmail.com
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <srostedt@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: DSLab, Lanzhou University, China
-Date: Tue, 16 Mar 2010 17:01:54 +0800
-Message-ID: <1268730114.9552.34.camel@falcon>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=E3fIQrspKRoYbTQQDycw5roMW/ZqD4ABJFVBRo1KnLIXXXiF6cb8ku7CM/UQvCUV1b
+         zGMYco46Cx7W9q/JKwoYoIOsJ8MHuvFmGwC9oToYl2h3g6UfcPmQrVoU8VErDBJgLuim
+         D5ejtSS+yA5CFJj13TcOAv1b6lLRBJG8yxHmg=
+MIME-Version: 1.0
+In-Reply-To: <b6fcc0a1003160132m62b2b2a1x28dbe6b99e74abf5@mail.gmail.com>
+References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org>
+	 <20100316061718.GA22651@elte.hu> <4B9F2B0A.70507@kernel.org>
+	 <4B9F36C7.4020304@kernel.org> <20100316075726.GE18448@elte.hu>
+	 <b6fcc0a1003160132m62b2b2a1x28dbe6b99e74abf5@mail.gmail.com>
+Date: Tue, 16 Mar 2010 11:11:12 +0200
+X-Google-Sender-Auth: 61b3168c42fdb4ee
+Message-ID: <84144f021003160211tde2c641j478da44bdb8efe9c@mail.gmail.com>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas
+On Tue, Mar 16, 2010 at 10:32 AM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> It's amazing to see how much sidework people are willing to create
+> to _not_ do simple and obvious thing -- just remove slab.h.
 
-Just traced the preemption latency of 2.6.33-rt7 on my Yeeloong netbook
-with the preemptoff tracer of Ftrace and found it is very big in
-cpu_idle(), more than 1000 us.
-
-And found that we have called cpu_idle() in init/main.c with preemption
-disabled? why we need to do it? can we simply call it with preemption
-enabled?
-
-diff --git a/init/main.c b/init/main.c
-index 48393c0..437ac34 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -428,9 +428,8 @@ static noinline void __init_refok rest_init(void)
-         */
-        init_idle_bootup_task(current);
-        preempt_enable_and_schedule();
--       preempt_disable();
- 
--       /* Call into cpu_idle with preempt disabled */
-+       /* There is no reason for calling cpu_idle with preemption
-disabled */
-        cpu_idle();
- }
-
-After removing that preempt_disable() and the related operations around
-the calling to __schedule() in the cpu_idle(), the result becomes around
-200 us, which is acceptable for I have enabled several Ftrace tracers.
-
-Best Regards,
-	Wu Zhangjin
-
+I'm not following your idea here. Where do you propose moving
+kmalloc() and friends to? kernel.h?
