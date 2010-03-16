@@ -1,42 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403Ab0CPPrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 11:47:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36674 "EHLO mx2.suse.de"
+	id S1758924Ab0CPPwh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 11:52:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37636 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549Ab0CPPrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 11:47:48 -0400
-Date: Tue, 16 Mar 2010 16:47:44 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Rupjyoti Sarmah <rsarmah@amcc.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Failure with the 2.6.34-rc1 kernel
-In-Reply-To: <AC311A8E81420D4EBC1F26E6479848FE065B7D3D@SDCEXCHANGE01.ad.amcc.com>
-Message-ID: <alpine.LRH.2.00.1003161646590.26353@twin.jikos.cz>
-References: <AC311A8E81420D4EBC1F26E6479848FE065B7D3D@SDCEXCHANGE01.ad.amcc.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753549Ab0CPPwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 11:52:34 -0400
+Date: Tue, 16 Mar 2010 16:52:21 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Message-ID: <20100316155221.GA19699@elte.hu>
+References: <20100316105021.GA14344@elte.hu>
+ <4B9F671D.5060001@redhat.com>
+ <20100316112500.GA5337@elte.hu>
+ <4B9F77E7.2060101@redhat.com>
+ <20100316122903.GA8831@elte.hu>
+ <4B9F7C6A.3070207@redhat.com>
+ <20100316130840.GA24808@elte.hu>
+ <4B9F84C0.70706@redhat.com>
+ <20100316133114.GB575@elte.hu>
+ <y0mbpeo1f1y.fsf@fche.csb>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <y0mbpeo1f1y.fsf@fche.csb>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010, Rupjyoti Sarmah wrote:
 
-> We are seeing issues in booting some of our boards with this new kernel.
-> Kernel version upto 2.6.33 works fine on the boards like Canyonlands,
-> Katmai, Glacier etc.
-> These boards are not booting with kernel later than 2.6.33. Please let
-> me know how about fixing these issues ?
+* Frank Ch. Eigler <fche@redhat.com> wrote:
 
-You'd need to provide at least dmesg from the working and non-working 
-cases.
+> 
+> Ingo Molnar <mingo@elte.hu> writes:
+> 
+> > [...]
+> >> >I.e. we really want to be able users to:
+> >> >
+> >> >  1) have it all working with a single guest, without having to specify 'which'
+> >> >     guest (qemu PID) to work with. That is the dominant usecase both for
+> >> >     developers and for a fair portion of testers.
+> >> 
+> >> That's reasonable if we can get it working simply.
+> >
+> > IMO such ease of use is reasonable and required, full stop.
+> > If it cannot be gotten simply then that's a bug: either in the code, or in the 
+> > design, or in the development process that led to the design. Bugs need 
+> > fixing. [...]
+> 
+> Perhaps the fact that kvm happens to deal with an interesting application 
+> area (virtualization) is misleading here.  As far as the host kernel or 
+> other host userspace is concerned, qemu is just some random unprivileged 
+> userspace program (with some *optional* /dev/kvm services that might happen 
+> to require temporary root).
+> 
+> As such, perf trying to instrument qemu is no different than perf trying to 
+> instrument any other userspace widget.  Therefore, expecting 'trusted 
+> enumeration' of instances is just as sensible as using 'trusted ps' and 
+> 'trusted /var/run/FOO.pid files'.
 
-Also git-bisect between 2.6.33 and 2.6.34-rc1 might help you identify the 
-commit that broke your hardware.
+You are quite mistaken: KVM isnt really a 'random unprivileged application' in 
+this context, it is clearly an extension of system/kernel services.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+( Which can be seen from the simple fact that what started the discussion was 
+  'how do we get /proc/kallsyms from the guest'. I.e. an extension of the 
+  existing host-space /proc/kallsyms was desired. )
 
+In that sense the most natural 'extension' would be the solution i mentioned a 
+week or two ago: to have a (read only) mount of all guest filesystems, plus a 
+channel for profiling/tracing data. That would make symbol parsing easier and 
+it's what extends the existing 'host space' abstraction in the most natural 
+way.
+
+( It doesnt even have to be done via the kernel - Qemu could implement that
+  via FUSE for example. )
+
+As a second best option a 'symbol server' might be used too.
+
+Thanks,
+
+	Ingo
