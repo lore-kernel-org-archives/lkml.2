@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966291Ab0CPOVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:21:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33395 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966260Ab0CPOVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:21:54 -0400
+	id S966278Ab0CPO0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:26:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:59227 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab0CPO0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:26:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Bottomley <James.Bottomley@suse.de>
 Subject: Re: ATA 4 KiB sector issues.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+Date: Tue, 16 Mar 2010 15:25:58 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <vda.linux@googlemail.com>,
        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
        lkml <linux-kernel@vger.kernel.org>,
        Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
@@ -19,34 +22,36 @@ Cc: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
        Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
        jdelvare@suse.de
-In-Reply-To: <4B9F8E1A.2020608@kernel.org>
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>
-	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>
-	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>
-	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
-	 <4B9F8E1A.2020608@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 07:21:37 -0700
-Message-ID: <1268749297.21384.15.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+References: <4B947393.2050002@kernel.org> <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>
+In-Reply-To: <1268749297.21384.15.camel@mulgrave.site>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003161525.59364.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX185qQs0KEsA8Zjz6OoGCYRjFoHVV6Dajzd9JMW
+ 1aDZZCRVG5Vsilr/7g4PrCM1HY27LtJZVRjyi9lgNSdu8p9fp9
+ 34HYSyRw4TAMDo/ae4hFw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 22:56 +0900, Tejun Heo wrote:
-> Hello, James.
+On Tuesday 16 March 2010, James Bottomley wrote:
+> On Tue, 2010-03-16 at 22:56 +0900, Tejun Heo wrote:
+> > Hello, James.
+> > 
+> > On 03/16/2010 10:24 PM, James Bottomley wrote:
+> > > For msdos labels, it's embedded in the label ... for all other labels,
+> > > it's made up on the spot.
+> > 
+> > Where in the label?
 > 
-> On 03/16/2010 10:24 PM, James Bottomley wrote:
-> > For msdos labels, it's embedded in the label ... for all other labels,
-> > it's made up on the spot.
-> 
-> Where in the label?
+> No idea ... I only know you can use fdisk expert mode to change the
+> C/H/S layout and the change is preserved across reboots.
 
-No idea ... I only know you can use fdisk expert mode to change the
-C/H/S layout and the change is preserved across reboots.
+IIRC, the layout is guessed from the partition end locations, in the
+assumption that each partition is aligned to full cylinders. That
+gives you the heads/sectors number, while the cylinder number can be
+calculated from the total number of sectors using these numbers.
 
-James
-
-
+	Arnd
