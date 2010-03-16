@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S938012Ab0CPRef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 13:34:35 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53977 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933080Ab0CPRee (ORCPT
+	id S938031Ab0CPRgE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 13:36:04 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:34720 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S938018Ab0CPRgB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 13:34:34 -0400
-Message-ID: <4B9FC11A.1070507@linux.vnet.ibm.com>
-Date: Tue, 16 Mar 2010 12:34:18 -0500
-From: Anthony Liguori <aliguori@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "Frank Ch. Eigler" <fche@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <20100316105021.GA14344@elte.hu> <4B9F671D.5060001@redhat.com> <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com> <20100316133114.GB575@elte.hu> <y0mbpeo1f1y.fsf@fche.csb> <20100316155221.GA19699@elte.hu>
-In-Reply-To: <20100316155221.GA19699@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Mar 2010 13:36:01 -0400
+Date: Tue, 16 Mar 2010 18:35:18 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hid: avoid '\0' in hid debugfs events file
+Message-ID: <20100316183518.3b631b73@neptune.home>
+In-Reply-To: <alpine.LNX.2.00.1003161354380.18642@pobox.suse.cz>
+References: <20100315190027.752c82ea@neptune.home>
+	<alpine.LNX.2.00.1003161354380.18642@pobox.suse.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 10:52 AM, Ingo Molnar wrote:
-> You are quite mistaken: KVM isnt really a 'random unprivileged application' in
-> this context, it is clearly an extension of system/kernel services.
->
-> ( Which can be seen from the simple fact that what started the discussion was
->    'how do we get /proc/kallsyms from the guest'. I.e. an extension of the
->    existing host-space /proc/kallsyms was desired. )
->    
+On Tue, 16 March 2010 Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 15 Mar 2010, Bruno Prémont wrote:
+> > The ring buffer overflow case (when tail crosses head) seems to be
+> > suboptimal at best.
+> > Would there be a good way to mark those cases so reader can know where
+> > data got lost. (though this might not be easy keeping the lockless
+> > design)
+> 
+> I agree that there might be better implementation. The circular buffer is 
+> merely the same to what we use in other userspace interfaces already (see 
+> original hiddev, for example). Plus this is only debugging interface, and 
+> with SIZE being 512, it's very unlikely that events will get lost.
 
-Random tools (like perf) should not be able to do what you describe.  
-It's a security nightmare.
+Well, 512 is not that large, considering that a single event may well
+fill half of it (e.g. 64byte HID event * 3 for hex dump, adding decoded
+event to it). For basic keyboard events it's definitely sufficient.
 
-If it's desirable to have /proc/kallsyms available, we can expose an 
-interface in QEMU to provide that.  That can then be plumbed through 
-libvirt and QMP.
+In my case I was seeing overflow with outbound reports I dumped there
+too, where it's pretty common to have more than a single report sent
+back to device in a row.
+Sure it's just an aid for debugging so loosing data is not an issue,
+just having a hard time to understand output when things got lost would
+be nice to avoid.
 
-Then a management tool can use libvirt or QMP to obtain that information 
-and interact with the kernel appropriately.
+> But I don't think the lockless design is that important here, so if you 
+> are motivated to rewrite it to something better, I wouldn't object.
 
-> In that sense the most natural 'extension' would be the solution i mentioned a
-> week or two ago: to have a (read only) mount of all guest filesystems, plus a
-> channel for profiling/tracing data. That would make symbol parsing easier and
-> it's what extends the existing 'host space' abstraction in the most natural
-> way.
->
-> ( It doesnt even have to be done via the kernel - Qemu could implement that
->    via FUSE for example. )
->    
+The easy way to keep output consistent would be to stop appending new
+data when the ring buffer is full. (and maybe adding a single '\0' or
+equivalent just before head if more data has to be written than space is
+available so there is an overflow marker).
+This way reader would not risk reading old data a second time.
 
-No way.  The guest has sensitive data and exposing it widely on the host 
-is a bad thing to do.  It's a bad interface.  We can expose specific 
-information about guests but only through our existing channels which 
-are validated through a security infrastructure.
+Dropping old data looks more complicated to get race-free or it would
+have to be a bigger change (with new locking).
 
-Ultimately, your goal is to keep perf a simple tool with little 
-dependencies.  But practically speaking, if you want to add features to 
-it, it's going to have to interact with other subsystems in the 
-appropriate way.  That means, it's going to need to interact with 
-libvirt or QMP.
 
-If you want all applications to expose their data via synthetic file 
-systems, then there's always plan9 :-)
+The optimal case would be to have a single ring-buffer implementation
+for use by anyone needing it (I don't know if such one exists nor
+how many ring-buffers are being used around the kernel)...
+This is for a later time when I'm happy with my PicoLCD driver!
 
-Regards,
-
-Anthony Liguori
+Bruno
