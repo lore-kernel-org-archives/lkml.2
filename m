@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab0CPUnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 16:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2872 "EHLO mx1.redhat.com"
+	id S1757519Ab0CPUos (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 16:44:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915Ab0CPUnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 16:43:24 -0400
-Message-ID: <4B9FED32.6080400@redhat.com>
-Date: Tue, 16 Mar 2010 16:42:26 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.1
+	id S1750979Ab0CPUop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 16:44:45 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: linux-aio@kvack.org, Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: aio: compat_ioctl issue?
+References: <4B956E5B.9020302@msgid.tls.msk.ru>
+	<x497hpm8p69.fsf@segfault.boston.devel.redhat.com>
+	<4B957122.4060007@msgid.tls.msk.ru>
+	<x49mxyi78ob.fsf@segfault.boston.devel.redhat.com>
+	<4B957AF3.6040801@msgid.tls.msk.ru>
+	<4B957D20.4010904@msgid.tls.msk.ru>
+	<x49wrxij11s.fsf@segfault.boston.devel.redhat.com>
+	<4B994022.6030703@msgid.tls.msk.ru>
+	<4B994888.8020007@msgid.tls.msk.ru>
+	<x49eijqiqcd.fsf@segfault.boston.devel.redhat.com>
+	<4B994EFE.70005@msgid.tls.msk.ru>
+	<x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
+	<4B9FEBB0.4020300@msgid.tls.msk.ru>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 16 Mar 2010 16:44:40 -0400
+In-Reply-To: <4B9FEBB0.4020300@msgid.tls.msk.ru> (Michael Tokarev's message of
+	"Tue, 16 Mar 2010 23:36:00 +0300")
+Message-ID: <x498w9st2rr.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Denys Vlasenko <vda.linux@googlemail.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
-       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
-       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de
-Subject: Re: ATA 4 KiB sector issues.
-References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>	 <4B9F8E1A.2020608@kernel.org> <1268749297.21384.15.camel@mulgrave.site>	 <4B9F9AAF.6080709@kernel.org> <1268751748.21384.18.camel@mulgrave.site>	 <4B9FA1C6.7090305@kernel.org> <1268752993.21384.23.camel@mulgrave.site> <4B9FA59E.1000402@kernel.org>
-In-Reply-To: <4B9FA59E.1000402@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 11:37 AM, Tejun Heo wrote:
-> Hello,
+Michael Tokarev <mjt@tls.msk.ru> writes:
+
+> Jeff Moyer wrote:
+> []
+>> Sorry for taking so long on this.  I only tested the case where niovs >
+>> fast_segs, and I missed an obvious thing: I didn't assign the return
+>> pointer to the proper iovec.
 >
-> On 03/17/2010 12:23 AM, James Bottomley wrote:
->    
->>> So, using custom geometry doesn't help compatibility at all.
->>>        
->> Our partitioning tool still obey the integral cylinder rule ... we can
->> argue about whether they should, but what we need is a strategy for
->> fixing what is rather than what should be.
->>      
-> The updated ones don't anymore.  They just align to 1MiB + whatever
-> the drive requests for offset (the offset-by-one thing).  They will
-> basically behave the same as windows vista/7 ones, so it's already
-> fixed.  What we can argue is whether adding CHS tricks on top to make
-> those larger alignments somewhat meaningful w/ CHS interpretation too,
-> which I'm objecting on the ground that it doesn't help compatibility
-> at all.
+> There's no need to be sorry really.  Because, well, the whole thing isn't
+> quite useful anyway: running proper 64bit code is preferable ;)
 >
-> Thanks.
+> I actually tried the thing, running a guest right now, which in turn is
+> running a quick benchmark and appears to perform quite good at it too.
+
+OK, great.  I'm in the process of unifying the duplicated code, now, so
+I might ask for one more sanity check if you have the time and patience
+for it.
+
+>> So, this patch should get you going.
 >
->    
+> Well, I already switched to 64bit kvm binary for my case, and actually
+> that one makes alot more sense anyway: there's no conversion like this
+> needed, and no 32<=>64bit mode switching either.  (Actually 32bit code
+> in this my case is slower elsewhere too).
 
-Dropping any mention of CHS seems to be the only sensible thing. Why 
-waste any time to continue some myth about drives that no modern 
-hardware supports (and then have the joy of explaining that to users)?
+OK, makes sense, but we should get this right.
 
-Talking about it only confuses people and in the worst case, could cause 
-them to misalign their partitions by clinging to these pretend borders :-)
+> By the way, how about the case when we've several {write,read}v in the
+> iocb array?  Will each use the same fast_segs array from the beginning,
+> overwriting data of previous iocb element? :)  Just... curious :)
 
-ric
+No, each iocb has a built-in iovec which gets specified for the
+fast_iov.
 
+> Thank you for your support!
+>
+> You can add my
+> Tested-By: Michael Tokarev <mjt@tls.msk.ru>
+> if you want.  Thanks!
+
+Thanks!
+
+-Jeff
