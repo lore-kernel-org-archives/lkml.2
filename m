@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966242Ab0CPNyJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 09:54:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49747 "EHLO mx1.redhat.com"
+	id S966248Ab0CPN5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 09:57:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54656 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966216Ab0CPNyH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 09:54:07 -0400
-Date: Tue, 16 Mar 2010 09:53:46 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <GuiJianfeng@cn.fujitsu.com>,
-       Ben Blum <bblum@andrew.cmu.edu>, LKML <linux-kernel@vger.kernel.org>,
-       "containers@lists.osdl.org" <containers@lists.osdl.org>
-Subject: Re: [PATCH] block: make CONFIG_BLK_CGROUP visible
-Message-ID: <20100316135346.GB9144@redhat.com>
-References: <4B9DA6F5.3070606@cn.fujitsu.com> <20100315132149.GA21127@redhat.com> <4B9EE0A9.5010901@cn.fujitsu.com>
+	id S1752728Ab0CPN5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 09:57:19 -0400
+Message-ID: <4B9F8E1A.2020608@kernel.org>
+Date: Tue, 16 Mar 2010 22:56:42 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9EE0A9.5010901@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Denys Vlasenko <vda.linux@googlemail.com>, Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, hirofumi@mail.parknet.co.jp,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de,
+       jdelvare@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <4B947393.2050002@kernel.org> <201003100046.24695.arnd@arndb.de>	 <1158166a1003100114j6ea329fbh84bfad65dcac90bf@mail.gmail.com>	 <4B9EED55.10201@kernel.org> <1268720060.21384.10.camel@mulgrave.site>	 <4B9F2388.2030803@kernel.org> <1268745897.21384.14.camel@mulgrave.site>
+In-Reply-To: <1268745897.21384.14.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 13:56:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 09:36:41AM +0800, Li Zefan wrote:
-> >>  	---help---
-> >>  	Generic block IO controller cgroup interface. This is the common
-> >> @@ -91,7 +92,7 @@ config BLK_CGROUP
-> >>  	to such task groups.
-> >>  
-> >>  config DEBUG_BLK_CGROUP
-> >> -	bool
-> >> +	bool "Block cgroup debugging help"
-> > 
-> > 
-> > Why are you making DEBUG_BLK_CGROUP this as a user visible/configurable
-> > option? This is already controlled by DEBUG_CFQ_IOSCHED. If you don't want
-> > the DEBUG overhead, just set DEBUG_CFQ_IOSCHED=n and DEBUG_BLK_CGROUP will
-> > not be selected? Making it user visible does not seem to be buying us
-> > anything?
-> > 
-> 
-> Sounds reasonable. A minor question, since DEBUG_BLK_CGROUP is not
-> visible, the help message for this config is not visible too, so we
-> still keep it?
+Hello, James.
 
-Right now the message is only for developer if somebody opens the Kconfig
-file. I think it does not harm if somebody wants to understand what this
-config option is doing. But if you think that it should not be there, I have
-no strong opinion about it.
+On 03/16/2010 10:24 PM, James Bottomley wrote:
+> For msdos labels, it's embedded in the label ... for all other labels,
+> it's made up on the spot.
 
-Thanks
-Vivek
+Where in the label?
 
+Thanks.
 
-
+-- 
+tejun
