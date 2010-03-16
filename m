@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab0CPUgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 16:36:07 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:33696 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757990Ab0CPUgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 16:36:04 -0400
-Message-ID: <4B9FEBB0.4020300@msgid.tls.msk.ru>
-Date: Tue, 16 Mar 2010 23:36:00 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	id S1758050Ab0CPUhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 16:37:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55342 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab0CPUhD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 16:37:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=OxTES7pv44Y1w8Hjz/+nUdnT9BMlBm/d4oCDXCqXPvGs5QzCLDg3hbM4ocgERUJ7so
+         L5mqyuDr1UsxZBiFQ4/0fzQYqKkhDTYUY1g0lZfUVfwxnmoAx2EM2xEVnLqt0ZXPmdf+
+         aby51ZxZcj/h4Gazk0aX4QIFOh7B5gBCJ5uKw=
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: linux-aio@kvack.org, Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: aio: compat_ioctl issue?
-References: <4B956E5B.9020302@msgid.tls.msk.ru>	<x497hpm8p69.fsf@segfault.boston.devel.redhat.com>	<4B957122.4060007@msgid.tls.msk.ru>	<x49mxyi78ob.fsf@segfault.boston.devel.redhat.com>	<4B957AF3.6040801@msgid.tls.msk.ru>	<4B957D20.4010904@msgid.tls.msk.ru>	<x49wrxij11s.fsf@segfault.boston.devel.redhat.com>	<4B994022.6030703@msgid.tls.msk.ru>	<4B994888.8020007@msgid.tls.msk.ru>	<x49eijqiqcd.fsf@segfault.boston.devel.redhat.com>	<4B994EFE.70005@msgid.tls.msk.ru> <x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49d3z4t7yt.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 0.95.0
-OpenPGP: id=804465C5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4B9FD11E.5050108@gmail.com>
+References: <4B9F86E9.2030702@gmail.com> <43e72e891003160918x3b7e3c9asf4fc8a9db35ccd8a@mail.gmail.com> 
+	<4B9FD11E.5050108@gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 16 Mar 2010 13:36:38 -0700
+Message-ID: <43e72e891003161336t1c2f905w13762dfa49257450@mail.gmail.com>
+Subject: Re: regd: sleeping in atomic
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer wrote:
-[]
-> Sorry for taking so long on this.  I only tested the case where niovs >
-> fast_segs, and I missed an obvious thing: I didn't assign the return
-> pointer to the proper iovec.
+On Tue, Mar 16, 2010 at 11:42 AM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 03/16/2010 05:18 PM, Luis R. Rodriguez wrote:
+>>
+>> one iteration of call_crda() which happens during module
+>> initialization and from what I gather I don't think the kernel is
+>> happy when you mutex_lock on load routines, please correct my foggy
+>> memory if I am mistaken.
+>
+> No, using mutex in init/exit module routines is fine. Where do you have the
+> information from?
 
-There's no need to be sorry really.  Because, well, the whole thing isn't
-quite useful anyway: running proper 64bit code is preferable ;)
+A snag I hit when trying this a while ago on reg.c. I suppose the real
+issue could have been something else.
 
-I actually tried the thing, running a guest right now, which in turn is
-running a quick benchmark and appears to perform quite good at it too.
+> There might be problems only with request_module,
+> flush_scheduled_work or similar.
 
-> So, this patch should get you going.
+OK -- then in that case I think using a mutex would work here, unless
+John spots any other issues.
 
-Well, I already switched to 64bit kvm binary for my case, and actually
-that one makes alot more sense anyway: there's no conversion like this
-needed, and no 32<=>64bit mode switching either.  (Actually 32bit code
-in this my case is slower elsewhere too).
-
-By the way, how about the case when we've several {write,read}v in the
-iocb array?  Will each use the same fast_segs array from the beginning,
-overwriting data of previous iocb element? :)  Just... curious :)
-
-Thank you for your support!
-
-You can add my
-Tested-By: Michael Tokarev <mjt@tls.msk.ru>
-if you want.  Thanks!
-
-/mjt
+  Luis
