@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937813Ab0CPLJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 07:09:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50618 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S937794Ab0CPLJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 07:09:24 -0400
-Message-ID: <4B9F66E1.2060309@cn.fujitsu.com>
-Date: Tue, 16 Mar 2010 19:09:21 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S937818Ab0CPLKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 07:10:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937777Ab0CPLKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 07:10:39 -0400
+Message-ID: <4B9F671D.5060001@redhat.com>
+Date: Tue, 16 Mar 2010 13:10:21 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -tip] rcu: local_irq_disable() also delimits RCU_SCHED read-site
- critical sections
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <1268717232.2813.36.camel@localhost> <4B9F19F7.6000309@redhat.com> <20100316072449.GB11881@elte.hu> <4B9F4D74.4090403@redhat.com> <20100316095336.GI7961@elte.hu> <4B9F59DE.1060008@redhat.com> <20100316102052.GC10069@elte.hu> <4B9F603B.4080004@redhat.com> <20100316105021.GA14344@elte.hu>
+In-Reply-To: <20100316105021.GA14344@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is documented that local_irq_disable() also delimits
-RCU_SCHED read-site critical sections.
-See the document of synchronize_sched() or
-Documentation/RCU/whatisRCU.txt.
+On 03/16/2010 12:50 PM, Ingo Molnar wrote:
+>
+>> I'm confused - initrd seems to be guest-side.  I was talking about the host
+>> side.
+>>      
+> host side doesnt need much support - just some client capability in perf
+> itself. I suspect vmchannels are sufficiently flexible and configuration-free
+> for such purposes? (i.e. like a filesystem in essence)
+>    
 
-So we have to test irqs_disabled() in rcu_read_lock_sched_held().
-Otherwise rcu-lockdep brings incorrect complaint.
+I haven't followed vmchannel closely, but I think it is.  vmchannel is 
+terminated in qemu on the host side, not in the host kernel.  So perf 
+would need to connect to qemu.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 3024050..2ce5674 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -160,7 +160,7 @@ static inline int rcu_read_lock_sched_held(void)
- 		return 1;
- 	if (debug_locks)
- 		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
--	return lockdep_opinion || preempt_count() != 0;
-+	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
- }
- #else /* #ifdef CONFIG_PREEMPT */
- static inline int rcu_read_lock_sched_held(void)
-@@ -191,7 +191,7 @@ static inline int rcu_read_lock_bh_held(void)
- #ifdef CONFIG_PREEMPT
- static inline int rcu_read_lock_sched_held(void)
- {
--	return !rcu_scheduler_active || preempt_count() != 0;
-+	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
- }
- #else /* #ifdef CONFIG_PREEMPT */
- static inline int rcu_read_lock_sched_held(void)
+-- 
+error compiling committee.c: too many arguments to function
 
