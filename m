@@ -1,219 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0CPV6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 17:58:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab0CPV5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 17:57:55 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 06/10] perf probe: Introduce die_find_child() function
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, Mike Galbraith <efault@gmx.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue, 16 Mar 2010 18:05:58 -0400
-Message-ID: <20100316220558.32050.7905.stgit@localhost6.localdomain6>
-In-Reply-To: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
-References: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	id S1752227Ab0CPWAq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 18:00:46 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:50830 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab0CPWAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 18:00:42 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zz936eMab9bhzz1202hzzz32i6bh2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 5,
+X-WSS-ID: 0KZEAGW-01-8NR-02
+X-M-MSG: 
+From: Andre Przywara <andre.przywara@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
+       linux-kernel@vger.kernel.org, Andre Przywara <andre.przywara@amd.com>
+Subject: [PATCH] x86: Fix AMD feature bits for XOP and FMA4 instructions
+Date: Tue, 16 Mar 2010 23:00:41 +0100
+Message-ID: <1268776841-28753-1-git-send-email-andre.przywara@amd.com>
+X-Mailer: git-send-email 1.6.4
+X-OriginalArrivalTime: 16 Mar 2010 22:00:29.0055 (UTC) FILETIME=[1731E0F0:01CAC554]
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce die_find_child() function to integrate DIE-tree searching
-functions.
+The AMD SSE5 feature set as-it has been replaced by some extensions
+to the AVX instruction set. Thus the bit formerly advertised as SSE5
+is re-used for one of these extensions (XOP).
+Replace the name and add another one described in the new AMD APM6
+manual (doc #43479, p. 25). Although this changes the /proc/cpuinfo
+output, it is not user visible, as there are no CPUs (yet) having
+either of these features.
+Additionally as long as AVX is not sane for KVM to pass-through,
+XOP and FMA4 are neither.
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andre Przywara <andre.przywara@amd.com>
 ---
+ arch/x86/include/asm/cpufeature.h |    3 ++-
+ arch/x86/kvm/x86.c                |    4 ++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
- tools/perf/util/probe-finder.c |  136 ++++++++++++++++++++++++----------------
- 1 files changed, 80 insertions(+), 56 deletions(-)
-
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c91a960..3942e14 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -186,6 +186,62 @@ static const char *cu_find_realpath(Dwarf_Die *cu_die, const char *fname)
- 	return src;
- }
- 
-+/* Compare diename and tname */
-+static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
-+{
-+	const char *name;
-+	name = dwarf_diename(dw_die);
-+	DIE_IF(name == NULL);
-+	return strcmp(tname, name);
-+}
-+
-+/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
-+static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
-+{
-+	Dwarf_Addr epc;
-+	int ret;
-+
-+	ret = dwarf_entrypc(dw_die, &epc);
-+	DIE_IF(ret == -1);
-+	return epc;
-+}
-+
-+/* Return values for die_find callbacks */
-+enum {
-+	DIE_FIND_CB_FOUND = 0,		/* End of Search */
-+	DIE_FIND_CB_CHILD = 1,		/* Search only children */
-+	DIE_FIND_CB_SIBLING = 2,	/* Search only siblings */
-+	DIE_FIND_CB_CONTINUE = 3,	/* Search children and siblings */
-+};
-+
-+/* Search a child die */
-+static Dwarf_Die *die_find_child(Dwarf_Die *rt_die,
-+				 int (*callback)(Dwarf_Die *, void *),
-+				 void *data, Dwarf_Die *die_mem)
-+{
-+	Dwarf_Die child_die;
-+	int ret;
-+
-+	ret = dwarf_child(rt_die, die_mem);
-+	if (ret != 0)
-+		return NULL;
-+
-+	do {
-+		ret = callback(die_mem, data);
-+		if (ret == DIE_FIND_CB_FOUND)
-+			return die_mem;
-+
-+		if ((ret & DIE_FIND_CB_CHILD) &&
-+		    die_find_child(die_mem, callback, data, &child_die)) {
-+			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
-+			return die_mem;
-+		}
-+	} while ((ret & DIE_FIND_CB_SIBLING) &&
-+		 dwarf_siblingof(die_mem, die_mem) == 0);
-+
-+	return NULL;
-+}
-+
- struct __addr_die_search_param {
- 	Dwarf_Addr	addr;
- 	Dwarf_Die	*die_mem;
-@@ -217,77 +273,45 @@ static Dwarf_Die *die_find_real_subprogram(Dwarf_Die *cu_die, Dwarf_Addr addr,
- 		return die_mem;
- }
- 
--/* Similar to dwarf_getfuncs, but returns inlined_subroutine if exists. */
--static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
--				      Dwarf_Die *die_mem)
-+/* die_find callback for inline function search */
-+static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
- {
--	Dwarf_Die child_die;
--	int ret;
-+	Dwarf_Addr *addr = data;
- 
--	ret = dwarf_child(sp_die, die_mem);
--	if (ret != 0)
--		return NULL;
--
--	do {
--		if (dwarf_tag(die_mem) == DW_TAG_inlined_subroutine &&
--		    dwarf_haspc(die_mem, addr))
--			return die_mem;
-+	if (dwarf_tag(die_mem) == DW_TAG_inlined_subroutine &&
-+	    dwarf_haspc(die_mem, *addr))
-+		return DIE_FIND_CB_FOUND;
- 
--		if (die_find_inlinefunc(die_mem, addr, &child_die)) {
--			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
--			return die_mem;
--		}
--	} while (dwarf_siblingof(die_mem, die_mem) == 0);
--
--	return NULL;
-+	return DIE_FIND_CB_CONTINUE;
- }
- 
--/* Compare diename and tname */
--static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
-+/* Similar to dwarf_getfuncs, but returns inlined_subroutine if exists. */
-+static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
-+				      Dwarf_Die *die_mem)
- {
--	const char *name;
--	name = dwarf_diename(dw_die);
--	DIE_IF(name == NULL);
--	return strcmp(tname, name);
-+	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
- }
- 
--/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
--static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
-+static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
- {
--	Dwarf_Addr epc;
--	int ret;
-+	const char *name = data;
-+	int tag;
- 
--	ret = dwarf_entrypc(dw_die, &epc);
--	DIE_IF(ret == -1);
--	return epc;
-+	tag = dwarf_tag(die_mem);
-+	if ((tag == DW_TAG_formal_parameter ||
-+	     tag == DW_TAG_variable) &&
-+	    (die_compare_name(die_mem, name) == 0))
-+		return DIE_FIND_CB_FOUND;
-+
-+	return DIE_FIND_CB_CONTINUE;
- }
- 
--/* Get a variable die */
-+/* Find a variable called 'name' */
- static Dwarf_Die *die_find_variable(Dwarf_Die *sp_die, const char *name,
- 				    Dwarf_Die *die_mem)
- {
--	Dwarf_Die child_die;
--	int tag;
--	int ret;
--
--	ret = dwarf_child(sp_die, die_mem);
--	if (ret != 0)
--		return NULL;
--
--	do {
--		tag = dwarf_tag(die_mem);
--		if ((tag == DW_TAG_formal_parameter ||
--		     tag == DW_TAG_variable) &&
--		    (die_compare_name(die_mem, name) == 0))
--			return die_mem;
--
--		if (die_find_variable(die_mem, name, &child_die)) {
--			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
--			return die_mem;
--		}
--	} while (dwarf_siblingof(die_mem, die_mem) == 0);
--
--	return NULL;
-+	return die_find_child(sp_die, __die_find_variable_cb, (void *)name,
-+			      die_mem);
- }
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 0cd82d0..1af4708 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -150,9 +150,10 @@
+ #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch instructions */
+ #define X86_FEATURE_OSVW	(6*32+ 9) /* OS Visible Workaround */
+ #define X86_FEATURE_IBS		(6*32+10) /* Instruction Based Sampling */
+-#define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
++#define X86_FEATURE_XOP		(6*32+11) /* extended AVX instructions */
+ #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
+ #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
++#define X86_FEATURE_FMA4	(6*32+16) /* 4 operands MAC instructions */
+ #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
  
  /*
-
-
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index e46282a..67541a6 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1859,8 +1859,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
+ 	const u32 kvm_supported_word6_x86_features =
+ 		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
+ 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
+-		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(SSE5) |
+-		0 /* SKINIT */ | 0 /* WDT */;
++		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | 0 /* XOP */ |
++		0 /* SKINIT, WDT */ | 0 /* FMA4 */;
+ 
+ 	/* all calls to cpuid_count() should be made on the same cpu */
+ 	get_cpu();
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+1.6.4
+
+
