@@ -1,50 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966311Ab0CPOqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 10:46:11 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:52299 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S933060Ab0CPOqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 10:46:09 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: airlied@redhat.com
-Cc: linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 1/1] GPU: vga_switcheroo, fix lock imbalance
-Date: Tue, 16 Mar 2010 15:45:51 +0100
-Message-Id: <1268750751-13087-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.0.1
+	id S966331Ab0CPOq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 10:46:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44467 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966315Ab0CPOq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 10:46:26 -0400
+Date: Tue, 16 Mar 2010 14:45:36 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+       mingo@redhat.com, peterz@infradead.org, xiaoguangrong@cn.fujitsu.com,
+       fweisbec@gmail.com, tglx@linutronix.de, sfr@canb.auug.org.au,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, peterz@infradead.org,
+       xiaoguangrong@cn.fujitsu.com, fweisbec@gmail.com, sfr@canb.auug.org.au,
+       tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
+References: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix unexported generic perf_arch_fetch_caller_regs
+Message-ID: <tip-1d199b1ad606ae8b88acebd295b101c4e1cf2a57@git.kernel.org>
+Git-Commit-ID: 1d199b1ad606ae8b88acebd295b101c4e1cf2a57
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 14:45:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that one error path in vga_switcheroo_debugfs_write
-omits to unlock vgasr_mutex. Fix that.
+Commit-ID:  1d199b1ad606ae8b88acebd295b101c4e1cf2a57
+Gitweb:     http://git.kernel.org/tip/1d199b1ad606ae8b88acebd295b101c4e1cf2a57
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Tue, 16 Mar 2010 01:05:02 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 16 Mar 2010 09:27:27 +0100
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Dave Airlie <airlied@redhat.com>
+perf: Fix unexported generic perf_arch_fetch_caller_regs
+
+perf_arch_fetch_caller_regs() is exported for the overriden x86
+version, but not for the generic weak version.
+
+As a general rule, weak functions should not have their symbol
+exported in the same file they are defined.
+
+So let's export it on trace_event_perf.c as it is used by trace
+events only.
+
+This fixes:
+
+	ERROR: ".perf_arch_fetch_caller_regs" [fs/xfs/xfs.ko] undefined!
+	ERROR: ".perf_arch_fetch_caller_regs" [arch/powerpc/platforms/cell/spufs/spufs.ko] undefined!
+
+-v2: And also only build it if trace events are enabled.
+-v3: Fix changelog mistake
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Paul Mackerras <paulus@samba.org>
+LKML-Reference: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/gpu/vga/vga_switcheroo.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |    3 ++-
+ kernel/perf_event.c              |    2 ++
+ kernel/trace/trace_event_perf.c  |    2 ++
+ 3 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/vga/vga_switcheroo.c b/drivers/gpu/vga/vga_switcheroo.c
-index d6d1149..c8768f3 100644
---- a/drivers/gpu/vga/vga_switcheroo.c
-+++ b/drivers/gpu/vga/vga_switcheroo.c
-@@ -276,8 +276,10 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 978d297..0d3466c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1695,6 +1695,7 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 	return entry;
+ }
  
- 	mutex_lock(&vgasr_mutex);
++#ifdef CONFIG_EVENT_TRACING
+ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
+ {
+ 	regs->ip = ip;
+@@ -1706,4 +1707,4 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
+ 	regs->cs = __KERNEL_CS;
+ 	local_save_flags(regs->flags);
+ }
+-EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
++#endif
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 8bf6127..455393e 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2790,10 +2790,12 @@ __weak struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 	return NULL;
+ }
  
--	if (!vgasr_priv.active)
--		return -EINVAL;
-+	if (!vgasr_priv.active) {
-+		cnt = -EINVAL;
-+		goto out;
-+	}
++#ifdef CONFIG_EVENT_TRACING
+ __weak
+ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
+ {
+ }
++#endif
  
- 	/* pwr off the device not in use */
- 	if (strncmp(usercmd, "OFF", 3) == 0) {
--- 
-1.7.0.1
-
-
+ /*
+  * Output
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0709e4f..7d79a10 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -12,6 +12,8 @@
+ DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
+ EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
+ 
++EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
++
+ static char *perf_trace_buf;
+ static char *perf_trace_buf_nmi;
+ 
