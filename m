@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S938123Ab0CPRrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 13:47:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50637 "EHLO mx1.redhat.com"
+	id S938140Ab0CPRrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 13:47:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6444 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S938110Ab0CPRrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 13:47:20 -0400
-Date: Tue, 16 Mar 2010 13:46:47 -0400
+	id S938110Ab0CPRr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 13:47:26 -0400
+Date: Tue, 16 Mar 2010 13:47:01 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: fweisbec@gmail.com, mingo@elte.hu, rostedt@goodmis.org
 Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, lizf@cn.fujitsu.com,
@@ -14,312 +14,410 @@ Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, lizf@cn.fujitsu.com,
        heiko.carstens@de.ibm.com, benh@kernel.crashing.org,
        davem@davemloft.net, lethal@linux-sh.org, schwidefsky@de.ibm.com,
        brueckner@linux.vnet.ibm.com, tony.luck@intel.com
-Message-Id: <3f5e24df124c2cdb6b34279395dfa0fd8fcb810e.1268749695.git.jbaron@redhat.com>
+Message-Id: <b5eab933e655309f3453313588ba2b216c8d1e3c.1268749695.git.jbaron@redhat.com>
 In-Reply-To: <cover.1268749695.git.jbaron@redhat.com>
 References: <cover.1268749695.git.jbaron@redhat.com>
-Subject: [PATCH 08/14] x86, compat: convert ia32 layer to use
+Subject: [PATCH 11/14] compat: convert fs compat to use COMPAT_SYSCALL_DEFINE#N() macros
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of the new ARCH_COMPAT_SYSCALL_DEFINE#N() macros to tie the compat
-syscalls into the event tracer.
+convert the fs/compat.c file to use the COMPAT_SYSCALL_DEFINE#N() macros to tie
+them into the generic compat layer.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- arch/x86/ia32/sys_ia32.c |  106 +++++++++++++++++++++++-----------------------
- 1 files changed, 53 insertions(+), 53 deletions(-)
+ fs/compat.c |  147 +++++++++++++++++++++++++++++------------------------------
+ 1 files changed, 72 insertions(+), 75 deletions(-)
 
-diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
-index 422572c..70b9ee1 100644
---- a/arch/x86/ia32/sys_ia32.c
-+++ b/arch/x86/ia32/sys_ia32.c
-@@ -50,15 +50,15 @@
- #define AA(__x)		((unsigned long)(__x))
- 
- 
--asmlinkage long sys32_truncate64(char __user *filename,
--				 unsigned long offset_low,
--				 unsigned long offset_high)
-+ARCH_COMPAT_SYSCALL_DEFINE3(truncate64, char __user *, filename,
-+				 unsigned long, offset_low,
-+				 unsigned long, offset_high)
+diff --git a/fs/compat.c b/fs/compat.c
+index 00d90c2..c20c2ca 100644
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -75,7 +75,7 @@ int compat_printk(const char *fmt, ...)
+  * Not all architectures have sys_utime, so implement this in terms
+  * of sys_utimes.
+  */
+-asmlinkage long compat_sys_utime(char __user *filename, struct compat_utimbuf __user *t)
++COMPAT_SYSCALL_DEFINE2(utime, char __user *, filename, struct compat_utimbuf __user *, t)
  {
-        return sys_truncate(filename, ((loff_t) offset_high << 32) | offset_low);
+ 	struct timespec tv[2];
+ 
+@@ -89,7 +89,7 @@ asmlinkage long compat_sys_utime(char __user *filename, struct compat_utimbuf __
+ 	return do_utimes(AT_FDCWD, filename, t ? tv : NULL, 0);
  }
  
--asmlinkage long sys32_ftruncate64(unsigned int fd, unsigned long offset_low,
--				  unsigned long offset_high)
-+ARCH_COMPAT_SYSCALL_DEFINE3(ftruncate64, unsigned int, fd, unsigned long, offset_low,
-+				  unsigned long, offset_high)
+-asmlinkage long compat_sys_utimensat(unsigned int dfd, char __user *filename, struct compat_timespec __user *t, int flags)
++COMPAT_SYSCALL_DEFINE4(utimensat, unsigned int, dfd, char __user *, filename, struct compat_timespec __user *, t, int, flags)
  {
-        return sys_ftruncate(fd, ((loff_t) offset_high << 32) | offset_low);
- }
-@@ -95,8 +95,8 @@ static int cp_stat64(struct stat64 __user *ubuf, struct kstat *stat)
- 	return 0;
+ 	struct timespec tv[2];
+ 
+@@ -104,7 +104,7 @@ asmlinkage long compat_sys_utimensat(unsigned int dfd, char __user *filename, st
+ 	return do_utimes(dfd, filename, t ? tv : NULL, flags);
  }
  
--asmlinkage long sys32_stat64(char __user *filename,
--			     struct stat64 __user *statbuf)
-+ARCH_COMPAT_SYSCALL_DEFINE2(stat64, char __user *, filename,
-+			     struct stat64 __user *, statbuf)
+-asmlinkage long compat_sys_futimesat(unsigned int dfd, char __user *filename, struct compat_timeval __user *t)
++COMPAT_SYSCALL_DEFINE3(futimesat, unsigned int, dfd, char __user *, filename, struct compat_timeval __user *, t)
  {
- 	struct kstat stat;
- 	int ret = vfs_stat(filename, &stat);
-@@ -106,8 +106,8 @@ asmlinkage long sys32_stat64(char __user *filename,
- 	return ret;
+ 	struct timespec tv[2];
+ 
+@@ -123,7 +123,7 @@ asmlinkage long compat_sys_futimesat(unsigned int dfd, char __user *filename, st
+ 	return do_utimes(dfd, filename, t ? tv : NULL, 0);
  }
  
--asmlinkage long sys32_lstat64(char __user *filename,
--			      struct stat64 __user *statbuf)
-+ARCH_COMPAT_SYSCALL_DEFINE2(lstat64, char __user *, filename,
-+			      struct stat64 __user *, statbuf)
+-asmlinkage long compat_sys_utimes(char __user *filename, struct compat_timeval __user *t)
++COMPAT_SYSCALL_DEFINE2(utimes, char __user *, filename, struct compat_timeval __user *, t)
  {
- 	struct kstat stat;
- 	int ret = vfs_lstat(filename, &stat);
-@@ -116,7 +116,7 @@ asmlinkage long sys32_lstat64(char __user *filename,
- 	return ret;
+ 	return compat_sys_futimesat(AT_FDCWD, filename, t);
+ }
+@@ -167,8 +167,8 @@ static int cp_compat_stat(struct kstat *stat, struct compat_stat __user *ubuf)
+ 	return err;
  }
  
--asmlinkage long sys32_fstat64(unsigned int fd, struct stat64 __user *statbuf)
-+ARCH_COMPAT_SYSCALL_DEFINE2(fstat64, unsigned int, fd, struct stat64 __user *, statbuf)
- {
- 	struct kstat stat;
- 	int ret = vfs_fstat(fd, &stat);
-@@ -125,8 +125,8 @@ asmlinkage long sys32_fstat64(unsigned int fd, struct stat64 __user *statbuf)
- 	return ret;
- }
- 
--asmlinkage long sys32_fstatat(unsigned int dfd, char __user *filename,
--			      struct stat64 __user *statbuf, int flag)
-+ARCH_COMPAT_SYSCALL_DEFINE4(fstatat, unsigned int, dfd, char __user *, filename,
-+			      struct stat64 __user *, statbuf, int, flag)
+-asmlinkage long compat_sys_newstat(char __user * filename,
+-		struct compat_stat __user *statbuf)
++COMPAT_SYSCALL_DEFINE2(newstat, char __user *, filename,
++			struct compat_stat __user *, statbuf)
  {
  	struct kstat stat;
  	int error;
-@@ -152,7 +152,7 @@ struct mmap_arg_struct {
- 	unsigned int offset;
- };
- 
--asmlinkage long sys32_mmap(struct mmap_arg_struct __user *arg)
-+ARCH_COMPAT_SYSCALL_DEFINE1(mmap, struct mmap_arg_struct __user *, arg)
- {
- 	struct mmap_arg_struct a;
- 
-@@ -166,15 +166,15 @@ asmlinkage long sys32_mmap(struct mmap_arg_struct __user *arg)
- 			       a.offset>>PAGE_SHIFT);
+@@ -179,8 +179,8 @@ asmlinkage long compat_sys_newstat(char __user * filename,
+ 	return cp_compat_stat(&stat, statbuf);
  }
  
--asmlinkage long sys32_mprotect(unsigned long start, size_t len,
--			       unsigned long prot)
-+ARCH_COMPAT_SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
-+			       unsigned long, prot)
+-asmlinkage long compat_sys_newlstat(char __user * filename,
+-		struct compat_stat __user *statbuf)
++COMPAT_SYSCALL_DEFINE2(newlstat, char __user *, filename,
++			struct compat_stat __user *, statbuf)
  {
- 	return sys_mprotect(start, len, prot);
+ 	struct kstat stat;
+ 	int error;
+@@ -192,8 +192,8 @@ asmlinkage long compat_sys_newlstat(char __user * filename,
  }
  
--asmlinkage long sys32_rt_sigaction(int sig, struct sigaction32 __user *act,
--				   struct sigaction32 __user *oact,
--				   unsigned int sigsetsize)
-+ARCH_COMPAT_SYSCALL_DEFINE4(rt_sigaction, int, sig, struct sigaction32 __user *, act,
-+				   struct sigaction32 __user *, oact,
-+				   unsigned int, sigsetsize)
+ #ifndef __ARCH_WANT_STAT64
+-asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user *filename,
+-		struct compat_stat __user *statbuf, int flag)
++COMPAT_SYSCALL_DEFINE4(newfstatat, unsigned int, dfd, char __user *, filename,
++			struct compat_stat __user *, statbuf, int, flag)
  {
- 	struct k_sigaction new_ka, old_ka;
- 	int ret;
-@@ -248,8 +248,8 @@ asmlinkage long sys32_rt_sigaction(int sig, struct sigaction32 __user *act,
- 	return ret;
+ 	struct kstat stat;
+ 	int error;
+@@ -205,8 +205,8 @@ asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user *filename,
  }
+ #endif
  
--asmlinkage long sys32_sigaction(int sig, struct old_sigaction32 __user *act,
--				struct old_sigaction32 __user *oact)
-+ARCH_COMPAT_SYSCALL_DEFINE3(sigaction, int, sig, struct old_sigaction32 __user *, act,
-+				struct old_sigaction32 __user *, oact)
+-asmlinkage long compat_sys_newfstat(unsigned int fd,
+-		struct compat_stat __user * statbuf)
++COMPAT_SYSCALL_DEFINE2(newfstat, unsigned int, fd,
++			struct compat_stat __user *, statbuf)
  {
- 	struct k_sigaction new_ka, old_ka;
- 	int ret;
-@@ -287,9 +287,9 @@ asmlinkage long sys32_sigaction(int sig, struct old_sigaction32 __user *act,
- 	return ret;
- }
- 
--asmlinkage long sys32_rt_sigprocmask(int how, compat_sigset_t __user *set,
--				     compat_sigset_t __user *oset,
--				     unsigned int sigsetsize)
-+ARCH_COMPAT_SYSCALL_DEFINE4(rt_sigprocmask, int, how, compat_sigset_t __user *, set,
-+				     compat_sigset_t __user *, oset,
-+				     unsigned int, sigsetsize)
+ 	struct kstat stat;
+ 	int error = vfs_fstat(fd, &stat);
+@@ -257,7 +257,7 @@ static int put_compat_statfs(struct compat_statfs __user *ubuf, struct kstatfs *
+  * The following statfs calls are copies of code from fs/open.c and
+  * should be checked against those from time to time
+  */
+-asmlinkage long compat_sys_statfs(const char __user *pathname, struct compat_statfs __user *buf)
++COMPAT_SYSCALL_DEFINE2(statfs, const char __user *, pathname, struct compat_statfs __user *, buf)
  {
- 	sigset_t s;
- 	compat_sigset_t s32;
-@@ -327,7 +327,7 @@ asmlinkage long sys32_rt_sigprocmask(int how, compat_sigset_t __user *set,
- 	return 0;
- }
- 
--asmlinkage long sys32_alarm(unsigned int seconds)
-+ARCH_COMPAT_SYSCALL_DEFINE1(alarm, unsigned int, seconds)
- {
- 	return alarm_setitimer(seconds);
- }
-@@ -340,7 +340,7 @@ struct sel_arg_struct {
- 	unsigned int tvp;
- };
- 
--asmlinkage long sys32_old_select(struct sel_arg_struct __user *arg)
-+ARCH_COMPAT_SYSCALL_DEFINE1(old_select, struct sel_arg_struct __user *, arg)
- {
- 	struct sel_arg_struct a;
- 
-@@ -350,21 +350,21 @@ asmlinkage long sys32_old_select(struct sel_arg_struct __user *arg)
- 				 compat_ptr(a.exp), compat_ptr(a.tvp));
- }
- 
--asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
--			      int options)
-+ARCH_COMPAT_SYSCALL_DEFINE3(waitpid, compat_pid_t, pid, unsigned int *, stat_addr,
-+			      int, options)
- {
- 	return compat_sys_wait4(pid, stat_addr, options, NULL);
- }
- 
- /* 32-bit timeval and related flotsam.  */
- 
--asmlinkage long sys32_sysfs(int option, u32 arg1, u32 arg2)
-+ARCH_COMPAT_SYSCALL_DEFINE3(sysfs, int, option, u32, arg1, u32, arg2)
- {
- 	return sys_sysfs(option, arg1, arg2);
- }
- 
--asmlinkage long sys32_sched_rr_get_interval(compat_pid_t pid,
--				    struct compat_timespec __user *interval)
-+ARCH_COMPAT_SYSCALL_DEFINE2(sched_rr_get_interval, compat_pid_t, pid,
-+				    struct compat_timespec __user *, interval)
- {
- 	struct timespec t;
- 	int ret;
-@@ -378,8 +378,8 @@ asmlinkage long sys32_sched_rr_get_interval(compat_pid_t pid,
- 	return ret;
- }
- 
--asmlinkage long sys32_rt_sigpending(compat_sigset_t __user *set,
--				    compat_size_t sigsetsize)
-+ARCH_COMPAT_SYSCALL_DEFINE2(rt_sigpending, compat_sigset_t __user *, set,
-+				    compat_size_t, sigsetsize)
- {
- 	sigset_t s;
- 	compat_sigset_t s32;
-@@ -402,8 +402,8 @@ asmlinkage long sys32_rt_sigpending(compat_sigset_t __user *set,
- 	return ret;
- }
- 
--asmlinkage long sys32_rt_sigqueueinfo(int pid, int sig,
--				      compat_siginfo_t __user *uinfo)
-+ARCH_COMPAT_SYSCALL_DEFINE3(rt_sigqueueinfo, int, pid, int, sig,
-+				      compat_siginfo_t __user *, uinfo)
- {
- 	siginfo_t info;
- 	int ret;
-@@ -418,22 +418,22 @@ asmlinkage long sys32_rt_sigqueueinfo(int pid, int sig,
- }
- 
- /* warning: next two assume little endian */
--asmlinkage long sys32_pread(unsigned int fd, char __user *ubuf, u32 count,
--			    u32 poslo, u32 poshi)
-+ARCH_COMPAT_SYSCALL_DEFINE5(pread, unsigned int, fd, char __user *, ubuf, u32, count,
-+			    u32, poslo, u32, poshi)
- {
- 	return sys_pread64(fd, ubuf, count,
- 			 ((loff_t)AA(poshi) << 32) | AA(poslo));
- }
- 
--asmlinkage long sys32_pwrite(unsigned int fd, char __user *ubuf, u32 count,
--			     u32 poslo, u32 poshi)
-+ARCH_COMPAT_SYSCALL_DEFINE5(pwrite, unsigned int, fd, char __user *, ubuf, u32, count,
-+			     u32, poslo, u32, poshi)
- {
- 	return sys_pwrite64(fd, ubuf, count,
- 			  ((loff_t)AA(poshi) << 32) | AA(poslo));
- }
- 
- 
--asmlinkage long sys32_personality(unsigned long personality)
-+ARCH_COMPAT_SYSCALL_DEFINE1(personality, unsigned long, personality)
- {
- 	int ret;
- 
-@@ -446,8 +446,8 @@ asmlinkage long sys32_personality(unsigned long personality)
- 	return ret;
- }
- 
--asmlinkage long sys32_sendfile(int out_fd, int in_fd,
--			       compat_off_t __user *offset, s32 count)
-+ARCH_COMPAT_SYSCALL_DEFINE4(sendfile, int, out_fd, int, in_fd,
-+			       compat_off_t __user *, offset, s32, count)
- {
- 	mm_segment_t old_fs = get_fs();
- 	int ret;
-@@ -466,7 +466,7 @@ asmlinkage long sys32_sendfile(int out_fd, int in_fd,
- 	return ret;
- }
- 
--asmlinkage long sys32_olduname(struct oldold_utsname __user *name)
-+ARCH_COMPAT_SYSCALL_DEFINE1(olduname, struct oldold_utsname __user *, name)
- {
- 	char *arch = "x86_64";
- 	int err;
-@@ -518,8 +518,8 @@ long sys32_uname(struct old_utsname __user *name)
- 	return err ? -EFAULT : 0;
- }
- 
--asmlinkage long sys32_execve(char __user *name, compat_uptr_t __user *argv,
--			     compat_uptr_t __user *envp, struct pt_regs *regs)
-+ARCH_COMPAT_SYSCALL_DEFINE4(execve, char __user *, name, compat_uptr_t __user *, argv,
-+			compat_uptr_t __user *, envp, struct pt_regs *, regs)
- {
- 	long error;
- 	char *filename;
-@@ -533,8 +533,8 @@ asmlinkage long sys32_execve(char __user *name, compat_uptr_t __user *argv,
+ 	struct path path;
+ 	int error;
+@@ -273,7 +273,7 @@ asmlinkage long compat_sys_statfs(const char __user *pathname, struct compat_sta
  	return error;
  }
  
--asmlinkage long sys32_clone(unsigned int clone_flags, unsigned int newsp,
--			    struct pt_regs *regs)
-+ARCH_COMPAT_SYSCALL_DEFINE3(clone, unsigned int, clone_flags, unsigned int, newsp,
-+			    struct pt_regs *, regs)
+-asmlinkage long compat_sys_fstatfs(unsigned int fd, struct compat_statfs __user *buf)
++COMPAT_SYSCALL_DEFINE2(fstatfs, unsigned int, fd, struct compat_statfs __user *, buf)
  {
- 	void __user *parent_tid = (void __user *)regs->dx;
- 	void __user *child_tid = (void __user *)regs->di;
-@@ -593,24 +593,24 @@ asmlinkage ssize_t sys32_readahead(int fd, unsigned off_lo, unsigned off_hi,
- 	return sys_readahead(fd, ((u64)off_hi << 32) | off_lo, count);
+ 	struct file * file;
+ 	struct kstatfs tmp;
+@@ -322,7 +322,7 @@ static int put_compat_statfs64(struct compat_statfs64 __user *ubuf, struct kstat
+ 	return 0;
  }
  
--asmlinkage long sys32_sync_file_range(int fd, unsigned off_low, unsigned off_hi,
--				      unsigned n_low, unsigned n_hi,  int flags)
-+ARCH_COMPAT_SYSCALL_DEFINE6(sync_file_range, int, fd, unsigned, off_low, unsigned, off_hi,
-+			unsigned, n_low, unsigned, n_hi,  int, flags)
+-asmlinkage long compat_sys_statfs64(const char __user *pathname, compat_size_t sz, struct compat_statfs64 __user *buf)
++COMPAT_SYSCALL_DEFINE3(statfs64, const char __user *, pathname, compat_size_t, sz, struct compat_statfs64 __user *, buf)
  {
- 	return sys_sync_file_range(fd,
- 				   ((u64)off_hi << 32) | off_low,
- 				   ((u64)n_hi << 32) | n_low, flags);
+ 	struct path path;
+ 	int error;
+@@ -341,7 +341,7 @@ asmlinkage long compat_sys_statfs64(const char __user *pathname, compat_size_t s
+ 	return error;
  }
  
--asmlinkage long sys32_fadvise64(int fd, unsigned offset_lo, unsigned offset_hi,
--				size_t len, int advice)
-+ARCH_COMPAT_SYSCALL_DEFINE5(fadvise64, int, fd, unsigned, offset_lo, unsigned, offset_hi,
-+				size_t, len, int, advice)
+-asmlinkage long compat_sys_fstatfs64(unsigned int fd, compat_size_t sz, struct compat_statfs64 __user *buf)
++COMPAT_SYSCALL_DEFINE3(fstatfs64, unsigned int, fd, compat_size_t, sz, struct compat_statfs64 __user *, buf)
  {
- 	return sys_fadvise64_64(fd, ((u64)offset_hi << 32) | offset_lo,
- 				len, advice);
+ 	struct file * file;
+ 	struct kstatfs tmp;
+@@ -367,7 +367,7 @@ out:
+  * Given how simple this syscall is that apporach is more maintainable
+  * than the various conversion hacks.
+  */
+-asmlinkage long compat_sys_ustat(unsigned dev, struct compat_ustat __user *u)
++COMPAT_SYSCALL_DEFINE2(ustat, unsigned, dev, struct compat_ustat __user *, u)
+ {
+ 	struct super_block *sb;
+ 	struct compat_ustat tmp;
+@@ -442,8 +442,8 @@ static int put_compat_flock64(struct flock *kfl, struct compat_flock64 __user *u
+ }
+ #endif
+ 
+-asmlinkage long compat_sys_fcntl64(unsigned int fd, unsigned int cmd,
+-		unsigned long arg)
++COMPAT_SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
++			unsigned long, arg)
+ {
+ 	mm_segment_t old_fs;
+ 	struct flock f;
+@@ -511,16 +511,15 @@ asmlinkage long compat_sys_fcntl64(unsigned int fd, unsigned int cmd,
+ 	return ret;
  }
  
--asmlinkage long sys32_fallocate(int fd, int mode, unsigned offset_lo,
--				unsigned offset_hi, unsigned len_lo,
--				unsigned len_hi)
-+ARCH_COMPAT_SYSCALL_DEFINE6(fallocate, int, fd, int, mode, unsigned, offset_lo,
-+				unsigned, offset_hi, unsigned, len_lo,
-+				unsigned, len_hi)
+-asmlinkage long compat_sys_fcntl(unsigned int fd, unsigned int cmd,
+-		unsigned long arg)
++COMPAT_SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd,
++			unsigned long, arg)
  {
- 	return sys_fallocate(fd, mode, ((u64)offset_hi << 32) | offset_lo,
- 			     ((u64)len_hi << 32) | len_lo);
+ 	if ((cmd == F_GETLK64) || (cmd == F_SETLK64) || (cmd == F_SETLKW64))
+ 		return -EINVAL;
+ 	return compat_sys_fcntl64(fd, cmd, arg);
+ }
+ 
+-asmlinkage long
+-compat_sys_io_setup(unsigned nr_reqs, u32 __user *ctx32p)
++COMPAT_SYSCALL_DEFINE2(io_setup, unsigned, nr_reqs, u32 __user *, ctx32p)
+ {
+ 	long ret;
+ 	aio_context_t ctx64;
+@@ -539,12 +538,11 @@ compat_sys_io_setup(unsigned nr_reqs, u32 __user *ctx32p)
+ 	return ret;
+ }
+ 
+-asmlinkage long
+-compat_sys_io_getevents(aio_context_t ctx_id,
+-				 unsigned long min_nr,
+-				 unsigned long nr,
+-				 struct io_event __user *events,
+-				 struct compat_timespec __user *timeout)
++COMPAT_SYSCALL_DEFINE5(io_getevents, aio_context_t, ctx_id,
++				 unsigned long, min_nr,
++				 unsigned long, nr,
++				 struct io_event __user *, events,
++				 struct compat_timespec __user *, timeout)
+ {
+ 	long ret;
+ 	struct timespec t;
+@@ -584,8 +582,7 @@ copy_iocb(long nr, u32 __user *ptr32, struct iocb __user * __user *ptr64)
+ 
+ #define MAX_AIO_SUBMITS 	(PAGE_SIZE/sizeof(struct iocb *))
+ 
+-asmlinkage long
+-compat_sys_io_submit(aio_context_t ctx_id, int nr, u32 __user *iocb)
++COMPAT_SYSCALL_DEFINE3(io_submit, aio_context_t, ctx_id, int, nr, u32 __user *, iocb)
+ {
+ 	struct iocb __user * __user *iocb64; 
+ 	long ret;
+@@ -762,9 +759,9 @@ static int do_nfs4_super_data_conv(void *raw_data)
+ #define NCPFS_NAME      "ncpfs"
+ #define NFS4_NAME	"nfs4"
+ 
+-asmlinkage long compat_sys_mount(char __user * dev_name, char __user * dir_name,
+-				 char __user * type, unsigned long flags,
+-				 void __user * data)
++COMPAT_SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
++			char __user *, type, unsigned long, flags,
++			void __user *, data)
+ {
+ 	char *kernel_type;
+ 	unsigned long data_page;
+@@ -863,8 +860,9 @@ efault:
+ 	return -EFAULT;
+ }
+ 
+-asmlinkage long compat_sys_old_readdir(unsigned int fd,
+-	struct compat_old_linux_dirent __user *dirent, unsigned int count)
++COMPAT_SYSCALL_DEFINE3(old_readdir, unsigned int, fd,
++			struct compat_old_linux_dirent __user *, dirent,
++			unsigned int, count)
+ {
+ 	int error;
+ 	struct file *file;
+@@ -943,8 +941,9 @@ efault:
+ 	return -EFAULT;
+ }
+ 
+-asmlinkage long compat_sys_getdents(unsigned int fd,
+-		struct compat_linux_dirent __user *dirent, unsigned int count)
++COMPAT_SYSCALL_DEFINE3(getdents, unsigned int, fd,
++			struct compat_linux_dirent __user *, dirent,
++			unsigned int, count)
+ {
+ 	struct file * file;
+ 	struct compat_linux_dirent __user * lastdirent;
+@@ -1031,8 +1030,9 @@ efault:
+ 	return -EFAULT;
+ }
+ 
+-asmlinkage long compat_sys_getdents64(unsigned int fd,
+-		struct linux_dirent64 __user * dirent, unsigned int count)
++COMPAT_SYSCALL_DEFINE3(getdents64, unsigned int, fd,
++			struct linux_dirent64 __user *, dirent,
++			unsigned int, count)
+ {
+ 	struct file * file;
+ 	struct linux_dirent64 __user * lastdirent;
+@@ -1291,9 +1291,8 @@ compat_sys_pwritev(unsigned long fd, const struct compat_iovec __user *vec,
+ 	return ret;
+ }
+ 
+-asmlinkage long
+-compat_sys_vmsplice(int fd, const struct compat_iovec __user *iov32,
+-		    unsigned int nr_segs, unsigned int flags)
++COMPAT_SYSCALL_DEFINE4(vmsplice, int, fd, const struct compat_iovec __user *, iov32,
++			unsigned int, nr_segs, unsigned int, flags)
+ {
+ 	unsigned i;
+ 	struct iovec __user *iov;
+@@ -1315,8 +1314,7 @@ compat_sys_vmsplice(int fd, const struct compat_iovec __user *iov32,
+  * Exactly like fs/open.c:sys_open(), except that it doesn't set the
+  * O_LARGEFILE flag.
+  */
+-asmlinkage long
+-compat_sys_open(const char __user *filename, int flags, int mode)
++COMPAT_SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, int, mode)
+ {
+ 	return do_sys_open(AT_FDCWD, filename, flags, mode);
+ }
+@@ -1325,8 +1323,7 @@ compat_sys_open(const char __user *filename, int flags, int mode)
+  * Exactly like fs/open.c:sys_openat(), except that it doesn't set the
+  * O_LARGEFILE flag.
+  */
+-asmlinkage long
+-compat_sys_openat(unsigned int dfd, const char __user *filename, int flags, int mode)
++COMPAT_SYSCALL_DEFINE4(openat, unsigned int, dfd, const char __user *, filename, int, flags, int, mode)
+ {
+ 	return do_sys_open(dfd, filename, flags, mode);
+ }
+@@ -1770,9 +1767,9 @@ out_nofds:
+ 	return ret;
+ }
+ 
+-asmlinkage long compat_sys_select(int n, compat_ulong_t __user *inp,
+-	compat_ulong_t __user *outp, compat_ulong_t __user *exp,
+-	struct compat_timeval __user *tvp)
++COMPAT_SYSCALL_DEFINE5(select, int, n, compat_ulong_t __user *, inp,
++			compat_ulong_t __user *, outp, compat_ulong_t __user *, exp,
++			struct compat_timeval __user *, tvp)
+ {
+ 	struct timespec end_time, *to = NULL;
+ 	struct compat_timeval tv;
+@@ -1847,9 +1844,9 @@ static long do_compat_pselect(int n, compat_ulong_t __user *inp,
+ 	return ret;
+ }
+ 
+-asmlinkage long compat_sys_pselect6(int n, compat_ulong_t __user *inp,
+-	compat_ulong_t __user *outp, compat_ulong_t __user *exp,
+-	struct compat_timespec __user *tsp, void __user *sig)
++COMPAT_SYSCALL_DEFINE6(pselect6, int, n, compat_ulong_t __user *, inp,
++			compat_ulong_t __user *, outp, compat_ulong_t __user *, exp,
++			struct compat_timespec __user *, tsp, void __user *, sig)
+ {
+ 	compat_size_t sigsetsize = 0;
+ 	compat_uptr_t up = 0;
+@@ -1866,9 +1863,9 @@ asmlinkage long compat_sys_pselect6(int n, compat_ulong_t __user *inp,
+ 				 sigsetsize);
+ }
+ 
+-asmlinkage long compat_sys_ppoll(struct pollfd __user *ufds,
+-	unsigned int nfds, struct compat_timespec __user *tsp,
+-	const compat_sigset_t __user *sigmask, compat_size_t sigsetsize)
++COMPAT_SYSCALL_DEFINE5(ppoll, struct pollfd __user *, ufds,
++			unsigned int, nfds, struct compat_timespec __user *, tsp,
++			const compat_sigset_t __user *, sigmask, compat_size_t, sigsetsize)
+ {
+ 	compat_sigset_t ss32;
+ 	sigset_t ksigmask, sigsaved;
+@@ -2096,9 +2093,9 @@ static int compat_nfs_getfh_res_trans(union nfsctl_res *kres,
+ 	return (err) ? -EFAULT : 0;
+ }
+ 
+-asmlinkage long compat_sys_nfsservctl(int cmd,
+-				struct compat_nfsctl_arg __user *arg,
+-				union compat_nfsctl_res __user *res)
++COMPAT_SYSCALL_DEFINE3(nfsservctl, int cmd,
++			struct compat_nfsctl_arg __user *, arg,
++			union compat_nfsctl_res __user *, res)
+ {
+ 	struct nfsctl_arg *karg;
+ 	union nfsctl_res *kres;
+@@ -2174,11 +2171,11 @@ long asmlinkage compat_sys_nfsservctl(int cmd, void *notused, void *notused2)
+ #ifdef CONFIG_EPOLL
+ 
+ #ifdef HAVE_SET_RESTORE_SIGMASK
+-asmlinkage long compat_sys_epoll_pwait(int epfd,
+-			struct compat_epoll_event __user *events,
+-			int maxevents, int timeout,
+-			const compat_sigset_t __user *sigmask,
+-			compat_size_t sigsetsize)
++COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
++			struct compat_epoll_event __user *, events,
++			int, maxevents, int, timeout,
++			const compat_sigset_t __user *, sigmask,
++			compat_size_t, sigsetsize)
+ {
+ 	long err;
+ 	compat_sigset_t csigmask;
+@@ -2223,9 +2220,9 @@ asmlinkage long compat_sys_epoll_pwait(int epfd,
+ 
+ #ifdef CONFIG_SIGNALFD
+ 
+-asmlinkage long compat_sys_signalfd4(int ufd,
+-				     const compat_sigset_t __user *sigmask,
+-				     compat_size_t sigsetsize, int flags)
++COMPAT_SYSCALL_DEFINE4(signalfd4, int, ufd,
++			const compat_sigset_t __user *, sigmask,
++			compat_size_t, sigsetsize, int, flags)
+ {
+ 	compat_sigset_t ss32;
+ 	sigset_t tmp;
+@@ -2243,9 +2240,9 @@ asmlinkage long compat_sys_signalfd4(int ufd,
+ 	return sys_signalfd4(ufd, ksigmask, sizeof(sigset_t), flags);
+ }
+ 
+-asmlinkage long compat_sys_signalfd(int ufd,
+-				    const compat_sigset_t __user *sigmask,
+-				    compat_size_t sigsetsize)
++COMPAT_SYSCALL_DEFINE3(signalfd, int, ufd,
++			const compat_sigset_t __user *, sigmask,
++			compat_size_t, sigsetsize)
+ {
+ 	return compat_sys_signalfd4(ufd, sigmask, sigsetsize, 0);
+ }
+@@ -2253,9 +2250,9 @@ asmlinkage long compat_sys_signalfd(int ufd,
+ 
+ #ifdef CONFIG_TIMERFD
+ 
+-asmlinkage long compat_sys_timerfd_settime(int ufd, int flags,
+-				   const struct compat_itimerspec __user *utmr,
+-				   struct compat_itimerspec __user *otmr)
++COMPAT_SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
++			const struct compat_itimerspec __user *, utmr,
++			struct compat_itimerspec __user *, otmr)
+ {
+ 	int error;
+ 	struct itimerspec t;
+@@ -2274,8 +2271,8 @@ asmlinkage long compat_sys_timerfd_settime(int ufd, int flags,
+ 	return error;
+ }
+ 
+-asmlinkage long compat_sys_timerfd_gettime(int ufd,
+-				   struct compat_itimerspec __user *otmr)
++COMPAT_SYSCALL_DEFINE2(timerfd_gettime, int, ufd,
++			struct compat_itimerspec __user *, otmr)
+ {
+ 	int error;
+ 	struct itimerspec t;
 -- 
 1.6.5.1
 
