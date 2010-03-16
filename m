@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937473Ab0CPGyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 02:54:23 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:63037 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937447Ab0CPGyT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 02:54:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ijCNW+A4JmakYfaXtkRL5tjLo+zhtUvN+y6l/SqpVy+2JUZ/PjlFf36xjIrljTd/sD
-         DjLJEin7j5dvu8Mg9O2IxvHKARhswIk0K/rQv8pbjUT+DpUxrQ7EeLx1IDI9r2MHkypI
-         YXRBqmuyqvZ4HqqODbaBCtg/17QL5lGrBVUFg=
+	id S937463Ab0CPGyV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 02:54:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42220 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937150Ab0CPGyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 02:54:16 -0400
+Message-ID: <4B9F2B0A.70507@kernel.org>
+Date: Tue, 16 Mar 2010 15:54:02 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
-References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
-	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
-	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
-	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
-	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
-Date: Tue, 16 Mar 2010 07:54:17 +0100
-Message-ID: <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
-Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Fabio Comolli <fabio.comolli@gmail.com>
-Cc: ACPI mailing list <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Len Brown <lenb@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+References: <4B990496.4020002@kernel.org> <4B9F08AC.9030904@kernel.org> <20100316061718.GA22651@elte.hu>
+In-Reply-To: <20100316061718.GA22651@elte.hu>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 16 Mar 2010 06:54:05 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 13, 2010 at 1:50 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
-> Well, I'm confused.
->
-> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
-> the situation it's not like the one I described in the post I wrote 2
-> days ago. Actually the situation with the patch reverted is the same I
-> have with the patch applied.
->
-> What I mean is that if I boot on AC power /proc/cpuinfo always reports
-> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
-> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
-> not change the situation. Only reboot does.
->
-> But the cpufv interface does indeed seem to work, as glxgears and
-> stellarium show the frame rate change accordingly to the powersave /
-> performance selection.
->
-> So my question is: what does really the cpufv interface do? Is it
-> supposed to change the processor frequency? Or does it change
-> something else?
->
-> And if the answer to the latest question is affirmative, why
-> /proc/cpuinfo seems to ignore it?
->
-> Sorry for the confusion.
-> Regards,
-> Fabio
->
+Hello, Ingo.
 
-Here is what I can read in your DSDT:
+On 03/16/2010 03:17 PM, Ingo Molnar wrote:
+> ( /me mumbles something about not having a patch in the email to review and
+>   pulling the tree. 200k patch is just fine for lkml - i've attached it below
+>   for easier review. percpu.h and percpu.c has the meat of the changes. )
 
-When INIT or _Q31 is called, the bios check the the battery is
-present, and call FSBA(0) or FSBA(1).
-_Q31 seems to be called by an hotkey, could you run "acpi_listen" and
-search the hotkey that generate 0x50 or 0x51 ?
+I wanted to keep the discussion high level while giving a general idea
+about the extent of necessary changes.  I'll include the patch from
+now on.
 
-FSBA is the method called by CFVS. When you do "echo 1 > cpufv" it
-calls CFVS(1), then FSBA(1).
-FSBA got 2 presets on 900.
+> i like the dependency reduction. Noticed one small detail:
+> 
+> this new 2000-lines #ifdef block percpu.c:
+> 
+>  +#ifdef CONFIG_SMP
+>  +#else  /* CONFIG_SMP */
+>  +#endif /* CONFIG_SMP */
+> 
+> feels a bit lame. A separate percpu_up.c file would be nicer i suppose?
 
-Using these presets, is write some bytes to the EC and to something
-wich sounds like clock (RCLK, WCKB, WLCK)
-By the name it seems that it set the FSB, it may also surely change
-the CPU Clock.
+Sure.
 
-Now, I don't know why cpuinfo always show the same value, maybe
-because the cpu clock is not changed
-by a cpufreq driver.
+> Also, why should we make this opt-in and expose a wide range of configs to 
+> build breakages? A more gradual approach would be to write a simple script 
+> that adds a slab.h include to all .c's that include percpu.h, directly or 
+> indirectly.
+>
+> You can map the pattern experimentally: the insertion pattern could be built 
+> from the x86 allmodconfig build you did [i.e. extend the pattern until you 
+> make it build on allmodconfig] - that would cover most cases in practice (not 
+> just allmodconfig) - and would cover most architectures as well.
+
+I don't really get the 'experimental' part but if I count all the
+files which ends up including percpu.h directly or indirectly on
+allmodconfig it ends up including much more .c files than necessasry -
+11203 to be exact, ~20 times more than necessary.  Inclusions from .c
+files definitely are much less troublesome so the situation would be
+better than now but we'll still end up with a LOT of bogus inclusions
+without any good way to eventually remove them.
+
+Maybe a better way is to grab for slab API usages in .c files which
+don't have slab.h inclusion.  If breaking the dependency is the way to
+go, I can definitely write up some scripts and do test builds on some
+archs.  There sure will be some fallouts but I think it won't be too
+bad.
+
+Thanks.
 
 -- 
-Corentin Chary
-http://xf.iksaif.net
+tejun
