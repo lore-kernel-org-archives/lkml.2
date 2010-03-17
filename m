@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0CQIC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:02:58 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58003 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753029Ab0CQICz (ORCPT
+	id S1753514Ab0CQIFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:05:00 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33293 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab0CQIE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:02:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: linux-next: build warning after merge of the tip tree
-Cc: kosaki.motohiro@jp.fujitsu.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100317070239.GA16374@elte.hu>
-References: <20100317145702.e314f75b.sfr@canb.auug.org.au> <20100317070239.GA16374@elte.hu>
-Message-Id: <20100317170228.870F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 17 Mar 2010 17:02:51 +0900 (JST)
+	Wed, 17 Mar 2010 04:04:56 -0400
+From: Arun Bhanu <arun@bhanu.net>
+To: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
+Cc: Michal Simek <monstr@monstr.eu>, Arun Bhanu <arun@bhanu.net>
+Subject: [PATCH 1/2] microblaze: Fix Makefile to delete build generated files
+Date: Wed, 17 Mar 2010 16:06:03 +0800
+Message-Id: <1268813164-12582-2-git-send-email-arun@bhanu.net>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1268813164-12582-1-git-send-email-arun@bhanu.net>
+References: <1268813164-12582-1-git-send-email-arun@bhanu.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> * Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 
-> > Hi all,
-> > 
-> > After merging the tip tree, today's linux-next build (powerpc
-> > ppc64_defconfig) produced this warning:
-> > 
-> > kernel/sched.c: In function 'SYSC_sched_getaffinity':
-> > kernel/sched.c:4915: warning: comparison of distinct pointer types lacks a cast
-> 
-> I already reported this yesterday, see:
-> 
->   http://patchwork.kernel.org/patch/86244/
+'make clean' does not to delete the following build generated file:
+	arch/microblaze/boot/linux.bin.ub
 
-yup, very thanks.
+'make mrproper' does not to delete the following build generated files:
+	arch/microblaze/boot/simpleImage.*
 
+Fix the Makefile to delete these build generated files.
 
+See [1] for a discussion on why simpleImage.* files are deleted with 'make
+mrproper' and not with 'make clean'.
+	[1] http://lkml.org/lkml/2010/3/12/96
+
+Signed-off-by: Arun Bhanu <arun@bhanu.net>
+---
+ arch/microblaze/Makefile      |    2 ++
+ arch/microblaze/boot/Makefile |    2 +-
+ 2 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/arch/microblaze/Makefile b/arch/microblaze/Makefile
+index d2d6cfc..36926b9 100644
+--- a/arch/microblaze/Makefile
++++ b/arch/microblaze/Makefile
+@@ -93,3 +93,5 @@ define archhelp
+   echo '  name of a dts file from the arch/microblaze/boot/dts/ directory'
+   echo '  (minus the .dts extension).'
+ endef
++
++MRPROPER_FILES += $(boot)/simpleImage.*
+diff --git a/arch/microblaze/boot/Makefile b/arch/microblaze/boot/Makefile
+index 902cf98..a1fc324 100644
+--- a/arch/microblaze/boot/Makefile
++++ b/arch/microblaze/boot/Makefile
+@@ -64,4 +64,4 @@ $(obj)/%.dtb: $(dtstree)/%.dts FORCE
+ 
+ clean-kernel += linux.bin linux.bin.gz simpleImage.*
+ 
+-clean-files += *.dtb simpleImage.*.unstrip
++clean-files += *.dtb simpleImage.*.unstrip linux.bin.ub
+-- 
+1.6.2.5
 
