@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab0CQOPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 10:15:35 -0400
-Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:16064 "EHLO
-	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752548Ab0CQOPe (ORCPT
+	id S1753968Ab0CQOQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 10:16:47 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:29882 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab0CQOQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 10:15:34 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAJx/oEtbss6F/2dsb2JhbACbA3S6MA2EaQQ
-Date: Wed, 17 Mar 2010 15:15:28 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v2 0/4] RDC321x southbridge and GPIO support
-Message-ID: <20100317141528.GB3823@infomag.iguana.be>
-References: <201003110942.03602.florian@openwrt.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003110942.03602.florian@openwrt.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 17 Mar 2010 10:16:45 -0400
+Subject: Re: [PATCH 1/5] tmpfs: fix oops on mounts with mpol=default
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, kiran@scalex86.org,
+       cl@linux-foundation.org, hugh.dickins@tiscali.co.uk, mel@csn.ul.ie,
+       stable@kernel.org, linux-mm <linux-mm@kvack.org>,
+       akpm@linux-foundation.org
+In-Reply-To: <20100316144810.4C48.A69D9226@jp.fujitsu.com>
+References: <201003122353.o2CNrC56015250@imap1.linux-foundation.org>
+	 <20100316143406.4C45.A69D9226@jp.fujitsu.com>
+	 <20100316144810.4C48.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain
+Organization: HP/LKTT
+Date: Wed, 17 Mar 2010 10:16:11 -0400
+Message-Id: <1268835371.4773.40.camel@useless.americas.hpqcorp.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
-
-> Here are 4 patches relative to adding support for the RDC321x southbridge.
-> This southbridge is present on all x86-based RDC321x System-on-a-Chip and
-> provides access to GPIOs and Wathchdog. The watchdog driver is already merged.
+On Tue, 2010-03-16 at 14:49 +0900, KOSAKI Motohiro wrote:
+> ChangeLog from Ravikiran's original one
+>   - Fix the patch description. the problem is in mount, not only remount.
+>   - Skip mpol_new() simply, instead adding NULL check.
 > 
-> Samuel, this is rebased on top of your mfd-2.6 master branch after commit 
-> 522dba7 and I think the 4 patches should go via your tree to make sure the 
-> merge is consistent.
 > 
-> Thank you.
+> =========================
+> From: Ravikiran G Thirumalai <kiran@scalex86.org>
 > 
-> Florian Fainelli (4):
->   x86: remove rdc321x_defs.h
->   MFD: add support for the RDC321x southbridge
->   GPIO: add support for RDC321x GPIO controller
->   WATCHDOG: convert rdc321x_wdt to use southbridge accessors
+> Fix an 'oops' when a tmpfs mount point is mounted with the mpol=default
+> mempolicy.
+> 
+> Upon remounting a tmpfs mount point with 'mpol=default' option, the
+> mount code crashed with a null pointer dereference.  The initial
+> problem report was on 2.6.27, but the problem exists in mainline
+> 2.6.34-rc as well.  On examining the code, we see that mpol_new returns
+> NULL if default mempolicy was requested.  This 'NULL' mempolicy is
+> accessed to store the node mask resulting in oops.
+> 
+> The following patch fixes it.
+> 
+> Signed-off-by: Ravikiran Thirumalai <kiran@scalex86.org>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
+> Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> Cc: <stable@kernel.org>
 
-Watchdog part is OK for me. So Acked-by me can be added.
-Personally I don't like the fact that you remove the rdc321x_defs.h file as the first patch.
-If someone bisects the kernel, he will get a broken driver between the first and the fourth patch.
+Acked-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Kind regards,
-Wim.
+> ---
+>  mm/mempolicy.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index bda230e..25a0c0f 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -2213,10 +2213,15 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+>  			goto out;
+>  		mode = MPOL_PREFERRED;
+>  		break;
+> -
+> +	case MPOL_DEFAULT:
+> +		/*
+> +		 * Insist on a empty nodelist
+> +		 */
+> +		if (!nodelist)
+> +			err = 0;
+> +		goto out;
+>  	/*
+>  	 * case MPOL_BIND:    mpol_new() enforces non-empty nodemask.
+> -	 * case MPOL_DEFAULT: mpol_new() enforces empty nodemask, ignores flags.
+>  	 */
+>  	}
+>  
 
