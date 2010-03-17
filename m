@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab0CQRGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 13:06:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42365 "EHLO mx1.redhat.com"
+	id S1755216Ab0CQRHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 13:07:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42117 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753703Ab0CQRGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 13:06:39 -0400
-Message-ID: <4BA10C07.7000904@redhat.com>
-Date: Wed, 17 Mar 2010 19:06:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
+	id S1753718Ab0CQRHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 13:07:17 -0400
+Date: Wed, 17 Mar 2010 13:05:01 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chris Webb <chris@arachsys.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
        Rik van Riel <riel@surriel.com>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Kevin Wolf <kwolf@redhat.com>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100317152452.GZ31148@arachsys.com> <4BA101C5.9040406@redhat.com> <4BA105FE.2000607@redhat.com> <20100317165725.GB29548@lst.de>
-In-Reply-To: <20100317165725.GB29548@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+	parameter
+Message-ID: <20100317170501.GB9198@redhat.com>
+References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9EC60A.2070101@codemonkey.ws> <20100317151409.GY31148@arachsys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100317151409.GY31148@arachsys.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 06:57 PM, Christoph Hellwig wrote:
-> On Wed, Mar 17, 2010 at 06:40:30PM +0200, Avi Kivity wrote:
->    
->> Chris, can you carry out an experiment?  Write a program that pwrite()s
->> a byte to a file at the same location repeatedly, with the file opened
->> using O_SYNC.  Measure the write rate, and run blktrace on the host to
->> see what the disk (/dev/sda, not the volume) sees.  Should be a (write,
->> flush, write, flush) per pwrite pattern or similar (for writing the data
->> and a journal block, perhaps even three writes will be needed).
->>
->> Then scale this across multiple guests, measure and trace again.  If
->> we're lucky, the flushes will be coalesced, if not, we need to work on it.
->>      
-> As the person who has written quite a bit of the current O_SYNC
-> implementation and also reviewed the rest of it I can tell you that
-> those flushes won't be coalesced.  If we always rewrite the same block
-> we do the cache flush from the fsync method and there's is nothing
-> to coalesced it there.  If you actually do modify metadata (e.g. by
-> using the new real O_SYNC instead of the old one that always was O_DSYNC
-> that I introduced in 2.6.33 but that isn't picked up by userspace yet)
-> you might hit a very limited transaction merging window in some
-> filesystems, but it's generally very small for a good reason.  If it
-> were too large we'd make the once progress wait for I/O in another just
-> because we might expect transactions to coalesced later.  There's been
-> some long discussion about that fsync transaction batching tuning
-> for ext3 a while ago.
->    
+On Wed, Mar 17, 2010 at 03:14:10PM +0000, Chris Webb wrote:
+> Anthony Liguori <anthony@codemonkey.ws> writes:
+> 
+> > This really gets down to your definition of "safe" behaviour.  As it
+> > stands, if you suffer a power outage, it may lead to guest
+> > corruption.
+> > 
+> > While we are correct in advertising a write-cache, write-caches are
+> > volatile and should a drive lose power, it could lead to data
+> > corruption.  Enterprise disks tend to have battery backed write
+> > caches to prevent this.
+> > 
+> > In the set up you're emulating, the host is acting as a giant write
+> > cache.  Should your host fail, you can get data corruption.
+> 
+> Hi Anthony. I suspected my post might spark an interesting discussion!
+> 
+> Before considering anything like this, we did quite a bit of testing with
+> OSes in qemu-kvm guests running filesystem-intensive work, using an ipmitool
+> power off to kill the host. I didn't manage to corrupt any ext3, ext4 or
+> NTFS filesystems despite these efforts.
+> 
+> Is your claim here that:-
+> 
+>   (a) qemu doesn't emulate a disk write cache correctly; or
+> 
+>   (b) operating systems are inherently unsafe running on top of a disk with
+>       a write-cache; or
+> 
+>   (c) installations that are already broken and lose data with a physical
+>       drive with a write-cache can lose much more in this case because the
+>       write cache is much bigger?
+> 
+> Following Christoph Hellwig's patch series from last September, I'm pretty
+> convinced that (a) isn't true apart from the inability to disable the
+> write-cache at run-time, which is something that neither recent linux nor
+> windows seem to want to do out-of-the box.
+> 
+> Given that modern SATA drives come with fairly substantial write-caches
+> nowadays which operating systems leave on without widespread disaster, I
+> don't really believe in (b) either, at least for the ide and scsi case.
+> Filesystems know they have to flush the disk cache to avoid corruption.
+> (Virtio makes the write cache invisible to the OS except in linux 2.6.32+ so
+> I know virtio-blk has to be avoided for current windows and obsolete linux
+> when writeback caching is on.)
+> 
+> I can certainly imagine (c) might be the case, although when I use strace to
+> watch the IO to the block device, I see pretty regular fdatasyncs being
+> issued by the guests, interleaved with the writes, so I'm not sure how
+> likely the problem would be in practice. Perhaps my test guests were
+> unrepresentatively well-behaved.
+> 
+> However, the potentially unlimited time-window for loss of incorrectly
+> unsynced data is also something one could imagine fixing at the qemu level.
+> Perhaps I should be implementing something like
+> cache=writeback,flushtimeout=N which, upon a write being issued to the block
+> device, starts an N second timer if it isn't already running. The timer is
+> destroyed on flush, and if it expires before it's destroyed, a gratuitous
+> flush is sent. Do you think this is worth doing? Just a simple 'while sleep
+> 10; do sync; done' on the host even!
+> 
+> We've used cache=none and cache=writethrough, and whilst performance is fine
+> with a single guest accessing a disk, when we chop the disks up with LVM and
+> run a even a small handful of guests, the constant seeking to serve tiny
+> synchronous IOs leads to truly abysmal throughput---we've seen less than
+> 700kB/s streaming write rates within guests when the backing store is
+> capable of 100MB/s.
+> 
+> With cache=writeback, there's still IO contention between guests, but the
+> write granularity is a bit coarser, so the host's elevator seems to get a
+> bit more of a chance to help us out and we can at least squeeze out 5-10MB/s
+> from two or three concurrently running guests, getting a total of 20-30% of
+> the performance of the underlying block device rather than a total of around
+> 5%.
 
-I definitely don't expect flush merging for a single guest, but for 
-multiple guests there is certainly an opportunity for merging.  Most 
-likely we don't take advantage of it and that's one of the problems.  
-Copying data into pagecache so that we can merge the flushes seems like 
-a very unsatisfactory implementation.
+Hi Chris,
 
+Are you using CFQ in the host? What is the host kernel version? I am not sure
+what is the problem here but you might want to play with IO controller and put
+these guests in individual cgroups and see if you get better throughput even
+with cache=writethrough.
 
+If the problem is that if sync writes from different guests get intermixed
+resulting in more seeks, IO controller might help as these writes will now
+go on different group service trees and in CFQ, we try to service requests
+from one service tree at a time for a period before we switch the service
+tree.
 
+The issue will be that all the logic is in CFQ and it works at leaf nodes
+of storage stack and not at LVM nodes. So first you might want to try it with
+single partitioned disk. If it helps, then it might help with LVM
+configuration also (IO control working at leaf nodes).
 
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks
+Vivek
