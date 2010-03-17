@@ -1,61 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab0CQDBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:01:21 -0400
-Received: from ppp167-251-209.static.internode.on.net ([59.167.251.209]:60017
-	"EHLO cheesypoof.guarana.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079Ab0CQDBU (ORCPT
+	id S1751638Ab0CQDHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:07:23 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:40260 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab0CQDHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:01:20 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 23:01:19 EDT
-Date: Wed, 17 Mar 2010 13:51:01 +1100
-From: Kevin Easton <caf@guarana.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: ATA 4 KiB sector issues.
-Message-ID: <20100317025101.GA13339@guarana.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268752993.21384.23.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Mar 2010 23:07:21 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: Weird wireless/wpa_supplicant screw-up.
+In-Reply-To: Your message of "Fri, 12 Mar 2010 19:09:09 PST."
+             <1268449749.4880.2.camel@jlt3.sipsolutions.net>
+From: Valdis.Kletnieks@vt.edu
+References: <7197.1268086939@localhost> <1268392481.4828.7.camel@jlt3.sipsolutions.net> <5220.1268430568@localhost>
+            <1268449749.4880.2.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1268795213_4069P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 16 Mar 2010 23:06:53 -0400
+Message-ID: <12262.1268795213@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=steiner.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020202.4BA0474E.017B,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley wrote:
-> On Wed, 2010-03-17 at 00:20 +0900, Tejun Heo wrote:
+--==_Exmh_1268795213_4069P
+Content-Type: text/plain; charset=us-ascii
 
-...
-
-> > Well, the thing is that
-> > 
-> > * Anything remotely modern (>= XP) doesn't give a hoot about cylinder
-> >   alignment.
-> > 
-> > * Anything older (<= 2000) is very likely to get confused with custom
-> >   geometry starting from the BIOS itself.  For those cases, the only
-> >   thing we can do is aligning partitions to cylinders abiding BIOS
-> >   supplied geometry parameters which will usually be 255/63.
-> > 
-> > So, using custom geometry doesn't help compatibility at all.
+On Fri, 12 Mar 2010 19:09:09 PST, Johannes Berg said:
+> No ... look at _all_ that it produces.
 > 
-> Our partitioning tool still obey the integral cylinder rule ... we can
-> argue about whether they should, but what we need is a strategy for
-> fixing what is rather than what should be.
+> [   98.592575] In giwencode idx=0 keys=ffff88001b304000 cipher=0
+> [   98.592580] And we're going home...
+> *****
+> [   98.592633] In giwencode idx=1 keys=ffff88001b304000 cipher=fac04
+> *****
+> [   98.592749] In giwencode idx=2 keys=ffff88001b304000 cipher=0
+> [   98.592751] And we're going home...
+> [   98.592803] In giwencode idx=3 keys=ffff88001b304000 cipher=0
+> [   98.592805] And we're going home...
+> [   98.592856] In giwencode idx=0 keys=ffff88001b304000 cipher=0
+> [   98.592859] And we're going home...
+> 
+> See? It reports one key which is the RX-only group key which is
+> absolutely correct.
 
-James / Tejun,
+It matches what 'iwlist keys' reports, but I remain unconvinced of
+its "correctness".  If a TX key has been set anyplace, what allows me
+to verify that it was in fact set?
 
-Can't we fix the problem by defaulting to aligning partitions to
-start on an LBA that is a multiple of 64260 ?
+> > So the root cause has something to do with params[idx].cipher being unset.
+> 
+> Not at all.
 
-Such partitions will always be 4KiB-aligned, *and* start-of-cylinder
-aligned (assuming 255/63, as seems to be the norm).
+I was referring to the root cause of why 'iwlist keys' wasn't reporting
+anything for the other 3 key slots.
 
-Sure, that reduces your partition granularity to almost-32-MiB, but
-that's pretty small potatoes these days (and it's only a *default*, so
-you could always override that if you really cared, and didn't need 
-the compatibility).
+> GIWENCODE is 100% unsuitable for WPA. Just forget about "iwlist key".
 
-    - Kevin
+Feel free to point me at the officially approved substitute.
+
+> And then we'd like to know what the actual problem is.
+
+The problem is that I do 'iwconfig', and I see:
+
+Encryption key:off
+
+And if I do 'iwlist keys', I don't see a TX key listed, which certainly gives
+the at least the impression that we're not encrypting outbound traffic.  If I'm
+not supposed to trust 'iwconfig' or 'iwlist key' to tell me whether WPA2
+traffic is in fact encrypted or not, what *am* I supposed to use instead?
+
+There's two possibilities:
+
+1) iwconfig and iwlist keys are correctly reporting I don't have a TX key
+set - which means wpa_supplicant and/or the kernel is failing to get the
+key set, which is a problem.
+
+2) iwconfig and iwlist are lying through their teeth, and reporting there
+isn't any key set when in fact there is.  This is still a problem because it
+implies to users their traffic isn't secured.
+
+I'll point out that until fairly recently 'iwconfig' *did* report a key for
+WPA2, so this looks like a regression on somebody's part.
+
+
+--==_Exmh_1268795213_4069P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLoEdNcC3lWbTT17ARAgE3AKDxlTrvsTPkYR/tsy9JLX8ehBPA3ACfU0aG
+i18TPXQEXyrzWhUEKdJR6DI=
+=rZEE
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1268795213_4069P--
 
