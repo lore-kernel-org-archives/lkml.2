@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0CQOOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 10:14:40 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11078 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab0CQOOh (ORCPT
+	id S1753972Ab0CQOPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 10:15:35 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:16064 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752548Ab0CQOPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 10:14:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=mNw1OUMCDk2YG9btyUiahzbC0/EnUO16yUtp3pW4IqBltuumfEY/KXx8qajgDQwAt
-	QoSmsR2QvPPwH/Me0xI8Q==
-Message-ID: <4ba0e3c7.1c185e0a.7786.ffffb1d9@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 17 Mar 2010 15:11:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com
-Subject: [PATCH] perf: fix stat attach bogus counts
-X-System-Of-Record: true
+	Wed, 17 Mar 2010 10:15:34 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJx/oEtbss6F/2dsb2JhbACbA3S6MA2EaQQ
+Date: Wed, 17 Mar 2010 15:15:28 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2 0/4] RDC321x southbridge and GPIO support
+Message-ID: <20100317141528.GB3823@infomag.iguana.be>
+References: <201003110942.03602.florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201003110942.03602.florian@openwrt.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	When perf stat -p pid is used, the events must be enabled
-	immediately as there is no exec and thus no enable_on_exec.
+Hi Florian,
 
-	Signed-off-by: Stephane Eranian <eranian@google.com>
+> Here are 4 patches relative to adding support for the RDC321x southbridge.
+> This southbridge is present on all x86-based RDC321x System-on-a-Chip and
+> provides access to GPIOs and Wathchdog. The watchdog driver is already merged.
+> 
+> Samuel, this is rebased on top of your mfd-2.6 master branch after commit 
+> 522dba7 and I think the 4 patches should go via your tree to make sure the 
+> merge is consistent.
+> 
+> Thank you.
+> 
+> Florian Fainelli (4):
+>   x86: remove rdc321x_defs.h
+>   MFD: add support for the RDC321x southbridge
+>   GPIO: add support for RDC321x GPIO controller
+>   WATCHDOG: convert rdc321x_wdt to use southbridge accessors
 
---
- builtin-stat.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Watchdog part is OK for me. So Acked-by me can be added.
+Personally I don't like the fact that you remove the rdc321x_defs.h file as the first patch.
+If someone bisects the kernel, he will get a broken driver between the first and the fourth patch.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 95db31c..3a91fad 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -159,8 +159,10 @@ static void create_perf_stat_counter(int counter, int pid)
- 		}
- 	} else {
- 		attr->inherit	     = inherit;
--		attr->disabled	     = 1;
--		attr->enable_on_exec = 1;
-+		if (target_pid == -1) {
-+			attr->disabled	     = 1;
-+			attr->enable_on_exec = 1;
-+		}
- 
- 		fd[0][counter] = sys_perf_event_open(attr, pid, -1, -1, 0);
- 		if (fd[0][counter] < 0 && verbose)
+Kind regards,
+Wim.
+
