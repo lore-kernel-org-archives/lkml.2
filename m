@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0CQSwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 14:52:23 -0400
-Received: from mail.gmx.net ([213.165.64.20]:54551 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751595Ab0CQSwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 14:52:22 -0400
-X-Authenticated: #34473864
-X-Provags-ID: V01U2FsdGVkX19sd8Zo1UBsd8ExDlbKZXFIWZ3AO5o2QCtf3+6qz/
-	DXZ/HneHAdORXk
-Message-ID: <4BA124DC.2070701@gmx.de>
-Date: Wed, 17 Mar 2010 19:52:12 +0100
-From: Philipp Kohlbecher <xt28@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Shredder/3.0.3
+	id S1753255Ab0CQSxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 14:53:38 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:44987 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595Ab0CQSxg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 14:53:36 -0400
+Date: Thu, 18 Mar 2010 00:23:27 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrea Righi <arighi@develer.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v7)
+Message-ID: <20100317185327.GV18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <20100315171209.GI21127@redhat.com>
+ <20100315171921.GJ21127@redhat.com>
+ <20100317115427.GR18054@balbir.in.ibm.com>
+ <20100317133407.GA9198@redhat.com>
 MIME-Version: 1.0
-To: linux-kbuild@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] .gitignore: ignore *.lzo files
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.68999999999999995
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100317133407.GA9198@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ignore files compressed with lzop.
+* Vivek Goyal <vgoyal@redhat.com> [2010-03-17 09:34:07]:
 
-Signed-off-by: Philipp Kohlbecher <xt28@gmx.de>
----
- .gitignore |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> > > 
+> > > root cgroup
+> > > ==========
+> > > #time dd if=/dev/zero of=/root/zerofile bs=4K count=1M
+> > > 4294967296 bytes (4.3 GB) copied, 56.098 s, 76.6 MB/s
+> > > 
+> > > real	0m56.614s
+> > > 
+> > > test1 cgroup with memory limit 100M
+> > > ===================================
+> > > # time dd if=/dev/zero of=/root/zerofile1 bs=4K count=1M
+> > > 4294967296 bytes (4.3 GB) copied, 19.8097 s, 217 MB/s
+> > > 
+> > > real	0m19.992s
+> > > 
+> > 
+> > This is strange, did you flish the cache between the two runs?
+> > NOTE: Since the files are same, we reuse page cache from the
+> > other cgroup.
+> 
+> Files are different. Note suffix "1".
+>
 
-diff --git a/.gitignore b/.gitignore
-index a2939fc..8faa6c0 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -28,6 +28,7 @@ modules.builtin
- *.gz
- *.bz2
- *.lzma
-+*.lzo
- *.patch
- *.gcno
+Thanks, I'll get the perf output and see what I get. 
 
 -- 
-1.7.0.2
+	Three Cheers,
+	Balbir
