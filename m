@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab0CQEbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 00:31:07 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39109 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab0CQEbF (ORCPT
+	id S1753169Ab0CQEba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 00:31:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51614
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752720Ab0CQEb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 00:31:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc:in-reply-to:references;
-        b=bNAqkOGLKbpeFD1E6z82JG4bW8ypfWymIkUfgfY/aV7L7b69GtSojE8A7i1EqEBJGo
-         M1j4694HkpXpf7Z+egtBp2vxJl6GnYWKa9Eob0oKtUbOJAiTy8X2rKgl8rFIMa1PVFCn
-         sZp0vDjOzJdxJYGQUe4qN+KRuizfT9DOWFLLc=
-Message-ID: <4ba05b07.9f15f10a.5ac5.144f@mx.google.com>
-Date: Tue, 16 Mar 2010 21:31:03 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-In-Reply-To: <20100317033010.GE8256@thunk.org>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
-	<20100317012439.GA8256@thunk.org>
-	<4ba049f1.017ee70a.5ce6.1456@mx.google.com>
-	<20100317033010.GE8256@thunk.org>
+	Wed, 17 Mar 2010 00:31:28 -0400
+Date: Tue, 16 Mar 2010 21:31:49 -0700 (PDT)
+Message-Id: <20100316.213149.00701940.davem@davemloft.net>
+To: joe@perches.com
+Cc: jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
+       jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+       alexander.h.duyck@intel.com, peter.p.waskiewicz.jr@intel.com,
+       john.ronciak@intel.com, gallatin@myri.com, brice@myri.com,
+       linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net
+Subject: Re: [PATCH net-next] drivers/net/e100.c: Use pr_<level> and
+ netif_<level>
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1267478181.12641.142.camel@Joe-Laptop.home>
+References: <cover.1266893507.git.joe@perches.com>
+	<9929d2391002231833j65008a1ev1d2297672a39a483@mail.gmail.com>
+	<1267478181.12641.142.camel@Joe-Laptop.home>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010 23:30:10 -0400, tytso@mit.edu wrote:
-> .... so did switching to Btrfs solve your latency issues, or are you
-> still having problems?
+From: Joe Perches <joe@perches.com>
+Date: Mon, 01 Mar 2010 13:16:21 -0800
 
-Still having troubles although I'm now running 2.6.34-rc1 and things seem
-mildly better. I'll try doing a backup tonight and report back.
+> Convert DPRINTK, commonly used for debugging, to netif_<level>
+> Remove #define PFX
+> Use #define pr_fmt
+> Consistently use no periods for non-sentence logging messages
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-- Ben
+Applied.
