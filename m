@@ -1,69 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab0CQX61 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:58:27 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53845 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049Ab0CQX60 (ORCPT
+	id S1753168Ab0CRAQy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 20:16:54 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:33805 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372Ab0CRAQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:58:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Mar 2010 08:54:11 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100317115855.GS18054@balbir.in.ibm.com>
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
-	<1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100317115855.GS18054@balbir.in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Mar 2010 20:16:52 -0400
+Date: Wed, 17 Mar 2010 16:37:53 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Andreas Dilger <adilger@sun.com>
+Cc: Oren Laadan <orenl@cs.columbia.edu>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-api@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       containers@lists.linux-foundation.org,
+       Matt Helsley <matthltc@us.ibm.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [C/R v20][PATCH 46/96] c/r: add checkpoint operation for
+ opened files of generic filesystems
+Message-ID: <20100317233753.GJ3037@count0.beaverton.ibm.com>
+References: <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
+ <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Mar 2010 17:28:55 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Wed, Mar 17, 2010 at 03:09:00PM -0600, Andreas Dilger wrote:
 
-> * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+<snip> (already responded to the first part)
+
+> >static const struct vm_operations_struct nfs_file_vm_ops = {
+> >	.fault = filemap_fault,
+> >	.page_mkwrite = nfs_vm_page_mkwrite,
+> >+#ifdef CONFIG_CHECKPOINT
+> >+	.checkpoint = filemap_checkpoint,
+> >+#endif
+> >};
 > 
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > Now, file-mapped is maintaiend. But more generic update function
-> > will be needed for dirty page accounting.
-> > 
-> > For accountig page status, we have to guarantee lock_page_cgroup()
-> > will be never called under tree_lock held.
-> > To guarantee that, we use trylock at updating status.
-> > By this, we do fuzzy accounting, but in almost all case, it's correct.
-> >
-> 
-> I don't like this at all, but in almost all cases is not acceptable
-> for statistics, since decisions will be made on them and having them
-> incorrect is really bad. Could we do a form of deferred statistics and
-> fix this.
-> 
+> Why is this one conditional, but the others are not?
 
-plz show your implementation which has no performance regresssion.
-For me, I don't neee file_mapped accounting, at all. If we can remove that,
-we can add simple migration lock.
-file_mapped is a feattue you added. please improve it.
+Something like this perhaps (untested, but it should work).
 
+    Move empty filemap_checkpoint definition
+    
+    This makes the operation usable in the nfs vm operation structure
+    and avoids the extra #ifdef.
+    
+    Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+    Cc: Andreas Dilger <adilger@sun.com>
 
-Thanks,
--Kame
-
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 4437ef9..c6f9090 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -578,9 +578,7 @@ out_unlock:
+ static const struct vm_operations_struct nfs_file_vm_ops = {
+ 	.fault = filemap_fault,
+ 	.page_mkwrite = nfs_vm_page_mkwrite,
+-#ifdef CONFIG_CHECKPOINT
+ 	.checkpoint = filemap_checkpoint,
+-#endif
+ };
+ 
+ static int nfs_need_sync_write(struct file *filp, struct inode *inode)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 210d8e3..e9d9605 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1206,6 +1206,8 @@ extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
+ #ifdef CONFIG_CHECKPOINT
+ /* generic vm_area_ops exported for mapped files checkpoint */
+ extern int filemap_checkpoint(struct ckpt_ctx *, struct vm_area_struct *);
++#else /* !CONFIG_CHECKPOINT */
++#define filemap_checkpoint NULL
+ #endif
+ 
+ /* mm/page-writeback.c */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 4ea28e6..bc98a15 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1678,8 +1678,6 @@ int filemap_restore(struct ckpt_ctx *ctx,
+ 	}
+ 	return ret;
+ }
+-#else /* !CONFIG_CHECKPOINT */
+-#define filemap_checkpoint NULL
+ #endif
+ 
+ const struct vm_operations_struct generic_file_vm_ops = {
