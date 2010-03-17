@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642Ab0CQQOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:14:30 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37424 "EHLO
+	id S1755077Ab0CQQPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:15:39 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37733 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754672Ab0CQQOS (ORCPT
+	with ESMTP id S1754986Ab0CQQPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:18 -0400
+	Wed, 17 Mar 2010 12:15:25 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 32/96] c/r: support for zombie processes
-Date: Wed, 17 Mar 2010 12:08:20 -0400
-Message-Id: <1268842164-5590-33-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 50/96] splice: export pipe/file-to-pipe/file functionality
+Date: Wed, 17 Mar 2010 12:08:38 -0400
+Message-Id: <1268842164-5590-51-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-50-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -50,279 +50,180 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-30-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-33-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-34-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-35-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-43-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-44-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-46-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-48-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-49-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-50-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During checkpoint, a zombie processes need only save p->comm,
-p->state, p->exit_state, and p->exit_code.
+During pipes c/r pipes we need to save and restore pipe buffers. But
+do_splice() requires two file descriptors, therefore we can't use it,
+as we always have one file descriptor (checkpoint image) and one
+pipe_inode_info.
 
-During restart, zombie processes are created like all other
-processes. They validate the saved exit_code restore p->comm
-and p->exit_code. Then they call do_exit() instead of waking
-up the next task in line.
+This patch exports interfaces that work at the pipe_inode_info level,
+namely link_pipe(), do_splice_to() and do_splice_from(). They are used
+in the following patch to to save and restore pipe buffers without
+unnecessary data copy.
 
-But before, they place the @ctx in p->checkpoint_ctx, so that
-only at exit time they will wake up the next task in line,
-and drop the reference to the @ctx.
-
-This provides the guarantee that when the coordinator's wait
-completes, all normal tasks completed their restart, and all
-zombie tasks are already zombified (as opposed to perhap only
-becoming a zombie).
-
-Changelog[v19-rc1]:
-  - Simplify logic of tracking restarting tasks
-Changelog[v18]:
-  - Fix leak of ckpt_ctx when restoring zombie tasks
-  - Add a few more ckpt_write_err()s
-Changelog[v17]:
-  - Validate t->exit_signal for both threads and leader
-  - Skip zombies in most of may_checkpoint_task()
-  - Save/restore t->pdeath_signal
-  - Validate ->exit_signal and ->pdeath_signal
+It slightly modifies both do_splice_to() and do_splice_from() to
+detect the case of pipe-to-pipe transfer, in which case they invoke
+splice_pipe_to_pipe() directly.
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- checkpoint/checkpoint.c        |   10 ++++--
- checkpoint/process.c           |   69 +++++++++++++++++++++++++++++++++++-----
- checkpoint/restart.c           |   22 +++++++++++--
- include/linux/checkpoint.h     |    1 +
- include/linux/checkpoint_hdr.h |    1 +
- 5 files changed, 89 insertions(+), 14 deletions(-)
+ fs/splice.c            |   61 ++++++++++++++++++++++++++++++++---------------
+ include/linux/splice.h |    9 +++++++
+ 2 files changed, 50 insertions(+), 20 deletions(-)
 
-diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
-index 1e38ae3..ea1494d 100644
---- a/checkpoint/checkpoint.c
-+++ b/checkpoint/checkpoint.c
-@@ -218,7 +218,7 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+diff --git a/fs/splice.c b/fs/splice.c
+index 3920866..76acb55 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1051,18 +1051,43 @@ ssize_t generic_splice_sendpage(struct pipe_inode_info *pipe, struct file *out,
+ EXPORT_SYMBOL(generic_splice_sendpage);
  
- 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
- 
--	if (t->state == TASK_DEAD) {
-+	if (t->exit_state == EXIT_DEAD) {
- 		_ckpt_err(ctx, -EBUSY, "%(T)Task state EXIT_DEAD\n");
- 		return -EBUSY;
- 	}
-@@ -228,6 +228,10 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		return -EPERM;
- 	}
- 
-+	/* zombies are cool (and also don't have nsproxy, below...) */
-+	if (t->exit_state)
-+		return 0;
-+
- 	/* verify that all tasks belongs to same freezer cgroup */
- 	if (t != current && !in_same_cgroup_freezer(t, ctx->root_freezer)) {
- 		_ckpt_err(ctx, -EBUSY, "%(T)Not frozen or wrong cgroup\n");
-@@ -244,8 +248,8 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 	 * FIX: for now, disallow siblings of container init created
- 	 * via CLONE_PARENT (unclear if they will remain possible)
- 	 */
--	if (ctx->root_init && t != root && t->tgid != root->tgid &&
--	    t->real_parent == root->real_parent) {
-+	if (ctx->root_init && t != root &&
-+	    t->real_parent == root->real_parent && t->tgid != root->tgid) {
- 		_ckpt_err(ctx, -EINVAL, "%(T)Task is sibling of root\n");
- 		return -EINVAL;
- 	}
-diff --git a/checkpoint/process.c b/checkpoint/process.c
-index 9f2059c..c47dea1 100644
---- a/checkpoint/process.c
-+++ b/checkpoint/process.c
-@@ -35,12 +35,18 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
- 	h->state = t->state;
- 	h->exit_state = t->exit_state;
- 	h->exit_code = t->exit_code;
--	h->exit_signal = t->exit_signal;
- 
--	h->set_child_tid = (unsigned long) t->set_child_tid;
--	h->clear_child_tid = (unsigned long) t->clear_child_tid;
-+	if (t->exit_state) {
-+		/* zombie - skip remaining state */
-+		BUG_ON(t->exit_state != EXIT_ZOMBIE);
-+	} else {
-+		/* FIXME: save remaining relevant task_struct fields */
-+		h->exit_signal = t->exit_signal;
-+		h->pdeath_signal = t->pdeath_signal;
- 
--	/* FIXME: save remaining relevant task_struct fields */
-+		h->set_child_tid = (unsigned long) t->set_child_tid;
-+		h->clear_child_tid = (unsigned long) t->clear_child_tid;
-+	}
- 
- 	ret = ckpt_write_obj(ctx, &h->h);
- 	ckpt_hdr_put(ctx, h);
-@@ -171,6 +177,11 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 	ckpt_debug("task %d\n", ret);
- 	if (ret < 0)
- 		goto out;
-+
-+	/* zombie - we're done here */
-+	if (t->exit_state)
-+		return 0;
-+
- 	ret = checkpoint_thread(ctx, t);
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
-@@ -190,6 +201,19 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
-  * Restart
-  */
- 
-+static inline int valid_exit_code(int exit_code)
+ /*
++ * After the inode slimming patch, i_pipe/i_bdev/i_cdev share the same
++ * location, so checking ->i_pipe is not enough to verify that this is a
++ * pipe.
++ */
++static inline struct pipe_inode_info *pipe_info(struct inode *inode)
 +{
-+	if (exit_code >= 0x10000)
-+		return 0;
-+	if (exit_code & 0xff) {
-+		if (exit_code & ~0xff)
-+			return 0;
-+		if (!valid_signal(exit_code & 0xff))
-+			return 0;
-+	}
-+	return 1;
++	if (S_ISFIFO(inode->i_mode))
++		return inode->i_pipe;
++
++	return NULL;
 +}
 +
- /* read the task_struct into the current task */
- static int restore_task_struct(struct ckpt_ctx *ctx)
++static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
++			       struct pipe_inode_info *opipe,
++			       size_t len, unsigned int flags);
++
++/*
+  * Attempt to initiate a splice from pipe to file.
+  */
+-static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+-			   loff_t *ppos, size_t len, unsigned int flags)
++long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++		    loff_t *ppos, size_t len, unsigned int flags)
  {
-@@ -201,15 +225,39 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
+ 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *,
+ 				loff_t *, size_t, unsigned int);
++	struct pipe_inode_info *opipe;
+ 	int ret;
  
-+	ret = -EINVAL;
-+	if (h->state == TASK_DEAD) {
-+		if (h->exit_state != EXIT_ZOMBIE)
-+			goto out;
-+		if (!valid_exit_code(h->exit_code))
-+			goto out;
-+		t->exit_code = h->exit_code;
-+	} else {
-+		if (h->exit_code)
-+			goto out;
-+		if ((thread_group_leader(t) && !valid_signal(h->exit_signal)) ||
-+		    (!thread_group_leader(t) && h->exit_signal != -1))
-+			goto out;
-+		if (!valid_signal(h->pdeath_signal))
-+			goto out;
-+
-+		/* FIXME: restore remaining relevant task_struct fields */
-+		t->exit_signal = h->exit_signal;
-+		t->pdeath_signal = h->pdeath_signal;
-+
-+		t->set_child_tid =
-+			(int __user *) (unsigned long) h->set_child_tid;
-+		t->clear_child_tid =
-+			(int __user *) (unsigned long) h->clear_child_tid;
+ 	if (unlikely(!(out->f_mode & FMODE_WRITE)))
+ 		return -EBADF;
+ 
++	/* When called directly (e.g. from c/r) output may be a pipe */
++	opipe = pipe_info(out->f_path.dentry->d_inode);
++	if (opipe) {
++		BUG_ON(opipe == pipe);
++		return splice_pipe_to_pipe(pipe, opipe, len, flags);
 +	}
 +
- 	memset(t->comm, 0, TASK_COMM_LEN);
- 	ret = _ckpt_read_string(ctx, t->comm, TASK_COMM_LEN);
- 	if (ret < 0)
- 		goto out;
+ 	if (unlikely(out->f_flags & O_APPEND))
+ 		return -EINVAL;
  
--	t->set_child_tid = (int __user *) (unsigned long) h->set_child_tid;
--	t->clear_child_tid = (int __user *) (unsigned long) h->clear_child_tid;
+@@ -1081,17 +1106,25 @@ static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+ /*
+  * Attempt to initiate a splice from a file to a pipe.
+  */
+-static long do_splice_to(struct file *in, loff_t *ppos,
+-			 struct pipe_inode_info *pipe, size_t len,
+-			 unsigned int flags)
++long do_splice_to(struct file *in, loff_t *ppos,
++		  struct pipe_inode_info *pipe, size_t len,
++		  unsigned int flags)
+ {
+ 	ssize_t (*splice_read)(struct file *, loff_t *,
+ 			       struct pipe_inode_info *, size_t, unsigned int);
++	struct pipe_inode_info *ipipe;
+ 	int ret;
+ 
+ 	if (unlikely(!(in->f_mode & FMODE_READ)))
+ 		return -EBADF;
+ 
++	/* When called firectly (e.g. from c/r) input may be a pipe */
++	ipipe = pipe_info(in->f_path.dentry->d_inode);
++	if (ipipe) {
++		BUG_ON(ipipe == pipe);
++		return splice_pipe_to_pipe(ipipe, pipe, len, flags);
++	}
++
+ 	ret = rw_verify_area(READ, in, ppos, len);
+ 	if (unlikely(ret < 0))
+ 		return ret;
+@@ -1271,18 +1304,6 @@ long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
+ static int splice_pipe_to_pipe(struct pipe_inode_info *ipipe,
+ 			       struct pipe_inode_info *opipe,
+ 			       size_t len, unsigned int flags);
+-/*
+- * After the inode slimming patch, i_pipe/i_bdev/i_cdev share the same
+- * location, so checking ->i_pipe is not enough to verify that this is a
+- * pipe.
+- */
+-static inline struct pipe_inode_info *pipe_info(struct inode *inode)
+-{
+-	if (S_ISFIFO(inode->i_mode))
+-		return inode->i_pipe;
 -
--	/* FIXME: restore remaining relevant task_struct fields */
-+	/* return 1 for zombie, 0 otherwise */
-+	ret = (h->state == TASK_DEAD ? 1 : 0);
-  out:
- 	ckpt_hdr_put(ctx, h);
- 	return ret;
-@@ -329,6 +377,11 @@ int restore_task(struct ckpt_ctx *ctx)
- 	ckpt_debug("task %d\n", ret);
- 	if (ret < 0)
- 		goto out;
-+
-+	/* zombie - we're done here */
-+	if (ret)
-+		goto out;
-+
- 	ret = restore_thread(ctx);
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
-diff --git a/checkpoint/restart.c b/checkpoint/restart.c
-index 59c4bd8..e2ed358 100644
---- a/checkpoint/restart.c
-+++ b/checkpoint/restart.c
-@@ -852,7 +852,7 @@ static int wait_sync_threads(void)
- static int do_restore_task(void)
+-	return NULL;
+-}
+ 
+ /*
+  * Determine where to splice to/from.
+@@ -1887,9 +1908,9 @@ retry:
+ /*
+  * Link contents of ipipe to opipe.
+  */
+-static int link_pipe(struct pipe_inode_info *ipipe,
+-		     struct pipe_inode_info *opipe,
+-		     size_t len, unsigned int flags)
++int link_pipe(struct pipe_inode_info *ipipe,
++	      struct pipe_inode_info *opipe,
++	      size_t len, unsigned int flags)
  {
- 	struct ckpt_ctx *ctx;
--	int ret;
-+	int zombie, ret;
+ 	struct pipe_buffer *ibuf, *obuf;
+ 	int ret = 0, i = 0, nbuf;
+diff --git a/include/linux/splice.h b/include/linux/splice.h
+index 18e7c7c..431662c 100644
+--- a/include/linux/splice.h
++++ b/include/linux/splice.h
+@@ -82,4 +82,13 @@ extern ssize_t splice_to_pipe(struct pipe_inode_info *,
+ extern ssize_t splice_direct_to_actor(struct file *, struct splice_desc *,
+ 				      splice_direct_actor *);
  
- 	ctx = wait_checkpoint_ctx();
- 	if (IS_ERR(ctx))
-@@ -862,6 +862,8 @@ static int do_restore_task(void)
- 	if (ret < 0)
- 		goto out;
- 
-+	current->flags |= PF_RESTARTING;
++extern int link_pipe(struct pipe_inode_info *ipipe,
++		     struct pipe_inode_info *opipe,
++		     size_t len, unsigned int flags);
++extern long do_splice_to(struct file *in, loff_t *ppos,
++			 struct pipe_inode_info *pipe, size_t len,
++			 unsigned int flags);
++extern long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
++			   loff_t *ppos, size_t len, unsigned int flags);
 +
- 	ret = wait_sync_threads();
- 	if (ret < 0)
- 		goto out;
-@@ -873,9 +875,22 @@ static int do_restore_task(void)
- 
- 	restore_debug_running(ctx);
- 
--	ret = restore_task(ctx);
--	if (ret < 0)
-+	zombie = restore_task(ctx);
-+	if (zombie < 0) {
-+		ret = zombie;
- 		goto out;
-+	}
-+
-+	/*
-+	 * zombie: we're done here; do_exit() will notice the @ctx on
-+	 * our current->checkpoint_ctx (and our PF_RESTARTING) - it
-+	 * will call restore_activate_next() and release the @ctx.
-+	 */
-+	if (zombie) {
-+		restore_debug_exit(ctx);
-+		ckpt_ctx_put(ctx);
-+		do_exit(current->exit_code);
-+	}
- 
- 	restore_task_done(ctx);
- 	ret = wait_task_sync(ctx);
-@@ -884,6 +899,7 @@ static int do_restore_task(void)
- 	if (ret < 0)
- 		ckpt_err(ctx, ret, "task restart failed\n");
- 
-+	current->flags &= ~PF_RESTARTING;
- 	clear_task_ctx(current);
- 	ckpt_ctx_put(ctx);
- 	return ret;
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index d1eb722..61581f6 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -113,6 +113,7 @@ extern long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid);
- extern long do_restart(struct ckpt_ctx *ctx, pid_t pid);
- 
- /* task */
-+extern int ckpt_activate_next(struct ckpt_ctx *ctx);
- extern int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int restore_task(struct ckpt_ctx *ctx);
- 
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 083f5d3..f85b673 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -160,6 +160,7 @@ struct ckpt_hdr_task {
- 	__u32 exit_state;
- 	__u32 exit_code;
- 	__u32 exit_signal;
-+	__u32 pdeath_signal;
- 
- 	__u64 set_child_tid;
- 	__u64 clear_child_tid;
+ #endif
 -- 
 1.6.3.3
 
