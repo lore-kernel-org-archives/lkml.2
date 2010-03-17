@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab0CQAcK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 20:32:10 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35777 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab0CQAcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 20:32:08 -0400
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: munroesj@us.ibm.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
-       drepper@redhat.com, ralf@linux-mips.org, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
-       torvalds@linux-foundation.org
-In-Reply-To: <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
-References: <20100315134449.GB1653@linux-mips.org>
-	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
-	 <20100315.120004.209998642.davem@davemloft.net>
-	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>
-	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Mar 2010 11:31:14 +1100
-Message-ID: <1268785874.2335.137.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1751783Ab0CQAhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 20:37:07 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50973 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652Ab0CQAhE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 20:37:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [tip:sched/urgent] sched: sched_getaffinity(): Allow less than NR_CPUS length
+Cc: kosaki.motohiro@jp.fujitsu.com, mingo@redhat.com, hpa@zytor.com,
+       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+       travis@sgi.com, peterz@infradead.org, drepper@redhat.com, rja@sgi.com,
+       sharyath@in.ibm.com, akpm@linux-foundation.org, steiner@sgi.com,
+       tglx@linutronix.de, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20100316171034.GA17211@elte.hu>
+References: <tip-cd3d8031eb4311e516329aee03c79a08333141f1@git.kernel.org> <20100316171034.GA17211@elte.hu>
+Message-Id: <20100317090046.4C79.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 17 Mar 2010 09:36:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 16:56 -0500, Steven Munroe wrote:
-> On Tue, 2010-03-16 at 07:35 +1100, Benjamin Herrenschmidt wrote:
-> > On Mon, 2010-03-15 at 12:41 -0700, H. Peter Anvin wrote:
-> > > I don't see why syscall() can't change the type for its first argument
-> > > -- it seems to be exactly what symbol versioning is for.
-> > > 
-> > > Doesn't change the fact that it is fundamentally broken, of course. 
-> > 
-> > No need to change the type of the first arg and go for symbol
-> > versionning if you do something like I proposed earlier, there will be
-> > no conflict between syscall() and __syscall() and both variants can
-> > exist.
-> > 
-> One concern is the new syscall and the kernel have to match and mixing
-> will not work. your proposal seems to impact all syscalls not just the
-> one called via syscall API. These syscalls get generated inline which
-> makes static linking very dangerous ...
 > 
-> So I think you do need both symbol versioning and kernel feature stubs
-> (like xstat). That gets to be a lot of work
+> * tip-bot for KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > Commit-ID:  cd3d8031eb4311e516329aee03c79a08333141f1
+> > Gitweb:     http://git.kernel.org/tip/cd3d8031eb4311e516329aee03c79a08333141f1
+> > Author:     KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > AuthorDate: Fri, 12 Mar 2010 16:15:36 +0900
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Mon, 15 Mar 2010 08:28:44 +0100
+> > 
+> > sched: sched_getaffinity(): Allow less than NR_CPUS length
+> 
+> > +		int retlen = min(len, cpumask_size());
+> 
+> this one causes:
+> 
+> kernel/sched.c:4850: warning: comparison of distinct pointer types lacks a cast
 
-What do you mean ? My proposal is purely a change to the syscall()
-function, nothing else. No kernel change, no ABI change, no change to
-the way glibc normally calls syscalls internally, etc... just the
-exported syscall() function to shift its arguments in order to avoid
-losing register pair alignment.
+Ahh, I'm sorry. attached fixing patch.
 
-And the change would still be compatible with existing userland code who
-manually splits the 64-bit arguments to avoid the problem on power.
+thanks.
 
-IE. Unless I've missed something, this would be a 100% backward
-compatible change that simply make a whole class of syscall() use work
-that didn't before on power (but did on x86), such as the one I hit in
-hdparm for example.
 
-Cheers,
-Ben.
+============================
+Subject: [PATCH] fix warning
+
+fix following warning.
+
+kernel/sched.c:4850: warning: comparison of distinct pointer types lacks
+a cast
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ kernel/sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 34217f1..d1d5acd 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4912,7 +4912,7 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+ 
+ 	ret = sched_getaffinity(pid, mask);
+ 	if (ret == 0) {
+-		int retlen = min(len, cpumask_size());
++		size_t retlen = min_t(size_t, len, cpumask_size());
+ 
+ 		if (copy_to_user(user_mask_ptr, mask, retlen))
+ 			ret = -EFAULT;
+-- 
+1.6.5.2
+
 
 
