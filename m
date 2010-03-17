@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab0CQDTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:19:39 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:45306 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592Ab0CQDTi (ORCPT
+	id S1752474Ab0CQDTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:19:54 -0400
+Received: from mail-yw0-f201.google.com ([209.85.211.201]:36181 "EHLO
+	mail-yw0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752085Ab0CQDTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:19:38 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 17 Mar 2010 12:15:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped 
- anonymous pages
-Message-Id: <20100317121551.b619f55b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <28c262361003162000w34cc13ecnbd32840a0df80f95@mail.gmail.com>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie>
-	<1268412087-13536-3-git-send-email-mel@csn.ul.ie>
-	<28c262361003141728g4aa40901hb040144c5a4aeeed@mail.gmail.com>
-	<20100315143420.6ec3bdf9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100315112829.GI18274@csn.ul.ie>
-	<1268657329.1889.4.camel@barrios-desktop>
-	<20100315142124.GL18274@csn.ul.ie>
-	<20100316084934.3798576c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100317111234.d224f3fd.kamezawa.hiroyu@jp.fujitsu.com>
-	<28c262361003162000w34cc13ecnbd32840a0df80f95@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 16 Mar 2010 23:19:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Kt+wHG/CO6FY0i6V+f3Je85pm/gq9hnNYJly3Ut6tiU8MTRXJmF2tymyPHb1fPvDMl
+         z3hkrvR7xKBxmVDHNKkKDqW3qn+csWTN9YmQiW0zKAjdq6BSQ/YXEy0AzZ5wtFW4Lhon
+         aQq26P6Q1WNhpcDsoDp6BCc56B9ZGCIcxL7dc=
+Date: Wed, 17 Mar 2010 11:19:47 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: xfs-masters@oss.sgi.com, aelder@sgi.com, david@fromorbit.com
+Subject: [PATCH] xfs: Fix integer overflow in fs/xfs/linux-2.6/xfs_ioctl*.c
+Message-ID: <20100317031947.GB2796@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Mar 2010 12:00:15 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+The am_hreq.opcount field in the xfs_attrmulti_by_handle() interface
+is not bounded correctly. The opcount is used to determine the size
+of the buffer required. The size is bounded, but can overflow and so
+the size checks may not be sufficient to catch invalid opcounts.
+Fix it by catching opcount values that would cause overflows before
+calculating the size.
 
-> On Wed, Mar 17, 2010 at 11:12 AM, KAMEZAWA Hiroyuki
-> > BTW, I doubt freeing anon_vma can happen even when we check mapcount.
-> >
-> > "unmap" is 2-stage operation.
-> >        1. unmap_vmas() => modify ptes, free pages, etc.
-> >        2. free_pgtables() => free pgtables, unlink vma and free it.
-> >
-> > Then, if migration is enough slow.
-> >
-> >        Migration():                            Exit():
-> >        check mapcount
-> >        rcu_read_lock
-> >        pte_lock
-> >        replace pte with migration pte
-> >        pte_unlock
-> >                                                pte_lock
-> >        copy page etc...                        zap pte (clear pte)
-> >                                                pte_unlock
-> >                                                free_pgtables
-> >                                                ->free vma
-> >                                                ->free anon_vma
-> >        pte_lock
-> >        remap pte with new pfn(fail)
-> >        pte_unlock
-> >
-> >        lock anon_vma->lock             # modification after free.
-> >        check list is empty
-> 
-> check list is empty?
-> Do you mean anon_vma->head?
-> 
-yes.
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-> If it is, is it possible that that list isn't empty since anon_vma is
-> used by others due to
-> SLAB_DESTROY_BY_RCU?
-> 
-There are 4 cases.
-	A) anon_vma->list is not empty because anon_vma is not freed.
-	B) anon_vma->list is empty because it's freed.
-	C) anon_vma->list is empty but it's reused.
-	D) anon_vma->list is not empty but it's reused.
+---
+ fs/xfs/linux-2.6/xfs_ioctl.c   |    4 ++++
+ fs/xfs/linux-2.6/xfs_ioctl32.c |    4 ++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
+index a034cf6..b716ec8 100644
+--- a/fs/xfs/linux-2.6/xfs_ioctl.c
++++ b/fs/xfs/linux-2.6/xfs_ioctl.c
+@@ -526,6 +526,10 @@ xfs_attrmulti_by_handle(
+ 	if (copy_from_user(&am_hreq, arg, sizeof(xfs_fsop_attrmulti_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
  
-> but such case is handled by page_check_address, vma_address, I think.
-> 
-yes. Then, this corrupt nothing, as I wrote. We just modify anon_vma->lock
-and it's safe because of SLAB_DESTROY_BY_RCU.
-
-
-> >        unlock anon_vma->lock
-> >        free anon_vma
-> >        rcu_read_unlock
-> >
-> >
-> > Hmm. IIUC, anon_vma is allocated as SLAB_DESTROY_BY_RCU. Then, while
-> > rcu_read_lock() is taken, anon_vma is anon_vma even if freed. But it
-> > may reused as anon_vma for someone else.
-> > (IOW, it may be reused but never pushed back to general purpose memory
-> >  until RCU grace period.)
-> > Then, touching anon_vma->lock never cause any corruption.
-> >
-> > Does use-after-free check for SLAB_DESTROY_BY_RCU correct behavior ?
-> 
-> Could you elaborate your point?
-> 
-
-Ah, my point is "how use-after-free is detected ?"
-
-If use-after-free is detected by free_pages() (DEBUG_PGALLOC), it seems
-strange because DESTROY_BY_RCU guarantee that never happens.
-
-So, I assume use-after-free is detected in SLAB layer. If so,
-in above B), C), D) case, it seems there is use-after free in slab's point
-of view but it works as expected, no corruption.
-
-Then, my question is
-"Does use-after-free check for SLAB_DESTROY_BY_RCU work correctly ?"
-
-and implies we need this patch ?
-(But this will prevent unnecessary page copy etc. by easy check.)
-
-Thanks,
--Kame
-
-
++	/* overflow check */
++	if (am_hreq.opcount >= INT_MAX / sizeof(xfs_attr_multiop_t))
++		return -E2BIG;
++
+ 	dentry = xfs_handlereq_to_dentry(parfilp, &am_hreq.hreq);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+diff --git a/fs/xfs/linux-2.6/xfs_ioctl32.c b/fs/xfs/linux-2.6/xfs_ioctl32.c
+index be1527b..c9d9d5e 100644
+--- a/fs/xfs/linux-2.6/xfs_ioctl32.c
++++ b/fs/xfs/linux-2.6/xfs_ioctl32.c
+@@ -419,6 +419,10 @@ xfs_compat_attrmulti_by_handle(
+ 			   sizeof(compat_xfs_fsop_attrmulti_handlereq_t)))
+ 		return -XFS_ERROR(EFAULT);
+ 
++	/* overflow check */
++	if (am_hreq.opcount >= INT_MAX / sizeof(compat_xfs_attr_multiop_t))
++		return -E2BIG;
++
+ 	dentry = xfs_compat_handlereq_to_dentry(parfilp, &am_hreq.hreq);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+-- 
+1.6.5.3
 
