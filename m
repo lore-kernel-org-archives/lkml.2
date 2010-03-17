@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab0CQQnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:43:05 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:59071 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab0CQQnB (ORCPT
+	id S1755767Ab0CQQsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:48:03 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:51043 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753738Ab0CQQr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:43:01 -0400
-Date: Wed, 17 Mar 2010 11:41:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-cc: Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped 
- anonymous pages
-In-Reply-To: <20100317121551.b619f55b.kamezawa.hiroyu@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1003171139280.27268@router.home>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie> <1268412087-13536-3-git-send-email-mel@csn.ul.ie> <28c262361003141728g4aa40901hb040144c5a4aeeed@mail.gmail.com> <20100315143420.6ec3bdf9.kamezawa.hiroyu@jp.fujitsu.com> <20100315112829.GI18274@csn.ul.ie>
- <1268657329.1889.4.camel@barrios-desktop> <20100315142124.GL18274@csn.ul.ie> <20100316084934.3798576c.kamezawa.hiroyu@jp.fujitsu.com> <20100317111234.d224f3fd.kamezawa.hiroyu@jp.fujitsu.com> <28c262361003162000w34cc13ecnbd32840a0df80f95@mail.gmail.com>
- <20100317121551.b619f55b.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 17 Mar 2010 12:47:59 -0400
+Date: Wed, 17 Mar 2010 16:47:53 +0000
+From: Chris Webb <chris@arachsys.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+ parameter
+Message-ID: <20100317164752.GA31884@arachsys.com>
+References: <20100315072214.GA18054@balbir.in.ibm.com>
+ <4B9DE635.8030208@redhat.com>
+ <20100315080726.GB18054@balbir.in.ibm.com>
+ <4B9DEF81.6020802@redhat.com>
+ <20100315202353.GJ3840@arachsys.com>
+ <4B9F4CBD.3020805@redhat.com>
+ <20100317152452.GZ31148@arachsys.com>
+ <4BA101C5.9040406@redhat.com>
+ <4BA105FE.2000607@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA105FE.2000607@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Mar 2010, KAMEZAWA Hiroyuki wrote:
+Avi Kivity <avi@redhat.com> writes:
 
-> Ah, my point is "how use-after-free is detected ?"
+> Chris, can you carry out an experiment?  Write a program that
+> pwrite()s a byte to a file at the same location repeatedly, with the
+> file opened using O_SYNC.  Measure the write rate, and run blktrace
+> on the host to see what the disk (/dev/sda, not the volume) sees.
+> Should be a (write, flush, write, flush) per pwrite pattern or
+> similar (for writing the data and a journal block, perhaps even
+> three writes will be needed).
+> 
+> Then scale this across multiple guests, measure and trace again.  If
+> we're lucky, the flushes will be coalesced, if not, we need to work
+> on it.
 
-The slab layers do not check for use after free conditions if
-SLAB_DESTROY_BY_RCU is set. It is legal to access the object after a
-kfree() etc as long as the RCU period has not passed.
+Sure, sounds like an excellent plan. I don't have a test machine at the
+moment as the last host I was using for this has gone into production, but
+I'm due to get another one to install later today or first thing tomorrow
+which would be ideal for doing this. I'll follow up with the results once I
+have them.
 
-> Then, my question is
-> "Does use-after-free check for SLAB_DESTROY_BY_RCU work correctly ?"
+Cheers,
 
-Use after free checks are not performed for SLAB_DESTROY_BY_RCU slabs.
-
-
+Chris.
