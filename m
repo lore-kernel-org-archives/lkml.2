@@ -1,106 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab0CQIsn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:48:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46001 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab0CQIsk (ORCPT
+	id S1753408Ab0CQItE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:49:04 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:31589 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab0CQIs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:48:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4BA0973A.5070701@jp.fujitsu.com>
-Date: Wed, 17 Mar 2010 17:47:54 +0900
-From: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+	Wed, 17 Mar 2010 04:48:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:openpgp:content-type
+         :content-transfer-encoding;
+        b=YjYcwsxEvXpxZFXJCWWTEkSyC8WyXHFytPGISQmjC+owSqT8LyZdp/+R9xayQ2EaQ3
+         t5VyokwMyQzYuyWD16cykA7BG+gIkic0UscEaJETpSZ4072zhkS4AgPkIjeZqFTdoxvN
+         HPTVbXmsaqb4MhNHO05/q1yvEmf3MXXPbL/oE=
+Message-ID: <4BA09776.4020205@gmail.com>
+Date: Wed, 17 Mar 2010 10:48:54 +0200
+From: =?ISO-8859-1?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Yanko Kaneti <yaneti@declera.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Renninger <trenn@suse.de>, maciej.rutecki@gmail.com
-Subject: Re: [PATCH v1 2/3] x86/PCI: trim _CRS windows when they conflict
- with	previous reservations
-References: <20100311235954.4355.23100.stgit@bob.kio>	 <20100312000114.4355.58189.stgit@bob.kio> <4BA04BB9.2090501@jp.fujitsu.com> <1268799725.13147.29.camel@dc7800.home>
-In-Reply-To: <1268799725.13147.29.camel@dc7800.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: x86: fix callgraphs of 32-bit processes on 64-bit
+ kernels V2.
+References: <20100316144906.GA5621@nowhere> <1268751734-9167-1-git-send-email-edwintorok@gmail.com> <20100316170549.GC17537@elte.hu>
+In-Reply-To: <20100316170549.GC17537@elte.hu>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=5379965D
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas wrote:
-> On Wed, 2010-03-17 at 12:25 +0900, Kenji Kaneshige wrote:
->> Bjorn Helgaas wrote:
->>> Yanko's GA-MA78GM-S2H (BIOS F11) reports a host bridge window that overlaps
->>> system memory:
->>>
->>>     PCI window: [mem 0xcff00000-0x10ed0ffff]
->>>     System RAM: [mem 0x100000000-0x22fffffff]
->>>
->>> We can be pretty confident that the System RAM region is correct (if it
->>> were wrong, we'd crash as soon as we tried to use any memory in that area),
->>> so this patch tries to correct the PCI window by trimming it so it doesn't
->>> conflict with any previous reservations.
->> Though I might misunderstand something, it looks Yanko's machine specific
->> workaround. I'm wondering if trimming _CRS is a generic workaround for
->> broken _CRS machine.
+On 03/16/2010 07:05 PM, Ingo Molnar wrote:
+> * T??r??k Edwin <edwintorok@gmail.com> wrote:
+> 
+>> When profiling a 32-bit process on a 64-bit kernel, callgraph tracing
+>> stopped after the first function, because it has seen a garbage memory address
+>> (tried to interpret the frame pointer, and return address as a 64-bit pointer).
 >>
->> How about doing this when GA-MA78GM-S2H (BIOS F11) (and known machines
->> that have the same problem) is detected? Or how about switching nocrs
->> mode if the problem (resource conflict) is detected?
+>> Fix this by using a struct stack_frame with 32-bit pointers when the TIF_IA32 flag is set.
+>>
+>> Note that TIF_IA32 flag must be used, and not is_compat_task(), because the
+>> latter is only set when the 32-bit process is executing a syscall,
+>> which may not always be the case (when tracing page fault events for example).
+>>
+>> Signed-off-by: T??r??k Edwin <edwintorok@gmail.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event.c |   33 +++++++++++++++++++++++++++++++++
+>>  1 files changed, 33 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>> index 8c1c070..b85ea9f 100644
+>> --- a/arch/x86/kernel/cpu/perf_event.c
+>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>> @@ -2401,6 +2401,20 @@ static int copy_stack_frame(const void __user *fp, struct stack_frame *frame)
+>>  	return bytes == sizeof(*frame);
+>>  }
+>>  
+>> +struct stack_frame_ia32 {
+>> +    u32 next_frame;
+>> +    u32 return_address;
+>> +};
 > 
-> It's certainly a possibility to do this only for specific machines, but
-> I'd like to avoid tripping over issues one-by-one.
-> 
-> I think there are three ways to address BIOS _CRS defects:
-> 
->   1) Ship an OEM-specific host bridge driver
->   2) Put a platform- or BIOS-specific quirk into Windows
+> Please put such new data type definitions not into the middle of a .c file but 
+> next to where struct stack_frame is defined.
 
-"into Linux"?
-
->   3) Change the BIOS
-> 
-> The first two sound like such a hassle to me that I doubt they would be
-> practical.
-
-I agree.
-For 1), we need OEM-specific driver, not chipset specific driver.
-
-For 2), I thought it depends on how many machines with broken _CRS are
-there, and I didn't think there are so many, but...
-
-> 
-> But it's clear that there are systems like this with what appear to be
-> _CRS defects.  It's quite possible that it's not really a defect, and we
-> just don't understand how to parse _CRS correctly yet.  Or, Windows
-> might have a few heuristics to clean up obvious errors.
-
-Indeed, it might be true. Now I realize I need to change my opinion
-about 2).
+Ok.
 
 > 
-> For example, I think Windows aligns host bridge windows, as documented
-> here: http://bugzilla.kernel.org/show_bug.cgi?id=14337
+>> +
+>> +static int copy_stack_frame_ia32(u32 fp, struct stack_frame_ia32 *frame)
+>> +{
+>> +	unsigned long bytes;
+>> +
+>> +	bytes = copy_from_user_nmi(frame, (const void __user*)(unsigned long)fp, sizeof(*frame));
+>> +
+>> +	return bytes == sizeof(*frame);
+>> +}
+>>
 > 
-> I think Windows also knows to ignore the Consumer/Producer bit in
-> Address Space Descriptors, and assume that all resources on bridges are
-> Producers.
+> Single-use - should be inline i guess.
 > 
-> Hmm, what we really need is a way to run Windows in a virtualized
-> environment where we could manipulate the _CRS method and see what
-> Windows does with it...
+
+So should be copy_stack_frame() then.
+
+>> +
+>>  static void
+>>  perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>>  {
+>> @@ -2414,6 +2428,25 @@ perf_callchain_user(struct pt_regs *regs, struct perf_callchain_entry *entry)
+>>  
+>>  	callchain_store(entry, PERF_CONTEXT_USER);
+>>  	callchain_store(entry, regs->ip);
+>> +	if (test_thread_flag(TIF_IA32)) {
+>> +	    /* 32-bit process in 64-bit kernel. */
+>> +	    u32 fp = regs->bp;
+>> +	    struct stack_frame_ia32 frame;
+>> +	    while (entry->nr < PERF_MAX_STACK_DEPTH) {
 > 
-> Anyway, I'd like to make Linux behave as much like Windows as possible
-> in this area so we can take advantage of all the testing that's done
-> with Windows.
+> Please put newlines after local variable definition so that they are clearly 
+> delimited.
+> 
+> Also, the tabulation is weird - please run it through scripts/checkpatch.pl.
 
-Okey, thank you very much for explanation. I understood the background
-of your change.
+I forgot to change shiftwidth to 8 (I usually use 4).
+I cleaned the checkpatch warnings now.
 
-Thanks,
-Kenji Kaneshige
+> 
+>> +		frame.next_frame     = 0;
+>> +		frame.return_address = 0;
+>> +
+>> +		if (!copy_stack_frame_ia32(fp, &frame))
+>> +			break;
+>> +
+>> +		if (fp < (u32)regs->sp)
+>> +			break;
+>> +
+>> +		callchain_store(entry, frame.return_address);
+>> +		fp = frame.next_frame;
+>> +	    }
+>> +	    return;
+> 
+> This whole new block should probably be in a helper inline?
 
+To reduce indenting, or why?
 
+> 
+> Also, it should probably be #ifdef CONFIG_COMPAT or so.
 
+Ok, see V3 of my patch.
+
+Best regards,
+--Edwin
