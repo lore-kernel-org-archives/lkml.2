@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0CQQTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:19:20 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38573 "EHLO
+	id S1755451Ab0CQQVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:21:53 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:39226 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab0CQQTM (ORCPT
+	with ESMTP id S1755420Ab0CQQVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:19:12 -0400
+	Wed, 17 Mar 2010 12:21:48 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 68/96] c/r: [signal 1/4] blocked and template for shared signals
-Date: Wed, 17 Mar 2010 12:08:56 -0400
-Message-Id: <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
+       Dan Smith <danms@us.ibm.com>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [C/R v20][PATCH 77/96] c/r: add support for listening INET sockets (v2)
+Date: Wed, 17 Mar 2010 12:09:05 -0400
+Message-Id: <1268842164-5590-78-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-77-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -86,521 +86,405 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-73-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-74-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-75-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-76-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-77-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds checkpoint/restart of blocked signals mask
-(t->blocked) and a template for shared signals (t->signal).
+From: Dan Smith <danms@us.ibm.com>
 
-Because t->signal sharing is tied to threads, we ensure proper sharing
-of t->signal (struct signal_struct) for threads only.
+This is an incremental step towards supporting checkpoint/restart on
+AF_INET sockets.  In this scenario, any sockets that were in TCP_LISTEN
+state are restored as they were.  Any that were connected are forced to
+TCP_CLOSE.  This should cover a range of use cases that involve
+applications that are tolerant of such an interruption.
 
-Access to t->signal is protected by locking t->sighand->lock.
-Therefore, the usual checkpoint_obj() invoking the callback
-checkpoint_signal(ctx, signal) is insufficient because the task
-pointer is unavailable.
-
-Instead, handling of t->signal sharing is explicit using helpers
-like ckpt_obj_lookup_add(), ckpt_obj_fetch() and ckpt_obj_insert().
-The actual state is saved (if needed) _after_ the task_objs data.
-
-To prevent tasks from handling restored signals during restart,
-set their mask to block all signals and only restore the original
-mask at the very end (before the last sync point).
-
-Introduce per-task pointer 'ckpt_data' to temporary store data
-for restore actions that are deferred to the end (like restoring
-the signal block mask).
-
-Changelog [ckpt-v19]:
-  - Use task->saves_sigmask and drop task->checkpoint_data
-  - [Serge Hallyn] Handle saved_sigmask at checkpoint
-
-Changelog [ckpt-v19-rc1]:
-  - Defer restore of blocked signals mask during restart
+Changelog [v19-rc1]:
   - [Matt Helsley] Add cpp definitions for enums
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Louis Rilling <Louis.Rilling@kerlabs.com>
+Changes in v2:
+ - Fix whitespace
+ - Fix return in inet_checkpoint() on failed ckpt_hdr_get_type()
+ - Fix garbage free on error path of inet_read_buffer()
+ - Fix unnecessary ret=0 in inet_read_buffers()
+ - Add inet_precheck() (like unix) to validate the address lengths (and
+   more later)
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dan Smith <danms@us.ibm.com>
+Acked-by: Oren Laadan <orenl@librato.com>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- arch/s390/kernel/checkpoint.c  |    2 -
- arch/s390/kernel/signal.c      |    5 ++
- arch/x86/kernel/signal.c       |    5 ++
- checkpoint/objhash.c           |    7 +++
- checkpoint/process.c           |   71 +++++++++++++++++++++++++-
- checkpoint/restart.c           |   13 +++++
- checkpoint/signal.c            |  111 ++++++++++++++++++++++++++++++++++++++++
- include/linux/checkpoint.h     |    8 +++
- include/linux/checkpoint_hdr.h |   16 ++++++
- include/linux/signal.h         |    3 +
- kernel/fork.c                  |    3 +
- 11 files changed, 241 insertions(+), 3 deletions(-)
+ Documentation/checkpoint/readme.txt |   21 ++++
+ include/linux/checkpoint_hdr.h      |   12 ++
+ include/net/inet_common.h           |   13 +++
+ net/checkpoint.c                    |    9 ++
+ net/ipv4/Makefile                   |    1 +
+ net/ipv4/af_inet.c                  |    6 +
+ net/ipv4/checkpoint.c               |  190 +++++++++++++++++++++++++++++++++++
+ 7 files changed, 252 insertions(+), 0 deletions(-)
+ create mode 100644 net/ipv4/checkpoint.c
 
-diff --git a/arch/s390/kernel/checkpoint.c b/arch/s390/kernel/checkpoint.c
-index 79f0a2f..894bca3 100644
---- a/arch/s390/kernel/checkpoint.c
-+++ b/arch/s390/kernel/checkpoint.c
-@@ -203,8 +203,6 @@ int restore_thread(struct ckpt_ctx *ctx)
- 	if (h->thread_info_flags & _TIF_SIG_RESTARTBLOCK)
- 		set_thread_flag(TIF_SIG_RESTARTBLOCK);
+diff --git a/Documentation/checkpoint/readme.txt b/Documentation/checkpoint/readme.txt
+index 4fa5560..2548bb4 100644
+--- a/Documentation/checkpoint/readme.txt
++++ b/Documentation/checkpoint/readme.txt
+@@ -344,6 +344,27 @@ we will be forced to more carefully review each of those features.
+ However, this can be controlled with a sysctl-variable.
  
--	/* will have to handle TIF_RESTORE_SIGMASK as well */
--
- 	ckpt_hdr_put(ctx, h);
  
- 	return 0;
-diff --git a/arch/s390/kernel/signal.c b/arch/s390/kernel/signal.c
-index 83425b1..41e03d3 100644
---- a/arch/s390/kernel/signal.c
-+++ b/arch/s390/kernel/signal.c
-@@ -540,6 +540,11 @@ void do_signal(struct pt_regs *regs)
- 	}
- }
++Sockets
++=======
++
++For AF_UNIX sockets, both endpoints must be within the checkpointed
++task set to maintain a connected state after restart.  UNIX sockets
++that are in the process of passing a descriptor will cause the
++checkpoint to fail with -EBUSY indicating a transient state that
++cannot be checkpointed.  Listening sockets with an unaccepted peer
++will also cause an -EBUSY result.
++
++AF_INET sockets with endpoints outside the checkpointed task set may
++remain open if care is taken to avoid TCP timeouts and resets.
++Careful use of a virtual IP address can help avoid emission of an RST
++to the non-checkpointed endpoint.  If desired, the
++RESTART_SOCK_LISTENONLY flag may be passed to the restart syscall
++which will cause all connected AF_INET sockets to be closed during the
++restore process.  Listening sockets will still be restored to their
++original state, which makes this mode a candidate for something like
++an HTTP server.
++
++
+ Kernel interfaces
+ =================
  
-+int task_has_saved_sigmask(struct task_struct *task)
-+{
-+	return !!(test_tsk_thread_flag(task, TIF_RESTORE_SIGMASK));
-+}
-+
- void do_notify_resume(struct pt_regs *regs)
- {
- 	clear_thread_flag(TIF_NOTIFY_RESUME);
-diff --git a/arch/x86/kernel/signal.c b/arch/x86/kernel/signal.c
-index 4fd173c..eb63d59 100644
---- a/arch/x86/kernel/signal.c
-+++ b/arch/x86/kernel/signal.c
-@@ -831,6 +831,11 @@ static void do_signal(struct pt_regs *regs)
- 	}
- }
- 
-+int task_has_saved_sigmask(struct task_struct *task)
-+{
-+	return !!(task_thread_info(task)->status & TS_RESTORE_SIGMASK);
-+}
-+
- /*
-  * notification of userspace execution resumption
-  * - triggered by the TIF_WORK_MASK flags
-diff --git a/checkpoint/objhash.c b/checkpoint/objhash.c
-index 858613e..ea2f063 100644
---- a/checkpoint/objhash.c
-+++ b/checkpoint/objhash.c
-@@ -289,6 +289,13 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
- 		.checkpoint = checkpoint_sighand,
- 		.restore = restore_sighand,
- 	},
-+	/* signal object */
-+	{
-+		.obj_name = "SIGNAL",
-+		.obj_type = CKPT_OBJ_SIGNAL,
-+		.ref_drop = obj_no_drop,
-+		.ref_grab = obj_no_grab,
-+	},
- 	/* ns object */
- 	{
- 		.obj_name = "NSPROXY",
-diff --git a/checkpoint/process.c b/checkpoint/process.c
-index 71eb9a5..c5e9357 100644
---- a/checkpoint/process.c
-+++ b/checkpoint/process.c
-@@ -182,7 +182,8 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- 	int files_objref;
- 	int mm_objref;
- 	int sighand_objref;
--	int ret;
-+	int signal_objref;
-+	int first, ret;
- 
- 	/*
- 	 * Shared objects may have dependencies among them: task->mm
-@@ -227,14 +228,38 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- 		return sighand_objref;
- 	}
- 
-+	/*
-+	 * Handle t->signal differently because the checkpoint method
-+	 * for t->signal needs access to owning task_struct to access
-+	 * t->sighand (to lock/unlock). First explicitly determine if
-+	 * need to save, and only below invoke checkpoint_obj_signal()
-+	 * if needed.
-+	 */
-+	signal_objref = ckpt_obj_lookup_add(ctx, t->signal,
-+					    CKPT_OBJ_SIGNAL, &first);
-+	ckpt_debug("signal: objref %d\n", signal_objref);
-+	if (signal_objref < 0) {
-+		ckpt_err(ctx, signal_objref, "%(T)process signals\n");
-+		return signal_objref;
-+	}
-+
- 	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
- 	if (!h)
- 		return -ENOMEM;
- 	h->files_objref = files_objref;
- 	h->mm_objref = mm_objref;
- 	h->sighand_objref = sighand_objref;
-+	h->signal_objref = signal_objref;
- 	ret = ckpt_write_obj(ctx, &h->h);
- 	ckpt_hdr_put(ctx, h);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* actually save t->signal, if need to */
-+	if (first)
-+		ret = checkpoint_obj_signal(ctx, t);
-+	if (ret < 0)
-+		ckpt_err(ctx, ret, "%(T)signal_struct\n");
- 
- 	return ret;
- }
-@@ -379,6 +404,10 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		goto out;
- 	ret = checkpoint_task_objs(ctx, t);
- 	ckpt_debug("objs %d\n", ret);
-+	if (ret < 0)
-+		goto out;
-+	ret = checkpoint_task_signal(ctx, t);
-+	ckpt_debug("task-signal %d\n", ret);
-  out:
- 	ctx->tsk = NULL;
- 	return ret;
-@@ -567,6 +596,11 @@ static int restore_task_objs(struct ckpt_ctx *ctx)
- 
- 	ret = restore_obj_sighand(ctx, h->sighand_objref);
- 	ckpt_debug("sighand: ret %d (%p)\n", ret, current->sighand);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = restore_obj_signal(ctx, h->signal_objref);
-+	ckpt_debug("signal: ret %d (%p)\n", ret, current->signal);
-  out:
- 	ckpt_hdr_put(ctx, h);
- 	return ret;
-@@ -704,6 +738,37 @@ int restore_restart_block(struct ckpt_ctx *ctx)
- 	return ret;
- }
- 
-+/* prepare the task for restore */
-+int pre_restore_task(void)
-+{
-+	sigset_t sigset;
-+
-+	/*
-+	 * Block task's signals to avoid interruptions due to signals,
-+	 * say, from restored timers, file descriptors etc. Signals
-+	 * will be unblocked when restore completes.
-+	 *
-+	 * NOTE: tasks with file descriptors set to send a SIGKILL as
-+	 * i/o notification may fail the restart if a signal occurs
-+	 * before that task completed its restore. FIX ?
-+	 */
-+	current->saved_sigmask = current->blocked;
-+
-+	sigfillset(&sigset);
-+	sigdelset(&sigset, SIGKILL);
-+	sigdelset(&sigset, SIGSTOP);
-+	sigprocmask(SIG_SETMASK, &sigset, NULL);
-+
-+	return 0;
-+}
-+
-+/* finish up task restore */
-+void post_restore_task(void)
-+{
-+	/* only now is it safe to unblock the restored task's signals */
-+	sigprocmask(SIG_SETMASK, &current->saved_sigmask, NULL);
-+}
-+
- /* read the entire state of the current task */
- int restore_task(struct ckpt_ctx *ctx)
- {
-@@ -736,6 +801,10 @@ int restore_task(struct ckpt_ctx *ctx)
- 		goto out;
- 	ret = restore_creds(ctx);
- 	ckpt_debug("creds: ret %d\n", ret);
-+	if (ret < 0)
-+		goto out;
-+	ret = restore_task_signal(ctx);
-+	ckpt_debug("signal: ret %d\n", ret);
-  out:
- 	return ret;
- }
-diff --git a/checkpoint/restart.c b/checkpoint/restart.c
-index 34d3e64..026911e 100644
---- a/checkpoint/restart.c
-+++ b/checkpoint/restart.c
-@@ -933,6 +933,10 @@ static int do_restore_task(void)
- 
- 	restore_debug_running(ctx);
- 
-+	ret = pre_restore_task();
-+	if (ret < 0)
-+		goto out;
-+
- 	zombie = restore_task(ctx);
- 	if (zombie < 0) {
- 		ret = zombie;
-@@ -946,6 +950,7 @@ static int do_restore_task(void)
- 	 */
- 	if (zombie) {
- 		restore_debug_exit(ctx);
-+		post_restore_task();
- 		ckpt_ctx_put(ctx);
- 		do_exit(current->exit_code);
- 	}
-@@ -957,6 +962,7 @@ static int do_restore_task(void)
- 	if (ret < 0)
- 		ckpt_err(ctx, ret, "task restart failed\n");
- 
-+	post_restore_task();
- 	current->flags &= ~PF_RESTARTING;
- 	clear_task_ctx(current);
- 	ckpt_ctx_put(ctx);
-@@ -1164,6 +1170,10 @@ static int do_restore_coord(struct ckpt_ctx *ctx, pid_t pid)
- 	 */
- 
- 	if (ctx->uflags & RESTART_TASKSELF) {
-+		ret = pre_restore_task();
-+		ckpt_debug("pre restore task: %d\n", ret);
-+		if (ret < 0)
-+			goto out;
- 		ret = restore_task(ctx);
- 		ckpt_debug("restore task: %d\n", ret);
- 		if (ret < 0)
-@@ -1196,6 +1206,9 @@ static int do_restore_coord(struct ckpt_ctx *ctx, pid_t pid)
- 		ckpt_debug("freezing restart tasks ... %d\n", ret);
- 	}
-  out:
-+	if (ctx->uflags & RESTART_TASKSELF)
-+		post_restore_task();
-+
- 	restore_debug_error(ctx, ret);
- 	if (ret < 0)
- 		ckpt_err(ctx, ret, "restart failed (coordinator)\n");
-diff --git a/checkpoint/signal.c b/checkpoint/signal.c
-index 1aadadd..fedb8f8 100644
---- a/checkpoint/signal.c
-+++ b/checkpoint/signal.c
-@@ -161,3 +161,114 @@ int restore_obj_sighand(struct ckpt_ctx *ctx, int sighand_objref)
- 
- 	return 0;
- }
-+
-+/***********************************************************************
-+ * signal checkpoint/restart
-+ */
-+
-+static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_signal *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	/* fill in later */
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+int checkpoint_obj_signal(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	BUG_ON(t->flags & PF_EXITING);
-+	return checkpoint_signal(ctx, t);
-+}
-+
-+static int restore_signal(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_signal *h;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	/* fill in later */
-+
-+	ckpt_hdr_put(ctx, h);
-+	return 0;
-+}
-+
-+int restore_obj_signal(struct ckpt_ctx *ctx, int signal_objref)
-+{
-+	struct signal_struct *signal;
-+	int ret = 0;
-+
-+	signal = ckpt_obj_fetch(ctx, signal_objref, CKPT_OBJ_SIGNAL);
-+	if (!IS_ERR(signal)) {
-+		/*
-+		 * signal_struct is already shared properly as it is
-+		 * tied to thread groups. Since thread relationships
-+		 * are already restore now, t->signal must match.
-+		 */
-+		if (signal != current->signal)
-+			ret = -EINVAL;
-+	} else if (PTR_ERR(signal) == -EINVAL) {
-+		/* first timer: add to hash and restore our t->signal */
-+		ret = ckpt_obj_insert(ctx, current->signal,
-+				      signal_objref, CKPT_OBJ_SIGNAL);
-+		if (ret >= 0)
-+			ret = restore_signal(ctx);
-+	} else {
-+		ret = PTR_ERR(signal);
-+	}
-+
-+	return ret;
-+}
-+
-+int checkpoint_task_signal(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_signal_task *h;
-+	int ret;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL_TASK);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	if (task_has_saved_sigmask(t))
-+		fill_sigset(&h->blocked, &t->saved_sigmask);
-+	else
-+		fill_sigset(&h->blocked, &t->blocked);
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
-+int restore_task_signal(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_signal_task *h;
-+	sigset_t blocked;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_SIGNAL_TASK);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	load_sigset(&blocked, &h->blocked);
-+	/* silently remove SIGKILL, SIGSTOP */
-+	sigdelset(&blocked, SIGKILL);
-+	sigdelset(&blocked, SIGSTOP);
-+
-+	/*
-+	 * Unblocking signals now may affect us in wait_task_sync().
-+	 * Instead, save blocked mask in current->saved_sigmaks for
-+	 * post_restore_task().
-+	 */
-+	current->saved_sigmask = blocked;
-+
-+	ckpt_hdr_put(ctx, h);
-+	return 0;
-+}
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 5a26f8b..2fe2a9d 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -152,6 +152,8 @@ extern int ckpt_activate_next(struct ckpt_ctx *ctx);
- extern int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int restore_task(struct ckpt_ctx *ctx);
-+extern int pre_restore_task(void);
-+extern void post_restore_task(void);
- 
- /* arch hooks */
- extern int checkpoint_write_header_arch(struct ckpt_ctx *ctx);
-@@ -275,6 +277,12 @@ extern int ckpt_collect_sighand(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int checkpoint_sighand(struct ckpt_ctx *ctx, void *ptr);
- extern void *restore_sighand(struct ckpt_ctx *ctx);
- 
-+extern int checkpoint_obj_signal(struct ckpt_ctx *ctx, struct task_struct *t);
-+extern int restore_obj_signal(struct ckpt_ctx *ctx, int signal_objref);
-+
-+extern int checkpoint_task_signal(struct ckpt_ctx *ctx, struct task_struct *t);
-+extern int restore_task_signal(struct ckpt_ctx *ctx);
-+
- static inline int ckpt_validate_errno(int errno)
- {
- 	return (errno >= 0) && (errno < MAX_ERRNO);
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 225fd1f..535ea93 100644
+index ad2f0f2..cf36fe1 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -133,6 +133,10 @@ enum {
+@@ -14,11 +14,13 @@
+ #include <linux/types.h>
+ #include <linux/socket.h>
+ #include <linux/un.h>
++#include <linux/in.h>
+ #else
+ #include <sys/types.h>
+ #include <linux/types.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
++#include <netinet/in.h>
+ #endif
  
- 	CKPT_HDR_SIGHAND = 601,
- #define CKPT_HDR_SIGHAND CKPT_HDR_SIGHAND
-+	CKPT_HDR_SIGNAL,
-+#define CKPT_HDR_SIGNAL CKPT_HDR_SIGNAL
-+	CKPT_HDR_SIGNAL_TASK,
-+#define CKPT_HDR_SIGNAL_TASK CKPT_HDR_SIGNAL_TASK
+ /*
+@@ -152,6 +154,8 @@ enum {
+ #define CKPT_HDR_SOCKET_FRAG CKPT_HDR_SOCKET_FRAG
+ 	CKPT_HDR_SOCKET_UNIX,
+ #define CKPT_HDR_SOCKET_UNIX CKPT_HDR_SOCKET_UNIX
++	CKPT_HDR_SOCKET_INET,
++#define CKPT_HDR_SOCKET_INET CKPT_HDR_SOCKET_INET
  
  	CKPT_HDR_TAIL = 9001,
  #define CKPT_HDR_TAIL CKPT_HDR_TAIL
-@@ -173,6 +177,8 @@ enum obj_type {
- #define CKPT_OBJ_MM CKPT_OBJ_MM
- 	CKPT_OBJ_SIGHAND,
- #define CKPT_OBJ_SIGHAND CKPT_OBJ_SIGHAND
-+	CKPT_OBJ_SIGNAL,
-+#define CKPT_OBJ_SIGNAL CKPT_OBJ_SIGNAL
- 	CKPT_OBJ_NS,
- #define CKPT_OBJ_NS CKPT_OBJ_NS
- 	CKPT_OBJ_UTS_NS,
-@@ -373,6 +379,7 @@ struct ckpt_hdr_task_objs {
- 	__s32 files_objref;
- 	__s32 mm_objref;
- 	__s32 sighand_objref;
-+	__s32 signal_objref;
- } __attribute__((aligned(8)));
+@@ -570,6 +574,14 @@ struct ckpt_hdr_socket_unix {
+ 	struct sockaddr_un raddr;
+ } __attribute__ ((aligned(8)));
  
- /* restart blocks */
-@@ -531,6 +538,15 @@ struct ckpt_hdr_sighand {
- 	struct ckpt_sigaction action[0];
- } __attribute__((aligned(8)));
- 
-+struct ckpt_hdr_signal {
++struct ckpt_hdr_socket_inet {
 +	struct ckpt_hdr h;
++	__u32 laddr_len;
++	__u32 raddr_len;
++	struct sockaddr_in laddr;
++	struct sockaddr_in raddr;
 +} __attribute__((aligned(8)));
 +
-+struct ckpt_hdr_signal_task {
-+	struct ckpt_hdr h;
-+	struct ckpt_sigset blocked;
-+} __attribute__((aligned(8)));
-+
- /* ipc commons */
- struct ckpt_hdr_ipcns {
- 	struct ckpt_hdr h;
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index ab9272c..af6cac3 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -376,6 +376,9 @@ int unhandled_signal(struct task_struct *tsk, int sig);
- 
- void signals_init(void);
- 
-+/* [arch] checkpoint: should saved_sigmask be used in place of blocked */
-+int task_has_saved_sigmask(struct task_struct *task);
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _LINUX_SIGNAL_H */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 4eb8e7e..24472ec 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -910,6 +910,9 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
- 
- 	sig->oom_adj = current->signal->oom_adj;
+ struct ckpt_hdr_file_socket {
+ 	struct ckpt_hdr_file common;
+ 	__s32 sock_objref;
+diff --git a/include/net/inet_common.h b/include/net/inet_common.h
+index 18c7732..bf04e6e 100644
+--- a/include/net/inet_common.h
++++ b/include/net/inet_common.h
+@@ -45,6 +45,19 @@ extern int			inet_ctl_sock_create(struct sock **sk,
+ 						     unsigned char protocol,
+ 						     struct net *net);
  
 +#ifdef CONFIG_CHECKPOINT
-+	atomic_set(&sig->restart_count, 0);
-+#endif
- 	return 0;
- }
++struct ckpt_ctx;
++struct ckpt_hdr_socket;
++extern int inet_checkpoint(struct ckpt_ctx *ctx, struct socket *sock);
++extern int inet_collect(struct ckpt_ctx *ctx, struct socket *sock);
++extern int inet_restore(struct ckpt_ctx *cftx, struct socket *sock,
++			struct ckpt_hdr_socket *h);
++#else
++#define inet_checkpoint NULL
++#define inet_collect NULL
++#define inet_restore NULL
++#endif /* CONFIG_CHECKPOINT */
++
+ static inline void inet_ctl_sock_destroy(struct sock *sk)
+ {
+ 	sk_release_kernel(sk);
+diff --git a/net/checkpoint.c b/net/checkpoint.c
+index 386a0c6..6fe7aa2 100644
+--- a/net/checkpoint.c
++++ b/net/checkpoint.c
+@@ -935,6 +935,15 @@ struct sock *do_sock_restore(struct ckpt_ctx *ctx)
+ 	if (ret < 0)
+ 		goto err;
  
++	if ((h->sock_common.family == AF_INET) &&
++	    (h->sock.state != TCP_LISTEN)) {
++		/* Temporary hack to enable restore of TCP_LISTEN sockets
++		 * while forcing anything else to a closed state
++		 */
++		sock->sk->sk_state = TCP_CLOSE;
++		sock->state = SS_UNCONNECTED;
++	}
++
+ 	ckpt_hdr_put(ctx, h);
+ 	return sock->sk;
+  err:
+diff --git a/net/ipv4/Makefile b/net/ipv4/Makefile
+index 80ff87c..c00d8ce 100644
+--- a/net/ipv4/Makefile
++++ b/net/ipv4/Makefile
+@@ -49,6 +49,7 @@ obj-$(CONFIG_TCP_CONG_LP) += tcp_lp.o
+ obj-$(CONFIG_TCP_CONG_YEAH) += tcp_yeah.o
+ obj-$(CONFIG_TCP_CONG_ILLINOIS) += tcp_illinois.o
+ obj-$(CONFIG_NETLABEL) += cipso_ipv4.o
++obj-$(CONFIG_CHECKPOINT) += checkpoint.o
+ 
+ obj-$(CONFIG_XFRM) += xfrm4_policy.o xfrm4_state.o xfrm4_input.o \
+ 		      xfrm4_output.o
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 7d12c6a..a56f21a 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -870,6 +870,9 @@ const struct proto_ops inet_stream_ops = {
+ 	.mmap		   = sock_no_mmap,
+ 	.sendpage	   = tcp_sendpage,
+ 	.splice_read	   = tcp_splice_read,
++	.checkpoint        = inet_checkpoint,
++	.restore           = inet_restore,
++	.collect           = inet_collect,
+ #ifdef CONFIG_COMPAT
+ 	.compat_setsockopt = compat_sock_common_setsockopt,
+ 	.compat_getsockopt = compat_sock_common_getsockopt,
+@@ -896,6 +899,9 @@ const struct proto_ops inet_dgram_ops = {
+ 	.recvmsg	   = sock_common_recvmsg,
+ 	.mmap		   = sock_no_mmap,
+ 	.sendpage	   = inet_sendpage,
++	.checkpoint        = inet_checkpoint,
++	.restore           = inet_restore,
++	.collect           = inet_collect,
+ #ifdef CONFIG_COMPAT
+ 	.compat_setsockopt = compat_sock_common_setsockopt,
+ 	.compat_getsockopt = compat_sock_common_getsockopt,
+diff --git a/net/ipv4/checkpoint.c b/net/ipv4/checkpoint.c
+new file mode 100644
+index 0000000..1982119
+--- /dev/null
++++ b/net/ipv4/checkpoint.c
+@@ -0,0 +1,190 @@
++/*
++ *  Copyright 2009 IBM Corporation
++ *
++ *  Author(s): Dan Smith <danms@us.ibm.com>
++ *
++ *  This program is free software; you can redistribute it and/or
++ *  modify it under the terms of the GNU General Public License as
++ *  published by the Free Software Foundation, version 2 of the
++ *  License.
++ */
++
++#include <linux/namei.h>
++#include <linux/checkpoint.h>
++#include <linux/checkpoint_hdr.h>
++#include <linux/tcp.h>
++#include <linux/in.h>
++#include <linux/deferqueue.h>
++#include <net/tcp_states.h>
++#include <net/tcp.h>
++
++struct dq_sock {
++	struct ckpt_ctx *ctx;
++	struct sock *sk;
++};
++
++struct dq_buffers {
++	struct ckpt_ctx *ctx;
++	struct sock *sk;
++};
++
++int inet_checkpoint(struct ckpt_ctx *ctx, struct socket *sock)
++{
++	struct ckpt_hdr_socket_inet *in;
++	int ret;
++
++	in = ckpt_hdr_get_type(ctx, sizeof(*in), CKPT_HDR_SOCKET_INET);
++	if (!in)
++		return -EINVAL;
++
++	ret = ckpt_sock_getnames(ctx, sock,
++				(struct sockaddr *)&in->laddr, &in->laddr_len,
++				(struct sockaddr *)&in->raddr, &in->raddr_len);
++	if (ret)
++		goto out;
++
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) in);
++ out:
++	ckpt_hdr_put(ctx, in);
++
++	return ret;
++}
++
++int inet_collect(struct ckpt_ctx *ctx, struct socket *sock)
++{
++	return ckpt_obj_collect(ctx, sock->sk, CKPT_OBJ_SOCK);
++}
++
++static int inet_read_buffer(struct ckpt_ctx *ctx, struct sk_buff_head *queue)
++{
++	struct sk_buff *skb = NULL;
++
++	skb = sock_restore_skb(ctx);
++	if (IS_ERR(skb))
++		return PTR_ERR(skb);
++
++	skb_queue_tail(queue, skb);
++	return skb->len;
++}
++
++static int inet_read_buffers(struct ckpt_ctx *ctx, struct sk_buff_head *queue)
++{
++	struct ckpt_hdr_socket_queue *h;
++	int ret = 0;
++	int i;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_SOCKET_QUEUE);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
++
++	for (i = 0; i < h->skb_count; i++) {
++		ret = inet_read_buffer(ctx, queue);
++		ckpt_debug("read inet buffer %i: %i", i, ret);
++		if (ret < 0)
++			goto out;
++
++		if (ret > h->total_bytes) {
++			ret = -EINVAL;
++			ckpt_err(ctx, ret, "Buffers exceeded claim");
++			goto out;
++		}
++
++		h->total_bytes -= ret;
++	}
++
++	ret = h->skb_count;
++ out:
++	ckpt_hdr_put(ctx, h);
++
++	return ret;
++}
++
++static int inet_deferred_restore_buffers(void *data)
++{
++	struct dq_buffers *dq = (struct dq_buffers *)data;
++	struct ckpt_ctx *ctx = dq->ctx;
++	struct sock *sk = dq->sk;
++	int ret;
++
++	ret = inet_read_buffers(ctx, &sk->sk_receive_queue);
++	ckpt_debug("(R) inet_read_buffers: %i\n", ret);
++	if (ret < 0)
++		return ret;
++
++	ret = inet_read_buffers(ctx, &sk->sk_write_queue);
++	ckpt_debug("(W) inet_read_buffers: %i\n", ret);
++
++	return ret;
++}
++
++static int inet_defer_restore_buffers(struct ckpt_ctx *ctx, struct sock *sk)
++{
++	struct dq_buffers dq;
++
++	dq.ctx = ctx;
++	dq.sk = sk;
++
++	return deferqueue_add(ctx->files_deferq, &dq, sizeof(dq),
++			      inet_deferred_restore_buffers, NULL);
++}
++
++static int inet_precheck(struct socket *sock, struct ckpt_hdr_socket_inet *in)
++{
++	if (in->laddr_len > sizeof(struct sockaddr_in)) {
++		ckpt_debug("laddr_len is too big\n");
++		return -EINVAL;
++	}
++
++	if (in->raddr_len > sizeof(struct sockaddr_in)) {
++		ckpt_debug("raddr_len is too big\n");
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++int inet_restore(struct ckpt_ctx *ctx,
++		 struct socket *sock,
++		 struct ckpt_hdr_socket *h)
++{
++	struct ckpt_hdr_socket_inet *in;
++	int ret = 0;
++
++	in = ckpt_read_obj_type(ctx, sizeof(*in), CKPT_HDR_SOCKET_INET);
++	if (IS_ERR(in))
++		return PTR_ERR(in);
++
++	ret = inet_precheck(sock, in);
++	if (ret < 0)
++		goto out;
++
++	/* Listening sockets and those that are closed but have a local
++	 * address need to call bind()
++	 */
++	if ((h->sock.state == TCP_LISTEN) ||
++	    ((h->sock.state == TCP_CLOSE) && (in->laddr_len > 0))) {
++		sock->sk->sk_reuse = 2;
++		inet_sk(sock->sk)->freebind = 1;
++		ret = sock->ops->bind(sock,
++				      (struct sockaddr *)&in->laddr,
++				      in->laddr_len);
++		ckpt_debug("inet bind: %i\n", ret);
++		if (ret < 0)
++			goto out;
++
++		if (h->sock.state == TCP_LISTEN) {
++			ret = sock->ops->listen(sock, h->sock.backlog);
++			ckpt_debug("inet listen: %i\n", ret);
++			if (ret < 0)
++				goto out;
++		}
++	} else {
++		if (!sock_flag(sock->sk, SOCK_DEAD))
++			ret = inet_defer_restore_buffers(ctx, sock->sk);
++	}
++ out:
++	ckpt_hdr_put(ctx, in);
++
++	return ret;
++}
++
 -- 
 1.6.3.3
 
