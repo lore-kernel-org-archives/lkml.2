@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab0CQTfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 15:35:40 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53562 "EHLO mx2.mail.elte.hu"
+	id S1755920Ab0CQTmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 15:42:14 -0400
+Received: from virgo.iok.hu ([212.40.97.103]:47841 "EHLO virgo.iok.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755765Ab0CQTfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 15:35:38 -0400
-Date: Wed, 17 Mar 2010 20:35:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       =?unknown-8bit?B?RnLDqWTDqXJpYw==?= Weisbecker 
-	<fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] rcu: Fix holdoff for accelerated GPs for last
- non-dynticked CPU
-Message-ID: <20100317193527.GA12584@elte.hu>
-References: <1267311188-16603-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <tip-622ea685f1fafdf84d612440535c84341f0860b8@git.kernel.org>
- <20100316110036.GA4554@elte.hu>
- <20100316110323.GA31038@elte.hu>
- <20100317175311.GA5187@elte.hu>
- <20100317192241.GB6806@linux.vnet.ibm.com>
+	id S1755634Ab0CQTmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 15:42:13 -0400
+X-Greylist: delayed 1065 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 15:42:12 EDT
+Date: Wed, 17 Mar 2010 20:24:24 +0100
+From: Miklos Vajna <vmiklos@frugalware.org>
+To: Chris Vine <chris@cvine.freeserve.co.uk>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: Suspend/hibernate wireless regression with 2.6.33 kernel
+Message-ID: <20100317192424.GA27414@genesis.frugalware.org>
+References: <20100317015113.4e833e1c@boulder.homenet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="glG7QM0/F4Gfd30i"
 Content-Disposition: inline
-In-Reply-To: <20100317192241.GB6806@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100317015113.4e833e1c@boulder.homenet>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+--glG7QM0/F4Gfd30i
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Mar 17, 2010 at 06:53:11PM +0100, Ingo Molnar wrote:
-> > 
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> > 
-> > > incidentally i have a RCU badness crash log from another box:
-> > > 
-> > > [    4.573332] initcall ipmi_init_msghandler_mod+0x0/0xd returned 0 after 0 usecs                 
-> > > [    4.573332] calling  init_ipmi_si+0x0/0x435 @ 1
-> > > [    4.573332] IPMI System Interface driver.
-> > > [    4.573340]  [<ffffffff81022cdc>] no_context+0x1fc/0x20b
-> > > [    4.576672]  [<ffffffff81002a16>] ? ftrace_call+0x5/0x2b
-> > > [    4.580021]  [<ffffffff81022e77>] __bad_area_nosemaphore+0x18c/0x1af
-> > > [    4.583338]  [<ffffffff81002a16>] ? ftrace_call+0x5/0x2b
-> > > [    4.586672]  [<ffffffff81022ead>] bad_area_nosemaphore+0x13/0x15
-> > > [    4.590005]  [<ffffffff81023159>] do_page_fault+0x138/0x284
-> > > [    4.593354]  [<ffffffff81a632bf>] page_fault+0x1f/0x30
-> > 
-> > I spent a few hours yesterday and today trying to track this down, but failed 
-> > to bisect it. The crash is sporadic on many configs - which confused my 
-> > bisection attempts. Sometimes it crashes only after 10 reboots. Was able to 
-> > crash v2.6.30 as well, so it's an older bug. v2.6.29 was not testable on that 
-> > box due to network driver problems so i stopped there.
-> 
-> OK, I give up...
-> 
-> What did you change about your testing?  ;-)
+On Wed, Mar 17, 2010 at 01:51:13AM +0000, Chris Vine <chris@cvine.freeserve=
+=2Eco.uk> wrote:
+> I have a Lenovo S12 (Ideapad) netbook with a BCM4312 802.11b/g
+> [14e4:4315] wireless device.  Although this works using the PIO option
+> in kernel 2.6.33/2.6.33.1 (not with DMA) using the in-kernel b43 driver,
+> and also works with the broadcom proprietary wl driver, it breaks after
+> a suspend or hibernate. Attempts to bring up the wlan0 interface with
+> 'ifconfig wlan0 up' after suspension or hibernation results in the
+> following message (although nothing is revealed by dmesg):
+>=20
+>   SIOCSIFFLAGS: Unknown error 132
 
-Nothing really - and it has not reoccured on that box since i let it move on 
-to another random config. This might be a 1:100000 kind of blue moon bug. 
-(literally)
+I just wanted to mention that I can reproduce this issue.
 
-My suspicion is that it's an ftrace bug, all the crashes happened during 
-function-tracer self-tests.
+Same HW (Lenovo S12 Ideapad), and I can reproduce with b43 and wl, on
+2.6.33 and 2.6.34-rc1 as well. It works fine on 2.6.32 for me, too.
 
-	Ingo
+Thanks.
+
+--glG7QM0/F4Gfd30i
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkuhLGgACgkQe81tAgORUJZZlgCghs9A0iiul4A3D3voO+gMdJJN
+1KIAoKDEx20R8r+1o490s9d9dRZvjrae
+=VY3z
+-----END PGP SIGNATURE-----
+
+--glG7QM0/F4Gfd30i--
