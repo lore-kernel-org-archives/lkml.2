@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab0CQHeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 03:34:12 -0400
-Received: from mx9.orcon.net.nz ([219.88.242.59]:52253 "EHLO mx9.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab0CQHeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 03:34:09 -0400
-Message-ID: <4BA085EE.3060700@orcon.net.nz>
-Date: Wed, 17 Mar 2010 20:34:06 +1300
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100121 Lightning/1.0b2pre Shredder/3.0.1
+	id S1752939Ab0CQHuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 03:50:32 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51736 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab0CQHub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 03:50:31 -0400
+Message-ID: <4BA089C0.8090406@dcl.info.waseda.ac.jp>
+Date: Wed, 17 Mar 2010 16:50:24 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ra=FAl_Porcel?= <armin76@gentoo.org>
-CC: Matt Turner <mattst88@gmail.com>, Will L Givens <wlgivens@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
-Subject: Re: Will's kernel compilation error
-References: <b4198de61003151609je8a94ceyf6dd39acfd1a5876@mail.gmail.com> <4B9FDD4E.8080607@gentoo.org>
-In-Reply-To: <4B9FDD4E.8080607@gentoo.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf: Make printing table easily
+References: <1268034910-12544-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100311125126.GI31354@elte.hu> <20100311140615.GD28421@ghostprotocols.net>
+In-Reply-To: <20100311140615.GD28421@ghostprotocols.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-DSPAM-Check: by mx9.orcon.net.nz on Wed, 17 Mar 2010 20:34:07 +1300
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed Mar 17 20:34:08 2010
-X-DSPAM-Confidence: 0.7003
-X-DSPAM-Probability: 0.0000
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/03/10 08:34, Raúl Porcel wrote:
-> Have one.
->
-> My error is as follows:
->
-> net/built-in.o: In function `svc_auth_unregister':
-> (.text+0xb822c): relocation truncated to fit: GPREL16 against `.sbss'
+On 03/11/10 23:06, Arnaldo Carvalho de Melo wrote:
+ > Em Thu, Mar 11, 2010 at 01:51:26PM +0100, Ingo Molnar escreveu:
+ >>
+ >> * Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
+ >>
+ >>> Hi,
+ >>>
+ >>> Making table of matrix by printf is painful work,
+ >>> but it can be found in perf here and there.
+ >>> So I'd like to propose semi-automation of making table.
+ >>> New files util/table.c provides stuffs for easy table printing.
+ >>
+ >> Looks quite reasonable in theory. I suspect it would be useful to 
+see a few
+ >> table printing places converted to this facility, to see the 
+simplification
+ >> factor in practice.
+ >
+ > I'm going thru the printing routines now to get them usable by TUI/GUIs,
+ > starting with a libnewt based browser integrating initially report and
+ > annotate, after I get the first patch in shape for merging I'll revisit
+ > this table class of yours :-)
 
-Right, I've confirmed that with the supplied config.  What's happening 
-is that the small data area (where certain static data are stored) has 
-exceeded 64kB which is the limit under the small data model.  As noted 
-elsewhere on this thread it can be solved by compiling with the large 
-data model, but that incurs extra CPU instructions whenever the data 
-area is accessed.
+Thanks Arnaldo!
 
-A better solution, in my view, is to concert some drivers to modules.  I 
-note that the config has a large number of devices to be built (some of 
-which are denoted as having been tested on x86/x86_64/ia64 only).  I 
-converted a few drivers, and most of the selected filesystems (do you 
-really need them all at boot time?) into modules.  The kernel then 
-builds correctly.
+But I noticed fatal weak point of table.c.
 
-But if people insist on being able to build impractical monolithic 
-kernels on Alpha I will post my patch to add a kernel option for the 
-large data model.
+User of table.c can reduce the cost of specifying
+format specifier for printf, but like this case:
 
-Cheers
-Michael.
+	table_add_fixed(t, "%p", SIZE_OF_ADDR);
+	if (some_cond1)
+		table_add_fixed(t, "%10d", sizeof(int));
+	if (some_cond2)
+		table_add_string(t, "%30s", 30);
+
+table_printf() may produces a lot of if-branch like this:
+
+	if (some_cond1 && some_cond2)
+  		table_printf(t, table_test, 2501, "one");
+	else if (!some_cond1 && some_cond2)
+  		table_printf(t, table_test, "one");
+	else if (some_cond1 && !some_cond2)
+  		table_printf(t, table_test, 2501);
+
+It is not so good, as Ingo told, at least table of this style
+is not useful in real world...
+
+But, how about this style?
+
+First, user declare column with name like this:
+        table_add_column(t, "num1", "%10d", sizeof(int));
+
+Then, user can add values with name,
+       table_add_field(t, "num1", 2501);
+
+Finally, flush stored column
+	 table_flush_line(t);
+
+This way will be good for making title of table.
+How about this?
+
+Thanks,
+	Hitoshi
