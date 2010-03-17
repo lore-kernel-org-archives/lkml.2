@@ -1,80 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456Ab0CQDWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:22:41 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:37374 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751292Ab0CQDWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:22:40 -0400
-Subject: Re: Weird wireless/wpa_supplicant screw-up.
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Valdis.Kletnieks@vt.edu
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-In-Reply-To: <12262.1268795213@localhost>
-References: <7197.1268086939@localhost>
-	 <1268392481.4828.7.camel@jlt3.sipsolutions.net> <5220.1268430568@localhost>
-	 <1268449749.4880.2.camel@jlt3.sipsolutions.net>
-	 <12262.1268795213@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Mar 2010 20:22:30 -0700
-Message-ID: <1268796150.7068.6.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.29.91 
-Content-Transfer-Encoding: 7bit
+	id S1752639Ab0CQDX1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:23:27 -0400
+Received: from tenax.loup.net ([209.169.16.66]:53184 "EHLO tenax.loup.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752256Ab0CQDXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 23:23:25 -0400
+Date: Tue, 16 Mar 2010 21:09:50 -0600
+Message-Id: <201003170309.o2H39o1H010844@alien.loup.net>
+From: Mike Hayward <hayward@loup.net>
+To: hancockrwd@gmail.com
+CC: linux-kernel@vger.kernel.org, mvds.00@gmail.com
+In-reply-to: <4B9EC36F.8010404@gmail.com> (message from Robert Hancock on Mon,
+	15 Mar 2010 17:31:59 -0600)
+Subject: Re: SCSI GENERIC command queueing for block storage is unstable.
+References: <201003151825.o2FIPUTV006948@alien.loup.net> <4B9EC36F.8010404@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 23:06 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Fri, 12 Mar 2010 19:09:09 PST, Johannes Berg said:
-> > No ... look at _all_ that it produces.
-> > 
-> > [   98.592575] In giwencode idx=0 keys=ffff88001b304000 cipher=0
-> > [   98.592580] And we're going home...
-> > *****
-> > [   98.592633] In giwencode idx=1 keys=ffff88001b304000 cipher=fac04
-> > *****
-> > [   98.592749] In giwencode idx=2 keys=ffff88001b304000 cipher=0
-> > [   98.592751] And we're going home...
-> > [   98.592803] In giwencode idx=3 keys=ffff88001b304000 cipher=0
-> > [   98.592805] And we're going home...
-> > [   98.592856] In giwencode idx=0 keys=ffff88001b304000 cipher=0
-> > [   98.592859] And we're going home...
-> > 
-> > See? It reports one key which is the RX-only group key which is
-> > absolutely correct.
-> 
-> It matches what 'iwlist keys' reports, but I remain unconvinced of
-> its "correctness".  
+Hi Robert,
 
-That's your problem then, not mine. It's correct in how wext operates.
-If you want to know why, you'll have to understand the distinction
-between PTK and GTK and how wext operates with them.
+ > > After discovering that O_NONBLOCK reads and writes were actually
+ > > blocking calls, I attempted to use the SCSI generic driver for
+ > > nonblocking io.  The good news is that it is nonblocking; the bad news
+ > > is that it is not dependable in any of the systems I have tested with.
+ > >
+ > > Does anyone know if these defects have been fixed in later kernels?
+ > >
+ > > 1. When queueing, write can occassionally return errno 12 (ENOMEM, Cannot
+ > >     allocate memory).  This is documented in the SCSI GENERIC HOWTO,
+ > >     however only for indirect io and it says extremely rare.  I can cause
+ > >     it easily within a few hours and it can return even for direct io when
+ > >     no io's are queued and 80% of the ram is free or in buffer cache.  The
+ > >     fd polls as available for writing, but retrying never clears the error
+ > >     and the fd is no longer usable.  This is a complete show stopper.
+ > >
+ > >     Linux 2.6.22.1-32.fc6 #1 SMP Wed Aug 1 14:30:16 EDT 2007 x86_64 x86_64 x86_64 GNU/Linux
+ > 
+ > First off, have you tested any of these problems against a newer kernel?
 
-> If a TX key has been set anyplace, what allows me
-> to verify that it was in fact set?
+It appears all of the problems have existed at least from 2.6.18
+through 2.6.32 since I'm seeing essentially the same behavior on those
+plus the two intermediate kernel versions in the last mail, same
+hardware.  We also see the relevant ones on a recent ubuntu arm device:
 
-Nothing. Blame it on wext and on the fact that nobody cares.
+Linux armage 2.6.22.18 #1 Thu Mar 19 14:46:22 IST 2009 armv5tejl GNU/Linux
 
-> > > So the root cause has something to do with params[idx].cipher being unset.
-> > 
-> > Not at all.
-> 
-> I was referring to the root cause of why 'iwlist keys' wasn't reporting
-> anything for the other 3 key slots.
+I'm wondering if anyone has recently worked on anything that might be
+related.  The kernel is issuing error messages independent of a
+specific system or kernel and it is very repeatable.  The ENOMEM
+problem (1) above is much less likely to occur than the other issues
+and I have yet to cause it on 2.6.32; doesn't mean it isn't still
+there if someone hasn't worked on it recently...
 
-Right ... all of that is completely correct. See above about PTK and
-GTK ... You seem to not be interested in telling me what your actual
-problem is, if there is one. If your actual problem is just that iwlist
-reports what you think is wrong information (which is just incomplete,
-it doesn't show the PTK) then that's nothing I actually care about
-fixing.
+----------------------------------------------------------------------
+Linux opt2.loup.net 2.6.32.9-70.fc12.x86_64 #1 SMP Wed Mar 3 04:40:41 UTC 2010 x86_64 x86_64 x86_64 GNU/Linux
 
-> I'll point out that until fairly recently 'iwconfig' *did* report a
-> key for WPA2, so this looks like a regression on somebody's part.
+interface_id S dxfer_direction -3 cmd_len 10 mx_sb_len 252 iovec_count 0 dxfer_len 10000 dxferp 0x1263200 cmdp 1368cf8 sbp 1368d08 timeout 20000 flags 1 pack_id 0 usr_ptr 0x1368cc0
+CDB 28 00 00 11 49 83 00 00 80 00 19 01 00 00 00 00
+CDB OP 28 READ_10(10)
+CDB READ_10 RELADR 0 FUA 0 DPO 0 LBA 00114983 TRANSFERLEN 0080
+CDB Control Vendor 0 NACA 0 LINK 0
+status 2 masked_status 1 host_status 0 driver_status 8 resid 0 duration 277 info 1
+SENSE FIXED RESPONSE CODE 72 VALID 0 SENSEKEY NO_SENSE
+SENSE FIXED ILI 0 EOM 0 FILEMARK 0 INFO 00000000 ASENSELEN 0c
+SENSE FIXED COMMANDINFO 000a8000 ADDSENSE 0000
+SENSE FIXED FRUCODE 00
+SKSData SKSV 0
 
-I'm sure it did not.
+ata4.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6
+ata4.00: port_status 0x20080000
+ata4.00: failed command: READ DMA
+ata4.00: cmd c8/00:80:83:49:11/00:00:00:00:00/e0 tag 0 dma 65536 in
+         res 50/00:00:02:4a:11/00:00:00:00:00/e0 Emask 0x2 (HSM violation)
+ata4.00: status: { DRDY }
+ata4: hard resetting link
+ata4: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+ata4.00: configured for UDMA/133
+ata4: EH complete
+----------------------------------------------------------------------
 
-johannes
+I'd like to mention another issue I forgot in the last email:
 
+7. The sg info result is supposed to return a nonzero result if it
+   transfers data DIRECT according to HOWTO but despite issuing aligned
+   dxferp (as you can see in the one that failed) and setting flags to
+   DIRECT, it never indicates a direct transfer occurred.
+
+Am I like the only one really using sg driver queueing?  From the
+number of issues I've found right off the bat, it makes me think it
+must be primarily used in blocking ioctl mode.
+
+Are there formal regression tests somewhere that are normally run
+against the kernel?  I've never seen any in the kernel downloads
+themselves.  Do such regressions cover the scsi generic driver?
+
+- Mike
