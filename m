@@ -1,92 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab0CQHuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 03:50:32 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51736 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab0CQHub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 03:50:31 -0400
-Message-ID: <4BA089C0.8090406@dcl.info.waseda.ac.jp>
-Date: Wed, 17 Mar 2010 16:50:24 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
+	id S1753210Ab0CQHvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 03:51:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50963 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752557Ab0CQHvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 03:51:19 -0400
+Message-ID: <4BA0897F.3050906@cn.fujitsu.com>
+Date: Wed, 17 Mar 2010 15:49:19 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       h.mitake@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] perf: Make printing table easily
-References: <1268034910-12544-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20100311125126.GI31354@elte.hu> <20100311140615.GD28421@ghostprotocols.net>
-In-Reply-To: <20100311140615.GD28421@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+       KVM list <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] KVM: cleanup {kvm_vm_ioctl, kvm}_get_dirty_log()
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/11/10 23:06, Arnaldo Carvalho de Melo wrote:
- > Em Thu, Mar 11, 2010 at 01:51:26PM +0100, Ingo Molnar escreveu:
- >>
- >> * Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
- >>
- >>> Hi,
- >>>
- >>> Making table of matrix by printf is painful work,
- >>> but it can be found in perf here and there.
- >>> So I'd like to propose semi-automation of making table.
- >>> New files util/table.c provides stuffs for easy table printing.
- >>
- >> Looks quite reasonable in theory. I suspect it would be useful to 
-see a few
- >> table printing places converted to this facility, to see the 
-simplification
- >> factor in practice.
- >
- > I'm going thru the printing routines now to get them usable by TUI/GUIs,
- > starting with a libnewt based browser integrating initially report and
- > annotate, after I get the first patch in shape for merging I'll revisit
- > this table class of yours :-)
+Using bitmap_empty() to see whether memslot->dirty_bitmap is empty 
 
-Thanks Arnaldo!
+Changlog:
+cleanup x86 specific kvm_vm_ioctl_get_dirty_log() and fix a local
+parameter's type address Takuya Yoshikawa's suggestion
 
-But I noticed fatal weak point of table.c.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/x86.c  |   17 ++++-------------
+ virt/kvm/kvm_main.c |    7 ++-----
+ 2 files changed, 6 insertions(+), 18 deletions(-)
 
-User of table.c can reduce the cost of specifying
-format specifier for printf, but like this case:
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index bcf52d1..e6cbbd4 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -2644,22 +2644,17 @@ static int kvm_vm_ioctl_reinject(struct kvm *kvm,
+ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 				      struct kvm_dirty_log *log)
+ {
+-	int r, n, i;
++	int r, n, is_dirty = 0;
+ 	struct kvm_memory_slot *memslot;
+-	unsigned long is_dirty = 0;
+ 	unsigned long *dirty_bitmap = NULL;
+ 
+ 	mutex_lock(&kvm->slots_lock);
+ 
+-	r = -EINVAL;
+-	if (log->slot >= KVM_MEMORY_SLOTS)
++	r = kvm_get_dirty_log(kvm, log, &is_dirty);
++	if (r)
+ 		goto out;
+ 
+ 	memslot = &kvm->memslots->memslots[log->slot];
+-	r = -ENOENT;
+-	if (!memslot->dirty_bitmap)
+-		goto out;
+-
+ 	n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
+ 
+ 	r = -ENOMEM;
+@@ -2668,9 +2663,6 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 		goto out;
+ 	memset(dirty_bitmap, 0, n);
+ 
+-	for (i = 0; !is_dirty && i < n/sizeof(long); i++)
+-		is_dirty = memslot->dirty_bitmap[i];
+-
+ 	/* If nothing is dirty, don't bother messing with page tables. */
+ 	if (is_dirty) {
+ 		struct kvm_memslots *slots, *old_slots;
+@@ -2694,8 +2686,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+ 	}
+ 
+ 	r = 0;
+-	if (copy_to_user(log->dirty_bitmap, dirty_bitmap, n))
+-		r = -EFAULT;
++
+ out_free:
+ 	vfree(dirty_bitmap);
+ out:
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index bcd08b8..b08a7de 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -767,9 +767,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
+ 			struct kvm_dirty_log *log, int *is_dirty)
+ {
+ 	struct kvm_memory_slot *memslot;
+-	int r, i;
+-	int n;
+-	unsigned long any = 0;
++	int r, n, any = 0;
+ 
+ 	r = -EINVAL;
+ 	if (log->slot >= KVM_MEMORY_SLOTS)
+@@ -782,8 +780,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
+ 
+ 	n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
+ 
+-	for (i = 0; !any && i < n/sizeof(long); ++i)
+-		any = memslot->dirty_bitmap[i];
++	any = !bitmap_empty(memslot->dirty_bitmap, memslot->npages);
+ 
+ 	r = -EFAULT;
+ 	if (copy_to_user(log->dirty_bitmap, memslot->dirty_bitmap, n))
+-- 
+1.6.1.2
 
-	table_add_fixed(t, "%p", SIZE_OF_ADDR);
-	if (some_cond1)
-		table_add_fixed(t, "%10d", sizeof(int));
-	if (some_cond2)
-		table_add_string(t, "%30s", 30);
-
-table_printf() may produces a lot of if-branch like this:
-
-	if (some_cond1 && some_cond2)
-  		table_printf(t, table_test, 2501, "one");
-	else if (!some_cond1 && some_cond2)
-  		table_printf(t, table_test, "one");
-	else if (some_cond1 && !some_cond2)
-  		table_printf(t, table_test, 2501);
-
-It is not so good, as Ingo told, at least table of this style
-is not useful in real world...
-
-But, how about this style?
-
-First, user declare column with name like this:
-        table_add_column(t, "num1", "%10d", sizeof(int));
-
-Then, user can add values with name,
-       table_add_field(t, "num1", 2501);
-
-Finally, flush stored column
-	 table_flush_line(t);
-
-This way will be good for making title of table.
-How about this?
-
-Thanks,
-	Hitoshi
