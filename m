@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab0CQVP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:15:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9122 "EHLO mx1.redhat.com"
+	id S1755357Ab0CQVQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:16:50 -0400
+Received: from mail.pxnet.com ([195.227.45.7]:49662 "EHLO mail.pxnet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab0CQVP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:15:27 -0400
-Message-ID: <4BA1464C.2020507@redhat.com>
-Date: Wed, 17 Mar 2010 11:14:52 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Sheng Yang <sheng@linux.intel.com>
-CC: Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
-       Joerg Roedel <joerg.roedel@amd.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <1268717232.2813.36.camel@localhost> <4B9F5021.3080206@redhat.com> <1268793273.2813.70.camel@localhost> <201003171728.43739.sheng@linux.intel.com>
-In-Reply-To: <201003171728.43739.sheng@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752779Ab0CQVQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 17:16:48 -0400
+From: Tilman Schmidt <tilman@imap.cc>
+Date: Wed, 17 Mar 2010 18:37:05 +0100
+Subject: [PATCH] gigaset: fix build failure
+To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       Hansjoerg Lipp <hjlipp@web.de>,
+       isdn4linux <isdn4linux@listserv.isdn4linux.de>,
+       i4ldeveloper <i4ldeveloper@listserv.isdn4linux.de>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Message-Id: <20100317211231.569B140118@xenon.ts.pxnet.com>
+X-Spam-Score: -1.527 () AWL,BAYES_00,DATE_IN_PAST_03_06,RDNS_NONE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/16/2010 11:28 PM, Sheng Yang wrote:
-> On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
->    
->> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
->>      
->>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
->>>        
->>>> Right, but there is a scope between kvm_guest_enter and really running
->>>> in guest os, where a perf event might overflow. Anyway, the scope is
->>>> very narrow, I will change it to use flag PF_VCPU.
->>>>          
->>> There is also a window between setting the flag and calling 'int $2'
->>> where an NMI might happen and be accounted incorrectly.
->>>
->>> Perhaps separate the 'int $2' into a direct call into perf and another
->>> call for the rest of NMI handling.  I don't see how it would work on svm
->>> though - AFAICT the NMI is held whereas vmx swallows it.
->>>
->>>   I guess NMIs
->>> will be disabled until the next IRET so it isn't racy, just tricky.
->>>        
->> I'm not sure if vmexit does break NMI context or not. Hardware NMI context
->> isn't reentrant till a IRET. YangSheng would like to double check it.
->>      
-> After more check, I think VMX won't remained NMI block state for host. That's
-> means, if NMI happened and processor is in VMX non-root mode, it would only
-> result in VMExit, with a reason indicate that it's due to NMI happened, but no
-> more state change in the host.
->
-> So in that meaning, there _is_ a window between VMExit and KVM handle the NMI.
-> Moreover, I think we _can't_ stop the re-entrance of NMI handling code because
-> "int $2" don't have effect to block following NMI.
->
-> And if the NMI sequence is not important(I think so), then we need to generate
-> a real NMI in current vmexit-after code. Seems let APIC send a NMI IPI to
-> itself is a good idea.
->
-> I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to replace
-> "int $2". Something unexpected is happening...
->    
+Update the dummy LL interface to the LL interface change
+introduced by commit daab433c03c15fd642c71c94eb51bdd3f32602c8.
+This fixes the build failure occurring after that commit when
+enabling ISDN_DRV_GIGASET but neither ISDN_I4L nor ISDN_CAPI.
 
-You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't 
-supposed to be able to.
+Impact: bugfix
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+---
+ drivers/isdn/gigaset/dummyll.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
 
-Zach
+diff --git a/drivers/isdn/gigaset/dummyll.c b/drivers/isdn/gigaset/dummyll.c
+index 5b27c99..bd0b1ea 100644
+--- a/drivers/isdn/gigaset/dummyll.c
++++ b/drivers/isdn/gigaset/dummyll.c
+@@ -57,12 +57,20 @@ void gigaset_isdn_stop(struct cardstate *cs)
+ {
+ }
+ 
+-int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
++int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+ {
+-	pr_info("no ISDN subsystem interface\n");
+ 	return 1;
+ }
+ 
+-void gigaset_isdn_unregister(struct cardstate *cs)
++void gigaset_isdn_unregdev(struct cardstate *cs)
++{
++}
++
++void gigaset_isdn_regdrv(void)
++{
++	pr_info("no ISDN subsystem interface\n");
++}
++
++void gigaset_isdn_unregdrv(void)
+ {
+ }
+-- 
+1.6.5.3.298.g39add
+
