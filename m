@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755712Ab0CQQcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:32:36 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37354 "EHLO
+	id S1753706Ab0CQQMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:12:22 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:36811 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab0CQQOG (ORCPT
+	with ESMTP id S1751074Ab0CQQMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:06 -0400
+	Wed, 17 Mar 2010 12:12:18 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 28/96] c/r: restart-blocks
-Date: Wed, 17 Mar 2010 12:08:16 -0400
-Message-Id: <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org
+Subject: [C/R v20][PATCH 09/96] eclone (9/11): Implement sys_eclone for s390
+Date: Wed, 17 Mar 2010 12:07:57 -0400
+Message-Id: <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -27,479 +26,148 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Paraphrasing what's said this message:
-http://lists.openwall.net/linux-kernel/2007/12/05/64)
+From: Serge E. Hallyn <serue@us.ibm.com>
 
-Restart blocks are callbacks used cause a system call to be restarted
-with the arguments specified in the system call restart block. It is
-useful for system call that are not idempotent, i.e. the argument(s)
-might be a relative timeout, where some adjustments are required when
-restarting the system call. It relies on the system call itself to set
-up its restart point and the argument save area.  They are rare: an
-actual signal would turn that it an EINTR. The only case that should
-ever trigger this is some kernel action that interrupts the system
-call, but does not actually result in any user-visible state changes -
-like freeze and thaw.
+Implement the s390 hook for sys_eclone().
 
-So restart blocks are about time remaining for the system call to
-sleep/wait. Generally in c/r, there are two possible time models that
-we can follow: absolute, relative. Here, I chose to save the relative
-timeout, measured from the beginning of the checkpoint. The time when
-the checkpoint (and restart) begin is also saved. This information is
-sufficient to restart in either model (absolute or negative).
+Changelog:
+	Nov 24: Removed user-space code from commit log. See user-cr git tree.
+	Nov 17: remove redundant flags_high check
+	Nov 13: As suggested by Heiko, convert eclone to take its
+		parameters via registers.
 
-Which model to use should eventually be a per application choice (and
-possible configurable via cradvise() or some sort). For now, we adopt
-the relative model, namely, at restart the timeout is set relative to
-the beginning of the restart.
-
-To checkpoint, we check if a task has a valid restart block, and if so
-we save the *remaining* time that is has to wait/sleep, and the type
-of the restart block.
-
-To restart, we fill in the data required at the proper place in the
-thread information. If the system call return an error (which is
-possibly an -ERESTARTSYS eg), we not only use that error as our own
-return value, but also arrange for the task to execute the signal
-handler (by faking a signal). The handler, in turn, already has the
-code to handle these restart request gracefully.
-
-
-Changelog[v19-rc1]:
-  - [Matt Helsley] Add cpp definitions for enums
-Changelog[v1]:
-  - [Nathan Lynch] fix compilation errors with CONFIG_COMPAT=y
-
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- checkpoint/checkpoint.c          |    1 +
- checkpoint/process.c             |  226 ++++++++++++++++++++++++++++++++++++++
- checkpoint/restart.c             |    5 +-
- checkpoint/sys.c                 |    1 +
- include/linux/checkpoint.h       |    4 +
- include/linux/checkpoint_hdr.h   |   34 ++++++
- include/linux/checkpoint_types.h |    3 +
- 7 files changed, 272 insertions(+), 2 deletions(-)
+ arch/s390/include/asm/unistd.h    |    3 ++-
+ arch/s390/kernel/compat_linux.c   |   17 +++++++++++++++++
+ arch/s390/kernel/compat_wrapper.S |    8 ++++++++
+ arch/s390/kernel/process.c        |   37 +++++++++++++++++++++++++++++++++++++
+ arch/s390/kernel/syscalls.S       |    1 +
+ 5 files changed, 65 insertions(+), 1 deletions(-)
 
-diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
-index 695ab00..e25b9b7 100644
---- a/checkpoint/checkpoint.c
-+++ b/checkpoint/checkpoint.c
-@@ -22,6 +22,7 @@
- #include <linux/mount.h>
- #include <linux/utsname.h>
- #include <linux/magic.h>
-+#include <linux/hrtimer.h>
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
+diff --git a/arch/s390/include/asm/unistd.h b/arch/s390/include/asm/unistd.h
+index 6e9f049..2250950 100644
+--- a/arch/s390/include/asm/unistd.h
++++ b/arch/s390/include/asm/unistd.h
+@@ -269,7 +269,8 @@
+ #define	__NR_pwritev		329
+ #define __NR_rt_tgsigqueueinfo	330
+ #define __NR_perf_event_open	331
+-#define NR_syscalls 332
++#define __NR_eclone		332
++#define NR_syscalls 333
  
-diff --git a/checkpoint/process.c b/checkpoint/process.c
-index f6fb9d1..9f2059c 100644
---- a/checkpoint/process.c
-+++ b/checkpoint/process.c
-@@ -12,6 +12,9 @@
- #define CKPT_DFLAG  CKPT_DSYS
- 
- #include <linux/sched.h>
-+#include <linux/posix-timers.h>
-+#include <linux/futex.h>
-+#include <linux/poll.h>
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
- 
-@@ -47,6 +50,116 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
- 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
+ /* 
+  * There are some system calls that are not present on 64 bit, some
+diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
+index 11c3aba..f9e8983 100644
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -663,6 +663,23 @@ asmlinkage long sys32_write(unsigned int fd, char __user * buf, size_t count)
+ 	return sys_write(fd, buf, count);
  }
  
-+/* dump the task_struct of a given task */
-+int checkpoint_restart_block(struct ckpt_ctx *ctx, struct task_struct *t)
++asmlinkage long sys32_clone(void)
 +{
-+	struct ckpt_hdr_restart_block *h;
-+	struct restart_block *restart_block;
-+	long (*fn)(struct restart_block *);
-+	s64 base, expire = 0;
-+	int ret;
++	struct pt_regs *regs = task_pt_regs(current);
++	unsigned long clone_flags;
++	unsigned long newsp;
++	int __user *parent_tidptr, *child_tidptr;
 +
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
-+	if (!h)
-+		return -ENOMEM;
-+
-+	base = ktime_to_ns(ctx->ktime_begin);
-+	restart_block = &task_thread_info(t)->restart_block;
-+	fn = restart_block->fn;
-+
-+	/* FIX: enumerate clockid_t so we're immune to changes */
-+
-+	if (fn == do_no_restart_syscall) {
-+
-+		h->function_type = CKPT_RESTART_BLOCK_NONE;
-+		ckpt_debug("restart_block: non\n");
-+
-+	} else if (fn == hrtimer_nanosleep_restart) {
-+
-+		h->function_type = CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP;
-+		h->arg_0 = restart_block->nanosleep.index;
-+		h->arg_1 = (unsigned long) restart_block->nanosleep.rmtp;
-+		expire = restart_block->nanosleep.expires;
-+		ckpt_debug("restart_block: hrtimer expire %lld now %lld\n",
-+			 expire, base);
-+
-+	} else if (fn == posix_cpu_nsleep_restart) {
-+		struct timespec ts;
-+
-+		h->function_type = CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP;
-+		h->arg_0 = restart_block->arg0;
-+		h->arg_1 = restart_block->arg1;
-+		ts.tv_sec = restart_block->arg2;
-+		ts.tv_nsec = restart_block->arg3;
-+		expire = timespec_to_ns(&ts);
-+		ckpt_debug("restart_block: posix_cpu expire %lld now %lld\n",
-+			 expire, base);
-+
-+#ifdef CONFIG_COMPAT
-+	} else if (fn == compat_nanosleep_restart) {
-+
-+		h->function_type = CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP;
-+		h->arg_0 = restart_block->nanosleep.index;
-+		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
-+		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
-+		expire = restart_block->nanosleep.expires;
-+		ckpt_debug("restart_block: compat expire %lld now %lld\n",
-+			 expire, base);
-+
-+	} else if (fn == compat_clock_nanosleep_restart) {
-+
-+		h->function_type = CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP;
-+		h->arg_0 = restart_block->nanosleep.index;
-+		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
-+		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
-+		expire = restart_block->nanosleep.expires;
-+		ckpt_debug("restart_block: compat_clock expire %lld now %lld\n",
-+			 expire, base);
-+
-+#endif
-+	} else if (fn == futex_wait_restart) {
-+
-+		h->function_type = CKPT_RESTART_BLOCK_FUTEX;
-+		h->arg_0 = (unsigned long) restart_block->futex.uaddr;
-+		h->arg_1 = restart_block->futex.val;
-+		h->arg_2 = restart_block->futex.flags;
-+		h->arg_3 = restart_block->futex.bitset;
-+		expire = restart_block->futex.time;
-+		ckpt_debug("restart_block: futex expire %lld now %lld\n",
-+			 expire, base);
-+
-+	} else if (fn == do_restart_poll) {
-+		struct timespec ts;
-+
-+		h->function_type = CKPT_RESTART_BLOCK_POLL;
-+		h->arg_0 = (unsigned long) restart_block->poll.ufds;
-+		h->arg_1 = restart_block->poll.nfds;
-+		h->arg_2 = restart_block->poll.has_timeout;
-+		ts.tv_sec = restart_block->poll.tv_sec;
-+		ts.tv_nsec = restart_block->poll.tv_nsec;
-+		expire = timespec_to_ns(&ts);
-+		ckpt_debug("restart_block: poll expire %lld now %lld\n",
-+			 expire, base);
-+
-+	} else {
-+
-+		BUG();
-+
-+	}
-+
-+	/* common to all restart blocks: */
-+	h->arg_4 = (base < expire ? expire - base : 0);
-+
-+	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
-+		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+
-+	ckpt_debug("restart_block ret %d\n", ret);
-+	return ret;
++	clone_flags = regs->gprs[3] & 0xffffffffUL;
++	newsp = regs->orig_gpr2 & 0x7fffffffUL;
++	parent_tidptr = compat_ptr(regs->gprs[4]);
++	child_tidptr = compat_ptr(regs->gprs[5]);
++	if (!newsp)
++		newsp = regs->gprs[15];
++	return do_fork(clone_flags, newsp, regs, 0,
++		       parent_tidptr, child_tidptr);
 +}
 +
- /* dump the entire state of a given task */
- int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
-@@ -62,6 +175,10 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
- 		goto out;
-+	ret = checkpoint_restart_block(ctx, t);
-+	ckpt_debug("restart-blocks %d\n", ret);
-+	if (ret < 0)
-+		goto out;
- 	ret = checkpoint_cpu(ctx, t);
- 	ckpt_debug("cpu %d\n", ret);
-  out:
-@@ -98,6 +215,111 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
- 	return ret;
+ /*
+  * 31 bit emulation wrapper functions for sys_fadvise64/fadvise64_64.
+  * These need to rewrite the advise values for POSIX_FADV_{DONTNEED,NOREUSE}
+diff --git a/arch/s390/kernel/compat_wrapper.S b/arch/s390/kernel/compat_wrapper.S
+index 30de2d0..cfa227e 100644
+--- a/arch/s390/kernel/compat_wrapper.S
++++ b/arch/s390/kernel/compat_wrapper.S
+@@ -1847,6 +1847,14 @@ sys_clone_wrapper:
+ 	llgtr	%r5,%r5			# int *
+ 	jg	sys_clone		# branch to system call
+ 
++	.globl	sys_eclone_wrapper
++sys_eclone_wrapper:
++	llgfr	%r2,%r2			# unsigned int
++	llgtr	%r3,%r3			# struct clone_args *
++	lgfr	%r4,%r4			# int
++	llgtr	%r5,%r5			# pid_t *
++	jg	sys_eclone		# branch to system call
++
+ 	.globl	sys32_execve_wrapper
+ sys32_execve_wrapper:
+ 	llgtr	%r2,%r2			# char *
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 00b6d1d..5b0729a 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -240,6 +240,43 @@ SYSCALL_DEFINE4(clone, unsigned long, newsp, unsigned long, clone_flags,
+ 		       parent_tidptr, child_tidptr);
  }
  
-+int restore_restart_block(struct ckpt_ctx *ctx)
++SYSCALL_DEFINE4(eclone, unsigned int, flags_low, struct clone_args __user *,
++		uca, int, args_size, pid_t __user *, pids)
 +{
-+	struct ckpt_hdr_restart_block *h;
-+	struct restart_block restart_block;
-+	struct timespec ts;
-+	clockid_t clockid;
-+	s64 expire;
-+	int ret = 0;
++	int rc;
++	struct pt_regs *regs = task_pt_regs(current);
++	struct clone_args kca;
++	int __user *parent_tid_ptr;
++	int __user *child_tid_ptr;
++	unsigned long flags;
++	unsigned long __user child_stack;
++	unsigned long stack_size;
 +
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
++	rc = fetch_clone_args_from_user(uca, args_size, &kca);
++	if (rc)
++		return rc;
 +
-+	expire = ktime_to_ns(ctx->ktime_begin) + h->arg_4;
-+	restart_block.fn = NULL;
++	flags = flags_low;
++	parent_tid_ptr = (int __user *) kca.parent_tid_ptr;
++	child_tid_ptr =  (int __user *) kca.child_tid_ptr;
 +
-+	ckpt_debug("restart_block: expire %lld begin %lld\n",
-+		 expire, ktime_to_ns(ctx->ktime_begin));
-+	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
-+		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
++	stack_size = (unsigned long) kca.child_stack_size;
++	if (stack_size)
++		return -EINVAL;
 +
-+	switch (h->function_type) {
-+	case CKPT_RESTART_BLOCK_NONE:
-+		restart_block.fn = do_no_restart_syscall;
-+		break;
-+	case CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP:
-+		clockid = h->arg_0;
-+		if (clockid < 0 || invalid_clockid(clockid))
-+			break;
-+		restart_block.fn = hrtimer_nanosleep_restart;
-+		restart_block.nanosleep.index = clockid;
-+		restart_block.nanosleep.rmtp =
-+			(struct timespec __user *) (unsigned long) h->arg_1;
-+		restart_block.nanosleep.expires = expire;
-+		break;
-+	case CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP:
-+		clockid = h->arg_0;
-+		if (clockid < 0 || invalid_clockid(clockid))
-+			break;
-+		restart_block.fn = posix_cpu_nsleep_restart;
-+		restart_block.arg0 = clockid;
-+		restart_block.arg1 = h->arg_1;
-+		ts = ns_to_timespec(expire);
-+		restart_block.arg2 = ts.tv_sec;
-+		restart_block.arg3 = ts.tv_nsec;
-+		break;
-+#ifdef CONFIG_COMPAT
-+	case CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP:
-+		clockid = h->arg_0;
-+		if (clockid < 0 || invalid_clockid(clockid))
-+			break;
-+		restart_block.fn = compat_nanosleep_restart;
-+		restart_block.nanosleep.index = clockid;
-+		restart_block.nanosleep.rmtp =
-+			(struct timespec __user *) (unsigned long) h->arg_1;
-+		restart_block.nanosleep.compat_rmtp =
-+			(struct compat_timespec __user *)
-+				(unsigned long) h->arg_2;
-+		restart_block.nanosleep.expires = expire;
-+		break;
-+	case CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP:
-+		clockid = h->arg_0;
-+		if (clockid < 0 || invalid_clockid(clockid))
-+			break;
-+		restart_block.fn = compat_clock_nanosleep_restart;
-+		restart_block.nanosleep.index = clockid;
-+		restart_block.nanosleep.rmtp =
-+			(struct timespec __user *) (unsigned long) h->arg_1;
-+		restart_block.nanosleep.compat_rmtp =
-+			(struct compat_timespec __user *)
-+				(unsigned long) h->arg_2;
-+		restart_block.nanosleep.expires = expire;
-+		break;
-+#endif
-+	case CKPT_RESTART_BLOCK_FUTEX:
-+		restart_block.fn = futex_wait_restart;
-+		restart_block.futex.uaddr = (u32 *) (unsigned long) h->arg_0;
-+		restart_block.futex.val = h->arg_1;
-+		restart_block.futex.flags = h->arg_2;
-+		restart_block.futex.bitset = h->arg_3;
-+		restart_block.futex.time = expire;
-+		break;
-+	case CKPT_RESTART_BLOCK_POLL:
-+		restart_block.fn = do_restart_poll;
-+		restart_block.poll.ufds =
-+			(struct pollfd __user *) (unsigned long) h->arg_0;
-+		restart_block.poll.nfds = h->arg_1;
-+		restart_block.poll.has_timeout = h->arg_2;
-+		ts = ns_to_timespec(expire);
-+		restart_block.poll.tv_sec = ts.tv_sec;
-+		restart_block.poll.tv_nsec = ts.tv_nsec;
-+		break;
-+	default:
-+		break;
-+	}
++	child_stack = (unsigned long) kca.child_stack;
++	if (!child_stack)
++		child_stack = regs->gprs[15];
 +
-+	if (restart_block.fn)
-+		task_thread_info(current)->restart_block = restart_block;
-+	else
-+		ret = -EINVAL;
-+
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
++	/*
++	 * TODO: On 32-bit systems, clone_flags is passed in as 32-bit value
++	 * 	 to several functions. Need to convert clone_flags to 64-bit.
++	 */
++	return do_fork_with_pids(flags, child_stack, regs, stack_size,
++				parent_tid_ptr, child_tid_ptr, kca.nr_pids,
++				pids);
 +}
 +
- /* read the entire state of the current task */
- int restore_task(struct ckpt_ctx *ctx)
- {
-@@ -111,6 +333,10 @@ int restore_task(struct ckpt_ctx *ctx)
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
- 		goto out;
-+	ret = restore_restart_block(ctx);
-+	ckpt_debug("restart-blocks %d\n", ret);
-+	if (ret < 0)
-+		goto out;
- 	ret = restore_cpu(ctx);
- 	ckpt_debug("cpu %d\n", ret);
-  out:
-diff --git a/checkpoint/restart.c b/checkpoint/restart.c
-index 11d9738..360c41e 100644
---- a/checkpoint/restart.c
-+++ b/checkpoint/restart.c
-@@ -16,6 +16,8 @@
- #include <linux/file.h>
- #include <linux/magic.h>
- #include <linux/utsname.h>
-+#include <asm/syscall.h>
-+#include <linux/elf.h>
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
- 
-@@ -523,6 +525,5 @@ long do_restart(struct ckpt_ctx *ctx, pid_t pid)
- 	if (ret < 0)
- 		return ret;
- 
--	/* on success, adjust the return value if needed [TODO] */
--	return restore_retval(ctx);
-+	return restore_retval();
- }
-diff --git a/checkpoint/sys.c b/checkpoint/sys.c
-index 308cd27..d858096 100644
---- a/checkpoint/sys.c
-+++ b/checkpoint/sys.c
-@@ -198,6 +198,7 @@ static struct ckpt_ctx *ckpt_ctx_alloc(int fd, unsigned long uflags,
- 
- 	ctx->uflags = uflags;
- 	ctx->kflags = kflags;
-+	ctx->ktime_begin = ktime_get();
- 
- 	mutex_init(&ctx->msg_mutex);
- 
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 3095431..8cb6130 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -77,6 +77,10 @@ extern int restore_read_header_arch(struct ckpt_ctx *ctx);
- extern int restore_thread(struct ckpt_ctx *ctx);
- extern int restore_cpu(struct ckpt_ctx *ctx);
- 
-+extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
-+				    struct task_struct *t);
-+extern int restore_restart_block(struct ckpt_ctx *ctx);
-+
- static inline int ckpt_validate_errno(int errno)
- {
- 	return (errno >= 0) && (errno < MAX_ERRNO);
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 4627564..24e880f 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -67,6 +67,8 @@ enum {
- 
- 	CKPT_HDR_TASK = 101,
- #define CKPT_HDR_TASK CKPT_HDR_TASK
-+	CKPT_HDR_RESTART_BLOCK,
-+#define CKPT_HDR_RESTART_BLOCK CKPT_HDR_RESTART_BLOCK
- 	CKPT_HDR_THREAD,
- #define CKPT_HDR_THREAD CKPT_HDR_THREAD
- 	CKPT_HDR_CPU,
-@@ -147,4 +149,36 @@ struct ckpt_hdr_task {
- 	__u64 clear_child_tid;
- } __attribute__((aligned(8)));
- 
-+/* restart blocks */
-+struct ckpt_hdr_restart_block {
-+	struct ckpt_hdr h;
-+	__u64 function_type;
-+	__u64 arg_0;
-+	__u64 arg_1;
-+	__u64 arg_2;
-+	__u64 arg_3;
-+	__u64 arg_4;
-+} __attribute__((aligned(8)));
-+
-+enum restart_block_type {
-+	CKPT_RESTART_BLOCK_NONE = 1,
-+#define CKPT_RESTART_BLOCK_NONE CKPT_RESTART_BLOCK_NONE
-+	CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP,
-+#define CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP \
-+		CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP
-+	CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP,
-+#define CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP \
-+		CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP
-+	CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP,
-+#define CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP \
-+		CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP
-+	CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP,
-+#define CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP \
-+		CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP
-+	CKPT_RESTART_BLOCK_POLL,
-+#define CKPT_RESTART_BLOCK_POLL CKPT_RESTART_BLOCK_POLL
-+	CKPT_RESTART_BLOCK_FUTEX,
-+#define CKPT_RESTART_BLOCK_FUTEX CKPT_RESTART_BLOCK_FUTEX
-+};
-+
- #endif /* _CHECKPOINT_CKPT_HDR_H_ */
-diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
-index dc35b21..6420a3b 100644
---- a/include/linux/checkpoint_types.h
-+++ b/include/linux/checkpoint_types.h
-@@ -15,10 +15,13 @@
- #include <linux/sched.h>
- #include <linux/nsproxy.h>
- #include <linux/fs.h>
-+#include <linux/ktime.h>
- 
- struct ckpt_ctx {
- 	int crid;		/* unique checkpoint id */
- 
-+	ktime_t ktime_begin;	/* checkpoint start time */
-+
- 	pid_t root_pid;				/* [container] root pid */
- 	struct task_struct *root_task;		/* [container] root task */
- 	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
+ /*
+  * This is trivial, and on the face of it looks like it
+  * could equally well be done in user mode.
+diff --git a/arch/s390/kernel/syscalls.S b/arch/s390/kernel/syscalls.S
+index 30eca07..fb8708d 100644
+--- a/arch/s390/kernel/syscalls.S
++++ b/arch/s390/kernel/syscalls.S
+@@ -340,3 +340,4 @@ SYSCALL(sys_preadv,sys_preadv,compat_sys_preadv_wrapper)
+ SYSCALL(sys_pwritev,sys_pwritev,compat_sys_pwritev_wrapper)
+ SYSCALL(sys_rt_tgsigqueueinfo,sys_rt_tgsigqueueinfo,compat_sys_rt_tgsigqueueinfo_wrapper) /* 330 */
+ SYSCALL(sys_perf_event_open,sys_perf_event_open,sys_perf_event_open_wrapper)
++SYSCALL(sys_eclone,sys_eclone,sys_eclone_wrapper)
 -- 
 1.6.3.3
 
