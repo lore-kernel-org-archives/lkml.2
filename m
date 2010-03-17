@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab0CQJxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 05:53:33 -0400
-Received: from mail-iw0-f176.google.com ([209.85.223.176]:40735 "EHLO
-	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab0CQJxb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 05:53:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=oh611pb7vy0dTkzQvcsa1SK256dGNoYS6kN9OpBeS4UsxeB9P6N2Bk5HkqsSYqOgvu
-         elRM16oTj+a6Y0dW4kzO7tE7lnGZkqKJXeFYnNcNYRhTcF/L88632S6O05SA63Cn2opC
-         tCUn4g7Zropy01vSnvfFQ4dDiWTCrs84ha/3I=
+	id S1754085Ab0CQJzJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 05:55:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43141 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753036Ab0CQJzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 05:55:07 -0400
+Date: Wed, 17 Mar 2010 10:54:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: T??r??k Edwin <edwintorok@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: x86: fix callgraphs of 32-bit processes on 64-bit
+ kernels V3.
+Message-ID: <20100317095456.GE17146@elte.hu>
+References: <4BA09776.4020205@gmail.com>
+ <1268815776-29501-1-git-send-email-edwintorok@gmail.com>
 MIME-Version: 1.0
-Date: Wed, 17 Mar 2010 05:53:30 -0400
-Message-ID: <5d592f661003170253h2a34219cif6d560af6454c8a6@mail.gmail.com>
-Subject: Can not get 'function_graph' for
-From: Ryan Wang <openspace.wang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268815776-29501-1-git-send-email-edwintorok@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-        I have build 2.6.33.1 with ftrace on, but after reboot
-I cannot get function_graph from available_tracers.
-===============
-# .config
-CONFIG_NOP_TRACER=y
-CONFIG_HAVE_FUNCTION_TRACER=y
-CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
-CONFIG_TRACER_MAX_TRACE=y
-CONFIG_CONTEXT_SWITCH_TRACER=y
-CONFIG_GENERIC_TRACER=y
-CONFIG_FUNCTION_TRACER=y
-CONFIG_IRQSOFF_TRACER=y
-CONFIG_SYSPROF_TRACER=y
-CONFIG_SCHED_TRACER=y
-CONFIG_BOOT_TRACER=y
-CONFIG_BRANCH_TRACER=y
-# CONFIG_POWER_TRACER is not set
-CONFIG_KSYM_TRACER=y
-# CONFIG_PROFILE_KSYM_TRACER is not set
-CONFIG_STACK_TRACER=y
-CONFIG_WORKQUEUE_TRACER=y
+* T??r??k Edwin <edwintorok@gmail.com> wrote:
 
+> +#ifdef CONFIG_COMPAT
+> +	if (test_thread_flag(TIF_IA32)) {
+> +		perf_callchain_user32(regs, entry);
+> +		return;
+> +	}
+> +#endif
 
-======================================
-# cat available_tracers
-ksym_tracer blk kmemtrace branch mmiotrace wakeup_rt wakeup irqsoff
-function sched_switch initcall nop
+You can push that test into perf_callchain_user32() and turn it into something 
+like:
+
+	if (perf_callchain_user32(regs, entry))
+		return;
+
+without the #ifdef here.
+
+	Ingo
