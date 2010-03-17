@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab0CQL3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 07:29:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36036 "EHLO hera.kernel.org"
+	id S1754530Ab0CQL3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 07:29:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36051 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754461Ab0CQL27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 07:28:59 -0400
-Date: Wed, 17 Mar 2010 11:28:15 GMT
+	id S1754509Ab0CQL3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 07:29:09 -0400
+Date: Wed, 17 Mar 2010 11:27:57 GMT
 From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
@@ -18,32 +18,32 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
        dle-develop@lists.sourceforge.net, fweisbec@gmail.com,
        tglx@linutronix.de, mhiramat@redhat.com, systemtap@sources.redhat.com,
        mingo@elte.hu
-In-Reply-To: <20100316220537.32050.72214.stgit@localhost6.localdomain6>
-References: <20100316220537.32050.72214.stgit@localhost6.localdomain6>
+In-Reply-To: <20100316220530.32050.53951.stgit@localhost6.localdomain6>
+References: <20100316220530.32050.53951.stgit@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Move add-probe routine to util/
-Message-ID: <tip-e0faa8d35845bb1893cf9e608a5a5d92e9390bf0@git.kernel.org>
-Git-Commit-ID: e0faa8d35845bb1893cf9e608a5a5d92e9390bf0
+Subject: [tip:perf/core] perf probe: Use wrapper functions
+Message-ID: <tip-31facc5f1ac674fbcc29f212377e589396bb934c@git.kernel.org>
+Git-Commit-ID: 31facc5f1ac674fbcc29f212377e589396bb934c
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 11:28:16 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 11:27:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e0faa8d35845bb1893cf9e608a5a5d92e9390bf0
-Gitweb:     http://git.kernel.org/tip/e0faa8d35845bb1893cf9e608a5a5d92e9390bf0
+Commit-ID:  31facc5f1ac674fbcc29f212377e589396bb934c
+Gitweb:     http://git.kernel.org/tip/31facc5f1ac674fbcc29f212377e589396bb934c
 Author:     Masami Hiramatsu <mhiramat@redhat.com>
-AuthorDate: Tue, 16 Mar 2010 18:05:37 -0400
+AuthorDate: Tue, 16 Mar 2010 18:05:30 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 17 Mar 2010 11:32:30 +0100
+CommitDate: Wed, 17 Mar 2010 11:32:29 +0100
 
-perf probe: Move add-probe routine to util/
+perf probe: Use wrapper functions
 
-Move add-probe routine to util/probe_event.c. This simplifies
-main routine for reducing maintenance cost.
+Use wrapped functions as much as possible, to check out of
+memory conditions in perf probe.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: systemtap <systemtap@sources.redhat.com>
@@ -53,382 +53,228 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100316220537.32050.72214.stgit@localhost6.localdomain6>
+LKML-Reference: <20100316220530.32050.53951.stgit@localhost6.localdomain6>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-probe.c    |  126 +------------------------------------
- tools/perf/util/probe-event.c |  137 ++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/probe-event.h |    2 +-
- 3 files changed, 139 insertions(+), 126 deletions(-)
+ tools/perf/builtin-probe.c     |    4 +--
+ tools/perf/util/probe-event.c  |   46 ++++++++++++++-------------------------
+ tools/perf/util/probe-finder.c |   14 +++++-------
+ 3 files changed, 24 insertions(+), 40 deletions(-)
 
 diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index b6afe7b..2087034 100644
+index 152d6c9..b6afe7b 100644
 --- a/tools/perf/builtin-probe.c
 +++ b/tools/perf/builtin-probe.c
-@@ -36,11 +36,9 @@
- #include "builtin.h"
- #include "util/util.h"
- #include "util/strlist.h"
--#include "util/event.h"
-+#include "util/symbol.h"
- #include "util/debug.h"
- #include "util/debugfs.h"
--#include "util/symbol.h"
--#include "util/thread.h"
- #include "util/parse-options.h"
- #include "util/parse-events.h"	/* For debugfs_path */
- #include "util/probe-finder.h"
-@@ -57,8 +55,6 @@ static struct {
- 	int nr_probe;
- 	struct probe_point probes[MAX_PROBES];
- 	struct strlist *dellist;
--	struct map_groups kmap_groups;
--	struct map *kmaps[MAP__NR_TYPES];
- 	struct line_range line_range;
- } session;
- 
-@@ -114,29 +110,7 @@ static int opt_del_probe_event(const struct option *opt __used,
- 	return 0;
- }
- 
--/* Currently just checking function name from symbol map */
--static void evaluate_probe_point(struct probe_point *pp)
--{
--	struct symbol *sym;
--	sym = map__find_symbol_by_name(session.kmaps[MAP__FUNCTION],
--				       pp->function, NULL);
--	if (!sym)
--		die("Kernel symbol \'%s\' not found - probe not added.",
--		    pp->function);
--}
--
- #ifndef NO_DWARF_SUPPORT
--static int open_vmlinux(void)
--{
--	if (map__load(session.kmaps[MAP__FUNCTION], NULL) < 0) {
--		pr_debug("Failed to load kernel map.\n");
--		return -EINVAL;
--	}
--	pr_debug("Try to open %s\n",
--		 session.kmaps[MAP__FUNCTION]->dso->long_name);
--	return open(session.kmaps[MAP__FUNCTION]->dso->long_name, O_RDONLY);
--}
--
- static int opt_show_lines(const struct option *opt __used,
- 			  const char *str, int unset __used)
- {
-@@ -204,31 +178,8 @@ static const struct option options[] = {
- 	OPT_END()
- };
- 
--/* Initialize symbol maps for vmlinux */
--static void init_vmlinux(void)
--{
--	symbol_conf.sort_by_name = true;
--	if (symbol_conf.vmlinux_name == NULL)
--		symbol_conf.try_vmlinux_path = true;
--	else
--		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
--	if (symbol__init() < 0)
--		die("Failed to init symbol map.");
--
--	map_groups__init(&session.kmap_groups);
--	if (map_groups__create_kernel_maps(&session.kmap_groups,
--					   session.kmaps) < 0)
--		die("Failed to create kernel maps.");
--}
--
- int cmd_probe(int argc, const char **argv, const char *prefix __used)
- {
--	int i, ret;
--#ifndef NO_DWARF_SUPPORT
--	int fd;
--#endif
--	struct probe_point *pp;
--
- 	argc = parse_options(argc, argv, options, probe_usage,
- 			     PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (argc > 0) {
-@@ -267,14 +218,7 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 				   " --add/--del.\n");
- 			usage_with_options(probe_usage, options);
- 		}
--		init_vmlinux();
--		fd = open_vmlinux();
--		if (fd < 0)
--			die("Could not open debuginfo file.");
--		ret = find_line_range(fd, &session.line_range);
--		if (ret <= 0)
--			die("Source line is not found.\n");
--		close(fd);
-+
- 		show_line_range(&session.line_range);
- 		return 0;
- 	}
-@@ -287,72 +231,8 @@ int cmd_probe(int argc, const char **argv, const char *prefix __used)
- 			return 0;
- 	}
- 
--	/* Add probes */
--	init_vmlinux();
--
--	if (session.need_dwarf)
--#ifdef NO_DWARF_SUPPORT
--		die("Debuginfo-analysis is not supported");
--#else	/* !NO_DWARF_SUPPORT */
--		pr_debug("Some probes require debuginfo.\n");
--
--	fd = open_vmlinux();
--	if (fd < 0) {
--		if (session.need_dwarf)
--			die("Could not open debuginfo file.");
--
--		pr_debug("Could not open vmlinux/module file."
--			 " Try to use symbols.\n");
--		goto end_dwarf;
--	}
--
--	/* Searching probe points */
--	for (i = 0; i < session.nr_probe; i++) {
--		pp = &session.probes[i];
--		if (pp->found)
--			continue;
--
--		lseek(fd, SEEK_SET, 0);
--		ret = find_probe_point(fd, pp);
--		if (ret > 0)
--			continue;
--		if (ret == 0) {	/* No error but failed to find probe point. */
--			synthesize_perf_probe_point(pp);
--			die("Probe point '%s' not found. - probe not added.",
--			    pp->probes[0]);
--		}
--		/* Error path */
--		if (session.need_dwarf) {
--			if (ret == -ENOENT)
--				pr_warning("No dwarf info found in the vmlinux - please rebuild with CONFIG_DEBUG_INFO=y.\n");
--			die("Could not analyze debuginfo.");
--		}
--		pr_debug("An error occurred in debuginfo analysis."
--			 " Try to use symbols.\n");
--		break;
--	}
--	close(fd);
--
--end_dwarf:
--#endif /* !NO_DWARF_SUPPORT */
--
--	/* Synthesize probes without dwarf */
--	for (i = 0; i < session.nr_probe; i++) {
--		pp = &session.probes[i];
--		if (pp->found)	/* This probe is already found. */
--			continue;
--
--		evaluate_probe_point(pp);
--		ret = synthesize_trace_kprobe_event(pp);
--		if (ret == -E2BIG)
--			die("probe point definition becomes too long.");
--		else if (ret < 0)
--			die("Failed to synthesize a probe point.");
--	}
--
--	/* Settng up probe points */
- 	add_trace_kprobe_events(session.probes, session.nr_probe,
--				session.force_add);
-+				session.force_add, session.need_dwarf);
- 	return 0;
- }
- 
+@@ -87,9 +87,7 @@ static void parse_probe_event_argv(int argc, const char **argv)
+ 	len = 0;
+ 	for (i = 0; i < argc; i++)
+ 		len += strlen(argv[i]) + 1;
+-	buf = zalloc(len + 1);
+-	if (!buf)
+-		die("Failed to allocate memory for binding arguments.");
++	buf = xzalloc(len + 1);
+ 	len = 0;
+ 	for (i = 0; i < argc; i++)
+ 		len += sprintf(&buf[len], "%s ", argv[i]);
 diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 88a3b6d..1e60a65 100644
+index 7c004b6..88a3b6d 100644
 --- a/tools/perf/util/probe-event.c
 +++ b/tools/perf/util/probe-event.c
-@@ -40,6 +40,8 @@
- #include "debug.h"
- #include "cache.h"
- #include "color.h"
-+#include "symbol.h"
-+#include "thread.h"
- #include "parse-events.h"  /* For debugfs_path */
- #include "probe-event.h"
+@@ -33,6 +33,7 @@
+ #include <limits.h>
  
-@@ -65,6 +67,38 @@ static int e_snprintf(char *str, size_t size, const char *format, ...)
- 	return ret;
+ #undef _GNU_SOURCE
++#include "util.h"
+ #include "event.h"
+ #include "string.h"
+ #include "strlist.h"
+@@ -90,9 +91,9 @@ void parse_line_range_desc(const char *arg, struct line_range *lr)
+ 		if (*tmp != '\0')
+ 			semantic_error("Tailing with invalid character '%d'.",
+ 				       *tmp);
+-		tmp = strndup(arg, (ptr - arg));
++		tmp = xstrndup(arg, (ptr - arg));
+ 	} else
+-		tmp = strdup(arg);
++		tmp = xstrdup(arg);
+ 
+ 	if (strchr(tmp, '.'))
+ 		lr->file = tmp;
+@@ -135,7 +136,7 @@ static void parse_perf_probe_probepoint(char *arg, struct probe_point *pp)
+ 		if (!check_event_name(arg))
+ 			semantic_error("%s is bad for event name -it must "
+ 				       "follow C symbol-naming rule.", arg);
+-		pp->event = strdup(arg);
++		pp->event = xstrdup(arg);
+ 		arg = tmp;
+ 	}
+ 
+@@ -147,17 +148,16 @@ static void parse_perf_probe_probepoint(char *arg, struct probe_point *pp)
+ 
+ 	/* Check arg is function or file and copy it */
+ 	if (strchr(arg, '.'))	/* File */
+-		pp->file = strdup(arg);
++		pp->file = xstrdup(arg);
+ 	else			/* Function */
+-		pp->function = strdup(arg);
+-	DIE_IF(pp->file == NULL && pp->function == NULL);
++		pp->function = xstrdup(arg);
+ 
+ 	/* Parse other options */
+ 	while (ptr) {
+ 		arg = ptr;
+ 		c = nc;
+ 		if (c == ';') {	/* Lazy pattern must be the last part */
+-			pp->lazy_line = strdup(arg);
++			pp->lazy_line = xstrdup(arg);
+ 			break;
+ 		}
+ 		ptr = strpbrk(arg, ";:+@%");
+@@ -181,8 +181,7 @@ static void parse_perf_probe_probepoint(char *arg, struct probe_point *pp)
+ 		case '@':	/* File name */
+ 			if (pp->file)
+ 				semantic_error("SRC@SRC is not allowed.");
+-			pp->file = strdup(arg);
+-			DIE_IF(pp->file == NULL);
++			pp->file = xstrdup(arg);
+ 			break;
+ 		case '%':	/* Probe places */
+ 			if (strcmp(arg, "return") == 0) {
+@@ -247,11 +246,9 @@ void parse_perf_probe_event(const char *str, struct probe_point *pp,
+ 
+ 	/* Copy arguments and ensure return probe has no C argument */
+ 	pp->nr_args = argc - 1;
+-	pp->args = zalloc(sizeof(char *) * pp->nr_args);
++	pp->args = xzalloc(sizeof(char *) * pp->nr_args);
+ 	for (i = 0; i < pp->nr_args; i++) {
+-		pp->args[i] = strdup(argv[i + 1]);
+-		if (!pp->args[i])
+-			die("Failed to copy argument.");
++		pp->args[i] = xstrdup(argv[i + 1]);
+ 		if (is_c_varname(pp->args[i])) {
+ 			if (pp->retprobe)
+ 				semantic_error("You can't specify local"
+@@ -299,14 +296,12 @@ void parse_trace_kprobe_event(const char *str, struct probe_point *pp)
+ 	pp->file = NULL;
+ 
+ 	pp->nr_args = argc - 2;
+-	pp->args = zalloc(sizeof(char *) * pp->nr_args);
++	pp->args = xzalloc(sizeof(char *) * pp->nr_args);
+ 	for (i = 0; i < pp->nr_args; i++) {
+ 		p = strchr(argv[i + 2], '=');
+ 		if (p)	/* We don't need which register is assigned. */
+ 			*p = '\0';
+-		pp->args[i] = strdup(argv[i + 2]);
+-		if (!pp->args[i])
+-			die("Failed to copy argument.");
++		pp->args[i] = xstrdup(argv[i + 2]);
+ 	}
+ 
+ 	argv_free(argv);
+@@ -319,10 +314,8 @@ int synthesize_perf_probe_point(struct probe_point *pp)
+ 	char offs[64] = "", line[64] = "";
+ 	int ret;
+ 
+-	pp->probes[0] = buf = zalloc(MAX_CMDLEN);
++	pp->probes[0] = buf = xzalloc(MAX_CMDLEN);
+ 	pp->found = 1;
+-	if (!buf)
+-		die("Failed to allocate memory by zalloc.");
+ 	if (pp->offset) {
+ 		ret = e_snprintf(offs, 64, "+%d", pp->offset);
+ 		if (ret <= 0)
+@@ -380,9 +373,7 @@ int synthesize_trace_kprobe_event(struct probe_point *pp)
+ 	char *buf;
+ 	int i, len, ret;
+ 
+-	pp->probes[0] = buf = zalloc(MAX_CMDLEN);
+-	if (!buf)
+-		die("Failed to allocate memory by zalloc.");
++	pp->probes[0] = buf = xzalloc(MAX_CMDLEN);
+ 	ret = e_snprintf(buf, MAX_CMDLEN, "%s+%d", pp->function, pp->offset);
+ 	if (ret <= 0)
+ 		goto error;
+@@ -612,10 +603,9 @@ void add_trace_kprobe_events(struct probe_point *probes, int nr_probes,
+ 	for (j = 0; j < nr_probes; j++) {
+ 		pp = probes + j;
+ 		if (!pp->event)
+-			pp->event = strdup(pp->function);
++			pp->event = xstrdup(pp->function);
+ 		if (!pp->group)
+-			pp->group = strdup(PERFPROBE_GROUP);
+-		DIE_IF(!pp->event || !pp->group);
++			pp->group = xstrdup(PERFPROBE_GROUP);
+ 		/* If force_add is true, suffix search is allowed */
+ 		allow_suffix = force_add;
+ 		for (i = 0; i < pp->found; i++) {
+@@ -709,9 +699,7 @@ void del_trace_kprobe_events(struct strlist *dellist)
+ 	namelist = get_perf_event_names(fd, true);
+ 
+ 	strlist__for_each(ent, dellist) {
+-		str = strdup(ent->s);
+-		if (!str)
+-			die("Failed to copy event.");
++		str = xstrdup(ent->s);
+ 		pr_debug("Parsing: %s\n", str);
+ 		p = strchr(str, ':');
+ 		if (p) {
+diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+index c171a24..e887bb6 100644
+--- a/tools/perf/util/probe-finder.c
++++ b/tools/perf/util/probe-finder.c
+@@ -125,8 +125,7 @@ static void line_list__add_line(struct list_head *head, unsigned int line)
+ 	p = head;
+ found:
+ 	pr_debug("line list: add a line %u\n", line);
+-	ln = zalloc(sizeof(struct line_node));
+-	DIE_IF(ln == NULL);
++	ln = xzalloc(sizeof(struct line_node));
+ 	ln->line = line;
+ 	INIT_LIST_HEAD(&ln->list);
+ 	list_add(&ln->list, p);
+@@ -416,7 +415,7 @@ static void show_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 				(unsigned long)(pf->addr - eaddr));
+ 		/* Copy the function name if possible */
+ 		if (!pp->function) {
+-			pp->function = strdup(name);
++			pp->function = xstrdup(name);
+ 			pp->offset = (size_t)(pf->addr - eaddr);
+ 		}
+ 	} else {
+@@ -425,7 +424,7 @@ static void show_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 			       (uintmax_t)pf->addr);
+ 		if (!pp->function) {
+ 			/* TODO: Use _stext */
+-			pp->function = strdup("");
++			pp->function = xstrdup("");
+ 			pp->offset = (size_t)pf->addr;
+ 		}
+ 	}
+@@ -456,7 +455,7 @@ static void show_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	if (pp->found == MAX_PROBES)
+ 		die("Too many( > %d) probe point found.\n", MAX_PROBES);
+ 
+-	pp->probes[pp->found] = strdup(tmp);
++	pp->probes[pp->found] = xstrdup(tmp);
+ 	pp->found++;
  }
  
-+
-+static struct map_groups kmap_groups;
-+static struct map *kmaps[MAP__NR_TYPES];
-+
-+/* Initialize symbol maps for vmlinux */
-+static void init_vmlinux(void)
-+{
-+	symbol_conf.sort_by_name = true;
-+	if (symbol_conf.vmlinux_name == NULL)
-+		symbol_conf.try_vmlinux_path = true;
-+	else
-+		pr_debug("Use vmlinux: %s\n", symbol_conf.vmlinux_name);
-+	if (symbol__init() < 0)
-+		die("Failed to init symbol map.");
-+
-+	map_groups__init(&kmap_groups);
-+	if (map_groups__create_kernel_maps(&kmap_groups, kmaps) < 0)
-+		die("Failed to create kernel maps.");
-+}
-+
-+#ifndef NO_DWARF_SUPPORT
-+static int open_vmlinux(void)
-+{
-+	if (map__load(kmaps[MAP__FUNCTION], NULL) < 0) {
-+		pr_debug("Failed to load kernel map.\n");
-+		return -EINVAL;
-+	}
-+	pr_debug("Try to open %s\n", kmaps[MAP__FUNCTION]->dso->long_name);
-+	return open(kmaps[MAP__FUNCTION]->dso->long_name, O_RDONLY);
-+}
-+#endif
-+
- void parse_line_range_desc(const char *arg, struct line_range *lr)
- {
- 	const char *ptr;
-@@ -586,8 +620,8 @@ static void get_new_event_name(char *buf, size_t len, const char *base,
- 		die("Too many events are on the same function.");
- }
- 
--void add_trace_kprobe_events(struct probe_point *probes, int nr_probes,
--			     bool force_add)
-+static void __add_trace_kprobe_events(struct probe_point *probes,
-+				      int nr_probes, bool force_add)
- {
- 	int i, j, fd;
- 	struct probe_point *pp;
-@@ -640,6 +674,92 @@ void add_trace_kprobe_events(struct probe_point *probes, int nr_probes,
+@@ -506,8 +505,7 @@ static int find_lazy_match_lines(struct list_head *head,
+ 	if (fd < 0)
+ 		die("failed to open %s", fname);
+ 	DIE_IF(fstat(fd, &st) < 0);
+-	fbuf = malloc(st.st_size + 2);
+-	DIE_IF(fbuf == NULL);
++	fbuf = xmalloc(st.st_size + 2);
+ 	DIE_IF(read(fd, fbuf, st.st_size) < 0);
  	close(fd);
- }
+ 	fbuf[st.st_size] = '\n';	/* Dummy line */
+@@ -727,7 +725,7 @@ static void find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
  
-+/* Currently just checking function name from symbol map */
-+static void evaluate_probe_point(struct probe_point *pp)
-+{
-+	struct symbol *sym;
-+	sym = map__find_symbol_by_name(kmaps[MAP__FUNCTION],
-+				       pp->function, NULL);
-+	if (!sym)
-+		die("Kernel symbol \'%s\' not found - probe not added.",
-+		    pp->function);
-+}
-+
-+void add_trace_kprobe_events(struct probe_point *probes, int nr_probes,
-+			     bool force_add, bool need_dwarf)
-+{
-+	int i, ret;
-+	struct probe_point *pp;
-+#ifndef NO_DWARF_SUPPORT
-+	int fd;
-+#endif
-+	/* Add probes */
-+	init_vmlinux();
-+
-+	if (need_dwarf)
-+#ifdef NO_DWARF_SUPPORT
-+		die("Debuginfo-analysis is not supported");
-+#else	/* !NO_DWARF_SUPPORT */
-+		pr_debug("Some probes require debuginfo.\n");
-+
-+	fd = open_vmlinux();
-+	if (fd < 0) {
-+		if (need_dwarf)
-+			die("Could not open debuginfo file.");
-+
-+		pr_debug("Could not open vmlinux/module file."
-+			 " Try to use symbols.\n");
-+		goto end_dwarf;
-+	}
-+
-+	/* Searching probe points */
-+	for (i = 0; i < nr_probes; i++) {
-+		pp = &probes[i];
-+		if (pp->found)
-+			continue;
-+
-+		lseek(fd, SEEK_SET, 0);
-+		ret = find_probe_point(fd, pp);
-+		if (ret > 0)
-+			continue;
-+		if (ret == 0) {	/* No error but failed to find probe point. */
-+			synthesize_perf_probe_point(pp);
-+			die("Probe point '%s' not found. - probe not added.",
-+			    pp->probes[0]);
-+		}
-+		/* Error path */
-+		if (need_dwarf) {
-+			if (ret == -ENOENT)
-+				pr_warning("No dwarf info found in the vmlinux - please rebuild with CONFIG_DEBUG_INFO=y.\n");
-+			die("Could not analyze debuginfo.");
-+		}
-+		pr_debug("An error occurred in debuginfo analysis."
-+			 " Try to use symbols.\n");
-+		break;
-+	}
-+	close(fd);
-+
-+end_dwarf:
-+#endif /* !NO_DWARF_SUPPORT */
-+
-+	/* Synthesize probes without dwarf */
-+	for (i = 0; i < nr_probes; i++) {
-+		pp = &probes[i];
-+		if (pp->found)	/* This probe is already found. */
-+			continue;
-+
-+		evaluate_probe_point(pp);
-+		ret = synthesize_trace_kprobe_event(pp);
-+		if (ret == -E2BIG)
-+			die("probe point definition becomes too long.");
-+		else if (ret < 0)
-+			die("Failed to synthesize a probe point.");
-+	}
-+
-+	/* Settng up probe points */
-+	__add_trace_kprobe_events(probes, nr_probes, force_add);
-+}
-+
- static void __del_trace_kprobe_event(int fd, struct str_node *ent)
- {
- 	char *p;
-@@ -759,6 +879,17 @@ void show_line_range(struct line_range *lr)
- 	unsigned int l = 1;
- 	struct line_node *ln;
- 	FILE *fp;
-+	int fd, ret;
-+
-+	/* Search a line range */
-+	init_vmlinux();
-+	fd = open_vmlinux();
-+	if (fd < 0)
-+		die("Could not open debuginfo file.");
-+	ret = find_line_range(fd, lr);
-+	if (ret <= 0)
-+		die("Source line is not found.\n");
-+	close(fd);
- 
- 	setup_pager();
- 
-@@ -788,3 +919,5 @@ void show_line_range(struct line_range *lr)
- 
- 	fclose(fp);
- }
-+
-+
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 711287d..3865e16 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -13,7 +13,7 @@ extern int synthesize_perf_probe_event(struct probe_point *pp);
- extern void parse_trace_kprobe_event(const char *str, struct probe_point *pp);
- extern int synthesize_trace_kprobe_event(struct probe_point *pp);
- extern void add_trace_kprobe_events(struct probe_point *probes, int nr_probes,
--				    bool force_add);
-+				    bool force_add, bool need_dwarf);
- extern void del_trace_kprobe_events(struct strlist *dellist);
- extern void show_perf_probe_events(void);
- extern void show_line_range(struct line_range *lr);
+ 		/* Copy real path */
+ 		if (!lf->lr->path)
+-			lf->lr->path = strdup(src);
++			lf->lr->path = xstrdup(src);
+ 		line_list__add_line(&lf->lr->line_list, (unsigned int)lineno);
+ 	}
+ 	/* Update status */
