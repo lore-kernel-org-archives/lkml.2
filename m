@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab0CQPOY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:14:24 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:50140 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab0CQPOX (ORCPT
+	id S1751986Ab0CQPWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:22:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33122 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750818Ab0CQPWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:14:23 -0400
-Date: Wed, 17 Mar 2010 15:14:10 +0000
-From: Chris Webb <chris@arachsys.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
- parameter
-Message-ID: <20100317151409.GY31148@arachsys.com>
-References: <20100315072214.GA18054@balbir.in.ibm.com>
- <4B9DE635.8030208@redhat.com>
- <20100315080726.GB18054@balbir.in.ibm.com>
- <4B9DEF81.6020802@redhat.com>
- <20100315202353.GJ3840@arachsys.com>
- <4B9EC60A.2070101@codemonkey.ws>
+	Wed, 17 Mar 2010 11:22:02 -0400
+Date: Wed, 17 Mar 2010 11:22:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+cc: James.Bottomley@HansenPartnership.com, <linux-kernel@vger.kernel.org>
+Subject: Re: dma_sync_sg_for_cpu applied to a single scatterlist element
+In-Reply-To: <20100317072827F.fujita.tomonori@lab.ntt.co.jp>
+Message-ID: <Pine.LNX.4.44L0.1003171050080.1734-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4B9EC60A.2070101@codemonkey.ws>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anthony Liguori <anthony@codemonkey.ws> writes:
+On Wed, 17 Mar 2010, FUJITA Tomonori wrote:
 
-> This really gets down to your definition of "safe" behaviour.  As it
-> stands, if you suffer a power outage, it may lead to guest
-> corruption.
+> dma_sync_single_for_* can do a partial sync but dma_sync_sg_for_*
+> doesn't support a partial sync.
 > 
-> While we are correct in advertising a write-cache, write-caches are
-> volatile and should a drive lose power, it could lead to data
-> corruption.  Enterprise disks tend to have battery backed write
-> caches to prevent this.
 > 
-> In the set up you're emulating, the host is acting as a giant write
-> cache.  Should your host fail, you can get data corruption.
+> > So it isn't clear that dma_sync_sg_for_cpu(dev, sg, 1, dir) can be used
+> > on a mapping created by dma_map_sg(dev, sg, n, dir),
+> 
+> You should not do (though it might work).
+> 
+> > and it isn't 
+> > clear that dma_sync_single_for_cpu() can be used on a mapping created 
+> > by dma_map_sg().
+> 
+> You should not do (though it might work).
+> 
+> 
+> > But if you guys say it will work, I'll go ahead and use
+> > dma_sync_single_for_cpu().
+> > 
+> 
+> Well, it's undocumented. It might work but might not.
 
-Hi Anthony. I suspected my post might spark an interesting discussion!
+It's a real problem.  I need it to work correctly.
 
-Before considering anything like this, we did quite a bit of testing with
-OSes in qemu-kvm guests running filesystem-intensive work, using an ipmitool
-power off to kill the host. I didn't manage to corrupt any ext3, ext4 or
-NTFS filesystems despite these efforts.
+Here's the situation.  The USB controller drivers don't all support
+scatter-gather operation.  So there's a library routine in the USB core
+which calls dma_map_sg() and then creates a separate I/O request for
+each scatterlist element.  The driver can process these requests one at
+a time, and when they are all finished the library routine calls
+dma_unmap_sg().
 
-Is your claim here that:-
+However...  For tracing purposes (usbmon -- like tcpdump but for USB),
+we may need to copy the data from each I/O request's transfer buffer.  
+Unfortunately, this copying is done as each request is submitted (for 
+output) or as it completes (for input), at which times the buffers are 
+all mapped for DMA.  That's the problem.
 
-  (a) qemu doesn't emulate a disk write cache correctly; or
+Would we be better off not using dma_map_sg() at all in this situation?
+We could map each scatterlist buffer individually with dma_map_single()
+as the request is submitted and then unmap the buffer when the request
+completes, just like with non-sg transfers; then the problem wouldn't
+arise.
 
-  (b) operating systems are inherently unsafe running on top of a disk with
-      a write-cache; or
+Would there be any significant penalty for doing this?  I realize it
+would prevent adjacent buffers from getting coalesced, but that's
+probably okay.  Any other reason not to?
 
-  (c) installations that are already broken and lose data with a physical
-      drive with a write-cache can lose much more in this case because the
-      write cache is much bigger?
+Alan Stern
 
-Following Christoph Hellwig's patch series from last September, I'm pretty
-convinced that (a) isn't true apart from the inability to disable the
-write-cache at run-time, which is something that neither recent linux nor
-windows seem to want to do out-of-the box.
-
-Given that modern SATA drives come with fairly substantial write-caches
-nowadays which operating systems leave on without widespread disaster, I
-don't really believe in (b) either, at least for the ide and scsi case.
-Filesystems know they have to flush the disk cache to avoid corruption.
-(Virtio makes the write cache invisible to the OS except in linux 2.6.32+ so
-I know virtio-blk has to be avoided for current windows and obsolete linux
-when writeback caching is on.)
-
-I can certainly imagine (c) might be the case, although when I use strace to
-watch the IO to the block device, I see pretty regular fdatasyncs being
-issued by the guests, interleaved with the writes, so I'm not sure how
-likely the problem would be in practice. Perhaps my test guests were
-unrepresentatively well-behaved.
-
-However, the potentially unlimited time-window for loss of incorrectly
-unsynced data is also something one could imagine fixing at the qemu level.
-Perhaps I should be implementing something like
-cache=writeback,flushtimeout=N which, upon a write being issued to the block
-device, starts an N second timer if it isn't already running. The timer is
-destroyed on flush, and if it expires before it's destroyed, a gratuitous
-flush is sent. Do you think this is worth doing? Just a simple 'while sleep
-10; do sync; done' on the host even!
-
-We've used cache=none and cache=writethrough, and whilst performance is fine
-with a single guest accessing a disk, when we chop the disks up with LVM and
-run a even a small handful of guests, the constant seeking to serve tiny
-synchronous IOs leads to truly abysmal throughput---we've seen less than
-700kB/s streaming write rates within guests when the backing store is
-capable of 100MB/s.
-
-With cache=writeback, there's still IO contention between guests, but the
-write granularity is a bit coarser, so the host's elevator seems to get a
-bit more of a chance to help us out and we can at least squeeze out 5-10MB/s
-from two or three concurrently running guests, getting a total of 20-30% of
-the performance of the underlying block device rather than a total of around
-5%.
-
-Cheers,
-
-Chris.
