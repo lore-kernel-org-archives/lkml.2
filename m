@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab0CQTzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 15:55:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47678 "EHLO mx1.redhat.com"
+	id S1756066Ab0CQT7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 15:59:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56507 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab0CQTzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 15:55:31 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: lm-sensors@lm-sensors.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] hwmon: Add basic support for lm64 to lm63.c
-Date: Wed, 17 Mar 2010 15:55:22 -0400
-Message-Id: <1268855722-18457-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 66.187.234.200
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1755854Ab0CQT7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 15:59:14 -0400
+Message-ID: <4BA13490.5070201@suse.com>
+Date: Wed, 17 Mar 2010 15:59:12 -0400
+From: Jeff Mahoney <jeffm@suse.com>
+Organization: SUSE Labs, Novell, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.3 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: ReiserFS Mailing List <reiserfs-devel@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/2] reiserfs: Properly honor read-only devices
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lm64 appears to be an lm63 with added gpio lines. Add support for the
-hwmon functionality - gpio can be added at some later stage if someone
-has a need for them.
+ The reiserfs journal behaves inconsistently when determining whether
+ to allow a mount of a read-only device.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
+ This is due to the use of the continue_replay variable to short circuit
+ the journal scanning. If it's set, it's assumed that there are
+ transactions to replay, but there may not be. If it's unset, it's assumed
+ that there aren't any, and that may not be the case either.
+
+ I've observed two failure cases:
+ 1) Where a clean file system on a read-only device refuses to mount
+ 2) Where a clean file system on a read-only device passes the
+    optimization and then tries writing the journal header to update
+    the latest mount id.
+
+ The former is easily observable by using a freshly created file system
+ on a read-only loopback device.
+
+ This patch moves the check into journal_read_transaction, where it
+ can bail out before it's about to replay a transaction. That way it
+ can go through and skip transactions where appropriate, yet still
+ refuse to mount a file system with outstanding transactions.
+
+Signed-off-by: Jeff Mahoney <jeffm@suse.com>
 ---
- Documentation/hwmon/lm63 |    7 +++++++
- drivers/hwmon/lm63.c     |   19 +++++++++++++++----
- 2 files changed, 22 insertions(+), 4 deletions(-)
+ fs/reiserfs/journal.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/hwmon/lm63 b/Documentation/hwmon/lm63
-index 31660bf..b6f0495 100644
---- a/Documentation/hwmon/lm63
-+++ b/Documentation/hwmon/lm63
-@@ -7,6 +7,11 @@ Supported chips:
-     Addresses scanned: I2C 0x4c
-     Datasheet: Publicly available at the National Semiconductor website
-                http://www.national.com/pf/LM/LM63.html
-+  * National Semiconductor LM64
-+    Prefix: 'lm64'
-+    Addresses scanned: I2C 0x18 and 0x4e
-+    Datasheet: Publicly available at the National Semiconductor website
-+               http://www.national.com/pf/LM/LM64.html
- 
- Author: Jean Delvare <khali@linux-fr.org>
- 
-@@ -55,3 +60,5 @@ The lm63 driver will not update its values more frequently than every
- second; reading them more often will do no harm, but will return 'old'
- values.
- 
-+The lm64 is effectively an lm63 with gpio lines. The driver does not
-+support these gpio lines at present.
-\ No newline at end of file
-diff --git a/drivers/hwmon/lm63.c b/drivers/hwmon/lm63.c
-index bf81aff..01b23ef 100644
---- a/drivers/hwmon/lm63.c
-+++ b/drivers/hwmon/lm63.c
-@@ -53,7 +53,7 @@
-  * Address is fully defined internally and cannot be changed.
-  */
- 
--static const unsigned short normal_i2c[] = { 0x4c, I2C_CLIENT_END };
-+static const unsigned short normal_i2c[] = { 0x18, 0x4c, 0x4e, I2C_CLIENT_END };
- 
- /*
-  * The LM63 registers
-@@ -131,12 +131,15 @@ static struct lm63_data *lm63_update_device(struct device *dev);
- static int lm63_detect(struct i2c_client *client, struct i2c_board_info *info);
- static void lm63_init_client(struct i2c_client *client);
- 
-+enum chips { lm63, lm64 };
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -2217,6 +2217,15 @@ static int journal_read_transaction(stru
+ 		brelse(d_bh);
+ 		return 1;
+ 	}
 +
- /*
-  * Driver data (common to all clients)
-  */
- 
- static const struct i2c_device_id lm63_id[] = {
--	{ "lm63", 0 },
-+	{ "lm63", lm63 },
-+	{ "lm64", lm64 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, lm63_id);
-@@ -177,6 +180,7 @@ struct lm63_data {
- 			   2: remote high limit */
- 	u8 temp2_crit_hyst;
- 	u8 alarms;
-+	int kind;
- };
- 
- /*
-@@ -422,6 +426,7 @@ static int lm63_detect(struct i2c_client *new_client,
- 	struct i2c_adapter *adapter = new_client->adapter;
- 	u8 man_id, chip_id, reg_config1, reg_config2;
- 	u8 reg_alert_status, reg_alert_mask;
-+	int address = new_client->addr;
- 
- 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -ENODEV;
-@@ -439,7 +444,6 @@ static int lm63_detect(struct i2c_client *new_client,
- 			 LM63_REG_ALERT_MASK);
- 
- 	if (man_id != 0x01 /* National Semiconductor */
--	 || chip_id != 0x41 /* LM63 */
- 	 || (reg_config1 & 0x18) != 0x00
- 	 || (reg_config2 & 0xF8) != 0x00
- 	 || (reg_alert_status & 0x20) != 0x00
-@@ -450,7 +454,12 @@ static int lm63_detect(struct i2c_client *new_client,
- 		return -ENODEV;
++	if (bdev_read_only(sb->s_bdev)) {
++		reiserfs_warning(sb, "clm-2076",
++				 "device is readonly, unable to replay log");
++		brelse(c_bh);
++		brelse(d_bh);
++		return -EROFS;
++	}
++
+ 	trans_id = get_desc_trans_id(desc);
+ 	/* now we know we've got a good transaction, and it was inside the valid time ranges */
+ 	log_blocks = kmalloc(get_desc_trans_len(desc) *
+@@ -2459,12 +2468,6 @@ static int journal_read(struct super_blo
+ 		goto start_log_replay;
  	}
  
--	strlcpy(info->type, "lm63", I2C_NAME_SIZE);
-+	if (chip_id == 0x41 && address == 0x4c)
-+		strlcpy(info->type, "lm63", I2C_NAME_SIZE);
-+	else if (chip_id == 0x51 && (address == 0x18 || address == 0x4e))
-+		strlcpy(info->type, "lm64", I2C_NAME_SIZE);
-+	else
-+		return -ENODEV;
- 
- 	return 0;
- }
-@@ -471,6 +480,8 @@ static int lm63_probe(struct i2c_client *new_client,
- 	data->valid = 0;
- 	mutex_init(&data->update_lock);
- 
-+	data->kind = id->driver_data;
-+
- 	/* Initialize the LM63 chip */
- 	lm63_init_client(new_client);
- 
+-	if (continue_replay && bdev_read_only(sb->s_bdev)) {
+-		reiserfs_warning(sb, "clm-2076",
+-				 "device is readonly, unable to replay log");
+-		return -1;
+-	}
+-
+ 	/* ok, there are transactions that need to be replayed.  start with the first log block, find
+ 	 ** all the valid transactions, and pick out the oldest.
+ 	 */
 -- 
-1.7.0.1
-
+Jeff Mahoney
+SUSE Labs
