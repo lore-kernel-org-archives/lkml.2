@@ -1,90 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab0CQPqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:46:53 -0400
-Received: from mail-ew0-f209.google.com ([209.85.219.209]:53891 "EHLO
-	mail-ew0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab0CQPqu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:46:50 -0400
-X-Greylist: delayed 384 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 11:46:50 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rvCRfvD4sWz6CwGwe2WpZPuAu4krZYCWv1wPqGBZl+HDgVk7lpTcE1nqqSM3btXHVv
-         vZmedCZTNVcy9qgvKgXED7eIqK4VOXctyXwSYeGOhmshV+MicUl1sGqRoEeVj8yIT6vO
-         rI9g5wRUELS+MosP22VSegDqVObhRPISE6BvQ=
+	id S1751647Ab0CQPtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:49:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750762Ab0CQPtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 11:49:51 -0400
+Date: Wed, 17 Mar 2010 17:45:02 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Stevens <dlstevens@us.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Herbert Xu <herbert@gondor.apana.org.au>,
+       "Michael S. Tsirkin" <mst@redhat.com>, Paul Moore <paul.moore@hp.com>,
+       David Woodhouse <David.Woodhouse@intel.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] tun: add ioctl to modify vnet header size
+Message-ID: <20100317154501.GA5244@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <9b2b86521003170749t5008c5cbpc2064988b59f1507@mail.gmail.com>
-References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
-	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
-	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
-	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
-	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
-	 <9b2b86521003170749t5008c5cbpc2064988b59f1507@mail.gmail.com>
-Date: Wed, 17 Mar 2010 16:40:24 +0100
-Message-ID: <b637ec0b1003170840j5a8ed0c8nda3b7890caf0a855@mail.gmail.com>
-Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
-From: Fabio Comolli <fabio.comolli@gmail.com>
-To: Alan Jenkins <sourcejedi.lkml@googlemail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>,
-       ACPI mailing list <linux-acpi@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Len Brown <lenb@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+virtio added mergeable buffers mode where 2 bytes of extra info is put
+after vnet header but before actual data (tun does not need this data).
+In hindsight, it would have been better to add the new info *before* the
+packet: as it is, users need a lot of tricky code to skip the extra 2
+bytes in the middle of the iovec, and in fact applications seem to get
+it wrong, and only work with specific iovec layout.  The fact we might
+need to split iovec also means we might in theory overflow iovec max
+size.
 
-On Wed, Mar 17, 2010 at 3:49 PM, Alan Jenkins
-<sourcejedi.lkml@googlemail.com> wrote:
-> On 3/13/10, Fabio Comolli <fabio.comolli@gmail.com> wrote:
->> Well, I'm confused.
->>
->> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
->> the situation it's not like the one I described in the post I wrote 2
->> days ago. Actually the situation with the patch reverted is the same I
->> have with the patch applied.
->>
->> What I mean is that if I boot on AC power /proc/cpuinfo always reports
->> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
->> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
->> not change the situation. Only reboot does.
->>
->> But the cpufv interface does indeed seem to work, as glxgears and
->> stellarium show the frame rate change accordingly to the powersave /
->> performance selection.
->>
->> So my question is: what does really the cpufv interface do? Is it
->> supposed to change the processor frequency?
->
-> Yes, writing to cpufv asks the BIOS to set the CPU speed.
+This patch adds a simpler way for applications to handle this,
+and future proofs the interface against further extensions,
+by making the size of the virtio net header configurable
+from userspace. As a result, tun driver will simply
+skip the extra 2 bytes on both input and output.
 
-OK
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/net/tun.c      |   31 +++++++++++++++++++++++++++----
+ include/linux/if_tun.h |    2 ++
+ 2 files changed, 29 insertions(+), 4 deletions(-)
 
->
->> And if the answer to the latest question is affirmative, why
->> /proc/cpuinfo seems to ignore it?
->
-> It's because eeepc-laptop doesn't register as a real cpufreq driver.
-> The BIOS doesn't tell us what frequency it switches to.  Theoretically
-> you could re-use the boot code, but I'm not sure how you would make it
-> co-operate with the cpufreq core.
-
-OK, now I understand. Thanks. So it seems that the only way to get the
-actual CPU frequency is to query the cpufv sysfs file. Good to know.
-
-Unless someone with the required knowledge comes up with the code
-needed to register eeepc-laptop as a real cpufreq driver (hint, hint
-:-) )
-
->
-> Alan
->
-
-Thanks,
-Fabio
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index ce1efa4..0b11222 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -110,6 +110,8 @@ struct tun_struct {
+ 	struct tap_filter       txflt;
+ 	struct socket		socket;
+ 
++	int			vnet_hdr_sz;
++
+ #ifdef TUN_DEBUG
+ 	int debug;
+ #endif
+@@ -559,7 +561,7 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
+ 	}
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+-		if ((len -= sizeof(gso)) > count)
++		if ((len -= tun->vnet_hdr_sz) > count)
+ 			return -EINVAL;
+ 
+ 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
+@@ -571,7 +573,7 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
+ 
+ 		if (gso.hdr_len > len)
+ 			return -EINVAL;
+-		offset += sizeof(gso);
++		offset += tun->vnet_hdr_sz;
+ 	}
+ 
+ 	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
+@@ -714,7 +716,7 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
+ 
+ 	if (tun->flags & TUN_VNET_HDR) {
+ 		struct virtio_net_hdr gso = { 0 }; /* no info leak */
+-		if ((len -= sizeof(gso)) < 0)
++		if ((len -= tun->vnet_hdr_sz) < 0)
+ 			return -EINVAL;
+ 
+ 		if (skb_is_gso(skb)) {
+@@ -745,7 +747,7 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
+ 		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
+ 					       sizeof(gso))))
+ 			return -EFAULT;
+-		total += sizeof(gso);
++		total += tun->vnet_hdr_sz;
+ 	}
+ 
+ 	len = min_t(int, skb->len, len);
+@@ -1029,6 +1031,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		tun->dev = dev;
+ 		tun->flags = flags;
+ 		tun->txflt.count = 0;
++		tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+ 
+ 		err = -ENOMEM;
+ 		sk = sk_alloc(net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
+@@ -1170,6 +1173,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 	struct sock_fprog fprog;
+ 	struct ifreq ifr;
+ 	int sndbuf;
++	int vnet_hdr_sz;
+ 	int ret;
+ 
+ 	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89)
+@@ -1315,6 +1319,25 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+ 		tun->socket.sk->sk_sndbuf = sndbuf;
+ 		break;
+ 
++	case TUNGETVNETHDRSZ:
++		vnet_hdr_sz = tun->vnet_hdr_sz;
++		if (copy_to_user(argp, &vnet_hdr_sz, sizeof(vnet_hdr_sz)))
++			ret = -EFAULT;
++		break;
++
++	case TUNSETVNETHDRSZ:
++		if (copy_from_user(&vnet_hdr_sz, argp, sizeof(vnet_hdr_sz))) {
++			ret = -EFAULT;
++			break;
++		}
++		if (vnet_hdr_sz < (int)sizeof(struct virtio_net_hdr)) {
++			ret = -EINVAL;
++			break;
++		}
++
++		tun->vnet_hdr_sz = vnet_hdr_sz;
++		break;
++
+ 	case TUNATTACHFILTER:
+ 		/* Can be set only for TAPs */
+ 		ret = -EINVAL;
+diff --git a/include/linux/if_tun.h b/include/linux/if_tun.h
+index 1350a24..06b1829 100644
+--- a/include/linux/if_tun.h
++++ b/include/linux/if_tun.h
+@@ -51,6 +51,8 @@
+ #define TUNSETSNDBUF   _IOW('T', 212, int)
+ #define TUNATTACHFILTER _IOW('T', 213, struct sock_fprog)
+ #define TUNDETACHFILTER _IOW('T', 214, struct sock_fprog)
++#define TUNGETVNETHDRSZ _IOR('T', 215, int)
++#define TUNSETVNETHDRSZ _IOW('T', 216, int)
+ 
+ /* TUNSETIFF ifr flags */
+ #define IFF_TUN		0x0001
+-- 
+1.7.0.18.g0d53a5
