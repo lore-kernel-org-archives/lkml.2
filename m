@@ -1,224 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab0CQVdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:33:32 -0400
-Received: from smtprelay-h22.telenor.se ([195.54.99.197]:53588 "EHLO
-	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab0CQVda (ORCPT
+	id S1754784Ab0CQVgk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:36:40 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:52948 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab0CQVgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:33:30 -0400
-X-SENDER-IP: [83.226.248.128]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArQ5AKfnoEtT4viAPGdsb2JhbACHYJMoDAEBAQE3LatnjWmEdgQ
-X-IronPort-AV: E=Sophos;i="4.51,261,1267398000"; 
-   d="scan'208";a="52170104"
-From: Lars Lindley <lindley@coyote.org>
-To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Lars Lindley <lindley@coyote.org>
-Subject: [PATCH] staging: winbond: phy_calibration.h coding style cleanup.
-Date: Wed, 17 Mar 2010 22:33:27 +0100
-Message-Id: <1268861607-11039-1-git-send-email-lindley@coyote.org>
-X-Mailer: git-send-email 1.7.0.2
+	Wed, 17 Mar 2010 17:36:39 -0400
+Message-ID: <4BA14B12.4030900@oracle.com>
+Date: Wed, 17 Mar 2010 14:35:14 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Tilman Schmidt <tilman@imap.cc>
+CC: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       Hansjoerg Lipp <hjlipp@web.de>,
+       isdn4linux <isdn4linux@listserv.isdn4linux.de>,
+       i4ldeveloper <i4ldeveloper@listserv.isdn4linux.de>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] gigaset: fix build failure
+References: <20100317211231.569B140118@xenon.ts.pxnet.com>
+In-Reply-To: <20100317211231.569B140118@xenon.ts.pxnet.com>
+Content-Type: text/plain; charset=ISO-8859-9
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0208.4BA14B2B.01D7:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed all checkpatch.pl problems, removed versioning comments and
-"commented away" code.
+On 03/17/10 10:37, Tilman Schmidt wrote:
+> Update the dummy LL interface to the LL interface change
+> introduced by commit daab433c03c15fd642c71c94eb51bdd3f32602c8.
+> This fixes the build failure occurring after that commit when
+> enabling ISDN_DRV_GIGASET but neither ISDN_I4L nor ISDN_CAPI.
+> 
+> Impact: bugfix
+> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/winbond/phy_calibration.h |  177 +++++++++++++----------------
- 1 files changed, 77 insertions(+), 100 deletions(-)
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-diff --git a/drivers/staging/winbond/phy_calibration.h b/drivers/staging/winbond/phy_calibration.h
-index 51c8fde..3032031 100644
---- a/drivers/staging/winbond/phy_calibration.h
-+++ b/drivers/staging/winbond/phy_calibration.h
-@@ -3,105 +3,82 @@
- 
- #include "wbhal_f.h"
- 
--// 20031229 Turbo add
--#define REG_AGC_CTRL1               0x1000
--#define REG_AGC_CTRL2               0x1004
--#define REG_AGC_CTRL3               0x1008
--#define REG_AGC_CTRL4               0x100C
--#define REG_AGC_CTRL5               0x1010
--#define REG_AGC_CTRL6               0x1014
--#define REG_AGC_CTRL7               0x1018
--#define REG_AGC_CTRL8               0x101C
--#define REG_AGC_CTRL9               0x1020
--#define REG_AGC_CTRL10              0x1024
--#define REG_CCA_CTRL                0x1028
--#define REG_A_ACQ_CTRL              0x102C
--#define REG_B_ACQ_CTRL              0x1030
--#define REG_A_TXRX_CTRL             0x1034
--#define REG_B_TXRX_CTRL             0x1038
--#define REG_A_TX_COEF3              0x103C
--#define REG_A_TX_COEF2              0x1040
--#define REG_A_TX_COEF1              0x1044
--#define REG_B_TX_COEF2              0x1048
--#define REG_B_TX_COEF1              0x104C
--#define REG_MODE_CTRL               0x1050
--#define REG_CALIB_DATA              0x1054
--#define REG_IQ_ALPHA                0x1058
--#define REG_DC_CANCEL               0x105C
--#define REG_WTO_READ                0x1060
--#define REG_OFFSET_READ             0x1064
--#define REG_CALIB_READ1             0x1068
--#define REG_CALIB_READ2             0x106C
--#define REG_A_FREQ_EST              0x1070
--
--
--
--
--//  20031101 Turbo add
--#define MASK_AMER_OFF_REG          BIT(31)
--
--#define MASK_BMER_OFF_REG          BIT(31)
--
--#define MASK_LNA_FIX_GAIN          (BIT(3)|BIT(4))
--#define MASK_AGC_FIX               BIT(1)
--
--#define MASK_AGC_FIX_GAIN          0xFF00
--
--#define MASK_ADC_DC_CAL_STR        BIT(10)
--#define MASK_CALIB_START           BIT(4)
--#define MASK_IQCAL_TONE_SEL        (BIT(3)|BIT(2))
--#define MASK_IQCAL_MODE            (BIT(1)|BIT(0))
--
--#define MASK_TX_CAL_0              0xF0000000
--#define TX_CAL_0_SHIFT             28
--#define MASK_TX_CAL_1              0x0F000000
--#define TX_CAL_1_SHIFT             24
--#define MASK_TX_CAL_2              0x00F00000
--#define TX_CAL_2_SHIFT             20
--#define MASK_TX_CAL_3              0x000F0000
--#define TX_CAL_3_SHIFT             16
--#define MASK_RX_CAL_0              0x0000F000
--#define RX_CAL_0_SHIFT             12
--#define MASK_RX_CAL_1              0x00000F00
--#define RX_CAL_1_SHIFT             8
--#define MASK_RX_CAL_2              0x000000F0
--#define RX_CAL_2_SHIFT             4
--#define MASK_RX_CAL_3              0x0000000F
--#define RX_CAL_3_SHIFT             0
--
--#define MASK_CANCEL_DC_I           0x3E0
--#define CANCEL_DC_I_SHIFT          5
--#define MASK_CANCEL_DC_Q           0x01F
--#define CANCEL_DC_Q_SHIFT          0
--
--// LA20040210 kevin
--//#define MASK_ADC_DC_CAL_I(x)       (((x)&0x1FE00)>>9)
--//#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x1FF)
--#define MASK_ADC_DC_CAL_I(x)       (((x)&0x0003FE00)>>9)
--#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x000001FF)
--
--// LA20040210 kevin (Turbo has wrong definition)
--//#define MASK_IQCAL_TONE_I          0x7FFC000
--//#define SHIFT_IQCAL_TONE_I(x)      ((x)>>13)
--//#define MASK_IQCAL_TONE_Q          0x1FFF
--//#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>0)
--#define MASK_IQCAL_TONE_I          0x00001FFF
--#define SHIFT_IQCAL_TONE_I(x)      ((x)>>0)
--#define MASK_IQCAL_TONE_Q          0x03FFE000
--#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>13)
--
--// LA20040210 kevin (Turbo has wrong definition)
--//#define MASK_IQCAL_IMAGE_I         0x7FFC000
--//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>13)
--//#define MASK_IQCAL_IMAGE_Q         0x1FFF
--//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>0)
--
--//#define MASK_IQCAL_IMAGE_I         0x00001FFF
--//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>0)
--//#define MASK_IQCAL_IMAGE_Q         0x03FFE000
--//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>13)
--
--void phy_set_rf_data(  struct hw_data * pHwData,  u32 index,  u32 value );
--#define phy_init_rf( _A )	//RFSynthesizer_initial( _A )
-+#define REG_AGC_CTRL1		0x1000
-+#define REG_AGC_CTRL2		0x1004
-+#define REG_AGC_CTRL3		0x1008
-+#define REG_AGC_CTRL4		0x100C
-+#define REG_AGC_CTRL5		0x1010
-+#define REG_AGC_CTRL6		0x1014
-+#define REG_AGC_CTRL7		0x1018
-+#define REG_AGC_CTRL8		0x101C
-+#define REG_AGC_CTRL9		0x1020
-+#define REG_AGC_CTRL10		0x1024
-+#define REG_CCA_CTRL		0x1028
-+#define REG_A_ACQ_CTRL		0x102C
-+#define REG_B_ACQ_CTRL		0x1030
-+#define REG_A_TXRX_CTRL		0x1034
-+#define REG_B_TXRX_CTRL		0x1038
-+#define REG_A_TX_COEF3		0x103C
-+#define REG_A_TX_COEF2		0x1040
-+#define REG_A_TX_COEF1		0x1044
-+#define REG_B_TX_COEF2		0x1048
-+#define REG_B_TX_COEF1		0x104C
-+#define REG_MODE_CTRL		0x1050
-+#define REG_CALIB_DATA		0x1054
-+#define REG_IQ_ALPHA		0x1058
-+#define REG_DC_CANCEL		0x105C
-+#define REG_WTO_READ		0x1060
-+#define REG_OFFSET_READ		0x1064
-+#define REG_CALIB_READ1		0x1068
-+#define REG_CALIB_READ2		0x106C
-+#define REG_A_FREQ_EST		0x1070
-+
-+
-+#define MASK_AMER_OFF_REG	BIT(31)
-+
-+#define MASK_BMER_OFF_REG	BIT(31)
-+
-+#define MASK_LNA_FIX_GAIN	(BIT(3) | BIT(4))
-+#define MASK_AGC_FIX		BIT(1)
-+
-+#define MASK_AGC_FIX_GAIN	0xFF00
-+
-+#define MASK_ADC_DC_CAL_STR	BIT(10)
-+#define MASK_CALIB_START	BIT(4)
-+#define MASK_IQCAL_TONE_SEL	(BIT(3) | BIT(2))
-+#define MASK_IQCAL_MODE		(BIT(1) | BIT(0))
-+
-+#define MASK_TX_CAL_0		0xF0000000
-+#define TX_CAL_0_SHIFT		28
-+#define MASK_TX_CAL_1		0x0F000000
-+#define TX_CAL_1_SHIFT		24
-+#define MASK_TX_CAL_2		0x00F00000
-+#define TX_CAL_2_SHIFT		20
-+#define MASK_TX_CAL_3		0x000F0000
-+#define TX_CAL_3_SHIFT		16
-+#define MASK_RX_CAL_0		0x0000F000
-+#define RX_CAL_0_SHIFT		12
-+#define MASK_RX_CAL_1		0x00000F00
-+#define RX_CAL_1_SHIFT		8
-+#define MASK_RX_CAL_2		0x000000F0
-+#define RX_CAL_2_SHIFT		4
-+#define MASK_RX_CAL_3		0x0000000F
-+#define RX_CAL_3_SHIFT		0
-+
-+#define MASK_CANCEL_DC_I	0x3E0
-+#define CANCEL_DC_I_SHIFT	5
-+#define MASK_CANCEL_DC_Q	0x01F
-+#define CANCEL_DC_Q_SHIFT	0
-+
-+#define MASK_ADC_DC_CAL_I(x)	(((x) & 0x0003FE00) >> 9)
-+#define MASK_ADC_DC_CAL_Q(x)	((x) & 0x000001FF)
-+
-+#define MASK_IQCAL_TONE_I	0x00001FFF
-+#define SHIFT_IQCAL_TONE_I(x)	((x) >> 0)
-+#define MASK_IQCAL_TONE_Q	0x03FFE000
-+#define SHIFT_IQCAL_TONE_Q(x)	((x) >> 13)
-+
-+void phy_set_rf_data(struct hw_data *pHwData, u32 index, u32 value);
-+#define phy_init_rf(_A)		/* RFSynthesizer_initial(_A) */
- 
- #endif
+Thanks.
+
+> ---
+>  drivers/isdn/gigaset/dummyll.c |   14 +++++++++++---
+>  1 files changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/isdn/gigaset/dummyll.c b/drivers/isdn/gigaset/dummyll.c
+> index 5b27c99..bd0b1ea 100644
+> --- a/drivers/isdn/gigaset/dummyll.c
+> +++ b/drivers/isdn/gigaset/dummyll.c
+> @@ -57,12 +57,20 @@ void gigaset_isdn_stop(struct cardstate *cs)
+>  {
+>  }
+>  
+> -int gigaset_isdn_register(struct cardstate *cs, const char *isdnid)
+> +int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
+>  {
+> -	pr_info("no ISDN subsystem interface\n");
+>  	return 1;
+>  }
+>  
+> -void gigaset_isdn_unregister(struct cardstate *cs)
+> +void gigaset_isdn_unregdev(struct cardstate *cs)
+> +{
+> +}
+> +
+> +void gigaset_isdn_regdrv(void)
+> +{
+> +	pr_info("no ISDN subsystem interface\n");
+> +}
+> +
+> +void gigaset_isdn_unregdrv(void)
+>  {
+>  }
+
+
 -- 
-1.7.0.2
-
+~Randy
