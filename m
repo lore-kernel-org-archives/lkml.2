@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753715Ab0CQI52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:57:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47187 "EHLO gate.crashing.org"
+	id S1753752Ab0CQI7P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:59:15 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45761 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab0CQI5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:57:25 -0400
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ulrich Drepper <drepper@redhat.com>
-Cc: munroesj@us.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel@teksavvy.com, torvalds@linux-foundation.org
-In-Reply-To: <4BA06E1B.2040706@redhat.com>
-References: <20100315134449.GB1653@linux-mips.org>
-	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
-	 <20100315.120004.209998642.davem@davemloft.net>
-	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>
-	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
-	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Mar 2010 19:56:19 +1100
-Message-ID: <1268816179.2335.187.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1753211Ab0CQI7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 04:59:13 -0400
+Date: Wed, 17 Mar 2010 09:59:00 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>,
+       Anthony Liguori <aliguori@linux.vnet.ibm.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Message-ID: <20100317085900.GG16374@elte.hu>
+References: <20100316155221.GA19699@elte.hu>
+ <4B9FC11A.1070507@linux.vnet.ibm.com>
+ <20100316175243.GC23859@elte.hu>
+ <4B9FC8B2.6070404@linux.vnet.ibm.com>
+ <20100316182809.GA26602@elte.hu>
+ <4BA00E6A.7080903@linux.vnet.ibm.com>
+ <20100317004136.GC17472@redhat.com>
+ <4BA05285.3070903@redhat.com>
+ <20100317081641.GE16374@elte.hu>
+ <4BA090CB.5020906@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA090CB.5020906@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 22:52 -0700, Ulrich Drepper wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+
+* Avi Kivity <avi@redhat.com> wrote:
+
+> On 03/17/2010 10:16 AM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >> Monitoring guests from the host is useful for kvm developers, but less so
+> >> for users.
+> >
+> > Guest space profiling is easy, and 'perf kvm' is not about that. (plain 
+> > 'perf' will work if a proper paravirt channel is opened to the host)
+> >
+> > I think you might have misunderstood the purpose and role of the 'perf 
+> > kvm' patch here? 'perf kvm' is aimed at KVM developers: it is them who 
+> > improve KVM code, not guest kernel users.
 > 
-> On 03/16/2010 05:31 PM, Benjamin Herrenschmidt wrote:
-> > My proposal is purely a change to the syscall()
-> > function, nothing else. No kernel change, no ABI change, no change to
-> > the way glibc normally calls syscalls internally, etc...
-> 
-> How can this be?  People are today actively working around the problem
-> of 64-bit arguments.  You have to break something since you cannot
-> recognize these situations.
+> Of course I understood it.  My point was that 'perf kvm' serves a tiny 
+> minority of users. [...]
 
-Ok, so I -may- be missing something, but I believe this won't break
-anything:
+I hope you wont be disappointed to learn that 100% of Linux, all 13+ million 
+lines of it, was and is being developed by a tiny, tiny, tiny minority of 
+users ;-)
 
- - You keep the existing syscall() exported by glibc for binary
-compatibility
+> [...]  That doesn't mean it isn't useful, just that it doesn't satisfy all 
+> needs by itself.
 
- - You add a new __syscall() (or whatever you want to name it) that adds
-a dummy argument at the beginning, and whose implementation shifts
-everything by 2 instead of 1 argument before calling into the kernel
+Of course - and it doesnt bring world peace either. One step at a time.
 
- - You define in unistd.h or whatever is relevant, a macro that does:
+Thanks,
 
-#define syscall(__sysno, __args..) __syscall(0, _sysno, __args)
-
-I believe that should cover it, at least for powerpc, possibly for other
-archs too though as I said, I may have missed something there.
-
-IE. Whether your app writes:
-
-	syscall(SYS_foo, my_64bit_arg);
-
-Or
-
-	syscall(SYS_foo, (u32)(my_64bit_arg >> 32), (u32)(my_64bit_arg));
-
-Both should still work with the new approach and end up doing the right
-thing.
-
-Hence, apps that use the first form today because it works on x86 would
-end up working at least on powerpc where they would have been otherwise
-broken unless they used some arch specific #ifdef to do the second form.
- 
->   And since it became meanwhile clear that
-> there is no way to "fix" all archs magically I really don't want to
-> introduce anything.  There are mechanisms in place to abstract out some
-> of the issues.  And for the rest, well, if you're using syscalls
-> directly you already have to encoded lowlevel knowledge.  One more bit
-> doesn't hurt.  It's not as if this happens every day.
-
-It doesn't happen everyday. However, if my proposal ends up fixing a
-bunch of cases where it does without breaking anything, then I suppose
-it's worth considering, though as I said, it's possible that I miss some
-subtlety here in which case I'd be glad to stand corrected :-)
-
-Cheers,
-Ben.
-  
-> - -- 
-> ➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
-> Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-> 
-> iEYEARECAAYFAkugbhsACgkQ2ijCOnn/RHQzlACeMp0UK2jZuZOgXhJjB8Z9p4kh
-> rCoAn0zaJqFYV9tQ0Ct49Mprfa0O5iKh
-> =71la
-> -----END PGP SIGNATURE-----
-
-
+	Ingo
