@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab0CQUPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 16:15:38 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:52380 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754935Ab0CQUPg (ORCPT
+	id S1755098Ab0CQUaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 16:30:15 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57761 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab0CQUaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 16:15:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=uR+EH5rGxSVYVJzezCubsWKH0nuQpuYSBdUX67mH9tC8DiHGbTE5AT9B6BSlhQcdvm
-         ObigMkX1iw0/qdsnadzlQgpSnk6KMS+dTVgIl+nzNH4qB/jrATiyhIZ3iVvPkKRHgCfE
-         Bfb1eZDGMxNTX/+tpNhEIeHYIky5cmvQ/odWk=
-Message-ID: <4BA13865.4080408@pobox.com>
-Date: Wed, 17 Mar 2010 16:15:33 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Stefan Roese <sr@denx.de>, Rupjyoti Sarmah <rsarmah@amcc.com>
-CC: linuxppc-dev@lists.ozlabs.org, linux-ide@vger.kernel.org,
-       Rupjyoti Sarmah <rupjyoti.sarmah@gmail.com>, linuxppc-dev@ozlabs.org,
-       Rupjyoti Sarmah <rupjyoti.sarmah@appliedmicro.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] 460EX on-chip SATA driver<kernel 2.6.33> < resubmission
- : 01>
-References: <1268646854-27387-1-git-send-email-rsarmah@appliedmicro.com> <AC311A8E81420D4EBC1F26E6479848FE065B7F30@SDCEXCHANGE01.ad.amcc.com> <201003171303.06258.sr@denx.de>
-In-Reply-To: <201003171303.06258.sr@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 17 Mar 2010 16:30:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Holger Schurig <holgerschurig@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: Re: Weird wireless/wpa_supplicant screw-up.
+In-Reply-To: Your message of "Wed, 17 Mar 2010 10:03:54 BST."
+             <201003171003.54295.holgerschurig@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <7197.1268086939@localhost> <1268796150.7068.6.camel@jlt3.sipsolutions.net> <27228.1268814093@localhost>
+            <201003171003.54295.holgerschurig@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1268857787_3820P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Wed, 17 Mar 2010 16:29:47 -0400
+Message-ID: <24712.1268857787@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4BA13BBB.017F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 08:03 AM, Stefan Roese wrote:
-> Hi Rup,
->
-> On Wednesday 17 March 2010 05:23:16 Rupjyoti Sarmah wrote:
->> This patch enables the on-chip DWC SATA controller of the AppliedMicro
->> processor 460EX.
->
-> Apart from the other comments, did you take a look at the latest version of
-> this driver in our linux-2.6-denx repository? We did some work on this driver
-> for a new Canyonlands release last year. It's hard to check this for me now,
-> with this line wrapped patch (the drivers diverged somewhat). So either check
-> for yourself, or send a new, not line-wrapped, patch version so that I can
-> better check myself.
->
-> BTW: It would be nice if you would add me to Cc on DWC-SATA related patches,
-> since I've been involved in the development at some time.
+--==_Exmh_1268857787_3820P
+Content-Type: text/plain; charset="us-ascii"
+Content-Id: <24706.1268857787.1@localhost>
 
-I will wait for Rupjyoti to check the linux-2.6-denx repo, and resend 
-the patches without word wrapping.
+On Wed, 17 Mar 2010 10:03:54 BST, Holger Schurig said:
 
-	Jeff
+> And in this case, you can use "wpa_cli status" and well see all the details, 
+> no matter if you use WPA, WPA2, WEXT or some of the 802.11x derivates:
+
+Wow. Is *that* where they hid it?  
+
+In any case, that does fit the bill, even if it was well-hidden:
+
+# wpa_cli status
+Selected interface 'wlan0'
+bssid=00:0f:f7:14:2a:91
+ssid=VT-Wireless
+id=0
+pairwise_cipher=CCMP
+group_cipher=TKIP
+key_mgmt=WPA2/IEEE 802.1X/EAP
+wpa_state=COMPLETED
+ip_address=172.31.143.252
+Supplicant PAE state=AUTHENTICATED
+suppPortStatus=Authorized
+EAP state=SUCCESS
+selectedMethod=13 (EAP-TLS)
+EAP TLS cipher=DHE-RSA-AES256-SHA
 
 
+
+
+--==_Exmh_1268857787_3820P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLoTu7cC3lWbTT17ARAsU4AJ4kYt/FIG1AtC6caAr0cqCvNsWHnwCg4ofn
+MQe9ryCVr8h3YoqstRhDC9M=
+=AfXw
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1268857787_3820P--
 
