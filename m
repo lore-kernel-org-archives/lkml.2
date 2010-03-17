@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab0CQUay (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 16:30:54 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:59397 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab0CQUax (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 16:30:53 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Daniel Vetter <daniel@ffwll.ch>, Dan Carpenter <error27@gmail.com>,
-       David Airlie <airlied@linux.ie>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-       maximlevitsky@gmail.com, Chris Wilson <chris@chris-wilson.co.uk>,
-       Luca Barbieri <luca@luca-barbieri.com>, dri-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] i915: fix small leak on error path
-In-Reply-To: <20100306115054.GA3462@viiv.ffwll.ch>
-References: <20100306110539.GD4958@bicker>
-	<20100306115054.GA3462@viiv.ffwll.ch>
-Date: Wed, 17 Mar 2010 13:30:50 -0700
-Message-ID: <87k4tak7wl.fsf@pollan.anholt.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1755723Ab0CQUg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 16:36:58 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51678 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754648Ab0CQUg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 16:36:57 -0400
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ulrich Drepper <drepper@redhat.com>, munroesj@us.ibm.com,
+       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel@teksavvy.com, torvalds@linux-foundation.org
+In-Reply-To: <4BA11FD2.2090104@zytor.com>
+References: <20100315134449.GB1653@linux-mips.org>
+	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
+	 <20100315.120004.209998642.davem@davemloft.net>
+	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>
+	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
+	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
+	 <1268816179.2335.187.camel@pasglop>  <4BA11FD2.2090104@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Mar 2010 07:35:34 +1100
+Message-ID: <1268858134.2335.198.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-03-17 at 11:30 -0700, H. Peter Anvin wrote:
+> Again, this is *exactly* symbol versioning done by hand... we have 
+> proper symbol versioning, let's use it.
 
-On Sat, 6 Mar 2010 12:50:54 +0100, Daniel Vetter <daniel@ffwll.ch> wrote:
-> Oh, dang. Thanks for catching this. Eric, please merge.
->=20
-> Cc: stable@kernel.org (for .33)
-> Reviewed-by: Daniel Vetter <daniel@ffwll.ch>
->=20
-> On Sat, Mar 06, 2010 at 02:05:39PM +0300, Dan Carpenter wrote:
-> > We should free "params" before returning.
-> >=20
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+Yeah, whatever, I don't mind what technique you use for the versionning,
+ultimately, if the approach works, we can look at those details :-) We
+-do- need the macro to strip the dummy argument though, unless we use
+a slightly different technique which is to make the __sysno argument
+itself 64-bit, which works as well I believe.
 
-Applied.  Thanks!
+Cheers,
+Ben.
 
---=-=-=
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuhO/oACgkQHUdvYGzw6vfNQQCfd9iu1hzTfEypRak0IiZ1IQce
-eY8AmwcR1UWFehBnP3jmvCjpe8+TKZyA
-=XICB
------END PGP SIGNATURE-----
---=-=-=--
