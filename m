@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab0CQDzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:55:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17415 "EHLO mx1.redhat.com"
+	id S1752770Ab0CQD5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:57:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51378 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751673Ab0CQDzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:55:04 -0400
-Message-ID: <4BA05285.3070903@redhat.com>
-Date: Wed, 17 Mar 2010 05:54:45 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: "Frank Ch. Eigler" <fche@redhat.com>
-CC: Anthony Liguori <aliguori@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-References: <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com> <20100316133114.GB575@elte.hu> <y0mbpeo1f1y.fsf@fche.csb> <20100316155221.GA19699@elte.hu> <4B9FC11A.1070507@linux.vnet.ibm.com> <20100316175243.GC23859@elte.hu> <4B9FC8B2.6070404@linux.vnet.ibm.com> <20100316182809.GA26602@elte.hu> <4BA00E6A.7080903@linux.vnet.ibm.com> <20100317004136.GC17472@redhat.com>
-In-Reply-To: <20100317004136.GC17472@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752396Ab0CQD5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 23:57:10 -0400
+Date: Wed, 17 Mar 2010 14:57:02 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: linux-next: build warning after merge of the tip tree
+Message-Id: <20100317145702.e314f75b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__17_Mar_2010_14_57_02_+1100_lVRRz1Vk6UjsTpoY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 02:41 AM, Frank Ch. Eigler wrote:
-> Hi -
->
-> On Tue, Mar 16, 2010 at 06:04:10PM -0500, Anthony Liguori wrote:
->    
->> [...]
->> The only way to really address this is to change the interaction.
->> Instead of running perf externally to qemu, we should support a perf
->> command in the qemu monitor that can then tie directly to the perf
->> tooling.  That gives us the best possible user experience.
->>      
-> To what extent could this be solved with less crossing of
-> isolation/abstraction layers, if the perfctr facilities were properly
-> virtualized?
->    
+--Signature=_Wed__17_Mar_2010_14_57_02_+1100_lVRRz1Vk6UjsTpoY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That's the more interesting (by far) usage model.  In general guest 
-owners don't have access to the host, and host owners can't (and 
-shouldn't) change guests.
+Hi all,
 
-Monitoring guests from the host is useful for kvm developers, but less 
-so for users.
+After merging the tip tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+kernel/sched.c: In function 'SYSC_sched_getaffinity':
+kernel/sched.c:4915: warning: comparison of distinct pointer types lacks a =
+cast
 
+Introduced by commit cd3d8031eb4311e516329aee03c79a08333141f1 ("sched:
+sched_getaffinity(): Allow less than NR_CPUS length").  Just a usage of
+min() with different types.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__17_Mar_2010_14_57_02_+1100_lVRRz1Vk6UjsTpoY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkugUw4ACgkQjjKRsyhoI8yjtQCcCZ9Bgj9hwccxxLnWPDQ3sQ30
+lu4AmgLIEnWOR93Tio33RzXL7tG6eGAJ
+=q/+w
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__17_Mar_2010_14_57_02_+1100_lVRRz1Vk6UjsTpoY--
