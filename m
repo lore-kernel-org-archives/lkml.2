@@ -1,154 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab0CQPtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:49:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3165 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750762Ab0CQPtv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:49:51 -0400
-Date: Wed, 17 Mar 2010 17:45:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Stevens <dlstevens@us.ibm.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-       Herbert Xu <herbert@gondor.apana.org.au>,
-       "Michael S. Tsirkin" <mst@redhat.com>, Paul Moore <paul.moore@hp.com>,
-       David Woodhouse <David.Woodhouse@intel.com>,
-       Sridhar Samudrala <sri@us.ibm.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] tun: add ioctl to modify vnet header size
-Message-ID: <20100317154501.GA5244@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1752673Ab0CQPuj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:50:39 -0400
+Received: from tarap.cc.columbia.edu ([128.59.29.7]:58235 "EHLO
+	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab0CQPuh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 11:50:37 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: [C/R v20][PATCH 01/96] eclone (1/11): Factor out code to allocate pidmap page
+Date: Wed, 17 Mar 2010 11:48:12 -0400
+Message-Id: <1268840987-4400-2-git-send-email-orenl@cs.columbia.edu>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1268840987-4400-1-git-send-email-orenl@cs.columbia.edu>
+References: <1268840987-4400-1-git-send-email-orenl@cs.columbia.edu>
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio added mergeable buffers mode where 2 bytes of extra info is put
-after vnet header but before actual data (tun does not need this data).
-In hindsight, it would have been better to add the new info *before* the
-packet: as it is, users need a lot of tricky code to skip the extra 2
-bytes in the middle of the iovec, and in fact applications seem to get
-it wrong, and only work with specific iovec layout.  The fact we might
-need to split iovec also means we might in theory overflow iovec max
-size.
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-This patch adds a simpler way for applications to handle this,
-and future proofs the interface against further extensions,
-by making the size of the virtio net header configurable
-from userspace. As a result, tun driver will simply
-skip the extra 2 bytes on both input and output.
+To simplify alloc_pidmap(), move code to allocate a pid map page to a
+separate function.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Changelog[v4]:
+	- [Oren Laadan] Adapt to kernel 2.6.33-rc5
+Changelog[v3]:
+	- Earlier version of patchset called alloc_pidmap_page() from two
+	  places. But now its called from only one place. Even so, moving
+	  this code out into a separate function simplifies alloc_pidmap().
+Changelog[v2]:
+	- (Matt Helsley, Dave Hansen) Have alloc_pidmap_page() return
+	  -ENOMEM on error instead of -1.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Reviewed-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- drivers/net/tun.c      |   31 +++++++++++++++++++++++++++----
- include/linux/if_tun.h |    2 ++
- 2 files changed, 29 insertions(+), 4 deletions(-)
+ kernel/pid.c |   41 ++++++++++++++++++++++++++---------------
+ 1 files changed, 26 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index ce1efa4..0b11222 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -110,6 +110,8 @@ struct tun_struct {
- 	struct tap_filter       txflt;
- 	struct socket		socket;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 2e17c9c..39292e6 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -122,6 +122,30 @@ static void free_pidmap(struct upid *upid)
+ 	atomic_inc(&map->nr_free);
+ }
  
-+	int			vnet_hdr_sz;
++static int alloc_pidmap_page(struct pidmap *map)
++{
++	void *page;
 +
- #ifdef TUN_DEBUG
- 	int debug;
- #endif
-@@ -559,7 +561,7 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 	}
- 
- 	if (tun->flags & TUN_VNET_HDR) {
--		if ((len -= sizeof(gso)) > count)
-+		if ((len -= tun->vnet_hdr_sz) > count)
- 			return -EINVAL;
- 
- 		if (memcpy_fromiovecend((void *)&gso, iv, offset, sizeof(gso)))
-@@ -571,7 +573,7 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 
- 		if (gso.hdr_len > len)
- 			return -EINVAL;
--		offset += sizeof(gso);
-+		offset += tun->vnet_hdr_sz;
- 	}
- 
- 	if ((tun->flags & TUN_TYPE_MASK) == TUN_TAP_DEV) {
-@@ -714,7 +716,7 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
- 
- 	if (tun->flags & TUN_VNET_HDR) {
- 		struct virtio_net_hdr gso = { 0 }; /* no info leak */
--		if ((len -= sizeof(gso)) < 0)
-+		if ((len -= tun->vnet_hdr_sz) < 0)
- 			return -EINVAL;
- 
- 		if (skb_is_gso(skb)) {
-@@ -745,7 +747,7 @@ static __inline__ ssize_t tun_put_user(struct tun_struct *tun,
- 		if (unlikely(memcpy_toiovecend(iv, (void *)&gso, total,
- 					       sizeof(gso))))
- 			return -EFAULT;
--		total += sizeof(gso);
-+		total += tun->vnet_hdr_sz;
- 	}
- 
- 	len = min_t(int, skb->len, len);
-@@ -1029,6 +1031,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun->dev = dev;
- 		tun->flags = flags;
- 		tun->txflt.count = 0;
-+		tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
- 
- 		err = -ENOMEM;
- 		sk = sk_alloc(net, AF_UNSPEC, GFP_KERNEL, &tun_proto);
-@@ -1170,6 +1173,7 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 	struct sock_fprog fprog;
- 	struct ifreq ifr;
- 	int sndbuf;
-+	int vnet_hdr_sz;
- 	int ret;
- 
- 	if (cmd == TUNSETIFF || _IOC_TYPE(cmd) == 0x89)
-@@ -1315,6 +1319,25 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		tun->socket.sk->sk_sndbuf = sndbuf;
- 		break;
- 
-+	case TUNGETVNETHDRSZ:
-+		vnet_hdr_sz = tun->vnet_hdr_sz;
-+		if (copy_to_user(argp, &vnet_hdr_sz, sizeof(vnet_hdr_sz)))
-+			ret = -EFAULT;
-+		break;
++	if (likely(map->page))
++		return 0;
 +
-+	case TUNSETVNETHDRSZ:
-+		if (copy_from_user(&vnet_hdr_sz, argp, sizeof(vnet_hdr_sz))) {
-+			ret = -EFAULT;
-+			break;
-+		}
-+		if (vnet_hdr_sz < (int)sizeof(struct virtio_net_hdr)) {
-+			ret = -EINVAL;
-+			break;
-+		}
++	page = kzalloc(PAGE_SIZE, GFP_KERNEL);
++	/*
++	 * Free the page if someone raced with us installing it:
++	 */
++	spin_lock_irq(&pidmap_lock);
++	if (!map->page) {
++		map->page = page;
++		page = NULL;
++	}
++	spin_unlock_irq(&pidmap_lock);
++	kfree(page);
++	if (unlikely(!map->page))
++		return -1;
 +
-+		tun->vnet_hdr_sz = vnet_hdr_sz;
-+		break;
++	return 0;
++}
 +
- 	case TUNATTACHFILTER:
- 		/* Can be set only for TAPs */
- 		ret = -EINVAL;
-diff --git a/include/linux/if_tun.h b/include/linux/if_tun.h
-index 1350a24..06b1829 100644
---- a/include/linux/if_tun.h
-+++ b/include/linux/if_tun.h
-@@ -51,6 +51,8 @@
- #define TUNSETSNDBUF   _IOW('T', 212, int)
- #define TUNATTACHFILTER _IOW('T', 213, struct sock_fprog)
- #define TUNDETACHFILTER _IOW('T', 214, struct sock_fprog)
-+#define TUNGETVNETHDRSZ _IOR('T', 215, int)
-+#define TUNSETVNETHDRSZ _IOW('T', 216, int)
- 
- /* TUNSETIFF ifr flags */
- #define IFF_TUN		0x0001
+ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ {
+ 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
+@@ -134,22 +158,9 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
+ 	max_scan = (pid_max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
+ 	for (i = 0; i <= max_scan; ++i) {
+-		if (unlikely(!map->page)) {
+-			void *page = kzalloc(PAGE_SIZE, GFP_KERNEL);
+-			/*
+-			 * Free the page if someone raced with us
+-			 * installing it:
+-			 */
+-			spin_lock_irq(&pidmap_lock);
+-			if (!map->page) {
+-				map->page = page;
+-				page = NULL;
+-			}
+-			spin_unlock_irq(&pidmap_lock);
+-			kfree(page);
+-			if (unlikely(!map->page))
++		if (unlikely(!map->page))
++			if (alloc_pidmap_page(map) < 0)
+ 				break;
+-		}
+ 		if (likely(atomic_read(&map->nr_free))) {
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
 -- 
-1.7.0.18.g0d53a5
+1.6.3.3
+
