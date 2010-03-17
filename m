@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab0CQLvx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 07:51:53 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51303 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab0CQLvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 07:51:52 -0400
-Date: Wed, 17 Mar 2010 11:51:34 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
-	anonymous pages
-Message-ID: <20100317115133.GG12388@csn.ul.ie>
-References: <1268657329.1889.4.camel@barrios-desktop> <20100315142124.GL18274@csn.ul.ie> <20100317104734.4C8E.A69D9226@jp.fujitsu.com>
+	id S1754574Ab0CQLw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 07:52:56 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43105 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab0CQLwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 07:52:53 -0400
+X-SpamScore: -4
+X-BigFish: VPS-4(zz936eMab9bhzz1202hzzz32i2a8h6bh87h43h65h)
+X-Spam-TCS-SCL: 4:0
+X-FB-SS: 5,
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0KZFCZU-01-60W-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 1/4] perf/core, x86: reduce number of CONFIG_X86_LOCAL_APIC macros
+Date: Wed, 17 Mar 2010 12:49:10 +0100
+Message-ID: <1268826553-19518-2-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1268826553-19518-1-git-send-email-robert.richter@amd.com>
+References: <1268826553-19518-1-git-send-email-robert.richter@amd.com>
+X-OriginalArrivalTime: 17 Mar 2010 11:52:37.0747 (UTC) FILETIME=[5703AC30:01CAC5C8]
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100317104734.4C8E.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 11:03:05AM +0900, KOSAKI Motohiro wrote:
-> > mm,migration: Do not try to migrate unmapped anonymous pages
-> > 
-> > rmap_walk_anon() was triggering errors in memory compaction that look like
-> > use-after-free errors. The problem is that between the page being isolated
-> > from the LRU and rcu_read_lock() being taken, the mapcount of the page
-> > dropped to 0 and the anon_vma gets freed. This can happen during memory
-> > compaction if pages being migrated belong to a process that exits before
-> > migration completes. Hence, the use-after-free race looks like
-> > 
-> >  1. Page isolated for migration
-> >  2. Process exits
-> >  3. page_mapcount(page) drops to zero so anon_vma was no longer reliable
-> >  4. unmap_and_move() takes the rcu_lock but the anon_vma is already garbage
-> >  4. call try_to_unmap, looks up tha anon_vma and "locks" it but the lock
-> >     is garbage.
-> > 
-> > This patch checks the mapcount after the rcu lock is taken. If the
-> > mapcount is zero, the anon_vma is assumed to be freed and no further
-> > action is taken.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > ---
-> >  mm/migrate.c |   13 +++++++++++++
-> >  1 files changed, 13 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/migrate.c b/mm/migrate.c
-> > index 98eaaf2..6eb1efe 100644
-> > --- a/mm/migrate.c
-> > +++ b/mm/migrate.c
-> > @@ -603,6 +603,19 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
-> >  	 */
-> >  	if (PageAnon(page)) {
-> >  		rcu_read_lock();
-> > +
-> > +		/*
-> > +		 * If the page has no mappings any more, just bail. An
-> > +		 * unmapped anon page is likely to be freed soon but worse,
-> > +		 * it's possible its anon_vma disappeared between when
-> > +		 * the page was isolated and when we reached here while
-> > +		 * the RCU lock was not held
-> > +		 */
-> > +		if (!page_mapcount(page)) {
-> > +			rcu_read_unlock();
-> > +			goto uncharge;
-> > +		}
-> 
-> I haven't understand what prevent this check. Why don't we need following scenario?
-> 
->  1. Page isolated for migration
->  2. Passed this if (!page_mapcount(page)) check
->  3. Process exits
->  4. page_mapcount(page) drops to zero so anon_vma was no longer reliable
-> 
-> 
-> Traditionally, page migration logic is, it can touch garbarge of anon_vma, but
-> SLAB_DESTROY_BY_RCU prevent any disaster. Is this broken concept?
-> 
+The function reserve_pmc_hardware() and release_pmc_hardware() were
+hard to read. This patch improves readablity of the code by removing
+most of the CONFIG_X86_LOCAL_APIC macros.
 
-The check is made within the RCU read lock. If the count is positive at
-that point but goes to zero due to a process exiting, the anon_vma will
-still be valid until rcu_read_unlock() is called.
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/cpu/perf_event.c |   15 +++++++++------
+ 1 files changed, 9 insertions(+), 6 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5dacf63..793e63f 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -313,9 +313,10 @@ again:
+ static atomic_t active_events;
+ static DEFINE_MUTEX(pmc_reserve_mutex);
+ 
++#ifdef CONFIG_X86_LOCAL_APIC
++
+ static bool reserve_pmc_hardware(void)
+ {
+-#ifdef CONFIG_X86_LOCAL_APIC
+ 	int i;
+ 
+ 	if (nmi_watchdog == NMI_LOCAL_APIC)
+@@ -330,11 +331,9 @@ static bool reserve_pmc_hardware(void)
+ 		if (!reserve_evntsel_nmi(x86_pmu.eventsel + i))
+ 			goto eventsel_fail;
+ 	}
+-#endif
+ 
+ 	return true;
+ 
+-#ifdef CONFIG_X86_LOCAL_APIC
+ eventsel_fail:
+ 	for (i--; i >= 0; i--)
+ 		release_evntsel_nmi(x86_pmu.eventsel + i);
+@@ -349,12 +348,10 @@ perfctr_fail:
+ 		enable_lapic_nmi_watchdog();
+ 
+ 	return false;
+-#endif
+ }
+ 
+ static void release_pmc_hardware(void)
+ {
+-#ifdef CONFIG_X86_LOCAL_APIC
+ 	int i;
+ 
+ 	for (i = 0; i < x86_pmu.num_events; i++) {
+@@ -364,9 +361,15 @@ static void release_pmc_hardware(void)
+ 
+ 	if (nmi_watchdog == NMI_LOCAL_APIC)
+ 		enable_lapic_nmi_watchdog();
+-#endif
+ }
+ 
++#else
++
++static bool reserve_pmc_hardware(void) { return true; }
++static void release_pmc_hardware(void) {}
++
++#endif
++
+ static int reserve_ds_buffers(void);
+ static void release_ds_buffers(void);
+ 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.0
+
+
