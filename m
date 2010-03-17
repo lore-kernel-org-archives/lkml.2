@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953Ab0CQQd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:33:27 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37328 "EHLO
+	id S1755984Ab0CQQdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:33:06 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37342 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab0CQQOB (ORCPT
+	with ESMTP id S1754247Ab0CQQOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:01 -0400
+	Wed, 17 Mar 2010 12:14:05 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 27/96] c/r: export functionality used in next patch for restart-blocks
-Date: Wed, 17 Mar 2010 12:08:15 -0400
-Message-Id: <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 25/96] c/r: x86-64: checkpoint/restart implementation
+Date: Wed, 17 Mar 2010 12:08:13 -0400
+Message-Id: <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -43,170 +43,417 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To support c/r of restart-blocks (system call that need to be
-restarted because they were interrupted but there was no userspace
-visible side-effect), export restart-block callbacks for poll()
-and futex() syscalls.
+Support for checkpoint and restart for X86_32 architecture.
+Partly based on Alexey's work.
 
-More details on c/r of restart-blocks and how it works in the
-following patch.
+Support for 32bit on 64bit and fixes from Serge Hallyn.
+
+ Checkpoint          Restart
+ (app/arch)         (app/arch/program*)
+---------------------------------------
+  64/x86-64	->  64/x86-64	  works
+  32/x86-64	->  32/x86-64	  works
+  32/x86-64	->  32/x86-32	  ?
+  32/x86-32	->  32/x86-64	  ?
+
+  32/x86-64	->  32/x86-32	  ?
+  32/x86-32	->  32/x86-64	  ?
+
+(*) "program" indicates the bit-ness of 'restart' executable.
+
+Changelog[v19-rc3]:
+  - Rebase to kernel 2.6.33
+  - [Serge Hallyn] Changes to fs/gs register handling
+  - [Serge Hallyn] Allow 32-bit restart of 64-bit and vice versa
+  - [Serge Hallyn] Only allow 'restart' with same bit-ness as image.
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: Serge Hallyn <serue@us.ibm.com>
 ---
- fs/select.c                  |    2 +-
- include/linux/futex.h        |   11 +++++++++++
- include/linux/poll.h         |    3 +++
- include/linux/posix-timers.h |    6 ++++++
- kernel/compat.c              |    4 ++--
- kernel/futex.c               |   12 +-----------
- kernel/posix-timers.c        |    2 +-
- 7 files changed, 25 insertions(+), 15 deletions(-)
+ arch/x86/Kconfig                      |    2 +-
+ arch/x86/include/asm/checkpoint_hdr.h |    6 +
+ arch/x86/include/asm/unistd_64.h      |    4 +
+ arch/x86/kernel/Makefile              |    2 +
+ arch/x86/kernel/checkpoint.c          |   16 +++
+ arch/x86/kernel/checkpoint_64.c       |  241 +++++++++++++++++++++++++++++++++
+ arch/x86/kernel/entry_64.S            |    7 +
+ include/linux/checkpoint_hdr.h        |    2 +
+ 8 files changed, 279 insertions(+), 1 deletions(-)
+ create mode 100644 arch/x86/kernel/checkpoint_64.c
 
-diff --git a/fs/select.c b/fs/select.c
-index fd38ce2..7e3de2c 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -873,7 +873,7 @@ out_fds:
- 	return err;
- }
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d5a7284..a6ae38a 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -93,7 +93,7 @@ config HAVE_LATENCYTOP_SUPPORT
  
--static long do_restart_poll(struct restart_block *restart_block)
-+long do_restart_poll(struct restart_block *restart_block)
- {
- 	struct pollfd __user *ufds = restart_block->poll.ufds;
- 	int nfds = restart_block->poll.nfds;
-diff --git a/include/linux/futex.h b/include/linux/futex.h
-index 1e5a26d..ae755f6 100644
---- a/include/linux/futex.h
-+++ b/include/linux/futex.h
-@@ -136,6 +136,17 @@ extern int
- handle_futex_death(u32 __user *uaddr, struct task_struct *curr, int pi);
+ config CHECKPOINT_SUPPORT
+ 	bool
+-	default y if X86_32
++	default y
  
- /*
-+ * In case we must use restart_block to restart a futex_wait,
-+ * we encode in the 'flags' shared capability
-+ */
-+#define FLAGS_SHARED		0x01
-+#define FLAGS_CLOCKRT		0x02
-+#define FLAGS_HAS_TIMEOUT	0x04
-+
-+/* for c/r */
-+extern long futex_wait_restart(struct restart_block *restart);
-+
-+/*
-  * Futexes are matched on equal values of this key.
-  * The key type depends on whether it's a shared or private mapping.
-  * Don't rearrange members without looking at hash_futex().
-diff --git a/include/linux/poll.h b/include/linux/poll.h
-index 6673743..6c40d42 100644
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -134,6 +134,9 @@ extern int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
- 
- extern int poll_select_set_timeout(struct timespec *to, long sec, long nsec);
- 
-+/* used by checkpoint/restart */
-+extern long do_restart_poll(struct restart_block *restart_block);
-+
- #endif /* KERNEL */
- 
- #endif /* _LINUX_POLL_H */
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 4f71bf4..d0d6a66 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -101,6 +101,10 @@ int posix_cpu_timer_create(struct k_itimer *timer);
- int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- 		     struct timespec *rqtp, struct timespec __user *rmtp);
- long posix_cpu_nsleep_restart(struct restart_block *restart_block);
-+#ifdef CONFIG_COMPAT
-+long compat_nanosleep_restart(struct restart_block *restart);
-+long compat_clock_nanosleep_restart(struct restart_block *restart);
-+#endif
- int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 			struct itimerspec *new, struct itimerspec *old);
- int posix_cpu_timer_del(struct k_itimer *timer);
-@@ -119,4 +123,6 @@ long clock_nanosleep_restart(struct restart_block *restart_block);
- 
- void update_rlimit_cpu(unsigned long rlim_new);
- 
-+int invalid_clockid(const clockid_t which_clock);
-+
+ config MMU
+ 	def_bool y
+diff --git a/arch/x86/include/asm/checkpoint_hdr.h b/arch/x86/include/asm/checkpoint_hdr.h
+index e6cfc99..6f600dd 100644
+--- a/arch/x86/include/asm/checkpoint_hdr.h
++++ b/arch/x86/include/asm/checkpoint_hdr.h
+@@ -36,6 +36,10 @@
+ #include <asm/processor.h>
  #endif
-diff --git a/kernel/compat.c b/kernel/compat.c
-index f6c204f..20afdba 100644
---- a/kernel/compat.c
-+++ b/kernel/compat.c
-@@ -100,7 +100,7 @@ int put_compat_timespec(const struct timespec *ts, struct compat_timespec __user
- 			__put_user(ts->tv_nsec, &cts->tv_nsec)) ? -EFAULT : 0;
- }
  
--static long compat_nanosleep_restart(struct restart_block *restart)
-+long compat_nanosleep_restart(struct restart_block *restart)
- {
- 	struct compat_timespec __user *rmtp;
- 	struct timespec rmt;
-@@ -647,7 +647,7 @@ long compat_sys_clock_getres(clockid_t which_clock,
- 	return err;
- }
++#ifdef CONFIG_X86_64
++#define CKPT_ARCH_ID	CKPT_ARCH_X86_64
++#endif
++
+ #ifdef CONFIG_X86_32
+ #define CKPT_ARCH_ID	CKPT_ARCH_X86_32
+ #endif
+@@ -106,6 +110,8 @@ struct ckpt_hdr_cpu {
+ #define CKPT_X86_SEG_NULL	0
+ #define CKPT_X86_SEG_USER32_CS	1
+ #define CKPT_X86_SEG_USER32_DS	2
++#define CKPT_X86_SEG_USER64_CS	3
++#define CKPT_X86_SEG_USER64_DS	4
+ #define CKPT_X86_SEG_TLS	0x4000	/* 0100 0000 0000 00xx */
+ #define CKPT_X86_SEG_LDT	0x8000	/* 100x xxxx xxxx xxxx */
  
--static long compat_clock_nanosleep_restart(struct restart_block *restart)
-+long compat_clock_nanosleep_restart(struct restart_block *restart)
- {
- 	long err;
- 	mm_segment_t oldfs;
-diff --git a/kernel/futex.c b/kernel/futex.c
-index e7a35f1..23419c9 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1593,16 +1593,6 @@ handle_fault:
- 	goto retry;
- }
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index d87318d..17bacfd 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -665,6 +665,10 @@ __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
+ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
+ #define __NR_eclone                   		300
+ __SYSCALL(__NR_eclone, stub_eclone)
++#define __NR_checkpoint                   	301
++__SYSCALL(__NR_checkpoint, stub_checkpoint)
++#define __NR_restart                   		302
++__SYSCALL(__NR_restart, stub_restart)
  
--/*
-- * In case we must use restart_block to restart a futex_wait,
-- * we encode in the 'flags' shared capability
-- */
--#define FLAGS_SHARED		0x01
--#define FLAGS_CLOCKRT		0x02
--#define FLAGS_HAS_TIMEOUT	0x04
--
--static long futex_wait_restart(struct restart_block *restart);
--
- /**
-  * fixup_owner() - Post lock pi_state and corner case management
-  * @uaddr:	user address of the futex
-@@ -1876,7 +1866,7 @@ out:
- }
+ #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 2f45350..2d0ff56 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -137,4 +137,6 @@ ifeq ($(CONFIG_X86_64),y)
  
+ 	obj-$(CONFIG_PCI_MMCONFIG)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
++
++	obj-$(CONFIG_CHECKPOINT)	+= checkpoint_64.o
+ endif
+diff --git a/arch/x86/kernel/checkpoint.c b/arch/x86/kernel/checkpoint.c
+index 06fe740..53b7e66 100644
+--- a/arch/x86/kernel/checkpoint.c
++++ b/arch/x86/kernel/checkpoint.c
+@@ -251,6 +251,22 @@ int restore_thread(struct ckpt_ctx *ctx)
+ 	load_TLS(thread, cpu);
+ 	put_cpu();
  
--static long futex_wait_restart(struct restart_block *restart)
-+long futex_wait_restart(struct restart_block *restart)
- {
- 	u32 __user *uaddr = (u32 __user *)restart->futex.uaddr;
- 	int fshared = 0;
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 4954407..86dcae4 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -211,7 +211,7 @@ static int no_nsleep(const clockid_t which_clock, int flags,
- /*
-  * Return nonzero if we know a priori this clockid_t value is bogus.
-  */
--static inline int invalid_clockid(const clockid_t which_clock)
-+int invalid_clockid(const clockid_t which_clock)
- {
- 	if (which_clock < 0)	/* CPU clock, posix_cpu_* will check it */
- 		return 0;
++	{
++		int pre, post;
++		/*
++		 * Eventually we'd like to support mixed-bit restart, but for
++		 * now don't pretend to.
++		 */
++		pre = test_thread_flag(TIF_IA32);
++		post = !!(h->thread_info_flags & _TIF_IA32);
++		if (pre != post) {
++			ret = -EINVAL;
++			ckpt_err(ctx, ret, "%d-bit restarting %d-bit\n",
++				64 >> pre, 64 >> post);
++			goto out;
++		}
++	}
++
+ 	/* TODO: restore TIF flags as necessary (e.g. TIF_NOTSC) */
+ 
+ 	ret = 0;
+diff --git a/arch/x86/kernel/checkpoint_64.c b/arch/x86/kernel/checkpoint_64.c
+new file mode 100644
+index 0000000..f8226e2
+--- /dev/null
++++ b/arch/x86/kernel/checkpoint_64.c
+@@ -0,0 +1,241 @@
++/*
++ *  Checkpoint/restart - architecture specific support for x86_64
++ *
++ *  Copyright (C) 2009 Oren Laadan
++ *
++ *  This file is subject to the terms and conditions of the GNU General Public
++ *  License.  See the file COPYING in the main directory of the Linux
++ *  distribution for more details.
++ */
++
++/* default debug level for output */
++#define CKPT_DFLAG  CKPT_DSYS
++
++#include <asm/desc.h>
++#include <asm/i387.h>
++#include <asm/elf.h>
++
++#include <linux/checkpoint.h>
++#include <linux/checkpoint_hdr.h>
++
++/* helpers to encode/decode/validate segments */
++
++int check_segment(__u16 seg)
++{
++	int ret = 0;
++
++	switch (seg) {
++	case CKPT_X86_SEG_NULL:
++	case CKPT_X86_SEG_USER64_CS:
++	case CKPT_X86_SEG_USER64_DS:
++#ifdef CONFIG_COMPAT
++	case CKPT_X86_SEG_USER32_CS:
++	case CKPT_X86_SEG_USER32_DS:
++#endif
++		return 1;
++	}
++	if (seg & CKPT_X86_SEG_TLS) {
++		seg &= ~CKPT_X86_SEG_TLS;
++		if (seg <= GDT_ENTRY_TLS_MAX - GDT_ENTRY_TLS_MIN)
++			ret = 1;
++	} else if (seg & CKPT_X86_SEG_LDT) {
++		seg &= ~CKPT_X86_SEG_LDT;
++		if (seg <= 0x1fff)
++			ret = 1;
++	}
++	return ret;
++}
++
++__u16 encode_segment(unsigned short seg)
++{
++	if (seg == 0)
++		return CKPT_X86_SEG_NULL;
++	BUG_ON((seg & 3) != 3);
++
++	if (seg == __USER_CS)
++		return CKPT_X86_SEG_USER64_CS;
++	if (seg == __USER_DS)
++		return CKPT_X86_SEG_USER64_DS;
++#ifdef CONFIG_COMPAT
++	if (seg == __USER32_CS)
++		return CKPT_X86_SEG_USER32_CS;
++	if (seg == __USER32_DS)
++		return CKPT_X86_SEG_USER32_DS;
++#endif
++
++	if (seg & 4)
++		return CKPT_X86_SEG_LDT | (seg >> 3);
++
++	seg >>= 3;
++	if (GDT_ENTRY_TLS_MIN <= seg && seg <= GDT_ENTRY_TLS_MAX)
++		return CKPT_X86_SEG_TLS | (seg - GDT_ENTRY_TLS_MIN);
++
++	printk(KERN_ERR "c/r: (decode) bad segment %#hx\n", seg);
++	BUG();
++}
++
++unsigned short decode_segment(__u16 seg)
++{
++	if (seg == CKPT_X86_SEG_NULL)
++		return 0;
++
++	if (seg == CKPT_X86_SEG_USER64_CS)
++		return __USER_CS;
++	if (seg == CKPT_X86_SEG_USER64_DS)
++		return __USER_DS;
++#ifdef CONFIG_COMPAT
++	if (seg == CKPT_X86_SEG_USER32_CS)
++		return __USER32_CS;
++	if (seg == CKPT_X86_SEG_USER32_DS)
++		return __USER32_DS;
++#endif
++
++	if (seg & CKPT_X86_SEG_TLS) {
++		seg &= ~CKPT_X86_SEG_TLS;
++		return ((GDT_ENTRY_TLS_MIN + seg) << 3) | 3;
++	}
++	if (seg & CKPT_X86_SEG_LDT) {
++		seg &= ~CKPT_X86_SEG_LDT;
++		return (seg << 3) | 7;
++	}
++	BUG();
++}
++
++void save_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++{
++	struct pt_regs *regs = task_pt_regs(t);
++	unsigned long _ds, _es, _fs, _gs;
++
++	h->r15 = regs->r15;
++	h->r14 = regs->r14;
++	h->r13 = regs->r13;
++	h->r12 = regs->r12;
++	h->r11 = regs->r11;
++	h->r10 = regs->r10;
++	h->r9 = regs->r9;
++	h->r8 = regs->r8;
++
++	h->bp = regs->bp;
++	h->bx = regs->bx;
++	h->ax = regs->ax;
++	h->cx = regs->cx;
++	h->dx = regs->dx;
++	h->si = regs->si;
++	h->di = regs->di;
++	h->orig_ax = regs->orig_ax;
++	h->ip = regs->ip;
++
++	h->flags = regs->flags;
++	h->sp = regs->sp;
++
++	/*
++	 * for checkpoint in process context (from within a container)
++	 * DS, ES, FS, GS registers should be saved from the hardware;
++	 * otherwise they are already saved on the thread structure
++	 */
++
++	h->cs = encode_segment(regs->cs);
++	h->ss = encode_segment(regs->ss);
++
++	if (t == current) {
++		savesegment(ds, _ds);
++		savesegment(es, _es);
++		savesegment(fs, _fs);
++		savesegment(gs, _gs);
++		rdmsrl(MSR_FS_BASE, h->fs);
++		rdmsrl(MSR_KERNEL_GS_BASE, h->gs);
++	} else {
++		_ds = t->thread.ds;
++		_es = t->thread.es;
++		_fs = t->thread.fsindex;
++		_gs = t->thread.gsindex;
++		h->fs = t->thread.fs;
++		h->gs = t->thread.gs;
++	}
++	h->ds = encode_segment(_ds);
++	h->es = encode_segment(_es);
++	h->fsindex = encode_segment(_fs);
++	h->gsindex = encode_segment(_gs);
++
++	/* see comment in __switch_to() */
++	if (_fs)
++		h->fs = 0;
++	if (_gs)
++		h->gs = 0;
++
++	/*
++	 * for checkpoint in process context (from within a container),
++	 * the actual syscall is taking place at this very moment; so
++	 * we (optimistically) subtitute the future return value (0) of
++	 * this syscall into the orig_eax, so that upon restart it will
++	 * succeed (or it will endlessly retry checkpoint...)
++	 */
++	if (t == current) {
++		BUG_ON(h->orig_ax < 0);
++		h->ax = 0;
++	}
++}
++
++int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
++{
++	struct thread_struct *thread = &t->thread;
++	struct pt_regs *regs = task_pt_regs(t);
++
++	if (h->cs == CKPT_X86_SEG_NULL)
++		return -EINVAL;
++	if (!check_segment(h->cs) || !check_segment(h->ds) ||
++	    !check_segment(h->es) || !check_segment(h->ss) ||
++	    !check_segment(h->fsindex) || !check_segment(h->gsindex))
++		return -EINVAL;
++
++	regs->r15 = h->r15;
++	regs->r14 = h->r14;
++	regs->r13 = h->r13;
++	regs->r12 = h->r12;
++	regs->r11 = h->r11;
++	regs->r10 = h->r10;
++	regs->r9 = h->r9;
++	regs->r8 = h->r8;
++
++	regs->bp = h->bp;
++	regs->bx = h->bx;
++	regs->ax = h->ax;
++	regs->cx = h->cx;
++	regs->dx = h->dx;
++	regs->si = h->si;
++	regs->di = h->di;
++	regs->orig_ax = h->orig_ax;
++	regs->ip = h->ip;
++
++	regs->sp = h->sp;
++	thread->usersp = h->sp;
++
++	preempt_disable();
++
++	regs->cs = decode_segment(h->cs);
++	regs->ss = decode_segment(h->ss);
++	thread->ds = decode_segment(h->ds);
++	thread->es = decode_segment(h->es);
++	thread->fsindex = decode_segment(h->fsindex);
++	thread->gsindex = decode_segment(h->gsindex);
++
++	thread->fs = h->fs;
++	thread->gs = h->gs;
++
++	/* XXX - unsure is this really needed ... */
++	loadsegment(fs, thread->fsindex);
++	if (thread->fs)
++		wrmsrl(MSR_FS_BASE, thread->fs);
++	load_gs_index(thread->gsindex);
++	/*
++	 * when we switch to user-space, the MSR_KERNEL_GS_BASE
++	 * will be moved back to MSR_GS_BASE.
++	 * http://lists.openwall.net/linux-kernel/2008/11/18/340
++	 */
++	if (thread->gs)
++		wrmsrl(MSR_KERNEL_GS_BASE, thread->gs);
++
++	preempt_enable();
++
++	return 0;
++}
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 216681e..c2ece28 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -699,6 +699,13 @@ END(\label)
+ 	PTREGSCALL stub_sigaltstack, sys_sigaltstack, %rdx
+ 	PTREGSCALL stub_iopl, sys_iopl, %rsi
+ 	PTREGSCALL stub_eclone, sys_eclone, %r8
++#ifdef CONFIG_CHECKPOINT
++	PTREGSCALL stub_checkpoint, sys_checkpoint, %r8
++	PTREGSCALL stub_restart, sys_restart, %r8
++#else
++	PTREGSCALL stub_checkpoint, sys_ni_syscall, %r8
++	PTREGSCALL stub_restart, sys_ni_syscall, %r8
++#endif
+ 
+ ENTRY(ptregscall_common)
+ 	DEFAULT_FRAME 1 8	/* offset 8: return address */
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index 2ab878a..4627564 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -85,6 +85,8 @@ enum {
+ enum {
+ 	CKPT_ARCH_X86_32 = 1,
+ #define CKPT_ARCH_X86_32 CKPT_ARCH_X86_32
++	CKPT_ARCH_X86_64,
++#define CKPT_ARCH_X86_64 CKPT_ARCH_X86_64
+ };
+ 
+ /* kernel constants */
 -- 
 1.6.3.3
 
