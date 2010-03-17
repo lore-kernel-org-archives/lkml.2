@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab0CQQZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:25:04 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:39759 "EHLO
+	id S1755570Ab0CQQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:26:00 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37542 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754813Ab0CQQYT (ORCPT
+	with ESMTP id S1754522Ab0CQQOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:24:19 -0400
+	Wed, 17 Mar 2010 12:14:49 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 79/96] c/r: [pty 1/2] allow allocation of desired pty slave
-Date: Wed, 17 Mar 2010 12:09:07 -0400
-Message-Id: <1268842164-5590-80-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 39/96] c/r: restore open file descriptors
+Date: Wed, 17 Mar 2010 12:08:27 -0400
+Message-Id: <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-79-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -57,272 +57,472 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-43-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-44-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-46-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-48-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-49-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-50-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-51-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-52-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-53-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-54-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-55-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-56-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-58-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-73-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-74-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-75-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-76-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-77-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-78-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-79-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During restart, we need to allocate pty slaves with the same
-identifiers as recorded during checkpoint. Modify the allocation code
-to allow an in-kernel caller to request a specific slave identifier.
+For each fd read 'struct ckpt_hdr_file_desc' and lookup objref in the
+hash table; If not found in the hash table, (first occurence), read in
+'struct ckpt_hdr_file', create a new file and register in the hash.
+Otherwise attach the file pointer from the hash as an FD.
 
-For this, add a new field to task_struct - 'required_id'. It will
-hold the desired identifier when restoring a (master) pty.
 
-The code in ptmx_open() will use this value only for tasks that try to
-open /dev/ptmx that are restarting (PF_RESTARTING), and if the value
-isn't CKPT_REQUIRED_NONE (-1).
-
-Changelog[v19-rc3]:
-  - Rebase to kernel 2.6.33
+Changelog[v19-rc1]:
+  - Fix lockdep complaint in restore_obj_files()
+Changelog[v19-rc1]:
+  - Restore thread/cpu state early
+  - Ensure null-termination of file names read from image
+  - Fix compile warning in restore_open_fname()
+Changelog[v18]:
+  - Invoke set_close_on_exec() unconditionally on restart
+Changelog[v17]:
+  - Validate f_mode after restore against saved f_mode
+  - Fail if f_flags have O_CREAT|O_EXCL|O_NOCTTY|O_TRUN
+  - Reorder patch (move earlier in series)
+  - Handle shared files_struct objects
+Changelog[v14]:
+  - Introduce a per file-type restore() callback
+  - Revert change to pr_debug(), back to ckpt_debug()
+  - Rename:  restore_files() => restore_fd_table()
+  - Rename:  ckpt_read_fd_data() => restore_file()
+  - Check whether calls to ckpt_hbuf_get() fail
+  - Discard field 'hh->parent'
+Changelog[v12]:
+  - Replace obsolete ckpt_debug() with pr_debug()
+Changelog[v6]:
+  - Balance all calls to ckpt_hbuf_get() with matching ckpt_hbuf_put()
+    (even though it's not really needed)
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- drivers/char/pty.c        |   65 +++++++++++++++++++++++++++++++++++++++++---
- drivers/char/tty_io.c     |    1 +
- fs/devpts/inode.c         |   13 +++++++--
- include/linux/devpts_fs.h |    6 +++-
- include/linux/tty.h       |    2 +
- 5 files changed, 78 insertions(+), 9 deletions(-)
+ checkpoint/files.c         |  318 ++++++++++++++++++++++++++++++++++++++++++++
+ checkpoint/objhash.c       |    2 +
+ checkpoint/process.c       |   20 +++
+ include/linux/checkpoint.h |    7 +
+ 4 files changed, 347 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/pty.c b/drivers/char/pty.c
-index 385c44b..33f720b 100644
---- a/drivers/char/pty.c
-+++ b/drivers/char/pty.c
-@@ -614,9 +614,10 @@ static const struct tty_operations pty_unix98_ops = {
+diff --git a/checkpoint/files.c b/checkpoint/files.c
+index 7a57b24..b404c8f 100644
+--- a/checkpoint/files.c
++++ b/checkpoint/files.c
+@@ -16,6 +16,8 @@
+ #include <linux/sched.h>
+ #include <linux/file.h>
+ #include <linux/fdtable.h>
++#include <linux/fsnotify.h>
++#include <linux/syscalls.h>
+ #include <linux/deferqueue.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
+@@ -442,3 +444,319 @@ int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t)
+ 
+ 	return ret;
+ }
++
++/**************************************************************************
++ * Restart
++ */
++
++/**
++ * restore_open_fname - read a file name and open a file
++ * @ctx: checkpoint context
++ * @flags: file flags
++ */
++struct file *restore_open_fname(struct ckpt_ctx *ctx, int flags)
++{
++	struct file *file;
++	char *fname;
++	int len;
++
++	/* prevent bad input from doing bad things */
++	if (flags & (O_CREAT | O_EXCL | O_NOCTTY | O_TRUNC))
++		return ERR_PTR(-EINVAL);
++
++	len = ckpt_read_payload(ctx, (void **) &fname,
++				PATH_MAX, CKPT_HDR_FILE_NAME);
++	if (len < 0)
++		return ERR_PTR(len);
++	fname[len - 1] = '\0';	/* always play if safe */
++	ckpt_debug("fname '%s' flags %#x\n", fname, flags);
++
++	file = filp_open(fname, flags, 0);
++	kfree(fname);
++
++	return file;
++}
++
++static int close_all_fds(struct files_struct *files)
++{
++	int *fdtable;
++	int nfds;
++
++	nfds = scan_fds(files, &fdtable);
++	if (nfds < 0)
++		return nfds;
++	while (nfds--)
++		sys_close(fdtable[nfds]);
++	kfree(fdtable);
++	return 0;
++}
++
++/**
++ * attach_file - attach a lonely file ptr to a file descriptor
++ * @file: lonely file pointer
++ */
++static int attach_file(struct file *file)
++{
++	int fd = get_unused_fd_flags(0);
++
++	if (fd >= 0) {
++		get_file(file);
++		fsnotify_open(file->f_path.dentry);
++		fd_install(fd, file);
++	}
++	return fd;
++}
++
++#define CKPT_SETFL_MASK  \
++	(O_APPEND | O_NONBLOCK | O_NDELAY | FASYNC | O_DIRECT | O_NOATIME)
++
++int restore_file_common(struct ckpt_ctx *ctx, struct file *file,
++			struct ckpt_hdr_file *h)
++{
++	fmode_t new_mode = file->f_mode;
++	fmode_t saved_mode = (__force fmode_t) h->f_mode;
++	int ret;
++
++	/* FIX: need to restore uid, gid, owner etc */
++
++	/* safe to set 1st arg (fd) to 0, as command is F_SETFL */
++	ret = vfs_fcntl(0, F_SETFL, h->f_flags & CKPT_SETFL_MASK, file);
++	if (ret < 0)
++		return ret;
++
++	/*
++	 * Normally f_mode is set by open, and modified only via
++	 * fcntl(), so its value now should match that at checkpoint.
++	 * However, a file may be downgraded from (read-)write to
++	 * read-only, e.g:
++	 *  - mark_files_ro() unsets FMODE_WRITE
++	 *  - nfs4_file_downgrade() too, and also sert FMODE_READ
++	 * Validate the new f_mode against saved f_mode, allowing:
++	 *  - new with FMODE_WRITE, saved without FMODE_WRITE
++	 *  - new without FMODE_READ, saved with FMODE_READ
++	 */
++	if ((new_mode & FMODE_WRITE) && !(saved_mode & FMODE_WRITE)) {
++		new_mode &= ~FMODE_WRITE;
++		if (!(new_mode & FMODE_READ) && (saved_mode & FMODE_READ))
++			new_mode |= FMODE_READ;
++	}
++	/* finally, at this point new mode should match saved mode */
++	if (new_mode ^ saved_mode)
++		return -EINVAL;
++
++	if (file->f_mode & FMODE_LSEEK)
++		ret = vfs_llseek(file, h->f_pos, SEEK_SET);
++
++	return ret;
++}
++
++static struct file *generic_file_restore(struct ckpt_ctx *ctx,
++					 struct ckpt_hdr_file *ptr)
++{
++	struct file *file;
++	int ret;
++
++	if (ptr->h.type != CKPT_HDR_FILE  ||
++	    ptr->h.len != sizeof(*ptr) || ptr->f_type != CKPT_FILE_GENERIC)
++		return ERR_PTR(-EINVAL);
++
++	file = restore_open_fname(ctx, ptr->f_flags);
++	if (IS_ERR(file))
++		return file;
++
++	ret = restore_file_common(ctx, file, ptr);
++	if (ret < 0) {
++		fput(file);
++		file = ERR_PTR(ret);
++	}
++	return file;
++}
++
++struct restore_file_ops {
++	char *file_name;
++	enum file_type file_type;
++	struct file * (*restore) (struct ckpt_ctx *ctx,
++				  struct ckpt_hdr_file *ptr);
++};
++
++static struct restore_file_ops restore_file_ops[] = {
++	/* ignored file */
++	{
++		.file_name = "IGNORE",
++		.file_type = CKPT_FILE_IGNORE,
++		.restore = NULL,
++	},
++	/* regular file/directory */
++	{
++		.file_name = "GENERIC",
++		.file_type = CKPT_FILE_GENERIC,
++		.restore = generic_file_restore,
++	},
++};
++
++static struct file *do_restore_file(struct ckpt_ctx *ctx)
++{
++	struct restore_file_ops *ops;
++	struct ckpt_hdr_file *h;
++	struct file *file = ERR_PTR(-EINVAL);
++
++	/*
++	 * All 'struct ckpt_hdr_file_...' begin with ckpt_hdr_file,
++	 * but the actual object depends on the file type. The length
++	 * should never be more than page.
++	 */
++	h = ckpt_read_buf_type(ctx, PAGE_SIZE, CKPT_HDR_FILE);
++	if (IS_ERR(h))
++		return (struct file *) h;
++	ckpt_debug("flags %#x mode %#x type %d\n",
++		 h->f_flags, h->f_mode, h->f_type);
++
++	if (h->f_type >= CKPT_FILE_MAX)
++		goto out;
++
++	ops = &restore_file_ops[h->f_type];
++	BUG_ON(ops->file_type != h->f_type);
++
++	if (ops->restore)
++		file = ops->restore(ctx, h);
++ out:
++	ckpt_hdr_put(ctx, h);
++	return file;
++}
++
++/* restore callback for file pointer */
++void *restore_file(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_file(ctx);
++}
++
++/**
++ * ckpt_read_file_desc - restore the state of a given file descriptor
++ * @ctx: checkpoint context
++ *
++ * Restores the state of a file descriptor; looks up the objref (in the
++ * header) in the hash table, and if found picks the matching file and
++ * use it; otherwise calls restore_file to restore the file too.
++ */
++static int restore_file_desc(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_file_desc *h;
++	struct file *file;
++	int newfd, ret;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_FILE_DESC);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
++	ckpt_debug("ref %d fd %d c.o.e %d\n",
++		 h->fd_objref, h->fd_descriptor, h->fd_close_on_exec);
++
++	ret = -EINVAL;
++	if (h->fd_objref <= 0 || h->fd_descriptor < 0)
++		goto out;
++
++	file = ckpt_obj_fetch(ctx, h->fd_objref, CKPT_OBJ_FILE);
++	if (IS_ERR(file)) {
++		ret = PTR_ERR(file);
++		goto out;
++	}
++
++	newfd = attach_file(file);
++	if (newfd < 0) {
++		ret = newfd;
++		goto out;
++	}
++
++	ckpt_debug("newfd got %d wanted %d\n", newfd, h->fd_descriptor);
++
++	/* reposition if newfd isn't desired fd */
++	if (newfd != h->fd_descriptor) {
++		ret = sys_dup2(newfd, h->fd_descriptor);
++		if (ret < 0)
++			goto out;
++		sys_close(newfd);
++	}
++
++	set_close_on_exec(h->fd_descriptor, h->fd_close_on_exec);
++	ret = 0;
++ out:
++	ckpt_hdr_put(ctx, h);
++	return ret;
++}
++
++/* restore callback for file table */
++static struct files_struct *do_restore_file_table(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_file_table *h;
++	struct files_struct *files;
++	int i, ret;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_FILE_TABLE);
++	if (IS_ERR(h))
++		return (struct files_struct *) h;
++
++	ckpt_debug("nfds %d\n", h->fdt_nfds);
++
++	ret = -EMFILE;
++	if (h->fdt_nfds < 0 || h->fdt_nfds > sysctl_nr_open)
++		goto out;
++
++	/*
++	 * We assume that restarting tasks, as created in user-space,
++	 * have distinct files_struct objects each. If not, we need to
++	 * call dup_fd() to make sure we don't overwrite an already
++	 * restored one.
++	 */
++
++	/* point of no return -- close all file descriptors */
++	ret = close_all_fds(current->files);
++	if (ret < 0)
++		goto out;
++
++	for (i = 0; i < h->fdt_nfds; i++) {
++		ret = restore_file_desc(ctx);
++		if (ret < 0)
++			goto out;
++	}
++
++	ret = deferqueue_run(ctx->files_deferq);
++	ckpt_debug("files_deferq ran %d entries\n", ret);
++	if (ret > 0)
++		ret = 0;
++ out:
++	ckpt_hdr_put(ctx, h);
++	if (!ret) {
++		files = current->files;
++		atomic_inc(&files->count);
++	} else {
++		files = ERR_PTR(ret);
++	}
++	return files;
++}
++
++void *restore_file_table(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_file_table(ctx);
++}
++
++int restore_obj_file_table(struct ckpt_ctx *ctx, int files_objref)
++{
++	struct files_struct *files;
++
++	files = ckpt_obj_fetch(ctx, files_objref, CKPT_OBJ_FILE_TABLE);
++	if (IS_ERR(files))
++		return PTR_ERR(files);
++
++	if (files != current->files) {
++		struct files_struct *prev;
++
++		task_lock(current);
++		prev = current->files;
++		current->files = files;
++		atomic_inc(&files->count);
++		task_unlock(current);
++
++		put_files_struct(prev);
++	}
++
++	return 0;
++}
+diff --git a/checkpoint/objhash.c b/checkpoint/objhash.c
+index f25d130..cacc4c7 100644
+--- a/checkpoint/objhash.c
++++ b/checkpoint/objhash.c
+@@ -112,6 +112,7 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
+ 		.ref_grab = obj_file_table_grab,
+ 		.ref_users = obj_file_table_users,
+ 		.checkpoint = checkpoint_file_table,
++		.restore = restore_file_table,
+ 	},
+ 	/* file object */
+ 	{
+@@ -121,6 +122,7 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
+ 		.ref_grab = obj_file_grab,
+ 		.ref_users = obj_file_users,
+ 		.checkpoint = checkpoint_file,
++		.restore = restore_file,
+ 	},
  };
  
- /**
-- *	ptmx_open		-	open a unix 98 pty master
-+ *	__ptmx_open		-	open a unix 98 pty master
-  *	@inode: inode of device file
-  *	@filp: file pointer to tty
-+ *	@index: desired slave index
-  *
-  *	Allocate a unix98 pty master device from the ptmx driver.
-  *
-@@ -625,16 +626,15 @@ static const struct tty_operations pty_unix98_ops = {
-  *		allocated_ptys_lock handles the list of free pty numbers
-  */
- 
--static int __ptmx_open(struct inode *inode, struct file *filp)
-+static int __ptmx_open(struct inode *inode, struct file *filp, int index)
- {
- 	struct tty_struct *tty;
- 	int retval;
--	int index;
- 
- 	nonseekable_open(inode, filp);
- 
- 	/* find a device that is not in use. */
--	index = devpts_new_index(inode);
-+	index = devpts_new_index(inode, index);
- 	if (index < 0)
- 		return index;
- 
-@@ -670,12 +670,66 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- {
- 	int ret;
- 
-+#ifdef CONFIG_CHECKPOINT
-+	/*
-+	 * If current task is restarting, we skip the actual open.
-+	 * Instead, leave it up to the caller (restart code) to invoke
-+	 * __ptmx_open() with the desired pty index request.
-+	 *
-+	 * NOTE: this gives a half-baked file that has ptmx f_op but
-+	 * the tty (private_data) is NULL. It is the responsibility of
-+	 * the _caller_ to ensure proper initialization before
-+	 * allowing it to be used (ptmx_release() tolerates NULL tty).
-+	 */
-+	if (current->flags & PF_RESTARTING)
-+		return 0;
-+#endif
-+
- 	lock_kernel();
--	ret = __ptmx_open(inode, filp);
-+	ret = __ptmx_open(inode, filp, UNSPECIFIED_PTY_INDEX);
- 	unlock_kernel();
+diff --git a/checkpoint/process.c b/checkpoint/process.c
+index adc34a2..23e0296 100644
+--- a/checkpoint/process.c
++++ b/checkpoint/process.c
+@@ -348,6 +348,22 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
  	return ret;
  }
  
-+static int ptmx_release(struct inode *inode, struct file *filp)
++static int restore_task_objs(struct ckpt_ctx *ctx)
 +{
-+#ifdef CONFIG_CHECKPOINT
-+	/*
-+	 * It is possible for a restart to create a half-baked
-+	 * ptmx file - see ptmx_open(). In that case there is no
-+	 * tty (private_data) and nothing to do.
-+	 */
-+	if (!filp->private_data)
-+		return 0;
-+#endif
-+
-+	return tty_release(inode, filp);
-+}
-+
-+struct file *pty_open_by_index(char *ptmxpath, int index)
-+{
-+	struct file *ptmxfile;
++	struct ckpt_hdr_task_objs *h;
 +	int ret;
 +
-+	/*
-+	 * We need to pick a way to specify which devpts mountpoint to
-+	 * use. For now, we'll just use whatever /dev/ptmx points to.
-+	 */
-+	ptmxfile = filp_open(ptmxpath, O_RDWR|O_NOCTTY, 0);
-+	if (IS_ERR(ptmxfile))
-+		return ptmxfile;
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
 +
-+	lock_kernel();
-+	ret = __ptmx_open(ptmxfile->f_dentry->d_inode, ptmxfile, index);
-+	unlock_kernel();
-+	if (ret) {
-+		fput(ptmxfile);
-+		return ERR_PTR(ret);
-+	}
++	ret = restore_obj_file_table(ctx, h->files_objref);
++	ckpt_debug("file_table: ret %d (%p)\n", ret, current->files);
 +
-+	return ptmxfile;
++	ckpt_hdr_put(ctx, h);
++	return ret;
 +}
 +
- static struct file_operations ptmx_fops;
- 
- static void __init unix98_pty_init(void)
-@@ -732,6 +786,7 @@ static void __init unix98_pty_init(void)
- 	/* Now create the /dev/ptmx special device */
- 	tty_default_fops(&ptmx_fops);
- 	ptmx_fops.open = ptmx_open;
-+	ptmx_fops.release = ptmx_release;
- 
- 	cdev_init(&ptmx_cdev, &ptmx_fops);
- 	if (cdev_add(&ptmx_cdev, MKDEV(TTYAUX_MAJOR, 2), 1) ||
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index dcb9083..169c130 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -142,6 +142,7 @@ ssize_t redirected_tty_write(struct file *, const char __user *,
- 							size_t, loff_t *);
- static unsigned int tty_poll(struct file *, poll_table *);
- static int tty_open(struct inode *, struct file *);
-+int tty_release(struct inode *, struct file *);
- long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
- #ifdef CONFIG_COMPAT
- static long tty_compat_ioctl(struct file *file, unsigned int cmd,
-diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index 8882ecc..e997f8a 100644
---- a/fs/devpts/inode.c
-+++ b/fs/devpts/inode.c
-@@ -432,11 +432,11 @@ static struct file_system_type devpts_fs_type = {
-  * to the System V naming convention
-  */
- 
--int devpts_new_index(struct inode *ptmx_inode)
-+int devpts_new_index(struct inode *ptmx_inode, int req_idx)
+ int restore_restart_block(struct ckpt_ctx *ctx)
  {
- 	struct super_block *sb = pts_sb_from_inode(ptmx_inode);
- 	struct pts_fs_info *fsi = DEVPTS_SB(sb);
--	int index;
-+	int index = req_idx;
- 	int ida_ret;
+ 	struct ckpt_hdr_restart_block *h;
+@@ -477,6 +493,10 @@ int restore_task(struct ckpt_ctx *ctx)
+ 		goto out;
+ 	ret = restore_cpu(ctx);
+ 	ckpt_debug("cpu %d\n", ret);
++	if (ret < 0)
++		goto out;
++	ret = restore_task_objs(ctx);
++	ckpt_debug("objs %d\n", ret);
+  out:
+ 	return ret;
+ }
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index d74a890..749f30c 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -163,16 +163,23 @@ extern int restore_restart_block(struct ckpt_ctx *ctx);
+ extern int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t);
+ extern int checkpoint_obj_file_table(struct ckpt_ctx *ctx,
+ 				     struct task_struct *t);
++extern int restore_obj_file_table(struct ckpt_ctx *ctx, int files_objref);
+ extern int checkpoint_file_table(struct ckpt_ctx *ctx, void *ptr);
++extern void *restore_file_table(struct ckpt_ctx *ctx);
  
- retry:
-@@ -444,7 +444,9 @@ retry:
- 		return -ENOMEM;
- 
- 	mutex_lock(&allocated_ptys_lock);
--	ida_ret = ida_get_new(&fsi->allocated_ptys, &index);
-+	if (index == UNSPECIFIED_PTY_INDEX)
-+		index = 0;
-+	ida_ret = ida_get_new_above(&fsi->allocated_ptys, index, &index);
- 	if (ida_ret < 0) {
- 		mutex_unlock(&allocated_ptys_lock);
- 		if (ida_ret == -EAGAIN)
-@@ -452,6 +454,11 @@ retry:
- 		return -EIO;
- 	}
- 
-+	if (req_idx != UNSPECIFIED_PTY_INDEX && index != req_idx) {
-+		ida_remove(&fsi->allocated_ptys, index);
-+		mutex_unlock(&allocated_ptys_lock);
-+		return -EBUSY;
-+	}
- 	if (index >= pty_limit) {
- 		ida_remove(&fsi->allocated_ptys, index);
- 		mutex_unlock(&allocated_ptys_lock);
-diff --git a/include/linux/devpts_fs.h b/include/linux/devpts_fs.h
-index 5ce0e5f..163a70e 100644
---- a/include/linux/devpts_fs.h
-+++ b/include/linux/devpts_fs.h
-@@ -15,9 +15,13 @@
- 
- #include <linux/errno.h>
- 
-+#define UNSPECIFIED_PTY_INDEX -1
+ /* files */
+ extern int checkpoint_fname(struct ckpt_ctx *ctx,
+ 			    struct path *path, struct path *root);
++extern struct file *restore_open_fname(struct ckpt_ctx *ctx, int flags);
 +
- #ifdef CONFIG_UNIX98_PTYS
+ extern int ckpt_collect_file(struct ckpt_ctx *ctx, struct file *file);
+ extern int checkpoint_file(struct ckpt_ctx *ctx, void *ptr);
++extern void *restore_file(struct ckpt_ctx *ctx);
  
--int devpts_new_index(struct inode *ptmx_inode);
-+struct file *pty_open_by_index(char *ptmxpath, int index);
-+
-+int devpts_new_index(struct inode *ptmx_inode, int req_idx);
- void devpts_kill_index(struct inode *ptmx_inode, int idx);
- /* mknod in devpts */
- int devpts_pty_new(struct inode *ptmx_inode, struct tty_struct *tty);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 6abfcf5..7d77487 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -501,6 +501,8 @@ extern void tty_ldisc_begin(void);
- /* This last one is just for the tty layer internals and shouldn't be used elsewhere */
- extern void tty_ldisc_enable(struct tty_struct *tty);
+ extern int checkpoint_file_common(struct ckpt_ctx *ctx, struct file *file,
+ 				  struct ckpt_hdr_file *h);
++extern int restore_file_common(struct ckpt_ctx *ctx, struct file *file,
++			       struct ckpt_hdr_file *h);
  
-+/* This one is for ptmx_close() */
-+extern int tty_release(struct inode *inode, struct file *filp);
- 
- /* n_tty.c */
- extern struct tty_ldisc_ops tty_ldisc_N_TTY;
+ static inline int ckpt_validate_errno(int errno)
+ {
 -- 
 1.6.3.3
 
