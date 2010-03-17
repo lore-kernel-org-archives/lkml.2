@@ -1,43 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961Ab0CQEez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 00:34:55 -0400
-Received: from kroah.org ([198.145.64.141]:42573 "EHLO coco.kroah.org"
+	id S1753005Ab0CQEk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 00:40:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57501 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab0CQEex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 00:34:53 -0400
-Date: Tue, 16 Mar 2010 21:30:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Crane Cai <crane.cai@amd.com>, Alex Chiang <achiang@hp.com>,
-       sarah.a.sharp@linux.intel.com, linux-usb@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] USB: xhci: rename driver to xhci_hcd
-Message-ID: <20100317043006.GC21125@kroah.com>
-References: <20100316204845.GJ8278@ldl.fc.hp.com> <20100317022228.GB2138@crane-desktop>
+	id S1752670Ab0CQEk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 00:40:58 -0400
+Date: Tue, 16 Mar 2010 21:39:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: Christopher Hoover <ch@murgatroid.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Patch for B&B Electronics USPLT4-LS
+Message-ID: <20100317043910.GA21532@suse.de>
+References: <4BA03A1A.50204@murgatroid.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100317022228.GB2138@crane-desktop>
+In-Reply-To: <4BA03A1A.50204@murgatroid.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 10:22:28AM +0800, Crane Cai wrote:
-> On Tue, Mar 16, 2010 at 02:48:45PM -0600, Alex Chiang wrote:
-> > Naming consistency with other USB HCDs.
-> 
-> I don't know the value of this changes. 
-> I think we do not need to make this change, only make xhci.ko to
-> xhci-hcd.ko.
+On Tue, Mar 16, 2010 at 07:10:34PM -0700, Christopher Hoover wrote:
+> Adds support for B&B Electronics USPLT4-LS.
 
-It makes things consistant.
+Can you resend this with a "Signed-off-by:" line so that I can apply the
+patch?  The file, Documentation/SubmittingPatches shows what is needed
+here.
 
-> Any way this depends on Sarah.
+> diff --exclude='*~' -Naur linux-2.6.30.orig/drivers/usb/serial/ftdi_sio.c linux-2.6.30/drivers/usb/serial/ftdi_sio.c
 
-As the patch noted, Sarah asked for this change :)
-
-It's now in my tree.
+Can you make the patch against 2.6.33 or even 2.6.34-rc1 if possible?
+The code in this area has changed so you will have to move your patch
+around a bit.
 
 thanks,
 
