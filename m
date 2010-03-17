@@ -1,126 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab0CQQ0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:26:06 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37540 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab0CQQOt (ORCPT
+	id S1755842Ab0CQQ2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:28:51 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:57274 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755804Ab0CQQ2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:49 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 45/96] c/r: add generic '->checkpoint()' f_op to simple devices
-Date: Wed, 17 Mar 2010 12:08:33 -0400
-Message-Id: <1268842164-5590-46-git-send-email-orenl@cs.columbia.edu>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-30-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-33-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-34-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-35-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-43-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-44-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
-X-No-Spam-Score: Local
+	Wed, 17 Mar 2010 12:28:47 -0400
+Date: Wed, 17 Mar 2010 16:27:12 +0000
+From: Chris Webb <chris@arachsys.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+ parameter
+Message-ID: <20100317162711.GK1997@arachsys.com>
+References: <20100315072214.GA18054@balbir.in.ibm.com>
+ <4B9DE635.8030208@redhat.com>
+ <20100315080726.GB18054@balbir.in.ibm.com>
+ <4B9DEF81.6020802@redhat.com>
+ <20100315202353.GJ3840@arachsys.com>
+ <4B9EC60A.2070101@codemonkey.ws>
+ <20100317151409.GY31148@arachsys.com>
+ <4BA0FB83.1010502@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA0FB83.1010502@codemonkey.ws>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* /dev/null
-* /dev/zero
-* /dev/random
-* /dev/urandom
+Anthony Liguori <anthony@codemonkey.ws> writes:
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
----
- drivers/char/mem.c    |    2 ++
- drivers/char/random.c |    2 ++
- 2 files changed, 4 insertions(+), 0 deletions(-)
+> On 03/17/2010 10:14 AM, Chris Webb wrote:
+> >   (c) installations that are already broken and lose data with a physical
+> >       drive with a write-cache can lose much more in this case because the
+> >       write cache is much bigger?
+> 
+> This is the closest to the most accurate.
+> 
+> It basically boils down to this: most enterprises use a disks with
+> battery backed write caches.  Having the host act as a giant write
+> cache means that you can lose data.
+> 
+> I agree that a well behaved file system will not become corrupt, but
+> my contention is that for many types of applications, data lose ==
+> corruption and not all file systems are well behaved.  And it's
+> certainly valid to argue about whether common filesystems are
+> "broken" but from a purely pragmatic perspective, this is going to
+> be the case.
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 48788db..57e3443 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -763,6 +763,7 @@ static const struct file_operations null_fops = {
- 	.read		= read_null,
- 	.write		= write_null,
- 	.splice_write	= splice_write_null,
-+	.checkpoint	= generic_file_checkpoint,
- };
- 
- #ifdef CONFIG_DEVPORT
-@@ -779,6 +780,7 @@ static const struct file_operations zero_fops = {
- 	.read		= read_zero,
- 	.write		= write_zero,
- 	.mmap		= mmap_zero,
-+	.checkpoint	= generic_file_checkpoint,
- };
- 
- /*
-diff --git a/drivers/char/random.c b/drivers/char/random.c
-index 2849713..c082789 100644
---- a/drivers/char/random.c
-+++ b/drivers/char/random.c
-@@ -1169,6 +1169,7 @@ const struct file_operations random_fops = {
- 	.poll  = random_poll,
- 	.unlocked_ioctl = random_ioctl,
- 	.fasync = random_fasync,
-+	.checkpoint = generic_file_checkpoint,
- };
- 
- const struct file_operations urandom_fops = {
-@@ -1176,6 +1177,7 @@ const struct file_operations urandom_fops = {
- 	.write = random_write,
- 	.unlocked_ioctl = random_ioctl,
- 	.fasync = random_fasync,
-+	.checkpoint = generic_file_checkpoint,
- };
- 
- /***************************************************************
--- 
-1.6.3.3
+Okay. What I was driving at in describing these systems as 'already broken'
+is that they will already lose data (in this sense) if they're run on bare
+metal with normal commodity SATA disks with their 32MB write caches on. That
+configuration surely describes the vast majority of PC-class desktops and
+servers!
 
+If I understand correctly, your point here is that the small cache on a real
+SATA drive gives a relatively small time window for data loss, whereas the
+worry with cache=writeback is that the host page cache can be gigabytes, so
+the time window for unsynced data to be lost is potentially enormous.
+
+Isn't the fix for that just forcing periodic sync on the host to bound-above
+the time window for unsynced data loss in the guest?
+
+Cheers,
+
+Chris.
