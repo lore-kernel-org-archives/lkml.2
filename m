@@ -1,146 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab0CQQNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:13:10 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37064 "EHLO
+	id S1754265Ab0CQQNI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:13:08 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37059 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753422Ab0CQQNE (ORCPT
+	with ESMTP id S1754087Ab0CQQNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:13:04 -0400
+	Wed, 17 Mar 2010 12:13:01 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Subject: [C/R v20][PATCH 03/96] eclone (3/11): Define set_pidmap() function
-Date: Wed, 17 Mar 2010 12:07:51 -0400
-Message-Id: <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
+       Oren Laadan <orenl@cs.columbia.edu>, Matt Helsley <matthltc@us.ibm.com>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Cedric Le Goater <legoater@free.fr>
+Subject: [C/R v20][PATCH 18/96] cgroup freezer: interface to freeze a cgroup from within the kernel
+Date: Wed, 17 Mar 2010 12:08:06 -0400
+Message-Id: <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Add public interface to freeze a cgroup freezer given a task that
+belongs to that cgroup:  cgroup_freezer_make_frozen(task)
 
-Define a set_pidmap() interface which is like alloc_pidmap() only that
-caller specifies the pid number to be assigned.
+Freezing the root cgroup is not permitted. Freezing the cgroup to
+which current process belong is also not permitted.
 
-Changelog[v13]:
-	- Don't let do_alloc_pidmap return 0 if it failed to find a pid.
-Changelog[v9]:
-	- Completely rewrote this patch based on Eric Biederman's code.
-Changelog[v7]:
-        - [Eric Biederman] Generalize alloc_pidmap() to take a range of pids.
-Changelog[v6]:
-        - Separate target_pid > 0 case to minimize the number of checks needed.
-Changelog[v3]:
-        - (Eric Biederman): Avoid set_pidmap() function. Added couple of
-          checks for target_pid in alloc_pidmap() itself.
-Changelog[v2]:
-        - (Serge Hallyn) Check for 'pid < 0' in set_pidmap().(Code
-          actually checks for 'pid <= 0' for completeness).
+This will be used for restart(2) to be able to leave the restarted
+processes in a frozen state, instead of resuming execution.
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Reviewed-by: Oren Laadan <orenl@cs.columbia.edu>
+This is useful for debugging, if the user would like to attach a
+debugger to the restarted task(s).
+
+It is also useful if the restart procedure would like to perform
+additional setup once the tasks are restored but before they are
+allowed to proceed execution.
+
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+CC: Matt Helsley <matthltc@us.ibm.com>
+Cc: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Cedric Le Goater <legoater@free.fr>
 ---
- kernel/pid.c |   41 +++++++++++++++++++++++++++++++++--------
- 1 files changed, 33 insertions(+), 8 deletions(-)
+ include/linux/freezer.h |    1 +
+ kernel/cgroup_freezer.c |   27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 252babf..1f15bb6 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -146,17 +146,18 @@ static int alloc_pidmap_page(struct pidmap *map)
- 	return 0;
- }
- 
--static int alloc_pidmap(struct pid_namespace *pid_ns)
-+static int do_alloc_pidmap(struct pid_namespace *pid_ns, int last, int min,
-+		int max)
+diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+index 3d32641..0cb22cb 100644
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -68,6 +68,7 @@ extern int cgroup_freezing_or_frozen(struct task_struct *task);
+ extern int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q);
+ extern int cgroup_freezer_begin_checkpoint(struct task_struct *task);
+ extern void cgroup_freezer_end_checkpoint(struct task_struct *task);
++extern int cgroup_freezer_make_frozen(struct task_struct *task);
+ #else /* !CONFIG_CGROUP_FREEZER */
+ static inline int cgroup_freezing_or_frozen(struct task_struct *task)
  {
--	int i, offset, max_scan, pid, last = pid_ns->last_pid;
-+	int i, offset, max_scan, pid;
- 	struct pidmap *map;
- 
- 	pid = last + 1;
- 	if (pid >= pid_max)
--		pid = RESERVED_PIDS;
-+		pid = min;
- 	offset = pid & BITS_PER_PAGE_MASK;
- 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
--	max_scan = (pid_max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
-+	max_scan = (max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
- 	for (i = 0; i <= max_scan; ++i) {
- 		if (unlikely(!map->page))
- 			if (alloc_pidmap_page(map) < 0)
-@@ -165,7 +166,6 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 			do {
- 				if (!test_and_set_bit(offset, map->page)) {
- 					atomic_dec(&map->nr_free);
--					pid_ns->last_pid = pid;
- 					return pid;
- 				}
- 				offset = find_next_offset(map, offset);
-@@ -176,16 +176,16 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 			 * bitmap block and the final block was the same
- 			 * as the starting point, pid is before last_pid.
- 			 */
--			} while (offset < BITS_PER_PAGE && pid < pid_max &&
-+			} while (offset < BITS_PER_PAGE && pid < max &&
- 					(i != max_scan || pid < last ||
- 					    !((last+1) & BITS_PER_PAGE_MASK)));
- 		}
--		if (map < &pid_ns->pidmap[(pid_max-1)/BITS_PER_PAGE]) {
-+		if (map < &pid_ns->pidmap[(max-1)/BITS_PER_PAGE]) {
- 			++map;
- 			offset = 0;
- 		} else {
- 			map = &pid_ns->pidmap[0];
--			offset = RESERVED_PIDS;
-+			offset = min;
- 			if (unlikely(last == offset))
- 				break;
- 		}
-@@ -194,6 +194,31 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
- 	return -EBUSY;
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index dd87010..efd4597 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -479,4 +479,31 @@ void cgroup_freezer_end_checkpoint(struct task_struct *task)
+ 	 */
+ 	WARN_ON(freezer_checkpointing(task, CGROUP_FROZEN) != CGROUP_CHECKPOINTING);
  }
- 
-+static int alloc_pidmap(struct pid_namespace *pid_ns)
++
++int cgroup_freezer_make_frozen(struct task_struct *task)
 +{
-+	int nr;
++	struct freezer *freezer;
++	struct cgroup_subsys_state *css;
++	int ret = -ENODEV;
 +
-+	nr = do_alloc_pidmap(pid_ns, pid_ns->last_pid, RESERVED_PIDS, pid_max);
-+	if (nr >= 0)
-+		pid_ns->last_pid = nr;
-+	return nr;
++	task_lock(task);
++	css = task_subsys_state(task, freezer_subsys_id);
++	css_get(css); /* make sure freezer doesn't go away */
++	freezer = container_of(css, struct freezer, css);
++	task_unlock(task);
++
++	/* Never freeze the root cgroup */
++	if (!test_bit(CSS_ROOT, &css->flags) &&
++	    cgroup_lock_live_group(css->cgroup)) {
++		/* do not freeze outselves, ei ?! */
++		if (css != task_subsys_state(current, freezer_subsys_id))
++			ret = freezer_change_state(css->cgroup, CGROUP_FROZEN);
++		else
++			ret = -EPERM;
++		cgroup_unlock();
++	}
++
++	css_put(css);
++	return ret;
 +}
-+
-+static int set_pidmap(struct pid_namespace *pid_ns, int target)
-+{
-+	if (!target)
-+		return alloc_pidmap(pid_ns);
-+
-+	if (target >= pid_max)
-+		return -EINVAL;
-+
-+	if ((target < 0) || (target < RESERVED_PIDS &&
-+				pid_ns->last_pid >= RESERVED_PIDS))
-+		return -EINVAL;
-+
-+	return do_alloc_pidmap(pid_ns, target - 1, target, target + 1);
-+}
-+
- int next_pidmap(struct pid_namespace *pid_ns, int last)
- {
- 	int offset;
+ #endif /* CONFIG_CHECKPOINT */
 -- 
 1.6.3.3
 
