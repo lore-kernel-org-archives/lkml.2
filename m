@@ -1,115 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0CQWsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:48:36 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:19382 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756221Ab0CQWse (ORCPT
+	id S1755896Ab0CQWwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:52:11 -0400
+Received: from trinity.develer.com ([83.149.158.210]:39759 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0CQWwJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:48:34 -0400
-Subject: Re: [LKML] Re: [LKML] Re: swiotlb detection should be memory
-	hotplug aware ?
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "ak@linux.intel.com" <ak@linux.intel.com>,
-       "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Petr Vandrovec <petr@vmware.com>
-In-Reply-To: <20100316124556.GA25340@phenom.dumpdata.com>
-References: <1268446032.13691.69.camel@ank32>
-	 <4B9B01F5.3000807@linux.intel.com>
-	 <20100316005140.GB7622@phenom.dumpdata.com>
-	 <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
-	 <20100316124556.GA25340@phenom.dumpdata.com>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Wed, 17 Mar 2010 15:48:33 -0700
-Message-Id: <1268866113.20507.26.camel@ank32>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Mar 2010 18:52:09 -0400
+Date: Wed, 17 Mar 2010 23:52:03 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 4/5] memcg: dirty pages accounting and limiting
+ infrastructure
+Message-ID: <20100317225203.GD8467@linux.develer.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <1268609202-15581-5-git-send-email-arighi@develer.com>
+ <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 16, 2010 at 11:32:38AM +0900, Daisuke Nishimura wrote:
+[snip]
+> > @@ -3190,10 +3512,14 @@ struct {
+> >  } memcg_stat_strings[NR_MCS_STAT] = {
+> >  	{"cache", "total_cache"},
+> >  	{"rss", "total_rss"},
+> > -	{"mapped_file", "total_mapped_file"},
+> >  	{"pgpgin", "total_pgpgin"},
+> >  	{"pgpgout", "total_pgpgout"},
+> >  	{"swap", "total_swap"},
+> > +	{"mapped_file", "total_mapped_file"},
+> > +	{"filedirty", "dirty_pages"},
+> > +	{"writeback", "writeback_pages"},
+> > +	{"writeback_tmp", "writeback_temp_pages"},
+> > +	{"nfs", "nfs_unstable"},
+> >  	{"inactive_anon", "total_inactive_anon"},
+> >  	{"active_anon", "total_active_anon"},
+> >  	{"inactive_file", "total_inactive_file"},
+> Why not using "total_xxx" for total_name ?
 
-On Tue, 2010-03-16 at 05:45 -0700, Konrad Rzeszutek Wilk wrote:
-> On Tue, Mar 16, 2010 at 10:33:20AM +0900, FUJITA Tomonori wrote:
-> > On Mon, 15 Mar 2010 20:51:40 -0400
-> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > 
-> > > On Fri, Mar 12, 2010 at 07:09:41PM -0800, Andi Kleen wrote:
-> > > > , Alok Kataria wrote:
-> > > >
-> > > > Hi Alok,
-> > > >
-> > > >> Hi,
-> > > >>
-> > > >> Looking at the current code swiotlb is initialized for 64bit kernels
-> > > >> only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
-> > > >> So in cases when the initial memory is less than 4GB the kernel boots
-> > > >> without enabling swiotlb, when we hotadd memory to such a kernel and go
-> > > >> beyond the 4G limit, swiotlb is still disabled. As a result when any
-> > > >> 32bit devices start using this newly added memory beyond 4G, the kernel
-> > > >> starts spitting error messages like below or in some cases it causes
-> > > >> kernel panics.
-> > > >
-> > > > Yes seems like a real problem.
-> > > >
-> > > >>
-> > > >> 1. Enable swiotlb for all 64bit kernels which have memory hot-add
-> > > >> support.
-> > > >
-> > > > I don't think that's a good idea. It would enable it everywhere on
-> > > > distributions which compile with hotadd. Need (2)
-> > > >
-> > > >> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
-> > > >> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
-> > > >> value readily available. I could parse the SRAT and get hotplug memory
-> > > >> information but that will make swiotlb detection logic a little too
-> > > >> complex. A quick look around srat_xx.c files and the acpi_memhotplug
-> > > >> module didn't find any useful API that could be used directly either.
-> > > >> So was wondering if any of you are aware of an easy way to get such
-> > > >> information ?
-> > > >
-> > > > I have a patchkit to revamp the SRAT parsing to store the hotadd information
-> > > 
+Agreed. I would be definitely more clear. Balbir, KAME-san, what do you
+think?
 
-Andi...ping any pointers to the patchkit. 
-
-> > > There is a late mechanism to do kickoff the SWIOTLB. Perhaps the hot-add
-> > > could use swiotlb_init_late and start up the SWIOTLB?
-
-I don't see why we need to do this via late_init, swiotlb detection that
-happens through pci_swiotlb_detect, is already late enough that SRAT is
-already parsed. Or am I missing something ?
-> > 
-> > I guess that you are talking about
-> > swiotlb_late_init_with_default_size(), which IA64 uses. However, you
-> > can use swiotlb_late_init_with_default_size() only before we
-> > initialize devices. Making it work after initializing devices is not
-> > so easy, I think (that is, we need to change dma_ops).
-
-> That is a good point. Especially if we have some outstanding DMA pages
-> allocated via dma_alloc_coherent.
 > 
-> I thought that the machines that have hot-add memory they have their
-> own fancy IOMMU. For example the IBM x3955 (and its family) utilize the
-> Calgary IOMMU. The HP boxes utilize the Intel VT-D (or the AMD
-> equivalant).
-> So is this mostly specialized in the areas of virtualized guests? (Xen
-> PV guests with PCI passthrough suffer the same problem, btw).
+> > @@ -3212,8 +3538,6 @@ static int mem_cgroup_get_local_stat(struct mem_cgroup *mem, void *data)
+> >  	s->stat[MCS_CACHE] += val * PAGE_SIZE;
+> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
+> >  	s->stat[MCS_RSS] += val * PAGE_SIZE;
+> > -	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
+> > -	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
+> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
+> >  	s->stat[MCS_PGPGIN] += val;
+> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGOUT_COUNT);
+> > @@ -3222,6 +3546,16 @@ static int mem_cgroup_get_local_stat(struct mem_cgroup *mem, void *data)
+> >  		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
+> >  		s->stat[MCS_SWAP] += val * PAGE_SIZE;
+> >  	}
+> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
+> > +	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
+> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
+> > +	s->stat[MCS_FILE_DIRTY] += val;
+> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_WRITEBACK);
+> > +	s->stat[MCS_WRITEBACK] += val;
+> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_WRITEBACK_TEMP);
+> > +	s->stat[MCS_WRITEBACK_TEMP] += val;
+> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_UNSTABLE_NFS);
+> > +	s->stat[MCS_UNSTABLE_NFS] += val;
+> >  
+> I don't have a strong objection, but I prefer showing them in bytes.
+> And can you add to mem_cgroup_stat_show() something like:
+> 
+> 	for (i = 0; i < NR_MCS_STAT; i++) {
+> 		if (i == MCS_SWAP && !do_swap_account)
+> 			continue;
+> +		if (i >= MCS_FILE_STAT_STAR && i <= MCS_FILE_STAT_END &&
+> +		   mem_cgroup_is_root(mem_cont))
+> +			continue;
+> 		cb->fill(cb, memcg_stat_strings[i].local_name, mystat.stat[i]);
+> 	}
 
+I like this. And I also prefer to show these values in bytes.
 
-I am assuming that there were Intel based servers which supported memory
-hot-add before VT-d too. So, IMO this is not specialized to
-virtualization, though might be hard to prove if there are actual
-physical machines out there which have similar constraints (no HWIOMMU +
-MEMHOT add support)
+> 
+> not to show file stat in root cgroup ? It's meaningless value anyway.
+> Of course, you'd better mention it in [2/5] too.
+
+OK.
 
 Thanks,
-Alok
-
+-Andrea
