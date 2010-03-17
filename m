@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0CQE2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 00:28:19 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36018
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752932Ab0CQE2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 00:28:18 -0400
-Date: Tue, 16 Mar 2010 21:28:40 -0700 (PDT)
-Message-Id: <20100316.212840.211879050.davem@davemloft.net>
-To: jgunthorpe@obsidianresearch.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NET: Support clause 45 MDIO commands at the MDIO bus
- level
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100309191742.GB30462@obsidianresearch.com>
-References: <20100309191742.GB30462@obsidianresearch.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753078Ab0CQE3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 00:29:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53233 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752884Ab0CQE3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 00:29:12 -0400
+Message-ID: <4BA05A1C.3090001@cn.fujitsu.com>
+Date: Wed, 17 Mar 2010 12:27:08 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Avi Kivity <avi@redhat.com>, KVM list <kvm@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] KVM: cleanup kvm_get_dirty_log()
+References: <4BA05040.4000101@cn.fujitsu.com> <4BA05A92.7090102@oss.ntt.co.jp>
+In-Reply-To: <4BA05A92.7090102@oss.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Date: Tue, 9 Mar 2010 12:17:42 -0700
 
-> IEEE 802.3ae clause 45 specifies a somewhat modified MDIO protocol
-> for use by 10GIGE phys. The main change is a 21 bit address split into
-> a 5 bit device ID and a 16 bit register offset. The definition is designed
-> so that normal and extended devices can run on the same MDIO bus.
-> 
-> Extend mdio-bitbang to do the new protocol. At the MDIO bus level the
-> protocol is requested by or'ing MII_ADDR_C45 into the register offset.
-> 
-> Make phy_read/phy_write/etc pass a full 32 bit register offset.
-> 
-> This does not attempt to make the phy layer support C45 style PHYs, just
-> to provide the MDIO bus support.
-> 
-> Tested against a Broadcom 10GE phy with ID 0x206034, and several
-> Broadcom 10/100/1000 Phys in normal mode.
-> 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-Applied.
+Takuya Yoshikawa wrote:
+> Xiao Guangrong wrote:
+>> Using bitmap_empty() to see whether memslot->dirty_bitmap is empty
+>>
+> 
+> You can do this for arch specific get_dirty_log() too.
+
+OK, i'll do it in the next version
+
+> 
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+>> ---
+>>  virt/kvm/kvm_main.c |    6 ++----
+>>  1 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+>> index bcd08b8..497ae14 100644
+>> --- a/virt/kvm/kvm_main.c
+>> +++ b/virt/kvm/kvm_main.c
+>> @@ -767,8 +767,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
+>>              struct kvm_dirty_log *log, int *is_dirty)
+>>  {
+>>      struct kvm_memory_slot *memslot;
+>> -    int r, i;
+>> -    int n;
+>> +    int r, n;
+>>      unsigned long any = 0;
+> 
+> any is no longer need to be unsigned long, if you do this?
+
+Yeah, right, thanks for you point out.
+
+Xiao
