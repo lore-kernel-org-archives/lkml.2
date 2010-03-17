@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab0CQQSH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:18:07 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38299 "EHLO
+	id S1755329Ab0CQQTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:19:30 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:38633 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab0CQQR7 (ORCPT
+	with ESMTP id S1754953Ab0CQQTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:17:59 -0400
+	Wed, 17 Mar 2010 12:19:23 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 54/96] c/r: make ckpt_may_checkpoint_task() check each namespace individually
-Date: Wed, 17 Mar 2010 12:08:42 -0400
-Message-Id: <1268842164-5590-55-git-send-email-orenl@cs.columbia.edu>
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org
+Subject: [C/R v20][PATCH 64/96] c/r: capabilities: define checkpoint and restore fns
+Date: Wed, 17 Mar 2010 12:08:52 -0400
+Message-Id: <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-54-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -72,466 +71,344 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-52-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-53-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-54-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-55-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-56-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-58-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For a given namespace type, say XXX, if a checkpoint was taken on a
-CONFIG_XXX_NS system, is restarted on a !CONFIG_XXX_NS, then ensure
-that:
+From: Serge E. Hallyn <serue@us.ibm.com>
 
-1) The global settings of the global (init) namespace do not get
-overwritten. Creating new objects in that namespace is ok, as long as
-the request identifier is available.
+[ Andrew: I am punting on dealing with the subsystem cooperation
+issues in this version, in favor of trying to get LSM issues
+straightened out ]
 
-2) All restarting tasks use a single namespace - because it is
-impossible to create additional namespaces to accommodate for what had
-been checkpointed.
+An application checkpoint image will store capability sets
+(and the bounding set) as __u64s.  Define checkpoint and
+restart functions to translate between those and kernel_cap_t's.
 
-Original patch introducing nsproxy c/r by Dan Smith <danms@us.ibm.com>
+Define a common function do_capset_tocred() which applies capability
+set changes to a passed-in struct cred.
 
-Chagnelog[v19]:
-  - Restart to handle checkpoint images lacking {uts,ipc}-ns
-Chagnelog[v19-rc1]:
+The restore function uses do_capset_tocred() to apply the restored
+capabilities to the struct cred being crafted, subject to the
+current task's (task executing sys_restart()) permissions.
+
+Changlog [v19-rc1]:
   - [Matt Helsley] Add cpp definitions for enums
-Chagnelog[v18]:
-  - Add a few more ckpt_write_err()s
-Chagnelog[v17]:
-  - Only collect sub-objects of struct_nsproxy once.
-  - Restore namespace pieces directly instead of using sys_unshare()
-  - Proper handling of restart from namespace(s) without namespace(s)
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Changelog:
+	Jun 09: Can't choose securebits or drop bounding set if
+		file capabilities aren't compiled into the kernel.
+		Also just store caps in __u32s (looks cleaner).
+	Jun 01: Made the checkpoint and restore functions and the
+		ckpt_hdr_capabilities struct more opaque to the
+		rest of the c/r code, as suggested by Andrew Morgan,
+		and using naming suggested by Oren.
+	Jun 01: Add commented BUILD_BUG_ON() to point out that the
+		current implementation depends on 64-bit capabilities.
+		(Andrew Morgan and Alexey Dobriyan).
+	May 28: add helpers to c/r securebits
+
+Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+Acked-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- checkpoint/checkpoint.c        |   29 +++++++++--
- checkpoint/objhash.c           |   28 ++++++++++
- checkpoint/process.c           |   81 +++++++++++++++++++++++++++++
- include/linux/checkpoint.h     |    5 ++
- include/linux/checkpoint_hdr.h |   16 ++++++
- kernel/nsproxy.c               |  110 ++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 265 insertions(+), 4 deletions(-)
+ include/linux/capability.h     |    6 ++
+ include/linux/checkpoint_hdr.h |   12 +++
+ kernel/capability.c            |  164 +++++++++++++++++++++++++++++++++++++---
+ security/commoncap.c           |   19 +----
+ 4 files changed, 173 insertions(+), 28 deletions(-)
 
-diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
-index fd88d5f..9bafb13 100644
---- a/checkpoint/checkpoint.c
-+++ b/checkpoint/checkpoint.c
-@@ -218,6 +218,8 @@ static int checkpoint_all_tasks(struct ckpt_ctx *ctx)
- static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct task_struct *root = ctx->root_task;
-+	struct nsproxy *nsproxy;
-+	int ret = 0;
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 39e5ff5..5abd86c 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -566,6 +566,12 @@ extern int capable(int cap);
+ struct dentry;
+ extern int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data *cpu_caps);
  
- 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
++struct cred;
++int apply_securebits(unsigned securebits, struct cred *new);
++struct ckpt_capabilities;
++int restore_capabilities(struct ckpt_capabilities *h, struct cred *new);
++void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred * cred);
++
+ #endif /* __KERNEL__ */
  
-@@ -257,11 +259,30 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		return -EINVAL;
- 	}
- 
--	/* FIX: change this when namespaces are added */
--	if (task_nsproxy(t) != ctx->root_nsproxy)
--		return -EPERM;
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	if (nsproxy->uts_ns != ctx->root_nsproxy->uts_ns)
-+		ret = -EPERM;
-+	if (nsproxy->ipc_ns != ctx->root_nsproxy->ipc_ns)
-+		ret = -EPERM;
-+	/* no support for >1 private mntns */
-+	if (nsproxy->mnt_ns != ctx->root_nsproxy->mnt_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested mnt_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	/* no support for >1 private netns */
-+	if (nsproxy->net_ns != ctx->root_nsproxy->net_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	/* no support for >1 private pidns */
-+	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
-+		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
-+		ret = -EPERM;
-+	}
-+	rcu_read_unlock();
- 
--	return 0;
-+	return ret;
- }
- 
- #define CKPT_HDR_PIDS_CHUNK	256
-diff --git a/checkpoint/objhash.c b/checkpoint/objhash.c
-index 8c8e622..4368e7b 100644
---- a/checkpoint/objhash.c
-+++ b/checkpoint/objhash.c
-@@ -122,6 +122,22 @@ static int obj_mm_users(void *ptr)
- 	return atomic_read(&((struct mm_struct *) ptr)->mm_users);
- }
- 
-+static int obj_ns_grab(void *ptr)
-+{
-+	get_nsproxy((struct nsproxy *) ptr);
-+	return 0;
-+}
-+
-+static void obj_ns_drop(void *ptr, int lastref)
-+{
-+	put_nsproxy((struct nsproxy *) ptr);
-+}
-+
-+static int obj_ns_users(void *ptr)
-+{
-+	return atomic_read(&((struct nsproxy *) ptr)->count);
-+}
-+
- static struct ckpt_obj_ops ckpt_obj_ops[] = {
- 	/* ignored object */
- 	{
-@@ -167,6 +183,16 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
- 		.checkpoint = checkpoint_mm,
- 		.restore = restore_mm,
- 	},
-+	/* ns object */
-+	{
-+		.obj_name = "NSPROXY",
-+		.obj_type = CKPT_OBJ_NS,
-+		.ref_drop = obj_ns_drop,
-+		.ref_grab = obj_ns_grab,
-+		.ref_users = obj_ns_users,
-+		.checkpoint = checkpoint_ns,
-+		.restore = restore_ns,
-+	},
- };
- 
- 
-@@ -579,6 +605,8 @@ int ckpt_obj_contained(struct ckpt_ctx *ctx)
- 	ckpt_obj_users_inc(ctx, ctx->file, 1);
- 	if (ctx->logfile)
- 		ckpt_obj_users_inc(ctx, ctx->logfile, 1);
-+	/* account for ctx->root_nsproxy (if in the table already) */
-+	ckpt_obj_users_inc(ctx, ctx->root_nsproxy, 1);
- 
- 	hlist_for_each_entry(obj, node, &ctx->obj_hash->list, next) {
- 		if (!obj->ops->ref_users)
-diff --git a/checkpoint/process.c b/checkpoint/process.c
-index 91999ee..961795f 100644
---- a/checkpoint/process.c
-+++ b/checkpoint/process.c
-@@ -12,6 +12,7 @@
- #define CKPT_DFLAG  CKPT_DSYS
- 
- #include <linux/sched.h>
-+#include <linux/nsproxy.h>
- #include <linux/posix-timers.h>
- #include <linux/futex.h>
- #include <linux/compat.h>
-@@ -104,6 +105,35 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
- 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
- }
- 
-+static int checkpoint_task_ns(struct ckpt_ctx *ctx, struct task_struct *t)
-+{
-+	struct ckpt_hdr_task_ns *h;
-+	struct nsproxy *nsproxy;
-+	int ns_objref;
-+	int ret;
-+
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	get_nsproxy(nsproxy);
-+	rcu_read_unlock();
-+
-+	ns_objref = checkpoint_obj(ctx, nsproxy, CKPT_OBJ_NS);
-+	put_nsproxy(nsproxy);
-+
-+	ckpt_debug("nsproxy: objref %d\n", ns_objref);
-+	if (ns_objref < 0)
-+		return ns_objref;
-+
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
-+	if (!h)
-+		return -ENOMEM;
-+	h->ns_objref = ns_objref;
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
-+
-+	return ret;
-+}
-+
- static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct ckpt_hdr_task_objs *h;
-@@ -111,6 +141,19 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
- 	int mm_objref;
- 	int ret;
- 
-+	/*
-+	 * Shared objects may have dependencies among them: task->mm
-+	 * depends on task->nsproxy (by ipc_ns). Therefore first save
-+	 * the namespaces, and then the remaining shared objects.
-+	 * During restart a task will already have its namespaces
-+	 * restored when it gets to restore, e.g. its memory.
-+	 */
-+
-+	ret = checkpoint_task_ns(ctx, t);
-+	ckpt_debug("ns: objref %d\n", ret);
-+	if (ret < 0)
-+		return ret;
-+
- 	files_objref = checkpoint_obj_file_table(ctx, t);
- 	ckpt_debug("files: objref %d\n", files_objref);
- 	if (files_objref < 0) {
-@@ -285,6 +328,9 @@ int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	int ret;
- 
-+	ret = ckpt_collect_ns(ctx, t);
-+	if (ret < 0)
-+		return ret;
- 	ret = ckpt_collect_file_table(ctx, t);
- 	if (ret < 0)
- 		return ret;
-@@ -360,11 +406,46 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
- 	return ret;
- }
- 
-+static int restore_task_ns(struct ckpt_ctx *ctx)
-+{
-+	struct ckpt_hdr_task_ns *h;
-+	struct nsproxy *nsproxy;
-+	int ret = 0;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_NS);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	nsproxy = ckpt_obj_fetch(ctx, h->ns_objref, CKPT_OBJ_NS);
-+	if (IS_ERR(nsproxy)) {
-+		ret = PTR_ERR(nsproxy);
-+		goto out;
-+	}
-+
-+	if (nsproxy != task_nsproxy(current)) {
-+		get_nsproxy(nsproxy);
-+		switch_task_namespaces(current, nsproxy);
-+	}
-+ out:
-+	ckpt_debug("nsproxy: ret %d (%p)\n", ret, task_nsproxy(current));
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-+
- static int restore_task_objs(struct ckpt_ctx *ctx)
- {
- 	struct ckpt_hdr_task_objs *h;
- 	int ret;
- 
-+	/*
-+	 * Namespaces come first, because ->mm depends on ->nsproxy,
-+	 * and because shared objects are restored before they are
-+	 * referenced. See comment in checkpoint_task_objs.
-+	 */
-+	ret = restore_task_ns(ctx);
-+	if (ret < 0)
-+		return ret;
-+
- 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index de17f9b..22cc8f6 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -164,6 +164,11 @@ extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
- 				    struct task_struct *t);
- extern int restore_restart_block(struct ckpt_ctx *ctx);
- 
-+/* namespaces */
-+extern int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t);
-+extern int checkpoint_ns(struct ckpt_ctx *ctx, void *ptr);
-+extern void *restore_ns(struct ckpt_ctx *ctx);
-+
- /* file table */
- extern int ckpt_collect_file_table(struct ckpt_ctx *ctx, struct task_struct *t);
- extern int checkpoint_obj_file_table(struct ckpt_ctx *ctx,
+ #endif /* !_LINUX_CAPABILITY_H */
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index fce35f3..7c43266 100644
+index 825f4cc..78557ec 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -71,6 +71,8 @@ enum {
- #define CKPT_HDR_TREE CKPT_HDR_TREE
- 	CKPT_HDR_TASK,
- #define CKPT_HDR_TASK CKPT_HDR_TASK
-+	CKPT_HDR_TASK_NS,
-+#define CKPT_HDR_TASK_NS CKPT_HDR_TASK_NS
- 	CKPT_HDR_TASK_OBJS,
- #define CKPT_HDR_TASK_OBJS CKPT_HDR_TASK_OBJS
- 	CKPT_HDR_RESTART_BLOCK,
-@@ -79,6 +81,8 @@ enum {
- #define CKPT_HDR_THREAD CKPT_HDR_THREAD
- 	CKPT_HDR_CPU,
- #define CKPT_HDR_CPU CKPT_HDR_CPU
-+	CKPT_HDR_NS,
-+#define CKPT_HDR_NS CKPT_HDR_NS
+@@ -85,6 +85,8 @@ enum {
+ #define CKPT_HDR_UTS_NS CKPT_HDR_UTS_NS
+ 	CKPT_HDR_IPC_NS,
+ #define CKPT_HDR_IPC_NS CKPT_HDR_IPC_NS
++	CKPT_HDR_CAPABILITIES,
++#define CKPT_HDR_CAPABILITIES CKPT_HDR_CAPABILITIES
  
  	/* 201-299: reserved for arch-dependent */
  
-@@ -136,6 +140,8 @@ enum obj_type {
- #define CKPT_OBJ_FILE CKPT_OBJ_FILE
- 	CKPT_OBJ_MM,
- #define CKPT_OBJ_MM CKPT_OBJ_MM
-+	CKPT_OBJ_NS,
-+#define CKPT_OBJ_NS CKPT_OBJ_NS
- 	CKPT_OBJ_MAX
- #define CKPT_OBJ_MAX CKPT_OBJ_MAX
- };
-@@ -220,6 +226,16 @@ struct ckpt_hdr_task {
+@@ -249,6 +251,16 @@ struct ckpt_hdr_task {
  	__u64 clear_child_tid;
  } __attribute__((aligned(8)));
  
-+/* namespaces */
-+struct ckpt_hdr_task_ns {
-+	struct ckpt_hdr h;
-+	__s32 ns_objref;
++/* Posix capabilities */
++struct ckpt_capabilities {
++	__u32 cap_i_0, cap_i_1; /* inheritable set */
++	__u32 cap_p_0, cap_p_1; /* permitted set */
++	__u32 cap_e_0, cap_e_1; /* effective set */
++	__u32 cap_b_0, cap_b_1; /* bounding set */
++	__u32 securebits;
++	__u32 padding;
 +} __attribute__((aligned(8)));
 +
-+struct ckpt_hdr_ns {
-+	struct ckpt_hdr h;
-+} __attribute__((aligned(8)));
-+
- /* task's shared resources */
- struct ckpt_hdr_task_objs {
+ /* namespaces */
+ struct ckpt_hdr_task_ns {
  	struct ckpt_hdr h;
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 09b4ff9..ccb4fd3 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -21,6 +21,7 @@
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 7f876e6..2cc66a7 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -14,6 +14,8 @@
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
  #include <linux/pid_namespace.h>
- #include <net/net_namespace.h>
- #include <linux/ipc_namespace.h>
++#include <linux/securebits.h>
 +#include <linux/checkpoint.h>
+ #include <asm/uaccess.h>
+ #include "cred-internals.h"
  
- static struct kmem_cache *nsproxy_cachep;
- 
-@@ -221,6 +222,115 @@ void exit_task_namespaces(struct task_struct *p)
- 	switch_task_namespaces(p, NULL);
+@@ -215,6 +217,45 @@ SYSCALL_DEFINE2(capget, cap_user_header_t, header, cap_user_data_t, dataptr)
+ 	return ret;
  }
  
-+#ifdef CONFIG_CHECKPOINT
-+int ckpt_collect_ns(struct ckpt_ctx *ctx, struct task_struct *t)
++static int do_capset_tocred(kernel_cap_t *effective, kernel_cap_t *inheritable,
++			kernel_cap_t *permitted, struct cred *new)
 +{
-+	struct nsproxy *nsproxy;
-+	int exists;
 +	int ret;
 +
-+	rcu_read_lock();
-+	nsproxy = task_nsproxy(t);
-+	if (nsproxy)
-+		get_nsproxy(nsproxy);
-+	rcu_read_unlock();
++	ret = security_capset(new, current_cred(),
++			      effective, inheritable, permitted);
++	if (ret < 0)
++		return ret;
 +
-+	if (!nsproxy)
-+		return 0;
++	/*
++	 * for checkpoint-restart, do we want to wait until end of restart?
++	 * not sure we care */
++	audit_log_capset(current->pid, new, current_cred());
 +
-+	/* if already exists, don't proceed inside the struct */
-+	exists = ckpt_obj_lookup(ctx, nsproxy, CKPT_OBJ_NS);
-+
-+	ret = ckpt_obj_collect(ctx, nsproxy, CKPT_OBJ_NS);
-+	if (ret < 0 || exists)
-+		goto out;
-+
-+	/* TODO: collect other namespaces here */
-+ out:
-+	put_nsproxy(nsproxy);
-+	return ret;
++	return 0;
 +}
 +
-+static int do_checkpoint_ns(struct ckpt_ctx *ctx, struct nsproxy *nsproxy)
++static int do_capset(kernel_cap_t *effective, kernel_cap_t *inheritable,
++			kernel_cap_t *permitted)
 +{
-+	struct ckpt_hdr_ns *h;
++	struct cred *new;
 +	int ret;
 +
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_NS);
-+	if (!h)
++	new = prepare_creds();
++	if (!new)
 +		return -ENOMEM;
 +
-+	/* TODO: Write other namespaces here */
++	ret = do_capset_tocred(effective, inheritable, permitted, new);
++	if (ret < 0)
++		goto error;
 +
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	ckpt_hdr_put(ctx, h);
++	return commit_creds(new);
++
++error:
++	abort_creds(new);
 +	return ret;
 +}
 +
-+
-+int checkpoint_ns(struct ckpt_ctx *ctx, void *ptr)
-+{
-+	return do_checkpoint_ns(ctx, (struct nsproxy *) ptr);
+ /**
+  * sys_capset - set capabilities for a process or (*) a group of processes
+  * @header: pointer to struct that contains capability version and
+@@ -238,7 +279,6 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
+ 	struct __user_cap_data_struct kdata[_KERNEL_CAPABILITY_U32S];
+ 	unsigned i, tocopy, copybytes;
+ 	kernel_cap_t inheritable, permitted, effective;
+-	struct cred *new;
+ 	int ret;
+ 	pid_t pid;
+ 
+@@ -272,23 +312,125 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
+ 		i++;
+ 	}
+ 
+-	new = prepare_creds();
+-	if (!new)
+-		return -ENOMEM;
++	return do_capset(&effective, &inheritable, &permitted);
+ 
+-	ret = security_capset(new, current_cred(),
+-			      &effective, &inheritable, &permitted);
 +}
 +
-+static struct nsproxy *do_restore_ns(struct ckpt_ctx *ctx)
++#ifdef CONFIG_SECURITY_FILE_CAPABILITIES
++int apply_securebits(unsigned securebits, struct cred *new)
 +{
-+	struct ckpt_hdr_ns *h;
-+	struct nsproxy *nsproxy = NULL;
-+	struct uts_namespace *uts_ns;
-+	struct ipc_namespace *ipc_ns;
-+	struct mnt_namespace *mnt_ns;
-+	struct net *net_ns;
-+	int ret = 0;
++	if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
++	     & (new->securebits ^ securebits))				/*[1]*/
++	    || ((new->securebits & SECURE_ALL_LOCKS & ~securebits))	/*[2]*/
++	    || (securebits & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
++	    || (cap_capable(current, current_cred(), CAP_SETPCAP,
++			    SECURITY_CAP_AUDIT) != 0)			/*[4]*/
++		/*
++		 * [1] no changing of bits that are locked
++		 * [2] no unlocking of locks
++		 * [3] no setting of unsupported bits
++		 * [4] doing anything requires privilege (go read about
++		 *     the "sendmail capabilities bug")
++		 */
++	    )
++		/* cannot change a locked bit */
++		return -EPERM;
++	new->securebits = securebits;
++	return 0;
++}
 +
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_NS);
-+	if (IS_ERR(h))
-+		return (struct nsproxy *) h;
++static void do_capbset_drop(struct cred *cred, int cap)
++{
++	cap_lower(cred->cap_bset, cap);
++}
 +
-+	uts_ns = ctx->root_nsproxy->uts_ns;
-+	ipc_ns = ctx->root_nsproxy->ipc_ns;
-+	mnt_ns = ctx->root_nsproxy->mnt_ns;
-+	net_ns = ctx->root_nsproxy->net_ns;
++static inline int restore_cap_bset(kernel_cap_t bset, struct cred *cred)
++{
++	int i, may_dropbcap = capable(CAP_SETPCAP);
 +
-+	if (uts_ns == current->nsproxy->uts_ns &&
-+	    ipc_ns == current->nsproxy->ipc_ns &&
-+	    mnt_ns == current->nsproxy->mnt_ns &&
-+	    net_ns == current->nsproxy->net_ns) {
-+		/* all xxx-ns are identical: reuse nsproxy */
-+		nsproxy = current->nsproxy;
-+		get_nsproxy(nsproxy);
-+	} else {
-+		nsproxy = create_nsproxy();
-+		if (!nsproxy) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+
-+		get_uts_ns(uts_ns);
-+		nsproxy->uts_ns = uts_ns;
-+		get_ipc_ns(ipc_ns);
-+		nsproxy->ipc_ns = ipc_ns;
-+		get_mnt_ns(mnt_ns);
-+		nsproxy->mnt_ns = mnt_ns;
-+		get_net(net_ns);
-+		nsproxy->net_ns = net_ns;
-+
-+		get_pid_ns(current->nsproxy->pid_ns);
-+		nsproxy->pid_ns = current->nsproxy->pid_ns;
++	for (i = 0; i < CAP_LAST_CAP; i++) {
++		if (cap_raised(bset, i))
++			continue;
++		if (!cap_raised(current_cred()->cap_bset, i))
++			continue;
++		if (!may_dropbcap)
++			return -EPERM;
++		do_capbset_drop(cred, i);
 +	}
-+ out:
-+	if (ret < 0)
-+		nsproxy = ERR_PTR(ret);
-+	ckpt_hdr_put(ctx, h);
-+	return nsproxy;
++
++	return 0;
 +}
 +
-+void *restore_ns(struct ckpt_ctx *ctx)
++#else /* CONFIG_SECURITY_FILE_CAPABILITIES */
++
++int apply_securebits(unsigned securebits, struct cred *new)
 +{
-+	return (void *) do_restore_ns(ctx);
++	/* settable securebits not supported */
++	return 0;
 +}
-+#endif /* CONFIG_CHECKPOINT */
 +
- static int __init nsproxy_cache_init(void)
- {
- 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
++static inline int restore_cap_bset(kernel_cap_t bset, struct cred *cred)
++{
++	/* bounding sets not supported */
++	return 0;
++}
++#endif /* CONFIG_SECURITY_FILE_CAPABILITIES */
++
++#ifdef CONFIG_CHECKPOINT
++static int do_restore_caps(struct ckpt_capabilities *h, struct cred *cred)
++{
++	kernel_cap_t effective, inheritable, permitted, bset;
++	int ret;
++
++	effective.cap[0] = h->cap_e_0;
++	effective.cap[1] = h->cap_e_1;
++	inheritable.cap[0] = h->cap_i_0;
++	inheritable.cap[1] = h->cap_i_1;
++	permitted.cap[0] = h->cap_p_0;
++	permitted.cap[1] = h->cap_p_1;
++	bset.cap[0] = h->cap_b_0;
++	bset.cap[1] = h->cap_b_1;
++
++	ret = do_capset_tocred(&effective, &inheritable, &permitted, cred);
+ 	if (ret < 0)
+-		goto error;
++		return ret;
+ 
+-	audit_log_capset(pid, new, current_cred());
++	ret = restore_cap_bset(bset, cred);
++	return ret;
++}
+ 
+-	return commit_creds(new);
++void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred * cred)
++{
++	BUILD_BUG_ON(CAP_LAST_CAP >= 64);
++	h->securebits = cred->securebits;
++	h->cap_i_0 = cred->cap_inheritable.cap[0];
++	h->cap_i_1 = cred->cap_inheritable.cap[1];
++	h->cap_p_0 = cred->cap_permitted.cap[0];
++	h->cap_p_1 = cred->cap_permitted.cap[1];
++	h->cap_e_0 = cred->cap_effective.cap[0];
++	h->cap_e_1 = cred->cap_effective.cap[1];
++	h->cap_b_0 = cred->cap_bset.cap[0];
++	h->cap_b_1 = cred->cap_bset.cap[1];
++}
++
++/*
++ * restore_capabilities: called by restore_creds() to set the
++ * restored capabilities (if permitted) in a new struct cred which
++ * will be attached at the end of the sys_restart().
++ * struct cred *new is prepared by caller (using prepare_creds())
++ * (and aborted by caller on error)
++ * return 0 on success, < 0 on error
++ */
++int restore_capabilities(struct ckpt_capabilities *h, struct cred *new)
++{
++	int ret = do_restore_caps(h, new);
++
++	if (!ret)
++		ret = apply_securebits(h->securebits, new);
+ 
+-error:
+-	abort_creds(new);
+ 	return ret;
+ }
++#endif /* CONFIG_CHECKPOINT */
+ 
+ /**
+  * capable - Determine if the current task has a superior capability in effect
+diff --git a/security/commoncap.c b/security/commoncap.c
+index f800fdb..86b3e23 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -827,24 +827,9 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 	 * capability-based-privilege environment.
+ 	 */
+ 	case PR_SET_SECUREBITS:
+-		error = -EPERM;
+-		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
+-		     & (new->securebits ^ arg2))			/*[1]*/
+-		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/
+-		    || (arg2 & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
+-		    || (cap_capable(current, current_cred(), CAP_SETPCAP,
+-				    SECURITY_CAP_AUDIT) != 0)		/*[4]*/
+-			/*
+-			 * [1] no changing of bits that are locked
+-			 * [2] no unlocking of locks
+-			 * [3] no setting of unsupported bits
+-			 * [4] doing anything requires privilege (go read about
+-			 *     the "sendmail capabilities bug")
+-			 */
+-		    )
+-			/* cannot change a locked bit */
++		error = apply_securebits(arg2, new);
++		if (error)
+ 			goto error;
+-		new->securebits = arg2;
+ 		goto changed;
+ 
+ 	case PR_GET_SECUREBITS:
 -- 
 1.6.3.3
 
