@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab0CQXrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:47:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45449 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753841Ab0CQXrS (ORCPT
+	id S1752941Ab0CQXw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 19:52:27 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35205 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751566Ab0CQXw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:47:18 -0400
-Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-In-Reply-To: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
-References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 00:47:11 +0100
-Message-ID: <1268869631.9440.282.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 17 Mar 2010 19:52:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hugh.dickins@tiscali.co.uk>, lee.schermerhorn@hp.com
+Subject: Re: [PATCH 3/5] tmpfs: handle MPOL_LOCAL mount option properly
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       kiran@scalex86.org, cl@linux-foundation.org, mel@csn.ul.ie,
+       stable@kernel.org, linux-mm <linux-mm@kvack.org>,
+       akpm@linux-foundation.org
+In-Reply-To: <alpine.LSU.2.00.1003171619410.29003@sister.anvils>
+References: <20100316145022.4C4E.A69D9226@jp.fujitsu.com> <alpine.LSU.2.00.1003171619410.29003@sister.anvils>
+Message-Id: <20100318084915.8723.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 18 Mar 2010 08:52:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 10:40 +0200, Stephane Eranian wrote:
-> 	On AMD processors, we need to allocate a data structure per Northbridge
-> 	to handle certain events.
+> On Tue, 16 Mar 2010, KOSAKI Motohiro wrote:
 > 
-> 	On CPU initialization, we need to query the Northbridge id and check
-> 	whether the structure is already allocated or not. We use the
-> 	amd_get_nb_id() function to request the Northbridge identification.
+> > commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
+> > shmem_sb_info) added mpol=local mount option. but its feature is
+> > broken since it was born. because such code always return 1 (i.e.
+> > mount failure).
+> > 
+> > This patch fixes it.
+> > 
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Ravikiran Thirumalai <kiran@scalex86.org>
 > 
-> 	The recent cleanup of the CPU online/offline initialization introduced
-> 	a bug. AMD cpu initialization is invoked on CPU_UP_PREPARE callback.
-> 	This is before the CPU Northbridge id is calculated. Therefore no
-> 	processor had a Northbridge structure allocated except the boot
-> 	processor. That was causing bogus NB event scheduling.
+> Thank you both for finding and fixing these mpol embarrassments.
 > 
-> 	This patch uses the CPU_ONLINE callback to initialize the AMD
-> 	Northbridge structure. This way amd_get_nb_id() returns valid
-> 	information.
-> 
-> 	The x86_cpu_up() callback was added. Could not call it cpu_online
-> 	because of existing macro.
-> 
-> 	Signed-off-by: Stephane Eranian <eranian@google.com>
+> But if this "mpol=local" feature was never documented (not even in the
+> commit log), has been broken since birth 20 months ago, and nobody has
+> noticed: wouldn't it be better to save a little bloat and just rip it out?
+
+I have no objection if lee agreed, lee?
+Of cource, if we agree it, we can make the new patch soon :)
 
 
-No, ONLINE is not exposed for a good reason, its always wrong.
-
-Use prepare to allocate data, and starting to initialize stuff on the
-cpu proper once its up. Online is after the cpu is up and running and we
-are already scheduling stuff on it so its too late to initialize things.
 
