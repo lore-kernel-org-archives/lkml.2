@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab0CQRxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 13:53:20 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59189 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab0CQRxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 13:53:18 -0400
-Date: Wed, 17 Mar 2010 18:53:11 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/rcu] rcu: Fix holdoff for accelerated GPs for last
- non-dynticked CPU
-Message-ID: <20100317175311.GA5187@elte.hu>
-References: <1267311188-16603-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <tip-622ea685f1fafdf84d612440535c84341f0860b8@git.kernel.org>
- <20100316110036.GA4554@elte.hu>
- <20100316110323.GA31038@elte.hu>
+	id S1755158Ab0CQRzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 13:55:24 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:61627 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754040Ab0CQRzW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 13:55:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=cDpE/VfE4ovwGSmN7lBGxPruvzWVY1mf4h39+Pp2uZI9xNsZ3bUcNCdlj92ZiUTw/
+	bFNruqHOG84MNsD2r7lDQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316110323.GA31038@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100317144249.GA3984@redhat.com>
+References: <20100317144249.GA3984@redhat.com>
+From: Laurent Chavey <chavey@google.com>
+Date: Wed, 17 Mar 2010 10:54:57 -0700
+Message-ID: <97949e3e1003171054q3bee27d5yce0d92ae33e5b5ca@mail.gmail.com>
+Subject: Re: [PATCH] vhost: fix error handling in vring ioctls
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Acked-by: chavey@google.com
 
-* Ingo Molnar <mingo@elte.hu> wrote:
 
-> incidentally i have a RCU badness crash log from another box:
-> 
-> [    4.573332] initcall ipmi_init_msghandler_mod+0x0/0xd returned 0 after 0 usecs                 
-> [    4.573332] calling  init_ipmi_si+0x0/0x435 @ 1
-> [    4.573332] IPMI System Interface driver.
-> [    4.573340]  [<ffffffff81022cdc>] no_context+0x1fc/0x20b
-> [    4.576672]  [<ffffffff81002a16>] ? ftrace_call+0x5/0x2b
-> [    4.580021]  [<ffffffff81022e77>] __bad_area_nosemaphore+0x18c/0x1af
-> [    4.583338]  [<ffffffff81002a16>] ? ftrace_call+0x5/0x2b
-> [    4.586672]  [<ffffffff81022ead>] bad_area_nosemaphore+0x13/0x15
-> [    4.590005]  [<ffffffff81023159>] do_page_fault+0x138/0x284
-> [    4.593354]  [<ffffffff81a632bf>] page_fault+0x1f/0x30
-
-I spent a few hours yesterday and today trying to track this down, but failed 
-to bisect it. The crash is sporadic on many configs - which confused my 
-bisection attempts. Sometimes it crashes only after 10 reboots. Was able to 
-crash v2.6.30 as well, so it's an older bug. v2.6.29 was not testable on that 
-box due to network driver problems so i stopped there.
-
-	Ingo
+On Wed, Mar 17, 2010 at 7:42 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> Stanse found a locking problem in vhost_set_vring:
+> several returns from VHOST_SET_VRING_KICK, VHOST_SET_VRING_CALL,
+> VHOST_SET_VRING_ERR with the vq->mutex held.
+> Fix these up.
+>
+> Reported-by: Jiri Slaby <jirislaby@gmail.com>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+>  drivers/vhost/vhost.c |   18 ++++++++++++------
+>  1 files changed, 12 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+> index 7cd55e0..7bd7a1e 100644
+> --- a/drivers/vhost/vhost.c
+> +++ b/drivers/vhost/vhost.c
+> @@ -476,8 +476,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+>                if (r < 0)
+>                        break;
+>                eventfp = f.fd == -1 ? NULL : eventfd_fget(f.fd);
+> -               if (IS_ERR(eventfp))
+> -                       return PTR_ERR(eventfp);
+> +               if (IS_ERR(eventfp)) {
+> +                       r = PTR_ERR(eventfp);
+> +                       break;
+> +               }
+>                if (eventfp != vq->kick) {
+>                        pollstop = filep = vq->kick;
+>                        pollstart = vq->kick = eventfp;
+> @@ -489,8 +491,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+>                if (r < 0)
+>                        break;
+>                eventfp = f.fd == -1 ? NULL : eventfd_fget(f.fd);
+> -               if (IS_ERR(eventfp))
+> -                       return PTR_ERR(eventfp);
+> +               if (IS_ERR(eventfp)) {
+> +                       r = PTR_ERR(eventfp);
+> +                       break;
+> +               }
+>                if (eventfp != vq->call) {
+>                        filep = vq->call;
+>                        ctx = vq->call_ctx;
+> @@ -505,8 +509,10 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+>                if (r < 0)
+>                        break;
+>                eventfp = f.fd == -1 ? NULL : eventfd_fget(f.fd);
+> -               if (IS_ERR(eventfp))
+> -                       return PTR_ERR(eventfp);
+> +               if (IS_ERR(eventfp)) {
+> +                       r = PTR_ERR(eventfp);
+> +                       break;
+> +               }
+>                if (eventfp != vq->error) {
+>                        filep = vq->error;
+>                        vq->error = eventfp;
+> --
+> 1.7.0.18.g0d53a5
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
