@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab0CQBoL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 21:44:11 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41084 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab0CQBoK (ORCPT
+	id S1751914Ab0CQBr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 21:47:56 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:44228 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab0CQBry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 21:44:10 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 01/11] mm,migration: Take a reference to the anon_vma before migrating
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1268412087-13536-2-git-send-email-mel@csn.ul.ie>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie> <1268412087-13536-2-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100317103434.4C8B.A69D9226@jp.fujitsu.com>
+	Tue, 16 Mar 2010 21:47:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=F+wj5mNoEmOkYjOUBbHcj1DTi9rihxga1PyAPCe2jDxalfhhtF5zXIC5J5yjaEtFx+
+         USCkkwfiCkWqm5aRI28wwFnIwc0rL6z3Xh31ew2JplWUKuVpK5aVozcZuI07cGFnzN6m
+         IsbkQO37qMmMBEZHB/9zmrG8EUv5IMhKRxFok=
+Date: Wed, 17 Mar 2010 02:47:56 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+	lock
+Message-ID: <20100317014755.GC5258@nowhere>
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 17 Mar 2010 10:44:06 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  rcu_unlock:
-> +
-> +	/* Drop an anon_vma reference if we took one */
-> +	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-> +		int empty = list_empty(&anon_vma->head);
-> +		spin_unlock(&anon_vma->lock);
-> +		if (empty)
-> +			anon_vma_free(anon_vma);
-> +	}
-> +
-
-Why don't we check ksm_refcount here? Also, why drop_anon_vma() doesn't
-need check migrate_refcount?
-
-plus, if we add this logic, we can remove SLAB_DESTROY_BY_RCU from 
-anon_vma_cachep and rcu_read_lock() from unmap_and_move(), I think.
-It is for preventing anon_vma recycle logic. but no free directly mean
-no memory recycle.
+On Sun, Mar 14, 2010 at 07:38:37PM +0900, Hitoshi Mitake wrote:
+> I implemented it on the branch perf/inject of Frederic's random-tracing tree.
+> Because the branch is hottest place of lock and tracing :)
 
 
+Ouch! You shouldn't do this. The patches inside were
+trials submitted for review and the resulting discussion
+concluded that the injection must be redesigned.
+
+More generally I don't recommend you to base your patches
+on my tree. I use it as a buffer when I send patches
+for review or for pull requests.
+
+The branches inside can be randomly rebased (unless a
+branch is waiting to be pulled) and they are pretty async
+with the -tip tree.
+
+The hottest and most sync tree on which you should base your patches
+for perf is:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
+	perf/core
+
+With that you have best chances to work on a sane and up-to-date
+base.
+
+Thanks.
 
