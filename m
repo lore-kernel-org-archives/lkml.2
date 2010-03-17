@@ -1,146 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab0CQPYk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:24:40 -0400
-Received: from rsk.demon.co.uk ([80.176.90.227]:45161 "EHLO castor.localdomain"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752161Ab0CQPYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:24:24 -0400
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org, jmm@debian.org,
-       mithlesh@linsyssoft.com
-Subject: [PATCH 1/3] staging wlan-ng: tidy up iw_handler
-Date: Wed, 17 Mar 2010 14:30:21 +0000
-Message-Id: <1268836223-31620-2-git-send-email-richard@rsk.demon.co.uk>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1268836223-31620-1-git-send-email-richard@rsk.demon.co.uk>
-References: <1268836223-31620-1-git-send-email-richard@rsk.demon.co.uk>
+	id S1752608Ab0CQPZF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:25:05 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:58190 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752356Ab0CQPZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 11:25:00 -0400
+Date: Wed, 17 Mar 2010 15:24:53 +0000
+From: Chris Webb <chris@arachsys.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+ parameter
+Message-ID: <20100317152452.GZ31148@arachsys.com>
+References: <20100315072214.GA18054@balbir.in.ibm.com>
+ <4B9DE635.8030208@redhat.com>
+ <20100315080726.GB18054@balbir.in.ibm.com>
+ <4B9DEF81.6020802@redhat.com>
+ <20100315202353.GJ3840@arachsys.com>
+ <4B9F4CBD.3020805@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4B9F4CBD.3020805@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use array initialisation technique copied from ipw2200.c.
+Avi Kivity <avi@redhat.com> writes:
 
-This should always get the function pointers in the correct place,
-without the needed for endless counting, skipping blanks etc.
+> On 03/15/2010 10:23 PM, Chris Webb wrote:
+>
+> >Wasteful duplication of page cache between guest and host notwithstanding,
+> >turning on cache=writeback is a spectacular performance win for our guests.
+> 
+> Is this with qcow2, raw file, or direct volume access?
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
----
- drivers/staging/wlan-ng/p80211wext.c |   98 ++++++++++++++-------------------
- 1 files changed, 42 insertions(+), 56 deletions(-)
+This is with direct access to logical volumes. No file systems or qcow2 in
+the stack. Our typical host has a couple of SATA disks, combined in md
+RAID1, chopped up into volumes with LVM2 (really just dm linear targets).
+The performance measured outside qemu is excellent, inside qemu-kvm is fine
+too until multiple guests are trying to access their drives at once, but
+then everything starts to grind badly.
 
-diff --git a/drivers/staging/wlan-ng/p80211wext.c b/drivers/staging/wlan-ng/p80211wext.c
-index 2fa1dfa..94d933c 100644
---- a/drivers/staging/wlan-ng/p80211wext.c
-+++ b/drivers/staging/wlan-ng/p80211wext.c
-@@ -1682,64 +1682,50 @@ static int p80211_wext_get_iwauth(struct net_device *dev,
- 	return result;
- }
- 
-+#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
-+
- static iw_handler p80211wext_handlers[] = {
--	(iw_handler) p80211wext_siwcommit,	/* SIOCSIWCOMMIT */
--	(iw_handler) p80211wext_giwname,	/* SIOCGIWNAME */
--	(iw_handler) NULL,	/* SIOCSIWNWID */
--	(iw_handler) NULL,	/* SIOCGIWNWID */
--	(iw_handler) p80211wext_siwfreq,	/* SIOCSIWFREQ */
--	(iw_handler) p80211wext_giwfreq,	/* SIOCGIWFREQ */
--	(iw_handler) p80211wext_siwmode,	/* SIOCSIWMODE */
--	(iw_handler) p80211wext_giwmode,	/* SIOCGIWMODE */
--	(iw_handler) NULL,	/* SIOCSIWSENS */
--	(iw_handler) NULL,	/* SIOCGIWSENS */
--	(iw_handler) NULL,	/* not used *//* SIOCSIWRANGE */
--	(iw_handler) p80211wext_giwrange,	/* SIOCGIWRANGE */
--	(iw_handler) NULL,	/* not used *//* SIOCSIWPRIV */
--	(iw_handler) NULL,	/* kernel code *//* SIOCGIWPRIV */
--	(iw_handler) NULL,	/* not used *//* SIOCSIWSTATS */
--	(iw_handler) NULL,	/* kernel code *//* SIOCGIWSTATS */
--	(iw_handler) p80211wext_siwspy,	/* SIOCSIWSPY */
--	(iw_handler) p80211wext_giwspy,	/* SIOCGIWSPY */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* SIOCSIWAP */
--	(iw_handler) p80211wext_giwap,	/* SIOCGIWAP */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* SIOCGIWAPLIST */
--	(iw_handler) p80211wext_siwscan,	/* SIOCSIWSCAN */
--	(iw_handler) p80211wext_giwscan,	/* SIOCGIWSCAN */
--	(iw_handler) p80211wext_siwessid,	/* SIOCSIWESSID */
--	(iw_handler) p80211wext_giwessid,	/* SIOCGIWESSID */
--	(iw_handler) NULL,	/* SIOCSIWNICKN */
--	(iw_handler) p80211wext_giwessid,	/* SIOCGIWNICKN */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* SIOCSIWRATE */
--	(iw_handler) p80211wext_giwrate,	/* SIOCGIWRATE */
--	(iw_handler) p80211wext_siwrts,	/* SIOCSIWRTS */
--	(iw_handler) p80211wext_giwrts,	/* SIOCGIWRTS */
--	(iw_handler) p80211wext_siwfrag,	/* SIOCSIWFRAG */
--	(iw_handler) p80211wext_giwfrag,	/* SIOCGIWFRAG */
--	(iw_handler) p80211wext_siwtxpow,	/* SIOCSIWTXPOW */
--	(iw_handler) p80211wext_giwtxpow,	/* SIOCGIWTXPOW */
--	(iw_handler) p80211wext_siwretry,	/* SIOCSIWRETRY */
--	(iw_handler) p80211wext_giwretry,	/* SIOCGIWRETRY */
--	(iw_handler) p80211wext_siwencode,	/* SIOCSIWENCODE */
--	(iw_handler) p80211wext_giwencode,	/* SIOCGIWENCODE */
--	(iw_handler) NULL,	/* SIOCSIWPOWER */
--	(iw_handler) NULL,	/* SIOCGIWPOWER */
-+	IW_IOCTL(SIOCSIWCOMMIT) = (iw_handler) p80211wext_siwcommit,
-+	IW_IOCTL(SIOCGIWNAME) = (iw_handler) p80211wext_giwname,
-+/* SIOCSIWNWID,SIOCGIWNWID */
-+	IW_IOCTL(SIOCSIWFREQ) = (iw_handler) p80211wext_siwfreq,
-+	IW_IOCTL(SIOCGIWFREQ) = (iw_handler) p80211wext_giwfreq,
-+	IW_IOCTL(SIOCSIWMODE) = (iw_handler) p80211wext_siwmode,
-+	IW_IOCTL(SIOCGIWMODE) = (iw_handler) p80211wext_giwmode,
-+/* SIOCSIWSENS,SIOCGIWSENS,SIOCSIWRANGE */
-+	IW_IOCTL(SIOCGIWRANGE) = (iw_handler) p80211wext_giwrange,
-+/* SIOCSIWPRIV,SIOCGIWPRIV,SIOCSIWSTATS,SIOCGIWSTATS */
-+	IW_IOCTL(SIOCSIWSPY) = (iw_handler) p80211wext_siwspy,
-+	IW_IOCTL(SIOCGIWSPY) = (iw_handler) p80211wext_giwspy,
-+/* SIOCSIWAP */
-+	IW_IOCTL(SIOCGIWAP) = (iw_handler) p80211wext_giwap,
-+/* SIOCGIWAPLIST */
-+	IW_IOCTL(SIOCSIWSCAN) = (iw_handler) p80211wext_siwscan,
-+	IW_IOCTL(SIOCGIWSCAN) = (iw_handler) p80211wext_giwscan,
-+	IW_IOCTL(SIOCSIWESSID) = (iw_handler) p80211wext_siwessid,
-+	IW_IOCTL(SIOCGIWESSID) = (iw_handler) p80211wext_giwessid,
-+/* SIOCSIWNICKN */
-+	IW_IOCTL(SIOCGIWNICKN) = (iw_handler) p80211wext_giwessid,
-+/* SIOCSIWRATE */
-+	IW_IOCTL(SIOCGIWRATE) = (iw_handler) p80211wext_giwrate,
-+	IW_IOCTL(SIOCSIWRTS) = (iw_handler) p80211wext_siwrts,
-+	IW_IOCTL(SIOCGIWRTS) = (iw_handler) p80211wext_giwrts,
-+	IW_IOCTL(SIOCSIWFRAG) = (iw_handler) p80211wext_siwfrag,
-+	IW_IOCTL(SIOCGIWFRAG) = (iw_handler) p80211wext_giwfrag,
-+	IW_IOCTL(SIOCSIWTXPOW) = (iw_handler) p80211wext_siwtxpow,
-+	IW_IOCTL(SIOCGIWTXPOW) = (iw_handler) p80211wext_giwtxpow,
-+	IW_IOCTL(SIOCSIWRETRY) = (iw_handler) p80211wext_siwretry,
-+	IW_IOCTL(SIOCGIWRETRY) = (iw_handler) p80211wext_giwretry,
-+	IW_IOCTL(SIOCSIWENCODE) = (iw_handler) p80211wext_siwencode,
-+	IW_IOCTL(SIOCGIWENCODE) = (iw_handler) p80211wext_giwencode,
-+/* SIOCSIWPOWER,SIOCGIWPOWER */
- /* WPA operations */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* -- hole -- */
--	(iw_handler) NULL,	/* SIOCSIWGENIE      set generic IE */
--	(iw_handler) NULL,	/* SIOCGIWGENIE      get generic IE */
--	(iw_handler) p80211_wext_set_iwauth,	/* SIOCSIWAUTH     set authentication mode params */
--	(iw_handler) p80211_wext_get_iwauth,	/* SIOCGIWAUTH     get authentication mode params */
--
--	(iw_handler) p80211wext_set_encodeext,	/* SIOCSIWENCODEEXT  set encoding token & mode */
--	(iw_handler) p80211wext_get_encodeext,	/* SIOCGIWENCODEEXT  get encoding token & mode */
--	(iw_handler) NULL,	/* SIOCSIWPMKSA      PMKSA cache operation */
-+/* SIOCSIWGENIE,SIOCGIWGENIE generic IE */
-+	IW_IOCTL(SIOCSIWAUTH) = (iw_handler) p80211_wext_set_iwauth, /*set authentication mode params */
-+	IW_IOCTL(SIOCGIWAUTH) = (iw_handler) p80211_wext_get_iwauth, /*get authentication mode params */
-+	IW_IOCTL(SIOCSIWENCODEEXT) = (iw_handler) p80211wext_set_encodeext, /*set encoding token & mode */
-+	IW_IOCTL(SIOCGIWENCODEEXT) = (iw_handler) p80211wext_get_encodeext, /*get encoding token & mode */
-+/* SIOCSIWPMKSA      PMKSA cache operation */
- };
- 
- struct iw_handler_def p80211wext_handler_def = {
--- 
-1.6.6.1
+> I can understand it for qcow2, but for direct volume access this
+> shouldn't happen.  The guest schedules as many writes as it can,
+> followed by a sync.  The host (and disk) can then reschedule them
+> whether they are in the writeback cache or in the block layer, and
+> must sync in the same way once completed.
 
+I don't really understand what's going on here, but I wonder if the
+underlying problem might be that all the O_DIRECT/O_SYNC writes from the
+guests go down into the same block device at the bottom of the device mapper
+stack, and thus can't be reordered with respect to one another. For our
+purposes,
+
+  Guest AA   Guest BB       Guest AA   Guest BB       Guest AA   Guest BB
+  write A1                  write A1                             write B1
+             write B1       write A2                  write A1
+  write A2                             write B1       write A2
+
+are all equivalent, but the system isn't allowed to reorder in this way
+because there isn't a separate request queue for each logical volume, just
+the one at the bottom. (I don't know whether nested request queues would
+behave remotely reasonably either, though!)
+
+Also, if my guest kernel issues (say) three small writes, one at the start
+of the disk, one in the middle, one at the end, and then does a flush, can
+virtio really express this as one non-contiguous O_DIRECT write (the three
+components of which can be reordered by the elevator with respect to one
+another) rather than three distinct O_DIRECT writes which can't be permuted?
+Can qemu issue a write like that? cache=writeback + flush allows this to be
+optimised by the block layer in the normal way.
+
+Cheers,
+
+Chris.
