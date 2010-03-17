@@ -1,74 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab0CQOiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 10:38:51 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42446 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753562Ab0CQOiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 10:38:50 -0400
-Date: Wed, 17 Mar 2010 10:38:48 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Jason Wessel <jason.wessel@windriver.com>
-cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
-       Oliver Neukum <oliver@neukum.org>
-Subject: Re: [PATCH 4/5] usb-hcd,usb-console: poll hcd device to force usb
- console writes
-In-Reply-To: <1268773546-12457-5-git-send-email-jason.wessel@windriver.com>
-Message-ID: <Pine.LNX.4.44L0.1003171031400.1734-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754526Ab0CQOlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 10:41:11 -0400
+Received: from rsk.demon.co.uk ([80.176.90.227]:34347 "EHLO castor.localdomain"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754320Ab0CQOlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 10:41:09 -0400
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] staging wlan-ng: tidy up iw_handler
+Date: Wed, 17 Mar 2010 14:40:55 +0000
+Message-Id: <1268836857-31738-2-git-send-email-richard@rsk.demon.co.uk>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1268836857-31738-1-git-send-email-richard@rsk.demon.co.uk>
+References: <1268836857-31738-1-git-send-email-richard@rsk.demon.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010, Jason Wessel wrote:
+Use array initialisation technique copied from ipw2200.c.
 
-> This patch tries to solve the problem that data is lost because there
-> are too many outstanding transmit urb's while trying to execute
-> printk's to a console.  The same is true if you try something like
-> "echo t > /proc/sysrq-trigger".
-> 
-> This patch takes the route of forcibly polling the hcd device to drain
-> the urb queue in order to initiate the bulk write call backs.  This
-> only happens if the device is a usb serial console device that sets
-> the max_in_flight_urbs to a non zero value in the serial device
-> structure.
-> 
-> A few millisecond penalty will get incurred to allow the hcd controller
-> to complete a write urb, else the console data is thrown away.
-> 
-> The max_in_flight_urbs was reduced in the usb_debug driver because it
-> is highly desired to push things out to the console in a timely
-> fashion and there is no need to have a queue that large for the
-> interrupt driven mode of operation when used through the tty
-> interface.
+This should always get the function pointers in the correct place,
+without the needed for endless counting, skipping blanks etc.
 
-> diff --git a/include/linux/usb.h b/include/linux/usb.h
-> index 8c9f053..a7d6cf7 100644
-> --- a/include/linux/usb.h
-> +++ b/include/linux/usb.h
-> @@ -569,6 +569,9 @@ static inline void usb_mark_last_busy(struct usb_device *udev)
->  
->  /*-------------------------------------------------------------------------*/
->  
-> +/* for polling the hcd device */
-> +extern void usb_poll_irq(struct usb_device *udev);
-> +
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+---
+ drivers/staging/wlan-ng/p80211wext.c |   98 ++++++++++++++-------------------
+ 1 files changed, 42 insertions(+), 56 deletions(-)
 
-The points Johan Hovold made about max_in_flight_urbs are well taken
-and they should be addressed before this patch is accepted.
-
-The parts about usb_poll_irq() are fine, although the comment above 
-should be changed to something more like:
-
-	/* for polling the device's host controller */
-
-since "hcd" is short for "host controller driver", and "polling the 
-host controller driver device" doesn't make much sense.  The same goes 
-for the comment in usb_do_console_write().
-
-Alan Stern
+diff --git a/drivers/staging/wlan-ng/p80211wext.c b/drivers/staging/wlan-ng/p80211wext.c
+index 2fa1dfa..94d933c 100644
+--- a/drivers/staging/wlan-ng/p80211wext.c
++++ b/drivers/staging/wlan-ng/p80211wext.c
+@@ -1682,64 +1682,50 @@ static int p80211_wext_get_iwauth(struct net_device *dev,
+ 	return result;
+ }
+ 
++#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
++
+ static iw_handler p80211wext_handlers[] = {
+-	(iw_handler) p80211wext_siwcommit,	/* SIOCSIWCOMMIT */
+-	(iw_handler) p80211wext_giwname,	/* SIOCGIWNAME */
+-	(iw_handler) NULL,	/* SIOCSIWNWID */
+-	(iw_handler) NULL,	/* SIOCGIWNWID */
+-	(iw_handler) p80211wext_siwfreq,	/* SIOCSIWFREQ */
+-	(iw_handler) p80211wext_giwfreq,	/* SIOCGIWFREQ */
+-	(iw_handler) p80211wext_siwmode,	/* SIOCSIWMODE */
+-	(iw_handler) p80211wext_giwmode,	/* SIOCGIWMODE */
+-	(iw_handler) NULL,	/* SIOCSIWSENS */
+-	(iw_handler) NULL,	/* SIOCGIWSENS */
+-	(iw_handler) NULL,	/* not used *//* SIOCSIWRANGE */
+-	(iw_handler) p80211wext_giwrange,	/* SIOCGIWRANGE */
+-	(iw_handler) NULL,	/* not used *//* SIOCSIWPRIV */
+-	(iw_handler) NULL,	/* kernel code *//* SIOCGIWPRIV */
+-	(iw_handler) NULL,	/* not used *//* SIOCSIWSTATS */
+-	(iw_handler) NULL,	/* kernel code *//* SIOCGIWSTATS */
+-	(iw_handler) p80211wext_siwspy,	/* SIOCSIWSPY */
+-	(iw_handler) p80211wext_giwspy,	/* SIOCGIWSPY */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* SIOCSIWAP */
+-	(iw_handler) p80211wext_giwap,	/* SIOCGIWAP */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* SIOCGIWAPLIST */
+-	(iw_handler) p80211wext_siwscan,	/* SIOCSIWSCAN */
+-	(iw_handler) p80211wext_giwscan,	/* SIOCGIWSCAN */
+-	(iw_handler) p80211wext_siwessid,	/* SIOCSIWESSID */
+-	(iw_handler) p80211wext_giwessid,	/* SIOCGIWESSID */
+-	(iw_handler) NULL,	/* SIOCSIWNICKN */
+-	(iw_handler) p80211wext_giwessid,	/* SIOCGIWNICKN */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* SIOCSIWRATE */
+-	(iw_handler) p80211wext_giwrate,	/* SIOCGIWRATE */
+-	(iw_handler) p80211wext_siwrts,	/* SIOCSIWRTS */
+-	(iw_handler) p80211wext_giwrts,	/* SIOCGIWRTS */
+-	(iw_handler) p80211wext_siwfrag,	/* SIOCSIWFRAG */
+-	(iw_handler) p80211wext_giwfrag,	/* SIOCGIWFRAG */
+-	(iw_handler) p80211wext_siwtxpow,	/* SIOCSIWTXPOW */
+-	(iw_handler) p80211wext_giwtxpow,	/* SIOCGIWTXPOW */
+-	(iw_handler) p80211wext_siwretry,	/* SIOCSIWRETRY */
+-	(iw_handler) p80211wext_giwretry,	/* SIOCGIWRETRY */
+-	(iw_handler) p80211wext_siwencode,	/* SIOCSIWENCODE */
+-	(iw_handler) p80211wext_giwencode,	/* SIOCGIWENCODE */
+-	(iw_handler) NULL,	/* SIOCSIWPOWER */
+-	(iw_handler) NULL,	/* SIOCGIWPOWER */
++	IW_IOCTL(SIOCSIWCOMMIT) = (iw_handler) p80211wext_siwcommit,
++	IW_IOCTL(SIOCGIWNAME) = (iw_handler) p80211wext_giwname,
++/* SIOCSIWNWID,SIOCGIWNWID */
++	IW_IOCTL(SIOCSIWFREQ) = (iw_handler) p80211wext_siwfreq,
++	IW_IOCTL(SIOCGIWFREQ) = (iw_handler) p80211wext_giwfreq,
++	IW_IOCTL(SIOCSIWMODE) = (iw_handler) p80211wext_siwmode,
++	IW_IOCTL(SIOCGIWMODE) = (iw_handler) p80211wext_giwmode,
++/* SIOCSIWSENS,SIOCGIWSENS,SIOCSIWRANGE */
++	IW_IOCTL(SIOCGIWRANGE) = (iw_handler) p80211wext_giwrange,
++/* SIOCSIWPRIV,SIOCGIWPRIV,SIOCSIWSTATS,SIOCGIWSTATS */
++	IW_IOCTL(SIOCSIWSPY) = (iw_handler) p80211wext_siwspy,
++	IW_IOCTL(SIOCGIWSPY) = (iw_handler) p80211wext_giwspy,
++/* SIOCSIWAP */
++	IW_IOCTL(SIOCGIWAP) = (iw_handler) p80211wext_giwap,
++/* SIOCGIWAPLIST */
++	IW_IOCTL(SIOCSIWSCAN) = (iw_handler) p80211wext_siwscan,
++	IW_IOCTL(SIOCGIWSCAN) = (iw_handler) p80211wext_giwscan,
++	IW_IOCTL(SIOCSIWESSID) = (iw_handler) p80211wext_siwessid,
++	IW_IOCTL(SIOCGIWESSID) = (iw_handler) p80211wext_giwessid,
++/* SIOCSIWNICKN */
++	IW_IOCTL(SIOCGIWNICKN) = (iw_handler) p80211wext_giwessid,
++/* SIOCSIWRATE */
++	IW_IOCTL(SIOCGIWRATE) = (iw_handler) p80211wext_giwrate,
++	IW_IOCTL(SIOCSIWRTS) = (iw_handler) p80211wext_siwrts,
++	IW_IOCTL(SIOCGIWRTS) = (iw_handler) p80211wext_giwrts,
++	IW_IOCTL(SIOCSIWFRAG) = (iw_handler) p80211wext_siwfrag,
++	IW_IOCTL(SIOCGIWFRAG) = (iw_handler) p80211wext_giwfrag,
++	IW_IOCTL(SIOCSIWTXPOW) = (iw_handler) p80211wext_siwtxpow,
++	IW_IOCTL(SIOCGIWTXPOW) = (iw_handler) p80211wext_giwtxpow,
++	IW_IOCTL(SIOCSIWRETRY) = (iw_handler) p80211wext_siwretry,
++	IW_IOCTL(SIOCGIWRETRY) = (iw_handler) p80211wext_giwretry,
++	IW_IOCTL(SIOCSIWENCODE) = (iw_handler) p80211wext_siwencode,
++	IW_IOCTL(SIOCGIWENCODE) = (iw_handler) p80211wext_giwencode,
++/* SIOCSIWPOWER,SIOCGIWPOWER */
+ /* WPA operations */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* -- hole -- */
+-	(iw_handler) NULL,	/* SIOCSIWGENIE      set generic IE */
+-	(iw_handler) NULL,	/* SIOCGIWGENIE      get generic IE */
+-	(iw_handler) p80211_wext_set_iwauth,	/* SIOCSIWAUTH     set authentication mode params */
+-	(iw_handler) p80211_wext_get_iwauth,	/* SIOCGIWAUTH     get authentication mode params */
+-
+-	(iw_handler) p80211wext_set_encodeext,	/* SIOCSIWENCODEEXT  set encoding token & mode */
+-	(iw_handler) p80211wext_get_encodeext,	/* SIOCGIWENCODEEXT  get encoding token & mode */
+-	(iw_handler) NULL,	/* SIOCSIWPMKSA      PMKSA cache operation */
++/* SIOCSIWGENIE,SIOCGIWGENIE generic IE */
++	IW_IOCTL(SIOCSIWAUTH) = (iw_handler) p80211_wext_set_iwauth, /*set authentication mode params */
++	IW_IOCTL(SIOCGIWAUTH) = (iw_handler) p80211_wext_get_iwauth, /*get authentication mode params */
++	IW_IOCTL(SIOCSIWENCODEEXT) = (iw_handler) p80211wext_set_encodeext, /*set encoding token & mode */
++	IW_IOCTL(SIOCGIWENCODEEXT) = (iw_handler) p80211wext_get_encodeext, /*get encoding token & mode */
++/* SIOCSIWPMKSA      PMKSA cache operation */
+ };
+ 
+ struct iw_handler_def p80211wext_handler_def = {
+-- 
+1.6.6.1
 
