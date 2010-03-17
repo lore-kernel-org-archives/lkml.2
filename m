@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336Ab0CQCIA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 22:08:00 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:32986 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab0CQCH6 (ORCPT
+	id S1752215Ab0CQCLY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 22:11:24 -0400
+Received: from hapkido.dreamhost.com ([66.33.216.122]:59623 "EHLO
+	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0CQCLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 22:07:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=M9zw+FUyhQ1dQzz3ZUzk+Fg3c5KRL5lgRgkQWM97Xv4A/RzvNuRBZXbIfCApCb5hTU
-         G6Vhhs3EoCWF7ySZrPR9oPt0P8rTRVFalN64ntimMq5GcJiOejtcRqbzLYqxEfyRKV4i
-         cPEpNvEzgoE3XqOLyYHmnjDdQ+X8B1feIE0Gs=
-Date: Wed, 17 Mar 2010 03:08:01 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       stable@kernel.org
-Subject: Re: [PATCH 5/5] tracing: Do not record user stack trace from NMI
-	context
-Message-ID: <20100317020759.GE5258@nowhere>
-References: <20100313025655.104950166@goodmis.org> <20100313025855.495916344@goodmis.org> <20100314102747.GB5140@nowhere> <1268585920.13400.14.camel@localhost>
+	Tue, 16 Mar 2010 22:11:23 -0400
+Message-ID: <4BA03A1A.50204@murgatroid.com>
+Date: Tue, 16 Mar 2010 19:10:34 -0700
+From: Christopher Hoover <ch@murgatroid.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.8) Gecko/20100227 Lightning/1.0b1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268585920.13400.14.camel@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Patch for B&B Electronics USPLT4-LS
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 14, 2010 at 12:58:40PM -0400, Steven Rostedt wrote:
-> On Sun, 2010-03-14 at 11:27 +0100, Frederic Weisbecker wrote:
-> 
-> > 
-> > Wow, that's a race :)
-> > 
-> > In perf this is dealt with a special copy_from_user_nmi()
-> > (see in arch/x86/kernel/cpu/perf_event.c)
-> > 
-> > May be save_stack_trace_user() should use that instead
-> > of a __copy_from_user_inatomic() based thing, just to
-> > cover such NMI corner race case.
-> > 
-> 
-> Yeah, we should move the __copy_from_user_nmi() out of the perf code and
-> into the normal uaccess code. Then we could do as you suggest, and have
-> the stack code do:
-> 
-> if (in_nmi())
-> 	__copy_from_user_nmi();
-> else
-> 	__copy_from_user_inatomic();
-> 
-> Or maybe it would be best to have the __copy_from_user_inatomic() handle
-> it.
+Adds support for B&B Electronics USPLT4-LS.
 
+Cheers,
+Christopher.
 
-Yeah, agreed.
+-ch
+ch@murgatroid.com
+
+diff --exclude='*~' -Naur linux-2.6.30.orig/drivers/usb/serial/ftdi_sio.c linux-2.6.30/drivers/usb/serial/ftdi_sio.c
+--- linux-2.6.30.orig/drivers/usb/serial/ftdi_sio.c	2009-06-09 20:05:27.000000000 -0700
++++ linux-2.6.30/drivers/usb/serial/ftdi_sio.c	2010-03-16 09:24:34.000000000 -0700
+@@ -587,6 +587,7 @@
+  	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+  	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+  	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
++	{ USB_DEVICE(BANDB_VID, BANDB_USPTL4LS_PID) },
+  	{ USB_DEVICE(FTDI_VID, EVER_ECO_PRO_CDS) },
+  	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_1_PID) },
+  	{ USB_DEVICE(FTDI_VID, FTDI_4N_GALAXY_DE_2_PID) },
+diff --exclude='*~' -Naur linux-2.6.30.orig/drivers/usb/serial/ftdi_sio.h linux-2.6.30/drivers/usb/serial/ftdi_sio.h
+--- linux-2.6.30.orig/drivers/usb/serial/ftdi_sio.h	2009-06-09 20:05:27.000000000 -0700
++++ linux-2.6.30/drivers/usb/serial/ftdi_sio.h	2010-03-16 09:24:05.000000000 -0700
+@@ -651,6 +651,7 @@
+  #define BANDB_USOTL4_PID	0xAC01	/* USOTL4 Isolated RS-485 Converter */
+  #define BANDB_USTL4_PID		0xAC02	/* USTL4 RS-485 Converter */
+  #define BANDB_USO9ML2_PID	0xAC03	/* USO9ML2 Isolated RS-232 Converter */
++#define BANDB_USPTL4LS_PID	0xAC12  /* USPTL4-LS RS-422/485 Adapter */
+
+  /*
+   * RM Michaelides CANview USB (http://www.rmcan.com)
+
 
