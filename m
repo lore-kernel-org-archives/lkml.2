@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab0CQROt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 13:14:49 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:40366 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab0CQROs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 13:14:48 -0400
-Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1003171134070.27268@router.home>
-References: <4B990496.4020002@kernel.org>
-	 <alpine.DEB.2.00.1003161107070.2311@router.home>
-	 <4BA00CE4.1090108@kernel.org>
-	 <alpine.DEB.2.00.1003171134070.27268@router.home>
-Content-Type: text/plain
-Organization: HP/LKTT
-Date: Wed, 17 Mar 2010 13:14:43 -0400
-Message-Id: <1268846083.4773.64.camel@useless.americas.hpqcorp.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+	id S1755318Ab0CQRPF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 13:15:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47656 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755255Ab0CQRPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 13:15:00 -0400
+Message-ID: <4BA10DCF.3050901@zytor.com>
+Date: Wed, 17 Mar 2010 10:13:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Ric Wheeler <rwheeler@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, James Bottomley <James.Bottomley@suse.de>,
+       Denys Vlasenko <vda.linux@googlemail.com>,
+       Arnd Bergmann <arnd@arndb.de>,
+       "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Daniel Taylor <Daniel.Taylor@wdc.com>, Jeff Garzik <jeff@garzik.org>,
+       Mark Lord <kernel@teksavvy.com>, tytso@mit.edu,
+       hirofumi@mail.parknet.co.jp, Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, irtiger@gmail.com,
+       Matthew Wilcox <matthew@wil.cx>, aschnell@suse.de, knikanth@suse.de
+Subject: Re: ATA 4 KiB sector issues.
+References: <6af388e7-e313-4212-86c8-30ffa327411c@email.android.com> <4BA0F057.7020909@redhat.com>
+In-Reply-To: <4BA0F057.7020909@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 11:34 -0500, Christoph Lameter wrote:
-> On Wed, 17 Mar 2010, Tejun Heo wrote:
-> 
-> > Hello,
-> >
-> > On 03/17/2010 01:16 AM, Christoph Lameter wrote:
-> > > On Thu, 11 Mar 2010, Tejun Heo wrote:
-> > >
-> > >> Lee Schermerhorn was trying to use percpu from slab.h and ran into a
-> > >> dependency loop.  percpu.h was using slab.h for UP inline
-> > >
-> > > Did something change there or does the description need an update?
-> >
-> > I don't find anything too wrong about the description?
-> 
-> "Lee Schermerhorn nwas trying to use percpu from slab.h and ..."
+On 03/17/2010 08:08 AM, Ric Wheeler wrote:
+> On 03/16/2010 06:21 PM, H. Peter Anvin wrote:
+>> The only reason I see to care about CHS at all is that there are
+>> systems in the field which can only boot from USB in CHS mode, and
+>> which often look at the MBR partition table to guess the geometry. Of
+>> course, some then *report* the detected geometry but don't *use* the
+>> detected geometry...
+>
+> These systems, given the changes in modern microsoft releases, must be
+> doomed even without any effort on our part.
+>
+> I still think that we should work to make this ancient stuff disappear &
+> help force the legacy edge cases to modernize. It has been some huge
+> amount of time since storage vendors pretty much abandoned CHS (15
+> years? 20?) :-)
+>
 
-Well, indirectly, I was including percpu.h in slab.h by way of
-gpf.h/topology.h.  Not actually what I was *trying* to do.
+I wish.  This is mostly systems from the first half of the 2000's 
+timeframe.  There was a *huge* regression when BIOS vendors started 
+doing USB boot; almost all of them introduced major bugs at that time; 
+in many cases they still haven't been fixed.
 
-s/from slab.h/from topology.h/ is the update Christoph is indicating.
-Right, Christoph?
-
-
-
-> 
-
+	-hpa
