@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0CQQdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:33:24 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37341 "EHLO
+	id S1755953Ab0CQQd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:33:27 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37328 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754119Ab0CQQOB (ORCPT
+	with ESMTP id S1753333Ab0CQQOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Mar 2010 12:14:01 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
@@ -13,11 +13,11 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 31/96] c/r: introduce PF_RESTARTING, and skip notification on exit
-Date: Wed, 17 Mar 2010 12:08:19 -0400
-Message-Id: <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 27/96] c/r: export functionality used in next patch for restart-blocks
+Date: Wed, 17 Mar 2010 12:08:15 -0400
+Message-Id: <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -45,107 +45,168 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-30-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To restore zombie's we will create the a task, that, on its turn to
-run, calls do_exit(). Unlike normal tasks that exit, we need to
-prevent notification side effects that send signals to other
-processes, e.g. parent (SIGCHLD) or child tasks (per child's request).
+To support c/r of restart-blocks (system call that need to be
+restarted because they were interrupted but there was no userspace
+visible side-effect), export restart-block callbacks for poll()
+and futex() syscalls.
 
-There are three main cases for such notifications:
-
-1) do_notify_parent(): parent of a process is notified about a change
- in status (e.g. become zombie, reparent, etc). If parent ignores,
- then mark child for immediate release (skip zombie).
-
-2) kill_orphan_pgrp(): a process group that becomes orphaned will
- signal stopped jobs (HUP then CONT).
-
-3) forget_original_parent(): children of a process are signaled (per
- request) with p->pdeath_signal
-
-Remember that restoring signal state (for any restarting task) must
-complete _before_ it is allowed to resume execution, and not during
-the resume. Otherwise, a running task may send a signal to another
-task that hasn't restored yet, so the new signal will be lost
-soon-after.
-
-I considered two possible way to address this:
-
-1. Add another sync point to restart: all tasks will first restore
-their state without signals (all signals blocked), and zombies call
-do_exit(). A sync point then will ensure that all zombies are gone and
-their effects done. Then all tasks restore their signal state (and
-mask), and sync (new point) again. Only then they may resume
-execution.
-The main disadvantage is the added complexity and inefficiency,
-for no good reason.
-
-2. Introduce PF_RESTARTING: mark all restarting tasks with a new flag,
-and teach the above three notifications to skip sending the signal if
-theis flag is set.
-The main advantage is simplicity and completeness. Also, such a flag
-may to be useful later on. This the method implemented.
-
-Changelog [ckpt-v19-rc3]:
-  - Rebase to kernel 2.6.33
-Changelog [ckpt-v19-rc1]:
-  - In reparent_thread() test for PF_RESTARTING on parent
+More details on c/r of restart-blocks and how it works in the
+following patch.
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- kernel/exit.c   |    6 +++++-
- kernel/signal.c |    4 ++++
- 2 files changed, 9 insertions(+), 1 deletions(-)
+ fs/select.c                  |    2 +-
+ include/linux/futex.h        |   11 +++++++++++
+ include/linux/poll.h         |    3 +++
+ include/linux/posix-timers.h |    6 ++++++
+ kernel/compat.c              |    4 ++--
+ kernel/futex.c               |   12 +-----------
+ kernel/posix-timers.c        |    2 +-
+ 7 files changed, 25 insertions(+), 15 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index f8eb8bb..576576a 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -300,6 +300,10 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
- 	struct pid *pgrp = task_pgrp(tsk);
- 	struct task_struct *ignored_task = tsk;
+diff --git a/fs/select.c b/fs/select.c
+index fd38ce2..7e3de2c 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -873,7 +873,7 @@ out_fds:
+ 	return err;
+ }
  
-+	/* restarting zombie doesn't trigger signals */
-+	if (tsk->flags & PF_RESTARTING)
-+		return;
-+
- 	if (!parent)
- 		 /* exit: our father is in a different pgrp than
- 		  * we are and we were the only connection outside.
-@@ -785,7 +789,7 @@ static void forget_original_parent(struct task_struct *father)
- 				BUG_ON(task_ptrace(t));
- 				t->parent = t->real_parent;
- 			}
--			if (t->pdeath_signal)
-+			if (t->pdeath_signal && !(t->flags & PF_RESTARTING))
- 				group_send_sig_info(t->pdeath_signal,
- 						    SEND_SIG_NOINFO, t);
- 		} while_each_thread(p, t);
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 934ae5e..ce8d404 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1432,6 +1432,10 @@ int do_notify_parent(struct task_struct *tsk, int sig)
- 	BUG_ON(!task_ptrace(tsk) &&
- 	       (tsk->group_leader != tsk || !thread_group_empty(tsk)));
+-static long do_restart_poll(struct restart_block *restart_block)
++long do_restart_poll(struct restart_block *restart_block)
+ {
+ 	struct pollfd __user *ufds = restart_block->poll.ufds;
+ 	int nfds = restart_block->poll.nfds;
+diff --git a/include/linux/futex.h b/include/linux/futex.h
+index 1e5a26d..ae755f6 100644
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -136,6 +136,17 @@ extern int
+ handle_futex_death(u32 __user *uaddr, struct task_struct *curr, int pi);
  
-+	/* restarting zombie doesn't notify parent */
-+	if (tsk->flags & PF_RESTARTING)
-+		return ret;
+ /*
++ * In case we must use restart_block to restart a futex_wait,
++ * we encode in the 'flags' shared capability
++ */
++#define FLAGS_SHARED		0x01
++#define FLAGS_CLOCKRT		0x02
++#define FLAGS_HAS_TIMEOUT	0x04
 +
- 	info.si_signo = sig;
- 	info.si_errno = 0;
- 	/*
++/* for c/r */
++extern long futex_wait_restart(struct restart_block *restart);
++
++/*
+  * Futexes are matched on equal values of this key.
+  * The key type depends on whether it's a shared or private mapping.
+  * Don't rearrange members without looking at hash_futex().
+diff --git a/include/linux/poll.h b/include/linux/poll.h
+index 6673743..6c40d42 100644
+--- a/include/linux/poll.h
++++ b/include/linux/poll.h
+@@ -134,6 +134,9 @@ extern int core_sys_select(int n, fd_set __user *inp, fd_set __user *outp,
+ 
+ extern int poll_select_set_timeout(struct timespec *to, long sec, long nsec);
+ 
++/* used by checkpoint/restart */
++extern long do_restart_poll(struct restart_block *restart_block);
++
+ #endif /* KERNEL */
+ 
+ #endif /* _LINUX_POLL_H */
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index 4f71bf4..d0d6a66 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -101,6 +101,10 @@ int posix_cpu_timer_create(struct k_itimer *timer);
+ int posix_cpu_nsleep(const clockid_t which_clock, int flags,
+ 		     struct timespec *rqtp, struct timespec __user *rmtp);
+ long posix_cpu_nsleep_restart(struct restart_block *restart_block);
++#ifdef CONFIG_COMPAT
++long compat_nanosleep_restart(struct restart_block *restart);
++long compat_clock_nanosleep_restart(struct restart_block *restart);
++#endif
+ int posix_cpu_timer_set(struct k_itimer *timer, int flags,
+ 			struct itimerspec *new, struct itimerspec *old);
+ int posix_cpu_timer_del(struct k_itimer *timer);
+@@ -119,4 +123,6 @@ long clock_nanosleep_restart(struct restart_block *restart_block);
+ 
+ void update_rlimit_cpu(unsigned long rlim_new);
+ 
++int invalid_clockid(const clockid_t which_clock);
++
+ #endif
+diff --git a/kernel/compat.c b/kernel/compat.c
+index f6c204f..20afdba 100644
+--- a/kernel/compat.c
++++ b/kernel/compat.c
+@@ -100,7 +100,7 @@ int put_compat_timespec(const struct timespec *ts, struct compat_timespec __user
+ 			__put_user(ts->tv_nsec, &cts->tv_nsec)) ? -EFAULT : 0;
+ }
+ 
+-static long compat_nanosleep_restart(struct restart_block *restart)
++long compat_nanosleep_restart(struct restart_block *restart)
+ {
+ 	struct compat_timespec __user *rmtp;
+ 	struct timespec rmt;
+@@ -647,7 +647,7 @@ long compat_sys_clock_getres(clockid_t which_clock,
+ 	return err;
+ }
+ 
+-static long compat_clock_nanosleep_restart(struct restart_block *restart)
++long compat_clock_nanosleep_restart(struct restart_block *restart)
+ {
+ 	long err;
+ 	mm_segment_t oldfs;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index e7a35f1..23419c9 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1593,16 +1593,6 @@ handle_fault:
+ 	goto retry;
+ }
+ 
+-/*
+- * In case we must use restart_block to restart a futex_wait,
+- * we encode in the 'flags' shared capability
+- */
+-#define FLAGS_SHARED		0x01
+-#define FLAGS_CLOCKRT		0x02
+-#define FLAGS_HAS_TIMEOUT	0x04
+-
+-static long futex_wait_restart(struct restart_block *restart);
+-
+ /**
+  * fixup_owner() - Post lock pi_state and corner case management
+  * @uaddr:	user address of the futex
+@@ -1876,7 +1866,7 @@ out:
+ }
+ 
+ 
+-static long futex_wait_restart(struct restart_block *restart)
++long futex_wait_restart(struct restart_block *restart)
+ {
+ 	u32 __user *uaddr = (u32 __user *)restart->futex.uaddr;
+ 	int fshared = 0;
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 4954407..86dcae4 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -211,7 +211,7 @@ static int no_nsleep(const clockid_t which_clock, int flags,
+ /*
+  * Return nonzero if we know a priori this clockid_t value is bogus.
+  */
+-static inline int invalid_clockid(const clockid_t which_clock)
++int invalid_clockid(const clockid_t which_clock)
+ {
+ 	if (which_clock < 0)	/* CPU clock, posix_cpu_* will check it */
+ 		return 0;
 -- 
 1.6.3.3
 
