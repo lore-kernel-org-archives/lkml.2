@@ -1,103 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab0CQQXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:23:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34671 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755437Ab0CQQWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:22:55 -0400
-Message-ID: <4BA101C5.9040406@redhat.com>
-Date: Wed, 17 Mar 2010 18:22:29 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Chris Webb <chris@arachsys.com>
-CC: balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100317152452.GZ31148@arachsys.com>
-In-Reply-To: <20100317152452.GZ31148@arachsys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755485Ab0CQQW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:22:59 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37658 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754921Ab0CQQPI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 12:15:08 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
+       Oren Laadan <orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 41/96] Introduce FOLL_DIRTY to follow_page() for "dirty" pages
+Date: Wed, 17 Mar 2010 12:08:29 -0400
+Message-Id: <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
+References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-30-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-33-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-34-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-35-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 05:24 PM, Chris Webb wrote:
-> Avi Kivity<avi@redhat.com>  writes:
->
->    
->> On 03/15/2010 10:23 PM, Chris Webb wrote:
->>
->>      
->>> Wasteful duplication of page cache between guest and host notwithstanding,
->>> turning on cache=writeback is a spectacular performance win for our guests.
->>>        
->> Is this with qcow2, raw file, or direct volume access?
->>      
-> This is with direct access to logical volumes. No file systems or qcow2 in
-> the stack. Our typical host has a couple of SATA disks, combined in md
-> RAID1, chopped up into volumes with LVM2 (really just dm linear targets).
-> The performance measured outside qemu is excellent, inside qemu-kvm is fine
-> too until multiple guests are trying to access their drives at once, but
-> then everything starts to grind badly.
->
->    
+This is a preparatory patch necessary for checkpoint/restart (next
+two patches) of memory to work correctly.
 
-OK.
+The patch introduces a new FOLL_DIRTY flag which tells follow_page()
+to return -EFAULT also for not-present file-backed pages.
 
->> I can understand it for qcow2, but for direct volume access this
->> shouldn't happen.  The guest schedules as many writes as it can,
->> followed by a sync.  The host (and disk) can then reschedule them
->> whether they are in the writeback cache or in the block layer, and
->> must sync in the same way once completed.
->>      
-> I don't really understand what's going on here, but I wonder if the
-> underlying problem might be that all the O_DIRECT/O_SYNC writes from the
-> guests go down into the same block device at the bottom of the device mapper
-> stack, and thus can't be reordered with respect to one another.
+In 2.6.32 follow_page() changes its behavior due to this commit:
+	mm: FOLL_DUMP replace FOLL_ANON
+ 	8e4b9a60718970bbc02dfd3abd0b956ab65af231
 
-They should be reorderable.  Otherwise host filesystems on several 
-volumes would suffer the same problems.
+Also introduce __get_dirty_page() that returns a page only if it's
+"dirty", that is that has been modified before, and otherwise returns
+NULL. It uses FOLL_DUMP | FOLL_DIRTY and converts the error value
+EFAULT to NULL - telling the caller that the page in question is
+clean.
 
-Whether the filesystem is in the host or guest shouldn't matter.
+(This also optimizes for checkpoint in the next patch: before, if a
+file-backed page was not-present we would first fault it in (read from
+disk) and then detect that it was virgin. Instead, now we detect that
+the page is clean earlier without needing to fault it in).
 
-> For our
-> purposes,
->
->    Guest AA   Guest BB       Guest AA   Guest BB       Guest AA   Guest BB
->    write A1                  write A1                             write B1
->               write B1       write A2                  write A1
->    write A2                             write B1       write A2
->
-> are all equivalent, but the system isn't allowed to reorder in this way
-> because there isn't a separate request queue for each logical volume, just
-> the one at the bottom. (I don't know whether nested request queues would
-> behave remotely reasonably either, though!)
->
-> Also, if my guest kernel issues (say) three small writes, one at the start
-> of the disk, one in the middle, one at the end, and then does a flush, can
-> virtio really express this as one non-contiguous O_DIRECT write (the three
-> components of which can be reordered by the elevator with respect to one
-> another) rather than three distinct O_DIRECT writes which can't be permuted?
-> Can qemu issue a write like that? cache=writeback + flush allows this to be
-> optimised by the block layer in the normal way.
->    
+To see why it's needed, consider these scenarios:
 
-Guest side virtio will send this as three requests followed by a flush.  
-Qemu will issue these as three distinct requests and then flush.  The 
-requests are marked, as Christoph says, in a way that limits their 
-reorderability, and perhaps if we fix these two problems performance 
-will improve.
+1. Task maps a file beyond it's limit, never touches those
+ extra page (if it did, it would get EFAULT/Bus error)
 
-Something that comes to mind is merging of flush requests.  If N guests 
-issue one write and one flush each, we should issue N writes and just 
-one flush - a flush for the disk applies to all volumes on that disk.
+2. Task maps a file and writes the last page, then the file gets
+ truncated (by at least a page). A subsequent access to the page will
+ cause bus error (VM_FAULT_SIGBUS).
 
+3. If the file size is extended back (using truncate) and the task
+ accesses that page, then the task will get a fresh page (losing data
+ it had written to that address before).
+
+[Before kernel 2.6.32, that page would become anonymous once it was
+dirtied, such that accesses in case #2 are valid, and in case #3 the
+task would see the old page regardless of the file contents.]
+
+--CHECKPOINT: before we used FOLL_ANON flags to tell follow_page() to
+return the zero-page for case#1. For case#2, the actual page was
+returned. Without this patch, In kernel 2.3.32, FOLL_DUMP would make
+follow_page() return NULL and then fault handler would have returned
+VM_FAULT_SIGBUS in case#1 (and depending on arch, case#2 too), and
+checkpoint would fails.
+
+--RESTART: case #1 works, because mmap() works as before, and those
+pages that were never touched will not be restored either, they will
+remain untouched. The same holds for case#2 (as of kernel 2.6.32),
+because at checkpoint it would decide that the page is clean and not
+save the contents, and therefore it will not try to restore the
+contents at restart. This is consistent with the expected behavior
+after restart: if the file remains as is, subsequent accesses will
+trigger a bus error, and if the file is extended, then the user will
+observe a fresh page.
+
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+---
+ include/linux/mm.h |    2 +
+ mm/memory.c        |   95 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 96 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 48d67ee..a93f4dc 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -843,6 +843,7 @@ int get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			struct page **pages);
+ struct page *get_dump_page(unsigned long addr);
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr);
+ 
+ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
+@@ -1262,6 +1263,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_GET	0x04	/* do get_page on page */
+ #define FOLL_DUMP	0x08	/* give error on hole if it would be zero */
+ #define FOLL_FORCE	0x10	/* get_user_pages read/write w/o permission */
++#define FOLL_DIRTY	0x20	/* give error on non-present file mapped */
+ 
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index 09e4b1b..005dd55 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1226,8 +1226,17 @@ bad_page:
+ 
+ no_page:
+ 	pte_unmap_unlock(ptep, ptl);
+-	if (!pte_none(pte))
++	if (!pte_none(pte)) {
++		/*
++		 * When checkpointing we only care about dirty pages.
++		 * If a file-backed page is missing, then return an
++		 * error to tell __get_dirty_page() that it's clean,
++		 * so it won't try to demand page it into memory.
++		 */
++		if ((flags & FOLL_DIRTY) && pte_file(pte))
++			page = ERR_PTR(-EFAULT);
+ 		return page;
++	}
+ 
+ no_page_table:
+ 	/*
+@@ -1241,6 +1250,16 @@ no_page_table:
+ 	if ((flags & FOLL_DUMP) &&
+ 	    (!vma->vm_ops || !vma->vm_ops->fault))
+ 		return ERR_PTR(-EFAULT);
++
++	/*
++	 * When checkpointing we only care about dirty pages. If there
++	 * is no page table for a non-anonymous page, we return an
++	 * error to tell __get_dirty_page() that the page is clean, so
++	 * it won't allocate page tables and the page unnecessarily.
++	 */
++	if ((flags & FOLL_DIRTY) && vma->vm_ops)
++		return ERR_PTR(-EFAULT);
++
+ 	return page;
+ }
+ 
+@@ -1498,6 +1517,80 @@ pte_t *get_locked_pte(struct mm_struct *mm, unsigned long addr,
+ 	return NULL;
+ }
+ 
++/**
++ * __get_dirty_page - return page pointer for dirty user page
++ * @vma - target vma
++ * @addr - page address
++ *
++ * Looks up the page that correspond to the address in the vma, and
++ * return the page if it was modified (and grabs a reference to it),
++ * or otherwise returns NULL or error.
++ *
++ * Should only be called for private vma.
++ * Must be called with mmap_sem held for read or write.
++ */
++struct page *__get_dirty_page(struct vm_area_struct *vma, unsigned long addr)
++{
++	struct page *page;
++
++	BUG_ON(vma->vm_flags & (VM_SHARED | VM_MAYSHARE));
++
++	/*
++	 * FOLL_DUMP tells follow_page() to return -EFAULT for either
++	 * non-present anonymous pages, or memory "holes".
++	 * FOLL_DIRTY tells follow_page() to return -EFAULT also for
++	 * non-present file-mapped pages.
++	 * Otherwise, follow_page() returns the page, or NULL if the
++	 * page is swapped out.
++	 */
++
++	cond_resched();
++	while (!(page = follow_page(vma, addr,
++				    FOLL_GET | FOLL_DUMP | FOLL_DIRTY))) {
++		int ret;
++
++		/* the page is swapped out - bring it in (optimize ?) */
++		ret = handle_mm_fault(vma->vm_mm, vma, addr, 0);
++		if (ret & VM_FAULT_ERROR) {
++			if (ret & VM_FAULT_OOM)
++				return ERR_PTR(-ENOMEM);
++			else if (ret & VM_FAULT_SIGBUS)
++				return ERR_PTR(-EFAULT);
++			else
++				BUG();
++			break;
++		}
++		cond_resched();
++	}
++
++	/* -EFAULT means that the page is clean (see above) */
++	if (PTR_ERR(page) == -EFAULT)
++		return NULL;
++	else if (IS_ERR(page))
++		return page;
++
++	/*
++	 * Only care about dirty pages: either anonymous non-zero pages,
++	 * or file-backed COW (copy-on-write) pages that were modified.
++	 * A clean COW page is not interesting because its contents are
++	 * identical to the backing file; ignore such pages.
++	 * A file-backed broken COW is identified by its page_mapping()
++	 * being unset (NULL) because the page will no longer be mapped
++	 * to the original file after having been modified.
++	 */
++	if (is_zero_pfn(page_to_pfn(page))) {
++		/* this is the zero page: ignore */
++		page_cache_release(page);
++		page = NULL;
++	} else if (vma->vm_file && (page_mapping(page) != NULL)) {
++		/* file backed clean cow: ignore */
++		page_cache_release(page);
++		page = NULL;
++	}
++
++	return page;
++}
++
+ /*
+  * This is the old fallback for page remapping.
+  *
 -- 
-error compiling committee.c: too many arguments to function
+1.6.3.3
 
