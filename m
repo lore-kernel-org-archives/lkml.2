@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab0CQVor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:44:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47256 "EHLO ogre.sisk.pl"
+	id S1753449Ab0CQVuo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:50:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14121 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606Ab0CQVoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:44:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [RFC][PATCH] PM: Update device power management document
-Date: Wed, 17 Mar 2010 22:47:21 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1003171047270.1734-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1003171047270.1734-100000@iolanthe.rowland.org>
+	id S1751204Ab0CQVum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 17:50:42 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003172247.21783.rjw@sisk.pl>
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Veaceslav Falico <vfalico@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] signal_struct->count must die, initial changes
+In-Reply-To: Oleg Nesterov's message of  Wednesday, 17 March 2010 20:28:47 +0100 <20100317192847.GA2086@redhat.com>
+References: <20100317192847.GA2086@redhat.com>
+X-Shopping-List: (1) Vigorous L'eggs
+   (2) Hydraulic clothes
+   (3) Arab-Israeli Geese
+Message-Id: <20100317215033.867F9BD1A@magilla.sf.frob.com>
+Date: Wed, 17 Mar 2010 14:50:33 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 March 2010, Alan Stern wrote:
-> On Tue, 16 Mar 2010, Rafael J. Wysocki wrote:
-> 
-> > On Tuesday 16 March 2010, Alan Stern wrote:
-> > > On Mon, 15 Mar 2010, Rafael J. Wysocki wrote:
-> > > 
-> > > > Thanks for the comments, I did my best to address them all.
-> > > > 
-> > > > Updated patch is appended.
-> > > 
-> > > I'm making some updates too.  They're pretty extensive, so they won't 
-> > > be ready for a day or two.
-> > 
-> > Do they interfere a lot with this doc?
-> 
-> Yes; it involves a lot of rewriting the material you added.  I'm 
-> simplifying the text in many places and reorganizing part of the 
-> discussion.
+> signal_struct->count in its current form must die.
 
-OK, I'll wait.
+Agreed.  This series
+Acked-by: Roland McGrath <roland@redhat.com>
+
+> 	- otoh, we really need to make task->signal refcountable,
+> 	  just look at the extremely ugly task_rq_unlock_wait()
+> 	  called from __exit_signals().
+
+Another of many good reasons for...
+
+> 	- we should change the lifetime rules for task->signal,
+> 	  it should be pinned to task_struct. We have a lot of
+> 	  code which can be simplified after that.
+
+Yes, and sighand too.  I think there will be quite a torrent of cleanup we
+can do after that.
+
+Remember too that we should really change de_thread() altogether.  It has
+long-standing signal-losing races that we should fix.  Changing the
+lifetime rules may complicate that, or not.  But they'll tie in together,
+and when we do that we'll replace the notify_count again with something
+else entirely.
+
 
 Thanks,
-Rafael
+Roland
