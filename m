@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab0CQQb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:31:58 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37384 "EHLO
+	id S1755712Ab0CQQcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:32:36 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37354 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0CQQOJ (ORCPT
+	with ESMTP id S1754607Ab0CQQOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:09 -0400
+	Wed, 17 Mar 2010 12:14:06 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>,
-       Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: [C/R v20][PATCH 21/96] c/r: create syscalls: sys_checkpoint, sys_restart
-Date: Wed, 17 Mar 2010 12:08:09 -0400
-Message-Id: <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
+       Oren Laadan <orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 28/96] c/r: restart-blocks
+Date: Wed, 17 Mar 2010 12:08:16 -0400
+Message-Id: <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -40,256 +39,467 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create trivial sys_checkpoint and sys_restore system calls. They will
-enable to checkpoint and restart an entire container, to and from a
-checkpoint image file descriptor.
+(Paraphrasing what's said this message:
+http://lists.openwall.net/linux-kernel/2007/12/05/64)
 
-The syscalls take a pid, a file descriptor (for the image file) and
-flags as arguments. The pid identifies the top-most (root) task in the
-process tree, e.g. the container init: for sys_checkpoint the first
-argument identifies the pid of the target container/subtree; for
-sys_restart it will identify the pid of restarting root task.
+Restart blocks are callbacks used cause a system call to be restarted
+with the arguments specified in the system call restart block. It is
+useful for system call that are not idempotent, i.e. the argument(s)
+might be a relative timeout, where some adjustments are required when
+restarting the system call. It relies on the system call itself to set
+up its restart point and the argument save area.  They are rare: an
+actual signal would turn that it an EINTR. The only case that should
+ever trigger this is some kernel action that interrupts the system
+call, but does not actually result in any user-visible state changes -
+like freeze and thaw.
 
-A checkpoint, much like a process coredump, dumps the state of multiple
-processes at once, including the state of the container. The checkpoint
-image is written to (and read from) the file descriptor directly from
-the kernel. This way the data is generated and then pushed out naturally
-as resources and tasks are scanned to save their state. This is the
-approach taken by, e.g., Zap and OpenVZ.
+So restart blocks are about time remaining for the system call to
+sleep/wait. Generally in c/r, there are two possible time models that
+we can follow: absolute, relative. Here, I chose to save the relative
+timeout, measured from the beginning of the checkpoint. The time when
+the checkpoint (and restart) begin is also saved. This information is
+sufficient to restart in either model (absolute or negative).
 
-By using a return value and not a file descriptor, we can distinguish
-between a return from checkpoint, a return from restart (in case of a
-checkpoint that includes self, i.e. a task checkpointing its own
-container, or itself), and an error condition, in a manner analogous
-to a fork() call.
+Which model to use should eventually be a per application choice (and
+possible configurable via cradvise() or some sort). For now, we adopt
+the relative model, namely, at restart the timeout is set relative to
+the beginning of the restart.
 
-We don't use copy_from_user()/copy_to_user() because it requires
-holding the entire image in user space, and does not make sense for
-restart.  Also, we don't use a pipe, pseudo-fs file and the like,
-because they work by generating data on demand as the user pulls it
-(unless the entire image is buffered in the kernel) and would require
-more complex logic.  They also would significantly complicate
-checkpoint that includes self.
+To checkpoint, we check if a task has a valid restart block, and if so
+we save the *remaining* time that is has to wait/sleep, and the type
+of the restart block.
+
+To restart, we fill in the data required at the proper place in the
+thread information. If the system call return an error (which is
+possibly an -ERESTARTSYS eg), we not only use that error as our own
+return value, but also arrange for the task to execute the signal
+handler (by faking a signal). The handler, in turn, already has the
+code to handle these restart request gracefully.
+
 
 Changelog[v19-rc1]:
-  - Add 'int logfd' to prototype of sys_{checkpoint,restart}
-Changelog[v18]:
-  - [John Dykstra] Fix no-dot-config-targets pattern in linux/Makefile
-Changelog[v17]:
-  - Move checkpoint closer to namespaces (kconfig)
-  - Kill "Enable" in c/r config option
-Changelog[v16]:
-  - Change sys_restart() first argument to be 'pid_t pid'
-Changelog[v14]:
-  - Change CONFIG_CHEKCPOINT_RESTART to CONFIG_CHECKPOINT (Ingo)
-  - Remove line 'def_bool n' (default is already 'n')
-  - Add CHECKPOINT_SUPPORT in Kconfig (Nathan Lynch)
-Changelog[v5]:
-  - Config is 'def_bool n' by default
+  - [Matt Helsley] Add cpp definitions for enums
+Changelog[v1]:
+  - [Nathan Lynch] fix compilation errors with CONFIG_COMPAT=y
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- Makefile                           |    2 +-
- arch/x86/Kconfig                   |    4 +++
- arch/x86/include/asm/unistd_32.h   |    4 ++-
- arch/x86/kernel/syscall_table_32.S |    2 +
- checkpoint/Kconfig                 |   14 +++++++++++
- checkpoint/Makefile                |    5 ++++
- checkpoint/sys.c                   |   45 ++++++++++++++++++++++++++++++++++++
- include/linux/syscalls.h           |    4 +++
- init/Kconfig                       |    2 +
- kernel/sys_ni.c                    |    4 +++
- 10 files changed, 84 insertions(+), 2 deletions(-)
- create mode 100644 checkpoint/Kconfig
- create mode 100644 checkpoint/Makefile
- create mode 100644 checkpoint/sys.c
+ checkpoint/checkpoint.c          |    1 +
+ checkpoint/process.c             |  226 ++++++++++++++++++++++++++++++++++++++
+ checkpoint/restart.c             |    5 +-
+ checkpoint/sys.c                 |    1 +
+ include/linux/checkpoint.h       |    4 +
+ include/linux/checkpoint_hdr.h   |   34 ++++++
+ include/linux/checkpoint_types.h |    3 +
+ 7 files changed, 272 insertions(+), 2 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 1b24895..1452de1 100644
---- a/Makefile
-+++ b/Makefile
-@@ -409,7 +409,7 @@ endif
- # of make so .config is not included in this case either (for *config).
+diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
+index 695ab00..e25b9b7 100644
+--- a/checkpoint/checkpoint.c
++++ b/checkpoint/checkpoint.c
+@@ -22,6 +22,7 @@
+ #include <linux/mount.h>
+ #include <linux/utsname.h>
+ #include <linux/magic.h>
++#include <linux/hrtimer.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
  
- no-dot-config-targets := clean mrproper distclean \
--			 cscope TAGS tags help %docs check% \
-+			 cscope TAGS tags help %docs checkstack \
- 			 include/linux/version.h headers_% \
- 			 kernelrelease kernelversion
+diff --git a/checkpoint/process.c b/checkpoint/process.c
+index f6fb9d1..9f2059c 100644
+--- a/checkpoint/process.c
++++ b/checkpoint/process.c
+@@ -12,6 +12,9 @@
+ #define CKPT_DFLAG  CKPT_DSYS
  
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index eb40925..d5a7284 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -91,6 +91,10 @@ config STACKTRACE_SUPPORT
- config HAVE_LATENCYTOP_SUPPORT
- 	def_bool y
+ #include <linux/sched.h>
++#include <linux/posix-timers.h>
++#include <linux/futex.h>
++#include <linux/poll.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
  
-+config CHECKPOINT_SUPPORT
-+	bool
-+	default y if X86_32
+@@ -47,6 +50,116 @@ static int checkpoint_task_struct(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	return ckpt_write_string(ctx, t->comm, TASK_COMM_LEN);
+ }
+ 
++/* dump the task_struct of a given task */
++int checkpoint_restart_block(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	struct ckpt_hdr_restart_block *h;
++	struct restart_block *restart_block;
++	long (*fn)(struct restart_block *);
++	s64 base, expire = 0;
++	int ret;
 +
- config MMU
- 	def_bool y
- 
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index cd7ca6a..55b7cae 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -344,10 +344,12 @@
- #define __NR_perf_event_open	336
- #define __NR_recvmmsg		337
- #define __NR_eclone		338
-+#define __NR_checkpoint		339
-+#define __NR_restart		340
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 339
-+#define NR_syscalls 341
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index 22ae7ef..899a4f1 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -338,3 +338,5 @@ ENTRY(sys_call_table)
- 	.long sys_perf_event_open
- 	.long sys_recvmmsg
- 	.long ptregs_eclone
-+	.long sys_checkpoint
-+	.long sys_restart		/* 340 */
-diff --git a/checkpoint/Kconfig b/checkpoint/Kconfig
-new file mode 100644
-index 0000000..ef7d406
---- /dev/null
-+++ b/checkpoint/Kconfig
-@@ -0,0 +1,14 @@
-+# Architectures should define CHECKPOINT_SUPPORT when they have
-+# implemented the hooks for processor state etc. needed by the
-+# core checkpoint/restart code.
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
++	if (!h)
++		return -ENOMEM;
 +
-+config CHECKPOINT
-+	bool "Checkpoint/restart (EXPERIMENTAL)"
-+	depends on CHECKPOINT_SUPPORT && EXPERIMENTAL
-+	help
-+	  Application checkpoint/restart is the ability to save the
-+	  state of a running application so that it can later resume
-+	  its execution from the time at which it was checkpointed.
++	base = ktime_to_ns(ctx->ktime_begin);
++	restart_block = &task_thread_info(t)->restart_block;
++	fn = restart_block->fn;
 +
-+	  Turning this option on will enable checkpoint and restart
-+	  functionality in the kernel.
-diff --git a/checkpoint/Makefile b/checkpoint/Makefile
-new file mode 100644
-index 0000000..8a32c6f
---- /dev/null
-+++ b/checkpoint/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for linux checkpoint/restart.
-+#
++	/* FIX: enumerate clockid_t so we're immune to changes */
 +
-+obj-$(CONFIG_CHECKPOINT) += sys.o
++	if (fn == do_no_restart_syscall) {
++
++		h->function_type = CKPT_RESTART_BLOCK_NONE;
++		ckpt_debug("restart_block: non\n");
++
++	} else if (fn == hrtimer_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long) restart_block->nanosleep.rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: hrtimer expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == posix_cpu_nsleep_restart) {
++		struct timespec ts;
++
++		h->function_type = CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP;
++		h->arg_0 = restart_block->arg0;
++		h->arg_1 = restart_block->arg1;
++		ts.tv_sec = restart_block->arg2;
++		ts.tv_nsec = restart_block->arg3;
++		expire = timespec_to_ns(&ts);
++		ckpt_debug("restart_block: posix_cpu expire %lld now %lld\n",
++			 expire, base);
++
++#ifdef CONFIG_COMPAT
++	} else if (fn == compat_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
++		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: compat expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == compat_clock_nanosleep_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP;
++		h->arg_0 = restart_block->nanosleep.index;
++		h->arg_1 = (unsigned long)restart_block->nanosleep.rmtp;
++		h->arg_2 = (unsigned long)restart_block->nanosleep.compat_rmtp;
++		expire = restart_block->nanosleep.expires;
++		ckpt_debug("restart_block: compat_clock expire %lld now %lld\n",
++			 expire, base);
++
++#endif
++	} else if (fn == futex_wait_restart) {
++
++		h->function_type = CKPT_RESTART_BLOCK_FUTEX;
++		h->arg_0 = (unsigned long) restart_block->futex.uaddr;
++		h->arg_1 = restart_block->futex.val;
++		h->arg_2 = restart_block->futex.flags;
++		h->arg_3 = restart_block->futex.bitset;
++		expire = restart_block->futex.time;
++		ckpt_debug("restart_block: futex expire %lld now %lld\n",
++			 expire, base);
++
++	} else if (fn == do_restart_poll) {
++		struct timespec ts;
++
++		h->function_type = CKPT_RESTART_BLOCK_POLL;
++		h->arg_0 = (unsigned long) restart_block->poll.ufds;
++		h->arg_1 = restart_block->poll.nfds;
++		h->arg_2 = restart_block->poll.has_timeout;
++		ts.tv_sec = restart_block->poll.tv_sec;
++		ts.tv_nsec = restart_block->poll.tv_nsec;
++		expire = timespec_to_ns(&ts);
++		ckpt_debug("restart_block: poll expire %lld now %lld\n",
++			 expire, base);
++
++	} else {
++
++		BUG();
++
++	}
++
++	/* common to all restart blocks: */
++	h->arg_4 = (base < expire ? expire - base : 0);
++
++	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
++		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
++
++	ret = ckpt_write_obj(ctx, &h->h);
++	ckpt_hdr_put(ctx, h);
++
++	ckpt_debug("restart_block ret %d\n", ret);
++	return ret;
++}
++
+ /* dump the entire state of a given task */
+ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
+@@ -62,6 +175,10 @@ int checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	ckpt_debug("thread %d\n", ret);
+ 	if (ret < 0)
+ 		goto out;
++	ret = checkpoint_restart_block(ctx, t);
++	ckpt_debug("restart-blocks %d\n", ret);
++	if (ret < 0)
++		goto out;
+ 	ret = checkpoint_cpu(ctx, t);
+ 	ckpt_debug("cpu %d\n", ret);
+  out:
+@@ -98,6 +215,111 @@ static int restore_task_struct(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++int restore_restart_block(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_restart_block *h;
++	struct restart_block restart_block;
++	struct timespec ts;
++	clockid_t clockid;
++	s64 expire;
++	int ret = 0;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_RESTART_BLOCK);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
++
++	expire = ktime_to_ns(ctx->ktime_begin) + h->arg_4;
++	restart_block.fn = NULL;
++
++	ckpt_debug("restart_block: expire %lld begin %lld\n",
++		 expire, ktime_to_ns(ctx->ktime_begin));
++	ckpt_debug("restart_block: args %#llx %#llx %#llx %#llx %#llx\n",
++		 h->arg_0, h->arg_1, h->arg_2, h->arg_3, h->arg_4);
++
++	switch (h->function_type) {
++	case CKPT_RESTART_BLOCK_NONE:
++		restart_block.fn = do_no_restart_syscall;
++		break;
++	case CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = hrtimer_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.expires = expire;
++		break;
++	case CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = posix_cpu_nsleep_restart;
++		restart_block.arg0 = clockid;
++		restart_block.arg1 = h->arg_1;
++		ts = ns_to_timespec(expire);
++		restart_block.arg2 = ts.tv_sec;
++		restart_block.arg3 = ts.tv_nsec;
++		break;
++#ifdef CONFIG_COMPAT
++	case CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = compat_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.compat_rmtp =
++			(struct compat_timespec __user *)
++				(unsigned long) h->arg_2;
++		restart_block.nanosleep.expires = expire;
++		break;
++	case CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP:
++		clockid = h->arg_0;
++		if (clockid < 0 || invalid_clockid(clockid))
++			break;
++		restart_block.fn = compat_clock_nanosleep_restart;
++		restart_block.nanosleep.index = clockid;
++		restart_block.nanosleep.rmtp =
++			(struct timespec __user *) (unsigned long) h->arg_1;
++		restart_block.nanosleep.compat_rmtp =
++			(struct compat_timespec __user *)
++				(unsigned long) h->arg_2;
++		restart_block.nanosleep.expires = expire;
++		break;
++#endif
++	case CKPT_RESTART_BLOCK_FUTEX:
++		restart_block.fn = futex_wait_restart;
++		restart_block.futex.uaddr = (u32 *) (unsigned long) h->arg_0;
++		restart_block.futex.val = h->arg_1;
++		restart_block.futex.flags = h->arg_2;
++		restart_block.futex.bitset = h->arg_3;
++		restart_block.futex.time = expire;
++		break;
++	case CKPT_RESTART_BLOCK_POLL:
++		restart_block.fn = do_restart_poll;
++		restart_block.poll.ufds =
++			(struct pollfd __user *) (unsigned long) h->arg_0;
++		restart_block.poll.nfds = h->arg_1;
++		restart_block.poll.has_timeout = h->arg_2;
++		ts = ns_to_timespec(expire);
++		restart_block.poll.tv_sec = ts.tv_sec;
++		restart_block.poll.tv_nsec = ts.tv_nsec;
++		break;
++	default:
++		break;
++	}
++
++	if (restart_block.fn)
++		task_thread_info(current)->restart_block = restart_block;
++	else
++		ret = -EINVAL;
++
++	ckpt_hdr_put(ctx, h);
++	return ret;
++}
++
+ /* read the entire state of the current task */
+ int restore_task(struct ckpt_ctx *ctx)
+ {
+@@ -111,6 +333,10 @@ int restore_task(struct ckpt_ctx *ctx)
+ 	ckpt_debug("thread %d\n", ret);
+ 	if (ret < 0)
+ 		goto out;
++	ret = restore_restart_block(ctx);
++	ckpt_debug("restart-blocks %d\n", ret);
++	if (ret < 0)
++		goto out;
+ 	ret = restore_cpu(ctx);
+ 	ckpt_debug("cpu %d\n", ret);
+  out:
+diff --git a/checkpoint/restart.c b/checkpoint/restart.c
+index 11d9738..360c41e 100644
+--- a/checkpoint/restart.c
++++ b/checkpoint/restart.c
+@@ -16,6 +16,8 @@
+ #include <linux/file.h>
+ #include <linux/magic.h>
+ #include <linux/utsname.h>
++#include <asm/syscall.h>
++#include <linux/elf.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
+ 
+@@ -523,6 +525,5 @@ long do_restart(struct ckpt_ctx *ctx, pid_t pid)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* on success, adjust the return value if needed [TODO] */
+-	return restore_retval(ctx);
++	return restore_retval();
+ }
 diff --git a/checkpoint/sys.c b/checkpoint/sys.c
-new file mode 100644
-index 0000000..a81750a
---- /dev/null
+index 308cd27..d858096 100644
+--- a/checkpoint/sys.c
 +++ b/checkpoint/sys.c
-@@ -0,0 +1,45 @@
-+/*
-+ *  Generic container checkpoint-restart
-+ *
-+ *  Copyright (C) 2008-2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ */
-+
-+#include <linux/sched.h>
-+#include <linux/kernel.h>
-+#include <linux/syscalls.h>
-+
-+/**
-+ * sys_checkpoint - checkpoint a container
-+ * @pid: pid of the container init(1) process
-+ * @fd: file to which dump the checkpoint image
-+ * @flags: checkpoint operation flags
-+ * @logfd: fd to which to dump debug and error messages
-+ *
-+ * Returns positive identifier on success, 0 when returning from restart
-+ * or negative value on error
-+ */
-+SYSCALL_DEFINE4(checkpoint, pid_t, pid, int, fd,
-+		unsigned long, flags, int, logfd)
-+{
-+	return -ENOSYS;
-+}
-+
-+/**
-+ * sys_restart - restart a container
-+ * @pid: pid of task root (in coordinator's namespace), or 0
-+ * @fd: file from which read the checkpoint image
-+ * @flags: restart operation flags
-+ * @logfd: fd to which to dump debug and error messages
-+ *
-+ * Returns negative value on error, or otherwise returns in the realm
-+ * of the original checkpoint
-+ */
-+SYSCALL_DEFINE4(restart, pid_t, pid, int, fd,
-+		unsigned long, flags, int, logfd)
-+{
-+	return -ENOSYS;
-+}
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 207466a..3d80ac0 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -825,6 +825,10 @@ asmlinkage long sys_pselect6(int, fd_set __user *, fd_set __user *,
- asmlinkage long sys_ppoll(struct pollfd __user *, unsigned int,
- 			  struct timespec __user *, const sigset_t __user *,
- 			  size_t);
-+asmlinkage long sys_checkpoint(pid_t pid, int fd, unsigned long flags,
-+			       int logfd);
-+asmlinkage long sys_restart(pid_t pid, int fd, unsigned long flags,
-+			    int logfd);
+@@ -198,6 +198,7 @@ static struct ckpt_ctx *ckpt_ctx_alloc(int fd, unsigned long uflags,
  
- int kernel_execve(const char *filename, char *const argv[], char *const envp[]);
+ 	ctx->uflags = uflags;
+ 	ctx->kflags = kflags;
++	ctx->ktime_begin = ktime_get();
  
-diff --git a/init/Kconfig b/init/Kconfig
-index 0c00a78..4640375 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -719,6 +719,8 @@ config NET_NS
- 	  Allow user space to create what appear to be multiple instances
- 	  of the network stack.
+ 	mutex_init(&ctx->msg_mutex);
  
-+source "checkpoint/Kconfig"
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 3095431..8cb6130 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -77,6 +77,10 @@ extern int restore_read_header_arch(struct ckpt_ctx *ctx);
+ extern int restore_thread(struct ckpt_ctx *ctx);
+ extern int restore_cpu(struct ckpt_ctx *ctx);
+ 
++extern int checkpoint_restart_block(struct ckpt_ctx *ctx,
++				    struct task_struct *t);
++extern int restore_restart_block(struct ckpt_ctx *ctx);
 +
- config BLK_DEV_INITRD
- 	bool "Initial RAM filesystem and RAM disk (initramfs/initrd) support"
- 	depends on BROKEN || !FRV
-diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
-index 695384f..9c6fab7 100644
---- a/kernel/sys_ni.c
-+++ b/kernel/sys_ni.c
-@@ -180,3 +180,7 @@ cond_syscall(sys_eventfd2);
+ static inline int ckpt_validate_errno(int errno)
+ {
+ 	return (errno >= 0) && (errno < MAX_ERRNO);
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index 4627564..24e880f 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -67,6 +67,8 @@ enum {
  
- /* performance counters: */
- cond_syscall(sys_perf_event_open);
+ 	CKPT_HDR_TASK = 101,
+ #define CKPT_HDR_TASK CKPT_HDR_TASK
++	CKPT_HDR_RESTART_BLOCK,
++#define CKPT_HDR_RESTART_BLOCK CKPT_HDR_RESTART_BLOCK
+ 	CKPT_HDR_THREAD,
+ #define CKPT_HDR_THREAD CKPT_HDR_THREAD
+ 	CKPT_HDR_CPU,
+@@ -147,4 +149,36 @@ struct ckpt_hdr_task {
+ 	__u64 clear_child_tid;
+ } __attribute__((aligned(8)));
+ 
++/* restart blocks */
++struct ckpt_hdr_restart_block {
++	struct ckpt_hdr h;
++	__u64 function_type;
++	__u64 arg_0;
++	__u64 arg_1;
++	__u64 arg_2;
++	__u64 arg_3;
++	__u64 arg_4;
++} __attribute__((aligned(8)));
 +
-+/* checkpoint/restart */
-+cond_syscall(sys_checkpoint);
-+cond_syscall(sys_restart);
++enum restart_block_type {
++	CKPT_RESTART_BLOCK_NONE = 1,
++#define CKPT_RESTART_BLOCK_NONE CKPT_RESTART_BLOCK_NONE
++	CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP \
++		CKPT_RESTART_BLOCK_HRTIMER_NANOSLEEP
++	CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP \
++		CKPT_RESTART_BLOCK_POSIX_CPU_NANOSLEEP
++	CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP \
++		CKPT_RESTART_BLOCK_COMPAT_NANOSLEEP
++	CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP,
++#define CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP \
++		CKPT_RESTART_BLOCK_COMPAT_CLOCK_NANOSLEEP
++	CKPT_RESTART_BLOCK_POLL,
++#define CKPT_RESTART_BLOCK_POLL CKPT_RESTART_BLOCK_POLL
++	CKPT_RESTART_BLOCK_FUTEX,
++#define CKPT_RESTART_BLOCK_FUTEX CKPT_RESTART_BLOCK_FUTEX
++};
++
+ #endif /* _CHECKPOINT_CKPT_HDR_H_ */
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index dc35b21..6420a3b 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -15,10 +15,13 @@
+ #include <linux/sched.h>
+ #include <linux/nsproxy.h>
+ #include <linux/fs.h>
++#include <linux/ktime.h>
+ 
+ struct ckpt_ctx {
+ 	int crid;		/* unique checkpoint id */
+ 
++	ktime_t ktime_begin;	/* checkpoint start time */
++
+ 	pid_t root_pid;				/* [container] root pid */
+ 	struct task_struct *root_task;		/* [container] root task */
+ 	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
 -- 
 1.6.3.3
 
