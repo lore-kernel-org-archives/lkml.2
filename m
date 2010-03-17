@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0CQILV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:11:21 -0400
-Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:35937 "EHLO
-	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753523Ab0CQILR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:11:17 -0400
-X-Greylist: delayed 551 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 04:11:17 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=DzcC0JhCFQg3CJ55/VJuouUUAPVMpWTC/edp5nUVwMms7dJGz/jgy5zwyCv+lNyr;
-  h=Received:Message-ID:From:To:Cc:References:Subject:Date:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Priority:X-MSMail-Priority:X-Mailer:X-MimeOLE:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <F0C16B7475144C4089CF76CBAB92072D@wizardess.wiz>
-From: "jdow" <jdow@earthlink.net>
-To: "Tejun Heo" <tj@kernel.org>, "Kevin Easton" <caf@guarana.org>
-Cc: "James Bottomley" <James.Bottomley@suse.de>,
-       <linux-kernel@vger.kernel.org>
-References: <20100317025101.GA13339@guarana.org> <4BA05004.3040405@kernel.org>
-Subject: Re: ATA 4 KiB sector issues.
-Date: Wed, 17 Mar 2010 01:01:55 -0700
+	id S1753530Ab0CQIOe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:14:34 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:60764 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752025Ab0CQIOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 04:14:31 -0400
+Date: Wed, 17 Mar 2010 09:14:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Anthony Liguori <aliguori@linux.vnet.ibm.com>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Message-ID: <20100317081410.GD16374@elte.hu>
+References: <4B9F84C0.70706@redhat.com>
+ <20100316133114.GB575@elte.hu>
+ <y0mbpeo1f1y.fsf@fche.csb>
+ <20100316155221.GA19699@elte.hu>
+ <4B9FC11A.1070507@linux.vnet.ibm.com>
+ <20100316175243.GC23859@elte.hu>
+ <4B9FC8B2.6070404@linux.vnet.ibm.com>
+ <20100316182809.GA26602@elte.hu>
+ <4BA00E6A.7080903@linux.vnet.ibm.com>
+ <20100317004136.GC17472@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5843
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5579
-X-ELNK-Trace: bb89ecdb26a8f9f24d2b10475b57112071baa9b735746dc6e2fdcdf0b4623d12b174fd24821b975c350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 208.127.11.7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100317004136.GC17472@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Tejun Heo" <tj@kernel.org>
-Sent: Tuesday, 2010/March/16 20:44
 
+* Frank Ch. Eigler <fche@redhat.com> wrote:
 
-> Hello,
+> Hi -
 > 
-> On 03/17/2010 11:51 AM, Kevin Easton wrote:
->> Can't we fix the problem by defaulting to aligning partitions to
->> start on an LBA that is a multiple of 64260 ?
->> 
->> Such partitions will always be 4KiB-aligned, *and* start-of-cylinder
->> aligned (assuming 255/63, as seems to be the norm).
->> 
->> Sure, that reduces your partition granularity to almost-32-MiB, but
->> that's pretty small potatoes these days (and it's only a *default*, so
->> you could always override that if you really cared, and didn't need 
->> the compatibility).
+> On Tue, Mar 16, 2010 at 06:04:10PM -0500, Anthony Liguori wrote:
+> > [...]
+> > The only way to really address this is to change the interaction.  
+> > Instead of running perf externally to qemu, we should support a perf 
+> > command in the qemu monitor that can then tie directly to the perf 
+> > tooling.  That gives us the best possible user experience.
 > 
-> The only thing we can gain by that is possible compatibility w/ very
-> old operating systems (<=w2k, BTW, it would be great if someone can
-> actually test it).  Plus, breaking the first cylinder assumption might
-> not be always safe to begin with.  I personally don't think it's
-> something worth departing from the behavior most vendors would assume
-> from now on (1MiB alignment).  It should be enough and safer to
-> provide a mechanism to choose legacy alignment if someone is trying to
-> put something which is older than a decade there.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+> To what extent could this be solved with less crossing of 
+> isolation/abstraction layers, if the perfctr facilities were properly 
+> virtualized? [...]
 
-WRT very old filesystems - it won't affect Amiga partition tables or
-the Amiga FFS. It already understands large block sizes natively. And
-that's MY definition of "old" with "very" in front of it.
+Note, 'perfctr' is a different out-of-tree Linux kernel project run by someone 
+else: it offers the /dev/perfctr special-purpose device that allows raw, 
+unabstracted, low-level access to the PMU.
 
-{^_^}   Joanne Dow
+I suspect the one you wanted to mention here is called 'perf' or 'perf 
+events'. (and used to be called 'performance counters' or 'perfcounters' until 
+it got renamed about a year ago)
+
+Thanks,
+
+	Ingo
