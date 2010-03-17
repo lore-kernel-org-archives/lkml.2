@@ -1,290 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab0CQQ0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:26:51 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:54062 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab0CQQ0s (ORCPT
+	id S1755124Ab0CQQ1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:27:04 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:40350 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab0CQQ0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:26:48 -0400
-X-Spam-Processed: digidescorp.com, Wed, 17 Mar 2010 11:26:47 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=16925da2b5=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-       monstr@monstr.eu, Grant Likely <grant.likely@secretlab.ca>,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH 4/4] dmaengine: xlldma OF bus driver
-Date: Wed, 17 Mar 2010 11:26:36 -0500
-Message-Id: <1268843196-15315-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Wed, 17 Mar 2010 12:26:55 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
+       Matt Helsley <matthltc@us.ibm.com>
+Subject: [C/R v20][PATCH 83/96] c/r: checkpoint/restart eventfd
+Date: Wed, 17 Mar 2010 12:09:11 -0400
+Message-Id: <1268842164-5590-84-git-send-email-orenl@cs.columbia.edu>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1268842164-5590-83-git-send-email-orenl@cs.columbia.edu>
+References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-22-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-23-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-24-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-25-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-26-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-27-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-28-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-29-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-30-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-31-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-32-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-33-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-34-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-35-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-43-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-44-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-46-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-48-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-49-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-50-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-51-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-52-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-53-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-54-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-55-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-56-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-58-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-73-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-74-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-75-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-76-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-77-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-78-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-79-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-80-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-81-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-82-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-83-git-send-email-orenl@cs.columbia.edu>
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Open Firmware bus attachment for the Xilinx MPMC Soft Direct Memory
-Access Controller DMA engine.
+From: Matt Helsley <matthltc@us.ibm.com>
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+Save/restore eventfd files. These are anon_inodes just like epoll
+but instead of a set of files to poll they are a 64-bit counter
+and a flag value. Used for AIO.
+
+[Oren Laadan] Added #ifdef's around checkpoint/restart to compile even
+without CONFIG_CHECKPOINT
+
+Changelog[v19]:
+  - Fix broken compilation for architectures that don't support c/r
+
+Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
-diff -uprN a/drivers/dma/xlldma_of.c b/drivers/dma/xlldma_of.c
---- a/drivers/dma/xlldma_of.c	1969-12-31 18:00:00.000000000 -0600
-+++ b/drivers/dma/xlldma_of.c	2010-03-17 11:11:16.000000000 -0500
-@@ -0,0 +1,252 @@
-+/*
-+ * Xilinx Multi-Port Memory Controller (MPMC) DMA Engine support
-+ *
-+ * Copyright (C) 2010 Digital Design Corporation. All rights reserved.
-+ *
-+ * Author:
-+ *   Steve Magnani <steve@digidescorp.com>, Mar 2010
-+ *
-+ * Description:
-+ *   OpenFirmware bus attachment for the Xilinx MPMC Soft Direct Memory
-+ *   Access Controller DMA engine.
-+ *
-+ * This is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ */
-+
-+#include <linux/of_platform.h>
-+#include <linux/module.h>
-+
-+#include "xlldma.h"
-+
-+static int __devinit xlldma_of_chan_probe(struct xlldma_device *xdev,
-+					  struct device_node *node,
-+					  const char *compatible)
+ checkpoint/files.c             |    7 +++++
+ fs/eventfd.c                   |   55 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/checkpoint_hdr.h |    8 ++++++
+ include/linux/eventfd.h        |   12 ++++++++
+ 4 files changed, 82 insertions(+), 0 deletions(-)
+
+diff --git a/checkpoint/files.c b/checkpoint/files.c
+index 6aaaf22..4b551fe 100644
+--- a/checkpoint/files.c
++++ b/checkpoint/files.c
+@@ -23,6 +23,7 @@
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
+ #include <linux/eventpoll.h>
++#include <linux/eventfd.h>
+ #include <net/sock.h>
+ 
+ 
+@@ -644,6 +645,12 @@ static struct restore_file_ops restore_file_ops[] = {
+ 		.file_type = CKPT_FILE_EPOLL,
+ 		.restore = ep_file_restore,
+ 	},
++	/* eventfd */
++	{
++		.file_name = "EVENTFD",
++		.file_type = CKPT_FILE_EVENTFD,
++		.restore = eventfd_restore,
++	},
+ };
+ 
+ static struct file *do_restore_file(struct ckpt_ctx *ctx)
+diff --git a/fs/eventfd.c b/fs/eventfd.c
+index 7758cc3..f2785c0 100644
+--- a/fs/eventfd.c
++++ b/fs/eventfd.c
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/kref.h>
+ #include <linux/eventfd.h>
++#include <linux/checkpoint.h>
+ 
+ struct eventfd_ctx {
+ 	struct kref kref;
+@@ -287,11 +288,65 @@ static ssize_t eventfd_write(struct file *file, const char __user *buf, size_t c
+ 	return res;
+ }
+ 
++#ifdef CONFIG_CHECKPOINT
++static int eventfd_checkpoint(struct ckpt_ctx *ckpt_ctx, struct file *file)
 +{
-+	struct xlldma_chan *chan;
-+	int err;
-+#ifdef CONFIG_PPC_DCR_NATIVE
-+	unsigned int dcrs;
-+#endif
++	struct eventfd_ctx *ctx;
++	struct ckpt_hdr_file_eventfd *h;
++	int ret = -ENOMEM;
 +
-+	/* alloc channel */
-+	chan = kzalloc(sizeof(struct xlldma_chan), GFP_KERNEL);
-+	if (!chan) {
-+		dev_err(xdev->dev, "No free memory for allocating "
-+			"dma channels!\n");
++	h = ckpt_hdr_get_type(ckpt_ctx, sizeof(*h), CKPT_HDR_FILE);
++	if (!h)
 +		return -ENOMEM;
-+	}
-+
-+	/* get dma channel register base */
-+#ifdef CONFIG_PPC_DCR_NATIVE
-+	dcrs = dcr_resource_start(node, 0);
-+	if (dcrs == 0) {
-+		dev_err(xdev->dev, "could not get DMA register address\n");
-+		goto err_no_reg;
-+	}
-+	chan->dcr_c    = dcr_resource_len(node, 0);
-+	chan->reg_dcrs = dcr_map(node, dcrs, dcr_c);
-+	dev_dbg(xdev->dev, "DCR base: %x\n", dcrs);
-+#else
-+	chan->reg_base = NULL;
-+
-+	err = of_address_to_resource(node, 0, &chan->reg);
-+	if (err) {
-+		dev_err(xdev->dev, "Can't get %s property 'reg'\n",
-+			node->full_name);
-+		goto err_no_reg;
-+	}
-+
-+	chan->reg_base = of_iomap(node, 0);
-+	if (chan->reg_base) {
-+		dev_dbg(xdev->dev, "MEM base: %p\n", chan->reg_base);
-+	} else {
-+		dev_err(xdev->dev, "unable to map DMA registers\n");
-+		goto err_no_reg;
-+	}
-+#endif
-+
-+	chan->xdev = xdev;
-+
-+	chan->id = xdev->common.chancnt;
-+	if (chan->id >= XLLDMA_MAX_CHANS_PER_DEVICE) {
-+		dev_err(xdev->dev, "There is no %d channel!\n",
-+			chan->id);
-+		err = -EINVAL;
-+		goto err_no_chan;
-+	}
-+	xdev->chan[chan->id] = chan;
-+	tasklet_init(&chan->tasklet, xlldma_cleanup_tasklet,
-+		     (unsigned long)chan);
-+
-+	spin_lock_init(&chan->desc_lock);
-+	INIT_LIST_HEAD(&chan->desc_queue);
-+	INIT_LIST_HEAD(&chan->pending_free);
-+
-+	chan->common.device = &xdev->common;
-+
-+	/* Add the channel to DMA device channel list */
-+	list_add_tail(&chan->common.device_node, &xdev->common.channels);
-+	xdev->common.chancnt++;
-+
-+	/* RX interrupt is required, and first */
-+	chan->rx_irq = irq_of_parse_and_map(node, 0);
-+	if (chan->rx_irq == NO_IRQ) {
-+		err = -ENXIO;
-+		goto err_no_irq;
-+	}
-+
-+	err = request_irq(chan->rx_irq,
-+			  &xlldma_chan_rx_interrupt, IRQF_SHARED,
-+			  "xlldma-rx", chan);
-+	if (err) {
-+		dev_err(xdev->dev, "DMA channel %s request_irq error "
-+			"with return %d\n", node->full_name, err);
-+		goto err_no_irq;
-+	}
-+
-+	/* TX interrupt is optional, and second */
-+	chan->tx_irq = irq_of_parse_and_map(node, 1);
-+	if (chan->tx_irq != NO_IRQ) {
-+		err = request_irq(chan->tx_irq,
-+				  &xlldma_chan_tx_interrupt, IRQF_SHARED,
-+				  "xlldma-tx", chan);
-+		if (err) {
-+			dev_err(xdev->dev, "DMA channel %s request_irq error "
-+				"with return %d\n", node->full_name, err);
-+			goto err_rx_irq;
-+		}
-+	}
-+
-+	dev_info(xdev->dev, "#%d (%s), tx irq %d, rx irq %d\n", chan->id,
-+		 compatible, chan->tx_irq, chan->rx_irq);
-+
-+	return 0;
-+err_rx_irq:
-+	free_irq(chan->rx_irq, chan);
-+err_no_irq:
-+	list_del(&chan->common.device_node);
-+err_no_chan:
-+#ifdef CONFIG_PPC_DCR_NATIVE
-+	dcr_unmap(chan->reg_dcrs, chan->dcr_c);
-+#else
-+	iounmap(chan->reg_base);
-+#endif
-+err_no_reg:
-+	kfree(chan);
-+	return err;
-+}
-+
-+static int __devinit xlldma_probe_channels(struct device *dev)
-+{
-+	struct of_device     *odev = to_of_device(dev);
-+	struct xlldma_device *xdev = dev_get_drvdata(dev);
-+	struct device_node *child;
-+	int rc = 0;
-+
-+	/* We cannot use of_platform_bus_probe() because there is no
-+	 * of_platform_bus_remove.  Instead, we manually instantiate every DMA
-+	 * channel object.
-+	 */
-+	for_each_child_of_node(odev->node, child) {
-+		if (of_device_is_compatible(child, "xlnx,ll-dma-channel")) {
-+			rc = xlldma_of_chan_probe(xdev, child,
-+						  "xlnx,ll-dma-channel");
-+			if (rc)
-+				break;
-+		}
-+	}
-+
-+	return rc;
-+}
-+
-+static int __devinit xlldma_of_probe(struct of_device *dev,
-+				     const struct of_device_id *match)
-+{
-+	struct xlldma_device *xdev;
-+	int i, rc;
-+
-+	dev_info(&dev->dev,
-+		 "Probe the Xilinx DMA driver for %s controller...\n",
-+		 match->compatible);
-+
-+
-+	xdev = kzalloc(sizeof(struct xlldma_device), GFP_KERNEL);
-+	if (!xdev) {
-+		dev_err(&dev->dev, "Not enough memory for 'priv'\n");
-+		rc = -ENOMEM;
-+		goto fail_alloc;
-+	}
-+	xdev->dev = &dev->dev;
-+	INIT_LIST_HEAD(&xdev->common.channels);
-+
-+	xdev->common.dev = &dev->dev;
-+	dev_set_drvdata(&dev->dev, xdev);
-+
-+	rc = xlldma_probe_channels(xdev->dev);
-+	if (xdev->common.chancnt == 0)
-+		goto fail_nochan;
-+
-+	rc = xlldma_device_setup(xdev->dev);
-+	if (rc == 0)
-+		return 0;
-+
-+/* fail: */
-+	for (i = 0; i < XLLDMA_MAX_CHANS_PER_DEVICE; i++) {
-+		if (xdev->chan[i])
-+			xlldma_chan_remove(xdev->chan[i]);
-+	}
-+fail_nochan:
-+	dev_set_drvdata(&dev->dev, NULL);
-+	kfree(xdev);
-+
-+fail_alloc:
-+	return rc;
-+}
-+
-+static int __devexit xlldma_of_remove(struct of_device *op)
-+{
-+	return xlldma_device_teardown(&op->dev);
-+}
-+
-+static const struct of_device_id xlldma_of_ids[] = {
-+	{ .compatible = "xlnx,ll-dma-1.00.a", },
-+	{ .compatible = "xlnx,ll-dma-1.00.b", },
-+	{ .compatible = "xlnx,ll-dma-1.01.a", },
-+	{}
-+};
-+
-+static struct of_platform_driver xlldma_of_driver = {
-+	.name = "xlldma",
-+	.match_table = xlldma_of_ids,
-+	.probe = xlldma_of_probe,
-+	.remove = __devexit_p(xlldma_of_remove),
-+};
-+
-+static __init int xlldma_of_init(void)
-+{
-+	int ret;
-+
-+	pr_info("Xilinx LocalLink DMA driver\n");
-+
-+	ret = of_register_platform_driver(&xlldma_of_driver);
-+	if (ret)
-+		pr_err("xlldma: failed to register platform driver\n");
-+
++	h->common.f_type = CKPT_FILE_EVENTFD;
++	ret = checkpoint_file_common(ckpt_ctx, file, &h->common);
++	if (ret < 0)
++		goto out;
++	ctx = file->private_data;
++	h->count = ctx->count;
++	h->flags = ctx->flags;
++	ret = ckpt_write_obj(ckpt_ctx, &h->common.h);
++out:
++	ckpt_hdr_put(ckpt_ctx, h);
 +	return ret;
 +}
 +
-+static void __exit xlldma_of_exit(void)
++struct file *eventfd_restore(struct ckpt_ctx *ckpt_ctx,
++			     struct ckpt_hdr_file *ptr)
 +{
-+	of_unregister_platform_driver(&xlldma_of_driver);
++	struct ckpt_hdr_file_eventfd *h = (struct ckpt_hdr_file_eventfd *) ptr;
++	struct file *evfile;
++	int evfd, ret;
++
++	/* Already know type == CKPT_HDR_FILE and f_type == CKPT_FILE_EVENTFD */
++	if (h->common.h.len != sizeof(*h))
++		return ERR_PTR(-EINVAL);
++
++	evfd = sys_eventfd2(h->count, h->flags);
++	if (evfd < 0)
++		return ERR_PTR(evfd);
++	evfile = fget(evfd);
++	sys_close(evfd);
++	if (!evfile)
++		return ERR_PTR(-EBUSY);
++
++	ret = restore_file_common(ckpt_ctx, evfile, &h->common);
++	if (ret < 0) {
++		fput(evfile);
++		return ERR_PTR(ret);
++	}
++	return evfile;
 +}
++#else
++#define eventfd_checkpoint NULL
++#endif
 +
-+module_init(xlldma_of_init);
-+module_exit(xlldma_of_exit);
+ static const struct file_operations eventfd_fops = {
+ 	.release	= eventfd_release,
+ 	.poll		= eventfd_poll,
+ 	.read		= eventfd_read,
+ 	.write		= eventfd_write,
++	.checkpoint     = eventfd_checkpoint,
+ };
+ 
+ /**
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index b96d2dc..0b36430 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -481,6 +481,8 @@ enum file_type {
+ #define CKPT_FILE_TTY CKPT_FILE_TTY
+ 	CKPT_FILE_EPOLL,
+ #define CKPT_FILE_EPOLL CKPT_FILE_EPOLL
++	CKPT_FILE_EVENTFD,
++#define CKPT_FILE_EVENTFD CKPT_FILE_EVENTFD
+ 	CKPT_FILE_MAX
+ #define CKPT_FILE_MAX CKPT_FILE_MAX
+ };
+@@ -505,6 +507,12 @@ struct ckpt_hdr_file_pipe {
+ 	__s32 pipe_objref;
+ } __attribute__((aligned(8)));
+ 
++struct ckpt_hdr_file_eventfd {
++	struct ckpt_hdr_file common;
++	__u64 count;
++	__u32 flags;
++} __attribute__((aligned(8)));
 +
-+MODULE_AUTHOR("Digital Design Corporation");
-+MODULE_DESCRIPTION("Xilinx LocalLink DMA OpenFirmware driver");
-+MODULE_LICENSE("GPL");
-
+ /* socket */
+ struct ckpt_hdr_socket {
+ 	struct ckpt_hdr h;
+diff --git a/include/linux/eventfd.h b/include/linux/eventfd.h
+index 91bb4f2..2ce8525 100644
+--- a/include/linux/eventfd.h
++++ b/include/linux/eventfd.h
+@@ -39,6 +39,16 @@ ssize_t eventfd_ctx_read(struct eventfd_ctx *ctx, int no_wait, __u64 *cnt);
+ int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx, wait_queue_t *wait,
+ 				  __u64 *cnt);
+ 
++#ifdef CONFIG_CHECKPOINT
++struct ckpt_ctx;
++struct ckpt_hdr_file;
++
++struct file *eventfd_restore(struct ckpt_ctx *ckpt_ctx,
++			     struct ckpt_hdr_file *ptr);
++#else
++#define eventfd_restore NULL
++#endif
++
+ #else /* CONFIG_EVENTFD */
+ 
+ /*
+@@ -77,6 +87,8 @@ static inline int eventfd_ctx_remove_wait_queue(struct eventfd_ctx *ctx,
+ 	return -ENOSYS;
+ }
+ 
++#define eventfd_restore NULL
++
+ #endif
+ 
+ #endif /* _LINUX_EVENTFD_H */
+-- 
+1.6.3.3
 
