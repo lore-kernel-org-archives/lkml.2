@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752329Ab0CQX4b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:56:31 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47706 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab0CQX4a (ORCPT
+	id S1752971Ab0CQX61 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 19:58:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53845 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab0CQX60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:56:30 -0400
+	Wed, 17 Mar 2010 19:58:26 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 04/11] Allow CONFIG_MIGRATION to be set without CONFIG_NUMA or memory hot-remove
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+Date: Thu, 18 Mar 2010 08:54:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        linux-mm@kvack.org
-In-Reply-To: <alpine.DEB.2.00.1003171135390.27268@router.home>
-References: <20100317113205.GC12388@csn.ul.ie> <alpine.DEB.2.00.1003171135390.27268@router.home>
-Message-Id: <20100318085226.8726.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100317115855.GS18054@balbir.in.ibm.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100317115855.GS18054@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 18 Mar 2010 08:56:23 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 17 Mar 2010, Mel Gorman wrote:
+On Wed, 17 Mar 2010 17:28:55 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+
+> * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
 > 
-> > > If select MIGRATION works, we can remove "depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE"
-> > > line from config MIGRATION.
-> > >
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > 
+> > Now, file-mapped is maintaiend. But more generic update function
+> > will be needed for dirty page accounting.
+> > 
+> > For accountig page status, we have to guarantee lock_page_cgroup()
+> > will be never called under tree_lock held.
+> > To guarantee that, we use trylock at updating status.
+> > By this, we do fuzzy accounting, but in almost all case, it's correct.
 > >
-> > I'm not quite getting why this would be an advantage. COMPACTION
-> > requires MIGRATION but conceivable both NUMA and HOTREMOVE can work
-> > without it.
 > 
-> Avoids having to add additional CONFIG_XXX on the page migration "depends"
-> line in the future.
+> I don't like this at all, but in almost all cases is not acceptable
+> for statistics, since decisions will be made on them and having them
+> incorrect is really bad. Could we do a form of deferred statistics and
+> fix this.
+> 
 
-Yes, Kconfig mess freqently shot ourself in past days. if we have a chance
-to remove unnecessary dependency, we should do. that's my intention of the last mail.
+plz show your implementation which has no performance regresssion.
+For me, I don't neee file_mapped accounting, at all. If we can remove that,
+we can add simple migration lock.
+file_mapped is a feattue you added. please improve it.
 
 
+Thanks,
+-Kame
 
