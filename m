@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab0CQL3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 07:29:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36103 "EHLO hera.kernel.org"
+	id S1754527Ab0CQLaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 07:30:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36174 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab0CQL3v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 07:29:51 -0400
-Date: Wed, 17 Mar 2010 11:29:05 GMT
+	id S1754464Ab0CQLaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 07:30:14 -0400
+Date: Wed, 17 Mar 2010 11:29:22 GMT
 From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
 Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
@@ -18,32 +18,31 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
        dle-develop@lists.sourceforge.net, fweisbec@gmail.com,
        tglx@linutronix.de, mhiramat@redhat.com, systemtap@sources.redhat.com,
        mingo@elte.hu
-In-Reply-To: <20100316220558.32050.7905.stgit@localhost6.localdomain6>
-References: <20100316220558.32050.7905.stgit@localhost6.localdomain6>
+In-Reply-To: <20100316220605.32050.6571.stgit@localhost6.localdomain6>
+References: <20100316220605.32050.6571.stgit@localhost6.localdomain6>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Introduce die_find_child() function
-Message-ID: <tip-016f262e4fb10c6ecff709317098912f94a21efa@git.kernel.org>
-Git-Commit-ID: 016f262e4fb10c6ecff709317098912f94a21efa
+Subject: [tip:perf/core] perf probe: Add --dry-run option
+Message-ID: <tip-f4d7da499e4fc1fdff8f26fdeb1a058d475a7a6c@git.kernel.org>
+Git-Commit-ID: f4d7da499e4fc1fdff8f26fdeb1a058d475a7a6c
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 11:29:06 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 11:29:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  016f262e4fb10c6ecff709317098912f94a21efa
-Gitweb:     http://git.kernel.org/tip/016f262e4fb10c6ecff709317098912f94a21efa
+Commit-ID:  f4d7da499e4fc1fdff8f26fdeb1a058d475a7a6c
+Gitweb:     http://git.kernel.org/tip/f4d7da499e4fc1fdff8f26fdeb1a058d475a7a6c
 Author:     Masami Hiramatsu <mhiramat@redhat.com>
-AuthorDate: Tue, 16 Mar 2010 18:05:58 -0400
+AuthorDate: Tue, 16 Mar 2010 18:06:05 -0400
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Wed, 17 Mar 2010 11:32:31 +0100
 
-perf probe: Introduce die_find_child() function
+perf probe: Add --dry-run option
 
-Introduce die_find_child() function to integrate DIE-tree
-searching functions.
+Add --dry-run option for debugging and testing.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: systemtap <systemtap@sources.redhat.com>
@@ -53,178 +52,130 @@ Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100316220558.32050.7905.stgit@localhost6.localdomain6>
+LKML-Reference: <20100316220605.32050.6571.stgit@localhost6.localdomain6>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/util/probe-finder.c |  136 +++++++++++++++++++++++----------------
- 1 files changed, 80 insertions(+), 56 deletions(-)
+ tools/perf/Documentation/perf-probe.txt |    5 +++++
+ tools/perf/builtin-probe.c              |    1 +
+ tools/perf/util/probe-event.c           |   24 ++++++++++++++++--------
+ tools/perf/util/probe-event.h           |    2 ++
+ 4 files changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c91a960..3942e14 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -186,6 +186,62 @@ static const char *cu_find_realpath(Dwarf_Die *cu_die, const char *fname)
- 	return src;
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 34202b1..0f944b3 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -57,6 +57,11 @@ OPTIONS
+ --force::
+ 	Forcibly add events with existing name.
+ 
++-n::
++--dry-run::
++	Dry run. With this option, --add and --del doesn't execute actual
++	adding and removal operations.
++
+ PROBE SYNTAX
+ ------------
+ Probe points are defined by following syntax.
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index f577e14..a1a2891 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -175,6 +175,7 @@ static const struct option options[] = {
+ 		     "FUNC[:RLN[+NUM|:RLN2]]|SRC:ALN[+NUM|:ALN2]",
+ 		     "Show source code lines.", opt_show_lines),
+ #endif
++	OPT__DRY_RUN(&probe_event_dry_run),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 1e60a65..ac41578 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -49,6 +49,8 @@
+ #define MAX_PROBE_ARGS 128
+ #define PERFPROBE_GROUP "probe"
+ 
++bool probe_event_dry_run;	/* Dry run flag */
++
+ #define semantic_error(msg ...) die("Semantic error :" msg)
+ 
+ /* If there is no space to write, returns -E2BIG. */
+@@ -430,7 +432,7 @@ error:
+ 	return ret;
  }
  
-+/* Compare diename and tname */
-+static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
-+{
-+	const char *name;
-+	name = dwarf_diename(dw_die);
-+	DIE_IF(name == NULL);
-+	return strcmp(tname, name);
-+}
-+
-+/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
-+static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
-+{
-+	Dwarf_Addr epc;
-+	int ret;
-+
-+	ret = dwarf_entrypc(dw_die, &epc);
-+	DIE_IF(ret == -1);
-+	return epc;
-+}
-+
-+/* Return values for die_find callbacks */
-+enum {
-+	DIE_FIND_CB_FOUND = 0,		/* End of Search */
-+	DIE_FIND_CB_CHILD = 1,		/* Search only children */
-+	DIE_FIND_CB_SIBLING = 2,	/* Search only siblings */
-+	DIE_FIND_CB_CONTINUE = 3,	/* Search children and siblings */
-+};
-+
-+/* Search a child die */
-+static Dwarf_Die *die_find_child(Dwarf_Die *rt_die,
-+				 int (*callback)(Dwarf_Die *, void *),
-+				 void *data, Dwarf_Die *die_mem)
-+{
-+	Dwarf_Die child_die;
-+	int ret;
-+
-+	ret = dwarf_child(rt_die, die_mem);
-+	if (ret != 0)
-+		return NULL;
-+
-+	do {
-+		ret = callback(die_mem, data);
-+		if (ret == DIE_FIND_CB_FOUND)
-+			return die_mem;
-+
-+		if ((ret & DIE_FIND_CB_CHILD) &&
-+		    die_find_child(die_mem, callback, data, &child_die)) {
-+			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
-+			return die_mem;
-+		}
-+	} while ((ret & DIE_FIND_CB_SIBLING) &&
-+		 dwarf_siblingof(die_mem, die_mem) == 0);
-+
-+	return NULL;
-+}
-+
- struct __addr_die_search_param {
- 	Dwarf_Addr	addr;
- 	Dwarf_Die	*die_mem;
-@@ -217,77 +273,45 @@ static Dwarf_Die *die_find_real_subprogram(Dwarf_Die *cu_die, Dwarf_Addr addr,
- 		return die_mem;
- }
- 
--/* Similar to dwarf_getfuncs, but returns inlined_subroutine if exists. */
--static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
--				      Dwarf_Die *die_mem)
-+/* die_find callback for inline function search */
-+static int __die_find_inline_cb(Dwarf_Die *die_mem, void *data)
+-static int open_kprobe_events(int flags, int mode)
++static int open_kprobe_events(bool readwrite)
  {
--	Dwarf_Die child_die;
--	int ret;
-+	Dwarf_Addr *addr = data;
+ 	char buf[PATH_MAX];
+ 	int ret;
+@@ -439,7 +441,11 @@ static int open_kprobe_events(int flags, int mode)
+ 	if (ret < 0)
+ 		die("Failed to make kprobe_events path.");
  
--	ret = dwarf_child(sp_die, die_mem);
--	if (ret != 0)
--		return NULL;
--
--	do {
--		if (dwarf_tag(die_mem) == DW_TAG_inlined_subroutine &&
--		    dwarf_haspc(die_mem, addr))
--			return die_mem;
-+	if (dwarf_tag(die_mem) == DW_TAG_inlined_subroutine &&
-+	    dwarf_haspc(die_mem, *addr))
-+		return DIE_FIND_CB_FOUND;
- 
--		if (die_find_inlinefunc(die_mem, addr, &child_die)) {
--			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
--			return die_mem;
--		}
--	} while (dwarf_siblingof(die_mem, die_mem) == 0);
--
--	return NULL;
-+	return DIE_FIND_CB_CONTINUE;
- }
- 
--/* Compare diename and tname */
--static bool die_compare_name(Dwarf_Die *dw_die, const char *tname)
-+/* Similar to dwarf_getfuncs, but returns inlined_subroutine if exists. */
-+static Dwarf_Die *die_find_inlinefunc(Dwarf_Die *sp_die, Dwarf_Addr addr,
-+				      Dwarf_Die *die_mem)
- {
--	const char *name;
--	name = dwarf_diename(dw_die);
--	DIE_IF(name == NULL);
--	return strcmp(tname, name);
-+	return die_find_child(sp_die, __die_find_inline_cb, &addr, die_mem);
- }
- 
--/* Get entry pc(or low pc, 1st entry of ranges)  of the die */
--static Dwarf_Addr die_get_entrypc(Dwarf_Die *dw_die)
-+static int __die_find_variable_cb(Dwarf_Die *die_mem, void *data)
- {
--	Dwarf_Addr epc;
--	int ret;
-+	const char *name = data;
-+	int tag;
- 
--	ret = dwarf_entrypc(dw_die, &epc);
--	DIE_IF(ret == -1);
--	return epc;
-+	tag = dwarf_tag(die_mem);
-+	if ((tag == DW_TAG_formal_parameter ||
-+	     tag == DW_TAG_variable) &&
-+	    (die_compare_name(die_mem, name) == 0))
-+		return DIE_FIND_CB_FOUND;
+-	ret = open(buf, flags, mode);
++	if (readwrite && !probe_event_dry_run)
++		ret = open(buf, O_RDWR, O_APPEND);
++	else
++		ret = open(buf, O_RDONLY, 0);
 +
-+	return DIE_FIND_CB_CONTINUE;
+ 	if (ret < 0) {
+ 		if (errno == ENOENT)
+ 			die("kprobe_events file does not exist -"
+@@ -535,7 +541,7 @@ void show_perf_probe_events(void)
+ 	setup_pager();
+ 	memset(&pp, 0, sizeof(pp));
+ 
+-	fd = open_kprobe_events(O_RDONLY, 0);
++	fd = open_kprobe_events(false);
+ 	rawlist = get_trace_kprobe_event_rawlist(fd);
+ 	close(fd);
+ 
+@@ -585,9 +591,11 @@ static void write_trace_kprobe_event(int fd, const char *buf)
+ 	int ret;
+ 
+ 	pr_debug("Writing event: %s\n", buf);
+-	ret = write(fd, buf, strlen(buf));
+-	if (ret <= 0)
+-		die("Failed to write event: %s", strerror(errno));
++	if (!probe_event_dry_run) {
++		ret = write(fd, buf, strlen(buf));
++		if (ret <= 0)
++			die("Failed to write event: %s", strerror(errno));
++	}
  }
  
--/* Get a variable die */
-+/* Find a variable called 'name' */
- static Dwarf_Die *die_find_variable(Dwarf_Die *sp_die, const char *name,
- 				    Dwarf_Die *die_mem)
- {
--	Dwarf_Die child_die;
--	int tag;
--	int ret;
--
--	ret = dwarf_child(sp_die, die_mem);
--	if (ret != 0)
--		return NULL;
--
--	do {
--		tag = dwarf_tag(die_mem);
--		if ((tag == DW_TAG_formal_parameter ||
--		     tag == DW_TAG_variable) &&
--		    (die_compare_name(die_mem, name) == 0))
--			return die_mem;
--
--		if (die_find_variable(die_mem, name, &child_die)) {
--			memcpy(die_mem, &child_die, sizeof(Dwarf_Die));
--			return die_mem;
--		}
--	} while (dwarf_siblingof(die_mem, die_mem) == 0);
--
--	return NULL;
-+	return die_find_child(sp_die, __die_find_variable_cb, (void *)name,
-+			      die_mem);
- }
+ static void get_new_event_name(char *buf, size_t len, const char *base,
+@@ -630,7 +638,7 @@ static void __add_trace_kprobe_events(struct probe_point *probes,
+ 	struct strlist *namelist;
+ 	bool allow_suffix;
  
- /*
+-	fd = open_kprobe_events(O_RDWR, O_APPEND);
++	fd = open_kprobe_events(true);
+ 	/* Get current event names */
+ 	namelist = get_perf_event_names(fd, false);
+ 
+@@ -814,7 +822,7 @@ void del_trace_kprobe_events(struct strlist *dellist)
+ 	struct str_node *ent;
+ 	struct strlist *namelist;
+ 
+-	fd = open_kprobe_events(O_RDWR, O_APPEND);
++	fd = open_kprobe_events(true);
+ 	/* Get current event names */
+ 	namelist = get_perf_event_names(fd, true);
+ 
+diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
+index 3865e16..703b887 100644
+--- a/tools/perf/util/probe-event.h
++++ b/tools/perf/util/probe-event.h
+@@ -5,6 +5,8 @@
+ #include "probe-finder.h"
+ #include "strlist.h"
+ 
++extern bool probe_event_dry_run;
++
+ extern void parse_line_range_desc(const char *arg, struct line_range *lr);
+ extern void parse_perf_probe_event(const char *str, struct probe_point *pp,
+ 				   bool *need_dwarf);
