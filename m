@@ -1,88 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab0CQRfL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 13:35:11 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:2037 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab0CQRfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 13:35:06 -0400
-Subject: [PATCH 2/3] hpet: pass physical address, not entire hpet_data,
-	to hpet_is_known()
-To: Clemens Ladisch <clemens@ladisch.de>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-acpi@vger.kernel.org, Vojtech Pavlik <vojtech@suse.cz>,
-       linux-kernel@vger.kernel.org,
-       "Venkatesh Pallipadi \(Venki\)" <venkatesh.pallipadi@intel.com>
-Date: Wed, 17 Mar 2010 11:35:05 -0600
-Message-ID: <20100317173505.31124.74595.stgit@bob.kio>
-In-Reply-To: <20100317173329.31124.69795.stgit@bob.kio>
-References: <20100317173329.31124.69795.stgit@bob.kio>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755198Ab0CQRqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 13:46:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:1749 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754231Ab0CQRqd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 13:46:33 -0400
+Subject: [PATCH 1/2] net/wireless/wext_core.c: Use IW_IOCTL_IDX macro
+From: Joe Perches <joe@perches.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
+       Andy Whitcroft <apw@canonical.com>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless <linux-wireless@vger.kernel.org>
+In-Reply-To: <1268842112.5989.8.camel@jlt3.sipsolutions.net>
+References: <1268823629.1999.9.camel@localhost>
+	 <1268839535.1652.43.camel@Joe-Laptop.home>
+	 <1268840454.1999.22.camel@localhost>
+	 <1268841904.1652.94.camel@Joe-Laptop.home>
+	 <1268842112.5989.8.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 10:46:31 -0700
+Message-ID: <1268847991.1652.106.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There's a wireless.h macro for this, might as well use it.
 
-No functional change; hpet_is_known() only needs the physical address,
-so supplying that instead of the whole struct hpet_data makes the callers
-a little simpler.
-
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
+index 5e1656b..dbde22b 100644
+--- a/net/wireless/wext-core.c
++++ b/net/wireless/wext-core.c
+@@ -28,226 +28,226 @@ typedef int (*wext_ioctl_func)(struct net_device *, struct iwreq *,
+  * know about.
+  */
+ static const struct iw_ioctl_description standard_ioctl[] = {
+-	[SIOCSIWCOMMIT	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWCOMMIT)] = {
+ 		.header_type	= IW_HEADER_TYPE_NULL,
+ 	},
+-	[SIOCGIWNAME	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWNAME)] = {
+ 		.header_type	= IW_HEADER_TYPE_CHAR,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWNWID	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWNWID)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 		.flags		= IW_DESCR_FLAG_EVENT,
+ 	},
+-	[SIOCGIWNWID	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWNWID)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWFREQ	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWFREQ)] = {
+ 		.header_type	= IW_HEADER_TYPE_FREQ,
+ 		.flags		= IW_DESCR_FLAG_EVENT,
+ 	},
+-	[SIOCGIWFREQ	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWFREQ)] = {
+ 		.header_type	= IW_HEADER_TYPE_FREQ,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWMODE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWMODE)] = {
+ 		.header_type	= IW_HEADER_TYPE_UINT,
+ 		.flags		= IW_DESCR_FLAG_EVENT,
+ 	},
+-	[SIOCGIWMODE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWMODE)] = {
+ 		.header_type	= IW_HEADER_TYPE_UINT,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWSENS	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWSENS)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWSENS	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWSENS)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWRANGE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWRANGE)] = {
+ 		.header_type	= IW_HEADER_TYPE_NULL,
+ 	},
+-	[SIOCGIWRANGE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWRANGE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= sizeof(struct iw_range),
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWPRIV	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWPRIV)] = {
+ 		.header_type	= IW_HEADER_TYPE_NULL,
+ 	},
+-	[SIOCGIWPRIV	- SIOCIWFIRST] = { /* (handled directly by us) */
++	[IW_IOCTL_IDX(SIOCGIWPRIV)] = { /* (handled directly by us) */
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct iw_priv_args),
+ 		.max_tokens	= 16,
+ 		.flags		= IW_DESCR_FLAG_NOMAX,
+ 	},
+-	[SIOCSIWSTATS	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWSTATS)] = {
+ 		.header_type	= IW_HEADER_TYPE_NULL,
+ 	},
+-	[SIOCGIWSTATS	- SIOCIWFIRST] = { /* (handled directly by us) */
++	[IW_IOCTL_IDX(SIOCGIWSTATS)] = { /* (handled directly by us) */
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= sizeof(struct iw_statistics),
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWSPY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWSPY)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct sockaddr),
+ 		.max_tokens	= IW_MAX_SPY,
+ 	},
+-	[SIOCGIWSPY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWSPY)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct sockaddr) +
+ 				  sizeof(struct iw_quality),
+ 		.max_tokens	= IW_MAX_SPY,
+ 	},
+-	[SIOCSIWTHRSPY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWTHRSPY)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct iw_thrspy),
+ 		.min_tokens	= 1,
+ 		.max_tokens	= 1,
+ 	},
+-	[SIOCGIWTHRSPY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWTHRSPY)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct iw_thrspy),
+ 		.min_tokens	= 1,
+ 		.max_tokens	= 1,
+ 	},
+-	[SIOCSIWAP	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWAP)] = {
+ 		.header_type	= IW_HEADER_TYPE_ADDR,
+ 	},
+-	[SIOCGIWAP	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWAP)] = {
+ 		.header_type	= IW_HEADER_TYPE_ADDR,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWMLME	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWMLME)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.min_tokens	= sizeof(struct iw_mlme),
+ 		.max_tokens	= sizeof(struct iw_mlme),
+ 	},
+-	[SIOCGIWAPLIST	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWAPLIST)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= sizeof(struct sockaddr) +
+ 				  sizeof(struct iw_quality),
+ 		.max_tokens	= IW_MAX_AP,
+ 		.flags		= IW_DESCR_FLAG_NOMAX,
+ 	},
+-	[SIOCSIWSCAN	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWSCAN)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.min_tokens	= 0,
+ 		.max_tokens	= sizeof(struct iw_scan_req),
+ 	},
+-	[SIOCGIWSCAN	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWSCAN)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_SCAN_MAX_DATA,
+ 		.flags		= IW_DESCR_FLAG_NOMAX,
+ 	},
+-	[SIOCSIWESSID	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWESSID)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ESSID_MAX_SIZE,
+ 		.flags		= IW_DESCR_FLAG_EVENT,
+ 	},
+-	[SIOCGIWESSID	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWESSID)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ESSID_MAX_SIZE,
+ 		.flags		= IW_DESCR_FLAG_DUMP,
+ 	},
+-	[SIOCSIWNICKN	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWNICKN)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ESSID_MAX_SIZE,
+ 	},
+-	[SIOCGIWNICKN	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWNICKN)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ESSID_MAX_SIZE,
+ 	},
+-	[SIOCSIWRATE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWRATE)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWRATE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWRATE)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWRTS	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWRTS)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWRTS	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWRTS)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWFRAG	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWFRAG)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWFRAG	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWFRAG)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWTXPOW	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWTXPOW)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWTXPOW	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWTXPOW)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWRETRY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWRETRY)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWRETRY	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWRETRY)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWENCODE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWENCODE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ENCODING_TOKEN_MAX,
+ 		.flags		= IW_DESCR_FLAG_EVENT | IW_DESCR_FLAG_RESTRICT,
+ 	},
+-	[SIOCGIWENCODE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWENCODE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_ENCODING_TOKEN_MAX,
+ 		.flags		= IW_DESCR_FLAG_DUMP | IW_DESCR_FLAG_RESTRICT,
+ 	},
+-	[SIOCSIWPOWER	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWPOWER)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWPOWER	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWPOWER)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWGENIE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWGENIE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_GENERIC_IE_MAX,
+ 	},
+-	[SIOCGIWGENIE	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWGENIE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_GENERIC_IE_MAX,
+ 	},
+-	[SIOCSIWAUTH	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWAUTH)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCGIWAUTH	- SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWAUTH)] = {
+ 		.header_type	= IW_HEADER_TYPE_PARAM,
+ 	},
+-	[SIOCSIWENCODEEXT - SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWENCODEEXT)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.min_tokens	= sizeof(struct iw_encode_ext),
+ 		.max_tokens	= sizeof(struct iw_encode_ext) +
+ 				  IW_ENCODING_TOKEN_MAX,
+ 	},
+-	[SIOCGIWENCODEEXT - SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCGIWENCODEEXT)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.min_tokens	= sizeof(struct iw_encode_ext),
+ 		.max_tokens	= sizeof(struct iw_encode_ext) +
+ 				  IW_ENCODING_TOKEN_MAX,
+ 	},
+-	[SIOCSIWPMKSA - SIOCIWFIRST] = {
++	[IW_IOCTL_IDX(SIOCSIWPMKSA)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.min_tokens	= sizeof(struct iw_pmksa),
+@@ -449,7 +449,7 @@ void wireless_send_event(struct net_device *	dev,
+ 
+ 	/* Get the description of the Event */
+ 	if (cmd <= SIOCIWLAST) {
+-		cmd_index = cmd - SIOCIWFIRST;
++		cmd_index = IW_IOCTL_IDX(cmd);
+ 		if (cmd_index < standard_ioctl_num)
+ 			descr = &(standard_ioctl[cmd_index]);
+ 	} else {
+@@ -662,7 +662,7 @@ static iw_handler get_handler(struct net_device *dev, unsigned int cmd)
+ 		return NULL;
+ 
+ 	/* Try as a standard command */
+-	index = cmd - SIOCIWFIRST;
++	index = IW_IOCTL_IDX(cmd);
+ 	if (index < handlers->num_standard)
+ 		return handlers->standard[index];
+ 
+@@ -954,9 +954,9 @@ static int ioctl_standard_call(struct net_device *	dev,
+ 	int					ret = -EINVAL;
+ 
+ 	/* Get the description of the IOCTL */
+-	if ((cmd - SIOCIWFIRST) >= standard_ioctl_num)
++	if (IW_IOCTL_IDX(cmd) >= standard_ioctl_num)
+ 		return -EOPNOTSUPP;
+-	descr = &(standard_ioctl[cmd - SIOCIWFIRST]);
++	descr = &(standard_ioctl[IW_IOCTL_IDX(cmd)]);
+ 
+ 	/* Check if we have a pointer to user space data or not */
+ 	if (descr->header_type != IW_HEADER_TYPE_POINT) {
+@@ -1012,7 +1012,7 @@ static int compat_standard_call(struct net_device	*dev,
+ 	struct iw_point iwp;
+ 	int err;
+ 
+-	descr = standard_ioctl + (cmd - SIOCIWFIRST);
++	descr = standard_ioctl + IW_IOCTL_IDX(cmd);
+ 
+ 	if (descr->header_type != IW_HEADER_TYPE_POINT)
+ 		return ioctl_standard_call(dev, iwr, cmd, info, handler);
 
- drivers/char/hpet.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
-
-
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 65a9aa8..4c508df 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -662,12 +662,12 @@ static const struct file_operations hpet_fops = {
- 	.mmap = hpet_mmap,
- };
- 
--static int hpet_is_known(struct hpet_data *hdp)
-+static int hpet_is_known(unsigned long phys_address)
- {
- 	struct hpets *hpetp;
- 
- 	for (hpetp = hpets; hpetp; hpetp = hpetp->hp_next)
--		if (hpetp->hp_hpet_phys == hdp->hd_phys_address)
-+		if (hpetp->hp_hpet_phys == phys_address)
- 			return 1;
- 
- 	return 0;
-@@ -788,7 +788,7 @@ int hpet_alloc(struct hpet_data *hdp)
- 	 * If platform dependent code has allocated the hpet that
- 	 * ACPI has also reported, then we catch it here.
- 	 */
--	if (hpet_is_known(hdp)) {
-+	if (hpet_is_known(hdp->hd_phys_address)) {
- 		printk(KERN_DEBUG "%s: duplicate HPET ignored\n",
- 			__func__);
- 		return 0;
-@@ -911,9 +911,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	if (!mem)
- 		return -ENODEV;
- 
--	data.hd_phys_address = mem->start;
--
--	if (hpet_is_known(&data))
-+	if (hpet_is_known(mem->start))
- 		return -EBUSY;
- 
- 	i = 0;
-@@ -925,6 +923,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	if (!data.hd_nirqs)
- 		return -ENODEV;
- 
-+	data.hd_phys_address = mem->start;
- 	data.hd_address = ioremap(mem->start, resource_size(mem));
- 
- 	return hpet_alloc(&data);
 
