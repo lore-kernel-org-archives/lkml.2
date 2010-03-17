@@ -1,107 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab0CQWwL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:52:11 -0400
-Received: from trinity.develer.com ([83.149.158.210]:39759 "EHLO
-	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab0CQWwJ (ORCPT
+	id S1755418Ab0CQWzt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:55:49 -0400
+Received: from mail-bw0-f212.google.com ([209.85.218.212]:61901 "EHLO
+	mail-bw0-f212.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab0CQWzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:52:09 -0400
-Date: Wed, 17 Mar 2010 23:52:03 +0100
-From: Andrea Righi <arighi@develer.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 4/5] memcg: dirty pages accounting and limiting
- infrastructure
-Message-ID: <20100317225203.GD8467@linux.develer.com>
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
- <1268609202-15581-5-git-send-email-arighi@develer.com>
- <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
+	Wed, 17 Mar 2010 18:55:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=AbBn1bqOVppGiEPNin35A+pT04LRg8ItWRC2pC7QFOhaJpWLac99v/J1bL51f7Gx9q
+         Cka2GJQXn3kvZ9TYhK96YVZDxC05+il66fj1zKCXFkMAQDNUTGF90koqzpz3oWSt9tn6
+         f5FY5bgsPRG4yQIxhB2I8KDS5MLdwcCaIqMjs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100316113238.f7d74848.nishimura@mxp.nes.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <71cd59b01003170122h1ef767a3ma186e7ef278d73a1@mail.gmail.com>
+References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
+	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
+	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
+	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
+	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
+	 <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
+	 <b637ec0b1003161331y680418e0p6549504165a45701@mail.gmail.com>
+	 <71cd59b01003170122h1ef767a3ma186e7ef278d73a1@mail.gmail.com>
+Date: Wed, 17 Mar 2010 23:55:45 +0100
+Message-ID: <b637ec0b1003171555j43a50997sb4f5a781b0037b0f@mail.gmail.com>
+Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
+From: Fabio Comolli <fabio.comolli@gmail.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: ACPI mailing list <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 11:32:38AM +0900, Daisuke Nishimura wrote:
-[snip]
-> > @@ -3190,10 +3512,14 @@ struct {
-> >  } memcg_stat_strings[NR_MCS_STAT] = {
-> >  	{"cache", "total_cache"},
-> >  	{"rss", "total_rss"},
-> > -	{"mapped_file", "total_mapped_file"},
-> >  	{"pgpgin", "total_pgpgin"},
-> >  	{"pgpgout", "total_pgpgout"},
-> >  	{"swap", "total_swap"},
-> > +	{"mapped_file", "total_mapped_file"},
-> > +	{"filedirty", "dirty_pages"},
-> > +	{"writeback", "writeback_pages"},
-> > +	{"writeback_tmp", "writeback_temp_pages"},
-> > +	{"nfs", "nfs_unstable"},
-> >  	{"inactive_anon", "total_inactive_anon"},
-> >  	{"active_anon", "total_active_anon"},
-> >  	{"inactive_file", "total_inactive_file"},
-> Why not using "total_xxx" for total_name ?
+Hi
 
-Agreed. I would be definitely more clear. Balbir, KAME-san, what do you
-think?
+On Wed, Mar 17, 2010 at 9:22 AM, Corentin Chary
+<corentin.chary@gmail.com> wrote:
+> On Tue, Mar 16, 2010 at 9:31 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
+>> Hi.
+>>
+>> On Tue, Mar 16, 2010 at 7:54 AM, Corentin Chary
+>> <corentin.chary@gmail.com> wrote:
+>>> On Sat, Mar 13, 2010 at 1:50 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
+>>>> Well, I'm confused.
+>>>>
+>>>> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
+>>>> the situation it's not like the one I described in the post I wrote 2
+>>>> days ago. Actually the situation with the patch reverted is the same I
+>>>> have with the patch applied.
+>>>>
+>>>> What I mean is that if I boot on AC power /proc/cpuinfo always reports
+>>>> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
+>>>> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
+>>>> not change the situation. Only reboot does.
+>>>>
+>>>> But the cpufv interface does indeed seem to work, as glxgears and
+>>>> stellarium show the frame rate change accordingly to the powersave /
+>>>> performance selection.
+>>>>
+>>>> So my question is: what does really the cpufv interface do? Is it
+>>>> supposed to change the processor frequency? Or does it change
+>>>> something else?
+>>>>
+>>>> And if the answer to the latest question is affirmative, why
+>>>> /proc/cpuinfo seems to ignore it?
+>>>>
+>>>> Sorry for the confusion.
+>>>> Regards,
+>>>> Fabio
+>>>>
+>>>
+>>> Here is what I can read in your DSDT:
+>>>
+>>> When INIT or _Q31 is called, the bios check the the battery is
+>>> present, and call FSBA(0) or FSBA(1).
+>>> _Q31 seems to be called by an hotkey, could you run "acpi_listen" and
+>>> search the hotkey that generate 0x50 or 0x51 ?
+>>
+>> This is the output requested.
+>>
+>> hotkey ATKD 0000002e 00000000
+>> hotkey ATKD 0000002f 00000000
+>> hotkey ATKD 00000030 00000000
+>> hotkey ATKD 00000012 00000000
+>> hotkey ATKD 00000013 00000000
+>> hotkey ATKD 00000014 00000000
+>> hotkey ATKD 00000015 00000000
+>> hotkey ATKD 00000010 00000000
+>> button/sleep SLPB 00000080 00000001
+>> hotkey ATKD 00000010 00000001
+>
+> None of thesed generate 0x50 or 0x51, may be somehting else :/
+>
+>
 
-> 
-> > @@ -3212,8 +3538,6 @@ static int mem_cgroup_get_local_stat(struct mem_cgroup *mem, void *data)
-> >  	s->stat[MCS_CACHE] += val * PAGE_SIZE;
-> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_RSS);
-> >  	s->stat[MCS_RSS] += val * PAGE_SIZE;
-> > -	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
-> > -	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
-> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGIN_COUNT);
-> >  	s->stat[MCS_PGPGIN] += val;
-> >  	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_PGPGOUT_COUNT);
-> > @@ -3222,6 +3546,16 @@ static int mem_cgroup_get_local_stat(struct mem_cgroup *mem, void *data)
-> >  		val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_SWAPOUT);
-> >  		s->stat[MCS_SWAP] += val * PAGE_SIZE;
-> >  	}
-> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_MAPPED);
-> > +	s->stat[MCS_FILE_MAPPED] += val * PAGE_SIZE;
-> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
-> > +	s->stat[MCS_FILE_DIRTY] += val;
-> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_WRITEBACK);
-> > +	s->stat[MCS_WRITEBACK] += val;
-> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_WRITEBACK_TEMP);
-> > +	s->stat[MCS_WRITEBACK_TEMP] += val;
-> > +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_UNSTABLE_NFS);
-> > +	s->stat[MCS_UNSTABLE_NFS] += val;
-> >  
-> I don't have a strong objection, but I prefer showing them in bytes.
-> And can you add to mem_cgroup_stat_show() something like:
-> 
-> 	for (i = 0; i < NR_MCS_STAT; i++) {
-> 		if (i == MCS_SWAP && !do_swap_account)
-> 			continue;
-> +		if (i >= MCS_FILE_STAT_STAR && i <= MCS_FILE_STAT_END &&
-> +		   mem_cgroup_is_root(mem_cont))
-> +			continue;
-> 		cb->fill(cb, memcg_stat_strings[i].local_name, mystat.stat[i]);
-> 	}
+Found it!
 
-I like this. And I also prefer to show these values in bytes.
+Plugging the AC gives:
 
-> 
-> not to show file stat in root cgroup ? It's meaningless value anyway.
-> Of course, you'd better mention it in [2/5] too.
+ac_adapter AC0 00000080 00000001
+battery BAT0 00000080 00000001
+hotkey ATKD 00000050 00000002
 
-OK.
+And unplugging gives:
 
-Thanks,
--Andrea
+battery BAT0 00000080 00000001
+ac_adapter AC0 00000080 00000001
+ac_adapter AC0 00000080 00000000
+battery BAT0 00000080 00000001
+hotkey ATKD 00000051 00000002
+battery BAT0 00000080 00000001
+ac_adapter AC0 00000080 00000000
+
+However, the cpufv value is not affected at all.
+
+>
+> --
+> Corentin Chary
+> http://xf.iksaif.net
+>
+
+Regards,
+Fabio
