@@ -1,37 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab0CQLxK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 07:53:10 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:31624
-	"EHLO VA3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754633Ab0CQLxF (ORCPT
+	id S1754678Ab0CQLxf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 07:53:35 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:36915 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754634Ab0CQLxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 07:53:05 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzzz32i6bh87h2a8h65h)
-X-Spam-TCS-SCL: 4:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0KZFCZR-01-60T-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/4] perf/core: some small patches
-Date: Wed, 17 Mar 2010 12:49:09 +0100
-Message-ID: <1268826553-19518-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.0
-X-OriginalArrivalTime: 17 Mar 2010 11:52:37.0732 (UTC) FILETIME=[57016240:01CAC5C8]
+	Wed, 17 Mar 2010 07:53:06 -0400
+Date: Wed, 17 Mar 2010 11:53:03 +0000
+From: Andy Whitcroft <apw@canonical.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: checkpatch false positive
+Message-ID: <20100317115303.GO5443@shadowen.org>
+References: <1268823629.1999.9.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268823629.1999.9.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series includes some changes I found useful when reviewing
-and working with the code. Nothing exciting.
+On Wed, Mar 17, 2010 at 11:00:29AM +0000, Richard Kennedy wrote:
+> I'm getting this error from checkpatch which is a false positive AFAICT.
+> I don't see any other way to code this macro so maybe this rule
+> shouldn't apply?.
+> 
+> 	ERROR: space prohibited before open square bracket '['
+> 	#24: FILE: drivers/staging/wlan-ng/p80211wext.c:1685:
+> 	+#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
 
--Robert
+Yes that is definatly false, feed free to ignore it.  I'll have a look
+at fixing it.
 
-
+-apw
