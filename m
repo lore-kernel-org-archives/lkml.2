@@ -1,62 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab0CQWa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:30:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54340 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756134Ab0CQWa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:30:26 -0400
-Date: Thu, 18 Mar 2010 09:30:19 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: Neil Brown <neilb@suse.de>, Greg KH <greg@kroah.com>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20100318093019.f271bdd5.sfr@canb.auug.org.au>
-In-Reply-To: <Pine.LNX.4.64.1003170847110.25675@cobra.newdream.net>
-References: <20100317154145.bd9fca16.sfr@canb.auug.org.au>
-	<20100317182136.0f2ab805@notabene.brown>
-	<Pine.LNX.4.64.1003170847110.25675@cobra.newdream.net>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q"
+	id S1756199Ab0CQWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:32:28 -0400
+Received: from trinity.develer.com ([83.149.158.210]:45526 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756128Ab0CQWc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 18:32:26 -0400
+Date: Wed, 17 Mar 2010 23:32:22 +0100
+From: Andrea Righi <arighi@develer.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 0/5] memcg: per cgroup dirty limit (v6)
+Message-ID: <20100317223222.GA8467@linux.develer.com>
+References: <1268175636-4673-1-git-send-email-arighi@develer.com>
+ <20100311093913.07c9ca8a.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100311101726.f58d24e9.kamezawa.hiroyu@jp.fujitsu.com>
+ <1268298865.5279.997.camel@twins>
+ <20100311182500.0f3ba994.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100311150307.GC29246@redhat.com>
+ <20100312084230.850f331d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100315143841.GE21127@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315143841.GE21127@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Mar 15, 2010 at 10:38:41AM -0400, Vivek Goyal wrote:
+> > > 
+> > > bdi_thres ~= per_memory_cgroup_dirty * bdi_fraction
+> > > 
+> > > But bdi_nr_reclaimable and bdi_nr_writeback stats are still global.
+> > > 
+> > Why bdi_thresh of ROOT cgroup doesn't depend on global number ?
+> > 
+> 
+> I think in current implementation ROOT cgroup bdi_thres is always same
+> as global number. It is only for other child groups where it is different
+> from global number because of reduced dirytable_memory() limit. And we
+> don't seem to be allowing any control on root group. 
+> 
+> But I am wondering, what happens in following case.
+> 
+> IIUC, with use_hierarhy=0, if I create two test groups test1 and test2, then
+> hierarchy looks as follows.
+> 
+> 			root  test1  test2
+> 
+> Now root group's DIRTYABLE is still system wide but test1 and test2's
+> dirtyable will be reduced based on RES_LIMIT in those groups.
+> 
+> Conceptually, per cgroup dirty ratio is like fixing page cache share of
+> each group. So effectively we are saying that these limits apply to only
+> child group of root but not to root as such?
 
-Hi guys,
+Correct. In this implementation root cgroup means "outside all cgroups".
+I think this can be an acceptable behaviour since in general we don't
+set any limit to the root cgroup.
 
-On Wed, 17 Mar 2010 08:51:49 -0700 (PDT) Sage Weil <sage@newdream.net> wrot=
-e:
->
-> On Wed, 17 Mar 2010, Neil Brown wrote:
->=20
-> > I would say this is correct.
->=20
-> Yeah, the fix is good, thanks Stephen!  I'll add it to my tree shortly.
+>  
+> > > So for the same number of dirty pages system wide on this bdi, we will be
+> > > triggering writeouts much more aggressively if somebody has created few
+> > > memory cgroups and tasks are running in those cgroups.
+> > > 
+> > > I guess it might cause performance regressions in case of small file
+> > > writeouts because previously one could have written the file to cache and
+> > > be done with it but with this patch set, there are higher changes that
+> > > you will be throttled to write the pages back to disk.
+> > > 
+> > > I guess we need two pieces to resolve this.
+> > > 	- BDI stats per cgroup.
+> > > 	- Writeback of inodes from same cgroup.
+> > > 
+> > > I think BDI stats per cgroup will increase the complextiy.
+> > > 
+> > Thank you for clarification. IIUC, dirty_limit implemanation shoul assume
+> > there is I/O resource controller, maybe usual users will use I/O resource
+> > controller and memcg at the same time.
+> > Then, my question is what happens when used with I/O resource controller ?
+> > 
+> 
+> Currently IO resource controller keep all the async IO queues in root
+> group so we can't measure exactly. But my guess is until and unless we
+> at least implement "writeback inodes from same cgroup" we will not see
+> increased flow of writes from one cgroup over other cgroup.
 
-Thanks for the confirmation.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Agreed. And I plan to look a the "writeback inodes per cgroup" feature
+soon. I'm sorry but I've some deadlines this week, so probably I'll
+start working on this in the next weekend.
 
---Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuhV/sACgkQjjKRsyhoI8zSogCfVkNr/7gEEkQBKyUWvaV1TxrT
-ZrcAnRUzfPb9MF4wEx/4Y/F39KVRMBvA
-=O9+4
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q--
+-Andrea
