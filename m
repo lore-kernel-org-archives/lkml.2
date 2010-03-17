@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0CQXBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:01:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51185 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0CQXBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:01:37 -0400
-Message-ID: <4BA15F29.6030409@kernel.org>
-Date: Thu, 18 Mar 2010 08:00:57 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
-References: <4B990496.4020002@kernel.org>  <alpine.DEB.2.00.1003161107070.2311@router.home>  <4BA00CE4.1090108@kernel.org>  <alpine.DEB.2.00.1003171134070.27268@router.home> <1268846083.4773.64.camel@useless.americas.hpqcorp.net> <alpine.DEB.2.00.1003171453530.4231@router.home>
-In-Reply-To: <alpine.DEB.2.00.1003171453530.4231@router.home>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754094Ab0CQXHD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 19:07:03 -0400
+Received: from mail-bw0-f212.google.com ([209.85.218.212]:56833 "EHLO
+	mail-bw0-f212.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab0CQXHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 19:07:01 -0400
+Subject: Re: [PATCHv2] regulator: Get rid of lockdep warning
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Ameya Palande <ameya.palande@nokia.com>
+Cc: linux-kernel@vger.kernel.org, broonie@opensource.wolfsonmicro.com,
+       dbrownell@users.sourceforge.net
+In-Reply-To: <c9b72e72ecf154ff6bf96bd956bef7d4c5aca2d4.1268417170.git.ameya.palande@nokia.com>
+References: <20100312172156.GB22822@rakim.wolfsonmicro.main>
+	 <c9b72e72ecf154ff6bf96bd956bef7d4c5aca2d4.1268417170.git.ameya.palande@nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 23:06:59 +0000
+Message-ID: <1268867219.3834.23.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 23:00:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 04:54 AM, Christoph Lameter wrote:
-> On Wed, 17 Mar 2010, Lee Schermerhorn wrote:
+On Fri, 2010-03-12 at 20:09 +0200, Ameya Palande wrote:
+> From: Ameya Palande <ameya.palande@nokia.com>
 > 
->> s/from slab.h/from topology.h/ is the update Christoph is indicating.
->> Right, Christoph?
+> WARNING: at kernel/lockdep.c:2706 sysfs_add_file_mode+0x4c/0xa8()
 > 
-> Right.
+> Difference between v1 and v2:
+> Moved sysfs_attr_init() call as first one to access the structure.
+> 
+> Signed-off-by: Ameya Palande <ameya.palande@nokia.com>
+> CC: Liam Girdwood <lrg@slimlogic.co.uk>
+> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> CC: David Brownell <dbrownell@users.sourceforge.net>
+> ---
 
-OIC, I'll update accordingly.  Thanks.
+Applied.
+
+Thanks.
+
+Liam
 
 -- 
-tejun
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
