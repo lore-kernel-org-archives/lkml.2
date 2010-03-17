@@ -1,72 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0CQCt6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 22:49:58 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57250 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab0CQCt5 (ORCPT
+	id S1751152Ab0CQCxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 22:53:25 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:37232 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab0CQCxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 22:49:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 06/11] Export fragmentation index via /proc/extfrag_index
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1268412087-13536-7-git-send-email-mel@csn.ul.ie>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie> <1268412087-13536-7-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100317114321.4C9A.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 17 Mar 2010 11:49:49 +0900 (JST)
+	Tue, 16 Mar 2010 22:53:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Ny1M3Zh2rtdwtfYNNAm/iJrvJmqXWWMzMvYaxi0dJ5bkmKlsVZo7AKAffqynYHVMFx
+         PGVb768V6ZbTyMmcfzCfTw7ABP1bpjASczyO8SSGFmX5hfxaJDsay7mdJkTPBdCGWIiW
+         vLHa2l/bR55zLHwC7ueUiKw1o87pKcelAHyyA=
+From: baslangenberg@gmail.com
+To: gregkh@suse.de, wfp5p@virginia.edu, shawn.bohrer@gmail.com,
+       fmhess@users.sourceforge.net
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: fixes all space before tabs warnings in drivers/staging/comedi/comedi_fops.c This is patch that tends to fix all WARNING: no space before tab warnings in drivers/staging/comedi/comedi_fops.c Signed-off-by: Bas Langenberg <baslangenberg@gmail.com>
+Date: Wed, 17 Mar 2010 03:53:26 +0100
+Message-Id: <1268794406-3405-1-git-send-email-baslangenberg@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <baslangenberg@gmail.com>
+References: <baslangenberg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/*
-> + * A fragmentation index only makes sense if an allocation of a requested
-> + * size would fail. If that is true, the fragmentation index indicates
-> + * whether external fragmentation or a lack of memory was the problem.
-> + * The value can be used to determine if page reclaim or compaction
-> + * should be used
-> + */
-> +int fragmentation_index(unsigned int order, struct contig_page_info *info)
-> +{
-> +	unsigned long requested = 1UL << order;
-> +
-> +	if (!info->free_blocks_total)
-> +		return 0;
-> +
-> +	/* Fragmentation index only makes sense when a request would fail */
-> +	if (info->free_blocks_suitable)
-> +		return -1000;
-> +
-> +	/*
-> +	 * Index is between 0 and 1 so return within 3 decimal places
-> +	 *
-> +	 * 0 => allocation would fail due to lack of memory
-> +	 * 1 => allocation would fail due to fragmentation
-> +	 */
-> +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
-> +}
+From: Bas Langenberg <bas@Bas-Mint.(none)>
 
-Dumb question.
+---
+ drivers/staging/comedi/comedi_fops.c |   38 +++++++++++++++++-----------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
 
-your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
-
-fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
-
-but your code have extra '1000+'. Why?
-
-
-
-Probably, I haven't understand the intention of this calculation.
-
-
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index aca9674..3d6b40e 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -598,19 +598,19 @@ copyback:
+ static int parse_insn(struct comedi_device *dev, struct comedi_insn *insn,
+ 		      unsigned int *data, void *file);
+ /*
+- * 	COMEDI_INSNLIST
+- * 	synchronous instructions
++ *	COMEDI_INSNLIST
++ *	synchronous instructions
+  *
+- * 	arg:
+- * 		pointer to sync cmd structure
++ *	arg:
++ *		pointer to sync cmd structure
+  *
+- * 	reads:
+- * 		sync cmd struct at arg
+- * 		instruction list
+- * 		data (for writes)
++ *	reads:
++ *		sync cmd struct at arg
++ *		instruction list
++ *		data (for writes)
+  *
+- * 	writes:
+- * 		data (for reads)
++ *	writes:
++ *		data (for reads)
+  */
+ /* arbitrary limits */
+ #define MAX_SAMPLES 256
+@@ -894,18 +894,18 @@ out:
+ }
+ 
+ /*
+- * 	COMEDI_INSN
+- * 	synchronous instructions
++ *	COMEDI_INSN
++ *	synchronous instructions
+  *
+- * 	arg:
+- * 		pointer to insn
++ *	arg:
++ *		pointer to insn
+  *
+- * 	reads:
+- * 		struct comedi_insn struct at arg
+- * 		data (for writes)
++ *	reads:
++ *		struct comedi_insn struct at arg
++ *		data (for writes)
+  *
+- * 	writes:
+- * 		data (for reads)
++ *	writes:
++ *		data (for reads)
+  */
+ static int do_insn_ioctl(struct comedi_device *dev, void *arg, void *file)
+ {
+-- 
+1.6.3.3
 
