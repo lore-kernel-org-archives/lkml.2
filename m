@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0CQQRW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:17:22 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38131 "EHLO
+	id S1755244Ab0CQQT1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:19:27 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:38568 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754728Ab0CQQRP (ORCPT
+	with ESMTP id S1754320Ab0CQQTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:17:15 -0400
+	Wed, 17 Mar 2010 12:19:12 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 59/96] c/r: support share-memory sysv-ipc
-Date: Wed, 17 Mar 2010 12:08:47 -0400
-Message-Id: <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 67/96] c/r: checkpoint and restore (shared) task's sighand_struct
+Date: Wed, 17 Mar 2010 12:08:55 -0400
+Message-Id: <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -77,126 +77,239 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-58-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpoint of sysvipc shared memory is performed in two steps: first,
-the entire ipc namespace is dumped as a whole by iterating through all
-shm objects and dumping the contents of each one. The shmem inode is
-registered in the objhash. Second, for each vma that refers to ipc
-shared memory we find the inode in the objhash, and save the objref.
+This patch adds the checkpointing and restart of signal handling
+state - 'struct sighand_struct'. Since the contents of this state
+only affect userspace, no input validation is required.
 
-(If we find a new inode, that indicates that the ipc namespace is not
-entirely frozen and someone must have manipulated it since step 1).
+Add _NSIG to kernel constants saved/tested with image header.
 
-Handling of shm objects that have been deleted (via IPC_RMID) is left
-to a later patch in this series.
+Number of signals (_NSIG) is arch-dependent, but is within __KERNEL__
+and not visibile to userspace compile. Therefore, define per arch
+CKPT_ARCH_NSIG in <asm/checkpoint_hdr.h>.
 
-Changelog[v20]:
-    Fix "scheduling in atomic" while restoring ipc shm
-Changelog[v19-rc3]:
-  - Rebase to kernel 2.6.33
 Changelog[v19-rc1]:
   - [Matt Helsley] Add cpp definitions for enums
-Changelog[v18]:
-  - Collect files used by shm objects
-  - Use file instead of inode as shared object during checkpoint
-Changelog[v17]:
-  - Restore objects in the right namespace
-  - Properly initialize ctx->deferqueue
-  - Fix compilation with CONFIG_CHECKPOINT=n
+Changelog[v1]:
+  - Rename headerless struct ckpt_hdr_* to struct ckpt_*
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/checkpoint_hdr.h |   21 +++
- ipc/Makefile                   |    3 +-
- ipc/checkpoint.c               |    2 +-
- ipc/checkpoint_msg.c           |  380 ++++++++++++++++++++++++++++++++++++++++
- ipc/msg.c                      |   10 +-
- ipc/msgutil.c                  |    8 -
- ipc/util.h                     |   13 ++
- 7 files changed, 420 insertions(+), 17 deletions(-)
- create mode 100644 ipc/checkpoint_msg.c
+ arch/s390/include/asm/checkpoint_hdr.h |    8 ++
+ arch/x86/include/asm/checkpoint_hdr.h  |    8 ++
+ checkpoint/Makefile                    |    3 +-
+ checkpoint/checkpoint.c                |    2 +
+ checkpoint/objhash.c                   |   26 +++++
+ checkpoint/process.c                   |   19 ++++
+ checkpoint/restart.c                   |    3 +
+ checkpoint/signal.c                    |  163 ++++++++++++++++++++++++++++++++
+ include/linux/checkpoint.h             |    9 ++-
+ include/linux/checkpoint_hdr.h         |   24 +++++
+ 10 files changed, 263 insertions(+), 2 deletions(-)
+ create mode 100644 checkpoint/signal.c
 
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 1b2ffef..07e918e 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -114,6 +114,8 @@ enum {
- #define CKPT_HDR_IPC_SHM CKPT_HDR_IPC_SHM
- 	CKPT_HDR_IPC_MSG,
- #define CKPT_HDR_IPC_MSG CKPT_HDR_IPC_MSG
-+	CKPT_HDR_IPC_MSG_MSG,
-+#define CKPT_HDR_IPC_MSG_MSG CKPT_HDR_IPC_MSG_MSG
- 	CKPT_HDR_IPC_SEM,
- #define CKPT_HDR_IPC_SEM CKPT_HDR_IPC_SEM
+diff --git a/arch/s390/include/asm/checkpoint_hdr.h b/arch/s390/include/asm/checkpoint_hdr.h
+index e3312c0..7d30317 100644
+--- a/arch/s390/include/asm/checkpoint_hdr.h
++++ b/arch/s390/include/asm/checkpoint_hdr.h
+@@ -91,6 +91,14 @@ struct ckpt_hdr_mm_context {
+ 	unsigned long asce_limit;
+ };
  
-@@ -473,6 +475,25 @@ struct ckpt_hdr_ipc_shm {
- 	__u32 objref;
- } __attribute__((aligned(8)));
- 
-+struct ckpt_hdr_ipc_msg {
-+	struct ckpt_hdr h;
-+	struct ckpt_hdr_ipc_perms perms;
-+	__u64 q_stime;
-+	__u64 q_rtime;
-+	__u64 q_ctime;
-+	__u64 q_cbytes;
-+	__u64 q_qnum;
-+	__u64 q_qbytes;
-+	__s32 q_lspid;
-+	__s32 q_lrpid;
-+} __attribute__((aligned(8)));
++#define CKPT_ARCH_NSIG  64
++#ifdef __KERNEL__
++#include <asm/signal.h>
++#if CKPT_ARCH_NSIG != _SIGCONTEXT_NSIG
++#error CKPT_ARCH_NSIG size is wrong (asm/sigcontext.h and asm/checkpoint_hdr.h)
++#endif
++#endif
 +
-+struct ckpt_hdr_ipc_msg_msg {
-+	struct ckpt_hdr h;
-+	__s64 m_type;
-+	__u32 m_ts;
-+} __attribute__((aligned(8)));
+ struct ckpt_hdr_header_arch {
+ 	struct ckpt_hdr h;
+ };
+diff --git a/arch/x86/include/asm/checkpoint_hdr.h b/arch/x86/include/asm/checkpoint_hdr.h
+index 292bf50..44737b8 100644
+--- a/arch/x86/include/asm/checkpoint_hdr.h
++++ b/arch/x86/include/asm/checkpoint_hdr.h
+@@ -52,6 +52,14 @@ enum {
+ #define CKPT_HDR_MM_CONTEXT_LDT CKPT_HDR_MM_CONTEXT_LDT
+ };
+ 
++#define CKPT_ARCH_NSIG  64
++#ifdef __KERNEL__
++#include <asm/signal.h>
++#if CKPT_ARCH_NSIG != _NSIG
++#error CKPT_ARCH_NSIG size is wrong per asm/signal.h and asm/checkpoint_hdr.h
++#endif
++#endif
 +
+ struct ckpt_hdr_header_arch {
+ 	struct ckpt_hdr h;
+ 	/* FIXME: add HAVE_HWFP */
+diff --git a/checkpoint/Makefile b/checkpoint/Makefile
+index bb2c0ca..f8a55df 100644
+--- a/checkpoint/Makefile
++++ b/checkpoint/Makefile
+@@ -10,4 +10,5 @@ obj-$(CONFIG_CHECKPOINT) += \
+ 	process.o \
+ 	namespace.o \
+ 	files.o \
+-	memory.o
++	memory.o \
++	signal.o
+diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
+index f2d9016..445fef7 100644
+--- a/checkpoint/checkpoint.c
++++ b/checkpoint/checkpoint.c
+@@ -113,6 +113,8 @@ static void fill_kernel_const(struct ckpt_const *h)
+ 	h->task_comm_len = sizeof(tsk->comm);
+ 	/* mm->saved_auxv size */
+ 	h->at_vector_size = AT_VECTOR_SIZE;
++	/* signal */
++	h->signal_nsig = _NSIG;
+ 	/* uts */
+ 	h->uts_sysname_len = sizeof(uts->sysname);
+ 	h->uts_nodename_len = sizeof(uts->nodename);
+diff --git a/checkpoint/objhash.c b/checkpoint/objhash.c
+index 56d450a..858613e 100644
+--- a/checkpoint/objhash.c
++++ b/checkpoint/objhash.c
+@@ -125,6 +125,22 @@ static int obj_mm_users(void *ptr)
+ 	return atomic_read(&((struct mm_struct *) ptr)->mm_users);
+ }
  
- #define CKPT_TST_OVERFLOW_16(a, b) \
- 	((sizeof(a) > sizeof(b)) && ((a) > SHORT_MAX))
-diff --git a/ipc/Makefile b/ipc/Makefile
-index db4b076..71a257f 100644
---- a/ipc/Makefile
-+++ b/ipc/Makefile
-@@ -9,4 +9,5 @@ obj_mq-$(CONFIG_COMPAT) += compat_mq.o
- obj-$(CONFIG_POSIX_MQUEUE) += mqueue.o msgutil.o $(obj_mq-y)
- obj-$(CONFIG_IPC_NS) += namespace.o
- obj-$(CONFIG_POSIX_MQUEUE_SYSCTL) += mq_sysctl.o
--obj-$(CONFIG_SYSVIPC_CHECKPOINT) += checkpoint.o checkpoint_shm.o
-+obj-$(CONFIG_SYSVIPC_CHECKPOINT) += checkpoint.o \
-+		checkpoint_shm.o checkpoint_msg.o
-diff --git a/ipc/checkpoint.c b/ipc/checkpoint.c
-index 7a3a9ca..6b1ec0b 100644
---- a/ipc/checkpoint.c
-+++ b/ipc/checkpoint.c
-@@ -130,11 +130,11 @@ static int do_checkpoint_ipc_ns(struct ckpt_ctx *ctx,
++static int obj_sighand_grab(void *ptr)
++{
++	atomic_inc(&((struct sighand_struct *) ptr)->count);
++	return 0;
++}
++
++static void obj_sighand_drop(void *ptr, int lastref)
++{
++	__cleanup_sighand((struct sighand_struct *) ptr);
++}
++
++static int obj_sighand_users(void *ptr)
++{
++	return atomic_read(&((struct sighand_struct *) ptr)->count);
++}
++
+ static int obj_ns_grab(void *ptr)
+ {
+ 	get_nsproxy((struct nsproxy *) ptr);
+@@ -263,6 +279,16 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
+ 		.checkpoint = checkpoint_mm,
+ 		.restore = restore_mm,
+ 	},
++	/* sighand object */
++	{
++		.obj_name = "SIGHAND",
++		.obj_type = CKPT_OBJ_SIGHAND,
++		.ref_drop = obj_sighand_drop,
++		.ref_grab = obj_sighand_grab,
++		.ref_users = obj_sighand_users,
++		.checkpoint = checkpoint_sighand,
++		.restore = restore_sighand,
++	},
+ 	/* ns object */
+ 	{
+ 		.obj_name = "NSPROXY",
+diff --git a/checkpoint/process.c b/checkpoint/process.c
+index 6741b43..71eb9a5 100644
+--- a/checkpoint/process.c
++++ b/checkpoint/process.c
+@@ -181,6 +181,7 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	struct ckpt_hdr_task_objs *h;
+ 	int files_objref;
+ 	int mm_objref;
++	int sighand_objref;
+ 	int ret;
  
- 	ret = checkpoint_ipc_any(ctx, ipc_ns, IPC_SHM_IDS,
- 				 CKPT_HDR_IPC_SHM, checkpoint_ipc_shm);
--#if 0 /* NEXT FEW PATCHES */
+ 	/*
+@@ -219,11 +220,19 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		return mm_objref;
+ 	}
+ 
++	sighand_objref = checkpoint_obj_sighand(ctx, t);
++	ckpt_debug("sighand: objref %d\n", sighand_objref);
++	if (sighand_objref < 0) {
++		ckpt_err(ctx, sighand_objref, "%(T)sighand_struct\n");
++		return sighand_objref;
++	}
++
+ 	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
+ 	if (!h)
+ 		return -ENOMEM;
+ 	h->files_objref = files_objref;
+ 	h->mm_objref = mm_objref;
++	h->sighand_objref = sighand_objref;
+ 	ret = ckpt_write_obj(ctx, &h->h);
+ 	ckpt_hdr_put(ctx, h);
+ 
+@@ -386,6 +395,9 @@ int ckpt_collect_task(struct ckpt_ctx *ctx, struct task_struct *t)
  	if (ret < 0)
  		return ret;
- 	ret = checkpoint_ipc_any(ctx, ipc_ns, IPC_MSG_IDS,
- 				 CKPT_HDR_IPC_MSG, checkpoint_ipc_msg);
-+#if 0 /* NEXT FEW PATCHES */
- 	if (ret < 0)
- 		return ret;
- 	ret = checkpoint_ipc_any(ctx, ipc_ns, IPC_SEM_IDS,
-diff --git a/ipc/checkpoint_msg.c b/ipc/checkpoint_msg.c
+ 	ret = ckpt_collect_mm(ctx, t);
++	if (ret < 0)
++		return ret;
++	ret = ckpt_collect_sighand(ctx, t);
+ 
+ 	return ret;
+ }
+@@ -545,10 +557,17 @@ static int restore_task_objs(struct ckpt_ctx *ctx)
+ 
+ 	ret = restore_obj_file_table(ctx, h->files_objref);
+ 	ckpt_debug("file_table: ret %d (%p)\n", ret, current->files);
++	if (ret < 0)
++		goto out;
+ 
+ 	ret = restore_obj_mm(ctx, h->mm_objref);
+ 	ckpt_debug("mm: ret %d (%p)\n", ret, current->mm);
++	if (ret < 0)
++		goto out;
+ 
++	ret = restore_obj_sighand(ctx, h->sighand_objref);
++	ckpt_debug("sighand: ret %d (%p)\n", ret, current->sighand);
++ out:
+ 	ckpt_hdr_put(ctx, h);
+ 	return ret;
+ }
+diff --git a/checkpoint/restart.c b/checkpoint/restart.c
+index 60a8bb4..34d3e64 100644
+--- a/checkpoint/restart.c
++++ b/checkpoint/restart.c
+@@ -567,6 +567,9 @@ static int check_kernel_const(struct ckpt_const *h)
+ 	/* mm->saved_auxv size */
+ 	if (h->at_vector_size != AT_VECTOR_SIZE)
+ 		return -EINVAL;
++	/* signal */
++	if (h->signal_nsig != _NSIG)
++		return -EINVAL;
+ 	/* uts */
+ 	if (h->uts_sysname_len != sizeof(uts->sysname))
+ 		return -EINVAL;
+diff --git a/checkpoint/signal.c b/checkpoint/signal.c
 new file mode 100644
-index 0000000..16ebbb5
+index 0000000..1aadadd
 --- /dev/null
-+++ b/ipc/checkpoint_msg.c
-@@ -0,0 +1,380 @@
++++ b/checkpoint/signal.c
+@@ -0,0 +1,163 @@
 +/*
-+ *  Checkpoint/restart - dump state of sysvipc msg
++ *  Checkpoint task signals
 + *
 + *  Copyright (C) 2009 Oren Laadan
 + *
@@ -206,478 +319,248 @@ index 0000000..16ebbb5
 + */
 +
 +/* default debug level for output */
-+#define CKPT_DFLAG  CKPT_DIPC
++#define CKPT_DFLAG  CKPT_DSYS
 +
-+#include <linux/mm.h>
-+#include <linux/msg.h>
-+#include <linux/rwsem.h>
 +#include <linux/sched.h>
-+#include <linux/syscalls.h>
-+#include <linux/nsproxy.h>
-+#include <linux/security.h>
-+#include <linux/ipc_namespace.h>
-+
-+#include "util.h"
-+
++#include <linux/signal.h>
++#include <linux/errno.h>
 +#include <linux/checkpoint.h>
 +#include <linux/checkpoint_hdr.h>
 +
-+/************************************************************************
-+ * ipc checkpoint
-+ */
-+
-+/* called with the msgids->rw_mutex is read-held */
-+static int fill_ipc_msg_hdr(struct ckpt_ctx *ctx,
-+			    struct ckpt_hdr_ipc_msg *h,
-+			    struct msg_queue *msq)
++static inline void fill_sigset(struct ckpt_sigset *h, sigset_t *sigset)
 +{
-+	int ret;
-+
-+	ret = checkpoint_fill_ipc_perms(&h->perms, &msq->q_perm);
-+	if (ret < 0)
-+		return ret;
-+
-+	ipc_lock_by_ptr(&msq->q_perm);
-+	h->q_stime = msq->q_stime;
-+	h->q_rtime = msq->q_rtime;
-+	h->q_ctime = msq->q_ctime;
-+	h->q_cbytes = msq->q_cbytes;
-+	h->q_qnum = msq->q_qnum;
-+	h->q_qbytes = msq->q_qbytes;
-+	h->q_lspid = msq->q_lspid;
-+	h->q_lrpid = msq->q_lrpid;
-+	ipc_unlock(&msq->q_perm);
-+
-+	ckpt_debug("msg: lspid %d rspid %d qnum %lld qbytes %lld\n",
-+		 h->q_lspid, h->q_lrpid, h->q_qnum, h->q_qbytes);
-+
-+	return 0;
++	memcpy(&h->sigset, sigset, sizeof(*sigset));
 +}
 +
-+static int checkpoint_msg_contents(struct ckpt_ctx *ctx, struct msg_msg *msg)
++static inline void load_sigset(sigset_t *sigset, struct ckpt_sigset *h)
 +{
-+	struct ckpt_hdr_ipc_msg_msg *h;
-+	struct msg_msgseg *seg;
-+	int total, len;
-+	int ret;
++	memcpy(sigset, &h->sigset, sizeof(*sigset));
++}
 +
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_IPC_MSG_MSG);
++/***********************************************************************
++ * sighand checkpoint/collect/restart
++ */
++
++static int do_checkpoint_sighand(struct ckpt_ctx *ctx,
++				 struct sighand_struct *sighand)
++{
++	struct ckpt_hdr_sighand *h;
++	struct ckpt_sigaction *hh;
++	struct sigaction *sa;
++	int i, ret;
++
++	h = ckpt_hdr_get_type(ctx, _NSIG * sizeof(*hh) + sizeof(*h),
++			      CKPT_HDR_SIGHAND);
 +	if (!h)
 +		return -ENOMEM;
 +
-+	h->m_type = msg->m_type;
-+	h->m_ts = msg->m_ts;
++	hh = h->action;
++	spin_lock_irq(&sighand->siglock);
++	for (i = 0; i < _NSIG; i++) {
++		sa = &sighand->action[i].sa;
++		hh[i]._sa_handler = (unsigned long) sa->sa_handler;
++		hh[i].sa_flags = sa->sa_flags;
++		hh[i].sa_restorer = (unsigned long) sa->sa_restorer;
++		fill_sigset(&hh[i].sa_mask, &sa->sa_mask);
++	}
++	spin_unlock_irq(&sighand->siglock);
 +
 +	ret = ckpt_write_obj(ctx, &h->h);
 +	ckpt_hdr_put(ctx, h);
-+	if (ret < 0)
-+		return ret;
-+
-+	total = msg->m_ts;
-+	len = min(total, (int) DATALEN_MSG);
-+	ret = ckpt_write_buffer(ctx, (msg + 1), len);
-+	if (ret < 0)
-+		return ret;
-+
-+	seg = msg->next;
-+	total -= len;
-+
-+	while (total) {
-+		len = min(total, (int) DATALEN_SEG);
-+		ret = ckpt_write_buffer(ctx, (seg + 1), len);
-+		if (ret < 0)
-+			break;
-+		seg = seg->next;
-+		total -= len;
-+	}
 +
 +	return ret;
 +}
 +
-+static int checkpoint_msg_queue(struct ckpt_ctx *ctx, struct msg_queue *msq)
++int checkpoint_sighand(struct ckpt_ctx *ctx, void *ptr)
 +{
-+	struct list_head messages;
-+	struct msg_msg *msg;
-+	int ret = -EBUSY;
-+
-+	/*
-+	 * Scanning the msq requires the lock, but then we can't write
-+	 * data out from inside. Instead, we grab the lock, remove all
-+	 * messages to our own list, drop the lock, write the messages,
-+	 * and finally re-attach the them to the msq with the lock taken.
-+	 */
-+	ipc_lock_by_ptr(&msq->q_perm);
-+	if (!list_empty(&msq->q_receivers))
-+		goto unlock;
-+	if (!list_empty(&msq->q_senders))
-+		goto unlock;
-+	if (list_empty(&msq->q_messages))
-+		goto unlock;
-+	/* temporarily take out all messages */
-+	INIT_LIST_HEAD(&messages);
-+	list_splice_init(&msq->q_messages, &messages);
-+ unlock:
-+	ipc_unlock(&msq->q_perm);
-+
-+	list_for_each_entry(msg, &messages, m_list) {
-+		ret = checkpoint_msg_contents(ctx, msg);
-+		if (ret < 0)
-+			break;
-+	}
-+
-+	/* put all the messages back in */
-+	ipc_lock_by_ptr(&msq->q_perm);
-+	list_splice(&messages, &msq->q_messages);
-+	ipc_unlock(&msq->q_perm);
-+
-+	return ret;
++	return do_checkpoint_sighand(ctx, (struct sighand_struct *) ptr);
 +}
 +
-+/* called with the msgids->rw_mutex is read-held */
-+int checkpoint_ipc_msg(int id, void *p, void *data)
++int checkpoint_obj_sighand(struct ckpt_ctx *ctx, struct task_struct *t)
 +{
-+	struct ckpt_hdr_ipc_msg *h;
-+	struct ckpt_ctx *ctx = (struct ckpt_ctx *) data;
-+	struct kern_ipc_perm *perm = (struct kern_ipc_perm *) p;
-+	struct msg_queue *msq;
++	struct sighand_struct *sighand;
++	int objref;
++
++	read_lock(&tasklist_lock);
++	sighand = rcu_dereference(t->sighand);
++	atomic_inc(&sighand->count);
++	read_unlock(&tasklist_lock);
++
++	objref = checkpoint_obj(ctx, sighand, CKPT_OBJ_SIGHAND);
++	__cleanup_sighand(sighand);
++
++	return objref;
++}
++
++int ckpt_collect_sighand(struct ckpt_ctx *ctx, struct task_struct *t)
++{
++	struct sighand_struct *sighand;
 +	int ret;
 +
-+	msq = container_of(perm, struct msg_queue, q_perm);
++	read_lock(&tasklist_lock);
++	sighand = rcu_dereference(t->sighand);
++	atomic_inc(&sighand->count);
++	read_unlock(&tasklist_lock);
 +
-+	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_IPC_MSG);
-+	if (!h)
-+		return -ENOMEM;
++	ret = ckpt_obj_collect(ctx, sighand, CKPT_OBJ_SIGHAND);
++	__cleanup_sighand(sighand);
 +
-+	ret = fill_ipc_msg_hdr(ctx, h, msq);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = ckpt_write_obj(ctx, &h->h);
-+	if (ret < 0)
-+		goto out;
-+
-+	if (h->q_qnum)
-+		ret = checkpoint_msg_queue(ctx, msq);
-+ out:
-+	ckpt_hdr_put(ctx, h);
 +	return ret;
 +}
 +
-+
-+/************************************************************************
-+ * ipc restart
-+ */
-+
-+/* called with the msgids->rw_mutex is write-held */
-+static int load_ipc_msg_hdr(struct ckpt_ctx *ctx,
-+			    struct ckpt_hdr_ipc_msg *h,
-+			    struct msg_queue *msq)
++static struct sighand_struct *do_restore_sighand(struct ckpt_ctx *ctx)
 +{
-+	int ret = 0;
++	struct ckpt_hdr_sighand *h;
++	struct ckpt_sigaction *hh;
++	struct sighand_struct *sighand;
++	struct sigaction *sa;
++	int i;
 +
-+	ret = restore_load_ipc_perms(&h->perms, &msq->q_perm);
-+	if (ret < 0)
-+		return ret;
++	h = ckpt_read_obj_type(ctx, _NSIG * sizeof(*hh) + sizeof(*h),
++			       CKPT_HDR_SIGHAND);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
 +
-+	ckpt_debug("msq: lspid %d lrpid %d qnum %lld qbytes %lld\n",
-+		 h->q_lspid, h->q_lrpid, h->q_qnum, h->q_qbytes);
++	sighand = kmem_cache_alloc(sighand_cachep, GFP_KERNEL);
++	if (!sighand) {
++		sighand = ERR_PTR(-ENOMEM);
++		goto out;
++	}
++	atomic_set(&sighand->count, 1);
 +
-+	if (h->q_lspid < 0 || h->q_lrpid < 0)
-+		return -EINVAL;
++	hh = h->action;
++	for (i = 0; i < _NSIG; i++) {
++		sa = &sighand->action[i].sa;
++		sa->sa_handler = (void *) (unsigned long) hh[i]._sa_handler;
++		sa->sa_flags = hh[i].sa_flags;
++		sa->sa_restorer = (void *) (unsigned long) hh[i].sa_restorer;
++		load_sigset(&sa->sa_mask, &hh[i].sa_mask);
++	}
++ out:
++	ckpt_hdr_put(ctx, h);
++	return sighand;
++}
 +
-+	msq->q_stime = h->q_stime;
-+	msq->q_rtime = h->q_rtime;
-+	msq->q_ctime = h->q_ctime;
-+	msq->q_lspid = h->q_lspid;
-+	msq->q_lrpid = h->q_lrpid;
++void *restore_sighand(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_sighand(ctx);
++}
++
++int restore_obj_sighand(struct ckpt_ctx *ctx, int sighand_objref)
++{
++	struct sighand_struct *sighand;
++	struct sighand_struct *old_sighand;
++
++	sighand = ckpt_obj_fetch(ctx, sighand_objref, CKPT_OBJ_SIGHAND);
++	if (IS_ERR(sighand))
++		return PTR_ERR(sighand);
++
++	if (sighand == current->sighand)
++		return 0;
++
++	atomic_inc(&sighand->count);
++
++	/* manipulate tsk->sighand with tasklist lock write-held */
++	write_lock_irq(&tasklist_lock);
++	old_sighand = rcu_dereference(current->sighand);
++	spin_lock(&old_sighand->siglock);
++	rcu_assign_pointer(current->sighand, sighand);
++	spin_unlock(&old_sighand->siglock);
++	write_unlock_irq(&tasklist_lock);
++	__cleanup_sighand(old_sighand);
 +
 +	return 0;
 +}
-+
-+static struct msg_msg *restore_msg_contents_one(struct ckpt_ctx *ctx, int *clen)
-+{
-+	struct ckpt_hdr_ipc_msg_msg *h;
-+	struct msg_msg *msg = NULL;
-+	struct msg_msgseg *seg, **pseg;
-+	int total, len;
-+	int ret;
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_IPC_MSG_MSG);
-+	if (IS_ERR(h))
-+		return (struct msg_msg *) h;
-+
-+	ret = -EINVAL;
-+	if (h->m_type < 1)
-+		goto out;
-+	if (h->m_ts > current->nsproxy->ipc_ns->msg_ctlmax)
-+		goto out;
-+
-+	total = h->m_ts;
-+	len = min(total, (int) DATALEN_MSG);
-+	msg = kmalloc(sizeof(*msg) + len, GFP_KERNEL);
-+	if (!msg) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	msg->next = NULL;
-+	pseg = &msg->next;
-+
-+	ret = _ckpt_read_buffer(ctx, (msg + 1), len);
-+	if (ret < 0)
-+		goto out;
-+
-+	total -= len;
-+	while (total) {
-+		len = min(total, (int) DATALEN_SEG);
-+		seg = kmalloc(sizeof(*seg) + len, GFP_KERNEL);
-+		if (!seg) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+		seg->next = NULL;
-+		*pseg = seg;
-+		pseg = &seg->next;
-+
-+		ret = _ckpt_read_buffer(ctx, (seg + 1), len);
-+		if (ret < 0)
-+			goto out;
-+		total -= len;
-+	}
-+
-+	msg->m_type = h->m_type;
-+	msg->m_ts = h->m_ts;
-+	*clen = h->m_ts;
-+	ret = security_msg_msg_alloc(msg);
-+ out:
-+	if (ret < 0 && msg) {
-+		free_msg(msg);
-+		msg = ERR_PTR(ret);
-+	}
-+	ckpt_hdr_put(ctx, h);
-+	return msg;
-+}
-+
-+static inline void free_msg_list(struct list_head *queue)
-+{
-+	struct msg_msg *msg, *tmp;
-+
-+	list_for_each_entry_safe(msg, tmp, queue, m_list)
-+		free_msg(msg);
-+}
-+
-+static int restore_msg_contents(struct ckpt_ctx *ctx, struct list_head *queue,
-+				unsigned long qnum, unsigned long *cbytes)
-+{
-+	struct msg_msg *msg;
-+	int clen = 0;
-+	int ret = 0;
-+
-+	INIT_LIST_HEAD(queue);
-+
-+	*cbytes = 0;
-+	while (qnum--) {
-+		msg = restore_msg_contents_one(ctx, &clen);
-+		if (IS_ERR(msg))
-+			goto fail;
-+		list_add_tail(&msg->m_list, queue);
-+		*cbytes += clen;
-+	}
-+	return 0;
-+ fail:
-+	ret = PTR_ERR(msg);
-+	free_msg_list(queue);
-+	return ret;
-+}
-+
-+int restore_ipc_msg(struct ckpt_ctx *ctx, struct ipc_namespace *ns)
-+{
-+	struct ckpt_hdr_ipc_msg *h;
-+	struct kern_ipc_perm *ipc;
-+	struct msg_queue *msq;
-+	struct ipc_ids *msg_ids = &ns->ids[IPC_MSG_IDS];
-+	struct list_head messages;
-+	unsigned long cbytes;
-+	int msgflag;
-+	int ret;
-+
-+	INIT_LIST_HEAD(&messages);
-+
-+	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_IPC_MSG);
-+	if (IS_ERR(h))
-+		return PTR_ERR(h);
-+
-+	ret = -EINVAL;
-+	if (h->perms.id < 0)
-+		goto out;
-+
-+	/* read queued messages into temporary queue */
-+	ret = restore_msg_contents(ctx, &messages, h->q_qnum, &cbytes);
-+	if (ret < 0)
-+		goto out;
-+
-+	ret = -EINVAL;
-+	if (h->q_cbytes != cbytes)
-+		goto out;
-+
-+	/* restore the message queue */
-+	msgflag = h->perms.mode | IPC_CREAT | IPC_EXCL;
-+	ckpt_debug("msg: do_msgget key %d flag %#x id %d\n",
-+		 h->perms.key, msgflag, h->perms.id);
-+	ret = do_msgget(ns, h->perms.key, msgflag, h->perms.id);
-+	ckpt_debug("msg: do_msgget ret %d\n", ret);
-+	if (ret < 0)
-+		goto out;
-+
-+	down_write(&msg_ids->rw_mutex);
-+
-+	/*
-+	 * We are the sole owners/users of this brand new ipc-ns, so:
-+	 *
-+	 * 1) The msgid could not have been deleted between its creation
-+	 *   and taking the rw_mutex above.
-+	 *
-+	 * 2) No unauthorized task will have attempted to gain access
-+	 *   to it either, not even until we restore the security bit
-+	 *   further below, so the theoretical security race is void.
-+	 *
-+	 * If/when we allow to restore the ipc state within the parent's
-+	 * ipc-ns, we will need to re-examine this.
-+	 */
-+	ipc = ipc_lock(msg_ids, h->perms.id);
-+	BUG_ON(IS_ERR(ipc));
-+
-+	msq = container_of(ipc, struct msg_queue, q_perm);
-+	BUG_ON(!list_empty(&msq->q_messages));
-+
-+	/* attach queued messages we read before */
-+	list_splice_init(&messages, &msq->q_messages);
-+
-+	/* adjust msq and namespace statistics */
-+	atomic_add(h->q_cbytes, &ns->msg_bytes);
-+	atomic_add(h->q_qnum, &ns->msg_hdrs);
-+	msq->q_cbytes = h->q_cbytes;
-+	msq->q_qbytes = h->q_qbytes;
-+	msq->q_qnum = h->q_qnum;
-+
-+	/* this is safe because no unauthorized access is possible */
-+	ipc_unlock(ipc);
-+
-+	ret = load_ipc_msg_hdr(ctx, h, msq);
-+	if (ret < 0) {
-+		ckpt_debug("msq: need to remove (%d)\n", ret);
-+		ipc_lock_by_ptr(&msq->q_perm);
-+		freeque(ns, ipc);
-+		ipc_unlock(ipc);
-+	}
-+	up_write(&msg_ids->rw_mutex);
-+ out:
-+	free_msg_list(&messages);  /* no-op if all ok, else cleanup msgs */
-+	ckpt_hdr_put(ctx, h);
-+	return ret;
-+}
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 9230e7c..7711c77 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -72,7 +72,6 @@ struct msg_sender {
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index f321860..5a26f8b 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -267,6 +267,14 @@ extern int restore_memory_contents(struct ckpt_ctx *ctx, struct inode *inode);
+ 	 VM_RESERVED | VM_NORESERVE | VM_HUGETLB | VM_NONLINEAR |	\
+ 	 VM_MAPPED_COPY | VM_INSERTPAGE | VM_MIXEDMAP | VM_SAO)
  
- #define msg_unlock(msq)		ipc_unlock(&(msq)->q_perm)
- 
--static void freeque(struct ipc_namespace *, struct kern_ipc_perm *);
- static int newque(struct ipc_namespace *, struct ipc_params *, int);
- #ifdef CONFIG_PROC_FS
- static int sysvipc_msg_proc_show(struct seq_file *s, void *it);
-@@ -279,7 +278,7 @@ static void expunge_all(struct msg_queue *msq, int res)
-  * msg_ids.rw_mutex (writer) and the spinlock for this message queue are held
-  * before freeque() is called. msg_ids.rw_mutex remains locked on exit.
-  */
--static void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
-+void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
++/* signals */
++extern int checkpoint_obj_sighand(struct ckpt_ctx *ctx, struct task_struct *t);
++extern int restore_obj_sighand(struct ckpt_ctx *ctx, int sighand_objref);
++
++extern int ckpt_collect_sighand(struct ckpt_ctx *ctx, struct task_struct *t);
++extern int checkpoint_sighand(struct ckpt_ctx *ctx, void *ptr);
++extern void *restore_sighand(struct ckpt_ctx *ctx);
++
+ static inline int ckpt_validate_errno(int errno)
  {
- 	struct list_head *tmp;
- 	struct msg_queue *msq = container_of(ipcp, struct msg_queue, q_perm);
-@@ -312,14 +311,11 @@ static inline int msg_security(struct kern_ipc_perm *ipcp, int msgflg)
- 	return security_msg_queue_associate(msq, msgflg);
- }
+ 	return (errno >= 0) && (errno < MAX_ERRNO);
+@@ -299,7 +307,6 @@ static inline int ckpt_validate_errno(int errno)
+ 			memcpy(LIVE, SAVE, count * sizeof(*SAVE));	\
+ 	} while (0)
  
--int do_msgget(key_t key, int msgflg, int req_id)
-+int do_msgget(struct ipc_namespace *ns, key_t key, int msgflg, int req_id)
- {
--	struct ipc_namespace *ns;
- 	struct ipc_ops msg_ops;
- 	struct ipc_params msg_params;
- 
--	ns = current->nsproxy->ipc_ns;
 -
- 	msg_ops.getnew = newque;
- 	msg_ops.associate = msg_security;
- 	msg_ops.more_checks = NULL;
-@@ -332,7 +328,7 @@ int do_msgget(key_t key, int msgflg, int req_id)
+ /* debugging flags */
+ #define CKPT_DBASE	0x1		/* anything */
+ #define CKPT_DSYS	0x2		/* generic (system) */
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index 729be96..225fd1f 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -131,6 +131,9 @@ enum {
+ 	CKPT_HDR_IPC_SEM,
+ #define CKPT_HDR_IPC_SEM CKPT_HDR_IPC_SEM
  
- SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
- {
--	return do_msgget(key, msgflg, -1);
-+	return do_msgget(current->nsproxy->ipc_ns, key, msgflg, -1);
- }
- 
- static inline unsigned long
-diff --git a/ipc/msgutil.c b/ipc/msgutil.c
-index f095ee2..e119243 100644
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -36,14 +36,6 @@ struct ipc_namespace init_ipc_ns = {
- 
- atomic_t nr_ipc_ns = ATOMIC_INIT(1);
- 
--struct msg_msgseg {
--	struct msg_msgseg* next;
--	/* the next part of the message follows immediately */
--};
--
--#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
--#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
--
- struct msg_msg *load_msg(const void __user *src, int len)
- {
- 	struct msg_msg *msg;
-diff --git a/ipc/util.h b/ipc/util.h
-index e0007dc..8a223f0 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -141,6 +141,14 @@ extern void free_msg(struct msg_msg *msg);
- extern struct msg_msg *load_msg(const void __user *src, int len);
- extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
- 
-+struct msg_msgseg {
-+	struct msg_msgseg *next;
-+	/* the next part of the message follows immediately */
-+};
++	CKPT_HDR_SIGHAND = 601,
++#define CKPT_HDR_SIGHAND CKPT_HDR_SIGHAND
 +
-+#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
-+#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
+ 	CKPT_HDR_TAIL = 9001,
+ #define CKPT_HDR_TAIL CKPT_HDR_TAIL
+ 
+@@ -168,6 +171,8 @@ enum obj_type {
+ #define CKPT_OBJ_FILE CKPT_OBJ_FILE
+ 	CKPT_OBJ_MM,
+ #define CKPT_OBJ_MM CKPT_OBJ_MM
++	CKPT_OBJ_SIGHAND,
++#define CKPT_OBJ_SIGHAND CKPT_OBJ_SIGHAND
+ 	CKPT_OBJ_NS,
+ #define CKPT_OBJ_NS CKPT_OBJ_NS
+ 	CKPT_OBJ_UTS_NS,
+@@ -192,6 +197,8 @@ struct ckpt_const {
+ 	__u16 task_comm_len;
+ 	/* mm */
+ 	__u16 at_vector_size;
++	/* signal */
++	__u16 signal_nsig;
+ 	/* uts */
+ 	__u16 uts_sysname_len;
+ 	__u16 uts_nodename_len;
+@@ -365,6 +372,7 @@ struct ckpt_hdr_task_objs {
+ 
+ 	__s32 files_objref;
+ 	__s32 mm_objref;
++	__s32 sighand_objref;
+ } __attribute__((aligned(8)));
+ 
+ /* restart blocks */
+@@ -506,6 +514,22 @@ struct ckpt_hdr_pgarr {
+ 	__u64 nr_pages;		/* number of pages to saved */
+ } __attribute__((aligned(8)));
+ 
++/* signals */
++struct ckpt_sigset {
++	__u8 sigset[CKPT_ARCH_NSIG / 8];
++} __attribute__((aligned(8)));
 +
- extern void recompute_msgmni(struct ipc_namespace *);
- 
- static inline int ipc_buildid(int id, int seq)
-@@ -182,6 +190,8 @@ int do_shmget(struct ipc_namespace *ns, key_t key, size_t size, int shmflg,
- 	      int req_id);
- void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp);
- 
-+int do_msgget(struct ipc_namespace *ns, key_t key, int msgflg, int req_id);
-+void freeque(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp);
- 
- #ifdef CONFIG_CHECKPOINT
- extern int checkpoint_fill_ipc_perms(struct ckpt_hdr_ipc_perms *h,
-@@ -192,6 +202,9 @@ extern int restore_load_ipc_perms(struct ckpt_hdr_ipc_perms *h,
- extern int ckpt_collect_ipc_shm(int id, void *p, void *data);
- extern int checkpoint_ipc_shm(int id, void *p, void *data);
- extern int restore_ipc_shm(struct ckpt_ctx *ctx, struct ipc_namespace *ns);
++struct ckpt_sigaction {
++	__u64 _sa_handler;
++	__u64 sa_flags;
++	__u64 sa_restorer;
++	struct ckpt_sigset sa_mask;
++} __attribute__((aligned(8)));
 +
-+extern int checkpoint_ipc_msg(int id, void *p, void *data);
-+extern int restore_ipc_msg(struct ckpt_ctx *ctx, struct ipc_namespace *ns);
- #endif
++struct ckpt_hdr_sighand {
++	struct ckpt_hdr h;
++	struct ckpt_sigaction action[0];
++} __attribute__((aligned(8)));
  
- #endif
+ /* ipc commons */
+ struct ckpt_hdr_ipcns {
 -- 
 1.6.3.3
 
