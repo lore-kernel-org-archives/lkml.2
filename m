@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab0CQVWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:22:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58597
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753701Ab0CQVWE (ORCPT
+	id S1755651Ab0CQV0V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:26:21 -0400
+Received: from smtpgcba1.buenosaires.gob.ar ([200.89.135.225]:49086 "EHLO
+	smtpgcba1.buenosaires.gob.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754845Ab0CQV0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:22:04 -0400
-Date: Wed, 17 Mar 2010 14:22:24 -0700 (PDT)
-Message-Id: <20100317.142224.193700644.davem@davemloft.net>
-To: tilman@imap.cc
-Cc: isdn@linux-pingi.de, randy.dunlap@oracle.com, sfr@canb.auug.org.au,
-       linux-next@vger.kernel.org, hjlipp@web.de,
-       isdn4linux@listserv.isdn4linux.de, i4ldeveloper@listserv.isdn4linux.de,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] gigaset: fix build failure
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100317211231.569B140118@xenon.ts.pxnet.com>
-References: <20100317211231.569B140118@xenon.ts.pxnet.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Mar 2010 17:26:18 -0400
+X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 17:26:17 EDT
+Message-ID: <20100317181723.88480b88s77mrbvn@mail.buenosaires.gob.ar>
+Date: Wed, 17 Mar 2010 18:17:23 -0300
+From: "Mr.Patrick Adams" <mrpatrick.adams@gmail.com>
+Reply-to: mrpatrick.adams47@gmail.com
+To: undisclosed-recipients:;
+Subject: Winning Notification
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
+X-GCBA-Alerce-Info: Al
+X-MailScanner-Id: a07a31d52b4839807b76491db5f584cd
+X-GCBA-Alerce: limpio
+X-GCBA-Alerce-From: mrpatrick.adams@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tilman Schmidt <tilman@imap.cc>
-Date: Wed, 17 Mar 2010 18:37:05 +0100
 
-> Update the dummy LL interface to the LL interface change
-> introduced by commit daab433c03c15fd642c71c94eb51bdd3f32602c8.
-> This fixes the build failure occurring after that commit when
-> enabling ISDN_DRV_GIGASET but neither ISDN_I4L nor ISDN_CAPI.
-> 
-> Impact: bugfix
-> Signed-off-by: Tilman Schmidt <tilman@imap.cc>
 
-Applied, thanks.
+  Dear E-mail User,
+Your  email has just won the sum of £750,000.00 GBP in cash credited  
+to a file in the just concluded Irish Lottery International Award  
+Programme held 10th of march,2010
+====================================
+Your  e-mail address attached to:
+Winner Pin No:5388/10.
+Secret No:089188/10
+Winning Date: 10th of march,2010
+=============================================
+1. Full Name 2. Address: 3.Age/Gender 4. Occupation 5.Nationality  
+6.Phone Number 7. Have you won a lotttery before?(YES/NO)8.Amount Won?
+Send details to Fiduciary Agent: Dr.Culverton Humphery
+Tel: +44(0)703 595 7792
+Email:mrpatrick.adams47@gmail.com
+
+Note:All Reponses should be sent to Agent via  
+email:mrpatrick.adams47@gmail.com
+Online Co-Ordinator
+Mr.Patrick Adams
+
