@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab0CQIWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:22:01 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42274 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550Ab0CQIV6 (ORCPT
+	id S1753653Ab0CQIWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:22:46 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:61988 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab0CQIWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:21:58 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: Weird wireless/wpa_supplicant screw-up.
-In-Reply-To: Your message of "Tue, 16 Mar 2010 20:22:30 PDT."
-             <1268796150.7068.6.camel@jlt3.sipsolutions.net>
-From: Valdis.Kletnieks@vt.edu
-References: <7197.1268086939@localhost> <1268392481.4828.7.camel@jlt3.sipsolutions.net> <5220.1268430568@localhost> <1268449749.4880.2.camel@jlt3.sipsolutions.net> <12262.1268795213@localhost>
-            <1268796150.7068.6.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1268814093_4069P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 17 Mar 2010 04:21:33 -0400
-Message-ID: <27228.1268814093@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=steiner.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020205.4BA0910E.0060,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Wed, 17 Mar 2010 04:22:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=W/JNIC+n1gSL9P+VuQJtZOyjp54JdpYa8zB5tpoka25CfKAHu6nvTDOiJxdUOKX7/+
+         foXr+KeKnNYpKYo4Xr+NRBt0MojUiuQTTrucHm2SMjl8YirhbuBORSZyK2/ik4xUc0ys
+         cHyXwis1GWL2ol8ghpHxg+L9MZtyxzOZgxZfI=
+MIME-Version: 1.0
+In-Reply-To: <b637ec0b1003161331y680418e0p6549504165a45701@mail.gmail.com>
+References: <b637ec0b1003111328u5c1d7d7fw6c76c409740827c7@mail.gmail.com>
+	 <71cd59b01003120049n1a9fbbf3qfd37f14f241a7f64@mail.gmail.com>
+	 <b637ec0b1003121207g5d29ddb4k338f1768ed1c2759@mail.gmail.com>
+	 <71cd59b01003130116h4265769v9e1dae95361629ce@mail.gmail.com>
+	 <b637ec0b1003130450n3293ee78wc58e08a9bbcefe17@mail.gmail.com>
+	 <71cd59b01003152354h64d18c0fq2083f60e399313c8@mail.gmail.com>
+	 <b637ec0b1003161331y680418e0p6549504165a45701@mail.gmail.com>
+Date: Wed, 17 Mar 2010 09:22:40 +0100
+Message-ID: <71cd59b01003170122h1ef767a3ma186e7ef278d73a1@mail.gmail.com>
+Subject: Re: Possible bug in eeepc-laptop.c - EeePC 900
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Fabio Comolli <fabio.comolli@gmail.com>
+Cc: ACPI mailing list <linux-acpi@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1268814093_4069P
-Content-Type: text/plain; charset=us-ascii
+On Tue, Mar 16, 2010 at 9:31 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
+> Hi.
+>
+> On Tue, Mar 16, 2010 at 7:54 AM, Corentin Chary
+> <corentin.chary@gmail.com> wrote:
+>> On Sat, Mar 13, 2010 at 1:50 PM, Fabio Comolli <fabio.comolli@gmail.com> wrote:
+>>> Well, I'm confused.
+>>>
+>>> I rebooted with the "vanilla" eeepc-laptop.c and I'm sorry to say that
+>>> the situation it's not like the one I described in the post I wrote 2
+>>> days ago. Actually the situation with the patch reverted is the same I
+>>> have with the patch applied.
+>>>
+>>> What I mean is that if I boot on AC power /proc/cpuinfo always reports
+>>> 900MHz and 1800 bogomips. It I boot on battery /proc/cpuinfo always
+>>> reports 630MHz and 1260 bogomips. Plugging / unplugging the AC does
+>>> not change the situation. Only reboot does.
+>>>
+>>> But the cpufv interface does indeed seem to work, as glxgears and
+>>> stellarium show the frame rate change accordingly to the powersave /
+>>> performance selection.
+>>>
+>>> So my question is: what does really the cpufv interface do? Is it
+>>> supposed to change the processor frequency? Or does it change
+>>> something else?
+>>>
+>>> And if the answer to the latest question is affirmative, why
+>>> /proc/cpuinfo seems to ignore it?
+>>>
+>>> Sorry for the confusion.
+>>> Regards,
+>>> Fabio
+>>>
+>>
+>> Here is what I can read in your DSDT:
+>>
+>> When INIT or _Q31 is called, the bios check the the battery is
+>> present, and call FSBA(0) or FSBA(1).
+>> _Q31 seems to be called by an hotkey, could you run "acpi_listen" and
+>> search the hotkey that generate 0x50 or 0x51 ?
+>
+> This is the output requested.
+>
+> hotkey ATKD 0000002e 00000000
+> hotkey ATKD 0000002f 00000000
+> hotkey ATKD 00000030 00000000
+> hotkey ATKD 00000012 00000000
+> hotkey ATKD 00000013 00000000
+> hotkey ATKD 00000014 00000000
+> hotkey ATKD 00000015 00000000
+> hotkey ATKD 00000010 00000000
+> button/sleep SLPB 00000080 00000001
+> hotkey ATKD 00000010 00000001
 
-On Tue, 16 Mar 2010 20:22:30 PDT, Johannes Berg said:
-> On Tue, 2010-03-16 at 23:06 -0400, Valdis.Kletnieks@vt.edu wrote:
-
-> > If a TX key has been set anyplace, what allows me
-> > to verify that it was in fact set?
-> 
-> Nothing. Blame it on wext and on the fact that nobody cares.
-
-Pretty fucking fundemental thing to not care about, being able to tell whether
-or not your connection is in fact encrypted or not. But I guess you expect
-users to be all-knowing and magically know that even though iwconfig says
-'Encryption key: off' that in fact their connection is encrypted (unless of
-course it's off because it's not encrypted), and how to troubleshoot the
-difference between "not encrypted" and "lying about not being encrypted" when
-the utilities in wireless-tools provide the same output in both cases.
-
-Unfortunately, I'm a stupid idiot, and when I'm trying to get wpa_supplicant
-working and hitting various unrelated certificate issues, resolve those,
-finally get wpa_supplicant to say it connected, but then I type 'iwconfig'
-and it *still* says "Encryption key: off", I'm unable to make the leap of
-logic and say "AHA! It's encrypted now", and I start trying to find what I
-still have to fix so it will say it's encrypted.
-
-Sorry for bothering you and wasting your time.
-
-> problem is, if there is one. If your actual problem is just that iwlist
-> reports what you think is wrong information (which is just incomplete,
-> it doesn't show the PTK) then that's nothing I actually care about
-> fixing.
-
-The problem is a combination of things - (a) iwlist and iwconfig report no
-crypto and (b) there doesn't seem to be any *other* way for userspace to find
-out that in fact you have an encrypted WPA2 connection.
+None of thesed generate 0x50 or 0x51, may be somehting else :/
 
 
---==_Exmh_1268814093_4069P
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFLoJENcC3lWbTT17ARAsxYAKDjRLnZWhj1c2zZV1D/gE1H40kfaQCgm00D
-6O3y8QKZrwEJkoSbT+uKXiY=
-=UzQ0
------END PGP SIGNATURE-----
-
---==_Exmh_1268814093_4069P--
-
+-- 
+Corentin Chary
+http://xf.iksaif.net
