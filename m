@@ -1,79 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab0CQVDK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:03:10 -0400
-Received: from li142-175.members.linode.com ([109.74.195.175]:47948 "EHLO
-	designinfo.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab0CQVDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:03:09 -0400
-From: "Max V. Kotov" <ckopnuo@designinfo.ru>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: Fwd: linux-next: Tree for March 12, r8169 does not work
-Date: Thu, 18 Mar 2010 00:03:03 +0300
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-next-20100311.m-desktop+; KDE/4.3.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Stephen Rothwell <sfr@canb.auug.org.au>
-References: <bbc987b61003160702w66a86d6k31f61629ea421a68@mail.gmail.com> <201003172329.41634.ckopnuo@designinfo.ru> <4BA141AB.5000206@xenotime.net>
-In-Reply-To: <4BA141AB.5000206@xenotime.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart3983990.D4M1x8dlIA";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003180003.03617.ckopnuo@designinfo.ru>
-X-Authenticated-User: max.kotov@designinfo.ru
-X-Authenticator: plain
-X-Sender-Verify: SUCCEEDED (sender exists & accepts mail)
-X-Spam-Score: -6.8
-X-Spam-Score-Int: -67
-X-Exim-Version: 4.71 (build at 01-Jan-2010 14:03:12)
-X-Date: 2010-03-18 00:03:07
-X-Connected-IP: 80.251.122.142:40946
-X-Message-Linecount: 51
-X-Body-Linecount: 34
-X-Message-Size: 1719
-X-Body-Size: 923
-X-Received-Count: 1
-X-Recipient-Count: 3
-X-Local-Recipient-Count: 3
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+	id S1754794Ab0CQVJM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:09:12 -0400
+Received: from sca-es-mail-2.Sun.COM ([192.18.43.133]:62769 "EHLO
+	sca-es-mail-2.sun.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab0CQVJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 17:09:09 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; delsp=yes; format=flowed
+Date: Wed, 17 Mar 2010 15:09:00 -0600
+Sun-Java-System-SMTP-Warning: Lines longer than SMTP allows found and truncated.
+From: Andreas Dilger <adilger@sun.com>
+Subject: Re: [C/R v20][PATCH 46/96] c/r: add checkpoint operation for opened
+ files of generic filesystems
+In-reply-to: <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-api@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       containers@lists.linux-foundation.org,
+       Matt Helsley <matthltc@us.ibm.com>, linux-fsdevel@vger.kernel.org
+Message-id: <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
+X-Mailer: Apple Mail (2.936)
+References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart3983990.D4M1x8dlIA
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+On 2010-03-17, at 10:08, Oren Laadan wrote:
+> These patches extend the use of the generic file checkpoint  
+> operation to
+> non-extX filesystems which have lseek operations that ensure we can  
+> save
+> and restore the files for later use. Note that this does not include
+> things like FUSE, network filesystems, or pseudo-filesystem kernel
+> interfaces.
+
+I didn't see any other patches posted to linux-fsdevel regarding what  
+this code is, or what it is supposed to be doing.  Could you please  
+repost the patches related to generic_file_checkpoint(), and the  
+overview email that explains what you mean by "checkpoint".  I'm  
+assuming this is related to HPC/process restart/migration, but better  
+to not guess.
+
+> @@ -718,6 +718,7 @@ static const struct file_operations  
+> btrfs_ctl_fops = {
+> 	.unlocked_ioctl	 = btrfs_control_ioctl,
+> 	.compat_ioctl = btrfs_control_ioctl,
+> 	.owner	 = THIS_MODULE,
+> +	.checkpoint = generic_file_checkpoint,
+> };
+>
+> const struct file_operations exofs_file_operations = {
+> 	.llseek		= generic_file_llseek,
+> +	.checkpoint	= generic_file_checkpoint,
+> 	.read		= do_sync_read,
+> 	.write		= do_sync_write,
+> 	.aio_read	= generic_file_aio_read,
+>
+> static const struct file_operations hostfs_file_fops = {
+> 	.llseek		= generic_file_llseek,
+> +	.checkpoint	= generic_file_checkpoint,
+> 	.read		= do_sync_read,
+> 	.splice_read	= generic_file_splice_read,
+> 	.aio_read	= generic_file_aio_read,
+> @@ -430,6 +431,7 @@ static const struct file_operations  
+> hostfs_file_fops = {
+>
+> static const struct file_operations hostfs_dir_fops = {
+> 	.llseek		= generic_file_llseek,
+> +	.checkpoint	= generic_file_checkpoint,
+> 	.readdir	= hostfs_readdir,
+> 	.read		= generic_read_dir,
+> };
+>
+> const struct file_operations nilfs_file_operations = {
+> 	.llseek		= generic_file_llseek,
+> +	.checkpoint	= generic_file_checkpoint,
+> 	.read		= do_sync_read,
+> 	.write		= do_sync_write,
+> 	.aio_read	= generic_file_aio_read,
 
 
-> On 03/17/10 13:29, Max V. Kotov wrote:
-> > I've sent this message several days ago from my gmail account, but it's
-> > not in LKML list till now. Awesome strange...
->=20
-> I saw it yesterday (March 16):
-> http://marc.info/?l=3Dlinux-kernel&m=3D126874898506646&w=3D2
+Minor nit - it would be good to add this method in the same place in  
+all of the *_file_operation structures for consistency.  Ideally these  
+would already be in the order that they are declared in the structure,  
+but at least new ones should be added consistently.
 
-Hmm.. Ok
-Previous one i'd sent form gmail didn't return to me from mailing list as w=
-as usually...
+> static const struct vm_operations_struct nfs_file_vm_ops = {
+> 	.fault = filemap_fault,
+> 	.page_mkwrite = nfs_vm_page_mkwrite,
+> +#ifdef CONFIG_CHECKPOINT
+> +	.checkpoint = filemap_checkpoint,
+> +#endif
+> };
+
+Why is this one conditional, but the others are not?
 
 
-BR.
-Max V. Kotov
+Cheers, Andreas
+--
+Andreas Dilger
+Sr. Staff Engineer, Lustre Group
+Sun Microsystems of Canada, Inc.
 
---nextPart3983990.D4M1x8dlIA
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iF4EABEIAAYFAkuhQ4cACgkQWiTSOjzMofI+DQD8D7VUc/CCwdepNmxErefMCI8S
-BruGqlsVXj3MMnCzTioA/0bK3lq96bSy7myBeWyEk2X1/0JaSzoBp5dPt/w2doLS
-=sCa8
------END PGP SIGNATURE-----
-
---nextPart3983990.D4M1x8dlIA--
