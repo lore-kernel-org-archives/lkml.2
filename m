@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755970Ab0CQQk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:40:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30421 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755133Ab0CQQky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:40:54 -0400
-Message-ID: <4BA105FE.2000607@redhat.com>
-Date: Wed, 17 Mar 2010 18:40:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1756003Ab0CQQlo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:41:44 -0400
+Received: from mga10.intel.com ([192.55.52.92]:42691 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752682Ab0CQQlm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 12:41:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,658,1262592000"; 
+   d="scan'208";a="549867430"
+Message-ID: <4BA10642.8070208@linux.intel.com>
+Date: Wed, 17 Mar 2010 09:41:38 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Chris Webb <chris@arachsys.com>
-CC: balbir@linux.vnet.ibm.com, KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100317152452.GZ31148@arachsys.com> <4BA101C5.9040406@redhat.com>
-In-Reply-To: <4BA101C5.9040406@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Thomas Renninger <trenn@suse.de>
+CC: =?ISO-8859-15?Q?Robert_Sch=F6ne?= <robert.schoene@tu-dresden.de>,
+       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
+ Intel x86 CPUs)
+References: <1268399863.3407.15.camel@localhost> <201003161550.18102.trenn@suse.de> <4B9FB472.5060702@linux.intel.com> <201003171736.00550.trenn@suse.de>
+In-Reply-To: <201003171736.00550.trenn@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 06:22 PM, Avi Kivity wrote:
->> Also, if my guest kernel issues (say) three small writes, one at the 
->> start
->> of the disk, one in the middle, one at the end, and then does a 
->> flush, can
->> virtio really express this as one non-contiguous O_DIRECT write (the 
->> three
->> components of which can be reordered by the elevator with respect to one
->> another) rather than three distinct O_DIRECT writes which can't be 
->> permuted?
->> Can qemu issue a write like that? cache=writeback + flush allows this 
->> to be
->> optimised by the block layer in the normal way.
->
->
-> Guest side virtio will send this as three requests followed by a 
-> flush.  Qemu will issue these as three distinct requests and then 
-> flush.  The requests are marked, as Christoph says, in a way that 
-> limits their reorderability, and perhaps if we fix these two problems 
-> performance will improve.
->
-> Something that comes to mind is merging of flush requests.  If N 
-> guests issue one write and one flush each, we should issue N writes 
-> and just one flush - a flush for the disk applies to all volumes on 
-> that disk.
->
+On 3/17/2010 9:36, Thomas Renninger wrote:
+> On Tuesday 16 March 2010 17:40:18 Arjan van de Ven wrote:
+>> On 3/16/2010 7:50, Thomas Renninger wrote:
+>>> Still, as this is totally broken:
+>>>      - by design ->   only one of a dozen cpufreq drivers is supported
+>>
+>> the one I care about is supported.
+> And that's the problem, before it's not removed, you do not care to
+> provide/suggest a proper solution that could fit others as well.
 
-Chris, can you carry out an experiment?  Write a program that pwrite()s 
-a byte to a file at the same location repeatedly, with the file opened 
-using O_SYNC.  Measure the write rate, and run blktrace on the host to 
-see what the disk (/dev/sda, not the volume) sees.  Should be a (write, 
-flush, write, flush) per pwrite pattern or similar (for writing the data 
-and a journal block, perhaps even three writes will be needed).
+why don't you provide the others then?
 
-Then scale this across multiple guests, measure and trace again.  If 
-we're lucky, the flushes will be coalesced, if not, we need to work on it.
 
--- 
-error compiling committee.c: too many arguments to function
+>> how about not. it works right now,
+> It does not. Robert's fix (if he had taken the frequency) is correct.
+> That means you could get totally wrong values
+> when you put some load on the machine and the scheduler moves around
+> processes.
+
+the only case where the bug can hit is the userspace governor, yes.
+it works correct for everything else. Yes it wants fixing. No it does not make
+all data from it worthless.
+
+
+>> and is in active use right now.
+> It's obviously not powertop, there I get some statistics on an AMD
+> machine as well. So where does it get used?
+
+as I wrote in my previous mails... timechart.
 
