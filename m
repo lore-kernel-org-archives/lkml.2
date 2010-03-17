@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753866Ab0CQJRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 05:17:08 -0400
-Received: from ey-out-2122.google.com ([74.125.78.24]:39947 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753445Ab0CQJRD (ORCPT
+	id S1753905Ab0CQJTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 05:19:07 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:38259 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0CQJTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 05:17:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eT/rek8U1yLtwT6emBKnztCZRxIhHpZBjsPaaFyrXPyej5NLljVD9ge00NWa0CKPKL
-         4V1mN6KXf/QinluQgPav0tBV6I5iMTHE2ylPswN0xW/k1mJWl3eEovSHIyvwfThkl+yx
-         j5B5y3RIu2HtnwrWgnpA3cPhn5G44n6pw8qxc=
-Date: Wed, 17 Mar 2010 10:16:59 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Peter Feuerer <peter@piie.net>, Oliver Neukum <oliver@neukum.org>
-Subject: Re: [PATCH v2] USB: pl2303: switch to generic write implementation
-Message-ID: <20100317091659.GC18570@localhost>
-References: <201003031608.20277.oliver@neukum.org>
- <1267701172-9549-1-git-send-email-jhovold@gmail.com>
- <20100315232004.GB21339@kroah.com>
+	Wed, 17 Mar 2010 05:19:05 -0400
+Date: Wed, 17 Mar 2010 09:18:20 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Ulrich Drepper <drepper@redhat.com>, munroesj@us.ibm.com,
+       "H. Peter Anvin" <hpa@zytor.com>, David Miller <davem@davemloft.net>,
+       ralf@linux-mips.org, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
+       torvalds@linux-foundation.org
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+Message-ID: <20100317091820.GA8149@shareable.org>
+References: <20100315134449.GB1653@linux-mips.org> <4B9E4EB1.9010800@zytor.com> <4B9E59B7.6060405@redhat.com> <20100315.120004.209998642.davem@davemloft.net> <4B9E8D67.8040209@zytor.com> <1268685311.2335.38.camel@pasglop> <1268776570.19726.98.camel@spokane1.rchland.ibm.com> <1268785874.2335.137.camel@pasglop> <4BA06E1B.2040706@redhat.com> <1268816179.2335.187.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100315232004.GB21339@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1268816179.2335.187.camel@pasglop>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 04:20:05PM -0700, Greg KH wrote:
-> On Thu, Mar 04, 2010 at 12:12:52PM +0100, Johan Hovold wrote:
-> > Replace custom fifo-based write implementation with the generic
-> > kfifo-based one.
-> 
-> What kernel is this patch against?  For some reason it doesn't apply to
-> my tree right now :(
- 
-It's against 2.6.33 (the bug report in question was against 2.6.32.9 so
-I figured I'd rebase it against stable at least).
+Benjamin Herrenschmidt wrote:
+> Hence, apps that use the first form today because it works on x86 would
+> end up working at least on powerpc where they would have been otherwise
+> broken unless they used some arch specific #ifdef to do the second form.
 
-> Care to respin it?
+I think what Ulrich is getting at is your change will break existing
+code which already does:
 
-I'll submit it along with some other patches shortly.
+#ifdef __powerpc__
+	syscall(SYS_foo, 0, my_64bit_arg);
+#else
+	syscall(SYS_foo, my_64bit_arg);
+#endif
 
-Thanks,
-Johan
+I don't know of any such code, but it might be out there.
 
+-- Jamie
