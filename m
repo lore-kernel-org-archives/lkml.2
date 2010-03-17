@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab0CQPzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:55:53 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61944 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab0CQPzw (ORCPT
+	id S1753463Ab0CQP7j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:59:39 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:40978 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab0CQP7i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:55:52 -0400
-Message-ID: <4BA0FB83.1010502@codemonkey.ws>
-Date: Wed, 17 Mar 2010 10:55:47 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
-MIME-Version: 1.0
-To: Chris Webb <chris@arachsys.com>
-CC: Avi Kivity <avi@redhat.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9EC60A.2070101@codemonkey.ws> <20100317151409.GY31148@arachsys.com>
-In-Reply-To: <20100317151409.GY31148@arachsys.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 17 Mar 2010 11:59:38 -0400
+Subject: Re: [PATCH] Timekeeping: Fix dead lock in update_wall_time by
+ correct shift convertion.
+From: john stultz <johnstul@us.ibm.com>
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4e5ebad51003162214s3430aa39xde29a4ba9c1b7d8c@mail.gmail.com>
+References: <1268735629.5075.8.camel@eight.analog.com>
+	 <1268763512.1676.7.camel@work-vm>
+	 <4e5ebad51003161958n6db293f0y6da99483bf96ada0@mail.gmail.com>
+	 <1268797285.3130.90.camel@localhost.localdomain>
+	 <4e5ebad51003162214s3430aa39xde29a4ba9c1b7d8c@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 08:59:22 -0700
+Message-ID: <1268841562.1996.16.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/17/2010 10:14 AM, Chris Webb wrote:
-> Anthony Liguori<anthony@codemonkey.ws>  writes:
->
->    
->> This really gets down to your definition of "safe" behaviour.  As it
->> stands, if you suffer a power outage, it may lead to guest
->> corruption.
->>
->> While we are correct in advertising a write-cache, write-caches are
->> volatile and should a drive lose power, it could lead to data
->> corruption.  Enterprise disks tend to have battery backed write
->> caches to prevent this.
->>
->> In the set up you're emulating, the host is acting as a giant write
->> cache.  Should your host fail, you can get data corruption.
->>      
-> Hi Anthony. I suspected my post might spark an interesting discussion!
->
-> Before considering anything like this, we did quite a bit of testing with
-> OSes in qemu-kvm guests running filesystem-intensive work, using an ipmitool
-> power off to kill the host. I didn't manage to corrupt any ext3, ext4 or
-> NTFS filesystems despite these efforts.
->
-> Is your claim here that:-
->
->    (a) qemu doesn't emulate a disk write cache correctly; or
->
->    (b) operating systems are inherently unsafe running on top of a disk with
->        a write-cache; or
->
->    (c) installations that are already broken and lose data with a physical
->        drive with a write-cache can lose much more in this case because the
->        write cache is much bigger?
->    
+On Wed, 2010-03-17 at 13:14 +0800, Sonic Zhang wrote:
+> With you new workaround, no dead loop. But are you sure this doesn't
+> overflow the ntp_error after thousands of loops?
+> 
+>        timekeeper.ntp_error += tick_length << shift;
+>        timekeeper.ntp_error -= timekeeper.xtime_interval <<
+>                                (timekeeper.ntp_error_shift + shift);
 
-This is the closest to the most accurate.
 
-It basically boils down to this: most enterprises use a disks with 
-battery backed write caches.  Having the host act as a giant write cache 
-means that you can lose data.
+At some point, yes it could overflow, but for that to happen, we'd have
+to have accumulated over 4 seconds of time error between calls to
+update_wall_time. At a max error rate of 500ppm, that would mean over
+two hours of delay between calls.
 
-I agree that a well behaved file system will not become corrupt, but my 
-contention is that for many types of applications, data lose == 
-corruption and not all file systems are well behaved.  And it's 
-certainly valid to argue about whether common filesystems are "broken" 
-but from a purely pragmatic perspective, this is going to be the case.
+The time subsystem can try to accommodate reasonable stalls in the
+system, but i think there will always be windows in which KGDB could
+cause the system to not recover (ie: i know quite of bit of scsi
+hardware have heartbeat requirements, so I could imagine kgdb causing
+those watchdogs to trigger and reset the device).
 
-Regards,
+One approach would be to have KGDB suspend the timekeeping core, much as
+is done over suspend/resume. This should be able to protect us from any
+overflows, but I suspect its unlikely that we'd want to go run other
+kernel stuff when breaking into KGDB.
 
-Anthony Liguori
+Thanks again for the testing. I'll try to send out an improved version
+of the fix for testing later today. If you could confirm it works as
+well, I'd appreciate it.
+
+thanks
+-john
+
+
+
+
