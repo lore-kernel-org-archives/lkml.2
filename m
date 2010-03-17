@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0CQJtq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 05:49:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40614 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753710Ab0CQJtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 05:49:40 -0400
-Date: Wed, 17 Mar 2010 09:48:52 GMT
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-       mingo@redhat.com, peterz@infradead.org, xiaoguangrong@cn.fujitsu.com,
-       fweisbec@gmail.com, tglx@linutronix.de, sfr@canb.auug.org.au,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, peterz@infradead.org,
-       xiaoguangrong@cn.fujitsu.com, fweisbec@gmail.com, sfr@canb.auug.org.au,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
-References: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf: Fix unexported generic perf_arch_fetch_caller_regs
-Message-ID: <tip-a6b84574eed7e4fd8cb8dac2d0926fe2cf34b941@git.kernel.org>
-Git-Commit-ID: a6b84574eed7e4fd8cb8dac2d0926fe2cf34b941
-X-Mailer: tip-git-log-daemon
+	id S1754069Ab0CQJvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 05:51:05 -0400
+Received: from mga06.intel.com ([134.134.136.21]:13150 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753979Ab0CQJvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 05:51:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.49,656,1262592000"; 
+   d="scan'208";a="501314233"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
+Date: Wed, 17 Mar 2010 17:51:01 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
+       Joerg Roedel <joerg.roedel@amd.com>
+References: <1268717232.2813.36.camel@localhost> <201003171728.43739.sheng@linux.intel.com> <4BA0A3E6.4040100@redhat.com>
+In-Reply-To: <4BA0A3E6.4040100@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 09:48:54 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003171751.01777.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a6b84574eed7e4fd8cb8dac2d0926fe2cf34b941
-Gitweb:     http://git.kernel.org/tip/a6b84574eed7e4fd8cb8dac2d0926fe2cf34b941
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Tue, 16 Mar 2010 01:05:02 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 17 Mar 2010 10:44:42 +0100
+On Wednesday 17 March 2010 17:41:58 Avi Kivity wrote:
+> On 03/17/2010 11:28 AM, Sheng Yang wrote:
+> >> I'm not sure if vmexit does break NMI context or not. Hardware NMI
+> >> context isn't reentrant till a IRET. YangSheng would like to double
+> >> check it.
+> >
+> > After more check, I think VMX won't remained NMI block state for host.
+> > That's means, if NMI happened and processor is in VMX non-root mode, it
+> > would only result in VMExit, with a reason indicate that it's due to NMI
+> > happened, but no more state change in the host.
+> >
+> > So in that meaning, there _is_ a window between VMExit and KVM handle the
+> > NMI. Moreover, I think we _can't_ stop the re-entrance of NMI handling
+> > code because "int $2" don't have effect to block following NMI.
+> 
+> That's pretty bad, as NMI runs on a separate stack (via IST).  So if
+> another NMI happens while our int $2 is running, the stack will be
+> corrupted.
 
-perf: Fix unexported generic perf_arch_fetch_caller_regs
+Though hardware didn't provide this kind of block, software at least would 
+warn about it... nmi_enter() still would be executed by "int $2", and result 
+in BUG() if we are already in NMI context(OK, it is a little better than 
+mysterious crash due to corrupted stack).
+> 
+> > And if the NMI sequence is not important(I think so), then we need to
+> > generate a real NMI in current vmexit-after code. Seems let APIC send a
+> > NMI IPI to itself is a good idea.
+> >
+> > I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
+> > replace "int $2". Something unexpected is happening...
+> 
+> I think you need DM_NMI for that to work correctly.
+> 
+> An alternative is to call the NMI handler directly.
 
-perf_arch_fetch_caller_regs() is exported for the overriden x86
-version, but not for the generic weak version.
+apic_send_IPI_self() already took care of APIC_DM_NMI.
 
-As a general rule, weak functions should not have their symbol
-exported in the same file they are defined.
+And NMI handler would block the following NMI?
 
-So let's export it on trace_event_perf.c as it is used by trace
-events only.
-
-This fixes:
-
-	ERROR: ".perf_arch_fetch_caller_regs" [fs/xfs/xfs.ko] undefined!
-	ERROR: ".perf_arch_fetch_caller_regs" [arch/powerpc/platforms/cell/spufs/spufs.ko] undefined!
-
--v2: And also only build it if trace events are enabled.
--v3: Fix changelog mistake
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Paul Mackerras <paulus@samba.org>
-LKML-Reference: <1268697902-9518-1-git-send-regression-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    3 ++-
- kernel/perf_event.c              |    2 ++
- kernel/trace/trace_event_perf.c  |    2 ++
- 3 files changed, 6 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 7645fae..60398a0 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1702,6 +1702,7 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return entry;
- }
- 
-+#ifdef CONFIG_EVENT_TRACING
- void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
- {
- 	regs->ip = ip;
-@@ -1713,4 +1714,4 @@ void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int ski
- 	regs->cs = __KERNEL_CS;
- 	local_save_flags(regs->flags);
- }
--EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-+#endif
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index fb3031c..574ee58 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2786,10 +2786,12 @@ __weak struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return NULL;
- }
- 
-+#ifdef CONFIG_EVENT_TRACING
- __weak
- void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
- {
- }
-+#endif
- 
- /*
-  * Output
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0709e4f..7d79a10 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -12,6 +12,8 @@
- DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
- EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
- 
-+EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
-+
- static char *perf_trace_buf;
- static char *perf_trace_buf_nmi;
- 
+-- 
+regards
+Yang, Sheng
