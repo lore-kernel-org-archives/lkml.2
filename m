@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab0CQKAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 06:00:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:43630 "EHLO mx2.mail.elte.hu"
+	id S1753835Ab0CQKEG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 06:04:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42237 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab0CQKAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 06:00:12 -0400
-Date: Wed, 17 Mar 2010 10:59:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: T?r?k Edwin <edwintorok@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: x86: fix callgraphs of 32-bit processes on 64-bit
- kernels V2.
-Message-ID: <20100317095957.GG17146@elte.hu>
-References: <20100316144906.GA5621@nowhere>
- <1268751734-9167-1-git-send-email-edwintorok@gmail.com>
- <20100316170549.GC17537@elte.hu>
- <4BA09776.4020205@gmail.com>
+	id S1752473Ab0CQKEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 06:04:02 -0400
+Date: Wed, 17 Mar 2010 10:03:38 GMT
+From: tip-bot for KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu
+In-Reply-To: <20100317090046.4C79.A69D9226@jp.fujitsu.com>
+References: <20100317090046.4C79.A69D9226@jp.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Use proper type in sched_getaffinity()
+Message-ID: <tip-8bc037fb89bb3104b9ae290d18c877624cd7d9cc@git.kernel.org>
+Git-Commit-ID: 8bc037fb89bb3104b9ae290d18c877624cd7d9cc
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <4BA09776.4020205@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 10:03:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  8bc037fb89bb3104b9ae290d18c877624cd7d9cc
+Gitweb:     http://git.kernel.org/tip/8bc037fb89bb3104b9ae290d18c877624cd7d9cc
+Author:     KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+AuthorDate: Wed, 17 Mar 2010 09:36:58 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 17 Mar 2010 10:48:49 +0100
 
-* T?r?k Edwin <edwintorok@gmail.com> wrote:
+sched: Use proper type in sched_getaffinity()
 
-> >> +	    }
-> >> +	    return;
-> > 
-> > This whole new block should probably be in a helper inline?
-> 
-> To reduce indenting, or why?
+Using the proper type fixes the following compiler warning:
 
-Mainly to increase cleanliness. We want code that isolates separate blocks of 
-logic into separate sections. So a simple construct of:
+  kernel/sched.c:4850: warning: comparison of distinct pointer types lacks a cast
 
-        if (perf_callchain_user32(regs, entry))
-                return;
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: torvalds@linux-foundation.org
+Cc: travis@sgi.com
+Cc: peterz@infradead.org
+Cc: drepper@redhat.com
+Cc: rja@sgi.com
+Cc: sharyath@in.ibm.com
+Cc: steiner@sgi.com
+LKML-Reference: <20100317090046.4C79.A69D9226@jp.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-will tell the reader of the code that 'ok, this is 32-bit compat stuff'. It 
-doesnt, at this level, intrude into the main logic of that function. Then if 
-we look at perf_callchain_user32() we see all the 32-bit compat stack frame 
-walking details.
-
-Thanks,
-
-	Ingo
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 82975b5..49d2fa7 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4912,7 +4912,7 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
+ 
+ 	ret = sched_getaffinity(pid, mask);
+ 	if (ret == 0) {
+-		int retlen = min(len, cpumask_size());
++		size_t retlen = min_t(size_t, len, cpumask_size());
+ 
+ 		if (copy_to_user(user_mask_ptr, mask, retlen))
+ 			ret = -EFAULT;
