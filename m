@@ -1,130 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab0CQWrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:47:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34454 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756220Ab0CQWrR convert rfc822-to-8bit (ORCPT
+	id S1756342Ab0CQWsg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:48:36 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:19382 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756221Ab0CQWse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:47:17 -0400
-Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20100317224002.GA5156@Localhorst.asterix.local>
-Date: Wed, 17 Mar 2010 23:47:14 +0100
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de>
-References: <1258373983-8693-1-git-send-email-avi@redhat.com> <1258373983-8693-24-git-send-email-avi@redhat.com> <4BA1504A.3090801@dieterries.net> <808FF008-53B9-4271-904C-117A24ADF18C@suse.de> <20100317224002.GA5156@Localhorst.asterix.local>
-To: Dieter Ries <mail@dieterries.net>
-X-Mailer: Apple Mail (2.1077)
+	Wed, 17 Mar 2010 18:48:34 -0400
+Subject: Re: [LKML] Re: [LKML] Re: swiotlb detection should be memory
+	hotplug aware ?
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       "ak@linux.intel.com" <ak@linux.intel.com>,
+       "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Petr Vandrovec <petr@vmware.com>
+In-Reply-To: <20100316124556.GA25340@phenom.dumpdata.com>
+References: <1268446032.13691.69.camel@ank32>
+	 <4B9B01F5.3000807@linux.intel.com>
+	 <20100316005140.GB7622@phenom.dumpdata.com>
+	 <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
+	 <20100316124556.GA25340@phenom.dumpdata.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Wed, 17 Mar 2010 15:48:33 -0700
+Message-Id: <1268866113.20507.26.camel@ank32>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 17.03.2010, at 23:40, Dieter Ries wrote:
+On Tue, 2010-03-16 at 05:45 -0700, Konrad Rzeszutek Wilk wrote:
+> On Tue, Mar 16, 2010 at 10:33:20AM +0900, FUJITA Tomonori wrote:
+> > On Mon, 15 Mar 2010 20:51:40 -0400
+> > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> > 
+> > > On Fri, Mar 12, 2010 at 07:09:41PM -0800, Andi Kleen wrote:
+> > > > , Alok Kataria wrote:
+> > > >
+> > > > Hi Alok,
+> > > >
+> > > >> Hi,
+> > > >>
+> > > >> Looking at the current code swiotlb is initialized for 64bit kernels
+> > > >> only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
+> > > >> So in cases when the initial memory is less than 4GB the kernel boots
+> > > >> without enabling swiotlb, when we hotadd memory to such a kernel and go
+> > > >> beyond the 4G limit, swiotlb is still disabled. As a result when any
+> > > >> 32bit devices start using this newly added memory beyond 4G, the kernel
+> > > >> starts spitting error messages like below or in some cases it causes
+> > > >> kernel panics.
+> > > >
+> > > > Yes seems like a real problem.
+> > > >
+> > > >>
+> > > >> 1. Enable swiotlb for all 64bit kernels which have memory hot-add
+> > > >> support.
+> > > >
+> > > > I don't think that's a good idea. It would enable it everywhere on
+> > > > distributions which compile with hotadd. Need (2)
+> > > >
+> > > >> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
+> > > >> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
+> > > >> value readily available. I could parse the SRAT and get hotplug memory
+> > > >> information but that will make swiotlb detection logic a little too
+> > > >> complex. A quick look around srat_xx.c files and the acpi_memhotplug
+> > > >> module didn't find any useful API that could be used directly either.
+> > > >> So was wondering if any of you are aware of an easy way to get such
+> > > >> information ?
+> > > >
+> > > > I have a patchkit to revamp the SRAT parsing to store the hotadd information
+> > > 
 
-> On Wed, Mar 17, 2010 at 11:02:40PM +0100, Alexander Graf wrote:
->> On 17.03.2010, at 22:57, Dieter Ries wrote:
->>> Hi,
->>> 
->>> This is breaking KVM on my Phenom II X4 955.
->>> 
->>> When I start kvm I get this on the terminal:
->>> 
->>> kvm_create_vm: Device or resource busy
->>> Could not initialize KVM, will disable KVM support
->>> 
->>> And in dmesg:
->>> [   67.980732] kvm: enabling virtualization on CPU0 failed
->>> 
->>> 
->>> I commented out the if() and return, and I added 2 printk's there for
->>> debugging, and now that's what I see in dmesg when I start kvm:
->>> 
->>> [ 3341.740112] efer is 3329
->>> [ 3341.740113] efer is 3329
->>> [ 3341.740117] efer is 3329
->>> [ 3341.740119] EFER_SVME is 4096
->>> [ 3341.740121] EFER_SVME is 4096
->>> [ 3341.740124] EFER_SVME is 4096
->>> [ 3341.740130] efer is 3329
->>> [ 3341.740132] EFER_SVME is 4096
->>> 
->>> In hex the values are 0x1000 and 0x0d01
->>> 
->>> KVM has been working well on this machine before, and it still works
->>> well after commenting that part out.
->>> 
->>> I am not sure what the value of this register is supposed to be, but are
->>> you sure
->>> 
->>> if (efer & EFER_SVME)
->>> 
->>> is the right condition?
->> 
->> According to the printks you show above the & condition should never apply.
->> 
->> Are you 100% sure you don't have vmware, virtualbox, parallels, whatever running in parallel on that machine?
-> 
-> Definitely. I have virtualbox installed, but haven't used it in months.
-> The others I don't use at all, so they are not installed either.
-> 
-> There is nothing running which could cause that. Behaviour is the same
-> when I don't log into KDE but just try this without X, where nearly
-> nothing is started.
-> 
-> I noted something more now: When I comment it out once, and start kvm
-> like that, and then remove the comments again, then it works. So I guess
-> the dmesg parts I wrote were not perfect. It's more like:
-> 
-> I: After reboot, with debugging printk and if condition:
-> 
-> [   42.089423] efer is d01
-> [   42.089425] efer is d01
-> [   42.089428] efer is d01
-> [   42.089430] EFER_SVME is 1000
-> [   42.089431] EFER_SVME is 1000
-> [   42.089433] EFER_SVME is 1000
-> [   42.089436] efer is 1d01
-> [   42.089438] EFER_SVME is 1000
-> [   42.089440] kvm: enabling virtualization on CPU0 failed
-> 
-> II: debugging printk, no if condition:
-> 
-> [  317.355519] efer is d01
-> [  317.355522] efer is d01
-> [  317.355524] efer is d01
-> [  317.355527] EFER_SVME is 1000
-> [  317.355528] EFER_SVME is 1000
-> [  317.355531] EFER_SVME is 1000
-> [  317.355534] efer is 1d01
-> [  317.355536] EFER_SVME is 1000
-> 
-> III: debugging printk and if condition:
-> 
-> [  421.955433] efer is d01
-> [  421.955437] efer is d01
-> [  421.955440] efer is d01
-> [  421.955442] EFER_SVME is 1000
-> [  421.955443] EFER_SVME is 1000
-> [  421.955445] EFER_SVME is 1000
-> [  421.955449] efer is d01
-> [  421.955451] EFER_SVME is 1000
-> 
-> 
-> 
-> This is without reboots in between. So now before I use the commented
-> out version for the first time, it doesnt work, the 2nd time it works.
-> Maybe some initialization problem...
+Andi...ping any pointers to the patchkit. 
 
-It looks like one of your CPUs has EFER_SVME enabled on bootup already. I'm not aware of code clearing EFER, so if there's garbage in there on boot it stays there.
+> > > There is a late mechanism to do kickoff the SWIOTLB. Perhaps the hot-add
+> > > could use swiotlb_init_late and start up the SWIOTLB?
 
-Could you please add the current CPU number to your printk? I bet it's always the same one.
-If that's the case I'd say you have a broken BIOS or bootloader.
+I don't see why we need to do this via late_init, swiotlb detection that
+happens through pci_swiotlb_detect, is already late enough that SRAT is
+already parsed. Or am I missing something ?
+> > 
+> > I guess that you are talking about
+> > swiotlb_late_init_with_default_size(), which IA64 uses. However, you
+> > can use swiotlb_late_init_with_default_size() only before we
+> > initialize devices. Making it work after initializing devices is not
+> > so easy, I think (that is, we need to change dma_ops).
+
+> That is a good point. Especially if we have some outstanding DMA pages
+> allocated via dma_alloc_coherent.
+> 
+> I thought that the machines that have hot-add memory they have their
+> own fancy IOMMU. For example the IBM x3955 (and its family) utilize the
+> Calgary IOMMU. The HP boxes utilize the Intel VT-D (or the AMD
+> equivalant).
+> So is this mostly specialized in the areas of virtualized guests? (Xen
+> PV guests with PCI passthrough suffer the same problem, btw).
 
 
-Alex
+I am assuming that there were Intel based servers which supported memory
+hot-add before VT-d too. So, IMO this is not specialized to
+virtualization, though might be hard to prove if there are actual
+physical machines out there which have similar constraints (no HWIOMMU +
+MEMHOT add support)
+
+Thanks,
+Alok
+
