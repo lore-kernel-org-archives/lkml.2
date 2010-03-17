@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0CQQRs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:17:48 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38204 "EHLO
+	id S1755220Ab0CQQR0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:17:26 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:38137 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983Ab0CQQRa (ORCPT
+	with ESMTP id S1755033Ab0CQQRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:17:30 -0400
+	Wed, 17 Mar 2010 12:17:15 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Dan Smith <danms@us.ibm.com>, Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 62/96] c/r: add CKPT_COPY() macro
-Date: Wed, 17 Mar 2010 12:08:50 -0400
-Message-Id: <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
+       Oren Laadan <orenl@cs.columbia.edu>, Dan Smith <danms@us.ibm.com>
+Subject: [C/R v20][PATCH 61/96] c/r: (s390): expose a constant for the number of words (CRs)
+Date: Wed, 17 Mar 2010 12:08:49 -0400
+Message-Id: <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -79,81 +79,65 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Smith <danms@us.ibm.com>
-
-As suggested by Dave[1], this provides us a way to make the copy-in and
-copy-out processes symmetric.  CKPT_COPY_ARRAY() provides us a way to do
-the same thing but for arrays.  It's not critical, but it helps us unify
-the checkpoint and restart paths for some things.
+We need to use this value in the checkpoint/restart code and would like to
+have a constant instead of a magic '3'.
 
 Changelog:
-    Mar 04:
-            . Removed semicolons
-            . Added build-time check for __must_be_array in CKPT_COPY_ARRAY
-    Feb 27:
-            . Changed CKPT_COPY() to use assignment, eliminating the need
-              for the CKPT_COPY_BIT() macro
-            . Add CKPT_COPY_ARRAY() macro to help copying register arrays,
-              etc
-            . Move the macro definitions inside the CR #ifdef
-    Feb 25:
-            . Changed WARN_ON() to BUILD_BUG_ON()
+    Jan 20:
+            . Define s390x sys_restart wrapper
+    Mar 30:
+            . Add CHECKPOINT_SUPPORT in Kconfig (Nathan Lynch)
+    Mar 03:
+            . Picked up additional use of magic '3' in ptrace.h
 
 Signed-off-by: Dan Smith <danms@us.ibm.com>
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-
-1: https://lists.linux-foundation.org/pipermail/containers/2009-February/015821.html (all the way at the bottom)
 ---
- include/linux/checkpoint.h |   28 ++++++++++++++++++++++++++++
- 1 files changed, 28 insertions(+), 0 deletions(-)
+ arch/s390/Kconfig          |    4 ++++
+ arch/s390/kernel/process.c |    9 +++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 81e2150..9eeb71c 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -260,6 +260,34 @@ static inline int ckpt_validate_errno(int errno)
- 	return (errno >= 0) && (errno < MAX_ERRNO);
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index c802352..95bb4ed 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -49,6 +49,10 @@ config GENERIC_TIME_VSYSCALL
+ config GENERIC_CLOCKEVENTS
+ 	def_bool y
+ 
++config CHECKPOINT_SUPPORT
++	bool
++	default y if 64BIT
++
+ config GENERIC_BUG
+ 	bool
+ 	depends on BUG
+diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
+index 5b0729a..eb834fd 100644
+--- a/arch/s390/kernel/process.c
++++ b/arch/s390/kernel/process.c
+@@ -240,6 +240,15 @@ SYSCALL_DEFINE4(clone, unsigned long, newsp, unsigned long, clone_flags,
+ 		       parent_tidptr, child_tidptr);
  }
  
-+/* useful macros to copy fields and buffers to/from ckpt_hdr_xxx structures */
-+#define CKPT_CPT 1
-+#define CKPT_RST 2
++#ifdef CONFIG_CHECKPOINT
++extern long do_sys_restart(pid_t pid, int fd, unsigned long flags, int logfd);
++SYSCALL_DEFINE4(restart, pid_t, pid, int, fd, unsigned long, flags,
++		int, logfd)
++{
++	return do_sys_restart(pid, fd, flags, logfd);
++}
++#endif
 +
-+#define CKPT_COPY(op, SAVE, LIVE)				        \
-+	do {							\
-+		if (op == CKPT_CPT)				\
-+			SAVE = LIVE;				\
-+		else						\
-+			LIVE = SAVE;				\
-+	} while (0)
-+
-+/*
-+ * Copy @count items from @LIVE to @SAVE if op is CKPT_CPT (otherwise,
-+ * copy in the reverse direction)
-+ */
-+#define CKPT_COPY_ARRAY(op, SAVE, LIVE, count)				\
-+	do {								\
-+		(void)__must_be_array(SAVE);				\
-+		(void)__must_be_array(LIVE);				\
-+		BUILD_BUG_ON(sizeof(*SAVE) != sizeof(*LIVE));		\
-+		if (op == CKPT_CPT)					\
-+			memcpy(SAVE, LIVE, count * sizeof(*SAVE));	\
-+		else							\
-+			memcpy(LIVE, SAVE, count * sizeof(*SAVE));	\
-+	} while (0)
-+
-+
- /* debugging flags */
- #define CKPT_DBASE	0x1		/* anything */
- #define CKPT_DSYS	0x2		/* generic (system) */
+ SYSCALL_DEFINE4(eclone, unsigned int, flags_low, struct clone_args __user *,
+ 		uca, int, args_size, pid_t __user *, pids)
+ {
 -- 
 1.6.3.3
 
