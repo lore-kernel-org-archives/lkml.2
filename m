@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab0CQQL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:11:57 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:36677 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab0CQQLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:11:55 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [C/R v20][PATCH 06/96] eclone (6/11): Check invalid clone flags
-Date: Wed, 17 Mar 2010 12:07:54 -0400
-Message-Id: <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
-X-No-Spam-Score: Local
+	id S1755898Ab0CQQgL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:36:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50087 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753819Ab0CQQgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 12:36:04 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for Intel x86 CPUs)
+Date: Wed, 17 Mar 2010 17:36:00 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
+Cc: Robert =?iso-8859-15?q?Sch=F6ne?= <robert.schoene@tu-dresden.de>,
+       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+References: <1268399863.3407.15.camel@localhost> <201003161550.18102.trenn@suse.de> <4B9FB472.5060702@linux.intel.com>
+In-Reply-To: <4B9FB472.5060702@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003171736.00550.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+On Tuesday 16 March 2010 17:40:18 Arjan van de Ven wrote:
+> On 3/16/2010 7:50, Thomas Renninger wrote:
+> > Still, as this is totally broken:
+> >     - by design ->  only one of a dozen cpufreq drivers is supported
+> 
+> the one I care about is supported.
+And that's the problem, before it's not removed, you do not care to
+provide/suggest a proper solution that could fit others as well.
 
-As pointed out by Oren Laadan, we want to ensure that unused bits in the
-clone-flags remain unused and available for future. To ensure this, define
-a mask of clone-flags and check the flags in the clone() system calls.
+> The others... anyone can add
+> support for their favorite driver.
+Or everyone can write his own debug facility for every driver...
 
-Changelog[v9]:
-	- Include the unused clone-flag (CLONE_UNUSED) to VALID_CLONE_FLAGS
-	  to avoid breaking any applications that may have set it. IOW, this
-	  patch/check only applies to clone-flags bits 33 and higher.
+As said, there already is a debug facility. If you need timings,
+improve the existing interface, suggest how it could get connected
+to the tracing facility or why you see problems doing so.
 
-Changelog[v8]:
-	- New patch in set
+> > please submit my patch and remove this again until a proper
+> > implementation is provided.
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-Acked-by: Oren Laadan <orenl.cs.columbia.edu>
----
- include/linux/sched.h |   12 ++++++++++++
- kernel/fork.c         |    3 +++
- 2 files changed, 15 insertions(+), 0 deletions(-)
+> how about not. it works right now,
+It does not. Robert's fix (if he had taken the frequency) is correct.
+That means you could get totally wrong values
+when you put some load on the machine and the scheduler moves around
+processes. You'd better compared your results with cpufreq_stats...
+> and is in active use right now.
+It's obviously not powertop, there I get some statistics on an AMD
+machine as well. So where does it get used?
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 78efe7c..d57eab8 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -29,6 +29,18 @@
- #define CLONE_NEWNET		0x40000000	/* New network namespace */
- #define CLONE_IO		0x80000000	/* Clone io context */
- 
-+#define CLONE_UNUSED        	0x00001000	/* Can be reused ? */
-+
-+#define VALID_CLONE_FLAGS	(CSIGNAL | CLONE_VM | CLONE_FS | CLONE_FILES |\
-+				 CLONE_SIGHAND | CLONE_UNUSED | CLONE_PTRACE |\
-+				 CLONE_VFORK  | CLONE_PARENT | CLONE_THREAD  |\
-+				 CLONE_NEWNS  | CLONE_SYSVSEM | CLONE_SETTLS |\
-+				 CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID  |\
-+				 CLONE_DETACHED | CLONE_UNTRACED             |\
-+				 CLONE_CHILD_SETTID | CLONE_STOPPED          |\
-+				 CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWUSER |\
-+				 CLONE_NEWPID | CLONE_NEWNET | CLONE_IO)
-+
- /*
-  * Scheduling policies
-  */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 737bca9..f95cbd2 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -987,6 +987,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	struct task_struct *p;
- 	int cgroup_callbacks_done = 0;
- 
-+	if (clone_flags & ~VALID_CLONE_FLAGS)
-+		return ERR_PTR(-EINVAL);
-+
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
- 
--- 
-1.6.3.3
+> feel free to add support to other drivers if you care about those....
+It's easy to fix up acpi-cpufreq itself and implement this into
+powernow-k8. Not sure about possible cpufreq drivers which can switch
+frequency on cores without executing the code on this core. I expect
+trace(_power_frequency) is not made for such?
 
+I assume everybody who did work on cpufreq interfaces would have given
+you a not-ack'ed or at least had asked the questions I did above.
+People know you well and x86 maintainers just pushed it, I also doubt
+you intentionally did not CC the cpufreq list.
+But now things are broken and should get reverted.
+
+Grmpfl, I can have a look at it, but not the next couple of days...
+
+    Thomas
