@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab0CQRsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 13:48:08 -0400
-Received: from mail.perches.com ([173.55.12.10]:1755 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab0CQRsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 13:48:06 -0400
-Subject: [PATCH 2/2] net/wireless/wext_core.c: Use IW_EVENT_IDX macro
-From: Joe Perches <joe@perches.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
-       Andy Whitcroft <apw@canonical.com>, gregkh@suse.de,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless <linux-wireless@vger.kernel.org>
-In-Reply-To: <1268847991.1652.106.camel@Joe-Laptop.home>
-References: <1268823629.1999.9.camel@localhost>
-	 <1268839535.1652.43.camel@Joe-Laptop.home>
-	 <1268840454.1999.22.camel@localhost>
-	 <1268841904.1652.94.camel@Joe-Laptop.home>
-	 <1268842112.5989.8.camel@jlt3.sipsolutions.net>
-	 <1268847991.1652.106.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Mar 2010 10:48:04 -0700
-Message-ID: <1268848084.1652.108.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754695Ab0CQRss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 13:48:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:18257 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752587Ab0CQRsq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 13:48:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=VpsvRHHLHcTJDfYkRornrwTFUBa0PNULwpjLJa8A7H1pS0Y0hvnWIVC7vjzeh5RxG
+	AALCv3IY/k2W06cuaCNrw==
+MIME-Version: 1.0
+In-Reply-To: <20100316164121.024e35d8.nishimura@mxp.nes.nec.co.jp>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com> 
+	<1268609202-15581-3-git-send-email-arighi@develer.com> <20100316164121.024e35d8.nishimura@mxp.nes.nec.co.jp>
+From: Greg Thelen <gthelen@google.com>
+Date: Wed, 17 Mar 2010 09:48:18 -0800
+Message-ID: <49b004811003171048h5f27405oe6ea39a103bc4ee3@mail.gmail.com>
+Subject: Re: [PATCH -mmotm 2/5] memcg: dirty memory documentation
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrea Righi <arighi@develer.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a wireless.h macro for this, might as well use it.
+On Mon, Mar 15, 2010 at 11:41 PM, Daisuke Nishimura
+<nishimura@mxp.nes.nec.co.jp> wrote:
+> On Mon, 15 Mar 2010 00:26:39 +0100, Andrea Righi <arighi@develer.com> wrote:
+>> Document cgroup dirty memory interfaces and statistics.
+>>
+>> Signed-off-by: Andrea Righi <arighi@develer.com>
+>> ---
+>>  Documentation/cgroups/memory.txt |   36 ++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 36 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+>> index 49f86f3..38ca499 100644
+>> --- a/Documentation/cgroups/memory.txt
+>> +++ b/Documentation/cgroups/memory.txt
+>> @@ -310,6 +310,11 @@ cache            - # of bytes of page cache memory.
+>>  rss          - # of bytes of anonymous and swap cache memory.
+>>  pgpgin               - # of pages paged in (equivalent to # of charging events).
+>>  pgpgout              - # of pages paged out (equivalent to # of uncharging events).
+>> +filedirty    - # of pages that are waiting to get written back to the disk.
+>> +writeback    - # of pages that are actively being written back to the disk.
+>> +writeback_tmp        - # of pages used by FUSE for temporary writeback buffers.
+>> +nfs          - # of NFS pages sent to the server, but not yet committed to
+>> +               the actual storage.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
-index dbde22b..bfcbeee 100644
---- a/net/wireless/wext-core.c
-+++ b/net/wireless/wext-core.c
-@@ -261,44 +261,44 @@ static const unsigned standard_ioctl_num = ARRAY_SIZE(standard_ioctl);
-  * we know about.
-  */
- static const struct iw_ioctl_description standard_event[] = {
--	[IWEVTXDROP	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVTXDROP)] = {
- 		.header_type	= IW_HEADER_TYPE_ADDR,
- 	},
--	[IWEVQUAL	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVQUAL)] = {
- 		.header_type	= IW_HEADER_TYPE_QUAL,
- 	},
--	[IWEVCUSTOM	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVCUSTOM)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_CUSTOM_MAX,
- 	},
--	[IWEVREGISTERED	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVREGISTERED)] = {
- 		.header_type	= IW_HEADER_TYPE_ADDR,
- 	},
--	[IWEVEXPIRED	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVEXPIRED)] = {
- 		.header_type	= IW_HEADER_TYPE_ADDR,
- 	},
--	[IWEVGENIE	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVGENIE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_GENERIC_IE_MAX,
- 	},
--	[IWEVMICHAELMICFAILURE	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVMICHAELMICFAILURE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= sizeof(struct iw_michaelmicfailure),
- 	},
--	[IWEVASSOCREQIE	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVASSOCREQIE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_GENERIC_IE_MAX,
- 	},
--	[IWEVASSOCRESPIE	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVASSOCRESPIE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_GENERIC_IE_MAX,
- 	},
--	[IWEVPMKIDCAND	- IWEVFIRST] = {
-+	[IW_EVENT_IDX(IWEVPMKIDCAND)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= sizeof(struct iw_pmkid_cand),
-@@ -453,7 +453,7 @@ void wireless_send_event(struct net_device *	dev,
- 		if (cmd_index < standard_ioctl_num)
- 			descr = &(standard_ioctl[cmd_index]);
- 	} else {
--		cmd_index = cmd - IWEVFIRST;
-+		cmd_index = IW_EVENT_IDX(cmd);
- 		if (cmd_index < standard_event_num)
- 			descr = &(standard_event[cmd_index]);
- 	}
+Should these new memory.stat counters (filedirty, etc) report byte
+counts rather than page counts?  I am thinking that byte counters
+would make reporting more obvious depending on how heterogeneous page
+sizes are used. Byte counters would also agree with /proc/meminfo.
+Within the kernel we could still maintain page counts.  The only
+change would be to the reporting routine, mem_cgroup_get_local_stat(),
+which would scale the page counts by PAGE_SIZE as it does for for
+cache,rss,etc.
 
-
+--
+Greg
