@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0CQQTa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:19:30 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38633 "EHLO
+	id S1755304Ab0CQQTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:19:37 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:38676 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab0CQQTX (ORCPT
+	with ESMTP id S1755318Ab0CQQTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:19:23 -0400
+	Wed, 17 Mar 2010 12:19:30 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org
-Subject: [C/R v20][PATCH 64/96] c/r: capabilities: define checkpoint and restore fns
-Date: Wed, 17 Mar 2010 12:08:52 -0400
-Message-Id: <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
+       Oren Laadan <orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 71/96] c/r: [signal 4/4] support for real/virt/prof itimers
+Date: Wed, 17 Mar 2010 12:08:59 -0400
+Message-Id: <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -81,334 +82,229 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Serge E. Hallyn <serue@us.ibm.com>
+This patch adds support for real/virt/prof itimers.
+Expiry and the interval values are both saved in nanoseconds.
 
-[ Andrew: I am punting on dealing with the subsystem cooperation
-issues in this version, in favor of trying to get LSM issues
-straightened out ]
+Changelog[v19-rc2]:
+  - Adjust virt/prof itimer code for kernel 2.6.32
+Changelog[v1]:
+  - [Louis Rilling] Fix saving of signal->it_real_incr if not expired
+  - Fix restoring of signal->it_real_incr if expire is zero
+  - Save virt/prof expire relative to process accumulated time
 
-An application checkpoint image will store capability sets
-(and the bounding set) as __u64s.  Define checkpoint and
-restart functions to translate between those and kernel_cap_t's.
-
-Define a common function do_capset_tocred() which applies capability
-set changes to a passed-in struct cred.
-
-The restore function uses do_capset_tocred() to apply the restored
-capabilities to the struct cred being crafted, subject to the
-current task's (task executing sys_restart()) permissions.
-
-Changlog [v19-rc1]:
-  - [Matt Helsley] Add cpp definitions for enums
-
-Changelog:
-	Jun 09: Can't choose securebits or drop bounding set if
-		file capabilities aren't compiled into the kernel.
-		Also just store caps in __u32s (looks cleaner).
-	Jun 01: Made the checkpoint and restore functions and the
-		ckpt_hdr_capabilities struct more opaque to the
-		rest of the c/r code, as suggested by Andrew Morgan,
-		and using naming suggested by Oren.
-	Jun 01: Add commented BUILD_BUG_ON() to point out that the
-		current implementation depends on 64-bit capabilities.
-		(Andrew Morgan and Alexey Dobriyan).
-	May 28: add helpers to c/r securebits
-
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
+Acked-by: Louis Rilling <Louis.Rilling@kerlabs.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- include/linux/capability.h     |    6 ++
- include/linux/checkpoint_hdr.h |   12 +++
- kernel/capability.c            |  164 +++++++++++++++++++++++++++++++++++++---
- security/commoncap.c           |   19 +----
- 4 files changed, 173 insertions(+), 28 deletions(-)
+ checkpoint/signal.c            |   90 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/checkpoint_hdr.h |    6 +++
+ include/linux/posix-timers.h   |    9 ++++
+ kernel/posix-cpu-timers.c      |    9 ----
+ 4 files changed, 105 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/capability.h b/include/linux/capability.h
-index 39e5ff5..5abd86c 100644
---- a/include/linux/capability.h
-+++ b/include/linux/capability.h
-@@ -566,6 +566,12 @@ extern int capable(int cap);
- struct dentry;
- extern int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data *cpu_caps);
+diff --git a/checkpoint/signal.c b/checkpoint/signal.c
+index 3d13c56..ecb94f8 100644
+--- a/checkpoint/signal.c
++++ b/checkpoint/signal.c
+@@ -15,6 +15,8 @@
+ #include <linux/signal.h>
+ #include <linux/errno.h>
+ #include <linux/resource.h>
++#include <linux/timer.h>
++#include <linux/posix-timers.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
  
-+struct cred;
-+int apply_securebits(unsigned securebits, struct cred *new);
-+struct ckpt_capabilities;
-+int restore_capabilities(struct ckpt_capabilities *h, struct cred *new);
-+void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred * cred);
+@@ -315,6 +317,9 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	struct signal_struct *signal;
+ 	struct sigpending shared_pending;
+ 	struct rlimit *rlim;
++	struct timeval tval;
++	struct cpu_itimer *it;
++	cputime_t cputime;
+ 	unsigned long flags;
+ 	int i, ret;
+ 
+@@ -351,6 +356,53 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
+ 		h->rlim[i].rlim_cur = rlim[i].rlim_cur;
+ 		h->rlim[i].rlim_max = rlim[i].rlim_max;
+ 	}
 +
- #endif /* __KERNEL__ */
++	/* real/virt/prof itimers */
++	if (hrtimer_active(&signal->real_timer)) {
++		/* For an active timer compute the time delta */
++		ktime_t delta = hrtimer_get_remaining(&signal->real_timer);
++		/*
++		 * If the timer expired after the the test above, then
++		 * set the expire to the minimum possible (because by
++		 * now the pending signal have been saved already, but
++		 * the signal from this very expiry won't be sent before
++		 * we release t->sighand->siglock).
++		 */
++		ckpt_debug("active ! %lld\n", delta.tv64);
++		if (delta.tv64 <= 0)
++			delta.tv64 = NSEC_PER_USEC;
++		h->it_real_value = ktime_to_ns(delta);
++	} else {
++		/*
++		 * Timer is inactive; if @it_real_incr is 0 the timer
++		 * will not be re-armed. Beacuse we hold siglock, if
++		 * @it_real_incr > 0, the timer must have just expired
++		 * but not yet re-armed, and we have a SIGALRM pending
++		 * - that will trigger timer re-arm after restart.
++		 */
++		h->it_real_value = 0;
++	}
++	h->it_real_incr = ktime_to_ns(signal->it_real_incr);
++
++	/* for prof/virt, ignore error and incr_error */
++	it = &signal->it[CPUCLOCK_VIRT];
++	cputime = it->expires;
++	if (!cputime_eq(cputime, cputime_zero))
++		cputime = cputime_sub(it->expires, virt_ticks(t));
++	cputime_to_timeval(cputime, &tval);
++	h->it_virt_value = timeval_to_ns(&tval);
++	cputime_to_timeval(it->incr, &tval);
++	h->it_virt_incr = timeval_to_ns(&tval);
++
++	it = &signal->it[CPUCLOCK_PROF];
++	cputime = it->expires;
++	if (!cputime_eq(cputime, cputime_zero))
++		cputime = cputime_sub(it->expires, prof_ticks(t));
++	cputime_to_timeval(cputime, &tval);
++	h->it_prof_value = timeval_to_ns(&tval);
++	cputime_to_timeval(it->incr, &tval);
++	h->it_prof_incr = timeval_to_ns(&tval);
++
+ 	unlock_task_sighand(t, &flags);
  
- #endif /* !_LINUX_CAPABILITY_H */
+ 	ret = ckpt_write_obj(ctx, &h->h);
+@@ -424,6 +476,7 @@ static int restore_signal(struct ckpt_ctx *ctx)
+ 	struct ckpt_hdr_signal *h;
+ 	struct sigpending new_pending;
+ 	struct sigpending *pending;
++	struct itimerval itimer;
+ 	struct rlimit rlim;
+ 	int i, ret;
+ 
+@@ -444,12 +497,49 @@ static int restore_signal(struct ckpt_ctx *ctx)
+ 	if (ret < 0)
+ 		goto out;
+ 
++	/*
++	 * Reset real/virt/prof itimer (in case they were set), to
++	 * prevent unwanted signals after flushing current signals
++	 * and before restoring original real/virt/prof itimer.
++	 */
++	itimer.it_value = (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
++	itimer.it_interval =  (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
++	do_setitimer(ITIMER_REAL, &itimer, NULL);
++	do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
++	do_setitimer(ITIMER_PROF, &itimer, NULL);
++
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	pending = &current->signal->shared_pending;
+ 	flush_sigqueue(pending);
+ 	pending->signal = new_pending.signal;
+ 	list_splice_init(&new_pending.list, &pending->list);
+ 	spin_unlock_irq(&current->sighand->siglock);
++
++	/* real/virt/prof itimers */
++	itimer.it_value = ns_to_timeval(h->it_real_value);
++	itimer.it_interval = ns_to_timeval(h->it_real_incr);
++	ret = do_setitimer(ITIMER_REAL, &itimer, NULL);
++	if (ret < 0)
++		goto out;
++	/*
++	 * If expire is 0 but incr > 0 then we have a SIGALRM pending.
++	 * It should re-arm the timer when handled. But do_setitimer()
++	 * above already ignored @it_real_incr because @it_real_value
++	 * that was zero. So we set it manually. (This is safe against
++	 * malicious input, because in the worst case will generate an
++	 * unexpected SIGALRM to this process).
++	 */
++	if (!h->it_real_value && h->it_real_incr)
++		current->signal->it_real_incr = ns_to_ktime(h->it_real_incr);
++
++	itimer.it_value = ns_to_timeval(h->it_virt_value);
++	itimer.it_interval = ns_to_timeval(h->it_virt_incr);
++	ret = do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
++	if (ret < 0)
++		goto out;
++	itimer.it_value = ns_to_timeval(h->it_prof_value);
++	itimer.it_interval = ns_to_timeval(h->it_prof_incr);
++	ret = do_setitimer(ITIMER_PROF, &itimer, NULL);
+  out:
+ 	ckpt_hdr_put(ctx, h);
+ 	return ret;
 diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 825f4cc..78557ec 100644
+index 939d6f2..a09b5e5 100644
 --- a/include/linux/checkpoint_hdr.h
 +++ b/include/linux/checkpoint_hdr.h
-@@ -85,6 +85,8 @@ enum {
- #define CKPT_HDR_UTS_NS CKPT_HDR_UTS_NS
- 	CKPT_HDR_IPC_NS,
- #define CKPT_HDR_IPC_NS CKPT_HDR_IPC_NS
-+	CKPT_HDR_CAPABILITIES,
-+#define CKPT_HDR_CAPABILITIES CKPT_HDR_CAPABILITIES
- 
- 	/* 201-299: reserved for arch-dependent */
- 
-@@ -249,6 +251,16 @@ struct ckpt_hdr_task {
- 	__u64 clear_child_tid;
+@@ -581,6 +581,12 @@ struct ckpt_rlimit {
+ struct ckpt_hdr_signal {
+ 	struct ckpt_hdr h;
+ 	struct ckpt_rlimit rlim[CKPT_RLIM_NLIMITS];
++	__u64 it_real_value;
++	__u64 it_real_incr;
++	__u64 it_virt_value;
++	__u64 it_virt_incr;
++	__u64 it_prof_value;
++	__u64 it_prof_incr;
  } __attribute__((aligned(8)));
  
-+/* Posix capabilities */
-+struct ckpt_capabilities {
-+	__u32 cap_i_0, cap_i_1; /* inheritable set */
-+	__u32 cap_p_0, cap_p_1; /* permitted set */
-+	__u32 cap_e_0, cap_e_1; /* effective set */
-+	__u32 cap_b_0, cap_b_1; /* bounding set */
-+	__u32 securebits;
-+	__u32 padding;
-+} __attribute__((aligned(8)));
-+
- /* namespaces */
- struct ckpt_hdr_task_ns {
- 	struct ckpt_hdr h;
-diff --git a/kernel/capability.c b/kernel/capability.c
-index 7f876e6..2cc66a7 100644
---- a/kernel/capability.c
-+++ b/kernel/capability.c
-@@ -14,6 +14,8 @@
- #include <linux/security.h>
- #include <linux/syscalls.h>
- #include <linux/pid_namespace.h>
-+#include <linux/securebits.h>
-+#include <linux/checkpoint.h>
- #include <asm/uaccess.h>
- #include "cred-internals.h"
+ struct ckpt_hdr_signal_task {
+diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
+index d0d6a66..7dd69c3 100644
+--- a/include/linux/posix-timers.h
++++ b/include/linux/posix-timers.h
+@@ -125,4 +125,13 @@ void update_rlimit_cpu(unsigned long rlim_new);
  
-@@ -215,6 +217,45 @@ SYSCALL_DEFINE2(capget, cap_user_header_t, header, cap_user_data_t, dataptr)
- 	return ret;
- }
+ int invalid_clockid(const clockid_t which_clock);
  
-+static int do_capset_tocred(kernel_cap_t *effective, kernel_cap_t *inheritable,
-+			kernel_cap_t *permitted, struct cred *new)
++static inline cputime_t prof_ticks(struct task_struct *p)
 +{
-+	int ret;
-+
-+	ret = security_capset(new, current_cred(),
-+			      effective, inheritable, permitted);
-+	if (ret < 0)
-+		return ret;
-+
-+	/*
-+	 * for checkpoint-restart, do we want to wait until end of restart?
-+	 * not sure we care */
-+	audit_log_capset(current->pid, new, current_cred());
-+
-+	return 0;
++	return cputime_add(p->utime, p->stime);
++}
++static inline cputime_t virt_ticks(struct task_struct *p)
++{
++	return p->utime;
 +}
 +
-+static int do_capset(kernel_cap_t *effective, kernel_cap_t *inheritable,
-+			kernel_cap_t *permitted)
-+{
-+	struct cred *new;
-+	int ret;
-+
-+	new = prepare_creds();
-+	if (!new)
-+		return -ENOMEM;
-+
-+	ret = do_capset_tocred(effective, inheritable, permitted, new);
-+	if (ret < 0)
-+		goto error;
-+
-+	return commit_creds(new);
-+
-+error:
-+	abort_creds(new);
-+	return ret;
-+}
-+
- /**
-  * sys_capset - set capabilities for a process or (*) a group of processes
-  * @header: pointer to struct that contains capability version and
-@@ -238,7 +279,6 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
- 	struct __user_cap_data_struct kdata[_KERNEL_CAPABILITY_U32S];
- 	unsigned i, tocopy, copybytes;
- 	kernel_cap_t inheritable, permitted, effective;
--	struct cred *new;
- 	int ret;
- 	pid_t pid;
- 
-@@ -272,23 +312,125 @@ SYSCALL_DEFINE2(capset, cap_user_header_t, header, const cap_user_data_t, data)
- 		i++;
+ #endif
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 438ff45..5031bdf 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -168,15 +168,6 @@ static void bump_cpu_timer(struct k_itimer *timer,
  	}
- 
--	new = prepare_creds();
--	if (!new)
--		return -ENOMEM;
-+	return do_capset(&effective, &inheritable, &permitted);
- 
--	ret = security_capset(new, current_cred(),
--			      &effective, &inheritable, &permitted);
-+}
-+
-+#ifdef CONFIG_SECURITY_FILE_CAPABILITIES
-+int apply_securebits(unsigned securebits, struct cred *new)
-+{
-+	if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
-+	     & (new->securebits ^ securebits))				/*[1]*/
-+	    || ((new->securebits & SECURE_ALL_LOCKS & ~securebits))	/*[2]*/
-+	    || (securebits & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
-+	    || (cap_capable(current, current_cred(), CAP_SETPCAP,
-+			    SECURITY_CAP_AUDIT) != 0)			/*[4]*/
-+		/*
-+		 * [1] no changing of bits that are locked
-+		 * [2] no unlocking of locks
-+		 * [3] no setting of unsupported bits
-+		 * [4] doing anything requires privilege (go read about
-+		 *     the "sendmail capabilities bug")
-+		 */
-+	    )
-+		/* cannot change a locked bit */
-+		return -EPERM;
-+	new->securebits = securebits;
-+	return 0;
-+}
-+
-+static void do_capbset_drop(struct cred *cred, int cap)
-+{
-+	cap_lower(cred->cap_bset, cap);
-+}
-+
-+static inline int restore_cap_bset(kernel_cap_t bset, struct cred *cred)
-+{
-+	int i, may_dropbcap = capable(CAP_SETPCAP);
-+
-+	for (i = 0; i < CAP_LAST_CAP; i++) {
-+		if (cap_raised(bset, i))
-+			continue;
-+		if (!cap_raised(current_cred()->cap_bset, i))
-+			continue;
-+		if (!may_dropbcap)
-+			return -EPERM;
-+		do_capbset_drop(cred, i);
-+	}
-+
-+	return 0;
-+}
-+
-+#else /* CONFIG_SECURITY_FILE_CAPABILITIES */
-+
-+int apply_securebits(unsigned securebits, struct cred *new)
-+{
-+	/* settable securebits not supported */
-+	return 0;
-+}
-+
-+static inline int restore_cap_bset(kernel_cap_t bset, struct cred *cred)
-+{
-+	/* bounding sets not supported */
-+	return 0;
-+}
-+#endif /* CONFIG_SECURITY_FILE_CAPABILITIES */
-+
-+#ifdef CONFIG_CHECKPOINT
-+static int do_restore_caps(struct ckpt_capabilities *h, struct cred *cred)
-+{
-+	kernel_cap_t effective, inheritable, permitted, bset;
-+	int ret;
-+
-+	effective.cap[0] = h->cap_e_0;
-+	effective.cap[1] = h->cap_e_1;
-+	inheritable.cap[0] = h->cap_i_0;
-+	inheritable.cap[1] = h->cap_i_1;
-+	permitted.cap[0] = h->cap_p_0;
-+	permitted.cap[1] = h->cap_p_1;
-+	bset.cap[0] = h->cap_b_0;
-+	bset.cap[1] = h->cap_b_1;
-+
-+	ret = do_capset_tocred(&effective, &inheritable, &permitted, cred);
- 	if (ret < 0)
--		goto error;
-+		return ret;
- 
--	audit_log_capset(pid, new, current_cred());
-+	ret = restore_cap_bset(bset, cred);
-+	return ret;
-+}
- 
--	return commit_creds(new);
-+void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred * cred)
-+{
-+	BUILD_BUG_ON(CAP_LAST_CAP >= 64);
-+	h->securebits = cred->securebits;
-+	h->cap_i_0 = cred->cap_inheritable.cap[0];
-+	h->cap_i_1 = cred->cap_inheritable.cap[1];
-+	h->cap_p_0 = cred->cap_permitted.cap[0];
-+	h->cap_p_1 = cred->cap_permitted.cap[1];
-+	h->cap_e_0 = cred->cap_effective.cap[0];
-+	h->cap_e_1 = cred->cap_effective.cap[1];
-+	h->cap_b_0 = cred->cap_bset.cap[0];
-+	h->cap_b_1 = cred->cap_bset.cap[1];
-+}
-+
-+/*
-+ * restore_capabilities: called by restore_creds() to set the
-+ * restored capabilities (if permitted) in a new struct cred which
-+ * will be attached at the end of the sys_restart().
-+ * struct cred *new is prepared by caller (using prepare_creds())
-+ * (and aborted by caller on error)
-+ * return 0 on success, < 0 on error
-+ */
-+int restore_capabilities(struct ckpt_capabilities *h, struct cred *new)
-+{
-+	int ret = do_restore_caps(h, new);
-+
-+	if (!ret)
-+		ret = apply_securebits(h->securebits, new);
- 
--error:
--	abort_creds(new);
- 	return ret;
  }
-+#endif /* CONFIG_CHECKPOINT */
  
- /**
-  * capable - Determine if the current task has a superior capability in effect
-diff --git a/security/commoncap.c b/security/commoncap.c
-index f800fdb..86b3e23 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -827,24 +827,9 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
- 	 * capability-based-privilege environment.
- 	 */
- 	case PR_SET_SECUREBITS:
--		error = -EPERM;
--		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
--		     & (new->securebits ^ arg2))			/*[1]*/
--		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/
--		    || (arg2 & ~(SECURE_ALL_LOCKS | SECURE_ALL_BITS))	/*[3]*/
--		    || (cap_capable(current, current_cred(), CAP_SETPCAP,
--				    SECURITY_CAP_AUDIT) != 0)		/*[4]*/
--			/*
--			 * [1] no changing of bits that are locked
--			 * [2] no unlocking of locks
--			 * [3] no setting of unsupported bits
--			 * [4] doing anything requires privilege (go read about
--			 *     the "sendmail capabilities bug")
--			 */
--		    )
--			/* cannot change a locked bit */
-+		error = apply_securebits(arg2, new);
-+		if (error)
- 			goto error;
--		new->securebits = arg2;
- 		goto changed;
- 
- 	case PR_GET_SECUREBITS:
+-static inline cputime_t prof_ticks(struct task_struct *p)
+-{
+-	return cputime_add(p->utime, p->stime);
+-}
+-static inline cputime_t virt_ticks(struct task_struct *p)
+-{
+-	return p->utime;
+-}
+-
+ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ {
+ 	int error = check_clock(which_clock);
 -- 
 1.6.3.3
 
