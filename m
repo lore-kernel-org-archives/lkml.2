@@ -1,128 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0CQOJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 10:09:18 -0400
-Received: from ernst.netinsight.se ([194.16.221.21]:42251 "HELO
-	ernst.netinsight.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754951Ab0CQOJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 10:09:14 -0400
-Date: Wed, 17 Mar 2010 15:09:07 +0100
-From: Simon Kagstrom <simon.kagstrom@netinsight.net>
-To: Alan Cox <alan@linux.intel.com>
-Cc: x86@kernel.org, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mingo@redhat.com, tglx@linutronix.de, akpm@linux-foundation.org,
-       hpa@zytor.com
-Subject: Re: [PATCH 1/2]: serial8250: Use native_io_delay on the x86
-Message-ID: <20100317150907.59d40834@marrow.netinsight.se>
-In-Reply-To: <20100317130159.23d1103f@linux.intel.com>
-References: <20100317132849.7d49939b@marrow.netinsight.se>
-	<20100317133050.54851ff8@marrow.netinsight.se>
-	<20100317130159.23d1103f@linux.intel.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753037Ab0CQOLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 10:11:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751248Ab0CQOLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 10:11:48 -0400
+Message-ID: <4BA0E3CC.4060909@redhat.com>
+Date: Wed, 17 Mar 2010 10:14:36 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
+MIME-Version: 1.0
+To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+       mhiramat@redhat.com, mingo@elte.hu
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf probe: Fix !dwarf build
+References: <20100316220612.32050.33806.stgit@localhost6.localdomain6> <tip-3b0d516463f8deb897a55cb81e9dbbe58a2490ed@git.kernel.org>
+In-Reply-To: <tip-3b0d516463f8deb897a55cb81e9dbbe58a2490ed@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Mar 2010 13:01:59 +0000
-Alan Cox <alan@linux.intel.com> wrote:
+Oops, thank you,
 
-> On Wed, 17 Mar 2010 13:30:50 +0100
-> Simon Kagstrom <simon.kagstrom@netinsight.net> wrote:
+Acked-by: Masami Hiramatsu <mhiramat@redhat.com>
+
+tip-bot for Ingo Molnar wrote:
+> Commit-ID:  3b0d516463f8deb897a55cb81e9dbbe58a2490ed
+> Gitweb:     http://git.kernel.org/tip/3b0d516463f8deb897a55cb81e9dbbe58a2490ed
+> Author:     Ingo Molnar <mingo@elte.hu>
+> AuthorDate: Wed, 17 Mar 2010 12:13:28 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Wed, 17 Mar 2010 12:13:28 +0100
 > 
-> > Port 0x80 is not safe to use on all x86 boards (see
-> > arch/x86/kernel/io_delay.c), so use native_io_delay instead.
-> > 
-> > Signed-off-by: Simon Kagstrom <simon.kagstrom@netinsight.net>
+> perf probe: Fix !dwarf build
 > 
-> native_io_delay() won't work if the system is being run with no delays.
-> The I/O cycle isn't for the delay but to force the bus signals. So in
-> various modes (paravirt, udelay, no delay) the native_io_delay won't
-> actually do what is required.
+> Fix the !drawf build.
+> 
+> This uses the existing NO_DWARF_SUPPORT mechanism we use for that,
+> but it's really fragile and needs a cleanup. (in a separate patch)
+> 
+> 1) Such uses:
+> 
+>  #ifndef NO_DWARF_SUPPORT
+> 
+> are double inverted logic a'la 'not not'. Instead the flag should
+> be called DWARF_SUPPORT.
+> 
+> 2) Furthermore, assymetric #ifdef polluted code flow like:
+> 
+>         if (need_dwarf)
+>  #ifdef NO_DWARF_SUPPORT
+>                 die("Debuginfo-analysis is not supported");
+>  #else   /* !NO_DWARF_SUPPORT */
+>                 pr_debug("Some probes require debuginfo.\n");
+> 
+>         fd = open_vmlinux();
+> 
+> is very fragile and not acceptable. Instead of that helper functions
+> should be created and the dwarf/no-dwarf logic should be separated more
+> cleanly.
+> 
+> 3) Local variable #ifdefs like this:
+> 
+>  #ifndef NO_DWARF_SUPPORT
+>         int fd;
+>  #endif
+> 
+> Are fragile as well and should be eliminated. Helper functions achieve
+> that too.
+> 
+> Cc: Masami Hiramatsu <mhiramat@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> LKML-Reference: <20100316220612.32050.33806.stgit@localhost6.localdomain6>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> ---
+>  tools/perf/util/probe-event.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> index 64dea6c..f333269 100644
+> --- a/tools/perf/util/probe-event.c
+> +++ b/tools/perf/util/probe-event.c
+> @@ -1012,8 +1012,10 @@ end_dwarf:
+>  	if (!sym)
+>  		die("Kernel symbol \'%s\' not found - probe not added.",
+>  		    tev->point.symbol);
+> +#ifndef NO_DWARF_SUPPORT
+>  found:
+>  	close(fd);
+> +#endif
+>  	return ntevs;
+>  }
+>  
+> @@ -1172,10 +1174,13 @@ void show_line_range(struct line_range *lr)
+>  	unsigned int l = 1;
+>  	struct line_node *ln;
+>  	FILE *fp;
+> +#ifndef NO_DWARF_SUPPORT
+>  	int fd, ret;
+> +#endif
+>  
+>  	/* Search a line range */
+>  	init_vmlinux();
+> +#ifndef NO_DWARF_SUPPORT
+>  	fd = open_vmlinux();
+>  	if (fd < 0)
+>  		die("Could not open debuginfo file.");
+> @@ -1183,6 +1188,7 @@ void show_line_range(struct line_range *lr)
+>  	if (ret <= 0)
+>  		die("Source line is not found.\n");
+>  	close(fd);
+> +#endif
+>  
+>  	setup_pager();
+>  
 
-You are right, I should have seen that.
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
 
-Would something similar to the other patch be acceptable, i.e., like
-the diff below?
-
-> I'm actually surprised you hit this path and if anything the right fix
-> is to avoid hitting this kind of probing in the first place.
-
-But isn't this code path pretty much always being executed? If I read
-the code correct, unless we have a buggy UART it will be executed if
-UPF_BOOT_AUTOCONF is set.
-
-// Simon
-
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 524f6ab..c5e3f9a 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -38,6 +38,7 @@
- #include <linux/serial_8250.h>
- #include <linux/nmi.h>
- #include <linux/mutex.h>
-+#include <linux/io.h>
- 
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -1071,6 +1072,19 @@ static void autoconfig_16550a(struct uart_8250_port *up)
-        serial_outp(up, UART_IER, iersave);
- }
- 
-+static void bus_delay(u8 val)
-+{
-+#ifdef __i386__
-+# ifdef CONFIG_IO_DELAY_TYPE_0XED
-+       const u16 io_port = 0xed;
-+# else
-+       const u16 io_port = 0x80;
-+#endif
-+
-+       outb(0xff, io_port);
-+#endif
-+}
-+
- /*
-  * This routine is called by rs_init() to initialize a specific serial
-  * port.  It determines what type of UART chip this serial port is
-@@ -1104,29 +1118,24 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
-                 * Do a simple existence test first; if we fail this,
-                 * there's no point trying anything else.
-                 *
--                * 0x80 is used as a nonsense port to prevent against
--                * false positives due to ISA bus float.  The
--                * assumption is that 0x80 is a non-existent port;
--                * which should be safe since include/asm/io.h also
--                * makes this assumption.
-+                * The IO delay is used to prevent against false positives
-+                * due to ISA bus float.
-                 *
-                 * Note: this is safe as long as MCR bit 4 is clear
-                 * and the device is in "PC" mode.
-                 */
-                scratch = serial_inp(up, UART_IER);
-                serial_outp(up, UART_IER, 0);
--#ifdef __i386__
--               outb(0xff, 0x080);
--#endif
-+               bus_delay(0xff);
-+
-                /*
-                 * Mask out IER[7:4] bits for test as some UARTs (e.g. TL
-                 * 16C754B) allow only to modify them if an EFR bit is set.
-                 */
-                scratch2 = serial_inp(up, UART_IER) & 0x0f;
-                serial_outp(up, UART_IER, 0x0F);
--#ifdef __i386__
--               outb(0, 0x080);
--#endif
-+               bus_delay(0x0);
-+
-                scratch3 = serial_inp(up, UART_IER) & 0x0f;
-                serial_outp(up, UART_IER, scratch);
-                if (scratch2 != 0 || scratch3 != 0x0F) {
-[simkag@marrow kernel]$ 
