@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0CQQVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:21:36 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:39025 "EHLO
+	id S1755425Ab0CQQVL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:21:11 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:39027 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab0CQQU7 (ORCPT
+	with ESMTP id S1755356Ab0CQQU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 17 Mar 2010 12:20:59 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 73/96] c/r: correctly restore pgid
-Date: Wed, 17 Mar 2010 12:09:01 -0400
-Message-Id: <1268842164-5590-74-git-send-email-orenl@cs.columbia.edu>
+       Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org
+Subject: [C/R v20][PATCH 65/96] c/r: checkpoint and restore task credentials
+Date: Wed, 17 Mar 2010 12:08:53 -0400
+Message-Id: <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-73-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -83,403 +82,1114 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-73-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The main challenge with restoring the pgid of tasks is that the
-original "owner" (the process with that pid) might have exited
-already. I call these "ghost" pgids. 'mktree' does create these
-processes, but they then exit without participating in the restart.
+From: Serge E. Hallyn <serue@us.ibm.com>
 
-To solve this, this patch introduces a RESTART_GHOST flag, used for
-"ghost" owners that are created only to pass their pgid to other
-tasks. ('mktree' now makes them call restart(2) instead of exiting).
+This patch adds the checkpointing and restart of credentials
+(uids, gids, and capabilities) to Oren's c/r patchset (on top
+of v14).  It goes to great pains to re-use (and define when
+needed) common helpers, in order to make sure that as security
+code is modified, the cr code will be updated.  Some of the
+helpers should still be moved (i.e. _creds() functions should
+be in kernel/cred.c).
 
-When a "ghost" task calls restart(2), it will be placed on a wait
-queue until the restart completes and then exit. This guarantees that
-the pgid that it owns remains available for all (regular) restarting
-tasks for when they need it.
+When building the credentials for the restarted process, I
+1. create a new struct cred as a copy of the running task's
+cred (using prepare_cred())
+2. always authorize any changes to the new struct cred
+based on the permissions of current_cred() (not the current
+transient state of the new cred).
 
-Regular tasks perform the restart as before, except that they also
-now restore their old pgrp, which is guaranteed to exist.
+While this may mean that certain transient_cred1->transient_cred2
+states are allowed which otherwise wouldn't be allowed, the
+fact remains that current_cred() is allowed to transition to
+transient_cred2.
+
+The reconstructed creds are applied to the task at the very
+end of the sys_restart call.  This ensures that any objects which
+need to be re-created (file, socket, etc) are re-created using
+the creds of the task calling sys_restart - preventing an unpriv
+user from creating a privileged object, and ensuring that a
+root task can restart a process which had started out privileged,
+created some privileged objects, then dropped its privilege.
+
+With these patches, the root user can restart checkpoint images
+(created by either hallyn or root) of user hallyn's tasks,
+resulting in a program owned by hallyn.
 
 Changelog [v19-rc1]:
-  - Simplify logic of tracking restarting tasks
-  - Debug final process-tree state on restart
   - [Matt Helsley] Add cpp definitions for enums
-  - Self-restart to tolerate missing pgid
-Changelog [v3]:
-  - Fix leak of ckpt_ctx when restoring "ghost" tasks
-Changelog [v2]:
-  - Call change_pid() only if new pgrp differs from current one
-Changelog [v1]:
-  - Verify that pgid owner is a thread-group-leader.
-  - Handle the case of pgid/sid == 0 using root's parent pid-ns
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Changelog:
+	Sep 08: [NTL] discard const from struct cred * where appropriate
+	Jun 15: Fix user_ns handling when !CONFIG_USER_N
+	        Set creator_ref=0 for root_ns (discard @flags)
+		Don't  overwrite global user-ns if CONFIG_USER_NS
+	Jun 10: Merge with ckpt-v16-dev (Oren Laadan)
+	Jun 01: Don't check ordering of groups in group_info, bc
+		set_groups() will sort it for us.
+	May 28: 1. Restore securebits
+		2. Address Alexey's comments: move prototypes out of
+		   sched.h, validate ngroups < NGROUPS_MAX, validate
+		   groups are sorted, and get rid of ckpt_hdr_cred->version.
+		3. remove bogus unused flag RESTORE_CREATE_USERNS
+	May 26: Move group, user, userns, creds c/r functions out
+		of checkpoint/process.c and into the appropriate files.
+	May 26: Define struct ckpt_hdr_task_creds and move task cred
+		objref c/r into {checkpoint_restore}_task_shared().
+	May 26: Take cred refs around checkpoint_write_creds()
+	May 20: Remove the limit on number of groups in groupinfo
+		at checkpoint time
+	May 20: Remove the depth limit on empty user namespaces
+	May 20: Better document checkpoint_user
+	May 18: fix more refcounting: if (userns 5, uid 0) had
+		no active tasks or child user_namespaces, then
+		it shouldn't exist at restart or it, its namespace,
+		and its whole chain of creators will be leaked.
+	May 14: fix some refcounting:
+		1. a new user_ns needs a ref to remain pinned
+		   by its root user
+		2. current_user_ns needs an extra ref bc objhash
+		   drops two on restart
+		3. cred needs a ref for the real credentials bc
+		   commit_creds eats one ref.
+	May 13: folded in fix to userns refcounting.
+
+Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+[orenl@cs.columbia.edu: merge with ckpt-v16-dev]
 ---
- checkpoint/process.c             |  101 ++++++++++++++++++++++++++++++++++++++
- checkpoint/restart.c             |   59 +++++++++++++++++++---
- checkpoint/sys.c                 |    3 +-
- include/linux/checkpoint.h       |   11 +++-
- include/linux/checkpoint_hdr.h   |    3 +
- include/linux/checkpoint_types.h |    7 ++-
- 6 files changed, 171 insertions(+), 13 deletions(-)
+ checkpoint/namespace.c           |   41 ++++++++++
+ checkpoint/objhash.c             |   82 ++++++++++++++++++++
+ checkpoint/process.c             |  128 ++++++++++++++++++++++++++++++-
+ include/linux/capability.h       |    6 +-
+ include/linux/checkpoint.h       |   12 +++
+ include/linux/checkpoint_hdr.h   |   67 ++++++++++++++++
+ include/linux/checkpoint_types.h |    2 +
+ kernel/cred.c                    |  126 ++++++++++++++++++++++++++++++
+ kernel/groups.c                  |   69 +++++++++++++++++
+ kernel/user.c                    |  158 ++++++++++++++++++++++++++++++++++++++
+ kernel/user_namespace.c          |   89 +++++++++++++++++++++
+ 11 files changed, 774 insertions(+), 6 deletions(-)
 
+diff --git a/checkpoint/namespace.c b/checkpoint/namespace.c
+index 3703577..3bd8e85 100644
+--- a/checkpoint/namespace.c
++++ b/checkpoint/namespace.c
+@@ -114,3 +114,44 @@ void *restore_uts_ns(struct ckpt_ctx *ctx)
+ {
+ 	return (void *) do_restore_uts_ns(ctx);
+ }
++
++/*
++ * user_ns  -  trivial checkpoint/restore for !CONFIG_USER_NS case
++ */
++#ifndef CONFIG_USER_NS
++int checkpoint_userns(struct ckpt_ctx *ctx, void *ptr)
++{
++	struct ckpt_hdr_user_ns *h;
++	int ret;
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_USER_NS);
++	if (!h)
++		return -ENOMEM;
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
++	return ret;
++}
++
++void *restore_userns(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_user_ns *h;
++	struct user_namespace *ns;
++
++	/* complain if image contains multiple namespaces */
++	if (ctx->stats.user_ns)
++		return ERR_PTR(-EEXIST);
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_USER_NS);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++
++	if (h->creator_ref)
++		ns = ERR_PTR(-EINVAL);
++	else
++		ns = get_user_ns(current_user_ns());
++
++	ctx->stats.user_ns++;
++	ckpt_hdr_put(ctx, h);
++	return ns;
++}
++#endif
+diff --git a/checkpoint/objhash.c b/checkpoint/objhash.c
+index abb2a5b..56d450a 100644
+--- a/checkpoint/objhash.c
++++ b/checkpoint/objhash.c
+@@ -17,6 +17,7 @@
+ #include <linux/fdtable.h>
+ #include <linux/sched.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
+ 
+@@ -172,6 +173,51 @@ static int obj_ipc_ns_users(void *ptr)
+ 	return atomic_read(&((struct ipc_namespace *) ptr)->count);
+ }
+ 
++static int obj_cred_grab(void *ptr)
++{
++	get_cred((struct cred *) ptr);
++	return 0;
++}
++
++static void obj_cred_drop(void *ptr, int lastref)
++{
++	put_cred((struct cred *) ptr);
++}
++
++static int obj_user_grab(void *ptr)
++{
++	struct user_struct *u = ptr;
++	(void) get_uid(u);
++	return 0;
++}
++
++static void obj_user_drop(void *ptr, int lastref)
++{
++	free_uid((struct user_struct *) ptr);
++}
++
++static int obj_userns_grab(void *ptr)
++{
++	get_user_ns((struct user_namespace *) ptr);
++	return 0;
++}
++
++static void obj_userns_drop(void *ptr, int lastref)
++{
++	put_user_ns((struct user_namespace *) ptr);
++}
++
++static int obj_groupinfo_grab(void *ptr)
++{
++	get_group_info((struct group_info *) ptr);
++	return 0;
++}
++
++static void obj_groupinfo_drop(void *ptr, int lastref)
++{
++	put_group_info((struct group_info *) ptr);
++}
++
+ static struct ckpt_obj_ops ckpt_obj_ops[] = {
+ 	/* ignored object */
+ 	{
+@@ -247,6 +293,42 @@ static struct ckpt_obj_ops ckpt_obj_ops[] = {
+ 		.checkpoint = checkpoint_ipc_ns,
+ 		.restore = restore_ipc_ns,
+ 	},
++	/* user_ns object */
++	{
++		.obj_name = "USER_NS",
++		.obj_type = CKPT_OBJ_USER_NS,
++		.ref_drop = obj_userns_drop,
++		.ref_grab = obj_userns_grab,
++		.checkpoint = checkpoint_userns,
++		.restore = restore_userns,
++	},
++	/* struct cred */
++	{
++		.obj_name = "CRED",
++		.obj_type = CKPT_OBJ_CRED,
++		.ref_drop = obj_cred_drop,
++		.ref_grab = obj_cred_grab,
++		.checkpoint = checkpoint_cred,
++		.restore = restore_cred,
++	},
++	/* user object */
++	{
++		.obj_name = "USER",
++		.obj_type = CKPT_OBJ_USER,
++		.ref_drop = obj_user_drop,
++		.ref_grab = obj_user_grab,
++		.checkpoint = checkpoint_user,
++		.restore = restore_user,
++	},
++	/* struct groupinfo */
++	{
++		.obj_name = "GROUPINFO",
++		.obj_type = CKPT_OBJ_GROUPINFO,
++		.ref_drop = obj_groupinfo_drop,
++		.ref_grab = obj_groupinfo_grab,
++		.checkpoint = checkpoint_groupinfo,
++		.restore = restore_groupinfo,
++	},
+ };
+ 
+ 
 diff --git a/checkpoint/process.c b/checkpoint/process.c
-index c5e9357..e0ef795 100644
+index 0935cd6..6741b43 100644
 --- a/checkpoint/process.c
 +++ b/checkpoint/process.c
-@@ -24,6 +24,57 @@
+@@ -18,6 +18,7 @@
+ #include <linux/compat.h>
+ #include <linux/poll.h>
+ #include <linux/utsname.h>
++#include <linux/user_namespace.h>
+ #include <linux/checkpoint.h>
+ #include <linux/checkpoint_hdr.h>
  #include <linux/syscalls.h>
- 
- 
-+pid_t ckpt_pid_nr(struct ckpt_ctx *ctx, struct pid *pid)
-+{
-+	return pid ? pid_nr_ns(pid, ctx->root_nsproxy->pid_ns) : CKPT_PID_NULL;
-+}
-+
-+/* must be called with tasklist_lock or rcu_read_lock() held */
-+struct pid *_ckpt_find_pgrp(struct ckpt_ctx *ctx, pid_t pgid)
-+{
-+	struct task_struct *p;
-+	struct pid *pgrp;
-+
-+	if (pgid == 0) {
-+		/*
-+		 * At checkpoint the pgid owner lived in an ancestor
-+		 * pid-ns. The best we can do (sanely and safely) is
-+		 * to examine the parent of this restart's root: if in
-+		 * a distinct pid-ns, use its pgrp; otherwise fail.
-+		 */
-+		p = ctx->root_task->real_parent;
-+		if (p->nsproxy->pid_ns == current->nsproxy->pid_ns)
-+			return NULL;
-+		pgrp = task_pgrp(p);
-+	} else {
-+		/*
-+		 * Find the owner process of this pgid (it must exist
-+		 * if pgrp exists). It must be a thread group leader.
-+		 */
-+		pgrp = find_vpid(pgid);
-+		p = pid_task(pgrp, PIDTYPE_PID);
-+		if (!p || !thread_group_leader(p))
-+			return NULL;
-+		/*
-+		 * The pgrp must "belong" to our restart tree (compare
-+		 * p->checkpoint_ctx to ours). This prevents malicious
-+		 * input from (guessing and) using unrelated pgrps. If
-+		 * the owner is dead, then it doesn't have a context,
-+		 * so instead compare against its (real) parent's.
-+		 */
-+		if (p->exit_state == EXIT_ZOMBIE)
-+			p = p->real_parent;
-+		if (p->checkpoint_ctx != ctx)
-+			return NULL;
-+	}
-+
-+	if (task_session(current) != task_session(p))
-+		return NULL;
-+
-+	return pgrp;
-+}
-+
-+
- #ifdef CONFIG_FUTEX
- static void save_task_robust_futex_list(struct ckpt_hdr_task *h,
- 					struct task_struct *t)
-@@ -738,6 +789,53 @@ int restore_restart_block(struct ckpt_ctx *ctx)
+@@ -136,6 +137,45 @@ static int checkpoint_task_ns(struct ckpt_ctx *ctx, struct task_struct *t)
  	return ret;
  }
  
-+static int restore_task_pgid(struct ckpt_ctx *ctx)
++static int checkpoint_task_creds(struct ckpt_ctx *ctx, struct task_struct *t)
 +{
-+	struct task_struct *task = current;
-+	struct pid *pgrp;
-+	pid_t pgid;
++	int realcred_ref, ecred_ref;
++	struct cred *rcred, *ecred;
++	struct ckpt_hdr_task_creds *h;
 +	int ret;
 +
-+	/*
-+	 * We enforce the following restrictions on restoring pgrp:
-+	 *  1) Only thread group leaders restore pgrp
-+	 *  2) Session leader cannot change own pgrp
-+	 *  3) Owner of pgrp must belong to same restart tree
-+	 *  4) Must have same session as other tasks in same pgrp
-+	 *  5) Change must pass setpgid security callback
-+	 *
-+	 * TODO - check if we need additional restrictions ?
-+	 */
++	rcred = (struct cred *) get_cred(t->real_cred);
++	ecred = (struct cred *) get_cred(t->cred);
 +
-+	if (!thread_group_leader(task))  /* (1) */
-+		return 0;
-+
-+	pgid = ctx->pids_arr[ctx->active_pid].vpgid;
-+
-+	if (pgid == task_pgrp_vnr(task))  /* nothing to do */
-+		return 0;
-+
-+	if (task->signal->leader)  /* (2) */
-+		return -EINVAL;
-+
-+	ret = -EINVAL;
-+
-+	write_lock_irq(&tasklist_lock);
-+	pgrp = _ckpt_find_pgrp(ctx, pgid);  /* (3) and (4) */
-+	if (pgrp && task_pgrp(task) != pgrp) {
-+		ret = security_task_setpgid(task, pgid);  /* (5) */
-+		if (!ret)
-+			change_pid(task, PIDTYPE_PGID, pgrp);
++	realcred_ref = checkpoint_obj(ctx, rcred, CKPT_OBJ_CRED);
++	if (realcred_ref < 0) {
++		ret = realcred_ref;
++		goto error;
 +	}
-+	write_unlock_irq(&tasklist_lock);
 +
-+	/* self-restart: be tolerant if old pgid isn't found */
-+	if (ctx->uflags & RESTART_TASKSELF)
-+		ret = 0;
++	ecred_ref = checkpoint_obj(ctx, ecred, CKPT_OBJ_CRED);
++	if (ecred_ref < 0) {
++		ret = ecred_ref;
++		goto error;
++	}
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_TASK_CREDS);
++	if (!h) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	h->cred_ref = realcred_ref;
++	h->ecred_ref = ecred_ref;
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
++
++error:
++	put_cred(rcred);
++	put_cred(ecred);
++	return ret;
++}
++
+ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ {
+ 	struct ckpt_hdr_task_objs *h;
+@@ -151,10 +191,19 @@ static int checkpoint_task_objs(struct ckpt_ctx *ctx, struct task_struct *t)
+ 	 * restored when it gets to restore, e.g. its memory.
+ 	 */
+ 
++	ret = checkpoint_task_creds(ctx, t);
++	ckpt_debug("cred: objref %d\n", ret);
++	if (ret < 0) {
++		ckpt_err(ctx, ret, "%(T)process credentials\n");
++		return ret;
++	}
++
+ 	ret = checkpoint_task_ns(ctx, t);
+ 	ckpt_debug("ns: objref %d\n", ret);
+-	if (ret < 0)
++	if (ret < 0) {
++		ckpt_err(ctx, ret, "%(T)process namespaces\n");
+ 		return ret;
++	}
+ 
+ 	files_objref = checkpoint_obj_file_table(ctx, t);
+ 	ckpt_debug("files: objref %d\n", files_objref);
+@@ -434,6 +483,39 @@ static int restore_task_ns(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++static int restore_task_creds(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_task_creds *h;
++	struct cred *realcred, *ecred;
++	int ret = 0;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_CREDS);
++	if (IS_ERR(h))
++		return PTR_ERR(h);
++
++	realcred = ckpt_obj_fetch(ctx, h->cred_ref, CKPT_OBJ_CRED);
++	if (IS_ERR(realcred)) {
++		ckpt_debug("Error %ld fetching realcred (ref %d)\n",
++			PTR_ERR(realcred), h->cred_ref);
++		ret = PTR_ERR(realcred);
++		goto out;
++	}
++	ecred = ckpt_obj_fetch(ctx, h->ecred_ref, CKPT_OBJ_CRED);
++	if (IS_ERR(ecred)) {
++		ckpt_debug("Error %ld fetching ecred (ref %d)\n",
++			PTR_ERR(ecred), h->ecred_ref);
++		ret = PTR_ERR(ecred);
++		goto out;
++	}
++	ctx->realcred = realcred;
++	ctx->ecred = ecred;
++
++out:
++	ckpt_debug("Returning %d\n", ret);
++	ckpt_hdr_put(ctx, h);
++	return ret;
++}
++
+ static int restore_task_objs(struct ckpt_ctx *ctx)
+ {
+ 	struct ckpt_hdr_task_objs *h;
+@@ -444,13 +526,22 @@ static int restore_task_objs(struct ckpt_ctx *ctx)
+ 	 * and because shared objects are restored before they are
+ 	 * referenced. See comment in checkpoint_task_objs.
+ 	 */
++	ret = restore_task_creds(ctx);
++	if (ret < 0) {
++		ckpt_debug("restore_task_creds returned %d\n", ret);
++		return ret;
++	}
+ 	ret = restore_task_ns(ctx);
+-	if (ret < 0)
++	if (ret < 0) {
++		ckpt_debug("restore_task_ns returned %d\n", ret);
+ 		return ret;
++	}
+ 
+ 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TASK_OBJS);
+-	if (IS_ERR(h))
++	if (IS_ERR(h)) {
++		ckpt_debug("Error fetching task obj\n");
+ 		return PTR_ERR(h);
++	}
+ 
+ 	ret = restore_obj_file_table(ctx, h->files_objref);
+ 	ckpt_debug("file_table: ret %d (%p)\n", ret, current->files);
+@@ -462,6 +553,33 @@ static int restore_task_objs(struct ckpt_ctx *ctx)
+ 	return ret;
+ }
+ 
++static int restore_creds(struct ckpt_ctx *ctx)
++{
++	int ret;
++	const struct cred *old;
++	struct cred *rcred, *ecred;
++
++	rcred = ctx->realcred;
++	ecred = ctx->ecred;
++
++	/* commit_creds will take one ref for the eff creds, but
++	 * expects us to hold a ref for the obj creds, so take a
++	 * ref here */
++	get_cred(rcred);
++	ret = commit_creds(rcred);
++	if (ret)
++		return ret;
++
++	if (ecred == rcred)
++		return 0;
++
++	old = override_creds(ecred); /* override_creds otoh takes new ref */
++	put_cred(old);
++
++	ctx->realcred = ctx->ecred = NULL;
++	return 0;
++}
++
+ int restore_restart_block(struct ckpt_ctx *ctx)
+ {
+ 	struct ckpt_hdr_restart_block *h;
+@@ -595,6 +713,10 @@ int restore_task(struct ckpt_ctx *ctx)
+ 		goto out;
+ 	ret = restore_task_objs(ctx);
+ 	ckpt_debug("objs %d\n", ret);
++	if (ret < 0)
++		goto out;
++	ret = restore_creds(ctx);
++	ckpt_debug("creds: ret %d\n", ret);
+  out:
+ 	return ret;
+ }
+diff --git a/include/linux/capability.h b/include/linux/capability.h
+index 5abd86c..fe29a7d 100644
+--- a/include/linux/capability.h
++++ b/include/linux/capability.h
+@@ -567,10 +567,10 @@ struct dentry;
+ extern int get_vfs_caps_from_disk(const struct dentry *dentry, struct cpu_vfs_cap_data *cpu_caps);
+ 
+ struct cred;
+-int apply_securebits(unsigned securebits, struct cred *new);
++extern int apply_securebits(unsigned securebits, struct cred *new);
+ struct ckpt_capabilities;
+-int restore_capabilities(struct ckpt_capabilities *h, struct cred *new);
+-void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred * cred);
++extern int restore_capabilities(struct ckpt_capabilities *h, struct cred *new);
++extern void checkpoint_capabilities(struct ckpt_capabilities *h, struct cred *cred);
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
+index 9eeb71c..f321860 100644
+--- a/include/linux/checkpoint.h
++++ b/include/linux/checkpoint.h
+@@ -28,6 +28,7 @@
+ #include <linux/sched.h>
+ #include <linux/nsproxy.h>
+ #include <linux/ipc_namespace.h>
++#include <linux/user_namespace.h>
+ #include <linux/checkpoint_types.h>
+ #include <linux/checkpoint_hdr.h>
+ #include <linux/err.h>
+@@ -214,6 +215,17 @@ extern int checkpoint_file_common(struct ckpt_ctx *ctx, struct file *file,
+ extern int restore_file_common(struct ckpt_ctx *ctx, struct file *file,
+ 			       struct ckpt_hdr_file *h);
+ 
++/* credentials */
++extern int checkpoint_groupinfo(struct ckpt_ctx *ctx, void *ptr);
++extern int checkpoint_user(struct ckpt_ctx *ctx, void *ptr);
++extern int checkpoint_cred(struct ckpt_ctx *ctx, void *ptr);
++extern void *restore_groupinfo(struct ckpt_ctx *ctx);
++extern void *restore_user(struct ckpt_ctx *ctx);
++extern void *restore_cred(struct ckpt_ctx *ctx);
++
++extern int checkpoint_userns(struct ckpt_ctx *ctx, void *ptr);
++extern void *restore_userns(struct ckpt_ctx *ctx);
++
+ /* memory */
+ extern void ckpt_pgarr_free(struct ckpt_ctx *ctx);
+ 
+diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
+index 78557ec..cbccc81 100644
+--- a/include/linux/checkpoint_hdr.h
++++ b/include/linux/checkpoint_hdr.h
+@@ -87,6 +87,16 @@ enum {
+ #define CKPT_HDR_IPC_NS CKPT_HDR_IPC_NS
+ 	CKPT_HDR_CAPABILITIES,
+ #define CKPT_HDR_CAPABILITIES CKPT_HDR_CAPABILITIES
++	CKPT_HDR_USER_NS,
++#define CKPT_HDR_USER_NS CKPT_HDR_USER_NS
++	CKPT_HDR_CRED,
++#define CKPT_HDR_CRED CKPT_HDR_CRED
++	CKPT_HDR_USER,
++#define CKPT_HDR_USER CKPT_HDR_USER
++	CKPT_HDR_GROUPINFO,
++#define CKPT_HDR_GROUPINFO CKPT_HDR_GROUPINFO
++	CKPT_HDR_TASK_CREDS,
++#define CKPT_HDR_TASK_CREDS CKPT_HDR_TASK_CREDS
+ 
+ 	/* 201-299: reserved for arch-dependent */
+ 
+@@ -164,6 +174,14 @@ enum obj_type {
+ #define CKPT_OBJ_UTS_NS CKPT_OBJ_UTS_NS
+ 	CKPT_OBJ_IPC_NS,
+ #define CKPT_OBJ_IPC_NS CKPT_OBJ_IPC_NS
++	CKPT_OBJ_USER_NS,
++#define CKPT_OBJ_USER_NS CKPT_OBJ_USER_NS
++	CKPT_OBJ_CRED,
++#define CKPT_OBJ_CRED CKPT_OBJ_CRED
++	CKPT_OBJ_USER,
++#define CKPT_OBJ_USER CKPT_OBJ_USER
++	CKPT_OBJ_GROUPINFO,
++#define CKPT_OBJ_GROUPINFO CKPT_OBJ_GROUPINFO
+ 	CKPT_OBJ_MAX
+ #define CKPT_OBJ_MAX CKPT_OBJ_MAX
+ };
+@@ -247,6 +265,11 @@ struct ckpt_hdr_task {
+ 	__u32 robust_futex_head_len;
+ 	__u64 robust_futex_list; /* a __user ptr */
+ 
++#ifdef CONFIG_AUDITSYSCALL
++	/* would audit want to track the checkpointed ids,
++	   or (more likely) who actually restarted? */
++#endif
++
+ 	__u64 set_child_tid;
+ 	__u64 clear_child_tid;
+ } __attribute__((aligned(8)));
+@@ -261,6 +284,50 @@ struct ckpt_capabilities {
+ 	__u32 padding;
+ } __attribute__((aligned(8)));
+ 
++struct ckpt_hdr_task_creds {
++	struct ckpt_hdr h;
++	__s32 cred_ref;
++	__s32 ecred_ref;
++} __attribute__((aligned(8)));
++
++struct ckpt_hdr_cred {
++	struct ckpt_hdr h;
++	__u32 uid, suid, euid, fsuid;
++	__u32 gid, sgid, egid, fsgid;
++	__s32 user_ref;
++	__s32 groupinfo_ref;
++	struct ckpt_capabilities cap_s;
++} __attribute__((aligned(8)));
++
++struct ckpt_hdr_groupinfo {
++	struct ckpt_hdr h;
++	__u32 ngroups;
++	/*
++	 * This is followed by ngroups __u32s
++	 */
++	__u32 groups[0];
++} __attribute__((aligned(8)));
++
++/*
++ * todo - keyrings and LSM
++ * These may be better done with userspace help though
++ */
++struct ckpt_hdr_user_struct {
++	struct ckpt_hdr h;
++	__u32 uid;
++	__s32 userns_ref;
++} __attribute__((aligned(8)));
++
++/*
++ * The user-struct mostly tracks system resource usage.
++ * Most of it's contents therefore will simply be set
++ * correctly as restart opens resources
++ */
++struct ckpt_hdr_user_ns {
++	struct ckpt_hdr h;
++	__s32 creator_ref;
++} __attribute__((aligned(8)));
++
+ /* namespaces */
+ struct ckpt_hdr_task_ns {
+ 	struct ckpt_hdr h;
+diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
+index 4b1ddd6..e03f147 100644
+--- a/include/linux/checkpoint_types.h
++++ b/include/linux/checkpoint_types.h
+@@ -25,6 +25,7 @@
+ struct ckpt_stats {
+ 	int uts_ns;
+ 	int ipc_ns;
++	int user_ns;
+ };
+ 
+ struct ckpt_ctx {
+@@ -76,6 +77,7 @@ struct ckpt_ctx {
+ 	int active_pid;			/* (next) position in pids array */
+ 	struct completion complete;	/* container root and other tasks on */
+ 	wait_queue_head_t waitq;	/* start, end, and restart ordering */
++	struct cred *realcred, *ecred;	/* tmp storage for cred at restart */
+ 
+ 	struct ckpt_stats stats;	/* statistics */
+ 
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 1fefcb1..68f69b5 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -16,6 +16,7 @@
+ #include <linux/init_task.h>
+ #include <linux/security.h>
+ #include <linux/cn_proc.h>
++#include <linux/checkpoint.h>
+ #include "cred-internals.h"
+ 
+ #if 0
+@@ -1004,3 +1005,128 @@ int cred_setfsgid(struct cred *new, gid_t gid, gid_t *old_fsgid)
+ 	}
+ 	return -EPERM;
+ }
++
++#ifdef CONFIG_CHECKPOINT
++static int do_checkpoint_cred(struct ckpt_ctx *ctx, struct cred *cred)
++{
++	int ret;
++	int groupinfo_ref, user_ref;
++	struct ckpt_hdr_cred *h;
++
++	groupinfo_ref = checkpoint_obj(ctx, cred->group_info,
++					CKPT_OBJ_GROUPINFO);
++	if (groupinfo_ref < 0)
++		return groupinfo_ref;
++	user_ref = checkpoint_obj(ctx, cred->user, CKPT_OBJ_USER);
++	if (user_ref < 0)
++		return user_ref;
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_CRED);
++	if (!h)
++		return -ENOMEM;
++
++	ckpt_debug("cred uid %d fsuid %d gid %d\n", cred->uid, cred->fsuid,
++			cred->gid);
++
++	h->uid = cred->uid;
++	h->suid = cred->suid;
++	h->euid = cred->euid;
++	h->fsuid = cred->fsuid;
++
++	h->gid = cred->gid;
++	h->sgid = cred->sgid;
++	h->egid = cred->egid;
++	h->fsgid = cred->fsgid;
++
++	checkpoint_capabilities(&h->cap_s, cred);
++
++	h->user_ref = user_ref;
++	h->groupinfo_ref = groupinfo_ref;
++
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
 +
 +	return ret;
 +}
 +
- /* prepare the task for restore */
- int pre_restore_task(void)
- {
-@@ -783,6 +881,9 @@ int restore_task(struct ckpt_ctx *ctx)
- 	if (ret)
- 		goto out;
- 
-+	ret = restore_task_pgid(ctx);
-+	if (ret < 0)
-+		goto out;
- 	ret = restore_thread(ctx);
- 	ckpt_debug("thread %d\n", ret);
- 	if (ret < 0)
-diff --git a/checkpoint/restart.c b/checkpoint/restart.c
-index 863ee87..42885be 100644
---- a/checkpoint/restart.c
-+++ b/checkpoint/restart.c
-@@ -735,6 +735,7 @@ void restore_notify_error(struct ckpt_ctx *ctx)
- {
- 	complete(&ctx->complete);
- 	wake_up_all(&ctx->waitq);
-+	wake_up_all(&ctx->ghostq);
- }
- 
- static inline struct ckpt_ctx *get_task_ctx(struct task_struct *task)
-@@ -810,6 +811,9 @@ static int restore_activate_next(struct ckpt_ctx *ctx)
- 			ckpt_err(ctx, -ESRCH, "task %d not found\n", pid);
- 			return -ESRCH;
- 		}
-+	} else {
-+		/* wake up ghosts tasks so that they can terminate */
-+		wake_up_all(&ctx->ghostq);
- 	}
- 
- 	return 0;
-@@ -867,6 +871,38 @@ static struct ckpt_ctx *wait_checkpoint_ctx(void)
- 	return ctx;
- }
- 
-+static int do_ghost_task(void)
++int checkpoint_cred(struct ckpt_ctx *ctx, void *ptr)
 +{
-+	struct ckpt_ctx *ctx;
-+	int ret;
-+
-+	ctx = wait_checkpoint_ctx();
-+	if (IS_ERR(ctx))
-+		return PTR_ERR(ctx);
-+
-+	ret = restore_debug_task(ctx, RESTART_DBG_GHOST);
-+	if (ret < 0)
-+		goto out;
-+
-+	current->flags |= PF_RESTARTING;
-+	restore_debug_running(ctx);
-+
-+	ret = wait_event_interruptible(ctx->ghostq,
-+				       all_tasks_activated(ctx) ||
-+				       ckpt_test_error(ctx));
-+ out:
-+	restore_debug_error(ctx, ret);
-+	if (ret < 0)
-+		ckpt_err(ctx, ret, "ghost restart failed\n");
-+
-+	current->exit_signal = -1;
-+	restore_debug_exit(ctx);
-+	ckpt_ctx_put(ctx);
-+	do_exit(0);
-+
-+	/* NOT REACHED */
++	return do_checkpoint_cred(ctx, (struct cred *) ptr);
 +}
 +
- /*
-  * Ensure that all members of a thread group are in sys_restart before
-  * restoring any of them. Otherwise, restore may modify shared state
-@@ -946,10 +982,15 @@ static int do_restore_task(void)
- 		goto out;
- 	}
- 
-+	ret = restore_activate_next(ctx);
-+	if (ret < 0)
-+		goto out;
++static struct cred *do_restore_cred(struct ckpt_ctx *ctx)
++{
++	struct cred *cred;
++	struct ckpt_hdr_cred *h;
++	struct user_struct *user;
++	struct group_info *groupinfo;
++	int ret = -EINVAL;
++	uid_t olduid;
++	gid_t oldgid;
++	int i;
 +
- 	/*
- 	 * zombie: we're done here; do_exit() will notice the @ctx on
--	 * our current->checkpoint_ctx (and our PF_RESTARTING) - it
--	 * will call restore_activate_next() and release the @ctx.
-+	 * our current->checkpoint_ctx (and our PF_RESTARTING), will
-+	 * call restore_task_done() and release the @ctx. This ensures
-+	 * that we only report done after we really become zombie.
- 	 */
- 	if (zombie) {
- 		restore_debug_exit(ctx);
-@@ -1031,8 +1072,11 @@ static int prepare_descendants(struct ckpt_ctx *ctx, struct task_struct *root)
- 	if (nr_pids < 0)
- 		return nr_pids;
- 
--	/* fail unless number of processes matches */
--	if (nr_pids != ctx->nr_pids)
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_CRED);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++
++	cred = prepare_creds();
++	if (!cred)
++		goto error;
++
++
++	/* Do we care if the target user and target group were compatible?
++	 * Probably.  But then, we can't do any setuid without CAP_SETUID,
++	 * so we must have been privileged to abuse it... */
++	groupinfo = ckpt_obj_fetch(ctx, h->groupinfo_ref, CKPT_OBJ_GROUPINFO);
++	if (IS_ERR(groupinfo))
++		goto err_putcred;
++	user = ckpt_obj_fetch(ctx, h->user_ref, CKPT_OBJ_USER);
++	if (IS_ERR(user))
++		goto err_putcred;
++
 +	/*
-+	 * Actual tasks count may exceed ctx->nr_pids due of 'dead'
-+	 * tasks used as place-holders for PGIDs, but not fall short.
++	 * TODO: this check should  go into the common helper in
++	 * kernel/sys.c, and should account for user namespaces
 +	 */
-+	if (nr_pids < ctx->nr_pids)
- 		return -ESRCH;
++	if (!capable(CAP_SETGID))
++		for (i = 0; i < groupinfo->ngroups; i++) {
++			if (!in_egroup_p(GROUP_AT(groupinfo, i)))
++				goto err_putcred;
++		}
++	ret = set_groups(cred, groupinfo);
++	if (ret < 0)
++		goto err_putcred;
++	free_uid(cred->user);
++	cred->user = get_uid(user);
++	ret = cred_setresuid(cred, h->uid, h->euid, h->suid);
++	if (ret < 0)
++		goto err_putcred;
++	ret = cred_setfsuid(cred, h->fsuid, &olduid);
++	if (olduid != h->fsuid && ret < 0)
++		goto err_putcred;
++	ret = cred_setresgid(cred, h->gid, h->egid, h->sgid);
++	if (ret < 0)
++		goto err_putcred;
++	ret = cred_setfsgid(cred, h->fsgid, &oldgid);
++	if (oldgid != h->fsgid && ret < 0)
++		goto err_putcred;
++	ret = restore_capabilities(&h->cap_s, cred);
++	if (ret)
++		goto err_putcred;
++
++	ckpt_hdr_put(ctx, h);
++	return cred;
++
++err_putcred:
++	abort_creds(cred);
++error:
++	ckpt_hdr_put(ctx, h);
++	return ERR_PTR(ret);
++}
++
++void *restore_cred(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_cred(ctx);
++}
++
++#endif
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 2b45b2e..3612c3e 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -6,6 +6,7 @@
+ #include <linux/slab.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
++#include <linux/checkpoint.h>
+ #include <asm/uaccess.h>
  
- 	atomic_set(&ctx->nr_total, nr_pids);
-@@ -1278,12 +1322,14 @@ static long restore_retval(void)
- 	return syscall_get_return_value(current, regs);
+ /* init to 2 - one for init_task, one to ensure it is never freed */
+@@ -286,3 +287,71 @@ int in_egroup_p(gid_t grp)
  }
  
--long do_restart(struct ckpt_ctx *ctx, pid_t pid)
-+long do_restart(struct ckpt_ctx *ctx, pid_t pid, unsigned long flags)
- {
- 	long ret;
- 
- 	if (ctx)
- 		ret = do_restore_coord(ctx, pid);
-+	else if (flags & RESTART_GHOST)
-+		ret = do_ghost_task();
- 	else
- 		ret = do_restore_task();
- 
-@@ -1331,8 +1377,7 @@ void exit_checkpoint(struct task_struct *tsk)
- 	/* restarting zombies will activate next task in restart */
- 	if (tsk->flags & PF_RESTARTING) {
- 		BUG_ON(ctx->active_pid == -1);
--		if (restore_activate_next(ctx) < 0)
--			pr_warning("c/r: [%d] failed zombie exit\n", tsk->pid);
-+		restore_task_done(ctx);
- 	}
- 
- 	ckpt_ctx_put(ctx);
-diff --git a/checkpoint/sys.c b/checkpoint/sys.c
-index b7cb59e..02b12a3 100644
---- a/checkpoint/sys.c
-+++ b/checkpoint/sys.c
-@@ -257,6 +257,7 @@ static struct ckpt_ctx *ckpt_ctx_alloc(int fd, unsigned long uflags,
- 	INIT_LIST_HEAD(&ctx->pgarr_list);
- 	INIT_LIST_HEAD(&ctx->pgarr_pool);
- 	init_waitqueue_head(&ctx->waitq);
-+	init_waitqueue_head(&ctx->ghostq);
- 	init_completion(&ctx->complete);
- 
- 	init_completion(&ctx->errno_sync);
-@@ -664,7 +665,7 @@ long do_sys_restart(pid_t pid, int fd, unsigned long flags, int logfd)
- 	if (IS_ERR(ctx))
- 		return PTR_ERR(ctx);
- 
--	ret = do_restart(ctx, pid);
-+	ret = do_restart(ctx, pid, flags);
- 
- 	ckpt_ctx_put(ctx);
- 	return ret;
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 2fe2a9d..220388d 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -18,6 +18,7 @@
- /* restart user flags */
- #define RESTART_TASKSELF	0x1
- #define RESTART_FROZEN		0x2
-+#define RESTART_GHOST		0x4
- 
- /* misc user visible */
- #define CHECKPOINT_FD_NONE	-1
-@@ -52,7 +53,10 @@ extern long do_sys_restart(pid_t pid, int fd,
- 
- /* ckpt_ctx: uflags */
- #define CHECKPOINT_USER_FLAGS		CHECKPOINT_SUBTREE
--#define RESTART_USER_FLAGS		(RESTART_TASKSELF | RESTART_FROZEN)
-+#define RESTART_USER_FLAGS  \
-+	(RESTART_TASKSELF | \
-+	 RESTART_FROZEN | \
-+	 RESTART_GHOST)
- 
- extern int walk_task_subtree(struct task_struct *task,
- 			     int (*func)(struct task_struct *, void *),
-@@ -90,6 +94,9 @@ extern char *ckpt_fill_fname(struct path *path, struct path *root,
- extern int checkpoint_dump_page(struct ckpt_ctx *ctx, struct page *page);
- extern int restore_read_page(struct ckpt_ctx *ctx, struct page *page);
- 
-+/* pids */
-+extern pid_t ckpt_pid_nr(struct ckpt_ctx *ctx, struct pid *pid);
+ EXPORT_SYMBOL(in_egroup_p);
 +
- /* ckpt kflags */
- #define ckpt_set_ctx_kflag(__ctx, __kflag)  \
- 	set_bit(__kflag##_BIT, &(__ctx)->kflags)
-@@ -145,7 +152,7 @@ extern struct ckpt_ctx *ckpt_ctx_get(struct ckpt_ctx *ctx);
- extern void ckpt_ctx_put(struct ckpt_ctx *ctx);
- 
- extern long do_checkpoint(struct ckpt_ctx *ctx, pid_t pid);
--extern long do_restart(struct ckpt_ctx *ctx, pid_t pid);
-+extern long do_restart(struct ckpt_ctx *ctx, pid_t pid, unsigned long flags);
- 
- /* task */
- extern int ckpt_activate_next(struct ckpt_ctx *ctx);
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index a09b5e5..f0a41ec 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -268,6 +268,9 @@ struct ckpt_pids {
- 	__s32 vsid;
- } __attribute__((aligned(8)));
- 
-+/* pids */
-+#define CKPT_PID_NULL  -1
++#ifdef CONFIG_CHECKPOINT
++static int do_checkpoint_groupinfo(struct ckpt_ctx *ctx, struct group_info *g)
++{
++	int ret, i, size;
++	struct ckpt_hdr_groupinfo *h;
 +
- /* task data */
- struct ckpt_hdr_task {
- 	struct ckpt_hdr h;
-diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
-index e03f147..6edcaea 100644
---- a/include/linux/checkpoint_types.h
-+++ b/include/linux/checkpoint_types.h
-@@ -73,10 +73,11 @@ struct ckpt_ctx {
- 	/* [multi-process restart] */
- 	struct ckpt_pids *pids_arr;	/* array of all pids [restart] */
- 	int nr_pids;			/* size of pids array */
--	atomic_t nr_total;		/* total tasks count */
-+	atomic_t nr_total;		/* total tasks count (with ghosts) */
- 	int active_pid;			/* (next) position in pids array */
--	struct completion complete;	/* container root and other tasks on */
--	wait_queue_head_t waitq;	/* start, end, and restart ordering */
-+	struct completion complete;	/* completion for container root */
-+	wait_queue_head_t waitq;	/* waitqueue for restarting tasks */
-+	wait_queue_head_t ghostq;	/* waitqueue for ghost tasks */
- 	struct cred *realcred, *ecred;	/* tmp storage for cred at restart */
++	size = sizeof(*h) + g->ngroups * sizeof(__u32);
++	h = ckpt_hdr_get_type(ctx, size, CKPT_HDR_GROUPINFO);
++	if (!h)
++		return -ENOMEM;
++
++	h->ngroups = g->ngroups;
++	for (i = 0; i < g->ngroups; i++)
++		h->groups[i] = GROUP_AT(g, i);
++
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
++
++	return ret;
++}
++
++int checkpoint_groupinfo(struct ckpt_ctx *ctx, void *ptr)
++{
++	return do_checkpoint_groupinfo(ctx, (struct group_info *)ptr);
++}
++
++/*
++ * TODO - switch to reading in smaller blocks?
++ */
++#define MAX_GROUPINFO_SIZE (sizeof(*h)+NGROUPS_MAX*sizeof(gid_t))
++static struct group_info *do_restore_groupinfo(struct ckpt_ctx *ctx)
++{
++	struct group_info *g;
++	struct ckpt_hdr_groupinfo *h;
++	int i;
++
++	h = ckpt_read_buf_type(ctx, MAX_GROUPINFO_SIZE, CKPT_HDR_GROUPINFO);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++
++	g = ERR_PTR(-EINVAL);
++	if (h->ngroups > NGROUPS_MAX)
++		goto out;
++
++	for (i = 1; i < h->ngroups; i++)
++		if (h->groups[i-1] >= h->groups[i])
++			goto out;
++
++	g = groups_alloc(h->ngroups);
++	if (!g) {
++		g = ERR_PTR(-ENOMEM);
++		goto out;
++	}
++	for (i = 0; i < h->ngroups; i++)
++		GROUP_AT(g, i) = h->groups[i];
++
++out:
++	ckpt_hdr_put(ctx, h);
++	return g;
++}
++
++void *restore_groupinfo(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_groupinfo(ctx);
++}
++
++#endif
+diff --git a/kernel/user.c b/kernel/user.c
+index 46d0165..15f762c 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -16,6 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
++#include <linux/checkpoint.h>
+ #include "cred-internals.h"
  
- 	struct ckpt_stats stats;	/* statistics */
+ struct user_namespace init_user_ns = {
+@@ -508,3 +509,160 @@ static int __init uid_cache_init(void)
+ }
+ 
+ module_init(uid_cache_init);
++
++#ifdef CONFIG_CHECKPOINT
++/*
++ * write the user struct
++ * TODO keyring will need to be dumped
++ *
++ * Here is what we're doing.  Remember a task can do clone(CLONE_NEWUSER)
++ * resulting in a cloned task in a new user namespace, with uid 0 in that
++ * new user_ns.  In that case, the parent's user (uid+user_ns) is the
++ * 'creator' of the new user_ns.
++ * Here, we call the user_ns of the ctx->root_task the 'root_ns'.  When we
++ * checkpoint a user-struct, we must store the chain of creators.  We
++ * must not do so recursively, this being the kernel.  In
++ * checkpoint_write_user() we walk and record in memory the list of creators up
++ * to either the latest user_struct which has already been saved, or the
++ * root_ns.  Then we walk that chain backward, writing out the user_ns and
++ * user_struct to the checkpoint image.
++ */
++#define UNSAVED_STRIDE 50
++static int do_checkpoint_user(struct ckpt_ctx *ctx, struct user_struct *u)
++{
++	struct user_namespace *ns, *root_ns;
++	struct ckpt_hdr_user_struct *h;
++	int ns_objref;
++	int ret, i, unsaved_ns_nr = 0;
++	struct user_struct *save_u;
++	struct user_struct **unsaved_creators;
++	int step = 1, size;
++
++	/* if we've already saved the userns, then life is good */
++	ns_objref = ckpt_obj_lookup(ctx, u->user_ns, CKPT_OBJ_USER_NS);
++	if (ns_objref)
++		goto write_user;
++
++	root_ns = task_cred_xxx(ctx->root_task, user)->user_ns;
++
++	if (u->user_ns == root_ns)
++		goto save_last_ns;
++
++	size = UNSAVED_STRIDE*sizeof(struct user_struct *);
++	unsaved_creators = kmalloc(size, GFP_KERNEL);
++	if (!unsaved_creators)
++		return -ENOMEM;
++	save_u = u;
++	do {
++		ns = save_u->user_ns;
++		save_u = ns->creator;
++		if (ckpt_obj_lookup(ctx, save_u, CKPT_OBJ_USER))
++			goto found;
++		unsaved_creators[unsaved_ns_nr++] = save_u;
++		if (unsaved_ns_nr == step * UNSAVED_STRIDE) {
++			step++;
++			size = step*UNSAVED_STRIDE*sizeof(struct user_struct *);
++			unsaved_creators = krealloc(unsaved_creators, size,
++							GFP_KERNEL);
++			if (!unsaved_creators)
++				return -ENOMEM;
++		}
++	} while (ns != root_ns);
++
++found:
++	for (i = unsaved_ns_nr-1; i >= 0; i--) {
++		ret = checkpoint_obj(ctx, unsaved_creators[i], CKPT_OBJ_USER);
++		if (ret < 0) {
++			kfree(unsaved_creators);
++			return ret;
++		}
++	}
++	kfree(unsaved_creators);
++
++save_last_ns:
++	ns_objref = checkpoint_obj(ctx, u->user_ns, CKPT_OBJ_USER_NS);
++	if (ns_objref < 0)
++		return ns_objref;
++
++write_user:
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_USER);
++	if (!h)
++		return -ENOMEM;
++
++	h->uid = u->uid;
++	h->userns_ref = ns_objref;
++
++	/* write out the user_struct */
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
++
++	return ret;
++}
++
++int checkpoint_user(struct ckpt_ctx *ctx, void *ptr)
++{
++	return do_checkpoint_user(ctx, (struct user_struct *) ptr);
++}
++
++static int may_setuid(struct user_namespace *ns, uid_t uid)
++{
++	/*
++	 * this next check will one day become
++	 * if capable(CAP_SETUID, ns) return 1;
++	 * followed by uid_equiv(current_userns, current_uid, ns, uid)
++	 * instead of just uids.
++	 */
++	if (capable(CAP_SETUID))
++		return 1;
++
++	/*
++	 * this may be overly strict, but since we might end up
++	 * restarting a privileged program here, we do not want
++	 * someone with only CAP_SYS_ADMIN but no CAP_SETUID to
++	 * be able to create random userids even in a userns he
++	 * created.
++	 */
++	if (current_user()->user_ns != ns)
++		return 0;
++	if (current_uid() == uid ||
++		current_euid() == uid ||
++		current_suid() == uid)
++		return 1;
++	return 0;
++}
++
++static struct user_struct *do_restore_user(struct ckpt_ctx *ctx)
++{
++	struct user_struct *u;
++	struct user_namespace *ns;
++	struct ckpt_hdr_user_struct *h;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_USER);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++
++	ns = ckpt_obj_fetch(ctx, h->userns_ref, CKPT_OBJ_USER_NS);
++	if (IS_ERR(ns)) {
++		u = ERR_PTR(PTR_ERR(ns));
++		goto out;
++	}
++
++	if (!may_setuid(ns, h->uid)) {
++		u = ERR_PTR(-EPERM);
++		goto out;
++	}
++	u = alloc_uid(ns, h->uid);
++	if (!u)
++		u = ERR_PTR(-EINVAL);
++
++out:
++	ckpt_hdr_put(ctx, h);
++	return u;
++}
++
++void *restore_user(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_user(ctx);
++}
++
++#endif
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index e624b0f..3a35b50 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -9,6 +9,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/slab.h>
+ #include <linux/user_namespace.h>
++#include <linux/checkpoint.h>
+ #include <linux/cred.h>
+ 
+ static struct user_namespace *_new_user_ns(struct user_struct *creator,
+@@ -103,3 +104,91 @@ void free_user_ns(struct kref *kref)
+ 	schedule_work(&ns->destroyer);
+ }
+ EXPORT_SYMBOL(free_user_ns);
++
++#ifdef CONFIG_CHECKPOINT
++/*
++ * do_checkpoint_userns() is only called from do_checkpoint_user().
++ * When called, we always know that either:
++ *   1. This is the root_ns (user_ns of the ctx->root_task),
++ *	in which case we set h->creator_ref = 0.
++ * or
++ *   2. The creator has already been written out to the
++ *	checkpoint image (and saved in the objhash)
++ */
++static int do_checkpoint_userns(struct ckpt_ctx *ctx, struct user_namespace *ns)
++{
++	struct ckpt_hdr_user_ns *h;
++	struct user_namespace *root_ns;
++	int creator_ref = 0;
++	int ret;
++
++	root_ns = task_cred_xxx(ctx->root_task, user)->user_ns;
++	if (ns != root_ns) {
++		creator_ref = ckpt_obj_lookup(ctx, ns->creator, CKPT_OBJ_USER);
++		if (!creator_ref)
++			return -EINVAL;
++	}
++
++	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_USER_NS);
++	if (!h)
++		return -ENOMEM;
++	h->creator_ref = creator_ref;
++	ret = ckpt_write_obj(ctx, (struct ckpt_hdr *) h);
++	ckpt_hdr_put(ctx, h);
++
++	return ret;
++}
++
++int checkpoint_userns(struct ckpt_ctx *ctx, void *ptr)
++{
++	return do_checkpoint_userns(ctx, (struct user_namespace *) ptr);
++}
++
++static struct user_namespace *do_restore_userns(struct ckpt_ctx *ctx)
++{
++	struct ckpt_hdr_user_ns *h;
++	struct user_namespace *ns;
++	struct user_struct *new_root, *creator;
++
++	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_USER_NS);
++	if (IS_ERR(h))
++		return ERR_PTR(PTR_ERR(h));
++
++	if (!h->creator_ref) {
++		ns = get_user_ns(current_user_ns());
++		goto out;
++	}
++
++	creator = ckpt_obj_fetch(ctx, h->creator_ref, CKPT_OBJ_USER);
++	if (IS_ERR(creator)) {
++		ns = ERR_PTR(-EINVAL);
++		goto out;
++	}
++
++	ns = new_user_ns(creator, &new_root);
++	if (IS_ERR(ns))
++		goto out;
++
++	/* ns only referenced from new_root, which we discard below */
++	get_user_ns(ns);
++
++	/* new_user_ns() doesn't bump creator's refcount */
++	get_uid(creator);
++
++	/*
++	 * Free the new root user.  If we actually needed it,
++	 * then it will show up later in the checkpoint image
++	 * The objhash will keep the userns pinned until then.
++	 */
++	free_uid(new_root);
++ out:
++	ctx->stats.user_ns++;
++	ckpt_hdr_put(ctx, h);
++	return ns;
++}
++
++void *restore_userns(struct ckpt_ctx *ctx)
++{
++	return (void *) do_restore_userns(ctx);
++}
++#endif
 -- 
 1.6.3.3
 
