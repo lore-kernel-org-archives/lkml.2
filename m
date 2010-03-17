@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab0CQQ0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:26:53 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:54015 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755618Ab0CQQ02 (ORCPT
+	id S1755811Ab0CQQ1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:27:51 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:48200 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab0CQQ1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:26:28 -0400
-X-Spam-Processed: digidescorp.com, Wed, 17 Mar 2010 11:26:27 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=16925da2b5=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
-       monstr@monstr.eu, Grant Likely <grant.likely@secretlab.ca>,
-       "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH 2/4] dmaengine: Xilinx MPMC Kconfig/make
-Date: Wed, 17 Mar 2010 11:26:16 -0500
-Message-Id: <1268843176-15269-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	Wed, 17 Mar 2010 12:27:46 -0400
+Date: Wed, 17 Mar 2010 21:57:39 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Chris Webb <chris@arachsys.com>, Avi Kivity <avi@redhat.com>,
+       KVM development list <kvm@vger.kernel.org>,
+       Rik van Riel <riel@surriel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
+ parameter
+Message-ID: <20100317162739.GU18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100315072214.GA18054@balbir.in.ibm.com>
+ <4B9DE635.8030208@redhat.com>
+ <20100315080726.GB18054@balbir.in.ibm.com>
+ <4B9DEF81.6020802@redhat.com>
+ <20100315202353.GJ3840@arachsys.com>
+ <4B9EC60A.2070101@codemonkey.ws>
+ <20100317151409.GY31148@arachsys.com>
+ <4BA0FB83.1010502@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4BA0FB83.1010502@codemonkey.ws>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Integrate xlldma drivers into the build.
+* Anthony Liguori <anthony@codemonkey.ws> [2010-03-17 10:55:47]:
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/drivers/dma/Kconfig b/drivers/dma/Kconfig
---- a/drivers/dma/Kconfig	2010-03-16 13:27:42.000000000 -0500
-+++ b/drivers/dma/Kconfig	2010-03-17 11:11:57.000000000 -0500
-@@ -126,6 +126,28 @@ config AMCC_PPC440SPE_ADMA
- 	help
- 	  Enable support for the AMCC PPC440SPe RAID engines.
- 
-+config XLL_DMA
-+	tristate "Xilinx LocalLink DMA support"
-+	depends on XILINX_VIRTEX || MICROBLAZE
-+	select DMA_ENGINE
-+	---help---
-+	  Enable support for the Xilinx MPMC DMA controller.
-+	  This requires at least one MPMC SDMA port wired as a "loopback".
-+
-+	  If unsure, say N.
-+
-+config XLL_DMA_OF
-+        tristate "Xilinx LocalLink DMA OF device"
-+        depends on XLL_DMA && OF
-+        help
-+          OpenFirmware bus attachment for the Xilinx LocalLink DMA engine.
-+
-+config XLL_DMA_PLAT
-+        tristate "Xilinx LocalLink DMA platform device"
-+        depends on XLL_DMA
-+        help
-+          Platform bus attachment for the Xilinx LocalLink DMA engine.
-+
- config ARCH_HAS_ASYNC_TX_FIND_CHANNEL
- 	bool
- 
-@@ -138,13 +160,13 @@ comment "DMA Clients"
- config NET_DMA
- 	bool "Network: TCP receive copy offload"
- 	depends on DMA_ENGINE && NET
--	default (INTEL_IOATDMA || FSL_DMA)
-+	default (INTEL_IOATDMA || FSL_DMA || XLL_DMA)
- 	help
- 	  This enables the use of DMA engines in the network stack to
- 	  offload receive copy-to-user operations, freeing CPU cycles.
- 
--	  Say Y here if you enabled INTEL_IOATDMA or FSL_DMA, otherwise
--	  say N.
-+	  Say Y here if you enabled INTEL_IOATDMA, FSL_DMA, or XLL_DMA,
-+	  otherwise say N.
- 
- config ASYNC_TX_DMA
- 	bool "Async_tx: Offload support for the async_tx api"
-diff -uprN a/drivers/dma/Makefile b/drivers/dma/Makefile
---- a/drivers/dma/Makefile	2010-03-16 13:27:37.000000000 -0500
-+++ b/drivers/dma/Makefile	2010-03-16 15:10:54.000000000 -0500
-@@ -11,4 +11,7 @@ obj-$(CONFIG_MX3_IPU) += ipu/
- obj-$(CONFIG_TXX9_DMAC) += txx9dmac.o
- obj-$(CONFIG_SH_DMAE) += shdma.o
- obj-$(CONFIG_COH901318) += coh901318.o coh901318_lli.o
-+obj-$(CONFIG_XLL_DMA) += xlldma.o
-+obj-$(CONFIG_XLL_DMA_OF) += xlldma_of.o
-+obj-$(CONFIG_XLL_DMA_PLAT) += xlldma_plat.o
- obj-$(CONFIG_AMCC_PPC440SPE_ADMA) += ppc4xx/
+> On 03/17/2010 10:14 AM, Chris Webb wrote:
+> >Anthony Liguori<anthony@codemonkey.ws>  writes:
+> >
+> >>This really gets down to your definition of "safe" behaviour.  As it
+> >>stands, if you suffer a power outage, it may lead to guest
+> >>corruption.
+> >>
+> >>While we are correct in advertising a write-cache, write-caches are
+> >>volatile and should a drive lose power, it could lead to data
+> >>corruption.  Enterprise disks tend to have battery backed write
+> >>caches to prevent this.
+> >>
+> >>In the set up you're emulating, the host is acting as a giant write
+> >>cache.  Should your host fail, you can get data corruption.
+> >Hi Anthony. I suspected my post might spark an interesting discussion!
+> >
+> >Before considering anything like this, we did quite a bit of testing with
+> >OSes in qemu-kvm guests running filesystem-intensive work, using an ipmitool
+> >power off to kill the host. I didn't manage to corrupt any ext3, ext4 or
+> >NTFS filesystems despite these efforts.
+> >
+> >Is your claim here that:-
+> >
+> >   (a) qemu doesn't emulate a disk write cache correctly; or
+> >
+> >   (b) operating systems are inherently unsafe running on top of a disk with
+> >       a write-cache; or
+> >
+> >   (c) installations that are already broken and lose data with a physical
+> >       drive with a write-cache can lose much more in this case because the
+> >       write cache is much bigger?
+> 
+> This is the closest to the most accurate.
+> 
+> It basically boils down to this: most enterprises use a disks with
+> battery backed write caches.  Having the host act as a giant write
+> cache means that you can lose data.
+> 
+
+Dirty limits can help control how much we lose, but also affect how
+much we write out.
+
+> I agree that a well behaved file system will not become corrupt, but
+> my contention is that for many types of applications, data lose ==
+> corruption and not all file systems are well behaved.  And it's
+> certainly valid to argue about whether common filesystems are
+> "broken" but from a purely pragmatic perspective, this is going to
+> be the case.
+>
+
+I think it is a trade-off for end users to decide on. cache=writeback
+does provide performance benefits, but can cause data loss.
 
 
+-- 
+	Three Cheers,
+	Balbir
