@@ -1,103 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751705Ab0CQDIh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:08:37 -0400
-Received: from mail-yw0-f201.google.com ([209.85.211.201]:51663 "EHLO
-	mail-yw0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0CQDIg convert rfc822-to-8bit (ORCPT
+	id S1752042Ab0CQDSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:18:12 -0400
+Received: from mail-iw0-f176.google.com ([209.85.223.176]:37169 "EHLO
+	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335Ab0CQDSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:08:36 -0400
-X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Mar 2010 23:08:36 EDT
+	Tue, 16 Mar 2010 23:18:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Q1ndb9ge2iMxGIjdRMoobrjU9BKRlGICaonByq2sQgRx04dmYCrKwYjJcM15qCE2a6
-         uJpFqW4o75v93SFVnDcSMi/ZY7S4MgI6VaIYN0ycnH9ZTHyyGiKM7g2r7RAoVpQBZEls
-         Z1lsT9pdjCPlnGdKx/vFiV0R24/GZXdXYiHZo=
-MIME-Version: 1.0
-In-Reply-To: <20100317024101.GH12369@dastard>
-References: <20100316155350.GB18579@localhost.localdomain>
-	 <20100317024101.GH12369@dastard>
-Date: Wed, 17 Mar 2010 11:00:54 +0800
-Message-ID: <628d1651003162000u537790b4k697a0112375649ef@mail.gmail.com>
-Subject: Re: [PATCH] xfs: Fix integer overflow in fs/xfs/linux-2.6/xfs_ioctl*.c
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
-       aelder@sgi.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=m0lX4wLYzBLErZOP/f8FZcTznhxX5ZDH8cG7nfMtSMHqmrQoqgl9d9nMf9AboAWQAx
+         Wf+LSx4UTSJ2ppqP1Qnph9XYqK4bl+DusWRPyfk/UknE0ugvNGvzuh3WxPTA69DksRyD
+         4yrFSyhc4RUhOFwRHCOpy8MV22ndN4Bz0n/vQ=
+Message-ID: <4ba049f1.017ee70a.5ce6.1456@mx.google.com>
+Date: Tue, 16 Mar 2010 20:18:09 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Poor interactive performance with I/O loads with fsync()ing
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, Olly Betts <olly@survex.com>,
+       martin f krafft <madduck@madduck.net>
+In-Reply-To: <20100317012439.GA8256@thunk.org>
+References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
+	<20100317012439.GA8256@thunk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your help, i'll send a new patch soon.
+Sorry about the lack of any useful information in my initial email.
+I clearly didn't read it before sending.
 
-On Wed, Mar 17, 2010 at 10:41 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Mar 16, 2010 at 11:53:50PM +0800, wzt.wzt@gmail.com wrote:
->> STATIC int
->> xfs_compat_attrmulti_by_handle(
->>         struct file                             *parfilp,
->>         void                                    __user *arg)
->> {
->> ...
->>         if (copy_from_user(&am_hreq, arg,
->>                            sizeof(compat_xfs_fsop_attrmulti_handlereq_t)))
->>                 return -XFS_ERROR(EFAULT);
->> ...
->>         error = E2BIG;
->>         /* Not check the am_hreq.opcount max value from userspace,
->>         m_hreq.opcount * sizeof(compat_xfs_attr_multiop_t) can make
->>         integer overflow, and the if condition can be bypass. Though,
->>         it can not make security problem, but fix it maybe better. */
->>         size = am_hreq.opcount * sizeof(compat_xfs_attr_multiop_t);
->>         if (!size || size > 16 * PAGE_SIZE)
->>                 goto out_dput;
->> ...
->> }
+On Tue, 16 Mar 2010 21:24:39 -0400, tytso@mit.edu wrote:
+> What kernel version are you using; what distribution and what version
+> of that distro are you running; what file system are you using and
+> what if any mount options are you using?  And what kind of hard drives
+> do you have?
+
+While this problem has been around for some time, my current configuration
+is the following:
+
+  Kernel 2.6.32 (although also reproducible with kernels at least as early as 2.6.28)
+  Filesystem: Now Btrfs (was ext4 less than a week ago), default mount options
+  Hard drive: Seagate Momentus 7200.4 (ST9500420AS)
+  Distribution: Ubuntu 9.10 (Karmic)
+
+> 
+> I'm going to assume you're running into the standard ext3
+> "data=ordered" entagled writes problem.  There are solutions, such as
+> switching to using ext4, mounting with data=writeback mode, but they
+> have various shortcomings.
+> 
+Unfortunately several people have continued to encounter unacceptable
+latency, even with ext4 and data=writeback.
+
+> A number of improvements have been made in ext3 and ext4 since some of
+> the discussions you quoted, but since you didn't tell us what
+> distribution version and/or what kernel version you are using, we
+> can't tell you are using those newer improvements yet.
 >
-> This description could use a little work. ;)
->
-> Perhaps something like:
->
-> The am_hreq.opcount field in the xfs_attrmulti_by_handle() interface
-> is not bounded correctly. The opcount is used to determine the size
-> of the buffer required. The size is bounded, but can overflow and so
-> the size checks may not be sufficient to catch invalid opcounts.
-> Fix it by catching opcount values that would cause overflows before
-> calculating the size.
->
->
->>
->> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
->>
->> ---
->>  fs/xfs/linux-2.6/xfs_ioctl.c   |    4 ++++
->>  fs/xfs/linux-2.6/xfs_ioctl32.c |    4 ++++
->>  2 files changed, 8 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/xfs/linux-2.6/xfs_ioctl.c b/fs/xfs/linux-2.6/xfs_ioctl.c
->> index 4ea1ee1..b05b3b7 100644
->> --- a/fs/xfs/linux-2.6/xfs_ioctl.c
->> +++ b/fs/xfs/linux-2.6/xfs_ioctl.c
->> @@ -526,6 +526,10 @@ xfs_attrmulti_by_handle(
->>       if (copy_from_user(&am_hreq, arg, sizeof(xfs_fsop_attrmulti_handlereq_t)))
->>               return -XFS_ERROR(EFAULT);
->>
->> +     /* overflow check */
->> +     if (am_hreq.opcount >= INT_MAX / sizeof(xfs_attr_multiop_t))
->> +             return -ENOMEM;
->> +
->
-> The code currently return E2BIG for an opcount that is too large.
-> I think this should also return E2BIG rather then ENOMEM. Does that
-> seem reasonable?
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
->
+Sorry about that. I should know better by now.
+
+- Ben
