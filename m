@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0CQXAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:00:30 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33986 "EHLO gate.crashing.org"
+	id S1755369Ab0CQXBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 19:01:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51185 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754756Ab0CQXA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:00:28 -0400
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ulrich Drepper <drepper@redhat.com>, munroesj@us.ibm.com,
-       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel@teksavvy.com, torvalds@linux-foundation.org
-In-Reply-To: <4BA1412C.6070008@zytor.com>
-References: <20100315134449.GB1653@linux-mips.org>
-	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
-	 <20100315.120004.209998642.davem@davemloft.net>
-	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>
-	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
-	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
-	 <1268816179.2335.187.camel@pasglop>  <4BA11FD2.2090104@zytor.com>
-	 <1268858134.2335.198.camel@pasglop>  <4BA1412C.6070008@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 09:58:40 +1100
-Message-ID: <1268866720.2335.204.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1751446Ab0CQXBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 19:01:37 -0400
+Message-ID: <4BA15F29.6030409@kernel.org>
+Date: Thu, 18 Mar 2010 08:00:57 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux-foundation.org>
+CC: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] remove implicit slab.h inclusion from percpu.h
+References: <4B990496.4020002@kernel.org>  <alpine.DEB.2.00.1003161107070.2311@router.home>  <4BA00CE4.1090108@kernel.org>  <alpine.DEB.2.00.1003171134070.27268@router.home> <1268846083.4773.64.camel@useless.americas.hpqcorp.net> <alpine.DEB.2.00.1003171453530.4231@router.home>
+In-Reply-To: <alpine.DEB.2.00.1003171453530.4231@router.home>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 23:00:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 13:53 -0700, H. Peter Anvin wrote:
-> > Yeah, whatever, I don't mind what technique you use for the
-> versionning,
-> > ultimately, if the approach works, we can look at those details :-)
-> We
-> > -do- need the macro to strip the dummy argument though, unless we
-> use
-> > a slightly different technique which is to make the __sysno argument
-> > itself 64-bit, which works as well I believe.
-> >
+On 03/18/2010 04:54 AM, Christoph Lameter wrote:
+> On Wed, 17 Mar 2010, Lee Schermerhorn wrote:
 > 
-> It seems cleaner to do it that way (with a 64-bit sysno arg.) 
+>> s/from slab.h/from topology.h/ is the update Christoph is indicating.
+>> Right, Christoph?
+> 
+> Right.
 
-Right. Now if we can get Ulrich to actually put 2 and 2 together and
-admit that it actually works without breaking anything existing (at
-least for my arch but I wouldn't be surprised if that was the case for
-others), I would be even happier :-)
+OIC, I'll update accordingly.  Thanks.
 
-Steve, any chance you can cook up a glibc patch to test with ? Maybe
-making it powerpc specific for now ?
-
-Cheers,
-Ben.
-
-
+-- 
+tejun
