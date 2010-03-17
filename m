@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab0CQKcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 06:32:04 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:36081 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab0CQKcA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 06:32:00 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 07/11] Memory compaction core
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1268412087-13536-8-git-send-email-mel@csn.ul.ie>
-References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie> <1268412087-13536-8-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100317170116.870A.A69D9226@jp.fujitsu.com>
+	id S1754244Ab0CQKfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 06:35:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59150 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754118Ab0CQKfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 06:35:08 -0400
+Date: Wed, 17 Mar 2010 11:34:50 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Subject: Re: [PATCH -tip 00/10] perf-probe updates - data-structure support,
+ etc.
+Message-ID: <20100317103450.GJ17146@elte.hu>
+References: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 17 Mar 2010 19:31:53 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316220515.32050.82185.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=BAYES_00,FS_TIP_DDD autolearn=no SpamAssassin version=3.2.5
+	0.1 FS_TIP_DDD             Phrase: subject = tip ddd
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nit
 
-> +static int compact_zone(struct zone *zone, struct compact_control *cc)
-> +{
-> +	int ret = COMPACT_INCOMPLETE;
-> +
-> +	/* Setup to move all movable pages to the end of the zone */
-> +	cc->migrate_pfn = zone->zone_start_pfn;
-> +	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
-> +	cc->free_pfn &= ~(pageblock_nr_pages-1);
-> +
-> +	for (; ret == COMPACT_INCOMPLETE; ret = compact_finished(zone, cc)) {
-> +		unsigned long nr_migrate, nr_remaining;
-> +		if (!isolate_migratepages(zone, cc))
-> +			continue;
-> +
-> +		nr_migrate = cc->nr_migratepages;
-> +		migrate_pages(&cc->migratepages, compaction_alloc,
-> +						(unsigned long)cc, 0);
-> +		update_nr_listpages(cc);
-> +		nr_remaining = cc->nr_migratepages;
-> +
-> +		count_vm_event(COMPACTBLOCKS);
+* Masami Hiramatsu <mhiramat@redhat.com> wrote:
 
-V1 did compaction per pageblock. but current patch doesn't.
-so, Is COMPACTBLOCKS still good name?
+> Hi Ingo,
+> 
+> Here are several updates of perf-probe.
+> This updates includes data structure accessing support
+> --list option enhancement and --dry-run option support.
+> 
+> - --dry-run allows users to run perf-probe just for checking
+>   that the command works correctly.
+> 
+> - --list option enhancement allows user to check where the
+>   probes are put on (with filename/line number).
+> 
+> - data structure accessing support allows user to trace
+>   the contents of local variables/function parameters.
 
+Very nice! I think tracing a data structure value at a given point in the 
+source will be a rather popular feature.
 
-> +		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
-> +		if (nr_remaining)
-> +			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
-> +
-> +		/* Release LRU pages not migrated */
-> +		if (!list_empty(&cc->migratepages)) {
-> +			putback_lru_pages(&cc->migratepages);
-> +			cc->nr_migratepages = 0;
-> +		}
-> +
-> +		mod_zone_page_state(zone, NR_ISOLATED_ANON, -cc->nr_anon);
-> +		mod_zone_page_state(zone, NR_ISOLATED_FILE, -cc->nr_file);
+> Long-term TODOs (future features):
+>   - Enhance probe-finder to decode call frame instructions.
+>   - Support tracing static variables (non global)
+>   - Support variable basic types from debuginfo (e.g. char, int, ...)
+>   - Support array element (var[N])
+>   - Support string/dynamic arrays (*var, var[N..M])
+>   - Support the type of return value
+>   - Support force type-casting ((type)var)
+>   - Support sys_perf_counter_open (for non-root users)
+>   - Support dynamic array-indexing (var[var2])
+> 
+> Miscs:
+>   - Better support for probes on modules
+>   - More debugger like enhancements(%next, --disasm, etc.)
 
-I think you don't need decrease this vmstatistics here. migrate_pages() and
-putback_lru_pages() alredy does.
+Sounds good :-)
 
+> Masami Hiramatsu (10):
+>       perf probe: Accessing members in data structures
+>       perf probe: List probes with line number and file name
+>       perf probe: Introduce kprobe_trace_event and perf_probe_event
+>       perf probe: Add --dry-run option
+>       perf probe: Introduce die_find_child() function
+>       perf probe: Rename some die_get_* functions
+>       perf probe: Rename session to param
+>       perf probe: Move add-probe routine under util/
+>       perf probe: Use wrapper functions
+>       perf tools: Introduce xzalloc() for detecting out of memory
+> 
+> 
+>  tools/perf/Documentation/perf-probe.txt |    5 
+>  tools/perf/builtin-probe.c              |  191 +------
+>  tools/perf/util/probe-event.c           |  830 +++++++++++++++++++++++--------
+>  tools/perf/util/probe-event.h           |  123 ++++-
+>  tools/perf/util/probe-finder.c          |  459 ++++++++++++-----
+>  tools/perf/util/probe-finder.h          |   60 +-
+>  tools/perf/util/util.h                  |    7 
+>  7 files changed, 1115 insertions(+), 560 deletions(-)
 
-other parts, looks good.
+Applied, thanks!
 
-
-
-
+	Ingo
