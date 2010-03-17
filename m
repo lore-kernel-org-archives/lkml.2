@@ -1,99 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0CQQN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:13:56 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37272 "EHLO
+	id S1754329Ab0CQQNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:13:10 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37064 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab0CQQNw (ORCPT
+	with ESMTP id S1753422Ab0CQQNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:13:52 -0400
+	Wed, 17 Mar 2010 12:13:04 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 20/96] c/r: make file_pos_read/write() public
-Date: Wed, 17 Mar 2010 12:08:08 -0400
-Message-Id: <1268842164-5590-21-git-send-email-orenl@cs.columbia.edu>
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Subject: [C/R v20][PATCH 03/96] eclone (3/11): Define set_pidmap() function
+Date: Wed, 17 Mar 2010 12:07:51 -0400
+Message-Id: <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-20-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These two are used in the next patch when calling vfs_read/write()
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Define a set_pidmap() interface which is like alloc_pidmap() only that
+caller specifies the pid number to be assigned.
+
+Changelog[v13]:
+	- Don't let do_alloc_pidmap return 0 if it failed to find a pid.
+Changelog[v9]:
+	- Completely rewrote this patch based on Eric Biederman's code.
+Changelog[v7]:
+        - [Eric Biederman] Generalize alloc_pidmap() to take a range of pids.
+Changelog[v6]:
+        - Separate target_pid > 0 case to minimize the number of checks needed.
+Changelog[v3]:
+        - (Eric Biederman): Avoid set_pidmap() function. Added couple of
+          checks for target_pid in alloc_pidmap() itself.
+Changelog[v2]:
+        - (Serge Hallyn) Check for 'pid < 0' in set_pidmap().(Code
+          actually checks for 'pid <= 0' for completeness).
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@us.ibm.com>
+Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+Reviewed-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- fs/read_write.c    |   10 ----------
- include/linux/fs.h |   10 ++++++++++
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ kernel/pid.c |   41 +++++++++++++++++++++++++++++++++--------
+ 1 files changed, 33 insertions(+), 8 deletions(-)
 
-diff --git a/fs/read_write.c b/fs/read_write.c
-index b7f4a1f..e258301 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -359,16 +359,6 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 252babf..1f15bb6 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -146,17 +146,18 @@ static int alloc_pidmap_page(struct pidmap *map)
+ 	return 0;
+ }
  
- EXPORT_SYMBOL(vfs_write);
- 
--static inline loff_t file_pos_read(struct file *file)
--{
--	return file->f_pos;
--}
--
--static inline void file_pos_write(struct file *file, loff_t pos)
--{
--	file->f_pos = pos;
--}
--
- SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+-static int alloc_pidmap(struct pid_namespace *pid_ns)
++static int do_alloc_pidmap(struct pid_namespace *pid_ns, int last, int min,
++		int max)
  {
- 	struct file *file;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index ebb1cd5..6c08df2 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1543,6 +1543,16 @@ ssize_t rw_copy_check_uvector(int type, const struct iovec __user * uvector,
- 				struct iovec *fast_pointer,
- 				struct iovec **ret_pointer);
+-	int i, offset, max_scan, pid, last = pid_ns->last_pid;
++	int i, offset, max_scan, pid;
+ 	struct pidmap *map;
  
-+static inline loff_t file_pos_read(struct file *file)
+ 	pid = last + 1;
+ 	if (pid >= pid_max)
+-		pid = RESERVED_PIDS;
++		pid = min;
+ 	offset = pid & BITS_PER_PAGE_MASK;
+ 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
+-	max_scan = (pid_max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
++	max_scan = (max + BITS_PER_PAGE - 1)/BITS_PER_PAGE - !offset;
+ 	for (i = 0; i <= max_scan; ++i) {
+ 		if (unlikely(!map->page))
+ 			if (alloc_pidmap_page(map) < 0)
+@@ -165,7 +166,6 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
+ 					atomic_dec(&map->nr_free);
+-					pid_ns->last_pid = pid;
+ 					return pid;
+ 				}
+ 				offset = find_next_offset(map, offset);
+@@ -176,16 +176,16 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 			 * bitmap block and the final block was the same
+ 			 * as the starting point, pid is before last_pid.
+ 			 */
+-			} while (offset < BITS_PER_PAGE && pid < pid_max &&
++			} while (offset < BITS_PER_PAGE && pid < max &&
+ 					(i != max_scan || pid < last ||
+ 					    !((last+1) & BITS_PER_PAGE_MASK)));
+ 		}
+-		if (map < &pid_ns->pidmap[(pid_max-1)/BITS_PER_PAGE]) {
++		if (map < &pid_ns->pidmap[(max-1)/BITS_PER_PAGE]) {
+ 			++map;
+ 			offset = 0;
+ 		} else {
+ 			map = &pid_ns->pidmap[0];
+-			offset = RESERVED_PIDS;
++			offset = min;
+ 			if (unlikely(last == offset))
+ 				break;
+ 		}
+@@ -194,6 +194,31 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 	return -EBUSY;
+ }
+ 
++static int alloc_pidmap(struct pid_namespace *pid_ns)
 +{
-+	return file->f_pos;
++	int nr;
++
++	nr = do_alloc_pidmap(pid_ns, pid_ns->last_pid, RESERVED_PIDS, pid_max);
++	if (nr >= 0)
++		pid_ns->last_pid = nr;
++	return nr;
 +}
 +
-+static inline void file_pos_write(struct file *file, loff_t pos)
++static int set_pidmap(struct pid_namespace *pid_ns, int target)
 +{
-+	file->f_pos = pos;
++	if (!target)
++		return alloc_pidmap(pid_ns);
++
++	if (target >= pid_max)
++		return -EINVAL;
++
++	if ((target < 0) || (target < RESERVED_PIDS &&
++				pid_ns->last_pid >= RESERVED_PIDS))
++		return -EINVAL;
++
++	return do_alloc_pidmap(pid_ns, target - 1, target, target + 1);
 +}
 +
- extern ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
- extern ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
- extern ssize_t vfs_readv(struct file *, const struct iovec __user *,
+ int next_pidmap(struct pid_namespace *pid_ns, int last)
+ {
+ 	int offset;
 -- 
 1.6.3.3
 
