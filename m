@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab0CQIyH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 04:54:07 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42269 "EHLO mx2.mail.elte.hu"
+	id S1753715Ab0CQI52 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 04:57:28 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47187 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752594Ab0CQIyC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 04:54:02 -0400
-Date: Wed, 17 Mar 2010 09:53:51 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Anthony Liguori <aliguori@linux.vnet.ibm.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100317085351.GF16374@elte.hu>
-References: <20100316130840.GA24808@elte.hu>
- <4B9F84C0.70706@redhat.com>
- <20100316133114.GB575@elte.hu>
- <y0mbpeo1f1y.fsf@fche.csb>
- <20100316155221.GA19699@elte.hu>
- <4B9FC11A.1070507@linux.vnet.ibm.com>
- <20100316175243.GC23859@elte.hu>
- <4B9FC8B2.6070404@linux.vnet.ibm.com>
- <20100316182809.GA26602@elte.hu>
- <4BA00E6A.7080903@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA00E6A.7080903@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752594Ab0CQI5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 04:57:25 -0400
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Ulrich Drepper <drepper@redhat.com>
+Cc: munroesj@us.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
+       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel@teksavvy.com, torvalds@linux-foundation.org
+In-Reply-To: <4BA06E1B.2040706@redhat.com>
+References: <20100315134449.GB1653@linux-mips.org>
+	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
+	 <20100315.120004.209998642.davem@davemloft.net>
+	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>
+	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
+	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 19:56:19 +1100
+Message-ID: <1268816179.2335.187.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-03-16 at 22:52 -0700, Ulrich Drepper wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> On 03/16/2010 05:31 PM, Benjamin Herrenschmidt wrote:
+> > My proposal is purely a change to the syscall()
+> > function, nothing else. No kernel change, no ABI change, no change to
+> > the way glibc normally calls syscalls internally, etc...
+> 
+> How can this be?  People are today actively working around the problem
+> of 64-bit arguments.  You have to break something since you cannot
+> recognize these situations.
 
-* Anthony Liguori <aliguori@linux.vnet.ibm.com> wrote:
+Ok, so I -may- be missing something, but I believe this won't break
+anything:
 
-> If you want to use a synthetic filesystem as the management interface for 
-> qemu, that's one thing.  But you suggested exposing the guest filesystem in 
-> its entirely and that's what I disagreed with.
+ - You keep the existing syscall() exported by glibc for binary
+compatibility
 
-What did you think, that it would be world-readable? Why would we do such a 
-stupid thing? Any mounted content should at minimum match whatever policy 
-covers the image file. The mounting of contents is not a privilege escallation 
-and it is already possible today - just not integrated properly and not 
-practical. (and apparently not implemented for all the wrong 'security' 
-reasons)
+ - You add a new __syscall() (or whatever you want to name it) that adds
+a dummy argument at the beginning, and whose implementation shifts
+everything by 2 instead of 1 argument before calling into the kernel
 
-> The guest may encrypt it's disk image.  It still ought to be possible to run 
-> perf against that guest, no?
+ - You define in unistd.h or whatever is relevant, a macro that does:
 
-_In_ the guest you can of course run it just fine. (once paravirt bits are in 
-place)
+#define syscall(__sysno, __args..) __syscall(0, _sysno, __args)
 
-That has no connection to 'perf kvm' though, which this patch submission is 
-about ...
+I believe that should cover it, at least for powerpc, possibly for other
+archs too though as I said, I may have missed something there.
 
-If you want unified profiling of both host and guest then you need access to 
-both the guest and the host. This is what the 'perf kvm' patch is about. 
-Please read the patch, i think you might be misunderstanding what it does ...
+IE. Whether your app writes:
 
-Regarding encrypted contents - that's really a distraction but the host has 
-absolute, 100% control over the guest and there's nothing the guest can do 
-about that - unless you are thinking about the sub-sub-case of Orwellian 
-DRM-locked-down systems - in which case there's nothing for the host to mount 
-and the guest can reject any requests for information on itself and impose 
-additional policy that way. So it's a security non-issue.
+	syscall(SYS_foo, my_64bit_arg);
 
-Note that DRM is pretty much the worst place to look at when it comes to 
-usability: DRM lock-down is the anti-thesis of usability. Do you really want 
-KVM to match the mind-set of the RIAA and MPAA? Why do you pretend that a 
-developer cannot mount his own disk image? Pretty please, help Linux instead, 
-where development is driven by usability and accessibility ...
+Or
 
-Thanks,
+	syscall(SYS_foo, (u32)(my_64bit_arg >> 32), (u32)(my_64bit_arg));
 
-	Ingo
+Both should still work with the new approach and end up doing the right
+thing.
+
+Hence, apps that use the first form today because it works on x86 would
+end up working at least on powerpc where they would have been otherwise
+broken unless they used some arch specific #ifdef to do the second form.
+ 
+>   And since it became meanwhile clear that
+> there is no way to "fix" all archs magically I really don't want to
+> introduce anything.  There are mechanisms in place to abstract out some
+> of the issues.  And for the rest, well, if you're using syscalls
+> directly you already have to encoded lowlevel knowledge.  One more bit
+> doesn't hurt.  It's not as if this happens every day.
+
+It doesn't happen everyday. However, if my proposal ends up fixing a
+bunch of cases where it does without breaking anything, then I suppose
+it's worth considering, though as I said, it's possible that I miss some
+subtlety here in which case I'd be glad to stand corrected :-)
+
+Cheers,
+Ben.
+  
+> - -- 
+> ➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.10 (GNU/Linux)
+> Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+> 
+> iEYEARECAAYFAkugbhsACgkQ2ijCOnn/RHQzlACeMp0UK2jZuZOgXhJjB8Z9p4kh
+> rCoAn0zaJqFYV9tQ0Ct49Mprfa0O5iKh
+> =71la
+> -----END PGP SIGNATURE-----
+
+
