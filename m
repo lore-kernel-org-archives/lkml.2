@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab0CQQTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:19:37 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:38676 "EHLO
+	id S1755280Ab0CQQSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:18:47 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:38146 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755318Ab0CQQTa (ORCPT
+	with ESMTP id S1754106Ab0CQQRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:19:30 -0400
+	Wed, 17 Mar 2010 12:17:18 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 71/96] c/r: [signal 4/4] support for real/virt/prof itimers
-Date: Wed, 17 Mar 2010 12:08:59 -0400
-Message-Id: <1268842164-5590-72-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 56/96] c/r (ipc): allow allocation of a desired ipc identifier
+Date: Wed, 17 Mar 2010 12:08:44 -0400
+Message-Id: <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-56-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -74,237 +74,373 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-54-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-55-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-56-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-57-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-58-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-59-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-60-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-61-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-62-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-63-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-64-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-65-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-66-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-67-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-68-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-69-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-70-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-71-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for real/virt/prof itimers.
-Expiry and the interval values are both saved in nanoseconds.
-
-Changelog[v19-rc2]:
-  - Adjust virt/prof itimer code for kernel 2.6.32
-Changelog[v1]:
-  - [Louis Rilling] Fix saving of signal->it_real_incr if not expired
-  - Fix restoring of signal->it_real_incr if expire is zero
-  - Save virt/prof expire relative to process accumulated time
+During restart, we need to allocate ipc objects that with the same
+identifiers as recorded during checkpoint. Modify the allocation
+code allow an in-kernel caller to request a specific ipc identifier.
+The system call interface remains unchanged.
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-Acked-by: Louis Rilling <Louis.Rilling@kerlabs.com>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- checkpoint/signal.c            |   90 ++++++++++++++++++++++++++++++++++++++++
- include/linux/checkpoint_hdr.h |    6 +++
- include/linux/posix-timers.h   |    9 ++++
- kernel/posix-cpu-timers.c      |    9 ----
- 4 files changed, 105 insertions(+), 9 deletions(-)
+ ipc/msg.c  |   17 ++++++++++++-----
+ ipc/sem.c  |   17 ++++++++++++-----
+ ipc/shm.c  |   19 +++++++++++++------
+ ipc/util.c |   42 +++++++++++++++++++++++++++++-------------
+ ipc/util.h |    9 +++++----
+ 5 files changed, 71 insertions(+), 33 deletions(-)
 
-diff --git a/checkpoint/signal.c b/checkpoint/signal.c
-index 3d13c56..ecb94f8 100644
---- a/checkpoint/signal.c
-+++ b/checkpoint/signal.c
-@@ -15,6 +15,8 @@
- #include <linux/signal.h>
- #include <linux/errno.h>
- #include <linux/resource.h>
-+#include <linux/timer.h>
-+#include <linux/posix-timers.h>
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
+diff --git a/ipc/msg.c b/ipc/msg.c
+index af42ef8..9230e7c 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -73,7 +73,7 @@ struct msg_sender {
+ #define msg_unlock(msq)		ipc_unlock(&(msq)->q_perm)
  
-@@ -315,6 +317,9 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
- 	struct signal_struct *signal;
- 	struct sigpending shared_pending;
- 	struct rlimit *rlim;
-+	struct timeval tval;
-+	struct cpu_itimer *it;
-+	cputime_t cputime;
- 	unsigned long flags;
- 	int i, ret;
- 
-@@ -351,6 +356,53 @@ static int checkpoint_signal(struct ckpt_ctx *ctx, struct task_struct *t)
- 		h->rlim[i].rlim_cur = rlim[i].rlim_cur;
- 		h->rlim[i].rlim_max = rlim[i].rlim_max;
- 	}
-+
-+	/* real/virt/prof itimers */
-+	if (hrtimer_active(&signal->real_timer)) {
-+		/* For an active timer compute the time delta */
-+		ktime_t delta = hrtimer_get_remaining(&signal->real_timer);
-+		/*
-+		 * If the timer expired after the the test above, then
-+		 * set the expire to the minimum possible (because by
-+		 * now the pending signal have been saved already, but
-+		 * the signal from this very expiry won't be sent before
-+		 * we release t->sighand->siglock).
-+		 */
-+		ckpt_debug("active ! %lld\n", delta.tv64);
-+		if (delta.tv64 <= 0)
-+			delta.tv64 = NSEC_PER_USEC;
-+		h->it_real_value = ktime_to_ns(delta);
-+	} else {
-+		/*
-+		 * Timer is inactive; if @it_real_incr is 0 the timer
-+		 * will not be re-armed. Beacuse we hold siglock, if
-+		 * @it_real_incr > 0, the timer must have just expired
-+		 * but not yet re-armed, and we have a SIGALRM pending
-+		 * - that will trigger timer re-arm after restart.
-+		 */
-+		h->it_real_value = 0;
-+	}
-+	h->it_real_incr = ktime_to_ns(signal->it_real_incr);
-+
-+	/* for prof/virt, ignore error and incr_error */
-+	it = &signal->it[CPUCLOCK_VIRT];
-+	cputime = it->expires;
-+	if (!cputime_eq(cputime, cputime_zero))
-+		cputime = cputime_sub(it->expires, virt_ticks(t));
-+	cputime_to_timeval(cputime, &tval);
-+	h->it_virt_value = timeval_to_ns(&tval);
-+	cputime_to_timeval(it->incr, &tval);
-+	h->it_virt_incr = timeval_to_ns(&tval);
-+
-+	it = &signal->it[CPUCLOCK_PROF];
-+	cputime = it->expires;
-+	if (!cputime_eq(cputime, cputime_zero))
-+		cputime = cputime_sub(it->expires, prof_ticks(t));
-+	cputime_to_timeval(cputime, &tval);
-+	h->it_prof_value = timeval_to_ns(&tval);
-+	cputime_to_timeval(it->incr, &tval);
-+	h->it_prof_incr = timeval_to_ns(&tval);
-+
- 	unlock_task_sighand(t, &flags);
- 
- 	ret = ckpt_write_obj(ctx, &h->h);
-@@ -424,6 +476,7 @@ static int restore_signal(struct ckpt_ctx *ctx)
- 	struct ckpt_hdr_signal *h;
- 	struct sigpending new_pending;
- 	struct sigpending *pending;
-+	struct itimerval itimer;
- 	struct rlimit rlim;
- 	int i, ret;
- 
-@@ -444,12 +497,49 @@ static int restore_signal(struct ckpt_ctx *ctx)
- 	if (ret < 0)
- 		goto out;
- 
-+	/*
-+	 * Reset real/virt/prof itimer (in case they were set), to
-+	 * prevent unwanted signals after flushing current signals
-+	 * and before restoring original real/virt/prof itimer.
-+	 */
-+	itimer.it_value = (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
-+	itimer.it_interval =  (struct timeval) { .tv_sec = 0, .tv_usec = 0 };
-+	do_setitimer(ITIMER_REAL, &itimer, NULL);
-+	do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
-+	do_setitimer(ITIMER_PROF, &itimer, NULL);
-+
- 	spin_lock_irq(&current->sighand->siglock);
- 	pending = &current->signal->shared_pending;
- 	flush_sigqueue(pending);
- 	pending->signal = new_pending.signal;
- 	list_splice_init(&new_pending.list, &pending->list);
- 	spin_unlock_irq(&current->sighand->siglock);
-+
-+	/* real/virt/prof itimers */
-+	itimer.it_value = ns_to_timeval(h->it_real_value);
-+	itimer.it_interval = ns_to_timeval(h->it_real_incr);
-+	ret = do_setitimer(ITIMER_REAL, &itimer, NULL);
-+	if (ret < 0)
-+		goto out;
-+	/*
-+	 * If expire is 0 but incr > 0 then we have a SIGALRM pending.
-+	 * It should re-arm the timer when handled. But do_setitimer()
-+	 * above already ignored @it_real_incr because @it_real_value
-+	 * that was zero. So we set it manually. (This is safe against
-+	 * malicious input, because in the worst case will generate an
-+	 * unexpected SIGALRM to this process).
-+	 */
-+	if (!h->it_real_value && h->it_real_incr)
-+		current->signal->it_real_incr = ns_to_ktime(h->it_real_incr);
-+
-+	itimer.it_value = ns_to_timeval(h->it_virt_value);
-+	itimer.it_interval = ns_to_timeval(h->it_virt_incr);
-+	ret = do_setitimer(ITIMER_VIRTUAL, &itimer, NULL);
-+	if (ret < 0)
-+		goto out;
-+	itimer.it_value = ns_to_timeval(h->it_prof_value);
-+	itimer.it_interval = ns_to_timeval(h->it_prof_incr);
-+	ret = do_setitimer(ITIMER_PROF, &itimer, NULL);
-  out:
- 	ckpt_hdr_put(ctx, h);
- 	return ret;
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 939d6f2..a09b5e5 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -581,6 +581,12 @@ struct ckpt_rlimit {
- struct ckpt_hdr_signal {
- 	struct ckpt_hdr h;
- 	struct ckpt_rlimit rlim[CKPT_RLIM_NLIMITS];
-+	__u64 it_real_value;
-+	__u64 it_real_incr;
-+	__u64 it_virt_value;
-+	__u64 it_virt_incr;
-+	__u64 it_prof_value;
-+	__u64 it_prof_incr;
- } __attribute__((aligned(8)));
- 
- struct ckpt_hdr_signal_task {
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index d0d6a66..7dd69c3 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -125,4 +125,13 @@ void update_rlimit_cpu(unsigned long rlim_new);
- 
- int invalid_clockid(const clockid_t which_clock);
- 
-+static inline cputime_t prof_ticks(struct task_struct *p)
-+{
-+	return cputime_add(p->utime, p->stime);
-+}
-+static inline cputime_t virt_ticks(struct task_struct *p)
-+{
-+	return p->utime;
-+}
-+
+ static void freeque(struct ipc_namespace *, struct kern_ipc_perm *);
+-static int newque(struct ipc_namespace *, struct ipc_params *);
++static int newque(struct ipc_namespace *, struct ipc_params *, int);
+ #ifdef CONFIG_PROC_FS
+ static int sysvipc_msg_proc_show(struct seq_file *s, void *it);
  #endif
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 438ff45..5031bdf 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -168,15 +168,6 @@ static void bump_cpu_timer(struct k_itimer *timer,
- 	}
+@@ -175,10 +175,12 @@ static inline void msg_rmid(struct ipc_namespace *ns, struct msg_queue *s)
+  * newque - Create a new msg queue
+  * @ns: namespace
+  * @params: ptr to the structure that contains the key and msgflg
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with msg_ids.rw_mutex held (writer)
+  */
+-static int newque(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newque(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	struct msg_queue *msq;
+ 	int id, retval;
+@@ -202,7 +204,7 @@ static int newque(struct ipc_namespace *ns, struct ipc_params *params)
+ 	/*
+ 	 * ipc_addid() locks msq
+ 	 */
+-	id = ipc_addid(&msg_ids(ns), &msq->q_perm, ns->msg_ctlmni);
++	id = ipc_addid(&msg_ids(ns), &msq->q_perm, ns->msg_ctlmni, req_id);
+ 	if (id < 0) {
+ 		security_msg_queue_free(msq);
+ 		ipc_rcu_putref(msq);
+@@ -310,7 +312,7 @@ static inline int msg_security(struct kern_ipc_perm *ipcp, int msgflg)
+ 	return security_msg_queue_associate(msq, msgflg);
  }
  
--static inline cputime_t prof_ticks(struct task_struct *p)
--{
--	return cputime_add(p->utime, p->stime);
--}
--static inline cputime_t virt_ticks(struct task_struct *p)
--{
--	return p->utime;
--}
--
- int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
+-SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
++int do_msgget(key_t key, int msgflg, int req_id)
  {
- 	int error = check_clock(which_clock);
+ 	struct ipc_namespace *ns;
+ 	struct ipc_ops msg_ops;
+@@ -325,7 +327,12 @@ SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
+ 	msg_params.key = key;
+ 	msg_params.flg = msgflg;
+ 
+-	return ipcget(ns, &msg_ids(ns), &msg_ops, &msg_params);
++	return ipcget(ns, &msg_ids(ns), &msg_ops, &msg_params, req_id);
++}
++
++SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
++{
++	return do_msgget(key, msgflg, -1);
+ }
+ 
+ static inline unsigned long
+diff --git a/ipc/sem.c b/ipc/sem.c
+index dbef95b..faed3a3 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -92,7 +92,7 @@
+ #define sem_unlock(sma)		ipc_unlock(&(sma)->sem_perm)
+ #define sem_checkid(sma, semid)	ipc_checkid(&sma->sem_perm, semid)
+ 
+-static int newary(struct ipc_namespace *, struct ipc_params *);
++static int newary(struct ipc_namespace *, struct ipc_params *, int);
+ static void freeary(struct ipc_namespace *, struct kern_ipc_perm *);
+ #ifdef CONFIG_PROC_FS
+ static int sysvipc_sem_proc_show(struct seq_file *s, void *it);
+@@ -228,11 +228,13 @@ static inline void sem_rmid(struct ipc_namespace *ns, struct sem_array *s)
+  * newary - Create a new semaphore set
+  * @ns: namespace
+  * @params: ptr to the structure that contains key, semflg and nsems
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with sem_ids.rw_mutex held (as a writer)
+  */
+ 
+-static int newary(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newary(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	int id;
+ 	int retval;
+@@ -265,7 +267,7 @@ static int newary(struct ipc_namespace *ns, struct ipc_params *params)
+ 		return retval;
+ 	}
+ 
+-	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni);
++	id = ipc_addid(&sem_ids(ns), &sma->sem_perm, ns->sc_semmni, req_id);
+ 	if (id < 0) {
+ 		security_sem_free(sma);
+ 		ipc_rcu_putref(sma);
+@@ -315,7 +317,7 @@ static inline int sem_more_checks(struct kern_ipc_perm *ipcp,
+ 	return 0;
+ }
+ 
+-SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
++int do_semget(key_t key, int nsems, int semflg, int req_id)
+ {
+ 	struct ipc_namespace *ns;
+ 	struct ipc_ops sem_ops;
+@@ -334,7 +336,12 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
+ 	sem_params.flg = semflg;
+ 	sem_params.u.nsems = nsems;
+ 
+-	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params);
++	return ipcget(ns, &sem_ids(ns), &sem_ops, &sem_params, req_id);
++}
++
++SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
++{
++	return do_semget(key, nsems, semflg, -1);
+ }
+ 
+ /*
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 23256b8..5ae0eef 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -61,7 +61,7 @@ static const struct vm_operations_struct shm_vm_ops;
+ #define shm_unlock(shp)			\
+ 	ipc_unlock(&(shp)->shm_perm)
+ 
+-static int newseg(struct ipc_namespace *, struct ipc_params *);
++static int newseg(struct ipc_namespace *, struct ipc_params *, int);
+ static void shm_open(struct vm_area_struct *vma);
+ static void shm_close(struct vm_area_struct *vma);
+ static void shm_destroy (struct ipc_namespace *ns, struct shmid_kernel *shp);
+@@ -82,7 +82,7 @@ void shm_init_ns(struct ipc_namespace *ns)
+  * Called with shm_ids.rw_mutex (writer) and the shp structure locked.
+  * Only shm_ids.rw_mutex remains locked on exit.
+  */
+-static void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
++void do_shm_rmid(struct ipc_namespace *ns, struct kern_ipc_perm *ipcp)
+ {
+ 	struct shmid_kernel *shp;
+ 	shp = container_of(ipcp, struct shmid_kernel, shm_perm);
+@@ -329,11 +329,13 @@ static const struct vm_operations_struct shm_vm_ops = {
+  * newseg - Create a new shared memory segment
+  * @ns: namespace
+  * @params: ptr to the structure that contains key, size and shmflg
++ * @req_id: request desired id if available (-1 if don't care)
+  *
+  * Called with shm_ids.rw_mutex held as a writer.
+  */
+ 
+-static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
++static int
++newseg(struct ipc_namespace *ns, struct ipc_params *params, int req_id)
+ {
+ 	key_t key = params->key;
+ 	int shmflg = params->flg;
+@@ -388,7 +390,7 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 	if (IS_ERR(file))
+ 		goto no_file;
+ 
+-	id = ipc_addid(&shm_ids(ns), &shp->shm_perm, ns->shm_ctlmni);
++	id = ipc_addid(&shm_ids(ns), &shp->shm_perm, ns->shm_ctlmni, req_id);
+ 	if (id < 0) {
+ 		error = id;
+ 		goto no_id;
+@@ -448,7 +450,7 @@ static inline int shm_more_checks(struct kern_ipc_perm *ipcp,
+ 	return 0;
+ }
+ 
+-SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
++int do_shmget(key_t key, size_t size, int shmflg, int req_id)
+ {
+ 	struct ipc_namespace *ns;
+ 	struct ipc_ops shm_ops;
+@@ -464,7 +466,12 @@ SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
+ 	shm_params.flg = shmflg;
+ 	shm_params.u.size = size;
+ 
+-	return ipcget(ns, &shm_ids(ns), &shm_ops, &shm_params);
++	return ipcget(ns, &shm_ids(ns), &shm_ops, &shm_params, req_id);
++}
++
++SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
++{
++	return do_shmget(key, size, shmflg, -1);
+ }
+ 
+ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_ds *in, int version)
+diff --git a/ipc/util.c b/ipc/util.c
+index 79ce84e..c4ce60d 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -247,10 +247,12 @@ int ipc_get_maxid(struct ipc_ids *ids)
+  *	Called with ipc_ids.rw_mutex held as a writer.
+  */
+  
+-int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
++int
++ipc_addid(struct ipc_ids *ids, struct kern_ipc_perm *new, int size, int req_id)
+ {
+ 	uid_t euid;
+ 	gid_t egid;
++	int lid = 0;
+ 	int id, err;
+ 
+ 	if (size > IPCMNI)
+@@ -259,28 +261,41 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+ 	if (ids->in_use >= size)
+ 		return -ENOSPC;
+ 
++	if (req_id >= 0)
++		lid = ipcid_to_idx(req_id);
++
+ 	spin_lock_init(&new->lock);
+ 	new->deleted = 0;
+ 	rcu_read_lock();
+ 	spin_lock(&new->lock);
+ 
+-	err = idr_get_new(&ids->ipcs_idr, new, &id);
++	err = idr_get_new_above(&ids->ipcs_idr, new, lid, &id);
+ 	if (err) {
+ 		spin_unlock(&new->lock);
+ 		rcu_read_unlock();
+ 		return err;
+ 	}
+ 
++	if (req_id >= 0) {
++		if (id != lid) {
++			idr_remove(&ids->ipcs_idr, id);
++			spin_unlock(&new->lock);
++			rcu_read_unlock();
++			return -EBUSY;
++		}
++		new->seq = req_id / SEQ_MULTIPLIER;
++	} else {
++		new->seq = ids->seq++;
++		if (ids->seq > ids->seq_max)
++			ids->seq = 0;
++	}
++
+ 	ids->in_use++;
+ 
+ 	current_euid_egid(&euid, &egid);
+ 	new->cuid = new->uid = euid;
+ 	new->gid = new->cgid = egid;
+ 
+-	new->seq = ids->seq++;
+-	if(ids->seq > ids->seq_max)
+-		ids->seq = 0;
+-
+ 	new->id = ipc_buildid(id, new->seq);
+ 	return id;
+ }
+@@ -296,7 +311,7 @@ int ipc_addid(struct ipc_ids* ids, struct kern_ipc_perm* new, int size)
+  *	when the key is IPC_PRIVATE.
+  */
+ static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	int err;
+ retry:
+@@ -306,7 +321,7 @@ retry:
+ 		return -ENOMEM;
+ 
+ 	down_write(&ids->rw_mutex);
+-	err = ops->getnew(ns, params);
++	err = ops->getnew(ns, params, req_id);
+ 	up_write(&ids->rw_mutex);
+ 
+ 	if (err == -EAGAIN)
+@@ -351,6 +366,7 @@ static int ipc_check_perms(struct kern_ipc_perm *ipcp, struct ipc_ops *ops,
+  *	@ids: IPC identifer set
+  *	@ops: the actual creation routine to call
+  *	@params: its parameters
++ *	@req_id: request desired id if available (-1 if don't care)
+  *
+  *	This routine is called by sys_msgget, sys_semget() and sys_shmget()
+  *	when the key is not IPC_PRIVATE.
+@@ -360,7 +376,7 @@ static int ipc_check_perms(struct kern_ipc_perm *ipcp, struct ipc_ops *ops,
+  *	On success, the ipc id is returned.
+  */
+ static int ipcget_public(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	struct kern_ipc_perm *ipcp;
+ 	int flg = params->flg;
+@@ -381,7 +397,7 @@ retry:
+ 		else if (!err)
+ 			err = -ENOMEM;
+ 		else
+-			err = ops->getnew(ns, params);
++			err = ops->getnew(ns, params, req_id);
+ 	} else {
+ 		/* ipc object has been locked by ipc_findkey() */
+ 
+@@ -742,12 +758,12 @@ struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id)
+  * Common routine called by sys_msgget(), sys_semget() and sys_shmget().
+  */
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+-			struct ipc_ops *ops, struct ipc_params *params)
++		struct ipc_ops *ops, struct ipc_params *params, int req_id)
+ {
+ 	if (params->key == IPC_PRIVATE)
+-		return ipcget_new(ns, ids, ops, params);
++		return ipcget_new(ns, ids, ops, params, req_id);
+ 	else
+-		return ipcget_public(ns, ids, ops, params);
++		return ipcget_public(ns, ids, ops, params, req_id);
+ }
+ 
+ /**
+diff --git a/ipc/util.h b/ipc/util.h
+index 764b51a..159a73c 100644
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -71,7 +71,7 @@ struct ipc_params {
+  *      . routine to call for an extra check if needed
+  */
+ struct ipc_ops {
+-	int (*getnew) (struct ipc_namespace *, struct ipc_params *);
++	int (*getnew) (struct ipc_namespace *, struct ipc_params *, int);
+ 	int (*associate) (struct kern_ipc_perm *, int);
+ 	int (*more_checks) (struct kern_ipc_perm *, struct ipc_params *);
+ };
+@@ -94,7 +94,7 @@ void __init ipc_init_proc_interface(const char *path, const char *header,
+ #define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
+ 
+ /* must be called with ids->rw_mutex acquired for writing */
+-int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int);
++int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int, int);
+ 
+ /* must be called with ids->rw_mutex acquired for reading */
+ int ipc_get_maxid(struct ipc_ids *);
+@@ -171,7 +171,8 @@ static inline void ipc_unlock(struct kern_ipc_perm *perm)
+ 
+ struct kern_ipc_perm *ipc_lock_check(struct ipc_ids *ids, int id);
+ int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
+-			struct ipc_ops *ops, struct ipc_params *params);
++	   struct ipc_ops *ops, struct ipc_params *params, int req_id);
+ void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
+-		void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
++	       void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
++
+ #endif
 -- 
 1.6.3.3
 
