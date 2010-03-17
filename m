@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0CQVJM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:09:12 -0400
-Received: from sca-es-mail-2.Sun.COM ([192.18.43.133]:62769 "EHLO
-	sca-es-mail-2.sun.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab0CQVJJ (ORCPT
+	id S1755249Ab0CQVJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:09:41 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:48004 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754983Ab0CQVJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:09:09 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; delsp=yes; format=flowed
-Date: Wed, 17 Mar 2010 15:09:00 -0600
-Sun-Java-System-SMTP-Warning: Lines longer than SMTP allows found and truncated.
-From: Andreas Dilger <adilger@sun.com>
-Subject: Re: [C/R v20][PATCH 46/96] c/r: add checkpoint operation for opened
- files of generic filesystems
-In-reply-to: <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-api@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       containers@lists.linux-foundation.org,
-       Matt Helsley <matthltc@us.ibm.com>, linux-fsdevel@vger.kernel.org
-Message-id: <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
-X-Mailer: Apple Mail (2.936)
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
+	Wed, 17 Mar 2010 17:09:39 -0400
+From: Eric Anholt <eric@anholt.net>
+To: Li Zefan <lizf@cn.fujitsu.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+       David Airlie <airlied@linux.ie>
+Cc: LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.sourceforge.net,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] drm/i915: Convert some trace events to DEFINE_TRACE
+In-Reply-To: <4B98ACC9.4080504@cn.fujitsu.com>
+References: <4B98ACC9.4080504@cn.fujitsu.com>
+Date: Wed, 17 Mar 2010 14:09:25 -0700
+Message-ID: <87eijik64a.fsf@pollan.anholt.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-03-17, at 10:08, Oren Laadan wrote:
-> These patches extend the use of the generic file checkpoint  
-> operation to
-> non-extX filesystems which have lseek operations that ensure we can  
-> save
-> and restore the files for later use. Note that this does not include
-> things like FUSE, network filesystems, or pseudo-filesystem kernel
-> interfaces.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-I didn't see any other patches posted to linux-fsdevel regarding what  
-this code is, or what it is supposed to be doing.  Could you please  
-repost the patches related to generic_file_checkpoint(), and the  
-overview email that explains what you mean by "checkpoint".  I'm  
-assuming this is related to HPC/process restart/migration, but better  
-to not guess.
+On Thu, 11 Mar 2010 16:41:45 +0800, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> Use DECLARE_EVENT_CLASS to remove duplicate code:
+>=20
+>    text    data     bss     dec     hex filename
+>   14655    2732      15   17402    43fa i915_trace_points.o.orig
+>   11625    2732      10   14367    381f i915_trace_points.o
+>=20
+> 8 events are converted:
+>=20
+>   i915_gem_object:  i915_gem_object_{unbind, destroy}
+>   i915_gem_request: i915_gem_request_{complete, retire, wait_begin, wait_=
+end}
+>   i915_ring:        i915_ring_{wait_begin, wait_end}
+>=20
+> No functional change.
 
-> @@ -718,6 +718,7 @@ static const struct file_operations  
-> btrfs_ctl_fops = {
-> 	.unlocked_ioctl	 = btrfs_control_ioctl,
-> 	.compat_ioctl = btrfs_control_ioctl,
-> 	.owner	 = THIS_MODULE,
-> +	.checkpoint = generic_file_checkpoint,
-> };
->
-> const struct file_operations exofs_file_operations = {
-> 	.llseek		= generic_file_llseek,
-> +	.checkpoint	= generic_file_checkpoint,
-> 	.read		= do_sync_read,
-> 	.write		= do_sync_write,
-> 	.aio_read	= generic_file_aio_read,
->
-> static const struct file_operations hostfs_file_fops = {
-> 	.llseek		= generic_file_llseek,
-> +	.checkpoint	= generic_file_checkpoint,
-> 	.read		= do_sync_read,
-> 	.splice_read	= generic_file_splice_read,
-> 	.aio_read	= generic_file_aio_read,
-> @@ -430,6 +431,7 @@ static const struct file_operations  
-> hostfs_file_fops = {
->
-> static const struct file_operations hostfs_dir_fops = {
-> 	.llseek		= generic_file_llseek,
-> +	.checkpoint	= generic_file_checkpoint,
-> 	.readdir	= hostfs_readdir,
-> 	.read		= generic_read_dir,
-> };
->
-> const struct file_operations nilfs_file_operations = {
-> 	.llseek		= generic_file_llseek,
-> +	.checkpoint	= generic_file_checkpoint,
-> 	.read		= do_sync_read,
-> 	.write		= do_sync_write,
-> 	.aio_read	= generic_file_aio_read,
+Applied to -next.  Thanks!
 
+--=-=-=
+Content-Type: application/pgp-signature
 
-Minor nit - it would be good to add this method in the same place in  
-all of the *_file_operation structures for consistency.  Ideally these  
-would already be in the order that they are declared in the structure,  
-but at least new ones should be added consistently.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-> static const struct vm_operations_struct nfs_file_vm_ops = {
-> 	.fault = filemap_fault,
-> 	.page_mkwrite = nfs_vm_page_mkwrite,
-> +#ifdef CONFIG_CHECKPOINT
-> +	.checkpoint = filemap_checkpoint,
-> +#endif
-> };
-
-Why is this one conditional, but the others are not?
-
-
-Cheers, Andreas
---
-Andreas Dilger
-Sr. Staff Engineer, Lustre Group
-Sun Microsystems of Canada, Inc.
-
+iEYEARECAAYFAkuhRQYACgkQHUdvYGzw6vfnygCeNIEnkOao9mKW22SjLN9yS8U8
+hm4An1svalZCU9RUU/e4DkhRhvft3k7R
+=LsvT
+-----END PGP SIGNATURE-----
+--=-=-=--
