@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893Ab0CQXo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 19:44:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33886 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab0CQXoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 19:44:25 -0400
-Date: Wed, 17 Mar 2010 16:44:14 -0700
-From: Greg KH <gregkh@suse.de>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Dmitry Torokhov <dtor@mail.ru>, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [RFC/PATCH] platform_bus: allow custom extensions to system PM
- methods
-Message-ID: <20100317234414.GA23319@suse.de>
-References: <1268867896-7616-1-git-send-email-khilman@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268867896-7616-1-git-send-email-khilman@deeprootsystems.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754544Ab0CQXrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 19:47:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:45449 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab0CQXrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 19:47:18 -0400
+Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
+References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Mar 2010 00:47:11 +0100
+Message-ID: <1268869631.9440.282.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 04:18:15PM -0700, Kevin Hilman wrote:
-> When runtime PM for platform_bus was added, it allowed for platforms
-> to customize the runtime PM methods since they are defined as weak
-> symbols.
+On Wed, 2010-03-17 at 10:40 +0200, Stephane Eranian wrote:
+> 	On AMD processors, we need to allocate a data structure per Northbridge
+> 	to handle certain events.
 > 
-> This patch allows platforms to also extend the system PM methods with
-> custom hooks so runtime PM and system PM extensions can be managed
-> together by custom platform-specific code.
+> 	On CPU initialization, we need to query the Northbridge id and check
+> 	whether the structure is already allocated or not. We use the
+> 	amd_get_nb_id() function to request the Northbridge identification.
+> 
+> 	The recent cleanup of the CPU online/offline initialization introduced
+> 	a bug. AMD cpu initialization is invoked on CPU_UP_PREPARE callback.
+> 	This is before the CPU Northbridge id is calculated. Therefore no
+> 	processor had a Northbridge structure allocated except the boot
+> 	processor. That was causing bogus NB event scheduling.
+> 
+> 	This patch uses the CPU_ONLINE callback to initialize the AMD
+> 	Northbridge structure. This way amd_get_nb_id() returns valid
+> 	information.
+> 
+> 	The x86_cpu_up() callback was added. Could not call it cpu_online
+> 	because of existing macro.
+> 
+> 	Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Wow, that's scary, I didn't realize that was done for the runtime stuff.
 
-What would you be replacing these functions with for your platform that
-would require it to be in arch-specific code?
+No, ONLINE is not exposed for a good reason, its always wrong.
 
-thanks,
+Use prepare to allocate data, and starting to initialize stuff on the
+cpu proper once its up. Online is after the cpu is up and running and we
+are already scheduling stuff on it so its too late to initialize things.
 
-greg k-h
