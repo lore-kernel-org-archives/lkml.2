@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab0CQM4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 08:56:53 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:63145 "EHLO
+	id S1754391Ab0CQM5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 08:57:44 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:63147 "EHLO
 	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab0CQM4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 08:56:52 -0400
-Subject: [GIT PULL updated] led updates for 2.6.34-rc2
+	id S1753488Ab0CQM5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 08:57:42 -0400
+Subject: Re: [PATCH v2] LEDS: fix race between LED device uevent and actual
+ attributes creation
 From: Richard Purdie <rpurdie@rpsys.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
+To: Florian Fainelli <ffainelli@freebox.fr>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <201003171327.38516.ffainelli@freebox.fr>
+References: <201003101832.18867.ffainelli@freebox.fr>
+	 <201003170924.38919.ffainelli@freebox.fr> <1268828325.3662.0.camel@rex>
+	 <201003171327.38516.ffainelli@freebox.fr>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Mar 2010 12:56:34 +0000
-Message-ID: <1268830594.3662.17.camel@rex>
+Date: Wed, 17 Mar 2010 12:57:34 +0000
+Message-ID: <1268830654.3662.18.camel@rex>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[updated request adding a bugfix which was meant to be here originally]
+On Wed, 2010-03-17 at 13:27 +0100, Florian Fainelli wrote:
+> On Wednesday 17 March 2010 13:18:45 Richard Purdie wrote:
+> > On Wed, 2010-03-17 at 09:24 +0100, Florian Fainelli wrote:
+> > > Richard,
+> > >
+> > > Any thoughts?
+> > 
+> > Yes, I like the patch and its been queued in the LEDs tree and was
+> > included in my last pull request to Linus.
+> 
+> Ok, thanks. I actually did not see it in "[GIT PULL] led updates for 2.6.34-
+> rc2" that's why I asked.
 
-Linus,
+It was only applied locally but was meant to be there. I've updated the
+trees, thanks for spotting that.
 
-Could you please pull from:
+Cheers,
 
-git://git.o-hand.com/linux-rpurdie-leds for-linus
-
-for various LED updates suitable for 2.6.34-rc2. The patches are
-mostly bugfixes that have been testing in -mm/linux-next for a while but
-there is one new driver included which is unlikely to be harmful to
-anyone.
-
-I can rebase this without the new driver and make it bugfixes only if
-you prefer.
-
-Thanks, Richard
-
- drivers/leds/Kconfig       |   80 ++++++++++--------
- drivers/leds/Makefile      |    1 
- drivers/leds/dell-led.c    |  200 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/leds/led-class.c   |   42 ++-------
- drivers/leds/leds-gpio.c   |    3 
- drivers/leds/leds-ss4200.c |    2 
- 6 files changed, 257 insertions(+), 71 deletions(-)
-
-Anton Vorontsov (1):
-      leds-gpio: fix default state handling on OF platforms
-
-Bob Rodgers (1):
-      leds: Add Dell Business Class Netbook LED driver
-
-Daniel Mack (1):
-      leds: ALIX2: Add dependency to !GPIO_CS5335
-
-Florian Fainelli (1):
-      leds: Fix race between LED device uevent and actual attributes creation
-
-H Hartley Sweeten (2):
-      leds: led-class.c - Quiet boot messages
-      leds: Kconfig cleanup
-
-Márton Németh (1):
-      leds: make PCI device id constant
-
+Richard
 
