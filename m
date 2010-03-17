@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab0CQMLN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 08:11:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34945 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754692Ab0CQMLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 08:11:09 -0400
-Date: Wed, 17 Mar 2010 12:10:26 GMT
-From: tip-bot for Robert Richter <robert.richter@amd.com>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-       mingo@redhat.com, robert.richter@amd.com, a.p.zijlstra@chello.nl,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-       linux-kernel@vger.kernel.org, robert.richter@amd.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1268826553-19518-5-git-send-email-robert.richter@amd.com>
-References: <1268826553-19518-5-git-send-email-robert.richter@amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/core, x86: Remove duplicate perf_event_mask variable
-Message-ID: <tip-d6dc0b4ead6e8720096ecfa3d9e899b47ddbc8ed@git.kernel.org>
-Git-Commit-ID: d6dc0b4ead6e8720096ecfa3d9e899b47ddbc8ed
-X-Mailer: tip-git-log-daemon
+	id S1754748Ab0CQMPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 08:15:08 -0400
+Received: from mo-p05-ob.rzone.de ([81.169.146.181]:53507 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596Ab0CQMPF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 08:15:05 -0400
+X-Greylist: delayed 666 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 08:15:05 EDT
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohavlCkce+Ub5QXMSOpHp3LrAMgFm4S5s=
+X-RZG-CLASS-ID: mo05
+From: Stefan Roese <sr@denx.de>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] 460EX on-chip SATA driver<kernel 2.6.33> < resubmission : 01>
+Date: Wed, 17 Mar 2010 13:03:06 +0100
+User-Agent: KMail/1.13.1 (Linux/2.6.32.8-sr; KDE/4.4.1; i686; ; )
+Cc: "Rupjyoti Sarmah" <rsarmah@amcc.com>, linux-ide@vger.kernel.org,
+       "Jeff Garzik" <jgarzik@pobox.com>,
+       Rupjyoti Sarmah <rupjyoti.sarmah@gmail.com>, linuxppc-dev@ozlabs.org,
+       Rupjyoti Sarmah <rupjyoti.sarmah@appliedmicro.com>,
+       linux-kernel@vger.kernel.org
+References: <1268646854-27387-1-git-send-email-rsarmah@appliedmicro.com> <AC311A8E81420D4EBC1F26E6479848FE065B7F30@SDCEXCHANGE01.ad.amcc.com>
+In-Reply-To: <AC311A8E81420D4EBC1F26E6479848FE065B7F30@SDCEXCHANGE01.ad.amcc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 12:10:26 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003171303.06258.sr@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d6dc0b4ead6e8720096ecfa3d9e899b47ddbc8ed
-Gitweb:     http://git.kernel.org/tip/d6dc0b4ead6e8720096ecfa3d9e899b47ddbc8ed
-Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Wed, 17 Mar 2010 12:49:13 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 17 Mar 2010 13:06:59 +0100
+Hi Rup,
 
-perf/core, x86: Remove duplicate perf_event_mask variable
+On Wednesday 17 March 2010 05:23:16 Rupjyoti Sarmah wrote:
+> This patch enables the on-chip DWC SATA controller of the AppliedMicro
+> processor 460EX.
 
-The same information is stored also in x86_pmu.intel_ctrl. This
-patch removes perf_event_mask and instead uses
-x86_pmu.intel_ctrl directly.
+Apart from the other comments, did you take a look at the latest version of 
+this driver in our linux-2.6-denx repository? We did some work on this driver 
+for a new Canyonlands release last year. It's hard to check this for me now, 
+with this line wrapped patch (the drivers diverged somewhat). So either check 
+for yourself, or send a new, not line-wrapped, patch version so that I can 
+better check myself.
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1268826553-19518-5-git-send-email-robert.richter@amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+BTW: It would be nice if you would add me to Cc on DWC-SATA related patches, 
+since I've been involved in the development at some time.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 104292a..c97d5b5 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -75,8 +75,6 @@ copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
- 	return len;
- }
- 
--static u64 perf_event_mask __read_mostly;
--
- struct event_constraint {
- 	union {
- 		unsigned long	idxmsk[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-@@ -1406,7 +1404,7 @@ void __init init_hw_perf_events(void)
- 		     x86_pmu.num_events, X86_PMC_MAX_GENERIC);
- 		x86_pmu.num_events = X86_PMC_MAX_GENERIC;
- 	}
--	perf_event_mask = (1 << x86_pmu.num_events) - 1;
-+	x86_pmu.intel_ctrl = (1 << x86_pmu.num_events) - 1;
- 	perf_max_events = x86_pmu.num_events;
- 
- 	if (x86_pmu.num_events_fixed > X86_PMC_MAX_FIXED) {
-@@ -1415,9 +1413,8 @@ void __init init_hw_perf_events(void)
- 		x86_pmu.num_events_fixed = X86_PMC_MAX_FIXED;
- 	}
- 
--	perf_event_mask |=
-+	x86_pmu.intel_ctrl |=
- 		((1LL << x86_pmu.num_events_fixed)-1) << X86_PMC_IDX_FIXED;
--	x86_pmu.intel_ctrl = perf_event_mask;
- 
- 	perf_events_lapic_init();
- 	register_die_notifier(&perf_event_nmi_notifier);
-@@ -1442,7 +1439,7 @@ void __init init_hw_perf_events(void)
- 	pr_info("... value mask:             %016Lx\n", x86_pmu.event_mask);
- 	pr_info("... max period:             %016Lx\n", x86_pmu.max_period);
- 	pr_info("... fixed-purpose events:   %d\n",     x86_pmu.num_events_fixed);
--	pr_info("... event mask:             %016Lx\n", perf_event_mask);
-+	pr_info("... event mask:             %016Lx\n", x86_pmu.intel_ctrl);
- 
- 	perf_cpu_notifier(x86_pmu_notifier);
- }
+Thanks.
+
+Cheers,
+Stefan
+
+--
+DENX Software Engineering GmbH,      MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich,  Office: Kirchenstr.5, D-82194 Groebenzell, Germany
+Phone: (+49)-8142-66989-0 Fax: (+49)-8142-66989-80 Email: office@denx.de
