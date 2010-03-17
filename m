@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab0CQDnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 23:43:42 -0400
-Received: from tenax.loup.net ([209.169.16.66]:50171 "EHLO tenax.loup.net"
+	id S1752743Ab0CQDn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 23:43:56 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:51870 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752130Ab0CQDnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 23:43:41 -0400
-Date: Tue, 16 Mar 2010 21:30:07 -0600
-Message-Id: <201003170330.o2H3U7j5011328@alien.loup.net>
-From: Mike Hayward <hayward@loup.net>
-To: hancockrwd@gmail.com
-CC: linux-kernel@vger.kernel.org, mvds.00@gmail.com
-In-reply-to: <4B9EC36F.8010404@gmail.com> (message from Robert Hancock on Mon,
-	15 Mar 2010 17:31:59 -0600)
-Subject: Re: SCSI GENERIC command queueing for block storage is unstable.
-References: <201003151825.o2FIPUTV006948@alien.loup.net> <4B9EC36F.8010404@gmail.com>
+	id S1752698Ab0CQDny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 23:43:54 -0400
+Date: Tue, 16 Mar 2010 19:26:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip] rcu: local_irq_disable() also delimits RCU_SCHED
+	read-site critical sections
+Message-ID: <20100317022648.GA7049@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4B9F66E1.2060309@cn.fujitsu.com> <20100316132156.GC6709@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316132156.GC6709@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.15+20070412 (2007-04-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+On Tue, Mar 16, 2010 at 06:21:56AM -0700, Paul E. McKenney wrote:
+> On Tue, Mar 16, 2010 at 07:09:21PM +0800, Lai Jiangshan wrote:
+> > It is documented that local_irq_disable() also delimits
+> > RCU_SCHED read-site critical sections.
+> > See the document of synchronize_sched() or
+> > Documentation/RCU/whatisRCU.txt.
+> > 
+> > So we have to test irqs_disabled() in rcu_read_lock_sched_held().
+> > Otherwise rcu-lockdep brings incorrect complaint.
+> 
+> Interesting -- I was under the impression that preempt_count() covered
+> this as well, due to the following in include/linux/hardirq.h:
+> 
+> 	#define PREEMPT_MASK    (__IRQ_MASK(PREEMPT_BITS) << PREEMPT_SHIFT)
+> 	#define SOFTIRQ_MASK    (__IRQ_MASK(SOFTIRQ_BITS) << SOFTIRQ_SHIFT)
+> 	#define HARDIRQ_MASK    (__IRQ_MASK(HARDIRQ_BITS) << HARDIRQ_SHIFT)
+> 	#define NMI_MASK        (__IRQ_MASK(NMI_BITS)     << NMI_SHIFT)
+> 
+> But irqs_disabled() does look to sample the actual interrupt hardware.
+> 
+> So, if there are cases where RCU is used where the interrupt hardware
+> is disabled, but preempt_count() has not been updated, this patch is
+> the right thing to do.
 
- > > After discovering that O_NONBLOCK reads and writes were actually
- > > blocking calls, I attempted to use the SCSI generic driver for
- > > nonblocking io.  The good news is that it is nonblocking; the bad news
- > > is that it is not dependable in any of the systems I have tested with.
- > >
- > > Does anyone know if these defects have been fixed in later kernels?
- > >
- > > 1. When queueing, write can occassionally return errno 12 (ENOMEM, Cannot
- > >     allocate memory).  This is documented in the SCSI GENERIC HOWTO,
- > >     however only for indirect io and it says extremely rare.  I can cause
- > >     it easily within a few hours and it can return even for direct io when
- > >     no io's are queued and 80% of the ram is free or in buffer cache.  The
- > >     fd polls as available for writing, but retrying never clears the error
- > >     and the fd is no longer usable.  This is a complete show stopper.
- > >
- > >     Linux 2.6.22.1-32.fc6 #1 SMP Wed Aug 1 14:30:16 EDT 2007 x86_64 x86_64 x86_64 GNU/Linux
- > 
- > First off, have you tested any of these problems against a newer kernel?
+In light of later emails in this thread, first a big "thank you!!!"
+to Lai, and I will pull this one in.  Good stuff!!!
 
-Ok, #1 is also happening on 2.6.32.9-70.fc12.x86_64... this time on
-several processes nearly simultaneously, so it appears it isn't just
-tied to one fd.  This time instead of ENOMEM though, I got errno ==
-Invalid argument(16) when writing the sg_io_hdr.
+							Thanx, Paul
 
-interface_id S dxfer_direction fffffffe cmd_len a mx_sb_len fc
-iovec_count 0 dxfer_len 200000 dxferp 0x7f85e53dd200 cmdp 1f30a38
-sbp 1f30a48 timeout 20000 flags 1 pack_id 0 usr_ptr 0x1f30a00
-
-There appears nothing wrong with the sg_io_hdr.  If I can get through
-bug #2, my app will normally run constant io for hours before blowing
-and it is unlikely three daemons running against separate sg devices
-would simultaneously hit this error unless something were wrong in the
-sg driver itself.
-
-- Mike
+> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > ---
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 3024050..2ce5674 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -160,7 +160,7 @@ static inline int rcu_read_lock_sched_held(void)
+> >  		return 1;
+> >  	if (debug_locks)
+> >  		lockdep_opinion = lock_is_held(&rcu_sched_lock_map);
+> > -	return lockdep_opinion || preempt_count() != 0;
+> > +	return lockdep_opinion || preempt_count() != 0 || irqs_disabled();
+> >  }
+> >  #else /* #ifdef CONFIG_PREEMPT */
+> >  static inline int rcu_read_lock_sched_held(void)
+> > @@ -191,7 +191,7 @@ static inline int rcu_read_lock_bh_held(void)
+> >  #ifdef CONFIG_PREEMPT
+> >  static inline int rcu_read_lock_sched_held(void)
+> >  {
+> > -	return !rcu_scheduler_active || preempt_count() != 0;
+> > +	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
+> >  }
+> >  #else /* #ifdef CONFIG_PREEMPT */
+> >  static inline int rcu_read_lock_sched_held(void)
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
