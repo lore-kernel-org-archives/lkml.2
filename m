@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab0CQP7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:59:39 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:40978 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab0CQP7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:59:38 -0400
-Subject: Re: [PATCH] Timekeeping: Fix dead lock in update_wall_time by
- correct shift convertion.
-From: john stultz <johnstul@us.ibm.com>
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4e5ebad51003162214s3430aa39xde29a4ba9c1b7d8c@mail.gmail.com>
-References: <1268735629.5075.8.camel@eight.analog.com>
-	 <1268763512.1676.7.camel@work-vm>
-	 <4e5ebad51003161958n6db293f0y6da99483bf96ada0@mail.gmail.com>
-	 <1268797285.3130.90.camel@localhost.localdomain>
-	 <4e5ebad51003162214s3430aa39xde29a4ba9c1b7d8c@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Mar 2010 08:59:22 -0700
-Message-ID: <1268841562.1996.16.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753574Ab0CQQEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:04:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33502 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751951Ab0CQQEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 12:04:23 -0400
+Date: Wed, 17 Mar 2010 16:03:42 GMT
+From: tip-bot for Jack Steiner <steiner@sgi.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       steiner@sgi.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       steiner@sgi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20100317154038.GA29346@sgi.com>
+References: <20100317154038.GA29346@sgi.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/uv] x86, UV: Delete unneeded boot messages
+Message-ID: <tip-2acebe9ecb2b77876e87a1480729cfb2db4570dd@git.kernel.org>
+Git-Commit-ID: 2acebe9ecb2b77876e87a1480729cfb2db4570dd
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Mar 2010 16:03:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 13:14 +0800, Sonic Zhang wrote:
-> With you new workaround, no dead loop. But are you sure this doesn't
-> overflow the ntp_error after thousands of loops?
-> 
->        timekeeper.ntp_error += tick_length << shift;
->        timekeeper.ntp_error -= timekeeper.xtime_interval <<
->                                (timekeeper.ntp_error_shift + shift);
+Commit-ID:  2acebe9ecb2b77876e87a1480729cfb2db4570dd
+Gitweb:     http://git.kernel.org/tip/2acebe9ecb2b77876e87a1480729cfb2db4570dd
+Author:     Jack Steiner <steiner@sgi.com>
+AuthorDate: Wed, 17 Mar 2010 10:40:38 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Wed, 17 Mar 2010 17:00:55 +0100
 
+x86, UV: Delete unneeded boot messages
 
-At some point, yes it could overflow, but for that to happen, we'd have
-to have accumulated over 4 seconds of time error between calls to
-update_wall_time. At a max error rate of 500ppm, that would mean over
-two hours of delay between calls.
+SGI:UV: Delete extra boot messages that describe the system
+topology. These messages are no longer useful.
 
-The time subsystem can try to accommodate reasonable stalls in the
-system, but i think there will always be windows in which KGDB could
-cause the system to not recover (ie: i know quite of bit of scsi
-hardware have heartbeat requirements, so I could imagine kgdb causing
-those watchdogs to trigger and reset the device).
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+LKML-Reference: <20100317154038.GA29346@sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/apic/x2apic_uv_x.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-One approach would be to have KGDB suspend the timekeeping core, much as
-is done over suspend/resume. This should be able to protect us from any
-overflows, but I suspect its unlikely that we'd want to go run other
-kernel stuff when breaking into KGDB.
-
-Thanks again for the testing. I'll try to send out an improved version
-of the fix for testing later today. If you could confirm it works as
-well, I'd appreciate it.
-
-thanks
--john
-
-
-
-
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 3740c8a..9a93b07 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -736,9 +736,6 @@ void __init uv_system_init(void)
+ 		uv_node_to_blade[nid] = blade;
+ 		uv_cpu_to_blade[cpu] = blade;
+ 		max_pnode = max(pnode, max_pnode);
+-
+-		printk(KERN_DEBUG "UV: cpu %d, apicid 0x%x, pnode %d, nid %d, lcpu %d, blade %d\n",
+-			cpu, apicid, pnode, nid, lcpu, blade);
+ 	}
+ 
+ 	/* Add blade/pnode info for nodes without cpus */
