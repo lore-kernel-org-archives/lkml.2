@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753076Ab0CQPkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 11:40:43 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:45110 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab0CQPkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 11:40:41 -0400
-Date: Wed, 17 Mar 2010 10:40:38 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: mingo@elte.hu, tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, UV: Delete unneeded boot messages
-Message-ID: <20100317154038.GA29346@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753201Ab0CQPk6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 11:40:58 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:54508 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752831Ab0CQPk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 11:40:56 -0400
+Subject: Re: checkpatch false positive
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1268839535.1652.43.camel@Joe-Laptop.home>
+References: <1268823629.1999.9.camel@localhost>
+	 <1268839535.1652.43.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 15:40:54 +0000
+Message-ID: <1268840454.1999.22.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SGI:UV Delete extra boot messages that describe the system topology.
-These messages are no longer useful.
+On Wed, 2010-03-17 at 08:25 -0700, Joe Perches wrote:
+> On Wed, 2010-03-17 at 11:00 +0000, Richard Kennedy wrote:
+> > I'm getting this error from checkpatch which is a false positive AFAICT.
+> > I don't see any other way to code this macro so maybe this rule
+> > shouldn't apply?.
+> > 
+> > 	ERROR: space prohibited before open square bracket '['
+> > 	#24: FILE: drivers/staging/wlan-ng/p80211wext.c:1685:
+> > 	+#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
+> 
+> While true that this is a false positive, hiding array indexing
+> brackets in a macro doesn't seem a good idea.
+> 
+> Maybe it'd be better to move the brackets to the use?
+> 
+> 
+err maybe ;)
 
-Signed-off-by: Jack Steiner <steiner@sgi.com>
+I copied it from driver/net/wireless/ipw2x00/ipw2200.c 
 
----
- arch/x86/kernel/apic/x2apic_uv_x.c |    3 ---
- 1 file changed, 3 deletions(-)
+It just reduces typing when initialising the array :-
 
-Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-03-17 01:50:18.000000000 -0500
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-03-17 10:04:35.000000000 -0500
-@@ -737,9 +737,6 @@ void __init uv_system_init(void)
- 		uv_node_to_blade[nid] = blade;
- 		uv_cpu_to_blade[cpu] = blade;
- 		max_pnode = max(pnode, max_pnode);
--
--		printk(KERN_DEBUG "UV: cpu %d, apicid 0x%x, pnode %d, nid %d, lcpu %d, blade %d\n",
--			cpu, apicid, pnode, nid, lcpu, blade);
- 	}
- 
- 	/* Add blade/pnode info for nodes without cpus */
+	#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
+	static iw_handler p80211wext_handlers[] = {
+		IW_IOCTL(SIOCSIWCOMMIT) = (iw_handler) p80211wext_siwcommit,
+		...
+
+Oh, having quickly looked at wireless.h, I see there is already a macro
+IW_IOCTL_IDX so I guess I should have used that!
+
+would something like this be better?
+
+	static iw_handler p80211wext_handlers[] = {
+		[IW_IOCTL_IDX(SIOCSIWCOMMIT)] = (iw_handler) p80211wext_siwcommit,
+		...
+
+regards
+Richard
+
+
