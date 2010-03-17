@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0CQQOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:14:52 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37531 "EHLO
+	id S1755050Ab0CQQPf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:15:35 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37741 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296Ab0CQQOr (ORCPT
+	with ESMTP id S1755006Ab0CQQP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:14:47 -0400
+	Wed, 17 Mar 2010 12:15:27 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
        Oren Laadan <orenl@cs.columbia.edu>
-Subject: [C/R v20][PATCH 36/96] deferqueue: generic queue to defer work
-Date: Wed, 17 Mar 2010 12:08:24 -0400
-Message-Id: <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
+Subject: [C/R v20][PATCH 47/96] c/r: export shmem_getpage() to support shared memory
+Date: Wed, 17 Mar 2010 12:08:35 -0400
+Message-Id: <1268842164-5590-48-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
@@ -54,309 +54,99 @@ References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-34-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-35-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-36-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-37-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-38-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-39-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-40-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-41-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-42-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-43-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-44-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-45-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-46-git-send-email-orenl@cs.columbia.edu>
+ <1268842164-5590-47-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a interface to postpone an action until the end of the entire
-checkpoint or restart operation. This is useful when during the
-scan of tasks an operation cannot be performed in place, to avoid
-the need for a second scan.
+Export functionality to retrieve specific pages from shared memory
+given an inode in shmem-fs; this will be used in the next two patches
+to provide support for c/r of shared memory.
 
-One use case is when restoring an ipc shared memory region that has
-been deleted (but is still attached), during restart it needs to be
-create, attached and then deleted. However, creation and attachment
-are performed in distinct locations, so deletion can not be performed
-on the spot. Instead, this work (delete) is deferred until later.
-(This example is in one of the following patches).
-
-This interface allows chronic procrastination in the kernel:
-
-deferqueue_create(void):
-    Allocates and returns a new deferqueue.
-
-deferqueue_run(deferqueue):
-    Executes all the pending works in the queue. Returns the number
-    of works executed, or an error upon the first error reported by
-    a deferred work.
-
-deferqueue_add(deferqueue, data, size, func, dtor):
-    Enqueue a deferred work. @function is the callback function to
-    do the work, which will be called with @data as an argument.
-    @size tells the size of data. @dtor is a destructor callback
-    that is invoked for deferred works remaining in the queue when
-    the queue is destroyed. NOTE: for a given deferred work, @dtor
-    is _not_ called if @func was already called (regardless of the
-    return value of the latter).
-
-deferqueue_destroy(deferqueue):
-    Free the deferqueue and any queued items while invoking the
-    @dtor callback for each queued item.
-
-Why aren't we using the existing kernel workqueue mechanism?  We need
-to defer to work until the end of the operation: not earlier, since we
-need other things to be in place; not later, to not block waiting for
-it. However, the workqueue schedules the work for 'some time later'.
-Also, the kernel workqueue may run in any task context, but we require
-many times that an operation be run in the context of some specific
-restarting task (e.g., restoring IPC state of a certain ipc_ns).
-
-Instead, this mechanism is a simple way for the c/r operation as a
-whole, and later a task in particular, to defer some action until
-later (but not arbitrarily later) _in the restore_ operation.
-
-Changelog[v19-rc1]
-  - [Matt Helsley] Check for valid destructor before calling it
-Changelog[v18]
-  - Interface to pass simple pointers as data with deferqueue
-Changelog[v17]
-  - Fix deferqueue_add() function
+mm/shmem.c:
+- shmem_getpage() and 'enum sgp_type' moved to linux/mm.h
 
 Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
 Acked-by: Serge E. Hallyn <serue@us.ibm.com>
 Tested-by: Serge E. Hallyn <serue@us.ibm.com>
 ---
- checkpoint/Kconfig         |    5 ++
- include/linux/deferqueue.h |   78 +++++++++++++++++++++++++++++++
- kernel/Makefile            |    1 +
- kernel/deferqueue.c        |  110 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 194 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/deferqueue.h
- create mode 100644 kernel/deferqueue.c
+ include/linux/mm.h |   11 +++++++++++
+ mm/shmem.c         |   15 ++-------------
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/checkpoint/Kconfig b/checkpoint/Kconfig
-index 21fc86b..4a2c845 100644
---- a/checkpoint/Kconfig
-+++ b/checkpoint/Kconfig
-@@ -2,10 +2,15 @@
- # implemented the hooks for processor state etc. needed by the
- # core checkpoint/restart code.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index bdeb0b5..b37a9f1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -337,6 +337,17 @@ void put_pages_list(struct list_head *pages);
  
-+config DEFERQUEUE
-+	bool
-+	default n
-+
- config CHECKPOINT
- 	bool "Checkpoint/restart (EXPERIMENTAL)"
- 	depends on CHECKPOINT_SUPPORT && EXPERIMENTAL
- 	depends on CGROUP_FREEZER
-+	select DEFERQUEUE
- 	help
- 	  Application checkpoint/restart is the ability to save the
- 	  state of a running application so that it can later resume
-diff --git a/include/linux/deferqueue.h b/include/linux/deferqueue.h
-new file mode 100644
-index 0000000..ea3b620
---- /dev/null
-+++ b/include/linux/deferqueue.h
-@@ -0,0 +1,78 @@
-+/*
-+ * deferqueue.h --- deferred work queue handling for Linux.
-+ */
-+
-+#ifndef _LINUX_DEFERQUEUE_H
-+#define _LINUX_DEFERQUEUE_H
-+
-+#include <linux/list.h>
-+#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+/*
-+ * This interface allows chronic procrastination in the kernel:
-+ *
-+ * deferqueue_create(void):
-+ *     Allocates and returns a new deferqueue.
-+ *
-+ * deferqueue_run(deferqueue):
-+ *     Executes all the pending works in the queue. Returns the number
-+ *     of works executed, or an error upon the first error reported by
-+ *     a deferred work.
-+ *
-+ * deferqueue_add(deferqueue, data, size, func, dtor):
-+ * 	Enqueue a deferred work. @function is the callback function to
-+ *      do the work, which will be called with @data as an argument.
-+ *      @size tells the size of data. @dtor is a destructor callback
-+ *      that is invoked for deferred works remaining in the queue when
-+ *      the queue is destroyed. NOTE: for a given deferred work, @dtor
-+ *      is _not_ called if @func was already called (regardless of the
-+ *      return value of the latter).
-+ *
-+ * deferqueue_destroy(deferqueue):
-+ *      Free the deferqueue and any queued items while invoking the
-+ *      @dtor callback for each queued item.
-+ *
-+ * The following helpers are useful when @data is a simple pointer:
-+ *
-+ * deferqueue_add_ptr(deferqueue, ptr, func, dtor):
-+ *	Enqueue a deferred work whos data is @ptr.
-+ *
-+ * deferqueue_data_ptr(data):
-+ *	Convert a deferqueue @data to a void * pointer.
-+ */
-+
-+
-+typedef int (*deferqueue_func_t)(void *);
-+
-+struct deferqueue_entry {
-+	deferqueue_func_t function;
-+	deferqueue_func_t destructor;
-+	struct list_head list;
-+	char data[0];
+ void split_page(struct page *page, unsigned int order);
+ 
++/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
++enum sgp_type {
++	SGP_READ,	/* don't exceed i_size, don't allocate page */
++	SGP_CACHE,	/* don't exceed i_size, may allocate page */
++	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
++	SGP_WRITE,	/* may exceed i_size, may allocate page */
 +};
 +
-+struct deferqueue_head {
-+	spinlock_t lock;
-+	struct list_head list;
-+};
++extern int shmem_getpage(struct inode *inode, unsigned long idx,
++			 struct page **pagep, enum sgp_type sgp, int *type);
 +
-+struct deferqueue_head *deferqueue_create(void);
-+void deferqueue_destroy(struct deferqueue_head *head);
-+int deferqueue_add(struct deferqueue_head *head, void *data, int size,
-+		   deferqueue_func_t func, deferqueue_func_t dtor);
-+int deferqueue_run(struct deferqueue_head *head);
-+
-+static inline int deferqueue_add_ptr(struct deferqueue_head *head, void *ptr,
-+				     deferqueue_func_t func,
-+				     deferqueue_func_t dtor)
-+{
-+	return deferqueue_add(head, &ptr, sizeof(ptr), func, dtor);
-+}
-+
-+static inline void *deferqueue_data_ptr(void *data)
-+{
-+	return *((void **) data);
-+}
-+
-+#endif
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 864ff75..3c2c303 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -24,6 +24,7 @@ CFLAGS_REMOVE_sched_clock.o = -pg
- CFLAGS_REMOVE_perf_event.o = -pg
- endif
+ /*
+  * Compound pages have a destructor function.  Provide a
+  * prototype for that function and accessor functions.
+diff --git a/mm/shmem.c b/mm/shmem.c
+index eef4ebe..d93c394 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -98,14 +98,6 @@ static struct vfsmount *shm_mnt;
+ /* Pretend that each entry is of this size in directory's i_size */
+ #define BOGO_DIRENT_SIZE 20
  
-+obj-$(CONFIG_DEFERQUEUE) += deferqueue.o
- obj-$(CONFIG_FREEZER) += freezer.o
- obj-$(CONFIG_PROFILING) += profile.o
- obj-$(CONFIG_SYSCTL_SYSCALL_CHECK) += sysctl_check.o
-diff --git a/kernel/deferqueue.c b/kernel/deferqueue.c
-new file mode 100644
-index 0000000..1204c8b
---- /dev/null
-+++ b/kernel/deferqueue.c
-@@ -0,0 +1,110 @@
-+/*
-+ *  Infrastructure to manage deferred work
-+ *
-+ *  This differs from a workqueue in that the work must be deferred
-+ *  until specifically run by the caller.
-+ *
-+ *  As the only user currently is checkpoint/restart, which has
-+ *  very simple usage, the locking is kept simple.  Adding rules
-+ *  is protected by the head->lock.  But deferqueue_run() is only
-+ *  called once, after all entries have been added.  So it is not
-+ *  protected.  Similarly, _destroy is only called once when the
-+ *  ckpt_ctx is releeased, so it is not locked or refcounted.  These
-+ *  can of course be added if needed by other users.
-+ *
-+ *  Why not use workqueue ?  We need to defer work until the end of an
-+ *  operation: not earlier, since we need other things to be in place;
-+ *  not later, to not block waiting for it. However, the workqueue
-+ *  schedules the work for 'some time later'. Also, workqueue may run
-+ *  in any task context, but we require many times that an operation
-+ *  be run in the context of some specific restarting task (e.g.,
-+ *  restoring IPC state of a certain ipc_ns).
-+ *
-+ *  Instead, this mechanism is a simple way for the c/r operation as a
-+ *  whole, and later a task in particular, to defer some action until
-+ *  later (but not arbitrarily later) _in the restore_ operation.
-+ *
-+ *  Copyright (C) 2009 Oren Laadan
-+ *
-+ *  This file is subject to the terms and conditions of the GNU General Public
-+ *  License.  See the file COPYING in the main directory of the Linux
-+ *  distribution for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/deferqueue.h>
-+
-+struct deferqueue_head *deferqueue_create(void)
-+{
-+	struct deferqueue_head *h = kmalloc(sizeof(*h), GFP_KERNEL);
-+	if (h) {
-+		spin_lock_init(&h->lock);
-+		INIT_LIST_HEAD(&h->list);
-+	}
-+	return h;
-+}
-+
-+void deferqueue_destroy(struct deferqueue_head *h)
-+{
-+	if (!list_empty(&h->list)) {
-+		struct deferqueue_entry *dq, *n;
-+
-+		pr_debug("%s: freeing non-empty queue\n", __func__);
-+		list_for_each_entry_safe(dq, n, &h->list, list) {
-+			if (dq->destructor)
-+				dq->destructor(dq->data);
-+			list_del(&dq->list);
-+			kfree(dq);
-+		}
-+	}
-+	kfree(h);
-+}
-+
-+int deferqueue_add(struct deferqueue_head *head, void *data, int size,
-+		   deferqueue_func_t func, deferqueue_func_t dtor)
-+{
-+	struct deferqueue_entry *dq;
-+
-+	dq = kmalloc(sizeof(*dq) + size, GFP_KERNEL);
-+	if (!dq)
-+		return -ENOMEM;
-+
-+	dq->function = func;
-+	dq->destructor = dtor;
-+	memcpy(dq->data, data, size);
-+
-+	pr_debug("%s: adding work %p func %p dtor %p\n",
-+		 __func__, dq, func, dtor);
-+	spin_lock(&head->lock);
-+	list_add_tail(&dq->list, &head->list);
-+	spin_unlock(&head->lock);
-+	return 0;
-+}
-+
-+/*
-+ * deferqueue_run - perform all work in the work queue
-+ * @head: deferqueue_head from which to run
-+ *
-+ * returns: number of works performed, or < 0 on error
-+ */
-+int deferqueue_run(struct deferqueue_head *head)
-+{
-+	struct deferqueue_entry *dq, *n;
-+	int nr = 0;
-+	int ret;
-+
-+	list_for_each_entry_safe(dq, n, &head->list, list) {
-+		pr_debug("doing work %p function %p\n", dq, dq->function);
-+		/* don't call destructor - function callback should do it */
-+		ret = dq->function(dq->data);
-+		if (ret < 0)
-+			pr_debug("wq function failed %d\n", ret);
-+		list_del(&dq->list);
-+		kfree(dq);
-+		nr++;
-+	}
-+
-+	return nr;
-+}
+-/* Flag allocation requirements to shmem_getpage and shmem_swp_alloc */
+-enum sgp_type {
+-	SGP_READ,	/* don't exceed i_size, don't allocate page */
+-	SGP_CACHE,	/* don't exceed i_size, may allocate page */
+-	SGP_DIRTY,	/* like SGP_CACHE, but set new page dirty */
+-	SGP_WRITE,	/* may exceed i_size, may allocate page */
+-};
+-
+ #ifdef CONFIG_TMPFS
+ static unsigned long shmem_default_max_blocks(void)
+ {
+@@ -118,9 +110,6 @@ static unsigned long shmem_default_max_inodes(void)
+ }
+ #endif
+ 
+-static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			 struct page **pagep, enum sgp_type sgp, int *type);
+-
+ static inline struct page *shmem_dir_alloc(gfp_t gfp_mask)
+ {
+ 	/*
+@@ -1213,8 +1202,8 @@ static inline struct mempolicy *shmem_get_sbmpol(struct shmem_sb_info *sbinfo)
+  * vm. If we swap it in we mark it dirty since we also free the swap
+  * entry since a page cannot live in both the swap and page cache
+  */
+-static int shmem_getpage(struct inode *inode, unsigned long idx,
+-			struct page **pagep, enum sgp_type sgp, int *type)
++int shmem_getpage(struct inode *inode, unsigned long idx,
++		  struct page **pagep, enum sgp_type sgp, int *type)
+ {
+ 	struct address_space *mapping = inode->i_mapping;
+ 	struct shmem_inode_info *info = SHMEM_I(inode);
 -- 
 1.6.3.3
 
