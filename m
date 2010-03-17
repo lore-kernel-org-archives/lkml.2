@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab0CQQxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:53:09 -0400
-Received: from verein.lst.de ([213.95.11.210]:37243 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab0CQQxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:53:07 -0400
-Date: Wed, 17 Mar 2010 17:52:29 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Avi Kivity <avi@redhat.com>
-Cc: Chris Webb <chris@arachsys.com>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Christoph Hellwig <hch@lst.de>, Kevin Wolf <kwolf@redhat.com>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot parameter
-Message-ID: <20100317165229.GA29548@lst.de>
-References: <20100315072214.GA18054@balbir.in.ibm.com> <4B9DE635.8030208@redhat.com> <20100315080726.GB18054@balbir.in.ibm.com> <4B9DEF81.6020802@redhat.com> <20100315202353.GJ3840@arachsys.com> <4B9F4CBD.3020805@redhat.com> <20100317152452.GZ31148@arachsys.com> <4BA101C5.9040406@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA101C5.9040406@redhat.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1752130Ab0CQQxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:53:46 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:48163 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab0CQQxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 12:53:44 -0400
+Message-ID: <4BA108E8.7070307@oracle.com>
+Date: Wed, 17 Mar 2010 09:52:56 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       randy.dunlap@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: rename PCI/PCI-DMA-mapping.txt to DMA-API-HOWTO.txt
+References: <20100317090657E.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100317090657E.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BA108EF.0022:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 06:22:29PM +0200, Avi Kivity wrote:
-> They should be reorderable.  Otherwise host filesystems on several 
-> volumes would suffer the same problems.
+On 03/16/10 17:07, FUJITA Tomonori wrote:
+> This patch renames PCI/PCI-DMA-mapping.txt to DMA-API-HOWTO.txt.
+> 
+> The commit 51e7364ef281e540371f084008732b13292622f0 "Documentation:
+> rename PCI-DMA-mapping.txt to DMA-API-HOWTO.txt" was supposed to do
+> this but it didn't.
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> ---
+>  Documentation/DMA-API-HOWTO.txt       |  758 +++++++++++++++++++++++++++++++++
+>  Documentation/PCI/PCI-DMA-mapping.txt |  758 ---------------------------------
+>  2 files changed, 758 insertions(+), 758 deletions(-)
+>  create mode 100644 Documentation/DMA-API-HOWTO.txt
+>  delete mode 100644 Documentation/PCI/PCI-DMA-mapping.txt
 
-They are reordable, just not as extremly as the the page cache.
-Remember that the request queue really is just a relatively small queue
-of outstanding I/O, and that is absolutely intentional.  Large scale
-_caching_ is done by the VM in the pagecache, with all the usual aging,
-pressure, etc algorithms applied to it.  The block devices have a
-relatively small fixed size request queue associated with it to
-facilitate request merging and limited reordering and having fully
-set up I/O requests for the device.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
+
+Thanks.
+-- 
+~Randy
