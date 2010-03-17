@@ -1,122 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754265Ab0CQQNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 12:13:08 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:37059 "EHLO
+	id S1754422Ab0CQQNN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 12:13:13 -0400
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:37065 "EHLO
 	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754087Ab0CQQNB (ORCPT
+	with ESMTP id S1754183Ab0CQQNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 12:13:01 -0400
+	Wed, 17 Mar 2010 12:13:05 -0400
 From: Oren Laadan <orenl@cs.columbia.edu>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
        linux-api@vger.kernel.org, Serge Hallyn <serue@us.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, containers@lists.linux-foundation.org,
-       Oren Laadan <orenl@cs.columbia.edu>, Matt Helsley <matthltc@us.ibm.com>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Cedric Le Goater <legoater@free.fr>
-Subject: [C/R v20][PATCH 18/96] cgroup freezer: interface to freeze a cgroup from within the kernel
-Date: Wed, 17 Mar 2010 12:08:06 -0400
-Message-Id: <1268842164-5590-19-git-send-email-orenl@cs.columbia.edu>
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: [C/R v20][PATCH 02/96] eclone (2/11): Have alloc_pidmap() return actual error code
+Date: Wed, 17 Mar 2010 12:07:50 -0400
+Message-Id: <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
+In-Reply-To: <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
 References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu>
  <1268842164-5590-2-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-3-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-4-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-5-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-6-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-7-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-8-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-18-git-send-email-orenl@cs.columbia.edu>
 X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add public interface to freeze a cgroup freezer given a task that
-belongs to that cgroup:  cgroup_freezer_make_frozen(task)
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 
-Freezing the root cgroup is not permitted. Freezing the cgroup to
-which current process belong is also not permitted.
+alloc_pidmap() can fail either because all pid numbers are in use or
+because memory allocation failed.  With support for setting a specific
+pid number, alloc_pidmap() would also fail if either the given pid
+number is invalid or in use.
 
-This will be used for restart(2) to be able to leave the restarted
-processes in a frozen state, instead of resuming execution.
+Rather than have callers assume -ENOMEM, have alloc_pidmap() return
+the actual error.
 
-This is useful for debugging, if the user would like to attach a
-debugger to the restarted task(s).
+Changelog[v1]:
+	- [Oren Laadan] Rebase to kernel 2.6.33
 
-It is also useful if the restart procedure would like to perform
-additional setup once the tasks are restored but before they are
-allowed to proceed execution.
-
-Signed-off-by: Oren Laadan <orenl@cs.columbia.edu>
-CC: Matt Helsley <matthltc@us.ibm.com>
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Cedric Le Goater <legoater@free.fr>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Reviewed-by: Oren Laadan <orenl@cs.columbia.edu>
 ---
- include/linux/freezer.h |    1 +
- kernel/cgroup_freezer.c |   27 +++++++++++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+ kernel/fork.c |    5 +++--
+ kernel/pid.c  |   10 ++++++----
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-index 3d32641..0cb22cb 100644
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -68,6 +68,7 @@ extern int cgroup_freezing_or_frozen(struct task_struct *task);
- extern int in_same_cgroup_freezer(struct task_struct *p, struct task_struct *q);
- extern int cgroup_freezer_begin_checkpoint(struct task_struct *task);
- extern void cgroup_freezer_end_checkpoint(struct task_struct *task);
-+extern int cgroup_freezer_make_frozen(struct task_struct *task);
- #else /* !CONFIG_CGROUP_FREEZER */
- static inline int cgroup_freezing_or_frozen(struct task_struct *task)
- {
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index dd87010..efd4597 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -479,4 +479,31 @@ void cgroup_freezer_end_checkpoint(struct task_struct *task)
- 	 */
- 	WARN_ON(freezer_checkpointing(task, CGROUP_FROZEN) != CGROUP_CHECKPOINTING);
+diff --git a/kernel/fork.c b/kernel/fork.c
+index f88bd98..e9cf524 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1167,10 +1167,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto bad_fork_cleanup_io;
+ 
+ 	if (pid != &init_struct_pid) {
+-		retval = -ENOMEM;
+ 		pid = alloc_pid(p->nsproxy->pid_ns);
+-		if (!pid)
++		if (IS_ERR(pid)) {
++			retval = PTR_ERR(pid);
+ 			goto bad_fork_cleanup_io;
++		}
+ 
+ 		if (clone_flags & CLONE_NEWPID) {
+ 			retval = pid_ns_prepare_proc(p->nsproxy->pid_ns);
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 39292e6..252babf 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -160,7 +160,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 	for (i = 0; i <= max_scan; ++i) {
+ 		if (unlikely(!map->page))
+ 			if (alloc_pidmap_page(map) < 0)
+-				break;
++				return -ENOMEM;
+ 		if (likely(atomic_read(&map->nr_free))) {
+ 			do {
+ 				if (!test_and_set_bit(offset, map->page)) {
+@@ -191,7 +191,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
+ 		}
+ 		pid = mk_pid(pid_ns, map, offset);
+ 	}
+-	return -1;
++	return -EBUSY;
  }
-+
-+int cgroup_freezer_make_frozen(struct task_struct *task)
-+{
-+	struct freezer *freezer;
-+	struct cgroup_subsys_state *css;
-+	int ret = -ENODEV;
-+
-+	task_lock(task);
-+	css = task_subsys_state(task, freezer_subsys_id);
-+	css_get(css); /* make sure freezer doesn't go away */
-+	freezer = container_of(css, struct freezer, css);
-+	task_unlock(task);
-+
-+	/* Never freeze the root cgroup */
-+	if (!test_bit(CSS_ROOT, &css->flags) &&
-+	    cgroup_lock_live_group(css->cgroup)) {
-+		/* do not freeze outselves, ei ?! */
-+		if (css != task_subsys_state(current, freezer_subsys_id))
-+			ret = freezer_change_state(css->cgroup, CGROUP_FROZEN);
-+		else
-+			ret = -EPERM;
-+		cgroup_unlock();
+ 
+ int next_pidmap(struct pid_namespace *pid_ns, int last)
+@@ -260,8 +260,10 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+ 	struct upid *upid;
+ 
+ 	pid = kmem_cache_alloc(ns->pid_cachep, GFP_KERNEL);
+-	if (!pid)
++	if (!pid) {
++		pid = ERR_PTR(-ENOMEM);
+ 		goto out;
 +	}
-+
-+	css_put(css);
-+	return ret;
-+}
- #endif /* CONFIG_CHECKPOINT */
+ 
+ 	tmp = ns;
+ 	for (i = ns->level; i >= 0; i--) {
+@@ -295,7 +297,7 @@ out_free:
+ 		free_pidmap(pid->numbers + i);
+ 
+ 	kmem_cache_free(ns->pid_cachep, pid);
+-	pid = NULL;
++	pid = ERR_PTR(nr);
+ 	goto out;
+ }
+ 
 -- 
 1.6.3.3
 
