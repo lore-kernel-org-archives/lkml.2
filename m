@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab0CQWYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:24:20 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:8751 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab0CQWYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:24:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=SJ/O8d5RiCnAmikDlOjvmf44OKxpm505T6wWpiGJRR9eEABZ7MRHuVcSfB+e5xJxT
-	efy/92NYAcLMAAwhojTIQ==
-Message-ID: <4ba1568b.15185e0a.182a.7802@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 17 Mar 2010 23:21:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com
-Subject: [PATCH] perf_events: fix resource leak in x86 __hw_perf_event_init()
-X-System-Of-Record: true
+	id S1756195Ab0CQWa1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:30:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54340 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756134Ab0CQWa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 18:30:26 -0400
+Date: Thu, 18 Mar 2010 09:30:19 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sage Weil <sage@newdream.net>
+Cc: Neil Brown <neilb@suse.de>, Greg KH <greg@kroah.com>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-Id: <20100318093019.f271bdd5.sfr@canb.auug.org.au>
+In-Reply-To: <Pine.LNX.4.64.1003170847110.25675@cobra.newdream.net>
+References: <20100317154145.bd9fca16.sfr@canb.auug.org.au>
+	<20100317182136.0f2ab805@notabene.brown>
+	<Pine.LNX.4.64.1003170847110.25675@cobra.newdream.net>
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	If reserve_pmc_hardware() succeeds but reserve_ds_buffers()
-	fails, then we need to release_pmc_hardware. It won't be done
-	by the destroy() callback because we return before setting it
-	in case of error.
+--Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Signed-off-by: Stephane Eranian <eranian@google.com>
+Hi guys,
 
---
- perf_event.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+On Wed, 17 Mar 2010 08:51:49 -0700 (PDT) Sage Weil <sage@newdream.net> wrot=
+e:
+>
+> On Wed, 17 Mar 2010, Neil Brown wrote:
+>=20
+> > I would say this is correct.
+>=20
+> Yeah, the fix is good, thanks Stephen!  I'll add it to my tree shortly.
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 978d297..8d9b152 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -455,8 +455,11 @@ static int __hw_perf_event_init(struct perf_event *event)
- 		if (atomic_read(&active_events) == 0) {
- 			if (!reserve_pmc_hardware())
- 				err = -EBUSY;
--			else
-+			else {
- 				err = reserve_ds_buffers();
-+				if (err)
-+					release_pmc_hardware();
-+			}
- 		}
- 		if (!err)
- 			atomic_inc(&active_events);
+Thanks for the confirmation.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkuhV/sACgkQjjKRsyhoI8zSogCfVkNr/7gEEkQBKyUWvaV1TxrT
+ZrcAnRUzfPb9MF4wEx/4Y/F39KVRMBvA
+=O9+4
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Mar_2010_09_30_19_+1100_JO+GN6tpEPTXun1q--
