@@ -1,55 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0CQV0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 17:26:21 -0400
-Received: from smtpgcba1.buenosaires.gob.ar ([200.89.135.225]:49086 "EHLO
-	smtpgcba1.buenosaires.gob.ar" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754845Ab0CQV0S (ORCPT
+	id S1754681Ab0CQVdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 17:33:32 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:53588 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab0CQVda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 17:26:18 -0400
-X-Greylist: delayed 512 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Mar 2010 17:26:17 EDT
-Message-ID: <20100317181723.88480b88s77mrbvn@mail.buenosaires.gob.ar>
-Date: Wed, 17 Mar 2010 18:17:23 -0300
-From: "Mr.Patrick Adams" <mrpatrick.adams@gmail.com>
-Reply-to: mrpatrick.adams47@gmail.com
-To: undisclosed-recipients:;
-Subject: Winning Notification
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.5)
-X-GCBA-Alerce-Info: Al
-X-MailScanner-Id: a07a31d52b4839807b76491db5f584cd
-X-GCBA-Alerce: limpio
-X-GCBA-Alerce-From: mrpatrick.adams@gmail.com
+	Wed, 17 Mar 2010 17:33:30 -0400
+X-SENDER-IP: [83.226.248.128]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArQ5AKfnoEtT4viAPGdsb2JhbACHYJMoDAEBAQE3LatnjWmEdgQ
+X-IronPort-AV: E=Sophos;i="4.51,261,1267398000"; 
+   d="scan'208";a="52170104"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: phy_calibration.h coding style cleanup.
+Date: Wed, 17 Mar 2010 22:33:27 +0100
+Message-Id: <1268861607-11039-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I fixed all checkpatch.pl problems, removed versioning comments and
+"commented away" code.
 
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/phy_calibration.h |  177 +++++++++++++----------------
+ 1 files changed, 77 insertions(+), 100 deletions(-)
 
-  Dear E-mail User,
-Your  email has just won the sum of £750,000.00 GBP in cash credited  
-to a file in the just concluded Irish Lottery International Award  
-Programme held 10th of march,2010
-====================================
-Your  e-mail address attached to:
-Winner Pin No:5388/10.
-Secret No:089188/10
-Winning Date: 10th of march,2010
-=============================================
-1. Full Name 2. Address: 3.Age/Gender 4. Occupation 5.Nationality  
-6.Phone Number 7. Have you won a lotttery before?(YES/NO)8.Amount Won?
-Send details to Fiduciary Agent: Dr.Culverton Humphery
-Tel: +44(0)703 595 7792
-Email:mrpatrick.adams47@gmail.com
-
-Note:All Reponses should be sent to Agent via  
-email:mrpatrick.adams47@gmail.com
-Online Co-Ordinator
-Mr.Patrick Adams
+diff --git a/drivers/staging/winbond/phy_calibration.h b/drivers/staging/winbond/phy_calibration.h
+index 51c8fde..3032031 100644
+--- a/drivers/staging/winbond/phy_calibration.h
++++ b/drivers/staging/winbond/phy_calibration.h
+@@ -3,105 +3,82 @@
+ 
+ #include "wbhal_f.h"
+ 
+-// 20031229 Turbo add
+-#define REG_AGC_CTRL1               0x1000
+-#define REG_AGC_CTRL2               0x1004
+-#define REG_AGC_CTRL3               0x1008
+-#define REG_AGC_CTRL4               0x100C
+-#define REG_AGC_CTRL5               0x1010
+-#define REG_AGC_CTRL6               0x1014
+-#define REG_AGC_CTRL7               0x1018
+-#define REG_AGC_CTRL8               0x101C
+-#define REG_AGC_CTRL9               0x1020
+-#define REG_AGC_CTRL10              0x1024
+-#define REG_CCA_CTRL                0x1028
+-#define REG_A_ACQ_CTRL              0x102C
+-#define REG_B_ACQ_CTRL              0x1030
+-#define REG_A_TXRX_CTRL             0x1034
+-#define REG_B_TXRX_CTRL             0x1038
+-#define REG_A_TX_COEF3              0x103C
+-#define REG_A_TX_COEF2              0x1040
+-#define REG_A_TX_COEF1              0x1044
+-#define REG_B_TX_COEF2              0x1048
+-#define REG_B_TX_COEF1              0x104C
+-#define REG_MODE_CTRL               0x1050
+-#define REG_CALIB_DATA              0x1054
+-#define REG_IQ_ALPHA                0x1058
+-#define REG_DC_CANCEL               0x105C
+-#define REG_WTO_READ                0x1060
+-#define REG_OFFSET_READ             0x1064
+-#define REG_CALIB_READ1             0x1068
+-#define REG_CALIB_READ2             0x106C
+-#define REG_A_FREQ_EST              0x1070
+-
+-
+-
+-
+-//  20031101 Turbo add
+-#define MASK_AMER_OFF_REG          BIT(31)
+-
+-#define MASK_BMER_OFF_REG          BIT(31)
+-
+-#define MASK_LNA_FIX_GAIN          (BIT(3)|BIT(4))
+-#define MASK_AGC_FIX               BIT(1)
+-
+-#define MASK_AGC_FIX_GAIN          0xFF00
+-
+-#define MASK_ADC_DC_CAL_STR        BIT(10)
+-#define MASK_CALIB_START           BIT(4)
+-#define MASK_IQCAL_TONE_SEL        (BIT(3)|BIT(2))
+-#define MASK_IQCAL_MODE            (BIT(1)|BIT(0))
+-
+-#define MASK_TX_CAL_0              0xF0000000
+-#define TX_CAL_0_SHIFT             28
+-#define MASK_TX_CAL_1              0x0F000000
+-#define TX_CAL_1_SHIFT             24
+-#define MASK_TX_CAL_2              0x00F00000
+-#define TX_CAL_2_SHIFT             20
+-#define MASK_TX_CAL_3              0x000F0000
+-#define TX_CAL_3_SHIFT             16
+-#define MASK_RX_CAL_0              0x0000F000
+-#define RX_CAL_0_SHIFT             12
+-#define MASK_RX_CAL_1              0x00000F00
+-#define RX_CAL_1_SHIFT             8
+-#define MASK_RX_CAL_2              0x000000F0
+-#define RX_CAL_2_SHIFT             4
+-#define MASK_RX_CAL_3              0x0000000F
+-#define RX_CAL_3_SHIFT             0
+-
+-#define MASK_CANCEL_DC_I           0x3E0
+-#define CANCEL_DC_I_SHIFT          5
+-#define MASK_CANCEL_DC_Q           0x01F
+-#define CANCEL_DC_Q_SHIFT          0
+-
+-// LA20040210 kevin
+-//#define MASK_ADC_DC_CAL_I(x)       (((x)&0x1FE00)>>9)
+-//#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x1FF)
+-#define MASK_ADC_DC_CAL_I(x)       (((x)&0x0003FE00)>>9)
+-#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x000001FF)
+-
+-// LA20040210 kevin (Turbo has wrong definition)
+-//#define MASK_IQCAL_TONE_I          0x7FFC000
+-//#define SHIFT_IQCAL_TONE_I(x)      ((x)>>13)
+-//#define MASK_IQCAL_TONE_Q          0x1FFF
+-//#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>0)
+-#define MASK_IQCAL_TONE_I          0x00001FFF
+-#define SHIFT_IQCAL_TONE_I(x)      ((x)>>0)
+-#define MASK_IQCAL_TONE_Q          0x03FFE000
+-#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>13)
+-
+-// LA20040210 kevin (Turbo has wrong definition)
+-//#define MASK_IQCAL_IMAGE_I         0x7FFC000
+-//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>13)
+-//#define MASK_IQCAL_IMAGE_Q         0x1FFF
+-//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>0)
+-
+-//#define MASK_IQCAL_IMAGE_I         0x00001FFF
+-//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>0)
+-//#define MASK_IQCAL_IMAGE_Q         0x03FFE000
+-//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>13)
+-
+-void phy_set_rf_data(  struct hw_data * pHwData,  u32 index,  u32 value );
+-#define phy_init_rf( _A )	//RFSynthesizer_initial( _A )
++#define REG_AGC_CTRL1		0x1000
++#define REG_AGC_CTRL2		0x1004
++#define REG_AGC_CTRL3		0x1008
++#define REG_AGC_CTRL4		0x100C
++#define REG_AGC_CTRL5		0x1010
++#define REG_AGC_CTRL6		0x1014
++#define REG_AGC_CTRL7		0x1018
++#define REG_AGC_CTRL8		0x101C
++#define REG_AGC_CTRL9		0x1020
++#define REG_AGC_CTRL10		0x1024
++#define REG_CCA_CTRL		0x1028
++#define REG_A_ACQ_CTRL		0x102C
++#define REG_B_ACQ_CTRL		0x1030
++#define REG_A_TXRX_CTRL		0x1034
++#define REG_B_TXRX_CTRL		0x1038
++#define REG_A_TX_COEF3		0x103C
++#define REG_A_TX_COEF2		0x1040
++#define REG_A_TX_COEF1		0x1044
++#define REG_B_TX_COEF2		0x1048
++#define REG_B_TX_COEF1		0x104C
++#define REG_MODE_CTRL		0x1050
++#define REG_CALIB_DATA		0x1054
++#define REG_IQ_ALPHA		0x1058
++#define REG_DC_CANCEL		0x105C
++#define REG_WTO_READ		0x1060
++#define REG_OFFSET_READ		0x1064
++#define REG_CALIB_READ1		0x1068
++#define REG_CALIB_READ2		0x106C
++#define REG_A_FREQ_EST		0x1070
++
++
++#define MASK_AMER_OFF_REG	BIT(31)
++
++#define MASK_BMER_OFF_REG	BIT(31)
++
++#define MASK_LNA_FIX_GAIN	(BIT(3) | BIT(4))
++#define MASK_AGC_FIX		BIT(1)
++
++#define MASK_AGC_FIX_GAIN	0xFF00
++
++#define MASK_ADC_DC_CAL_STR	BIT(10)
++#define MASK_CALIB_START	BIT(4)
++#define MASK_IQCAL_TONE_SEL	(BIT(3) | BIT(2))
++#define MASK_IQCAL_MODE		(BIT(1) | BIT(0))
++
++#define MASK_TX_CAL_0		0xF0000000
++#define TX_CAL_0_SHIFT		28
++#define MASK_TX_CAL_1		0x0F000000
++#define TX_CAL_1_SHIFT		24
++#define MASK_TX_CAL_2		0x00F00000
++#define TX_CAL_2_SHIFT		20
++#define MASK_TX_CAL_3		0x000F0000
++#define TX_CAL_3_SHIFT		16
++#define MASK_RX_CAL_0		0x0000F000
++#define RX_CAL_0_SHIFT		12
++#define MASK_RX_CAL_1		0x00000F00
++#define RX_CAL_1_SHIFT		8
++#define MASK_RX_CAL_2		0x000000F0
++#define RX_CAL_2_SHIFT		4
++#define MASK_RX_CAL_3		0x0000000F
++#define RX_CAL_3_SHIFT		0
++
++#define MASK_CANCEL_DC_I	0x3E0
++#define CANCEL_DC_I_SHIFT	5
++#define MASK_CANCEL_DC_Q	0x01F
++#define CANCEL_DC_Q_SHIFT	0
++
++#define MASK_ADC_DC_CAL_I(x)	(((x) & 0x0003FE00) >> 9)
++#define MASK_ADC_DC_CAL_Q(x)	((x) & 0x000001FF)
++
++#define MASK_IQCAL_TONE_I	0x00001FFF
++#define SHIFT_IQCAL_TONE_I(x)	((x) >> 0)
++#define MASK_IQCAL_TONE_Q	0x03FFE000
++#define SHIFT_IQCAL_TONE_Q(x)	((x) >> 13)
++
++void phy_set_rf_data(struct hw_data *pHwData, u32 index, u32 value);
++#define phy_init_rf(_A)		/* RFSynthesizer_initial(_A) */
+ 
+ #endif
+-- 
+1.7.0.2
 
