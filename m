@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab0CQJw6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 05:52:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41438 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab0CQJw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 05:52:56 -0400
-Date: Wed, 17 Mar 2010 10:52:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to lock
-Message-ID: <20100317095230.GD17146@elte.hu>
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
- <1268590435.9440.8.camel@laptop>
- <20100317013236.GB5258@nowhere>
+	id S1754059Ab0CQJxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 05:53:33 -0400
+Received: from mail-iw0-f176.google.com ([209.85.223.176]:40735 "EHLO
+	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab0CQJxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 05:53:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=oh611pb7vy0dTkzQvcsa1SK256dGNoYS6kN9OpBeS4UsxeB9P6N2Bk5HkqsSYqOgvu
+         elRM16oTj+a6Y0dW4kzO7tE7lnGZkqKJXeFYnNcNYRhTcF/L88632S6O05SA63Cn2opC
+         tCUn4g7Zropy01vSnvfFQ4dDiWTCrs84ha/3I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100317013236.GB5258@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+Date: Wed, 17 Mar 2010 05:53:30 -0400
+Message-ID: <5d592f661003170253h2a34219cif6d560af6454c8a6@mail.gmail.com>
+Subject: Can not get 'function_graph' for
+From: Ryan Wang <openspace.wang@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+        I have build 2.6.33.1 with ftrace on, but after reboot
+I cannot get function_graph from available_tracers.
+===============
+# .config
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_TRACER_MAX_TRACE=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_IRQSOFF_TRACER=y
+CONFIG_SYSPROF_TRACER=y
+CONFIG_SCHED_TRACER=y
+CONFIG_BOOT_TRACER=y
+CONFIG_BRANCH_TRACER=y
+# CONFIG_POWER_TRACER is not set
+CONFIG_KSYM_TRACER=y
+# CONFIG_PROFILE_KSYM_TRACER is not set
+CONFIG_STACK_TRACER=y
+CONFIG_WORKQUEUE_TRACER=y
 
-> > You add chained indirect calls into all lock ops, that's got to hurt.
-> 
-> Well, the idea was not bad at the first glance. It was separating lockdep 
-> and lock events codes.
-> 
-> But indeed, the indirect calls plus the locking are not good for such a fast 
-> path.
 
-What would be nice to have is some sort of dynamic patching approach to enable 
-_both_ lockdep, lockstat and perf lock.
-
-If TRACE_EVENT() tracepoints were patchable we could use them. (but they arent 
-right now)
-
-	Ingo
+======================================
+# cat available_tracers
+ksym_tracer blk kmemtrace branch mmiotrace wakeup_rt wakeup irqsoff
+function sched_switch initcall nop
