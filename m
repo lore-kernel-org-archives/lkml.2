@@ -1,54 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab0CQWIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 18:08:51 -0400
-Received: from ey-out-2122.google.com ([74.125.78.24]:6552 "EHLO
-	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab0CQWIu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 18:08:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=R/rlmIygSY56myDLrc8Zw3P43mD30ZGgZ9AnxGxP7pHh17GdNawcWthTrgDh+T2O67
-         BizZqg8+cnLe2bMxwx4bSc5hYl/9pnoylmL/pzk6TYXLWpNJV720Is6puJH3cnK1qhPe
-         o0j+h+fv9/OUlR8sn6ZY3mcIxM4/3uo94M55s=
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH 2/9] USB: cp210x: increase the bulk-out buffer size to 256 byte
-Date: Wed, 17 Mar 2010 23:00:38 +0100
-Message-Id: <1268863245-17230-3-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1268863245-17230-1-git-send-email-jhovold@gmail.com>
-References: <1268863245-17230-1-git-send-email-jhovold@gmail.com>
+	id S1756088Ab0CQWNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 18:13:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:54868 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755841Ab0CQWNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 18:13:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,261,1267430400"; 
+   d="scan'208";a="605358193"
+Subject: Re: [PATCH] drivers/net/wimax/i2400m/fw.c fix possible double free
+From: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+To: Darren Jenkins <darrenrjenkins@gmail.com>
+Cc: David Miller <davem@davemloft.net>, linux-wimax <linux-wimax@intel.com>,
+       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+       "Kao, Cindy H" <cindy.h.kao@intel.com>,
+       "Brandewie, Dirk J" <dirk.j.brandewie@intel.com>,
+       "wimax@linuxwimax.org" <wimax@linuxwimax.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1268829638.10618.28.camel@ICE-BOX>
+References: <1268829638.10618.28.camel@ICE-BOX>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Mar 2010 15:10:41 -0700
+Message-ID: <1268863841.2292.7.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase the bulk-out buffer size from 64 to 256 byte.
+On Wed, 2010-03-17 at 05:40 -0700, Darren Jenkins wrote: 
+> On Wed, Mar 17, 2010 at 8:14 AM, David Miller <davem@davemloft.net>
+> wrote:
+> 
+> > Therefore the krealloc() failure handling in this driver should NULL
+> > out i2400m->fw_hdrs and that will fix the double kfree problem as well
+> > as trap any stray references.
+> 
+> Yes that is a much better Idea. Thanks for the advice. 
+> It also fixes the i2400m_barker_db problem that I didn't notice before.
+> 
+> 
+> Fix double free on krealloc() failure by zeroing pointer
 
-This gives a significant increase in throughput already at 1Mbaud
-(e.g. 710 instead of 640 KB/s) as well as lowered CPU usage.
+If krealloc() fails to aallocate a new pointer, the old block is
+unmodified, so by doing this you are leaking a buffer allocation.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/usb/serial/cp210x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I think this should be solved at the site where i2400m_zrealloc_2x() is
+called, with a 
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index ec9b044..e344000 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -138,6 +138,7 @@ static struct usb_serial_driver cp210x_device = {
- 	.usb_driver		= &cp210x_driver,
- 	.id_table		= id_table,
- 	.num_ports		= 1,
-+	.bulk_out_size		= 256,
- 	.open			= cp210x_open,
- 	.close			= cp210x_close,
- 	.break_ctl		= cp210x_break_ctl,
--- 
-1.7.0.2
+if (result < 0) {
+kfree(i2400m->fw_hdrs);
+i2400m->fw_hdrs = NULL;
+goto error_zrealloc;
+}
+
+or any other better fix. I am hesitant of having zrealloc_2x free the
+original pointer because it breaks the traditional semantics that come
+along being called 'realloc' (realloc if successful, keep the original
+if not).
+
+Am I missing anything?
+
+
+> coverity CID: 13455
+> 
+> Signed-off-by: Darren Jenkins <darrenrjenkins@gmail.com>
+> ---
+>  drivers/net/wimax/i2400m/fw.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/wimax/i2400m/fw.c b/drivers/net/wimax/i2400m/fw.c
+> index 25c24f0..9f3b594 100644
+> --- a/drivers/net/wimax/i2400m/fw.c
+> +++ b/drivers/net/wimax/i2400m/fw.c
+> @@ -232,8 +232,9 @@ int i2400m_zrealloc_2x(void **ptr, size_t *_count, size_t el_size,
+>  		*_count = new_count;
+>  		*ptr = nptr;
+>  		return 0;
+> -	} else
+> -		return -ENOMEM;
+> +	}
+> +	*ptr = NULL;
+> +	return -ENOMEM;
+>  }
+>  
+> 
+
+
 
