@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab0CQJOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 05:14:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14283 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753539Ab0CQJOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 05:14:30 -0400
-Message-ID: <4BA09D5D.5090602@redhat.com>
-Date: Wed, 17 Mar 2010 02:14:05 -0700
-From: Ulrich Drepper <drepper@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-DE; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
+	id S1753866Ab0CQJRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 05:17:08 -0400
+Received: from ey-out-2122.google.com ([74.125.78.24]:39947 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab0CQJRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 05:17:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eT/rek8U1yLtwT6emBKnztCZRxIhHpZBjsPaaFyrXPyej5NLljVD9ge00NWa0CKPKL
+         4V1mN6KXf/QinluQgPav0tBV6I5iMTHE2ylPswN0xW/k1mJWl3eEovSHIyvwfThkl+yx
+         j5B5y3RIu2HtnwrWgnpA3cPhn5G44n6pw8qxc=
+Date: Wed, 17 Mar 2010 10:16:59 +0100
+From: Johan Hovold <jhovold@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Peter Feuerer <peter@piie.net>, Oliver Neukum <oliver@neukum.org>
+Subject: Re: [PATCH v2] USB: pl2303: switch to generic write implementation
+Message-ID: <20100317091659.GC18570@localhost>
+References: <201003031608.20277.oliver@neukum.org>
+ <1267701172-9549-1-git-send-email-jhovold@gmail.com>
+ <20100315232004.GB21339@kroah.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: munroesj@us.ibm.com, "H. Peter Anvin" <hpa@zytor.com>,
-       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel@teksavvy.com, torvalds@linux-foundation.org
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-References: <20100315134449.GB1653@linux-mips.org>	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>	 <20100315.120004.209998642.davem@davemloft.net>	 <4B9E8D67.8040209@zytor.com>  <1268685311.2335.38.camel@pasglop>	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com> <1268816179.2335.187.camel@pasglop>
-In-Reply-To: <1268816179.2335.187.camel@pasglop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100315232004.GB21339@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
-On 03/17/2010 01:56 AM, Benjamin Herrenschmidt wrote:
->>  - You keep the existing syscall() exported by glibc for binary
->> compatibility
+On Mon, Mar 15, 2010 at 04:20:05PM -0700, Greg KH wrote:
+> On Thu, Mar 04, 2010 at 12:12:52PM +0100, Johan Hovold wrote:
+> > Replace custom fifo-based write implementation with the generic
+> > kfifo-based one.
 > 
->>  - You add a new __syscall() (or whatever you want to name it) that adds
->> a dummy argument at the beginning, and whose implementation shifts
->> everything by 2 instead of 1 argument before calling into the kernel
-> 
->>  - You define in unistd.h or whatever is relevant, a macro that does:
-> 
->> #define syscall(__sysno, __args..) __syscall(0, _sysno, __args)
-> 
->> I believe that should cover it, at least for powerpc, possibly for other
->> archs too though as I said, I may have missed something there.
+> What kernel is this patch against?  For some reason it doesn't apply to
+> my tree right now :(
+ 
+It's against 2.6.33 (the bug report in question was against 2.6.32.9 so
+I figured I'd rebase it against stable at least).
 
-How can this possibly be the case?  This will screw people who currently
-work around the ppc limitations of the existing syscall.
+> Care to respin it?
 
-Just leave it alone.
+I'll submit it along with some other patches shortly.
 
-- -- 
-➧ Ulrich Drepper ➧ Red Hat, Inc. ➧ 444 Castro St ➧ Mountain View, CA ❖
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+Thanks,
+Johan
 
-iEYEARECAAYFAkugnV0ACgkQ2ijCOnn/RHRL4gCeIY0SLDCgLqtVvuMw+pvCzkwE
-3MIAoJQRK5Mc+WtC/Wz9tPFPy4X+EALe
-=lexw
------END PGP SIGNATURE-----
