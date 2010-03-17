@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914Ab0CQBr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Mar 2010 21:47:56 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:44228 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751628Ab0CQBry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Mar 2010 21:47:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=F+wj5mNoEmOkYjOUBbHcj1DTi9rihxga1PyAPCe2jDxalfhhtF5zXIC5J5yjaEtFx+
-         USCkkwfiCkWqm5aRI28wwFnIwc0rL6z3Xh31ew2JplWUKuVpK5aVozcZuI07cGFnzN6m
-         IsbkQO37qMmMBEZHB/9zmrG8EUv5IMhKRxFok=
-Date: Wed, 17 Mar 2010 02:47:56 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
-	lock
-Message-ID: <20100317014755.GC5258@nowhere>
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752058Ab0CQBwM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Mar 2010 21:52:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44986 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab0CQBwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Mar 2010 21:52:10 -0400
+Date: Wed, 17 Mar 2010 12:52:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Ben Blum <bblum@andrew.cmu.edu>, Li Zefan <lizf@cn.fujitsu.com>
+Subject: linux-next: manual merge of the block tree with Linus' tree
+Message-Id: <20100317125200.5deb72ba.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__17_Mar_2010_12_52_00_+1100_SjcB.D_1NLNbX_WS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 14, 2010 at 07:38:37PM +0900, Hitoshi Mitake wrote:
-> I implemented it on the branch perf/inject of Frederic's random-tracing tree.
-> Because the branch is hottest place of lock and tracing :)
+--Signature=_Wed__17_Mar_2010_12_52_00_+1100_SjcB.D_1NLNbX_WS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Jens,
 
-Ouch! You shouldn't do this. The patches inside were
-trials submitted for review and the resulting discussion
-concluded that the injection must be redesigned.
+Today's linux-next merge of the block tree got a conflict in
+block/Kconfig between commit 67523c48aa74d5637848edeccf285af1c60bf14a
+("cgroups: blkio subsystem as module") from Linus' tree and commit
+910ac735bad53ce54741a72a5b19ab69794ae069 ("block: make CONFIG_BLK_CGROUP
+visible") from the block tree.
 
-More generally I don't recommend you to base your patches
-on my tree. I use it as a buffer when I send patches
-for review or for pull requests.
+I used the block tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-The branches inside can be randomly rebased (unless a
-branch is waiting to be pulled) and they are pretty async
-with the -tip tree.
+--Signature=_Wed__17_Mar_2010_12_52_00_+1100_SjcB.D_1NLNbX_WS
+Content-Type: application/pgp-signature
 
-The hottest and most sync tree on which you should base your patches
-for perf is:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
-	perf/core
+iEYEARECAAYFAkugNcAACgkQjjKRsyhoI8zSLACfRqN1d1f2PUc7isufoIGmqPbY
+bkQAoIhn41pEb2L1/U7R8WNHF3M/D5um
+=D0z9
+-----END PGP SIGNATURE-----
 
-With that you have best chances to work on a sane and up-to-date
-base.
-
-Thanks.
-
+--Signature=_Wed__17_Mar_2010_12_52_00_+1100_SjcB.D_1NLNbX_WS--
