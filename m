@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655Ab0CQTaN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 15:30:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31923 "EHLO mx1.redhat.com"
+	id S1755725Ab0CQTaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 15:30:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43962 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755619Ab0CQTaL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 15:30:11 -0400
-Date: Wed, 17 Mar 2010 20:28:47 +0100
+	id S1755658Ab0CQTaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 15:30:14 -0400
+Date: Wed, 17 Mar 2010 20:28:50 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Roland McGrath <roland@redhat.com>, Veaceslav Falico <vfalico@redhat.com>,
        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/4] signal_struct->count must die, initial changes
-Message-ID: <20100317192847.GA2086@redhat.com>
+Subject: [PATCH 1/4] exit: exit_notify() can trust signal->notify_count < 0
+Message-ID: <20100317192850.GA2090@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,25 +21,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-signal_struct->count in its current form must die.
+Now that Veaceslav changed copy_signal() to use zalloc(), exit_notify()
+can just check notify_count < 0 to ensure the execing sub-threads needs
+the notification from us. No need to do other checks, notify_count != 0
+must always mean ->group_exit_task != NULL is waiting for us.
 
-	- it has no reasons to be atomic_t
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-	- it looks like a reference counter, but it is not
+ kernel/exit.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
-	- otoh, we really need to make task->signal refcountable,
-	  just look at the extremely ugly task_rq_unlock_wait()
-	  called from __exit_signals().
-
-	- we should change the lifetime rules for task->signal,
-	  it should be pinned to task_struct. We have a lot of
-	  code which can be simplified after that.
-
-	- it is not needed! while the code is correct, any usage
-	  of this counter is artificial, except fs/proc uses it
-	  correctly to show the number of threads.
-
-This series removes the usage of sig->count from exit pathes.
-
-Oleg.
+--- 34-rc1/kernel/exit.c~1_EXIT_NOTIFY	2010-03-17 19:10:28.000000000 +0100
++++ 34-rc1/kernel/exit.c	2010-03-17 19:17:39.000000000 +0100
+@@ -857,12 +857,9 @@ static void exit_notify(struct task_stru
+ 
+ 	tsk->exit_state = signal == DEATH_REAP ? EXIT_DEAD : EXIT_ZOMBIE;
+ 
+-	/* mt-exec, de_thread() is waiting for us */
+-	if (thread_group_leader(tsk) &&
+-	    tsk->signal->group_exit_task &&
+-	    tsk->signal->notify_count < 0)
++	/* mt-exec, de_thread() is waiting for group leader */
++	if (unlikely(tsk->signal->notify_count < 0))
+ 		wake_up_process(tsk->signal->group_exit_task);
+-
+ 	write_unlock_irq(&tasklist_lock);
+ 
+ 	tracehook_report_death(tsk, signal, cookie, group_dead);
 
