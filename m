@@ -1,79 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab0CRIzS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 04:55:18 -0400
-Received: from mail-bw0-f212.google.com ([209.85.218.212]:56263 "EHLO
-	mail-bw0-f212.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab0CRIzP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 04:55:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=ulxDTVnTWrOmqcS/QAbfOdPPG5+ObSkYY11O1HPu/fnmx/oyontj8+bRkhE/ldfejL
-         izlUWUm2zhMPcxzTMM33eHP2fSTKgRq4GJJiLmRUDltZU79HBVy+I5vG4rFtlbbuml90
-         9nUWQVWQt6fyU6v6akzLrX8BS6hP5OxYfR4vA=
-Date: Thu, 18 Mar 2010 11:55:04 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Roland Dreier <rdreier@cisco.com>
-Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: bug list: range checking issues 2.6.34-rc1
-Message-ID: <20100318085504.GL5331@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Roland Dreier <rdreier@cisco.com>,
-	Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <201003151002.18928.toralf.foerster@gmx.de> <20100315101146.GL18181@bicker> <adar5nj9aae.fsf@roland-alpha.cisco.com>
+	id S1751665Ab0CRI4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 04:56:22 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53858 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751080Ab0CRI4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 04:56:19 -0400
+Date: Thu, 18 Mar 2010 09:56:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318085607.GB2157@elte.hu>
+References: <20100316112500.GA5337@elte.hu>
+ <4B9F77E7.2060101@redhat.com>
+ <20100316122903.GA8831@elte.hu>
+ <4B9F7C6A.3070207@redhat.com>
+ <20100316130840.GA24808@elte.hu>
+ <4B9FBA8B.8020200@codemonkey.ws>
+ <20100316173940.GA23859@elte.hu>
+ <4BA00F1F.1090907@codemonkey.ws>
+ <20100317081041.GC16374@elte.hu>
+ <4BA1E24B.6090904@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <adar5nj9aae.fsf@roland-alpha.cisco.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BA1E24B.6090904@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 16, 2010 at 03:22:33PM -0700, Roland Dreier wrote:
->  > > drivers/infiniband/core/user_mad.c +646 ib_umad_reg_agent() 'umm' 4 <= 6
->  >    641                          u32 *umm = (u32 *) ureq.method_mask;
->  >    642                          int i;
->  >    643  
->  >    644                          for (i = 0; i < BITS_TO_LONGS(IB_MGMT_MAX_METHODS); ++i)
->  >    645                                  req.method_mask[i] =
->  >    646                                          umm[i * 2] | ((u64) umm[i * 2 + 1] << 32);
->  > "umm" points to a array with 4 elements.
->  > i can be 0 to 3, so "i * 2" goes up to 6
->  > And 4 <= 6 so it's a problem.
->  > Smatch also complained about "i * 2 + 1" but I didn't include that. 
+
+* Avi Kivity <avi@redhat.com> wrote:
+
+> On 03/17/2010 10:10 AM, Ingo Molnar wrote:
+> >
+> >> It's about who owns the user interface.
+> >>
+> >> If qemu owns the user interface, than we can satisfy this in a very 
+> >> simple way by adding a perf monitor command.  If we have to support third 
+> >> party tools, then it significantly complicates things.
+> >
+> > Of course illogical modularization complicates things 'significantly'.
 > 
-> It's a bit tricky, but I believe this is a false positive.  The code in
-> question is compatibility handling for 32-bit userspace on a 64-bit
-> kernel.  In that case the range of i will be 0 to 1 (IB_MGMT_MAX_METHODS
-> is 128, so BITS_TO_LONGS on that is 2), and so we will only access
-> elements 0, 1, 2, and 3 of umm[], which is OK.
+> Who should own the user interface then?
+
+If qemu was in tools/kvm/ then we wouldnt have such issues. A single patch (or 
+series of patches) could modify tools/kvm/, arch/x86/kvm/, virt/ and 
+tools/perf/.
+
+Numerous times did we have patches to kernel/perf_event.c that fixed some 
+detail, also accompanied by a tools/perf/ patch fixing another detail. Having 
+a single 'culture of contribution' is a powerful way to develop.
+
+It turns out kernel developers can be pretty good user-space developers as 
+well and user-space developers can be pretty good kernel developers as well. 
+Some like to do both - as long as it's all within a single project.
+
+The moment any change (be it as trivial as fixing a GUI detail or as complex 
+as a new feature) involves two or more packages, development speed slows down 
+to a crawl - while the complexity of the change might be very low!
+
+Also, there's the harmful process that people start categorizing themselves 
+into 'I am a kernel developer' and 'I am a user space programmer' stereotypes, 
+which limits the scope of contributions artificially.
+
+> > Fast forward to 2010. The kernel side of KVM is maximum goodness - by far 
+> > the worst-quality remaining aspects of KVM are precisely in areas that you 
+> > mention: 'if we have to support third party tools, then it significantly 
+> > complicates things'. You kept Qemu as an external 'third party' entity to 
+> > KVM, and KVM is clearly hurting from that - just see the recent KVM 
+> > usability thread for examples about suckage.
 > 
-> (Not sure how easily a static checker could find this; the code in
-> question is guarded by test of compat_method_mask, which can only be 1
-> if ib_umad_reg_agent() is called from ib_umad_compat_ioctl(), which will
-> only be built with CONFIG_COMPAT set, which can only happen on a 64-bit
-> architecture -- but it seems a bit hard for a checker to follow all that)
+> Any qemu usability problems are because developers (or their employers) are 
+> not interested in fixing them, not because of the repository location.  Most 
+> kvm developer interest is in server-side deployment (even for desktop 
+> guests), so there is limited effort in implementing a virtualbox-style GUI.
 
-Smatch doesn't handle anything between functions yet.  Once it does you
-could do something like:
+The same has been said of oprofile as well: 'it somewhat sucks because we are 
+too server centric', 'nobody is interested in good usability and oprofile is 
+fine for the enterprises'. Ironically, the same has been said of Xen usability 
+as well, up to the point KVM came around.
 
-compat_method_mask = get_possible_range(this parameter);
-That would only be zero, because the other code is #ifdefed out.
-Then the rest is simple enough.
+What was the core of the problem was a bad design and a split kernel-side 
+user-side tool landscape.
 
-It will take some months to get the inter-function stuff working though.
+In fact i think saying that 'our developers only care about the server' is 
+borderline dishonest, when at the same time you are making it doubly sure (by 
+inaction) that it stays so: by leaving an artificial package wall between 
+kernel-side KVM and user-side KVM and not integrating the two technologies.
 
-regards,
-dan carpenter
+You'll never know what heights you could achieve if you leave that wall there 
+...
 
-> -- 
-> Roland Dreier  <rolandd@cisco.com>
-> For corporate legal information go to:
-> http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Furthermore, what should be realized is that bad usability hurts "server 
+features" just as much. Most of the day-to-day testing is done on the desktop 
+by desktop oriented testers/developers. _Not_ by enterprise shops - they tend 
+to see the code years down the line to begin with ...
+
+Yes, a particular feature might be server oriented, but a good portion of our 
+testing is on the desktop and everyone is hurting from bad usability and this 
+puts limits on contribution efficiency.
+
+As the patch posted in _this very thread demonstrates it_, it is doubly more 
+difficult to contribute a joint KVM+Qemu feature, because it's two separate 
+code bases, two contribution guidelines, two release schedules. While to the 
+user it really is just one and the same thing. It should be so for the 
+developer as well.
+
+Put in another way: KVM's current split design is making it easy to contribute 
+server features (because the kernel side is clean and cool), but also makes it 
+artificially hard to contribute desktop features: because the tooling side 
+(Qemu) is 'just another package', is separated by a package and maintenance 
+wall and is made somewhat uncool by a (as some KVM developers have pointed out 
+in this thread) quirky codebase.
+
+(the rest of your points are really a function of this fundamental 
+disagreement)
+
+Thanks,
+
+	Ingo
