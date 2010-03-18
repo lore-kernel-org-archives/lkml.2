@@ -1,142 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab0CRQ5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 12:57:15 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56312 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab0CRQ5L (ORCPT
+	id S1752473Ab0CRQ7o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 12:59:44 -0400
+Received: from toronto-hs-216-138-233-67.s-ip.magma.ca ([216.138.233.67]:58564
+	"HELO yow.seanm.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751152Ab0CRQ7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 12:57:11 -0400
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Dmitry Torokhov <dtor@mail.ru>, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [RFC/PATCH] platform_bus: allow custom extensions to system PM methods
-References: <1268867896-7616-1-git-send-email-khilman@deeprootsystems.com>
-	<20100317234414.GA23319@suse.de>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Thu, 18 Mar 2010 09:57:06 -0700
-In-Reply-To: <20100317234414.GA23319@suse.de> (Greg KH's message of "Wed\, 17 Mar 2010 16\:44\:14 -0700")
-Message-ID: <87bpellg9p.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 18 Mar 2010 12:59:43 -0400
+Date: Thu, 18 Mar 2010 12:59:39 -0400
+From: Sean MacLennan <smaclennan@pikatech.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: davem@davemloft.net, benh@kernel.crashing.org,
+       linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
+       linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [V2 PATCH 06/10] of/drivers: Always use struct device.of_node
+ to get node pointer
+Message-ID: <20100318125939.2b39d7f2@lappy.seanm.ca>
+In-Reply-To: <20100318152238.21082.10985.stgit@angua>
+References: <20100318144836.21082.93040.stgit@angua>
+	<20100318152238.21082.10985.stgit@angua>
+Organization: PIKA
+X-Mailer: Claws Mail 3.7.3 (GTK+ 2.14.7; i686-pc-linux-gnu)
+X-Message-Flag: Warning: This message may contain actual content.
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAHlBMVEXOy8P+/f8hHBFoOhetjm76/P5qPzJLJxltXUSaX0wbgtjEAAACY0lEQVQ4jWWUQWvcMBCF91BCjiuIIWcX6nsE9uZWgknjWwW7sD2rjL1XGzzpNS2ufI5xVv+2byTHSehcbO8nzWjeG+1GqcPhZfTlEl8/hUdVbgDUvfNT+SEqH8Ho/UdQCjDJg0dMceVUhVcBKhn8Go7qTjd4CYCcBL7OQ9GmGXfNuICauaNmIKrbNGWivAngQPhMOScibODGOZ2PYUfdMlCnyTJWpFlu9SkW14Ps6cdZHoJ4F4ENPzxOD3i2cZMA9VCHdV/KCmdC3i7WMAKyNuNfZVUwzoA2pmqjDkZd1ikjfpblTDj32PhSwEH9GHTBrQDvpaXT9Aqc1cz9HwHedg20qkLxK2cLNIh1q8p+Ae53TsMJ36shAewdDPHz+B/YDqOffEhTvXMQYIbp0SppIdQKIIG31XwK4Pk2OrYAuGQX0JHUowDUPY1O77xkeob6CLsxYQfZvMhxNJhYsNY56bjjktA6Pgl6WIiLiOC6g1hQltMMIJBY/FrEhcRisIWcrG3csa8DEOt6pGs5HwIw2zrkCW6TCN0sQP2tuwjSmouWb10EiXrJcUwhqAzfx2aWaYe5F48k9qbBYplKFybRmGPvbuJIyUTKTAagkquabrJWcnV0OqONqFWSfH/qi52cDOvHs10bVOobgEb73NPoh1WSJDky72whkmDcVmCkCMuJU9Yn/y6VMWaGriTTiesmUxZTIS4yOIR5qPzZSbMr2LefcaB4P/V7kNxlvcY9xJnEQ70Cc2w7aCFXtBCnVqC2uCEiU2hz6TxuuUsz0TDy/C1Vcgwayh8AwFvxg9k/LTcWUfA/se5dIXIv87sAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+On Thu, 18 Mar 2010 09:22:39 -0600
+Grant Likely <grant.likely@secretlab.ca> wrote:
 
-> On Wed, Mar 17, 2010 at 04:18:15PM -0700, Kevin Hilman wrote:
->> When runtime PM for platform_bus was added, it allowed for platforms
->> to customize the runtime PM methods since they are defined as weak
->> symbols.
->> 
->> This patch allows platforms to also extend the system PM methods with
->> custom hooks so runtime PM and system PM extensions can be managed
->> together by custom platform-specific code.
->
-> Wow, that's scary, I didn't realize that was done for the runtime stuff.
->
-> What would you be replacing these functions with for your platform that
-> would require it to be in arch-specific code?
+> The following structure elements duplicate the information in
+> 'struct device.of_node' and so are being eliminated.  This patches
+> makes all readers of the following elements use device.of_node
+> instead.
 
-I'm basically copying the existing functions and extending them with
-platform-specific code to manage device clocks and other PM HW state.
-IOW, I still call the drivers PM methods, but also take care of some
-platform specific PM HW management.  This is just like the runtime PM
-hooks: platform-specific code + calling drivers runtime PM methods.
+The NDFC driver also needs a patch... or at least the version from your
+last of_patch set does. I am included the patch I needed to get it to
+compile.
 
-On my platform (TI OMAP), the code to handle device PM is common for
-all devices, so for runtime PM, I'm taking care of it at the bus
-level.  At the hardware level, there's really no difference between
-runtime and system PM, so I want to take advantage of the same
-platform specific code for system PM
+Cheers,
+   Sean
 
-Initially, rather than making the system PM methods themselves weak, I
-added some weak hooks that could be overridden instead (see test patch
-below).  The problem with that is that it is not as flexible if you
-want to run some custom code before and/or after calling the drivers
-PM methods.  To be more flexible, using this approach, we'd probably
-need pre- and post- hooks to be used before and after the driver's PM
-methods are called.  Rather than add all these hooks, I decided it was
-cleaner to just allow override of the primary methods themselves,
-which parallels the runtime PM approach.
-
-Kevin
-
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 1ba9d61..a30f850 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -729,6 +729,26 @@ static void platform_pm_complete(struct device *dev)
+diff --git a/drivers/mtd/nand/ndfc.c b/drivers/mtd/nand/ndfc.c
+index 19d94a2..5a232ec 100644
+--- a/drivers/mtd/nand/ndfc.c
++++ b/drivers/mtd/nand/ndfc.c
+@@ -238,14 +238,14 @@ static int __devinit ndfc_probe(struct of_device *ofdev,
+ 	dev_set_drvdata(&ofdev->dev, ndfc);
  
- #ifdef CONFIG_SUSPEND
+ 	/* Read the reg property to get the chip select */
+-	reg = of_get_property(ofdev->node, "reg", &len);
++	reg = of_get_property(ofdev->dev.of_node, "reg", &len);
+ 	if (reg == NULL || len != 12) {
+ 		dev_err(&ofdev->dev, "unable read reg property (%d)\n", len);
+ 		return -ENOENT;
+ 	}
+ 	ndfc->chip_select = reg[0];
  
-+int __weak platform_pm_suspend_hook(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+int __weak platform_pm_suspend_noirq_hook(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+int __weak platform_pm_resume_hook(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+int __weak platform_pm_resume_noirq_hook(struct device *dev)
-+{
-+	return 0;
-+}
-+
- static int platform_pm_suspend(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
-@@ -744,6 +764,8 @@ static int platform_pm_suspend(struct device *dev)
- 		ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
+-	ndfc->ndfcbase = of_iomap(ofdev->node, 0);
++	ndfc->ndfcbase = of_iomap(ofdev->dev.of_node, 0);
+ 	if (!ndfc->ndfcbase) {
+ 		dev_err(&ofdev->dev, "failed to get memory\n");
+ 		return -EIO;
+@@ -254,20 +254,20 @@ static int __devinit ndfc_probe(struct of_device *ofdev,
+ 	ccr = NDFC_CCR_BS(ndfc->chip_select);
+ 
+ 	/* It is ok if ccr does not exist - just default to 0 */
+-	reg = of_get_property(ofdev->node, "ccr", NULL);
++	reg = of_get_property(ofdev->dev.of_node, "ccr", NULL);
+ 	if (reg)
+ 		ccr |= *reg;
+ 
+ 	out_be32(ndfc->ndfcbase + NDFC_CCR, ccr);
+ 
+ 	/* Set the bank settings if given */
+-	reg = of_get_property(ofdev->node, "bank-settings", NULL);
++	reg = of_get_property(ofdev->dev.of_node, "bank-settings", NULL);
+ 	if (reg) {
+ 		int offset = NDFC_BCFG0 + (ndfc->chip_select << 2);
+ 		out_be32(ndfc->ndfcbase + offset, *reg);
  	}
  
-+	platform_pm_suspend_hook(dev);
-+
- 	return ret;
- }
- 
-@@ -760,6 +782,8 @@ static int platform_pm_suspend_noirq(struct device *dev)
- 			ret = drv->pm->suspend_noirq(dev);
- 	}
- 
-+	platform_pm_suspend_noirq_hook(dev);
-+
- 	return ret;
- }
- 
-@@ -768,6 +792,8 @@ static int platform_pm_resume(struct device *dev)
- 	struct device_driver *drv = dev->driver;
- 	int ret = 0;
- 
-+	platform_pm_resume_hook(dev);
-+
- 	if (!drv)
- 		return 0;
- 
-@@ -786,6 +812,8 @@ static int platform_pm_resume_noirq(struct device *dev)
- 	struct device_driver *drv = dev->driver;
- 	int ret = 0;
- 
-+	platform_pm_resume_noirq_hook(dev);
-+
- 	if (!drv)
- 		return 0;
- 
-
-
-
-
-
+-	err = ndfc_chip_init(ndfc, ofdev->node);
++	err = ndfc_chip_init(ndfc, ofdev->dev.of_node);
+ 	if (err) {
+ 		iounmap(ndfc->ndfcbase);
+ 		return err;
 
