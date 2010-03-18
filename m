@@ -1,110 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab0CRGuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 02:50:51 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:46636 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753002Ab0CRGuu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 02:50:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=v3ZwC4pBTGUccNDa1viRqcTmnucRvLQgOK0kluZQqBTfsN/SEVy/r27iOHuOd+aZJ
-	lhYHh7FkBfbsHr0W50aeA==
-From: Greg Thelen <gthelen@google.com>
-To: Andrea Righi <arighi@develer.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH -mmotm 4/5] memcg: dirty pages accounting and limiting infrastructure
-Date: Wed, 17 Mar 2010 23:48:38 -0700
-Message-Id: <1268894918-26797-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1268609202-15581-5-git-send-email-arighi@develer.com>
-References: <1268609202-15581-5-git-send-email-arighi@develer.com>
+	id S1753319Ab0CRGxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 02:53:19 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:46165 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752822Ab0CRGxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 02:53:17 -0400
+Date: Thu, 18 Mar 2010 07:53:11 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: tiwai@suse.de, rmk@arm.linux.org.uk, perex@perex.cz,
+       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH] sound/oss/vidc.c: change the field used with DMA_ACTIVE
+Message-ID: <Pine.LNX.4.64.1003180752400.23843@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a proposed change to "[PATCH -mmotm 4/5] memcg: dirty pages accounting
-and limiting infrastructure" v6.  The change is small and I am presenting it
-as a git patch (below) to be applied after 4/5 v6 has been applied.
-The change is fairly simple.  An alternative would be to reject my
-patch (below) and enhance get_vm_dirty_param() to loop for consistenty in all
-cases.
+From: Julia Lawall <julia@diku.dk>
 
----patch snip here, rest of email is git patch of 4/5 v6 ---
+The constant DMA_ACTIVE is defined with the dma_buffparams structure rather
+than with the audio_operations structure.  Takashi Iwai suggested that the
+dmap_out field of the audio_operations structure should be used instead.
 
-Removed unneeded looping from get_vm_dirty_param().  The only caller of
-get_vm_dirty_param() gracefully handles inconsistent values, so there is no
-need for get_vm_dirty_param() to loop to ensure consistency.  The previous
-looping was inconsistent because it did not loop for the case where memory
-cgroups were disabled.
+This is not tested.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- mm/memcontrol.c |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+ sound/oss/vidc.c                    |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 4d00c0f..990a907 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1081,6 +1081,10 @@ static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
-  * The function fills @param with the current memcg dirty memory settings. If
-  * memory cgroup is disabled or in case of error the structure is filled with
-  * the global dirty memory settings.
-+ *
-+ * Because global and memcg vm_dirty_param are not protected, inconsistent
-+ * values may be returned.  If consistent values are required, then the caller
-+ * should call this routine until dirty_param_is_valid() returns true.
-  */
- void get_vm_dirty_param(struct vm_dirty_param *param)
- {
-@@ -1090,28 +1094,20 @@ void get_vm_dirty_param(struct vm_dirty_param *param)
- 		get_global_vm_dirty_param(param);
- 		return;
- 	}
-+
- 	/*
- 	 * It's possible that "current" may be moved to other cgroup while we
- 	 * access cgroup. But precise check is meaningless because the task can
- 	 * be moved after our access and writeback tends to take long time.
- 	 * At least, "memcg" will not be freed under rcu_read_lock().
- 	 */
--	while (1) {
--		rcu_read_lock();
--		memcg = mem_cgroup_from_task(current);
--		if (likely(memcg))
--			__mem_cgroup_get_dirty_param(param, memcg);
--		else
--			get_global_vm_dirty_param(param);
--		rcu_read_unlock();
--		/*
--		 * Since global and memcg vm_dirty_param are not protected we
--		 * try to speculatively read them and retry if we get
--		 * inconsistent values.
--		 */
--		if (likely(dirty_param_is_valid(param)))
--			break;
--	}
-+	rcu_read_lock();
-+	memcg = mem_cgroup_from_task(current);
-+	if (likely(memcg))
-+		__mem_cgroup_get_dirty_param(param, memcg);
-+	else
-+		get_global_vm_dirty_param(param);
-+	rcu_read_unlock();
- }
+diff --git a/sound/oss/vidc.c b/sound/oss/vidc.c
+index 725fef0..a4127ba 100644
+--- a/sound/oss/vidc.c
++++ b/sound/oss/vidc.c
+@@ -363,13 +363,13 @@ static void vidc_audio_trigger(int dev, int enable_bits)
+ 	struct audio_operations *adev = audio_devs[dev];
  
- /*
--- 
-1.7.0.1
-
+ 	if (enable_bits & PCM_ENABLE_OUTPUT) {
+-		if (!(adev->flags & DMA_ACTIVE)) {
++		if (!(adev->dmap_out->flags & DMA_ACTIVE)) {
+ 			unsigned long flags;
+ 
+ 			local_irq_save(flags);
+ 
+ 			/* prevent recusion */
+-			adev->flags |= DMA_ACTIVE;
++			adev->dmap_out->flags |= DMA_ACTIVE;
+ 
+ 			dma_interrupt = vidc_audio_dma_interrupt;
+ 			vidc_sound_dma_irq(0, NULL);
