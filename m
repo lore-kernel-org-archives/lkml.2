@@ -1,90 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0CRXja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 19:39:30 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:58627 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab0CRXj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 19:39:27 -0400
-Message-ID: <4BA2B94E.4070309@oracle.com>
-Date: Thu, 18 Mar 2010 16:37:50 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1752660Ab0CRXs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 19:48:57 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60740 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752451Ab0CRXsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 19:48:54 -0400
+Date: Fri, 19 Mar 2010 00:48:51 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 4/6] drivers/acpi: Use kasprintf
+In-Reply-To: <20100318162529.762251ef.akpm@linux-foundation.org>
+Message-ID: <Pine.LNX.4.64.1003190048220.23874@ask.diku.dk>
+References: <Pine.LNX.4.64.1003102216290.1672@ask.diku.dk>
+ <20100318162529.762251ef.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?UmVuw6kgQm9sbGRvcmY=?= <xsecute@googlemail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] drivers/pci/pci.c Section mismatch
-References: <4BA2A46E.5090008@googlemail.com> <4BA2B028.8060705@oracle.com> <4BA2B87E.8050404@googlemail.com>
-In-Reply-To: <4BA2B87E.8050404@googlemail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BA2B9AA.0096:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/10 16:34, René Bolldorf wrote:
-> On 03/18/10 23:58, Randy Dunlap wrote:
->> On 03/18/10 15:08, Ren� Bolldorf wrote:
->>> Signed-off-by: Rene Bolldorf<xsecute@googlemail.com>
->>>
->>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->>> index ddd55dc..a1f7d93 100644
->>> --- a/drivers/pci/pci.c
->>> +++ b/drivers/pci/pci.c
->>> @@ -2773,7 +2773,7 @@ int pci_resource_bar(struct pci_dev *dev, int
->>> resno, enum pci_bar_type *type)
->>>   /* Some architectures require additional programming to enable VGA */
->>>   static arch_set_vga_state_t arch_set_vga_state;
->>>
->>> -void __init pci_register_set_vga_state(arch_set_vga_state_t func)
->>> +void pci_register_set_vga_state(arch_set_vga_state_t func)
->>>   {
->>>       arch_set_vga_state = func;    /* NULL disables */
->>>   }
->>> -- 
->>
->> Hi,
->>
->> Please put the offending/warning messages in the patch description.
->> Include your analysis if it isn't obvious.
->>
->> thanks,
-> 
-> Hi,
-> 
-> the warning message was:
-> WARNING: drivers/pci/built-in.o(__ksymtab+0x190): Section mismatch in
-> reference from the variable __ksymtab_pci_register_set_vga_state to the
-> function .init.text:pci_register_set_vga_state()
-> The symbol pci_register_set_vga_state is exported and annotated __init
-> Fix this by removing the __init annotation of pci_register_set_vga_state
-> or drop the export.
-> 
-> $fgrep "pci_register_set_vga_state" `find .`
-> 
-> $./arch/x86/kernel/apic/x2apic_uv_x.c:
-> pci_register_set_vga_state(uv_set_vga_state);
-> $./include/linux/pci.h:extern void
-> pci_register_set_vga_state(arch_set_vga_state_t func);
-> $./drivers/pci/pci.c:void
-> pci_register_set_vga_state(arch_set_vga_state_t func)
-> $./drivers/pci/pci.c:EXPORT_SYMBOL(pci_register_set_vga_state);
-> 
-> this is a volatile function that set's a spec. state and is only used
-> from uv_system_init(arch/x86/kernel/apic/x2apic_uv_x.c), the macro can
-> also be removed.
+On Thu, 18 Mar 2010, Andrew Morton wrote:
 
-Thanks.  Yes, we shouldn't export __init functions, so the patch makes
-sense.
+> On Wed, 10 Mar 2010 22:16:51 +0100 (CET)
+> Julia Lawall <julia@diku.dk> wrote:
+> 
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > kasprintf combines kmalloc and sprintf, and takes care of the size
+> > calculation itself.
+> > 
+> > The semantic patch that makes this change is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @@
+> > expression a,flag;
+> > expression list args;
+> > statement S;
+> > @@
+> > 
+> >   a =
+> > -  \(kmalloc\|kzalloc\)(...,flag)
+> > +  kasprintf(flag,args)
+> >   <... when != a
+> >   if (a == NULL || ...) S
+> >   ...>
+> > - sprintf(a,args);
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  drivers/acpi/video.c |    6 ++----
+> >  1 file changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff -u -p a/drivers/acpi/video.c b/drivers/acpi/video.c
+> > --- a/drivers/acpi/video.c
+> > +++ b/drivers/acpi/video.c
+> > @@ -1005,11 +1005,10 @@ static void acpi_video_device_find_cap(s
+> >  		result = acpi_video_init_brightness(device);
+> >  		if (result)
+> >  			return;
+> > -		name = kzalloc(MAX_NAME_LEN, GFP_KERNEL);
+> > +		name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+> >  		if (!name)
+> >  			return;
+> >  
+> > -		sprintf(name, "acpi_video%d", count++);
+> >  		device->backlight = backlight_device_register(name,
+> >  			NULL, device, &acpi_backlight_ops);
+> >  		kfree(name);
+> > @@ -1056,10 +1055,9 @@ static void acpi_video_device_find_cap(s
+> >  		if (device->cap._DCS && device->cap._DSS) {
+> >  			static int count;
+> >  			char *name;
+> > -			name = kzalloc(MAX_NAME_LEN, GFP_KERNEL);
+> > +			name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+> >  			if (!name)
+> >  				return;
+> > -			sprintf(name, "acpi_video%d", count++);
+> >  			device->output_dev = video_output_register(name,
+> >  					NULL, device, &acpi_output_properties);
+> >  			kfree(name);
+> 
+> It's not an equivalent change - if the memory allocation fails, this
+> patch will now cause `count' to be incremented anyway, presumably
+> leaving a gap in the enumeration.
 
-BTW, you need to cc: one or more maintainers so that someone will merge
-your patches.  They don't scan the mailing lists looking for patches to merge.
+Indeed.  What is below looks better.
 
+julia
 
--- 
-~Randy
+> I don't know if that matters.  If so, this:
+> 
+> --- a/drivers/acpi/video.c~drivers-acpi-use-kasprintf-fix
+> +++ a/drivers/acpi/video.c
+> @@ -1006,9 +1006,10 @@ static void acpi_video_device_find_cap(s
+>  		result = acpi_video_init_brightness(device);
+>  		if (result)
+>  			return;
+> -		name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+> +		name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
+>  		if (!name)
+>  			return;
+> +		count++;
+>  
+>  		memset(&props, 0, sizeof(struct backlight_properties));
+>  		props.max_brightness = device->brightness->count - 3;
+> @@ -1058,9 +1059,10 @@ static void acpi_video_device_find_cap(s
+>  		if (device->cap._DCS && device->cap._DSS) {
+>  			static int count;
+>  			char *name;
+> -			name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+> +			name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
+>  			if (!name)
+>  				return;
+> +			count++;
+>  			device->output_dev = video_output_register(name,
+>  					NULL, device, &acpi_output_properties);
+>  			kfree(name);
+> _
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
