@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754577Ab0CRPWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:22:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50993 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab0CRPWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:22:36 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: [V2 PATCH 05/10] arch/microblaze: Always use 'struct device.of_node'
-	to get device node pointer.
-To: davem@davemloft.net, benh@kernel.crashing.org,
-       linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
-       linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       microblaze-uclinux@itee.uq.edu.au
-Date: Thu, 18 Mar 2010 09:22:33 -0600
-Message-ID: <20100318152233.21082.44377.stgit@angua>
-In-Reply-To: <20100318144836.21082.93040.stgit@angua>
-References: <20100318144836.21082.93040.stgit@angua>
-User-Agent: StGIT/0.14.2
+	id S1752934Ab0CRPZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 11:25:43 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37256 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751606Ab0CRPZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 11:25:41 -0400
+Date: Thu, 18 Mar 2010 16:25:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Colin Ian King <colin.king@canonical.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] softlockup: stop spurious softlockup messages due to
+ overflow
+Message-ID: <20100318152535.GB12564@elte.hu>
+References: <1268661673-21638-1-git-send-email-colin.king@canonical.com>
+ <1268663388.3154.30.camel@edumazet-laptop>
+ <20100316101251.GM7961@elte.hu>
+ <1268918537.1894.143.camel@lenovo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268918537.1894.143.camel@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following structure elements duplicate the information in
-'struct device.of_node' and so are being eliminated.  This patch
-makes all readers of the following elements use device.of_node instead.
 
-struct of_device.node
-struct dev_archdata.of_node
+* Colin Ian King <colin.king@canonical.com> wrote:
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
+> On Tue, 2010-03-16 at 11:12 +0100, Ingo Molnar wrote:
+> > * Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > 
+> > > Le lundi 15 mars 2010 ?? 14:01 +0000, Colin Ian King a ??crit :
+> > > > Ensure additions on touch_ts do not overflow.  This can occur when
+> > > > the top 32 bits of the TSC reach 0xffffffff causing additions to
+> > > > touch_ts to overflow and this in turn generates spurious softlockup
+> > > > warnings.
+> > > > 
+> > > > Signed-off-by: Colin Ian King <colin.king@canonical.com>
+> > > > ---
+> > > >  kernel/softlockup.c |    6 +++---
+> > > >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/softlockup.c b/kernel/softlockup.c
+> > > > index 0d4c789..90d9aa0 100644
+> > > > --- a/kernel/softlockup.c
+> > > > +++ b/kernel/softlockup.c
+> > > > @@ -111,10 +111,10 @@ int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
+> > > >  void softlockup_tick(void)
+> > > >  {
+> > > >  	int this_cpu = smp_processor_id();
+> > > > -	unsigned long touch_ts = per_cpu(softlockup_touch_ts, this_cpu);
+> > > > +	unsigned long long touch_ts = per_cpu(softlockup_touch_ts, this_cpu);
+> > > >  	unsigned long print_ts;
+> > > >  	struct pt_regs *regs = get_irq_regs();
+> > > > -	unsigned long now;
+> > > > +	unsigned long long now;
+> > > >  
+> > > >  	/* Is detection switched off? */
+> > > >  	if (!per_cpu(softlockup_watchdog, this_cpu) || softlockup_thresh <= 0) {
+> > > > @@ -165,7 +165,7 @@ void softlockup_tick(void)
+> > > >  	per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
+> > > >  
+> > > >  	spin_lock(&print_lock);
+> > > > -	printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %lus! [%s:%d]\n",
+> > > > +	printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %llus! [%s:%d]\n",
+> > > >  			this_cpu, now - touch_ts,
+> > > >  			current->comm, task_pid_nr(current));
+> > > >  	print_modules();
+> > > 
+> > > This looks wrong, touch_ts is a long, not a long long.
+> > 
+> > Could be increased to long long - but that's probably overkill as the touch_ts 
+> > is in seconds, so the scope of comparisons should never truly get even close 
+> > to ~2^31.
+> > 
+> > > You probably want to change the comparisons instead.
+> > > 
+> > > if (now > touch_ts + softlockup_thresh/2)
+> > > 	wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
+> > > if (now <= (touch_ts + softlockup_thresh))
+> > > 	return;
+> > > 	
+> > > ->
+> > > 
+> > > if ((long)(now - touch_ts) > softlockup_thresh/2)
+> > > 	wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
+> > > if ((long)(now - touch_ts) <= softlockup_thresh))
+> > > 	return;
+> > > 
+> > > Or use standard time_after()/time_before() macros.
+> > 
+> > Yeah, time_after/before would work better i suspect.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> 
+> Using time_after/before:
+> 
+> diff --git a/kernel/softlockup.c b/kernel/softlockup.c
+> index 0d4c789..4b493f6 100644
+> --- a/kernel/softlockup.c
+> +++ b/kernel/softlockup.c
+> @@ -155,11 +155,11 @@ void softlockup_tick(void)
+>          * Wake up the high-prio watchdog task twice per
+>          * threshold timespan.
+>          */
+> -       if (now > touch_ts + softlockup_thresh/2)
+> +       if (time_after(now - softlockup_thresh/2, touch_ts))
+>                 wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
+>  
+>         /* Warn about unreasonable delays: */
+> -       if (now <= (touch_ts + softlockup_thresh))
+> +       if (time_before_eq(now - softlockup_thresh, touch_ts))
+>                 return;
 
- arch/microblaze/kernel/of_device.c   |    8 ++++----
- arch/microblaze/kernel/of_platform.c |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+Ok, that looks like the most readable variant, agreed?
 
-diff --git a/arch/microblaze/kernel/of_device.c b/arch/microblaze/kernel/of_device.c
-index f6c5218..90d2246 100644
---- a/arch/microblaze/kernel/of_device.c
-+++ b/arch/microblaze/kernel/of_device.c
-@@ -12,7 +12,7 @@
- void of_device_make_bus_id(struct of_device *dev)
- {
- 	static atomic_t bus_no_reg_magic;
--	struct device_node *node = dev->node;
-+	struct device_node *node = dev->dev.of_node;
- 	const u32 *reg;
- 	u64 addr;
- 	int magic;
-@@ -76,17 +76,17 @@ int of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
- 
- 	ofdev = to_of_device(dev);
- 
--	if (add_uevent_var(env, "OF_NAME=%s", ofdev->node->name))
-+	if (add_uevent_var(env, "OF_NAME=%s", ofdev->dev.of_node->name))
- 		return -ENOMEM;
- 
--	if (add_uevent_var(env, "OF_TYPE=%s", ofdev->node->type))
-+	if (add_uevent_var(env, "OF_TYPE=%s", ofdev->dev.of_node->type))
- 		return -ENOMEM;
- 
- 	/* Since the compatible field can contain pretty much anything
- 	 * it's not really legal to split it out with commas. We split it
- 	 * up using a number of environment variables instead. */
- 
--	compat = of_get_property(ofdev->node, "compatible", &cplen);
-+	compat = of_get_property(ofdev->dev.of_node, "compatible", &cplen);
- 	while (compat && *compat && cplen > 0) {
- 		if (add_uevent_var(env, "OF_COMPATIBLE_%d=%s", seen, compat))
- 			return -ENOMEM;
-diff --git a/arch/microblaze/kernel/of_platform.c b/arch/microblaze/kernel/of_platform.c
-index 1c6d684..ea7d024 100644
---- a/arch/microblaze/kernel/of_platform.c
-+++ b/arch/microblaze/kernel/of_platform.c
-@@ -167,7 +167,7 @@ EXPORT_SYMBOL(of_platform_bus_probe);
- 
- static int of_dev_node_match(struct device *dev, void *data)
- {
--	return to_of_device(dev)->node == data;
-+	return to_of_device(dev)->dev.of_node == data;
- }
- 
- struct of_device *of_find_device_by_node(struct device_node *np)
-@@ -185,7 +185,7 @@ EXPORT_SYMBOL(of_find_device_by_node);
- static int of_dev_phandle_match(struct device *dev, void *data)
- {
- 	phandle *ph = data;
--	return to_of_device(dev)->node->phandle == *ph;
-+	return to_of_device(dev)->dev.of_node->phandle == *ph;
- }
- 
- struct of_device *of_find_device_by_phandle(phandle ph)
-
+	Ingo
