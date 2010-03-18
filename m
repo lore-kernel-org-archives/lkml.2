@@ -1,226 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab0CROWt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:22:49 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:35086 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753879Ab0CROWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:22:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=iiOD0Ug0eOqTcUFP7e0+AdS9XGBKlmgmodTpY+LxM/19gX0BwbbyKe0vwRKD7lYpar
-         Wz0tHy2NAZTru47Oqu1gKXS7L94yYyQI0hExFpFMCsxE8RMwjVHle2Y80QaiT0chZe/T
-         rsUmkZ2SVSDqTThIovyhL9caBmqy1jljjN97Y=
-From: Steven Harms <sjharms@gmail.com>
-To: gregkh@suse.de, lieb@canonical.com, forest@alittletooquiet.net,
-       sharms@ubuntu.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6655: Convert C99 style comments, remove spaces between function definitions and parenthesis
-Date: Thu, 18 Mar 2010 10:15:59 -0400
-Message-Id: <1268921759-25355-1-git-send-email-sharms@ubuntu.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753879Ab0CROXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:23:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37081 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753934Ab0CROXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 10:23:04 -0400
+Date: Thu, 18 Mar 2010 15:22:55 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318142255.GG25642@elte.hu>
+References: <20100316130840.GA24808@elte.hu>
+ <4B9FBA8B.8020200@codemonkey.ws>
+ <20100316173940.GA23859@elte.hu>
+ <4BA00F1F.1090907@codemonkey.ws>
+ <20100317081041.GC16374@elte.hu>
+ <4BA1E7E2.3010803@redhat.com>
+ <20100318095418.GD2157@elte.hu>
+ <4BA2030B.3090007@redhat.com>
+ <20100318105826.GA2174@elte.hu>
+ <4BA2296A.90401@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA2296A.90401@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Converted C99 style comments to kernel style guideline complianet comments.  Removed spaces between function definitions and parenthesis.  These were indicated as problems by checkpatch tool.
 
-Fixed typo found by Gabor Stefanik
+* Jes Sorensen <Jes.Sorensen@redhat.com> wrote:
 
-Signed-off-by: Steven Harms <sharms@ubuntu.com>
----
- drivers/staging/vt6655/srom.c |   50 ++++++++++++++++++++--------------------
- 1 files changed, 25 insertions(+), 25 deletions(-)
+> On 03/18/10 11:58, Ingo Molnar wrote:
+> >
+> >* Jes Sorensen<Jes.Sorensen@redhat.com>  wrote:
+> >>Thats a very glorified statement but it's not reality, sorry. You can do
+> >>that with something like perf because it's so small and development of perf
+> >>is limited to a very small group of developers.
+> >
+> > I was not talking about just perf: i am also talking about the arch/x86/ 
+> > unification which is 200+ KLOC of highly non-trivial kernel code with 
+> > hundreds of contributors and with 8000+ commits in the past two years.
+> 
+> Sorry but you cannot compare merging two chunks of kernel code that 
+> originated from the same base, with the efforts of mixing a large userland 
+> project with a kernel component. Apples and oranges.
 
-diff --git a/drivers/staging/vt6655/srom.c b/drivers/staging/vt6655/srom.c
-index 5a7c6ca..335630f 100644
---- a/drivers/staging/vt6655/srom.c
-+++ b/drivers/staging/vt6655/srom.c
-@@ -85,15 +85,15 @@ BYTE SROMbyReadEmbedded(DWORD_PTR dwIoBase, BYTE byContntOffset)
+That's true to a certain degree, but combined with the perf experience it's 
+all rather clear.
 
-     byData = 0xFF;
-     VNSvInPortB(dwIoBase + MAC_REG_I2MCFG, &byOrg);
--    // turn off hardware retry for getting NACK
-+    /* turn off hardware retry for getting NACK */
-     VNSvOutPortB(dwIoBase + MAC_REG_I2MCFG, (byOrg & (~I2MCFG_NORETRY)));
-     for (wNoACK = 0; wNoACK < W_MAX_I2CRETRY; wNoACK++) {
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MTGID, EEP_I2C_DEV_ID);
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MTGAD, byContntOffset);
+Similar arguments were made against the x86 unification and against perf. 
+Similar arguments were made against KVM and in favor of Xen years ago - back 
+when few of you knew about it ;-)
 
--        // issue read command
-+        /* issue read command */
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MCSR, I2MCSR_EEMR);
--        // wait DONE be set
-+        /* wait DONE be set */
-         for (wDelay = 0; wDelay < W_MAX_TIMEOUT; wDelay++) {
-             VNSvInPortB(dwIoBase + MAC_REG_I2MCSR, &byWait);
-             if (byWait & (I2MCSR_DONE | I2MCSR_NACK))
-@@ -125,7 +125,7 @@ BYTE SROMbyReadEmbedded(DWORD_PTR dwIoBase, BYTE byContntOffset)
-  * Return Value: TRUE if succeeded; FALSE if failed.
-  *
-  */
--BOOL SROMbWriteEmbedded (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byData)
-+BOOL SROMbWriteEmbedded(DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byData)
- {
-     WORD    wDelay, wNoACK;
-     BYTE    byWait;
-@@ -133,16 +133,16 @@ BOOL SROMbWriteEmbedded (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byData)
-     BYTE    byOrg;
+These are all repeating patterns in my experience.
 
-     VNSvInPortB(dwIoBase + MAC_REG_I2MCFG, &byOrg);
--    // turn off hardware retry for getting NACK
-+    /* turn off hardware retry for getting NACK */
-     VNSvOutPortB(dwIoBase + MAC_REG_I2MCFG, (byOrg & (~I2MCFG_NORETRY)));
-     for (wNoACK = 0; wNoACK < W_MAX_I2CRETRY; wNoACK++) {
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MTGID, EEP_I2C_DEV_ID);
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MTGAD, byContntOffset);
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MDOPT, byData);
+You could fairly contrast that with a _failed_ unification perhaps - but i'm 
+not aware of any such failed unification. (please educate me if you are)
 
--        // issue write command
-+        /* issue write command */
-         VNSvOutPortB(dwIoBase + MAC_REG_I2MCSR, I2MCSR_EEMW);
--        // wait DONE be set
-+        /* wait DONE be set */
-         for (wDelay = 0; wDelay < W_MAX_TIMEOUT; wDelay++) {
-             VNSvInPortB(dwIoBase + MAC_REG_I2MCSR, &byWait);
-             if (byWait & (I2MCSR_DONE | I2MCSR_NACK))
-@@ -178,7 +178,7 @@ BOOL SROMbWriteEmbedded (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byData)
-  * Return Value: none
-  *
-  */
--void SROMvRegBitsOn (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
-+void SROMvRegBitsOn(DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
- {
-     BYTE    byOrgData;
+The thing is, unifications are rare in the OSS space not because they dont 
+make sense technically (to the contrary), they are rare due to blind inertia 
+(why change if we managed to muddle through with the current scheme?) and to a 
+certain degree due to the egos involved ;-)
 
-@@ -199,7 +199,7 @@ void SROMvRegBitsOn (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
-  *      none
-  *
-  */
--void SROMvRegBitsOff (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
-+void SROMvRegBitsOff(DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
- {
-     BYTE    byOrgData;
+As such we have a proliferation of packages in Linux, and we'd be much better 
+off in a more focused fashion. And whenever i see that in the kernel's context 
+i'll mention it - as it happened here too.
 
-@@ -222,7 +222,7 @@ void SROMvRegBitsOff (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byBits)
-  * Return Value: TRUE if all test bits on; otherwise FALSE
-  *
-  */
--BOOL SROMbIsRegBitsOn (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits)
-+BOOL SROMbIsRegBitsOn(DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits)
- {
-     BYTE    byOrgData;
+> > Also, it applies to perf as well: people said exactly that a year ago: 
+> > 'perf has it easy to be clean as it is small, once it gets as large as 
+> > Oprofile tooling it will be in the same messy situation'.
+> >
+> > Today perf has more features than Oprofile, has a larger and more complex 
+> > code base, has more contributors, and no, it's not in the same messy 
+> > situation at all.
+> 
+> Both perf and oprofile are still relatively small projects in comparison to 
+> QEMU.
 
-@@ -245,7 +245,7 @@ BOOL SROMbIsRegBitsOn (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits)
-  * Return Value: TRUE if all test bits off; otherwise FALSE
-  *
-  */
--BOOL SROMbIsRegBitsOff (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits)
-+BOOL SROMbIsRegBitsOff(DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits)
- {
-     BYTE    byOrgData;
+So is your argument that the unification does not make sense due to size? 
+Would a smaller Qemu be more appropriate for this purpose?
 
-@@ -266,11 +266,11 @@ BOOL SROMbIsRegBitsOff (DWORD_PTR dwIoBase, BYTE byContntOffset, BYTE byTestBits
-  * Return Value: none
-  *
-  */
--void SROMvReadAllContents (DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
-+void SROMvReadAllContents(DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
- {
-     int     ii;
+> > So whatever you think of large, unified projects, you are quite clearly 
+> > mistaken. I have done and maintained through two different types of 
+> > unifications and the experience was very similar: both developers and 
+> > users (and maintainers) are much better off.
+> 
+> You believe that I am wrong in my assessment of unified projects, and I 
+> obviously think you are mistaken and underestimating the cost and effects of 
+> trying to merge the two.
+> 
+> Well I think we are just going to agree to disagree on this one. I am not 
+> against merging projects where it makes sense, but in this particular case I 
+> am strongly convinced the loss would be much greater than the gain.
 
--    // ii = Rom Address
-+    /* ii = Rom Address */
-     for (ii = 0; ii < EEP_MAX_CONTEXT_SIZE; ii++) {
-         *pbyEepromRegs = SROMbyReadEmbedded(dwIoBase,(BYTE) ii);
-         pbyEepromRegs++;
-@@ -291,11 +291,11 @@ void SROMvReadAllContents (DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
-  * Return Value: none
-  *
-  */
--void SROMvWriteAllContents (DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
-+void SROMvWriteAllContents(DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
- {
-     int     ii;
+I wish you said that based on first hand negative experience with 
+unifications, not based on just pure speculation.
 
--    // ii = Rom Address
-+    /* ii = Rom Address */
-     for (ii = 0; ii < EEP_MAX_CONTEXT_SIZE; ii++) {
-         SROMbWriteEmbedded(dwIoBase,(BYTE) ii, *pbyEepromRegs);
-         pbyEepromRegs++;
-@@ -315,11 +315,11 @@ void SROMvWriteAllContents (DWORD_PTR dwIoBase, PBYTE pbyEepromRegs)
-  * Return Value: none
-  *
-  */
--void SROMvReadEtherAddress (DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
-+void SROMvReadEtherAddress(DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
- {
-     BYTE     ii;
+(and yes, i speculate too, but at least with some basis)
 
--    // ii = Rom Address
-+    /* ii = Rom Address */
-     for (ii = 0; ii < U_ETHER_ADDR_LEN; ii++) {
-         *pbyEtherAddress = SROMbyReadEmbedded(dwIoBase, ii);
-         pbyEtherAddress++;
-@@ -340,11 +340,11 @@ void SROMvReadEtherAddress (DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
-  * Return Value: none
-  *
-  */
--void SROMvWriteEtherAddress (DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
-+void SROMvWriteEtherAddress(DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
- {
-     BYTE     ii;
-
--    // ii = Rom Address
-+    /* ii = Rom Address */
-     for (ii = 0; ii < U_ETHER_ADDR_LEN; ii++) {
-         SROMbWriteEmbedded(dwIoBase, ii, *pbyEtherAddress);
-         pbyEtherAddress++;
-@@ -364,15 +364,15 @@ void SROMvWriteEtherAddress (DWORD_PTR dwIoBase, PBYTE pbyEtherAddress)
-  * Return Value: none
-  *
-  */
--void SROMvReadSubSysVenId (DWORD_PTR dwIoBase, PDWORD pdwSubSysVenId)
-+void SROMvReadSubSysVenId(DWORD_PTR dwIoBase, PDWORD pdwSubSysVenId)
- {
-     PBYTE   pbyData;
-
-     pbyData = (PBYTE)pdwSubSysVenId;
--    // sub vendor
-+    /* sub vendor */
-     *pbyData = SROMbyReadEmbedded(dwIoBase, 6);
-     *(pbyData+1) = SROMbyReadEmbedded(dwIoBase, 7);
--    // sub system
-+    /* sub system */
-     *(pbyData+2) = SROMbyReadEmbedded(dwIoBase, 8);
-     *(pbyData+3) = SROMbyReadEmbedded(dwIoBase, 9);
- }
-@@ -389,7 +389,7 @@ void SROMvReadSubSysVenId (DWORD_PTR dwIoBase, PDWORD pdwSubSysVenId)
-  * Return Value: TRUE if success; otherwise FALSE
-  *
-  */
--BOOL SROMbAutoLoad (DWORD_PTR dwIoBase)
-+BOOL SROMbAutoLoad(DWORD_PTR dwIoBase)
- {
-     BYTE    byWait;
-     int     ii;
-@@ -397,12 +397,12 @@ BOOL SROMbAutoLoad (DWORD_PTR dwIoBase)
-     BYTE    byOrg;
-
-     VNSvInPortB(dwIoBase + MAC_REG_I2MCFG, &byOrg);
--    // turn on hardware retry
-+    /* turn on hardware retry */
-     VNSvOutPortB(dwIoBase + MAC_REG_I2MCFG, (byOrg | I2MCFG_NORETRY));
-
-     MACvRegBitsOn(dwIoBase, MAC_REG_I2MCSR, I2MCSR_AUTOLD);
-
--    // ii = Rom Address
-+    /* ii = Rom Address */
-     for (ii = 0; ii < EEP_MAX_CONTEXT_SIZE; ii++) {
-         MACvTimer0MicroSDelay(dwIoBase, CB_EEPROM_READBYTE_WAIT);
-         VNSvInPortB(dwIoBase + MAC_REG_I2MCSR, &byWait);
---
-1.6.3.3
-
+	Ingo
