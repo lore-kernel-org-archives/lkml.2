@@ -1,96 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab0CRCux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 22:50:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40103 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945Ab0CRCuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 22:50:46 -0400
-Date: Wed, 17 Mar 2010 23:48:52 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>,
-       Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-       KVM list <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM: cleanup {kvm_vm_ioctl, kvm}_get_dirty_log()
-Message-ID: <20100318024852.GA23995@amt.cnet>
-References: <4BA0897F.3050906@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA0897F.3050906@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751380Ab0CRC4n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 22:56:43 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:39734 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab0CRC4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 22:56:41 -0400
+Date: Thu, 18 Mar 2010 11:16:53 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100318111653.92f899e6.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100318094519.cd1eed72.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100317115855.GS18054@balbir.in.ibm.com>
+	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100318094519.cd1eed72.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 2.6.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 03:49:19PM +0800, Xiao Guangrong wrote:
-> Using bitmap_empty() to see whether memslot->dirty_bitmap is empty 
+On Thu, 18 Mar 2010 09:45:19 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Thu, 18 Mar 2010 08:54:11 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-> Changlog:
-> cleanup x86 specific kvm_vm_ioctl_get_dirty_log() and fix a local
-> parameter's type address Takuya Yoshikawa's suggestion
+> > On Wed, 17 Mar 2010 17:28:55 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > 
+> > > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > > 
+> > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > 
+> > > > Now, file-mapped is maintaiend. But more generic update function
+> > > > will be needed for dirty page accounting.
+> > > > 
+> > > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > > will be never called under tree_lock held.
+> > > > To guarantee that, we use trylock at updating status.
+> > > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > > >
+> > > 
+> > > I don't like this at all, but in almost all cases is not acceptable
+> > > for statistics, since decisions will be made on them and having them
+> > > incorrect is really bad. Could we do a form of deferred statistics and
+> > > fix this.
+> > > 
+> > 
+> > plz show your implementation which has no performance regresssion.
+> > For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> > we can add simple migration lock.
+> > file_mapped is a feattue you added. please improve it.
+> > 
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/x86.c  |   17 ++++-------------
->  virt/kvm/kvm_main.c |    7 ++-----
->  2 files changed, 6 insertions(+), 18 deletions(-)
+> BTW, I should explain how acculate this accounting is in this patch itself.
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index bcf52d1..e6cbbd4 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2644,22 +2644,17 @@ static int kvm_vm_ioctl_reinject(struct kvm *kvm,
->  int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
->  				      struct kvm_dirty_log *log)
->  {
-> -	int r, n, i;
-> +	int r, n, is_dirty = 0;
->  	struct kvm_memory_slot *memslot;
-> -	unsigned long is_dirty = 0;
->  	unsigned long *dirty_bitmap = NULL;
->  
->  	mutex_lock(&kvm->slots_lock);
->  
-> -	r = -EINVAL;
-> -	if (log->slot >= KVM_MEMORY_SLOTS)
-> +	r = kvm_get_dirty_log(kvm, log, &is_dirty);
-> +	if (r)
->  		goto out;
->  
->  	memslot = &kvm->memslots->memslots[log->slot];
-> -	r = -ENOENT;
-> -	if (!memslot->dirty_bitmap)
-> -		goto out;
-> -
+> Now, lock_page_cgroup/unlock_page_cgroup happens when
+> 	- charge/uncharge/migrate/move accounting
+> 
+> Then, the lock contention (trylock failure) seems to occur in conflict
+> with
+> 	- charge, uncharge, migarate. move accounting
+> 
+> About dirty accounting, charge/uncharge/migarate are operation in synchronous
+> manner with radix-tree (holding treelock etc). Then no account leak.
+> move accounting is only source for inacculacy...but I don't think this move-task
+> is ciritial....moreover, we don't move any file pages at task-move, now.
+> (But Nishimura-san has a plan to do so.)
+> So, contention will happen only at confliction with force_empty.
+> 
+> About FILE_MAPPED accounting, it's not synchronous with radix-tree operaton.
+> Then, accounting-miss seems to happen when charge/uncharge/migrate/account move.
+> But
+> 	charge .... we don't account a page as FILE_MAPPED before it's charged.
+> 	uncharge .. usual operation in turncation is unmap->remove-from-radix-tree.
+> 		    Then, it's sequential in almost all case. The race exists when...
+> 		    Assume there are 2 threads A and B. A truncate a file, B map/unmap that.
+> 		    This is very unusal confliction.
+> 	migrate.... we do try_to_unmap before migrating pages. Then, FILE_MAPPED
+> 		    is properly handled.
+> 	move account .... we don't have move-account-mapped-file, yet.
+> 
+FILE_MAPPED is updated under pte lock. OTOH, move account is also done under
+pte lock. page cgroup lock is held under pte lock in both cases, so move account
+is not so problem as for FILE_MAPPED.
 
-Its different because the user copy must be done after the 
-SRCU assignment.
 
-> index bcd08b8..b08a7de 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -767,9 +767,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
->  			struct kvm_dirty_log *log, int *is_dirty)
->  {
->  	struct kvm_memory_slot *memslot;
-> -	int r, i;
-> -	int n;
-> -	unsigned long any = 0;
-> +	int r, n, any = 0;
->  
->  	r = -EINVAL;
->  	if (log->slot >= KVM_MEMORY_SLOTS)
-> @@ -782,8 +780,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
->  
->  	n = ALIGN(memslot->npages, BITS_PER_LONG) / 8;
->  
-> -	for (i = 0; !any && i < n/sizeof(long); ++i)
-> -		any = memslot->dirty_bitmap[i];
-> +	any = !bitmap_empty(memslot->dirty_bitmap, memslot->npages);
+Thanks,
+Daisuke Nishimura.
 
-The opencoded version should be faster in comparison to __bitmap_empty 
-because the dirty bitmaps are always unsigned long aligned (and also
-there's a function call).
-
+> Then, this trylock contention happens at contention with force_empty and truncate.
+> 
+> 
+> Then, main issue for contention is force_empty. But it's called for removing memcg,
+> accounting for such memcg is not important.
+> Then, I say "this accounting is Okay."
+> 
+> To do more accurate, we may need another "migration lock". But to get better
+> performance for root cgroup, we have to call mem_cgroup_is_root() before
+> taking lock and there will be another complicated race.
+> 
+> Bye,
+> -Kame
+> 
