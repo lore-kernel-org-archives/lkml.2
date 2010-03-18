@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab0CRAdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 20:33:23 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:35416 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0CRAdW convert rfc822-to-8bit (ORCPT
+	id S1753841Ab0CRAed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 20:34:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55648 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab0CRAeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 20:33:22 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=MH1J4+lM/mMJloeiTw3YQeEnyme1mwEclIcWtwFWKnKNyghONF59M7Y+dAWrFhoFP
-	aZCU1LTgQKde8qgVV4gqw==
-MIME-Version: 1.0
-In-Reply-To: <1268869631.9440.282.camel@laptop>
-References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
-	 <1268869631.9440.282.camel@laptop>
-Date: Thu, 18 Mar 2010 01:33:15 +0100
-Message-ID: <bd4cb8901003171733k95fcf50mf6de78bf503d9a7b@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 17 Mar 2010 20:34:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Mar 2010 09:30:42 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped 
+ anonymous pages
+Message-Id: <20100318093042.b6b77d8f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1003171139280.27268@router.home>
+References: <1268412087-13536-1-git-send-email-mel@csn.ul.ie>
+	<1268412087-13536-3-git-send-email-mel@csn.ul.ie>
+	<28c262361003141728g4aa40901hb040144c5a4aeeed@mail.gmail.com>
+	<20100315143420.6ec3bdf9.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100315112829.GI18274@csn.ul.ie>
+	<1268657329.1889.4.camel@barrios-desktop>
+	<20100315142124.GL18274@csn.ul.ie>
+	<20100316084934.3798576c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100317111234.d224f3fd.kamezawa.hiroyu@jp.fujitsu.com>
+	<28c262361003162000w34cc13ecnbd32840a0df80f95@mail.gmail.com>
+	<20100317121551.b619f55b.kamezawa.hiroyu@jp.fujitsu.com>
+	<alpine.DEB.2.00.1003171139280.27268@router.home>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 12:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-03-17 at 10:40 +0200, Stephane Eranian wrote:
->>       On AMD processors, we need to allocate a data structure per Northbridge
->>       to handle certain events.
->>
->>       On CPU initialization, we need to query the Northbridge id and check
->>       whether the structure is already allocated or not. We use the
->>       amd_get_nb_id() function to request the Northbridge identification.
->>
->>       The recent cleanup of the CPU online/offline initialization introduced
->>       a bug. AMD cpu initialization is invoked on CPU_UP_PREPARE callback.
->>       This is before the CPU Northbridge id is calculated. Therefore no
->>       processor had a Northbridge structure allocated except the boot
->>       processor. That was causing bogus NB event scheduling.
->>
->>       This patch uses the CPU_ONLINE callback to initialize the AMD
->>       Northbridge structure. This way amd_get_nb_id() returns valid
->>       information.
->>
->>       The x86_cpu_up() callback was added. Could not call it cpu_online
->>       because of existing macro.
->>
->>       Signed-off-by: Stephane Eranian <eranian@google.com>
->
->
-> No, ONLINE is not exposed for a good reason, its always wrong.
->
-> Use prepare to allocate data, and starting to initialize stuff on the
-> cpu proper once its up. Online is after the cpu is up and running and we
-> are already scheduling stuff on it so its too late to initialize things.
->
->
-I can't because amd_get_nb_id() returns garbage for the CPU
-when you call from CPU_STARTING. So looks like initialization
-of cpu_llc_id needs to be moved way earlier. I don't want to have
-to duplicate that code.
+On Wed, 17 Mar 2010 11:41:10 -0500 (CDT)
+Christoph Lameter <cl@linux-foundation.org> wrote:
+
+> On Wed, 17 Mar 2010, KAMEZAWA Hiroyuki wrote:
+> 
+> > Ah, my point is "how use-after-free is detected ?"
+> 
+> The slab layers do not check for use after free conditions if
+> SLAB_DESTROY_BY_RCU is set. It is legal to access the object after a
+> kfree() etc as long as the RCU period has not passed.
+> 
+> > Then, my question is
+> > "Does use-after-free check for SLAB_DESTROY_BY_RCU work correctly ?"
+> 
+> Use after free checks are not performed for SLAB_DESTROY_BY_RCU slabs.
+> 
+Thank you for kindly clarification. I have no more concerns.
+
+Thanks,
+-Kame
+
+
