@@ -1,125 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752613Ab0CRFlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 01:41:17 -0400
-Received: from mga10.intel.com ([192.55.52.92]:18146 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752404Ab0CRFlP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 01:41:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,264,1267430400"; 
-   d="scan'208";a="550051799"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: kvm@vger.kernel.org
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-Date: Thu, 18 Mar 2010 13:41:15 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>,
-       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
-       Joerg Roedel <joerg.roedel@amd.com>
-References: <1268717232.2813.36.camel@localhost> <4BA1B132.5030509@redhat.com> <201003181322.28594.sheng@linux.intel.com>
-In-Reply-To: <201003181322.28594.sheng@linux.intel.com>
+	id S1752648Ab0CRFld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 01:41:33 -0400
+Received: from isrv.corpit.ru ([81.13.33.159]:49578 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752487Ab0CRFlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 01:41:31 -0400
+Message-ID: <4BA1BD08.4020401@msgid.tls.msk.ru>
+Date: Thu, 18 Mar 2010 08:41:28 +0300
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Dieter Ries <mail@dieterries.net>
+CC: Alexander Graf <agraf@suse.de>, Avi Kivity <avi@redhat.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
+References: <1258373983-8693-1-git-send-email-avi@redhat.com> <1258373983-8693-24-git-send-email-avi@redhat.com> <4BA1504A.3090801@dieterries.net> <808FF008-53B9-4271-904C-117A24ADF18C@suse.de> <20100317224002.GA5156@Localhorst.asterix.local>
+In-Reply-To: <20100317224002.GA5156@Localhorst.asterix.local>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003181341.15407.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 March 2010 13:22:28 Sheng Yang wrote:
-> On Thursday 18 March 2010 12:50:58 Zachary Amsden wrote:
-> > On 03/17/2010 03:19 PM, Sheng Yang wrote:
-> > > On Thursday 18 March 2010 05:14:52 Zachary Amsden wrote:
-> > >> On 03/16/2010 11:28 PM, Sheng Yang wrote:
-> > >>> On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
-> > >>>> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
-> > >>>>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
-> > >>>>>> Right, but there is a scope between kvm_guest_enter and really
-> > >>>>>> running in guest os, where a perf event might overflow. Anyway,
-> > >>>>>> the scope is very narrow, I will change it to use flag PF_VCPU.
-> > >>>>>
-> > >>>>> There is also a window between setting the flag and calling 'int
-> > >>>>> $2' where an NMI might happen and be accounted incorrectly.
-> > >>>>>
-> > >>>>> Perhaps separate the 'int $2' into a direct call into perf and
-> > >>>>> another call for the rest of NMI handling.  I don't see how it
-> > >>>>> would work on svm though - AFAICT the NMI is held whereas vmx
-> > >>>>> swallows it.
-> > >>>>>
-> > >>>>>    I guess NMIs
-> > >>>>> will be disabled until the next IRET so it isn't racy, just tricky.
-> > >>>>
-> > >>>> I'm not sure if vmexit does break NMI context or not. Hardware NMI
-> > >>>> context isn't reentrant till a IRET. YangSheng would like to double
-> > >>>> check it.
-> > >>>
-> > >>> After more check, I think VMX won't remained NMI block state for
-> > >>> host. That's means, if NMI happened and processor is in VMX non-root
-> > >>> mode, it would only result in VMExit, with a reason indicate that
-> > >>> it's due to NMI happened, but no more state change in the host.
-> > >>>
-> > >>> So in that meaning, there _is_ a window between VMExit and KVM handle
-> > >>> the NMI. Moreover, I think we _can't_ stop the re-entrance of NMI
-> > >>> handling code because "int $2" don't have effect to block following
-> > >>> NMI.
-> > >>>
-> > >>> And if the NMI sequence is not important(I think so), then we need to
-> > >>> generate a real NMI in current vmexit-after code. Seems let APIC send
-> > >>> a NMI IPI to itself is a good idea.
-> > >>>
-> > >>> I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
-> > >>> replace "int $2". Something unexpected is happening...
-> > >>
-> > >> You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't
-> > >> supposed to be able to.
-> > >
-> > > Um? Why?
-> > >
-> > > Especially kernel is already using it to deliver NMI.
-> >
-> > That's the only defined case, and it is defined because the vector field
-> > is ignore for DM_NMI.  Vol 3A (exact section numbers may vary depending
-> > on your version).
-> >
-> > 8.5.1 / 8.6.1
-> >
-> > '100 (NMI) Delivers an NMI interrupt to the target processor or
-> > processors.  The vector information is ignored'
-> >
-> > 8.5.2  Valid Interrupt Vectors
-> >
-> > 'Local and I/O APICs support 240 of these vectors (in the range of 16 to
-> > 255) as valid interrupts.'
-> >
-> > 8.8.4 Interrupt Acceptance for Fixed Interrupts
-> >
-> > '...; vectors 0 through 15 are reserved by the APIC (see also: Section
-> > 8.5.2, "Valid Interrupt Vectors")'
-> >
-> > So I misremembered, apparently you can deliver interrupts 0x10-0x1f, but
-> > vectors 0x00-0x0f are not valid to send via APIC or I/O APIC.
+Dieter Ries wrote:
+> On Wed, Mar 17, 2010 at 11:02:40PM +0100, Alexander Graf wrote:
+[]
+>> Are you 100% sure you don't have vmware, virtualbox, parallels, whatever running in parallel on that machine?
 > 
-> As you pointed out, NMI is not "Fixed interrupt". If we want to send NMI,
->  it would need a specific delivery mode rather than vector number.
-> 
-> And if you look at code, if we specific NMI_VECTOR, the delivery mode would
->  be set to NMI.
-> 
-> So what's wrong here?
+> Definitely. I have virtualbox installed, but haven't used it in months.
+> The others I don't use at all, so they are not installed either.
 
-OK, I think I understand your points now. You meant that these vectors can't 
-be filled in vector field directly, right? But NMI is a exception due to 
-DM_NMI. Is that your point? I think we agree on this.
+Dieter, we've talked with you on IRC yesterday...
 
--- 
-regards
-Yang, Sheng
+Can you take a look at what's in the startup script sequence on
+your machine, and what modules are loaded which may be related?
+What I'm trying to say: I don't know how virtualbox works, but it
+may come with a kernel module or a bootup script that touches SVM
+settings.
+
+/mjt
