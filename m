@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589Ab0CRVrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 17:47:09 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:48457 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752330Ab0CRVrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 17:47:08 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: users@rt2x00.serialmonkey.com
-Subject: rt2500usb broken since 2.6.29
-Date: Thu, 18 Mar 2010 22:46:53 +0100
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003182246.54889.linux@rainbow-software.org>
+	id S1752745Ab0CRVrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:47:35 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53596 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752330Ab0CRVrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 17:47:33 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Sonic Zhang <sonic.adi@gmail.com>
+Subject: [PATCH] time: Fix accumulation bug triggered by long delay.
+Date: Thu, 18 Mar 2010 14:47:30 -0700
+Message-Id: <1268948850-5225-1-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-rt2500usb is broken since kernel 2.6.29. It has been discussed before but 
-never solved:
-http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
-https://bugzilla.redhat.com/show_bug.cgi?id=484888
+The logarithmic accumulation done in the timekeeping has some overflow
+protection that limits the max shift value. That means it will take
+more then shift loops to accumulate all of the cycles. This causes
+the shift decrement to underflow, which causes the loop to never exit.
 
-I have Asus WL-167G and it really does not work. Scanning works, association 
-too but no packets can be sent (looks like receive works because tcpdump 
-shows packets from other machines). DHCP fails (No DHCPOFFERS received).
+The simplest fix would be simply to do a:
+	if (shift)
+		shift--;
 
-The problem is caused by this patch:
+However that is not optimal, as we know the cycle offset is larger
+then the interval << shift, the above would make shift drop to zero,
+then we would be spinning for quite awhile accumulating at interval
+chunks at a time.
 
-rt2x00: Implement HW encryption (rt2500usb)
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dddfb478b26e29a2b47f655ec219e743b8111015
+Instead, this patch only decreases shift if the offset is smaller
+then cycle_interval << shift.  This makes sure we accumulate using
+the largest chunks possible without overflowing tick_length, and limits
+the number of iterations through the loop.
 
-Removing it from 2.6.29 restores the functionality.
+This issue was found and reported by Sonic Zhang, who also tested the fix.
+Many thanks your explanation and testing!
 
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Sonic Zhang <sonic.adi@gmail.com>
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 1673637..39f6177 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -818,7 +818,8 @@ void update_wall_time(void)
+ 	shift = min(shift, maxshift);
+ 	while (offset >= timekeeper.cycle_interval) {
+ 		offset = logarithmic_accumulation(offset, shift);
+-		shift--;
++		if(offset < timekeeper.cycle_interval<<shift)
++			shift--;
+ 	}
+ 
+ 	/* correct the clock when NTP error is too big */
 -- 
-Ondrej Zary
+1.6.0.4
+
