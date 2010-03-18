@@ -1,229 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752172Ab0CRT0o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 15:26:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13772 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab0CRT0m convert rfc822-to-8bit (ORCPT
+	id S1752130Ab0CRTas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 15:30:48 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56345 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab0CRTaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 15:26:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=bmXTIjeY3JaO1G0xZhjL0Vbyop/vUGTgwC6da+59WOQ2MPJfbpFA7BGAZkh/uezbi
-	Ls7bwWAkU/RRBEZdHuh9w==
+	Thu, 18 Mar 2010 15:30:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rIH/7imy3t1Yadm6MnV8hn1BvqIff9MoGS8xH7WLyY/xbK2o0nDB56uq8cYdQV4Clr
+         J9kBOVICf6fuPC356CKbk6KMmoxvUKIInYJXuZimpGtUSeOBl8ZZWg6NrODDf/9YO/8v
+         +lbhNCkVrUiCVBjrv+j5NWdel+KrxLwAiLv5Y=
+Date: Thu, 18 Mar 2010 20:30:48 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       benh@kernel.crashing.org, linux-kernel@vger.kernel.org, anton@samba.org,
+       linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH v2] powerpc/perf_events: Implement
+	perf_arch_fetch_caller_regs
+Message-ID: <20100318193046.GD5103@nowhere>
+References: <20100318050513.GA6575@drongo>
 MIME-Version: 1.0
-In-Reply-To: <20100318175930.15143.28660.stgit@bob.kio>
-References: <20100318175852.15143.2124.stgit@bob.kio>
-	 <20100318175930.15143.28660.stgit@bob.kio>
-Date: Thu, 18 Mar 2010 12:26:38 -0700
-Message-ID: <3055132f1003181226w3db55bd8o506b1020d2e2218c@mail.gmail.com>
-Subject: Re: [PATCH v2 1/4] hpet: convert from ACPI to PNP driver
-From: Venkatesh Pallipadi <venki@google.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, Vojtech Pavlik <vojtech@suse.cz>,
-       linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318050513.GA6575@drongo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-
-On Thu, Mar 18, 2010 at 10:59 AM, Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
->
-> PNPACPI already parses _CRS, and does a more complete job than we did here,
-> so let's just take advantage of that.
->
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+On Thu, Mar 18, 2010 at 04:05:13PM +1100, Paul Mackerras wrote:
+> This implements a powerpc version of perf_arch_fetch_caller_regs.
+> It's implemented in assembly because that way we can be sure there
+> isn't a stack frame for perf_arch_fetch_caller_regs.  If it was in
+> C, gcc might or might not create a stack frame for it, which would
+> affect the number of levels we have to skip.
+> 
+> With this, we see results from perf record -e lock:lock_acquire like
+> this:
+> 
+> # Samples: 24878
+> #
+> # Overhead         Command      Shared Object  Symbol
+> # ........  ..............  .................  ......
+> #
+>     14.99%            perf  [kernel.kallsyms]  [k] ._raw_spin_lock
+>                       |
+>                       --- ._raw_spin_lock
+>                          |
+>                          |--25.00%-- .alloc_fd
+>                          |          (nil)
+>                          |          |
+>                          |          |--50.00%-- .anon_inode_getfd
+>                          |          |          .sys_perf_event_open
+>                          |          |          syscall_exit
+>                          |          |          syscall
+>                          |          |          create_counter
+>                          |          |          __cmd_record
+>                          |          |          run_builtin
+>                          |          |          main
+>                          |          |          0xfd2e704
+>                          |          |          0xfd2e8c0
+>                          |          |          (nil)
+> 
+> ... etc.
+> 
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 > ---
->
->  drivers/char/hpet.c |  109 +++++++++++++++------------------------------------
->  1 files changed, 33 insertions(+), 76 deletions(-)
->
->
-> diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-> index e481c59..5cb05ed 100644
-> --- a/drivers/char/hpet.c
-> +++ b/drivers/char/hpet.c
-> @@ -31,6 +31,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/bitops.h>
->  #include <linux/clocksource.h>
-> +#include <linux/pnp.h>
->
->  #include <asm/current.h>
->  #include <asm/uaccess.h>
-> @@ -40,7 +41,6 @@
->  #include <asm/div64.h>
->
->  #include <linux/acpi.h>
-> -#include <acpi/acpi_bus.h>
->  #include <linux/hpet.h>
->
->  /*
-> @@ -899,101 +899,56 @@ int hpet_alloc(struct hpet_data *hdp)
->        return 0;
->  }
->
-> -static acpi_status hpet_resources(struct acpi_resource *res, void *data)
-> +#ifdef CONFIG_PNP
-> +static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
->  {
-> -       struct hpet_data *hdp;
-> -       acpi_status status;
-> -       struct acpi_resource_address64 addr;
-> -
-> -       hdp = data;
-> -
-> -       status = acpi_resource_to_address64(res, &addr);
-> -
-> -       if (ACPI_SUCCESS(status)) {
-> -               hdp->hd_phys_address = addr.minimum;
-> -               hdp->hd_address = ioremap(addr.minimum, addr.address_length);
-> -
-> -               if (hpet_is_known(hdp)) {
-> -                       iounmap(hdp->hd_address);
-> -                       return AE_ALREADY_EXISTS;
-> -               }
-> -       } else if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
-> -               struct acpi_resource_fixed_memory32 *fixmem32;
-> -
-> -               fixmem32 = &res->data.fixed_memory32;
-> -               if (!fixmem32)
-> -                       return AE_NO_MEMORY;
-> -
-> -               hdp->hd_phys_address = fixmem32->address;
-> -               hdp->hd_address = ioremap(fixmem32->address,
-> -                                               HPET_RANGE_SIZE);
-> -
-> -               if (hpet_is_known(hdp)) {
-> -                       iounmap(hdp->hd_address);
-> -                       return AE_ALREADY_EXISTS;
-> -               }
-> -       } else if (res->type == ACPI_RESOURCE_TYPE_EXTENDED_IRQ) {
-> -               struct acpi_resource_extended_irq *irqp;
-> -               int i, irq;
-> -
-> -               irqp = &res->data.extended_irq;
-> -
-> -               for (i = 0; i < irqp->interrupt_count; i++) {
-> -                       irq = acpi_register_gsi(NULL, irqp->interrupts[i],
-> -                                     irqp->triggering, irqp->polarity);
-> -                       if (irq < 0)
-> -                               return AE_ERROR;
-> -
-> -                       hdp->hd_irq[hdp->hd_nirqs] = irq;
-> -                       hdp->hd_nirqs++;
-> -               }
-> -       }
-> -
-> -       return AE_OK;
-> -}
-> -
-> -static int hpet_acpi_add(struct acpi_device *device)
-> -{
-> -       acpi_status result;
->        struct hpet_data data;
-> +       struct resource *mem, *irq;
-> +       int i;
->
->        memset(&data, 0, sizeof(data));
->
-> -       result =
-> -           acpi_walk_resources(device->handle, METHOD_NAME__CRS,
-> -                               hpet_resources, &data);
-> -
-> -       if (ACPI_FAILURE(result))
-> +       mem = pnp_get_resource(dev, IORESOURCE_MEM, 0);
-> +       if (!mem)
->                return -ENODEV;
->
-> -       if (!data.hd_address || !data.hd_nirqs) {
-> -               printk("%s: no address or irqs in _CRS\n", __func__);
-> +       data.hd_phys_address = mem->start;
+>  arch/powerpc/include/asm/asm-compat.h |    2 ++
+>  arch/powerpc/kernel/misc.S            |   28 ++++++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/asm-compat.h b/arch/powerpc/include/asm/asm-compat.h
+> index c1b475a..a9b91ed 100644
+> --- a/arch/powerpc/include/asm/asm-compat.h
+> +++ b/arch/powerpc/include/asm/asm-compat.h
+> @@ -28,6 +28,7 @@
+>  #define PPC_LLARX(t, a, b, eh)	PPC_LDARX(t, a, b, eh)
+>  #define PPC_STLCX	stringify_in_c(stdcx.)
+>  #define PPC_CNTLZL	stringify_in_c(cntlzd)
+> +#define PPC_LR_STKOFF	16
+>  
+>  /* Move to CR, single-entry optimized version. Only available
+>   * on POWER4 and later.
+> @@ -51,6 +52,7 @@
+>  #define PPC_STLCX	stringify_in_c(stwcx.)
+>  #define PPC_CNTLZL	stringify_in_c(cntlzw)
+>  #define PPC_MTOCRF	stringify_in_c(mtcrf)
+> +#define PPC_LR_STKOFF	4
+>  
+>  #endif
+>  
+> diff --git a/arch/powerpc/kernel/misc.S b/arch/powerpc/kernel/misc.S
+> index 2d29752..b485a87 100644
+> --- a/arch/powerpc/kernel/misc.S
+> +++ b/arch/powerpc/kernel/misc.S
+> @@ -127,3 +127,31 @@ _GLOBAL(__setup_cpu_power7)
+>  _GLOBAL(__restore_cpu_power7)
+>  	/* place holder */
+>  	blr
 > +
-> +       if (hpet_is_known(&data))
->                return -ENODEV;
-> +
-> +       i = 0;
-> +       while (data.hd_nirqs < ARRAY_SIZE(data.hd_irq)) {
-> +               irq = pnp_get_resource(dev, IORESOURCE_IRQ, i++);
-> +               if (pnp_resource_valid(irq) && pnp_resource_enabled(irq))
-> +                       data.hd_irq[data.hd_nirqs++] = irq->start;
->        }
-> +       if (!data.hd_nirqs)
-> +               return -ENODEV;
-> +
-> +       data.hd_address = ioremap(mem->start, resource_size(mem));
->
->        return hpet_alloc(&data);
->  }
->
-> -static int hpet_acpi_remove(struct acpi_device *device, int type)
-> +static void hpet_pnp_remove(struct pnp_dev *dev)
->  {
->        /* XXX need to unregister clocksource, dealloc mem, etc */
-> -       return -EINVAL;
->  }
->
-> -static const struct acpi_device_id hpet_device_ids[] = {
-> +static const struct pnp_device_id hpet_device_ids[] = {
->        {"PNP0103", 0},
->        {"", 0},
->  };
->  MODULE_DEVICE_TABLE(acpi, hpet_device_ids);
->
-> -static struct acpi_driver hpet_acpi_driver = {
-> +static struct pnp_driver hpet_pnp_driver = {
->        .name = "hpet",
-> -       .ids = hpet_device_ids,
-> -       .ops = {
-> -               .add = hpet_acpi_add,
-> -               .remove = hpet_acpi_remove,
-> -               },
-> +       .id_table = hpet_device_ids,
-> +       .probe = hpet_pnp_add,
-> +       .remove = hpet_pnp_remove,
->  };
-> +#endif
->
->  static struct miscdevice hpet_misc = { HPET_MINOR, "hpet", &hpet_fops };
->
-> @@ -1007,26 +962,28 @@ static int __init hpet_init(void)
->
->        sysctl_header = register_sysctl_table(dev_root);
->
-> -       result = acpi_bus_register_driver(&hpet_acpi_driver);
-> +#ifdef CONFIG_PNP
-> +       result = pnp_register_driver(&hpet_pnp_driver);
->        if (result < 0) {
->                if (sysctl_header)
->                        unregister_sysctl_table(sysctl_header);
->                misc_deregister(&hpet_misc);
->                return result;
->        }
-> +#endif
->
->        return 0;
->  }
->
->  static void __exit hpet_exit(void)
->  {
-> -       acpi_bus_unregister_driver(&hpet_acpi_driver);
-> +#ifdef CONFIG_PNP
-> +       pnp_unregister_driver(&hpet_pnp_driver);
-> +#endif
->
->        if (sysctl_header)
->                unregister_sysctl_table(sysctl_header);
->        misc_deregister(&hpet_misc);
-> -
-> -       return;
->  }
->
->  module_init(hpet_init);
->
->
+> +#ifdef CONFIG_EVENT_TRACING
+> +/*
+> + * Get a minimal set of registers for our caller's nth caller.
+> + * r3 = regs pointer, r5 = n.
+> + *
+> + * We only get R1 (stack pointer), NIP (next instruction pointer)
+> + * and LR (link register).  These are all we can get in the
+> + * general case without doing complicated stack unwinding, but
+> + * fortunately they are enough to do a stack backtrace, which
+> + * is all we need them for.
+> + */
+> +_GLOBAL(perf_arch_fetch_caller_regs)
+> +	mr	r6,r1
+> +	cmpwi	r5,0
+> +	mflr	r4
+> +	ble	2f
+> +	mtctr	r5
+> +1:	PPC_LL	r6,0(r6)
+> +	bdnz	1b
+> +	PPC_LL	r4,PPC_LR_STKOFF(r6)
+> +2:	PPC_LL	r7,0(r6)
+> +	PPC_LL	r7,PPC_LR_STKOFF(r7)
+> +	PPC_STL	r6,GPR1-STACK_FRAME_OVERHEAD(r3)
+> +	PPC_STL	r4,_NIP-STACK_FRAME_OVERHEAD(r3)
+> +	PPC_STL	r7,_LINK-STACK_FRAME_OVERHEAD(r3)
+> +	blr
+> +#endif /* CONFIG_EVENT_TRACING */
+
+
+Ingo has reported me that context-switches software events
+(not the trace event version) have crappy callchains.
+
+So, while looking into it:
+
+- PERF_COUNT_SW_CPU_MIGRATIONS provides no regs.
+Heh, and it event doesn't work because of this perf_swevent_add
+give up if regs are NULL.
+Has PERF_COUNT_SW_CPU_MIGRATIONS ever worked?
+
+- PERF_COUNT_SW_CONTEXT_SWITCHES uses task_pt_regs(). This
+seems a very wrong thing. We don't want the regs when a user
+task was interrupted or before a syscall.
+That notwithstanding task_pt_regs() on kernel threads
+has insane effects.
+
+What we want for both is a hot regs snapshot.
+I'm going to fix this. But it means the CONFIG_EVENT_TRACING
+dependency is not true anymore. So I can't keep the exported
+symbol of perf_arch_fetch_caller_regs() in trace_event_perf.c.
+
+The ideal would be to put the EXPORT_SYMBOL in perf_event.c
+but doing so in the same file a weak symbol is defined has
+unpredictable effects. So I'm going to make it a macro as I
+don't have the choice. I'll update ppc at the same time but I
+can't guarantee it will even build :)
+
+Thanks.
+
