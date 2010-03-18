@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab0CRXAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 19:00:06 -0400
-Received: from lucidpixels.com ([75.144.35.66]:41709 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab0CRXAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 19:00:04 -0400
-Date: Thu, 18 Mar 2010 19:00:02 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org
-Subject: Re: 2.6.34-rc1: pci 0000:00:00.0: address space collision / spontaenous
- reboots [now 2.6.34-rc1]
-In-Reply-To: <201003181658.38462.bjorn.helgaas@hp.com>
-Message-ID: <alpine.DEB.2.00.1003181858590.27400@p34.internal.lan>
-References: <alpine.DEB.2.00.1003120522550.6420@p34.internal.lan> <4B9AB7AE.7000002@kernel.org> <alpine.DEB.2.00.1003121859240.6929@p34.internal.lan> <201003181658.38462.bjorn.helgaas@hp.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753007Ab0CRXAU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 19:00:20 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:16426 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab0CRXAS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 19:00:18 -0400
+Message-ID: <4BA2B028.8060705@oracle.com>
+Date: Thu, 18 Mar 2010 15:58:48 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: =?ISO-8859-1?Q?Ren=E9_Bolldorf?= <xsecute@googlemail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] drivers/pci/pci.c Section mismatch
+References: <4BA2A46E.5090008@googlemail.com>
+In-Reply-To: <4BA2A46E.5090008@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BA2B07F.0046:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/18/10 15:08, René Bolldorf wrote:
+> Signed-off-by: Rene Bolldorf <xsecute@googlemail.com>
+> 
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index ddd55dc..a1f7d93 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -2773,7 +2773,7 @@ int pci_resource_bar(struct pci_dev *dev, int
+> resno, enum pci_bar_type *type)
+>  /* Some architectures require additional programming to enable VGA */
+>  static arch_set_vga_state_t arch_set_vga_state;
+> 
+> -void __init pci_register_set_vga_state(arch_set_vga_state_t func)
+> +void pci_register_set_vga_state(arch_set_vga_state_t func)
+>  {
+>      arch_set_vga_state = func;    /* NULL disables */
+>  }
+> -- 
 
+Hi,
 
-On Thu, 18 Mar 2010, Bjorn Helgaas wrote:
+Please put the offending/warning messages in the patch description.
+Include your analysis if it isn't obvious.
 
-> On Saturday 13 March 2010 02:01:32 am Justin Piszcz wrote:
->> It stayed up for approximately 8-9 hours, then it crashed again.
->>
->> It is either a DOA motherboard OR the memory mapping is causing problems..
->
-> Hi Justin,
->
-> Did you ever make any more progress on this?  I don't have any ideas;
-> just wondering whether you learned anything.
->
-> Bjorn
->
-
-Hello,
-
-I swapped the motherboard with the ASUS and all problems have disappeared. 
-Someone else e-mailed me with a similar issue (freeze/hang/etc) with a 
-similar motherboard (but UDP3 instead of 5 I believe) and they could not 
-find a solution either, they were trying to install Fedora.
-
-Justin.
+thanks,
+-- 
+~Randy
