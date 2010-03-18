@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab0CRWaM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:30:12 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:42035 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab0CRWaJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:30:09 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAN5FokurRN+K/2dsb2JhbACbLnOjbph9hHkEgx0
-X-IronPort-AV: E=Sophos;i="4.51,269,1267401600"; 
-   d="scan'208";a="499130192"
-From: Roland Dreier <rdreier@cisco.com>
-To: Greg KH <greg@kroah.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Alex Chiang <achiang@hp.com>,
-       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] small xhci cleanups
-References: <20100316204845.GJ8278@ldl.fc.hp.com>
-	<20100309184723.GA31374@kroah.com> <20100316212445.GA15729@xanatos>
-	<20100316214014.GA8839@kroah.com> <20100318213308.GA5461@xanatos>
-	<20100318221958.GB3299@kroah.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 18 Mar 2010 15:30:05 -0700
-In-Reply-To: <20100318221958.GB3299@kroah.com> (Greg KH's message of "Thu, 18
-	Mar 2010 15:19:58 -0700")
-Message-ID: <ada1vfh6z6a.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752275Ab0CRWi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:38:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16843 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab0CRWi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 18:38:58 -0400
+Date: Thu, 18 Mar 2010 23:37:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>, Roland McGrath <roland@redhat.com>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] move tty_kref_put() outside of __cleanup_signal()
+Message-ID: <20100318223736.GA12944@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > > I think the end user doesn't want to see anything from the driver unless
- > > something serious has gone wrong.  But those cases use xhci_warn(),
- > > which translates down to dev_warn(), instead of xhci_dbg().
- > 
- > Yes, that's fine.  But you need/want something for when a user reports a
- > problem, and they can't rebuild their kernel.
+tty_kref_put() have two callsites in copy_process() pathes,
 
-Yes, just to be clear (and I'm pretty sure I'm agreeing with Greg here)
-any warnings that you want always enabled to show something in the
-kernel log whenever there's a problem should be dev_warn() or
-equivalent.
+	1. if copy_process() suceeds it is called before we copy
+	   signal->tty from parent
 
-Things that produce too much output and that you only want on when
-you're debugging a problem are probably best done via trace events.
+	2. otherwise it is called from __cleanup_signal() under
+	   bad_fork_cleanup_signal: label
 
- - R.
--- 
-Roland Dreier  <rolandd@cisco.com>
-For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+In both cases tty_kref_put() is not right and unneeded because we don't
+have the balancing tty_kref_get(). Fortunately, this is harmless because
+this can only happen without CLONE_THREAD, and in this case signal->tty
+must be NULL.
+
+Remove tty_kref_put() from copy_process() and __cleanup_signal(), and
+change another caller of __cleanup_signal(), __exit_signal(), to call
+tty_kref_put() by hand.
+
+I hope this change makes sense by itself, but it is also needed to
+make ->signal refcountable.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ kernel/fork.c |    2 --
+ kernel/exit.c |    1 +
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+--- 34-rc1/kernel/fork.c~7_TTY_PUT	2010-03-17 16:04:22.000000000 +0100
++++ 34-rc1/kernel/fork.c	2010-03-18 22:45:14.000000000 +0100
+@@ -896,7 +896,6 @@ static int copy_signal(unsigned long clo
+ void __cleanup_signal(struct signal_struct *sig)
+ {
+ 	thread_group_cputime_free(sig);
+-	tty_kref_put(sig->tty);
+ 	kmem_cache_free(signal_cachep, sig);
+ }
+ 
+@@ -1264,7 +1263,6 @@ static struct task_struct *copy_process(
+ 				p->nsproxy->pid_ns->child_reaper = p;
+ 
+ 			p->signal->leader_pid = pid;
+-			tty_kref_put(p->signal->tty);
+ 			p->signal->tty = tty_kref_get(current->signal->tty);
+ 			attach_pid(p, PIDTYPE_PGID, task_pgrp(current));
+ 			attach_pid(p, PIDTYPE_SID, task_session(current));
+--- 34-rc1/kernel/exit.c~7_TTY_PUT	2010-03-17 20:05:38.000000000 +0100
++++ 34-rc1/kernel/exit.c	2010-03-18 22:46:41.000000000 +0100
+@@ -150,6 +150,7 @@ static void __exit_signal(struct task_st
+ 		 * see account_group_exec_runtime().
+ 		 */
+ 		task_rq_unlock_wait(tsk);
++		tty_kref_put(sig->tty);
+ 		__cleanup_signal(sig);
+ 	}
+ }
+
