@@ -1,18 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0CRNqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:46:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22938 "EHLO mx1.redhat.com"
+	id S1753619Ab0CRNsY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:48:24 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57771 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab0CRNqw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:46:52 -0400
-Message-ID: <4BA22E9E.4000607@redhat.com>
-Date: Thu, 18 Mar 2010 15:46:06 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "Frank Ch. Eigler" <fche@redhat.com>, Alexander Graf <agraf@suse.de>,
+	id S1753474Ab0CRNsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 09:48:22 -0400
+Date: Thu, 18 Mar 2010 14:48:13 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Frank Ch. Eigler" <fche@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
        Anthony Liguori <anthony@codemonkey.ws>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -24,84 +21,96 @@ CC: "Frank Ch. Eigler" <fche@redhat.com>, Alexander Graf <agraf@suse.de>,
        Fr?d?ric Weisbecker <fweisbec@gmail.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-References: <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <F0F75B33-C0BA-42EB-BFC4-D60B1E232E6D@suse.de> <20100318101025.GA13073@elte.hu> <4BA1FEB0.7000400@redhat.com> <20100318113527.GA13168@elte.hu> <y0m4okdzu4z.fsf@fche.csb> <20100318130226.GB7424@elte.hu> <4BA22663.7070509@redhat.com> <20100318133124.GA25642@elte.hu>
-In-Reply-To: <20100318133124.GA25642@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20100318134813.GB25642@elte.hu>
+References: <20100317081041.GC16374@elte.hu>
+ <4BA1E24B.6090904@redhat.com>
+ <20100318085607.GB2157@elte.hu>
+ <F0F75B33-C0BA-42EB-BFC4-D60B1E232E6D@suse.de>
+ <20100318101025.GA13073@elte.hu>
+ <4BA1FEB0.7000400@redhat.com>
+ <20100318113527.GA13168@elte.hu>
+ <y0m4okdzu4z.fsf@fche.csb>
+ <20100318130226.GB7424@elte.hu>
+ <20100318132421.GA23126@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318132421.GA23126@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 03:31 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 03/18/2010 03:02 PM, Ingo Molnar wrote:
->>      
->>>        
->>>> [...] What users eagerly replace their kernels?
->>>>          
->>> Those 99% who click on the 'install 193 updates' popup.
->>>
->>>        
->> Of which 1 is the kernel, and 192 are userspace updates (of which one may be
->> qemu).
->>      
-> I think you didnt understand my (tersely explained) point - which is probably
-> my fault. What i said is:
->
->   - distros update the kernel first. Often in stable releases as well if
->     there's a new kernel released. (They must because it provides new hardware
->     enablement and other critical changes they generally cannot skip.)
->    
 
-No, they don't.  RHEL 5 is still on 2.6.18, for example.  Users don't 
-like their kernels updated unless absolutely necessary, with good reason.
+* Frank Ch. Eigler <fche@redhat.com> wrote:
 
-Kernel updates = reboots.
+> Hi -
+> 
+> > > > [...]
+> > > > Distributions are very eager to update kernels even in stable periods of the 
+> > > > distro lifetime - they are much less willing to update user-space packages.
+> > > > [...]
+> > > 
+> > > Sorry, er, what?  What distributions eagerly upgrade kernels in stable 
+> > > periods, were it not primarily motivated by security fixes? [...]
+> > 
+> > Please check the popular distro called 'Fedora' for example
+> 
+> I do believe I've heard of it.  According to fedora bodhi, there have
+> been 18 kernel updates issues for fedora 11 since its release, of
+> which 12 were for purely security updates, and most of the other six
+> also contain security fixes.  None are described as 'enhancement'
+> updates.  Oh, what about fedora 12?  8 updates total, of which 5 are
+> security only, one for drm showstoppers, others including security
+> fixes, again 0 tagged as 'enhancement'.
+> 
+> So where is that "eagerness" again??  My sense is that most users are
+> happy to leave a stable kernel running as long as possible, and
+> distributions know this.  You surely must understand that the lkml
+> demographics are different.
+> 
+> > and its kernel upgrade policies.
+> 
+> [citation needed]
 
->   - Qemu on the other hand is not upgraded with (nearly) that level of urgency.
->     Completely new versions will generally have to wait for the next distro
->     release.
->    
+You are quite wrong, despite the sarcastic tone you are attempting to use, and 
+this is distro kernel policy 101.
 
-F12 recently updated to 2.6.32.  This is probably due to 2.6.31.stable 
-dropping away, and no capacity at Fedora to maintain it on their own.  
-So they are caught in a bind - stay on 2.6.31 and expose users to 
-security vulnerabilities or move to 2.6.32 and cause regressions.  Not a 
-happy choice.
+For distros such as Fedora it's simpler to support the same kernel version 
+across many older versions of the distro than having to support different 
+kernel versions.
 
-> With in-kernel tools the kernel and the tooling that accompanies the kernel
-> are upgraded in the same low-latency pathway. That is a big plus if you are
-> offering things like instrumentation (which perf does), which relates closely
-> to the kernel.
->
-> Furthermore, many distros package up the latest -git kernel as well. They
-> almost never do that with user-space packages.
->    
+Check Fedora 12 for example. Four months ago it was released with kernel 
+v2.6.31:
 
-I'm sure if we ask the Fedora qemu maintainer to package qemu-kvm.git 
-they'll consider it favourably.  Isn't that what rawhide is for?
+ http://download.fedora.redhat.com/pub/fedora/linux/releases/12/Fedora/x86_64/os/Packages/kernel-2.6.31.5-127.fc12.x86_64.rpm
 
-> Let me give you a specific example:
->
-> I'm running Fedora Rawhide with 2.6.34-rc1 right now on my main desktop, and
-> that comes with perf-2.6.34-0.10.rc1.git0.fc14.noarch.
->
-> My rawhide box has qemu-kvm-0.12.3-3.fc14.x86_64 installed. That's more than a
-> 1000 Qemu commits older than the latest Qemu development branch.
->
-> So by being part of the kernel repo there's lower latency upgrades and earlier
-> and better testing available on most distros.
->
-> You made it very clear that you dont want that, but please dont try to claim
-> that those advantages do not exist - they are very much real and we are making
-> good use of it.
->    
+But if you update a Fedora 12 installation today you'll get kernel v2.6.32:
 
-I don't mind at all if rawhide users run on the latest and greatest, but 
-release users deserve a little more stability.
+ http://download.fedora.redhat.com/pub/fedora/linux/updates/12/SRPMS/kernel-2.6.32.9-70.fc12.src.rpm
 
--- 
-error compiling committee.c: too many arguments to function
+As a result you'll get a new 2.6.32 kernel on Fedora 12.
 
+The end result is what i said in the previous mail: that you'll get a newer 
+kernel even on a stable distro - while user-space packages will only be 
+updated if there's a security issue (and even then there's no version jump 
+like for the kernel).
+
+> > > [...] What users eagerly replace their kernels?
+> >
+> > Those 99% who click on the 'install 193 updates' popup.
+> 
+> That's not "eager".  That's "I'm exasperated from guessing what's really 
+> important; let's not have so many updates; meh".
+
+Erm, fact is, 99% [WAG] of the users click on the update button and accept 
+whatever kernel version the distro update offers them.
+
+	Ingo
