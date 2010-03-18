@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751808Ab0CRXSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 19:18:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46106 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171Ab0CRXSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 19:18:33 -0400
-Date: Fri, 19 Mar 2010 00:16:32 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] move tty_kref_put() outside of __cleanup_signal()
-Message-ID: <20100318231632.GA13591@redhat.com>
-References: <20100318223736.GA12944@redhat.com> <20100318225102.6a5578d9@lxorguk.ukuu.org.uk>
+	id S1752132Ab0CRXT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 19:19:58 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:26164 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0CRXT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 19:19:56 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Subject: Re: 2.6.34-rc1: pci 0000:00:00.0: address space collision / spontaenous reboots [now 2.6.34-rc1]
+Date: Thu, 18 Mar 2010 16:19:54 -0700
+User-Agent: KMail/1.9.10
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+       linux-pci@vger.kernel.org
+References: <alpine.DEB.2.00.1003120522550.6420@p34.internal.lan> <201003181658.38462.bjorn.helgaas@hp.com> <alpine.DEB.2.00.1003181858590.27400@p34.internal.lan>
+In-Reply-To: <alpine.DEB.2.00.1003181858590.27400@p34.internal.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100318225102.6a5578d9@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <201003181719.55238.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18, Alan Cox wrote:
->
-> > -			tty_kref_put(p->signal->tty);
-> >  			p->signal->tty = tty_kref_get(current->signal->tty);
->
-> That bit needs commenting clearly or a WARN_ON() that p->signal->tty is
-> NULL before the get otherwise when the assumption is broken the flaw will
-> be subtle and hard to find.
+On Thursday 18 March 2010 05:00:02 pm Justin Piszcz wrote:
+> On Thu, 18 Mar 2010, Bjorn Helgaas wrote:
+> 
+> > On Saturday 13 March 2010 02:01:32 am Justin Piszcz wrote:
+> >> It stayed up for approximately 8-9 hours, then it crashed again.
+> >>
+> >> It is either a DOA motherboard OR the memory mapping is causing problems..
+> >
+> > Did you ever make any more progress on this?  I don't have any ideas;
+> > just wondering whether you learned anything.
 
-Well. It must be NULL. This tty_kref_get() was added by
-9c9f4ded90a59eee84e15f5fd38c03d60184e112, and the same commit also added
-sig->tty = NULL into copy_signal(). With the recent changes in copy_signal()
-it must be NULL due to zalloc().
+> I swapped the motherboard with the ASUS and all problems have disappeared. 
+> Someone else e-mailed me with a similar issue (freeze/hang/etc) with a 
+> similar motherboard (but UDP3 instead of 5 I believe) and they could not 
+> find a solution either, they were trying to install Fedora.
 
-But this doesn't matter. We should not do tty_kref_put() even if it is not
-NULL. If we do "put", we need the balancing "get" which we do not have.
-That is why this "get" is not only unneeded, but wrong imho.
+Huh.  You started with a Gigabyte board, IIRC, and replaced it with
+an ASUS, so we can't tell if you just had a defective Gigabyte board,
+or if there's something we need to fix in Linux.
 
-Probably the little comment makes sense, but I don't really understand what
-it should explain. To me, this is like list_add_tail(&init_task.tasks) few
-lines below. We do not have the comment to explain the "missing" list_del().
-This task is new, nobody can see/use it before we drop the locks. NULL or not,
-its signal->tty is just uninitialized yet.
+The other poster with a similar board and similar symptoms sounds
+interesting, though.  You don't have a pointer to a bugzilla or
+email discussion, do you?
 
-> > --- 34-rc1/kernel/exit.c~7_TTY_PUT	2010-03-17 20:05:38.000000000 +0100
-> > +++ 34-rc1/kernel/exit.c	2010-03-18 22:46:41.000000000 +0100
-> > @@ -150,6 +150,7 @@ static void __exit_signal(struct task_st
-> >  		 * see account_group_exec_runtime().
-> >  		 */
-> >  		task_rq_unlock_wait(tsk);
-> > +		tty_kref_put(sig->tty);
->
-> and a sig->tty = NULL assignment to trap races might not go amiss here
-> perhaps ?
-
-Indeed ;)
-
-The subsequent patches will do this, we need more changes anyway. Currently
-this doesn't matter because we are going to kfree() this memory unconditionally.
-But when we pin ->signal to task_struct, we should clear ->signal->tty before
-we drop ->siglock, then tty_kref_put().
-
-Oleg.
-
+Bjorn
