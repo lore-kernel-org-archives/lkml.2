@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab0CRBFF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 21:05:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:31738 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab0CRBFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 21:05:03 -0400
+	id S1754845Ab0CRBTu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 21:19:50 -0400
+Received: from mga10.intel.com ([192.55.52.92]:65228 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754089Ab0CRBTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 21:19:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.51,262,1267430400"; 
-   d="scan'208";a="781767589"
-Date: Thu, 18 Mar 2010 09:05:00 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "vgoyal@redhat.com" <vgoyal@redhat.com>,
-       "jmoyer@redhat.com" <jmoyer@redhat.com>,
-       "guijianfeng@cn.fujitsu.com" <guijianfeng@cn.fujitsu.com>,
-       "Shi, Alex" <alex.shi@intel.com>
-Subject: Re: [RFC]cfq-iosched: fix a kbuild regression
-Message-ID: <20100318010459.GA26716@sli10-desk.sh.intel.com>
-References: <20100316025656.GA15390@sli10-desk.sh.intel.com>
- <20100317133019.GV5768@kernel.dk>
- <4e5e476b1003171124y791a25a8n6c31368f182b52a9@mail.gmail.com>
+   d="scan'208";a="550004982"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
+Date: Thu, 18 Mar 2010 09:19:00 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
+       Joerg Roedel <joerg.roedel@amd.com>
+References: <1268717232.2813.36.camel@localhost> <201003171728.43739.sheng@linux.intel.com> <4BA1464C.2020507@redhat.com>
+In-Reply-To: <4BA1464C.2020507@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4e5e476b1003171124y791a25a8n6c31368f182b52a9@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003180919.01090.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 02:24:10AM +0800, Corrado Zoccolo wrote:
-> On Wed, Mar 17, 2010 at 2:30 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> > On Tue, Mar 16 2010, Shaohua Li wrote:
-> >> Alex Shi reported a kbuild regression which is about 10% performance lost.
-> >> He bisected to this commit: 3dde36ddea3e07dd025c4c1ba47edec91606fec0.
-> >> The reason is cfqq_close() can't find close cooperator. If we store the seek
-> >> distance to the value before the commit like below, the regression fully goes
-> >> away. If this is too invasive, just changing the cfq_rq_close() for the
-> >> !for_preempt is ok too.
+On Thursday 18 March 2010 05:14:52 Zachary Amsden wrote:
+> On 03/16/2010 11:28 PM, Sheng Yang wrote:
+> > On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
+> >> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
+> >>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
+> >>>> Right, but there is a scope between kvm_guest_enter and really running
+> >>>> in guest os, where a perf event might overflow. Anyway, the scope is
+> >>>> very narrow, I will change it to use flag PF_VCPU.
+> >>>
+> >>> There is also a window between setting the flag and calling 'int $2'
+> >>> where an NMI might happen and be accounted incorrectly.
+> >>>
+> >>> Perhaps separate the 'int $2' into a direct call into perf and another
+> >>> call for the rest of NMI handling.  I don't see how it would work on
+> >>> svm though - AFAICT the NMI is held whereas vmx swallows it.
+> >>>
+> >>>   I guess NMIs
+> >>> will be disabled until the next IRET so it isn't racy, just tricky.
+> >>
+> >> I'm not sure if vmexit does break NMI context or not. Hardware NMI
+> >> context isn't reentrant till a IRET. YangSheng would like to double
+> >> check it.
 > >
-> > Corrado, any objections to widening the seek threshold?
+> > After more check, I think VMX won't remained NMI block state for host.
+> > That's means, if NMI happened and processor is in VMX non-root mode, it
+> > would only result in VMExit, with a reason indicate that it's due to NMI
+> > happened, but no more state change in the host.
+> >
+> > So in that meaning, there _is_ a window between VMExit and KVM handle the
+> > NMI. Moreover, I think we _can't_ stop the re-entrance of NMI handling
+> > code because "int $2" don't have effect to block following NMI.
+> >
+> > And if the NMI sequence is not important(I think so), then we need to
+> > generate a real NMI in current vmexit-after code. Seems let APIC send a
+> > NMI IPI to itself is a good idea.
+> >
+> > I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
+> > replace "int $2". Something unexpected is happening...
 > 
-> The previous seek threshold value was meant to be compared with the
-> average seek distance, so it was large to account for variations.
-> Since we handle the variations differently, we should have a smaller
-> value now (the 100 * 8 was the result of a benchmark run on several
-> disks).
-Our test doesn't find any issue with the seek threshold so far, so it proberly
-is ok.
+> You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't
+> supposed to be able to.
 
-> I agreee, though, that for merging queues, it is now too small, so we
-> should have two thresholds, the current one used to determine if a
-> request causes a seek, and an other to be used inside cfq_close (with
-> the older value, regardless of for_preempt).
-That makes sense. Updated patch.
+Um? Why?
 
+Especially kernel is already using it to deliver NMI.
 
-Alex Shi reported a kbuild regression which is about 10% performance lost.
-He bisected to this commit: 3dde36ddea3e07dd025c4c1ba47edec91606fec0.
-The reason is cfqq_close() can't find close cooperator. Restoring 
-cfq_rq_close()'s threshold to original value makes the regression go away.
-
-Since for_preempt parameter isn't used anymore, this patch deletes it.
-
-Reported-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index dee9d93..8d5a2f2 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -47,6 +47,7 @@ static const int cfq_hist_divisor = 4;
- #define CFQ_SERVICE_SHIFT       12
- 
- #define CFQQ_SEEK_THR		(sector_t)(8 * 100)
-+#define CFQQ_CLOSE_THR		(sector_t)(8 * 1024)
- #define CFQQ_SECT_THR_NONROT	(sector_t)(2 * 32)
- #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
- 
-@@ -1660,9 +1661,9 @@ static inline sector_t cfq_dist_from_last(struct cfq_data *cfqd,
- }
- 
- static inline int cfq_rq_close(struct cfq_data *cfqd, struct cfq_queue *cfqq,
--			       struct request *rq, bool for_preempt)
-+			       struct request *rq)
- {
--	return cfq_dist_from_last(cfqd, rq) <= CFQQ_SEEK_THR;
-+	return cfq_dist_from_last(cfqd, rq) <= CFQQ_CLOSE_THR;
- }
- 
- static struct cfq_queue *cfqq_close(struct cfq_data *cfqd,
-@@ -1689,7 +1690,7 @@ static struct cfq_queue *cfqq_close(struct cfq_data *cfqd,
- 	 * will contain the closest sector.
- 	 */
- 	__cfqq = rb_entry(parent, struct cfq_queue, p_node);
--	if (cfq_rq_close(cfqd, cur_cfqq, __cfqq->next_rq, false))
-+	if (cfq_rq_close(cfqd, cur_cfqq, __cfqq->next_rq))
- 		return __cfqq;
- 
- 	if (blk_rq_pos(__cfqq->next_rq) < sector)
-@@ -1700,7 +1701,7 @@ static struct cfq_queue *cfqq_close(struct cfq_data *cfqd,
- 		return NULL;
- 
- 	__cfqq = rb_entry(node, struct cfq_queue, p_node);
--	if (cfq_rq_close(cfqd, cur_cfqq, __cfqq->next_rq, false))
-+	if (cfq_rq_close(cfqd, cur_cfqq, __cfqq->next_rq))
- 		return __cfqq;
- 
- 	return NULL;
-@@ -3103,7 +3104,7 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
- 	 * if this request is as-good as one we would expect from the
- 	 * current cfqq, let it preempt
- 	 */
--	if (cfq_rq_close(cfqd, cfqq, rq, true))
-+	if (cfq_rq_close(cfqd, cfqq, rq))
- 		return true;
- 
- 	return false;
+-- 
+regards
+Yang, Sheng
