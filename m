@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab0CRPWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:22:13 -0400
+	id S1753126Ab0CRPWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 11:22:18 -0400
 Received: from mail-pw0-f46.google.com ([209.85.160.46]:53376 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab0CRPWK (ORCPT
+	with ESMTP id S1751182Ab0CRPWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:22:10 -0400
+	Thu, 18 Mar 2010 11:22:14 -0400
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: [V2 PATCH 00/10] of: Consolidate scattered device node pointers in
-	struct device
+Subject: [V2 PATCH 01/10] driver-core: Add device node pointer to struct device
 To: davem@davemloft.net, benh@kernel.crashing.org,
        linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
        linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
        microblaze-uclinux@itee.uq.edu.au
-Date: Thu, 18 Mar 2010 09:22:05 -0600
-Message-ID: <20100318144836.21082.93040.stgit@angua>
+Date: Thu, 18 Mar 2010 09:22:11 -0600
+Message-ID: <20100318152210.21082.2549.stgit@angua>
+In-Reply-To: <20100318144836.21082.93040.stgit@angua>
+References: <20100318144836.21082.93040.stgit@angua>
 User-Agent: StGIT/0.14.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,211 +25,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, each of_device has a copy of the device tree node pointer in both
-.node, and in .dev.archdata.of_node (microblaze and powerpc) or
-.dev.archdata.prom_node (sparc).  Also, other architectures will be adding
-CONFIG_OF support, and they will also need a reference to the device tree
-node pointer from struct device.
+Currently, platforms using CONFIG_OF add a 'struct device_node *of_node'
+to dev->archdata.  However, with CONFIG_OF becoming generic for all
+architectures, it makes sense for commonality to move it out of archdata
+and into struct device proper.
 
-This series consolidates the device node pointer by adding .of_node to
-struct device (conditional on CONFIG_OF) and removing the archdata.of_node,
-archdata.prom_node and of_device.node users.  The pointer is moved out of
-dev_archdata and into struct device proper so that of_node doesn't need to
-get manually added to archdata for each architecture that enables CONFIG_OF.
+This patch adds a struct device_node *of_node member to struct device
+and updates all locations which currently write the device_node pointer
+into archdata to also update dev->of_node.  Subsequent patches will
+modify callers to use the archdata location and ultimately remove
+the archdata member entirely.
 
-Based on v2.6.34-rc1
-
-Series should be fully bisectable.
- - Patch 1 adds the new device.of_node pointer and sets the value in all the
-   needed places.
- - Patches 2-6 eliminate all readers of the old values
- - Patch 7 removes references to the archdata stuff from drivers/of (there
-   are no more users at this point)
- - Patches 8-10 finally remove the old versions.
-
-My goal is to get patches 1-5 into linux-next as soon as I've collected acks.
-Dave, Michal and Ben, it would be fantastic if you're able to give this
-series a spin.  Once I've gotten the okay from you I can then start merging
-the driver changes from patch 6 as I receive acks from the various subsystem
-maintainers (I'm still maintaining the drivers changes in a large series of
-per-subsystem patches so I can add them to linux-next as maintainers
-respond, but for this posting I've rolled them all up to make it easy to
-handle.)  I'll add the last 4 patches to linux-next once all the driver
-changes are committed.
-
-Build tested on powerpc (32 & 64 bit), sparc (32 & 64), microblaze.  Booted
-on MPC5200.
-
-Difference from v1:
- - some cleanups and fixed more references to the old properties.
- - rolled all the drivers/ and sound/ changes into a single patch to
-   simplify review.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
 
-Grant Likely (10):
-      arch/sparc: Remove obsolete dev_archdata.prom_node and of_devce.node
-      arch/microblaze: Remove obsolete dev_archdata.of_node and of_devce.node
-      arch/powerpc: Remove obsolete dev_archdata.of_node and of_devce.node
-      of: eliminate calls to dev_archdata_set_node()
-      of/drivers: Always use struct device.of_node to get node pointer
-      arch/microblaze: Always use 'struct device.of_node' to get device node pointer.
-      arch/powerpc: Always use 'struct device.of_node' to get device node pointer.
-      arch/sparc: Always use 'struct device.of_node' to get device node pointer.
-      i2c/of: Allow device node to be passed via i2c_board_info
-      driver-core: Add device node pointer to struct device
+ arch/microblaze/kernel/of_device.c      |    1 +
+ arch/powerpc/kernel/of_device.c         |    1 +
+ arch/powerpc/kernel/pci-common.c        |    3 ++-
+ arch/powerpc/kernel/vio.c               |    3 ++-
+ arch/powerpc/platforms/ps3/system-bus.c |    1 +
+ arch/sparc/kernel/of_device_32.c        |    1 +
+ arch/sparc/kernel/of_device_64.c        |    1 +
+ arch/sparc/kernel/pci.c                 |    1 +
+ drivers/of/of_mdio.c                    |    1 +
+ drivers/of/of_spi.c                     |    1 +
+ include/linux/device.h                  |    4 ++++
+ 11 files changed, 16 insertions(+), 2 deletions(-)
 
+diff --git a/arch/microblaze/kernel/of_device.c b/arch/microblaze/kernel/of_device.c
+index 9a0f763..f6c5218 100644
+--- a/arch/microblaze/kernel/of_device.c
++++ b/arch/microblaze/kernel/of_device.c
+@@ -54,6 +54,7 @@ struct of_device *of_device_alloc(struct device_node *np,
+ 	dev->dev.parent = parent;
+ 	dev->dev.release = of_release_dev;
+ 	dev->dev.archdata.of_node = np;
++	dev->dev.of_node = np;
+ 
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, bus_id);
+diff --git a/arch/powerpc/kernel/of_device.c b/arch/powerpc/kernel/of_device.c
+index a359cb0..9577e6f 100644
+--- a/arch/powerpc/kernel/of_device.c
++++ b/arch/powerpc/kernel/of_device.c
+@@ -74,6 +74,7 @@ struct of_device *of_device_alloc(struct device_node *np,
+ 	dev->dev.parent = parent;
+ 	dev->dev.release = of_release_dev;
+ 	dev->dev.archdata.of_node = np;
++	dev->dev.of_node = np;
+ 
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 2597f95..5f9e2c8 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1111,8 +1111,9 @@ void __devinit pcibios_setup_bus_devices(struct pci_bus *bus)
+ 		if (dev->is_added)
+ 			continue;
+ 
+-		/* Setup OF node pointer in archdata */
++		/* Setup OF node pointer in the device */
+ 		sd->of_node = pci_device_to_OF_node(dev);
++		dev->dev.of_node = pci_device_to_OF_node(dev);
+ 
+ 		/* Fixup NUMA node as it may not be setup yet by the generic
+ 		 * code and is needed by the DMA init
+diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
+index 77f6421..0670843 100644
+--- a/arch/powerpc/kernel/vio.c
++++ b/arch/powerpc/kernel/vio.c
+@@ -1229,7 +1229,8 @@ struct vio_dev *vio_register_device_node(struct device_node *of_node)
+ 		if (unit_address != NULL)
+ 			viodev->unit_address = *unit_address;
+ 	}
+-	viodev->dev.archdata.of_node = of_node_get(of_node);
++	viodev->dev.of_node = of_node_get(of_node);
++	viodev->dev.archdata.of_node = viodev->dev.of_node;
+ 
+ 	if (firmware_has_feature(FW_FEATURE_CMO))
+ 		vio_cmo_set_dma_ops(viodev);
+diff --git a/arch/powerpc/platforms/ps3/system-bus.c b/arch/powerpc/platforms/ps3/system-bus.c
+index e34b305..2171a5b 100644
+--- a/arch/powerpc/platforms/ps3/system-bus.c
++++ b/arch/powerpc/platforms/ps3/system-bus.c
+@@ -765,6 +765,7 @@ int ps3_system_bus_device_register(struct ps3_system_bus_device *dev)
+ 		BUG();
+ 	};
+ 
++	dev->core.of_node = NULL;
+ 	dev->core.archdata.of_node = NULL;
+ 	set_dev_node(&dev->core, 0);
+ 
+diff --git a/arch/sparc/kernel/of_device_32.c b/arch/sparc/kernel/of_device_32.c
+index da527b3..4926c1b 100644
+--- a/arch/sparc/kernel/of_device_32.c
++++ b/arch/sparc/kernel/of_device_32.c
+@@ -348,6 +348,7 @@ static struct of_device * __init scan_one_device(struct device_node *dp,
+ 	sd->prom_node = dp;
+ 	sd->op = op;
+ 
++	op->dev.of_node = dp;
+ 	op->node = dp;
+ 
+ 	op->clock_freq = of_getintprop_default(dp, "clock-frequency",
+diff --git a/arch/sparc/kernel/of_device_64.c b/arch/sparc/kernel/of_device_64.c
+index b3d4cb5..5bc7416 100644
+--- a/arch/sparc/kernel/of_device_64.c
++++ b/arch/sparc/kernel/of_device_64.c
+@@ -643,6 +643,7 @@ static struct of_device * __init scan_one_device(struct device_node *dp,
+ 	sd->prom_node = dp;
+ 	sd->op = op;
+ 
++	op->dev.of_node = dp;
+ 	op->node = dp;
+ 
+ 	op->clock_freq = of_getintprop_default(dp, "clock-frequency",
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index 5ac539a..0c92014 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -262,6 +262,7 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
+ 	sd->stc = &pbm->stc;
+ 	sd->host_controller = pbm;
+ 	sd->prom_node = node;
++	dev->dev.of_node = node;
+ 	sd->op = op = of_find_device_by_node(node);
+ 	sd->numa_node = pbm->numa_node;
+ 
+diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
+index 18ecae4..12090f5 100644
+--- a/drivers/of/of_mdio.c
++++ b/drivers/of/of_mdio.c
+@@ -80,6 +80,7 @@ int of_mdiobus_register(struct mii_bus *mdio, struct device_node *np)
+ 		 * can be looked up later */
+ 		of_node_get(child);
+ 		dev_archdata_set_node(&phy->dev.archdata, child);
++		phy->dev.of_node = child;
+ 
+ 		/* All data is now stored in the phy struct; register it */
+ 		rc = phy_device_register(phy);
+diff --git a/drivers/of/of_spi.c b/drivers/of/of_spi.c
+index f65f48b..f3119a0 100644
+--- a/drivers/of/of_spi.c
++++ b/drivers/of/of_spi.c
+@@ -79,6 +79,7 @@ void of_register_spi_devices(struct spi_master *master, struct device_node *np)
+ 
+ 		/* Store a pointer to the node in the device structure */
+ 		of_node_get(nc);
++		spi->dev.of_node = nc;
+ 		spi->dev.archdata.of_node = nc;
+ 
+ 		/* Register the new device */
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1821928..7a968bd 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -34,6 +34,7 @@ struct class;
+ struct class_private;
+ struct bus_type;
+ struct bus_type_private;
++struct device_node;
+ 
+ struct bus_attribute {
+ 	struct attribute	attr;
+@@ -433,6 +434,9 @@ struct device {
+ 					     override */
+ 	/* arch specific additions */
+ 	struct dev_archdata	archdata;
++#ifdef CONFIG_OF
++	struct device_node	*of_node;
++#endif
+ 
+ 	dev_t			devt;	/* dev_t, creates the sysfs "dev" */
+ 
 
- arch/microblaze/include/asm/device.h          |   14 ------------
- arch/microblaze/include/asm/of_device.h       |    1 -
- arch/microblaze/kernel/of_device.c            |   11 ++++-----
- arch/microblaze/kernel/of_platform.c          |    4 ++-
- arch/powerpc/include/asm/device.h             |   15 -------------
- arch/powerpc/include/asm/macio.h              |    2 +-
- arch/powerpc/include/asm/of_device.h          |    1 -
- arch/powerpc/kernel/ibmebus.c                 |    4 ++-
- arch/powerpc/kernel/of_device.c               |   11 ++++-----
- arch/powerpc/kernel/of_platform.c             |   16 +++++++-------
- arch/powerpc/kernel/pci-common.c              |    4 ++-
- arch/powerpc/kernel/vio.c                     |   18 ++++++++--------
- arch/powerpc/platforms/52xx/mpc52xx_gpio.c    |    4 ++-
- arch/powerpc/platforms/52xx/mpc52xx_gpt.c     |   16 +++++++-------
- arch/powerpc/platforms/52xx/mpc52xx_lpbfifo.c |    6 +++--
- arch/powerpc/platforms/82xx/ep8248e.c         |    6 +++--
- arch/powerpc/platforms/83xx/suspend.c         |    2 +-
- arch/powerpc/platforms/cell/axon_msi.c        |    2 +-
- arch/powerpc/platforms/cell/iommu.c           |    5 ++--
- arch/powerpc/platforms/pasemi/gpio_mdio.c     |    2 +-
- arch/powerpc/platforms/pasemi/setup.c         |    4 ++-
- arch/powerpc/platforms/ps3/system-bus.c       |    2 +-
- arch/powerpc/platforms/pseries/iommu.c        |    2 +-
- arch/powerpc/sysdev/axonram.c                 |    6 +++--
- arch/powerpc/sysdev/bestcomm/bestcomm.c       |    8 +++----
- arch/powerpc/sysdev/fsl_msi.c                 |   14 ++++++------
- arch/powerpc/sysdev/fsl_pmc.c                 |    2 +-
- arch/powerpc/sysdev/pmi.c                     |    2 +-
- arch/sparc/include/asm/device.h               |   15 -------------
- arch/sparc/include/asm/fb.h                   |    2 +-
- arch/sparc/include/asm/floppy_64.h            |    4 ++-
- arch/sparc/include/asm/of_device.h            |    1 -
- arch/sparc/include/asm/parport.h              |    2 +-
- arch/sparc/kernel/auxio_64.c                  |    2 +-
- arch/sparc/kernel/central.c                   |    4 ++-
- arch/sparc/kernel/chmc.c                      |   10 ++++-----
- arch/sparc/kernel/ioport.c                    |    2 +-
- arch/sparc/kernel/of_device_32.c              |   17 +++++++--------
- arch/sparc/kernel/of_device_64.c              |   29 ++++++++++++-------------
- arch/sparc/kernel/of_device_common.c          |    4 ++-
- arch/sparc/kernel/pci.c                       |   14 +++++-------
- arch/sparc/kernel/pci_common.c                |    9 ++++----
- arch/sparc/kernel/pci_fire.c                  |    4 ++-
- arch/sparc/kernel/pci_msi.c                   |   18 ++++++++--------
- arch/sparc/kernel/pci_psycho.c                |    4 ++-
- arch/sparc/kernel/pci_sabre.c                 |    4 ++-
- arch/sparc/kernel/pci_schizo.c                |   14 ++++++------
- arch/sparc/kernel/pci_sun4v.c                 |    8 +++----
- arch/sparc/kernel/power.c                     |    4 ++-
- arch/sparc/kernel/psycho_common.c             |    2 +-
- arch/sparc/kernel/sbus.c                      |   16 +++++++-------
- arch/sparc/kernel/time_32.c                   |    2 +-
- arch/sparc/kernel/time_64.c                   |    6 +++--
- drivers/ata/pata_macio.c                      |    2 +-
- drivers/ata/pata_mpc52xx.c                    |   10 ++++-----
- drivers/ata/pata_of_platform.c                |    2 +-
- drivers/atm/fore200e.c                        |   16 ++++++++------
- drivers/block/xsysace.c                       |    8 +++----
- drivers/cdrom/viocd.c                         |    2 +-
- drivers/char/hw_random/n2-drv.c               |    2 +-
- drivers/char/hw_random/pasemi-rng.c           |    2 +-
- drivers/char/ipmi/ipmi_si_intf.c              |    4 ++-
- drivers/char/viotape.c                        |    2 +-
- drivers/char/xilinx_hwicap/xilinx_hwicap.c    |    6 +++--
- drivers/gpio/pca953x.c                        |    2 +-
- drivers/i2c/busses/i2c-ibm_iic.c              |    4 ++-
- drivers/i2c/busses/i2c-mpc.c                  |   17 ++++++++-------
- drivers/i2c/i2c-core.c                        |    3 +++
- drivers/ide/pmac.c                            |   10 ++++-----
- drivers/infiniband/hw/ehca/ehca_main.c        |   11 +++++----
- drivers/input/serio/i8042-sparcio.h           |    2 +-
- drivers/input/serio/xilinx_ps2.c              |    8 +++----
- drivers/leds/leds-gpio.c                      |    2 +-
- drivers/macintosh/macio_asic.c                |   16 +++++++-------
- drivers/macintosh/macio_sysfs.c               |    6 +++--
- drivers/macintosh/rack-meter.c                |    4 ++-
- drivers/macintosh/therm_pm72.c                |    2 +-
- drivers/mmc/host/of_mmc_spi.c                 |    4 ++-
- drivers/mmc/host/sdhci-of-core.c              |    2 +-
- drivers/mtd/maps/physmap_of.c                 |    6 +++--
- drivers/mtd/maps/sun_uflash.c                 |    2 +-
- drivers/mtd/nand/fsl_elbc_nand.c              |    6 +++--
- drivers/mtd/nand/pasemi_nand.c                |    2 +-
- drivers/net/can/sja1000/sja1000_of_platform.c |    4 ++-
- drivers/net/ehea/ehea_main.c                  |   14 ++++++------
- drivers/net/fec_mpc52xx.c                     |   12 +++++-----
- drivers/net/fec_mpc52xx_phy.c                 |    4 ++-
- drivers/net/greth.c                           |    3 ++-
- drivers/net/ibm_newemac/core.c                |   13 ++++++-----
- drivers/net/ibm_newemac/debug.c               |    9 ++++----
- drivers/net/ibm_newemac/debug.h               |    4 ++-
- drivers/net/ibm_newemac/mal.c                 |   28 ++++++++++++------------
- drivers/net/ibm_newemac/rgmii.c               |   12 +++++-----
- drivers/net/ibm_newemac/tah.c                 |    7 +++---
- drivers/net/ibm_newemac/zmii.c                |    9 ++++----
- drivers/net/ll_temac_main.c                   |   10 ++++-----
- drivers/net/myri_sbus.c                       |    2 +-
- drivers/net/niu.c                             |   10 ++++-----
- drivers/net/phy/mdio-gpio.c                   |    6 +++--
- drivers/net/sunbmac.c                         |    6 +++--
- drivers/net/sunhme.c                          |    8 +++----
- drivers/net/sunlance.c                        |    6 +++--
- drivers/net/sunqe.c                           |    6 +++--
- drivers/net/xilinx_emaclite.c                 |   10 ++++-----
- drivers/of/device.c                           |   20 +++++++++--------
- drivers/of/of_i2c.c                           |    4 ++-
- drivers/of/of_mdio.c                          |    6 +++--
- drivers/of/of_spi.c                           |    2 +-
- drivers/pcmcia/electra_cf.c                   |    2 +-
- drivers/sbus/char/bbc_envctrl.c               |    4 ++-
- drivers/sbus/char/bbc_i2c.c                   |    4 ++-
- drivers/sbus/char/display7seg.c               |    2 +-
- drivers/sbus/char/envctrl.c                   |    2 +-
- drivers/sbus/char/flash.c                     |    4 ++-
- drivers/sbus/char/uctrl.c                     |    2 +-
- drivers/scsi/ibmvscsi/ibmvfc.c                |    2 +-
- drivers/scsi/ibmvscsi/ibmvscsi.c              |    2 +-
- drivers/scsi/qlogicpti.c                      |   10 ++++-----
- drivers/scsi/sun_esp.c                        |   16 +++++++-------
- drivers/serial/apbuart.c                      |    2 +-
- drivers/serial/mpc52xx_uart.c                 |    8 +++----
- drivers/serial/nwpserial.c                    |    2 +-
- drivers/serial/of_serial.c                    |    4 ++-
- drivers/serial/pmac_zilog.c                   |    2 +-
- drivers/serial/sunhv.c                        |    2 +-
- drivers/serial/sunsab.c                       |    6 +++--
- drivers/serial/sunsu.c                        |    6 +++--
- drivers/serial/sunzilog.c                     |    8 +++----
- drivers/serial/uartlite.c                     |    6 +++--
- drivers/spi/mpc52xx_psc_spi.c                 |   11 +++++----
- drivers/spi/mpc52xx_spi.c                     |   14 ++++++------
- drivers/spi/spi_mpc8xxx.c                     |    6 +++--
- drivers/usb/host/ehci-ppc-of.c                |    2 +-
- drivers/usb/host/isp1760-if.c                 |    2 +-
- drivers/usb/host/ohci-ppc-of.c                |    2 +-
- drivers/video/cg6.c                           |    2 +-
- drivers/video/ffb.c                           |    2 +-
- drivers/video/fsl-diu-fb.c                    |    2 +-
- drivers/video/xilinxfb.c                      |   18 ++++++++--------
- drivers/watchdog/cpwd.c                       |    2 +-
- include/linux/device.h                        |    4 +++
- include/linux/i2c.h                           |    4 +++
- sound/aoa/fabrics/layout.c                    |    2 +-
- sound/aoa/soundbus/core.c                     |    8 +++----
- sound/aoa/soundbus/i2sbus/control.c           |    2 +-
- sound/aoa/soundbus/i2sbus/core.c              |    4 ++-
- sound/aoa/soundbus/sysfs.c                    |    4 ++-
- sound/soc/fsl/mpc8610_hpcd.c                  |    2 +-
- sound/sparc/cs4231.c                          |    6 +++--
- sound/sparc/dbri.c                            |    2 +-
- 150 files changed, 463 insertions(+), 495 deletions(-)
-
--- 
-Signature
