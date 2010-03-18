@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753466Ab0CRSQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 14:16:41 -0400
-Received: from mail-px0-f198.google.com ([209.85.216.198]:57170 "EHLO
-	mail-px0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab0CRSQj convert rfc822-to-8bit (ORCPT
+	id S1753646Ab0CRSUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 14:20:33 -0400
+Received: from mail-pz0-f200.google.com ([209.85.222.200]:35562 "EHLO
+	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab0CRSUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 14:16:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=NUpMqHSSD6lLihRTYYurGy3bNBDsBvuI4GaFkGwnUbr1HMxXnHERkapwlJB1WdBK3k
-         gYWRz//ti5JFi7Y9cnGaPeezXy7NNQ1S6PcHLRWPmbzb2DTllo0xbIXERjG70mOL8MSM
-         VZqKd/cs/okm0qlkMfURlV+rc1Bw3p5R5l5I4=
+	Thu, 18 Mar 2010 14:20:31 -0400
+Message-ID: <4BA26EEA.5090906@codemonkey.ws>
+Date: Thu, 18 Mar 2010 13:20:26 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <20100318173615.GA2456@elte.hu>
-References: <4ba0e3c7.1c185e0a.7786.ffffb1d9@mx.google.com>
-	 <20100318173615.GA2456@elte.hu>
-Date: Thu, 18 Mar 2010 19:16:37 +0100
-Message-ID: <7c86c4471003181116i6ea31333tecf79eb487fcad7b@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix stat attach bogus counts
-From: stephane eranian <eranian@googlemail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-       peterz@infradead.org, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+CC: Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA20EB8.60707@redhat.com> <20100318114821.GB13168@elte.hu> <4BA23E61.4080003@codemonkey.ws> <20100318161310.GA447@elte.hu>
+In-Reply-To: <20100318161310.GA447@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 6:36 PM, Ingo Molnar <mingo@elte.hu> wrote:
+On 03/18/2010 11:13 AM, Ingo Molnar wrote:
+> Good that you mention it, i think it's an excellent example.
+> The suckage of kernel async IO is for similar reasons: there's an ugly package
+> separation problem between the kernel and between glibc - and between the apps
+> that would make use of it.
 >
-> * Stephane Eranian <eranian@google.com> wrote:
+> ( With the separated libaio it was made worse: there were 3 libraries to
+>    work with, and even less applications that could make use of it ... )
 >
->>       When perf stat -p pid is used, the events must be enabled
->>       immediately as there is no exec and thus no enable_on_exec.
->>
->>       Signed-off-by: Stephane Eranian <eranian@google.com>
->>
->> --
->>  builtin-stat.c |    6 ++++--
->>  1 file changed, 4 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
->> index 95db31c..3a91fad 100644
->> --- a/tools/perf/builtin-stat.c
->> +++ b/tools/perf/builtin-stat.c
->> @@ -159,8 +159,10 @@ static void create_perf_stat_counter(int counter, int pid)
->>               }
->>       } else {
->>               attr->inherit        = inherit;
->> -             attr->disabled       = 1;
->> -             attr->enable_on_exec = 1;
->> +             if (target_pid == -1) {
->> +                     attr->disabled       = 1;
->> +                     attr->enable_on_exec = 1;
->> +             }
->
-> Mind checking latest -tip, which has these commits:
->
-> d6d901c: perf events: Change perf parameter --pid to process-wide collection instead of thread-wid
-> 46be604: perf record: Enable counters only when kernel is execing subcommand
-> 6be2850: perf stat: Enable counters when collecting process-wide or system-wide data
->
-> as they fix/improve various --pid related behavioral aspects of perf. Does it
-> work fine for you now?
->
-They indeed included the same fix.
-So that's fine now.
+> So IMO klibc is an arguably good idea - eventually hpa will get around posting
+> it for upstream merging again. Then we could offer both new libraries much
+> faster, and could offer things like comprehensive AIO used pervasively within
+> existing APIs.
+>    
+
+And why wouldn't the kernel developers produce posix-aio within klibc.
+
+posix-aio is also a really terrible interface (although not as bad as 
+linux-aio).
+
+The reason boils down to the fact that these interfaces are designed 
+without interacting with the consumers.  Part of the reason for that is 
+the attitude of the community.
+
+You approached this discussion with, "QEMU/KVM sucks, you should move 
+into the kernel because we're awesome and we'd fix everything in a heart 
+beat".  That attitude does not result in any useful collaboration.
+
+Had you started trying to understand what the problems that we face are 
+and whether there's anything that can be done in the kernel to improve 
+it, it would have been an entirely different discussion.
+
+The sad thing is, QEMU is probably one of the most demanding free 
+software applications out there today with respect to performance.  We 
+consume interfaces IO interfaces and things like large pages in a deeper 
+way than just about any application out there.
+
+We've been trying for a long time to improve Linux interfaces for years 
+but we've not had many people in the kernel community be receptive.
+
+We've failed to improve the userspace networking interfaces.  Compare 
+Rusty's posting of vringfd to vhost-net.  They are the same interface 
+except we tried to do something more generally useful with vringfd and 
+it was shot down because it was "yet another kernel/userspace data 
+transfer interface".  Unfortunately, we're learning that if we claim 
+something is virtualization specific, we avoid a lot of the kernel 
+bureaucracy.  My concern is that over time, we'll have more things like 
+vhost and that's bad for everyone.
+
+Regards,
+
+Anthony Liguori
+
