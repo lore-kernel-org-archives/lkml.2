@@ -1,228 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab0CRWTz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:19:55 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43147 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450Ab0CRWTx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:19:53 -0400
-Subject: Re: [RFC][PATCH] Convert alpha to use clocksource
-From: john stultz <johnstul@us.ibm.com>
-To: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Richard Henderson <rth@twiddle.net>, lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Matt Turner <mattst88@gmail.com>
-In-Reply-To: <20100318214030.GA8934@jurassic.park.msu.ru>
-References: <1268877702-2236-1-git-send-email-johnstul@us.ibm.com>
-	 <4BA23974.5030503@twiddle.net> <1268934923.1855.8.camel@work-vm>
-	 <20100318214030.GA8934@jurassic.park.msu.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 15:19:18 -0700
-Message-ID: <1268950758.4171.51.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1752884Ab0CRWUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:20:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752587Ab0CRWUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 18:20:39 -0400
+Message-ID: <4BA2A70B.5080101@redhat.com>
+Date: Thu, 18 Mar 2010 12:19:55 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100316130840.GA24808@elte.hu> <4B9FBA8B.8020200@codemonkey.ws> <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA294D4.2060700@redhat.com> <20100318211529.GA21367@elte.hu>
+In-Reply-To: <20100318211529.GA21367@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-19 at 00:40 +0300, Ivan Kokshaysky wrote:
-> On Thu, Mar 18, 2010 at 10:55:23AM -0700, john stultz wrote:
-> > On Thu, 2010-03-18 at 07:32 -0700, Richard Henderson wrote:
-> > > On 03/17/2010 07:01 PM, John Stultz wrote:
-> > > > Alpha has a tsc like rpcc counter that it uses to manage time.
-> > > > This can be converted to an actual clocksource instead of utilizing
-> > > > the arch_gettimeoffset method that is really only there for legacy
-> > > > systems with no continuous counter.
-> > > 
-> > > With 8 seconds or less between roll-overs, do you actually consider
-> > > this a continuous counter?  I don't.  I suggest this be left alone.
-> > 
-> > The timekeeping code handles this (although the shift value I picked may
-> > need some adjustment - what is the expected counter freq range on
-> > alpha?). The ACPI PM counter which is very common on x86 is only 24 bits
-> > and rolls over in ~5 seconds. It works fine.
-> 
-> Yeah, that looks cool. I'm typing this on the 800MHz UP1500 running
-> 2.6.34-rc1 plus your patch, and the timekeeping works fine so far.
+On 03/18/2010 11:15 AM, Ingo Molnar wrote:
+> * Zachary Amsden<zamsden@redhat.com>  wrote:
+>
+>    
+>> On 03/18/2010 12:50 AM, Ingo Molnar wrote:
+>>      
+>>> * Avi Kivity<avi@redhat.com>   wrote:
+>>>
+>>>        
+>>>>> The moment any change (be it as trivial as fixing a GUI detail or as
+>>>>> complex as a new feature) involves two or more packages, development speed
+>>>>> slows down to a crawl - while the complexity of the change might be very
+>>>>> low!
+>>>>>            
+>>>> Why is that?
+>>>>          
+>>> It's very simple: because the contribution latencies and overhead compound,
+>>> almost inevitably.
+>>>
+>>> If you ever tried to implement a combo GCC+glibc+kernel feature you'll know
+>>> ...
+>>>
+>>> Even with the best-run projects in existence it takes forever and is very
+>>> painful - and here i talk about first hand experience over many years.
+>>>        
+>> Ingo, what you miss is that this is not a bad thing.  Fact of the
+>> matter is, it's not just painful, it downright sucks.
+>>      
+> Our experience is the opposite, and we tried both variants and report about
+> our experience with both models honestly.
+>
+> You only have experience about one variant - the one you advocate.
+>
+> See the assymetry?
+>
+>    
+>> This is actually a Good Thing (tm).  It means you have to get your
+>> feature and its interfaces well defined and able to version forwards
+>> and backwards independently from each other.  And that introduces
+>> some complexity and time and testing, but in the end it's what you
+>> want.  You don't introduce a requirement to have the feature, but
+>> take advantage of it if it is there.
+>>
+>> It may take everyone else a couple years to upgrade the compilers,
+>> tools, libraries and kernel, and by that time any bugs introduced by
+>> interacting with this feature will have been ironed out and their
+>> patterns well known.
+>>      
+> Sorry, but this is pain not true. The 2.4->2.6 kernel cycle debacle has taught
+> us that waiting long to 'iron out' the details has the following effects:
+>
+>   - developer pain
+>   - user pain
+>   - distro pain
+>   - disconnect
+>   - loss of developers, testers and users
+>   - grave bugs discovered months (years ...) down the line
+>   - untested features
+>   - developer exhaustion
+>
+> It didnt work, trust me - and i've been around long enough to have suffered
+> through the whole 2.5.x misery. Some of our worst ABIs come from that cycle as
+> well.
+>    
 
-Nice! Thanks for testing! Another benefit that I forgot to mention, is
-that NTP adjustments will be made directly against the counter, instead
-of being made against the tick. This avoids possible small errors at
-tick time if the intertick interval doesn't match the actual tick
-length.
+You're talking about a single project and comparing it to my argument 
+about multiple independent projects.  In that case, I see no point in 
+the discussion.  If you want to win the argument by strawman, you are 
+welcome to do so.
 
+> Sorry, but i really think you are really trying to rationalize a disadvantage
+> here ...
+>    
 
-> Though, even after a glance over the clocksource code, I've not
-> gotten yet to how one could estimate the "shift" value...
-> Any hints?
+This could very well be true, but until someone comes forward with 
+compelling numbers (as in, developers committed to working on the 
+project, number of patches and total amount of code contribution), there 
+is no point in having an argument, there really isn't anything to 
+discuss other than opinion.  My opinion is you need a really strong 
+justification to have a successful fork and I don't see that justification.
 
-Yea, selecting a good shift is obnoxious. You want to pick the largest
-value of shift, so that it can be finely adjusted by ntp, but that
-creates large mult values, which can cause overflows for large cycle
-intervals. 
-
-A function to solve this was actually recently added, but simply I
-forgot to use it. :P
-
-I actually should rework the register function so you just give it a
-clocksource and a freq and it sets up both mult and shift for you. 
-
-
-> And if I recall correctly, production alphas have been clocked
-> in the range of 60-1250 MHz.
-
-Cool. The shift value I picked should be ok then. But below is an
-updated version that uses the self-calculated method.
-
-thanks
--john
-
-
-
->From 078e91d14cb5e82a3fab00cf74faf45f44336590 Mon Sep 17 00:00:00 2001
-From: John Stultz <johnstul@us.ibm.com>
-Date: Wed, 17 Mar 2010 12:43:11 -0700
-Subject: [PATCH] Convert alpha to use clocksources instead of arch_gettimeoffset
-
-Alpha has a tsc like rpcc counter that it uses to manage time.
-This can be converted to an actual clocksource instead of utilizing
-the arch_gettimeoffset method that is really only there for legacy
-systems with no continuous counter.
-
-Further cleanups could be made if alpha converted to the clockevent model.
-
-I've not tested or compiled this code. Any help from the maintainers would
-be greatly appreciated
-
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Richard Henderson <rth@twiddle.net>
-CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-CC: Matt Turner <mattst88@gmail.com>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- arch/alpha/Kconfig       |    4 --
- arch/alpha/kernel/time.c |   69 ++++++++++++++++++++-------------------------
- 2 files changed, 31 insertions(+), 42 deletions(-)
-
-diff --git a/arch/alpha/Kconfig b/arch/alpha/Kconfig
-index 75291fd..793c269 100644
---- a/arch/alpha/Kconfig
-+++ b/arch/alpha/Kconfig
-@@ -51,10 +51,6 @@ config GENERIC_TIME
- 	bool
- 	default y
- 
--config ARCH_USES_GETTIMEOFFSET
--	bool
--	default y
--
- config ZONE_DMA
- 	bool
- 	default y
-diff --git a/arch/alpha/kernel/time.c b/arch/alpha/kernel/time.c
-index 5d08266..a2be26b 100644
---- a/arch/alpha/kernel/time.c
-+++ b/arch/alpha/kernel/time.c
-@@ -51,6 +51,7 @@
- #include <linux/mc146818rtc.h>
- #include <linux/time.h>
- #include <linux/timex.h>
-+#include <linux/clocksource.h>
- 
- #include "proto.h"
- #include "irq_impl.h"
-@@ -301,6 +302,34 @@ rpcc_after_update_in_progress(void)
- 	return rpcc();
- }
- 
-+#ifndef CONFIG_SMP
-+/* Until and unless we figure out how to get cpu cycle counters
-+   in sync and keep them there, we can't use the rpcc.  */
-+static cycle_t read_rpcc(struct clocksource *cs)
-+{
-+	cycle_t ret = (cycle_t)rpcc();
-+	return ret;
-+}
-+
-+static struct clocksource clocksource_rpcc = {
-+	.name                   = "rpcc",
-+	.rating                 = 300,
-+	.read                   = read_rpcc,
-+	.mask                   = CLOCKSOURCE_MASK(32),
-+	.flags                  = CLOCK_SOURCE_IS_CONTINUOUS
-+};
-+
-+static inline void register_rpcc_clocksource(long cycle_freq)
-+{
-+	clocksource_calc_mult_shift(&clocksource_rpcc, cycle_freq, 4);
-+	clocksource_register(&clocksource_rpcc);
-+}
-+#else /* !CONFIG_SMP */
-+static inline void register_rpcc_clocksource(long cycle_freq)
-+{
-+}
-+#endif /* !CONFIG_SMP */
-+
- void __init
- time_init(void)
- {
-@@ -391,6 +420,8 @@ time_init(void)
- 		__you_loose();
- 	}
- 
-+	register_rpcc_clocksource(cycle_freq);
-+
- 	state.last_time = cc1;
- 	state.scaled_ticks_per_cycle
- 		= ((unsigned long) HZ << FIX_SHIFT) / cycle_freq;
-@@ -402,44 +433,6 @@ time_init(void)
- }
- 
- /*
-- * Use the cycle counter to estimate an displacement from the last time
-- * tick.  Unfortunately the Alpha designers made only the low 32-bits of
-- * the cycle counter active, so we overflow on 8.2 seconds on a 500MHz
-- * part.  So we can't do the "find absolute time in terms of cycles" thing
-- * that the other ports do.
-- */
--u32 arch_gettimeoffset(void)
--{
--#ifdef CONFIG_SMP
--	/* Until and unless we figure out how to get cpu cycle counters
--	   in sync and keep them there, we can't use the rpcc tricks.  */
--	return 0;
--#else
--	unsigned long delta_cycles, delta_usec, partial_tick;
--
--	delta_cycles = rpcc() - state.last_time;
--	partial_tick = state.partial_tick;
--	/*
--	 * usec = cycles * ticks_per_cycle * 2**48 * 1e6 / (2**48 * ticks)
--	 *	= cycles * (s_t_p_c) * 1e6 / (2**48 * ticks)
--	 *	= cycles * (s_t_p_c) * 15625 / (2**42 * ticks)
--	 *
--	 * which, given a 600MHz cycle and a 1024Hz tick, has a
--	 * dynamic range of about 1.7e17, which is less than the
--	 * 1.8e19 in an unsigned long, so we are safe from overflow.
--	 *
--	 * Round, but with .5 up always, since .5 to even is harder
--	 * with no clear gain.
--	 */
--
--	delta_usec = (delta_cycles * state.scaled_ticks_per_cycle 
--		      + partial_tick) * 15625;
--	delta_usec = ((delta_usec / ((1UL << (FIX_SHIFT-6-1)) * HZ)) + 1) / 2;
--	return delta_usec * 1000;
--#endif
--}
--
--/*
-  * In order to set the CMOS clock precisely, set_rtc_mmss has to be
-  * called 500 ms after the second nowtime has started, because when
-  * nowtime is written into the registers of the CMOS clock, it will
--- 
-1.6.0.4
-
-
-
+Zach
