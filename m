@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab0CREYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 00:24:07 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36179 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab0CREYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 00:24:05 -0400
-Date: Thu, 18 Mar 2010 15:23:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tom Herbert <therbert@google.com>
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20100318152351.df9e11a3.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.7; i486-pc-linux-gnu)
+	id S1750936Ab0CREZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 00:25:29 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59490 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab0CREZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 00:25:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Mar 2010 13:21:14 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100318041944.GA18054@balbir.in.ibm.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100317115855.GS18054@balbir.in.ibm.com>
+	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100318041944.GA18054@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__18_Mar_2010_15_23_51_+1100_nmirc.aVGp6rZyRq"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Mar_2010_15_23_51_+1100_nmirc.aVGp6rZyRq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 18 Mar 2010 09:49:44 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 
-Hi Dave,
+> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 08:54:11]:
+> 
+> > On Wed, 17 Mar 2010 17:28:55 +0530
+> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > 
+> > > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > > 
+> > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > 
+> > > > Now, file-mapped is maintaiend. But more generic update function
+> > > > will be needed for dirty page accounting.
+> > > > 
+> > > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > > will be never called under tree_lock held.
+> > > > To guarantee that, we use trylock at updating status.
+> > > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > > >
+> > > 
+> > > I don't like this at all, but in almost all cases is not acceptable
+> > > for statistics, since decisions will be made on them and having them
+> > > incorrect is really bad. Could we do a form of deferred statistics and
+> > > fix this.
+> > > 
+> > 
+> > plz show your implementation which has no performance regresssion.
+> > For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> > we can add simple migration lock.
+> 
+> That doesn't matter, if you need it, I think the larger user base
+> matters. Unmapped and mapped page cache is critical and I use it
+> almost daily.
+> 
+> > file_mapped is a feattue you added. please improve it.
+> >
+> 
+> I will, but please don't break it silently
+> 
+I never do silently. All e-mails are open.
 
-After merging the final tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+Thanks,
+-Kame
 
-net/core/dev.c: In function 'net_rps_action':
-net/core/dev.c:3183: error: implicit declaration of function '__smp_call_fu=
-nction_single'
-
-Caused by commit 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive
-Packet Steering") from the net tree.   This config does not have
-CONFIG_SMP set.  __smp_call_function_single is only available when
-CONFIG_SMP is set.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__18_Mar_2010_15_23_51_+1100_nmirc.aVGp6rZyRq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuhqtcACgkQjjKRsyhoI8wNuACfZ+5wMQY1DNF+VrcI+LsBPOp4
-10MAn3DzBVoFzF/xJmS2unuvdyUE5kM3
-=KEtx
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Mar_2010_15_23_51_+1100_nmirc.aVGp6rZyRq--
