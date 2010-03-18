@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab0CRTE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 15:04:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37763 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027Ab0CRTE2 (ORCPT
+	id S1751953Ab0CRTMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 15:12:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57578 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181Ab0CRTMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 15:04:28 -0400
-Subject: Re: [PATCH] perf_events: fix ordering bug in perf_output_sample()
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@google.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-In-Reply-To: <4ba2317a.8109cc0a.2858.ffffcd0c@mx.google.com>
-References: <4ba2317a.8109cc0a.2858.ffffcd0c@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 19:33:14 +0100
-Message-ID: <1268937194.9440.373.camel@laptop>
+	Thu, 18 Mar 2010 15:12:41 -0400
+Date: Thu, 18 Mar 2010 12:11:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Magnus Lynch <maglyx@gmail.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+       "Venkatesh Pallipadi (Venki)" <venkatesh.pallipadi@intel.com>,
+       "Vojtech Pavlik" <vojtech@suse.cz>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+       "Suresh Siddha" <suresh.b.siddha@intel.com>,
+       "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hpet: factor timer allocate from open
+Message-Id: <20100318121151.cedeb849.akpm@linux-foundation.org>
+In-Reply-To: <4b943f17.4902be0a.5bd5.0917@mx.google.com>
+References: <4B8F72B5.3000408@ladisch.de>
+	<4b943f17.4902be0a.5bd5.0917@mx.google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-18 at 14:42 +0200, Stephane Eranian wrote:
-> 	In order to parse a sample correctly based on the information
-> 	requested via sample_type, the kernel needs to save each component
-> 	in a known order. There is no type value saved with each component.
-> 	The current convention is that each component is saved according to
-> 	the order in enum perf_event_sample_format. But perf_output_sample()
-> 	was not completely following this convention, thereby making samples
-> 	impossible to parse without internal kernel knowledge.
+On Sun, 07 Mar 2010 16:04:39 -0800 (PST)
+Magnus Lynch <maglyx@gmail.com> wrote:
+
+> Clemens Ladisch wrote:
+> >> If so I can change that. I did add the explicit form of allocating
+> >> timers to accomodate such a case hypothetically (open, allocate timer,
+> >> get info).
+> >
+> > This wouldn't be backwards compatible.
 > 
-> 	This patch puts things in the right order.
+> OK, here's a version that retains HPET_INFO semantics.
+> 
+> Signed-off-by: Magnus Lynch <maglyx@gmail.com>
 
-NAK, not so actually, its in the order specified in the
-PERF_RECORD_SAMPLE comment.
+(wonders what this patch does)
 
+Please always retain and maintain the changelog with each version of a patch.
+
+Please resend this patch with a complete changelog.  Make sure that the
+changelog addresses any questions which were raised during review. 
+Please ensure that all participants in that review were cc'ed.
+
+Thanks.
