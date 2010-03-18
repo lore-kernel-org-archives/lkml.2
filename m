@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab0CRVu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 17:50:27 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:49644 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751062Ab0CRVuZ (ORCPT
+	id S1751936Ab0CRVwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:52:25 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:59359 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab0CRVwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 17:50:25 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAF49okurR7Hu/2dsb2JhbACbLHOjdpkBhHkEgx0
-X-IronPort-AV: E=Sophos;i="4.51,269,1267401600"; 
-   d="scan'208";a="168649066"
-From: Roland Dreier <rdreier@cisco.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Greg KH <greg@kroah.com>, Alex Chiang <achiang@hp.com>,
-       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] small xhci cleanups
-References: <20100316204845.GJ8278@ldl.fc.hp.com>
-	<20100309184723.GA31374@kroah.com> <20100316212445.GA15729@xanatos>
-	<20100316214014.GA8839@kroah.com> <20100318213308.GA5461@xanatos>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 18 Mar 2010 14:50:21 -0700
-In-Reply-To: <20100318213308.GA5461@xanatos> (Sarah Sharp's message of "Thu,
-	18 Mar 2010 14:33:08 -0700")
-Message-ID: <ada634t710i.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 18 Mar 2010 17:52:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
+References: <201003182246.54889.linux@rainbow-software.org>
+	 <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
+Date: Thu, 18 Mar 2010 21:52:23 +0000
+Message-ID: <880c1631003181452w4b8a500br6aa7a5388e60b5c@mail.gmail.com>
+Subject: [rt2x00-users] rt2500usb broken since 2.6.29
+From: Luis Correia <buga@loide.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > "On" or "off" doesn't really help when you're trying to debug different
- > parts of the driver.  If you're trying to debug a command, messages
- > about wrapping rings or enqueueing transfers doesn't really matter.
+Hi,
 
-For this debugging stuff, you could look at using the trace events
-infrastructure, which gives very fine control over what output is
-enabled and overall is pretty awesome.  You can look in
-include/trace/events for examples, eg look at
-include/trace/events/ext4.h and then look in fs/ext4 to see where
-trace_ext4_xxx() functions get called.
+On Thu, Mar 18, 2010 at 21:46, Ondrej Zary <linux@rainbow-software.org> wrote:
+>
+> Hello,
+> rt2500usb is broken since kernel 2.6.29. It has been discussed before but
+> never solved:
+> http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
+> https://bugzilla.redhat.com/show_bug.cgi?id=484888
+>
+> I have Asus WL-167G and it really does not work. Scanning works, association
+> too but no packets can be sent (looks like receive works because tcpdump
+> shows packets from other machines). DHCP fails (No DHCPOFFERS received).
+>
+> The problem is caused by this patch:
+>
+> rt2x00: Implement HW encryption (rt2500usb)
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dddfb478b26e29a2b47f655ec219e743b8111015
+>
+> Removing it from 2.6.29 restores the functionality.
+>
+> --
+> Ondrej Zary
+>
 
- - R.
--- 
-Roland Dreier  <rolandd@cisco.com>
-For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+you can prevent hardware encryption by supplying "nohwcrypt=1" to the driver.
+(modinfo rt2500usb)
+
+Luis Correia
+rt2x00 project admin
