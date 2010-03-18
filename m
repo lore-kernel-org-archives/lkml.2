@@ -1,102 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab0CROHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:07:42 -0400
-Received: from smtp-out4.blueyonder.co.uk ([195.188.213.7]:50984 "EHLO
-	smtp-out4.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753673Ab0CROHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:07:40 -0400
-Message-ID: <4BA233A9.1030407@blueyonder.co.uk>
-Date: Thu, 18 Mar 2010 14:07:37 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.7 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+	id S1753841Ab0CROJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:09:47 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58712 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753206Ab0CROJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 10:09:46 -0400
+Date: Thu, 18 Mar 2010 15:09:33 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318140933.GE25642@elte.hu>
+References: <20100317081041.GC16374@elte.hu>
+ <4BA1E24B.6090904@redhat.com>
+ <20100318085607.GB2157@elte.hu>
+ <4BA1FC80.2000401@redhat.com>
+ <20100318105013.GB24464@elte.hu>
+ <4BA20EB8.60707@redhat.com>
+ <20100318114821.GB13168@elte.hu>
+ <4BA21B09.6060706@redhat.com>
+ <20100318130047.GA7424@elte.hu>
+ <4BA22C72.9030503@redhat.com>
 MIME-Version: 1.0
-To: linux-x86_64@vger.kernel.org,
-       LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Fwd: Re: Boot failure 2.6.33 - 2.6.33-git12 inclusive
-References: <4B9A4337.9030609@blueyonder.co.uk>
-In-Reply-To: <4B9A4337.9030609@blueyonder.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA22C72.9030503@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Still no response to this problem and I still have it with
-2.6.34-rc1-git6. I also upgraded to the latest 2402 motherboard BIOS.
-Regards
-Sid.
 
+* Avi Kivity <avi@redhat.com> wrote:
 
-On 12/03/10 13:35, Sid Boyce wrote:
+> > That is not what i said. I said they are closely related, and where 
+> > technologies are closely related, project proximity turns into project 
+> > unification at a certain stage.
 > 
-> 
-> -------- Original Message --------
-> Subject: Re: Boot failure 2.6.33 - 2.6.33-git12 inclusive
-> Date: Fri, 12 Mar 2010 11:01:55 +0800
-> From: Américo Wang <xiyou.wangcong@gmail.com>
-> To: sboyce@blueyonder.co.uk
-> CC: Kernel Testers List <kernel-testers@vger.kernel.org>, "Rafael J.
-> Wysocki" <rjw@sisk.pl>, 	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar
-> <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-> 
-> On Fri, Mar 12, 2010 at 6:49 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
->> Same problem up to 2.6.33-git15 and 2.6.34-rc1. No response since posted
->> to LKML last week.
->> --------------------------------------------------
-> 
-> 
-> You need to Cc x86 people. Added.
-> 
-> 
->>
->> Asus Crosshair II motherboard, 4xCPU 8Gig storage fails, the M2N32-SLI
->> 2x CPU, 4 Gig and laptop 2x CPU, 2 Gig have no problems running
->> 2.6.33-git11 - all AMD CPU's.
->> Lockup requiring a hard reset.
->>
->> TCP cubic registered
->> registered taskstats version 1
->> Kmemleak: kernel memory leak detector initialized
->> Kmemleak: Automatic memory scanning thread started
->> No TPM chip found, activating TPM-bypass!
->> Freeing unused kernel memory: 688K freed
->> Write Protecting kernel memory read-only data: 6144K
->> Testing CPA: undo ffffffff81000000 - ffffffff81600000
->> Testing CPA: again
->> Freeing unused kernel memory: 964K freed
->> Freeing unused kernel memory: 212K freed
->> init[1] segfault at ffffffff8100eea8 ip ffffffff8100eea8 sp
->> 00007fff62e804b8 error 15
->> kernel panic - not syncing: Attempted to kill init!
->> Pid: 1,comm: init not tainted 2.6.33-git12-smp #2
->> Call Trace:
->> [<ffffffff81300876>] panic+0x73/0xfa
->> [<ffffffff8104b45c>] do_exit+0x6d/0x713
->> [<ffffffff8104bd85>] do_group_exit+0x72/0x9b
->> [<ffffffff8105917e>] get_signal_to_deliver+0x356/0x375
->> [<ffffffff8130310b>] ? _raw_spin_unlock_irqrestore+0x2f/0x34
->> [<ffffffff81007fc3>] do_signal+0x6d/0x660
->> [<ffffffff81300939>] ? printk+0x3c/0x43
->> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->> [<ffffffff81300939>] ? printk+0x3c/0x43
->> [<ffffffff8102b78c>] ? __bad_area_nosemaphore+0x183/0x1ad
->> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->> [<ffffffff810085fc>] do_notify_resume+0x27/0x69
->> [<ffffffff8130351c>] retint_signal+0x48/0x8c
->> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->>
->> Regards
->> Sid.
->> --
+> I really don't see how.  So what if both qemu and kvm implement an i8254?  
+> They can't share any code since the internal APIs are so different. [...]
 
+I wouldnt jump to assumptions there. perf shares some facilities with the 
+kernel on the source code level - they can be built both in the kernel and in 
+user-space.
 
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+But my main thought wasnt even to actually share the implementation - but to 
+actually synchronize when a piece of device emulation moves into the kernel. 
+It is arguably bad for performance in most cases when Qemu handles a given 
+device - so all the common devices should be kernel accelerated.
 
+The version and testing matrix would be simplified significantly as well: as 
+kernel and qemu goes hand in hand, they are always on the same version.
+
+> [...] Even worse for the x86 emulator as qemu and kvm are fundamentally 
+> different.
+
+So is it your argument that the difference and the duplication in x86 
+instruction emulation is a good thing? You said it some time ago that
+the kvm x86 emulator was very messy and you wish it was cleaner.
+
+While qemu's is indeed rather different (it's partly a translator/JIT), i'm 
+sure the decoder logic could be shared - and qemu has a slow-path 
+full-emulation fallback in any case, which is similar to what in-kernel 
+emulator does (IIRC ...).
+
+That might have changed meanwhile.
+
+	Ingo
