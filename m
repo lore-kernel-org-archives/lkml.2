@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750936Ab0CREZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 00:25:29 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59490 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab0CREZ1 (ORCPT
+	id S1751990Ab0CREjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 00:39:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38508 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab0CREjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 00:25:27 -0400
+	Thu, 18 Mar 2010 00:39:11 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Mar 2010 13:21:14 +0900
+Date: Thu, 18 Mar 2010 13:35:27 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: balbir@linux.vnet.ibm.com
 Cc: Andrea Righi <arighi@develer.com>,
@@ -22,7 +22,7 @@ Cc: Andrea Righi <arighi@develer.com>,
        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
        linux-mm@kvack.org
 Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
+Message-Id: <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20100318041944.GA18054@balbir.in.ibm.com>
 References: <1268609202-15581-1-git-send-email-arighi@develer.com>
 	<1268609202-15581-2-git-send-email-arighi@develer.com>
@@ -78,8 +78,21 @@ Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 > 
 > I will, but please don't break it silently
 > 
-I never do silently. All e-mails are open.
+Andrea, could you go in following way ?
+
+	- don't touch FILE_MAPPED stuff.
+	- add new functions for other dirty accounting stuff as in this series.
+	  (using trylock is ok.)
+	
+Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+fault. But please write "why add new function" to patch description.
+
+I'm sorry for wasting your time.
 
 Thanks,
 -Kame
+
+
+
 
