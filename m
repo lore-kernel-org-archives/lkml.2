@@ -1,172 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852Ab0CRSaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 14:30:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751622Ab0CRS37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 14:29:59 -0400
-Date: Thu, 18 Mar 2010 14:29:09 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: fweisbec@gmail.com, mingo@elte.hu, rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, lizf@cn.fujitsu.com,
-       hpa@zytor.com, tglx@linutronix.de, mhiramat@redhat.com,
-       heiko.carstens@de.ibm.com, benh@kernel.crashing.org,
-       davem@davemloft.net, lethal@linux-sh.org, schwidefsky@de.ibm.com,
-       brueckner@linux.vnet.ibm.com, tony.luck@intel.com
-Subject: Re: [PATCH 07/14 re-post] syscalls: add
-	ARCH_COMPAT_SYSCALL_DEFINE()
-Message-ID: <20100318182909.GB2661@redhat.com>
-References: <cover.1268749695.git.jbaron@redhat.com> <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752667Ab0CRSuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 14:50:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32836 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752229Ab0CRSuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 14:50:05 -0400
+Date: Thu, 18 Mar 2010 11:48:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lars Ellenberg <lars.ellenberg@linbit.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Neil Brown <neilb@suse.de>,
+       Alasdair G Kergon <agk@redhat.com>,
+       device-mapper development <dm-devel@redhat.com>, jens.axboe@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dm: max_segments=1 if merge_bvec_fn is not supported
+Message-Id: <20100318114858.0303157e.akpm@linux-foundation.org>
+In-Reply-To: <20100308131449.GA15156@racke>
+References: <20100306211012.GA9689@racke>
+	<20100308163345.42841480@notabene.brown>
+	<Pine.LNX.4.64.1003080321190.25635@hs20-bc2-1.build.redhat.com>
+	<20100308131449.GA15156@racke>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 8 Mar 2010 14:14:49 +0100
+Lars Ellenberg <lars.ellenberg@linbit.com> wrote:
 
-Re-post due to missing macro parameter. interdiff:
+> On Mon, Mar 08, 2010 at 03:35:37AM -0500, Mikulas Patocka wrote:
+> > Hi
+> > 
+> > That patch with limits->max_segments = 1; is wrong. It fixes this bug 
+> > sometimes and sometimes not.
+> > 
+> > The problem is, if someone attempts to create a bio with two vector 
+> > entries, the first maps the last sector contained in some page and the 
+> > second maps the first sector of the next physical page: it has one 
+> > segment, it has size <= PAGE_SIZE, but it still may cross raid stripe and 
+> > the raid driver will reject it.
+> 
+> Now that you put it that way ;)
+> You are right.
+> 
+> My asumption that "single segment" was  
+> equalvalent in practice with "single bvec"
+> does not hold true in that case.
+> 
+> Then, what about adding seg_boundary_mask restrictions as well?
+> 	max_sectors = PAGE_SIZE >> 9;
+> 	max_segments = 1;
+> 	seg_boundary_mask = PAGE_SIZE -1;
+> or some such.
+> 
+> > > > This is not the first time this has been patched, btw.
+> > > > See https://bugzilla.redhat.com/show_bug.cgi?id=440093
+> > > > and the patch by Mikulas:
+> > > > https://bugzilla.redhat.com/attachment.cgi?id=342638&action=diff
+> > 
+> > Look at this patch, it is the proper way how to fix it: create a 
+> > merge_bvec_fn that reject more than one biovec entry.
+> 
+> If adding seg_boundary_mask is still not sufficient,
+> lets merge that patch instead?
+> Why has it been dropped, respectively never been merged?
+> It became obsolete for dm-linear by 7bc3447b,
+> but in general the bug is still there, or am I missing something?
+> 
 
-diff -u b/include/linux/syscalls.h b/include/linux/syscalls.h
---- b/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -241,7 +241,7 @@
- 	SYSCALL_METADATA(syscall, compat_sys_##sname, x);	\
- 	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
- #else
--#define COMPAT_SYSCALL_DEFINEx(x, sname, ...)			\
-+#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)		\
- 	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
- #endif
+This all seemed to die.  Does Neil's mysterypatch fix all these issues?
 
---------------------------------------------------------
+Neil, was that patch tagged for -stable backporting?
 
-Add ARCH_COMPAT_SYSCALL_DEFINE#N() macro which prepends "sys32_" to
-arch specific compat syscall names. Identifies the 'compat' syscalls.
-
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- include/linux/syscalls.h |   50 ++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 38 insertions(+), 12 deletions(-)
-
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index e601985..b5f66dc 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -141,7 +141,7 @@ struct perf_event_attr;
- 	  __attribute__((__aligned__(4)))				\
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_enter_##sname = {					\
--		.name                   = "sys_enter"#sname,		\
-+		.name                   = "enter_"#sname,		\
- 		.system                 = "syscalls",			\
- 		.event                  = &enter_syscall_print_##sname,	\
- 		.raw_init		= init_syscall_trace,		\
-@@ -163,7 +163,7 @@ struct perf_event_attr;
- 	  __attribute__((__aligned__(4)))				\
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_exit_##sname = {					\
--		.name                   = "sys_exit"#sname,		\
-+		.name                   = "exit_"#sname,		\
- 		.system                 = "syscalls",			\
- 		.event                  = &exit_syscall_print_##sname,	\
- 		.raw_init		= init_syscall_trace,		\
-@@ -174,14 +174,14 @@ struct perf_event_attr;
- 		TRACE_SYS_EXIT_PROFILE_INIT(sname)			\
- 	}
- 
--#define SYSCALL_METADATA(sname, nb)				\
-+#define SYSCALL_METADATA(rname, sname, nb)			\
- 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
- 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
- 	static const struct syscall_metadata __used		\
- 	  __attribute__((__aligned__(4)))			\
- 	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta_##sname = {				\
--		.name 		= "sys"#sname,			\
-+		.name 		= #rname,			\
- 		.nb_args 	= nb,				\
- 		.types		= types_##sname,		\
- 		.args		= args_##sname,			\
-@@ -194,20 +194,20 @@ struct perf_event_attr;
- 	};
- 
- #define SYSCALL_DEFINE0(sname)					\
--	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
--	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
-+	SYSCALL_TRACE_ENTER_EVENT(sys_##sname);			\
-+	SYSCALL_TRACE_EXIT_EVENT(sys_##sname);			\
- 	static const struct syscall_metadata __used		\
- 	  __attribute__((__aligned__(4)))			\
- 	  __attribute__((section("__syscalls_metadata")))	\
--	  __syscall_meta__##sname = {				\
-+	  __syscall_meta_sys_##sname = {			\
- 		.name 		= "sys_"#sname,			\
- 		.nb_args 	= 0,				\
- 		.ftrace_enter	= 0,				\
- 		.ftrace_exit	= 0,				\
- 		.perf_enter	= 0,				\
- 		.perf_exit	= 0,				\
--		.enter_event	= &event_enter__##sname,	\
--		.exit_event	= &event_exit__##sname,		\
-+		.enter_event	= &event_enter_sys_##sname,	\
-+		.exit_event	= &event_exit_sys_##sname,	\
- 	};							\
- 	asmlinkage long sys_##sname(void)
- #else
-@@ -221,6 +221,32 @@ struct perf_event_attr;
- #define SYSCALL_DEFINE5(name, ...) SYSCALL_DEFINEx(5, _##name, __VA_ARGS__)
- #define SYSCALL_DEFINE6(name, ...) SYSCALL_DEFINEx(6, _##name, __VA_ARGS__)
- 
-+#ifdef CONFIG_COMPAT
-+
-+#define ARCH_COMPAT_SYSCALL_DEFINE1(name, ...) COMPAT_SYSCALL_DEFINEx(1, sys32_##name, name, __VA_ARGS__)
-+#define ARCH_COMPAT_SYSCALL_DEFINE2(name, ...) COMPAT_SYSCALL_DEFINEx(2, sys32_##name, name, __VA_ARGS__)
-+#define ARCH_COMPAT_SYSCALL_DEFINE3(name, ...) COMPAT_SYSCALL_DEFINEx(3, sys32_##name, name, __VA_ARGS__)
-+#define ARCH_COMPAT_SYSCALL_DEFINE4(name, ...) COMPAT_SYSCALL_DEFINEx(4, sys32_##name, name, __VA_ARGS__)
-+#define ARCH_COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, sys32_##name, name, __VA_ARGS__)
-+#define ARCH_COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, sys32_##name, name, __VA_ARGS__)
-+
-+#ifdef CONFIG_FTRACE_SYSCALLS
-+#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)		\
-+	static const char *types_compat_sys_##sname[] = {	\
-+		__SC_STR_TDECL##x(__VA_ARGS__)			\
-+	};							\
-+	static const char *args_compat_sys_##sname[] = {	\
-+		__SC_STR_ADECL##x(__VA_ARGS__)			\
-+	};							\
-+	SYSCALL_METADATA(syscall, compat_sys_##sname, x);	\
-+	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
-+#else
-+#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)		\
-+	asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
-+#endif
-+
-+#endif
-+
- #ifdef CONFIG_PPC64
- #define SYSCALL_ALIAS(alias, name)					\
- 	asm ("\t.globl " #alias "\n\t.set " #alias ", " #name "\n"	\
-@@ -237,13 +263,13 @@ struct perf_event_attr;
- 
- #ifdef CONFIG_FTRACE_SYSCALLS
- #define SYSCALL_DEFINEx(x, sname, ...)				\
--	static const char *types_##sname[] = {			\
-+	static const char *types_sys##sname[] = {		\
- 		__SC_STR_TDECL##x(__VA_ARGS__)			\
- 	};							\
--	static const char *args_##sname[] = {			\
-+	static const char *args_sys##sname[] = {		\
- 		__SC_STR_ADECL##x(__VA_ARGS__)			\
- 	};							\
--	SYSCALL_METADATA(sname, x);				\
-+	SYSCALL_METADATA(sys##sname, sys##sname, x);		\
- 	__SYSCALL_DEFINEx(x, sname, __VA_ARGS__)
- #else
- #define SYSCALL_DEFINEx(x, sname, ...)				\
--- 
-1.6.5.1
-
+Thanks.
