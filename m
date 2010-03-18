@@ -1,142 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab0CRFtl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 01:49:41 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61661 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab0CRFtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 01:49:40 -0400
-Message-ID: <4BA1BEF2.4050706@dcl.info.waseda.ac.jp>
-Date: Thu, 18 Mar 2010 14:49:38 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
+	id S1752681Ab0CRFwe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 01:52:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40978 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752387Ab0CRFwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 01:52:32 -0400
+Date: Thu, 18 Mar 2010 05:51:42 GMT
+From: tip-bot for Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+       mingo@redhat.com, peterz@infradead.org, benh@kernel.crashing.org,
+       fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       benh@kernel.crashing.org, peterz@infradead.org, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <20100318050513.GA6575@drongo>
+References: <20100318050513.GA6575@drongo>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] powerpc/perf_events: Fix call-graph recording, add perf_arch_fetch_caller_regs
+Message-ID: <tip-9eff26ea48bfbe2885b158742a7512a097ec911b@git.kernel.org>
+Git-Commit-ID: 9eff26ea48bfbe2885b158742a7512a097ec911b
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
- lock
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <4BA0852D.1090300@dcl.info.waseda.ac.jp> <20100317153858.GA5059@nowhere>
-In-Reply-To: <20100317153858.GA5059@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Mar 2010 05:51:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/10 00:39, Frederic Weisbecker wrote:
- > On Wed, Mar 17, 2010 at 04:30:53PM +0900, Hitoshi Mitake wrote:
- >> On 03/17/10 10:32, Frederic Weisbecker wrote:
- >>> On Sun, Mar 14, 2010 at 07:13:55PM +0100, Peter Zijlstra wrote:
- >>>> On Sun, 2010-03-14 at 19:38 +0900, Hitoshi Mitake wrote:
- >>>>> Current lockdep is too complicated because,
- >>>>>    * dependency validation
- >>>>>    * statistics
- >>>>>    * event tracing
- >>>>> are all implemented by it.
- >>>>> This cause problem of overhead.
- >>>>> If user enables one of them, overhead of rests part is not avoidable.
- >>>>> (tracing is exception. If user enables validation or stat,
- >>>>> overhead of tracing doesn't occur.)
- >>>>>
- >>>>> So I suggest new subsystem "lock monitor".
- >>>>> This is a general purpose lock event hooking mechanism.
- >>>>>
- >>>>> lock monitor will be enable easy implementing and running
- >>>>> these features related to lock.
- >>>>>
- >>>>> And I'm hoping that lock monitor will reduce overhead of perf lock.
- >>>>> Because lock monitor separates dependency validation and event
- >> tracing clearly,
- >>>>> so calling of functions of lockdep (e.g. lock_acquire()) only for
- >> validation
- >>>>> will not occur lock events.
- >>>>>
- >>>>> I implemented it on the branch perf/inject of Frederic's
- >> random-tracing tree.
- >>>>> Because the branch is hottest place of lock and tracing :)
- >>>>
- >>>> OK, so I really don't like this much..
- >>>>
- >>>> Building a lockstat kernel (PROVE_LOCKING=n) should not have much more
- >>>> overhead than the proposed solution, if the simple lock acquistion
- >>>> tracking bothers you, you can do a patch to weaken that.
- >>>>
- >>>> I really really dislike how you add a monitor variable between
- >>>> everything for no reason what so ever.
- >>>>
- >>>> You use a new rwlock_t, which is an instant fail, those things are 
-worse
- >>>> than useless.
- >>>>
- >>>> You add chained indirect calls into all lock ops, that's got to hurt.
- >>>
- >>>
- >>> Well, the idea was not bad at the first glance. It was separating
- >>> lockdep and lock events codes.
- >>>
- >>> But indeed, the indirect calls plus the locking are not good
- >>> for such a fast path.
- >>>
- >>> There is something else, it would be nice to keep the
- >>> lockdep_map ->   lockdep_class mapping so that we can
- >>> do lock profiling based on classes too. So we actually
- >>> need the lockdep code. What we don't need is the prove
- >>> locking or the lock stats. So I guess we can have a new
- >>> config to enable lock events and get rid of the prove
- >>> locking / lock stat code if we don't need it.
- >>>
- >>>
- >>
- >> Thanks for your comments, Peter and Frederic.
- >>
- >> My main motivation of writing this patch series was that
- >> some kernel codes uses lockdep functions (e.g. lock_acquire()) directly,
- >> so perf lock gets a lot of trace events without actual locks (e.g.
- >> might_lock_read()).
- >> I think that these are confusable things for users.
- >>
- >> But I noticed that these events can be reduced by
- >> turning off CONFIG_PROVE_LOCKING. Yeah, my patch series was 
-pointless... :)
- >>
- >> Should perf lock warn not to use with CONFIG_PROVE_LOCKING?
- >
- >
- > Ah I see.
- >
- > might_lock_read() uses might_fault(), rcu, workqueues and probably
- > yet some others use sequences of lock_acquire/lock_release to prove
- > locking while there is actually no real lock operation involved, but
- > this is to detect dependency/balance mistakes.
- >
- > I think that these cases are easily detectable in that they never have
- > any lock_acquired in their scenario. So may be we can just ignore
- > scenarios without lock_acquired and indeed advise users not to use
- > PROVE_LOCKING.
+Commit-ID:  9eff26ea48bfbe2885b158742a7512a097ec911b
+Gitweb:     http://git.kernel.org/tip/9eff26ea48bfbe2885b158742a7512a097ec911b
+Author:     Paul Mackerras <paulus@samba.org>
+AuthorDate: Thu, 18 Mar 2010 16:05:13 +1100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 18 Mar 2010 06:48:29 +0100
 
-Unfortunately, we cannot use this detection method.
-Because trylock series (e.g. spin_trylock()) only issues
-lock_acquire() like this,
+powerpc/perf_events: Fix call-graph recording, add perf_arch_fetch_caller_regs
 
-static inline int __raw_spin_trylock(raw_spinlock_t *lock)
-{
-	preempt_disable();
-	if (do_raw_spin_trylock(lock)) {
-		spin_acquire(&lock->monitor, 0, 1, _RET_IP_); <- spin_acquire() only 
-issues lock_acquire()
-		return 1;
-	}
-	preempt_enable();
-	return 0;
-}
+This implements a powerpc version of perf_arch_fetch_caller_regs
+to get correct call-graphs.
 
-So distinguishing trylocks and lock_acquire()/lock_release() pairs from
-might_lock_read(), might_fault() and etc is hard.
+It's implemented in assembly because that way we can be sure there isn't
+a stack frame for perf_arch_fetch_caller_regs.  If it was in C, gcc might
+or might not create a stack frame for it, which would affect the number
+of levels we have to skip.
 
-It seems that turning off PROVE_LOCKING must be required
-for state machine of perf lock.
+With this, we see results from perf record -e lock:lock_acquire like
+this:
+
+ # Samples: 24878
+ #
+ # Overhead         Command      Shared Object  Symbol
+ # ........  ..............  .................  ......
+ #
+    14.99%            perf  [kernel.kallsyms]  [k] ._raw_spin_lock
+                      |
+                      --- ._raw_spin_lock
+                         |
+                         |--25.00%-- .alloc_fd
+                         |          (nil)
+                         |          |
+                         |          |--50.00%-- .anon_inode_getfd
+                         |          |          .sys_perf_event_open
+                         |          |          syscall_exit
+                         |          |          syscall
+                         |          |          create_counter
+                         |          |          __cmd_record
+                         |          |          run_builtin
+                         |          |          main
+                         |          |          0xfd2e704
+                         |          |          0xfd2e8c0
+                         |          |          (nil)
+
+... etc.
+
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: anton@samba.org
+Cc: linuxppc-dev@ozlabs.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <20100318050513.GA6575@drongo>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/powerpc/include/asm/asm-compat.h |    2 ++
+ arch/powerpc/kernel/misc.S            |   28 ++++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/asm-compat.h b/arch/powerpc/include/asm/asm-compat.h
+index c1b475a..a9b91ed 100644
+--- a/arch/powerpc/include/asm/asm-compat.h
++++ b/arch/powerpc/include/asm/asm-compat.h
+@@ -28,6 +28,7 @@
+ #define PPC_LLARX(t, a, b, eh)	PPC_LDARX(t, a, b, eh)
+ #define PPC_STLCX	stringify_in_c(stdcx.)
+ #define PPC_CNTLZL	stringify_in_c(cntlzd)
++#define PPC_LR_STKOFF	16
+ 
+ /* Move to CR, single-entry optimized version. Only available
+  * on POWER4 and later.
+@@ -51,6 +52,7 @@
+ #define PPC_STLCX	stringify_in_c(stwcx.)
+ #define PPC_CNTLZL	stringify_in_c(cntlzw)
+ #define PPC_MTOCRF	stringify_in_c(mtcrf)
++#define PPC_LR_STKOFF	4
+ 
+ #endif
+ 
+diff --git a/arch/powerpc/kernel/misc.S b/arch/powerpc/kernel/misc.S
+index 2d29752..b485a87 100644
+--- a/arch/powerpc/kernel/misc.S
++++ b/arch/powerpc/kernel/misc.S
+@@ -127,3 +127,31 @@ _GLOBAL(__setup_cpu_power7)
+ _GLOBAL(__restore_cpu_power7)
+ 	/* place holder */
+ 	blr
++
++#ifdef CONFIG_EVENT_TRACING
++/*
++ * Get a minimal set of registers for our caller's nth caller.
++ * r3 = regs pointer, r5 = n.
++ *
++ * We only get R1 (stack pointer), NIP (next instruction pointer)
++ * and LR (link register).  These are all we can get in the
++ * general case without doing complicated stack unwinding, but
++ * fortunately they are enough to do a stack backtrace, which
++ * is all we need them for.
++ */
++_GLOBAL(perf_arch_fetch_caller_regs)
++	mr	r6,r1
++	cmpwi	r5,0
++	mflr	r4
++	ble	2f
++	mtctr	r5
++1:	PPC_LL	r6,0(r6)
++	bdnz	1b
++	PPC_LL	r4,PPC_LR_STKOFF(r6)
++2:	PPC_LL	r7,0(r6)
++	PPC_LL	r7,PPC_LR_STKOFF(r7)
++	PPC_STL	r6,GPR1-STACK_FRAME_OVERHEAD(r3)
++	PPC_STL	r4,_NIP-STACK_FRAME_OVERHEAD(r3)
++	PPC_STL	r7,_LINK-STACK_FRAME_OVERHEAD(r3)
++	blr
++#endif /* CONFIG_EVENT_TRACING */
