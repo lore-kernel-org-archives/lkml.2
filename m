@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab0CRWEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:04:53 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:57471 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752750Ab0CRWEt (ORCPT
+	id S1752430Ab0CRWGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:06:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2563 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab0CRWGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:04:49 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: users@rt2x00.serialmonkey.com
-Subject: Re: [rt2x00-users] rt2500usb broken since 2.6.29
-Date: Thu, 18 Mar 2010 23:04:41 +0100
-User-Agent: KMail/1.9.10
-Cc: Luis Correia <buga@loide.net>, linux-kernel@vger.kernel.org
-References: <201003182246.54889.linux@rainbow-software.org> <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
-In-Reply-To: <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003182304.43196.linux@rainbow-software.org>
+	Thu, 18 Mar 2010 18:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=muSIKZ1wGrj2KrFKVgEdzoz9plR/rAwepIsw4uR9hZo2SsBsSrYwSJZlgJ8aByF7B
+	Ud/wgk2LOT7t7gnyej0HQ==
+From: Greg Thelen <gthelen@google.com>
+To: Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Greg Thelen <gthelen@google.com>
+Subject: [PATCH] memcg: fix typo in memcg documentation
+Date: Thu, 18 Mar 2010 15:04:39 -0700
+Message-Id: <1268949879-29478-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 March 2010 22:51:18 Luis Correia wrote:
-> Hi,
->
-> On Thu, Mar 18, 2010 at 21:46, Ondrej Zary 
-<linux@rainbow-software.org>wrote:
-> > Hello,
-> > rt2500usb is broken since kernel 2.6.29. It has been discussed before but
-> > never solved:
-> > http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
-> > https://bugzilla.redhat.com/show_bug.cgi?id=484888
-> >
-> > I have Asus WL-167G and it really does not work. Scanning works,
-> > association
-> > too but no packets can be sent (looks like receive works because tcpdump
-> > shows packets from other machines). DHCP fails (No DHCPOFFERS received).
-> >
-> > The problem is caused by this patch:
-> >
-> > rt2x00: Implement HW encryption (rt2500usb)
-> >
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit
-> >;h=dddfb478b26e29a2b47f655ec219e743b8111015
-> >
-> > Removing it from 2.6.29 restores the functionality.
-> >
-> > --
-> > Ondrej Zary
->
-> you can prevent hardware encryption by supplying "nohwcrypt=1" to the
-> driver.
-> (modinfo rt2500usb)
+Updated memory.txt to be more consistent: s/swapiness/swappiness/
 
-That did not work. Maybe that was because I just unloaded the rt2500usb module 
-and loaded it again with nohwcrypt=1 without rebooting the machine. Then I 
-removed the HW encryption, recompiled and reloaded and it did not work 
-either. It started to work only after reboot.
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ Documentation/cgroups/memory.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Does the HW encryption really work with any rt2500usb hardware? How can I help 
-to fix it? Or maybe it should be disabled by default.
-
->
-> Luis Correia
-> rt2x00 project admin
-
-
+diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+index f8bc802..3a6aecd 100644
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -340,7 +340,7 @@ Note:
+ 5.3 swappiness
+   Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
+ 
+-  Following cgroups' swapiness can't be changed.
++  Following cgroups' swappiness can't be changed.
+   - root cgroup (uses /proc/sys/vm/swappiness).
+   - a cgroup which uses hierarchy and it has child cgroup.
+   - a cgroup which uses hierarchy and not the root of hierarchy.
 -- 
-Ondrej Zary
+1.7.0.1
+
