@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab0CRUDj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 16:03:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33593 "EHLO mx1.redhat.com"
+	id S1751640Ab0CRUSl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 16:18:41 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55861 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab0CRUDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 16:03:37 -0400
-Message-ID: <4BA28708.3080705@redhat.com>
-Date: Thu, 18 Mar 2010 16:03:20 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1751252Ab0CRUSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 16:18:39 -0400
+Date: Thu, 18 Mar 2010 21:18:26 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: drepper@gmail.com
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Joerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318201826.GA20588@elte.hu>
+References: <20100318191555.GA9741@elte.hu>
+ <g6xyqstzrxva01v1nlUYAxe124vaj_firegpg@mail.gmail.com>
 MIME-Version: 1.0
-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
-       mhiramat@redhat.com, mingo@elte.hu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf events: Fix false positive build warning
- with older GCC's
-References: <20100316220612.32050.33806.stgit@localhost6.localdomain6> <tip-55632770d7298835645489828af87f854c47749c@git.kernel.org>
-In-Reply-To: <tip-55632770d7298835645489828af87f854c47749c@git.kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <g6xyqstzrxva01v1nlUYAxe124vaj_firegpg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tip-bot for Ingo Molnar wrote:
-> Commit-ID:  55632770d7298835645489828af87f854c47749c
-> Gitweb:     http://git.kernel.org/tip/55632770d7298835645489828af87f854c47749c
-> Author:     Ingo Molnar <mingo@elte.hu>
-> AuthorDate: Thu, 18 Mar 2010 16:51:16 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Thu, 18 Mar 2010 17:03:24 +0100
-> 
-> perf events: Fix false positive build warning with older GCC's
-> 
-> gcc 4.2.1 produces:
-> 
->  util/probe-event.c: In function 'add_perf_probe_events':
->  util/probe-event.c:883: warning: 'tev' may be used uninitialized in this function
->  make: *** [util/probe-event.o] Error 1
-> 
-> Newer GCCs get this right.
-> 
-> To work it around, initialize the variable to NULL so that older GCCs see
-> it as initialized too.
 
-Hmm, indeed. this code implies that ntevs > 0, it seems that we'd better
-check it first (e.g. 'if(ntevs <= 0) return;') too.
+* drepper@gmail.com <drepper@gmail.com> wrote:
 
-Thank you,
-
+> On Thu, Mar 18, 2010 at 12:15, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> > I didnt say it's glibc's fault - if then it's more of the kernel's fault 
+> > as most of the complexity is on that side. I said it's due to the 
+> > fundamental distance between the app that makes use of it, the library and 
+> > the kernel, and the resulting difficulties in getting a combined solution 
+> > out.
 > 
-> Cc: Masami Hiramatsu <mhiramat@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <20100316220612.32050.33806.stgit@localhost6.localdomain6>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  tools/perf/util/probe-event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index f333269..c6603f3 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -880,7 +880,7 @@ static void __add_kprobe_trace_events(struct perf_probe_event *pev,
->  				      int ntevs, bool allow_suffix)
->  {
->  	int i, fd;
-> -	struct kprobe_trace_event *tev;
-> +	struct kprobe_trace_event *tev = NULL;
->  	char buf[64];
->  	const char *event, *group;
->  	struct strlist *namelist;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> This is wrong, too.  Once there is a kernel patch that has a reasonable 
+> syscall interface it's easy enough to hack up the glibc side. [...]
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Where 'reasonable' is defined by you, right?
+
+As i said, the KAIO situation is mostly the kernel's fault, but you are a 
+pretty passive and unhelpful entity in this matter too, arent you?
+
+For example, just to state the obvious: libaio has been written 8 years ago in 
+2002 and has been used in apps early on. Why arent those kernel APIs, while 
+not being a full/complete solution, supported by glibc, and wrapped to 
+pthreads based emulation on kernels that dont support it?
+
+I'm not talking about a 100% full POSIX AIO implementation (the kernel side is 
+not complete enough for that) - i'm just talking about the APIs that libaio 
+and the kernel supports today.
+
+Why isnt glibc itself making use of those AIO capabilities internally? (even 
+if it's not possible to support full POSIX AIO)
+
+I checked today's glibc repo, and there's no sign of any of that:
+
+ glibc> git grep io_submit 
+ glibc> git grep aio_context_t 
+ glibc> 
+
+Zero, nil, nada.
+
+Getting _something_ into glibc would certainly help move the situation. Glibc 
+itself using existing KAIO bits internally would help too and dont tell me 
+it's 100% unusable: it's certainly capable enough to run DB servers. glibc 
+using it would create further demand (and pressure, and incentives) for 
+improvements.
+
+There were even glibc patches created by Ben LaHaise for some of these bits, 
+IIRC.
+
+One can certainly make the argument that glibc not using _any_ of the current 
+KAIO capabilities harms its further development.
+
+> [...] Don't try to artificially find an argument to support your thesis.
+
+Charming argumentation style, i really missed it.
+
+Thanks,
+
+	Ingo
