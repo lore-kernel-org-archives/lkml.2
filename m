@@ -1,128 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab0CRVPn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 17:15:43 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56664 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401Ab0CRVPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 17:15:41 -0400
-Date: Thu, 18 Mar 2010 22:15:29 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Zachary Amsden <zamsden@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
+	id S1752682Ab0CRVQj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:16:39 -0400
+Received: from mail-pz0-f200.google.com ([209.85.222.200]:46579 "EHLO
+	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859Ab0CRVQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 17:16:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uxbzqMFbSE0H/S1vvtZI9C5P+FBd0FMwR0YXm/G9kCiSGea1Rr6O8FJv6gJM70HCdv
+         S43Qg+VceGS0Nw0Jr7VKEy1B7rgGqAmAyzjtF0U3jrX2jY3DDr3WVE2UXCTgPtQizzg7
+         jDpVBeh3ZwpsO1aCAJJVqkpSUL594Co6FdHhI=
+Date: Thu, 18 Mar 2010 22:16:36 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Paul Mackerras <paulus@samba.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100318211529.GA21367@elte.hu>
-References: <20100316130840.GA24808@elte.hu>
- <4B9FBA8B.8020200@codemonkey.ws>
- <20100316173940.GA23859@elte.hu>
- <4BA00F1F.1090907@codemonkey.ws>
- <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <4BA1FC80.2000401@redhat.com>
- <20100318105013.GB24464@elte.hu>
- <4BA294D4.2060700@redhat.com>
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+	lock
+Message-ID: <20100318211633.GG5103@nowhere>
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BA294D4.2060700@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4BA1C141.8050409@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Zachary Amsden <zamsden@redhat.com> wrote:
-
-> On 03/18/2010 12:50 AM, Ingo Molnar wrote:
-> >* Avi Kivity<avi@redhat.com>  wrote:
+On Thu, Mar 18, 2010 at 02:59:29PM +0900, Hitoshi Mitake wrote:
+> On 03/17/10 18:52, Ingo Molnar wrote:
 > >
-> >>>The moment any change (be it as trivial as fixing a GUI detail or as
-> >>>complex as a new feature) involves two or more packages, development speed
-> >>>slows down to a crawl - while the complexity of the change might be very
-> >>>low!
-> >>Why is that?
-> >It's very simple: because the contribution latencies and overhead compound,
-> >almost inevitably.
+> > * Frederic Weisbecker<fweisbec@gmail.com>  wrote:
 > >
-> >If you ever tried to implement a combo GCC+glibc+kernel feature you'll know
-> >...
+> >>> You add chained indirect calls into all lock ops, that's got to hurt.
+> >>
+> >> Well, the idea was not bad at the first glance. It was separating  
+> lockdep
+> >> and lock events codes.
+> >>
+> >> But indeed, the indirect calls plus the locking are not good for such 
+> a fast
+> >> path.
 > >
-> >Even with the best-run projects in existence it takes forever and is very
-> >painful - and here i talk about first hand experience over many years.
-> 
-> Ingo, what you miss is that this is not a bad thing.  Fact of the
-> matter is, it's not just painful, it downright sucks.
+> > What would be nice to have is some sort of dynamic patching approach  
+> to enable
+> > _both_ lockdep, lockstat and perf lock.
+> >
+> > If TRACE_EVENT() tracepoints were patchable we could use them. (but  
+> they arent
+> > right now)
+>
+> I'll try it!
 
-Our experience is the opposite, and we tried both variants and report about 
-our experience with both models honestly.
 
-You only have experience about one variant - the one you advocate.
 
-See the assymetry?
+I sometimes wonder which trick between jmp optimization and hot patching
+would be the best to optimize the tracepoints off-cases.
 
-> This is actually a Good Thing (tm).  It means you have to get your
-> feature and its interfaces well defined and able to version forwards
-> and backwards independently from each other.  And that introduces
-> some complexity and time and testing, but in the end it's what you
-> want.  You don't introduce a requirement to have the feature, but
-> take advantage of it if it is there.
-> 
-> It may take everyone else a couple years to upgrade the compilers,
-> tools, libraries and kernel, and by that time any bugs introduced by
-> interacting with this feature will have been ironed out and their
-> patterns well known.
+I should look more closely at the jmp optimization. I don't know if
+it avoids to push the tracepoints parameters in the off case, in
+which case it could be perhaps more efficient than hot patching,
+although perhaps most of the time the given arguments are already in
+registers because the traced function uses them for its own needs.
 
-Sorry, but this is pain not true. The 2.4->2.6 kernel cycle debacle has taught 
-us that waiting long to 'iron out' the details has the following effects:
+Also, adopting hot patching means the tracepoint calls would be
+in a non-inlined separated function. The result would be probably
+less i-cache footprint from the caller, and better for the off-case,
+worse for the on-case. But tracing off-case is most important.
 
- - developer pain
- - user pain
- - distro pain
- - disconnect
- - loss of developers, testers and users
- - grave bugs discovered months (years ...) down the line
- - untested features
- - developer exhaustion
+(Adding more people in Cc)
 
-It didnt work, trust me - and i've been around long enough to have suffered 
-through the whole 2.5.x misery. Some of our worst ABIs come from that cycle as 
-well.
 
-So we first created the 2.6.x process, then as we saw that it worked much 
-better we _sped up_ the kernel development process some more, to what many 
-claimed was an impossible, crazy pace: two weeks merge window, 2.5 months 
-stabilization and a stable release every 3 months.
+> And I have a question related to this dynamic patching approach for lockdep.
+> If dynamic proving turning on/off is provided,
+> lockdep will be confused by inconsistency of lock acquiring log.
+>
+> Will the sequence,
+>
+> lock_acquire(l) -> turning off -> lock_release(l) -> turning on ->  
+> lock_acquire(l)
+>
+> detected as double acquiring?
+>
+> Should turning on/off lockdep be done in the time
+> when every processes have no lock?
 
-And you can also see the countless examples of carefully drafted, well thought 
-out, committee written computer standards that were honed for years, which are 
-not worth the paper they are written on.
 
-'extra time' and 'extra buerocratic overhead to think things through' is about 
-the worst thing you can inject into a development process.
+There is almost always a process with a lock somewhere ;-)
 
-You should think about the human brain as a cache - the 'closer' things are 
-both in time and pyshically, the better they end up being. Also, the more 
-gradual, the more concentrated a thing is, the better it works out in general. 
-This is part of the basic human nature.
+This is not a big deal, it's very similar to unfinished scenarios
+due to the end of the tracing that can happen anytime and you miss
+a lock_release or whatever. We can also begin the tracing anytime,
+and you may receive orphan lock_release in the very beginning
+because you missed the lock_acquire that happened before the tracing.
 
-Sorry, but i really think you are really trying to rationalize a disadvantage 
-here ...
+Any locking scenario that doesn't fit into the state machine
+or is incomplete must be considered as broken and then ignored.
 
-	Ingo
