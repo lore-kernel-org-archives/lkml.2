@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab0CRVwZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 17:52:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:59359 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab0CRVwY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 17:52:24 -0400
+	id S1752216Ab0CRV5f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:57:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751824Ab0CRV5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 17:57:34 -0400
+Message-ID: <4BA2A1CD.1070207@redhat.com>
+Date: Thu, 18 Mar 2010 17:57:33 -0400
+From: William Cohen <wcohen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
-References: <201003182246.54889.linux@rainbow-software.org>
-	 <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
-Date: Thu, 18 Mar 2010 21:52:23 +0000
-Message-ID: <880c1631003181452w4b8a500br6aa7a5388e60b5c@mail.gmail.com>
-Subject: [rt2x00-users] rt2500usb broken since 2.6.29
-From: Luis Correia <buga@loide.net>
-To: linux-kernel@vger.kernel.org
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics fromhost
+ side
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+* Ingo Molnar <mingo@xxxxxxxx> wrote:
 
-On Thu, Mar 18, 2010 at 21:46, Ondrej Zary <linux@rainbow-software.org> wrote:
->
-> Hello,
-> rt2500usb is broken since kernel 2.6.29. It has been discussed before but
-> never solved:
-> http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
-> https://bugzilla.redhat.com/show_bug.cgi?id=484888
->
-> I have Asus WL-167G and it really does not work. Scanning works, association
-> too but no packets can be sent (looks like receive works because tcpdump
-> shows packets from other machines). DHCP fails (No DHCPOFFERS received).
->
-> The problem is caused by this patch:
->
-> rt2x00: Implement HW encryption (rt2500usb)
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=dddfb478b26e29a2b47f655ec219e743b8111015
->
-> Removing it from 2.6.29 restores the functionality.
->
-> --
-> Ondrej Zary
->
+> * Avi Kivity <avi@xxxxxxxxxx> wrote:
+> 
+> > Monitoring guests from the host is useful for kvm developers, but less so
+> > for users.
+> 
+> Guest space profiling is easy, and 'perf kvm' is not about that. (plain 'perf'
+> will work if a proper paravirt channel is opened to the host)
+> 
+> I think you might have misunderstood the purpose and role of the 'perf kvm'
+> patch here? 'perf kvm' is aimed at KVM developers: it is them who improve KVM
+> code, not guest kernel users.
+> 
+> Ingo
 
-you can prevent hardware encryption by supplying "nohwcrypt=1" to the driver.
-(modinfo rt2500usb)
+The software performance events work fine in a KVM guest. Do the hardware performance events work in KVM guest  environment? Last time I looked the results for the hardware counters were not sane. The values were seemingly random numbers. Something like the following.
 
-Luis Correia
-rt2x00 project admin
+Performance counter stats for 'ls':
+
+       3.427434  task-clock-msecs         #      0.046 CPUs 
+              2  context-switches         #      0.001 M/sec
+              0  CPU-migrations           #      0.000 M/sec
+            218  page-faults              #      0.064 M/sec
+ 140737488355327  cycles                   # 41062056440.861 M/sec
+ 68825777242116  instructions             #      0.489 IPC  
+ 68825777242117  branches                 # 20080846849.893 M/sec
+ 68825777242118  branch-misses            #    100.000 %    
+  <not counted>  cache-references        
+  <not counted>  cache-misses     
+
+The guest image is using 2.6.34-0.10.rc1.git0.fc14.it68 kernel and the host is Fedora-12 with a kernel built from 2.6.34-rc1-tip+ git tree running on Quad-Core AMD Opteron(tm) Processor 2350. Is there some combination of kernel/distribution/hardware that the hardware performance counters are suppose to work on?
+
+-Will
