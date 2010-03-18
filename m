@@ -1,95 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab0CROjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:39:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753715Ab0CROjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:39:06 -0400
-Message-ID: <4BA23ADD.4000201@redhat.com>
-Date: Thu, 18 Mar 2010 16:38:21 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA20EB8.60707@redhat.com> <20100318114821.GB13168@elte.hu> <4BA21B09.6060706@redhat.com> <20100318130047.GA7424@elte.hu> <4BA22C72.9030503@redhat.com> <20100318140933.GE25642@elte.hu>
-In-Reply-To: <20100318140933.GE25642@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754126Ab0CROkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:40:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53552 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab0CROkF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 10:40:05 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (mtd
+ related)
+From: David Woodhouse <dwmw2@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, torvalds@linux-foundation.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Maxim Levitsky <maximlevitsky@gmail.com>
+In-Reply-To: <20100302093932.1305852c.sfr@canb.auug.org.au>
+References: <20100301204844.68915148.sfr@canb.auug.org.au>
+	 <1267455546.11061.0.camel@macbook.infradead.org>
+	 <20100302093932.1305852c.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Mar 2010 14:39:54 +0000
+Message-ID: <1268923194.659.1.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 04:09 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->>> That is not what i said. I said they are closely related, and where
->>> technologies are closely related, project proximity turns into project
->>> unification at a certain stage.
->>>        
->> I really don't see how.  So what if both qemu and kvm implement an i8254?
->> They can't share any code since the internal APIs are so different. [...]
->>      
-> I wouldnt jump to assumptions there. perf shares some facilities with the
-> kernel on the source code level - they can be built both in the kernel and in
-> user-space.
->
-> But my main thought wasnt even to actually share the implementation - but to
-> actually synchronize when a piece of device emulation moves into the kernel.
-> It is arguably bad for performance in most cases when Qemu handles a given
-> device - so all the common devices should be kernel accelerated.
->
-> The version and testing matrix would be simplified significantly as well: as
-> kernel and qemu goes hand in hand, they are always on the same version.
->    
+On Tue, 2010-03-02 at 09:39 +1100, Stephen Rothwell wrote:
+> Hi David,
+> 
+> On Mon, 01 Mar 2010 15:59:06 +0100 David Woodhouse <dwmw2@infradead.org> wrote:
+> >
+> > Thanks. Are you happy carrying those until I get back to civilisation on
+> > Monday?
+> 
+> OK, I will keep applying them.  You might want to let Linus know that
+> your pull request will be relatively late, though, as he has threatened a
+> short merge window ...
 
-So, you propose to allow running tools/kvm/ only on the kernel it was 
-shipped with?
+Hm, seems that didn't suffice; he still ignored the pull request which I
+sent last Monday as promised.
 
-Otherwise the testing matrix isn't simplified.
-
->> [...] Even worse for the x86 emulator as qemu and kvm are fundamentally
->> different.
->>      
-> So is it your argument that the difference and the duplication in x86
-> instruction emulation is a good thing?
-
-Of course it isn't a good thing, but it is unavoidable.  Qemu compiles 
-code just-in-time to avoid interpretation overhead, while kvm emulates 
-one instruction at a time.  No caching is possible, especially with 
-ept/npt, since the guest is free to manipulate memory with no 
-notification to the host.  Qemu also supports the full instruction set 
-while kvm only implements what is necessary.  Qemu is a 
-multi-source/multi-target translator while kvm's emulator is x86 specific.
-
-> You said it some time ago that
-> the kvm x86 emulator was very messy and you wish it was cleaner.
->    
-
-It's still messy but is being cleaned up.
-
-> While qemu's is indeed rather different (it's partly a translator/JIT), i'm
-> sure the decoder logic could be shared - and qemu has a slow-path
-> full-emulation fallback in any case, which is similar to what in-kernel
-> emulator does (IIRC ...).
->
-> That might have changed meanwhile.
->    
-
-IIUC it only ever translates.
+Oh well, not the end of the world if it waits till 2.6.35.
 
 -- 
-error compiling committee.c: too many arguments to function
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
