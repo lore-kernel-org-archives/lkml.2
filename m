@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab0CRJJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 05:09:26 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60065 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab0CRJHu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 05:07:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=co27ZKPcnx3/uN/QXbNbFGXKR5DQ8Fh4C6WnKN1rUlHZK03wDLIzdouMrYWeFnDMM3
-         fM/351NIcrMdLGsWdA749gmZtDjmaZgg45cUXtj2bczwFYLyH6wPBXqzfKglSvLZVnMh
-         FNNFebxOW1R6I0/o1xZWcsTC7fszO9f5HsnRs=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 05/12] topology: convert cpu notifier to return encapsulate errno value
-Date: Thu, 18 Mar 2010 18:05:17 +0900
-Message-Id: <1268903124-10237-5-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.6.0.6
-In-Reply-To: <1268903124-10237-1-git-send-email-akinobu.mita@gmail.com>
-References: <1268903124-10237-1-git-send-email-akinobu.mita@gmail.com>
+	id S1751184Ab0CRJV0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 05:21:26 -0400
+Received: from borg.medozas.de ([188.40.89.202]:56428 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750835Ab0CRJVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 05:21:25 -0400
+Date: Thu, 18 Mar 2010 10:21:21 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Michal Marek <mmarek@suse.cz>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: kconfig: report select on a depending option
+Message-ID: <alpine.LSU.2.01.1003181015060.9334@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the previous modification, the cpu notifier can return encapsulate
-errno value. This converts the cpu notifiers for topology.
+Hi,
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/base/topology.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/topology.c b/drivers/base/topology.c
-index bf6b132..9fc630c 100644
---- a/drivers/base/topology.c
-+++ b/drivers/base/topology.c
-@@ -162,7 +162,7 @@ static int __cpuinit topology_cpu_callback(struct notifier_block *nfb,
- 		topology_remove_dev(cpu);
- 		break;
- 	}
--	return rc ? NOTIFY_BAD : NOTIFY_OK;
-+	return notifier_from_errno(rc);
- }
- 
- static int __cpuinit topology_sysfs_init(void)
--- 
-1.6.0.6
+With the following combination of Kconfig config options, I can select 
+TEST_Z, which will select TEST_X, even if TEST_Y=n. It also allows for 
+awkward situations like TEST_Y=M, TEST_X=y, TEST_Z=y, which would yield 
+a link time error when X uses Y's symbols.
+Is there a way to have such potential errors reported with kconfig?
 
+config TEST_Y
+	tristate "Y"
+
+config TEST_X
+	depends on Y
+	tristate "X"
+
+config TEST_Z
+	select TEST_Y
+	tristate "Z"
+
+thanks,
+Jan
