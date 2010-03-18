@@ -1,44 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab0CRGWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 02:22:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48188
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753149Ab0CRGWi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 02:22:38 -0400
-Date: Wed, 17 Mar 2010 23:23:00 -0700 (PDT)
-Message-Id: <20100317.232300.39195654.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, therbert@google.com
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100318152351.df9e11a3.sfr@canb.auug.org.au>
-References: <20100318152351.df9e11a3.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753270Ab0CRGW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 02:22:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:1797 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752711Ab0CRGVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 02:21:50 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Geoff Levand <geoffrey.levand@am.sony.com>, Zhu Yi <yi.zhu@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>, linuxppc-dev@ozlabs.org,
+       cbe-oss-dev@ozlabs.org, netdev@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: [PATCH v2 5/7] drivers/net: Remove local #define IW_IOCTL, use STD_IW_HANDLER
+Date: Wed, 17 Mar 2010 23:21:38 -0700
+Message-Id: <696c60e097ff35aeb2d746d1a0edf167514f2b61.1268892664.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.0.14.g7e948
+In-Reply-To: <cover.1268892663.git.joe@perches.com>
+References: <cover.1268892663.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 18 Mar 2010 15:23:51 +1100
+Use #define STD_IW_HANDLER from wireless.h instead
 
-> After merging the final tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
-> 
-> net/core/dev.c: In function 'net_rps_action':
-> net/core/dev.c:3183: error: implicit declaration of function '__smp_call_function_single'
-> 
-> Caused by commit 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive
-> Packet Steering") from the net tree.   This config does not have
-> CONFIG_SMP set.  __smp_call_function_single is only available when
-> CONFIG_SMP is set.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ps3_gelic_wireless.c       |   35 +++++++-------
+ drivers/net/wireless/ipw2x00/ipw2200.c |   83 ++++++++++++++++----------------
+ 2 files changed, 58 insertions(+), 60 deletions(-)
 
-Tom, please send me a fix for this soon.
+diff --git a/drivers/net/ps3_gelic_wireless.c b/drivers/net/ps3_gelic_wireless.c
+index 2663b2f..2bc8935 100644
+--- a/drivers/net/ps3_gelic_wireless.c
++++ b/drivers/net/ps3_gelic_wireless.c
+@@ -2279,26 +2279,25 @@ void gelic_wl_interrupt(struct net_device *netdev, u64 status)
+ /*
+  * driver helpers
+  */
+-#define IW_IOCTL(n) [(n) - SIOCSIWCOMMIT]
+ static const iw_handler gelic_wl_wext_handler[] =
+ {
+-	IW_IOCTL(SIOCGIWNAME)		= gelic_wl_get_name,
+-	IW_IOCTL(SIOCGIWRANGE)		= gelic_wl_get_range,
+-	IW_IOCTL(SIOCSIWSCAN)		= gelic_wl_set_scan,
+-	IW_IOCTL(SIOCGIWSCAN)		= gelic_wl_get_scan,
+-	IW_IOCTL(SIOCSIWAUTH)		= gelic_wl_set_auth,
+-	IW_IOCTL(SIOCGIWAUTH)		= gelic_wl_get_auth,
+-	IW_IOCTL(SIOCSIWESSID)		= gelic_wl_set_essid,
+-	IW_IOCTL(SIOCGIWESSID)		= gelic_wl_get_essid,
+-	IW_IOCTL(SIOCSIWENCODE)		= gelic_wl_set_encode,
+-	IW_IOCTL(SIOCGIWENCODE)		= gelic_wl_get_encode,
+-	IW_IOCTL(SIOCSIWAP)		= gelic_wl_set_ap,
+-	IW_IOCTL(SIOCGIWAP)		= gelic_wl_get_ap,
+-	IW_IOCTL(SIOCSIWENCODEEXT)	= gelic_wl_set_encodeext,
+-	IW_IOCTL(SIOCGIWENCODEEXT)	= gelic_wl_get_encodeext,
+-	IW_IOCTL(SIOCSIWMODE)		= gelic_wl_set_mode,
+-	IW_IOCTL(SIOCGIWMODE)		= gelic_wl_get_mode,
+-	IW_IOCTL(SIOCGIWNICKN)		= gelic_wl_get_nick,
++	STD_IW_HANDLER(SIOCGIWNAME, gelic_wl_get_name),
++	STD_IW_HANDLER(SIOCGIWRANGE, gelic_wl_get_range),
++	STD_IW_HANDLER(SIOCSIWSCAN, gelic_wl_set_scan),
++	STD_IW_HANDLER(SIOCGIWSCAN, gelic_wl_get_scan),
++	STD_IW_HANDLER(SIOCSIWAUTH, gelic_wl_set_auth),
++	STD_IW_HANDLER(SIOCGIWAUTH, gelic_wl_get_auth),
++	STD_IW_HANDLER(SIOCSIWESSID, gelic_wl_set_essid),
++	STD_IW_HANDLER(SIOCGIWESSID, gelic_wl_get_essid),
++	STD_IW_HANDLER(SIOCSIWENCODE, gelic_wl_set_encode),
++	STD_IW_HANDLER(SIOCGIWENCODE, gelic_wl_get_encode),
++	STD_IW_HANDLER(SIOCSIWAP, gelic_wl_set_ap),
++	STD_IW_HANDLER(SIOCGIWAP, gelic_wl_get_ap),
++	STD_IW_HANDLER(SIOCSIWENCODEEXT, gelic_wl_set_encodeext),
++	STD_IW_HANDLER(SIOCGIWENCODEEXT, gelic_wl_get_encodeext),
++	STD_IW_HANDLER(SIOCSIWMODE, gelic_wl_set_mode),
++	STD_IW_HANDLER(SIOCGIWMODE, gelic_wl_get_mode),
++	STD_IW_HANDLER(SIOCGIWNICKN, gelic_wl_get_nick),
+ };
+ 
+ static const struct iw_handler_def gelic_wl_wext_handler_def = {
+diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+index 5c7aa1b..1e84888 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -9995,49 +9995,48 @@ static int ipw_wx_sw_reset(struct net_device *dev,
+ }
+ 
+ /* Rebase the WE IOCTLs to zero for the handler array */
+-#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
+ static iw_handler ipw_wx_handlers[] = {
+-	IW_IOCTL(SIOCGIWNAME) = (iw_handler) cfg80211_wext_giwname,
+-	IW_IOCTL(SIOCSIWFREQ) = ipw_wx_set_freq,
+-	IW_IOCTL(SIOCGIWFREQ) = ipw_wx_get_freq,
+-	IW_IOCTL(SIOCSIWMODE) = ipw_wx_set_mode,
+-	IW_IOCTL(SIOCGIWMODE) = ipw_wx_get_mode,
+-	IW_IOCTL(SIOCSIWSENS) = ipw_wx_set_sens,
+-	IW_IOCTL(SIOCGIWSENS) = ipw_wx_get_sens,
+-	IW_IOCTL(SIOCGIWRANGE) = ipw_wx_get_range,
+-	IW_IOCTL(SIOCSIWAP) = ipw_wx_set_wap,
+-	IW_IOCTL(SIOCGIWAP) = ipw_wx_get_wap,
+-	IW_IOCTL(SIOCSIWSCAN) = ipw_wx_set_scan,
+-	IW_IOCTL(SIOCGIWSCAN) = ipw_wx_get_scan,
+-	IW_IOCTL(SIOCSIWESSID) = ipw_wx_set_essid,
+-	IW_IOCTL(SIOCGIWESSID) = ipw_wx_get_essid,
+-	IW_IOCTL(SIOCSIWNICKN) = ipw_wx_set_nick,
+-	IW_IOCTL(SIOCGIWNICKN) = ipw_wx_get_nick,
+-	IW_IOCTL(SIOCSIWRATE) = ipw_wx_set_rate,
+-	IW_IOCTL(SIOCGIWRATE) = ipw_wx_get_rate,
+-	IW_IOCTL(SIOCSIWRTS) = ipw_wx_set_rts,
+-	IW_IOCTL(SIOCGIWRTS) = ipw_wx_get_rts,
+-	IW_IOCTL(SIOCSIWFRAG) = ipw_wx_set_frag,
+-	IW_IOCTL(SIOCGIWFRAG) = ipw_wx_get_frag,
+-	IW_IOCTL(SIOCSIWTXPOW) = ipw_wx_set_txpow,
+-	IW_IOCTL(SIOCGIWTXPOW) = ipw_wx_get_txpow,
+-	IW_IOCTL(SIOCSIWRETRY) = ipw_wx_set_retry,
+-	IW_IOCTL(SIOCGIWRETRY) = ipw_wx_get_retry,
+-	IW_IOCTL(SIOCSIWENCODE) = ipw_wx_set_encode,
+-	IW_IOCTL(SIOCGIWENCODE) = ipw_wx_get_encode,
+-	IW_IOCTL(SIOCSIWPOWER) = ipw_wx_set_power,
+-	IW_IOCTL(SIOCGIWPOWER) = ipw_wx_get_power,
+-	IW_IOCTL(SIOCSIWSPY) = iw_handler_set_spy,
+-	IW_IOCTL(SIOCGIWSPY) = iw_handler_get_spy,
+-	IW_IOCTL(SIOCSIWTHRSPY) = iw_handler_set_thrspy,
+-	IW_IOCTL(SIOCGIWTHRSPY) = iw_handler_get_thrspy,
+-	IW_IOCTL(SIOCSIWGENIE) = ipw_wx_set_genie,
+-	IW_IOCTL(SIOCGIWGENIE) = ipw_wx_get_genie,
+-	IW_IOCTL(SIOCSIWMLME) = ipw_wx_set_mlme,
+-	IW_IOCTL(SIOCSIWAUTH) = ipw_wx_set_auth,
+-	IW_IOCTL(SIOCGIWAUTH) = ipw_wx_get_auth,
+-	IW_IOCTL(SIOCSIWENCODEEXT) = ipw_wx_set_encodeext,
+-	IW_IOCTL(SIOCGIWENCODEEXT) = ipw_wx_get_encodeext,
++	STD_IW_HANDLER(SIOCGIWNAME, cfg80211_wext_giwname),
++	STD_IW_HANDLER(SIOCSIWFREQ, ipw_wx_set_freq),
++	STD_IW_HANDLER(SIOCGIWFREQ, ipw_wx_get_freq),
++	STD_IW_HANDLER(SIOCSIWMODE, ipw_wx_set_mode),
++	STD_IW_HANDLER(SIOCGIWMODE, ipw_wx_get_mode),
++	STD_IW_HANDLER(SIOCSIWSENS, ipw_wx_set_sens),
++	STD_IW_HANDLER(SIOCGIWSENS, ipw_wx_get_sens),
++	STD_IW_HANDLER(SIOCGIWRANGE, ipw_wx_get_range),
++	STD_IW_HANDLER(SIOCSIWAP, ipw_wx_set_wap),
++	STD_IW_HANDLER(SIOCGIWAP, ipw_wx_get_wap),
++	STD_IW_HANDLER(SIOCSIWSCAN, ipw_wx_set_scan),
++	STD_IW_HANDLER(SIOCGIWSCAN, ipw_wx_get_scan),
++	STD_IW_HANDLER(SIOCSIWESSID, ipw_wx_set_essid),
++	STD_IW_HANDLER(SIOCGIWESSID, ipw_wx_get_essid),
++	STD_IW_HANDLER(SIOCSIWNICKN, ipw_wx_set_nick),
++	STD_IW_HANDLER(SIOCGIWNICKN, ipw_wx_get_nick),
++	STD_IW_HANDLER(SIOCSIWRATE, ipw_wx_set_rate),
++	STD_IW_HANDLER(SIOCGIWRATE, ipw_wx_get_rate),
++	STD_IW_HANDLER(SIOCSIWRTS, ipw_wx_set_rts),
++	STD_IW_HANDLER(SIOCGIWRTS, ipw_wx_get_rts),
++	STD_IW_HANDLER(SIOCSIWFRAG, ipw_wx_set_frag),
++	STD_IW_HANDLER(SIOCGIWFRAG, ipw_wx_get_frag),
++	STD_IW_HANDLER(SIOCSIWTXPOW, ipw_wx_set_txpow),
++	STD_IW_HANDLER(SIOCGIWTXPOW, ipw_wx_get_txpow),
++	STD_IW_HANDLER(SIOCSIWRETRY, ipw_wx_set_retry),
++	STD_IW_HANDLER(SIOCGIWRETRY, ipw_wx_get_retry),
++	STD_IW_HANDLER(SIOCSIWENCODE, ipw_wx_set_encode),
++	STD_IW_HANDLER(SIOCGIWENCODE, ipw_wx_get_encode),
++	STD_IW_HANDLER(SIOCSIWPOWER, ipw_wx_set_power),
++	STD_IW_HANDLER(SIOCGIWPOWER, ipw_wx_get_power),
++	STD_IW_HANDLER(SIOCSIWSPY, iw_handler_set_spy),
++	STD_IW_HANDLER(SIOCGIWSPY, iw_handler_get_spy),
++	STD_IW_HANDLER(SIOCSIWTHRSPY, iw_handler_set_thrspy),
++	STD_IW_HANDLER(SIOCGIWTHRSPY, iw_handler_get_thrspy),
++	STD_IW_HANDLER(SIOCSIWGENIE, ipw_wx_set_genie),
++	STD_IW_HANDLER(SIOCGIWGENIE, ipw_wx_get_genie),
++	STD_IW_HANDLER(SIOCSIWMLME, ipw_wx_set_mlme),
++	STD_IW_HANDLER(SIOCSIWAUTH, ipw_wx_set_auth),
++	STD_IW_HANDLER(SIOCGIWAUTH, ipw_wx_get_auth),
++	STD_IW_HANDLER(SIOCSIWENCODEEXT, ipw_wx_set_encodeext),
++	STD_IW_HANDLER(SIOCGIWENCODEEXT, ipw_wx_get_encodeext),
+ };
+ 
+ enum {
+-- 
+1.7.0.14.g7e948
 
-Thanks!
