@@ -1,162 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab0CRNdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:33:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753423Ab0CRNdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:33:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] NFS: Fix RCU warnings in
-	nfs_inode_return_delegation_noreclaim() [ver #2]
-To: Trond.Myklebust@netapp.com, paulmck@linux.vnet.ibm.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>
-Date: Thu, 18 Mar 2010 13:33:02 +0000
-Message-ID: <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1753470Ab0CRNgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:36:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36390 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab0CRNgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 09:36:11 -0400
+Date: Thu, 18 Mar 2010 10:35:48 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       Sheng Yang <sheng@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       kvm@vger.kernel.org, zhiteng.huang@intel.com,
+       Zachary Amsden <zamsden@redhat.com>
+Subject: Re: [PATCH 3/3] perf events: Change perf parameter --pid to
+ process-wide collection instead of thread-wide
+Message-ID: <20100318133548.GA2873@ghostprotocols.net>
+References: <1268904666.2813.172.camel@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268904666.2813.172.camel@localhost>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix a number of RCU warnings in nfs_inode_return_delegation_noreclaim().
-nfs_inode_return_delegation_noreclaim() and nfs_inode_return_delegation() don't
-need to use rcu_dereference() outside the spinlocked region as they merely
-examin the pointer and don't follow it, thus rendering unnecessary the need to
-impose a partial ordering over the one item of interest.
+Em Thu, Mar 18, 2010 at 05:31:06PM +0800, Zhang, Yanmin escreveu:
+> From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+> 
+> Parameter --pid (or -p) of perf currently means a thread-wide collection.
+> For exmaple, if a process whose id is 8888 has 10 threads, 'perf top -p 8888'
+> just collects the main thread statistics. That's misleading. Users are
+> used to attach a whole process when debugging a process by gdb. To follow
+> normal usage style, the patch change --pid to process-wide collection and
+> add --tid (-t) to mean a thread-wide collection.
+> 
+> Usage example is:
+> #perf top -p 8888
+> #perf record -p 8888 -f sleep 10
+> #perf stat -p 8888 -f sleep 10
+> Above commands collect the statistics of all threads of process 8888.
+> 
+> Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
 
-nfs_detach_delegation_locked() doesn't need rcu_derefence() because it can only
-be called if nfs_client::cl_lock is held, and that guards against anyone
-changing nfsi->delegation under it.  Furthermore, the barrier in
-rcu_derefence() is superfluous, given that the spin_lock() is also a barrier.
-
-nfs_free_delegation() should be using rcu_dereference_check() to validate the
-state that the data is in (the delegation inode must have been cleared).  By
-this point, the delegation is being released, so no one else should be
-attempting to use the saved credentials, and they can be cleared.  However,
-rcu_assign_pointer() should be used to clear them, and the delegation itself
-must still use call_rcu() as the list of delegations could be being traversed.
-
-
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-fs/nfs/delegation.c:332 invoked rcu_dereference_check() without protection!
-
-other info that might help us debug this:
-
-
-rcu_scheduler_active = 1, debug_locks = 0
-2 locks held by mount.nfs4/2281:
- #0:  (&type->s_umount_key#34){+.+...}, at: [<ffffffff810b25b4>] deactivate_super+0x60/0x80
- #1:  (iprune_sem){+.+...}, at: [<ffffffff810c332a>] invalidate_inodes+0x39/0x13a
-
-stack backtrace:
-Pid: 2281, comm: mount.nfs4 Not tainted 2.6.34-rc1-cachefs #110
-Call Trace:
- [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffffa00b4591>] nfs_inode_return_delegation_noreclaim+0x5b/0xa0 [nfs]
- [<ffffffffa0095d63>] nfs4_clear_inode+0x11/0x1e [nfs]
- [<ffffffff810c2d92>] clear_inode+0x9e/0xf8
- [<ffffffff810c3028>] dispose_list+0x67/0x10e
- [<ffffffff810c340d>] invalidate_inodes+0x11c/0x13a
- [<ffffffff810b1dc1>] generic_shutdown_super+0x42/0xf4
- [<ffffffff810b1ebe>] kill_anon_super+0x11/0x4f
- [<ffffffffa009893c>] nfs4_kill_super+0x3f/0x72 [nfs]
- [<ffffffff810b25bc>] deactivate_super+0x68/0x80
- [<ffffffff810c6744>] mntput_no_expire+0xbb/0xf8
- [<ffffffff810c681b>] release_mounts+0x9a/0xb0
- [<ffffffff810c689b>] put_mnt_ns+0x6a/0x79
- [<ffffffffa00983a1>] nfs_follow_remote_path+0x5a/0x146 [nfs]
- [<ffffffffa0098334>] ? nfs_do_root_mount+0x82/0x95 [nfs]
- [<ffffffffa00985a9>] nfs4_try_mount+0x75/0xaf [nfs]
- [<ffffffffa0098874>] nfs4_get_sb+0x291/0x31a [nfs]
- [<ffffffff810b2059>] vfs_kern_mount+0xb8/0x177
- [<ffffffff810b2176>] do_kern_mount+0x48/0xe8
- [<ffffffff810c810b>] do_mount+0x782/0x7f9
- [<ffffffff810c8205>] sys_mount+0x83/0xbe
- [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
-
-Also on:
-
-fs/nfs/delegation.c:215 invoked rcu_dereference_check() without protection!
- [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffffa00b4223>] nfs_inode_set_delegation+0xfe/0x219 [nfs]
- [<ffffffffa00a9c6f>] nfs4_opendata_to_nfs4_state+0x2c2/0x30d [nfs]
- [<ffffffffa00aa15d>] nfs4_do_open+0x2a6/0x3a6 [nfs]
- ...
-
-And:
-
-fs/nfs/delegation.c:40 invoked rcu_dereference_check() without protection!
- [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
- [<ffffffffa00b3bef>] nfs_free_delegation+0x3d/0x6e [nfs]
- [<ffffffffa00b3e71>] nfs_do_return_delegation+0x26/0x30 [nfs]
- [<ffffffffa00b406a>] __nfs_inode_return_delegation+0x1ef/0x1fe [nfs]
- [<ffffffffa00b448a>] nfs_client_return_marked_delegations+0xc9/0x124 [nfs]
- ...
-
-
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/nfs/delegation.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 2563beb..fa9b7c5 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -37,7 +37,8 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
- {
- 	struct rpc_cred *cred;
+Just did visual inspection of the three patches, all sane, except for
+some coding style nits, don't worry right now for that, I'll fix them up
+myself, but please take those into account int the future, highlight
+below.
  
--	cred = rcu_dereference(delegation->cred);
-+	cred = rcu_dereference_check(delegation->cred,
-+				     delegation->inode == NULL);
- 	rcu_assign_pointer(delegation->cred, NULL);
- 	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
- 	if (cred)
-@@ -167,7 +168,7 @@ static struct inode *nfs_delegation_grab_inode(struct nfs_delegation *delegation
- 
- static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
- {
--	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
-+	struct nfs_delegation *delegation = nfsi->delegation;
- 
- 	if (delegation == NULL)
- 		goto nomatch;
-@@ -212,7 +213,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
- 	spin_lock_init(&delegation->lock);
- 
- 	spin_lock(&clp->cl_lock);
--	if (rcu_dereference(nfsi->delegation) != NULL) {
-+	if (nfsi->delegation != NULL) {
- 		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
- 					sizeof(delegation->stateid)) == 0 &&
- 				delegation->type == nfsi->delegation->type) {
-@@ -329,7 +330,7 @@ void nfs_inode_return_delegation_noreclaim(struct inode *inode)
- 	struct nfs_inode *nfsi = NFS_I(inode);
- 	struct nfs_delegation *delegation;
- 
--	if (rcu_dereference(nfsi->delegation) != NULL) {
-+	if (nfsi->delegation != NULL) {
- 		spin_lock(&clp->cl_lock);
- 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
- 		spin_unlock(&clp->cl_lock);
-@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
- 	struct nfs_delegation *delegation;
- 	int err = 0;
- 
--	if (rcu_dereference(nfsi->delegation) != NULL) {
-+	if (nfsi->delegation != NULL) {
- 		spin_lock(&clp->cl_lock);
- 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
- 		spin_unlock(&clp->cl_lock);
+> ---
+> 
+> diff -Nraup linux-2.6_tip0317_statrecord/tools/perf/builtin-record.c linux-2.6_tip0317_statrecordpid/tools/perf/builtin-record.c
+> --- linux-2.6_tip0317_statrecord/tools/perf/builtin-record.c	2010-03-18 13:48:39.578181540 +0800
+> +++ linux-2.6_tip0317_statrecordpid/tools/perf/builtin-record.c	2010-03-18 14:28:41.449631936 +0800
+> +			mmap_array[nr_cpu][counter][thread_index].mask = mmap_pages*page_size - 1;
+> +			mmap_array[nr_cpu][counter][thread_index].base = mmap(NULL, (mmap_pages+1)*page_size,
 
+Spaces around +, *,  etc
+
+> +				PROT_READ|PROT_WRITE, MAP_SHARED, fd[nr_cpu][counter][thread_index], 0);
+> +			if (mmap_array[nr_cpu][counter][thread_index].base == MAP_FAILED) {
+> +				error("failed to mmap with %d (%s)\n", errno, strerror(errno));
+> +				exit(-1);
+> +			}
+> +	} else {
+> +		all_tids=malloc(sizeof(pid_t));
+
+Ditto here for =
+
+> +		if (!all_tids)
+> +			return -ENOMEM;
+> +
+> +		all_tids[0] = target_tid;
+> +		thread_num = 1;
+> +	}
+> +
+> +	for (i = 0; i < MAX_NR_CPUS; i++) {
+> +		for (j = 0; j < MAX_COUNTERS; j++) {
+> +			fd[i][j] = malloc(sizeof(int)*thread_num);
+> +			mmap_array[i][j] = malloc(
+> +				sizeof(struct mmap_data)*thread_num);
+
+Ditto
+
+> +			if (!fd[i][j] || !mmap_array[i][j])
+> +				return -ENOMEM;
+> +		}
+> +	}
+> +	event_array = malloc(
+> +		sizeof(struct pollfd)*MAX_NR_CPUS*MAX_COUNTERS*thread_num);
+
+Ditto
+
+Should be, I suggest:
+
+	event_array = malloc((sizeof(struct pollfd) * MAX_NR_CPUS *
+			      MAX_COUNTERS * thread_num));
+
+
+Anyway, I'll fix some of these while merging, now.
+
+- Arnaldo
