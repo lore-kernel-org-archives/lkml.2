@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922Ab0CRPrw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:47:52 -0400
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:49720 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752158Ab0CRPru (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:47:50 -0400
-Date: Thu, 18 Mar 2010 18:47:47 +0300
-From: Anton Vorontsov <avorontsov@ru.mvista.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: davem@davemloft.net, benh@kernel.crashing.org,
-       linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
-       linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
-       microblaze-uclinux@itee.uq.edu.au
-Subject: Re: [V2 PATCH 08/10] arch/powerpc: Remove obsolete
- dev_archdata.of_node and of_devce.node
-Message-ID: <20100318154747.GA7767@oksana.dev.rtsoft.ru>
-Reply-To: avorontsov@ru.mvista.com
-References: <20100318144836.21082.93040.stgit@angua>
- <20100318152250.21082.35352.stgit@angua>
+	id S1753119Ab0CRP4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 11:56:19 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60931 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752897Ab0CRP4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 11:56:18 -0400
+Date: Thu, 18 Mar 2010 16:56:10 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 2/2] x86,perf: add cache events in p4 PMU
+Message-ID: <20100318155610.GA28061@elte.hu>
+References: <1268908392.13901.128.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100318152250.21082.35352.stgit@angua>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1268908392.13901.128.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
 
-On Thu, Mar 18, 2010 at 09:22:50AM -0600, Grant Likely wrote:
-> Both dev_archdata.of_node and of_device.node are duplications of the
-> device.of_node value.  This patch removes them.
+* Lin Ming <ming.m.lin@intel.com> wrote:
 
-Yeah, they're plain duplications since you introduced dev.of_node.
-I wonder what was the problem with using dev.archdata.of_node?
-Why dev.of_node is better?
+> Add cache events in p4 PMU.
+> 
+> Move the HT bit setting code from p4_pmu_event_map to p4_hw_config.
+> So the cache events can get HT bit set correctly.
+> 
+> Tested on my P4 desktop, below 6 cache events work.
+> L1-dcache-load-misses
+> LLC-load-misses
+> dTLB-load-misses
+> dTLB-store-misses
+> iTLB-loads
+> iTLB-load-misses
+> 
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> ---
+>  arch/x86/include/asm/msr-index.h     |    2 +
+>  arch/x86/include/asm/perf_event_p4.h |   10 ++
+>  arch/x86/kernel/cpu/perf_event_p4.c  |  153 ++++++++++++++++++++++++++++++++--
+>  3 files changed, 159 insertions(+), 6 deletions(-)
 
-Also, by using dev.of_node directly you have to introduce ugly
-#ifdefs in the non-OF code (as in i2c patch), which you don't
-need with transparent archdata and accessors, which you've just
-removed:
+i tried it on a Pentium-D box, and it works pretty well:
 
-> -static inline void dev_archdata_set_node(struct dev_archdata *ad,
-> -					 struct device_node *np)
-> -{
-> -	ad->of_node = np;
-> -}
-> -
-> -static inline struct device_node *
-> -dev_archdata_get_node(const struct dev_archdata *ad)
-> -{
-> -	return ad->of_node;
-> -}
+rhea:/home/mingo/tip> perf stat -a sleep 1
 
-Thanks,
+ Performance counter stats for 'sleep 1':
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+    2003.237268  task-clock-msecs         #      2.000 CPUs 
+             11  context-switches         #      0.000 M/sec
+              2  CPU-migrations           #      0.000 M/sec
+            174  page-faults              #      0.000 M/sec
+          47361  cycles                   #      0.024 M/sec  (scaled from 52.83%)
+            430  instructions             #      0.009 IPC    (scaled from 74.58%)
+          23873  branches                 #      0.012 M/sec  (scaled from 96.70%)
+            193  branch-misses            #      0.808 %      (scaled from 49.64%)
+            867  cache-references         #      0.000 M/sec  (scaled from 49.69%)
+            504  cache-misses             #      0.000 M/sec  (scaled from 49.58%)
+
+    1.001411586  seconds time elapsed
+
+So i've applied your patches. Cyrill, what do you think?
+
+	Ingo
