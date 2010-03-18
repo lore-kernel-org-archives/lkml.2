@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0CRNW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:22:27 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35371 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156Ab0CRNWZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:22:25 -0400
-Subject: Re: [PATCH] softlockup: stop spurious softlockup messages due to
- overflow
-From: Colin Ian King <colin.king@canonical.com>
+	id S1753418Ab0CRNYU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:24:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156Ab0CRNYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 09:24:19 -0400
+Message-ID: <4BA2296A.90401@redhat.com>
+Date: Thu, 18 Mar 2010 14:23:54 +0100
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
+MIME-Version: 1.0
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+CC: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100316101251.GM7961@elte.hu>
-References: <1268661673-21638-1-git-send-email-colin.king@canonical.com>
-	 <1268663388.3154.30.camel@edumazet-laptop>  <20100316101251.GM7961@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 13:22:17 +0000
-Message-ID: <1268918537.1894.143.camel@lenovo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9FBA8B.8020200@codemonkey.ws> <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E7E2.3010803@redhat.com> <20100318095418.GD2157@elte.hu> <4BA2030B.3090007@redhat.com> <20100318105826.GA2174@elte.hu>
+In-Reply-To: <20100318105826.GA2174@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-16 at 11:12 +0100, Ingo Molnar wrote:
-> * Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> 
-> > Le lundi 15 mars 2010 ?? 14:01 +0000, Colin Ian King a ??crit :
-> > > Ensure additions on touch_ts do not overflow.  This can occur when
-> > > the top 32 bits of the TSC reach 0xffffffff causing additions to
-> > > touch_ts to overflow and this in turn generates spurious softlockup
-> > > warnings.
-> > > 
-> > > Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> > > ---
-> > >  kernel/softlockup.c |    6 +++---
-> > >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/kernel/softlockup.c b/kernel/softlockup.c
-> > > index 0d4c789..90d9aa0 100644
-> > > --- a/kernel/softlockup.c
-> > > +++ b/kernel/softlockup.c
-> > > @@ -111,10 +111,10 @@ int proc_dosoftlockup_thresh(struct ctl_table *table, int write,
-> > >  void softlockup_tick(void)
-> > >  {
-> > >  	int this_cpu = smp_processor_id();
-> > > -	unsigned long touch_ts = per_cpu(softlockup_touch_ts, this_cpu);
-> > > +	unsigned long long touch_ts = per_cpu(softlockup_touch_ts, this_cpu);
-> > >  	unsigned long print_ts;
-> > >  	struct pt_regs *regs = get_irq_regs();
-> > > -	unsigned long now;
-> > > +	unsigned long long now;
-> > >  
-> > >  	/* Is detection switched off? */
-> > >  	if (!per_cpu(softlockup_watchdog, this_cpu) || softlockup_thresh <= 0) {
-> > > @@ -165,7 +165,7 @@ void softlockup_tick(void)
-> > >  	per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
-> > >  
-> > >  	spin_lock(&print_lock);
-> > > -	printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %lus! [%s:%d]\n",
-> > > +	printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %llus! [%s:%d]\n",
-> > >  			this_cpu, now - touch_ts,
-> > >  			current->comm, task_pid_nr(current));
-> > >  	print_modules();
-> > 
-> > This looks wrong, touch_ts is a long, not a long long.
-> 
-> Could be increased to long long - but that's probably overkill as the touch_ts 
-> is in seconds, so the scope of comparisons should never truly get even close 
-> to ~2^31.
-> 
-> > You probably want to change the comparisons instead.
-> > 
-> > if (now > touch_ts + softlockup_thresh/2)
-> > 	wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
-> > if (now <= (touch_ts + softlockup_thresh))
-> > 	return;
-> > 	
-> > ->
-> > 
-> > if ((long)(now - touch_ts) > softlockup_thresh/2)
-> > 	wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
-> > if ((long)(now - touch_ts) <= softlockup_thresh))
-> > 	return;
-> > 
-> > Or use standard time_after()/time_before() macros.
-> 
-> Yeah, time_after/before would work better i suspect.
-> 
-> Thanks,
-> 
-> 	Ingo
+On 03/18/10 11:58, Ingo Molnar wrote:
+>
+> * Jes Sorensen<Jes.Sorensen@redhat.com>  wrote:
+>> Thats a very glorified statement but it's not reality, sorry. You can do
+>> that with something like perf because it's so small and development of perf
+>> is limited to a very small group of developers.
+>
+> I was not talking about just perf: i am also talking about the arch/x86/
+> unification which is 200+ KLOC of highly non-trivial kernel code with hundreds
+> of contributors and with 8000+ commits in the past two years.
 
-Using time_after/before:
+Sorry but you cannot compare merging two chunks of kernel code that
+originated from the same base, with the efforts of mixing a large
+userland project with a kernel component. Apples and oranges.
 
-diff --git a/kernel/softlockup.c b/kernel/softlockup.c
-index 0d4c789..4b493f6 100644
---- a/kernel/softlockup.c
-+++ b/kernel/softlockup.c
-@@ -155,11 +155,11 @@ void softlockup_tick(void)
-         * Wake up the high-prio watchdog task twice per
-         * threshold timespan.
-         */
--       if (now > touch_ts + softlockup_thresh/2)
-+       if (time_after(now - softlockup_thresh/2, touch_ts))
-                wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
- 
-        /* Warn about unreasonable delays: */
--       if (now <= (touch_ts + softlockup_thresh))
-+       if (time_before_eq(now - softlockup_thresh, touch_ts))
-                return;
- 
-        per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
+> Also, it applies to perf as well: people said exactly that a year ago: 'perf
+> has it easy to be clean as it is small, once it gets as large as Oprofile
+> tooling it will be in the same messy situation'.
+>
+> Today perf has more features than Oprofile, has a larger and more complex code
+> base, has more contributors, and no, it's not in the same messy situation at
+> all.
 
+Both perf and oprofile are still relatively small projects in comparison
+to QEMU.
+
+> So whatever you think of large, unified projects, you are quite clearly
+> mistaken. I have done and maintained through two different types of
+> unifications and the experience was very similar: both developers and users
+> (and maintainers) are much better off.
+
+You believe that I am wrong in my assessment of unified projects, and I
+obviously think you are mistaken and underestimating the cost and
+effects of trying to merge the two.
+
+Well I think we are just going to agree to disagree on this one. I am
+not against merging projects where it makes sense, but in this
+particular case I am strongly convinced the loss would be much greater
+than the gain.
+
+Cheers,
+Jes
