@@ -1,534 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab0CRUUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 16:20:09 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60115 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421Ab0CRUUH (ORCPT
+	id S1752002Ab0CRUWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 16:22:07 -0400
+Received: from tomts13-srv.bellnexxia.net ([209.226.175.34]:40237 "EHLO
+	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751520Ab0CRUWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 16:20:07 -0400
-Date: Thu, 18 Mar 2010 15:19:46 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Linux Containers <containers@lists.osdl.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH linux-cr] Handle nested pid namespaces
-Message-ID: <20100318201946.GA31313@us.ibm.com>
-MIME-Version: 1.0
+	Thu, 18 Mar 2010 16:22:05 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHcloktGHl03/2dsb2JhbACbKXS7B4JZgiAE
+Date: Thu, 18 Mar 2010 16:22:02 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH tip/core/urgent 2/2] rcu: remove INIT_RCU_HEAD,
+	RCU_HEAD_INIT, RCU_HEAD
+Message-ID: <20100318202202.GA18657@Krystal>
+References: <20100318192513.GA10832@linux.vnet.ibm.com> <1268940334-10892-2-git-send-email-paulmck@linux.vnet.ibm.com> <20100318193520.GB14283@Krystal> <20100318200317.GG2423@linux.vnet.ibm.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100318200317.GG2423@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 16:08:08 up 92 days,  4:26,  5 users,  load average: 0.31, 0.25,
+	0.26
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Patch against https://www.linux-cr.org/redmine/tab/show/kernel-cr ]
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Thu, Mar 18, 2010 at 03:35:20PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > From: Alexey Dobriyan <adobriyan@gmail.com>
+> > > 
+> > > call_rcu() will unconditionally reinitialize RCU head anyway.  New users
+> > > of these macros constantly appear, so remove them.
+> > 
+> > Hrm. So do we have something that checks for double-use of a RCU head at
+> > the moment ? (using call_rcu() twice on the same head without being
+> > certain that the first callback have finished its execution).
+> > 
+> > I think that hiding rcu head initialization into call_rcu() is one more
+> > step towards misuses that will silently corrupt rcu head lists. So I
+> > think we should first add the double-use debugging option before we
+> > remove the RCU head initializations.
+> 
+> So your thought is to have rcu_do_batch() do something like the
+> following?
+> 
+> 	...
+> 
+> 	next = list->next;
+> 	prefetch(next);
+> 	list->next = RCU_HEAD_INIT_PTR;
+> 	func = list->func;
+> 	list->func = RCU_HEAD_INIT_PTR;
+> 	func(list);
+> 	... /* touching anything referenced by "list" is use-after-free. */
+> 
+> Then have __call_rcu() do something like the following before initializing
+> the ->func and ->next pointers:
+> 
+> 	WARN_ON_ONCE(head->next != RCU_HEAD_INIT_PTR ||
+> 		     head->func != RCU_HEAD_INIT_PTR);
+> 
+> And then require that all users of call_rcu() and friends use one of the
+> RCU_INIT() macros?
+> 
+> Or did you have something else in mind?
 
-In place of one big pids array, checkpoint one struct ckpt_hdr_pids
-per task.  It contains pid/ppid/etc in the root nsproxy's pidns, and
-is followed by a list of all virtual pids in child pid namespaces, if
-any.
+More precisely poisoning an extra field of the rcu_head, as done in the
+following patch.
 
-When an nsproxy is created during do_restore_ns(), we don't yet set
-its pid_ns, waiting instead until a task attaches that new nsproxy to
-itself.  I *think* the nsproxy will generally get recreated by the
-task which will use it, but we may as well be sure by having the pid_ns
-set when the nsproxy is first assigned.
+I posted it a few months ago, but has been rejected on the ground that
+it should be re-done in within the debug objects infrastructure.  But I
+had to focus on other things and never found time to do these changes.
+It needs a separate patch which adds missing INIT_RCU_HEAD() to a few
+more kernel sites.
 
-This patch applies on top of ckpt-v20.  With this patch applied (and
-the corresponding user-cr patch), all cr_tests pass, including a new
-pidns test (which is in branch pidns.1 until this patch goes into
-ckpt-v20-dev).
+The reason why I add a supplementary field for the poison is to be able
+to warn for detection of incoherent list_head both in call_rcu and in
+rcu_do_batch(), which does not seem possible with the scheme you propose
+above. The sequence is:
 
-Please apply.
+init ->         debug = NULL
+call_rcu ->     WARN_ON_ONCE(debug != NULL)
+                debug = LIST_POISON1
+rcu_do_batch -> WARN_ON_ONCE(debug != LIST_POISON1)
+                debug = NULL
 
-Changelog:
-	Mar 18: bump checkpoing image format version
 
-Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+tree rcu: Add debug RCU head option
+
+Poisoning the rcu_head callback list. Only for rcu tree for now.
+
+Helps finding racy users of call_rcu(), which results in hangs because list
+entries are overwritten and/or skipped.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: mingo@elte.hu
+CC: akpm@linux-foundation.org
 ---
- checkpoint/checkpoint.c          |   91 +++++++++++++++++++++++--------------
- checkpoint/process.c             |   27 +++++++-----
- checkpoint/restart.c             |   59 ++++++++++++++++--------
- checkpoint/sys.c                 |    8 +++-
- include/linux/checkpoint.h       |    2 +-
- include/linux/checkpoint_hdr.h   |   19 +++++---
- include/linux/checkpoint_types.h |    3 +
- kernel/nsproxy.c                 |    9 +++-
- 8 files changed, 142 insertions(+), 76 deletions(-)
+ include/linux/rcupdate.h |   11 +++++++++++
+ include/net/dst.h        |    2 ++
+ kernel/rcutree.c         |   10 ++++++++++
+ lib/Kconfig.debug        |    9 +++++++++
+ 4 files changed, 32 insertions(+)
 
-diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
-index f27af41..55e14c3 100644
---- a/checkpoint/checkpoint.c
-+++ b/checkpoint/checkpoint.c
-@@ -27,6 +27,7 @@
- #include <linux/deferqueue.h>
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
-+#include <linux/pid_namespace.h>
+Index: linux-2.6-lttng/include/linux/rcupdate.h
+===================================================================
+--- linux-2.6-lttng.orig/include/linux/rcupdate.h	2009-11-22 20:25:49.000000000 -0500
++++ linux-2.6-lttng/include/linux/rcupdate.h	2009-11-22 22:11:48.000000000 -0500
+@@ -49,6 +49,9 @@
+ struct rcu_head {
+ 	struct rcu_head *next;
+ 	void (*func)(struct rcu_head *head);
++#ifdef CONFIG_DEBUG_RCU_HEAD
++	struct rcu_head *debug;
++#endif
+ };
  
- /* unique checkpoint identifier (FIXME: should be per-container ?) */
- static atomic_t ctx_count = ATOMIC_INIT(0);
-@@ -241,6 +242,7 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- {
- 	struct task_struct *root = ctx->root_task;
- 	struct nsproxy *nsproxy;
-+	struct pid_namespace *pidns;
- 	int ret = 0;
+ /* Exported common interfaces */
+@@ -77,11 +80,19 @@ extern int rcu_scheduler_active;
+ #error "Unknown RCU implementation specified to kernel configuration"
+ #endif
  
- 	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
-@@ -293,66 +295,85 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
- 		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
- 		ret = -EPERM;
- 	}
--	/* no support for >1 private pidns */
--	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
--		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
--		ret = -EPERM;
-+	/* pidns must be descendent of root_nsproxy */
-+	pidns = nsproxy->pid_ns;
-+	while (pidns != ctx->root_nsproxy->pid_ns) {
-+		if (pidns == &init_pid_ns) {
-+			ret = -EPERM;
-+			_ckpt_err(ctx, ret, "%(T)stranger pid_ns\n");
-+			break;
-+		}
-+		pidns = pidns->parent;
- 	}
- 	rcu_read_unlock();
++#ifdef CONFIG_DEBUG_RCU_HEAD
++#define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL, .debug = NULL }
++#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
++#define INIT_RCU_HEAD(ptr) do { \
++       (ptr)->next = NULL; (ptr)->func = NULL; (ptr)->debug = NULL; \
++} while (0)
++#else
+ #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
+ #define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
+ #define INIT_RCU_HEAD(ptr) do { \
+        (ptr)->next = NULL; (ptr)->func = NULL; \
+ } while (0)
++#endif
  
- 	return ret;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ extern struct lockdep_map rcu_lock_map;
+Index: linux-2.6-lttng/kernel/rcutree.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/rcutree.c	2009-11-22 21:38:56.000000000 -0500
++++ linux-2.6-lttng/kernel/rcutree.c	2009-11-22 22:10:49.000000000 -0500
+@@ -39,6 +39,7 @@
+ #include <asm/atomic.h>
+ #include <linux/bitops.h>
+ #include <linux/module.h>
++#include <linux/poison.h>
+ #include <linux/completion.h>
+ #include <linux/moduleparam.h>
+ #include <linux/percpu.h>
+@@ -1010,6 +1011,10 @@ static void rcu_do_batch(struct rcu_stat
+ 		next = list->next;
+ 		prefetch(next);
+ 		trace_rcu_tree_callback(list);
++#ifdef DEBUG_RCU_HEAD
++		WARN_ON_ONCE(list->debug != LIST_POISON1);
++		list->debug = NULL;
++#endif
+ 		list->func(list);
+ 		list = next;
+ 		if (++count >= rdp->blimit)
+@@ -1291,6 +1296,11 @@ __call_rcu(struct rcu_head *head, void (
+ 	unsigned long flags;
+ 	struct rcu_data *rdp;
+ 
++#ifdef DEBUG_RCU_HEAD
++	WARN_ON_ONCE(head->debug);
++	head->debug = LIST_POISON1;
++#endif
++
+ 	head->func = func;
+ 	head->next = NULL;
+ 
+Index: linux-2.6-lttng/lib/Kconfig.debug
+===================================================================
+--- linux-2.6-lttng.orig/lib/Kconfig.debug	2009-11-22 22:01:03.000000000 -0500
++++ linux-2.6-lttng/lib/Kconfig.debug	2009-11-22 22:10:49.000000000 -0500
+@@ -652,6 +652,15 @@ config DEBUG_LIST
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_RCU_HEAD
++	bool "Debug RCU callbacks"
++	depends on DEBUG_KERNEL
++	depends on TREE_RCU
++	help
++	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
++	  Seems to find problems more quickly with stress-tests in single-cpu
++	  mode.
++
+ config DEBUG_SG
+ 	bool "Debug SG table operations"
+ 	depends on DEBUG_KERNEL
+Index: linux-2.6-lttng/include/net/dst.h
+===================================================================
+--- linux-2.6-lttng.orig/include/net/dst.h	2009-11-22 20:25:49.000000000 -0500
++++ linux-2.6-lttng/include/net/dst.h	2009-11-22 22:10:49.000000000 -0500
+@@ -154,7 +154,9 @@ static inline void dst_hold(struct dst_e
+ 	 * If your kernel compilation stops here, please check
+ 	 * __pad_to_align_refcnt declaration in struct dst_entry
+ 	 */
++#ifndef CONFIG_DEBUG_RCU_HEAD
+ 	BUILD_BUG_ON(offsetof(struct dst_entry, __refcnt) & 63);
++#endif
+ 	atomic_inc(&dst->__refcnt);
  }
  
--#define CKPT_HDR_PIDS_CHUNK	256
-+/* called under rcu_read_lock */
-+static void copy_task(struct ckpt_hdr_pids *h, struct task_struct *t,
-+			struct pid_namespace *root_pid_ns,
-+			struct pid_namespace *task_pid_ns)
-+{
-+	int i = 0;
-+	__s32 *pids;
-+
-+	h->pid = task_pid_nr_ns(t, root_pid_ns);
-+	h->tgid = task_tgid_nr_ns(t, root_pid_ns);
-+	h->pgid = task_pgrp_nr_ns(t, root_pid_ns);
-+	h->sid = task_session_nr_ns(t, root_pid_ns);
-+	h->ppid = task_tgid_nr_ns(t->real_parent, root_pid_ns);
-+	h->rpid = task_pid_vnr(t);
-+	pids = h->vpids;
-+
-+	while (task_pid_ns != root_pid_ns) {
-+		pids[i++] = task_pid_nr_ns(t, task_pid_ns);
-+		task_pid_ns = task_pid_ns->parent;
-+	}
-+}
- 
- static int checkpoint_pids(struct ckpt_ctx *ctx)
- {
--	struct ckpt_pids *h;
--	struct pid_namespace *ns;
-+	struct ckpt_hdr_pids *h;
-+	struct pid_namespace *root_pidns;
- 	struct task_struct *task;
- 	struct task_struct **tasks_arr;
--	int nr_tasks, n, pos = 0, ret = 0;
-+	int nr_tasks, i, ret = 0;
- 
--	ns = ctx->root_nsproxy->pid_ns;
-+	root_pidns = ctx->root_nsproxy->pid_ns;
- 	tasks_arr = ctx->tasks_arr;
- 	nr_tasks = ctx->nr_tasks;
- 	BUG_ON(nr_tasks <= 0);
- 
--	ret = ckpt_write_obj_type(ctx, NULL,
--				  sizeof(*h) * nr_tasks,
--				  CKPT_HDR_BUFFER);
--	if (ret < 0)
--		return ret;
-+	for (i = 0; i < nr_tasks; i++) {
-+		int nsdelta, size;
-+		struct pid_namespace *task_pidns;
- 
--	h = ckpt_hdr_get(ctx, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
--	if (!h)
--		return -ENOMEM;
-+		task = tasks_arr[i];
-+		rcu_read_lock();
-+		task_pidns = task_nsproxy(task)->pid_ns;
-+		rcu_read_unlock();
-+
-+		nsdelta = task_pidns->level - root_pidns->level;
-+		size = sizeof(*h) + nsdelta * sizeof(__s32);
-+
-+		h = ckpt_hdr_get_type(ctx, size, CKPT_HDR_PID);
-+		if (!h)
-+			return -ENOMEM;
- 
--	do {
- 		rcu_read_lock();
--		for (n = 0; n < min(nr_tasks, CKPT_HDR_PIDS_CHUNK); n++) {
--			task = tasks_arr[pos];
--
--			h[n].vpid = task_pid_nr_ns(task, ns);
--			h[n].vtgid = task_tgid_nr_ns(task, ns);
--			h[n].vpgid = task_pgrp_nr_ns(task, ns);
--			h[n].vsid = task_session_nr_ns(task, ns);
--			h[n].vppid = task_tgid_nr_ns(task->real_parent, ns);
--			ckpt_debug("task[%d]: vpid %d vtgid %d parent %d\n",
--				   pos, h[n].vpid, h[n].vtgid, h[n].vppid);
--			pos++;
--		}
-+		copy_task(h, task, root_pidns, task_pidns);
- 		rcu_read_unlock();
-+		ckpt_debug("task[%d]: pid %d tgid %d parent %d\n",
-+			   i, h->pid, h->tgid, h->ppid);
- 
--		n = min(nr_tasks, CKPT_HDR_PIDS_CHUNK);
--		ret = ckpt_kwrite(ctx, h, n * sizeof(*h));
-+		ret = ckpt_write_obj(ctx, &h->h);
-+		ckpt_hdr_put(ctx, h);
- 		if (ret < 0)
- 			break;
- 
--		nr_tasks -= n;
--	} while (nr_tasks > 0);
-+	}
- 
--	_ckpt_hdr_put(ctx, h, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
- 	return ret;
- }
- 
-diff --git a/checkpoint/process.c b/checkpoint/process.c
-index f917112..bb44960 100644
---- a/checkpoint/process.c
-+++ b/checkpoint/process.c
-@@ -22,7 +22,7 @@
- #include <linux/checkpoint.h>
- #include <linux/checkpoint_hdr.h>
- #include <linux/syscalls.h>
--
-+#include <linux/pid_namespace.h>
- 
- pid_t ckpt_pid_nr(struct ckpt_ctx *ctx, struct pid *pid)
- {
-@@ -36,12 +36,6 @@ struct pid *_ckpt_find_pgrp(struct ckpt_ctx *ctx, pid_t pgid)
- 	struct pid *pgrp;
- 
- 	if (pgid == 0) {
--		/*
--		 * At checkpoint the pgid owner lived in an ancestor
--		 * pid-ns. The best we can do (sanely and safely) is
--		 * to examine the parent of this restart's root: if in
--		 * a distinct pid-ns, use its pgrp; otherwise fail.
--		 */
- 		p = ctx->root_task->real_parent;
- 		if (p->nsproxy->pid_ns == current->nsproxy->pid_ns)
- 			return NULL;
-@@ -51,7 +45,7 @@ struct pid *_ckpt_find_pgrp(struct ckpt_ctx *ctx, pid_t pgid)
- 		 * Find the owner process of this pgid (it must exist
- 		 * if pgrp exists). It must be a thread group leader.
- 		 */
--		pgrp = find_vpid(pgid);
-+		pgrp = find_pid_ns(pgid, ctx->root_nsproxy->pid_ns);
- 		p = pid_task(pgrp, PIDTYPE_PID);
- 		if (!p || !thread_group_leader(p))
- 			return NULL;
-@@ -578,6 +572,14 @@ static int restore_task_ns(struct ckpt_ctx *ctx)
- 	}
- 
- 	if (nsproxy != task_nsproxy(current)) {
-+		/*
-+		 * This is *kinda* shady to do without any locking.  However
-+		 * it is safe because each task is restarted separately in
-+		 * serial.  If that ever changes, we'll need a spinlock?
-+		 */
-+		if (!nsproxy->pid_ns)
-+			nsproxy->pid_ns = get_pid_ns(current->nsproxy->pid_ns);
-+
- 		get_nsproxy(nsproxy);
- 		switch_task_namespaces(current, nsproxy);
- 	}
-@@ -827,10 +829,10 @@ static int restore_task_pgid(struct ckpt_ctx *ctx)
- 	if (!thread_group_leader(task))  /* (1) */
- 		return 0;
- 
--	pgid = ctx->pids_arr[ctx->active_pid].vpgid;
-+	pgid = ctx->vpgids_arr[ctx->active_pid];
- 
--	if (pgid == task_pgrp_vnr(task))  /* nothing to do */
--		return 0;
-+	if (pgid == task_pgrp_nr_ns(task, ctx->root_nsproxy->pid_ns))
-+		return 0;  /* nothing to do */
- 
- 	if (task->signal->leader)  /* (2) */
- 		return -EINVAL;
-@@ -850,6 +852,9 @@ static int restore_task_pgid(struct ckpt_ctx *ctx)
- 	if (ctx->uflags & RESTART_TASKSELF)
- 		ret = 0;
- 
-+	if (ret < 0)
-+		ckpt_err(ctx, ret, "setting pgid\n");
-+
- 	return ret;
- }
- 
-diff --git a/checkpoint/restart.c b/checkpoint/restart.c
-index 6a9644d..84713c7 100644
---- a/checkpoint/restart.c
-+++ b/checkpoint/restart.c
-@@ -145,7 +145,7 @@ void restore_debug_free(struct ckpt_ctx *ctx)
- 	ckpt_debug("kflags %lu uflags %lu oflags %lu", ctx->kflags,
- 		   ctx->uflags, ctx->oflags);
- 	for (i = 0; i < ctx->nr_pids; i++)
--		ckpt_debug("task[%d] to run %d\n", i, ctx->pids_arr[i].vpid);
-+		ckpt_debug("task[%d] to run %d\n", i, ctx->vpids_arr[i]);
- 
- 	list_for_each_entry_safe(s, p, &ctx->task_status, list) {
- 		if (s->flags & RESTART_DBG_COORD)
-@@ -420,7 +420,8 @@ void *ckpt_read_obj_type(struct ckpt_ctx *ctx, int len, int type)
- 
- 	h = ckpt_read_obj(ctx, len, len);
- 	if (IS_ERR(h)) {
--		ckpt_err(ctx, PTR_ERR(h), "Expecting to read type %d\n", type);
-+		ckpt_err(ctx, PTR_ERR(h), "Expecting to read type %d len %d\n",
-+			type, len);
- 		return h;
- 	}
- 
-@@ -730,34 +731,51 @@ static int restore_read_tail(struct ckpt_ctx *ctx)
- 	return ret;
- }
- 
-+#define CKPT_MAX_PIDS_SZ 99999
- /* restore_read_tree - read the tasks tree into the checkpoint context */
- static int restore_read_tree(struct ckpt_ctx *ctx)
- {
- 	struct ckpt_hdr_tree *h;
--	int size, ret;
-+	int i, size;
- 
- 	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_TREE);
- 	if (IS_ERR(h))
- 		return PTR_ERR(h);
- 
--	ret = -EINVAL;
-+	ctx->nr_pids = h->nr_tasks;
-+	ckpt_hdr_put(ctx, h);
-+
- 	if (h->nr_tasks <= 0)
--		goto out;
-+		return -EINVAL;
- 
--	ctx->nr_pids = h->nr_tasks;
--	size = sizeof(*ctx->pids_arr) * ctx->nr_pids;
-+	size = sizeof(pid_t) * ctx->nr_pids;
- 	if (size <= 0)		/* overflow ? */
--		goto out;
-+		return -EINVAL;
- 
--	ctx->pids_arr = kmalloc(size, GFP_KERNEL);
--	if (!ctx->pids_arr) {
--		ret = -ENOMEM;
--		goto out;
-+	ctx->vpids_arr = kmalloc(size, GFP_KERNEL);
-+	ctx->vpgids_arr = kmalloc(size, GFP_KERNEL);
-+	if (!ctx->vpids_arr || !ctx->vpgids_arr)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < ctx->nr_pids; i++) {
-+		struct ckpt_hdr_pids *p;
-+
-+		p = ckpt_read_obj(ctx, 0, CKPT_MAX_PIDS_SZ);
-+		if (!p)
-+			return -EINVAL;
-+		if (p->h.type != CKPT_HDR_PID) {
-+			ckpt_hdr_put(ctx, p);
-+			return -EINVAL;
-+		}
-+		if (p->h.len < sizeof(*p)) {
-+			ckpt_hdr_put(ctx, p);
-+			return -EINVAL;
-+		}
-+		ctx->vpids_arr[i] = p->pid;
-+		ctx->vpgids_arr[i] = p->pgid;
-+		ckpt_hdr_put(ctx, p);
- 	}
--	ret = _ckpt_read_buffer(ctx, ctx->pids_arr, size);
-- out:
--	ckpt_hdr_put(ctx, h);
--	return ret;
-+	return 0;
- }
- 
- static inline int all_tasks_activated(struct ckpt_ctx *ctx)
-@@ -768,7 +786,7 @@ static inline int all_tasks_activated(struct ckpt_ctx *ctx)
- static inline pid_t get_active_pid(struct ckpt_ctx *ctx)
- {
- 	int active = ctx->active_pid;
--	return active >= 0 ? ctx->pids_arr[active].vpid : 0;
-+	return active >= 0 ? ctx->vpids_arr[active] : 0;
- }
- 
- static inline int is_task_active(struct ckpt_ctx *ctx, pid_t pid)
-@@ -870,7 +888,7 @@ static int restore_activate_next(struct ckpt_ctx *ctx)
- 
- static int wait_task_active(struct ckpt_ctx *ctx)
- {
--	pid_t pid = task_pid_vnr(current);
-+	pid_t pid = task_pid_nr_ns(current, ctx->root_nsproxy->pid_ns);
- 	int ret;
- 
- 	ckpt_debug("pid %d waiting\n", pid);
-@@ -886,7 +904,8 @@ static int wait_task_active(struct ckpt_ctx *ctx)
- 
- static int wait_task_sync(struct ckpt_ctx *ctx)
- {
--	ckpt_debug("pid %d syncing\n", task_pid_vnr(current));
-+	ckpt_debug("pid %d syncing\n",
-+		task_pid_nr_ns(current, ctx->root_nsproxy->pid_ns));
- 	wait_event_interruptible(ctx->waitq, ckpt_test_complete(ctx));
- 	ckpt_debug("task sync done (errno %d)\n", ctx->errno);
- 	if (ckpt_test_error(ctx))
-@@ -1160,7 +1179,7 @@ static struct task_struct *choose_root_task(struct ckpt_ctx *ctx, pid_t pid)
- 
- 	read_lock(&tasklist_lock);
- 	list_for_each_entry(task, &current->children, sibling) {
--		if (task_pid_vnr(task) == pid) {
-+		if (task_pid_nr_ns(task, ctx->coord_pidns) == pid) {
- 			get_task_struct(task);
- 			ctx->root_task = task;
- 			ctx->root_pid = pid;
-diff --git a/checkpoint/sys.c b/checkpoint/sys.c
-index 9e9df9b..5df72b0 100644
---- a/checkpoint/sys.c
-+++ b/checkpoint/sys.c
-@@ -22,6 +22,7 @@
- #include <linux/capability.h>
- #include <linux/checkpoint.h>
- #include <linux/deferqueue.h>
-+#include <linux/pid_namespace.h>
- 
- /*
-  * ckpt_unpriv_allowed - sysctl controlled.
-@@ -247,6 +248,8 @@ static void ckpt_ctx_free(struct ckpt_ctx *ctx)
- 	if (ctx->tasks_arr)
- 		task_arr_free(ctx);
- 
-+	if (ctx->coord_pidns)
-+		put_pid_ns(ctx->coord_pidns);
- 	if (ctx->root_nsproxy)
- 		put_nsproxy(ctx->root_nsproxy);
- 	if (ctx->root_task)
-@@ -256,7 +259,8 @@ static void ckpt_ctx_free(struct ckpt_ctx *ctx)
- 
- 	free_page((unsigned long) ctx->scratch_page);
- 
--	kfree(ctx->pids_arr);
-+	kfree(ctx->vpids_arr);
-+	kfree(ctx->vpgids_arr);
- 
- 	sock_listening_list_free(&ctx->listen_sockets);
- 
-@@ -277,6 +281,8 @@ static struct ckpt_ctx *ckpt_ctx_alloc(int fd, unsigned long uflags,
- 	ctx->kflags = kflags;
- 	ctx->ktime_begin = ktime_get();
- 
-+	ctx->coord_pidns = get_pid_ns(current->nsproxy->pid_ns);
-+
- 	atomic_set(&ctx->refcount, 0);
- 	INIT_LIST_HEAD(&ctx->pgarr_list);
- 	INIT_LIST_HEAD(&ctx->pgarr_pool);
-diff --git a/include/linux/checkpoint.h b/include/linux/checkpoint.h
-index 792b523..e860bf5 100644
---- a/include/linux/checkpoint.h
-+++ b/include/linux/checkpoint.h
-@@ -10,7 +10,7 @@
-  *  distribution for more details.
-  */
- 
--#define CHECKPOINT_VERSION  5
-+#define CHECKPOINT_VERSION  6
- 
- /* checkpoint user flags */
- #define CHECKPOINT_SUBTREE	0x1
-diff --git a/include/linux/checkpoint_hdr.h b/include/linux/checkpoint_hdr.h
-index 41412d1..7957b3b 100644
---- a/include/linux/checkpoint_hdr.h
-+++ b/include/linux/checkpoint_hdr.h
-@@ -117,6 +117,8 @@ enum {
- #define CKPT_HDR_GROUPINFO CKPT_HDR_GROUPINFO
- 	CKPT_HDR_TASK_CREDS,
- #define CKPT_HDR_TASK_CREDS CKPT_HDR_TASK_CREDS
-+	CKPT_HDR_PID,
-+#define CKPT_HDR_PID CKPT_HDR_PID
- 
- 	/* 201-299: reserved for arch-dependent */
- 
-@@ -326,12 +328,17 @@ struct ckpt_hdr_tree {
- 	__s32 nr_tasks;
- } __attribute__((aligned(8)));
- 
--struct ckpt_pids {
--	__s32 vpid;
--	__s32 vppid;
--	__s32 vtgid;
--	__s32 vpgid;
--	__s32 vsid;
-+struct ckpt_hdr_pids {
-+	struct ckpt_hdr h;
-+	__s32 rpid;  /* pid in checkpointer's pid_ns */
-+	/* The rest of these are in container init's pid_ns */
-+	__s32 pid;
-+	__s32 ppid;
-+	__s32 tgid;
-+	__s32 pgid;
-+	__s32 sid;
-+	/* followed by pids in pid_ns up to root->nsproxy->pid_ns */
-+	__s32 vpids[0];
- } __attribute__((aligned(8)));
- 
- /* pids */
-diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
-index ecd3e91..0ae78a7 100644
---- a/include/linux/checkpoint_types.h
-+++ b/include/linux/checkpoint_types.h
-@@ -37,6 +37,7 @@ struct ckpt_ctx {
- 	int root_init;				/* [container] root init ? */
- 	pid_t root_pid;				/* [container] root pid */
- 	struct task_struct *root_task;		/* [container] root task */
-+	struct pid_namespace *coord_pidns;	/* coordinator pid_ns */
- 	struct nsproxy *root_nsproxy;		/* [container] root nsproxy */
- 	struct task_struct *root_freezer;	/* [container] root task */
- 	char lsm_name[SECURITY_NAME_MAX + 1];   /* security module at ckpt */
-@@ -74,6 +75,8 @@ struct ckpt_ctx {
- 
- 	/* [multi-process restart] */
- 	struct ckpt_pids *pids_arr;	/* array of all pids [restart] */
-+	pid_t *vpids_arr;		/* pids array in container pidns */
-+	pid_t *vpgids_arr;		/* vpgids array in container pidns */
- 	int nr_pids;			/* size of pids array */
- 	atomic_t nr_total;		/* total tasks count (with ghosts) */
- 	int active_pid;			/* (next) position in pids array */
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 0da0d83..6d86240 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -364,8 +364,13 @@ static struct nsproxy *do_restore_ns(struct ckpt_ctx *ctx)
- 		get_net(net_ns);
- 		nsproxy->net_ns = net_ns;
- 
--		get_pid_ns(current->nsproxy->pid_ns);
--		nsproxy->pid_ns = current->nsproxy->pid_ns;
-+		/*
-+		 * The pid_ns will get assigned the first time that we
-+		 * assign the nsproxy to a task.  The task had unshared
-+		 * its pid_ns in userspace before calling restart, and
-+		 * we want to keep using that pid_ns.
-+		 */
-+		nsproxy->pid_ns = NULL;
- 	}
-  out:
- 	if (ret < 0)
+
 -- 
-1.6.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
