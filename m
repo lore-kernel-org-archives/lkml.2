@@ -1,115 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab0CRWUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:20:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44091 "EHLO mx1.redhat.com"
+	id S1752842Ab0CRWUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:20:32 -0400
+Received: from kroah.org ([198.145.64.141]:37855 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752587Ab0CRWUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:20:39 -0400
-Message-ID: <4BA2A70B.5080101@redhat.com>
-Date: Thu, 18 Mar 2010 12:19:55 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1751450Ab0CRWUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 18:20:30 -0400
+Date: Thu, 18 Mar 2010 15:19:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Alex Chiang <achiang@hp.com>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] small xhci cleanups
+Message-ID: <20100318221958.GB3299@kroah.com>
+References: <20100316204845.GJ8278@ldl.fc.hp.com>
+ <20100309184723.GA31374@kroah.com>
+ <20100316212445.GA15729@xanatos>
+ <20100316214014.GA8839@kroah.com>
+ <20100318213308.GA5461@xanatos>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100316130840.GA24808@elte.hu> <4B9FBA8B.8020200@codemonkey.ws> <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA294D4.2060700@redhat.com> <20100318211529.GA21367@elte.hu>
-In-Reply-To: <20100318211529.GA21367@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318213308.GA5461@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 11:15 AM, Ingo Molnar wrote:
-> * Zachary Amsden<zamsden@redhat.com>  wrote:
->
->    
->> On 03/18/2010 12:50 AM, Ingo Molnar wrote:
->>      
->>> * Avi Kivity<avi@redhat.com>   wrote:
->>>
->>>        
->>>>> The moment any change (be it as trivial as fixing a GUI detail or as
->>>>> complex as a new feature) involves two or more packages, development speed
->>>>> slows down to a crawl - while the complexity of the change might be very
->>>>> low!
->>>>>            
->>>> Why is that?
->>>>          
->>> It's very simple: because the contribution latencies and overhead compound,
->>> almost inevitably.
->>>
->>> If you ever tried to implement a combo GCC+glibc+kernel feature you'll know
->>> ...
->>>
->>> Even with the best-run projects in existence it takes forever and is very
->>> painful - and here i talk about first hand experience over many years.
->>>        
->> Ingo, what you miss is that this is not a bad thing.  Fact of the
->> matter is, it's not just painful, it downright sucks.
->>      
-> Our experience is the opposite, and we tried both variants and report about
-> our experience with both models honestly.
->
-> You only have experience about one variant - the one you advocate.
->
-> See the assymetry?
->
->    
->> This is actually a Good Thing (tm).  It means you have to get your
->> feature and its interfaces well defined and able to version forwards
->> and backwards independently from each other.  And that introduces
->> some complexity and time and testing, but in the end it's what you
->> want.  You don't introduce a requirement to have the feature, but
->> take advantage of it if it is there.
->>
->> It may take everyone else a couple years to upgrade the compilers,
->> tools, libraries and kernel, and by that time any bugs introduced by
->> interacting with this feature will have been ironed out and their
->> patterns well known.
->>      
-> Sorry, but this is pain not true. The 2.4->2.6 kernel cycle debacle has taught
-> us that waiting long to 'iron out' the details has the following effects:
->
->   - developer pain
->   - user pain
->   - distro pain
->   - disconnect
->   - loss of developers, testers and users
->   - grave bugs discovered months (years ...) down the line
->   - untested features
->   - developer exhaustion
->
-> It didnt work, trust me - and i've been around long enough to have suffered
-> through the whole 2.5.x misery. Some of our worst ABIs come from that cycle as
-> well.
->    
+On Thu, Mar 18, 2010 at 02:33:08PM -0700, Sarah Sharp wrote:
+> On Tue, Mar 16, 2010 at 02:40:14PM -0700, Greg KH wrote:
+> > On Tue, Mar 16, 2010 at 02:24:45PM -0700, Sarah Sharp wrote:
+> > > Ok, I didn't see Greg's email about dynamic debugging.  I guess you
+> > > shouldn't refresh the second patch.  I'm not sure how I would go about
+> > > converting the xHCI driver to dynamic debugging, as I haven't looked
+> > > into it.  Is there any documentation/simple examples?
+> > 
+> > Yes, just use 'dev_dbg' and you are finished.
+> > 
+> > Or pr_debug if you want to use different logging levels with your
+> > macros.
+> > 
+> > > Greg, does the less-verbose patch with log levels still make sense if
+> > > the driver got converted over to dynamic debugging?
+> > 
+> > I don't know what people really want to see.  In 6 months you will
+> > probably only care about "debugging on or off" as the majority of the
+> > messages only help you out when developing the driver, right?
+> 
+> "On" or "off" doesn't really help when you're trying to debug different
+> parts of the driver.  If you're trying to debug a command, messages
+> about wrapping rings or enqueueing transfers doesn't really matter.
 
-You're talking about a single project and comparing it to my argument 
-about multiple independent projects.  In that case, I see no point in 
-the discussion.  If you want to win the argument by strawman, you are 
-welcome to do so.
+Like Roland, I recommend the tracing interface for this.
 
-> Sorry, but i really think you are really trying to rationalize a disadvantage
-> here ...
->    
+> I think the end user doesn't want to see anything from the driver unless
+> something serious has gone wrong.  But those cases use xhci_warn(),
+> which translates down to dev_warn(), instead of xhci_dbg().
 
-This could very well be true, but until someone comes forward with 
-compelling numbers (as in, developers committed to working on the 
-project, number of patches and total amount of code contribution), there 
-is no point in having an argument, there really isn't anything to 
-discuss other than opinion.  My opinion is you need a really strong 
-justification to have a successful fork and I don't see that justification.
+Yes, that's fine.  But you need/want something for when a user reports a
+problem, and they can't rebuild their kernel.
 
-Zach
+> > So maybe par down some of the messages, or just live with seeing them
+> > all, it will be easier in the end.
+> 
+> Yes, I did par down the duplicate/redundant messages, but I still want
+> to see very detailed messages when I think there's a hardware problem.
+> 
+> What if I removed the debug config option for xHCI, allowed people to
+> use dynamic debugging to enable debugging for specific xHCI files, but
+> also allowed them to set the log level through a debugfs file?  That way
+> people could still control the variety of messages that they see, but
+> they can also change the level of debugging dynamically.
+
+Sure, that might work, but I'd recommend tracing for the most part,
+that's what it is there for :)
+
+thanks,
+
+greg k-h
