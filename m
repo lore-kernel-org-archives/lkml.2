@@ -1,53 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab0CRXT6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 19:19:58 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:26164 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0CRXT4 (ORCPT
+	id S1751968Ab0CRXZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 19:25:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57895 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751203Ab0CRXZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 19:19:56 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: 2.6.34-rc1: pci 0000:00:00.0: address space collision / spontaenous reboots [now 2.6.34-rc1]
-Date: Thu, 18 Mar 2010 16:19:54 -0700
-User-Agent: KMail/1.9.10
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org
-References: <alpine.DEB.2.00.1003120522550.6420@p34.internal.lan> <201003181658.38462.bjorn.helgaas@hp.com> <alpine.DEB.2.00.1003181858590.27400@p34.internal.lan>
-In-Reply-To: <alpine.DEB.2.00.1003181858590.27400@p34.internal.lan>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Thu, 18 Mar 2010 19:25:36 -0400
+Date: Thu, 18 Mar 2010 16:25:29 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 4/6] drivers/acpi: Use kasprintf
+Message-Id: <20100318162529.762251ef.akpm@linux-foundation.org>
+In-Reply-To: <Pine.LNX.4.64.1003102216290.1672@ask.diku.dk>
+References: <Pine.LNX.4.64.1003102216290.1672@ask.diku.dk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003181719.55238.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 March 2010 05:00:02 pm Justin Piszcz wrote:
-> On Thu, 18 Mar 2010, Bjorn Helgaas wrote:
+On Wed, 10 Mar 2010 22:16:51 +0100 (CET)
+Julia Lawall <julia@diku.dk> wrote:
+
+> From: Julia Lawall <julia@diku.dk>
 > 
-> > On Saturday 13 March 2010 02:01:32 am Justin Piszcz wrote:
-> >> It stayed up for approximately 8-9 hours, then it crashed again.
-> >>
-> >> It is either a DOA motherboard OR the memory mapping is causing problems..
-> >
-> > Did you ever make any more progress on this?  I don't have any ideas;
-> > just wondering whether you learned anything.
+> kasprintf combines kmalloc and sprintf, and takes care of the size
+> calculation itself.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression a,flag;
+> expression list args;
+> statement S;
+> @@
+> 
+>   a =
+> -  \(kmalloc\|kzalloc\)(...,flag)
+> +  kasprintf(flag,args)
+>   <... when != a
+>   if (a == NULL || ...) S
+>   ...>
+> - sprintf(a,args);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/acpi/video.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff -u -p a/drivers/acpi/video.c b/drivers/acpi/video.c
+> --- a/drivers/acpi/video.c
+> +++ b/drivers/acpi/video.c
+> @@ -1005,11 +1005,10 @@ static void acpi_video_device_find_cap(s
+>  		result = acpi_video_init_brightness(device);
+>  		if (result)
+>  			return;
+> -		name = kzalloc(MAX_NAME_LEN, GFP_KERNEL);
+> +		name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+>  		if (!name)
+>  			return;
+>  
+> -		sprintf(name, "acpi_video%d", count++);
+>  		device->backlight = backlight_device_register(name,
+>  			NULL, device, &acpi_backlight_ops);
+>  		kfree(name);
+> @@ -1056,10 +1055,9 @@ static void acpi_video_device_find_cap(s
+>  		if (device->cap._DCS && device->cap._DSS) {
+>  			static int count;
+>  			char *name;
+> -			name = kzalloc(MAX_NAME_LEN, GFP_KERNEL);
+> +			name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
+>  			if (!name)
+>  				return;
+> -			sprintf(name, "acpi_video%d", count++);
+>  			device->output_dev = video_output_register(name,
+>  					NULL, device, &acpi_output_properties);
+>  			kfree(name);
 
-> I swapped the motherboard with the ASUS and all problems have disappeared. 
-> Someone else e-mailed me with a similar issue (freeze/hang/etc) with a 
-> similar motherboard (but UDP3 instead of 5 I believe) and they could not 
-> find a solution either, they were trying to install Fedora.
+It's not an equivalent change - if the memory allocation fails, this
+patch will now cause `count' to be incremented anyway, presumably
+leaving a gap in the enumeration.
 
-Huh.  You started with a Gigabyte board, IIRC, and replaced it with
-an ASUS, so we can't tell if you just had a defective Gigabyte board,
-or if there's something we need to fix in Linux.
+I don't know if that matters.  If so, this:
 
-The other poster with a similar board and similar symptoms sounds
-interesting, though.  You don't have a pointer to a bugzilla or
-email discussion, do you?
+--- a/drivers/acpi/video.c~drivers-acpi-use-kasprintf-fix
++++ a/drivers/acpi/video.c
+@@ -1006,9 +1006,10 @@ static void acpi_video_device_find_cap(s
+ 		result = acpi_video_init_brightness(device);
+ 		if (result)
+ 			return;
+-		name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
++		name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
+ 		if (!name)
+ 			return;
++		count++;
+ 
+ 		memset(&props, 0, sizeof(struct backlight_properties));
+ 		props.max_brightness = device->brightness->count - 3;
+@@ -1058,9 +1059,10 @@ static void acpi_video_device_find_cap(s
+ 		if (device->cap._DCS && device->cap._DSS) {
+ 			static int count;
+ 			char *name;
+-			name = kasprintf(GFP_KERNEL, "acpi_video%d", count++);
++			name = kasprintf(GFP_KERNEL, "acpi_video%d", count);
+ 			if (!name)
+ 				return;
++			count++;
+ 			device->output_dev = video_output_register(name,
+ 					NULL, device, &acpi_output_properties);
+ 			kfree(name);
+_
 
-Bjorn
