@@ -1,114 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab0CRSWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 14:22:35 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49832 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754404Ab0CRSWd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 14:22:33 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: [RESEND][PATCH 1/3] Add tracing_off_event() to stop tracing when a bug or warning occur
-Date: Thu, 18 Mar 2010 12:31:40 -0400
-Message-Id: <1268929900-1788-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1752592Ab0CRSX5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 14:23:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751035Ab0CRSXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 14:23:55 -0400
+Date: Thu, 18 Mar 2010 14:22:39 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: fweisbec@gmail.com, mingo@elte.hu, rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, lizf@cn.fujitsu.com,
+       hpa@zytor.com, tglx@linutronix.de, mhiramat@redhat.com,
+       heiko.carstens@de.ibm.com, benh@kernel.crashing.org,
+       davem@davemloft.net, lethal@linux-sh.org, schwidefsky@de.ibm.com,
+       brueckner@linux.vnet.ibm.com, tony.luck@intel.com
+Subject: Re: [PATCH 15/14] compat_syscalls: introduce
+	CONFIG_COMPAT_FTRACE_SYSCALLS
+Message-ID: <20100318182238.GA2661@redhat.com>
+References: <cover.1268749695.git.jbaron@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1268749695.git.jbaron@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing_off_event() function calls tracing_off() to stop tracing
-when an event occurs. By default, only BUG-type events stop tracing,
-while WARNING type events do not. This is controlled through the
-tracing_off={none,warn,bug} commandline parameter.
+move the logic for enabling compat syscalls to common arch/Kconfig, where
+config_compat_ftrace_syscalls depends on CONFIG_COMPAT, CONFIG_FTRACE_SYSCALLS,
+and a per-arch CONFIG_HAVE_COMPAT_FTRACE_SYSCALLS. In this way arches that
+want to add support for compat syscalls, can request it via selecting
+HAVE_COMPAT_FTRACE_SYSCALLS in their respective arch Kconfig files.
 
-Call this function from bug and warning event handlers to enable a user
-to debug their kernel by starting a trace, hitting an event, and then
-retrieving trace info knowing that the trace was stopped right after the
-event was hit.
-
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/kernel.h     |    7 +++++++
- kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
+ arch/Kconfig                   |    7 +++++++
+ arch/x86/Kconfig               |    1 +
+ arch/x86/include/asm/syscall.h |    4 ----
+ arch/x86/kernel/ftrace.c       |    2 +-
+ include/linux/syscalls.h       |    2 +-
+ kernel/trace/trace_syscalls.c  |    2 +-
+ 6 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 7f07074..a19d545 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -478,16 +478,23 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
-  *
-  * Most likely, you want to use tracing_on/tracing_off.
-  */
-+typedef enum {
-+	TRACE_EVENT_BUG = 0,
-+	TRACE_EVENT_WARN,
-+} trace_event_t;
-+
- #ifdef CONFIG_RING_BUFFER
- void tracing_on(void);
- void tracing_off(void);
- /* trace_off_permanent stops recording with no way to bring it back */
- void tracing_off_permanent(void);
-+void tracing_off_event(trace_event_t event);
- int tracing_is_on(void);
- #else
- static inline void tracing_on(void) { }
- static inline void tracing_off(void) { }
- static inline void tracing_off_permanent(void) { }
-+static inline void tracing_off_event(trace_event_t event) { }
- static inline int tracing_is_on(void) { return 0; }
- #endif
- #ifdef CONFIG_TRACING
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0287f9f..202a677 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -193,6 +193,40 @@ void tracing_off_permanent(void)
- 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
- }
+diff --git a/arch/Kconfig b/arch/Kconfig
+index e0ad3ca..0aca622 100644
+--- a/arch/Kconfig
++++ b/arch/Kconfig
+@@ -153,4 +153,11 @@ config HAVE_HW_BREAKPOINT
+ config HAVE_USER_RETURN_NOTIFIER
+ 	bool
  
-+static trace_event_t tracing_off_event_ctrl = TRACE_EVENT_BUG;
++config HAVE_COMPAT_FTRACE_SYSCALLS
++	bool
 +
-+/**
-+ * tracing_off_event - turn off tracing depending on event type
-+ *
-+ * This function checks the event type to determine whether tracing should be
-+ * disabled. Useful for disabling tracing on bugs or warnings.
-+ */
-+void tracing_off_event(trace_event_t event)
-+{
-+	if (event <= tracing_off_event_ctrl)
-+		tracing_off();
-+}
-+EXPORT_SYMBOL_GPL(tracing_off_event);
++config COMPAT_FTRACE_SYSCALLS
++	def_bool y
++	depends on COMPAT && FTRACE_SYSCALLS && HAVE_COMPAT_FTRACE_SYSCALLS
 +
-+static int __init tracing_off_event_setup(char *str)
-+{
-+	if (!strcmp("none", str))
-+		tracing_off_event_ctrl = -1;
-+	else if (!strcmp("bug", str))
-+		tracing_off_event_ctrl = TRACE_EVENT_BUG;
-+	else if (!strcmp("warn", str))
-+		tracing_off_event_ctrl = TRACE_EVENT_WARN;
-+	else
-+	{
-+		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+__setup("tracing_off=", tracing_off_event_setup);
-+
- /**
-  * tracing_is_on - show state of ring buffers enabled
-  */
+ source "kernel/gcov/Kconfig"
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 6de8f35..4083c0f 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -40,6 +40,7 @@ config X86
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
+ 	select HAVE_FTRACE_NMI_ENTER if DYNAMIC_FTRACE
+ 	select HAVE_SYSCALL_TRACEPOINTS
++	select HAVE_COMPAT_FTRACE_SYSCALLS
+ 	select HAVE_KVM
+ 	select HAVE_ARCH_KGDB
+ 	select HAVE_ARCH_TRACEHOOK
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index 4e462cc..f734812 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -16,10 +16,6 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
+ 
+-#if defined(CONFIG_COMPAT) && defined(CONFIG_FTRACE_SYSCALLS)
+- #define __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
+-#endif
+-
+ extern const unsigned long sys_call_table[];
+ extern const unsigned long *ia32_sys_call_table;
+ 
+diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
+index 4b36a0b..662343b 100644
+--- a/arch/x86/kernel/ftrace.c
++++ b/arch/x86/kernel/ftrace.c
+@@ -512,7 +512,7 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr,
+ }
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+-#ifdef __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
++#ifdef CONFIG_COMPAT_FTRACE_SYSCALLS
+ unsigned long __init arch_compat_syscall_addr(int nr)
+ {
+ 	return (unsigned long)(&ia32_sys_call_table)[nr];
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 2361d9a..cf230a6 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -235,7 +235,7 @@ struct perf_event_attr;
+ #define COMPAT_SYSCALL_DEFINE5(name, ...) COMPAT_SYSCALL_DEFINEx(5, compat_sys_##name, name, __VA_ARGS__)
+ #define COMPAT_SYSCALL_DEFINE6(name, ...) COMPAT_SYSCALL_DEFINEx(6, compat_sys_##name, name, __VA_ARGS__)
+ 
+-#ifdef CONFIG_FTRACE_SYSCALLS
++#ifdef CONFIG_COMPAT_FTRACE_SYSCALLS
+ #define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)			\
+ 	static const char *types_compat_sys_##sname[] = {		\
+ 		__SC_STR_TDECL##x(__VA_ARGS__)				\
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 3f88b8e..6db3794 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -439,7 +439,7 @@ int __init init_ftrace_syscalls(void)
+ 		meta->syscall_nr = i;
+ 		syscalls_metadata[i] = meta;
+ 	}
+-#ifdef __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS
++#ifdef CONFIG_COMPAT_FTRACE_SYSCALLS
+ 	if (NR_syscalls_compat) {
+ 		int match;
+ 		struct ftrace_event_call *ftrace_event;
 -- 
-1.6.3.3
+1.6.5.1
 
