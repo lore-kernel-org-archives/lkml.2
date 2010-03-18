@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab0CRO10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:27:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753946Ab0CRO1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:27:24 -0400
-Message-ID: <4BA237E2.10303@redhat.com>
-Date: Thu, 18 Mar 2010 16:25:38 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1753923Ab0CRO2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:28:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47725 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab0CRO2s convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 10:28:48 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: "Frank Ch. Eigler" <fche@redhat.com>, Alexander Graf <agraf@suse.de>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100318085607.GB2157@elte.hu> <F0F75B33-C0BA-42EB-BFC4-D60B1E232E6D@suse.de> <20100318101025.GA13073@elte.hu> <4BA1FEB0.7000400@redhat.com> <20100318113527.GA13168@elte.hu> <y0m4okdzu4z.fsf@fche.csb> <20100318130226.GB7424@elte.hu> <4BA22663.7070509@redhat.com> <20100318133124.GA25642@elte.hu> <4BA22E9E.4000607@redhat.com> <20100318135700.GC25642@elte.hu>
-In-Reply-To: <20100318135700.GC25642@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <fa686aa41003111311w2a2c2707yddfe90c953b92be@mail.gmail.com>
+References: <fa686aa41003111311w2a2c2707yddfe90c953b92be@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 18 Mar 2010 08:28:27 -0600
+X-Google-Sender-Auth: 3611daa87f2b9388
+Message-ID: <fa686aa41003180728r4867fedei67c664815679f542@mail.gmail.com>
+Subject: [git pull updated] driver bug fixes and mpc5200 defconfig updates
+To: linuxppc-dev@lists.ozlabs.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Scott Ellis <scott@jumpnowtek.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 03:57 PM, Ingo Molnar wrote:
+Hi Linus,  I've updated my merge branch to add a build fix (mpc52xx)
+and an OF regression (fix comparison...).  Please pull.
+
+Thanks,
+g.
+
+The following changes since commit 57d54889cd00db2752994b389ba714138652e60c:
+  Linus Torvalds (1):
+        Linux 2.6.34-rc1
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 merge
+
+David Miller (1):
+      uartlite: Fix build on sparc.
+
+Grant Likely (3):
+      powerpc/52xx: update defconfigs
+      of: Fix comparison of "compatible" properties
+      powerpc/5200: Build fix for mpc52xx watchdog timer code
+
+Scott Ellis (2):
+      spi/omap2_mcspi: fix NULL pointer dereference
+      spi/omap2_mcspi: Use transaction speed if provided
+
+ arch/powerpc/configs/52xx/cm5200_defconfig    |   24 ++--
+ arch/powerpc/configs/52xx/lite5200b_defconfig |   28 +++--
+ arch/powerpc/configs/52xx/motionpro_defconfig |   25 +++--
+ arch/powerpc/configs/52xx/pcm030_defconfig    |   27 +++---
+ arch/powerpc/configs/52xx/tqm5200_defconfig   |   28 +++---
+ arch/powerpc/configs/mpc5200_defconfig        |  134 ++++++++++++++++---------
+ arch/powerpc/platforms/52xx/mpc52xx_gpt.c     |    6 +-
+ drivers/serial/uartlite.c                     |   10 +-
+ drivers/spi/omap2_mcspi.c                     |   18 ++-
+ include/linux/of.h                            |    2 +-
+ 10 files changed, 183 insertions(+), 119 deletions(-)
+
+
+On Thu, Mar 11, 2010 at 3:11 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> Hi Linus,
 >
->> [...]  RHEL 5 is still on 2.6.18, for example.  Users
->> don't like their kernels updated unless absolutely necessary, with
->> good reason.
->>      
-> Nope - RHEL 5 is on a 2.6.18 base for entirely different reasons.
->    
+> Here are some driver bug fixes, and the requisite powerpc-mpc5200
+> defconfig updates.  The defconfig updates would normally go through
+> Ben's tree, but since that is the only change I have that would go
+> through his tree I'm hoping that it is okay to have it here.
+>
+> Cheers,
+> g.
+>
+> The following changes since commit 57d54889cd00db2752994b389ba714138652e60c:
+>  Linus Torvalds (1):
+>        Linux 2.6.34-rc1
+>
+> are available in the git repository at:
+>
+>  git://git.secretlab.ca/git/linux-2.6 merge
+>
+> David Miller (1):
+>      uartlite: Fix build on sparc.
+>
+> Grant Likely (1):
+>      powerpc/52xx: update defconfigs
+>
+> Scott Ellis (2):
+>      spi/omap2_mcspi: fix NULL pointer dereference
+>      spi/omap2_mcspi: Use transaction speed if provided
+>
+>  arch/powerpc/configs/52xx/cm5200_defconfig    |   24 ++--
+>  arch/powerpc/configs/52xx/lite5200b_defconfig |   28 +++--
+>  arch/powerpc/configs/52xx/motionpro_defconfig |   25 +++--
+>  arch/powerpc/configs/52xx/pcm030_defconfig    |   27 +++---
+>  arch/powerpc/configs/52xx/tqm5200_defconfig   |   28 +++---
+>  arch/powerpc/configs/mpc5200_defconfig        |  134 ++++++++++++++++---------
+>  drivers/serial/uartlite.c                     |   10 +-
+>  drivers/spi/omap2_mcspi.c                     |   18 ++-
+>  8 files changed, 177 insertions(+), 117 deletions(-)
+>
+>
+> --
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
+>
 
-All the reasons have 'stability' in them.
 
->> Kernel updates = reboots.
->>      
-> If you check the update frequency of RHEL 5 kernels you'll see that it's
-> comparable to that of Fedora.
->    
-
-I'm sorry to say that's pretty bad.  Users don't want to update their 
-kernels.
-
->>>   - Qemu on the other hand is not upgraded with (nearly) that level of urgency.
->>>     Completely new versions will generally have to wait for the next distro
->>>     release.
->>>        
->> F12 recently updated to 2.6.32.  This is probably due to 2.6.31.stable
->> dropping away, and no capacity at Fedora to maintain it on their own.  So
->> they are caught in a bind - stay on 2.6.31 and expose users to security
->> vulnerabilities or move to 2.6.32 and cause regressions.  Not a happy
->> choice.
->>      
-> Happy choice or not, this is what i said is the distro practice these days. (i
-> dont know all the distros that well so i'm sure there's differences)
->    
-
-So in addition to all the normal kernel regressions, you want to force 
-tools/kvm/ regressions on users.
-
->> I don't mind at all if rawhide users run on the latest and greatest, but
->> release users deserve a little more stability.
->>      
-> What are you suggesting, that released versions of KVM are not reliable? Of
-> course any tools/ bits are release engineered just as much as the rest of KVM
-> ...
->    
-
-No, I am suggesting qemu-kvm.git is not as stable as released versions 
-(and won't get fixed backported).  Keep in mind that unlike many 
-userspace applications, qemu exposes an ABI to guests which we must keep 
-compatible.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
