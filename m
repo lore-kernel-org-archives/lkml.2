@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab0CRDkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 23:40:25 -0400
-Received: from mail-bw0-f212.google.com ([209.85.218.212]:38841 "EHLO
-	mail-bw0-f212.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129Ab0CRDkY (ORCPT
+	id S1751089Ab0CREUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 00:20:03 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:46786 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab0CREUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 23:40:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=H/CBdhixWslAojf7/3fV3x6xRrL7BKq4TZfrhoshOBcZoTgn9urxP+BTqu3XyxAXDr
-         +wOs+RsWTjnvjqoxzpY3NuTM3GmH5wk9jFcMRlLqg6JcFKUZbySewajIbJsud5BmG8iM
-         TYTO3xBgJDQgDFdchSXy12G6eN4Hjz+zWZd4k=
-Date: Thu, 18 Mar 2010 04:40:26 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Till Kamppeter <till.kamppeter@gmail.com>
-Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       lsb-discuss@lists.linux-foundation.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: Linux wireless GSoC 2010 project ideas
-Message-ID: <20100318034023.GB5045@nowhere>
-References: <43e72e891001281338u5f05307ble5360c3dac6ab9a2@mail.gmail.com> <20100128231545.GH18683@nowhere> <43e72e891001281523s56707279x896ab059e6d4e530@mail.gmail.com> <4B62231F.5080104@gmail.com> <20100309224347.GD5058@nowhere> <4B99F75C.2070603@gmail.com>
+	Thu, 18 Mar 2010 00:20:00 -0400
+Date: Thu, 18 Mar 2010 09:49:44 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100318041944.GA18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <1268609202-15581-2-git-send-email-arighi@develer.com>
+ <20100317115855.GS18054@balbir.in.ibm.com>
+ <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4B99F75C.2070603@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 12, 2010 at 09:12:12AM +0100, Till Kamppeter wrote:
-> On 03/09/2010 11:43 PM, Frederic Weisbecker wrote:
->> Ok, I hope it's not too late.
->
-> No, we are well before the student's application period.
->
->> Here is one subject that I would like to apply for:
->>
->
-> Thank you for your suggestion.
->
-> Great that you tell us your idea already now, we can put it on our ideas  
-> page to support our application as mentoring organization,
->
->    Till
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 08:54:11]:
 
+> On Wed, 17 Mar 2010 17:28:55 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > 
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Now, file-mapped is maintaiend. But more generic update function
+> > > will be needed for dirty page accounting.
+> > > 
+> > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > will be never called under tree_lock held.
+> > > To guarantee that, we use trylock at updating status.
+> > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > >
+> > 
+> > I don't like this at all, but in almost all cases is not acceptable
+> > for statistics, since decisions will be made on them and having them
+> > incorrect is really bad. Could we do a form of deferred statistics and
+> > fix this.
+> > 
+> 
+> plz show your implementation which has no performance regresssion.
+> For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> we can add simple migration lock.
 
-Thanks for adding it!
+That doesn't matter, if you need it, I think the larger user base
+matters. Unmapped and mapped page cache is critical and I use it
+almost daily.
 
+> file_mapped is a feattue you added. please improve it.
+>
+
+I will, but please don't break it silently
+
+-- 
+	Three Cheers,
+	Balbir
