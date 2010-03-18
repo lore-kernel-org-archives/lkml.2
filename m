@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0CRBva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 21:51:30 -0400
-Received: from kroah.org ([198.145.64.141]:46473 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab0CRBv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 21:51:28 -0400
-Date: Wed, 17 Mar 2010 18:51:09 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: usbutils 0.87 release
-Message-ID: <20100318015109.GB28263@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755049Ab0CRBzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 21:55:45 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:11524 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab0CRBzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 21:55:44 -0400
+Subject: Re: [PATCH 3/5] tmpfs: handle MPOL_LOCAL mount option properly
+From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       LKML <linux-kernel@vger.kernel.org>, kiran@scalex86.org,
+       cl@linux-foundation.org, mel@csn.ul.ie, stable@kernel.org,
+       linux-mm <linux-mm@kvack.org>, akpm@linux-foundation.org
+In-Reply-To: <20100318084915.8723.A69D9226@jp.fujitsu.com>
+References: <20100316145022.4C4E.A69D9226@jp.fujitsu.com>
+	 <alpine.LSU.2.00.1003171619410.29003@sister.anvils>
+	 <20100318084915.8723.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain
+Organization: HP/LKTT
+Date: Wed, 17 Mar 2010 21:55:38 -0400
+Message-Id: <1268877338.4773.151.camel@useless.americas.hpqcorp.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 0.87 release of usbutils.
+On Thu, 2010-03-18 at 08:52 +0900, KOSAKI Motohiro wrote:
+> > On Tue, 16 Mar 2010, KOSAKI Motohiro wrote:
+> > 
+> > > commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
+> > > shmem_sb_info) added mpol=local mount option. but its feature is
+> > > broken since it was born. because such code always return 1 (i.e.
+> > > mount failure).
+> > > 
+> > > This patch fixes it.
+> > > 
+> > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > > Cc: Ravikiran Thirumalai <kiran@scalex86.org>
+> > 
+> > Thank you both for finding and fixing these mpol embarrassments.
+> > 
+> > But if this "mpol=local" feature was never documented (not even in the
+> > commit log), has been broken since birth 20 months ago, and nobody has
+> > noticed: wouldn't it be better to save a little bloat and just rip it out?
+> 
+> I have no objection if lee agreed, lee?
+> Of cource, if we agree it, we can make the new patch soon :)
+> 
 
-There are some fixes for people having problems with the latest libusb
-version, minor code edits, and some new USB class logic.  The whole
-changelog is below.
+Well, given the other issues with mpol_parse_str(), I suspect the entire
+tmpfs mpol option is not used all that often in the mainline kernel.  I
+recall that this feature was introduced by SGI for some of their
+customers who may depend on it.  There have been cases where I could
+have used it were it supported for the SYSV shm and MAP_ANON_MAP_SHARED
+internal tmpfs mount.  Further, note that the addition of "mpol=local"
+occurred between when the major "enterprise distributions" selected a
+new mainline kernel.  Production users of those distros, who are the
+likely users of this feature, tend not to live on the bleeding edge.
+So, maybe we shouldn't read too much into it not being discovered until
+now.
 
-The package can be downladed from kernel.org:
-	http://www.kernel.org/pub/linux/utils/usb/usbutils/
+That being said, I suppose I wouldn't be all that opposed to deprecating
+the entire tmpfs mpol option, and see who yells.   If the mpol mount
+options stays, I'd like to see the 'local' option stay.  It's a
+legitimate behavior that one can specify via the system calls and see
+via numa_maps, so I think the mpol mount option, if it exists, should
+support a way to specify it.  
 
-We've switched over to using git for development now, which makes things
-much easier than the old cvs tree.  The tree can be found on both
-kernel.org and github.com if you want to fork it and send us changes
-easier:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-	http://github.com/gregkh/usbutils/tree/master
+As for bloat, the additional code on the mount option side to support it
+is:
 
-thanks,
+        case MPOL_LOCAL:
+                /*
+                 * Don't allow a nodelist;  mpol_new() checks flags
+                 */
+                if (nodelist)
+                        goto out;
+                mode = MPOL_PREFERRED;
+                break;
 
-greg k-h
+Lee
 
------------
-
-Shortlog of changes since last release (0.86):
-
-Aurelien Jarno (1):
-      lsusb.c: correctly dump ccid devices
-
-Greg Kroah-Hartman (11):
-      lots of trailing whitespace removed.
-      add autogen.sh script
-      coding style cleanups for .h files.
-      names.c: fix up some compiler warnings
-      coding style cleanups for usbmisc.c
-      names.c: fix lots of coding style issues
-      devtree.c: coding style cleanups
-      lsusb.c: coding style fixes
-      lsusb.c: fix some build warnings.
-      usb.ids: Reserve EEM Gadget id for the Linux Foundation
-      add lsusb.py from Kurt Garloff <garloff@suse.de>
-
-Philip A. Prindeville (1):
-      Fix build issue with libusb location
 
 
