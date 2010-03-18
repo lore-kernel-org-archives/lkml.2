@@ -1,110 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab0CRNs5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:48:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:39673 "EHLO
+	id S1753681Ab0CRNtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:49:04 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:39722 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab0CRNsz (ORCPT
+	with ESMTP id S1753657Ab0CRNs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:48:55 -0400
+	Thu, 18 Mar 2010 09:48:58 -0400
 From: Chase Douglas <chase.douglas@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 1/3] Add tracing_off_event() to stop tracing when a bug or warning occur
-Date: Thu, 18 Mar 2010 09:48:50 -0400
-Message-Id: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
+Subject: [PATCH 3/3] Stop tracing on a schedule bug
+Date: Thu, 18 Mar 2010 09:48:52 -0400
+Message-Id: <1268920132-30512-3-git-send-email-chase.douglas@canonical.com>
 X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
+References: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing_off_event() function calls tracing_off() to stop tracing
-when an event occurs. By default, only BUG-type events stop tracing,
-while WARNING type events do not. This is controlled through the
-tracing_off={none,warn,bug} commandline parameter.
-
-Call this function from bug and warning event handlers to enable a user
-to debug their kernel by starting a trace, hitting an event, and then
-retrieving trace info knowing that the trace was stopped right after the
-event was hit.
+This change adds a tracing_off_event() call to stop tracing on schedule
+bugs unless tracing_off=none was specified on the commandline.
 
 Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- include/linux/kernel.h     |    5 +++++
- kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
+ kernel/sched.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 7f07074..107091f 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -478,16 +478,21 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
-  *
-  * Most likely, you want to use tracing_on/tracing_off.
-  */
-+#define TRACE_EVENT_BUG 0
-+#define TRACE_EVENT_WARN 1
-+
- #ifdef CONFIG_RING_BUFFER
- void tracing_on(void);
- void tracing_off(void);
- /* trace_off_permanent stops recording with no way to bring it back */
- void tracing_off_permanent(void);
-+void tracing_off_event(long event);
- int tracing_is_on(void);
- #else
- static inline void tracing_on(void) { }
- static inline void tracing_off(void) { }
- static inline void tracing_off_permanent(void) { }
-+static inline void tracing_off_event(long event) { }
- static inline int tracing_is_on(void) { return 0; }
- #endif
- #ifdef CONFIG_TRACING
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0287f9f..b148862 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -193,6 +193,40 @@ void tracing_off_permanent(void)
- 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
- }
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 150b698..bfe4f05 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3589,6 +3589,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
+ {
+ 	struct pt_regs *regs = get_irq_regs();
  
-+static long tracing_event_mask = TRACE_EVENT_BUG;
++	tracing_off_event(TRACE_EVENT_BUG);
 +
-+/**
-+ * tracing_off_event - turn off tracing depending on event type
-+ *
-+ * This function checks the event type to determine whether tracing should be
-+ * disabled. Useful for disabling tracing on bugs or warnings.
-+ */
-+void tracing_off_event(long event)
-+{
-+	if (event <= tracing_event_mask)
-+		tracing_off();
-+}
-+EXPORT_SYMBOL_GPL(tracing_off_event);
-+
-+static int __init tracing_off_event_setup(char *str)
-+{
-+	if (!strcmp("none", str))
-+		tracing_event_mask = -1;
-+	else if (!strcmp("bug", str))
-+		tracing_event_mask = TRACE_EVENT_BUG;
-+	else if (!strcmp("warn", str))
-+		tracing_event_mask = TRACE_EVENT_WARN;
-+	else
-+	{
-+		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+__setup("tracing_off=", tracing_off_event_setup);
-+
- /**
-  * tracing_is_on - show state of ring buffers enabled
-  */
+ 	printk(KERN_ERR "BUG: scheduling while atomic: %s/%d/0x%08x\n",
+ 		prev->comm, prev->pid, preempt_count());
+ 
 -- 
 1.6.3.3
 
