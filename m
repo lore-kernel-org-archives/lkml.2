@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098Ab0CRJIT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 05:08:19 -0400
+	id S1751783Ab0CRJHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 05:07:43 -0400
 Received: from mail-yx0-f191.google.com ([209.85.210.191]:60035 "EHLO
 	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab0CRJII (ORCPT
+	with ESMTP id S1751702Ab0CRJHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 05:08:08 -0400
+	Thu, 18 Mar 2010 05:07:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=pIZ7h5ypLowyI7Tl3fUYLNdfNqS2k6csrPfbYd+jN5giuIN4yJ4eKdl/+BXt//Nklx
-         Mzm5n6+ozi7K5H9crDWHqsvk6LQ16LwwbHKmUxHCseMKVO4zsd6NE2FQ4pHEZCy7Tow5
-         W1KwnmGxeNaelHC9b1cCFZk6cs90r0EStbOlM=
+        b=ANPq42fizZU+2X2qGt/5YwOB77kOODlG2W6MmaXhkv4XMqH3YKJd5PoN+1Rwe+aus8
+         4OWdiuyvCv+k6gXuhbRcwZoUsJZkM5rEGkscB5rBYAj+TiSpRvWeJY/o9q1+KpWYSiRv
+         rFDYbqlUMve/K8lkXE2ZoDt0ebVbTdkzp04ik=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-       Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-       Christoph Raisch <raisch@de.ibm.com>, linux-rdma@vger.kernel.org
-Subject: [PATCH 09/12] ehca: convert cpu notifier to return encapsulate errno value
-Date: Thu, 18 Mar 2010 18:05:21 +0900
-Message-Id: <1268903124-10237-9-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 03/12] notifier: change notifier_from_errno(0) to return NOTIFY_OK
+Date: Thu, 18 Mar 2010 18:05:15 +0900
+Message-Id: <1268903124-10237-3-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.6.0.6
 In-Reply-To: <1268903124-10237-1-git-send-email-akinobu.mita@gmail.com>
 References: <1268903124-10237-1-git-send-email-akinobu.mita@gmail.com>
@@ -28,30 +26,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By the previous modification, the cpu notifier can return encapsulate
-errno value. This converts the cpu notifiers for ehca.
+This changes notifier_from_errno(0) to be NOTIFY_OK instead of
+NOTIFY_STOP_MASK | NOTIFY_OK.
+
+Currently, the notifiers which return encapsulated errno value have to
+do something like this:
+
+	err = do_something(); // returns -errno
+	if (err)
+		return notifier_from_errno(err);
+	else
+		return NOTIFY_OK;
+
+This change makes the above code simple:
+
+	err = do_something(); // returns -errno
+
+	return return notifier_from_errno(err);
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>
-Cc: Christoph Raisch <raisch@de.ibm.com>
-Cc: linux-rdma@vger.kernel.org
 ---
- drivers/infiniband/hw/ehca/ehca_irq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/notifier.h |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_irq.c b/drivers/infiniband/hw/ehca/ehca_irq.c
-index b2b6fea..31f3ee1 100644
---- a/drivers/infiniband/hw/ehca/ehca_irq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_irq.c
-@@ -845,7 +845,7 @@ static int __cpuinit comp_pool_callback(struct notifier_block *nfb,
- 		ehca_gen_dbg("CPU: %x (CPU_PREPARE)", cpu);
- 		if (!create_comp_task(pool, cpu)) {
- 			ehca_gen_err("Can't create comp_task for cpu: %x", cpu);
--			return NOTIFY_BAD;
-+			return notifier_from_errno(-ENOMEM);
- 		}
- 		break;
- 	case CPU_UP_CANCELED:
+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
+index fee6c2f..9e4831d 100644
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -164,7 +164,10 @@ extern int __srcu_notifier_call_chain(struct srcu_notifier_head *nh,
+ /* Encapsulate (negative) errno value (in particular, NOTIFY_BAD <=> EPERM). */
+ static inline int notifier_from_errno(int err)
+ {
+-	return NOTIFY_STOP_MASK | (NOTIFY_OK - err);
++	if (err)
++		return NOTIFY_STOP_MASK | (NOTIFY_OK - err);
++
++	return NOTIFY_OK;
+ }
+ 
+ /* Restore (negative) errno value from notify return value. */
 -- 
 1.6.0.6
 
