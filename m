@@ -1,109 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752783Ab0CRVWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 17:22:19 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51319 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471Ab0CRVWS (ORCPT
+	id S1752029Ab0CRVY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:24:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53504 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0CRVY4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 17:22:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=sender:date:from:x-x-sender:to:cc:subject:in-reply-to:
-	message-id:references:user-agent:mime-version:content-type:x-system-of-record;
-	b=V15GEbTxEmO8uFUAgu41p0tU6VoQwDjjXOmfNTmcx3i7thxvFQ9XjMw+VguLfep4G
-	9EtubhcY9/5kJDqfQdJKg==
-Date: Thu, 18 Mar 2010 21:21:58 +0000 (GMT)
-From: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-X-X-Sender: hugh@sister.anvils
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, kiran@scalex86.org,
-       cl@linux-foundation.org, mel@csn.ul.ie, stable@kernel.org,
-       linux-mm <linux-mm@kvack.org>, akpm@linux-foundation.org
-Subject: Re: [PATCH 3/5] tmpfs: handle MPOL_LOCAL mount option properly
-In-Reply-To: <1268877338.4773.151.camel@useless.americas.hpqcorp.net>
-Message-ID: <alpine.LSU.2.00.1003182112010.11097@sister.anvils>
-References: <20100316145022.4C4E.A69D9226@jp.fujitsu.com>  <alpine.LSU.2.00.1003171619410.29003@sister.anvils>  <20100318084915.8723.A69D9226@jp.fujitsu.com> <1268877338.4773.151.camel@useless.americas.hpqcorp.net>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Thu, 18 Mar 2010 17:24:56 -0400
+Message-ID: <4BA29A19.2050307@fami-braun.de>
+Date: Thu, 18 Mar 2010 22:24:41 +0100
+From: michael-dev@fami-braun.de
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.8.1.23) Gecko/20090817 Lightning/0.9 Thunderbird/2.0.0.23 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       Matt Mackall <mpm@selenic.com>,
+       Herbert Xu <herbert@gondor.apana.org.au>
+Subject: Re: [BUG] SLOB breaks Crypto
+References: <4B9E38AF.70309@fami-braun.de> <84144f021003180930s44e239dfmb38183096f07c8a8@mail.gmail.com>
+In-Reply-To: <84144f021003180930s44e239dfmb38183096f07c8a8@mail.gmail.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX1/RzlL6EoIj0pPgerBYnpnPcgxSEnTmaWZ9bek
+ 4RGTlyYUOzmLaRSiPTLHcM9+1zhahqNCGoHHxxbVSMwwYdaxvA
+ dVbiU/OYvQv0hrlca1i9Kbukw5+7Z15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Mar 2010, Lee Schermerhorn wrote:
-> On Thu, 2010-03-18 at 08:52 +0900, KOSAKI Motohiro wrote:
-> > > On Tue, 16 Mar 2010, KOSAKI Motohiro wrote:
-> > > 
-> > > > commit 71fe804b6d5 (mempolicy: use struct mempolicy pointer in
-> > > > shmem_sb_info) added mpol=local mount option. but its feature is
-> > > > broken since it was born. because such code always return 1 (i.e.
-> > > > mount failure).
-> > > > 
-> > > > This patch fixes it.
-> > > > 
-> > > > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > > > Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-> > > 
-> > > Thank you both for finding and fixing these mpol embarrassments.
-> > > 
-> > > But if this "mpol=local" feature was never documented (not even in the
-> > > commit log),
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Sorry, I was absolutely wrong to say that: I seem to have been looking at
-the wrong commit, but 3f226aa1 does document mpol=local, and does explain
-why mpol=default differed; and KOSAKI-san's 5/5 corrects the mpol=default
-description in tmpfs.txt, as well as adding mpol=local description.
+Pekka Enberg schrieb:
+> Even with CONFIG_DEBUG_SLAB enabled or with CONFIG_SLUB and
+> CONFIG_SLUB_DEBUG_ON?
+
+no, these options have not been / are not enabled.
 
 
-> > > has been broken since birth 20 months ago, and nobody has
-> > > noticed: wouldn't it be better to save a little bloat and just rip it out?
-> > 
-> > I have no objection if lee agreed, lee?
-> > Of cource, if we agree it, we can make the new patch soon :)
-> > 
-> 
-> Well, given the other issues with mpol_parse_str(), I suspect the entire
-> tmpfs mpol option is not used all that often in the mainline kernel.  I
-> recall that this feature was introduced by SGI for some of their
-> customers who may depend on it.  There have been cases where I could
-> have used it were it supported for the SYSV shm and MAP_ANON_MAP_SHARED
-> internal tmpfs mount.  Further, note that the addition of "mpol=local"
-> occurred between when the major "enterprise distributions" selected a
-> new mainline kernel.  Production users of those distros, who are the
-> likely users of this feature, tend not to live on the bleeding edge.
-> So, maybe we shouldn't read too much into it not being discovered until
-> now.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
 
-True.
-
-> 
-> That being said, I suppose I wouldn't be all that opposed to deprecating
-> the entire tmpfs mpol option, and see who yells.   If the mpol mount
-> options stays, I'd like to see the 'local' option stay.  It's a
-> legitimate behavior that one can specify via the system calls and see
-> via numa_maps, so I think the mpol mount option, if it exists, should
-> support a way to specify it.  
-> 
-> As for bloat, the additional code on the mount option side to support it
-> is:
-> 
->         case MPOL_LOCAL:
->                 /*
->                  * Don't allow a nodelist;  mpol_new() checks flags
->                  */
->                 if (nodelist)
->                         goto out;
->                 mode = MPOL_PREFERRED;
->                 break;
-
-Shocking :)
-
-Yes, I withdraw my objection.  I'd been puzzled by why you would have
-added an option which nobody was interested in, including yourself;
-but as I see it now, you'd noticed a bug in mpol=default, and felt
-that the right way to provide the missing functionality was to add
-mpol=local: fair enough, let's keep it.
-
-Hugh
+iEYEARECAAYFAkuimhkACgkQ+6sI4XSM4u1jtACfS9YfQfKZ/Pu/n62lT50xSise
+RdAAmgMfVmKXPFRT2hz7bSWAMIor9zTo
+=gMEL
+-----END PGP SIGNATURE-----
