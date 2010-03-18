@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064Ab0CRLcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 07:32:18 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59277 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab0CRLcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 07:32:16 -0400
-Message-ID: <4BA20EC7.5070508@cn.fujitsu.com>
-Date: Thu, 18 Mar 2010 19:30:15 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       KVM list <kvm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] KVM MMU: check reserved bits only when CR4.PSE=1 or
- CR4.PAE=1
-References: <4BA04FCA.40308@cn.fujitsu.com> <20100318024948.GB23995@amt.cnet>
-In-Reply-To: <20100318024948.GB23995@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+	id S1753125Ab0CRLck (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 07:32:40 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54965 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab0CRLcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 07:32:39 -0400
+Subject: Patch inclusion in stable
+From: Surbhi Palande <Surbhi.Palande@canonical.com>
+Reply-To: Surbhi.Palande@canonical.com
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: stable@kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Canonical Pvt. Ltd.
+Date: Thu, 18 Mar 2010 13:32:33 +0200
+Message-ID: <1268911953.4382.23.camel@subu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
+Hi All,
 
-Thanks for your review.
+I had a look at the 2.6.32.10 stable patches. Had a comment on the 31st
+patch in the series:
 
-Marcelo Tosatti wrote:
-> On Wed, Mar 17, 2010 at 11:43:06AM +0800, Xiao Guangrong wrote:
->> - The RSV bit is possibility set in error code when #PF occurred
->>   only if CR4.PSE=1 or CR4.PAE=1
->>   
->> - context->rsvd_bits_mask[1][0] is always 0
->>
->> Changlog:
->> Move this operation to reset_rsvds_bits_mask() address Avi Kivity's suggestion
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
->> ---
->>  arch/x86/kvm/mmu.c |   12 +++++++++---
->>  1 files changed, 9 insertions(+), 3 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index b137515..c49f8ec 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2288,18 +2288,26 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
->>  
->>  	if (!is_nx(vcpu))
->>  		exb_bit_rsvd = rsvd_bits(63, 63);
->> +
->> +	context->rsvd_bits_mask[1][0] = 0;
-> 
-> So if the guest enables PAT at PTE level you completly disable reserved
-> bit checking? You should only disable checking for [1][1] if !PSE.
+commit 7ef79e1045213953b87f45cf5993cc9c70c873ec
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
 
-Sorry, i make a mistake here because i see the current code is redundant:
-	context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
-in every case.
+    airo: fix setting zero length WEP key
 
-This code is imported by commit fd2e987d, i think this is Avi Kivity's typo :-)
-i think the correct way is:
-	ontext->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
+The linux-2.6 source has another patch that adds the following line:
+if (WARN_ON(keylen == 0))
+>> +     return -1;
 
-I'll send a new version patch to fix it if you not object. 
+This is added through the commit
+6510b8917948283005a125c8337d3312a8a0561c. This commit is missing in the
+2.6.32.10 stable patches. I think it should be a part of stable patches
+too.
 
-Xiao
+Thanks!
+
+Warm Regards,
+Surbhi.
+
 
 
