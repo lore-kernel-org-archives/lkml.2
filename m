@@ -1,140 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab0CRSWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 14:22:18 -0400
-Received: from mail-pz0-f200.google.com ([209.85.222.200]:59925 "EHLO
-	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab0CRSV2 (ORCPT
+	id S1754457Ab0CRSWf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 14:22:35 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:49832 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754404Ab0CRSWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 14:21:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C7ci3cxb8Hly0S3fz5z499MxAHMvXg6C+nIaWiwjnxn90ECx1u6v4flukJimQImQeU
-         J74C5eFn2jPpHVwSXNVZCI78hJMffuwWKrz+w8dZP/ya+RwPNdtLM+Ge4gBc5XpGvy75
-         4bofkzX81MUAk2anDKD4svjjaejwthWP2rBvQ=
-From: Brian Gerst <brgerst@gmail.com>
-To: hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] x86-32: Split cache flush handler from simd handler
-Date: Thu, 18 Mar 2010 14:20:49 -0400
-Message-Id: <1268936453-3727-2-git-send-email-brgerst@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1268936453-3727-1-git-send-email-brgerst@gmail.com>
-References: <1268936453-3727-1-git-send-email-brgerst@gmail.com>
+	Thu, 18 Mar 2010 14:22:33 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [RESEND][PATCH 1/3] Add tracing_off_event() to stop tracing when a bug or warning occur
+Date: Thu, 18 Mar 2010 12:31:40 -0400
+Message-Id: <1268929900-1788-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the cache flush handler a seperate function, and use
-an alternative to call the appropriate handler.
+The tracing_off_event() function calls tracing_off() to stop tracing
+when an event occurs. By default, only BUG-type events stop tracing,
+while WARNING type events do not. This is controlled through the
+tracing_off={none,warn,bug} commandline parameter.
 
-Signed-off-by: Brian Gerst <brgerst@gmail.com>
+Call this function from bug and warning event handlers to enable a user
+to debug their kernel by starting a trace, hitting an event, and then
+retrieving trace info knowing that the trace was stopped right after the
+event was hit.
+
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
 ---
- arch/x86/kernel/entry_32.S |   16 +++++++++++++++-
- arch/x86/kernel/traps.c    |   43 ++++++++++++++++++++++++-------------------
- 2 files changed, 39 insertions(+), 20 deletions(-)
+ include/linux/kernel.h     |    7 +++++++
+ kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 41 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 44a8e0d..c3769fa 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -53,6 +53,7 @@
- #include <asm/processor-flags.h>
- #include <asm/ftrace.h>
- #include <asm/irq_vectors.h>
-+#include <asm/cpufeature.h>
- 
- /* Avoid __ASSEMBLER__'ifying <linux/audit.h> just for this.  */
- #include <linux/elf-em.h>
-@@ -905,7 +906,20 @@ ENTRY(simd_coprocessor_error)
- 	RING0_INT_FRAME
- 	pushl $0
- 	CFI_ADJUST_CFA_OFFSET 4
--	pushl $do_simd_coprocessor_error
-+661:	pushl $do_cache_flush_error
-+662:
-+.section .altinstructions,"a"
-+	ALIGN
-+	.long 661b
-+	.long 663f
-+	.byte X86_FEATURE_XMM
-+	.byte 662b-661b
-+	.byte 664f-663f
-+.previous
-+.section .altinstr_replacement,"ax"	
-+663:	pushl $do_simd_coprocessor_error
-+664:
-+.previous
- 	CFI_ADJUST_CFA_OFFSET 4
- 	jmp error_code
- 	CFI_ENDPROC
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 1168e44..45b9cb0 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -257,6 +257,27 @@ dotraplinkage void do_double_fault(struct pt_regs *regs, long error_code)
- }
- #endif
- 
-+#ifdef CONFIG_X86_32
-+dotraplinkage void
-+do_cache_flush_error(struct pt_regs *regs, long error_code)
-+{
-+	conditional_sti(regs);
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 7f07074..a19d545 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -478,16 +478,23 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+  *
+  * Most likely, you want to use tracing_on/tracing_off.
+  */
++typedef enum {
++	TRACE_EVENT_BUG = 0,
++	TRACE_EVENT_WARN,
++} trace_event_t;
 +
-+	/*
-+	 * Handle strange cache flush from user space exception.
-+	 * This is undocumented behaviour.
-+	 */
-+	if (regs->flags & X86_VM_MASK) {
-+		handle_vm86_fault((struct kernel_vm86_regs *)regs, error_code);
-+		return;
-+	}
-+	current->thread.trap_no = 19;
-+	current->thread.error_code = error_code;
-+	die_if_kernel("cache flush denied", regs, error_code);
-+	force_sig(SIGSEGV, current);
-+}
-+#endif
-+
- dotraplinkage void __kprobes
- do_general_protection(struct pt_regs *regs, long error_code)
- {
-@@ -729,30 +750,14 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- 	conditional_sti(regs);
- 
- #ifdef CONFIG_X86_32
--	if (cpu_has_xmm) {
--		/* Handle SIMD FPU exceptions on PIII+ processors. */
--		ignore_fpu_irq = 1;
--		simd_math_error((void __user *)regs->ip);
--		return;
--	}
--	/*
--	 * Handle strange cache flush from user space exception
--	 * in all other cases.  This is undocumented behaviour.
--	 */
--	if (regs->flags & X86_VM_MASK) {
--		handle_vm86_fault((struct kernel_vm86_regs *)regs, error_code);
--		return;
--	}
--	current->thread.trap_no = 19;
--	current->thread.error_code = error_code;
--	die_if_kernel("cache flush denied", regs, error_code);
--	force_sig(SIGSEGV, current);
-+	ignore_fpu_irq = 1;
+ #ifdef CONFIG_RING_BUFFER
+ void tracing_on(void);
+ void tracing_off(void);
+ /* trace_off_permanent stops recording with no way to bring it back */
+ void tracing_off_permanent(void);
++void tracing_off_event(trace_event_t event);
+ int tracing_is_on(void);
  #else
- 	if (!user_mode(regs) &&
- 			kernel_math_error(regs, "kernel simd math error", 19))
- 		return;
--	simd_math_error((void __user *)regs->ip);
+ static inline void tracing_on(void) { }
+ static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
++static inline void tracing_off_event(trace_event_t event) { }
+ static inline int tracing_is_on(void) { return 0; }
  #endif
-+
-+	simd_math_error((void __user *)regs->ip);
+ #ifdef CONFIG_TRACING
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 0287f9f..202a677 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -193,6 +193,40 @@ void tracing_off_permanent(void)
+ 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
  }
  
- dotraplinkage void
++static trace_event_t tracing_off_event_ctrl = TRACE_EVENT_BUG;
++
++/**
++ * tracing_off_event - turn off tracing depending on event type
++ *
++ * This function checks the event type to determine whether tracing should be
++ * disabled. Useful for disabling tracing on bugs or warnings.
++ */
++void tracing_off_event(trace_event_t event)
++{
++	if (event <= tracing_off_event_ctrl)
++		tracing_off();
++}
++EXPORT_SYMBOL_GPL(tracing_off_event);
++
++static int __init tracing_off_event_setup(char *str)
++{
++	if (!strcmp("none", str))
++		tracing_off_event_ctrl = -1;
++	else if (!strcmp("bug", str))
++		tracing_off_event_ctrl = TRACE_EVENT_BUG;
++	else if (!strcmp("warn", str))
++		tracing_off_event_ctrl = TRACE_EVENT_WARN;
++	else
++	{
++		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
++		return 1;
++	}
++
++	return 0;
++}
++
++__setup("tracing_off=", tracing_off_event_setup);
++
+ /**
+  * tracing_is_on - show state of ring buffers enabled
+  */
 -- 
-1.6.6.1
+1.6.3.3
 
