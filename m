@@ -1,103 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab0CRP7F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:59:05 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:52845 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab0CRP67 (ORCPT
+	id S1751929Ab0CRQBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 12:01:42 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:37588 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab0CRQBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:58:59 -0400
-Subject: Re: 64-syscall args on 32-bit vs syscall()
-From: Steven Munroe <munroesj@linux.vnet.ibm.com>
-Reply-To: munroesj@us.ibm.com
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ulrich Drepper <drepper@redhat.com>,
-       munroesj@us.ibm.com, David Miller <davem@davemloft.net>,
-       ralf@linux-mips.org, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
-       torvalds@linux-foundation.org
-In-Reply-To: <1268866720.2335.204.camel@pasglop>
-References: <20100315134449.GB1653@linux-mips.org>
-	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
-	 <20100315.120004.209998642.davem@davemloft.net>
-	 <4B9E8D67.8040209@zytor.com> <1268685311.2335.38.camel@pasglop>
-	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
-	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
-	 <1268816179.2335.187.camel@pasglop>  <4BA11FD2.2090104@zytor.com>
-	 <1268858134.2335.198.camel@pasglop>  <4BA1412C.6070008@zytor.com>
-	 <1268866720.2335.204.camel@pasglop>
-Content-Type: text/plain
-Organization: IBM Linux Technology Center
-Date: Thu, 18 Mar 2010 11:08:00 -0500
-Message-Id: <1268928480.19726.123.camel@spokane1.rchland.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.6.0 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 12:01:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=grJnnjlD2kCv1TDX+iVyShfy0ytgfJC8vZYqOhMHpr/TVMGvKw2ogNcXjOkoa4/2wI
+         wxiADQ3Hz/kEDrLhbYOewXUdIcTA0PG6VXf6GxllCQ8ioXHWK+vxN0Gbic0FDNOH/8sb
+         dhhgBhZdOJ5wJx+A6a8toz771plp3FLDZb7DA=
+Date: Thu, 18 Mar 2010 19:01:35 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 2/2] x86,perf: add cache events in p4 PMU
+Message-ID: <20100318160135.GD5062@lenovo>
+References: <1268908392.13901.128.camel@minggr.sh.intel.com> <20100318155610.GA28061@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318155610.GA28061@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-18 at 09:58 +1100, Benjamin Herrenschmidt wrote:
-> On Wed, 2010-03-17 at 13:53 -0700, H. Peter Anvin wrote:
-> > > Yeah, whatever, I don't mind what technique you use for the
-> > versionning,
-> > > ultimately, if the approach works, we can look at those details :-)
-> > We
-> > > -do- need the macro to strip the dummy argument though, unless we
-> > use
-> > > a slightly different technique which is to make the __sysno argument
-> > > itself 64-bit, which works as well I believe.
-> > >
+On Thu, Mar 18, 2010 at 04:56:10PM +0100, Ingo Molnar wrote:
+> 
+> * Lin Ming <ming.m.lin@intel.com> wrote:
+> 
+> > Add cache events in p4 PMU.
 > > 
-> > It seems cleaner to do it that way (with a 64-bit sysno arg.) 
+> > Move the HT bit setting code from p4_pmu_event_map to p4_hw_config.
+> > So the cache events can get HT bit set correctly.
+> > 
+> > Tested on my P4 desktop, below 6 cache events work.
+> > L1-dcache-load-misses
+> > LLC-load-misses
+> > dTLB-load-misses
+> > dTLB-store-misses
+> > iTLB-loads
+> > iTLB-load-misses
+> > 
+> > Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> > ---
+> >  arch/x86/include/asm/msr-index.h     |    2 +
+> >  arch/x86/include/asm/perf_event_p4.h |   10 ++
+> >  arch/x86/kernel/cpu/perf_event_p4.c  |  153 ++++++++++++++++++++++++++++++++--
+> >  3 files changed, 159 insertions(+), 6 deletions(-)
 > 
-> Right. Now if we can get Ulrich to actually put 2 and 2 together and
-> admit that it actually works without breaking anything existing (at
-> least for my arch but I wouldn't be surprised if that was the case for
-> others), I would be even happier :-)
+> i tried it on a Pentium-D box, and it works pretty well:
 > 
-> Steve, any chance you can cook up a glibc patch to test with ? Maybe
-> making it powerpc specific for now ?
+> rhea:/home/mingo/tip> perf stat -a sleep 1
 > 
+>  Performance counter stats for 'sleep 1':
+> 
+>     2003.237268  task-clock-msecs         #      2.000 CPUs 
+>              11  context-switches         #      0.000 M/sec
+>               2  CPU-migrations           #      0.000 M/sec
+>             174  page-faults              #      0.000 M/sec
+>           47361  cycles                   #      0.024 M/sec  (scaled from 52.83%)
+>             430  instructions             #      0.009 IPC    (scaled from 74.58%)
+>           23873  branches                 #      0.012 M/sec  (scaled from 96.70%)
+>             193  branch-misses            #      0.808 %      (scaled from 49.64%)
+>             867  cache-references         #      0.000 M/sec  (scaled from 49.69%)
+>             504  cache-misses             #      0.000 M/sec  (scaled from 49.58%)
+> 
+>     1.001411586  seconds time elapsed
+> 
+> So i've applied your patches. Cyrill, what do you think?
 
-Do what declare __sysno as long long? The current prototype is in
-unistd.h:
+Sorry for a bit delay, yes, pick it up please. I found that we have an
+issue in escr binding (which is pretty mine error), hope to fix it up
+today. Also I hope to eventually implement raw events this weekend
+but better to base the new code on all this stuff merged. This will
+allow to "take a look" on code structure from a high point and find
+potential caveats.
 
-#ifdef __USE_MISC
-/* Invoke `system call' number SYSNO, passing it the remaining
-arguments.
-   This is completely system-dependent, and not often useful.
+All-in-one
 
-   In Unix, `syscall' sets `errno' for all errors and most calls return
--1
-   for errors; in many systems you cannot pass arguments or get return
-   values for all system calls (`pipe', `fork', and `getppid' typically
-   among them).
+Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
 
-   In Mach, all system calls take normal arguments and always return an
-   error code (zero for success).  */
-extern long int syscall (long int __sysno, ...) __THROW;
+Thanks a huge, Ming!
 
-#endif	/* Use misc.  */
-
-Changing this would be an ABI change and would have to be versioned. It
-would effect any one using syscall not just SYS_fallocate.
-
-the question is do programmers in practice include unistd.h when they
-use syscall.
-
-If the changed prototype is not in scope then the 1st parm (__sysno)
-defaults to int and is passed in on r3 which gets moved to r0.
-
-If the changed syscall prototype is in scope then then _sysno would be
-passed in r3/r4 (r3 would be 0 would be passed to r0 and the actual
-system number would be in r4 and passed to the kernel in r3)
-
-which behavior do you want? which (incorrect behavior compiled into
-existing codes do you want to support?
-
-Do you want syscall.S for PPC32 to change to match the changed
-prototype? It will have to be be versioned and the new prototype will
-only be available in future releases of GLIBC. Existing applications
-will bind to the old ABI and get the old behavior.
-
+> 
+> 	Ingo
+> 
+	-- Cyrill
