@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab0CRAQy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 20:16:54 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33805 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab0CRAQw (ORCPT
+	id S1753568Ab0CRAdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 20:33:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:35416 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab0CRAdW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 20:16:52 -0400
-Date: Wed, 17 Mar 2010 16:37:53 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Andreas Dilger <adilger@sun.com>
-Cc: Oren Laadan <orenl@cs.columbia.edu>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-api@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       containers@lists.linux-foundation.org,
-       Matt Helsley <matthltc@us.ibm.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [C/R v20][PATCH 46/96] c/r: add checkpoint operation for
- opened files of generic filesystems
-Message-ID: <20100317233753.GJ3037@count0.beaverton.ibm.com>
-References: <1268842164-5590-9-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-10-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-11-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-12-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-13-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-14-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
- <1268842164-5590-17-git-send-email-orenl@cs.columbia.edu>
- <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
+	Wed, 17 Mar 2010 20:33:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=MH1J4+lM/mMJloeiTw3YQeEnyme1mwEclIcWtwFWKnKNyghONF59M7Y+dAWrFhoFP
+	aZCU1LTgQKde8qgVV4gqw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BA0C23DE-E2B5-42A9-8478-CE216D18A6C6@sun.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1268869631.9440.282.camel@laptop>
+References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
+	 <1268869631.9440.282.camel@laptop>
+Date: Thu, 18 Mar 2010 01:33:15 +0100
+Message-ID: <bd4cb8901003171733k95fcf50mf6de78bf503d9a7b@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 03:09:00PM -0600, Andreas Dilger wrote:
-
-<snip> (already responded to the first part)
-
-> >static const struct vm_operations_struct nfs_file_vm_ops = {
-> >	.fault = filemap_fault,
-> >	.page_mkwrite = nfs_vm_page_mkwrite,
-> >+#ifdef CONFIG_CHECKPOINT
-> >+	.checkpoint = filemap_checkpoint,
-> >+#endif
-> >};
-> 
-> Why is this one conditional, but the others are not?
-
-Something like this perhaps (untested, but it should work).
-
-    Move empty filemap_checkpoint definition
-    
-    This makes the operation usable in the nfs vm operation structure
-    and avoids the extra #ifdef.
-    
-    Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-    Cc: Andreas Dilger <adilger@sun.com>
-
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 4437ef9..c6f9090 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -578,9 +578,7 @@ out_unlock:
- static const struct vm_operations_struct nfs_file_vm_ops = {
- 	.fault = filemap_fault,
- 	.page_mkwrite = nfs_vm_page_mkwrite,
--#ifdef CONFIG_CHECKPOINT
- 	.checkpoint = filemap_checkpoint,
--#endif
- };
- 
- static int nfs_need_sync_write(struct file *filp, struct inode *inode)
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 210d8e3..e9d9605 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1206,6 +1206,8 @@ extern int filemap_fault(struct vm_area_struct *, struct vm_fault *);
- #ifdef CONFIG_CHECKPOINT
- /* generic vm_area_ops exported for mapped files checkpoint */
- extern int filemap_checkpoint(struct ckpt_ctx *, struct vm_area_struct *);
-+#else /* !CONFIG_CHECKPOINT */
-+#define filemap_checkpoint NULL
- #endif
- 
- /* mm/page-writeback.c */
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 4ea28e6..bc98a15 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1678,8 +1678,6 @@ int filemap_restore(struct ckpt_ctx *ctx,
- 	}
- 	return ret;
- }
--#else /* !CONFIG_CHECKPOINT */
--#define filemap_checkpoint NULL
- #endif
- 
- const struct vm_operations_struct generic_file_vm_ops = {
+On Thu, Mar 18, 2010 at 12:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-03-17 at 10:40 +0200, Stephane Eranian wrote:
+>>       On AMD processors, we need to allocate a data structure per Northbridge
+>>       to handle certain events.
+>>
+>>       On CPU initialization, we need to query the Northbridge id and check
+>>       whether the structure is already allocated or not. We use the
+>>       amd_get_nb_id() function to request the Northbridge identification.
+>>
+>>       The recent cleanup of the CPU online/offline initialization introduced
+>>       a bug. AMD cpu initialization is invoked on CPU_UP_PREPARE callback.
+>>       This is before the CPU Northbridge id is calculated. Therefore no
+>>       processor had a Northbridge structure allocated except the boot
+>>       processor. That was causing bogus NB event scheduling.
+>>
+>>       This patch uses the CPU_ONLINE callback to initialize the AMD
+>>       Northbridge structure. This way amd_get_nb_id() returns valid
+>>       information.
+>>
+>>       The x86_cpu_up() callback was added. Could not call it cpu_online
+>>       because of existing macro.
+>>
+>>       Signed-off-by: Stephane Eranian <eranian@google.com>
+>
+>
+> No, ONLINE is not exposed for a good reason, its always wrong.
+>
+> Use prepare to allocate data, and starting to initialize stuff on the
+> cpu proper once its up. Online is after the cpu is up and running and we
+> are already scheduling stuff on it so its too late to initialize things.
+>
+>
+I can't because amd_get_nb_id() returns garbage for the CPU
+when you call from CPU_STARTING. So looks like initialization
+of cpu_llc_id needs to be moved way earlier. I don't want to have
+to duplicate that code.
