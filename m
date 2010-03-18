@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab0CRWEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:04:36 -0400
-Received: from jurassic.park.msu.ru ([195.208.223.243]:58821 "EHLO
-	jurassic.park.msu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab0CRWEe (ORCPT
+	id S1752787Ab0CRWEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:04:53 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:57471 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752750Ab0CRWEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:04:34 -0400
-X-Greylist: delayed 1474 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Mar 2010 18:04:33 EDT
-Date: Fri, 19 Mar 2010 00:40:30 +0300
-From: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Richard Henderson <rth@twiddle.net>, lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Matt Turner <mattst88@gmail.com>
-Subject: Re: [RFC][PATCH] Convert alpha to use clocksource
-Message-ID: <20100318214030.GA8934@jurassic.park.msu.ru>
-References: <1268877702-2236-1-git-send-email-johnstul@us.ibm.com> <4BA23974.5030503@twiddle.net> <1268934923.1855.8.camel@work-vm>
+	Thu, 18 Mar 2010 18:04:49 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: users@rt2x00.serialmonkey.com
+Subject: Re: [rt2x00-users] rt2500usb broken since 2.6.29
+Date: Thu, 18 Mar 2010 23:04:41 +0100
+User-Agent: KMail/1.9.10
+Cc: Luis Correia <buga@loide.net>, linux-kernel@vger.kernel.org
+References: <201003182246.54889.linux@rainbow-software.org> <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
+In-Reply-To: <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1268934923.1855.8.camel@work-vm>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Message-Id: <201003182304.43196.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 10:55:23AM -0700, john stultz wrote:
-> On Thu, 2010-03-18 at 07:32 -0700, Richard Henderson wrote:
-> > On 03/17/2010 07:01 PM, John Stultz wrote:
-> > > Alpha has a tsc like rpcc counter that it uses to manage time.
-> > > This can be converted to an actual clocksource instead of utilizing
-> > > the arch_gettimeoffset method that is really only there for legacy
-> > > systems with no continuous counter.
-> > 
-> > With 8 seconds or less between roll-overs, do you actually consider
-> > this a continuous counter?  I don't.  I suggest this be left alone.
-> 
-> The timekeeping code handles this (although the shift value I picked may
-> need some adjustment - what is the expected counter freq range on
-> alpha?). The ACPI PM counter which is very common on x86 is only 24 bits
-> and rolls over in ~5 seconds. It works fine.
+On Thursday 18 March 2010 22:51:18 Luis Correia wrote:
+> Hi,
+>
+> On Thu, Mar 18, 2010 at 21:46, Ondrej Zary 
+<linux@rainbow-software.org>wrote:
+> > Hello,
+> > rt2500usb is broken since kernel 2.6.29. It has been discussed before but
+> > never solved:
+> > http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
+> > https://bugzilla.redhat.com/show_bug.cgi?id=484888
+> >
+> > I have Asus WL-167G and it really does not work. Scanning works,
+> > association
+> > too but no packets can be sent (looks like receive works because tcpdump
+> > shows packets from other machines). DHCP fails (No DHCPOFFERS received).
+> >
+> > The problem is caused by this patch:
+> >
+> > rt2x00: Implement HW encryption (rt2500usb)
+> >
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit
+> >;h=dddfb478b26e29a2b47f655ec219e743b8111015
+> >
+> > Removing it from 2.6.29 restores the functionality.
+> >
+> > --
+> > Ondrej Zary
+>
+> you can prevent hardware encryption by supplying "nohwcrypt=1" to the
+> driver.
+> (modinfo rt2500usb)
 
-Yeah, that looks cool. I'm typing this on the 800MHz UP1500 running
-2.6.34-rc1 plus your patch, and the timekeeping works fine so far.
+That did not work. Maybe that was because I just unloaded the rt2500usb module 
+and loaded it again with nohwcrypt=1 without rebooting the machine. Then I 
+removed the HW encryption, recompiled and reloaded and it did not work 
+either. It started to work only after reboot.
 
-Though, even after a glance over the clocksource code, I've not
-gotten yet to how one could estimate the "shift" value...
-Any hints?
+Does the HW encryption really work with any rt2500usb hardware? How can I help 
+to fix it? Or maybe it should be disabled by default.
 
-And if I recall correctly, production alphas have been clocked
-in the range of 60-1250 MHz.
+>
+> Luis Correia
+> rt2x00 project admin
 
-Ivan.
+
+-- 
+Ondrej Zary
