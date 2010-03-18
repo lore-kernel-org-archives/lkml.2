@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab0CRWKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:10:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42790 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab0CRWKr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:10:47 -0400
+	id S1752528Ab0CRWQa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:16:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38988 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751450Ab0CRWQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 18:16:29 -0400
+Date: Thu, 18 Mar 2010 23:16:17 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: drepper@gmail.com, Anthony Liguori <anthony@codemonkey.ws>,
+       Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318221617.GB19669@elte.hu>
+References: <20100318201826.GA20588@elte.hu>
+ <g6y0y1gaeew5bcwbUYAxe124vaj_firegpg@mail.gmail.com>
+ <20100318205655.GB4821@elte.hu>
+ <20100318220654.4305b9e0@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <201003182304.43196.linux@rainbow-software.org>
-References: <201003182246.54889.linux@rainbow-software.org>
-	 <880c1631003181451r7669428ctee7adc867979bc25@mail.gmail.com>
-	 <201003182304.43196.linux@rainbow-software.org>
-Date: Thu, 18 Mar 2010 22:10:45 +0000
-Message-ID: <880c1631003181510k1850de40r823418a0b921ecee@mail.gmail.com>
-Subject: Re: [rt2x00-users] rt2500usb broken since 2.6.29
-From: Luis Correia <buga@loide.net>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: users@rt2x00.serialmonkey.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318220654.4305b9e0@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Thu, Mar 18, 2010 at 22:04, Ondrej Zary <linux@rainbow-software.org> wrote:
-> On Thursday 18 March 2010 22:51:18 Luis Correia wrote:
->> Hi,
->>
->> On Thu, Mar 18, 2010 at 21:46, Ondrej Zary
-> <linux@rainbow-software.org>wrote:
->> > Hello,
->> > rt2500usb is broken since kernel 2.6.29. It has been discussed before but
->> > never solved:
->> > http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
->> > https://bugzilla.redhat.com/show_bug.cgi?id=484888
->> >
->> > I have Asus WL-167G and it really does not work. Scanning works,
->> > association
->> > too but no packets can be sent (looks like receive works because tcpdump
->> > shows packets from other machines). DHCP fails (No DHCPOFFERS received).
->> >
->> > The problem is caused by this patch:
->> >
->> > rt2x00: Implement HW encryption (rt2500usb)
->> >
->> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit
->> >;h=dddfb478b26e29a2b47f655ec219e743b8111015
->> >
->> > Removing it from 2.6.29 restores the functionality.
->> >
->> > --
->> > Ondrej Zary
->>
->> you can prevent hardware encryption by supplying "nohwcrypt=1" to the
->> driver.
->> (modinfo rt2500usb)
+
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> > So it's good enough to be in Fedora/RHEL but not good enough to be in 
+> > upstream glibc? How is that possible? Isnt that a double standard?
+> 
+> Yes its a double standard
+> 
+> Glibc has a higher standard than Fedora/RHEL.
 >
-> That did not work. Maybe that was because I just unloaded the rt2500usb module
-> and loaded it again with nohwcrypt=1 without rebooting the machine. Then I
-> removed the HW encryption, recompiled and reloaded and it did not work
-> either. It started to work only after reboot.
+> Just like the Ubuntu kernel ships various ugly unfit for upstream kernel 
+> drivers.
 
-did you actually remove the usb module and unloaded the module as well?
+There's a world of a difference between a fugly driver and a glibc patch.
 
-you then need to load the module with the option, wait one sec and
-then plug the device back in.
+Also, we tend to upstream even fugly kernel drivers if they are important and 
+are deployed by a major distro - see Noveau.
 
-> Does the HW encryption really work with any rt2500usb hardware? How can I help
-> to fix it? Or maybe it should be disabled by default.
+> > kernel's fault. But glibc is certainly not being helpful in that situation 
+> > either and your earlier claim that you are only waiting for the patches is 
+> > rather dishonest.
+> 
+> I am sure Ulrich is being totally honest, but send him the patches and 
+> you'll find out. Plus you will learn what the API should look like when you 
+> try and create them ...
 
-I think the HW encription did work in the past, but I'm unsure of the
-proper timeline.
+I was there and extended/fixed bits of the kaio/libaio code when they were 
+written so yes i already know something about it. To say that the glibc 
+reaction was less than enthusiastic back then is a strong euphemism ;-)
 
-Luis Correia
-rt2x00 project admin
+So after 8 years some of the bits made its way into Fedora/RHEL.
+
+I think this is a pretty good demonstration of the points i made ;-)
+
+Thanks,
+
+	Ingo
