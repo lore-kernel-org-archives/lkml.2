@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab0CRLhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 07:37:21 -0400
-Received: from mail1.radix.net ([207.192.128.31]:65230 "EHLO mail1.radix.net"
+	id S1752079Ab0CRLnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 07:43:22 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50799 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751000Ab0CRLhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 07:37:18 -0400
-Subject: Re: [patch] ivtv: sizeof() => ARRAY_SIZE()
-From: Andy Walls <awalls@radix.net>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, ivtv-devel@ivtvdriver.org,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-In-Reply-To: <20100317151156.GG5331@bicker>
-References: <20100317151156.GG5331@bicker>
-Content-Type: text/plain
-Date: Thu, 18 Mar 2010 07:37:22 -0400
-Message-Id: <1268912242.3084.7.camel@palomino.walls.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.5 (2.24.5-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1751648Ab0CRLnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 07:43:21 -0400
+Date: Thu, 18 Mar 2010 11:43:03 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+Message-ID: <20100318114302.GM12388@csn.ul.ie>
+References: <20100317170116.870A.A69D9226@jp.fujitsu.com> <20100317114045.GE12388@csn.ul.ie> <20100318085741.8729.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100318085741.8729.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 18:11 +0300, Dan Carpenter wrote:
-> This fixes a smatch warning:
-> drivers/media/video/ivtv/ivtv-vbi.c +138 ivtv_write_vbi(43) 
-> 	error: buffer overflow 'vi->cc_payload' 256 <= 1023
+On Thu, Mar 18, 2010 at 11:35:46AM +0900, KOSAKI Motohiro wrote:
+> > On Wed, Mar 17, 2010 at 07:31:53PM +0900, KOSAKI Motohiro wrote:
+> > > nit
+> > > 
+> > > > +static int compact_zone(struct zone *zone, struct compact_control *cc)
+> > > > +{
+> > > > +	int ret = COMPACT_INCOMPLETE;
+> > > > +
+> > > > +	/* Setup to move all movable pages to the end of the zone */
+> > > > +	cc->migrate_pfn = zone->zone_start_pfn;
+> > > > +	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
+> > > > +	cc->free_pfn &= ~(pageblock_nr_pages-1);
+> > > > +
+> > > > +	for (; ret == COMPACT_INCOMPLETE; ret = compact_finished(zone, cc)) {
+> > > > +		unsigned long nr_migrate, nr_remaining;
+> > > > +		if (!isolate_migratepages(zone, cc))
+> > > > +			continue;
+> > > > +
+> > > > +		nr_migrate = cc->nr_migratepages;
+> > > > +		migrate_pages(&cc->migratepages, compaction_alloc,
+> > > > +						(unsigned long)cc, 0);
+> > > > +		update_nr_listpages(cc);
+> > > > +		nr_remaining = cc->nr_migratepages;
+> > > > +
+> > > > +		count_vm_event(COMPACTBLOCKS);
+> > > 
+> > > V1 did compaction per pageblock. but current patch doesn't.
+> > > so, Is COMPACTBLOCKS still good name?
+> > 
+> > It's not such a minor nit. I wondered about that myself but it's still a
+> > block - just not a pageblock. Would COMPACTCLUSTER be a better name as it's
+> > related to COMPACT_CLUSTER_MAX?
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-Looks good.
-
-Reviewed-by: Andy Walls <awalls@radix.net>
-
-And, if needed
-
-Signed-off-by: Andy Walls <awalls@radix.net>
-
-Regards,
-Andy
-
-> diff --git a/drivers/media/video/ivtv/ivtv-vbi.c b/drivers/media/video/ivtv/ivtv-vbi.c
-> index f420d31..d73af45 100644
-> --- a/drivers/media/video/ivtv/ivtv-vbi.c
-> +++ b/drivers/media/video/ivtv/ivtv-vbi.c
-> @@ -134,7 +134,7 @@ void ivtv_write_vbi(struct ivtv *itv, const struct v4l2_sliced_vbi_data *sliced,
->  			}
->  		}
->  	}
-> -	if (found_cc && vi->cc_payload_idx < sizeof(vi->cc_payload)) {
-> +	if (found_cc && vi->cc_payload_idx < ARRAY_SIZE(vi->cc_payload)) {
->  		vi->cc_payload[vi->cc_payload_idx++] = cc;
->  		set_bit(IVTV_F_I_UPDATE_CC, &itv->i_flags);
->  	}
+> I've looked at this code again. honestly I'm a abit confusing even though both your
+> suggestions seems reasonable.  
+> 
+> now COMPACTBLOCKS is tracking #-of-called-migrate_pages. but I can't imazine
+> how to use it. can you please explain this ststics purpose? probably this is only useful
+> when conbination other stats, and the name should be consist with such combination one.
 > 
 
+It is intended to count how many steps compaction took, the fewer the
+better so minimally, the lower this number is the better. Specifically, the
+"goodness" is related to the number of pages that were successfully allocated
+due to compaction. Assuming the only high-order allocation was huge pages,
+one possible calculation for "goodness" is;
+
+hugepage_clusters = (1 << HUGE HUGETLB_PAGE_ORDER) / COMPACT_CLUSTER_MAX
+goodness = (compactclusters / hugepage_clusters) / compactsuccess
+
+The value of goodness is undefined if "compactsuccess" is 0.
+
+Otherwise, the closer the "goodness" is to 1, the better. A value of 1
+implies that compaction is selecting exactly the right blocks for migration
+and the minimum number of pages are being moved around. The greater the value,
+the more "useless" work compaction is doing.
+
+If there are a mix of high-orders that are resulting in compaction, calculating
+the goodness is a lot harder and compactcluster is just a rule of thumb as
+to how much work compaction is doing.
+
+Does that make sense?
+
+> 
+> > > > +		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
+> > > > +		if (nr_remaining)
+> > > > +			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
+> > > > +
+> > > > +		/* Release LRU pages not migrated */
+> > > > +		if (!list_empty(&cc->migratepages)) {
+> > > > +			putback_lru_pages(&cc->migratepages);
+> > > > +			cc->nr_migratepages = 0;
+> > > > +		}
+> > > > +
+> > > > +		mod_zone_page_state(zone, NR_ISOLATED_ANON, -cc->nr_anon);
+> > > > +		mod_zone_page_state(zone, NR_ISOLATED_FILE, -cc->nr_file);
+> > > 
+> > > I think you don't need decrease this vmstatistics here. migrate_pages() and
+> > > putback_lru_pages() alredy does.
+> > > 
+> > 
+> > Hmm, I do need to decrease the vmstats here but not by this much. The
+> > pages migrated need to be accounted for but not the ones that failed. I
+> > missed this because migration was always succeeding. Thanks. I'll get it
+> > fixed for V5
+> 
+> thanks.
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
