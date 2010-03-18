@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab0CRBTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 21:19:50 -0400
-Received: from mga10.intel.com ([192.55.52.92]:65228 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754089Ab0CRBTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 21:19:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,262,1267430400"; 
-   d="scan'208";a="550004982"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-Date: Thu, 18 Mar 2010 09:19:00 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
-       Joerg Roedel <joerg.roedel@amd.com>
-References: <1268717232.2813.36.camel@localhost> <201003171728.43739.sheng@linux.intel.com> <4BA1464C.2020507@redhat.com>
-In-Reply-To: <4BA1464C.2020507@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1755147Ab0CRBqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 21:46:50 -0400
+Received: from sh.osrg.net ([192.16.179.4]:51708 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752129Ab0CRBqt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Mar 2010 21:46:49 -0400
+Date: Thu, 18 Mar 2010 10:46:37 +0900
+To: stern@rowland.harvard.edu
+Cc: fujita.tomonori@lab.ntt.co.jp, James.Bottomley@HansenPartnership.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: dma_sync_sg_for_cpu applied to a single scatterlist element
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <Pine.LNX.4.44L0.1003171050080.1734-100000@iolanthe.rowland.org>
+References: <20100317072827F.fujita.tomonori@lab.ntt.co.jp>
+	<Pine.LNX.4.44L0.1003171050080.1734-100000@iolanthe.rowland.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003180919.01090.sheng@linux.intel.com>
+Message-Id: <20100318104619S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 18 Mar 2010 10:46:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 March 2010 05:14:52 Zachary Amsden wrote:
-> On 03/16/2010 11:28 PM, Sheng Yang wrote:
-> > On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
-> >> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
-> >>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
-> >>>> Right, but there is a scope between kvm_guest_enter and really running
-> >>>> in guest os, where a perf event might overflow. Anyway, the scope is
-> >>>> very narrow, I will change it to use flag PF_VCPU.
-> >>>
-> >>> There is also a window between setting the flag and calling 'int $2'
-> >>> where an NMI might happen and be accounted incorrectly.
-> >>>
-> >>> Perhaps separate the 'int $2' into a direct call into perf and another
-> >>> call for the rest of NMI handling.  I don't see how it would work on
-> >>> svm though - AFAICT the NMI is held whereas vmx swallows it.
-> >>>
-> >>>   I guess NMIs
-> >>> will be disabled until the next IRET so it isn't racy, just tricky.
-> >>
-> >> I'm not sure if vmexit does break NMI context or not. Hardware NMI
-> >> context isn't reentrant till a IRET. YangSheng would like to double
-> >> check it.
-> >
-> > After more check, I think VMX won't remained NMI block state for host.
-> > That's means, if NMI happened and processor is in VMX non-root mode, it
-> > would only result in VMExit, with a reason indicate that it's due to NMI
-> > happened, but no more state change in the host.
-> >
-> > So in that meaning, there _is_ a window between VMExit and KVM handle the
-> > NMI. Moreover, I think we _can't_ stop the re-entrance of NMI handling
-> > code because "int $2" don't have effect to block following NMI.
-> >
-> > And if the NMI sequence is not important(I think so), then we need to
-> > generate a real NMI in current vmexit-after code. Seems let APIC send a
-> > NMI IPI to itself is a good idea.
-> >
-> > I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
-> > replace "int $2". Something unexpected is happening...
+On Wed, 17 Mar 2010 11:22:01 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
+
+> Here's the situation.  The USB controller drivers don't all support
+> scatter-gather operation.  So there's a library routine in the USB core
+> which calls dma_map_sg() and then creates a separate I/O request for
+> each scatterlist element.  The driver can process these requests one at
+> a time, and when they are all finished the library routine calls
+> dma_unmap_sg().
 > 
-> You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't
-> supposed to be able to.
+> However...  For tracing purposes (usbmon -- like tcpdump but for USB),
+> we may need to copy the data from each I/O request's transfer buffer.  
+> Unfortunately, this copying is done as each request is submitted (for 
+> output) or as it completes (for input), at which times the buffers are 
+> all mapped for DMA.  That's the problem.
+> 
+> Would we be better off not using dma_map_sg() at all in this situation?
+> We could map each scatterlist buffer individually with dma_map_single()
+> as the request is submitted and then unmap the buffer when the request
+> completes, just like with non-sg transfers; then the problem wouldn't
+> arise.
+> 
+> Would there be any significant penalty for doing this?  I realize it
+> would prevent adjacent buffers from getting coalesced, but that's
+> probably okay.  Any other reason not to?
 
-Um? Why?
+No reason. About merging adjacent buffers, there are few IOMMU
+implementations that do. The recent IOMMU implementations such as VT-d
+and AMD IOMMU don't.
 
-Especially kernel is already using it to deliver NMI.
-
--- 
-regards
-Yang, Sheng
+If drivers don't support scatter-gather operation, they had better use
+dma_map_page() instead of forging scatter-gather lists and playing
+with dma_map_sg().
