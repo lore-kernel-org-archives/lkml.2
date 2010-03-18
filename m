@@ -1,122 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab0CRFFX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 01:05:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:41510 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab0CRFFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 01:05:22 -0400
-Date: Thu, 18 Mar 2010 16:05:13 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, benh@kernel.crashing.org
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH v2] powerpc/perf_events: Implement
- perf_arch_fetch_caller_regs
-Message-ID: <20100318050513.GA6575@drongo>
+	id S1752108Ab0CRFMo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 01:12:44 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52624 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751806Ab0CRFMn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 01:12:43 -0400
+Date: Thu, 18 Mar 2010 10:42:32 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrea Righi <arighi@develer.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100318051232.GB18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <1268609202-15581-2-git-send-email-arighi@develer.com>
+ <20100317115855.GS18054@balbir.in.ibm.com>
+ <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318094519.cd1eed72.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318111653.92f899e6.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100318111653.92f899e6.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This implements a powerpc version of perf_arch_fetch_caller_regs.
-It's implemented in assembly because that way we can be sure there
-isn't a stack frame for perf_arch_fetch_caller_regs.  If it was in
-C, gcc might or might not create a stack frame for it, which would
-affect the number of levels we have to skip.
+* nishimura@mxp.nes.nec.co.jp <nishimura@mxp.nes.nec.co.jp> [2010-03-18 11:16:53]:
 
-With this, we see results from perf record -e lock:lock_acquire like
-this:
-
-# Samples: 24878
-#
-# Overhead         Command      Shared Object  Symbol
-# ........  ..............  .................  ......
-#
-    14.99%            perf  [kernel.kallsyms]  [k] ._raw_spin_lock
-                      |
-                      --- ._raw_spin_lock
-                         |
-                         |--25.00%-- .alloc_fd
-                         |          (nil)
-                         |          |
-                         |          |--50.00%-- .anon_inode_getfd
-                         |          |          .sys_perf_event_open
-                         |          |          syscall_exit
-                         |          |          syscall
-                         |          |          create_counter
-                         |          |          __cmd_record
-                         |          |          run_builtin
-                         |          |          main
-                         |          |          0xfd2e704
-                         |          |          0xfd2e8c0
-                         |          |          (nil)
-
-... etc.
-
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- arch/powerpc/include/asm/asm-compat.h |    2 ++
- arch/powerpc/kernel/misc.S            |   28 ++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
-
-diff --git a/arch/powerpc/include/asm/asm-compat.h b/arch/powerpc/include/asm/asm-compat.h
-index c1b475a..a9b91ed 100644
---- a/arch/powerpc/include/asm/asm-compat.h
-+++ b/arch/powerpc/include/asm/asm-compat.h
-@@ -28,6 +28,7 @@
- #define PPC_LLARX(t, a, b, eh)	PPC_LDARX(t, a, b, eh)
- #define PPC_STLCX	stringify_in_c(stdcx.)
- #define PPC_CNTLZL	stringify_in_c(cntlzd)
-+#define PPC_LR_STKOFF	16
+> On Thu, 18 Mar 2010 09:45:19 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Thu, 18 Mar 2010 08:54:11 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > On Wed, 17 Mar 2010 17:28:55 +0530
+> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > > > 
+> > > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > > 
+> > > > > Now, file-mapped is maintaiend. But more generic update function
+> > > > > will be needed for dirty page accounting.
+> > > > > 
+> > > > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > > > will be never called under tree_lock held.
+> > > > > To guarantee that, we use trylock at updating status.
+> > > > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > > > >
+> > > > 
+> > > > I don't like this at all, but in almost all cases is not acceptable
+> > > > for statistics, since decisions will be made on them and having them
+> > > > incorrect is really bad. Could we do a form of deferred statistics and
+> > > > fix this.
+> > > > 
+> > > 
+> > > plz show your implementation which has no performance regresssion.
+> > > For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> > > we can add simple migration lock.
+> > > file_mapped is a feattue you added. please improve it.
+> > > 
+> > 
+> > BTW, I should explain how acculate this accounting is in this patch itself.
+> > 
+> > Now, lock_page_cgroup/unlock_page_cgroup happens when
+> > 	- charge/uncharge/migrate/move accounting
+> > 
+> > Then, the lock contention (trylock failure) seems to occur in conflict
+> > with
+> > 	- charge, uncharge, migarate. move accounting
+> > 
+> > About dirty accounting, charge/uncharge/migarate are operation in synchronous
+> > manner with radix-tree (holding treelock etc). Then no account leak.
+> > move accounting is only source for inacculacy...but I don't think this move-task
+> > is ciritial....moreover, we don't move any file pages at task-move, now.
+> > (But Nishimura-san has a plan to do so.)
+> > So, contention will happen only at confliction with force_empty.
+> > 
+> > About FILE_MAPPED accounting, it's not synchronous with radix-tree operaton.
+> > Then, accounting-miss seems to happen when charge/uncharge/migrate/account move.
+> > But
+> > 	charge .... we don't account a page as FILE_MAPPED before it's charged.
+> > 	uncharge .. usual operation in turncation is unmap->remove-from-radix-tree.
+> > 		    Then, it's sequential in almost all case. The race exists when...
+> > 		    Assume there are 2 threads A and B. A truncate a file, B map/unmap that.
+> > 		    This is very unusal confliction.
+> > 	migrate.... we do try_to_unmap before migrating pages. Then, FILE_MAPPED
+> > 		    is properly handled.
+> > 	move account .... we don't have move-account-mapped-file, yet.
+> > 
+> FILE_MAPPED is updated under pte lock. OTOH, move account is also done under
+> pte lock. page cgroup lock is held under pte lock in both cases, so move account
+> is not so problem as for FILE_MAPPED.
+>
+True
  
- /* Move to CR, single-entry optimized version. Only available
-  * on POWER4 and later.
-@@ -51,6 +52,7 @@
- #define PPC_STLCX	stringify_in_c(stwcx.)
- #define PPC_CNTLZL	stringify_in_c(cntlzw)
- #define PPC_MTOCRF	stringify_in_c(mtcrf)
-+#define PPC_LR_STKOFF	4
- 
- #endif
- 
-diff --git a/arch/powerpc/kernel/misc.S b/arch/powerpc/kernel/misc.S
-index 2d29752..b485a87 100644
---- a/arch/powerpc/kernel/misc.S
-+++ b/arch/powerpc/kernel/misc.S
-@@ -127,3 +127,31 @@ _GLOBAL(__setup_cpu_power7)
- _GLOBAL(__restore_cpu_power7)
- 	/* place holder */
- 	blr
-+
-+#ifdef CONFIG_EVENT_TRACING
-+/*
-+ * Get a minimal set of registers for our caller's nth caller.
-+ * r3 = regs pointer, r5 = n.
-+ *
-+ * We only get R1 (stack pointer), NIP (next instruction pointer)
-+ * and LR (link register).  These are all we can get in the
-+ * general case without doing complicated stack unwinding, but
-+ * fortunately they are enough to do a stack backtrace, which
-+ * is all we need them for.
-+ */
-+_GLOBAL(perf_arch_fetch_caller_regs)
-+	mr	r6,r1
-+	cmpwi	r5,0
-+	mflr	r4
-+	ble	2f
-+	mtctr	r5
-+1:	PPC_LL	r6,0(r6)
-+	bdnz	1b
-+	PPC_LL	r4,PPC_LR_STKOFF(r6)
-+2:	PPC_LL	r7,0(r6)
-+	PPC_LL	r7,PPC_LR_STKOFF(r7)
-+	PPC_STL	r6,GPR1-STACK_FRAME_OVERHEAD(r3)
-+	PPC_STL	r4,_NIP-STACK_FRAME_OVERHEAD(r3)
-+	PPC_STL	r7,_LINK-STACK_FRAME_OVERHEAD(r3)
-+	blr
-+#endif /* CONFIG_EVENT_TRACING */
+> 
+> > Then, this trylock contention happens at contention with force_empty and truncate.
+> > 
+> > 
+> > Then, main issue for contention is force_empty. But it's called for removing memcg,
+> > accounting for such memcg is not important.
+> > Then, I say "this accounting is Okay."
+> > 
+> > To do more accurate, we may need another "migration lock". But to get better
+> > performance for root cgroup, we have to call mem_cgroup_is_root() before
+> > taking lock and there will be another complicated race.
+
+Agreed, we need to find a simpler way of doing this without affecting
+the accuracy of accounting - may be two accounting routines for two
+code paths. I have not thought through this yet.
+
+-- 
+	Three Cheers,
+	Balbir
