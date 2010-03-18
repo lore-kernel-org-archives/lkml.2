@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab0CRQvU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 12:51:20 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:57320 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab0CRQvS (ORCPT
+	id S1752383Ab0CRQvZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 12:51:25 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:60600 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab0CRQvW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 12:51:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=SY+eySKZGyvhyL492lAC9bR7tMvMWVBOWbkwzYYzTr4nf00eZu3M37Up1/k1+7Av6c
-         CpCMqelMXOe6BgsBYcJPdWGDny9hpeVmE2TBbu9gKUmjL0aaXdvOW6+5yt9qcykvkAii
-         is6G5l93TQzVNPx8F1eZaQJGhAfXo0mEBxrzY=
+	Thu, 18 Mar 2010 12:51:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <4BA256FE.5080501@codemonkey.ws>
-References: <20100318085607.GB2157@elte.hu> <4BA20EB8.60707@redhat.com>
-	 <20100318114821.GB13168@elte.hu> <4BA21B09.6060706@redhat.com>
-	 <20100318130047.GA7424@elte.hu> <4BA23FE1.5050402@codemonkey.ws>
-	 <20100318151737.GA2875@elte.hu> <4BA250BF.80704@codemonkey.ws>
-	 <20100318162853.GB447@elte.hu> <4BA256FE.5080501@codemonkey.ws>
-Date: Thu, 18 Mar 2010 18:51:16 +0200
-X-Google-Sender-Auth: f8364888b5df8982
-Message-ID: <84144f021003180951s5207de16p1cdf4b9b04040222@mail.gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
-	project
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>
+In-Reply-To: <20100318154747.GA7767@oksana.dev.rtsoft.ru>
+References: <20100318144836.21082.93040.stgit@angua> <20100318152250.21082.35352.stgit@angua> 
+	<20100318154747.GA7767@oksana.dev.rtsoft.ru>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 18 Mar 2010 10:22:14 -0600
+X-Google-Sender-Auth: d7fccbacfb17b60e
+Message-ID: <fa686aa41003180922g3e867bedo337568c3ca6f2097@mail.gmail.com>
+Subject: Re: [V2 PATCH 08/10] arch/powerpc: Remove obsolete 
+	dev_archdata.of_node and of_devce.node
+To: avorontsov@ru.mvista.com
+Cc: davem@davemloft.net, benh@kernel.crashing.org,
+       linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
+       linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       microblaze-uclinux@itee.uq.edu.au
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 6:38 PM, Anthony Liguori <anthony@codemonkey.ws> wrote:
->>>> There are all kernel space projects, going through Xorg would be a
->>>> horrible waste of performance for full-screen virtualization. It's fine
->>>> for the windowed or networked case (and good as a compatibility
->>>> fallback), but very much not fine for local desktop use.
->>
->> For the full-screen case (which is a very common mode of using a guest OS
->> on the desktop) there's not much of window management needed. You need to
->> save/restore as you switch in/out.
+On Thu, Mar 18, 2010 at 9:47 AM, Anton Vorontsov
+<avorontsov@ru.mvista.com> wrote:
+> Hi Grant,
 >
-> I don't think I've ever used full-screen mode with my VMs and I use
-> virtualization on a daily basis.
+> On Thu, Mar 18, 2010 at 09:22:50AM -0600, Grant Likely wrote:
+>> Both dev_archdata.of_node and of_device.node are duplications of the
+>> device.of_node value.  This patch removes them.
 >
-> We hear very infrequently from users using full screen mode.
+> Yeah, they're plain duplications since you introduced dev.of_node.
+> I wonder what was the problem with using dev.archdata.of_node?
+> Why dev.of_node is better?
 
-Sorry for getting slightly off-topic but I find the above statement interesting.
+CONFIG_OF support is not going to be an arch-specific thing any
+longer.  The code is being generalized, and I'm removing as many
+things as possible that arch code needs to add to enable CONFIG_OF.
+That includes the dev_archdata element.
 
-I don't use virtualization on daily basis but a working, fully
-integrated full-screen model with VirtualBox was the only reason I
-bothered to give VMs a second chance. From my point of view, the user
-experience of earlier versions (e.g. Parallels) was just too painful
-to live with.
+The impact of moving of_node from dev_archdata to device is pretty
+small anyway.  Most current users are getting the device node from
+of_device.node instead of archdata.  The number of dev_archdata users
+is comparatively small.
 
-/me crawls back to his hole now...
+> Also, by using dev.of_node directly you have to introduce ugly
+> #ifdefs in the non-OF code (as in i2c patch), which you don't
+> need with transparent archdata and accessors, which you've just
+> removed:
 
-                        Pekka
+The #ifdefs are only needed in the i2c code because the i2c API
+doesn't currently support separate allocation and registration of i2c
+devices.  With separate allocation and registration, the of_i2c code
+could set the device node pointer directly without touching the common
+i2c code at all (like how of_register_spi_devices handles it).  I do
+plan to write a patch to do this, but that is a task for another patch
+series.
+
+g.
