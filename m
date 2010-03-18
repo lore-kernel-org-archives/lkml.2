@@ -1,116 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753619Ab0CRNsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:48:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57771 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753474Ab0CRNsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:48:22 -0400
-Date: Thu, 18 Mar 2010 14:48:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Alexander Graf <agraf@suse.de>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100318134813.GB25642@elte.hu>
-References: <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <F0F75B33-C0BA-42EB-BFC4-D60B1E232E6D@suse.de>
- <20100318101025.GA13073@elte.hu>
- <4BA1FEB0.7000400@redhat.com>
- <20100318113527.GA13168@elte.hu>
- <y0m4okdzu4z.fsf@fche.csb>
- <20100318130226.GB7424@elte.hu>
- <20100318132421.GA23126@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100318132421.GA23126@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1753654Ab0CRNs5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:48:57 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:39673 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab0CRNsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 09:48:55 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 1/3] Add tracing_off_event() to stop tracing when a bug or warning occur
+Date: Thu, 18 Mar 2010 09:48:50 -0400
+Message-Id: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The tracing_off_event() function calls tracing_off() to stop tracing
+when an event occurs. By default, only BUG-type events stop tracing,
+while WARNING type events do not. This is controlled through the
+tracing_off={none,warn,bug} commandline parameter.
 
-* Frank Ch. Eigler <fche@redhat.com> wrote:
+Call this function from bug and warning event handlers to enable a user
+to debug their kernel by starting a trace, hitting an event, and then
+retrieving trace info knowing that the trace was stopped right after the
+event was hit.
 
-> Hi -
-> 
-> > > > [...]
-> > > > Distributions are very eager to update kernels even in stable periods of the 
-> > > > distro lifetime - they are much less willing to update user-space packages.
-> > > > [...]
-> > > 
-> > > Sorry, er, what?  What distributions eagerly upgrade kernels in stable 
-> > > periods, were it not primarily motivated by security fixes? [...]
-> > 
-> > Please check the popular distro called 'Fedora' for example
-> 
-> I do believe I've heard of it.  According to fedora bodhi, there have
-> been 18 kernel updates issues for fedora 11 since its release, of
-> which 12 were for purely security updates, and most of the other six
-> also contain security fixes.  None are described as 'enhancement'
-> updates.  Oh, what about fedora 12?  8 updates total, of which 5 are
-> security only, one for drm showstoppers, others including security
-> fixes, again 0 tagged as 'enhancement'.
-> 
-> So where is that "eagerness" again??  My sense is that most users are
-> happy to leave a stable kernel running as long as possible, and
-> distributions know this.  You surely must understand that the lkml
-> demographics are different.
-> 
-> > and its kernel upgrade policies.
-> 
-> [citation needed]
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ include/linux/kernel.h     |    5 +++++
+ kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 39 insertions(+), 0 deletions(-)
 
-You are quite wrong, despite the sarcastic tone you are attempting to use, and 
-this is distro kernel policy 101.
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 7f07074..107091f 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -478,16 +478,21 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+  *
+  * Most likely, you want to use tracing_on/tracing_off.
+  */
++#define TRACE_EVENT_BUG 0
++#define TRACE_EVENT_WARN 1
++
+ #ifdef CONFIG_RING_BUFFER
+ void tracing_on(void);
+ void tracing_off(void);
+ /* trace_off_permanent stops recording with no way to bring it back */
+ void tracing_off_permanent(void);
++void tracing_off_event(long event);
+ int tracing_is_on(void);
+ #else
+ static inline void tracing_on(void) { }
+ static inline void tracing_off(void) { }
+ static inline void tracing_off_permanent(void) { }
++static inline void tracing_off_event(long event) { }
+ static inline int tracing_is_on(void) { return 0; }
+ #endif
+ #ifdef CONFIG_TRACING
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 0287f9f..b148862 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -193,6 +193,40 @@ void tracing_off_permanent(void)
+ 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
+ }
+ 
++static long tracing_event_mask = TRACE_EVENT_BUG;
++
++/**
++ * tracing_off_event - turn off tracing depending on event type
++ *
++ * This function checks the event type to determine whether tracing should be
++ * disabled. Useful for disabling tracing on bugs or warnings.
++ */
++void tracing_off_event(long event)
++{
++	if (event <= tracing_event_mask)
++		tracing_off();
++}
++EXPORT_SYMBOL_GPL(tracing_off_event);
++
++static int __init tracing_off_event_setup(char *str)
++{
++	if (!strcmp("none", str))
++		tracing_event_mask = -1;
++	else if (!strcmp("bug", str))
++		tracing_event_mask = TRACE_EVENT_BUG;
++	else if (!strcmp("warn", str))
++		tracing_event_mask = TRACE_EVENT_WARN;
++	else
++	{
++		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
++		return 1;
++	}
++
++	return 0;
++}
++
++__setup("tracing_off=", tracing_off_event_setup);
++
+ /**
+  * tracing_is_on - show state of ring buffers enabled
+  */
+-- 
+1.6.3.3
 
-For distros such as Fedora it's simpler to support the same kernel version 
-across many older versions of the distro than having to support different 
-kernel versions.
-
-Check Fedora 12 for example. Four months ago it was released with kernel 
-v2.6.31:
-
- http://download.fedora.redhat.com/pub/fedora/linux/releases/12/Fedora/x86_64/os/Packages/kernel-2.6.31.5-127.fc12.x86_64.rpm
-
-But if you update a Fedora 12 installation today you'll get kernel v2.6.32:
-
- http://download.fedora.redhat.com/pub/fedora/linux/updates/12/SRPMS/kernel-2.6.32.9-70.fc12.src.rpm
-
-As a result you'll get a new 2.6.32 kernel on Fedora 12.
-
-The end result is what i said in the previous mail: that you'll get a newer 
-kernel even on a stable distro - while user-space packages will only be 
-updated if there's a security issue (and even then there's no version jump 
-like for the kernel).
-
-> > > [...] What users eagerly replace their kernels?
-> >
-> > Those 99% who click on the 'install 193 updates' popup.
-> 
-> That's not "eager".  That's "I'm exasperated from guessing what's really 
-> important; let's not have so many updates; meh".
-
-Erm, fact is, 99% [WAG] of the users click on the update button and accept 
-whatever kernel version the distro update offers them.
-
-	Ingo
