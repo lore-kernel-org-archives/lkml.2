@@ -1,74 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0CRLO4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 07:14:56 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58043 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752351Ab0CRLOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 07:14:55 -0400
-Date: Thu, 18 Mar 2010 11:14:36 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1752787Ab0CRLRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 07:17:15 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37955 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752548Ab0CRLRN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 07:17:13 -0400
+Date: Thu, 18 Mar 2010 12:17:24 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
-	anonymous pages
-Message-ID: <20100318111436.GK12388@csn.ul.ie>
-References: <20100317104734.4C8E.A69D9226@jp.fujitsu.com> <20100317115133.GG12388@csn.ul.ie> <20100318094720.872F.A69D9226@jp.fujitsu.com>
+       Wu Fengguang <fengguang.wu@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, Jamie Lokier <jamie@shareable.org>,
+       Roland Dreier <rdreier@cisco.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>
+Subject: Re: [PATCH] x86: Add optimized popcnt variants
+Message-ID: <20100318111724.GA11152@aftab>
+References: <20100223155852.GF30382@aftab>
+ <4B84118C.90203@zytor.com>
+ <20100223175457.GA2401@aftab>
+ <4B841BC3.1000908@zytor.com>
+ <20100223190614.GB2401@aftab>
+ <4B875BBD.4060104@zytor.com>
+ <20100226074714.GA15310@aftab>
+ <4B88097E.7010608@zytor.com>
+ <20100227082807.GA21706@aftab>
+ <4B8979DA.9000201@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100318094720.872F.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4B8979DA.9000201@zytor.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 09:48:08AM +0900, KOSAKI Motohiro wrote:
-> > > > +		/*
-> > > > +		 * If the page has no mappings any more, just bail. An
-> > > > +		 * unmapped anon page is likely to be freed soon but worse,
-> > > > +		 * it's possible its anon_vma disappeared between when
-> > > > +		 * the page was isolated and when we reached here while
-> > > > +		 * the RCU lock was not held
-> > > > +		 */
-> > > > +		if (!page_mapcount(page)) {
-> > > > +			rcu_read_unlock();
-> > > > +			goto uncharge;
-> > > > +		}
-> > > 
-> > > I haven't understand what prevent this check. Why don't we need following scenario?
-> > > 
-> > >  1. Page isolated for migration
-> > >  2. Passed this if (!page_mapcount(page)) check
-> > >  3. Process exits
-> > >  4. page_mapcount(page) drops to zero so anon_vma was no longer reliable
-> > > 
-> > > Traditionally, page migration logic is, it can touch garbarge of anon_vma, but
-> > > SLAB_DESTROY_BY_RCU prevent any disaster. Is this broken concept?
-> > 
-> > The check is made within the RCU read lock. If the count is positive at
-> > that point but goes to zero due to a process exiting, the anon_vma will
-> > still be valid until rcu_read_unlock() is called.
-> 
-> Thank you!
-> 
-> then, this logic depend on SLAB_DESTROY_BY_RCU, not refcount.
-> So, I think we don't need your [1/11] patch.
-> 
-> Am I missing something?
-> 
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sat, Feb 27, 2010 at 12:00:26PM -0800
 
-The refcount is still needed. The anon_vma might be valid, but the
-refcount is what ensures that the anon_vma is not freed and reused.
+> On 02/27/2010 12:28 AM, Borislav Petkov wrote:
+> > 
+> >> I guess, on the other hand, if it ends up not getting merged until .35
+> >> it's not a huge deal either.
+> > 
+> > Yeah, let's give it another round of testing and queue it for .35 -
+> > AFAIR Ingo runs also a wide testing effort so it spending another cycle
+> > in -tip and being hammered on by us could give us a bit more certainty.
+> > 
+> 
+> Yes, if we can get into -tip then we'll get more test coverage, so I'll
+> queue it up for .35 as soon as the merge window closes.  Please remind
+> me if I forget.
+
+Ok, I've been pretty busy lately and this got pushed back on the todo
+list. I finally got around to do some build-testing with a bunch of
+compilers and -fcall-saved* seem to get accepted. I haven't stared at
+their asm output though, yet:
+
+
+command:
+make CC=gcc-<version> HOSTCC=gcc-<version> -j4
+
+compile stats (64bit only):
+
+not ok:
+- gcc-3.3 (GCC) 3.3.5 (Debian 1:3.3.5-13):	OOM KILLER goes off, gcc-3.3 leak maybe
+
+ok:
+- gcc-3.4 (GCC) 3.4.4 20050314 (prerelease) (Debian 3.4.3-13sarge1)
+- gcc-4.1 (GCC) 4.1.3 20080704 (prerelease) (Debian 4.1.2-27)
+- gcc-4.3 (Debian 4.3.4-6) 4.3.4
+- gcc (Debian 4.4.2-6) 4.4.2
+- gcc (Debian 4.4.3-3) 4.4.3
+
+- gcc-3.4.6 (GCC) 3.4.6 (Gentoo 3.4.6-r2 p1.6, ssp-3.4.6-1.0, pie-8.7.10)
+- gcc-4.1.2 (GCC) 4.1.2 (Gentoo 4.1.2 p1.3)
+
+I'm attaching the versions of the patches I'm using. The first one by
+PeterZ touches a bunch of arches and Andrew hasn't picked it up yet so
+the question of getting the second (popcnt) patch to see wider testing
+in some tree is still unresolved. Suggestions, ideas?
+
+Thanks.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards/Gruss,
+Boris.
+
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
