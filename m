@@ -1,134 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab0CRO4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:56:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43325 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab0CRO4K (ORCPT
+	id S1754503Ab0CRO4p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:56:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54571 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab0CRO4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:56:10 -0400
-X-Authority-Analysis: v=1.0 c=1 a=G6bLc_XE8-QA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=DfNHnWVPAAAA:8 a=KvQ-PcgEvlxiAkEmKs8A:9 a=hm8tTJV6AYhx8GEMS7oA:7 a=Dn5HlCH4vPRefSmwNzfq776J8oEA:4 a=PUjeQqilurYA:10 a=lBRciGGoxdUA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 1/3] Add tracing_off_event() to stop tracing when a bug
- or warning occur
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
-References: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 18 Mar 2010 10:56:07 -0400
-Message-ID: <1268924167.32426.90.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 10:56:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type;
+        b=LlTV/hPg76IB7CFYKoaZq+sm60Uf5cESyHC+JS8hzRoP+XUnu7PiNjrAxJpPlUd+x5
+         iAzk2Hhvc7lxcQW+I3AUru0kfSoiypFhVnJpGdEj2SXbXWQeUZ8nOVbORtLA0NSIDsSf
+         HLQFSeZg2VyW1M9214ZzvQfBKavtram0cvy3U=
+Message-ID: <4BA23EFA.9040906@gmail.com>
+Date: Thu, 18 Mar 2010 15:55:54 +0100
+From: Daniel Borkmann <danborkmann@googlemail.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+MIME-Version: 1.0
+To: Matt Mackall <mpm@selenic.com>
+CC: Jiri Slaby <jirislaby@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+       davem@davemloft.net, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Daniel Borkmann <danborkmann@googlemail.com>
+Subject: Re: [PATCH 1/1] NET: netpoll, fix potential NULL ptr dereference
+References: <1268753394-17765-1-git-send-email-jslaby@suse.cz>	 <1268759527.25503.2980.camel@calx>  <4B9FBE49.6010709@gmail.com> <1268762160.25503.2988.camel@calx>
+In-Reply-To: <1268762160.25503.2988.camel@calx>
+X-Enigmail-Version: 0.96.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig500077E58B4802F6C66DE774"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Expanded the Cc list ]
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig500077E58B4802F6C66DE774
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2010-03-18 at 09:48 -0400, Chase Douglas wrote:
-> The tracing_off_event() function calls tracing_off() to stop tracing
-> when an event occurs. By default, only BUG-type events stop tracing,
-> while WARNING type events do not. This is controlled through the
-> tracing_off={none,warn,bug} commandline parameter.
-> 
-> Call this function from bug and warning event handlers to enable a user
-> to debug their kernel by starting a trace, hitting an event, and then
-> retrieving trace info knowing that the trace was stopped right after the
-> event was hit.
-> 
-> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
-> ---
->  include/linux/kernel.h     |    5 +++++
->  kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
->  2 files changed, 39 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-> index 7f07074..107091f 100644
-> --- a/include/linux/kernel.h
-> +++ b/include/linux/kernel.h
-> @@ -478,16 +478,21 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
->   *
->   * Most likely, you want to use tracing_on/tracing_off.
->   */
-> +#define TRACE_EVENT_BUG 0
-> +#define TRACE_EVENT_WARN 1
+Matt Mackall wrote:
+> On Tue, 2010-03-16 at 18:22 +0100, Jiri Slaby wrote:
+>> On 03/16/2010 06:12 PM, Matt Mackall wrote:
+>>> I don't get it. The source of the branch tests for !ndev->npinfo and =
+the
+>>> original destination of the branch also tests for !ndev->npinfo. I do=
+n't
+>>> see how it gets dereferenced.
+>> Let's look at more of the context:
+>>          if (!ndev->npinfo) {
+>>                  npinfo =3D kmalloc(sizeof(*npinfo), GFP_KERNEL);
+>>                  if (!npinfo) {         // npinfo is NULL
+>>                          err =3D -ENOMEM;
+>>                          goto release;
+>>                  }
+>> ...
+>> release:                           // npinfo is still NULL
+>>          if (!ndev->npinfo) {       // condition is the same (holds)
+>>               // dereference below: vvvvvvvvvvvvvvv
+>>                  spin_lock_irqsave(&npinfo->rx_lock, flags);
+>>                  list_for_each_entry_safe(npe, tmp, &npinfo->rx_np, rx=
+) {
+>>                          npe->dev =3D NULL;
+>>                  }
+>>                  spin_unlock_irqrestore(&npinfo->rx_lock, flags);
+>>
+>>                  kfree(npinfo);
+>>          }
+>=20
+> Ok, you're correct, I read the second test backwards.
+>=20
+> Acked-by: Matt Mackall <mpm@selenic.com>
+>=20
 
-This should probably be an enum.
+Thanks for fixing this and sorry for not being responsive, obviously it
+sucks when you have a broken leg and German hospitals do not really have
+Internet access ... ;)
 
-> +
->  #ifdef CONFIG_RING_BUFFER
->  void tracing_on(void);
->  void tracing_off(void);
->  /* trace_off_permanent stops recording with no way to bring it back */
->  void tracing_off_permanent(void);
-> +void tracing_off_event(long event);
->  int tracing_is_on(void);
->  #else
->  static inline void tracing_on(void) { }
->  static inline void tracing_off(void) { }
->  static inline void tracing_off_permanent(void) { }
-> +static inline void tracing_off_event(long event) { }
->  static inline int tracing_is_on(void) { return 0; }
->  #endif
->  #ifdef CONFIG_TRACING
-> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index 0287f9f..b148862 100644
-> --- a/kernel/trace/ring_buffer.c
-> +++ b/kernel/trace/ring_buffer.c
-> @@ -193,6 +193,40 @@ void tracing_off_permanent(void)
->  	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
->  }
->  
-> +static long tracing_event_mask = TRACE_EVENT_BUG;
-
-That's a bad name. It does not seem to be a mask but seems to be a
-control setting. Maybe call it tracing_event_off_ctrl ?
-
--- Steve
+Thanks,
+Daniel
 
 
-> +
-> +/**
-> + * tracing_off_event - turn off tracing depending on event type
-> + *
-> + * This function checks the event type to determine whether tracing should be
-> + * disabled. Useful for disabling tracing on bugs or warnings.
-> + */
-> +void tracing_off_event(long event)
-> +{
-> +	if (event <= tracing_event_mask)
-> +		tracing_off();
-> +}
-> +EXPORT_SYMBOL_GPL(tracing_off_event);
-> +
-> +static int __init tracing_off_event_setup(char *str)
-> +{
-> +	if (!strcmp("none", str))
-> +		tracing_event_mask = -1;
-> +	else if (!strcmp("bug", str))
-> +		tracing_event_mask = TRACE_EVENT_BUG;
-> +	else if (!strcmp("warn", str))
-> +		tracing_event_mask = TRACE_EVENT_WARN;
-> +	else
-> +	{
-> +		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
-> +		return 1;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +__setup("tracing_off=", tracing_off_event_setup);
-> +
->  /**
->   * tracing_is_on - show state of ring buffers enabled
->   */
+--------------enig500077E58B4802F6C66DE774
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
+iEYEARECAAYFAkuiPvoACgkQ5AxJm1m3CC/wEQCghGWwHVt7NijqebOOWkgg77pS
+3mUAn1sAEJDz5JdOihUe47NSdYLJr23X
+=isQZ
+-----END PGP SIGNATURE-----
+
+--------------enig500077E58B4802F6C66DE774--
