@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0CRR7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 13:59:33 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:36925 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab0CRR7b (ORCPT
+	id S1754016Ab0CRR7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 13:59:39 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:1810 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749Ab0CRR7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 13:59:31 -0400
-Subject: [PATCH v2 1/4] hpet: convert from ACPI to PNP driver
+	Thu, 18 Mar 2010 13:59:37 -0400
+Subject: [PATCH v2 2/4] hpet: pass physical address, not entire hpet_data,
+	to hpet_is_known()
 To: Clemens Ladisch <clemens@ladisch.de>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Venkatesh Pallipadi <venki@google.com>, Vojtech Pavlik <vojtech@suse.cz>,
        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Date: Thu, 18 Mar 2010 11:59:30 -0600
-Message-ID: <20100318175930.15143.28660.stgit@bob.kio>
+Date: Thu, 18 Mar 2010 11:59:35 -0600
+Message-ID: <20100318175935.15143.96345.stgit@bob.kio>
 In-Reply-To: <20100318175852.15143.2124.stgit@bob.kio>
 References: <20100318175852.15143.2124.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -25,195 +26,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-PNPACPI already parses _CRS, and does a more complete job than we did here,
-so let's just take advantage of that.
+No functional change; hpet_is_known() only needs the physical address,
+so supplying that instead of the whole struct hpet_data makes the callers
+a little simpler.
 
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Acked-by: Clemens Ladisch <clemens@ladisch.de>
 ---
 
- drivers/char/hpet.c |  109 +++++++++++++++------------------------------------
- 1 files changed, 33 insertions(+), 76 deletions(-)
+ drivers/char/hpet.c |   14 +++++---------
+ 1 files changed, 5 insertions(+), 9 deletions(-)
 
 
 diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index e481c59..5cb05ed 100644
+index 5cb05ed..d132fef 100644
 --- a/drivers/char/hpet.c
 +++ b/drivers/char/hpet.c
-@@ -31,6 +31,7 @@
- #include <linux/seq_file.h>
- #include <linux/bitops.h>
- #include <linux/clocksource.h>
-+#include <linux/pnp.h>
+@@ -662,12 +662,12 @@ static const struct file_operations hpet_fops = {
+ 	.mmap = hpet_mmap,
+ };
  
- #include <asm/current.h>
- #include <asm/uaccess.h>
-@@ -40,7 +41,6 @@
- #include <asm/div64.h>
- 
- #include <linux/acpi.h>
--#include <acpi/acpi_bus.h>
- #include <linux/hpet.h>
- 
- /*
-@@ -899,101 +899,56 @@ int hpet_alloc(struct hpet_data *hdp)
- 	return 0;
- }
- 
--static acpi_status hpet_resources(struct acpi_resource *res, void *data)
-+#ifdef CONFIG_PNP
-+static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+-static int hpet_is_known(struct hpet_data *hdp)
++static int hpet_is_known(unsigned long phys_address)
  {
--	struct hpet_data *hdp;
--	acpi_status status;
--	struct acpi_resource_address64 addr;
--
--	hdp = data;
--
--	status = acpi_resource_to_address64(res, &addr);
--
--	if (ACPI_SUCCESS(status)) {
--		hdp->hd_phys_address = addr.minimum;
--		hdp->hd_address = ioremap(addr.minimum, addr.address_length);
--
--		if (hpet_is_known(hdp)) {
--			iounmap(hdp->hd_address);
--			return AE_ALREADY_EXISTS;
--		}
--	} else if (res->type == ACPI_RESOURCE_TYPE_FIXED_MEMORY32) {
--		struct acpi_resource_fixed_memory32 *fixmem32;
--
--		fixmem32 = &res->data.fixed_memory32;
--		if (!fixmem32)
--			return AE_NO_MEMORY;
--
--		hdp->hd_phys_address = fixmem32->address;
--		hdp->hd_address = ioremap(fixmem32->address,
--						HPET_RANGE_SIZE);
--
--		if (hpet_is_known(hdp)) {
--			iounmap(hdp->hd_address);
--			return AE_ALREADY_EXISTS;
--		}
--	} else if (res->type == ACPI_RESOURCE_TYPE_EXTENDED_IRQ) {
--		struct acpi_resource_extended_irq *irqp;
--		int i, irq;
--
--		irqp = &res->data.extended_irq;
--
--		for (i = 0; i < irqp->interrupt_count; i++) {
--			irq = acpi_register_gsi(NULL, irqp->interrupts[i],
--				      irqp->triggering, irqp->polarity);
--			if (irq < 0)
--				return AE_ERROR;
--
--			hdp->hd_irq[hdp->hd_nirqs] = irq;
--			hdp->hd_nirqs++;
--		}
--	}
--
--	return AE_OK;
--}
--
--static int hpet_acpi_add(struct acpi_device *device)
--{
--	acpi_status result;
- 	struct hpet_data data;
-+	struct resource *mem, *irq;
-+	int i;
+ 	struct hpets *hpetp;
  
+ 	for (hpetp = hpets; hpetp; hpetp = hpetp->hp_next)
+-		if (hpetp->hp_hpet_phys == hdp->hd_phys_address)
++		if (hpetp->hp_hpet_phys == phys_address)
+ 			return 1;
+ 
+ 	return 0;
+@@ -788,7 +788,7 @@ int hpet_alloc(struct hpet_data *hdp)
+ 	 * If platform dependent code has allocated the hpet that
+ 	 * ACPI has also reported, then we catch it here.
+ 	 */
+-	if (hpet_is_known(hdp)) {
++	if (hpet_is_known(hdp->hd_phys_address)) {
+ 		printk(KERN_DEBUG "%s: duplicate HPET ignored\n",
+ 			__func__);
+ 		return 0;
+@@ -909,12 +909,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
  	memset(&data, 0, sizeof(data));
  
--	result =
--	    acpi_walk_resources(device->handle, METHOD_NAME__CRS,
--				hpet_resources, &data);
+ 	mem = pnp_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!mem)
+-		return -ENODEV;
 -
--	if (ACPI_FAILURE(result))
-+	mem = pnp_get_resource(dev, IORESOURCE_MEM, 0);
-+	if (!mem)
+-	data.hd_phys_address = mem->start;
+-
+-	if (hpet_is_known(&data))
++	if (!mem || hpet_is_known(mem->start))
  		return -ENODEV;
  
--	if (!data.hd_address || !data.hd_nirqs) {
--		printk("%s: no address or irqs in _CRS\n", __func__);
-+	data.hd_phys_address = mem->start;
-+
-+	if (hpet_is_known(&data))
+ 	i = 0;
+@@ -926,6 +921,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+ 	if (!data.hd_nirqs)
  		return -ENODEV;
-+
-+	i = 0;
-+	while (data.hd_nirqs < ARRAY_SIZE(data.hd_irq)) {
-+		irq = pnp_get_resource(dev, IORESOURCE_IRQ, i++);
-+		if (pnp_resource_valid(irq) && pnp_resource_enabled(irq))
-+			data.hd_irq[data.hd_nirqs++] = irq->start;
- 	}
-+	if (!data.hd_nirqs)
-+		return -ENODEV;
-+
-+	data.hd_address = ioremap(mem->start, resource_size(mem));
+ 
++	data.hd_phys_address = mem->start;
+ 	data.hd_address = ioremap(mem->start, resource_size(mem));
  
  	return hpet_alloc(&data);
- }
- 
--static int hpet_acpi_remove(struct acpi_device *device, int type)
-+static void hpet_pnp_remove(struct pnp_dev *dev)
- {
- 	/* XXX need to unregister clocksource, dealloc mem, etc */
--	return -EINVAL;
- }
- 
--static const struct acpi_device_id hpet_device_ids[] = {
-+static const struct pnp_device_id hpet_device_ids[] = {
- 	{"PNP0103", 0},
- 	{"", 0},
- };
- MODULE_DEVICE_TABLE(acpi, hpet_device_ids);
- 
--static struct acpi_driver hpet_acpi_driver = {
-+static struct pnp_driver hpet_pnp_driver = {
- 	.name = "hpet",
--	.ids = hpet_device_ids,
--	.ops = {
--		.add = hpet_acpi_add,
--		.remove = hpet_acpi_remove,
--		},
-+	.id_table = hpet_device_ids,
-+	.probe = hpet_pnp_add,
-+	.remove = hpet_pnp_remove,
- };
-+#endif
- 
- static struct miscdevice hpet_misc = { HPET_MINOR, "hpet", &hpet_fops };
- 
-@@ -1007,26 +962,28 @@ static int __init hpet_init(void)
- 
- 	sysctl_header = register_sysctl_table(dev_root);
- 
--	result = acpi_bus_register_driver(&hpet_acpi_driver);
-+#ifdef CONFIG_PNP
-+	result = pnp_register_driver(&hpet_pnp_driver);
- 	if (result < 0) {
- 		if (sysctl_header)
- 			unregister_sysctl_table(sysctl_header);
- 		misc_deregister(&hpet_misc);
- 		return result;
- 	}
-+#endif
- 
- 	return 0;
- }
- 
- static void __exit hpet_exit(void)
- {
--	acpi_bus_unregister_driver(&hpet_acpi_driver);
-+#ifdef CONFIG_PNP
-+	pnp_unregister_driver(&hpet_pnp_driver);
-+#endif
- 
- 	if (sysctl_header)
- 		unregister_sysctl_table(sysctl_header);
- 	misc_deregister(&hpet_misc);
--
--	return;
- }
- 
- module_init(hpet_init);
 
