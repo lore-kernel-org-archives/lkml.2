@@ -1,119 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab0CRFXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 01:23:01 -0400
-Received: from mga05.intel.com ([192.55.52.89]:26127 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752025Ab0CRFWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 01:22:48 -0400
+	id S1752501Ab0CRF2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 01:28:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38626 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751949Ab0CRF2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 01:28:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.51,264,1267430400"; 
-   d="scan'208";a="550048961"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Zachary Amsden <zamsden@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-Date: Thu, 18 Mar 2010 13:22:28 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>,
+   d="scan'208";a="501567289"
+From: "Huang, Zhiteng" <zhiteng.huang@intel.com>
+To: Avi Kivity <avi@redhat.com>, "Frank Ch. Eigler" <fche@redhat.com>
+CC: Anthony Liguori <aliguori@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
        Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
        Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
-       Joerg Roedel <joerg.roedel@amd.com>
-References: <1268717232.2813.36.camel@localhost> <201003180919.01090.sheng@linux.intel.com> <4BA1B132.5030509@redhat.com>
-In-Reply-To: <4BA1B132.5030509@redhat.com>
+       Zachary Amsden <zamsden@redhat.com>
+Date: Thu, 18 Mar 2010 13:27:40 +0800
+Subject: RE: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Thread-Topic: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+Thread-Index: AcrFhb8B9VmStT8jThWVCcWcUWUj7AA0j0PA
+Message-ID: <CE761E84DADF2947A4AF22FB8D97A4731C7B48FF@shsmsx501.ccr.corp.intel.com>
+References: <20100316130840.GA24808@elte.hu> <4B9F84C0.70706@redhat.com>
+ <20100316133114.GB575@elte.hu> <y0mbpeo1f1y.fsf@fche.csb>
+ <20100316155221.GA19699@elte.hu> <4B9FC11A.1070507@linux.vnet.ibm.com>
+ <20100316175243.GC23859@elte.hu> <4B9FC8B2.6070404@linux.vnet.ibm.com>
+ <20100316182809.GA26602@elte.hu> <4BA00E6A.7080903@linux.vnet.ibm.com>
+ <20100317004136.GC17472@redhat.com> <4BA05285.3070903@redhat.com>
+In-Reply-To: <4BA05285.3070903@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003181322.28594.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o2I5SKmE014539
 
-On Thursday 18 March 2010 12:50:58 Zachary Amsden wrote:
-> On 03/17/2010 03:19 PM, Sheng Yang wrote:
-> > On Thursday 18 March 2010 05:14:52 Zachary Amsden wrote:
-> >> On 03/16/2010 11:28 PM, Sheng Yang wrote:
-> >>> On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
-> >>>> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
-> >>>>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
-> >>>>>> Right, but there is a scope between kvm_guest_enter and really
-> >>>>>> running in guest os, where a perf event might overflow. Anyway, the
-> >>>>>> scope is very narrow, I will change it to use flag PF_VCPU.
-> >>>>>
-> >>>>> There is also a window between setting the flag and calling 'int $2'
-> >>>>> where an NMI might happen and be accounted incorrectly.
-> >>>>>
-> >>>>> Perhaps separate the 'int $2' into a direct call into perf and
-> >>>>> another call for the rest of NMI handling.  I don't see how it would
-> >>>>> work on svm though - AFAICT the NMI is held whereas vmx swallows it.
-> >>>>>
-> >>>>>    I guess NMIs
-> >>>>> will be disabled until the next IRET so it isn't racy, just tricky.
-> >>>>
-> >>>> I'm not sure if vmexit does break NMI context or not. Hardware NMI
-> >>>> context isn't reentrant till a IRET. YangSheng would like to double
-> >>>> check it.
-> >>>
-> >>> After more check, I think VMX won't remained NMI block state for host.
-> >>> That's means, if NMI happened and processor is in VMX non-root mode, it
-> >>> would only result in VMExit, with a reason indicate that it's due to
-> >>> NMI happened, but no more state change in the host.
-> >>>
-> >>> So in that meaning, there _is_ a window between VMExit and KVM handle
-> >>> the NMI. Moreover, I think we _can't_ stop the re-entrance of NMI
-> >>> handling code because "int $2" don't have effect to block following
-> >>> NMI.
-> >>>
-> >>> And if the NMI sequence is not important(I think so), then we need to
-> >>> generate a real NMI in current vmexit-after code. Seems let APIC send a
-> >>> NMI IPI to itself is a good idea.
-> >>>
-> >>> I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
-> >>> replace "int $2". Something unexpected is happening...
-> >>
-> >> You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't
-> >> supposed to be able to.
-> >
-> > Um? Why?
-> >
-> > Especially kernel is already using it to deliver NMI.
-> 
-> That's the only defined case, and it is defined because the vector field
-> is ignore for DM_NMI.  Vol 3A (exact section numbers may vary depending
-> on your version).
-> 
-> 8.5.1 / 8.6.1
-> 
-> '100 (NMI) Delivers an NMI interrupt to the target processor or
-> processors.  The vector information is ignored'
-> 
-> 8.5.2  Valid Interrupt Vectors
-> 
-> 'Local and I/O APICs support 240 of these vectors (in the range of 16 to
-> 255) as valid interrupts.'
-> 
-> 8.8.4 Interrupt Acceptance for Fixed Interrupts
-> 
-> '...; vectors 0 through 15 are reserved by the APIC (see also: Section
-> 8.5.2, "Valid Interrupt Vectors")'
-> 
-> So I misremembered, apparently you can deliver interrupts 0x10-0x1f, but
-> vectors 0x00-0x0f are not valid to send via APIC or I/O APIC.
+Hi Avi, Ingo,
 
-As you pointed out, NMI is not "Fixed interrupt". If we want to send NMI, it 
-would need a specific delivery mode rather than vector number. 
+I've been following through this long thread since the very first email.  
 
-And if you look at code, if we specific NMI_VECTOR, the delivery mode would be 
-set to NMI.
+I'm a performance engineer whose job is to tune workloads run on top of KVM (and Xen previously).  As a performance engineer, I desperately want to have a tool that can monitor the host and guests at same time.  Think about >100 guests mixed with Linux/Windows running together on single system, being able to know what's happening is critical to do performance analysis.   Actually I am the person asked Yanmin to add feature for CPU utilization break down (into host_usr, host_krn, guest_usr, guest_krn) so that I can monitor dozens of running guests.   I hasn't made this patch work on my system yet but I _do_ think this patch is a very good start.  
 
-So what's wrong here?
+And finally, monitoring guests from host is useful for users too (administrator and performance guy like me).   I really appreciate you guys' work and would love to provide feedback from my point of view if needed.
+
+
+Regards,
+
+HUANG, Zhiteng
+
+Intel SSG/SSD/SPA/PRC Scalability Lab
+
+
+-----Original Message-----
+From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On Behalf Of Avi Kivity
+Sent: Wednesday, March 17, 2010 11:55 AM
+To: Frank Ch. Eigler
+Cc: Anthony Liguori; Ingo Molnar; Zhang, Yanmin; Peter Zijlstra; Sheng Yang; linux-kernel@vger.kernel.org; kvm@vger.kernel.org; Marcelo Tosatti; oerg Roedel; Jes Sorensen; Gleb Natapov; Zachary Amsden; ziteng.huang@intel.com
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
+
+On 03/17/2010 02:41 AM, Frank Ch. Eigler wrote:
+> Hi -
+>
+> On Tue, Mar 16, 2010 at 06:04:10PM -0500, Anthony Liguori wrote:
+>    
+>> [...]
+>> The only way to really address this is to change the interaction.
+>> Instead of running perf externally to qemu, we should support a perf
+>> command in the qemu monitor that can then tie directly to the perf
+>> tooling.  That gives us the best possible user experience.
+>>      
+> To what extent could this be solved with less crossing of
+> isolation/abstraction layers, if the perfctr facilities were properly
+> virtualized?
+>    
+
+That's the more interesting (by far) usage model.  In general guest 
+owners don't have access to the host, and host owners can't (and 
+shouldn't) change guests.
+
+Monitoring guests from the host is useful for kvm developers, but less 
+so for users.
 
 -- 
-regards
-Yang, Sheng
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
+--
+To unsubscribe from this list: send the line "unsubscribe kvm" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
