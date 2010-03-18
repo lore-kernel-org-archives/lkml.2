@@ -1,1464 +1,1024 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752633Ab0CRPnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:43:11 -0400
-Received: from mail-in-02.arcor-online.net ([151.189.21.42]:34347 "EHLO
-	mail-in-02.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751089Ab0CRPnH (ORCPT
+	id S1752761Ab0CRPo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 11:44:28 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35262 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751089Ab0CRPo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:43:07 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-01.arcor-online.net B6BF8333580
-Subject: [PATCH] HID: add driver for Roccat Kone gaming mouse 2nd Attempt
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-       Stefan Achatz <erazor_de@users.sourceforge.net>,
-       Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
-       Michael Poole <mdpoole@troilus.org>, simon.windows@gmail.com,
-       Sean Hildebrand <silverwraithii@gmail.com>,
-       Sid Boyce <sboyce@blueyonder.co.uk>, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 16:43:01 +0100
-Message-ID: <1268926981.11269.3.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 11:44:27 -0400
+Date: Thu, 18 Mar 2010 11:44:25 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Randy Dunlap <rdunlap@xenotime.net>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] [RFC][PATCH] PM: Update device power management
+ document
+In-Reply-To: <201003152104.24882.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1003181135200.1665-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This Patch adds support for Kone gaming mouse from Roccat.
-It provides access to profiles, settings, firmware, weight,
-actual settings etc. through sysfs attributes.
-Event handling of this mouse differs from standard hid behaviour
-in that tilt button press is reported in each move event which
-results in strange behaviour if not handled by the driver.
+Rafael:
 
-This is a heavily reworked version of the previously introduced driver.
-The changes include most of the previously raised concerns,
-memory leak and other fixes, code cleanups, adoption of additional
-achieved knowlege about the hardware and is (IMHO) a much better version
-than before even when I exchanged reduced USB-IO with a bigger memory
-consumption.
+Here's my updated version of your patch.  It's meant as a replacement,
+rather than an additional patch.  I used much of your text but I also
+altered a lot.  And the new documentation describes the way things will
+be after Dominik Brodowski's change is added, rather than the way
+things are now.
 
-I refused to implement one mentioned point:
-Removing the 'just-because-we-can' attributes. Motivation:
-Reading the clipped in weight: I'm no gamer and can't determine the
-usefulness of this feature but if the manufacturer implements such a
-feature it might make sense to someone and I would unwillingly limit the
-functionality besides its such a small feature.
-Reading the actual profile and dpi settings: Here I can testify that one
-can get lost of the actual settings when switching back and forth.
-The manufacturers windows driver has the ability for on-screen-display
-of the values and there is a mouse in the market that has an lcd on the
-underside of it to show these values. So I think this feature makes sense
-not only for me and shouldn't be removed.
+Attribution of authorship for changes like this is difficult; the 
+existing conventions don't make allowance for patches with multiple 
+authors.  You'll have to figure out the right way to handle it.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+Alan Stern
+
+
+---------------------------------------------------------------------------
+The device PM document, Documentation/power/devices.txt, is badly
+outdated and requires total rework to fit the current design of the
+PM framework.  Make it more up to date.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+
 ---
- .../ABI/testing/sysfs-driver-hid-roccat-kone       |  111 +++
- drivers/hid/Kconfig                                |    7 +
- drivers/hid/Makefile                               |    1 +
- drivers/hid/hid-ids.h                              |    3 +
- drivers/hid/hid-roccat-kone.c                      | 1001 ++++++++++++++++++++
- drivers/hid/hid-roccat-kone.h                      |  214 +++++
- 6 files changed, 1337 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
- create mode 100644 drivers/hid/hid-roccat-kone.c
- create mode 100644 drivers/hid/hid-roccat-kone.h
 
-diff --git a/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone b/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
-new file mode 100644
-index 0000000..88340a2
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
-@@ -0,0 +1,111 @@
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/actual_dpi
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	It is possible to switch the dpi setting of the mouse with the
-+		press of a button.
-+		When read, this file returns the raw number of the actual dpi
-+		setting reported by the mouse. This number has to be further
-+		processed to receive the real dpi value.
+Index: usb-2.6/Documentation/power/devices.txt
+===================================================================
+--- usb-2.6.orig/Documentation/power/devices.txt
++++ usb-2.6/Documentation/power/devices.txt
+@@ -1,7 +1,13 @@
++Device Power Management
 +
-+		VALUE DPI
-+		1     800
-+		2     1200
-+		3     1600
-+		4     2000
-+		5     2400
-+		6     3200
++Copyright (c) 2010 Rafael J. Wysocki <rjw@sisk.pl>, Novell Inc.
++Copyright (c) 2010 Alan Stern <stern@rowland.harvard.edu>
 +
-+		This file is readonly.
 +
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/actual_profile
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	When read, this file returns the number of the actual profile.
-+		This file is readonly.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/firmware_version
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	When read, this file returns the raw integer version number of the
-+		firmware reported by the mouse. Using the integer value eases
-+		further usage in other programs. To receive the real version
-+		number the decimal point has to be shifted 2 positions to the
-+		left. E.g. a returned value of 138 means 1.38
-+		This file is readonly.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/kone_driver_version
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	When read, this file returns the driver version.
-+		The format of the string is "v<major>.<minor>.<patchlevel>".
-+		This attribute is used by the userland tools to find the sysfs-
-+		paths of installed kone-mice and determine the capabilites of
-+		the driver. Versions of this driver for old kernels replace
-+		usbhid instead of generic-usb. The way to scan for this file
-+		has been chosen to provide a consistent way for all supported
-+		kernel versions.
-+		This file is readonly.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/profile[1-5]
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	The mouse can store 5 profiles which can be switched by the
-+                press of a button. A profile holds informations like button
-+                mappings, sensitivity, the colors of the 5 leds and light
-+                effects.
-+                When read, these files return the respective profile. The
-+                returned data is 975 bytes in size.
-+		When written, this file lets one write the respective profile
-+		data back to the mouse. The data has to be 975 bytes long.
-+		The mouse will reject invalid data, whereas the profile number
-+		stored in the profile doesn't need to fit the number of the
-+		store.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/settings
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	When read, this file returns the settings stored in the mouse.
-+		The size of the data is 36 bytes and holds information like the
-+		startup_profile, tcu state and calibration_data.
-+		When written, this file lets write settings back to the mouse.
-+		The data has to be 36 bytes long. The mouse will reject invalid
-+		data.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/startup_profile
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	The integer value of this attribute ranges from 1 to 5.
-+                When read, this attribute returns the number of the profile
-+                that's active when the mouse is powered on.
-+		When written, this file sets the number of the startup profile
-+		and the mouse activates this profile immediately.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/tcu
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	The mouse has a "Tracking Control Unit" which lets the user
-+		calibrate the laser power to fit the mousepad surface.
-+		When read, this file returns the current state of the TCU,
-+		where 0 means off and 1 means on.
-+		Writing 0 in this file will switch the TCU off.
-+		Writing 1 in this file will start the calibration which takes
-+		around 6 seconds to complete and activates the TCU.
-+
-+What:		/sys/bus/usb/devices/<busnum>-<devnum>:<config num>.<interface num>/weight
-+Date:		March 2010
-+Contact:	Stefan Achatz <erazor_de@users.sourceforge.net>
-+Description:	The mouse can be equipped with one of four supplied weights
-+		ranging from 5 to 20 grams which are recognized by the mouse
-+		and its value can be read out. When read, this file returns the
-+		raw value returned by the mouse which eases further processing
-+		in other software.
-+		The values map to the weights as follows:
-+
-+		VALUE WEIGHT
-+		0     none
-+		1     5g
-+		2     10g
-+		3     15g
-+		4     20g
-+
-+		This file is readonly.
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 71d4c07..d819b02 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -268,6 +268,13 @@ config HID_QUANTA
- 	---help---
- 	Support for Quanta Optical Touch dual-touch panels.
+ Most of the code in Linux is device drivers, so most of the Linux power
+-management code is also driver-specific.  Most drivers will do very little;
+-others, especially for platforms with small batteries (like cell phones),
+-will do a lot.
++management (PM) code is also driver-specific.  Most drivers will do very
++little; others, especially for platforms with small batteries (like cell
++phones), will do a lot.
  
-+config HID_ROCCAT_KONE
-+	tristate "Roccat Kone" if EMBEDDED
-+	depends on USB_HID
-+	default !EMBEDDED
-+	---help---
-+	Support for Roccat Kone mouse.
-+
- config HID_SAMSUNG
- 	tristate "Samsung" if EMBEDDED
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 0b2618f..08b83cc 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -44,6 +44,7 @@ obj-$(CONFIG_HID_ORTEK)		+= hid-ortek.o
- obj-$(CONFIG_HID_QUANTA)	+= hid-quanta.o
- obj-$(CONFIG_HID_PANTHERLORD)	+= hid-pl.o
- obj-$(CONFIG_HID_PETALYNX)	+= hid-petalynx.o
-+obj-$(CONFIG_HID_ROCCAT_KONE)	+= hid-roccat-kone.o
- obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
- obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
- obj-$(CONFIG_HID_SONY)		+= hid-sony.o
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 72c05f9..237c583 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -399,6 +399,9 @@
- #define USB_VENDOR_ID_PRODIGE		0x05af
- #define USB_DEVICE_ID_PRODIGE_CORDLESS	0x3062
+ This writeup gives an overview of how drivers interact with system-wide
+ power management goals, emphasizing the models and interfaces that are
+@@ -15,9 +21,10 @@ Drivers will use one or both of these mo
+ states:
  
-+#define USB_VENDOR_ID_ROCCAT		0x1e7d
-+#define USB_DEVICE_ID_ROCCAT_KONE	0x2ced
-+
- #define USB_VENDOR_ID_SAITEK		0x06a3
- #define USB_DEVICE_ID_SAITEK_RUMBLEPAD	0xff17
+     System Sleep model:
+-	Drivers can enter low power states as part of entering system-wide
+-	low-power states like "suspend-to-ram", or (mostly for systems with
+-	disks) "hibernate" (suspend-to-disk).
++	Drivers can enter low-power states as part of entering system-wide
++	low-power states like "suspend" (also known as "suspend-to-RAM"), or
++	(mostly for systems with disks) "hibernation" (also known as
++	"suspend-to-disk").
  
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-new file mode 100644
-index 0000000..1a5e993
---- /dev/null
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -0,0 +1,1001 @@
-+/*
-+ * Roccat Kone driver for Linux
-+ *
-+ * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+/*
-+ * Roccat Kone is a gamer mouse which consists of a mouse part and a keyboard
-+ * part. The keyboard part enables the mouse to execute stored macros with mixed
-+ * key- and button-events.
-+ *
-+ * TODO implement on-the-fly polling-rate change
-+ *      The windows driver has the ability to change the polling rate of the
-+ *      device on the press of a mousebutton.
-+ *      Is it possible to remove and reinstall the urb in raw-event- or any
-+ *      other handler, or to defer this action to be executed somewhere else?
-+ *
-+ * TODO implement notification mechanism for overlong macro execution
-+ *      If user wants to execute an overlong macro only the names of macroset
-+ *      and macro are given. Should userland tap hidraw or is there an
-+ *      additional streaming mechanism?
-+ *
-+ * TODO is it possible to overwrite group for sysfs attributes via udev?
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/input.h>
-+#include <linux/hid.h>
-+#include <linux/usb.h>
-+#include <linux/module.h>
-+#include "hid-ids.h"
-+#include "hid-roccat-kone.h"
-+
-+static void kone_set_settings_checksum(struct kone_settings *settings)
-+{
-+	uint16_t checksum = 0;
-+	unsigned char *address = (unsigned char *)settings;
-+	int i;
-+
-+	for (i = 0; i < sizeof(struct kone_settings) - 2; ++i, ++address)
-+		checksum += *address;
-+	settings->checksum = cpu_to_le16(checksum);
-+}
-+
-+/*
-+ * Checks success after writing data to mouse
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_check_write(struct usb_device *usb_dev)
-+{
-+	int len;
-+	unsigned char *data;
-+
-+	data = kmalloc(1, GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	do {
-+		/*
-+		 * Mouse needs 50 msecs until it says ok, but there are
-+		 * 30 more msecs needed for next write to work.
-+		 */
-+		msleep(80);
-+
-+		len = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+				USB_REQ_CLEAR_FEATURE,
-+				USB_TYPE_CLASS | USB_RECIP_INTERFACE |
-+				USB_DIR_IN,
-+				kone_command_confirm_write, 0, data, 1,
-+				USB_CTRL_SET_TIMEOUT);
-+
-+		if (len != 1) {
-+			kfree(data);
-+			return -EIO;
-+		}
-+
-+		/*
-+		 * value of 3 seems to mean something like
-+		 * "not finished yet, but it looks good"
-+		 * So check again after a moment.
-+		 */
-+	} while (*data == 3);
-+
-+	if (*data == 1) { /* everything alright */
-+		kfree(data);
-+		return 0;
-+	} else { /* unknown answer */
-+		dev_err(&usb_dev->dev, "got retval %d when checking write\n",
-+				*data);
-+		kfree(data);
-+		return -EIO;
-+	}
-+}
-+
-+/*
-+ * Reads settings from mouse and stores it in @buf
-+ * @buf has to be alloced with GFP_KERNEL
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_get_settings(struct usb_device *usb_dev,
-+		struct kone_settings *buf)
-+{
-+	int len;
-+
-+	len = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+			USB_REQ_CLEAR_FEATURE,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN,
-+			kone_command_settings, 0, buf,
-+			sizeof(struct kone_settings), USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != sizeof(struct kone_settings))
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Writes settings from @buf to mouse
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_set_settings(struct usb_device *usb_dev,
-+		struct kone_settings const *settings)
-+{
-+	int len;
-+
-+	len = usb_control_msg(usb_dev, usb_sndctrlpipe(usb_dev, 0),
-+			USB_REQ_SET_CONFIGURATION,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_OUT,
-+			kone_command_settings, 0, (char *)settings,
-+			sizeof(struct kone_settings),
-+			USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != sizeof(struct kone_settings))
-+		return -EIO;
-+
-+	if (kone_check_write(usb_dev))
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Reads profile data from mouse and stores it in @buf
-+ * @number: profile number to read
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_get_profile(struct usb_device *usb_dev,
-+		struct kone_profile *buf, int number)
-+{
-+	int len;
-+
-+	if (number < 1 || number > 5)
-+		return -EINVAL;
-+
-+	len = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+			USB_REQ_CLEAR_FEATURE,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN,
-+			kone_command_profile, number, buf,
-+			sizeof(struct kone_profile), USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != sizeof(struct kone_profile))
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Writes profile data to mouse.
-+ * @number: profile number to write
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_set_profile(struct usb_device *usb_dev,
-+		struct kone_profile const *profile, int number)
-+{
-+	int len;
-+
-+	if (number < 1 || number > 5)
-+		return -EINVAL;
-+
-+	len = usb_control_msg(usb_dev, usb_sndctrlpipe(usb_dev, 0),
-+			USB_REQ_SET_CONFIGURATION,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_OUT,
-+			kone_command_profile, number, (char *)profile,
-+			sizeof(struct kone_profile),
-+			USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != sizeof(struct kone_profile))
-+		return len;
-+
-+	if (kone_check_write(usb_dev))
-+		return -EIO;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Reads value of "fast-clip-weight" and stores it in @result
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_get_weight(struct usb_device *usb_dev, int *result)
-+{
-+	int len;
-+	uint8_t *data;
-+
-+	data = kmalloc(1, GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	len = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+			USB_REQ_CLEAR_FEATURE,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN,
-+			kone_command_weight, 0, data, 1, USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != 1) {
-+		kfree(data);
-+		return -EIO;
-+	}
-+	*result = (int)*data;
-+	kfree(data);
-+	return 0;
-+}
-+
-+/*
-+ * Reads firmware_version of mouse and stores it in @result
-+ * On success returns 0
-+ * On failure returns errno
-+ */
-+static int kone_get_firmware_version(struct usb_device *usb_dev, int *result)
-+{
-+	int len;
-+	unsigned char *data;
-+
-+	data = kmalloc(2, GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	len = usb_control_msg(usb_dev, usb_rcvctrlpipe(usb_dev, 0),
-+			USB_REQ_CLEAR_FEATURE,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_IN,
-+			kone_command_firmware_version, 0, data, 2,
-+			USB_CTRL_SET_TIMEOUT);
-+
-+	if (len != 2) {
-+		kfree(data);
-+		return -EIO;
-+	}
-+	*result = le16_to_cpu(*data);
-+	kfree(data);
-+	return 0;
-+}
-+
-+static ssize_t kone_sysfs_read_settings(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+
-+	if (off >= sizeof(struct kone_settings))
-+		return 0;
-+
-+	if (off + count > sizeof(struct kone_settings))
-+		count = sizeof(struct kone_settings) - off;
-+
-+	mutex_lock(&kone->kone_lock);
-+	memcpy(buf, &kone->settings + off, count);
-+	mutex_unlock(&kone->kone_lock);
-+
-+	return count;
-+}
-+
-+/*
-+ * Writing settings automatically activates startup_profile.
-+ * This function keeps values in kone_device up to date and assumes that in
-+ * case of error the old data is still valid
-+ */
-+static ssize_t kone_sysfs_write_settings(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
-+	int retval = 0, difference;
-+
-+	/* I need to get my data in one piece */
-+	if (off != 0 || count != sizeof(struct kone_settings))
-+		return -EINVAL;
-+
-+	mutex_lock(&kone->kone_lock);
-+	difference = memcmp(buf, &kone->settings, sizeof(struct kone_settings));
-+	if (difference) {
-+		retval = kone_set_settings(usb_dev,
-+				(struct kone_settings const *)buf);
-+		if (!retval)
-+			memcpy(&kone->settings, buf,
-+					sizeof(struct kone_settings));
-+	}
-+	mutex_unlock(&kone->kone_lock);
-+
-+	if (retval)
-+		return retval;
-+
-+	/*
-+	 * If we get here, treat settings as okay and update actual values
-+	 * according to startup_profile
-+	 */
-+	kone->actual_profile = kone->settings.startup_profile;
-+	kone->actual_dpi = kone->profiles[kone->actual_profile - 1].startup_dpi;
-+
-+	return sizeof(struct kone_settings);
-+}
-+
-+static ssize_t kone_sysfs_read_profilex(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count, int number) {
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+
-+	if (off >= sizeof(struct kone_profile))
-+		return 0;
-+
-+	if (off + count > sizeof(struct kone_profile))
-+		count = sizeof(struct kone_profile) - off;
-+
-+	mutex_lock(&kone->kone_lock);
-+	memcpy(buf, &kone->profiles[number - 1], sizeof(struct kone_profile));
-+	mutex_unlock(&kone->kone_lock);
-+
-+	return count;
-+}
-+
-+static ssize_t kone_sysfs_read_profile1(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_read_profilex(kobj, attr, buf, off, count, 1);
-+}
-+
-+static ssize_t kone_sysfs_read_profile2(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_read_profilex(kobj, attr, buf, off, count, 2);
-+}
-+
-+static ssize_t kone_sysfs_read_profile3(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_read_profilex(kobj, attr, buf, off, count, 3);
-+}
-+
-+static ssize_t kone_sysfs_read_profile4(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_read_profilex(kobj, attr, buf, off, count, 4);
-+}
-+
-+static ssize_t kone_sysfs_read_profile5(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_read_profilex(kobj, attr, buf, off, count, 5);
-+}
-+
-+/* Writes data only if different to stored data */
-+static ssize_t kone_sysfs_write_profilex(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count, int number) {
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
-+	struct kone_profile *profile;
-+	int retval = 0, difference;
-+
-+	/* I need to get my data in one piece */
-+	if (off != 0 || count != sizeof(struct kone_profile))
-+		return -EINVAL;
-+
-+	profile = &kone->profiles[number - 1];
-+
-+	mutex_lock(&kone->kone_lock);
-+	difference = memcmp(buf, profile, sizeof(struct kone_profile));
-+	if (difference) {
-+		retval = kone_set_profile(usb_dev,
-+				(struct kone_profile const *)buf, number);
-+		if (!retval)
-+			memcpy(profile, buf, sizeof(struct kone_profile));
-+	}
-+	mutex_unlock(&kone->kone_lock);
-+
-+	if (retval)
-+		return retval;
-+
-+	return sizeof(struct kone_profile);
-+}
-+
-+static ssize_t kone_sysfs_write_profile1(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_write_profilex(kobj, attr, buf, off, count, 1);
-+}
-+
-+static ssize_t kone_sysfs_write_profile2(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_write_profilex(kobj, attr, buf, off, count, 2);
-+}
-+
-+static ssize_t kone_sysfs_write_profile3(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_write_profilex(kobj, attr, buf, off, count, 3);
-+}
-+
-+static ssize_t kone_sysfs_write_profile4(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_write_profilex(kobj, attr, buf, off, count, 4);
-+}
-+
-+static ssize_t kone_sysfs_write_profile5(struct kobject *kobj,
-+		struct bin_attribute *attr, char *buf,
-+		loff_t off, size_t count) {
-+	return kone_sysfs_write_profilex(kobj, attr, buf, off, count, 5);
-+}
-+
-+static ssize_t kone_sysfs_show_actual_profile(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	return snprintf(buf, PAGE_SIZE, "%d\n", kone->actual_profile);
-+}
-+
-+static ssize_t kone_sysfs_show_actual_dpi(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	return snprintf(buf, PAGE_SIZE, "%d\n", kone->actual_dpi);
-+}
-+
-+/* weight is read each time, since we don't get informed when it's changed */
-+static ssize_t kone_sysfs_show_weight(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
-+	int weight = 0;
-+	int retval;
-+
-+	mutex_lock(&kone->kone_lock);
-+	retval = kone_get_weight(usb_dev, &weight);
-+	mutex_unlock(&kone->kone_lock);
-+
-+	if (retval)
-+		return retval;
-+	return snprintf(buf, PAGE_SIZE, "%d\n", weight);
-+}
-+
-+static ssize_t kone_sysfs_show_firmware_version(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	return snprintf(buf, PAGE_SIZE, "%d\n", kone->firmware_version);
-+}
-+
-+static ssize_t kone_sysfs_show_tcu(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	return snprintf(buf, PAGE_SIZE, "%d\n", kone->settings.tcu);
-+}
-+
-+static int kone_tcu_command(struct usb_device *usb_dev, int number)
-+{
-+	int len;
-+	char *value;
-+
-+	value = kmalloc(1, GFP_KERNEL);
-+	if (!value)
-+		return -ENOMEM;
-+
-+	*value = number;
-+
-+	len = usb_control_msg(usb_dev, usb_sndctrlpipe(usb_dev, 0),
-+			USB_REQ_SET_CONFIGURATION,
-+			USB_TYPE_CLASS | USB_RECIP_INTERFACE | USB_DIR_OUT,
-+			kone_command_calibrate, 0, value, 1,
-+			USB_CTRL_SET_TIMEOUT);
-+
-+	kfree(value);
-+	return ((len != 1) ? -EIO : 0);
-+}
-+
-+/*
-+ * Calibrating the tcu is the only action that changes settings data inside the
-+ * mouse, so this data needs to be reread
-+ */
-+static ssize_t kone_sysfs_set_tcu(struct device *dev,
-+		struct device_attribute *attr, char const *buf, size_t size)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
-+	int retval, checksum;
-+	unsigned long state;
-+
-+	retval = strict_strtoul(buf, 10, &state);
-+	if (retval)
-+		return retval;
-+
-+	if (state != 0 && state != 1)
-+		return -EINVAL;
-+
-+	mutex_lock(&kone->kone_lock);
-+
-+	if (state == 1) { /* state activate */
-+		retval = kone_tcu_command(usb_dev, 1);
-+		if (retval)
-+			goto exit_unlock;
-+		retval = kone_tcu_command(usb_dev, 2);
-+		if (retval)
-+			goto exit_unlock;
-+		ssleep(5); /* tcu needs this time for calibration */
-+		retval = kone_tcu_command(usb_dev, 3);
-+		if (retval)
-+			goto exit_unlock;
-+		retval = kone_tcu_command(usb_dev, 0);
-+		if (retval)
-+			goto exit_unlock;
-+		retval = kone_tcu_command(usb_dev, 4);
-+		if (retval)
-+			goto exit_unlock;
-+		/*
-+		 * Kone needs this time to settle things.
-+		 * Reading settings too early will result in invalid data.
-+		 * Roccat's driver waits 1 sec, maybe this time could be
-+		 * shortened.
-+		 */
-+		ssleep(1);
-+	}
-+
-+	/* calibration changes values in settings, so reread */
-+	retval = kone_get_settings(usb_dev, &kone->settings);
-+	if (retval)
-+		goto exit_no_settings;
-+
-+	/* only write settings back if activation state is different */
-+	if (kone->settings.tcu != state) {
-+		kone->settings.tcu = state;
-+		kone_set_settings_checksum(&kone->settings);
-+
-+		retval = kone_set_settings(usb_dev, &kone->settings);
-+		if (retval) {
-+			dev_err(&usb_dev->dev, "couldn't set tcu state\n");
-+			/*
-+			 * try to reread valid settings into buffer overwriting
-+			 * first error code
-+			 */
-+			retval = kone_get_settings(usb_dev, &kone->settings);
-+			if (retval)
-+				goto exit_no_settings;
-+			goto exit_unlock;
-+		}
-+	}
-+
-+	retval = size;
-+exit_no_settings:
-+	dev_err(&usb_dev->dev, "couldn't read settings\n");
-+exit_unlock:
-+	mutex_unlock(&kone->kone_lock);
-+	return retval;
-+}
-+
-+static ssize_t kone_sysfs_show_startup_profile(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	return snprintf(buf, PAGE_SIZE, "%d\n", kone->settings.startup_profile);
-+}
-+
-+static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
-+		struct device_attribute *attr, char const *buf, size_t size)
-+{
-+	struct kone_device *kone = hid_get_drvdata(dev_get_drvdata(dev));
-+	struct usb_device *usb_dev = interface_to_usbdev(to_usb_interface(dev));
-+	int retval;
-+	unsigned long new_startup_profile;
-+
-+	retval = strict_strtoul(buf, 10, &new_startup_profile);
-+	if (retval)
-+		return retval;
-+
-+	if (new_startup_profile  < 1 || new_startup_profile > 5)
-+		return -EINVAL;
-+
-+	mutex_lock(&kone->kone_lock);
-+
-+	kone->settings.startup_profile = new_startup_profile;
-+	kone_set_settings_checksum(&kone->settings);
-+
-+	retval = kone_set_settings(usb_dev, &kone->settings);
-+
-+	mutex_unlock(&kone->kone_lock);
-+
-+	if (retval)
-+		return retval;
-+
-+	/* changing the startup profile immediately activates this profile */
-+	kone->actual_profile = new_startup_profile;
-+	kone->actual_dpi = kone->profiles[kone->actual_profile - 1].startup_dpi;
-+
-+	return size;
-+}
-+
-+/*
-+ * This file is used by userland software to find devices that are handled by
-+ * this driver. This provides a consistent way for actual and older kernels
-+ * where this driver replaced usbhid instead of generic-usb.
-+ * Driver capabilities are determined by version number.
-+ */
-+static ssize_t kone_sysfs_show_driver_version(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, PAGE_SIZE, DRIVER_VERSION "\n");
-+}
-+
-+/*
-+ * Read actual dpi settings.
-+ * Returns raw value for further processing. Refer to enum kone_polling_rates to
-+ * get real value.
-+ */
-+static DEVICE_ATTR(actual_dpi, 0440, kone_sysfs_show_actual_dpi, NULL);
-+
-+static DEVICE_ATTR(actual_profile, 0440, kone_sysfs_show_actual_profile, NULL);
-+
-+/*
-+ * The mouse can be equipped with one of four supplied weights from 5 to 20
-+ * grams which are recognized and its value can be read out.
-+ * This returns the raw value reported by the mouse for easy evaluation by
-+ * software. Refer to enum kone_weights to get corresponding real weight.
-+ */
-+static DEVICE_ATTR(weight, 0440, kone_sysfs_show_weight, NULL);
-+
-+/*
-+ * Prints firmware version stored in mouse as integer.
-+ * The raw value reported by the mouse is returned for easy evaluation, to get
-+ * the real version number the decimal point has to be shifted 2 positions to
-+ * the left. E.g. a value of 138 means 1.38.
-+ */
-+static DEVICE_ATTR(firmware_version, 0440,
-+		kone_sysfs_show_firmware_version, NULL);
-+
-+/*
-+ * Prints state of Tracking Control Unit as number where 0 = off and 1 = on
-+ * Writing 0 deactivates tcu and writing 1 calibrates and activates the tcu
-+ */
-+static DEVICE_ATTR(tcu, 0660, kone_sysfs_show_tcu, kone_sysfs_set_tcu);
-+
-+/* Prints and takes the number of the profile the mouse starts with */
-+static DEVICE_ATTR(startup_profile, 0660,
-+		kone_sysfs_show_startup_profile,
-+		kone_sysfs_set_startup_profile);
-+
-+static DEVICE_ATTR(kone_driver_version, 0440,
-+		kone_sysfs_show_driver_version, NULL);
-+
-+static struct attribute *kone_attributes[] = {
-+		&dev_attr_actual_dpi.attr,
-+		&dev_attr_actual_profile.attr,
-+		&dev_attr_weight.attr,
-+		&dev_attr_firmware_version.attr,
-+		&dev_attr_tcu.attr,
-+		&dev_attr_startup_profile.attr,
-+		&dev_attr_kone_driver_version.attr,
-+		NULL
-+};
-+
-+static struct attribute_group kone_attribute_group = {
-+		.attrs = kone_attributes
-+};
-+
-+static struct bin_attribute kone_settings_attr = {
-+	.attr = { .name = "settings", .mode = 0660 },
-+	.size = sizeof(struct kone_settings),
-+	.read = kone_sysfs_read_settings,
-+	.write = kone_sysfs_write_settings
-+};
-+
-+static struct bin_attribute kone_profile1_attr = {
-+	.attr = { .name = "profile1", .mode = 0660 },
-+	.size = sizeof(struct kone_profile),
-+	.read = kone_sysfs_read_profile1,
-+	.write = kone_sysfs_write_profile1
-+};
-+
-+static struct bin_attribute kone_profile2_attr = {
-+	.attr = { .name = "profile2", .mode = 0660 },
-+	.size = sizeof(struct kone_profile),
-+	.read = kone_sysfs_read_profile2,
-+	.write = kone_sysfs_write_profile2
-+};
-+
-+static struct bin_attribute kone_profile3_attr = {
-+	.attr = { .name = "profile3", .mode = 0660 },
-+	.size = sizeof(struct kone_profile),
-+	.read = kone_sysfs_read_profile3,
-+	.write = kone_sysfs_write_profile3
-+};
-+
-+static struct bin_attribute kone_profile4_attr = {
-+	.attr = { .name = "profile4", .mode = 0660 },
-+	.size = sizeof(struct kone_profile),
-+	.read = kone_sysfs_read_profile4,
-+	.write = kone_sysfs_write_profile4
-+};
-+
-+static struct bin_attribute kone_profile5_attr = {
-+	.attr = { .name = "profile5", .mode = 0660 },
-+	.size = sizeof(struct kone_profile),
-+	.read = kone_sysfs_read_profile5,
-+	.write = kone_sysfs_write_profile5
-+};
-+
-+static int kone_create_sysfs_attributes(struct usb_interface *intf)
-+{
-+	int retval;
-+
-+	retval = sysfs_create_group(&intf->dev.kobj, &kone_attribute_group);
-+	if (retval)
-+		goto exit_1;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_settings_attr);
-+	if (retval)
-+		goto exit_2;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-+	if (retval)
-+		goto exit_3;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-+	if (retval)
-+		goto exit_4;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-+	if (retval)
-+		goto exit_5;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-+	if (retval)
-+		goto exit_6;
-+
-+	retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile5_attr);
-+	if (retval)
-+		goto exit_7;
-+
-+	return 0;
-+
-+exit_7:
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-+exit_6:
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-+exit_5:
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-+exit_4:
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-+exit_3:
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_settings_attr);
-+exit_2:
-+	sysfs_remove_group(&intf->dev.kobj, &kone_attribute_group);
-+exit_1:
-+	return retval;
-+}
-+
-+static void kone_remove_sysfs_attributes(struct usb_interface *intf)
-+{
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile5_attr);
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-+	sysfs_remove_bin_file(&intf->dev.kobj, &kone_settings_attr);
-+	sysfs_remove_group(&intf->dev.kobj, &kone_attribute_group);
-+}
-+
-+static int kone_init_kone_device_struct(struct usb_device *usb_dev,
-+		struct kone_device *kone)
-+{
-+	uint i;
-+	int retval;
-+
-+	mutex_init(&kone->kone_lock);
-+
-+	for (i = 0; i < 5; ++i) {
-+		retval = kone_get_profile(usb_dev, &kone->profiles[i], i + 1);
-+		if (retval)
-+			return retval;
-+	}
-+
-+	retval = kone_get_settings(usb_dev, &kone->settings);
-+	if (retval)
-+		return retval;
-+
-+	retval = kone_get_firmware_version(usb_dev, &kone->firmware_version);
-+	if (retval)
-+		return retval;
-+
-+	kone->actual_profile = kone->settings.startup_profile;
-+	kone->actual_dpi = kone->profiles[kone->actual_profile].startup_dpi;
-+
-+	return 0;
-+}
-+
-+/*
-+ * Since IGNORE_MOUSE quirk moved to hid-apple, there is no way to bind only to
-+ * mousepart if usb_hid is compiled into the kernel and kone is compiled as
-+ * module.
-+ * Secial behaviour is bound only to mousepart since only mouseevents contain
-+ * additional notifications.
-+ */
-+static int kone_init_specials(struct hid_device *hdev)
-+{
-+	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-+	struct usb_device *usb_dev = interface_to_usbdev(intf);
-+	struct kone_device *kone;
-+	int retval;
-+
-+	if (intf->cur_altsetting->desc.bInterfaceProtocol
-+			== USB_INTERFACE_PROTOCOL_MOUSE) {
-+
-+		kone = kzalloc(sizeof(*kone), GFP_KERNEL);
-+		if (!kone) {
-+			dev_err(&hdev->dev, "can't alloc device descriptor\n");
-+			return -ENOMEM;
-+		}
-+		hid_set_drvdata(hdev, kone);
-+
-+		retval = kone_init_kone_device_struct(usb_dev, kone);
-+		if (retval) {
-+			dev_err(&hdev->dev,
-+					"couldn't init struct kone_device\n");
-+			goto exit_free;
-+		}
-+		retval = kone_create_sysfs_attributes(intf);
-+		if (retval) {
-+			dev_err(&hdev->dev, "cannot create sysfs files\n");
-+			goto exit_free;
-+		}
-+	} else {
-+		hid_set_drvdata(hdev, NULL);
-+	}
-+
-+	return 0;
-+exit_free:
-+	kfree(kone);
-+	return retval;
-+}
-+
-+
-+static void kone_remove_specials(struct hid_device *hdev)
-+{
-+	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-+
-+	if (intf->cur_altsetting->desc.bInterfaceProtocol
-+			== USB_INTERFACE_PROTOCOL_MOUSE) {
-+		kone_remove_sysfs_attributes(intf);
-+		kfree(hid_get_drvdata(hdev));
-+	}
-+}
-+
-+static int kone_probe(struct hid_device *hdev, const struct hid_device_id *id)
-+{
-+	int retval;
-+
-+	retval = hid_parse(hdev);
-+	if (retval) {
-+		dev_err(&hdev->dev, "parse failed\n");
-+		goto exit;
-+	}
-+
-+	retval = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-+	if (retval) {
-+		dev_err(&hdev->dev, "hw start failed\n");
-+		goto exit;
-+	}
-+
-+	retval = kone_init_specials(hdev);
-+	if (retval) {
-+		dev_err(&hdev->dev, "couldn't install mouse\n");
-+		goto exit_stop;
-+	}
-+
-+	return 0;
-+
-+exit_stop:
-+	hid_hw_stop(hdev);
-+exit:
-+	return retval;
-+}
-+
-+static void kone_remove(struct hid_device *hdev)
-+{
-+	kone_remove_specials(hdev);
-+	hid_hw_stop(hdev);
-+}
-+
-+/*
-+ * Is called for keyboard- and mousepart.
-+ * Only mousepart gets informations about special events in its extended event
-+ * structure.
-+ */
-+static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
-+		u8 *data, int size)
-+{
-+	struct kone_device *kone = hid_get_drvdata(hdev);
-+	struct kone_mouse_event *event = (struct kone_mouse_event *)data;
-+
-+	/* keyboard events are always processed by default handler */
-+	if (size != sizeof(struct kone_mouse_event))
-+		return 0;
-+
-+	/*
-+	 * Firmware 1.38 introduced new behaviour for tilt buttons.
-+	 * Pressed tilt button is reported in each movement event.
-+	 * Workaround sends only one event per press.
-+	 */
-+	if (kone->last_tilt_state == event->tilt)
-+		event->tilt = 0;
-+	else
-+		kone->last_tilt_state = event->tilt;
-+
-+	/*
-+	 * handle special events and keep actual profile and dpi values
-+	 * up to date
-+	 */
-+	switch (event->event) {
-+	case kone_mouse_event_osd_dpi:
-+		dev_dbg(&hdev->dev, "osd dpi event. actual dpi %d\n",
-+				event->value);
-+		return 1; /* return 1 if event was handled */
-+	case kone_mouse_event_switch_dpi:
-+		kone->actual_dpi = event->value;
-+		dev_dbg(&hdev->dev, "switched dpi to %d\n", event->value);
-+		return 1;
-+	case kone_mouse_event_osd_profile:
-+		dev_dbg(&hdev->dev, "osd profile event. actual profile %d\n",
-+				event->value);
-+		return 1;
-+	case kone_mouse_event_switch_profile:
-+		kone->actual_profile = event->value;
-+		kone->actual_dpi = kone->profiles[kone->actual_profile - 1].
-+				startup_dpi;
-+		dev_dbg(&hdev->dev, "switched profile to %d\n", event->value);
-+		return 1;
-+	case kone_mouse_event_call_overlong_macro:
-+		dev_dbg(&hdev->dev, "overlong macro called, button %d %s/%s\n",
-+				event->macro_key,
-+				kone->profiles[kone->actual_profile - 1].
-+				button_infos[event->macro_key].macro_set_name,
-+				kone->profiles[kone->actual_profile - 1].
-+				button_infos[event->macro_key].macro_name
-+				);
-+		return 1;
-+	}
-+
-+	return 0; /* do further processing */
-+}
-+
-+static const struct hid_device_id kone_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
-+	{ } };
-+
-+MODULE_DEVICE_TABLE(hid, kone_devices);
-+
-+static struct hid_driver kone_driver = { .name = "kone",
-+		.id_table = kone_devices, .probe = kone_probe,
-+		.remove = kone_remove, .raw_event = kone_raw_event, };
-+
-+static int kone_init(void)
-+{
-+	return hid_register_driver(&kone_driver);
-+}
-+
-+static void kone_exit(void)
-+{
-+	hid_unregister_driver(&kone_driver);
-+}
-+
-+module_init(kone_init);
-+module_exit(kone_exit);
-+
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+MODULE_LICENSE(DRIVER_LICENSE);
-diff --git a/drivers/hid/hid-roccat-kone.h b/drivers/hid/hid-roccat-kone.h
-new file mode 100644
-index 0000000..ee6898c
---- /dev/null
-+++ b/drivers/hid/hid-roccat-kone.h
-@@ -0,0 +1,214 @@
-+#ifndef __HID_ROCCAT_KONE_H
-+#define __HID_ROCCAT_KONE_H
-+
-+/*
-+ * Copyright (c) 2010 Stefan Achatz <erazor_de@users.sourceforge.net>
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/types.h>
-+
-+#define DRIVER_VERSION "v0.3.0"
-+#define DRIVER_AUTHOR "Stefan Achatz"
-+#define DRIVER_DESC "USB Roccat Kone driver"
-+#define DRIVER_LICENSE "GPL v2"
-+
-+#pragma pack(push)
-+#pragma pack(1)
-+
-+struct kone_keystroke {
-+	uint8_t key;
-+	uint8_t action;
-+	uint16_t period; /* in milliseconds */
-+};
-+
-+enum kone_keystroke_buttons {
-+	kone_keystroke_button_1 = 0xf0, /* left mouse button */
-+	kone_keystroke_button_2 = 0xf1, /* right mouse button */
-+	kone_keystroke_button_3 = 0xf2, /* wheel */
-+	kone_keystroke_button_9 = 0xf3, /* side button up */
-+	kone_keystroke_button_8 = 0xf4 /* side button down */
-+};
-+
-+enum kone_keystroke_actions {
-+	kone_keystroke_action_press = 0,
-+	kone_keystroke_action_release = 1
-+};
-+
-+struct kone_button_info {
-+	uint8_t number; /* range 1-8 */
-+	uint8_t type;
-+	uint8_t macro_type; /* 0 = short, 1 = overlong */
-+	uint8_t macro_set_name[16]; /* can be max 15 chars long */
-+	uint8_t macro_name[16]; /* can be max 15 chars long */
-+	uint8_t count;
-+	struct kone_keystroke keystrokes[20];
-+};
-+
-+enum kone_button_info_types {
-+	/* valid button types until firmware 1.32 */
-+	kone_button_info_type_button_1 = 0x1, /* click (left mouse button) */
-+	kone_button_info_type_button_2 = 0x2, /* menu (right mouse button)*/
-+	kone_button_info_type_button_3 = 0x3, /* scroll (wheel) */
-+	kone_button_info_type_double_click = 0x4,
-+	kone_button_info_type_key = 0x5,
-+	kone_button_info_type_macro = 0x6,
-+	kone_button_info_type_off = 0x7,
-+	/* TODO clarify function and rename */
-+	kone_button_info_type_osd_xy_prescaling = 0x8,
-+	kone_button_info_type_osd_dpi = 0x9,
-+	kone_button_info_type_osd_profile = 0xa,
-+	kone_button_info_type_button_9 = 0xb, /* ie forward */
-+	kone_button_info_type_button_8 = 0xc, /* ie backward */
-+	kone_button_info_type_dpi_up = 0xd, /* internal */
-+	kone_button_info_type_dpi_down = 0xe, /* internal */
-+	kone_button_info_type_button_7 = 0xf, /* tilt left */
-+	kone_button_info_type_button_6 = 0x10, /* tilt right */
-+	kone_button_info_type_profile_up = 0x11, /* internal */
-+	kone_button_info_type_profile_down = 0x12, /* internal */
-+	/* additional valid button types since firmware 1.38 */
-+	kone_button_info_type_multimedia_open_player = 0x20,
-+	kone_button_info_type_multimedia_next_track = 0x21,
-+	kone_button_info_type_multimedia_prev_track = 0x22,
-+	kone_button_info_type_multimedia_play_pause = 0x23,
-+	kone_button_info_type_multimedia_stop = 0x24,
-+	kone_button_info_type_multimedia_mute = 0x25,
-+	kone_button_info_type_multimedia_volume_up = 0x26,
-+	kone_button_info_type_multimedia_volume_down = 0x27
-+};
-+
-+struct kone_light_info {
-+	uint8_t number; /* number of light 1-5 */
-+	uint8_t mod;   /* 1 = on, 2 = off */
-+	uint8_t red;   /* range 0x00-0xff */
-+	uint8_t green; /* range 0x00-0xff */
-+	uint8_t blue;  /* range 0x00-0xff */
-+};
-+
-+struct kone_profile {
-+	uint16_t size; /* always 975 */
-+	uint16_t unused; /* always 0 */
-+
-+	/*
-+	 * range 1-5
-+	 * This number does not need to correspond with location where profile
-+	 * saved
-+	 */
-+	uint8_t profile; /* range 1-5 */
-+
-+	uint16_t main_sensitivity; /* range 100-1000 */
-+	uint8_t xy_sensitivity_enabled; /* 1 = on, 2 = off */
-+	uint16_t x_sensitivity; /* range 100-1000 */
-+	uint16_t y_sensitivity; /* range 100-1000 */
-+	uint8_t dpi_rate; /* bit 1 = 800, ... */
-+	uint8_t startup_dpi; /* range 1-6 */
-+	uint8_t polling_rate; /* 1 = 125Hz, 2 = 500Hz, 3 = 1000Hz */
-+	/* kone has no dcu
-+	 * value is always 2 in firmwares <= 1.32 and
-+	 * 1 in firmwares > 1.32
-+	 */
-+	uint8_t dcu_flag;
-+	uint8_t light_effect_1; /* range 1-3 */
-+	uint8_t light_effect_2; /* range 1-5 */
-+	uint8_t light_effect_3; /* range 1-4 */
-+	uint8_t light_effect_speed; /* range 0-255 */
-+
-+	struct kone_light_info light_infos[5];
-+	struct kone_button_info button_infos[8];
-+
-+	uint16_t checksum; /* \brief holds checksum of struct */
-+};
-+
-+enum kone_polling_rates {
-+	kone_polling_rate_125 = 1,
-+	kone_polling_rate_500 = 2,
-+	kone_polling_rate_1000 = 3
-+};
-+
-+struct kone_settings {
-+	uint16_t size; /* always 36 */
-+	uint8_t  startup_profile; /* 1-5 */
-+	uint8_t	 unknown1;
-+	uint8_t  tcu; /* 0 = off, 1 = on */
-+	uint8_t  unknown2[23];
-+	uint8_t  calibration_data[4];
-+	uint8_t  unknown3[2];
-+	uint16_t checksum;
-+};
-+
-+/*
-+ * 12 byte mouse event read by interrupt_read
-+ */
-+struct kone_mouse_event {
-+	uint8_t report_number; /* always 1 */
-+	uint8_t button;
-+	uint16_t x;
-+	uint16_t y;
-+	uint8_t wheel; /* up = 1, down = -1 */
-+	uint8_t tilt; /* right = 1, left = -1 */
-+	uint8_t unknown;
-+	uint8_t event;
-+	uint8_t value; /* press = 0, release = 1 */
-+	uint8_t macro_key; /* 0 to 8 */
-+};
-+
-+enum kone_mouse_events {
-+	/* osd events are thought to be display on screen */
-+	kone_mouse_event_osd_dpi = 0xa0,
-+	kone_mouse_event_osd_profile = 0xb0,
-+	/* TODO clarify meaning and occurence of kone_mouse_event_calibration */
-+	kone_mouse_event_calibration = 0xc0,
-+	kone_mouse_event_call_overlong_macro = 0xe0,
-+	/* switch events notify if user changed values wiht mousebutton click */
-+	kone_mouse_event_switch_dpi = 0xf0,
-+	kone_mouse_event_switch_profile = 0xf1
-+};
-+
-+enum kone_commands {
-+	kone_command_profile = 0x5a,
-+	kone_command_settings = 0x15a,
-+	kone_command_firmware_version = 0x25a,
-+	kone_command_weight = 0x45a,
-+	kone_command_calibrate = 0x55a,
-+	kone_command_confirm_write = 0x65a,
-+	kone_command_firmware = 0xe5a
-+};
-+
-+#pragma pack(pop)
-+
-+struct kone_device {
-+	/*
-+	 * Storing actual values when we get informed about changes since there
-+	 * is no way of getting this information from the device on demand
-+	 */
-+	int actual_profile, actual_dpi;
-+	/* Used for neutralizing abnormal tilt button behaviour */
-+	int last_tilt_state;
-+	/*
-+	 * It's unlikely that multiple sysfs attributes are accessed at a time,
-+	 * so only one mutex is used to secure hardware access and profiles and
-+	 * settings of this struct.
-+	 */
-+	struct mutex kone_lock;
-+
-+	/*
-+	 * Storing the data here reduces IO and ensures that data is available
-+	 * when its needed (E.g. interrupt handler).
-+	 */
-+	struct kone_profile profiles[5];
-+	struct kone_settings settings;
-+
-+	/*
-+	 * firmware doesn't change unless firmware update is implemented,
-+	 * so it's read only once
-+	 */
-+	int firmware_version;
-+};
-+
-+#endif
--- 
-1.6.6.1
-
-
-
+ 	This is something that device, bus, and class drivers collaborate on
+ 	by implementing various role-specific suspend and resume methods to
+@@ -25,33 +32,41 @@ states:
+ 	them without loss of data.
+ 
+ 	Some drivers can manage hardware wakeup events, which make the system
+-	leave that low-power state.  This feature may be disabled using the
+-	relevant /sys/devices/.../power/wakeup file; enabling it may cost some
+-	power usage, but let the whole system enter low power states more often.
++	leave the low-power state.  This feature may be enabled or disabled
++	using the relevant /sys/devices/.../power/wakeup file (for Ethernet
++	drivers the ioctl interface used by ethtool may also be used for this
++	purpose); enabling it may cost some power usage, but let the whole
++	system enter low-power states more often.
+ 
+     Runtime Power Management model:
+-	Drivers may also enter low power states while the system is running,
+-	independently of other power management activity.  Upstream drivers
+-	will normally not know (or care) if the device is in some low power
+-	state when issuing requests; the driver will auto-resume anything
+-	that's needed when it gets a request.
+-
+-	This doesn't have, or need much infrastructure; it's just something you
+-	should do when writing your drivers.  For example, clk_disable() unused
+-	clocks as part of minimizing power drain for currently-unused hardware.
+-	Of course, sometimes clusters of drivers will collaborate with each
+-	other, which could involve task-specific power management.
+-
+-There's not a lot to be said about those low power states except that they
+-are very system-specific, and often device-specific.  Also, that if enough
+-drivers put themselves into low power states (at "runtime"), the effect may be
+-the same as entering some system-wide low-power state (system sleep) ... and
+-that synergies exist, so that several drivers using runtime pm might put the
+-system into a state where even deeper power saving options are available.
+-
+-Most suspended devices will have quiesced all I/O:  no more DMA or irqs, no
+-more data read or written, and requests from upstream drivers are no longer
+-accepted.  A given bus or platform may have different requirements though.
++	Devices may also be put into low-power states while the system is
++	running, independently of other power management activity in principle.
++	However, devices are not generally independent of each other (for
++	example, a parent device cannot be suspended unless all of its child
++	devices have been suspended).  Moreover, depending on the bus type the
++	device is on, it may be necessary to carry out some bus-specific
++	operations on the device for this purpose.  Devices put into low power
++	states at run time may require special handling during system-wide power
++	transitions (suspend or hibernation).
++
++	For these reasons not only the device driver itself, but also the
++	appropriate subsystem (bus type, device type or device class) driver and
++	the PM core are involved in runtime power management.  As in the system
++	sleep power management case, they need to collaborate by implementing
++	various role-specific suspend and resume methods, so that the hardware
++	is cleanly powered down and reactivated without data or service loss.
++
++There's not a lot to be said about those low-power states except that they are
++very system-specific, and often device-specific.  Also, that if enough devices
++have been put into low-power states (at runtime), the effect may be very similar
++to entering some system-wide low-power state (system sleep) ... and that
++synergies exist, so that several drivers using runtime PM might put the system
++into a state where even deeper power saving options are available.
++
++Most suspended devices will have quiesced all I/O: no more DMA or IRQs (except
++for wakeup events), no more data read or written, and requests from upstream
++drivers are no longer accepted.  A given bus or platform may have different
++requirements though.
+ 
+ Examples of hardware wakeup events include an alarm from a real time clock,
+ network wake-on-LAN packets, keyboard or mouse activity, and media insertion
+@@ -60,129 +75,152 @@ or removal (for PCMCIA, MMC/SD, USB, and
+ 
+ Interfaces for Entering System Sleep States
+ ===========================================
+-Most of the programming interfaces a device driver needs to know about
+-relate to that first model:  entering a system-wide low power state,
+-rather than just minimizing power consumption by one device.
+-
+-
+-Bus Driver Methods
+-------------------
+-The core methods to suspend and resume devices reside in struct bus_type.
+-These are mostly of interest to people writing infrastructure for busses
+-like PCI or USB, or because they define the primitives that device drivers
+-may need to apply in domain-specific ways to their devices:
+-
+-struct bus_type {
+-	...
+-	int  (*suspend)(struct device *dev, pm_message_t state);
+-	int  (*resume)(struct device *dev);
++There are programming interfaces provided for subsystems (bus type, device type,
++device class) and device drivers to allow them to participate in the power
++management of devices they are concerned with.  These interfaces cover both
++system sleep and runtime power management.
++
++
++Device Power Management Operations
++----------------------------------
++Device power management operations, at the subsystem level as well as at the
++device driver level, are implemented by defining and populating objects of type
++struct dev_pm_ops:
++
++struct dev_pm_ops {
++	int (*prepare)(struct device *dev);
++	void (*complete)(struct device *dev);
++	int (*suspend)(struct device *dev);
++	int (*resume)(struct device *dev);
++	int (*freeze)(struct device *dev);
++	int (*thaw)(struct device *dev);
++	int (*poweroff)(struct device *dev);
++	int (*restore)(struct device *dev);
++	int (*suspend_noirq)(struct device *dev);
++	int (*resume_noirq)(struct device *dev);
++	int (*freeze_noirq)(struct device *dev);
++	int (*thaw_noirq)(struct device *dev);
++	int (*poweroff_noirq)(struct device *dev);
++	int (*restore_noirq)(struct device *dev);
++	int (*runtime_suspend)(struct device *dev);
++	int (*runtime_resume)(struct device *dev);
++	int (*runtime_idle)(struct device *dev);
+ };
+ 
+-Bus drivers implement those methods as appropriate for the hardware and
+-the drivers using it; PCI works differently from USB, and so on.  Not many
+-people write bus drivers; most driver code is a "device driver" that
+-builds on top of bus-specific framework code.
++This structure is defined in include/linux/pm.h and the methods included in it
++are also described in that file.  Their roles will be explained in what follows.
++For now, it should be sufficient to remember that the last three methods are
++specific to runtime power management while the remaining ones are used during
++system-wide power transitions.
++
++There also is a deprecated "old" or "legacy" interface for power management
++operations available at least for some subsystems.  This approach does not use
++struct dev_pm_ops objects and it is suitable only for implementing system sleep
++power management methods.  Therefore it is not described in this document, so
++please refer directly to the source code for more information about it.
++
++
++Subsystem-Level Methods
++-----------------------
++The core methods to suspend and resume devices reside in struct dev_pm_ops
++pointed to by the pm member of struct bus_type, struct device_type and
++struct class.  They are mostly of interest to the people writing infrastructure
++for buses, like PCI or USB, or device type and device class drivers.
++
++Bus drivers implement these methods as appropriate for the hardware and the
++drivers using it; PCI works differently from USB, and so on.  Not many people
++write subsystem-level drivers; most driver code is a "device driver" that builds
++on top of bus-specific framework code.
+ 
+ For more information on these driver calls, see the description later;
+ they are called in phases for every device, respecting the parent-child
+-sequencing in the driver model tree.  Note that as this is being written,
+-only the suspend() and resume() are widely available; not many bus drivers
+-leverage all of those phases, or pass them down to lower driver levels.
++sequencing in the driver model tree.
+ 
+ 
+ /sys/devices/.../power/wakeup files
+ -----------------------------------
+-All devices in the driver model have two flags to control handling of
+-wakeup events, which are hardware signals that can force the device and/or
+-system out of a low power state.  These are initialized by bus or device
+-driver code using device_init_wakeup(dev,can_wakeup).
++All devices in the driver model have two flags to control handling of wakeup
++events (hardware signals that can force the device and/or system out of a low
++power state).  These flags are initialized by bus or device driver code using
++device_set_wakeup_capable() and device_set_wakeup_enable(), defined in
++include/linux/pm_wakeup.h.
+ 
+ The "can_wakeup" flag just records whether the device (and its driver) can
+-physically support wakeup events.  When that flag is clear, the sysfs
+-"wakeup" file is empty, and device_may_wakeup() returns false.
+-
+-For devices that can issue wakeup events, a separate flag controls whether
+-that device should try to use its wakeup mechanism.  The initial value of
+-device_may_wakeup() will be true, so that the device's "wakeup" file holds
+-the value "enabled".  Userspace can change that to "disabled" so that
+-device_may_wakeup() returns false; or change it back to "enabled" (so that
+-it returns true again).
+-
+-
+-EXAMPLE:  PCI Device Driver Methods
+------------------------------------
+-PCI framework software calls these methods when the PCI device driver bound
+-to a device device has provided them:
+-
+-struct pci_driver {
+-	...
+-	int  (*suspend)(struct pci_device *pdev, pm_message_t state);
+-	int  (*suspend_late)(struct pci_device *pdev, pm_message_t state);
+-
+-	int  (*resume_early)(struct pci_device *pdev);
+-	int  (*resume)(struct pci_device *pdev);
+-};
+-
+-Drivers will implement those methods, and call PCI-specific procedures
+-like pci_set_power_state(), pci_enable_wake(), pci_save_state(), and
+-pci_restore_state() to manage PCI-specific mechanisms.  (PCI config space
+-could be saved during driver probe, if it weren't for the fact that some
+-systems rely on userspace tweaking using setpci.)  Devices are suspended
+-before their bridges enter low power states, and likewise bridges resume
+-before their devices.
+-
+-
+-Upper Layers of Driver Stacks
+------------------------------
+-Device drivers generally have at least two interfaces, and the methods
+-sketched above are the ones which apply to the lower level (nearer PCI, USB,
+-or other bus hardware).  The network and block layers are examples of upper
+-level interfaces, as is a character device talking to userspace.
+-
+-Power management requests normally need to flow through those upper levels,
+-which often use domain-oriented requests like "blank that screen".  In
+-some cases those upper levels will have power management intelligence that
+-relates to end-user activity, or other devices that work in cooperation.
+-
+-When those interfaces are structured using class interfaces, there is a
+-standard way to have the upper layer stop issuing requests to a given
+-class device (and restart later):
+-
+-struct class {
+-	...
+-	int  (*suspend)(struct device *dev, pm_message_t state);
+-	int  (*resume)(struct device *dev);
+-};
+-
+-Those calls are issued in specific phases of the process by which the
+-system enters a low power "suspend" state, or resumes from it.
+-
+-
+-Calling Drivers to Enter System Sleep States
+-============================================
+-When the system enters a low power state, each device's driver is asked
+-to suspend the device by putting it into state compatible with the target
++physically support wakeup events.  The device_set_wakeup_capable() routine
++affects this flag.  The "should_wakeup" flag controls whether the device should
++try to use its wakeup mechanism.  device_set_wakeup_enable() affects this flag;
++for the most part drivers should not change its value.  The initial value of
++should_wakeup is supposed to be false for the majority of devices; the major
++exceptions are power buttons, keyboards, and Ethernet adapters whose WoL
++(wake-on-LAN) feature has been set up with ethtool.
++
++Whether or not a device is capable of issuing wakeup events is a hardware
++matter, and the kernel is responsible for keeping track of it.  By contrast,
++whether or not a wakeup-capable device should issue wakeup events is a policy
++decision, and it is managed by user space through a sysfs attribute: the
++power/wakeup file.  User space can write the strings "enabled" or "disabled" to
++set or clear the should_wakeup flag, respectively.  Reads from the file will
++return the corresponding string if can_wakeup is true, but if can_wakeup is
++false then reads will return an empty string, to indicate that the device
++doesn't support wakeup events.  (But even though the file appears empty, writes
++will still affect the should_wakeup flag.)
++
++The device_may_wakeup() routine returns true only if both flags are set.
++Drivers should check this routine when putting devices in a low-power state
++during a system sleep transition, to see whether or not to enable the devices'
++wakeup mechanisms.  However for runtime power management, wakeup events should
++be enabled whenever the device and driver both support them, regardless of the
++should_wakeup flag.
++
++
++/sys/devices/.../power/control files
++------------------------------------
++Each device in the driver model has a flag to control whether it is subject to
++runtime power management.  This flag, called runtime_auto, is initialized by the
++bus type (or generally subsystem) code using pm_runtime_allow() or
++pm_runtime_forbid(); the default is to allow runtime power management.
++
++The setting can be adjusted by user space by writing either "on" or "auto" to
++the device's power/control sysfs file.  Writing "auto" calls pm_runtime_allow(),
++setting the flag and allowing the device to be runtime power-managed by its
++driver.  Writing "on" calls pm_runtime_forbid(), clearing the flag, returning
++the device to full power if it was in a low-power state, and preventing the
++device from being runtime power-managed.  User space can check the current value
++of the runtime_auto flag by reading the file.
++
++The device's runtime_auto flag has no effect on the handling of system-wide
++power transitions.  In particular, the device can (and in the majority of cases
++should and will) be put into a low-power state during a system-wide transition
++to a sleep state even though its runtime_auto flag is clear.
++
++For more information about the runtime power management framework, refer to
++Documentation/power/runtime_pm.txt.
++
++
++Calling Drivers to Enter and Leave System Sleep States
++======================================================
++When the system goes into a sleep state, each device's driver is asked to
++suspend the device by putting it into a state compatible with the target
+ system state.  That's usually some version of "off", but the details are
+ system-specific.  Also, wakeup-enabled devices will usually stay partly
+ functional in order to wake the system.
+ 
+-When the system leaves that low power state, the device's driver is asked
+-to resume it.  The suspend and resume operations always go together, and
+-both are multi-phase operations.
++When the system leaves that low-power state, the device's driver is asked to
++resume it by returning it to full power.  The suspend and resume operations
++always go together, and both are multi-phase operations.
+ 
+-For simple drivers, suspend might quiesce the device using the class code
+-and then turn its hardware as "off" as possible with late_suspend.  The
++For simple drivers, suspend might quiesce the device using class code
++and then turn its hardware as "off" as possible during suspend_noirq.  The
+ matching resume calls would then completely reinitialize the hardware
+ before reactivating its class I/O queues.
+ 
+-More power-aware drivers drivers will use more than one device low power
+-state, either at runtime or during system sleep states, and might trigger
+-system wakeup events.
++More power-aware drivers might prepare the devices for triggering system wakeup
++events.
+ 
+ 
+ Call Sequence Guarantees
+ ------------------------
+-To ensure that bridges and similar links needed to talk to a device are
++To ensure that bridges and similar links needing to talk to a device are
+ available when the device is suspended or resumed, the device tree is
+ walked in a bottom-up order to suspend devices.  A top-down order is
+ used to resume those devices.
+@@ -194,205 +232,300 @@ its parent; and can't be removed or susp
+ The policy is that the device tree should match hardware bus topology.
+ (Or at least the control bus, for devices which use multiple busses.)
+ In particular, this means that a device registration may fail if the parent of
+-the device is suspending (ie. has been chosen by the PM core as the next
++the device is suspending (i.e. has been chosen by the PM core as the next
+ device to suspend) or has already suspended, as well as after all of the other
+ devices have been suspended.  Device drivers must be prepared to cope with such
+ situations.
+ 
+ 
+-Suspending Devices
+-------------------
+-Suspending a given device is done in several phases.  Suspending the
+-system always includes every phase, executing calls for every device
+-before the next phase begins.  Not all busses or classes support all
+-these callbacks; and not all drivers use all the callbacks.
+-
+-The phases are seen by driver notifications issued in this order:
+-
+-   1	class.suspend(dev, message) is called after tasks are frozen, for
+-	devices associated with a class that has such a method.  This
+-	method may sleep.
+-
+-	Since I/O activity usually comes from such higher layers, this is
+-	a good place to quiesce all drivers of a given type (and keep such
+-	code out of those drivers).
+-
+-   2	bus.suspend(dev, message) is called next.  This method may sleep,
+-	and is often morphed into a device driver call with bus-specific
+-	parameters and/or rules.
+-
+-	This call should handle parts of device suspend logic that require
+-	sleeping.  It probably does work to quiesce the device which hasn't
+-	been abstracted into class.suspend().
+-
+-The pm_message_t parameter is currently used to refine those semantics
+-(described later).
+-
+-At the end of those phases, drivers should normally have stopped all I/O
+-transactions (DMA, IRQs), saved enough state that they can re-initialize
+-or restore previous state (as needed by the hardware), and placed the
+-device into a low-power state.  On many platforms they will also use
+-clk_disable() to gate off one or more clock sources; sometimes they will
+-also switch off power supplies, or reduce voltages.  Drivers which have
+-runtime PM support may already have performed some or all of the steps
+-needed to prepare for the upcoming system sleep state.
+-
+-When any driver sees that its device_can_wakeup(dev), it should make sure
+-to use the relevant hardware signals to trigger a system wakeup event.
+-For example, enable_irq_wake() might identify GPIO signals hooked up to
+-a switch or other external hardware, and pci_enable_wake() does something
+-similar for PCI's PME# signal.
+-
+-If a driver (or bus, or class) fails it suspend method, the system won't
+-enter the desired low power state; it will resume all the devices it's
+-suspended so far.
+-
+-Note that drivers may need to perform different actions based on the target
+-system lowpower/sleep state.  At this writing, there are only platform
+-specific APIs through which drivers could determine those target states.
++System Power Management Phases
++------------------------------
++Suspending or resuming the system is done in several phases.  Different phases
++are used for standby or memory sleep states ("suspend-to-RAM") and the
++hibernation state ("suspend-to-disk").  Each phase involves executing callbacks
++for every device before the next phase begins.  Not all busses or classes
++support all these callbacks and not all drivers use all the callbacks.  The
++various phases always run after tasks have been frozen and before they are
++unfrozen.  Furthermore, the *_noirq phases run at a time when IRQ handlers have
++been disabled (except for those marked with the IRQ_WAKEUP flag).
++
++Most phases use bus, type, and class callbacks (that is, methods defined in
++dev->bus->pm, dev->type->pm, and dev->class->pm).  The prepare and complete
++phases are exceptions; they use only bus callbacks.  When multiple callbacks
++are used in a phase, they are invoked in the order: <class, type, bus> during
++power-down transitions and in the opposite order during power-up transitions.
++For example, during the suspend phase the PM core invokes
++
++	dev->class->pm.suspend(dev);
++	dev->type->pm.suspend(dev);
++	dev->bus->pm.suspend(dev);
++
++before moving on to the next device, whereas during the resume phase the core
++invokes
++
++	dev->bus->pm.resume(dev);
++	dev->type->pm.resume(dev);
++	dev->class->pm.resume(dev);
+ 
++These callbacks may in turn invoke device- or driver-specific methods stored in
++dev->driver->pm, but they don't have to.
+ 
+-Device Low Power (suspend) States
+----------------------------------
+-Device low-power states aren't very standard.  One device might only handle
+-"on" and "off, while another might support a dozen different versions of
+-"on" (how many engines are active?), plus a state that gets back to "on"
+-faster than from a full "off".
+-
+-Some busses define rules about what different suspend states mean.  PCI
+-gives one example:  after the suspend sequence completes, a non-legacy
+-PCI device may not perform DMA or issue IRQs, and any wakeup events it
+-issues would be issued through the PME# bus signal.  Plus, there are
+-several PCI-standard device states, some of which are optional.
+-
+-In contrast, integrated system-on-chip processors often use irqs as the
+-wakeup event sources (so drivers would call enable_irq_wake) and might
+-be able to treat DMA completion as a wakeup event (sometimes DMA can stay
+-active too, it'd only be the CPU and some peripherals that sleep).
+ 
+-Some details here may be platform-specific.  Systems may have devices that
+-can be fully active in certain sleep states, such as an LCD display that's
+-refreshed using DMA while most of the system is sleeping lightly ... and
+-its frame buffer might even be updated by a DSP or other non-Linux CPU while
+-the Linux control processor stays idle.
+-
+-Moreover, the specific actions taken may depend on the target system state.
+-One target system state might allow a given device to be very operational;
+-another might require a hard shut down with re-initialization on resume.
+-And two different target systems might use the same device in different
+-ways; the aforementioned LCD might be active in one product's "standby",
+-but a different product using the same SOC might work differently.
++Entering System Suspend
++-----------------------
++When the system goes into the standby or memory sleep state, the phases are:
+ 
++		prepare, suspend, suspend_noirq.
+ 
+-Meaning of pm_message_t.event
+------------------------------
+-Parameters to suspend calls include the device affected and a message of
+-type pm_message_t, which has one field:  the event.  If driver does not
+-recognize the event code, suspend calls may abort the request and return
+-a negative errno.  However, most drivers will be fine if they implement
+-PM_EVENT_SUSPEND semantics for all messages.
+-
+-The event codes are used to refine the goal of suspending the device, and
+-mostly matter when creating or resuming system memory image snapshots, as
+-used with suspend-to-disk:
+-
+-    PM_EVENT_SUSPEND -- quiesce the driver and put hardware into a low-power
+-	state.  When used with system sleep states like "suspend-to-RAM" or
+-	"standby", the upcoming resume() call will often be able to rely on
+-	state kept in hardware, or issue system wakeup events.
+-
+-    PM_EVENT_HIBERNATE -- Put hardware into a low-power state and enable wakeup
+-	events as appropriate.  It is only used with hibernation
+-	(suspend-to-disk) and few devices are able to wake up the system from
+-	this state; most are completely powered off.
+-
+-    PM_EVENT_FREEZE -- quiesce the driver, but don't necessarily change into
+-	any low power mode.  A system snapshot is about to be taken, often
+-	followed by a call to the driver's resume() method.  Neither wakeup
+-	events nor DMA are allowed.
+-
+-    PM_EVENT_PRETHAW -- quiesce the driver, knowing that the upcoming resume()
+-	will restore a suspend-to-disk snapshot from a different kernel image.
+-	Drivers that are smart enough to look at their hardware state during
+-	resume() processing need that state to be correct ... a PRETHAW could
+-	be used to invalidate that state (by resetting the device), like a
+-	shutdown() invocation would before a kexec() or system halt.  Other
+-	drivers might handle this the same way as PM_EVENT_FREEZE.  Neither
+-	wakeup events nor DMA are allowed.
+-
+-To enter "standby" (ACPI S1) or "Suspend to RAM" (STR, ACPI S3) states, or
+-the similarly named APM states, only PM_EVENT_SUSPEND is used; the other event
+-codes are used for hibernation ("Suspend to Disk", STD, ACPI S4).
+-
+-There's also PM_EVENT_ON, a value which never appears as a suspend event
+-but is sometimes used to record the "not suspended" device state.
+-
+-
+-Resuming Devices
+-----------------
+-Resuming is done in multiple phases, much like suspending, with all
+-devices processing each phase's calls before the next phase begins.
+-
+-The phases are seen by driver notifications issued in this order:
+-
+-   1	bus.resume(dev) reverses the effects of bus.suspend().  This may
+-	be morphed into a device driver call with bus-specific parameters;
+-	implementations may sleep.
+-
+-   2	class.resume(dev) is called for devices associated with a class
+-	that has such a method.  Implementations may sleep.
+-
+-	This reverses the effects of class.suspend(), and would usually
+-	reactivate the device's I/O queue.
+-
+-At the end of those phases, drivers should normally be as functional as
+-they were before suspending:  I/O can be performed using DMA and IRQs, and
+-the relevant clocks are gated on.  The device need not be "fully on"; it
+-might be in a runtime lowpower/suspend state that acts as if it were.
++    1.	The prepare phase is meant to prevent races by preventing new devices
++	from being registered; the PM core would never know that all the
++	children of a device had been suspended if new children could be
++	registered at will.  (By contrast, devices may be unregistered at any
++	time.)  Unlike the other suspend-related phases, during the prepare
++	phase the device tree is traversed top-down.
++
++	The prepare phase uses only a bus callback.  After the callback method
++	returns, no new children may be registered below the device.  The method
++	may also prepare the device or driver in some way for the upcoming
++	system power transition, but it should not put the device into a
++	low-power state.
++
++    2.	The suspend methods should quiesce the device to stop it from performing
++	I/O.  They also may save the device registers and put it into the
++	appropriate low-power state, depending on the bus type the device is on,
++	and they may enable wakeup events.
++
++    3.	The suspend_noirq phase occurs after IRQ handlers have been disabled,
++	which means that the driver's interrupt handler will not be called while
++	the callback method is running.  The methods should save the values of
++	the device's registers that weren't saved previously and finally put the
++	device into the appropriate low-power state.
++
++	The majority of subsystems and device drivers need not implement this
++	callback.  However, bus types allowing devices to share interrupt
++	vectors, like PCI, generally need it; otherwise a driver might encounter
++	an error during the suspend phase by fielding a shared interrupt
++	generated by some other device after its own device had been set to low
++	power.
++
++At the end of these phases, drivers should have stopped all I/O transactions
++(DMA, IRQs), saved enough state that they can re-initialize or restore previous
++state (as needed by the hardware), and placed the device into a low-power state.
++On many platforms they will gate off one or more clock sources; sometimes they
++will also switch off power supplies or reduce voltages.  (Drivers supporting
++runtime PM may already have performed some or all of these steps.)
++
++If device_may_wakeup(dev) returns true, the device should be prepared for
++generating hardware wakeup signals to trigger a system wakeup event when the
++system is in the sleep state.  For example, enable_irq_wake() might identify
++GPIO signals hooked up to a switch or other external hardware, and
++pci_enable_wake() does something similar for the PCI PME signal.
++
++If any of these callbacks returns an error, the system won't enter the desired
++low-power state.  Instead the PM core will unwind its actions by resuming all
++the devices that were suspended.
++
++
++Leaving System Suspend
++----------------------
++When resuming from standby or memory sleep, the phases are:
++
++		resume_noirq, resume, complete.
++
++    1.	The resume_noirq callback methods should perform any actions needed
++	before the driver's interrupt handlers are invoked.  This generally
++	means undoing the actions of the suspend_noirq phase.  If the bus type
++	permits devices to share interrupt vectors, like PCI, the method should
++	bring the device and its driver into a state in which the driver can
++	recognize if the device is the source of incoming interrupts, if any,
++	and handle them correctly.
++
++	For example, the PCI bus type's ->pm.resume_noirq() puts the device into
++	the full-power state (D0 in the PCI terminology) and restores the
++	standard configuration registers of the device.  Then it calls the
++	device driver's ->pm.resume_noirq() method to perform device-specific
++	actions.
++
++    2.	The resume methods should bring the the device back to its operating
++	state, so that it can perform normal I/O.  This generally involves
++	undoing the actions of the suspend phase.
++
++    3.	The complete phase uses only a bus callback.  The method should undo the
++	actions of the prepare phase.  Note, however, that new children may be
++	registered below the device as soon as the resume callbacks occur; it's
++	not necessary to wait until the complete phase.
++
++At the end of these phases, drivers should be as functional as they were before
++suspending: I/O can be performed using DMA and IRQs, and the relevant clocks are
++gated on.  Even if the device was in a low-power state before the system sleep
++because of runtime power management, afterwards it should be back in its
++full-power state.  There are multiple reasons why it's best to do this; they are
++discussed in more detail in Documentation/power/runtime_pm.txt.
+ 
+ However, the details here may again be platform-specific.  For example,
+ some systems support multiple "run" states, and the mode in effect at
+-the end of resume() might not be the one which preceded suspension.
++the end of resume might not be the one which preceded suspension.
+ That means availability of certain clocks or power supplies changed,
+ which could easily affect how a driver works.
+ 
+-
+ Drivers need to be able to handle hardware which has been reset since the
+ suspend methods were called, for example by complete reinitialization.
+ This may be the hardest part, and the one most protected by NDA'd documents
+ and chip errata.  It's simplest if the hardware state hasn't changed since
+-the suspend() was called, but that can't always be guaranteed.
++the suspend was carried out, but that can't be guaranteed (in fact, it ususally
++is not the case).
+ 
+ Drivers must also be prepared to notice that the device has been removed
+-while the system was powered off, whenever that's physically possible.
++while the system was powered down, whenever that's physically possible.
+ PCMCIA, MMC, USB, Firewire, SCSI, and even IDE are common examples of busses
+ where common Linux platforms will see such removal.  Details of how drivers
+ will notice and handle such removals are currently bus-specific, and often
+ involve a separate thread.
+ 
+-
+-Note that the bus-specific runtime PM wakeup mechanism can exist, and might
+-be defined to share some of the same driver code as for system wakeup.  For
+-example, a bus-specific device driver's resume() method might be used there,
+-so it wouldn't only be called from bus.resume() during system-wide wakeup.
+-See bus-specific information about how runtime wakeup events are handled.
++These callbacks may return an error value, but the PM core will ignore such
++errors since there's nothing it can do about them other than printing them in
++the system log.
++
++
++Entering Hibernation
++--------------------
++Hibernating the system is more complicated than putting it into the standby or
++memory sleep state, because it involves creating and saving a system image.
++Therefore there are more phases for hibernation, with a different set of
++callbacks.  These phases always run after tasks have been frozen and memory has
++been freed.
++
++The general procedure for hibernation is to quiesce all devices (freeze), create
++an image of the system memory while everything is stable, reactivate all
++devices (thaw), write the image to permanent storage, and finally shut down the
++system (poweroff).  The phases used to accomplish this are:
++
++	prepare, freeze, freeze_noirq, thaw_noirq, thaw, complete,
++	prepare, poweroff, poweroff_noirq
++
++    1.	The prepare phase is discussed in the "Entering System Suspend" section
++	above.
++
++    2.	The freeze methods should quiesce the device so that it doesn't generate
++	IRQs or DMA, and they may need to save the values of device registers.
++	However the device does not have to be put in a low-power state, and to
++	save time it's best not to do so.  Also, the device should not be
++	prepared to generate wakeup events.
++
++    3.	The freeze_noirq phase is analogous to the suspend_noirq phase discussed
++	above, except again that the device should not be put in a low-power
++	state and should not be allowed to generate wakeup events.
++
++At this point the system image is created.  All devices should be inactive and
++the contents of memory should remain undisturbed while this happens, so that the
++image forms an atomic snapshot of the system state.
++
++    4.	The thaw_noirq phase is analogous to the resume_noirq phase discussed
++	above.  The main difference is that its methods can assume the device is
++	in the same state as at the end of the freeze_noirq phase.
++
++    5.	The thaw phase is analogous to the resume phase discussed above.  Its
++	methods should bring the device back to an operating state, so that it
++	can be used for saving the image if necessary.
++
++    6.	The complete phase is discussed in the "Leaving System Suspend" section
++	above.
++
++At this point the system image is saved, and the devices then need to be
++prepared for the upcoming system shutdown.  This is much like suspending them
++before putting the system into the standby or memory sleep state, and the phases
++are similar.
++
++    7.	The prepare phase is discussed above.
++
++    8.	The poweroff phase is analogous to the suspend phase.
++
++    9.	The poweroff_noirq phase is analogous to the suspend_noirq phase.
++
++The poweroff and poweroff_noirq callbacks should do essentially the same things
++as the suspend and suspend_noirq callbacks.  The only notable difference is that
++they need not store the device register values, because the registers should
++already have been stored during the freeze or freeze_noirq phases.
++
++
++Leaving Hibernation
++-------------------
++Resuming from hibernation is, again, more complicated than resuming from a sleep
++state in which the contents of main memory are preserved, because it requires
++a system image to be loaded into memory and the pre-hibernation memory contents
++to be restored before control can be passed back to the image kernel.
++
++Although in principle, the image might be loaded into memory and the
++pre-hibernation memory contents restored by the boot loader, in practice this
++can't be done because boot loaders aren't smart enough and there is no
++established protocol for passing the necessary information.  So instead, the
++boot loader loads a fresh instance of the kernel, called the boot kernel, into
++memory and passes control to it in the usual way.  Then the boot kernel reads
++the system image, restores the pre-hibernation memory contents, and passes
++control to the image kernel.  Thus two different kernels are involved in
++resuming from hibernation.  In fact, the boot kernel may be completely different
++from the image kernel: a different configuration and even a different version.
++This has important consequences for device drivers and their subsystems.
++
++To be able to load the system image into memory, the boot kernel needs to
++include at least a subset of device drivers allowing it to access the storage
++medium containing the image, although it doesn't need to include all of the
++drivers present in the image kernel.  After the image has been loaded, the
++devices managed by the boot kernel need to be prepared for passing control back
++to the image kernel.  This is very similar to the initial steps involved in
++creating a system image, and it is accomplished in the same way, using prepare,
++freeze, and freeze_noirq phases.  However the devices affected by these phases
++are only those having drivers in the boot kernel; other devices will still be in
++whatever state the boot loader left them.
++
++Should the restoration of the pre-hibernation memory contents fail, the boot
++kernel would go through the "thawing" procedure described above, using the
++thaw_noirq, thaw, and complete phases, and then continue running normally.  This
++happens only rarely.  Most often the pre-hibernation memory contents are
++restored successfully and control is passed to the image kernel, which then
++becomes responsible for bringing the system back to the working state.
++
++To achieve this, the image kernel must restore the devices' pre-hibernation
++functionality.  The operation is much like waking up from the memory sleep
++state, although it involves different phases:
++
++	restore_noirq, restore, complete
++
++    1.	The restore_noirq phase is analogous to the resume_noirq phase.
++
++    2.	The restore phase is analogous to the resume phase.
++
++    3.	The complete phase is discussed above.
++
++The main difference from resume[_noirq] is that restore[_noirq] must assume the
++device has been accessed and reconfigured by the boot loader or the boot kernel.
++Consequently the state of the device may be different from the state remembered
++from the freeze and freeze_noirq phases.  The device may even need to be reset
++and completely re-initialized.  In many cases this difference doesn't matter, so
++the resume[_noirq] and restore[_norq] method pointers can be set to the same
++routines.  Nevertheless, different callback pointers are used in case there is a
++situation where it actually matters.
+ 
+ 
+ System Devices
+ --------------
+-System devices follow a slightly different API, which can be found in
++System devices (sysdevs) follow a slightly different API, which can be found in
+ 
+ 	include/linux/sysdev.h
+ 	drivers/base/sys.c
+ 
+-System devices will only be suspended with interrupts disabled, and after
+-all other devices have been suspended.  On resume, they will be resumed
+-before any other devices, and also with interrupts disabled.
+-
+-That is, IRQs are disabled, the suspend_late() phase begins, then the
+-sysdev_driver.suspend() phase, and the system enters a sleep state.  Then
+-the sysdev_driver.resume() phase begins, followed by the resume_early()
+-phase, after which IRQs are enabled.
++System devices will be suspended with interrupts disabled, and after all other
++devices have been suspended.  On resume, they will be resumed before any other
++devices, and also with interrupts disabled.  These things occur in special
++"sysdev_driver" phases, which affect only system devices.
++
++Thus, after the suspend_noirq (or freeze_noirq or poweroff_noirq) phase, when
++the non-boot CPUs are all offline and IRQs are disabled on the remaining online
++CPU, then a sysdev_driver.suspend phase is carried out, and the system enters a
++sleep state (or a system image is created).  During resume (or after the image
++has been created or loaded) a sysdev_driver.resume phase is carried out, IRQs
++are enabled on the only online CPU, the non-boot CPUs are enabled, and the
++resume_noirq (or thaw_noirq or restore_noirq) phase begins.
+ 
+ Code to actually enter and exit the system-wide low power state sometimes
+ involves hardware details that are only known to the boot firmware, and
+@@ -400,6 +533,51 @@ may leave a CPU running software (from S
+ the system and manages its wakeup sequence.
+ 
+ 
++Device Low Power (suspend) States
++---------------------------------
++Device low-power states aren't standard.  One device might only handle
++"on" and "off, while another might support a dozen different versions of
++"on" (how many engines are active?), plus a state that gets back to "on"
++faster than from a full "off".
++
++Some busses define rules about what different suspend states mean.  PCI
++gives one example:  after the suspend sequence completes, a non-legacy
++PCI device may not perform DMA or issue IRQs, and any wakeup events it
++issues would be issued through the PME# bus signal.  Plus, there are
++several PCI-standard device states, some of which are optional.
++
++In contrast, integrated system-on-chip processors often use IRQs as the
++wakeup event sources (so drivers would call enable_irq_wake) and might
++be able to treat DMA completion as a wakeup event (sometimes DMA can stay
++active too, it'd only be the CPU and some peripherals that sleep).
++
++Some details here may be platform-specific.  Systems may have devices that
++can be fully active in certain sleep states, such as an LCD display that's
++refreshed using DMA while most of the system is sleeping lightly ... and
++its frame buffer might even be updated by a DSP or other non-Linux CPU while
++the Linux control processor stays idle.
++
++Moreover, the specific actions taken may depend on the target system state.
++One target system state might allow a given device to be very operational;
++another might require a hard shut down with re-initialization on resume.
++And two different target systems might use the same device in different
++ways; the aforementioned LCD might be active in one product's "standby",
++but a different product using the same SOC might work differently.
++
++
++Power Management Notifiers
++--------------------------
++There are some operations that cannot be carried out by the power management
++callbacks discussed above, because the callbacks occur too late or too early.
++To handle these cases, subsystems and device drivers may register power
++management notifiers that are called before tasks are frozen and after they have
++been thawed.  Generally speaking, the PM notifiers are suitable for performing
++actions that either require user space to be available, or at least won't
++interfere with user space.
++
++For details refer to Documentation/power/notifiers.txt.
++
++
+ Runtime Power Management
+ ========================
+ Many devices are able to dynamically power down while the system is still
+@@ -407,82 +585,23 @@ running. This feature is useful for devi
+ can offer significant power savings on a running system.  These devices
+ often support a range of runtime power states, which might use names such
+ as "off", "sleep", "idle", "active", and so on.  Those states will in some
+-cases (like PCI) be partially constrained by a bus the device uses, and will
++cases (like PCI) be partially constrained by the bus the device uses, and will
+ usually include hardware states that are also used in system sleep states.
+ 
+-However, note that if a driver puts a device into a runtime low power state
+-and the system then goes into a system-wide sleep state, it normally ought
+-to resume into that runtime low power state rather than "full on".  Such
+-distinctions would be part of the driver-internal state machine for that
+-hardware; the whole point of runtime power management is to be sure that
+-drivers are decoupled in that way from the state machine governing phases
+-of the system-wide power/sleep state transitions.
+-
+-
+-Power Saving Techniques
+------------------------
+-Normally runtime power management is handled by the drivers without specific
+-userspace or kernel intervention, by device-aware use of techniques like:
+-
+-    Using information provided by other system layers
+-	- stay deeply "off" except between open() and close()
+-	- if transceiver/PHY indicates "nobody connected", stay "off"
+-	- application protocols may include power commands or hints
+-
+-    Using fewer CPU cycles
+-	- using DMA instead of PIO
+-	- removing timers, or making them lower frequency
+-	- shortening "hot" code paths
+-	- eliminating cache misses
+-	- (sometimes) offloading work to device firmware
+-
+-    Reducing other resource costs
+-	- gating off unused clocks in software (or hardware)
+-	- switching off unused power supplies
+-	- eliminating (or delaying/merging) IRQs
+-	- tuning DMA to use word and/or burst modes
+-
+-    Using device-specific low power states
+-	- using lower voltages
+-	- avoiding needless DMA transfers
+-
+-Read your hardware documentation carefully to see the opportunities that
+-may be available.  If you can, measure the actual power usage and check
+-it against the budget established for your project.
+-
+-
+-Examples:  USB hosts, system timer, system CPU
+-----------------------------------------------
+-USB host controllers make interesting, if complex, examples.  In many cases
+-these have no work to do:  no USB devices are connected, or all of them are
+-in the USB "suspend" state.  Linux host controller drivers can then disable
+-periodic DMA transfers that would otherwise be a constant power drain on the
+-memory subsystem, and enter a suspend state.  In power-aware controllers,
+-entering that suspend state may disable the clock used with USB signaling,
+-saving a certain amount of power.
+-
+-The controller will be woken from that state (with an IRQ) by changes to the
+-signal state on the data lines of a given port, for example by an existing
+-peripheral requesting "remote wakeup" or by plugging a new peripheral.  The
+-same wakeup mechanism usually works from "standby" sleep states, and on some
+-systems also from "suspend to RAM" (or even "suspend to disk") states.
+-(Except that ACPI may be involved instead of normal IRQs, on some hardware.)
+-
+-System devices like timers and CPUs may have special roles in the platform
+-power management scheme.  For example, system timers using a "dynamic tick"
+-approach don't just save CPU cycles (by eliminating needless timer IRQs),
+-but they may also open the door to using lower power CPU "idle" states that
+-cost more than a jiffie to enter and exit.  On x86 systems these are states
+-like "C3"; note that periodic DMA transfers from a USB host controller will
+-also prevent entry to a C3 state, much like a periodic timer IRQ.
+-
+-That kind of runtime mechanism interaction is common.  "System On Chip" (SOC)
+-processors often have low power idle modes that can't be entered unless
+-certain medium-speed clocks (often 12 or 48 MHz) are gated off.  When the
+-drivers gate those clocks effectively, then the system idle task may be able
+-to use the lower power idle modes and thereby increase battery life.
+-
+-If the CPU can have a "cpufreq" driver, there also may be opportunities
+-to shift to lower voltage settings and reduce the power cost of executing
+-a given number of instructions.  (Without voltage adjustment, it's rare
+-for cpufreq to save much power; the cost-per-instruction must go down.)
++A system-wide power transition can be started while some devices are in low
++power states due to runtime power management.  The system sleep PM callbacks
++should recognize such situations and react to them appropriately, but the
++necessary actions are subsystem-specific.
++
++In some cases the decision may be made at the subsystem level while in other
++cases the device driver may be left to decide.  In some cases it may be
++desirable to leave a suspended device in that state during a system-wide power
++transition, but in other cases the device must be put back into the full-power
++state temporarily, for example so that its system wakeup capability can be
++disabled.  This all depends on the hardware and the design of the subsystem and
++device driver in question.
++
++During system-wide resume from a sleep state it's best to put devices into the
++full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer to
++that document for more information regarding this particular issue as well as
++for information on the device runtime power management framework in general.
 
