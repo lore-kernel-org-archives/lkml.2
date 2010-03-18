@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab0CRRUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 13:20:52 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37682 "EHLO mx1.suse.de"
+	id S1753077Ab0CRRUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 13:20:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63970 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752214Ab0CRRUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752297Ab0CRRUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Mar 2010 13:20:51 -0400
-Date: Thu, 18 Mar 2010 10:20:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Dmitry Torokhov <dtor@mail.ru>, Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [RFC/PATCH] platform_bus: allow custom extensions to system PM
- methods
-Message-ID: <20100318172024.GA1675@suse.de>
-References: <1268867896-7616-1-git-send-email-khilman@deeprootsystems.com>
- <20100317234414.GA23319@suse.de>
- <87bpellg9p.fsf@deeprootsystems.com>
+From: Andreas Schwab <schwab@redhat.com>
+To: munroesj@us.ibm.com
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ulrich Drepper <drepper@redhat.com>,
+       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel@teksavvy.com, torvalds@linux-foundation.org
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+References: <20100315134449.GB1653@linux-mips.org>
+	<4B9E4EB1.9010800@zytor.com> <4B9E59B7.6060405@redhat.com>
+	<20100315.120004.209998642.davem@davemloft.net>
+	<4B9E8D67.8040209@zytor.com> <1268685311.2335.38.camel@pasglop>
+	<1268776570.19726.98.camel@spokane1.rchland.ibm.com>
+	<1268785874.2335.137.camel@pasglop> <4BA06E1B.2040706@redhat.com>
+	<1268816179.2335.187.camel@pasglop> <4BA11FD2.2090104@zytor.com>
+	<1268858134.2335.198.camel@pasglop> <4BA1412C.6070008@zytor.com>
+	<1268866720.2335.204.camel@pasglop>
+	<1268928480.19726.123.camel@spokane1.rchland.ibm.com>
+X-Yow: I always wanted a NOSE JOB!!
+Date: Thu, 18 Mar 2010 17:21:06 +0100
+In-Reply-To: <1268928480.19726.123.camel@spokane1.rchland.ibm.com> (Steven
+	Munroe's message of "Thu, 18 Mar 2010 11:08:00 -0500")
+Message-ID: <m37hp9y51p.fsf@hase.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bpellg9p.fsf@deeprootsystems.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 09:57:06AM -0700, Kevin Hilman wrote:
-> Greg KH <gregkh@suse.de> writes:
-> 
-> > On Wed, Mar 17, 2010 at 04:18:15PM -0700, Kevin Hilman wrote:
-> >> When runtime PM for platform_bus was added, it allowed for platforms
-> >> to customize the runtime PM methods since they are defined as weak
-> >> symbols.
-> >> 
-> >> This patch allows platforms to also extend the system PM methods with
-> >> custom hooks so runtime PM and system PM extensions can be managed
-> >> together by custom platform-specific code.
-> >
-> > Wow, that's scary, I didn't realize that was done for the runtime stuff.
-> >
-> > What would you be replacing these functions with for your platform that
-> > would require it to be in arch-specific code?
-> 
-> I'm basically copying the existing functions and extending them with
-> platform-specific code to manage device clocks and other PM HW state.
-> IOW, I still call the drivers PM methods, but also take care of some
-> platform specific PM HW management.  This is just like the runtime PM
-> hooks: platform-specific code + calling drivers runtime PM methods.
-> 
-> On my platform (TI OMAP), the code to handle device PM is common for
-> all devices, so for runtime PM, I'm taking care of it at the bus
-> level.  At the hardware level, there's really no difference between
-> runtime and system PM, so I want to take advantage of the same
-> platform specific code for system PM
-> 
-> Initially, rather than making the system PM methods themselves weak, I
-> added some weak hooks that could be overridden instead (see test patch
-> below).  The problem with that is that it is not as flexible if you
-> want to run some custom code before and/or after calling the drivers
-> PM methods.  To be more flexible, using this approach, we'd probably
-> need pre- and post- hooks to be used before and after the driver's PM
-> methods are called.  Rather than add all these hooks, I decided it was
-> cleaner to just allow override of the primary methods themselves,
-> which parallels the runtime PM approach.
+Steven Munroe <munroesj@linux.vnet.ibm.com> writes:
 
-Ok, that sounds reasonable for now.  I'll queue it up for .35.
+> extern long int syscall (long int __sysno, ...) __THROW;
+>
+> #endif	/* Use misc.  */
+>
+> Changing this would be an ABI change and would have to be versioned. It
+> would effect any one using syscall not just SYS_fallocate.
+>
+> the question is do programmers in practice include unistd.h when they
+> use syscall.
+>
+> If the changed prototype is not in scope then the 1st parm (__sysno)
+> defaults to int and is passed in on r3 which gets moved to r0.
 
-thanks,
+int is incompatible with long, so you already get undefined behaviour
+anyway.
 
-greg k-h
+Andreas.
+
+-- 
+Andreas Schwab, schwab@redhat.com
+GPG Key fingerprint = D4E8 DBE3 3813 BB5D FA84  5EC7 45C6 250E 6F00 984E
+"And now for something completely different."
