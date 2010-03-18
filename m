@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab0CRUpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 16:45:13 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55791 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752325Ab0CRUpK (ORCPT
+	id S1752683Ab0CRUpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 16:45:19 -0400
+Received: from mail-bw0-f225.google.com ([209.85.218.225]:47610 "EHLO
+	mail-bw0-f225.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab0CRUpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 16:45:10 -0400
-Date: Thu, 18 Mar 2010 16:35:32 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-03-18
-Message-ID: <20100318203532.GE17357@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 18 Mar 2010 16:45:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WzhjKcmppojSq5t/lGt6qmYMpQZTWEg1kKSvtwf5MVzqF8qn9tYrghqDv++qZFcOYw
+         Vh0CAOH72ssGT/6VwvLOKvc6ssb7SPS13gVVFheQx+MgHD1187Lk1yJDKKNNg+AaODya
+         flrFNmAfRLmvFVNgctELOnoYoPdAq2+jA/2AM=
+Subject: Re: [PATCH] softlockup: stop spurious softlockup messages due to
+ overflow
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Colin Ian King <colin.king@canonical.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100318152535.GB12564@elte.hu>
+References: <1268661673-21638-1-git-send-email-colin.king@canonical.com>
+	 <1268663388.3154.30.camel@edumazet-laptop> <20100316101251.GM7961@elte.hu>
+	 <1268918537.1894.143.camel@lenovo>  <20100318152535.GB12564@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Mar 2010 21:45:10 +0100
+Message-ID: <1268945110.2894.162.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Le jeudi 18 mars 2010 à 16:25 +0100, Ingo Molnar a écrit :
+> * Colin Ian King <colin.king@canonical.com> wrote:
+> 
+> > 
+> > Using time_after/before:
+> > 
+> > diff --git a/kernel/softlockup.c b/kernel/softlockup.c
+> > index 0d4c789..4b493f6 100644
+> > --- a/kernel/softlockup.c
+> > +++ b/kernel/softlockup.c
+> > @@ -155,11 +155,11 @@ void softlockup_tick(void)
+> >          * Wake up the high-prio watchdog task twice per
+> >          * threshold timespan.
+> >          */
+> > -       if (now > touch_ts + softlockup_thresh/2)
+> > +       if (time_after(now - softlockup_thresh/2, touch_ts))
+> >                 wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
+> >  
+> >         /* Warn about unreasonable delays: */
+> > -       if (now <= (touch_ts + softlockup_thresh))
+> > +       if (time_before_eq(now - softlockup_thresh, touch_ts))
+> >                 return;
+> 
+> Ok, that looks like the most readable variant, agreed?
+> 
 
-Three more intended for 2.6.34...  The biggest one is for ath9k, which
-removes some unused code along with the one-liner that makes the code
-unused.  (Did you follow that?)  The others are a null-pointer fix and a
-"hush dawg" for a noisy warning message.
+Sure ! Colin please submit formally your patch :)
 
-Please let me know if there are problems!
+Thanks
 
-Thanks,
 
-John
-
----
-
-The following changes since commit 22001a13d09d82772e831dcdac0553994a4bac5d:
-  Tilman Schmidt (1):
-        gigaset: fix build failure
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Adel Gadllah (1):
-      iwlwifi: Silence tfds_in_queue message
-
-Felix Fietkau (1):
-      ath9k: fix BUG_ON triggered by PAE frames
-
-Grazvydas Ignotas (1):
-      wl1251: fix potential crash
-
- drivers/net/wireless/ath/ath9k/xmit.c        |   21 +--------------------
- drivers/net/wireless/iwlwifi/iwl-tx.c        |    2 +-
- drivers/net/wireless/wl12xx/wl1251_debugfs.c |    3 ++-
- 3 files changed, 4 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index b2c8207..294b486 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1353,25 +1353,6 @@ static enum ath9k_pkt_type get_hw_packet_type(struct sk_buff *skb)
- 	return htype;
- }
- 
--static bool is_pae(struct sk_buff *skb)
--{
--	struct ieee80211_hdr *hdr;
--	__le16 fc;
--
--	hdr = (struct ieee80211_hdr *)skb->data;
--	fc = hdr->frame_control;
--
--	if (ieee80211_is_data(fc)) {
--		if (ieee80211_is_nullfunc(fc) ||
--		    /* Port Access Entity (IEEE 802.1X) */
--		    (skb->protocol == cpu_to_be16(ETH_P_PAE))) {
--			return true;
--		}
--	}
--
--	return false;
--}
--
- static int get_hw_crypto_keytype(struct sk_buff *skb)
- {
- 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-@@ -1696,7 +1677,7 @@ static void ath_tx_start_dma(struct ath_softc *sc, struct ath_buf *bf,
- 			goto tx_done;
- 		}
- 
--		if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && !is_pae(skb)) {
-+		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU) {
- 			/*
- 			 * Try aggregation if it's a unicast data frame
- 			 * and the destination is HT capable.
-diff --git a/drivers/net/wireless/iwlwifi/iwl-tx.c b/drivers/net/wireless/iwlwifi/iwl-tx.c
-index 1ed5206..8c12311 100644
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -124,7 +124,7 @@ void iwl_free_tfds_in_queue(struct iwl_priv *priv,
- 	if (priv->stations[sta_id].tid[tid].tfds_in_queue >= freed)
- 		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
- 	else {
--		IWL_ERR(priv, "free more than tfds_in_queue (%u:%d)\n",
-+		IWL_DEBUG_TX(priv, "free more than tfds_in_queue (%u:%d)\n",
- 			priv->stations[sta_id].tid[tid].tfds_in_queue,
- 			freed);
- 		priv->stations[sta_id].tid[tid].tfds_in_queue = 0;
-diff --git a/drivers/net/wireless/wl12xx/wl1251_debugfs.c b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-index 0ccba57..05e4d68 100644
---- a/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-+++ b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
-@@ -466,7 +466,8 @@ out:
- 
- void wl1251_debugfs_reset(struct wl1251 *wl)
- {
--	memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
-+	if (wl->stats.fw_stats != NULL)
-+		memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
- 	wl->stats.retry_count = 0;
- 	wl->stats.excessive_retries = 0;
- }
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
