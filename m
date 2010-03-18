@@ -1,15 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab0CROJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:09:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:58712 "EHLO mx3.mail.elte.hu"
+	id S1753910Ab0CROME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:12:04 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38602 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753206Ab0CROJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:09:46 -0400
-Date: Thu, 18 Mar 2010 15:09:33 +0100
+	id S1753813Ab0CROMA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 10:12:00 -0400
+Date: Thu, 18 Mar 2010 15:11:31 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
+To: John Kacur <jkacur@redhat.com>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>, Alexander Graf <agraf@suse.de>,
+       Anthony Liguori <anthony@codemonkey.ws>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
@@ -20,21 +22,21 @@ Cc: Anthony Liguori <anthony@codemonkey.ws>,
        Fr?d?ric Weisbecker <fweisbec@gmail.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-Message-ID: <20100318140933.GE25642@elte.hu>
-References: <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <4BA1FC80.2000401@redhat.com>
- <20100318105013.GB24464@elte.hu>
- <4BA20EB8.60707@redhat.com>
- <20100318114821.GB13168@elte.hu>
- <4BA21B09.6060706@redhat.com>
- <20100318130047.GA7424@elte.hu>
- <4BA22C72.9030503@redhat.com>
+Message-ID: <20100318141131.GF25642@elte.hu>
+References: <20100318101025.GA13073@elte.hu>
+ <4BA1FEB0.7000400@redhat.com>
+ <20100318113527.GA13168@elte.hu>
+ <y0m4okdzu4z.fsf@fche.csb>
+ <20100318130226.GB7424@elte.hu>
+ <4BA22663.7070509@redhat.com>
+ <20100318133124.GA25642@elte.hu>
+ <20100318134457.GH22775@redhat.com>
+ <20100318135944.GD25642@elte.hu>
+ <520f0cf11003180706o3bc74165y2da989f6036c8c82@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BA22C72.9030503@redhat.com>
+In-Reply-To: <520f0cf11003180706o3bc74165y2da989f6036c8c82@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -48,39 +50,71 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Avi Kivity <avi@redhat.com> wrote:
+* John Kacur <jkacur@redhat.com> wrote:
 
-> > That is not what i said. I said they are closely related, and where 
-> > technologies are closely related, project proximity turns into project 
-> > unification at a certain stage.
+> On Thu, Mar 18, 2010 at 2:59 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Daniel P. Berrange <berrange@redhat.com> wrote:
+> >
+> >> On Thu, Mar 18, 2010 at 02:31:24PM +0100, Ingo Molnar wrote:
+> >> >
+> >> > * Avi Kivity <avi@redhat.com> wrote:
+> >> >
+> >> > > On 03/18/2010 03:02 PM, Ingo Molnar wrote:
+> >> > > >
+> >> > > >> [...] What users eagerly replace their kernels?
+> >> > > >
+> >> > > > Those 99% who click on the 'install 193 updates' popup.
+> >> > > >
+> >> > >
+> >> > > Of which 1 is the kernel, and 192 are userspace updates (of which one may be
+> >> > > qemu).
+> >> >
+> >> > I think you didnt understand my (tersely explained) point - which is probably
+> >> > my fault. What i said is:
+> >> >
+> >> > ?- distros update the kernel first. Often in stable releases as well if
+> >> > ? ?there's a new kernel released. (They must because it provides new hardware
+> >> > ? ?enablement and other critical changes they generally cannot skip.)
+> >> >
+> >> > ?- Qemu on the other hand is not upgraded with (nearly) that level of urgency.
+> >> > ? ?Completely new versions will generally have to wait for the next distro
+> >> > ? ?release.
+> >>
+> >> This has nothing todo with them being in separate source repos. We could
+> >> update QEMU to new major feature releaes with the same frequency in a Fedora
+> >> release, but we delibrately choose not to rebase the QEMU userspace because
+> >> experiance has shown the downside from new bugs / regressions outweighs the
+> >> benefit of any new features.
+> >>
+> >> The QEMU updates in stable Fedora trees, now just follow the minor bugfix
+> >> release stream provided by QEMU & those arrive in Fedora with little
+> >> noticable delay.
+> >
+> > That is exactly what i said: Qemu and most user-space packages are on a
+> > 'slower' update track than the kernel: generally updated for minor releases.
+> >
+> > My further point was that the kernel on the other hand gets updated more
+> > frequently and as such, any user-space tool bits hosted in the kernel repo get
+> > updated more frequently as well.
+> >
+> > Thanks,
+> >
+> > ? ? ? ?Ingo
 > 
-> I really don't see how.  So what if both qemu and kvm implement an i8254?  
-> They can't share any code since the internal APIs are so different. [...]
+> Just to play devil's advocate, let's not mix up the development model with 
+> the distribution model. There is nothing to stop packagers and distributors 
+> from providing separate kernel "proper" packages and perf tools packages.
+> 
+> It might even make good sense assuming backwards compatibility for distros 
+> that have conservative policies about new kernel versions to provide newer 
+> perf tools packages with older kernels.
 
-I wouldnt jump to assumptions there. perf shares some facilities with the 
-kernel on the source code level - they can be built both in the kernel and in 
-user-space.
+Of course. Some distros are also very conservative about updating the kernel 
+at all.
 
-But my main thought wasnt even to actually share the implementation - but to 
-actually synchronize when a piece of device emulation moves into the kernel. 
-It is arguably bad for performance in most cases when Qemu handles a given 
-device - so all the common devices should be kernel accelerated.
-
-The version and testing matrix would be simplified significantly as well: as 
-kernel and qemu goes hand in hand, they are always on the same version.
-
-> [...] Even worse for the x86 emulator as qemu and kvm are fundamentally 
-> different.
-
-So is it your argument that the difference and the duplication in x86 
-instruction emulation is a good thing? You said it some time ago that
-the kvm x86 emulator was very messy and you wish it was cleaner.
-
-While qemu's is indeed rather different (it's partly a translator/JIT), i'm 
-sure the decoder logic could be shared - and qemu has a slow-path 
-full-emulation fallback in any case, which is similar to what in-kernel 
-emulator does (IIRC ...).
-
-That might have changed meanwhile.
+I'm mostly talking about the distros that are at the frontier of kernel 
+development: those with fresh packages, those which provide eager 
+bleeding-edge testers and developers.
 
 	Ingo
