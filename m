@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab0CRAsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Mar 2010 20:48:12 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37871 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab0CRAsL (ORCPT
+	id S1754720Ab0CRAtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Mar 2010 20:49:10 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50272 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab0CRAtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Mar 2010 20:48:11 -0400
+	Wed, 17 Mar 2010 20:49:09 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped anonymous pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+Date: Thu, 18 Mar 2010 09:45:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100317115133.GG12388@csn.ul.ie>
-References: <20100317104734.4C8E.A69D9226@jp.fujitsu.com> <20100317115133.GG12388@csn.ul.ie>
-Message-Id: <20100318094720.872F.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-Id: <20100318094519.cd1eed72.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+	<1268609202-15581-2-git-send-email-arighi@develer.com>
+	<20100317115855.GS18054@balbir.in.ibm.com>
+	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.0 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 18 Mar 2010 09:48:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +		/*
-> > > +		 * If the page has no mappings any more, just bail. An
-> > > +		 * unmapped anon page is likely to be freed soon but worse,
-> > > +		 * it's possible its anon_vma disappeared between when
-> > > +		 * the page was isolated and when we reached here while
-> > > +		 * the RCU lock was not held
-> > > +		 */
-> > > +		if (!page_mapcount(page)) {
-> > > +			rcu_read_unlock();
-> > > +			goto uncharge;
-> > > +		}
-> > 
-> > I haven't understand what prevent this check. Why don't we need following scenario?
-> > 
-> >  1. Page isolated for migration
-> >  2. Passed this if (!page_mapcount(page)) check
-> >  3. Process exits
-> >  4. page_mapcount(page) drops to zero so anon_vma was no longer reliable
-> > 
-> > Traditionally, page migration logic is, it can touch garbarge of anon_vma, but
-> > SLAB_DESTROY_BY_RCU prevent any disaster. Is this broken concept?
+On Thu, 18 Mar 2010 08:54:11 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Wed, 17 Mar 2010 17:28:55 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 > 
-> The check is made within the RCU read lock. If the count is positive at
-> that point but goes to zero due to a process exiting, the anon_vma will
-> still be valid until rcu_read_unlock() is called.
+> > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > 
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Now, file-mapped is maintaiend. But more generic update function
+> > > will be needed for dirty page accounting.
+> > > 
+> > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > will be never called under tree_lock held.
+> > > To guarantee that, we use trylock at updating status.
+> > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > >
+> > 
+> > I don't like this at all, but in almost all cases is not acceptable
+> > for statistics, since decisions will be made on them and having them
+> > incorrect is really bad. Could we do a form of deferred statistics and
+> > fix this.
+> > 
+> 
+> plz show your implementation which has no performance regresssion.
+> For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> we can add simple migration lock.
+> file_mapped is a feattue you added. please improve it.
+> 
 
-Thank you!
+BTW, I should explain how acculate this accounting is in this patch itself.
 
-then, this logic depend on SLAB_DESTROY_BY_RCU, not refcount.
-So, I think we don't need your [1/11] patch.
+Now, lock_page_cgroup/unlock_page_cgroup happens when
+	- charge/uncharge/migrate/move accounting
 
-Am I missing something?
+Then, the lock contention (trylock failure) seems to occur in conflict
+with
+	- charge, uncharge, migarate. move accounting
+
+About dirty accounting, charge/uncharge/migarate are operation in synchronous
+manner with radix-tree (holding treelock etc). Then no account leak.
+move accounting is only source for inacculacy...but I don't think this move-task
+is ciritial....moreover, we don't move any file pages at task-move, now.
+(But Nishimura-san has a plan to do so.)
+So, contention will happen only at confliction with force_empty.
+
+About FILE_MAPPED accounting, it's not synchronous with radix-tree operaton.
+Then, accounting-miss seems to happen when charge/uncharge/migrate/account move.
+But
+	charge .... we don't account a page as FILE_MAPPED before it's charged.
+	uncharge .. usual operation in turncation is unmap->remove-from-radix-tree.
+		    Then, it's sequential in almost all case. The race exists when...
+		    Assume there are 2 threads A and B. A truncate a file, B map/unmap that.
+		    This is very unusal confliction.
+	migrate.... we do try_to_unmap before migrating pages. Then, FILE_MAPPED
+		    is properly handled.
+	move account .... we don't have move-account-mapped-file, yet.
+
+Then, this trylock contention happens at contention with force_empty and truncate.
+
+
+Then, main issue for contention is force_empty. But it's called for removing memcg,
+accounting for such memcg is not important.
+Then, I say "this accounting is Okay."
+
+To do more accurate, we may need another "migration lock". But to get better
+performance for root cgroup, we have to call mem_cgroup_is_root() before
+taking lock and there will be another complicated race.
+
+Bye,
+-Kame
+
+
+
+
+
+
+
+
+
+
 
 
