@@ -1,58 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab0CRJbf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 05:31:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53672 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680Ab0CRJbe convert rfc822-to-8bit (ORCPT
+	id S1752174Ab0CRJrI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 05:47:08 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:8756 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab0CRJrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 05:31:34 -0400
+	Thu, 18 Mar 2010 05:47:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UF6lUfJOK/AwSFvij6zIRQH6SnLj10PaSym6vgDeQiJAI7bQlCueeebjfH+dz+gxwJ
-         VLj44xxoafiVSXTff+VS9nMvovbD3rnaGIvcYe183f56OZnsGD1YKDChyE48H4vXtxha
-         0dUm8pOGDlGiAx7ujwl/aihI8EwWin2zT+GxY=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=vzu9qYaPkBs7BavjP7X1LHgASw8pgkHZUIsap/v9KanukM7QfxrQeryhjxZnUFURVC
+         FwiJVjwT9MMcq4L2C9Whp3js+v0zWqHmSU8SHLREqiVSZ73yGSUFgv7HuKA9fuD6az2o
+         9vGFGq3CGMxHjvBXS5Zbybte1spM9cefbKf9Y=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.01.1003181015060.9334@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1003181015060.9334@obet.zrqbmnf.qr>
-Date: Thu, 18 Mar 2010 17:31:33 +0800
-Message-ID: <2375c9f91003180231n85501e2u951e6d8bbffce5d3@mail.gmail.com>
-Subject: Re: kconfig: report select on a depending option
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Michal Marek <mmarek@suse.cz>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4BA1E03D.4050602@coyote.org>
+References: <1268899193-16034-1-git-send-email-lindley@coyote.org>
+	 <4BA1DE50.1080908@cs.helsinki.fi> <4BA1E03D.4050602@coyote.org>
+Date: Thu, 18 Mar 2010 11:47:03 +0200
+X-Google-Sender-Auth: be6e365ea3127646
+Message-ID: <84144f021003180247p5d175606j25d4b41ddfda2587@mail.gmail.com>
+Subject: Re: [PATCH] staging: winbond: mds_f.h whitespace corrections.
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, greg@kroah.com, pavel@ucw.cz, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 5:21 PM, Jan Engelhardt <jengelh@medozas.de> wrote:
-> Hi,
->
->
-> With the following combination of Kconfig config options, I can select
-> TEST_Z, which will select TEST_X, even if TEST_Y=n. It also allows for
-> awkward situations like TEST_Y=M, TEST_X=y, TEST_Z=y, which would yield
-> a link time error when X uses Y's symbols.
-> Is there a way to have such potential errors reported with kconfig?
->
-> config TEST_Y
->        tristate "Y"
->
-> config TEST_X
->        depends on Y
->        tristate "X"
->
-> config TEST_Z
->        select TEST_Y
+On Thu, Mar 18, 2010 at 10:11 AM, Lars Lindley <lindley@coyote.org> wrote:
+> Sure..So Mds_SendComplete would be mds_send_complete?
 
-You mean "select TEST_X" here, right?
-
->        tristate "Z"
->
-
-I think you should use "depends on X" instead of "select X".
+Oh, I meant just the argument names. Functions are bit bigger impact
+and I'd prefer to avoid it for now.
