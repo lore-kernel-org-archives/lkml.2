@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab0CRGZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 02:25:16 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50972 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab0CRGZO (ORCPT
+	id S1752892Ab0CRG02 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 02:26:28 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51827
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751655Ab0CRG00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 02:25:14 -0400
-Date: Thu, 18 Mar 2010 11:55:03 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-ID: <20100318062503.GC18054@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
- <1268609202-15581-2-git-send-email-arighi@develer.com>
- <20100317115855.GS18054@balbir.in.ibm.com>
- <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
- <20100318041944.GA18054@balbir.in.ibm.com>
- <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 18 Mar 2010 02:26:26 -0400
+Date: Wed, 17 Mar 2010 23:26:48 -0700 (PDT)
+Message-Id: <20100317.232648.59697287.davem@davemloft.net>
+To: fweisbec@gmail.com
+Cc: sparclinux@vger.kernel.org, tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] percpu misaligned allocation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100318044930.GC5045@nowhere>
+References: <20100318044930.GC5045@nowhere>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:21:14]:
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Thu, 18 Mar 2010 05:49:33 +0100
 
-> On Thu, 18 Mar 2010 09:49:44 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> While using the lock events through perf in a sparc box, I can see
+> the following message repeated many times:
 > 
-> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 08:54:11]:
-> > 
-> > > On Wed, 17 Mar 2010 17:28:55 +0530
-> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
-> > > > 
-> > > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > > > > 
-> > > > > Now, file-mapped is maintaiend. But more generic update function
-> > > > > will be needed for dirty page accounting.
-> > > > > 
-> > > > > For accountig page status, we have to guarantee lock_page_cgroup()
-> > > > > will be never called under tree_lock held.
-> > > > > To guarantee that, we use trylock at updating status.
-> > > > > By this, we do fuzzy accounting, but in almost all case, it's correct.
-> > > > >
-> > > > 
-> > > > I don't like this at all, but in almost all cases is not acceptable
-> > > > for statistics, since decisions will be made on them and having them
-> > > > incorrect is really bad. Could we do a form of deferred statistics and
-> > > > fix this.
-> > > > 
-> > > 
-> > > plz show your implementation which has no performance regresssion.
-> > > For me, I don't neee file_mapped accounting, at all. If we can remove that,
-> > > we can add simple migration lock.
-> > 
-> > That doesn't matter, if you need it, I think the larger user base
-> > matters. Unmapped and mapped page cache is critical and I use it
-> > almost daily.
-> > 
-> > > file_mapped is a feattue you added. please improve it.
-> > >
-> > 
-> > I will, but please don't break it silently
-> > 
-> I never do silently. All e-mails are open.
->
+> 	Kernel unaligned access at TPC[49357c] perf_trace_lock_acquire+0xb4/0x180
+> 
+> It actually hangs the box as the messages are sent to a serial console.
+> 
+> When used with perf, the trace events use a per cpu buffer allocated
+> in kernel/trace/trace_event_perf.c, and the allocation appears to return
+> a misaligned percpu pointer. It is aligned to 4 while it seems it
+> requires to be aligned to 8.
 
-No, I meant it from the Documentation update perspective. The end user
-will be confused when looking at stats without proper documentation. 
+Thanks I'll take a look at this.
 
--- 
-	Three Cheers,
-	Balbir
+RAW locks (both rwlocks and spinlocks) on sparc64 are 4-bytes
+in size, maybe some piece of code is assuming that locks
+are cpu word sized.
+
+Where is perf_trace_lock_acquire() I can't find it in Linus's
+tree?  Does it get created by some crazy macro expansion?
+
