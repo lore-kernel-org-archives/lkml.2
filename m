@@ -1,50 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab0CRQ5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 12:57:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab0CRQ5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 12:57:07 -0400
-Message-ID: <4BA25ADC.7040504@redhat.com>
-Date: Thu, 18 Mar 2010 18:54:52 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1752787Ab0CRQ5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 12:57:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56312 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab0CRQ5L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 12:57:11 -0400
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
+       Magnus Damm <damm@opensource.se>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Dmitry Torokhov <dtor@mail.ru>, Eric Miao <eric.y.miao@gmail.com>
+Subject: Re: [RFC/PATCH] platform_bus: allow custom extensions to system PM methods
+References: <1268867896-7616-1-git-send-email-khilman@deeprootsystems.com>
+	<20100317234414.GA23319@suse.de>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Thu, 18 Mar 2010 09:57:06 -0700
+In-Reply-To: <20100317234414.GA23319@suse.de> (Greg KH's message of "Wed\, 17 Mar 2010 16\:44\:14 -0700")
+Message-ID: <87bpellg9p.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA20EB8.60707@redhat.com> <20100318114821.GB13168@elte.hu> <4BA23E61.4080003@codemonkey.ws> <20100318161310.GA447@elte.hu>
-In-Reply-To: <20100318161310.GA447@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2010 06:13 PM, Ingo Molnar wrote:
-> Currently there's a wall between kernel developers and user-space developers,
-> and there's somewhat of an element of fear and arrogance on both sides. For
-> efficient technology such walls needs torn down and people need a bit more
-> experience with each other's areas.
->    
+Greg KH <gregkh@suse.de> writes:
+
+> On Wed, Mar 17, 2010 at 04:18:15PM -0700, Kevin Hilman wrote:
+>> When runtime PM for platform_bus was added, it allowed for platforms
+>> to customize the runtime PM methods since they are defined as weak
+>> symbols.
+>> 
+>> This patch allows platforms to also extend the system PM methods with
+>> custom hooks so runtime PM and system PM extensions can be managed
+>> together by custom platform-specific code.
+>
+> Wow, that's scary, I didn't realize that was done for the runtime stuff.
+>
+> What would you be replacing these functions with for your platform that
+> would require it to be in arch-specific code?
+
+I'm basically copying the existing functions and extending them with
+platform-specific code to manage device clocks and other PM HW state.
+IOW, I still call the drivers PM methods, but also take care of some
+platform specific PM HW management.  This is just like the runtime PM
+hooks: platform-specific code + calling drivers runtime PM methods.
+
+On my platform (TI OMAP), the code to handle device PM is common for
+all devices, so for runtime PM, I'm taking care of it at the bus
+level.  At the hardware level, there's really no difference between
+runtime and system PM, so I want to take advantage of the same
+platform specific code for system PM
+
+Initially, rather than making the system PM methods themselves weak, I
+added some weak hooks that could be overridden instead (see test patch
+below).  The problem with that is that it is not as flexible if you
+want to run some custom code before and/or after calling the drivers
+PM methods.  To be more flexible, using this approach, we'd probably
+need pre- and post- hooks to be used before and after the driver's PM
+methods are called.  Rather than add all these hooks, I decided it was
+cleaner to just allow override of the primary methods themselves,
+which parallels the runtime PM approach.
+
+Kevin
 
 
-I think you're increasing the height of that wall by arguing that a 
-userspace project cannot be successful because it's development process 
-sucks and the only way to fix it is to put it into the kernel where 
-people know so much better.  Instead we kernel developers should listen 
-to requirements from users, even if their code isn't in tools/.
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 1ba9d61..a30f850 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -729,6 +729,26 @@ static void platform_pm_complete(struct device *dev)
+ 
+ #ifdef CONFIG_SUSPEND
+ 
++int __weak platform_pm_suspend_hook(struct device *dev)
++{
++	return 0;
++}
++
++int __weak platform_pm_suspend_noirq_hook(struct device *dev)
++{
++	return 0;
++}
++
++int __weak platform_pm_resume_hook(struct device *dev)
++{
++	return 0;
++}
++
++int __weak platform_pm_resume_noirq_hook(struct device *dev)
++{
++	return 0;
++}
++
+ static int platform_pm_suspend(struct device *dev)
+ {
+ 	struct device_driver *drv = dev->driver;
+@@ -744,6 +764,8 @@ static int platform_pm_suspend(struct device *dev)
+ 		ret = platform_legacy_suspend(dev, PMSG_SUSPEND);
+ 	}
+ 
++	platform_pm_suspend_hook(dev);
++
+ 	return ret;
+ }
+ 
+@@ -760,6 +782,8 @@ static int platform_pm_suspend_noirq(struct device *dev)
+ 			ret = drv->pm->suspend_noirq(dev);
+ 	}
+ 
++	platform_pm_suspend_noirq_hook(dev);
++
+ 	return ret;
+ }
+ 
+@@ -768,6 +792,8 @@ static int platform_pm_resume(struct device *dev)
+ 	struct device_driver *drv = dev->driver;
+ 	int ret = 0;
+ 
++	platform_pm_resume_hook(dev);
++
+ 	if (!drv)
+ 		return 0;
+ 
+@@ -786,6 +812,8 @@ static int platform_pm_resume_noirq(struct device *dev)
+ 	struct device_driver *drv = dev->driver;
+ 	int ret = 0;
+ 
++	platform_pm_resume_noirq_hook(dev);
++
+ 	if (!drv)
+ 		return 0;
+ 
 
--- 
-error compiling committee.c: too many arguments to function
+
+
+
+
 
