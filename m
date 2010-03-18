@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab0CRR7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 13:59:39 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:1810 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753749Ab0CRR7h (ORCPT
+	id S1754037Ab0CRR7p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 13:59:45 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:37163 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753755Ab0CRR7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 13:59:37 -0400
-Subject: [PATCH v2 2/4] hpet: pass physical address, not entire hpet_data,
-	to hpet_is_known()
+	Thu, 18 Mar 2010 13:59:42 -0400
+Subject: [PATCH v2 3/4] hpet: clean up io mapping when hpet_alloc() fails
 To: Clemens Ladisch <clemens@ladisch.de>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Venkatesh Pallipadi <venki@google.com>, Vojtech Pavlik <vojtech@suse.cz>,
        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Date: Thu, 18 Mar 2010 11:59:35 -0600
-Message-ID: <20100318175935.15143.96345.stgit@bob.kio>
+Date: Thu, 18 Mar 2010 11:59:40 -0600
+Message-ID: <20100318175940.15143.53027.stgit@bob.kio>
 In-Reply-To: <20100318175852.15143.2124.stgit@bob.kio>
 References: <20100318175852.15143.2124.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -26,66 +25,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-No functional change; hpet_is_known() only needs the physical address,
-so supplying that instead of the whole struct hpet_data makes the callers
-a little simpler.
+When hpet_alloc() fails, we should iounmap() the timer so we don't leak
+the mapping.
 
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
 ---
 
- drivers/char/hpet.c |   14 +++++---------
- 1 files changed, 5 insertions(+), 9 deletions(-)
+ drivers/char/hpet.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
 
 diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index 5cb05ed..d132fef 100644
+index d132fef..8961985 100644
 --- a/drivers/char/hpet.c
 +++ b/drivers/char/hpet.c
-@@ -662,12 +662,12 @@ static const struct file_operations hpet_fops = {
- 	.mmap = hpet_mmap,
- };
- 
--static int hpet_is_known(struct hpet_data *hdp)
-+static int hpet_is_known(unsigned long phys_address)
+@@ -904,7 +904,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
  {
- 	struct hpets *hpetp;
+ 	struct hpet_data data;
+ 	struct resource *mem, *irq;
+-	int i;
++	int i, ret;
  
- 	for (hpetp = hpets; hpetp; hpetp = hpetp->hp_next)
--		if (hpetp->hp_hpet_phys == hdp->hd_phys_address)
-+		if (hpetp->hp_hpet_phys == phys_address)
- 			return 1;
- 
- 	return 0;
-@@ -788,7 +788,7 @@ int hpet_alloc(struct hpet_data *hdp)
- 	 * If platform dependent code has allocated the hpet that
- 	 * ACPI has also reported, then we catch it here.
- 	 */
--	if (hpet_is_known(hdp)) {
-+	if (hpet_is_known(hdp->hd_phys_address)) {
- 		printk(KERN_DEBUG "%s: duplicate HPET ignored\n",
- 			__func__);
- 		return 0;
-@@ -909,12 +909,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
  	memset(&data, 0, sizeof(data));
  
- 	mem = pnp_get_resource(dev, IORESOURCE_MEM, 0);
--	if (!mem)
--		return -ENODEV;
--
--	data.hd_phys_address = mem->start;
--
--	if (hpet_is_known(&data))
-+	if (!mem || hpet_is_known(mem->start))
- 		return -ENODEV;
- 
- 	i = 0;
-@@ -926,6 +921,7 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
- 	if (!data.hd_nirqs)
- 		return -ENODEV;
- 
-+	data.hd_phys_address = mem->start;
+@@ -924,7 +924,11 @@ static int hpet_pnp_add(struct pnp_dev *dev, const struct pnp_device_id *dev_id)
+ 	data.hd_phys_address = mem->start;
  	data.hd_address = ioremap(mem->start, resource_size(mem));
  
- 	return hpet_alloc(&data);
+-	return hpet_alloc(&data);
++	ret = hpet_alloc(&data);
++	if (ret)
++		iounmap(data.hd_address);
++
++	return ret;
+ }
+ 
+ static void hpet_pnp_remove(struct pnp_dev *dev)
 
