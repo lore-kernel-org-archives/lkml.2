@@ -1,99 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453Ab0CRNb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 09:31:57 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55002 "EHLO mx3.mail.elte.hu"
+	id S1753461Ab0CRNdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 09:33:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5526 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752966Ab0CRNbz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 09:31:55 -0400
-Date: Thu, 18 Mar 2010 14:31:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, Alexander Graf <agraf@suse.de>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100318133124.GA25642@elte.hu>
-References: <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <F0F75B33-C0BA-42EB-BFC4-D60B1E232E6D@suse.de>
- <20100318101025.GA13073@elte.hu>
- <4BA1FEB0.7000400@redhat.com>
- <20100318113527.GA13168@elte.hu>
- <y0m4okdzu4z.fsf@fche.csb>
- <20100318130226.GB7424@elte.hu>
- <4BA22663.7070509@redhat.com>
+	id S1753423Ab0CRNdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 09:33:08 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NFS: Fix RCU warnings in
+	nfs_inode_return_delegation_noreclaim() [ver #2]
+To: Trond.Myklebust@netapp.com, paulmck@linux.vnet.ibm.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       David Howells <dhowells@redhat.com>
+Date: Thu, 18 Mar 2010 13:33:02 +0000
+Message-ID: <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA22663.7070509@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix a number of RCU warnings in nfs_inode_return_delegation_noreclaim().
+nfs_inode_return_delegation_noreclaim() and nfs_inode_return_delegation() don't
+need to use rcu_dereference() outside the spinlocked region as they merely
+examin the pointer and don't follow it, thus rendering unnecessary the need to
+impose a partial ordering over the one item of interest.
 
-* Avi Kivity <avi@redhat.com> wrote:
+nfs_detach_delegation_locked() doesn't need rcu_derefence() because it can only
+be called if nfs_client::cl_lock is held, and that guards against anyone
+changing nfsi->delegation under it.  Furthermore, the barrier in
+rcu_derefence() is superfluous, given that the spin_lock() is also a barrier.
 
-> On 03/18/2010 03:02 PM, Ingo Molnar wrote:
-> >
-> >> [...] What users eagerly replace their kernels?
-> >
-> > Those 99% who click on the 'install 193 updates' popup.
-> >
-> 
-> Of which 1 is the kernel, and 192 are userspace updates (of which one may be 
-> qemu).
+nfs_free_delegation() should be using rcu_dereference_check() to validate the
+state that the data is in (the delegation inode must have been cleared).  By
+this point, the delegation is being released, so no one else should be
+attempting to use the saved credentials, and they can be cleared.  However,
+rcu_assign_pointer() should be used to clear them, and the delegation itself
+must still use call_rcu() as the list of delegations could be being traversed.
 
-I think you didnt understand my (tersely explained) point - which is probably 
-my fault. What i said is:
 
- - distros update the kernel first. Often in stable releases as well if 
-   there's a new kernel released. (They must because it provides new hardware
-   enablement and other critical changes they generally cannot skip.)
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+fs/nfs/delegation.c:332 invoked rcu_dereference_check() without protection!
 
- - Qemu on the other hand is not upgraded with (nearly) that level of urgency.
-   Completely new versions will generally have to wait for the next distro
-   release.
+other info that might help us debug this:
 
-With in-kernel tools the kernel and the tooling that accompanies the kernel 
-are upgraded in the same low-latency pathway. That is a big plus if you are 
-offering things like instrumentation (which perf does), which relates closely 
-to the kernel.
 
-Furthermore, many distros package up the latest -git kernel as well. They 
-almost never do that with user-space packages.
+rcu_scheduler_active = 1, debug_locks = 0
+2 locks held by mount.nfs4/2281:
+ #0:  (&type->s_umount_key#34){+.+...}, at: [<ffffffff810b25b4>] deactivate_super+0x60/0x80
+ #1:  (iprune_sem){+.+...}, at: [<ffffffff810c332a>] invalidate_inodes+0x39/0x13a
 
-Let me give you a specific example:
+stack backtrace:
+Pid: 2281, comm: mount.nfs4 Not tainted 2.6.34-rc1-cachefs #110
+Call Trace:
+ [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffffa00b4591>] nfs_inode_return_delegation_noreclaim+0x5b/0xa0 [nfs]
+ [<ffffffffa0095d63>] nfs4_clear_inode+0x11/0x1e [nfs]
+ [<ffffffff810c2d92>] clear_inode+0x9e/0xf8
+ [<ffffffff810c3028>] dispose_list+0x67/0x10e
+ [<ffffffff810c340d>] invalidate_inodes+0x11c/0x13a
+ [<ffffffff810b1dc1>] generic_shutdown_super+0x42/0xf4
+ [<ffffffff810b1ebe>] kill_anon_super+0x11/0x4f
+ [<ffffffffa009893c>] nfs4_kill_super+0x3f/0x72 [nfs]
+ [<ffffffff810b25bc>] deactivate_super+0x68/0x80
+ [<ffffffff810c6744>] mntput_no_expire+0xbb/0xf8
+ [<ffffffff810c681b>] release_mounts+0x9a/0xb0
+ [<ffffffff810c689b>] put_mnt_ns+0x6a/0x79
+ [<ffffffffa00983a1>] nfs_follow_remote_path+0x5a/0x146 [nfs]
+ [<ffffffffa0098334>] ? nfs_do_root_mount+0x82/0x95 [nfs]
+ [<ffffffffa00985a9>] nfs4_try_mount+0x75/0xaf [nfs]
+ [<ffffffffa0098874>] nfs4_get_sb+0x291/0x31a [nfs]
+ [<ffffffff810b2059>] vfs_kern_mount+0xb8/0x177
+ [<ffffffff810b2176>] do_kern_mount+0x48/0xe8
+ [<ffffffff810c810b>] do_mount+0x782/0x7f9
+ [<ffffffff810c8205>] sys_mount+0x83/0xbe
+ [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
 
-I'm running Fedora Rawhide with 2.6.34-rc1 right now on my main desktop, and 
-that comes with perf-2.6.34-0.10.rc1.git0.fc14.noarch.
+Also on:
 
-My rawhide box has qemu-kvm-0.12.3-3.fc14.x86_64 installed. That's more than a 
-1000 Qemu commits older than the latest Qemu development branch.
+fs/nfs/delegation.c:215 invoked rcu_dereference_check() without protection!
+ [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffffa00b4223>] nfs_inode_set_delegation+0xfe/0x219 [nfs]
+ [<ffffffffa00a9c6f>] nfs4_opendata_to_nfs4_state+0x2c2/0x30d [nfs]
+ [<ffffffffa00aa15d>] nfs4_do_open+0x2a6/0x3a6 [nfs]
+ ...
 
-So by being part of the kernel repo there's lower latency upgrades and earlier 
-and better testing available on most distros.
+And:
 
-You made it very clear that you dont want that, but please dont try to claim 
-that those advantages do not exist - they are very much real and we are making 
-good use of it.
+fs/nfs/delegation.c:40 invoked rcu_dereference_check() without protection!
+ [<ffffffff8105149f>] lockdep_rcu_dereference+0xaa/0xb2
+ [<ffffffffa00b3bef>] nfs_free_delegation+0x3d/0x6e [nfs]
+ [<ffffffffa00b3e71>] nfs_do_return_delegation+0x26/0x30 [nfs]
+ [<ffffffffa00b406a>] __nfs_inode_return_delegation+0x1ef/0x1fe [nfs]
+ [<ffffffffa00b448a>] nfs_client_return_marked_delegations+0xc9/0x124 [nfs]
+ ...
 
-Thanks,
 
-	Ingo
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/nfs/delegation.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 2563beb..fa9b7c5 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -37,7 +37,8 @@ static void nfs_free_delegation(struct nfs_delegation *delegation)
+ {
+ 	struct rpc_cred *cred;
+ 
+-	cred = rcu_dereference(delegation->cred);
++	cred = rcu_dereference_check(delegation->cred,
++				     delegation->inode == NULL);
+ 	rcu_assign_pointer(delegation->cred, NULL);
+ 	call_rcu(&delegation->rcu, nfs_free_delegation_callback);
+ 	if (cred)
+@@ -167,7 +168,7 @@ static struct inode *nfs_delegation_grab_inode(struct nfs_delegation *delegation
+ 
+ static struct nfs_delegation *nfs_detach_delegation_locked(struct nfs_inode *nfsi, const nfs4_stateid *stateid)
+ {
+-	struct nfs_delegation *delegation = rcu_dereference(nfsi->delegation);
++	struct nfs_delegation *delegation = nfsi->delegation;
+ 
+ 	if (delegation == NULL)
+ 		goto nomatch;
+@@ -212,7 +213,7 @@ int nfs_inode_set_delegation(struct inode *inode, struct rpc_cred *cred, struct
+ 	spin_lock_init(&delegation->lock);
+ 
+ 	spin_lock(&clp->cl_lock);
+-	if (rcu_dereference(nfsi->delegation) != NULL) {
++	if (nfsi->delegation != NULL) {
+ 		if (memcmp(&delegation->stateid, &nfsi->delegation->stateid,
+ 					sizeof(delegation->stateid)) == 0 &&
+ 				delegation->type == nfsi->delegation->type) {
+@@ -329,7 +330,7 @@ void nfs_inode_return_delegation_noreclaim(struct inode *inode)
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+ 	struct nfs_delegation *delegation;
+ 
+-	if (rcu_dereference(nfsi->delegation) != NULL) {
++	if (nfsi->delegation != NULL) {
+ 		spin_lock(&clp->cl_lock);
+ 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+ 		spin_unlock(&clp->cl_lock);
+@@ -345,7 +346,7 @@ int nfs_inode_return_delegation(struct inode *inode)
+ 	struct nfs_delegation *delegation;
+ 	int err = 0;
+ 
+-	if (rcu_dereference(nfsi->delegation) != NULL) {
++	if (nfsi->delegation != NULL) {
+ 		spin_lock(&clp->cl_lock);
+ 		delegation = nfs_detach_delegation_locked(nfsi, NULL);
+ 		spin_unlock(&clp->cl_lock);
+
