@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab0CRQHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 12:07:54 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:60560 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab0CRQHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 12:07:53 -0400
-X-Auth-Info: 9sbv9s97qhn6pBtlXphEl+9lpSVFcJ7qnkMscyIhrM8=
-Message-ID: <4BA24F77.6010209@grandegger.com>
-Date: Thu, 18 Mar 2010 17:06:15 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+	id S1752608Ab0CRQLH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 12:11:07 -0400
+Received: from mail0.scram.de ([78.47.204.202]:48780 "EHLO mail.scram.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618Ab0CRQLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 12:11:04 -0400
+X-Greylist: delayed 744 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Mar 2010 12:11:04 EDT
+Authentication-Results: localhost; dkim=pass (1024-bit key)
+	header.i=@scram.de; dkim-asp=signed
+X-Spam-Flag: NO
+X-Spam-Score: -3.904
+Authentication-Results: amavis.colab.de (amavisd-new); dkim=pass
+	header.i=@scram.de
+Message-ID: <4BA24DA8.9030309@scram.de>
+Date: Thu, 18 Mar 2010 16:58:32 +0100
+From: Jochen Friedrich <jochen@scram.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: socketcan-core@lists.berlios.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN module
-References: <1267564929-9324-1-git-send-email-iws@ovro.caltech.edu>	<1267564929-9324-3-git-send-email-iws@ovro.caltech.edu>	<20100317193312.GF9783@ovro.caltech.edu>	<4BA1E609.1010401@grandegger.com> <20100318151913.GA11682@ovro.caltech.edu>
-In-Reply-To: <20100318151913.GA11682@ovro.caltech.edu>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: davem@davemloft.net, benh@kernel.crashing.org,
+       linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
+       linuxppc-dev@lists.ozlabs.org, sparclinux@vger.kernel.org,
+       microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [V2 PATCH 06/10] of/drivers: Always use struct device.of_node
+ to get	node pointer
+References: <20100318144836.21082.93040.stgit@angua> <20100318152238.21082.10985.stgit@angua>
+In-Reply-To: <20100318152238.21082.10985.stgit@angua>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ira W. Snyder wrote:
-> On Thu, Mar 18, 2010 at 09:36:25AM +0100, Wolfgang Grandegger wrote:
->> Hi Ira,
->>
->> Ira W. Snyder wrote:
->>> Hello SocketCAN folks,
->>>
->>> Is there any feedback on this patch? I've waited two weeks without a
->>> response to any part of the series. As this is the biggest patch in the
->>> series, if you're fine with it, I think the other supporting patches
->>> should be fairly uncontroversial.
->> For some strange reason this patch did not show up in my socketcan mbox,
->> sorry. At least I cannot find it. Oliver, or somebody else, did you
->> receive it? Nevertheless, for kernel inclusion the patch should go
->> through the netdev mailing list as described in:
->>
->> http://svn.berlios.de/svnroot/repos/socketcan/trunk/README.submitting-patches
->>
->> It's also confusing that one 2/3 shows up on the Socketcan-core ML. At
->> least 0/3 should also be presented there.
->>
->> Could you please resubmit?
->>
+Hi Grant,
+
+> The following structure elements duplicate the information in
+> 'struct device.of_node' and so are being eliminated.  This patches
+> makes all readers of the following elements use device.of_node instead.
 > 
-> Sure, I'll resubmit.
+> struct dev_archdata.prom_node (sparc)
+> struct dev_archdata.of_node (powerpc)
+> struct of_device.node
 > 
-> The patch showed up just fine on socketcan-core for me (I'm subscribed).
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+>  drivers/i2c/busses/i2c-ibm_iic.c              |    4 ++--
+>  drivers/i2c/busses/i2c-mpc.c                  |   17 ++++++++-------
 
-It seems to be a local problem then :-).
-
-> It also showed up on LKML (I'm not subscribed). I'll make sure to CC
-
-I'm not subscribed either.
-
-> everyone with patch 0/3, as well as CC'ing netdev.
+drivers/i2c/busses/i2c-cpm.c is missing in this patch.
 
 Thanks,
-
-Wolfgang.
+Jochen
