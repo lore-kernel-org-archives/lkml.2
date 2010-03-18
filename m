@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620Ab0CRU7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 16:59:55 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:10241 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab0CRU7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 16:59:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MPbM8ofFvGF2+8D6tI21ojn30ZlgvFHfmSQzHptF0OIQk63l25DnwxVX4hswUFlLkI
-         Aw8zN3Dvhxwi7mPknFuYUoTGbNi3LbECDAATGXr1RbHYoirOi1r974tY8XDNfr4T06GO
-         zkMc7VCpfsAcVpjdgF0tj2TGeQpDE6+2bEtdY=
-Date: Thu, 18 Mar 2010 23:59:49 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/2] x86,perf: add cache events in p4 PMU
-Message-ID: <20100318205949.GG5062@lenovo>
-References: <1268908392.13901.128.camel@minggr.sh.intel.com> <20100318155610.GA28061@elte.hu> <20100318160135.GD5062@lenovo>
+	id S1752645Ab0CRVCh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 17:02:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60266 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab0CRVCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 17:02:36 -0400
+Message-ID: <4BA294D4.2060700@redhat.com>
+Date: Thu, 18 Mar 2010 11:02:12 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100318160135.GD5062@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9FBA8B.8020200@codemonkey.ws> <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu>
+In-Reply-To: <20100318105013.GB24464@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 07:01:35PM +0300, Cyrill Gorcunov wrote:
-[...]
-> > So i've applied your patches. Cyrill, what do you think?
-> 
-> Sorry for a bit delay, yes, pick it up please. I found that we have an
-> issue in escr binding (which is pretty mine error), hope to fix it up
-> today. Also I hope to eventually implement raw events this weekend
-> but better to base the new code on all this stuff merged. This will
-> allow to "take a look" on code structure from a high point and find
-> potential caveats.
-> 
-> All-in-one
-> 
-> Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> 
-> Thanks a huge, Ming!
-> 
-> > 
-> > 	Ingo
-> > 
-> 	-- Cyrill
+On 03/18/2010 12:50 AM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+>    
+>>> The moment any change (be it as trivial as fixing a GUI detail or as
+>>> complex as a new feature) involves two or more packages, development speed
+>>> slows down to a crawl - while the complexity of the change might be very
+>>> low!
+>>>        
+>> Why is that?
+>>      
+> It's very simple: because the contribution latencies and overhead compound,
+> almost inevitably.
+>
+> If you ever tried to implement a combo GCC+glibc+kernel feature you'll know
+> ...
+>
+> Even with the best-run projects in existence it takes forever and is very
+> painful - and here i talk about first hand experience over many years.
+>    
 
-Ok, the issue I thought about not really exist. Misfire :)
+Ingo, what you miss is that this is not a bad thing.  Fact of the matter 
+is, it's not just painful, it downright sucks.
 
-	-- Cyrill
+This is actually a Good Thing (tm).  It means you have to get your 
+feature and its interfaces well defined and able to version forwards and 
+backwards independently from each other.  And that introduces some 
+complexity and time and testing, but in the end it's what you want.  You 
+don't introduce a requirement to have the feature, but take advantage of 
+it if it is there.
+
+It may take everyone else a couple years to upgrade the compilers, 
+tools, libraries and kernel, and by that time any bugs introduced by 
+interacting with this feature will have been ironed out and their 
+patterns well known.
+
+If you haven't well defined and carefully thought out the feature ahead 
+of time, you end up creating a giant mess, possibly the need for nasty 
+backwards compatibility (case in point: COMPAT_VDSO).  But in the end, 
+you would have made those same mistakes on your internal tree anyway, 
+and then you (or likely, some other hapless project maintainer for the 
+project you forked) would have to go add the features, fixes and 
+workarounds back to the original project(s).  However, since you 
+developed in an insulated sheltered environment, those fixes and 
+workarounds would not be robust and independently versionable from each 
+other.
+
+The result is you've kept your codebase version-neutral, forked in 
+outside code, enhanced it, and left the hard work of backporting those 
+changes and keeping them version-safe to the original package 
+maintainers you forked from.  What you've created is no longer a single 
+project, it is called a distro, and you're being short-sighted and 
+anti-social to think you can garner more support than all of those 
+individual packages you forked.  This is why most developers work 
+upstream and let the goodness propagate down from the top like molten 
+sugar of each granular package on a flan where it is collected from the 
+rich custard channel sitting on a distribution plate below before the 
+big hungry mouth of the consumer devours it and incorporates it into 
+their infrastructure.
+
+Or at least, something like that, until the last sentence.  In short, if 
+project A has Y active developers, you better have Z >> Y active 
+developers to throw at project A when you fork it into project B.
+
+Zach
