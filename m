@@ -1,304 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab0CRRjG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 13:39:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55068 "EHLO hera.kernel.org"
+	id S1753534Ab0CRRmk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 13:42:40 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58108 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753574Ab0CRRjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 13:39:01 -0400
-Date: Thu, 18 Mar 2010 17:38:35 GMT
-From: tip-bot for Lin Ming <ming.m.lin@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       gorcunov@openvz.org, peterz@infradead.org, ming.m.lin@intel.com,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       gorcunov@openvz.org, peterz@infradead.org, ming.m.lin@intel.com,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1268908392.13901.128.camel@minggr.sh.intel.com>
-References: <1268908392.13901.128.camel@minggr.sh.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Add cache events for the Pentium-4 PMU
-Message-ID: <tip-cb7d6b5053e86598735d9af19930f5929f007b7f@git.kernel.org>
-Git-Commit-ID: cb7d6b5053e86598735d9af19930f5929f007b7f
-X-Mailer: tip-git-log-daemon
+	id S1753321Ab0CRRmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 13:42:39 -0400
+Date: Thu, 18 Mar 2010 17:42:21 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
+	pressure
+Message-ID: <20100318174220.GP12388@csn.ul.ie>
+References: <1268048904-19397-1-git-send-email-mel@csn.ul.ie> <20100311154124.e1e23900.akpm@linux-foundation.org> <4B99E19E.6070301@linux.vnet.ibm.com> <20100312020526.d424f2a8.akpm@linux-foundation.org> <20100312104712.GB18274@csn.ul.ie> <4B9A3049.7010602@linux.vnet.ibm.com> <20100312093755.b2393b33.akpm@linux-foundation.org> <4B9E296A.2010605@linux.vnet.ibm.com> <20100315130935.f8b0a2d7.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Mar 2010 17:38:35 +0000 (UTC)
+In-Reply-To: <20100315130935.f8b0a2d7.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cb7d6b5053e86598735d9af19930f5929f007b7f
-Gitweb:     http://git.kernel.org/tip/cb7d6b5053e86598735d9af19930f5929f007b7f
-Author:     Lin Ming <ming.m.lin@intel.com>
-AuthorDate: Thu, 18 Mar 2010 18:33:12 +0800
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 18 Mar 2010 17:04:02 +0100
+On Mon, Mar 15, 2010 at 01:09:35PM -0700, Andrew Morton wrote:
+> On Mon, 15 Mar 2010 13:34:50 +0100
+> Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
+> 
+> > c) If direct reclaim did reasonable progress in try_to_free but did not
+> > get a page, AND there is no write in flight at all then let it try again
+> > to free up something.
+> > This could be extended by some kind of max retry to avoid some weird
+> > looping cases as well.
+> > 
+> > d) Another way might be as easy as letting congestion_wait return
+> > immediately if there are no outstanding writes - this would keep the 
+> > behavior for cases with write and avoid the "running always in full 
+> > timeout" issue without writes.
+> 
+> They're pretty much equivalent and would work.  But there are two
+> things I still don't understand:
+> 
+> 1: Why is direct reclaim calling congestion_wait() at all?  If no
+> writes are going on there's lots of clean pagecache around so reclaim
+> should trivially succeed.  What's preventing it from doing so?
+> 
+> 2: This is, I think, new behaviour.  A regression.  What caused it?
+> 
 
-perf, x86: Add cache events for the Pentium-4 PMU
+I looked at this a bit closer using an iozone test very similar to
+Christian's. Despite buying a number of disks, I still can't reproduce his
+problem but I instrumented congestion_wait counts and times similar to
+what he did.
 
-Move the HT bit setting code from p4_pmu_event_map to
-p4_hw_config. So the cache events can get HT bit set correctly.
+2.6.29-instrument:congestion_waittime 990
+2.6.30-instrument:congestion_waittime 2823
+2.6.31-instrument:congestion_waittime 193169
+2.6.32-instrument:congestion_waittime 228890
+2.6.33-instrument:congestion_waittime 785529
+2.6.34-rc1-instrument:congestion_waittime 797178
 
-Tested on my P4 desktop, below 6 cache events work:
+So in the problem window, there was *definite* increases in the time spent
+in congestion_wait and the number of times it was called. I'll look
+closer at this tomorrow and Monday and see can I pin down what is
+happening.
 
- L1-dcache-load-misses
- LLC-load-misses
- dTLB-load-misses
- dTLB-store-misses
- iTLB-loads
- iTLB-load-misses
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Reviewed-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <1268908392.13901.128.camel@minggr.sh.intel.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/include/asm/msr-index.h     |    2 +
- arch/x86/include/asm/perf_event_p4.h |   10 ++
- arch/x86/kernel/cpu/perf_event_p4.c  |  153 ++++++++++++++++++++++++++++++++--
- 3 files changed, 159 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index 1cd58cd..aef562c 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -357,6 +357,8 @@
- #define MSR_P4_U2L_ESCR0		0x000003b0
- #define MSR_P4_U2L_ESCR1		0x000003b1
- 
-+#define MSR_P4_PEBS_MATRIX_VERT		0x000003f2
-+
- /* Intel Core-based CPU performance counters */
- #define MSR_CORE_PERF_FIXED_CTR0	0x00000309
- #define MSR_CORE_PERF_FIXED_CTR1	0x0000030a
-diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
-index 7d3406a..871249c 100644
---- a/arch/x86/include/asm/perf_event_p4.h
-+++ b/arch/x86/include/asm/perf_event_p4.h
-@@ -708,4 +708,14 @@ enum P4_EVENTS_ATTR {
- 	P4_MAKE_EVENT_ATTR(P4_INSTR_COMPLETED, BOGUS, 1),
- };
- 
-+enum {
-+	KEY_P4_L1D_OP_READ_RESULT_MISS,
-+	KEY_P4_LL_OP_READ_RESULT_MISS,
-+	KEY_P4_DTLB_OP_READ_RESULT_MISS,
-+	KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
-+	KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
-+	KEY_P4_ITLB_OP_READ_RESULT_MISS,
-+	KEY_P4_UOP_TYPE,
-+};
-+
- #endif /* PERF_EVENT_P4_H */
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 3e97ed3..b7bf991 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -19,6 +19,11 @@ struct p4_event_template {
- 	u64 config;			/* packed predefined bits */
- 	int dep;			/* upstream dependency event index */
- 	int key;			/* index into p4_templates */
-+	u64 msr;			/*
-+					 * the high 32 bits set into MSR_IA32_PEBS_ENABLE and
-+					 * the low 32 bits set into MSR_P4_PEBS_MATRIX_VERT
-+					 * for cache events
-+					 */
- 	unsigned int emask;		/* ESCR EventMask */
- 	unsigned int escr_msr[2];	/* ESCR MSR for this event */
- 	unsigned int cntr[2];		/* counter index (offset) */
-@@ -31,6 +36,67 @@ struct p4_pmu_res {
- 
- static DEFINE_PER_CPU(struct p4_pmu_res, p4_pmu_config);
- 
-+#define P4_CACHE_EVENT_CONFIG(event, bit) \
-+	p4_config_pack_escr(P4_EVENT_UNPACK_EVENT(event) << P4_EVNTSEL_EVENT_SHIFT) | \
-+	p4_config_pack_escr((event##_##bit) << P4_EVNTSEL_EVENTMASK_SHIFT) | \
-+	p4_config_pack_cccr(P4_EVENT_UNPACK_SELECTOR(event) << P4_CCCR_ESCR_SELECT_SHIFT)
-+
-+static __initconst u64 p4_hw_cache_event_ids
-+				[PERF_COUNT_HW_CACHE_MAX]
-+				[PERF_COUNT_HW_CACHE_OP_MAX]
-+				[PERF_COUNT_HW_CACHE_RESULT_MAX] =
-+{
-+ [ C(L1D ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+					/* 1stL_cache_load_miss_retired */
-+		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
-+					| KEY_P4_L1D_OP_READ_RESULT_MISS,
-+	},
-+ },
-+ [ C(LL  ) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+					/* 2ndL_cache_load_miss_retired */
-+		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
-+					| KEY_P4_LL_OP_READ_RESULT_MISS,
-+	},
-+ },
-+ [ C(DTLB) ] = {
-+	[ C(OP_READ) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+					/* DTLB_load_miss_retired */
-+		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
-+					| KEY_P4_DTLB_OP_READ_RESULT_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = 0x0,
-+					/* DTLB_store_miss_retired */
-+		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
-+					| KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
-+	},
-+ },
-+ [ C(ITLB) ] = {
-+	[ C(OP_READ) ] = {
-+					/* ITLB_reference.HIT */
-+		[ C(RESULT_ACCESS) ] = P4_CACHE_EVENT_CONFIG(P4_ITLB_REFERENCE, HIT)
-+					| KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
-+
-+					/* ITLB_reference.MISS */
-+		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_ITLB_REFERENCE, MISS)
-+					| KEY_P4_ITLB_OP_READ_RESULT_MISS,
-+	},
-+	[ C(OP_WRITE) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+	[ C(OP_PREFETCH) ] = {
-+		[ C(RESULT_ACCESS) ] = -1,
-+		[ C(RESULT_MISS)   ] = -1,
-+	},
-+ },
-+};
-+
- /*
-  * WARN: CCCR1 doesn't have a working enable bit so try to not
-  * use it if possible
-@@ -121,11 +187,77 @@ struct p4_event_template p4_templates[] = {
- 		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
- 		.cntr		= { 0, 2 },
- 	},
--	[7] = {
-+	[KEY_P4_L1D_OP_READ_RESULT_MISS] = {
-+		.opcode	= P4_REPLAY_EVENT,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= (u64)(1 << 0 | 1 << 24) << 32 | (1 << 0),
-+		.key	= KEY_P4_L1D_OP_READ_RESULT_MISS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
-+		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
-+		.cntr		= { 16, 17 },
-+	},
-+	[KEY_P4_LL_OP_READ_RESULT_MISS] = {
-+		.opcode	= P4_REPLAY_EVENT,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= (u64)(1 << 1 | 1 << 24) << 32 | (1 << 0),
-+		.key	= KEY_P4_LL_OP_READ_RESULT_MISS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
-+		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
-+		.cntr		= { 16, 17 },
-+	},
-+	[KEY_P4_DTLB_OP_READ_RESULT_MISS] = {
-+		.opcode	= P4_REPLAY_EVENT,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= (u64)(1 << 2 | 1 << 24) << 32 | (1 << 0),
-+		.key	= KEY_P4_DTLB_OP_READ_RESULT_MISS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
-+		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
-+		.cntr		= { 16, 17 },
-+	},
-+	[KEY_P4_DTLB_OP_WRITE_RESULT_MISS] = {
-+		.opcode	= P4_REPLAY_EVENT,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= (u64)(1 << 2 | 1 << 24) << 32 | (1 << 1),
-+		.key	= KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
-+		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
-+		.cntr		= { 16, 17 },
-+	},
-+	[KEY_P4_ITLB_OP_READ_RESULT_ACCESS] = {
-+		.opcode	= P4_ITLB_REFERENCE,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= 0,
-+		.key	= KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_ITLB_REFERENCE, HIT),
-+		.escr_msr	= { MSR_P4_ITLB_ESCR0, MSR_P4_ITLB_ESCR1 },
-+		.cntr		= { 0, 2 },
-+	},
-+	[KEY_P4_ITLB_OP_READ_RESULT_MISS] = {
-+		.opcode	= P4_ITLB_REFERENCE,
-+		.config	= 0,
-+		.dep	= -1,
-+		.msr	= 0,
-+		.key	= KEY_P4_ITLB_OP_READ_RESULT_MISS,
-+		.emask	=
-+			P4_EVENT_ATTR(P4_ITLB_REFERENCE, MISS),
-+		.escr_msr	= { MSR_P4_ITLB_ESCR0, MSR_P4_ITLB_ESCR1 },
-+		.cntr		= { 0, 2 },
-+	},
-+	[KEY_P4_UOP_TYPE] = {
- 		.opcode	= P4_UOP_TYPE,
- 		.config	= 0,
- 		.dep	= -1,
--		.key	= 7,
-+		.key	= KEY_P4_UOP_TYPE,
- 		.emask	=
- 			P4_EVENT_ATTR(P4_UOP_TYPE, TAGLOADS)	|
- 			P4_EVENT_ATTR(P4_UOP_TYPE, TAGSTORES),
-@@ -155,10 +287,6 @@ static u64 p4_pmu_event_map(int hw_event)
- 	config |= p4_config_pack_cccr(P4_EVENT_UNPACK_SELECTOR(tpl->opcode) << P4_CCCR_ESCR_SELECT_SHIFT);
- 	config |= p4_config_pack_cccr(hw_event & P4_CCCR_RESERVED);
- 
--	/* on HT machine we need a special bit */
--	if (p4_ht_active() && p4_ht_thread(raw_smp_processor_id()))
--		config = p4_set_ht_bit(config);
--
- 	return config;
- }
- 
-@@ -211,6 +339,10 @@ static int p4_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc)
- 	/* Count user and OS events unless not requested to */
- 	hwc->config |= p4_config_pack_escr(p4_default_escr_conf(cpu, attr->exclude_kernel,
- 								attr->exclude_user));
-+	/* on HT machine we need a special bit */
-+	if (p4_ht_active() && p4_ht_thread(cpu))
-+		hwc->config = p4_set_ht_bit(hwc->config);
-+
- 	return 0;
- }
- 
-@@ -271,6 +403,12 @@ static void p4_pmu_enable_event(struct perf_event *event)
- 		pr_crit("%s: Wrong index: %d\n", __func__, hwc->idx);
- 		return;
- 	}
-+
-+	if (tpl->msr) {
-+		(void)checking_wrmsrl(MSR_IA32_PEBS_ENABLE, tpl->msr >> 32);
-+		(void)checking_wrmsrl(MSR_P4_PEBS_MATRIX_VERT, tpl->msr & 0xffffffff);
-+	}
-+
- 	escr_base = (u64)tpl->escr_msr[thread];
- 
- 	/*
-@@ -577,6 +715,9 @@ static __init int p4_pmu_init(void)
- 		return -ENODEV;
- 	}
- 
-+	memcpy(hw_cache_event_ids, p4_hw_cache_event_ids,
-+	       sizeof(hw_cache_event_ids));
-+
- 	pr_cont("Netburst events, ");
- 
- 	x86_pmu = p4_pmu;
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
