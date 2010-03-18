@@ -1,206 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0CRKkt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 06:40:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24586 "EHLO mx1.redhat.com"
+	id S1752624Ab0CRKuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 06:50:11 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13509 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752229Ab0CRKkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 06:40:47 -0400
-Message-ID: <4BA2030B.3090007@redhat.com>
-Date: Thu, 18 Mar 2010 11:40:11 +0100
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100316112500.GA5337@elte.hu> <4B9F77E7.2060101@redhat.com> <20100316122903.GA8831@elte.hu> <4B9F7C6A.3070207@redhat.com> <20100316130840.GA24808@elte.hu> <4B9FBA8B.8020200@codemonkey.ws> <20100316173940.GA23859@elte.hu> <4BA00F1F.1090907@codemonkey.ws> <20100317081041.GC16374@elte.hu> <4BA1E7E2.3010803@redhat.com> <20100318095418.GD2157@elte.hu>
-In-Reply-To: <20100318095418.GD2157@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752443Ab0CRKuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 06:50:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,265,1267430400"; 
+   d="scan'208";a="781885484"
+Subject: [RFC][PATCH 1/2] x86,perf: add a key to simplify template lookup
+ in p4 PMU
+From: Lin Ming <ming.m.lin@intel.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Thu, 18 Mar 2010 18:33:07 +0800
+Message-Id: <1268908387.13901.127.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/10 10:54, Ingo Molnar wrote:
-> * Jes Sorensen<Jes.Sorensen@redhat.com>  wrote:
-[...]
->>
->> At my previous employer we ended up dropping all Xen efforts exactly because
->> it was like maintaining two separate operating system kernels. The key to
->> KVM is that once you have Linux, you practically have KVM as well.
->
-> Yes. Please realize that what is behind it is a strikingly simple argument:
->
->   "Once you have a single project to develop and maintain all is much better."
+Currently, we use opcode(Event and Event-Selector) + emask to look up
+template in p4_templates.
 
-Thats a very glorified statement but it's not reality, sorry. You can do
-that with something like perf because it's so small and development of
-perf is limited to a very small group of developers.
+But cache events (L1-dcache-load-misses, LLC-load-misses, etc) use the
+same event(P4_REPLAY_EVENT) to do the counting, ie, they have the same
+opcode and emask. So we can not use current lookup mechanism to find the
+template for cache events.
 
->> [...] However, there is far more to it than just a couple of ioctls, for
->> example the stack of reverse device-drivers is a pretty significant code
->> base, rewriting that and maintaining it is not a trivial task. It is
->> certainly my belief that the benefit we get from sharing that with QEMU by
->> far outweighs the cost of forking it and keeping our own fork in the kernel
->> tree. In fact it would result in exactly the same problems I mentioned above
->> wrt Xen.
->
-> I do not suggest forking Qemu at all, i suggest using the most natural
-> development model for the KVM+Qemu shared project: a single repository.
+This patch introduces a "key", which is the index into p4_templates.
+The low 12 bits of CCCR are reserved, so we can hide the "key" in the
+low 12 bits of hwc->config.
 
-If you are not suggesting to fork QEMU, what are you suggesting then?
-You don't seriously expect that the KVM community will be able to
-mandate that the QEMU community switch to the Linux kernel repository?
-That would be like telling the openssl developers that they should merge
-with glibc and start working out of the glibc tree.
+We extract the key from hwc->config and then quickly find the template.
 
-What you are suggesting is *only* going to happen if we fork QEMU, there
-is zero chance to move the main QEMU repository into the Linux kernel
-tree. And trust me, you don't want to have Linus having to deal with
-handling patches for tcg or embedded board emulation.
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ arch/x86/include/asm/perf_event_p4.h |    5 ++-
+ arch/x86/kernel/cpu/perf_event_p4.c  |   86 +++++++++++++--------------------
+ 2 files changed, 38 insertions(+), 53 deletions(-)
 
->> With this you have just thrown away all the benefits of having the QEMU
->> repository shared with other developers who will actively fix bugs in
->> components we do care about for KVM.
->
-> Not if it's a unified project.
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index b842b32..7d3406a 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -65,6 +65,7 @@
+ #define P4_CCCR_THREAD_SINGLE		0x00010000U
+ #define P4_CCCR_THREAD_BOTH		0x00020000U
+ #define P4_CCCR_THREAD_ANY		0x00030000U
++#define P4_CCCR_RESERVED		0x00000fffU
+ 
+ /* Non HT mask */
+ #define P4_CCCR_MASK				\
+@@ -116,7 +117,7 @@
+ #define p4_config_pack_escr(v)		(((u64)(v)) << 32)
+ #define p4_config_pack_cccr(v)		(((u64)(v)) & 0xffffffffULL)
+ #define p4_config_unpack_escr(v)	(((u64)(v)) >> 32)
+-#define p4_config_unpack_cccr(v)	(((u64)(v)) & 0xffffffffULL)
++#define p4_config_unpack_cccr(v)	(((u64)(v)) & 0xfffff000ULL)
+ 
+ #define p4_config_unpack_emask(v)			\
+ 	({						\
+@@ -126,6 +127,8 @@
+ 		t;					\
+ 	})
+ 
++#define p4_config_unpack_key(v)		(((u64)(v)) & P4_CCCR_RESERVED)
++
+ #define P4_CONFIG_HT_SHIFT		63
+ #define P4_CONFIG_HT			(1ULL << P4_CONFIG_HT_SHIFT)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index a11ce73..e088010 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -18,6 +18,7 @@ struct p4_event_template {
+ 	u32 opcode;			/* ESCR event + CCCR selector */
+ 	u64 config;			/* packed predefined bits */
+ 	int dep;			/* upstream dependency event index */
++	int key;			/* index into p4_templates */
+ 	unsigned int emask;		/* ESCR EventMask */
+ 	unsigned int escr_msr[2];	/* ESCR MSR for this event */
+ 	unsigned int cntr[2];		/* counter index (offset) */
+@@ -39,38 +40,31 @@ static DEFINE_PER_CPU(struct p4_pmu_res, p4_pmu_config);
+  */
+ struct p4_event_template p4_templates[] = {
+ 	[0] = {
+-		.opcode	= P4_UOP_TYPE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_UOP_TYPE, TAGLOADS)	|
+-			P4_EVENT_ATTR(P4_UOP_TYPE, TAGSTORES),
+-		.escr_msr	= { MSR_P4_RAT_ESCR0, MSR_P4_RAT_ESCR1 },
+-		.cntr		= { 16, 17 },
+-	},
+-	[1] = {
+ 		.opcode	= P4_GLOBAL_POWER_EVENTS,
+ 		.config	= 0,
+ 		.dep	= -1,
++		.key	= 0,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_GLOBAL_POWER_EVENTS, RUNNING),
+ 		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
+ 		.cntr		= { 0, 2 },
+ 	},
+-	[2] = {
++	[1] = {
+ 		.opcode	= P4_INSTR_RETIRED,
+ 		.config	= 0,
+ 		.dep	= -1, /* needs front-end tagging */
++		.key	= 1,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_INSTR_RETIRED, NBOGUSNTAG)	|
+ 			P4_EVENT_ATTR(P4_INSTR_RETIRED, BOGUSNTAG),
+ 		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
+ 		.cntr		= { 12, 14 },
+ 	},
+-	[3] = {
++	[2] = {
+ 		.opcode	= P4_BSQ_CACHE_REFERENCE,
+ 		.config	= 0,
+ 		.dep	= -1,
++		.key	= 2,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITS)	|
+ 			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITE)	|
+@@ -81,10 +75,11 @@ struct p4_event_template p4_templates[] = {
+ 		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR1 },
+ 		.cntr		= { 0, 2 },
+ 	},
+-	[4] = {
++	[3] = {
+ 		.opcode	= P4_BSQ_CACHE_REFERENCE,
+ 		.config	= 0,
+ 		.dep	= -1,
++		.key	= 3,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_MISS)	|
+ 			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_MISS)	|
+@@ -92,10 +87,11 @@ struct p4_event_template p4_templates[] = {
+ 		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR1 },
+ 		.cntr		= { 0, 3 },
+ 	},
+-	[5] = {
++	[4] = {
+ 		.opcode	= P4_RETIRED_BRANCH_TYPE,
+ 		.config	= 0,
+ 		.dep	= -1,
++		.key	= 4,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CONDITIONAL)	|
+ 			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CALL)		|
+@@ -104,48 +100,38 @@ struct p4_event_template p4_templates[] = {
+ 		.escr_msr	= { MSR_P4_TBPU_ESCR0, MSR_P4_TBPU_ESCR1 },
+ 		.cntr		= { 4, 6 },
+ 	},
+-	[6] = {
++	[5] = {
+ 		.opcode	= P4_MISPRED_BRANCH_RETIRED,
+ 		.config	= 0,
+ 		.dep	= -1,
++		.key	= 5,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_MISPRED_BRANCH_RETIRED, NBOGUS),
+ 		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
+ 		.cntr		= { 12, 14 },
+ 	},
+-	[7] = {
++	[6] = {
+ 		.opcode	= P4_FSB_DATA_ACTIVITY,
+ 		.config	= p4_config_pack_cccr(P4_CCCR_EDGE | P4_CCCR_COMPARE),
+ 		.dep	= -1,
++		.key	= 6,
+ 		.emask	=
+ 			P4_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_DRV)	|
+ 			P4_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_OWN),
+ 		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
+ 		.cntr		= { 0, 2 },
+ 	},
+-};
+-
+-static struct p4_event_template *p4_event_map[PERF_COUNT_HW_MAX] = {
+-	/* non-halted CPU clocks */
+-	[PERF_COUNT_HW_CPU_CYCLES]		= &p4_templates[1],
+-
+-	/* retired instructions: dep on tagging the FSB */
+-	[PERF_COUNT_HW_INSTRUCTIONS]		= &p4_templates[2],
+-
+-	/* cache hits */
+-	[PERF_COUNT_HW_CACHE_REFERENCES]	= &p4_templates[3],
+-
+-	/* cache misses */
+-	[PERF_COUNT_HW_CACHE_MISSES]		= &p4_templates[4],
+-
+-	/* branch instructions retired */
+-	[PERF_COUNT_HW_BRANCH_INSTRUCTIONS]	= &p4_templates[5],
+-
+-	/* mispredicted branches retired */
+-	[PERF_COUNT_HW_BRANCH_MISSES]		= &p4_templates[6],
+-
+-	/* bus ready clocks (cpu is driving #DRDY_DRV\#DRDY_OWN):  */
+-	[PERF_COUNT_HW_BUS_CYCLES]		= &p4_templates[7],
++	[7] = {
++		.opcode	= P4_UOP_TYPE,
++		.config	= 0,
++		.dep	= -1,
++		.key	= 7,
++		.emask	=
++			P4_EVENT_ATTR(P4_UOP_TYPE, TAGLOADS)	|
++			P4_EVENT_ATTR(P4_UOP_TYPE, TAGSTORES),
++		.escr_msr	= { MSR_P4_RAT_ESCR0, MSR_P4_RAT_ESCR1 },
++		.cntr		= { 16, 17 },
++	},
+ };
+ 
+ static u64 p4_pmu_event_map(int hw_event)
+@@ -153,11 +139,11 @@ static u64 p4_pmu_event_map(int hw_event)
+ 	struct p4_event_template *tpl;
+ 	u64 config;
+ 
+-	if (hw_event > ARRAY_SIZE(p4_event_map)) {
++	if (hw_event > ARRAY_SIZE(p4_templates)) {
+ 		printk_once(KERN_ERR "PMU: Incorrect event index\n");
+ 		return 0;
+ 	}
+-	tpl = p4_event_map[hw_event];
++	tpl = &p4_templates[hw_event];
+ 
+ 	/*
+ 	 * fill config up according to
+@@ -167,6 +153,7 @@ static u64 p4_pmu_event_map(int hw_event)
+ 	config |= p4_config_pack_escr(P4_EVENT_UNPACK_EVENT(tpl->opcode) << P4_EVNTSEL_EVENT_SHIFT);
+ 	config |= p4_config_pack_escr(tpl->emask << P4_EVNTSEL_EVENTMASK_SHIFT);
+ 	config |= p4_config_pack_cccr(P4_EVENT_UNPACK_SELECTOR(tpl->opcode) << P4_CCCR_ESCR_SELECT_SHIFT);
++	config |= p4_config_pack_cccr(hw_event & P4_CCCR_RESERVED);
+ 
+ 	/* on HT machine we need a special bit */
+ 	if (p4_ht_active() && p4_ht_thread(raw_smp_processor_id()))
+@@ -187,17 +174,12 @@ static inline int p4_pmu_emask_match(unsigned int dst, unsigned int src)
+ 
+ static struct p4_event_template *p4_pmu_template_lookup(u64 config)
+ {
+-	u32 opcode = p4_config_unpack_opcode(config);
+-	unsigned int emask = p4_config_unpack_emask(config);
+-	unsigned int i;
+-
+-	for (i = 0; i < ARRAY_SIZE(p4_templates); i++) {
+-		if (opcode == p4_templates[i].opcode &&
+-			p4_pmu_emask_match(emask, p4_templates[i].emask))
+-			return &p4_templates[i];
+-	}
++	int key = p4_config_unpack_key(config);
+ 
+-	return NULL;
++	if (key < ARRAY_SIZE(p4_templates))
++		return &p4_templates[key];
++	else
++		return NULL;
+ }
+ 
+ /*
+@@ -566,7 +548,7 @@ static __initconst struct x86_pmu p4_pmu = {
+ 	.perfctr		= MSR_P4_BPU_PERFCTR0,
+ 	.event_map		= p4_pmu_event_map,
+ 	.raw_event		= p4_pmu_raw_event,
+-	.max_events		= ARRAY_SIZE(p4_event_map),
++	.max_events		= ARRAY_SIZE(p4_templates),
+ 	.get_event_constraints	= x86_get_event_constraints,
+ 	/*
+ 	 * IF HT disabled we may need to use all
 
-You still haven't explained how you expect create a unified KVM+QEMU
-project, without forking from the existing QEMU.
 
->>>   - encourage kernel-space and user-space KVM developers to work on both
->>>     user-space and kernel-space bits as a single unit. It's one project and
->>>     a single experience to the user.
->>
->> This is already happening and a total non issue.
->
-> My experience as an external observer of the end result contradicts this.
-
-What I have seen you complain about here is the lack of a good end user
-GUI for KVM. However that is a different thing. So far no vendor has put
-significant effort into it, but that is nothing new in Linux. We have a
-great kernel, but our user applications are still lacking. We have 217
-CD players for GNOME, but we have no usable calendering application.
-
-A good GUI for virtualization is a big task, and whoever designs it will
-base their design upon their preferences for whats important. A lot of
-spare time developers would clearly care most about a gui installation
-and fancy icons to click on, whereas server users would be much more
-interested in automation and remote access to the systems. For a good
-example of an incomplete solution, try installing Fedora over a serial
-line, you cannot do half the things without launching VNC :( Getting a
-comprehensive solution for this that would satisfy the bulk of the users
-would be a huge chunk of code in the kernel tree. Imagine the screaming
-that would result in? How often have we not had the moaning from x86
-users who wanted to rip out all the non x86 code to reduce the size of
-the tarball?
-
-> Seemingly trivial usability changes to the KVM+Qemu combo are not being done
-> often because they involve cross-discipline changes.
-
-Which trivial usability changes?
-
->>>   - [ and probably libvirt should go there too ]
->>
->> Now that would be interesting, next we'll have to include things like libxml
->> in the kernel git tree as well, to make sure libvirt doesn't get out of sync
->> with the version supplied by your distribution vendor.
->
-> The way we have gone about this in tools/perf/ is similar to the route picked
-> by Git: we only use very lowlevel libraries available everywhere, and we
-> provide optional wrappers to the rest.
-
-Did you ever look at what libvirt actually does and what it offers? Or
-how about the various libraries used by QEMU to offer things like VNC
-support or X support?
-
-Again this works fine for something like perf where the primary
-display is text mode.
-
->> So far your argument would justify pulling all of gdb into the kernel git
->> tree as well, to support the kgdb efforts, or gcc so we can get rid of the
->> gcc version quirks in the kernel header files, e2fsprogs and equivalent for
->> _all_ file systems included in the kernel so we can make sure our fs tools
->> never get out of sync with whats supported in the kernel......
->
-> gdb and gcc is clearly extrinsic to the kernel so why would we move them
-> there?
-
-gdb should go with kgdb which goes with the kernel to keep it in sync.
-If you want to be consistent in your argument, you have to go all the
-way.
-
-> I was talking about tools that are closely related to the kernel - where much
-> of the development and actual use is in combination with the Linux kernel.
-
-Well the file system tools would obviously have to go into the kernel
-then so appropriate binaries can be distributed to match the kernel.
-
-> 90%+ of the Qemu usecases are combined with Linux. (Yes, i know that you can
-> run Qemu without KVM, and no, i dont think it matters in the grand scheme of
-> things and most investment into Qemu comes from the KVM angle these days. In
-> particular it for sure does not justify handicapping future KVM evolution so
-> drastically.)
-
-90+%? You got to be kidding? You clearly have no idea just how much it's
-used for running embedded emulators on non Linux. You should have seen
-the noise it made when I added C99 initializers to certain structs,
-because it broke builds using very old GCC versions on BeOS. Linux only,
-not a chance. Try subscribing to qemu-devel and you'll see a list that
-is only overtaken by few lists like lkml in terms of daily traffic.
-
->> Oh and you completely forgot SeaBIOS. KVM+QEMU rely on SeaBIOS too, so from
->> what you're saying we should pull that into the kernel git repository as
->> well. Never mind the fact that we share SeaBIOS with the coreboot project
->> which is very actively adding features to it that benefit us as well.....
->
-> SeaBIOS is in essence a firmware, so it could either be loaded as such.
->
-> Just look at the qemu source code - the BIOSes are .bin images in
-> qemu/pc-bios/ imported externally in essence.
-
-Ehm no, QEMU now pulls in SeaBIOS to build it. And there are a lot of
-changes that require modification in SeaBIOS to match changes to QEMU.
-
-> qemu-kvm branch is not similar to my proposal at all: it made KVM _more_
-> fragmented, not more unified. I.e. it was a move in the exact opposite
-> direction and i'd expect such a move to fail.
->
-> In fact the failure of qemu-kvm supports my point rather explicitly: it
-> demonstrates that extra packages and split development are actively harmful.
-
-Ehm it showed what happens when you fork QEMU to modify it primarily for
-your own project, ie. KVM. You are suggesting we fork QEMU for the
-benefit of KVM, and it will be exactly the same thing that happens.
-
-I know you state that you are not suggesting we fork it, but as I showed
-above, pulling QEMU into the kernel tree, can only happen as a fork.
-There is no point pretending otherwise.
-
-> I speak about this as a person who has done successful unifications of split
-> codebases and in my judgement this move would be significantly beneficial to
-> KVM.
->
-> You cannot really validly reject this proposal with "It wont work" as it
-> clearly has worked in other, comparable cases. You could only reject this with
-> "I have tried it and it didnt work".
->
-> Think about it: a clean and hackable user-space component in tools/kvm/. It's
-> very tempting :-)
-
-I say this based on my hacking experience, my experience with the
-kernel, the QEMU base, SeaBIOS and merging projects. Yes it can be done,
-but the cost is much higher than the gain.
-
-Cheers,
-Jes
