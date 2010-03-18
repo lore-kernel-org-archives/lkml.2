@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab0CRWIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 18:08:24 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:51271 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab0CRWIW (ORCPT
+	id S1752807Ab0CRWI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 18:08:29 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:34555 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752683Ab0CRWIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 18:08:22 -0400
+	Thu, 18 Mar 2010 18:08:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=googlemail.com; s=gamma;
         h=message-id:date:from:user-agent:mime-version:to:subject
          :content-type:content-transfer-encoding;
-        b=JU/yaWDG4BktEnDm3b42ioyjRNsI7NhmCzCMbGoH/H6IgxDVCkKd+Ff63hLZV6upEo
-         hRygYdaFpIHll1q1TWyLpvnuRerj/0LXx58bni/VWdgBRUkP4UsUtrif5VZ50pIH+s4R
-         ozjWLYt3ZjBNlKxLc7jIYsREC4cXXi3iIBD3s=
-Message-ID: <4BA2A455.1070303@googlemail.com>
-Date: Thu, 18 Mar 2010 23:08:21 +0100
+        b=nJQibuZ6F6acA5LFIPlH3ThtOkeG982Yil6cG/Z0PGI4LF4XaWWXee19org6tlBx+S
+         WgKWpYj6+TUN8hyuKrCGW/X7GXRAcqnN0fSNOfu2ihE+zanwxOv644RvikWgJTkZhn9r
+         UA1lE5trqYJIyryuskxKX1Coo6rfjrzfi9t5M=
+Message-ID: <4BA2A458.8040808@googlemail.com>
+Date: Thu, 18 Mar 2010 23:08:24 +0100
 From: =?windows-1252?Q?Ren=E9_Bolldorf?= <xsecute@googlemail.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org
-Subject: =?windows-1252?Q?=5BPATCH_0/5=5D_drivers/ata/ahci=2Ec_warn?=
- =?windows-1252?Q?ing=3A_comparison_between_=91enum_=3Canonymous=3E?=
- =?windows-1252?Q?=92_and_=91enum_=3Canonymous=3E=92?=
+Subject: [PATCH 1/5] drivers/ata/ahci_platform.c Section mismatch
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -31,17 +29,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Rene Bolldorf <xsecute@googlemail.com>
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 108f2c6..f17b114 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -998,7 +998,7 @@ static int ahci_init_one(struct pci_dev *pdev, const 
-struct pci_device_id *ent)
 
-  	VPRINTK("ENTER\n");
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 42cdd73..16fa45b 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -164,7 +164,7 @@ static int __devexit ahci_remove(struct 
+platform_device *pdev)
+  	return 0;
+  }
 
--	WARN_ON(ATA_MAX_QUEUE > AHCI_MAX_CMDS);
-+	WARN_ON(ATA_MAX_QUEUE >= AHCI_MAX_CMDS);
-
-  	if (!printed_version++)
-  		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+-static struct platform_driver ahci_driver = {
++static struct platform_driver __refdata ahci_driver = {
+  	.probe = ahci_probe,
+  	.remove = __devexit_p(ahci_remove),
+  	.driver = {
