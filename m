@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab0CRGVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 02:21:49 -0400
-Received: from mail.perches.com ([173.55.12.10]:1771 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752714Ab0CRGVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 02:21:44 -0400
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Geoff Levand <geoffrey.levand@am.sony.com>, Zhu Yi <yi.zhu@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Pavel Roskin <proski@gnu.org>,
-       David Gibson <hermes@gibson.dropbear.id.au>,
-       Corey Thomas <coreythomas@charter.net>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       "David S. Miller" <davem@davemloft.net>, linuxppc-dev@ozlabs.org,
-       cbe-oss-dev@ozlabs.org, netdev@vger.kernel.org,
-       linux-wireless@vger.kernel.org, orinoco-users@lists.sourceforge.net,
-       orinoco-devel@lists.sourceforge.net
-Subject: [PATCH v2 0/7] wireless: Use macros from wireless.h
-Date: Wed, 17 Mar 2010 23:21:33 -0700
-Message-Id: <cover.1268892663.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.0.14.g7e948
+	id S1752982Ab0CRGZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 02:25:16 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50972 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab0CRGZO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 02:25:14 -0400
+Date: Thu, 18 Mar 2010 11:55:03 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100318062503.GC18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <1268609202-15581-2-git-send-email-arighi@develer.com>
+ <20100317115855.GS18054@balbir.in.ibm.com>
+ <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318041944.GA18054@balbir.in.ibm.com>
+ <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100318132114.d5680e1e.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the STD_IW_HANDLER macro from orinoco to wireless.h
-Use the wireless.h macros in various wireless files
-Remove local #defines of IW_IOCTL
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:21:14]:
 
-Joe Perches (7):
-  wireless.h: Add STD_IW_HANDLER macro
-  net/wireless/wext_core.c: Use IW_IOCTL_IDX macro
-  net/wireless/wext-core.c: Use IW_EVENT_IDX macro
-  drivers/net/wireless: Use STD_IW_HANDLER macro
-  drivers/net: Remove local #define IW_IOCTL, use STD_IW_HANDLER
-  orinoco/wext.c: Remove local #define STD_IW_HANDLER
-  wireless.h: Use SIOCIWFIRST not SIOCSIWCOMMIT for range check
+> On Thu, 18 Mar 2010 09:49:44 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 08:54:11]:
+> > 
+> > > On Wed, 17 Mar 2010 17:28:55 +0530
+> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > * Andrea Righi <arighi@develer.com> [2010-03-15 00:26:38]:
+> > > > 
+> > > > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > > > 
+> > > > > Now, file-mapped is maintaiend. But more generic update function
+> > > > > will be needed for dirty page accounting.
+> > > > > 
+> > > > > For accountig page status, we have to guarantee lock_page_cgroup()
+> > > > > will be never called under tree_lock held.
+> > > > > To guarantee that, we use trylock at updating status.
+> > > > > By this, we do fuzzy accounting, but in almost all case, it's correct.
+> > > > >
+> > > > 
+> > > > I don't like this at all, but in almost all cases is not acceptable
+> > > > for statistics, since decisions will be made on them and having them
+> > > > incorrect is really bad. Could we do a form of deferred statistics and
+> > > > fix this.
+> > > > 
+> > > 
+> > > plz show your implementation which has no performance regresssion.
+> > > For me, I don't neee file_mapped accounting, at all. If we can remove that,
+> > > we can add simple migration lock.
+> > 
+> > That doesn't matter, if you need it, I think the larger user base
+> > matters. Unmapped and mapped page cache is critical and I use it
+> > almost daily.
+> > 
+> > > file_mapped is a feattue you added. please improve it.
+> > >
+> > 
+> > I will, but please don't break it silently
+> > 
+> I never do silently. All e-mails are open.
+>
 
- drivers/net/ps3_gelic_wireless.c       |   35 ++++----
- drivers/net/wireless/ipw2x00/ipw2200.c |   83 ++++++++++----------
- drivers/net/wireless/orinoco/wext.c    |    2 -
- drivers/net/wireless/ray_cs.c          |   40 +++++-----
- drivers/net/wireless/wl3501_cs.c       |   52 ++++++------
- include/linux/wireless.h               |    4 +-
- net/wireless/wext-core.c               |  134 ++++++++++++++++----------------
- 7 files changed, 174 insertions(+), 176 deletions(-)
+No, I meant it from the Documentation update perspective. The end user
+will be confused when looking at stats without proper documentation. 
 
+-- 
+	Three Cheers,
+	Balbir
