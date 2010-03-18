@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab0CRGVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 02:21:53 -0400
-Received: from mail.perches.com ([173.55.12.10]:1780 "EHLO mail.perches.com"
+	id S1752992Ab0CRGVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 02:21:55 -0400
+Received: from mail.perches.com ([173.55.12.10]:1791 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab0CRGVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 02:21:45 -0400
+	id S1752877Ab0CRGVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 02:21:49 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
 Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
        Johannes Berg <johannes@sipsolutions.net>,
+       Corey Thomas <coreythomas@charter.net>,
        "John W. Linville" <linville@tuxdriver.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: [PATCH v2 2/7] net/wireless/wext_core.c: Use IW_IOCTL_IDX macro
-Date: Wed, 17 Mar 2010 23:21:35 -0700
-Message-Id: <099511558f3e8e9d1219de7436421a4f0c5558ef.1268892664.git.joe@perches.com>
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH v2 4/7] drivers/net/wireless: Use STD_IW_HANDLER macro
+Date: Wed, 17 Mar 2010 23:21:37 -0700
+Message-Id: <b628c684e970196a7c4c0966ddd599a4c2ce293e.1268892664.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.14.g7e948
 In-Reply-To: <cover.1268892663.git.joe@perches.com>
 References: <cover.1268892663.git.joe@perches.com>
@@ -23,334 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a wireless.h macro for this, might as well use it.
+Convert direct uses of [ (foo - SIOCIWFIRST) , fn)
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/wireless/wext-core.c |  112 +++++++++++++++++++++++-----------------------
- 1 files changed, 56 insertions(+), 56 deletions(-)
+ drivers/net/wireless/ray_cs.c    |   40 ++++++++++++++--------------
+ drivers/net/wireless/wl3501_cs.c |   52 +++++++++++++++++++-------------------
+ 2 files changed, 46 insertions(+), 46 deletions(-)
 
-diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
-index 5e1656b..dbde22b 100644
---- a/net/wireless/wext-core.c
-+++ b/net/wireless/wext-core.c
-@@ -28,226 +28,226 @@ typedef int (*wext_ioctl_func)(struct net_device *, struct iwreq *,
-  * know about.
+diff --git a/drivers/net/wireless/ray_cs.c b/drivers/net/wireless/ray_cs.c
+index 84c530a..d25ed5a 100644
+--- a/drivers/net/wireless/ray_cs.c
++++ b/drivers/net/wireless/ray_cs.c
+@@ -1531,28 +1531,28 @@ static iw_stats *ray_get_wireless_stats(struct net_device *dev)
   */
- static const struct iw_ioctl_description standard_ioctl[] = {
--	[SIOCSIWCOMMIT	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWCOMMIT)] = {
- 		.header_type	= IW_HEADER_TYPE_NULL,
- 	},
--	[SIOCGIWNAME	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWNAME)] = {
- 		.header_type	= IW_HEADER_TYPE_CHAR,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWNWID	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWNWID)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 		.flags		= IW_DESCR_FLAG_EVENT,
- 	},
--	[SIOCGIWNWID	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWNWID)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWFREQ	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWFREQ)] = {
- 		.header_type	= IW_HEADER_TYPE_FREQ,
- 		.flags		= IW_DESCR_FLAG_EVENT,
- 	},
--	[SIOCGIWFREQ	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWFREQ)] = {
- 		.header_type	= IW_HEADER_TYPE_FREQ,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWMODE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWMODE)] = {
- 		.header_type	= IW_HEADER_TYPE_UINT,
- 		.flags		= IW_DESCR_FLAG_EVENT,
- 	},
--	[SIOCGIWMODE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWMODE)] = {
- 		.header_type	= IW_HEADER_TYPE_UINT,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWSENS	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWSENS)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWSENS	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWSENS)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWRANGE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWRANGE)] = {
- 		.header_type	= IW_HEADER_TYPE_NULL,
- 	},
--	[SIOCGIWRANGE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWRANGE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= sizeof(struct iw_range),
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWPRIV	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWPRIV)] = {
- 		.header_type	= IW_HEADER_TYPE_NULL,
- 	},
--	[SIOCGIWPRIV	- SIOCIWFIRST] = { /* (handled directly by us) */
-+	[IW_IOCTL_IDX(SIOCGIWPRIV)] = { /* (handled directly by us) */
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct iw_priv_args),
- 		.max_tokens	= 16,
- 		.flags		= IW_DESCR_FLAG_NOMAX,
- 	},
--	[SIOCSIWSTATS	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWSTATS)] = {
- 		.header_type	= IW_HEADER_TYPE_NULL,
- 	},
--	[SIOCGIWSTATS	- SIOCIWFIRST] = { /* (handled directly by us) */
-+	[IW_IOCTL_IDX(SIOCGIWSTATS)] = { /* (handled directly by us) */
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= sizeof(struct iw_statistics),
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWSPY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWSPY)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct sockaddr),
- 		.max_tokens	= IW_MAX_SPY,
- 	},
--	[SIOCGIWSPY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWSPY)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct sockaddr) +
- 				  sizeof(struct iw_quality),
- 		.max_tokens	= IW_MAX_SPY,
- 	},
--	[SIOCSIWTHRSPY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWTHRSPY)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct iw_thrspy),
- 		.min_tokens	= 1,
- 		.max_tokens	= 1,
- 	},
--	[SIOCGIWTHRSPY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWTHRSPY)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct iw_thrspy),
- 		.min_tokens	= 1,
- 		.max_tokens	= 1,
- 	},
--	[SIOCSIWAP	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWAP)] = {
- 		.header_type	= IW_HEADER_TYPE_ADDR,
- 	},
--	[SIOCGIWAP	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWAP)] = {
- 		.header_type	= IW_HEADER_TYPE_ADDR,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWMLME	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWMLME)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.min_tokens	= sizeof(struct iw_mlme),
- 		.max_tokens	= sizeof(struct iw_mlme),
- 	},
--	[SIOCGIWAPLIST	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWAPLIST)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= sizeof(struct sockaddr) +
- 				  sizeof(struct iw_quality),
- 		.max_tokens	= IW_MAX_AP,
- 		.flags		= IW_DESCR_FLAG_NOMAX,
- 	},
--	[SIOCSIWSCAN	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWSCAN)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.min_tokens	= 0,
- 		.max_tokens	= sizeof(struct iw_scan_req),
- 	},
--	[SIOCGIWSCAN	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWSCAN)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_SCAN_MAX_DATA,
- 		.flags		= IW_DESCR_FLAG_NOMAX,
- 	},
--	[SIOCSIWESSID	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWESSID)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ESSID_MAX_SIZE,
- 		.flags		= IW_DESCR_FLAG_EVENT,
- 	},
--	[SIOCGIWESSID	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWESSID)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ESSID_MAX_SIZE,
- 		.flags		= IW_DESCR_FLAG_DUMP,
- 	},
--	[SIOCSIWNICKN	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWNICKN)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ESSID_MAX_SIZE,
- 	},
--	[SIOCGIWNICKN	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWNICKN)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ESSID_MAX_SIZE,
- 	},
--	[SIOCSIWRATE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWRATE)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWRATE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWRATE)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWRTS	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWRTS)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWRTS	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWRTS)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWFRAG	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWFRAG)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWFRAG	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWFRAG)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWTXPOW	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWTXPOW)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWTXPOW	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWTXPOW)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWRETRY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWRETRY)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWRETRY	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWRETRY)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWENCODE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWENCODE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ENCODING_TOKEN_MAX,
- 		.flags		= IW_DESCR_FLAG_EVENT | IW_DESCR_FLAG_RESTRICT,
- 	},
--	[SIOCGIWENCODE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWENCODE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_ENCODING_TOKEN_MAX,
- 		.flags		= IW_DESCR_FLAG_DUMP | IW_DESCR_FLAG_RESTRICT,
- 	},
--	[SIOCSIWPOWER	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWPOWER)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWPOWER	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWPOWER)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWGENIE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWGENIE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_GENERIC_IE_MAX,
- 	},
--	[SIOCGIWGENIE	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWGENIE)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.max_tokens	= IW_GENERIC_IE_MAX,
- 	},
--	[SIOCSIWAUTH	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWAUTH)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCGIWAUTH	- SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWAUTH)] = {
- 		.header_type	= IW_HEADER_TYPE_PARAM,
- 	},
--	[SIOCSIWENCODEEXT - SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWENCODEEXT)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.min_tokens	= sizeof(struct iw_encode_ext),
- 		.max_tokens	= sizeof(struct iw_encode_ext) +
- 				  IW_ENCODING_TOKEN_MAX,
- 	},
--	[SIOCGIWENCODEEXT - SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCGIWENCODEEXT)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.min_tokens	= sizeof(struct iw_encode_ext),
- 		.max_tokens	= sizeof(struct iw_encode_ext) +
- 				  IW_ENCODING_TOKEN_MAX,
- 	},
--	[SIOCSIWPMKSA - SIOCIWFIRST] = {
-+	[IW_IOCTL_IDX(SIOCSIWPMKSA)] = {
- 		.header_type	= IW_HEADER_TYPE_POINT,
- 		.token_size	= 1,
- 		.min_tokens	= sizeof(struct iw_pmksa),
-@@ -449,7 +449,7 @@ void wireless_send_event(struct net_device *	dev,
  
- 	/* Get the description of the Event */
- 	if (cmd <= SIOCIWLAST) {
--		cmd_index = cmd - SIOCIWFIRST;
-+		cmd_index = IW_IOCTL_IDX(cmd);
- 		if (cmd_index < standard_ioctl_num)
- 			descr = &(standard_ioctl[cmd_index]);
- 	} else {
-@@ -662,7 +662,7 @@ static iw_handler get_handler(struct net_device *dev, unsigned int cmd)
- 		return NULL;
+ static const iw_handler ray_handler[] = {
+-	[SIOCSIWCOMMIT - SIOCIWFIRST] = (iw_handler) ray_commit,
+-	[SIOCGIWNAME - SIOCIWFIRST] = (iw_handler) ray_get_name,
+-	[SIOCSIWFREQ - SIOCIWFIRST] = (iw_handler) ray_set_freq,
+-	[SIOCGIWFREQ - SIOCIWFIRST] = (iw_handler) ray_get_freq,
+-	[SIOCSIWMODE - SIOCIWFIRST] = (iw_handler) ray_set_mode,
+-	[SIOCGIWMODE - SIOCIWFIRST] = (iw_handler) ray_get_mode,
+-	[SIOCGIWRANGE - SIOCIWFIRST] = (iw_handler) ray_get_range,
++	STD_IW_HANDLER(SIOCSIWCOMMIT, ray_commit),
++	STD_IW_HANDLER(SIOCGIWNAME, ray_get_name),
++	STD_IW_HANDLER(SIOCSIWFREQ, ray_set_freq),
++	STD_IW_HANDLER(SIOCGIWFREQ, ray_get_freq),
++	STD_IW_HANDLER(SIOCSIWMODE, ray_set_mode),
++	STD_IW_HANDLER(SIOCGIWMODE, ray_get_mode),
++	STD_IW_HANDLER(SIOCGIWRANGE, ray_get_range),
+ #ifdef WIRELESS_SPY
+-	[SIOCSIWSPY - SIOCIWFIRST] = (iw_handler) iw_handler_set_spy,
+-	[SIOCGIWSPY - SIOCIWFIRST] = (iw_handler) iw_handler_get_spy,
+-	[SIOCSIWTHRSPY - SIOCIWFIRST] = (iw_handler) iw_handler_set_thrspy,
+-	[SIOCGIWTHRSPY - SIOCIWFIRST] = (iw_handler) iw_handler_get_thrspy,
++	STD_IW_HANDLER(SIOCSIWSPY, iw_handler_set_spy),
++	STD_IW_HANDLER(SIOCGIWSPY, iw_handler_get_spy),
++	STD_IW_HANDLER(SIOCSIWTHRSPY, iw_handler_set_thrspy),
++	STD_IW_HANDLER(SIOCGIWTHRSPY, iw_handler_get_thrspy),
+ #endif /* WIRELESS_SPY */
+-	[SIOCGIWAP - SIOCIWFIRST] = (iw_handler) ray_get_wap,
+-	[SIOCSIWESSID - SIOCIWFIRST] = (iw_handler) ray_set_essid,
+-	[SIOCGIWESSID - SIOCIWFIRST] = (iw_handler) ray_get_essid,
+-	[SIOCSIWRATE - SIOCIWFIRST] = (iw_handler) ray_set_rate,
+-	[SIOCGIWRATE - SIOCIWFIRST] = (iw_handler) ray_get_rate,
+-	[SIOCSIWRTS - SIOCIWFIRST] = (iw_handler) ray_set_rts,
+-	[SIOCGIWRTS - SIOCIWFIRST] = (iw_handler) ray_get_rts,
+-	[SIOCSIWFRAG - SIOCIWFIRST] = (iw_handler) ray_set_frag,
+-	[SIOCGIWFRAG - SIOCIWFIRST] = (iw_handler) ray_get_frag,
++	STD_IW_HANDLER(SIOCGIWAP, ray_get_wap),
++	STD_IW_HANDLER(SIOCSIWESSID, ray_set_essid),
++	STD_IW_HANDLER(SIOCGIWESSID, ray_get_essid),
++	STD_IW_HANDLER(SIOCSIWRATE, ray_set_rate),
++	STD_IW_HANDLER(SIOCGIWRATE, ray_get_rate),
++	STD_IW_HANDLER(SIOCSIWRTS, ray_set_rts),
++	STD_IW_HANDLER(SIOCGIWRTS, ray_get_rts),
++	STD_IW_HANDLER(SIOCSIWFRAG, ray_set_frag),
++	STD_IW_HANDLER(SIOCGIWFRAG, ray_get_frag),
+ };
  
- 	/* Try as a standard command */
--	index = cmd - SIOCIWFIRST;
-+	index = IW_IOCTL_IDX(cmd);
- 	if (index < handlers->num_standard)
- 		return handlers->standard[index];
+ #define SIOCSIPFRAMING	SIOCIWFIRSTPRIV	/* Set framing mode */
+diff --git a/drivers/net/wireless/wl3501_cs.c b/drivers/net/wireless/wl3501_cs.c
+index 7b9621d..d72f588 100644
+--- a/drivers/net/wireless/wl3501_cs.c
++++ b/drivers/net/wireless/wl3501_cs.c
+@@ -1834,32 +1834,32 @@ out:
+ }
  
-@@ -954,9 +954,9 @@ static int ioctl_standard_call(struct net_device *	dev,
- 	int					ret = -EINVAL;
+ static const iw_handler	wl3501_handler[] = {
+-	[SIOCGIWNAME	- SIOCIWFIRST] = wl3501_get_name,
+-	[SIOCSIWFREQ	- SIOCIWFIRST] = wl3501_set_freq,
+-	[SIOCGIWFREQ	- SIOCIWFIRST] = wl3501_get_freq,
+-	[SIOCSIWMODE	- SIOCIWFIRST] = wl3501_set_mode,
+-	[SIOCGIWMODE	- SIOCIWFIRST] = wl3501_get_mode,
+-	[SIOCGIWSENS	- SIOCIWFIRST] = wl3501_get_sens,
+-	[SIOCGIWRANGE	- SIOCIWFIRST] = wl3501_get_range,
+-	[SIOCSIWSPY	- SIOCIWFIRST] = iw_handler_set_spy,
+-	[SIOCGIWSPY	- SIOCIWFIRST] = iw_handler_get_spy,
+-	[SIOCSIWTHRSPY	- SIOCIWFIRST] = iw_handler_set_thrspy,
+-	[SIOCGIWTHRSPY	- SIOCIWFIRST] = iw_handler_get_thrspy,
+-	[SIOCSIWAP	- SIOCIWFIRST] = wl3501_set_wap,
+-	[SIOCGIWAP	- SIOCIWFIRST] = wl3501_get_wap,
+-	[SIOCSIWSCAN	- SIOCIWFIRST] = wl3501_set_scan,
+-	[SIOCGIWSCAN	- SIOCIWFIRST] = wl3501_get_scan,
+-	[SIOCSIWESSID	- SIOCIWFIRST] = wl3501_set_essid,
+-	[SIOCGIWESSID	- SIOCIWFIRST] = wl3501_get_essid,
+-	[SIOCSIWNICKN	- SIOCIWFIRST] = wl3501_set_nick,
+-	[SIOCGIWNICKN	- SIOCIWFIRST] = wl3501_get_nick,
+-	[SIOCGIWRATE	- SIOCIWFIRST] = wl3501_get_rate,
+-	[SIOCGIWRTS	- SIOCIWFIRST] = wl3501_get_rts_threshold,
+-	[SIOCGIWFRAG	- SIOCIWFIRST] = wl3501_get_frag_threshold,
+-	[SIOCGIWTXPOW	- SIOCIWFIRST] = wl3501_get_txpow,
+-	[SIOCGIWRETRY	- SIOCIWFIRST] = wl3501_get_retry,
+-	[SIOCGIWENCODE	- SIOCIWFIRST] = wl3501_get_encode,
+-	[SIOCGIWPOWER	- SIOCIWFIRST] = wl3501_get_power,
++	STD_IW_HANDLER(SIOCGIWNAME, wl3501_get_name),
++	STD_IW_HANDLER(SIOCSIWFREQ, wl3501_set_freq),
++	STD_IW_HANDLER(SIOCGIWFREQ, wl3501_get_freq),
++	STD_IW_HANDLER(SIOCSIWMODE, wl3501_set_mode),
++	STD_IW_HANDLER(SIOCGIWMODE, wl3501_get_mode),
++	STD_IW_HANDLER(SIOCGIWSENS, wl3501_get_sens),
++	STD_IW_HANDLER(SIOCGIWRANGE, wl3501_get_range),
++	STD_IW_HANDLER(SIOCSIWSPY, iw_handler_set_spy),
++	STD_IW_HANDLER(SIOCGIWSPY, iw_handler_get_spy),
++	STD_IW_HANDLER(SIOCSIWTHRSPY, iw_handler_set_thrspy),
++	STD_IW_HANDLER(SIOCGIWTHRSPY, iw_handler_get_thrspy),
++	STD_IW_HANDLER(SIOCSIWAP, wl3501_set_wap),
++	STD_IW_HANDLER(SIOCGIWAP, wl3501_get_wap),
++	STD_IW_HANDLER(SIOCSIWSCAN, wl3501_set_scan),
++	STD_IW_HANDLER(SIOCGIWSCAN, wl3501_get_scan),
++	STD_IW_HANDLER(SIOCSIWESSID, wl3501_set_essid),
++	STD_IW_HANDLER(SIOCGIWESSID, wl3501_get_essid),
++	STD_IW_HANDLER(SIOCSIWNICKN, wl3501_set_nick),
++	STD_IW_HANDLER(SIOCGIWNICKN, wl3501_get_nick),
++	STD_IW_HANDLER(SIOCGIWRATE, wl3501_get_rate),
++	STD_IW_HANDLER(SIOCGIWRTS, wl3501_get_rts_threshold),
++	STD_IW_HANDLER(SIOCGIWFRAG, wl3501_get_frag_threshold),
++	STD_IW_HANDLER(SIOCGIWTXPOW, wl3501_get_txpow),
++	STD_IW_HANDLER(SIOCGIWRETRY, wl3501_get_retry),
++	STD_IW_HANDLER(SIOCGIWENCODE, wl3501_get_encode),
++	STD_IW_HANDLER(SIOCGIWPOWER, wl3501_get_power),
+ };
  
- 	/* Get the description of the IOCTL */
--	if ((cmd - SIOCIWFIRST) >= standard_ioctl_num)
-+	if (IW_IOCTL_IDX(cmd) >= standard_ioctl_num)
- 		return -EOPNOTSUPP;
--	descr = &(standard_ioctl[cmd - SIOCIWFIRST]);
-+	descr = &(standard_ioctl[IW_IOCTL_IDX(cmd)]);
- 
- 	/* Check if we have a pointer to user space data or not */
- 	if (descr->header_type != IW_HEADER_TYPE_POINT) {
-@@ -1012,7 +1012,7 @@ static int compat_standard_call(struct net_device	*dev,
- 	struct iw_point iwp;
- 	int err;
- 
--	descr = standard_ioctl + (cmd - SIOCIWFIRST);
-+	descr = standard_ioctl + IW_IOCTL_IDX(cmd);
- 
- 	if (descr->header_type != IW_HEADER_TYPE_POINT)
- 		return ioctl_standard_call(dev, iwr, cmd, info, handler);
+ static const struct iw_handler_def wl3501_handler_def = {
 -- 
 1.7.0.14.g7e948
 
