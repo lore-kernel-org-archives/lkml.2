@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0CRP5j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 11:57:39 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:35126 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752640Ab0CRP5h (ORCPT
+	id S1752324Ab0CRP7F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 11:59:05 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:52845 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab0CRP67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 11:57:37 -0400
-X-SENDER-IP: [83.226.250.86]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmZBAK7qoUtT4vpWPGdsb2JhbACHYJNMDAEBAQE3LawTjW2EeQQ
-X-IronPort-AV: E=Sophos;i="4.51,267,1267398000"; 
-   d="scan'208";a="52722215"
-From: Lars Lindley <lindley@coyote.org>
-To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Lars Lindley <lindley@coyote.org>
-Subject: [PATCH] staging: winbond: mlmetxrx_f.h Coding style fixes.
-Date: Thu, 18 Mar 2010 16:57:37 +0100
-Message-Id: <1268927857-14141-1-git-send-email-lindley@coyote.org>
-X-Mailer: git-send-email 1.7.0.2
+	Thu, 18 Mar 2010 11:58:59 -0400
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+From: Steven Munroe <munroesj@linux.vnet.ibm.com>
+Reply-To: munroesj@us.ibm.com
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ulrich Drepper <drepper@redhat.com>,
+       munroesj@us.ibm.com, David Miller <davem@davemloft.net>,
+       ralf@linux-mips.org, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel@teksavvy.com,
+       torvalds@linux-foundation.org
+In-Reply-To: <1268866720.2335.204.camel@pasglop>
+References: <20100315134449.GB1653@linux-mips.org>
+	 <4B9E4EB1.9010800@zytor.com>	<4B9E59B7.6060405@redhat.com>
+	 <20100315.120004.209998642.davem@davemloft.net>
+	 <4B9E8D67.8040209@zytor.com> <1268685311.2335.38.camel@pasglop>
+	 <1268776570.19726.98.camel@spokane1.rchland.ibm.com>
+	 <1268785874.2335.137.camel@pasglop>  <4BA06E1B.2040706@redhat.com>
+	 <1268816179.2335.187.camel@pasglop>  <4BA11FD2.2090104@zytor.com>
+	 <1268858134.2335.198.camel@pasglop>  <4BA1412C.6070008@zytor.com>
+	 <1268866720.2335.204.camel@pasglop>
+Content-Type: text/plain
+Organization: IBM Linux Technology Center
+Date: Thu, 18 Mar 2010 11:08:00 -0500
+Message-Id: <1268928480.19726.123.camel@spokane1.rchland.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.6.0 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed all problems found by checkpatch.pl and removed CamelCase
-from argument names.
+On Thu, 2010-03-18 at 09:58 +1100, Benjamin Herrenschmidt wrote:
+> On Wed, 2010-03-17 at 13:53 -0700, H. Peter Anvin wrote:
+> > > Yeah, whatever, I don't mind what technique you use for the
+> > versionning,
+> > > ultimately, if the approach works, we can look at those details :-)
+> > We
+> > > -do- need the macro to strip the dummy argument though, unless we
+> > use
+> > > a slightly different technique which is to make the __sysno argument
+> > > itself 64-bit, which works as well I believe.
+> > >
+> > 
+> > It seems cleaner to do it that way (with a 64-bit sysno arg.) 
+> 
+> Right. Now if we can get Ulrich to actually put 2 and 2 together and
+> admit that it actually works without breaking anything existing (at
+> least for my arch but I wouldn't be surprised if that was the case for
+> others), I would be even happier :-)
+> 
+> Steve, any chance you can cook up a glibc patch to test with ? Maybe
+> making it powerpc specific for now ?
+> 
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/winbond/mlmetxrx_f.h |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
+Do what declare __sysno as long long? The current prototype is in
+unistd.h:
 
-diff --git a/drivers/staging/winbond/mlmetxrx_f.h b/drivers/staging/winbond/mlmetxrx_f.h
-index 6c04e3e..02dfd46 100644
---- a/drivers/staging/winbond/mlmetxrx_f.h
-+++ b/drivers/staging/winbond/mlmetxrx_f.h
-@@ -1,25 +1,26 @@
--//================================================================
--// MLMETxRx.H --
--//
--//   Functions defined in MLMETxRx.c.
--//
--// Copyright (c) 2002 Winbond Electrics Corp. All Rights Reserved.
--//================================================================
-+/* ================================================================
-+ * MLMETxRx.H --
-+ *
-+ *   Functions defined in MLMETxRx.c.
-+ *
-+ * Copyright (c) 2002 Winbond Electrics Corp. All Rights Reserved.
-+ * ================================================================
-+ */
- #ifndef _MLMETXRX_H
- #define _MLMETXRX_H
- 
- #include "core.h"
- 
--void MLME_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *pDes);
-+void MLME_GetNextPacket(struct wbsoft_priv *adapter,
-+			struct wb35_descriptor *pdes);
- u8 MLMESendFrame(struct wbsoft_priv *adapter,
--		 u8 * pMMPDU, u16 len, u8 DataType);
-+		 u8 *pmmpdu, u16 len, u8 datatype);
- 
--void
--MLME_SendComplete(struct wbsoft_priv *adapter, u8 PacketID,
--		  unsigned char SendOK);
-+void MLME_SendComplete(struct wbsoft_priv *adapter, u8 packetid,
-+			unsigned char sendok);
- 
- #ifdef _IBSS_BEACON_SEQ_STICK_
--s8 SendBCNullData(struct wbsoft_priv *adapter, u16 wIdx);
-+s8 SendBCNullData(struct wbsoft_priv *adapter, u16 widx);
- #endif
- 
- #endif
--- 
-1.7.0.2
+#ifdef __USE_MISC
+/* Invoke `system call' number SYSNO, passing it the remaining
+arguments.
+   This is completely system-dependent, and not often useful.
+
+   In Unix, `syscall' sets `errno' for all errors and most calls return
+-1
+   for errors; in many systems you cannot pass arguments or get return
+   values for all system calls (`pipe', `fork', and `getppid' typically
+   among them).
+
+   In Mach, all system calls take normal arguments and always return an
+   error code (zero for success).  */
+extern long int syscall (long int __sysno, ...) __THROW;
+
+#endif	/* Use misc.  */
+
+Changing this would be an ABI change and would have to be versioned. It
+would effect any one using syscall not just SYS_fallocate.
+
+the question is do programmers in practice include unistd.h when they
+use syscall.
+
+If the changed prototype is not in scope then the 1st parm (__sysno)
+defaults to int and is passed in on r3 which gets moved to r0.
+
+If the changed syscall prototype is in scope then then _sysno would be
+passed in r3/r4 (r3 would be 0 would be passed to r0 and the actual
+system number would be in r4 and passed to the kernel in r3)
+
+which behavior do you want? which (incorrect behavior compiled into
+existing codes do you want to support?
+
+Do you want syscall.S for PPC32 to change to match the changed
+prototype? It will have to be be versioned and the new prototype will
+only be available in future releases of GLIBC. Existing applications
+will bind to the old ABI and get the old behavior.
 
