@@ -1,140 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab0CRI4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 04:56:22 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:53858 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab0CRI4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 04:56:19 -0400
-Date: Thu, 18 Mar 2010 09:56:07 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100318085607.GB2157@elte.hu>
-References: <20100316112500.GA5337@elte.hu>
- <4B9F77E7.2060101@redhat.com>
- <20100316122903.GA8831@elte.hu>
- <4B9F7C6A.3070207@redhat.com>
- <20100316130840.GA24808@elte.hu>
- <4B9FBA8B.8020200@codemonkey.ws>
- <20100316173940.GA23859@elte.hu>
- <4BA00F1F.1090907@codemonkey.ws>
- <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
+	id S1751612Ab0CRJDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 05:03:23 -0400
+Received: from [85.183.11.32] ([85.183.11.32]:54150 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751171Ab0CRJDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 05:03:21 -0400
+Date: Thu, 18 Mar 2010 10:03:08 +0100
+From: =?utf-8?Q?J=F6rn?= Engel <joern@dublin.logfs.org>
+To: Francois Romieu <romieu@fr.zoreil.com>,
+       Robert Hancock <hancockrwd@gmail.com>,
+       David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [Regression] r8169: enable 64-bit DMA by default for PCI
+	Express devices (v2)
+Message-ID: <20100318090308.GA3697@Dublin.logfs.org>
+References: <20100315150806.GA15354@Dublin.logfs.org> <20100315151041.GA15667@Dublin.logfs.org> <20100315.115748.13754030.davem@davemloft.net> <51f3faa71003151628g5edc4d7av8916ac76cb337bfe@mail.gmail.com> <20100316083501.GA3489@Dublin.logfs.org> <20100317205206.GA2699@electric-eye.fr.zoreil.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4BA1E24B.6090904@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100317205206.GA2699@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
-> On 03/17/2010 10:10 AM, Ingo Molnar wrote:
+On Wed, 17 March 2010 21:52:06 +0100, Francois Romieu wrote:
+> On Tue, Mar 16, 2010 at 09:35:01AM +0100, J�rn Engel wrote:
+> [...]
+> > I just noticed lspci is also unhappy.
+> > 
+> > With patch in:
+> > Bikini:~# lspci -vv > lspci
+> > pcilib: sysfs_read_vpd: read failed: Connection timed out.
 > >
-> >> It's about who owns the user interface.
-> >>
-> >> If qemu owns the user interface, than we can satisfy this in a very 
-> >> simple way by adding a perf monitor command.  If we have to support third 
-> >> party tools, then it significantly complicates things.
-> >
-> > Of course illogical modularization complicates things 'significantly'.
+> > With patch reverted:
+> > Bikini:~# lspci -vv > lspci2
+> > Bikini:~# diff -u lspci*
+> > --- lspci       2010-03-16 09:03:02.000000000 +0100
+> > +++ lspci2      2010-03-16 09:09:36.000000000 +0100
+> > @@ -246,7 +246,7 @@
+> >                 Vector table: BAR=4 offset=00000000
+> >                 PBA: BAR=4 offset=00000800
+> >         Capabilities: [cc] Vital Product Data
+> > -               Not readable
+> > +               Unknown small resource type 00, will not decode more.
 > 
-> Who should own the user interface then?
+> Neither looks good.
 
-If qemu was in tools/kvm/ then we wouldnt have such issues. A single patch (or 
-series of patches) could modify tools/kvm/, arch/x86/kvm/, virt/ and 
-tools/perf/.
+Agreed.
 
-Numerous times did we have patches to kernel/perf_event.c that fixed some 
-detail, also accompanied by a tools/perf/ patch fixing another detail. Having 
-a single 'culture of contribution' is a powerful way to develop.
+> Did lspci output look different with an older kernel ?
 
-It turns out kernel developers can be pretty good user-space developers as 
-well and user-space developers can be pretty good kernel developers as well. 
-Some like to do both - as long as it's all within a single project.
+Yes.  The relevant hunk is this one.  Different obviously doesn't
+mean better. :)
 
-The moment any change (be it as trivial as fixing a GUI detail or as complex 
-as a new feature) involves two or more packages, development speed slows down 
-to a crawl - while the complexity of the change might be very low!
+@@ -223,7 +221,7 @@
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+-               Address: 00000000fee0300c  Data: 4169
++               Address: 00000000fee0300c  Data: 4179
+        Capabilities: [70] Express (v2) Endpoint, MSI 01
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
 
-Also, there's the harmful process that people start categorizing themselves 
-into 'I am a kernel developer' and 'I am a user space programmer' stereotypes, 
-which limits the scope of contributions artificially.
+And for completeness he is the full diff.  The machine was bought on
+16 Jun 2009, so this is the oldest kernel I have.  If you want any
+specific kernels tested, please tell me which ones.
 
-> > Fast forward to 2010. The kernel side of KVM is maximum goodness - by far 
-> > the worst-quality remaining aspects of KVM are precisely in areas that you 
-> > mention: 'if we have to support third party tools, then it significantly 
-> > complicates things'. You kept Qemu as an external 'third party' entity to 
-> > KVM, and KVM is clearly hurting from that - just see the recent KVM 
-> > usability thread for examples about suckage.
-> 
-> Any qemu usability problems are because developers (or their employers) are 
-> not interested in fixing them, not because of the repository location.  Most 
-> kvm developer interest is in server-side deployment (even for desktop 
-> guests), so there is limited effort in implementing a virtualbox-style GUI.
-
-The same has been said of oprofile as well: 'it somewhat sucks because we are 
-too server centric', 'nobody is interested in good usability and oprofile is 
-fine for the enterprises'. Ironically, the same has been said of Xen usability 
-as well, up to the point KVM came around.
-
-What was the core of the problem was a bad design and a split kernel-side 
-user-side tool landscape.
-
-In fact i think saying that 'our developers only care about the server' is 
-borderline dishonest, when at the same time you are making it doubly sure (by 
-inaction) that it stays so: by leaving an artificial package wall between 
-kernel-side KVM and user-side KVM and not integrating the two technologies.
-
-You'll never know what heights you could achieve if you leave that wall there 
-...
-
-Furthermore, what should be realized is that bad usability hurts "server 
-features" just as much. Most of the day-to-day testing is done on the desktop 
-by desktop oriented testers/developers. _Not_ by enterprise shops - they tend 
-to see the code years down the line to begin with ...
-
-Yes, a particular feature might be server oriented, but a good portion of our 
-testing is on the desktop and everyone is hurting from bad usability and this 
-puts limits on contribution efficiency.
-
-As the patch posted in _this very thread demonstrates it_, it is doubly more 
-difficult to contribute a joint KVM+Qemu feature, because it's two separate 
-code bases, two contribution guidelines, two release schedules. While to the 
-user it really is just one and the same thing. It should be so for the 
-developer as well.
-
-Put in another way: KVM's current split design is making it easy to contribute 
-server features (because the kernel side is clean and cool), but also makes it 
-artificially hard to contribute desktop features: because the tooling side 
-(Qemu) is 'just another package', is separated by a package and maintenance 
-wall and is made somewhat uncool by a (as some KVM developers have pointed out 
-in this thread) quirky codebase.
-
-(the rest of your points are really a function of this fundamental 
-disagreement)
-
-Thanks,
-
-	Ingo
+Bikini:~# uname -a
+Linux Bikini 2.6.31-rc2 #193 SMP Sun Mar 14 17:00:08 CET 2010 x86_64 GNU/Linux
+Bikini:~# lspci -vv > lspci3
+Bikini:~# diff -u lspci[23]
+--- lspci2      2010-03-16 09:09:46.000000000 +0100
++++ lspci3      2010-03-18 09:49:21.000000000 +0100
+@@ -24,14 +24,12 @@
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+ 
+ 00:1c.0 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 1 (rev 01) (prog-if 00 [Normal decode])
+-       Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
++       Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 32 bytes
+        Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
+-       I/O behind bridge: 00001000-00001fff
+-       Memory behind bridge: bf700000-bfafffff
+        Prefetchable memory behind bridge: 00000000fdf00000-00000000fdffffff
+-       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
++       Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ <SERR- <PERR-
+        BridgeCtl: Parity- SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
+                PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
+        Capabilities: [40] Express (v1) Root Port (Slot+), MSI 00
+@@ -56,14 +54,14 @@
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+        Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+-               Address: fee0300c  Data: 4149
++               Address: fee0300c  Data: 4159
+        Capabilities: [90] Subsystem: ASRock Incorporation Device 27d0
+        Capabilities: [a0] Power Management version 2
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [100] Virtual Channel <?>
+        Capabilities: [180] Root Complex Link <?>
+-       Kernel driver in use: pcieport
++       Kernel driver in use: pcieport-driver
+ 
+ 00:1c.1 PCI bridge: Intel Corporation 82801G (ICH7 Family) PCI Express Port 2 (rev 01) (prog-if 00 [Normal decode])
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR+ FastB2B- DisINTx+
+@@ -98,14 +96,14 @@
+                RootCap: CRSVisible-
+                RootSta: PME ReqID 0000, PMEStatus- PMEPending-
+        Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+-               Address: fee0300c  Data: 4151
++               Address: fee0300c  Data: 4161
+        Capabilities: [90] Subsystem: ASRock Incorporation Device 27d2
+        Capabilities: [a0] Power Management version 2
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [100] Virtual Channel <?>
+        Capabilities: [180] Root Complex Link <?>
+-       Kernel driver in use: pcieport
++       Kernel driver in use: pcieport-driver
+ 
+ 00:1d.0 USB Controller: Intel Corporation 82801G (ICH7 Family) USB UHCI Controller #1 (rev 01) (prog-if 00 [UHCI])
+        Subsystem: ASRock Incorporation Device 27c8
+@@ -223,7 +221,7 @@
+                Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=375mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+                Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit+
+-               Address: 00000000fee0300c  Data: 4169
++               Address: 00000000fee0300c  Data: 4179
+        Capabilities: [70] Express (v2) Endpoint, MSI 01
+                DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <512ns, L1 <64us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
