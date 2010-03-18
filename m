@@ -1,123 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab0CRLnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 07:43:22 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50799 "EHLO gir.skynet.ie"
+	id S1752175Ab0CRLst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 07:48:49 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42456 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab0CRLnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 07:43:21 -0400
-Date: Thu, 18 Mar 2010 11:43:03 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100318114302.GM12388@csn.ul.ie>
-References: <20100317170116.870A.A69D9226@jp.fujitsu.com> <20100317114045.GE12388@csn.ul.ie> <20100318085741.8729.A69D9226@jp.fujitsu.com>
+	id S1751788Ab0CRLsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 07:48:47 -0400
+Date: Thu, 18 Mar 2010 12:48:21 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318114821.GB13168@elte.hu>
+References: <20100316130840.GA24808@elte.hu>
+ <4B9FBA8B.8020200@codemonkey.ws>
+ <20100316173940.GA23859@elte.hu>
+ <4BA00F1F.1090907@codemonkey.ws>
+ <20100317081041.GC16374@elte.hu>
+ <4BA1E24B.6090904@redhat.com>
+ <20100318085607.GB2157@elte.hu>
+ <4BA1FC80.2000401@redhat.com>
+ <20100318105013.GB24464@elte.hu>
+ <4BA20EB8.60707@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100318085741.8729.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4BA20EB8.60707@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 11:35:46AM +0900, KOSAKI Motohiro wrote:
-> > On Wed, Mar 17, 2010 at 07:31:53PM +0900, KOSAKI Motohiro wrote:
-> > > nit
-> > > 
-> > > > +static int compact_zone(struct zone *zone, struct compact_control *cc)
-> > > > +{
-> > > > +	int ret = COMPACT_INCOMPLETE;
-> > > > +
-> > > > +	/* Setup to move all movable pages to the end of the zone */
-> > > > +	cc->migrate_pfn = zone->zone_start_pfn;
-> > > > +	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
-> > > > +	cc->free_pfn &= ~(pageblock_nr_pages-1);
-> > > > +
-> > > > +	for (; ret == COMPACT_INCOMPLETE; ret = compact_finished(zone, cc)) {
-> > > > +		unsigned long nr_migrate, nr_remaining;
-> > > > +		if (!isolate_migratepages(zone, cc))
-> > > > +			continue;
-> > > > +
-> > > > +		nr_migrate = cc->nr_migratepages;
-> > > > +		migrate_pages(&cc->migratepages, compaction_alloc,
-> > > > +						(unsigned long)cc, 0);
-> > > > +		update_nr_listpages(cc);
-> > > > +		nr_remaining = cc->nr_migratepages;
-> > > > +
-> > > > +		count_vm_event(COMPACTBLOCKS);
-> > > 
-> > > V1 did compaction per pageblock. but current patch doesn't.
-> > > so, Is COMPACTBLOCKS still good name?
-> > 
-> > It's not such a minor nit. I wondered about that myself but it's still a
-> > block - just not a pageblock. Would COMPACTCLUSTER be a better name as it's
-> > related to COMPACT_CLUSTER_MAX?
+
+* Avi Kivity <avi@redhat.com> wrote:
+
+> On 03/18/2010 12:50 PM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >>>The moment any change (be it as trivial as fixing a GUI detail or as
+> >>>complex as a new feature) involves two or more packages, development speed
+> >>>slows down to a crawl - while the complexity of the change might be very
+> >>>low!
+> >>Why is that?
+> > It's very simple: because the contribution latencies and overhead compound,
+> > almost inevitably.
 > 
-> I've looked at this code again. honestly I'm a abit confusing even though both your
-> suggestions seems reasonable.  
-> 
-> now COMPACTBLOCKS is tracking #-of-called-migrate_pages. but I can't imazine
-> how to use it. can you please explain this ststics purpose? probably this is only useful
-> when conbination other stats, and the name should be consist with such combination one.
-> 
+> It's not inevitable, if the projects are badly run, you'll have high 
+> latencies, but projects don't have to be badly run.
 
-It is intended to count how many steps compaction took, the fewer the
-better so minimally, the lower this number is the better. Specifically, the
-"goodness" is related to the number of pages that were successfully allocated
-due to compaction. Assuming the only high-order allocation was huge pages,
-one possible calculation for "goodness" is;
-
-hugepage_clusters = (1 << HUGE HUGETLB_PAGE_ORDER) / COMPACT_CLUSTER_MAX
-goodness = (compactclusters / hugepage_clusters) / compactsuccess
-
-The value of goodness is undefined if "compactsuccess" is 0.
-
-Otherwise, the closer the "goodness" is to 1, the better. A value of 1
-implies that compaction is selecting exactly the right blocks for migration
-and the minimum number of pages are being moved around. The greater the value,
-the more "useless" work compaction is doing.
-
-If there are a mix of high-orders that are resulting in compaction, calculating
-the goodness is a lot harder and compactcluster is just a rule of thumb as
-to how much work compaction is doing.
-
-Does that make sense?
+So the 64K dollar question is, why does Qemu still suck?
 
 > 
-> > > > +		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
-> > > > +		if (nr_remaining)
-> > > > +			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
-> > > > +
-> > > > +		/* Release LRU pages not migrated */
-> > > > +		if (!list_empty(&cc->migratepages)) {
-> > > > +			putback_lru_pages(&cc->migratepages);
-> > > > +			cc->nr_migratepages = 0;
-> > > > +		}
-> > > > +
-> > > > +		mod_zone_page_state(zone, NR_ISOLATED_ANON, -cc->nr_anon);
-> > > > +		mod_zone_page_state(zone, NR_ISOLATED_FILE, -cc->nr_file);
-> > > 
-> > > I think you don't need decrease this vmstatistics here. migrate_pages() and
-> > > putback_lru_pages() alredy does.
-> > > 
-> > 
-> > Hmm, I do need to decrease the vmstats here but not by this much. The
-> > pages migrated need to be accounted for but not the ones that failed. I
-> > missed this because migration was always succeeding. Thanks. I'll get it
-> > fixed for V5
+> >If you ever tried to implement a combo GCC+glibc+kernel feature you'll know
+> >...
+> >
+> >Even with the best-run projects in existence it takes forever and is very
+> >painful - and here i talk about first hand experience over many years.
 > 
-> thanks.
+> Try sending a patch to qemu-devel@, you may be pleasantly surprised.
 > 
 > 
+> >>I the maintainers of all packages are cooperative and responsive, then the
+> >>patches will get accepted quickly.  If they aren't, development will be
+> >>slow. [...]
+> >I'm afraid practice is different from the rosy ideal you paint there. Even
+> >with assumed 'perfect projects' there's always random differences between
+> >projects, causing doubled (tripled) overhead and compounded up overhead:
+> >
+> >  - random differences in release schedules
+> >
+> >  - random differences in contribution guidelines
+> >
+> >  - random differences in coding style
+> 
+> None of these matter for steady contributors.
+> 
+> >>[...] It isn't any different from contributing to two unrelated kernel
+> >>subsystems (which are in fact in different repositories until the next merge
+> >>window).
+> >You mention a perfect example: contributing to multipe kernel subsystems. Even
+> >_that_ is very noticeably harder than contributing to a single subsystem - due
+> >to the inevitable buerocratic overhead, due to different development trees,
+> >due to different merge criteria.
+> >
+> >So you are underlining my point (perhaps without intending to): treating
+> >closely related bits of technology as a single project is much better.
+> >
+> > Obviously arch/x86/kvm/, virt/ and tools/kvm/ should live in a single 
+> > development repository (perhaps micro-differentiated by a few topical 
+> > branches), for exactly those reasons you mention.
+> 
+> How is a patch for the qemu GUI eject button and the kvm shadow mmu related?  
+> Should a single maintainer deal with both?
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+We have co-maintainers for perf that have a different focus. It works pretty 
+well.
+
+Look at git log tools/perf/ and how user-space and kernel-space components 
+interact in practice. You'll patches that only impact one side, but you'll see 
+very big overlap both in contributor identity and in patches as well.
+
+Also, let me put similar questions in a bit different way:
+
+ - ' how is an in-kernel PIT emulation connected to Qemu's PIT emulation? '
+
+ - ' how is the in-kernel dynticks implementation related to Qemu's 
+     implementation of hardware timers? '
+
+ - ' how is an in-kernel event for a CD-ROM eject connected to an in-Qemu 
+     eject event? '
+
+ - ' how is a new hardware virtualization feature related to being able to 
+     configure and use it via Qemu? '
+
+ - ' how is the in-kernel x86 decoder/emulator related to the Qemu x86 
+     emulator? '
+
+ - ' how is the performance of the qemu GUI related to the way VGA buffers are 
+     mapped and accelerated by KVM? '
+
+They are obviously deeply related. The quality of a development process is not 
+defined by the easy cases where no project unification is needed. The quality 
+of a development process is defined by the _difficult_ cases.
+
+	Ingo
