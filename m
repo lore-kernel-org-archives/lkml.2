@@ -1,335 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab0CRRAp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 13:00:45 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:56400 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab0CRRAA (ORCPT
+	id S1753183Ab0CRRB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 13:01:26 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:26252 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab0CRRBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 13:00:00 -0400
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, sameo@linux.intel.com,
-       socketcan-core@lists.berlios.de
-Subject: [PATCH 3/3] gpio: add support for Janz VMOD-TTL Digital IO module
-Date: Thu, 18 Mar 2010 09:38:44 -0700
-Message-Id: <1268930324-29841-4-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.5.4.3
-In-Reply-To: <>
-References: <>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 18 Mar 2010 09:38:45 -0700 (PDT)
+	Thu, 18 Mar 2010 13:01:23 -0400
+Date: Thu, 18 Mar 2010 12:59:50 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+Message-ID: <20100318165950.GE14074@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100315191807.GA3449@think>
+ <20100316210150.GA14886@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100316210150.GA14886@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BA25C44.0053:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Janz VMOD-TTL is a MODULbus daughterboard which fits onto any MODULbus
-carrier board. It essentially consists of some various logic and a Zilog
-Z8536 CIO Counter/Timer and Parallel IO Unit.
+On Tue, Mar 16, 2010 at 05:01:50PM -0400, Chris Mason wrote:
+> On Mon, Mar 15, 2010 at 03:18:07PM -0400, Chris Mason wrote:
+> > Hello everyone,
+> > 
+> > The master branch of the btrfs unstable tree has a collection of fixes
+> > and features:
+> > 
 
-The board must be physically configured with jumpers to enable a user to
-drive output signals. I am only interested in outputs, so I have made this
-driver as simple as possible. It only supports a very minimal amount of the
-features provided by the Z8536 chip.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
 
-Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
----
- drivers/gpio/Kconfig    |   10 ++
- drivers/gpio/Makefile   |    1 +
- drivers/gpio/janz-ttl.c |  257 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 268 insertions(+), 0 deletions(-)
- create mode 100644 drivers/gpio/janz-ttl.c
+> 
+> I've updated the master tree with 3 small fixes.  Thanks to Sage for
+> sending along a one liner for a bad cast in the searching ioctl, really
+> not sure why my gcc isn't giving the same warnings his was.
+> 
+> I fixed the new space info ioctl to avoid scheduling in a
+> rcu_read_lock.  Sage also turned u64 to __u64 in the space_info ioctl
+> args struct.
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 1f1d88a..0da364d 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -255,4 +255,14 @@ config GPIO_UCB1400
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called ucb1400_gpio.
- 
-+comment "MODULbus GPIO expanders:"
-+
-+config GPIO_JANZ_TTL
-+	tristate "Janz VMOD-TTL Digital IO Module"
-+	depends on MFD_JANZ_CMODIO
-+	help
-+	  This enables support for the Janz VMOD-TTL Digital IO module.
-+	  This driver provides support for driving the pins in output
-+	  mode only. Input mode is not supported.
-+
- endif
-diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-index 4868723..2263966 100644
---- a/drivers/gpio/Makefile
-+++ b/drivers/gpio/Makefile
-@@ -22,3 +22,4 @@ obj-$(CONFIG_GPIO_CS5535)	+= cs5535-gpio.o
- obj-$(CONFIG_GPIO_BT8XX)	+= bt8xxgpio.o
- obj-$(CONFIG_GPIO_VR41XX)	+= vr41xx_giu.o
- obj-$(CONFIG_GPIO_WM831X)	+= wm831x-gpio.o
-+obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
-diff --git a/drivers/gpio/janz-ttl.c b/drivers/gpio/janz-ttl.c
-new file mode 100644
-index 0000000..d97eeda
---- /dev/null
-+++ b/drivers/gpio/janz-ttl.c
-@@ -0,0 +1,257 @@
-+/*
-+ * Janz MODULbus VMOD-TTL GPIO Driver
-+ *
-+ * Copyright (c) 2010 Ira W. Snyder <iws@ovro.caltech.edu>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/delay.h>
-+#include <linux/platform_device.h>
-+#include <linux/io.h>
-+#include <linux/gpio.h>
-+
-+#include <linux/mfd/janz.h>
-+
-+#define DRV_NAME "janz-ttl"
-+
-+#define PORTA_DIRECTION		0x23
-+#define PORTB_DIRECTION		0x2B
-+#define PORTC_DIRECTION		0x06
-+#define PORTA_IOCTL		0x24
-+#define PORTB_IOCTL		0x2C
-+#define PORTC_IOCTL		0x07
-+
-+#define MASTER_INT_CTL		0x00
-+#define MASTER_CONF_CTL		0x01
-+
-+#define CONF_PAE		(1 << 2)
-+#define CONF_PBE		(1 << 7)
-+#define CONF_PCE		(1 << 4)
-+
-+struct ttl_control_regs {
-+	__be16 portc;
-+	__be16 portb;
-+	__be16 porta;
-+	__be16 control;
-+};
-+
-+struct ttl_module {
-+	struct gpio_chip gpio;
-+
-+	/* base address of registers */
-+	struct ttl_control_regs __iomem *regs;
-+
-+	u8 portc_shadow;
-+	u8 portb_shadow;
-+	u8 porta_shadow;
-+
-+	spinlock_t lock;
-+};
-+
-+static int ttl_get_value(struct gpio_chip *gpio, unsigned offset)
-+{
-+	struct ttl_module *mod = dev_get_drvdata(gpio->dev);
-+	u8 *shadow;
-+	int ret;
-+
-+	if (offset < 8) {
-+		shadow = &mod->porta_shadow;
-+	} else if (offset < 16) {
-+		shadow = &mod->portb_shadow;
-+		offset -= 8;
-+	} else {
-+		shadow = &mod->portc_shadow;
-+		offset -= 16;
-+	}
-+
-+	spin_lock(&mod->lock);
-+	ret = *shadow & (1 << offset);
-+	spin_unlock(&mod->lock);
-+	return ret;
-+}
-+
-+static void ttl_set_value(struct gpio_chip *gpio, unsigned offset, int value)
-+{
-+	struct ttl_module *mod = dev_get_drvdata(gpio->dev);
-+	void __iomem *port;
-+	u8 *shadow;
-+
-+	if (offset < 8) {
-+		port = &mod->regs->porta;
-+		shadow = &mod->porta_shadow;
-+	} else if (offset < 16) {
-+		port = &mod->regs->portb;
-+		shadow = &mod->portb_shadow;
-+		offset -= 8;
-+	} else {
-+		port = &mod->regs->portc;
-+		shadow = &mod->portc_shadow;
-+		offset -= 16;
-+	}
-+
-+	spin_lock(&mod->lock);
-+	if (value)
-+		*shadow |= (1 << offset);
-+	else
-+		*shadow &= ~(1 << offset);
-+
-+	iowrite16be(*shadow, port);
-+	spin_unlock(&mod->lock);
-+}
-+
-+static void __devinit ttl_write_reg(struct ttl_module *mod, u8 reg, u16 val)
-+{
-+	iowrite16be(reg, &mod->regs->control);
-+	iowrite16be(val, &mod->regs->control);
-+}
-+
-+static void __devinit ttl_setup_device(struct ttl_module *mod)
-+{
-+	/* reset the device to a known state */
-+	iowrite16be(0x0000, &mod->regs->control);
-+	iowrite16be(0x0001, &mod->regs->control);
-+	iowrite16be(0x0000, &mod->regs->control);
-+
-+	/* put all ports in open-drain mode */
-+	ttl_write_reg(mod, PORTA_IOCTL, 0x00ff);
-+	ttl_write_reg(mod, PORTB_IOCTL, 0x00ff);
-+	ttl_write_reg(mod, PORTC_IOCTL, 0x000f);
-+
-+	/* set all ports as outputs */
-+	ttl_write_reg(mod, PORTA_DIRECTION, 0x0000);
-+	ttl_write_reg(mod, PORTB_DIRECTION, 0x0000);
-+	ttl_write_reg(mod, PORTC_DIRECTION, 0x0000);
-+
-+	/* set all ports to drive zeroes */
-+	iowrite16be(0x0000, &mod->regs->porta);
-+	iowrite16be(0x0000, &mod->regs->portb);
-+	iowrite16be(0x0000, &mod->regs->portc);
-+
-+	/* enable all ports */
-+	ttl_write_reg(mod, MASTER_CONF_CTL, CONF_PAE | CONF_PBE | CONF_PCE);
-+}
-+
-+static int __devinit ttl_probe(struct platform_device *pdev)
-+{
-+	struct janz_platform_data *pdata;
-+	struct device *dev = &pdev->dev;
-+	struct ttl_module *mod;
-+	struct gpio_chip *gpio;
-+	struct resource *res;
-+	int ret;
-+
-+	pdata = pdev->dev.platform_data;
-+	if (!pdata) {
-+		dev_err(dev, "no platform data\n");
-+		ret = -ENXIO;
-+		goto out_return;
-+	}
-+
-+	mod = kzalloc(sizeof(*mod), GFP_KERNEL);
-+	if (!mod) {
-+		dev_err(dev, "unable to allocate private data\n");
-+		ret = -ENOMEM;
-+		goto out_return;
-+	}
-+
-+	platform_set_drvdata(pdev, mod);
-+	spin_lock_init(&mod->lock);
-+
-+	/* get access to the MODULbus registers for this module */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(dev, "MODULbus registers not found\n");
-+		ret = -ENODEV;
-+		goto out_free_mod;
-+	}
-+
-+	mod->regs = ioremap(res->start, resource_size(res));
-+	if (!mod->regs) {
-+		dev_err(dev, "MODULbus registers not ioremap\n");
-+		ret = -ENOMEM;
-+		goto out_free_mod;
-+	}
-+
-+	ttl_setup_device(mod);
-+
-+	/* Initialize the GPIO data structures */
-+	gpio = &mod->gpio;
-+	gpio->dev = &pdev->dev;
-+	gpio->label = pdev->name;
-+	gpio->get = ttl_get_value;
-+	gpio->set = ttl_set_value;
-+	gpio->owner = THIS_MODULE;
-+
-+	/* request dynamic allocation */
-+	gpio->base = -1;
-+	gpio->ngpio = 20;
-+
-+	ret = gpiochip_add(gpio);
-+	if (ret) {
-+		dev_err(dev, "unable to add GPIO chip\n");
-+		goto out_iounmap_regs;
-+	}
-+
-+	dev_info(&pdev->dev, "module %d: registered GPIO device\n",
-+			     pdata->modno);
-+	return 0;
-+
-+out_iounmap_regs:
-+	iounmap(mod->regs);
-+out_free_mod:
-+	kfree(mod);
-+out_return:
-+	return ret;
-+}
-+
-+static int __devexit ttl_remove(struct platform_device *pdev)
-+{
-+	struct ttl_module *mod = platform_get_drvdata(pdev);
-+	struct device *dev = &pdev->dev;
-+	int ret;
-+
-+	ret = gpiochip_remove(&mod->gpio);
-+	if (ret) {
-+		dev_err(dev, "unable to remove GPIO chip\n");
-+		return ret;
-+	}
-+
-+	iounmap(mod->regs);
-+	kfree(mod);
-+	return 0;
-+}
-+
-+static struct platform_driver ttl_driver = {
-+	.driver		= {
-+		.name	= DRV_NAME,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ttl_probe,
-+	.remove		= __devexit_p(ttl_remove),
-+};
-+
-+static int __init ttl_init(void)
-+{
-+	return platform_driver_register(&ttl_driver);
-+}
-+
-+static void __exit ttl_exit(void)
-+{
-+	platform_driver_unregister(&ttl_driver);
-+}
-+
-+MODULE_AUTHOR("Ira W. Snyder <iws@ovro.caltech.edu>");
-+MODULE_DESCRIPTION("Janz MODULbus VMOD-TTL Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:janz-ttl");
-+
-+module_init(ttl_init);
-+module_exit(ttl_exit);
--- 
-1.5.4.3
+I mentioned how the new searching ioctl could be used to very quickly
+find updated files, and that I was planning on adding this.  There were
+a few questions about how it might work, so I worked up a prototype.
+
+I had to make some small mods to the kernel side to be more friendly to
+userland, mostly just fixing up how we advance through the keys.  For an
+example of how this works, cloned the linux-26 git repo onto a fresh FS,
+then modified a single file.
+
+I timed how long it took find to find my one modified file (via find
+-newer) and I timed my ioctl.
+
+Find took 9s, the ioctl took .024s.
+
+A repeat of the test on a much larger filesystem had find timed in at
+25s and the ioctl at 2s.
+
+The prototype is called btrfs subvol find-new and it can be found in the
+master branch of the btrfs-progs-unstable repo.  I've updated the master branch
+on the kernel side.  Here are the updates since my last pull request:
+
+Chris Mason (4) commits (+35/-18):
+    Btrfs: fix the inode ref searches done by btrfs_search_path_in_tree (+6/-3)
+    Btrfs: fix key checks and advance in the search ioctl (+25/-14)
+    Btrfs: return keys for large items to the search ioctl (+1/-1)
+    Btrfs: allow treeid==0 in the inode lookup ioctl (+3/-0)
+
+Total: (4) commits
+
+ fs/btrfs/ioctl.c |   53 +++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 35 insertions(+), 18 deletions(-)
+
+And here is the full log of things missing from Linus' git tree right
+now.
+
+Chris Mason (11) commits (+654/-85):
+    Btrfs: fix the inode ref searches done by btrfs_search_path_in_tree (+6/-3)
+    Btrfs: run the backing dev more often in the submit_bio helper (+10/-10)
+    Btrfs: finish read pages in the order they are submitted (+4/-3)
+    Btrfs: fix key checks and advance in the search ioctl (+25/-14)
+    Btrfs: return keys for large items to the search ioctl (+1/-1)
+    Btrfs: allow treeid==0 in the inode lookup ioctl (+3/-0)
+    Btrfs: buffer results in the space_info ioctl (+46/-11)
+    Btrfs: don't look at bio flags after submit_bio (+3/-3)
+    Btrfs: be more selective in the defrag ioctl (+140/-10)
+    Btrfs: add search and inode lookup ioctls (+299/-16)
+    Btrfs: add new defrag-range ioctl. (+117/-14)
+
+Josef Bacik (10) commits (+517/-160):
+    Btrfs: make set/get functions for the super compat_ro flags use compat_ro (+1/-1)
+    Btrfs: change the ordered tree to use a spinlock instead of a mutex (+19/-19)
+    Btrfs: add ioctl and incompat flag to set the default mount subvol (+80/-1)
+    Btrfs: cache the extent state everywhere we possibly can V2 (+148/-90)
+    Btrfs: make subvolid=0 mount the original default root (+9/-3)
+    Btrfs: make df be a little bit more understandable (+26/-3)
+    Btrfs: cache extent state in find_delalloc_range (+8/-3)
+    Btrfs: cache ordered extent when completing io (+10/-5)
+    Btrfs: change how we mount subvolumes (+158/-34)
+    Btrfs: add a "df" ioctl for btrfs (+58/-1)
+
+Sage Weil (3) commits (+7/-10):
+    Btrfs: flush data on snapshot creation (+1/-4)
+    Btrfs: fix search_ioctl key advance (+1/-1)
+    Btrfs: use __u64 types in ioctl.h (+5/-5)
+
+TARUISI Hiroaki (2) commits (+99/-0):
+    Btrfs: add a function to lookup a directory path by following backrefs (+92/-0)
+    btrfs: Update existing btrfs_device for renaming device (+7/-0)
+
+Xiao Guangrong (1) commits (+3/-3):
+    btrfs: using btrfs_stack_device_id() get devid
+
+Akinobu Mita (1) commits (+4/-30):
+    btrfs: use memparse
+
+Miao Xie (1) commits (+1/-1):
+    btrfs: fix btrfs_mkdir goto for no free objectids
+
+Nick Piggin (1) commits (+1/-1):
+    Btrfs: fix gfp flags masking in the compression code
+
+Total: (30) commits
+
+ fs/btrfs/ioctl.c        |  810 +++++++++++++++++++++++++++++++++++++++++++-----
+ fs/btrfs/super.c        |  244 ++++++++++----
+ fs/btrfs/inode.c        |  139 +++++---
+ fs/btrfs/ioctl.h        |  123 ++++++-
+ fs/btrfs/extent_io.c    |   79 ++--
+ fs/btrfs/ordered-data.c |   41 +-
+ fs/btrfs/volumes.c      |   39 +-
+ fs/btrfs/file.c         |   23 -
+ fs/btrfs/disk-io.c      |   15 
+ fs/btrfs/ctree.h        |   13 
+ fs/btrfs/extent-tree.c  |   11 
+ fs/btrfs/extent_io.h    |   10 
+ fs/btrfs/ordered-data.h |    7 
+ fs/btrfs/transaction.c  |    5 
+ fs/btrfs/btrfs_inode.h  |    5 
+ fs/btrfs/relocation.c   |    4 
+ fs/btrfs/export.c       |    4 
+ fs/btrfs/tree-log.c     |    2 
+ fs/btrfs/compression.c  |    2 
+ 19 files changed, 1286 insertions(+), 290 deletions(-)
 
