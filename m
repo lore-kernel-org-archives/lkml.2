@@ -1,322 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab0CRLUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 07:20:06 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37990 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab0CRLUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 07:20:03 -0400
-Date: Thu, 18 Mar 2010 12:20:15 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, Jamie Lokier <jamie@shareable.org>,
-       Roland Dreier <rdreier@cisco.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Brian Gerst <brgerst@gmail.com>
-Subject: [PATCH 2/2] x86: Add optimized popcnt variants
-Message-ID: <20100318112015.GC11152@aftab>
-References: <20100223155852.GF30382@aftab>
- <4B84118C.90203@zytor.com>
- <20100223175457.GA2401@aftab>
- <4B841BC3.1000908@zytor.com>
- <20100223190614.GB2401@aftab>
- <4B875BBD.4060104@zytor.com>
- <20100226074714.GA15310@aftab>
- <4B88097E.7010608@zytor.com>
- <20100227082807.GA21706@aftab>
- <4B8979DA.9000201@zytor.com>
+	id S1752903Ab0CRLUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 07:20:30 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55522 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752594Ab0CRLUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 07:20:24 -0400
+Date: Thu, 18 Mar 2010 12:19:59 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100318111959.GB2174@elte.hu>
+References: <20100316122903.GA8831@elte.hu>
+ <4B9F7C6A.3070207@redhat.com>
+ <20100316130840.GA24808@elte.hu>
+ <4B9FBA8B.8020200@codemonkey.ws>
+ <20100316173940.GA23859@elte.hu>
+ <4BA00F1F.1090907@codemonkey.ws>
+ <20100317081041.GC16374@elte.hu>
+ <4BA1E24B.6090904@redhat.com>
+ <20100318092232.GC2157@elte.hu>
+ <4BA20153.5060409@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4B8979DA.9000201@zytor.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BA20153.5060409@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
-Date: Fri, 5 Mar 2010 17:34:46 +0100
-Subject: [PATCH 2/2] x86: Add optimized popcnt variants
 
-Add support for the hardware version of the Hamming weight function,
-popcnt, present in CPUs which advertize it under CPUID, Function
-0x0000_0001_ECX[23]. On CPUs which don't support it, we fallback to the
-default lib/hweight.c sw versions.
+* Avi Kivity <avi@redhat.com> wrote:
 
-A synthetic benchmark comparing popcnt with __sw_hweight64 showed almost
-a 3x speedup on a F10h machine.
+> On 03/18/2010 11:22 AM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >>>  - move a clean (and minimal) version of the Qemu code base to tools/kvm/,
+> >>>    in the upstream kernel repo, and work on that from that point on.
+> >>I'll ignore the repository location which should be immaterial to a serious
+> >>developer and concentrate on the 'clean and minimal' aspect, since it has
+> >>some merit.  [...]
+> >
+> > To the contrary, experience shows that repository location, and in 
+> > particular a shared repository for closely related bits is very much 
+> > material!
+> >
+> > It matters because when there are two separate projects, even a "serious 
+> > developer" is finding it double and triple difficult to contribute even 
+> > trivial changes.
+> >
+> > It becomes literally a nightmare if you have to touch 3 packages: kernel, 
+> > a library and an app codebase. It takes _forever_ to get anything useful 
+> > done.
+> 
+> You can't be serious.  I find that the difficulty in contributing a patch 
+> has mostly to do with writing the patch, and less with figuring out which 
+> email address to send it to.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/Kconfig                          |    5 ++
- arch/x86/include/asm/alternative.h        |    9 +++-
- arch/x86/include/asm/arch_hweight.h       |   59 +++++++++++++++++++++++++++++
- arch/x86/include/asm/bitops.h             |    4 +-
- include/asm-generic/bitops/arch_hweight.h |   22 +++++++++--
- lib/Makefile                              |    3 +
- lib/hweight.c                             |   20 +++++-----
- scripts/Makefile.lib                      |    4 ++
- 8 files changed, 108 insertions(+), 18 deletions(-)
- create mode 100644 arch/x86/include/asm/arch_hweight.h
+My own experience and everyone i've talked about such topics (developers and 
+distro people) about feature contribution tells the exact opposite: it's much 
+harder to contribute features to multiple packages than to a single project.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0eacb1f..89d8c54 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -238,6 +238,11 @@ config X86_32_LAZY_GS
- 	def_bool y
- 	depends on X86_32 && !CC_STACKPROTECTOR
- 
-+config ARCH_HWEIGHT_CFLAGS
-+	string
-+	default "-fcall-saved-ecx -fcall-saved-edx" if X86_32
-+	default "-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11" if X86_64
-+
- config KTIME_SCALAR
- 	def_bool X86_32
- source "init/Kconfig"
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index b09ec55..67dae51 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -39,9 +39,6 @@
- #define LOCK_PREFIX ""
- #endif
- 
--/* This must be included *after* the definition of LOCK_PREFIX */
--#include <asm/cpufeature.h>
--
- struct alt_instr {
- 	u8 *instr;		/* original instruction */
- 	u8 *replacement;
-@@ -96,6 +93,12 @@ static inline int alternatives_text_reserved(void *start, void *end)
-       ".previous"
- 
- /*
-+ * This must be included *after* the definition of ALTERNATIVE due to
-+ * <asm/arch_hweight.h>
-+ */
-+#include <asm/cpufeature.h>
-+
-+/*
-  * Alternative instructions for different CPU types or capabilities.
-  *
-  * This allows to use optimized instructions even on generic binary
-diff --git a/arch/x86/include/asm/arch_hweight.h b/arch/x86/include/asm/arch_hweight.h
-new file mode 100644
-index 0000000..d1fc3c2
---- /dev/null
-+++ b/arch/x86/include/asm/arch_hweight.h
-@@ -0,0 +1,59 @@
-+#ifndef _ASM_X86_HWEIGHT_H
-+#define _ASM_X86_HWEIGHT_H
-+
-+#ifdef CONFIG_64BIT
-+/* popcnt %rdi, %rax */
-+#define POPCNT ".byte 0xf3,0x48,0x0f,0xb8,0xc7"
-+#define REG_IN "D"
-+#define REG_OUT "a"
-+#else
-+/* popcnt %eax, %eax */
-+#define POPCNT ".byte 0xf3,0x0f,0xb8,0xc0"
-+#define REG_IN "a"
-+#define REG_OUT "a"
-+#endif
-+
-+/*
-+ * __sw_hweightXX are called from within the alternatives below
-+ * and callee-clobbered registers need to be taken care of. See
-+ * ARCH_HWEIGHT_CFLAGS in <arch/x86/Kconfig> for the respective
-+ * compiler switches.
-+ */
-+static inline unsigned int __arch_hweight32(unsigned int w)
-+{
-+	unsigned int res = 0;
-+
-+	asm (ALTERNATIVE("call __sw_hweight32", POPCNT, X86_FEATURE_POPCNT)
-+		     : "="REG_OUT (res)
-+		     : REG_IN (w));
-+
-+	return res;
-+}
-+
-+static inline unsigned int __arch_hweight16(unsigned int w)
-+{
-+	return __arch_hweight32(w & 0xffff);
-+}
-+
-+static inline unsigned int __arch_hweight8(unsigned int w)
-+{
-+	return __arch_hweight32(w & 0xff);
-+}
-+
-+static inline unsigned long __arch_hweight64(__u64 w)
-+{
-+	unsigned long res = 0;
-+
-+#ifdef CONFIG_X86_32
-+	return  __arch_hweight32((u32)w) +
-+		__arch_hweight32((u32)(w >> 32));
-+#else
-+	asm (ALTERNATIVE("call __sw_hweight64", POPCNT, X86_FEATURE_POPCNT)
-+		     : "="REG_OUT (res)
-+		     : REG_IN (w));
-+#endif /* CONFIG_X86_32 */
-+
-+	return res;
-+}
-+
-+#endif
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 02b47a6..545776e 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -444,7 +444,9 @@ static inline int fls(int x)
- 
- #define ARCH_HAS_FAST_MULTIPLIER 1
- 
--#include <asm-generic/bitops/hweight.h>
-+#include <asm/arch_hweight.h>
-+
-+#include <asm-generic/bitops/const_hweight.h>
- 
- #endif /* __KERNEL__ */
- 
-diff --git a/include/asm-generic/bitops/arch_hweight.h b/include/asm-generic/bitops/arch_hweight.h
-index 3a7be84..9a81c1e 100644
---- a/include/asm-generic/bitops/arch_hweight.h
-+++ b/include/asm-generic/bitops/arch_hweight.h
-@@ -3,9 +3,23 @@
- 
- #include <asm/types.h>
- 
--extern unsigned int __arch_hweight32(unsigned int w);
--extern unsigned int __arch_hweight16(unsigned int w);
--extern unsigned int __arch_hweight8(unsigned int w);
--extern unsigned long __arch_hweight64(__u64 w);
-+inline unsigned int __arch_hweight32(unsigned int w)
-+{
-+	return __sw_hweight32(w);
-+}
- 
-+inline unsigned int __arch_hweight16(unsigned int w)
-+{
-+	return __sw_hweight16(w);
-+}
-+
-+inline unsigned int __arch_hweight8(unsigned int w)
-+{
-+	return __sw_hweight8(w);
-+}
-+
-+inline unsigned long __arch_hweight64(__u64 w)
-+{
-+	return __sw_hweight64(w);
-+}
- #endif /* _ASM_GENERIC_BITOPS_HWEIGHT_H_ */
-diff --git a/lib/Makefile b/lib/Makefile
-index 2e152ae..abe63a8 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -39,7 +39,10 @@ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
- lib-$(CONFIG_GENERIC_FIND_FIRST_BIT) += find_next_bit.o
- lib-$(CONFIG_GENERIC_FIND_NEXT_BIT) += find_next_bit.o
- obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
-+
-+CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
- obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
-+
- obj-$(CONFIG_LOCK_KERNEL) += kernel_lock.o
- obj-$(CONFIG_BTREE) += btree.o
- obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
-diff --git a/lib/hweight.c b/lib/hweight.c
-index a6927e7..3c79d50 100644
---- a/lib/hweight.c
-+++ b/lib/hweight.c
-@@ -9,7 +9,7 @@
-  * The Hamming Weight of a number is the total number of bits set in it.
-  */
- 
--unsigned int __arch_hweight32(unsigned int w)
-+unsigned int __sw_hweight32(unsigned int w)
- {
- #ifdef ARCH_HAS_FAST_MULTIPLIER
- 	w -= (w >> 1) & 0x55555555;
-@@ -24,30 +24,30 @@ unsigned int __arch_hweight32(unsigned int w)
- 	return (res + (res >> 16)) & 0x000000FF;
- #endif
- }
--EXPORT_SYMBOL(__arch_hweight32);
-+EXPORT_SYMBOL(__sw_hweight32);
- 
--unsigned int __arch_hweight16(unsigned int w)
-+unsigned int __sw_hweight16(unsigned int w)
- {
- 	unsigned int res = w - ((w >> 1) & 0x5555);
- 	res = (res & 0x3333) + ((res >> 2) & 0x3333);
- 	res = (res + (res >> 4)) & 0x0F0F;
- 	return (res + (res >> 8)) & 0x00FF;
- }
--EXPORT_SYMBOL(__arch_hweight16);
-+EXPORT_SYMBOL(__sw_hweight16);
- 
--unsigned int __arch_hweight8(unsigned int w)
-+unsigned int __sw_hweight8(unsigned int w)
- {
- 	unsigned int res = w - ((w >> 1) & 0x55);
- 	res = (res & 0x33) + ((res >> 2) & 0x33);
- 	return (res + (res >> 4)) & 0x0F;
- }
--EXPORT_SYMBOL(__arch_hweight8);
-+EXPORT_SYMBOL(__sw_hweight8);
- 
--unsigned long __arch_hweight64(__u64 w)
-+unsigned long __sw_hweight64(__u64 w)
- {
- #if BITS_PER_LONG == 32
--	return __arch_hweight32((unsigned int)(w >> 32)) +
--	       __arch_hweight32((unsigned int)w);
-+	return __sw_hweight32((unsigned int)(w >> 32)) +
-+	       __sw_hweight32((unsigned int)w);
- #elif BITS_PER_LONG == 64
- #ifdef ARCH_HAS_FAST_MULTIPLIER
- 	w -= (w >> 1) & 0x5555555555555555ul;
-@@ -64,4 +64,4 @@ unsigned long __arch_hweight64(__u64 w)
- #endif
- #endif
- }
--EXPORT_SYMBOL(__arch_hweight64);
-+EXPORT_SYMBOL(__sw_hweight64);
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index f9bdf26..cbcd654 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -245,3 +245,7 @@ quiet_cmd_lzo = LZO    $@
- cmd_lzo = (cat $(filter-out FORCE,$^) | \
- 	lzop -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
- 	(rm -f $@ ; false)
-+
-+# misc stuff
-+# ---------------------------------------------------------------------------
-+quote:="
--- 
-1.7.0.2
+kernel+library+app features take forever to propagate, and there's constant 
+fear of version friction, productization deadlines are uncertain and ABI 
+messups are frequent as well due to disjoint testing. Also, each component has 
+essential veto power: so if the proposed API or approach is opposed or changed 
+in a later stage then that affects (sometimes already committed) changes. If 
+you've ever done it you'll know how tedious it is.
 
--- 
-Regards/Gruss,
-Boris.
+This very thread and recent threads about KVM usability demonstrate the same 
+complications.
 
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+Thanks,
+
+	Ingo
