@@ -1,52 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab0CRUnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 16:43:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41564 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751261Ab0CRUnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 16:43:31 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for Intel x86 CPUs)
-Date: Thu, 18 Mar 2010 21:43:22 +0100
-User-Agent: KMail/1.9.10
-Cc: Robert =?iso-8859-15?q?Sch=F6ne?= <robert.schoene@tu-dresden.de>,
-       Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-References: <1268399863.3407.15.camel@localhost> <201003171736.00550.trenn@suse.de> <4BA10642.8070208@linux.intel.com>
-In-Reply-To: <4BA10642.8070208@linux.intel.com>
+	id S1752647Ab0CRUpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 16:45:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55791 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325Ab0CRUpK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 16:45:10 -0400
+Date: Thu, 18 Mar 2010 16:35:32 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-03-18
+Message-ID: <20100318203532.GE17357@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201003182143.22929.trenn@suse.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 March 2010 05:41:38 pm Arjan van de Ven wrote:
-> On 3/17/2010 9:36, Thomas Renninger wrote:
-> > On Tuesday 16 March 2010 17:40:18 Arjan van de Ven wrote:
-> >> On 3/16/2010 7:50, Thomas Renninger wrote:
-> >>> Still, as this is totally broken:
-> >>>      - by design ->   only one of a dozen cpufreq drivers is supported
-> >>
-> >> the one I care about is supported.
-> >
-> > And that's the problem, before it's not removed, you do not care to
-> > provide/suggest a proper solution that could fit others as well.
->
-> why don't you provide the others then?
-Is it possible somehow to provide a kind of wrapper/backup function:
-trace_power_frequency_cpu(POWER_PSTATE, frequency, cpu);
-or another trace interface with eventually some more overhead?
-Then it should be easy to support all drivers.
-Otherwise you'll for example miss the pcc driver which supports
-latest/upcoming Intel CPUs and which does IO based switching which needs not
-to run on the cpu that gets switched.
+Dave,
 
-     Thomas
+Three more intended for 2.6.34...  The biggest one is for ath9k, which
+removes some unused code along with the one-liner that makes the code
+unused.  (Did you follow that?)  The others are a null-pointer fix and a
+"hush dawg" for a noisy warning message.
+
+Please let me know if there are problems!
+
+Thanks,
+
+John
+
+---
+
+The following changes since commit 22001a13d09d82772e831dcdac0553994a4bac5d:
+  Tilman Schmidt (1):
+        gigaset: fix build failure
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Adel Gadllah (1):
+      iwlwifi: Silence tfds_in_queue message
+
+Felix Fietkau (1):
+      ath9k: fix BUG_ON triggered by PAE frames
+
+Grazvydas Ignotas (1):
+      wl1251: fix potential crash
+
+ drivers/net/wireless/ath/ath9k/xmit.c        |   21 +--------------------
+ drivers/net/wireless/iwlwifi/iwl-tx.c        |    2 +-
+ drivers/net/wireless/wl12xx/wl1251_debugfs.c |    3 ++-
+ 3 files changed, 4 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index b2c8207..294b486 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1353,25 +1353,6 @@ static enum ath9k_pkt_type get_hw_packet_type(struct sk_buff *skb)
+ 	return htype;
+ }
+ 
+-static bool is_pae(struct sk_buff *skb)
+-{
+-	struct ieee80211_hdr *hdr;
+-	__le16 fc;
+-
+-	hdr = (struct ieee80211_hdr *)skb->data;
+-	fc = hdr->frame_control;
+-
+-	if (ieee80211_is_data(fc)) {
+-		if (ieee80211_is_nullfunc(fc) ||
+-		    /* Port Access Entity (IEEE 802.1X) */
+-		    (skb->protocol == cpu_to_be16(ETH_P_PAE))) {
+-			return true;
+-		}
+-	}
+-
+-	return false;
+-}
+-
+ static int get_hw_crypto_keytype(struct sk_buff *skb)
+ {
+ 	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+@@ -1696,7 +1677,7 @@ static void ath_tx_start_dma(struct ath_softc *sc, struct ath_buf *bf,
+ 			goto tx_done;
+ 		}
+ 
+-		if ((tx_info->flags & IEEE80211_TX_CTL_AMPDU) && !is_pae(skb)) {
++		if (tx_info->flags & IEEE80211_TX_CTL_AMPDU) {
+ 			/*
+ 			 * Try aggregation if it's a unicast data frame
+ 			 * and the destination is HT capable.
+diff --git a/drivers/net/wireless/iwlwifi/iwl-tx.c b/drivers/net/wireless/iwlwifi/iwl-tx.c
+index 1ed5206..8c12311 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
+@@ -124,7 +124,7 @@ void iwl_free_tfds_in_queue(struct iwl_priv *priv,
+ 	if (priv->stations[sta_id].tid[tid].tfds_in_queue >= freed)
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue -= freed;
+ 	else {
+-		IWL_ERR(priv, "free more than tfds_in_queue (%u:%d)\n",
++		IWL_DEBUG_TX(priv, "free more than tfds_in_queue (%u:%d)\n",
+ 			priv->stations[sta_id].tid[tid].tfds_in_queue,
+ 			freed);
+ 		priv->stations[sta_id].tid[tid].tfds_in_queue = 0;
+diff --git a/drivers/net/wireless/wl12xx/wl1251_debugfs.c b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
+index 0ccba57..05e4d68 100644
+--- a/drivers/net/wireless/wl12xx/wl1251_debugfs.c
++++ b/drivers/net/wireless/wl12xx/wl1251_debugfs.c
+@@ -466,7 +466,8 @@ out:
+ 
+ void wl1251_debugfs_reset(struct wl1251 *wl)
+ {
+-	memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
++	if (wl->stats.fw_stats != NULL)
++		memset(wl->stats.fw_stats, 0, sizeof(*wl->stats.fw_stats));
+ 	wl->stats.retry_count = 0;
+ 	wl->stats.excessive_retries = 0;
+ }
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
