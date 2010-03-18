@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0CRSVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 14:21:39 -0400
-Received: from mail-pz0-f200.google.com ([209.85.222.200]:59925 "EHLO
-	mail-pz0-f200.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab0CRSVd (ORCPT
+	id S1754290Ab0CRSVl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 14:21:41 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54220 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753984Ab0CRSVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 14:21:33 -0400
+	Thu, 18 Mar 2010 14:21:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=kTPQ/e2WI5K4as6OWSjdraXAbdp7cPMmJgIV968zEiR8NeOv11XheYoeVnEeP13Yk7
-         NnAqbySWfAHA3U0HlxSkW//CcrRCGvb3IfF9mi0z8i26+cCCZ8RfDbBO79Lb8VJJRSpH
-         T0H3s55s8c4dZX90N45cBKMv8TJbSMxyAY/rE=
+        b=xnriKrXM7sis99v4e0Hr/u7k96o12rfv2zdnZ3Xf05LrqLXZWugWIzXOA/CUfzgjwg
+         KBxpCdJJZiAX4vne8mjMY8JM4mVnG7H2i5eu+oUMjFYOgeTmM9q8CbBKC5nucJZT8JDp
+         fVGuEIWi+01UGn+1W+h0TuoVZ6PdEJ4JQUVqQ=
 From: Brian Gerst <brgerst@gmail.com>
 To: hpa@zytor.com
 Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] x86: Merge kernel_math_error() into math_error()
-Date: Thu, 18 Mar 2010 14:20:52 -0400
-Message-Id: <1268936453-3727-5-git-send-email-brgerst@gmail.com>
+Subject: [PATCH 3/5] x86: Merge simd_math_error() into math_error()
+Date: Thu, 18 Mar 2010 14:20:51 -0400
+Message-Id: <1268936453-3727-4-git-send-email-brgerst@gmail.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1268936453-3727-1-git-send-email-brgerst@gmail.com>
 References: <1268936453-3727-1-git-send-email-brgerst@gmail.com>
@@ -26,100 +26,181 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up the kernel exception handling and make it more similar to
-the other traps.
+The only difference between FPU and SIMD exceptions is where the
+status bits are read from (cwd/swd vs. mxcsr).  This also fixes
+the discrepency introduced by commit adf77bac, which fixed FPU
+but not SIMD.
 
 Signed-off-by: Brian Gerst <brgerst@gmail.com>
 ---
- arch/x86/kernel/traps.c |   44 ++++++++++++++++----------------------------
- 1 files changed, 16 insertions(+), 28 deletions(-)
+ arch/x86/include/asm/traps.h |    2 +-
+ arch/x86/kernel/irqinit.c    |    2 +-
+ arch/x86/kernel/traps.c      |  100 +++++++++++++----------------------------
+ 3 files changed, 34 insertions(+), 70 deletions(-)
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 5628307..6384066 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -598,20 +598,6 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	return;
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 4da91ad..f66cda5 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -79,7 +79,7 @@ static inline int get_si_code(unsigned long condition)
+ 
+ extern int panic_on_unrecovered_nmi;
+ 
+-void math_error(void __user *);
++void math_error(struct pt_regs *, int, int);
+ void math_emulate(struct math_emu_info *);
+ #ifndef CONFIG_X86_32
+ asmlinkage void smp_thermal_interrupt(void);
+diff --git a/arch/x86/kernel/irqinit.c b/arch/x86/kernel/irqinit.c
+index ef257fc..15bd039 100644
+--- a/arch/x86/kernel/irqinit.c
++++ b/arch/x86/kernel/irqinit.c
+@@ -61,7 +61,7 @@ static irqreturn_t math_error_irq(int cpl, void *dev_id)
+ 	outb(0, 0xF0);
+ 	if (ignore_fpu_irq || !boot_cpu_data.hard_math)
+ 		return IRQ_NONE;
+-	math_error((void __user *)get_irq_regs()->ip);
++	math_error(get_irq_regs(), 0, 16);
+ 	return IRQ_HANDLED;
  }
  
--#ifdef CONFIG_X86_64
--static int kernel_math_error(struct pt_regs *regs, const char *str, int trapnr)
--{
--	if (fixup_exception(regs))
--		return 1;
--
--	notify_die(DIE_GPF, str, regs, 0, trapnr, SIGFPE);
--	/* Illegal floating point operation in the kernel */
--	current->thread.trap_no = trapnr;
--	die(str, regs, 0);
--	return 0;
--}
--#endif
--
- /*
-  * Note that we play around with the 'TS' bit in an attempt to get
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index cea343e..5628307 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -617,36 +617,48 @@ static int kernel_math_error(struct pt_regs *regs, const char *str, int trapnr)
   * the correct behaviour even in the presence of the asynchronous
-@@ -619,14 +605,28 @@ static int kernel_math_error(struct pt_regs *regs, const char *str, int trapnr)
+  * IRQ13 behaviour
   */
- void math_error(struct pt_regs *regs, int error_code, int trapnr)
+-void math_error(void __user *ip)
++void math_error(struct pt_regs *regs, int error_code, int trapnr)
  {
--	struct task_struct *task;
-+	struct task_struct *task = current;
+ 	struct task_struct *task;
  	siginfo_t info;
- 	unsigned short err;
-+	char *str = (trapnr == 16) ? "fpu exception" : "simd exception";
-+
-+	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, SIGFPE) == NOTIFY_STOP)
-+		return;
-+	conditional_sti(regs);
-+
-+	if (!user_mode_vm(regs))
-+	{
-+		if (!fixup_exception(regs)) {
-+			task->thread.error_code = error_code;
-+			task->thread.trap_no = trapnr;
-+			die(str, regs, error_code);
-+		}
-+		return;
-+	}
+-	unsigned short cwd, swd, err;
++	unsigned short err;
  
  	/*
  	 * Save the info for the exception handler and clear the error.
  	 */
--	task = current;
+ 	task = current;
  	save_init_fpu(task);
- 	task->thread.trap_no = trapnr;
- 	task->thread.error_code = error_code;
-@@ -687,14 +687,8 @@ void math_error(struct pt_regs *regs, int error_code, int trapnr)
+-	task->thread.trap_no = 16;
+-	task->thread.error_code = 0;
++	task->thread.trap_no = trapnr;
++	task->thread.error_code = error_code;
+ 	info.si_signo = SIGFPE;
+ 	info.si_errno = 0;
+-	info.si_addr = ip;
+-	/*
+-	 * (~cwd & swd) will mask out exceptions that are not set to unmasked
+-	 * status.  0x3f is the exception bits in these regs, 0x200 is the
+-	 * C1 reg you need in case of a stack fault, 0x040 is the stack
+-	 * fault bit.  We should only be taking one exception at a time,
+-	 * so if this combination doesn't produce any single exception,
+-	 * then we have a bad program that isn't synchronizing its FPU usage
+-	 * and it will suffer the consequences since we won't be able to
+-	 * fully reproduce the context of the exception
+-	 */
+-	cwd = get_fpu_cwd(task);
+-	swd = get_fpu_swd(task);
++	info.si_addr = (void __user *)regs->ip;
++	if (trapnr == 16) {
++		unsigned short cwd, swd;
++		/*
++		 * (~cwd & swd) will mask out exceptions that are not set to unmasked
++		 * status.  0x3f is the exception bits in these regs, 0x200 is the
++		 * C1 reg you need in case of a stack fault, 0x040 is the stack
++		 * fault bit.  We should only be taking one exception at a time,
++		 * so if this combination doesn't produce any single exception,
++		 * then we have a bad program that isn't synchronizing its FPU usage
++		 * and it will suffer the consequences since we won't be able to
++		 * fully reproduce the context of the exception
++		 */
++		cwd = get_fpu_cwd(task);
++		swd = get_fpu_swd(task);
  
- dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
- {
--	conditional_sti(regs);
--
- #ifdef CONFIG_X86_32
- 	ignore_fpu_irq = 1;
--#else
--	if (!user_mode(regs) &&
--	    kernel_math_error(regs, "kernel x87 math error", 16))
--		return;
+-	err = swd & ~cwd;
++		err = swd & ~cwd;
++	} else {
++		/*
++		 * The SIMD FPU exceptions are handled a little differently, as there
++		 * is only a single status/control register.  Thus, to determine which
++		 * unmasked exception was caught we must mask the exception mask bits
++		 * at 0x1f80, and then use these to mask the exception bits at 0x3f.
++		 */
++		unsigned short mxcsr = get_fpu_mxcsr(task);
++		err = ~(mxcsr >> 7) & mxcsr;
++	}
+ 
+ 	if (err & 0x001) {	/* Invalid op */
+ 		/*
+@@ -685,55 +697,7 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
+ 		return;
  #endif
  
- 	math_error(regs, error_code, 16);
-@@ -703,14 +697,8 @@ dotraplinkage void do_coprocessor_error(struct pt_regs *regs, long error_code)
+-	math_error((void __user *)regs->ip);
+-}
+-
+-static void simd_math_error(void __user *ip)
+-{
+-	struct task_struct *task;
+-	siginfo_t info;
+-	unsigned short mxcsr;
+-
+-	/*
+-	 * Save the info for the exception handler and clear the error.
+-	 */
+-	task = current;
+-	save_init_fpu(task);
+-	task->thread.trap_no = 19;
+-	task->thread.error_code = 0;
+-	info.si_signo = SIGFPE;
+-	info.si_errno = 0;
+-	info.si_code = __SI_FAULT;
+-	info.si_addr = ip;
+-	/*
+-	 * The SIMD FPU exceptions are handled a little differently, as there
+-	 * is only a single status/control register.  Thus, to determine which
+-	 * unmasked exception was caught we must mask the exception mask bits
+-	 * at 0x1f80, and then use these to mask the exception bits at 0x3f.
+-	 */
+-	mxcsr = get_fpu_mxcsr(task);
+-	switch (~((mxcsr & 0x1f80) >> 7) & (mxcsr & 0x3f)) {
+-	case 0x000:
+-	default:
+-		break;
+-	case 0x001: /* Invalid Op */
+-		info.si_code = FPE_FLTINV;
+-		break;
+-	case 0x002: /* Denormalize */
+-	case 0x010: /* Underflow */
+-		info.si_code = FPE_FLTUND;
+-		break;
+-	case 0x004: /* Zero Divide */
+-		info.si_code = FPE_FLTDIV;
+-		break;
+-	case 0x008: /* Overflow */
+-		info.si_code = FPE_FLTOVF;
+-		break;
+-	case 0x020: /* Precision */
+-		info.si_code = FPE_FLTRES;
+-		break;
+-	}
+-	force_sig_info(SIGFPE, &info, task);
++	math_error(regs, error_code, 16);
+ }
+ 
  dotraplinkage void
- do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
- {
--	conditional_sti(regs);
--
- #ifdef CONFIG_X86_32
- 	ignore_fpu_irq = 1;
--#else
--	if (!user_mode(regs) &&
--			kernel_math_error(regs, "kernel simd math error", 19))
--		return;
+@@ -749,7 +713,7 @@ do_simd_coprocessor_error(struct pt_regs *regs, long error_code)
+ 		return;
  #endif
  
- 	math_error(regs, error_code, 19);
+-	simd_math_error((void __user *)regs->ip);
++	math_error(regs, error_code, 19);
+ }
+ 
+ dotraplinkage void
 -- 
 1.6.6.1
 
