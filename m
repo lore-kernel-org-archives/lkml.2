@@ -1,96 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0CROej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 10:34:39 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:2944 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab0CROeh (ORCPT
+	id S1754023Ab0CROgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 10:36:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42910 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753724Ab0CROgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 10:34:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Q3FLw9VuysI/Pvcr8SVdwW0kiGx3KLNv5ecCZSBZUprjAv9E3uVlJpotiU5sTyMPEF
-         LYC8zzFPT4tOtWml91g6HJlDa3cpzCoElHfX+HsSFuUlZpum5twR6ggUoTzBn9pcH3fF
-         kV6GtiSJTn78R1jFuChV9qdo6rZh0HX+3Hoi4=
-MIME-Version: 1.0
-In-Reply-To: <20100307204213.GB17727@core.coreip.homeip.net>
-References: <4B8C1867.7040201@cam.ac.uk>
-	 <404ea8001003022213v78be2c81r40504661835fff7e@mail.gmail.com>
-	 <alpine.LFD.2.00.1003030859360.3627@localhost.localdomain>
-	 <20100303184132.GA11471@core.coreip.homeip.net>
-	 <alpine.LFD.2.00.1003031045390.3599@localhost.localdomain>
-	 <20100303190753.GB11471@core.coreip.homeip.net>
-	 <404ea8001003031338j34847961jd8a7114bbc45603a@mail.gmail.com>
-	 <alpine.LFD.2.00.1003031348510.3599@localhost.localdomain>
-	 <20100307204213.GB17727@core.coreip.homeip.net>
-Date: Thu, 18 Mar 2010 10:34:35 -0400
-Message-ID: <9e4733911003180734q1783b108o1bfd994bb0fadd7c@mail.gmail.com>
-Subject: Re: [GIT PULL] Ambient Light Sensors subsystem
-From: Jon Smirl <jonsmirl@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Dima Zavin <dmitriyz@google.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-       LKML <linux-kernel@vger.kernel.org>, Zhang Rui <rui.zhang@intel.com>,
-       Amit Kucheria <amit.kucheria@verdurent.com>,
-       Jean Delvare <khali@linux-fr.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 18 Mar 2010 10:36:16 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       <zhiteng.huang@intel.com>, Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 2/3] perf record: Enable counters only when kernel is execing subcommand
+Date: Thu, 18 Mar 2010 11:36:04 -0300
+Message-Id: <1268922965-14774-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1268922965-14774-1-git-send-email-acme@infradead.org>
+References: <1268922965-14774-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 7, 2010 at 4:42 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Wed, Mar 03, 2010 at 01:51:07PM -0800, Linus Torvalds wrote:
->>
->>
->> On Wed, 3 Mar 2010, Dima Zavin wrote:
->> >
->> > Actually, accelerometers fit into that model fine. They have some
->> > variable number of absolute axes (3, 6, etc.).
->>
->> In fact, they obviouslya also do end up being used exactly like joysticks
->> in real life, and joysticks are commonly starting to have accelerometers
->> in them (ie any modern game console controller).
->>
->> So treating an accelerometer like a joystick - regardless of whether it
->> happens to be internal to the device or happens to be external in a
->> separate controller - is not all that far-fetched anyway.
->>
->
-> But the point is that not every accelerometer is a joystick. We have
-> hdaps and friends that have accelerometers inside but that is not their
-> main purpose (they do export a secondary joystick-like interface and
-> that is fine), and I am pretty sure that there are other users of
-> accelerometers in various systems.
->
-> I am pretty sure that once we settle on the proper interface for such
-> sensors we should be able to write a bridge to input layer so they can
-> be easily used as [human] input devices in cases whether it is desired.
->
+From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
 
-Sorry for the late reply, but this is a recurring theme. Remote
-controls (IR and radio) have the same problem and this was the core of
-my objection to their drivers being merged.  Input devices need to
-communicate their human oriented events to user space using the input
-subsystem period. If you don't do this things like the xserver/apps
-have to implement custom drivers for every new user event interface
-that is dreamed up and that destroys backwards compatibility.
+'perf record' starts counters before subcommand is execed, so the
+statistics is not precise because it includes data of some preparation
+steps. I fix it with the patch.
 
-Drivers can always be split into two modules. A core module could
-provide a sysfs or kernel internal interface. An add-on module can
-optionally redirect events from the core module into the input
-subsystem.
+In addition, Change the condition to fork/exec subcommand. If there is a
+subcommand parameter, perf always fork/exec it. The usage example is:
 
-I'm also not a fan of having a custom interface on the sensor/input
-devices that reports device specific events to user space. Then those
-events are massaged by a tiny user space app and reinjected into the
-input subsystem. That does work but it leads to the kernel requiring
-external apps in order to function. I believe converting device
-specific events to a common device protocol is the work of the device
-driver.
+ # perf record -f -a sleep 10
 
+So this command could collect statistics for 10 seconds precisely. User
+still could stop it by CTRL+C. Without the new capability, user could
+only input CTRL+C to stop it without precise time clock.
+
+Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Sheng Yang <sheng@linux.intel.com>
+Cc: oerg Roedel <joro@8bytes.org>
+Cc: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: <zhiteng.huang@intel.com>
+Cc: Zachary Amsden <zamsden@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   33 +++++++++++++++------------------
+ 1 files changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 962cdbf..e2b35ad 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -225,7 +225,7 @@ static struct perf_header_attr *get_header_attr(struct perf_event_attr *a, int n
+ 	return h_attr;
+ }
+ 
+-static void create_counter(int counter, int cpu, pid_t pid, bool forks)
++static void create_counter(int counter, int cpu, pid_t pid)
+ {
+ 	char *filter = filters[counter];
+ 	struct perf_event_attr *attr = attrs + counter;
+@@ -275,10 +275,10 @@ static void create_counter(int counter, int cpu, pid_t pid, bool forks)
+ 	attr->mmap		= track;
+ 	attr->comm		= track;
+ 	attr->inherit		= inherit;
+-	attr->disabled		= 1;
+-
+-	if (forks)
++	if (target_pid == -1 && !system_wide) {
++		attr->disabled = 1;
+ 		attr->enable_on_exec = 1;
++	}
+ 
+ try_again:
+ 	fd[nr_cpu][counter] = sys_perf_event_open(attr, pid, cpu, group_fd, 0);
+@@ -380,17 +380,15 @@ try_again:
+ 			exit(-1);
+ 		}
+ 	}
+-
+-	ioctl(fd[nr_cpu][counter], PERF_EVENT_IOC_ENABLE);
+ }
+ 
+-static void open_counters(int cpu, pid_t pid, bool forks)
++static void open_counters(int cpu, pid_t pid)
+ {
+ 	int counter;
+ 
+ 	group_fd = -1;
+ 	for (counter = 0; counter < nr_counters; counter++)
+-		create_counter(counter, cpu, pid, forks);
++		create_counter(counter, cpu, pid);
+ 
+ 	nr_cpu++;
+ }
+@@ -425,7 +423,7 @@ static int __cmd_record(int argc, const char **argv)
+ 	int err;
+ 	unsigned long waking = 0;
+ 	int child_ready_pipe[2], go_pipe[2];
+-	const bool forks = target_pid == -1 && argc > 0;
++	const bool forks = argc > 0;
+ 	char buf;
+ 
+ 	page_size = sysconf(_SC_PAGE_SIZE);
+@@ -496,13 +494,13 @@ static int __cmd_record(int argc, const char **argv)
+ 	atexit(atexit_header);
+ 
+ 	if (forks) {
+-		pid = fork();
++		child_pid = fork();
+ 		if (pid < 0) {
+ 			perror("failed to fork");
+ 			exit(-1);
+ 		}
+ 
+-		if (!pid) {
++		if (!child_pid) {
+ 			close(child_ready_pipe[0]);
+ 			close(go_pipe[1]);
+ 			fcntl(go_pipe[0], F_SETFD, FD_CLOEXEC);
+@@ -531,11 +529,6 @@ static int __cmd_record(int argc, const char **argv)
+ 			exit(-1);
+ 		}
+ 
+-		child_pid = pid;
+-
+-		if (!system_wide)
+-			target_pid = pid;
+-
+ 		close(child_ready_pipe[1]);
+ 		close(go_pipe[0]);
+ 		/*
+@@ -548,13 +541,17 @@ static int __cmd_record(int argc, const char **argv)
+ 		close(child_ready_pipe[0]);
+ 	}
+ 
++	if (forks && target_pid == -1 && !system_wide)
++		pid = child_pid;
++	else
++		pid = target_pid;
+ 
+ 	if ((!system_wide && !inherit) || profile_cpu != -1) {
+-		open_counters(profile_cpu, target_pid, forks);
++		open_counters(profile_cpu, pid);
+ 	} else {
+ 		nr_cpus = read_cpu_map();
+ 		for (i = 0; i < nr_cpus; i++)
+-			open_counters(cpumap[i], target_pid, forks);
++			open_counters(cpumap[i], pid);
+ 	}
+ 
+ 	if (file_new) {
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+1.6.2.5
+
