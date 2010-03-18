@@ -1,53 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379Ab0CRIrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 04:47:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53940 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab0CRIq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 04:46:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=BmIKXvphG6WXnvBx2mbg32bCoDzc9ToHm1TAz2dZqaf5irTPR7hEx2AALjQA2iEnEI
-         izbwTouR7ehAHy5/Xq4HMChRK6+2VuravRr1K/JH6Cf2tGJ6YR3ZNLgecSYB69CIj0eb
-         ECIoxD701CaIdw5pN51JkwaKSEL6RnbvmADOs=
-Subject: Re: [PATCH] drivers/net/wimax/i2400m/fw.c fix possible double free
-From: Darren Jenkins <darrenrjenkins@gmail.com>
-To: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Cc: David Miller <davem@davemloft.net>, linux-wimax <linux-wimax@intel.com>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-       "Kao, Cindy H" <cindy.h.kao@intel.com>,
-       "Brandewie, Dirk J" <dirk.j.brandewie@intel.com>,
-       "wimax@linuxwimax.org" <wimax@linuxwimax.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Mar 2010 19:46:48 +1100
-Message-ID: <1268902008.10536.41.camel@ICE-BOX>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1751424Ab0CRIsP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 04:48:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab0CRIsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 04:48:12 -0400
+Message-ID: <4BA1E8A9.90100@redhat.com>
+Date: Wed, 17 Mar 2010 22:47:37 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Sheng Yang <sheng@linux.intel.com>
+CC: kvm@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>,
+       "Huang, Zhiteng" <zhiteng.huang@intel.com>,
+       Joerg Roedel <joerg.roedel@amd.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+References: <1268717232.2813.36.camel@localhost> <4BA1B132.5030509@redhat.com> <201003181322.28594.sheng@linux.intel.com> <201003181341.15407.sheng@linux.intel.com>
+In-Reply-To: <201003181341.15407.sheng@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/17/2010 07:41 PM, Sheng Yang wrote:
+> On Thursday 18 March 2010 13:22:28 Sheng Yang wrote:
+>    
+>> On Thursday 18 March 2010 12:50:58 Zachary Amsden wrote:
+>>      
+>>> On 03/17/2010 03:19 PM, Sheng Yang wrote:
+>>>        
+>>>> On Thursday 18 March 2010 05:14:52 Zachary Amsden wrote:
+>>>>          
+>>>>> On 03/16/2010 11:28 PM, Sheng Yang wrote:
+>>>>>            
+>>>>>> On Wednesday 17 March 2010 10:34:33 Zhang, Yanmin wrote:
+>>>>>>              
+>>>>>>> On Tue, 2010-03-16 at 11:32 +0200, Avi Kivity wrote:
+>>>>>>>                
+>>>>>>>> On 03/16/2010 09:48 AM, Zhang, Yanmin wrote:
+>>>>>>>>                  
+>>>>>>>>> Right, but there is a scope between kvm_guest_enter and really
+>>>>>>>>> running in guest os, where a perf event might overflow. Anyway,
+>>>>>>>>> the scope is very narrow, I will change it to use flag PF_VCPU.
+>>>>>>>>>                    
+>>>>>>>> There is also a window between setting the flag and calling 'int
+>>>>>>>> $2' where an NMI might happen and be accounted incorrectly.
+>>>>>>>>
+>>>>>>>> Perhaps separate the 'int $2' into a direct call into perf and
+>>>>>>>> another call for the rest of NMI handling.  I don't see how it
+>>>>>>>> would work on svm though - AFAICT the NMI is held whereas vmx
+>>>>>>>> swallows it.
+>>>>>>>>
+>>>>>>>>     I guess NMIs
+>>>>>>>> will be disabled until the next IRET so it isn't racy, just tricky.
+>>>>>>>>                  
+>>>>>>> I'm not sure if vmexit does break NMI context or not. Hardware NMI
+>>>>>>> context isn't reentrant till a IRET. YangSheng would like to double
+>>>>>>> check it.
+>>>>>>>                
+>>>>>> After more check, I think VMX won't remained NMI block state for
+>>>>>> host. That's means, if NMI happened and processor is in VMX non-root
+>>>>>> mode, it would only result in VMExit, with a reason indicate that
+>>>>>> it's due to NMI happened, but no more state change in the host.
+>>>>>>
+>>>>>> So in that meaning, there _is_ a window between VMExit and KVM handle
+>>>>>> the NMI. Moreover, I think we _can't_ stop the re-entrance of NMI
+>>>>>> handling code because "int $2" don't have effect to block following
+>>>>>> NMI.
+>>>>>>
+>>>>>> And if the NMI sequence is not important(I think so), then we need to
+>>>>>> generate a real NMI in current vmexit-after code. Seems let APIC send
+>>>>>> a NMI IPI to itself is a good idea.
+>>>>>>
+>>>>>> I am debugging a patch based on apic->send_IPI_self(NMI_VECTOR) to
+>>>>>> replace "int $2". Something unexpected is happening...
+>>>>>>              
+>>>>> You can't use the APIC to send vectors 0x00-0x1f, or at least, aren't
+>>>>> supposed to be able to.
+>>>>>            
+>>>> Um? Why?
+>>>>
+>>>> Especially kernel is already using it to deliver NMI.
+>>>>          
+>>> That's the only defined case, and it is defined because the vector field
+>>> is ignore for DM_NMI.  Vol 3A (exact section numbers may vary depending
+>>> on your version).
+>>>
+>>> 8.5.1 / 8.6.1
+>>>
+>>> '100 (NMI) Delivers an NMI interrupt to the target processor or
+>>> processors.  The vector information is ignored'
+>>>
+>>> 8.5.2  Valid Interrupt Vectors
+>>>
+>>> 'Local and I/O APICs support 240 of these vectors (in the range of 16 to
+>>> 255) as valid interrupts.'
+>>>
+>>> 8.8.4 Interrupt Acceptance for Fixed Interrupts
+>>>
+>>> '...; vectors 0 through 15 are reserved by the APIC (see also: Section
+>>> 8.5.2, "Valid Interrupt Vectors")'
+>>>
+>>> So I misremembered, apparently you can deliver interrupts 0x10-0x1f, but
+>>> vectors 0x00-0x0f are not valid to send via APIC or I/O APIC.
+>>>        
+>> As you pointed out, NMI is not "Fixed interrupt". If we want to send NMI,
+>>   it would need a specific delivery mode rather than vector number.
+>>
+>> And if you look at code, if we specific NMI_VECTOR, the delivery mode would
+>>   be set to NMI.
+>>
+>> So what's wrong here?
+>>      
+> OK, I think I understand your points now. You meant that these vectors can't
+> be filled in vector field directly, right? But NMI is a exception due to
+> DM_NMI. Is that your point? I think we agree on this.
+>    
 
-On Thu, Mar 18, 2010 at 9:10 AM, Inaky Perez-Gonzalez
-<inaky.perez-gonzalez@intel.com> wrote:
+Yes, I think we agree.  NMI is the only vector in 0x0-0xf which can be 
+sent via self-IPI because the vector itself does not matter for NMI.
 
-> If krealloc() fails to aallocate a new pointer, the old block is
-> unmodified, so by doing this you are leaking a buffer allocation.
-
-It seems you are right.
-So now understanding correctly how krealloc() works I can see that the
-double kfree() can only actually happen if the el_size parameter to
-i2400m_zrealloc_2x() is zero, and it isn't at the two call sites.
-
-So this was a false positive and I am sorry for the noise.
-
-Darren J.
-
-
+Zach
