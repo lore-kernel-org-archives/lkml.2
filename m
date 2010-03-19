@@ -1,79 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab0CSV63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 17:58:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38725 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751060Ab0CSV62 (ORCPT
+	id S1751677Ab0CSWDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 18:03:05 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51642 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab0CSWDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 17:58:28 -0400
-Date: Fri, 19 Mar 2010 14:57:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: John Ogness <john.ogness@linutronix.de>,
-       Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] serial: fix possible imx deadlock
-Message-Id: <20100319145721.0af2203c.akpm@linux-foundation.org>
-In-Reply-To: <20100315134556.GX19843@pengutronix.de>
-References: <80k4tehryt.fsf@merkur.tec.linutronix.de>
-	<20100315134556.GX19843@pengutronix.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 19 Mar 2010 18:03:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5925"; a="36832708"
+Message-ID: <4BA3F494.2040705@codeaurora.org>
+Date: Fri, 19 Mar 2010 18:03:00 -0400
+From: Ashwin Chaugule <ashwinc@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090608)
+MIME-Version: 1.0
+To: Tim Bird <tim.bird@am.sony.com>
+CC: "Bird, Tim" <Timothy.Bird@am.sony.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH] Make Function Duration Tracer work with __gnu_mcount_nc
+References: <4BA3F000.5030404@codeaurora.org> <4BA3F25C.9000105@am.sony.com>
+In-Reply-To: <4BA3F25C.9000105@am.sony.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010 14:45:57 +0100
-Sascha Hauer <s.hauer@pengutronix.de> wrote:
+Tim Bird wrote:
+> On 03/19/2010 02:43 PM, Ashwin Chaugule wrote:
+>   
+>> Is there a better way to fix this in the original ftrace_graph_caller ?
+>> The lr isn't pushed on the stack before "bl mcount".
+>>
+>> --
+>>
+>> From: Ashwin Chaugule <ashwinc@quicinc.com>
+>>
+>> Newer compilers use the __gnu_mcount_nc stub in every function
+>> prologue. The lr of the instrumented function is pushed on the
+>> stack before branching to __gnu_mcount_nc. Pop it before returning
+>> back to instrumented function so that it can return to its parent
+>> from its epilogue.
+>>
+>>
+>> Signed-off-by: Ashwin Chaugule <ashwinc@quicinc.com>
+>> ---
+>>  arch/arm/kernel/entry-common.S |   20 ++++++++++++++++++++
+>>  1 files changed, 20 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+>> index b8a9e47..30feac3 100644
+>> --- a/arch/arm/kernel/entry-common.S
+>> +++ b/arch/arm/kernel/entry-common.S
+>> @@ -144,6 +144,14 @@ ENTRY(__gnu_mcount_nc)
+>>      adr r0, ftrace_stub
+>>      cmp r0, r2
+>>      bne gnu_trace
+>> +
+>> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>> +    ldr r1, =ftrace_graph_return
+>> +    ldr r2, [r1]
+>> +    cmp r0, r2        @ if *ftrace_graph_return != ftrace_stub
+>> +    bne new_ftrace_graph_caller
+>> +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>> +
+>>      ldmia sp!, {r0-r3, ip, lr}
+>>      bx ip
+>>  
+>> @@ -155,6 +163,18 @@ gnu_trace:
+>>      mov pc, r2
+>>      ldmia sp!, {r0-r3, ip, lr}
+>>      bx ip
+>> +
+>> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+>> +ENTRY(new_ftrace_graph_caller)        @ for use with __gnu_mcount_nc
+>> +    sub r0, fp, #4                    @ &lr of instrumented routine 
+>> (&parent)
+>> +    mov r1, lr                        @ instrumented routine (func)
+>> +    sub r1, r1, #MCOUNT_INSN_SIZE
+>> +    mov r2, fp                        @ frame pointer
+>> +    bl prepare_ftrace_return
+>> +    ldmia sp!, {r0-r3, ip, lr}        @ need to pop lr, pushed before
+>> +    mov pc, ip                        @ bl __gnu_mcount_nc
+>> +
+>> +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>>     
+>>  ENTRY(mcount)
+>>      stmdb sp!, {r0-r3, lr}
+>>     
+>
+> Wow, interesting timing.  I just finished yesterday my own
+> version of this patch (for 2.6.29) - it looks amazingingly similar.
+>
+> What's up with putting fp in r2 - is that required in the latest
+> prepare_ftrace_return()?
+>  -- Tim
+>   
+:D
+I had to wait for legal clearance ;)
 
-> On Mon, Mar 15, 2010 at 10:08:58AM +0100, John Ogness wrote:
-> > This patch fixes a possible deadlock situation with the port and timer
-> > locks. The calling paths for the deadlock situation are:
-> > 
-> > 1. imx_set_termios() -> LOCK(port.lock)
-> >       -> del_timer_sync() -> LOCK(timer.base.lock)
-> > 
-> > 2. run_timer_softirq() -> LOCK(timer.base.lock)
-> >       -> imx_timeout() -> LOCK(port.lock)
-> > 
-> > This patch is against 2.6.34-rc1.
-> > 
-> > Signed-off-by: John Ogness <john.ogness@linutronix.de>
-> > ---
-> >  drivers/serial/imx.c |    8 ++++++--
-> >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > diff -Naurp a/drivers/serial/imx.c b/drivers/serial/imx.c
-> > --- a/drivers/serial/imx.c	2010-03-08 19:45:44.000000000 +0100
-> > +++ b/drivers/serial/imx.c	2010-03-15 09:52:39.855261060 +0100
-> > @@ -836,6 +836,12 @@ imx_set_termios(struct uart_port *port, 
-> >  	baud = uart_get_baud_rate(port, termios, old, 50, port->uartclk / 16);
-> >  	quot = uart_get_divisor(port, baud);
-> >  
-> > +	/*
-> > +	 * Stop our timer. This is done with the port unlocked
-> > +	 * to avoid possible deadlock against the timer function.
-> > +	 */
-> > +	del_timer_sync(&sport->timer);
-> > +
-> 
-> Is this call needed here anyway? Only few drivers have it. Does anyone
-> have more insights on this?
+mov r2, fp is there in your patches on 
+http://elinux.org/Ftrace_Function_Graph_ARM. I'm using this for 2.6.31.
+It seemed fishy to me as well, since you don't really change the fp, so 
+it should remain intact when control returns to the epilogue of the 
+instrumented function.
 
-The other drivers might be buggy ;)
 
-I think the del_timer can probably be removed, as the later
-imx_enable_ms() will do a mod_timer() on it.  Unless that
-imx_enable_ms() doesn't get performed, of course..
-
-Plus it could be that we want to kill the timer because we're about to
-change various pieces of state and we don't want the timer handler
-running while that state is in flux.  Presumably that's why it's all
-done under the spinlock.
-
-Moving the del_timer_sync() to outside the spinlock might introduce
-races though - perhaps userspace can cause the timer to get re-enabled
-after it's been del_timer()'ed.
+> ------------- patch follows ----------------
+> Add support to __gnu_mcount_nc, used by newer (4.x?) Gnu compilers,
+> for ftrace function_graph support on ARM.
+>
+> Signed-off-by: Tim Bird <tim.bird@am.sony.com>
+> ---
+>  arch/arm/kernel/entry-common.S |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> --- a/arch/arm/kernel/entry-common.S
+> +++ b/arch/arm/kernel/entry-common.S
+> @@ -140,6 +140,12 @@ ENTRY(__gnu_mcount_nc)
+>  	adr r0, ftrace_stub
+>  	cmp r0, r2
+>  	bne gnu_trace
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	ldr r1, =ftrace_graph_return
+> +	ldr r2, [r1]
+> +	cmp r0, r2		@ if *ftrace_graph_return != ftrace_stub
+> +	bne gnu_ftrace_graph_caller
+> +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>  	ldmia sp!, {r0-r3, ip, lr}
+>  	bx ip
+>
+> @@ -196,6 +202,13 @@ return_to_handler:
+>  	ldmia sp!, {r0-r3}
+>  	mov pc, lr
+>
+> +ENTRY(gnu_ftrace_graph_caller)
+> +	sub r0, fp, #4			@ &lr of instrumented routine (&parent)
+> +	sub r1, lr, #MCOUNT_INSN_SIZE	@ instrumented routine (func)
+> +	bl prepare_ftrace_return
+> +	ldmia sp!, {r0-r3, ip, lr}
+> +	bx ip
+> +
+>  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+>
+>  #endif /* CONFIG_DYNAMIC_FTRACE */
+>
+>   
 
