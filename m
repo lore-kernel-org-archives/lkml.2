@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751917Ab0CSL1y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 07:27:54 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:50272 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab0CSL1o (ORCPT
+	id S1751410Ab0CSLip (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 07:38:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43919 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab0CSLio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 07:27:44 -0400
-X-IronPort-AV: E=Sophos;i="4.51,273,1267419600"; 
-   d="scan'208";a="88757708"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ian Campbell <ian.campbell@citrix.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Yinghai Lu <yinghai@kernel.org>, Jeremy Fitzhardinge <jeremy@goop.org>,
-       x86@kernel.org
-Subject: [PATCH 2/2] x86: irq_desc->chip_data is always correct whether or not SPARSE_IRQ is enabled.
-Date: Fri, 19 Mar 2010 11:27:21 +0000
-Message-Id: <1268998041-22707-2-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1268998032.10129.44653.camel@zakaz.uk.xensource.com>
-References: <1268998032.10129.44653.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 19 Mar 2010 11:27:43.0321 (UTC) FILETIME=[3117DC90:01CAC757]
+	Fri, 19 Mar 2010 07:38:44 -0400
+Message-ID: <4BA36239.4070909@infradead.org>
+Date: Fri, 19 Mar 2010 08:38:33 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Jeremy Kerr <jk@ozlabs.org>
+CC: users@linux.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [kernel.org users] [KORG] Availability of SSL on kernel.org
+References: <4BA2CFB7.7070108@kernel.org> <20100319035806.GB25308@linux-sh.org> <201003191600.13474.jk@ozlabs.org>
+In-Reply-To: <201003191600.13474.jk@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_early_irq_init ensures that in the non-SPARSE_IRQ case that
-chip_data is only set for irq < NR_IRQS which means that the
-SPARSE_IRQ version of irq_cfg behaves exactly the same as the
-non-SPARSE_IRQ version when SPARSE_IRQ is disabled.
+Hi Jeremy,
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Jeremy Kerr wrote:
+> Hi Paul,
+> 
+> Thanks for the report and testing - I've just committed a fix, plus a change 
+> to reflect the https URL in the sample .pwclientrc file.
+> 
+> J.H.: If you update to the current git HEAD, the pwclient and .pwclientrc 
+> files served by patchwork.kernel.org will now be more suitable for use with 
+> https.
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/x86/kernel/apic/io_apic.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
+It worked after commenting this line:
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 035b6d2..a7c45c5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -178,7 +178,6 @@ int __init arch_early_irq_init(void)
- 	return 0;
- }
- 
--#ifdef CONFIG_SPARSE_IRQ
- struct irq_cfg *irq_cfg(unsigned int irq)
- {
- 	struct irq_cfg *cfg = NULL;
-@@ -191,6 +190,8 @@ struct irq_cfg *irq_cfg(unsigned int irq)
- 	return cfg;
- }
- 
-+#ifdef CONFIG_SPARSE_IRQ
-+
- static struct irq_cfg *get_one_free_irq_cfg(int node)
- {
- 	struct irq_cfg *cfg;
-@@ -331,16 +332,10 @@ void x86_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
- /* end for move_irq_desc */
- 
- #else
--struct irq_cfg *irq_cfg(unsigned int irq)
--{
--	return irq < nr_irqs ? irq_cfgx + irq : NULL;
--}
--
- int x86_init_chip_data(struct irq_desc *desc, int node)
- {
- 	return 0;
- }
--
- #endif
- 
- struct io_apic {
+#        xmlrpclib.SafeTransport.__init__(self)
+
+Without commenting, I get this bug:
+
+Traceback (most recent call last):
+  File "/usr/local/bin/pwclient", line 463, in ?
+    main()
+  File "/usr/local/bin/pwclient", line 381, in main
+    use_https)
+  File "/usr/local/bin/pwclient", line 88, in __init__
+    xmlrpclib.SafeTransport.__init__(self)
+AttributeError: class SafeTransport has no attribute '__init__'
+
+
+Btw, I had to do the same with the older pwclient. I'm using here the python/python libraries
+provided on RHEL5.
+
+
+Cheers,
+Mauro
+
 -- 
-1.5.6.5
 
+Cheers,
+Mauro
