@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab0CSQGr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 12:06:47 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:46922 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323Ab0CSQGp (ORCPT
+	id S1753396Ab0CSQMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 12:12:06 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:57956 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371Ab0CSQMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 12:06:45 -0400
-X-Sasl-enc: +GW2HMREBXsX54QYatm56IeOhnbnx4jCf6O7LuvSVRpR 1269014804
-Date: Fri, 19 Mar 2010 13:06:41 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linux Input <linux-input@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [RFC] Input: implement sysrq as an input handler
-Message-ID: <20100319160641.GC16743@khazad-dum.debian.net>
-References: <20100317061952.GA19789@core.coreip.homeip.net>
- <20100319000043.GC12017@khazad-dum.debian.net>
- <20100319000931.GA5671@core.coreip.homeip.net>
+	Fri, 19 Mar 2010 12:12:02 -0400
+Message-ID: <4BA3A20A.4090102@oracle.com>
+Date: Fri, 19 Mar 2010 09:10:50 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319000931.GA5671@core.coreip.homeip.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: rostedt@goodmis.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: 2.6.33 GP fault only when built with tracing
+References: <4BA2B69D.3000309@oracle.com> <1268964941.758.21.camel@gandalf.stny.rr.com>
+In-Reply-To: <1268964941.758.21.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4BA3A24D.004C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Mar 2010, Dmitry Torokhov wrote:
-> On Thu, Mar 18, 2010 at 09:00:43PM -0300, Henrique de Moraes Holschuh wrote:
-> > Any chance of the user being able to avoid the SysRQ events getting to the
-> > handle, e.g. by opening the input device in exclusive mode or something like
-> > that?
+On 03/18/10 19:15, Steven Rostedt wrote:
+> On Thu, 2010-03-18 at 16:26 -0700, Randy Dunlap wrote:
+>> I can build/boot 2.6.33 with CONFIG_TRACE/TRACING disabled successfully,
+>> but when I enable lots of tracing config options and then boot with
+>> ftrace=nop on the kernel command line, I see a GP fault when the parport &
+>> parport_pc modules are loading/initializing.
+>>
+>> It happens in drivers/parport/share.c::parport_register_device(), when that
+>> function calls try_module_get().
+>>
+>> If I comment out the trace_module_get() calls in include/linux/module.h,
+>> the kernel boots with no problems.
+>>
+>> [   21.852829] general protection fault: 0000 [#1] SMP 
+>> [   21.856321] last sysfs file: /sys/module/parport/initstate
+>> [   21.856321] CPU 0 
+>> [   21.856321] Pid: 2089, comm: modprobe Not tainted 2.6.33 #11 0HH807/OptiPlex GX620               
+>> [   21.856321] RIP: 0010:[<ffffffffa0437671>]  [<ffffffffa0437671>] parport_register_device+0xe4/0x48c [parport]
+>> [   21.856321] RSP: 0018:ffff8800765cba78  EFLAGS: 00010283
+>> [   21.856321] RAX: ffff10007b04a3d0 RBX: ffff88007a6a5e30 RCX: 0000000000000000
+>> [   21.856321] RDX: 0000000000000000 RSI: ffffffffa043d1de RDI: ffff88007a6a5e30
+>> [   21.856321] RBP: ffff8800765cbad8 R08: 0000000000000000 R09: 0000000000000000
+>> [   21.856321] R10: ffffffffa043dff8 R11: 0000000000000000 R12: ffffffffa043d1de
+>> [   21.856321] R13: ffffffffa043d1de R14: ffffffffa045c940 R15: 0000000000000000
+>> [   21.856321] FS:  00007f09cc3fb6f0(0000) GS:ffff880004a00000(0000) knlGS:0000000000000000
+>> [   21.856321] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [   21.856321] CR2: 0000003fb5ad62c0 CR3: 00000000764f6000 CR4: 00000000000006f0
+>> [   21.856321] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [   21.856321] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [   21.856321] Process modprobe (pid: 2089, threadinfo ffff8800765ca000, task ffff88007664a3d0)
+>> [   21.856321] Stack:
 > 
-> Yes, it is a possible to suppress SysRq by grabbing an input device.
-> This possibility exisst with the current implementation too though -
-> after all legacy keyboard driver implemented as an input handler as
-> well.
 > 
-> ... or am I answering a question different from the one you asked? ;)
+> Is this fully reproducible at every boot up? I just booted your config
+> (no changes) and loaded the parport_pc module with no issues. I even
+> added your command line (just modifying root=.. )
 
-No, that's exactly what I wanted to know.
+Yes, it has failed for me 100% of the time (about 10 boots).
 
-What about SAK?  That thing *has* to be untrappable.
-
-Even for the SysRQ debug events, I'd feel better if we could have a class of
-system input handlers that cannot be suppressed to use for these things.
+I'm rebuilding to test with Mathieu's request now.
 
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+~Randy
