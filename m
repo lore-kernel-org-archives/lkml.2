@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab0CSWnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 18:43:51 -0400
-Received: from mail-fx0-f219.google.com ([209.85.220.219]:54424 "EHLO
-	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab0CSWnt (ORCPT
+	id S1752014Ab0CSWqw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 18:46:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37478 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341Ab0CSWqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 18:43:49 -0400
+	Fri, 19 Mar 2010 18:46:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VM8hWheQEzPJLqKpFmQ78vHU0Xn2bXvJaxacfUknqNSkuB7dDPE+qIXlym3OezJ6Gg
-         UA8GARcSejCtx/FWOUoU05nER62X0mcV8eygXVLZoJ7ybLcB9dGFToY/ZIEmsjmSdOBq
-         R96kC2R4hNe7bhyXUrOkSRLffB8rdkOg9qfQs=
-Message-ID: <4BA3FE2D.6070301@googlemail.com>
-Date: Fri, 19 Mar 2010 23:43:57 +0100
-From: =?UTF-8?B?UmVuw6kgQm9sbGRvcmY=?= <xsecute@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=nJfiRt1fOy4uzScHfznKfI0By8DsOCN9T9wXBkWIuQNLr5jFoTiezCZ/J8bbQ/htL/
+         N+mb3s64cxtp47LkBi5bmMohqS8PLx72zdCMOmxbNKYkuDm4c6OFP+II7jvNnhjBnB88
+         XKyT9itT12rJmDLk9zQNWjVz655v1Rq7lmv1I=
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] arch/x86/kernel/head_32.S Warning: shift count out
- of range (32 is not between 0 and 31)
-References: <4BA2A45B.6060004@googlemail.com> <4BA3F088.8040203@zytor.com>
-In-Reply-To: <4BA3F088.8040203@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BA3FD3E.9070801@gmail.com>
+References: <4BA3FD3E.9070801@gmail.com>
+Date: Fri, 19 Mar 2010 18:46:49 -0400
+X-Google-Sender-Auth: 9d0545d7ffe8d2cc
+Message-ID: <87d699441003191546v6c0f0b89t64ab93c4e3207f37@mail.gmail.com>
+Subject: Re: Intel SASMF8I
+From: Ilia Mirkin <imirkin@alum.mit.edu>
+To: Marco Schindler <marco.schindler@gmail.com>
+Cc: Eric.Moore@lsi.com, DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/10 22:45, H. Peter Anvin wrote:
-> On 03/18/2010 03:08 PM, Ren� Bolldorf wrote:
->> Signed-off-by: Rene Bolldorf<xsecute@googlemail.com>
->>
->> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
->> index 37c3d4b..8bfba5e 100644
->> --- a/arch/x86/kernel/head_32.S
->> +++ b/arch/x86/kernel/head_32.S
->> @@ -62,7 +62,7 @@
->>
->>    /* Enough space to fit pagetables for the low memory linear map */
->>    MAPPING_BEYOND_END = \
->> -	PAGE_TABLE_SIZE(((1<<32) - __PAGE_OFFSET)>>  PAGE_SHIFT)<<  PAGE_SHIFT
->> +	PAGE_TABLE_SIZE(((1<<31) - __PAGE_OFFSET)>>  PAGE_SHIFT)<<  PAGE_SHIFT
->>
->>    /*
->>     * Worst-case size of the kernel mapping we need to make:
+On Fri, Mar 19, 2010 at 6:39 PM, Marco Schindler
+<marco.schindler@gmail.com> wrote:
+> Hello,
+> this card (using LSISAS1068(E)) is not recognized by FUSION_SAS, after
+> patching the device code it appears to work nicely.
 >
-> NAK... this is in fact doubly wrong... the assembler handles this case
-> just fine -- it's a .S file after all -- and the result is wrong.
->
-> If you want to change it change it to 0x100000000.
->
-> 	-hpa
 
-Thank you, i try it out.
+I was 99% of the way there to submit a similar patch (actually there's
+a few more places where you want to add the new ID), but noticed a
+previous discussion when a comparable patch was rejected. Turns out
+there was a jumper on my motherboard (Supermicro X8DT3) which switches
+between "raid" and "regular" mode (except they were called something
+much fancier), and the regular mode switches the PCI ID to 0x58 which
+in turn is recognized. [And the mptsas driver doesn't support the RAID
+features anyways... there's a what appears to be proprietary driver
+for that, megasr, which I did not need.]
