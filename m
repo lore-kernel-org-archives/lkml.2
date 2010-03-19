@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab0CSB5h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:57:37 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39738
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752818Ab0CSB5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:57:35 -0400
-Date: Thu, 18 Mar 2010 18:57:57 -0700 (PDT)
-Message-Id: <20100318.185757.39197211.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: tj@kernel.org, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] percpu misaligned allocation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100319013119.GB22095@nowhere>
-References: <4BA1F2BA.30604@kernel.org>
-	<20100318.175413.183069013.davem@davemloft.net>
-	<20100319013119.GB22095@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1753126Ab0CSCA7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:00:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53019 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752128Ab0CSCA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 22:00:58 -0400
+Message-ID: <4BA34ADD.9040903@cn.fujitsu.com>
+Date: Fri, 19 Mar 2010 17:58:53 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20090922 Fedora/3.0-3.9.b4.fc12 Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
+Subject: [PATCH v3] KVM MMU:  check reserved bits only  if CR4.PSE=1 or CR4.PAE=1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 19 Mar 2010 02:31:22 +0100
+- Check reserved bits only if CR4.PAE=1 or CR4.PSE=1 when guest #PF occurs
+- Fix a typo in reset_rsvds_bits_mask()
 
-> On Thu, Mar 18, 2010 at 05:54:13PM -0700, David Miller wrote:
->> From: Tejun Heo <tj@kernel.org>
->> Date: Thu, 18 Mar 2010 18:30:34 +0900
->> 
->> >  
->> >  	if (!total_profile_count) {
->> > -		buf = (char *)alloc_percpu(perf_trace_t);
->> > +		buf = (char *)__alloc_percpu(sizeof(perf_trace_t),
->> > +					     __alignof__(unsigned long));
->> >  		if (!buf)
->> >  			goto fail_buf;
->> 
->> Why not make perf_trace_t have the proper alignment?
-> 
-> 
-> So, making perf_trace_t as align(8) would do the trick?
-> I lack the knowledge about alignment layout for archs that
-> need aligned accesses.
-> At a first glance, what I would except is that every buffer
-> has a base address aligned, no?
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-Make it of the largest type that could appeat
-in a trace entry.
-
-I would use u64 so something like:
-
-	u64 [FTRACE_MAX_PROFILE_SIZE / sizeof(u64)]
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index b137515..d6c1f03 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2293,13 +2293,19 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+ 		/* no rsvd bits for 2 level 4K page table entries */
+ 		context->rsvd_bits_mask[0][1] = 0;
+ 		context->rsvd_bits_mask[0][0] = 0;
++		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
++
++		if (!is_pse(vcpu)) {
++			context->rsvd_bits_mask[1][1] = 0;
++			break;
++		}
++
+ 		if (is_cpuid_PSE36())
+ 			/* 36bits PSE 4MB page */
+ 			context->rsvd_bits_mask[1][1] = rsvd_bits(17, 21);
+ 		else
+ 			/* 32 bits PSE 4MB page */
+ 			context->rsvd_bits_mask[1][1] = rsvd_bits(13, 21);
+-		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
+ 		break;
+ 	case PT32E_ROOT_LEVEL:
+ 		context->rsvd_bits_mask[0][2] =
+@@ -2312,7 +2318,7 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+ 		context->rsvd_bits_mask[1][1] = exb_bit_rsvd |
+ 			rsvd_bits(maxphyaddr, 62) |
+ 			rsvd_bits(13, 20);		/* large page */
+-		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
++		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
+ 		break;
+ 	case PT64_ROOT_LEVEL:
+ 		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+@@ -2330,7 +2336,7 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+ 		context->rsvd_bits_mask[1][1] = exb_bit_rsvd |
+ 			rsvd_bits(maxphyaddr, 51) |
+ 			rsvd_bits(13, 20);		/* large page */
+-		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
++		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
+ 		break;
+ 	}
+ }
+-- 
+1.6.6.1
