@@ -1,34 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab0CSH54 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 03:57:56 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51495 "EHLO kernel.dk"
+	id S1752323Ab0CSIAS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 04:00:18 -0400
+Received: from ozlabs.org ([203.10.76.45]:40317 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751893Ab0CSH5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 03:57:55 -0400
-Date: Fri, 19 Mar 2010 08:57:54 +0100
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]  block: remove 16 bytes of padding from struct request
-	on  64bits
-Message-ID: <20100319075754.GN5768@kernel.dk>
-References: <1268907592.2047.6.camel@localhost>
+	id S1752117Ab0CSIAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 04:00:17 -0400
+From: Jeremy Kerr <jk@ozlabs.org>
+To: users@linux.kernel.org
+Subject: Re: [kernel.org users] [KORG] Availability of SSL on kernel.org
+Date: Fri, 19 Mar 2010 16:00:13 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: Paul Mundt <lethal@linux-sh.org>, "J.H." <warthog9@kernel.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4BA2CFB7.7070108@kernel.org> <20100319035806.GB25308@linux-sh.org>
+In-Reply-To: <20100319035806.GB25308@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268907592.2047.6.camel@localhost>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003191600.13474.jk@ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18 2010, Richard Kennedy wrote:
-> Remove alignment padding to shrink struct request from 336 to 320 bytes
-> so needing one fewer cacheline and therefore removing 48 bytes from
-> struct request_queue.
+Hi Paul,
 
-Thanks Richard, applied.
+Thanks for the report and testing - I've just committed a fix, plus a change 
+to reflect the https URL in the sample .pwclientrc file.
 
--- 
-Jens Axboe
+J.H.: If you update to the current git HEAD, the pwclient and .pwclientrc 
+files served by patchwork.kernel.org will now be more suitable for use with 
+https.
 
+Cheers,
+
+
+Jeremy
