@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab0CSVYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 17:24:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58391 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0CSVYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 17:24:34 -0400
-Message-ID: <4BA3E9CD.70203@kernel.org>
-Date: Fri, 19 Mar 2010 14:17:01 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752756Ab0CSVcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 17:32:01 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59382 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751411Ab0CSVcA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 17:32:00 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: users@rt2x00.serialmonkey.com
+Subject: Re: [rt2x00-users] rt2500usb broken since 2.6.29
+Date: Fri, 19 Mar 2010 22:31:48 +0100
+User-Agent: KMail/1.9.10
+Cc: Luis Correia <buga@loide.net>, linux-kernel@vger.kernel.org
+References: <201003182246.54889.linux@rainbow-software.org> <880c1631003181510k1850de40r823418a0b921ecee@mail.gmail.com> <201003191601.48405.linux@rainbow-software.org>
+In-Reply-To: <201003191601.48405.linux@rainbow-software.org>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Tejun Heo <tj@kernel.org>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [LKML] Re: Infinite loop on boot in free_early_partial due to
- start==end on tip/master
-References: <1267801390.11737.38014.camel@zakaz.uk.xensource.com> <20100319182807.GA14985@phenom.dumpdata.com> <4BA3CAB8.7000702@kernel.org> <1269027289.23584.0.camel@localhost.localdomain> <20100319200409.GE31908@phenom.dumpdata.com>
-In-Reply-To: <20100319200409.GE31908@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201003192231.50287.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2010 01:04 PM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Mar 19, 2010 at 07:34:49PM +0000, Ian Campbell wrote:
->> On Fri, 2010-03-19 at 19:04 +0000, Yinghai Lu wrote: 
->>> On 03/19/2010 11:28 AM, Konrad Rzeszutek Wilk wrote:
->>>>> Subject: x86: do not free zero sized per cpu areas
->>>>>
->>>>> This avoids an infinite loop in free_early_partial().
->>>>
->>>> The patch fixed PV guests booting on Xen. I've added my
->>>> Tested-by .. Please merge it in the release.
->>>>
->>>> Thanks!
->>>>>
->>>>> Add a warning to free_early_partial to catch future problems.
->>>>>
->>>>> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->>>>
->>>> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>>
->>> please check update version...
->>>
->>> please check if this patch help...
->>>
->>> http://patchwork.kernel.org/patch/83832/
->>
->> Sorry Konrad, looks like I directed you to an older version of the patch
->> by mistake.
-> 
-> Np. I tested this one and it worked succesfully.
-> 
-> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> index ef6370b..89a3205 100644
-> --- a/arch/x86/kernel/setup_percpu.c
-> +++ b/arch/x86/kernel/setup_percpu.c
-> @@ -140,7 +140,8 @@  static void __init pcpu_fc_free(void *ptr, size_t
-> size)
->  #ifdef CONFIG_NO_BOOTMEM
->  	u64 start = __pa(ptr);
->  	u64 end = start + size;
-> -	free_early_partial(start, end);
-> +	if (start < end)
-> +		free_early_partial(start, end);
+On Friday 19 March 2010 16:01:47 Ondrej Zary wrote:
+> On Thursday 18 March 2010, Luis Correia wrote:
+> > Hi,
+> >
+> > On Thu, Mar 18, 2010 at 22:04, Ondrej Zary <linux@rainbow-software.org>
+>
+> wrote:
+> > > On Thursday 18 March 2010 22:51:18 Luis Correia wrote:
+> > >> Hi,
+> > >>
+> > >> On Thu, Mar 18, 2010 at 21:46, Ondrej Zary
+> > >
+> > > <linux@rainbow-software.org>wrote:
+> > >> > Hello,
+> > >> > rt2500usb is broken since kernel 2.6.29. It has been discussed
+> > >> > before but never solved:
+> > >> > http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
+> > >> > https://bugzilla.redhat.com/show_bug.cgi?id=484888
+> > >> >
+> > >> > I have Asus WL-167G and it really does not work. Scanning works,
+> > >> > association
+> > >> > too but no packets can be sent (looks like receive works because
+> > >> > tcpdump shows packets from other machines). DHCP fails (No
+> > >> > DHCPOFFERS received).
+> > >> >
+> > >> > The problem is caused by this patch:
+> > >> >
+> > >> > rt2x00: Implement HW encryption (rt2500usb)
+> > >> >
+> > >> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=c
+> > >> >om mit ;h=dddfb478b26e29a2b47f655ec219e743b8111015
+> > >> >
+> > >> > Removing it from 2.6.29 restores the functionality.
+> > >> >
+> > >> > --
+> > >> > Ondrej Zary
+> > >>
+> > >> you can prevent hardware encryption by supplying "nohwcrypt=1" to the
+> > >> driver.
+> > >> (modinfo rt2500usb)
+> > >
+> > > That did not work. Maybe that was because I just unloaded the rt2500usb
+> > > module and loaded it again with nohwcrypt=1 without rebooting the
+> > > machine. Then I removed the HW encryption, recompiled and reloaded and
+> > > it did not work either. It started to work only after reboot.
+> >
+> > did you actually remove the usb module and unloaded the module as well?
+> >
+> > you then need to load the module with the option, wait one sec and
+> > then plug the device back in.
+> >
+> > > Does the HW encryption really work with any rt2500usb hardware? How can
+> > > I help to fix it? Or maybe it should be disabled by default.
+> >
+> > I think the HW encription did work in the past, but I'm unsure of the
+> > proper timeline.
+>
+> HW encryption was added in 2.6.29 and it does not work there. In 2.6.30,
+> the driver is broken even more - it does not work even with HW encryption
+> disabled. I'm going to bisect it.
 
-it seems we could remove this line
+Bisection revealed this commit:
+ac7f9cfa2c3b810e0adfb889ad407a8c79a84dbe
+cfg80211: accept no-op interface mode changes
 
-Tejun, how this could happen? free zero range ?
+Removing it from 2.6.30 (and disabling HW encryption) makes rt2500usb work in 
+2.6.30. There are more changes to that code in next kernels so the patch 
+cannot be removed from newer kernels. However, disabling it (by changing "if 
+(change)" to "if (1)" in net/wireless/nl80211.c) and disabling HW encryption 
+makes rt2500usb work even in 2.6.34-rc1.
 
-YH
+There seems to be another (third!) problem. With 2.6.29, DHCP works on the 
+first DHCPDISCOVER. With 2.6.30, it takes two to three DHCPDISCOVERs to get a 
+reply. With 2.6.34-rc1, it takes three to five. After one reboot with 
+2.6.34-rc1, it did not work at all with this in log:
+phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 
+(-16).
 
->  #else
->  	free_bootmem(__pa(ptr), size);
->  #endif
-> diff --git a/kernel/early_res.c b/kernel/early_res.c
-> index 3cb2c66..f3a861b 100644
-> --- a/kernel/early_res.c
-> +++ b/kernel/early_res.c
-> @@ -333,6 +333,11 @@  void __init free_early_partial(u64 start, u64 end)
->  	struct early_res *r;
->  	int i;
->  
-> +	if (WARN_ONCE(start >= end,
-> +		      "free_early_partial got wrong start/end
-> %#llx/%#llx\n",
-> +		      start, end))
-> +		return;
-> +
->  try_next:
->  	i = find_overlapped_early(start, end);
->  	if (i >= max_early_res)
-> 
+-- 
+Ondrej Zary
