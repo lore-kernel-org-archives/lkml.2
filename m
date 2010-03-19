@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab0CSBF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:05:56 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:47429 "EHLO tac.ki.iif.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab0CSBFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:05:54 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: Phillip Lougher <phillip.lougher@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Subject: Re: RFC: direct MTD support for SquashFS
-References: <87vdcwv139.fsf@tac.ki.iif.hu>
-	<87ljdsibqe.fsf@macbook.be.48ers.dk> <87r5nhziss.fsf@tac.ki.iif.hu>
-	<bffbecbb1003181440kc78f4dbvd25d4e2ea17b52e5@mail.gmail.com>
-Date: Fri, 19 Mar 2010 02:05:50 +0100
-In-Reply-To: Ferenc Wagner's message of "Fri\, 19 Mar 2010 00\:13\:46 +0100"
-Message-ID: <87d3z1unm9.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1754320Ab0CSBGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:06:36 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:41232 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab0CSBGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 21:06:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=Ki2x1XrDLDIYtGKacLUOpVmSPSpods8mvyP2kAR9QB4ld6laqciHqJVbWBU9aiKOp5
+         3kABLuQXSOiBYsmTRZe+FiTB+wezn+X1Wko9EWh8bf6ZFja0Qi09qkbs4ZaUtDfPgO96
+         GqQ4CLSmLrzw5s2kmAiCZQr10Xzfnkbx1JGwc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <49f90a801003181747m5078d9c2y3cc8421203a7b1e6@mail.gmail.com>
+References: <21512362.post@talk.nabble.com> <3e8340490901162016y268e3936k4b2d3fcb2afcf216@mail.gmail.com> 
+	<21512985.post@talk.nabble.com> <3e8340490901162126u109da9cbu7292fddf6d832723@mail.gmail.com> 
+	<49f90a801003181710v5e08ccc8jdd26ec899e75bdb9@mail.gmail.com> 
+	<3e8340491003181728r766245edo91ecc1db75f3a6df@mail.gmail.com> 
+	<49f90a801003181747m5078d9c2y3cc8421203a7b1e6@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Thu, 18 Mar 2010 21:06:12 -0400
+Message-ID: <3e8340491003181806t201218acod8ea408d1993cbfc@mail.gmail.com>
+Subject: Re: Kernel vs user memory
+To: Siddhartha Chhabra <siddhartha.chhabra@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ferenc Wagner <wferi@niif.hu> writes:
-
-> Phillip Lougher <phillip.lougher@gmail.com> writes:
->
->> On Thu, Mar 18, 2010 at 4:38 PM, Ferenc Wagner <wferi@niif.hu> wrote:
+On Thu, Mar 18, 2010 at 20:47, Siddhartha Chhabra
+<siddhartha.chhabra@gmail.com> wrote:
+> On Thu, Mar 18, 2010 at 8:28 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
 >>
->> +static int fill_bdev_super(struct super_block *sb, void *data, int silent)
->> +{
->> +	struct squashfs_sb_info *msblk;
->> +	struct squashfs_bdev *bdev;
->> +	int err = squashfs_fill_super2(sb, data, silent, &squashfs_bdev_ops);
->> +	if (err)
->> +		return err;
->> +
->> +	bdev = kzalloc(sizeof(*bdev), GFP_KERNEL);
->> +	if (!bdev)
->> +		return -ENOMEM;
->> +
->> +	bdev->devblksize = sb_min_blocksize(sb, BLOCK_SIZE);
->> +	bdev->devblksize_log2 = ffz(~bdev->devblksize);
->> +
->> +	msblk = sb->s_fs_info;
->> +	msblk->backend_data = bdev;
->> +	return 0;
->> +}
+>> > If the kernel's doing a copy_from_user or copy_to_user family of calls
+>> > (ie, the calls used in system call handlers when accessing user space
+>> > buffers referenced in the arguments), this will trigger a page fault
+>> > exactly like the userspace process would, and the PF handler will then
+>> > deal with any copy on write or whatever may be needed. Of course, if a
+>> > userspace access wouldn't trigger a PF, the kernel access won't
+>> > either.
 >>
->> This function looks rather 'back-to-front' to me.  I'm assuming that
->> squashfs_fill_super2() will be the current fill superblock function?
+>> > For the actual copy-on-write process itself, it would be a Bad Thing
+>> > to trigger a recursive page fault, so instead the kernel will directly
+>> > access the page via the direct mapped section of the address space -
+>> > this will never cause a PF (on x86, this may require creating a
+>> > temporary mapping for memory at a high physical address, but this
+>> > still won't be a PF as it will be set up before the first access).
+>> > Additionally, memory mapped IO involves direct DMA to/from pages that
+>> > are simultaneously in use by userspace - this won't cause a PF in
+>> > kernel mode either. Same with swap.
+>>
+>> > In short, some kernel accesses to user space do go through normal
+>> > channels which may or may not PF; other accesses will never PF. So
+>> > it's a bad idea to rely on all kernel accesses triggering a page
+>> > fault.
 >
-> Yes, with the extra parameter added.
 >
->> This function wants to read data off the filesystem through the
->> backend, and yet the backend (bdev, mblk->backend_data) hasn't been
->> initialised when it's called...
+>>
+>> > Hope this helps,
+>>
+>> > Bryan
 >
-> It can't be, because msblk = sb->s_fs_info is allocated by
-> squashfs_fill_super().  Now it will be passed the ops, so after
-> allocating msblk it can also fill out the ops.  After that it can read,
-> and squashfs_read_data() will call the init, read and free operations of
-> the backend.
+> In other words, without tying the kernel access to any specific operation
+> (like COW, or copy-from/to-user, DMA, Memory mapped IO etc.), is it safe to
+> say that a possibly compromised kernel wanting to read application's pages
+> can do so without mapping the page to its address space, that is, without
+> resulting in a page fault in the kernel mode on an attempt to access a page
+> ?
+>
+> For example:
+>
+> Lets say for App A frame 5 on physical memory is mapped to its address space
+> and its currently using it. The OS does a context switch, however, A's
+> frames are still in the main memory. Now can the OS read these page frames
+> (frame 5 in main memory) without mapping them to its address space, maybe
+> just to read the application's contents and send it out to a potential
+> attacker wanting to compromise the system's security ?
 
-And here we indeed have a rather fundamental problem.  This isn't
-specific to the discussed plugin system at all.  Even in the current
-code, to set msblk->block_size squashfs_fill_super() calls
-squashfs_read_table() to read the superblock, which in turn calls
-squashfs_read_data(), which uses msblk->block_size to allocate enough
-buffer heads, but msblk->block_size just can't be set at this point.
-msblk->bytes_used is preset with a dummy value to make the read
-possible, but msblk->block_size is not.  Fortunately, one buffer head is
-allocated each time nevertheless.  I wonder what a correct solution
-would look lke..
--- 
-Regards,
-Feri.
+That is correct. The kernel can avoid a PF if it wants to by ensuring
+the page tables are set up properly from the start; and physical
+addresses below a certain value (which varies by architecture) can be
+accessed directly without any setup at all.
