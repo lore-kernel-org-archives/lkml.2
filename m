@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0CSPTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:19:11 -0400
-Received: from kroah.org ([198.145.64.141]:45902 "EHLO coco.kroah.org"
+	id S1752745Ab0CSPTI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:19:08 -0400
+Received: from kroah.org ([198.145.64.141]:45890 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752466Ab0CSPTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:19:00 -0400
+	id S1751424Ab0CSPS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:18:57 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Yinghai Lu <yinghai@kernel.org>,
-       Eric Biederman <ebiederm@xmission.com>
-Subject: [PATCH 04/12] sysfs: fix sysfs lockdep warning in infiniband code
-Date: Fri, 19 Mar 2010 08:18:47 -0700
-Message-Id: <1269011935-8886-4-git-send-email-gregkh@suse.de>
+Cc: Jiri Kosina <jkosina@suse.cz>, "Eric W. Biederman" <ebiederm@xmission.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 01/12] sysfs: use sysfs_bin_attr_init in firmware class driver
+Date: Fri, 19 Mar 2010 08:18:44 -0700
+Message-Id: <1269011935-8886-1-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <20100319151311.GA8541@kroah.com>
 References: <20100319151311.GA8541@kroah.com>
@@ -20,27 +20,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a sysfs lockdep warning in the infiniband code.
+From: Jiri Kosina <jkosina@suse.cz>
 
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Eric Biederman <ebiederm@xmission.com>
+Annotate dynamic sysfs attribute in fw_setup_device(). This gets
+rid of the following lockdep warning:
+
+bnx2 0000:08:00.0: firmware: requesting bnx2/bnx2-mips-06-5.0.0.j6.fw
+BUG: key ffff880008293470 not in .data!
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0x562/0x620()
+Modules linked in: bnx2(+) sg tpm_bios floppy rtc_lib usb_storage i2c_piix4 joydev button container shpchp i2c_core sr_mod cdrom pci_hotplug usbhid hid ohci_hcd ehci_hcd sd_mod usbcore edd ext3 mbcache jbd fan ata_generic sata_svw pata_serverworks libata scsi_mod thermal processor
+Pid: 1915, comm: work_for_cpu Not tainted 2.6.34-rc1-default #81
+Call Trace:
+ [<ffffffff8107c1d2>] ? lockdep_init_map+0x562/0x620
+ [<ffffffff81049fd8>] warn_slowpath_common+0x78/0xd0
+ [<ffffffff8104a03f>] warn_slowpath_null+0xf/0x20
+ [<ffffffff8107c1d2>] lockdep_init_map+0x562/0x620
+ [<ffffffff8117a236>] ? sysfs_new_dirent+0x76/0x120
+ [<ffffffff8126edb2>] ? put_device+0x12/0x20
+ [<ffffffff811797cc>] sysfs_add_file_mode+0x6c/0xd0
+ [<ffffffff8117983c>] sysfs_add_file+0xc/0x10
+ [<ffffffff8117bf61>] sysfs_create_bin_file+0x21/0x30
+ [<ffffffff81279c61>] _request_firmware+0x2f1/0x650
+ [<ffffffff8127a04e>] request_firmware+0xe/0x10
+ [<ffffffffa01ec19e>] bnx2_init_one+0x8f5/0x177e [bnx2]
+ [<ffffffff81389eab>] ? _raw_spin_unlock_irq+0x2b/0x40
+ [<ffffffff81040ed9>] ? finish_task_switch+0x69/0x100
+ [<ffffffff81040e70>] ? finish_task_switch+0x0/0x100
+ [<ffffffff81064b40>] ? do_work_for_cpu+0x0/0x30
+ [<ffffffff811e6302>] local_pci_probe+0x12/0x20
+ [<ffffffff81064b53>] do_work_for_cpu+0x13/0x30
+ [<ffffffff81064b40>] ? do_work_for_cpu+0x0/0x30
+ [<ffffffff81068c56>] kthread+0x96/0xa0
+ [<ffffffff81003e64>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8138a350>] ? restore_args+0x0/0x30
+ [<ffffffff81068bc0>] ? kthread+0x0/0xa0
+ [<ffffffff81003e60>] ? kernel_thread_helper+0x0/0x10
+---[ end trace a2ecee9c9602d195 ]---
+
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/infiniband/core/sysfs.c |    1 +
+ drivers/base/firmware_class.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/infiniband/core/sysfs.c b/drivers/infiniband/core/sysfs.c
-index 1558bb7..f901957 100644
---- a/drivers/infiniband/core/sysfs.c
-+++ b/drivers/infiniband/core/sysfs.c
-@@ -461,6 +461,7 @@ alloc_group_attrs(ssize_t (*show)(struct ib_port *,
- 		element->attr.attr.mode  = S_IRUGO;
- 		element->attr.show       = show;
- 		element->index		 = i;
-+		sysfs_attr_init(&element->attr.attr);
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index d0dc26a..fc7565c 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -442,6 +442,7 @@ static int fw_setup_device(struct firmware *fw, struct device **dev_p,
+ 	fw_priv = dev_get_drvdata(f_dev);
  
- 		tab_attr[i] = &element->attr.attr;
- 	}
+ 	fw_priv->fw = fw;
++	sysfs_bin_attr_init(&fw_priv->attr_data);
+ 	retval = sysfs_create_bin_file(&f_dev->kobj, &fw_priv->attr_data);
+ 	if (retval) {
+ 		dev_err(device, "%s: sysfs_create_bin_file failed\n", __func__);
 -- 
 1.7.0.2
 
