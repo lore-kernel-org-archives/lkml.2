@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab0CSDTe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 23:19:34 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56699 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab0CSDTc (ORCPT
+	id S1752865Ab0CSDgZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 23:36:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43675
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab0CSDgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 23:19:32 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] ntp: Make time_adjust static
-Date: Thu, 18 Mar 2010 20:19:27 -0700
-Message-Id: <1268968769-19209-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
+	Thu, 18 Mar 2010 23:36:23 -0400
+Date: Thu, 18 Mar 2010 20:36:44 -0700 (PDT)
+Message-Id: <20100318.203644.102533317.davem@davemloft.net>
+To: steve@digidescorp.com
+Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+       jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NET_DMA: free skbs periodically
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1268752964-4397-1-git-send-email-steve@digidescorp.com>
+References: <1268752964-4397-1-git-send-email-steve@digidescorp.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that no arches are accessing time_adjust directly,
-make it static.
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Date: Tue, 16 Mar 2010 10:22:44 -0500
 
-CC: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- include/linux/timex.h |    1 -
- kernel/time/ntp.c     |    2 +-
- 2 files changed, 1 insertions(+), 2 deletions(-)
+> Under NET_DMA, data transfer can grind to a halt when userland issues a
+> large read on a socket with a high RCVLOWAT (i.e., 512 KB for both).
+> This appears to be because the NET_DMA design queues up lots of memcpy 
+> operations, but doesn't issue or wait for them (and thus free the 
+> associated skbs) until it is time for tcp_recvmesg() to return. 
+> The socket hangs when its TCP window goes to zero before enough data is 
+> available to satisfy the read.
+> 
+> Periodically issue asynchronous memcpy operations, and free skbs for ones 
+> that have completed, to prevent sockets from going into zero-window mode.
+> 
+> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
 
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index 7a082b3..e2de51e 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -238,7 +238,6 @@ extern int tickadj;			/* amount of adjustment per tick */
-  * phase-lock loop variables
-  */
- extern int time_status;		/* clock synchronization status bits */
--extern long time_adjust;	/* The amount of adjtime left */
- 
- extern void ntp_init(void);
- extern void ntp_clear(void);
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 7c0f180..c631168 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -69,7 +69,7 @@ static s64			time_freq;
- /* time at last adjustment (secs):					*/
- static long			time_reftime;
- 
--long				time_adjust;
-+static long			time_adjust;
- 
- /* constant (boot-param configurable) NTP tick adjustment (upscaled)	*/
- static s64			ntp_tick_adj;
--- 
-1.6.0.4
+Can one of the NET DMA folks review this.
 
+It's a pretty fundamental problem with how this stuff works
+it seems.
