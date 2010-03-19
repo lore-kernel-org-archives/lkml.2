@@ -1,126 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab0CSIlR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 04:41:17 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:34962 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab0CSIlP (ORCPT
+	id S1753170Ab0CSIl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 04:41:27 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:53597 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab0CSIlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 04:41:15 -0400
-Date: Fri, 19 Mar 2010 17:37:51 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       akpm@linux-foundation.org, andi.kleen@intel.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] [BUGFIX] pagemap: fix pfn calculation for hugepage
-Message-ID: <20100319083751.GB13107@spritzerA.linux.bs1.fc.nec.co.jp>
-References: <1268979996-12297-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com>
+	Fri, 19 Mar 2010 04:41:25 -0400
+Date: Fri, 19 Mar 2010 08:40:48 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Kreuzer, Michael (NSN - DE/Ulm)" <michael.kreuzer@nsn.com>,
+       linux-mtd@lists.infradead.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] fix MTD CFI/LPDDR flash driver huge latency bug
+Message-ID: <20100319084048.GA1670@shareable.org>
+References: <1267894137.18869.0.camel@wall-e> <20100312142344.174bd46f.akpm@linux-foundation.org> <20100312233820.GH6491@shareable.org> <1268483744.6339.25.camel@wall-e> <20100315030338.GR6491@shareable.org> <1268633754.6012.4.camel@wall-e.seibold.net> <20100315142421.GB15133@shareable.org> <1268987355.4028.33.camel@macbook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1268987355.4028.33.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 04:10:23PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Fri, 19 Mar 2010 15:26:36 +0900
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> 
-> > When we look into pagemap using page-types with option -p, the value
-> > of pfn for hugepages looks wrong (see below.)
-> > This is because pte was evaluated only once for one vma
-> > although it should be updated for each hugepage. This patch fixes it.
-> > 
-> > $ page-types -p 3277 -Nl -b huge
-> > voffset   offset  len     flags
-> > 7f21e8a00 11e400  1       ___U___________H_G________________
-> > 7f21e8a01 11e401  1ff     ________________TG________________
-> > 7f21e8c00 11e400  1       ___U___________H_G________________
-> > 7f21e8c01 11e401  1ff     ________________TG________________
-> >              ^^^
-> >              should not be the same
-> > 
-> > With this patch applied:
-> > 
-> > $ page-types -p 3386 -Nl -b huge
-> > voffset   offset   len    flags
-> > 7fec7a600 112c00   1      ___UD__________H_G________________
-> > 7fec7a601 112c01   1ff    ________________TG________________
-> > 7fec7a800 113200   1      ___UD__________H_G________________
-> > 7fec7a801 113201   1ff    ________________TG________________
-> >              ^^^
-> >              OK
-> > 
-> Hmm. Is this bug ? To me, it's just shown in hugepage's pagesize, by design.
-> 
-> _And_, Doesn't this patch change behavior of walk_pagemap_range() implicitly ?
+David Woodhouse wrote:
+> Rather than pulling a number our of our posterior like "every 256 bytes"
+> which might _really_ screw up performance of some architectures' memcpy
+> routines, I suspect we might want the platform to provide an optimised
+> "sleepable_memcpy" function which does it at whatever interval is
+> appropriate for the memcpy routine in use. Or magically makes it
+> preemptable. Or uses a DMA engine. Or whatever.
+>
+> I wonder where else we could use such a function...
 
-No. It just fixes the bug of wrong offset calculation.
+The posterior number isn't great, although I don't see how it would
+really harm memcpy performance to check current->need_resched even
+quite often.
 
-> No influence to other users ? (as memcontrol.c. in mmotm. Ask Nishimura-san ;)
-> 
+In this instance, the speed depends on the flash which can be as much
+as 100x slower than RAM - that's the particular situation where it
+might be most useful to split the copies.
 
-I asked him for double-check.
+Other uses of sleepable_memcpy you may be thinking of could be
+operating on RAM only, so the number should be 100x larger for them.
 
-> 
-> some nitpicks.
-> 
-> 
-> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> > ---
-> >  fs/proc/task_mmu.c |   37 +++++++++++++++++++------------------
-> >  include/linux/mm.h |    4 ++--
-> >  mm/pagewalk.c      |   14 ++++----------
-> >  3 files changed, 25 insertions(+), 30 deletions(-)
-> > 
-> > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > index 2a3ef17..cc14479 100644
-> > --- a/fs/proc/task_mmu.c
-> > +++ b/fs/proc/task_mmu.c
-> > @@ -662,31 +662,32 @@ static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
-> >  	return pme;
-> >  }
-> >  
-> > -static int pagemap_hugetlb_range(pte_t *pte, unsigned long addr,
-> > +/* This function walks only within @vma */
-> > +static int pagemap_hugetlb_range(struct vm_area_struct *vma, unsigned long addr,
-> >  				 unsigned long end, struct mm_walk *walk)
-> >  {
-> > -	struct vm_area_struct *vma;
-> > +	struct mm_struct *mm = walk->mm;
-> >  	struct pagemapread *pm = walk->private;
-> >  	struct hstate *hs = NULL;
-> >  	int err = 0;
-> > -
-> > -	vma = find_vma(walk->mm, addr);
-> > -	if (vma)
-> > -		hs = hstate_vma(vma);
-> > +	pte_t *pte = NULL;
-> > +
-> > +	BUG_ON(!mm);
-> > +	BUG_ON(!vma || !is_vm_hugetlb_page(vma));
-> > +	BUG_ON(addr < vma->vm_start || addr >= vma->vm_end);
-> 
-> This is my personal opinion, may not be popular.
-> 
-> When you add BUG_ON(), please confirm "you have real concern about this."
-> After reading this, code reader will take care of avoiding calling this
-> function with above condition. yes.
-> 
-> But, this function itself is only for pagemap_read() and it seems no
-> other one will call this function externally in future.
-> Above 3 BUG_ON will never happen because of simple logic around this.
-> Then, it seems unnecessary noise to me.
-> 
+In other words, "whatever interval is appropriate for memcpy" does not
+exist, and could not be hard-coded into sleepable_memcpy.  It's
+whatever interval is appropriate for the particular memory being
+copied, so it would have to be a parameter.
 
-OK. It sounds reasonable.
-
-> If your changes in walk_page_range() causes concerns to add above BUG_ON()s,
-> please avoid such changes. 
-
-There is no concern about it.  I'll turn off BUG_ON()s.
-
-Thanks,
-Naoya Horiguchi
+-- Jamie
