@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab0CSJRh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 05:17:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57207 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365Ab0CSJRg (ORCPT
+	id S1752988Ab0CSJUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 05:20:12 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:33539 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab0CSJUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 05:17:36 -0400
-Date: Fri, 19 Mar 2010 17:16:33 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Mike Galbraith <efault@gmx.de>
-Subject: Re: [RESEND PATCH][tip:sched/core] sched: clean AFFINE_WAKEUPS
- feature
-Message-ID: <20100319091633.GF13937@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <1268989961-20418-1-git-send-email-yong.zhang@windriver.com>
+	Fri, 19 Mar 2010 05:20:10 -0400
+Date: Fri, 19 Mar 2010 18:19:04 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Message-ID: <20100319091904.GF10003@linux-sh.org>
+References: <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA20EB8.60707@redhat.com> <20100318114821.GB13168@elte.hu> <4BA21B09.6060706@redhat.com> <20100318130047.GA7424@elte.hu> <4BA23FE1.5050402@codemonkey.ws> <20100318151737.GA2875@elte.hu> <4BA250BF.80704@codemonkey.ws>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1268989961-20418-1-git-send-email-yong.zhang@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 Mar 2010 09:16:35.0159 (UTC) FILETIME=[DF4D9E70:01CAC744]
+In-Reply-To: <4BA250BF.80704@codemonkey.ws>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git config suppress cc, add it manually.
+On Thu, Mar 18, 2010 at 11:11:43AM -0500, Anthony Liguori wrote:
+> On 03/18/2010 10:17 AM, Ingo Molnar wrote:
+> >* Anthony Liguori<anthony@codemonkey.ws>  wrote:
+> >>On 03/18/2010 08:00 AM, Ingo Molnar wrote:
+> >>>>[...]  kvm in fact knows nothing about vga, to take your last example.
+> >>>>[...]
+> >>>>         
+> >>>Look at the VGA dirty bitmap optimization a'ka the KVM_GET_DIRTY_LOG
+> >>>ioctl.
+> >>>
+> >>>See qemu/kvm-all.c's kvm_physical_sync_dirty_bitmap().
+> >>>
+> >>>It started out as a VGA optimization (also used by live migration) and
+> >>>even today it's mostly used by the VGA drivers - albeit a weak one.
+> >>>
+> >>>I wish there were stronger VGA optimizations implemented, copying the
+> >>>dirty bitmap is not a particularly performant solution. (although it's
+> >>>certainly better than full emulation) Graphics performance is one of the
+> >>>more painful aspects of KVM usability today.
+> >>>       
+> >>We have to maintain a dirty bitmap because we don't have a paravirtual
+> >>graphics driver.  IOW, someone needs to write an Xorg driver.
+> >>
+> >>Ideally, we could just implement a Linux framebuffer device, right?
+> >>     
+> >No, you'd want to interact with DRM.
+> 
+> Using DRM doesn't help very much.  You still need an X driver and most 
+> of the operations you care about (video rendering, window movement, etc) 
+> are not operations that need to go through DRM.
+> 
+> 3D graphics virtualization is extremely difficult in the non-passthrough 
+> case.  It really requires hardware support that isn't widely available 
+> today (outside a few NVIDIA chipsets).
+> 
+Implementing a virtualized DRM/KMS driver would at least get you the
+framebuffer interface more or less for free, while allowing you to deal
+with the userspace side of things incrementally (ie, running a dummy xorg
+on top of the virtualized fbdev until the DRI side catches up). It would
+also enable you to focus on the 2D and 3D parts independently.
 
-On Fri, Mar 19, 2010 at 05:12:41PM +0800, Yong Zhang wrote:
-> complementary work to commit beac4c7e4a1cc6d57801f690e5e82fa2c9c245c8
+> It doesn't provide the things we need to a good user experience.  You 
+> need things like an absolute input device, host driven display resize, 
+> RGBA hardware cursors.  None of these go through DRI and it's those 
+> things that really provide the graphics user experience.
 > 
-> Signed-off-by: Yong Zhang <yong.zhang@windriver.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched_features.h |    8 --------
->  1 files changed, 0 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-> index 83c66e8..2137ac0 100644
-> --- a/kernel/sched_features.h
-> +++ b/kernel/sched_features.h
-> @@ -17,14 +17,6 @@ SCHED_FEAT(START_DEBIT, 1)
->  SCHED_FEAT(WAKEUP_PREEMPT, 1)
->  
->  /*
-> - * Based on load and program behaviour, see if it makes sense to place
-> - * a newly woken task on the same cpu as the task that woke it --
-> - * improve cache locality. Typically used with SYNC wakeups as
-> - * generated by pipes and the like, see also SYNC_WAKEUPS.
-> - */
-> -SCHED_FEAT(AFFINE_WAKEUPS, 1)
-> -
-> -/*
->   * Prefer to schedule the task we woke last (assuming it failed
->   * wakeup-preemption), since its likely going to consume data we
->   * touched, increases cache locality.
-> -- 
-> 1.6.3.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+None of these things negate the benefit one would get from a virtualized
+DRM/KMS driver either. There are multiple problems that need solving in
+this area, and it's a bit disingenuous to discount a valid suggestion out
+of hand due to the fact it doesn't solve all of the outstanding issues.
