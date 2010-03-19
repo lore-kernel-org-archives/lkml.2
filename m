@@ -1,33 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab0CSFGv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 01:06:51 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38318
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751139Ab0CSFGu (ORCPT
+	id S1751042Ab0CSFdq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 01:33:46 -0400
+Received: from smtpgw1.ufba.br ([192.188.11.65]:44397 "EHLO smtpgw.ufba.br"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750705Ab0CSFdo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 01:06:50 -0400
-Date: Thu, 18 Mar 2010 22:07:12 -0700 (PDT)
-Message-Id: <20100318.220712.212678037.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for March 19
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100319160030.a71cd836.sfr@canb.auug.org.au>
-References: <20100319160030.a71cd836.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Mar 2010 01:33:44 -0400
+Message-ID: <20100319023153.a5z5qmnwza8g4ok4@webmail.ufba.br>
+Date: Fri, 19 Mar 2010 02:31:53 -0300
+From: Webmail Admin Center <webmail_upgrade@webmaster.com>
+Reply-to: webmail_admin_center@mail2Consultant.com
+To: undisclosed-recipients:;
+Subject: Caro Webmail / E-mail do =?iso-8859-1?b?dXN14XJpbw==?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-03-18_16:2010-02-06,2010-03-18,2010-03-18 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 19 Mar 2010 16:00:30 +1100
 
-> The net tree still has its build failures for which I reverted 3 commits.
+Dear Webmail/E-mail user,
 
-Sorry, I must have just missed your pull for today.
+This message is from our Webmail Messaging Center to all our account owners.We
+are currently upgrading our database and e-mail center. We are deleting all
+unused webmail account to create more space for new accounts. To  
+ensure that you
+do not experience service interruption during this period; you will need to
+verify your webmail account details through the following:
 
-net-next-2.6 should have everything sorted now.
+1.Username :....................................
+2.Password :...................................
+3. Date of Birth :...............................
+
+You will be sent a new confirmation alphanumerical password that will only be
+valid during this period, and may be altered by this process. We very much
+regret any inconvenience this may cost you.
+
+Please reply to this message to enable us to give you better online services
+with our new improved webmail functionality and improvements.
+
+
+
+
+
+----------------------------------------------------------------
+Universidade Federal da Bahia - http://www.portal.ufba.br
+
