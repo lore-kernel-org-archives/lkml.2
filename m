@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab0CSB3r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:29:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:1848 "EHLO mail.perches.com"
+	id S1754598Ab0CSBbv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:31:51 -0400
+Received: from mail.perches.com ([173.55.12.10]:1867 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab0CSB3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:29:44 -0400
+	id S1754288Ab0CSB3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 21:29:47 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
 Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
        Johannes Berg <johannes@sipsolutions.net>,
        "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless@vger.kernel.org
-Subject: [PATCH v3 1/9] include/linux/wireless.h: Add IW_HANDLER macro to initialize array entry
-Date: Thu, 18 Mar 2010 18:29:32 -0700
-Message-Id: <278cd636841ab997e0f6956abcfad715a8e58895.1268961559.git.joe@perches.com>
+       "David S. Miller" <davem@davemloft.net>, linux-wireless@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: [PATCH v3 5/9] net/wireless/wext-core.c: Use IW_EVENT_IDX macro
+Date: Thu, 18 Mar 2010 18:29:36 -0700
+Message-Id: <4f2b84da3f0f6845cb3ee5c5479532dce9a05982.1268961559.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.14.g7e948
 In-Reply-To: <cover.1268961559.git.joe@perches.com>
 References: <cover.1268961559.git.joe@perches.com>
@@ -22,26 +23,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copied the idea from orinoco
+There's a wireless.h macro for this, might as well use it.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/wireless.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ net/wireless/wext-core.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/wireless.h b/include/linux/wireless.h
-index 5b4c6c7..0955b67 100644
---- a/include/linux/wireless.h
-+++ b/include/linux/wireless.h
-@@ -346,6 +346,8 @@
- #define SIOCIWFIRST	0x8B00
- #define SIOCIWLAST	SIOCIWLASTPRIV		/* 0x8BFF */
- #define IW_IOCTL_IDX(cmd)	((cmd) - SIOCIWFIRST)
-+#define IW_HANDLER(id, func)			\
-+	[IW_IOCTL_IDX(id)] = func
- 
- /* Odd : get (world access), even : set (root access) */
- #define IW_IS_SET(cmd)	(!((cmd) & 0x1))
+diff --git a/net/wireless/wext-core.c b/net/wireless/wext-core.c
+index dbde22b..bfcbeee 100644
+--- a/net/wireless/wext-core.c
++++ b/net/wireless/wext-core.c
+@@ -261,44 +261,44 @@ static const unsigned standard_ioctl_num = ARRAY_SIZE(standard_ioctl);
+  * we know about.
+  */
+ static const struct iw_ioctl_description standard_event[] = {
+-	[IWEVTXDROP	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVTXDROP)] = {
+ 		.header_type	= IW_HEADER_TYPE_ADDR,
+ 	},
+-	[IWEVQUAL	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVQUAL)] = {
+ 		.header_type	= IW_HEADER_TYPE_QUAL,
+ 	},
+-	[IWEVCUSTOM	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVCUSTOM)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_CUSTOM_MAX,
+ 	},
+-	[IWEVREGISTERED	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVREGISTERED)] = {
+ 		.header_type	= IW_HEADER_TYPE_ADDR,
+ 	},
+-	[IWEVEXPIRED	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVEXPIRED)] = {
+ 		.header_type	= IW_HEADER_TYPE_ADDR,
+ 	},
+-	[IWEVGENIE	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVGENIE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_GENERIC_IE_MAX,
+ 	},
+-	[IWEVMICHAELMICFAILURE	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVMICHAELMICFAILURE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= sizeof(struct iw_michaelmicfailure),
+ 	},
+-	[IWEVASSOCREQIE	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVASSOCREQIE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_GENERIC_IE_MAX,
+ 	},
+-	[IWEVASSOCRESPIE	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVASSOCRESPIE)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= IW_GENERIC_IE_MAX,
+ 	},
+-	[IWEVPMKIDCAND	- IWEVFIRST] = {
++	[IW_EVENT_IDX(IWEVPMKIDCAND)] = {
+ 		.header_type	= IW_HEADER_TYPE_POINT,
+ 		.token_size	= 1,
+ 		.max_tokens	= sizeof(struct iw_pmkid_cand),
+@@ -453,7 +453,7 @@ void wireless_send_event(struct net_device *	dev,
+ 		if (cmd_index < standard_ioctl_num)
+ 			descr = &(standard_ioctl[cmd_index]);
+ 	} else {
+-		cmd_index = cmd - IWEVFIRST;
++		cmd_index = IW_EVENT_IDX(cmd);
+ 		if (cmd_index < standard_event_num)
+ 			descr = &(standard_event[cmd_index]);
+ 	}
 -- 
 1.7.0.14.g7e948
 
