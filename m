@@ -1,91 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750775Ab0CSEG5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 00:06:57 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54221 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750695Ab0CSEG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 00:06:56 -0400
-Date: Thu, 18 Mar 2010 20:57:41 -0700
-From: Greg KH <gregkh@suse.de>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Larry.Finger@lwfinger.net,
-       johannes@sipsolutions.net, linville@tuxdriver.com, mb@bu3sch.de,
-       stable@kernel.org
-Subject: Re: patch
-	b43-workaround-circular-locking-in-hw-tkip-key-update-callback.patch
-	added to 2.6.33-stable tree
-Message-ID: <20100319035741.GC26626@suse.de>
-References: <12689584343638@kroah.org> <201003190316.28515.s.L-H@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003190316.28515.s.L-H@gmx.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1750873Ab0CSEHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 00:07:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58270 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750695Ab0CSEHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 00:07:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:subject:from:to:cc:in-reply-to;
+        b=wAdkH92QkNUJECjhPleuYx61066zaUT7uN+/eTEj+hbtcIQr4Eyysv3e2mvDAOWJNj
+         Uzn6CtJZ2h2hc1JaSYWasnITElWrP611vCdz/iTfnRA8JXYywtdLcme61+gaxbQ2NwEk
+         ZW2okQRkM92GZTqOM6FvqPZRIY4YDPiqrGjlI=
+Message-ID: <4ba2f862.4902be0a.0815.0d09@mx.google.com>
+Date: Thu, 18 Mar 2010 21:06:58 -0700 (PDT)
+Subject: Re: [PATCH] hpet: factor timer allocate from open
+From: Magnus Lynch <maglyx@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Clemens Ladisch <clemens@ladisch.de>
+Cc: "Venkatesh Pallipadi (Venki)" <venkatesh.pallipadi@intel.com>,
+       "Vojtech Pavlik" <vojtech@suse.cz>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       "Paul Gortmaker" <paul.gortmaker@windriver.com>,
+       "Suresh Siddha" <suresh.b.siddha@intel.com>,
+       "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100318121151.cedeb849.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 03:16:22AM +0100, Stefan Lippers-Hollmann wrote:
-> Hi
-> 
-> On Friday 19 March 2010, gregkh@suse.de wrote:
-> > This is a note to let you know that we have just queued up the patch titled
-> > 
-> >     Subject: b43: Workaround circular locking in hw-tkip key update callback
-> > 
-> > to the 2.6.33-stable tree.  Its filename is
-> [...]
-> > From: Larry Finger <Larry.Finger@lwfinger.net>
-> > Date: Wed, 10 Mar 2010 22:10:32 -0600
-> > Subject: b43: Workaround circular locking in hw-tkip key update callback
-> > To: Greg Kroah-Hartman <gregkh@suse.de>
-> > Cc: Michael Buesch <mb@bu3sch.de>
-> > Message-ID: <4b986d38.aOKVIPS3U9/aYsOP%Larry.Finger@lwfinger.net>
-> > 
-> > From: Michael Buesch <mb@bu3sch.de>
-> > 
-> > commit 96869a39399269a776a94812e9fff3d38b47d838 upstream
-> > 
-> > The TKIP key update callback is called from the RX path, where the driver
-> > mutex is already locked. This results in a circular locking bug.
-> > Avoid this by removing the lock.
-> >     
-> > Johannes noted that there is a separate bug: The callback still breaks on SDIO
-> > hardware, because SDIO hardware access needs to sleep, but we are not allowed
-> > to sleep in the callback due to mac80211's RCU locking.
-> [...]
-> 
-> This patch breaks compiling 2.6.33.1 + the current stable queue (and likely 
-> queue-2.6.32 as well):
-> 
->   CC [M]  drivers/net/wireless/b43/main.o
-> drivers/net/wireless/b43/main.c: In function 'b43_op_update_tkip_key':
-> drivers/net/wireless/b43/main.c:868: error: 'sta' undeclared (first use in this function)
-> drivers/net/wireless/b43/main.c:868: error: (Each undeclared identifier is reported only once
-> drivers/net/wireless/b43/main.c:868: error: for each function it appears in.)
-> 
-> as it is based on the mac80211 API change of 
-> 
-> Gitweb:     http://git.kernel.org/linus/b3fbdcf49f940d0703c356441e0daf045e64e076
-> Commit:     b3fbdcf49f940d0703c356441e0daf045e64e076
-> Parent:     e4fca007b06165900d0e44e8d5e251376819bf5d
-> Author:     Johannes Berg <johannes@sipsolutions.net>
-> AuthorDate: Thu Jan 21 11:40:47 2010 +0100
-> Committer:  John W. Linville <linville@tuxdriver.com>
-> CommitDate: Fri Jan 22 16:08:55 2010 -0500
-> 
->     mac80211: pass vif and station to update_tkip_key
->     
->     When a TKIP key is updated, we should pass the station
->     pointer instead of just the address, since drivers can
->     use that to store their own data. We also need to pass
->     the virtual interface pointer.
-> 
-> which also touches, besides the API mac80211 tkip handling, iwl-agn as well
-> as b43.
+Andrew Morton wrote:
+> Please always retain and maintain the changelog with each version of a patch.
+>
+> Please resend this patch with a complete changelog.
 
-Yeah, I backed it out right away and told the authors about it, but
-didn't push the stable-queue changes out, sorry about that.
+OK, here's my description from the original posting:
+<<
+The current implementation of the /dev/hpet driver couples opening the
+device with allocating one of the (scarce) timers (aka comparators).
+This is a limitation in that the main counter may be valuable to
+applications seeking a high-resolution timer who have no use for the
+interrupt generating functionality of the comparators.
 
-greg k-h
+This patch alters the open semantics so that when the device is
+opened, no timer is allocated. Operations that depend on a timer being
+in context implicitly attempt allocating a timer, to maintain backward
+compatibility. There is also an IOCTL (HPET_ALLOC_TIMER _IO) added so
+that the allocation may be done explicitly. (I prefer the explicit
+open then allocate pattern but don't know how practical it would be to
+require all existing code to be changed.)
+>>
+
+The difference between the first and second version of my patch is that
+the first altered the semantics of the HPET_INFO IOCTL so that it didn't
+force allocation of a timer, which would not be strictly backwards compatible;
+the second version keeps it so a device open followed by HPET_INFO call will
+have allocated a timer (or attempted to and given an error).
+
+Signed-off-by: Magnus Lynch <maglyx@gmail.com>
+
+diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
+index e481c59..97f8d5b 100644
+--- a/drivers/char/hpet.c
++++ b/drivers/char/hpet.c
+@@ -244,16 +244,40 @@ static void hpet_timer_set_irq(struct hpet_dev *devp)
+ 
+ static int hpet_open(struct inode *inode, struct file *file)
+ {
+-	struct hpet_dev *devp;
+ 	struct hpets *hpetp;
+-	int i;
+ 
+ 	if (file->f_mode & FMODE_WRITE)
+ 		return -EINVAL;
+ 
++	hpetp = hpets;
++	/* starting with timer-neutral instance */
++	file->private_data = &hpetp->hp_dev[hpetp->hp_ntimer];
++
++	return 0;
++}
++
++static int hpet_alloc_timer(struct file *file)
++{
++	struct hpet_dev *devp;
++	struct hpets *hpetp;
++	int i;
++
++	/* once acquired, will remain */
++	devp = file->private_data;
++	if (devp->hd_timer)
++		return 0;
++
+ 	lock_kernel();
+ 	spin_lock_irq(&hpet_lock);
+ 
++	/* check for race acquiring */
++	devp = file->private_data;
++	if (devp->hd_timer) {
++		spin_unlock_irq(&hpet_lock);
++		unlock_kernel();
++		return 0;
++	}
++
+ 	for (devp = NULL, hpetp = hpets; hpetp && !devp; hpetp = hpetp->hp_next)
+ 		for (i = 0; i < hpetp->hp_ntimer; i++)
+ 			if (hpetp->hp_dev[i].hd_flags & HPET_OPEN)
+@@ -384,6 +408,10 @@ static int hpet_fasync(int fd, struct file *file, int on)
+ {
+ 	struct hpet_dev *devp;
+ 
++	int r = hpet_alloc_timer(file);
++	if (r < 0)
++		return r;
++
+ 	devp = file->private_data;
+ 
+ 	if (fasync_helper(fd, file, on, &devp->hd_async_queue) >= 0)
+@@ -401,6 +429,9 @@ static int hpet_release(struct inode *inode, struct file *file)
+ 	devp = file->private_data;
+ 	timer = devp->hd_timer;
+ 
++	if (!timer)
++		goto out;
++
+ 	spin_lock_irq(&hpet_lock);
+ 
+ 	writeq((readq(&timer->hpet_config) & ~Tn_INT_ENB_CNF_MASK),
+@@ -425,7 +456,7 @@ static int hpet_release(struct inode *inode, struct file *file)
+ 
+ 	if (irq)
+ 		free_irq(irq, devp);
+-
++out:
+ 	file->private_data = NULL;
+ 	return 0;
+ }
+@@ -438,6 +469,10 @@ hpet_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+ {
+ 	struct hpet_dev *devp;
+ 
++	int r = hpet_alloc_timer(file);
++	if (r < 0)
++		return r;
++
+ 	devp = file->private_data;
+ 	return hpet_ioctl_common(devp, cmd, arg, 0);
+ }
+@@ -570,6 +605,9 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
+ 		break;
+ 	case HPET_IE_ON:
+ 		return hpet_ioctl_ieon(devp);
++	case HPET_ALLOC_TIMER:
++		/* nothing to do */
++		return 0;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -794,7 +832,11 @@ int hpet_alloc(struct hpet_data *hdp)
+ 		return 0;
+ 	}
+ 
+-	siz = sizeof(struct hpets) + ((hdp->hd_nirqs - 1) *
++	/*
++	 * last hpet_dev will have null timer pointer, gives timer-neutral
++	 * representation of block
++	 */
++	siz = sizeof(struct hpets) + ((hdp->hd_nirqs) *
+ 				      sizeof(struct hpet_dev));
+ 
+ 	hpetp = kzalloc(siz, GFP_KERNEL);
+@@ -860,13 +902,16 @@ int hpet_alloc(struct hpet_data *hdp)
+ 		writeq(mcfg, &hpet->hpet_config);
+ 	}
+ 
+-	for (i = 0, devp = hpetp->hp_dev; i < hpetp->hp_ntimer; i++, devp++) {
++	for (i = 0, devp = hpetp->hp_dev; i < hpetp->hp_ntimer + 1;
++	     i++, devp++) {
+ 		struct hpet_timer __iomem *timer;
+ 
+-		timer = &hpet->hpet_timers[devp - hpetp->hp_dev];
+-
+ 		devp->hd_hpets = hpetp;
+ 		devp->hd_hpet = hpet;
++		if (i == hpetp->hp_ntimer)
++			continue;
++
++		timer = &hpet->hpet_timers[devp - hpetp->hp_dev];
+ 		devp->hd_timer = timer;
+ 
+ 		/*
+diff --git a/include/linux/hpet.h b/include/linux/hpet.h
+index 219ca4f..d690c0f 100644
+--- a/include/linux/hpet.h
++++ b/include/linux/hpet.h
+@@ -125,6 +125,7 @@ struct hpet_info {
+ #define	HPET_EPI	_IO('h', 0x04)	/* enable periodic */
+ #define	HPET_DPI	_IO('h', 0x05)	/* disable periodic */
+ #define	HPET_IRQFREQ	_IOW('h', 0x6, unsigned long)	/* IRQFREQ usec */
++#define	HPET_ALLOC_TIMER _IO('h', 0x7)
+ 
+ #define MAX_HPET_TBS	8		/* maximum hpet timer blocks */
+ 
