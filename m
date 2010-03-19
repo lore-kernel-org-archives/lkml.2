@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab0CSGV7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 02:21:59 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35396 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752091Ab0CSGV4 (ORCPT
+	id S1751119Ab0CSG2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 02:28:33 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:52819 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750705Ab0CSG2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 02:21:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 07/11] Memory compaction core
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100318114302.GM12388@csn.ul.ie>
-References: <20100318085741.8729.A69D9226@jp.fujitsu.com> <20100318114302.GM12388@csn.ul.ie>
-Message-Id: <20100319152102.876C.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 19 Mar 2010 15:21:52 +0900 (JST)
+	Fri, 19 Mar 2010 02:28:32 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, akpm@linux-foundation.org, andi.kleen@intel.com,
+       fengguang.wu@intel.com
+Subject: [PATCH 1/2] pagemap: add #ifdefs CONFIG_HUGETLB_PAGE on code walking hugetlb vma
+Date: Fri, 19 Mar 2010 15:26:35 +0900
+Message-Id: <1268979996-12297-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > V1 did compaction per pageblock. but current patch doesn't.
-> > > > so, Is COMPACTBLOCKS still good name?
-> > > 
-> > > It's not such a minor nit. I wondered about that myself but it's still a
-> > > block - just not a pageblock. Would COMPACTCLUSTER be a better name as it's
-> > > related to COMPACT_CLUSTER_MAX?
-> > 
-> > I've looked at this code again. honestly I'm a abit confusing even though both your
-> > suggestions seems reasonable.  
-> > 
-> > now COMPACTBLOCKS is tracking #-of-called-migrate_pages. but I can't imazine
-> > how to use it. can you please explain this ststics purpose? probably this is only useful
-> > when conbination other stats, and the name should be consist with such combination one.
-> > 
-> 
-> It is intended to count how many steps compaction took, the fewer the
-> better so minimally, the lower this number is the better. Specifically, the
-> "goodness" is related to the number of pages that were successfully allocated
-> due to compaction. Assuming the only high-order allocation was huge pages,
-> one possible calculation for "goodness" is;
-> 
-> hugepage_clusters = (1 << HUGE HUGETLB_PAGE_ORDER) / COMPACT_CLUSTER_MAX
-> goodness = (compactclusters / hugepage_clusters) / compactsuccess
-> 
-> The value of goodness is undefined if "compactsuccess" is 0.
-> 
-> Otherwise, the closer the "goodness" is to 1, the better. A value of 1
-> implies that compaction is selecting exactly the right blocks for migration
-> and the minimum number of pages are being moved around. The greater the value,
-> the more "useless" work compaction is doing.
-> 
-> If there are a mix of high-orders that are resulting in compaction, calculating
-> the goodness is a lot harder and compactcluster is just a rule of thumb as
-> to how much work compaction is doing.
-> 
-> Does that make sense?
+If !CONFIG_HUGETLB_PAGE, pagemap_hugetlb_range() is never called.
+So put it (and its calling function) into #ifdef block.
 
-Sure! then, now I fully agree with COMPACTCLUSTER.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/proc/task_mmu.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 183f8ff..2a3ef17 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -652,6 +652,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	return err;
+ }
+ 
++#ifdef CONFIG_HUGETLB_PAGE
+ static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
+ {
+ 	u64 pme = 0;
+@@ -695,6 +696,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long addr,
+ 
+ 	return err;
+ }
++#endif /* HUGETLB_PAGE */
+ 
+ /*
+  * /proc/pid/pagemap - an array mapping virtual pages to pfns
+@@ -788,7 +790,9 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+ 
+ 	pagemap_walk.pmd_entry = pagemap_pte_range;
+ 	pagemap_walk.pte_hole = pagemap_pte_hole;
++#ifdef CONFIG_HUGETLB_PAGE
+ 	pagemap_walk.hugetlb_entry = pagemap_hugetlb_range;
++#endif
+ 	pagemap_walk.mm = mm;
+ 	pagemap_walk.private = &pm;
+ 
+-- 
+1.7.0
 
