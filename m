@@ -1,248 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab0CSOs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 10:48:56 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47086 "EHLO mx1.suse.de"
+	id S1752459Ab0CSO4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 10:56:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15418 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750968Ab0CSOsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 10:48:55 -0400
-Date: Fri, 19 Mar 2010 15:48:50 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org, x86@kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86: remove early_res debug output (was Re: Confusing bootmem
- messages on bootup)
-In-Reply-To: <alpine.LNX.2.00.1003191526560.18642@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1003191544010.18642@pobox.suse.cz>
-References: <alpine.LNX.2.00.1003191526560.18642@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751668Ab0CSO4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 10:56:19 -0400
+Date: Fri, 19 Mar 2010 15:53:58 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anthony Liguori <anthony@codemonkey.ws>,
+       Avi Kivity <avi@redhat.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100319145358.GC29874@random.random>
+References: <20100316112500.GA5337@elte.hu>
+ <4B9F77E7.2060101@redhat.com>
+ <20100316122903.GA8831@elte.hu>
+ <4B9F7C6A.3070207@redhat.com>
+ <20100316130840.GA24808@elte.hu>
+ <4B9FBA8B.8020200@codemonkey.ws>
+ <20100316173940.GA23859@elte.hu>
+ <4BA00F1F.1090907@codemonkey.ws>
+ <20100317081041.GC16374@elte.hu>
+ <4BA1E7E2.3010803@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA1E7E2.3010803@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi there,
 
-[ some more CCs added ]
+not really trying to get into the CC list of this discussion ;) but
+for what is worth I'd like to share my opinion on the matter.
 
-On Fri, 19 Mar 2010, Jiri Kosina wrote:
+On Thu, Mar 18, 2010 at 09:44:18AM +0100, Jes Sorensen wrote:
+> What made KVM so successful was that the core kernel of the hypervisor
+> was designed the right way, as a kernel module where it belonged. It was
+> obvious to anyone who had been exposed to the main competition at the
+> time, Xen, that this was the right approach. What has ended up killing
+> Xen in the end is the not-invented-here approach of copying everything
+> over, reformatting it, and rewriting half of it, which made it
+> impossible to maintain and support as a single codebase. At my previous
 
-> Hi,
-> 
-> current tree (HEAD on 39710479303fd3a) gives quite non-informative and 
-> confusing output during bootup:
-> 
-> 
-> === cut here ===
-> Subtract (85 early reservations)
->   #1 [0001000000 - 00023dc5e8]   TEXT DATA BSS
->   #2 [003753c000 - 0037fefdaa]         RAMDISK
->   #3 [00023dd000 - 00023dd214]             BRK
->   #4 [00000f8390 - 0000100000]   BIOS reserved
->   #5 [00000f8380 - 00000f8390]    MP-table mpf
->   #6 [000009dc00 - 000009e271]   BIOS reserved
->   #7 [000009e54d - 00000f8380]   BIOS reserved
->   #8 [000009e271 - 000009e54d]    MP-table mpc
->   #9 [0000010000 - 0000012000]      TRAMPOLINE
->   #10 [0000012000 - 0000016000]     ACPI WAKEUP
->   #11 [0000016000 - 0000018000]         PGTABLE
->   #12 [0000018000 - 0000019000]         PGTABLE
->   #13 [0000019000 - 000001d640]      MEMNODEMAP
->   #14 [00023dd240 - 00023e2240]       NODE_DATA
->   #15 [0100000000 - 0100005000]       NODE_DATA
->   #16 [0130000000 - 0130005000]       NODE_DATA
->   #17 [01b0000000 - 01b0005000]       NODE_DATA
->   #18 [00023e2240 - 00023e3240]         BOOTMEM
->   #19 [00023dc600 - 00023dc780]         BOOTMEM
->   #20 [0080000000 - 0080000180]         BOOTMEM
->   #21 [0130005000 - 0130005180]         BOOTMEM
->   #22 [01b0005000 - 01b0005180]         BOOTMEM
->   #23 [0002be4000 - 0002be5000]         BOOTMEM
->   #24 [0002be5000 - 0002be6000]         BOOTMEM
->   #25 [0002c00000 - 0004800000]        MEMMAP 0
->   #26 [0100200000 - 0102000000]        MEMMAP 1
->   #27 [0130200000 - 0131e00000]        MEMMAP 2
->   #28 [01b0200000 - 01b1e00000]        MEMMAP 3
->   #29 [00023dc780 - 00023dcb80]         BOOTMEM
->   #30 [00023e3240 - 0002403240]         BOOTMEM
->   #31 [0080000180 - 0080020180]         BOOTMEM
->   #32 [0080020180 - 0080030180]         BOOTMEM
->   #33 [0130005180 - 0130025180]         BOOTMEM
->   #34 [01b0005180 - 01b0025180]         BOOTMEM
->   #35 [0002404000 - 0002405000]         BOOTMEM
->   #36 [00023dcb80 - 00023dcbc1]         BOOTMEM
->   #37 [00023dcc00 - 00023dccc9]         BOOTMEM
->   #38 [00023dcd00 - 00023dcfd8]         BOOTMEM
->   #39 [0002403240 - 00024032a8]         BOOTMEM
->   #40 [00024032c0 - 0002403328]         BOOTMEM
->   #41 [0002403340 - 00024033a8]         BOOTMEM
->   #42 [00024033c0 - 0002403428]         BOOTMEM
->   #43 [0002403440 - 00024034a8]         BOOTMEM
->   #44 [00024034c0 - 0002403528]         BOOTMEM
->   #45 [0002403540 - 00024035a8]         BOOTMEM
->   #46 [00024035c0 - 0002403628]         BOOTMEM
->   #47 [0002403640 - 00024036a8]         BOOTMEM
->   #48 [00024036c0 - 0002403728]         BOOTMEM
->   #49 [0002403740 - 00024037a8]         BOOTMEM
->   #50 [00024037c0 - 0002403828]         BOOTMEM
->   #51 [0002403840 - 0002403860]         BOOTMEM
->   #52 [0002403880 - 00024038a0]         BOOTMEM
->   #53 [00024038c0 - 0002403958]         BOOTMEM
->   #54 [0002403980 - 0002403a18]         BOOTMEM
->   #55 [0002600000 - 000261c000]         BOOTMEM
->   #56 [0002680000 - 000269c000]         BOOTMEM
->   #57 [0002700000 - 000271c000]         BOOTMEM
->   #58 [0002780000 - 000279c000]         BOOTMEM
->   #59 [0080200000 - 008021c000]         BOOTMEM
->   #60 [0080280000 - 008029c000]         BOOTMEM
->   #61 [0080300000 - 008031c000]         BOOTMEM
->   #62 [0080380000 - 008039c000]         BOOTMEM
->   #63 [0131e00000 - 0131e1c000]         BOOTMEM
->   #64 [0131e80000 - 0131e9c000]         BOOTMEM
->   #65 [0131f00000 - 0131f1c000]         BOOTMEM
->   #34 [01b0005180 - 01b0025180]         BOOTMEM
->   #35 [0002404000 - 0002405000]         BOOTMEM
->   #36 [00023dcb80 - 00023dcbc1]         BOOTMEM
->   #37 [00023dcc00 - 00023dccc9]         BOOTMEM
->   #38 [00023dcd00 - 00023dcfd8]         BOOTMEM
->   #39 [0002403240 - 00024032a8]         BOOTMEM
->   #40 [00024032c0 - 0002403328]         BOOTMEM
->   #41 [0002403340 - 00024033a8]         BOOTMEM
->   #42 [00024033c0 - 0002403428]         BOOTMEM
->   #43 [0002403440 - 00024034a8]         BOOTMEM
->   #44 [00024034c0 - 0002403528]         BOOTMEM
->   #45 [0002403540 - 00024035a8]         BOOTMEM
->   #46 [00024035c0 - 0002403628]         BOOTMEM
->   #47 [0002403640 - 00024036a8]         BOOTMEM
->   #48 [00024036c0 - 0002403728]         BOOTMEM
->   #49 [0002403740 - 00024037a8]         BOOTMEM
->   #50 [00024037c0 - 0002403828]         BOOTMEM
->   #51 [0002403840 - 0002403860]         BOOTMEM
->   #52 [0002403880 - 00024038a0]         BOOTMEM
->   #53 [00024038c0 - 0002403958]         BOOTMEM
->   #54 [0002403980 - 0002403a18]         BOOTMEM
->   #55 [0002600000 - 000261c000]         BOOTMEM
->   #56 [0002680000 - 000269c000]         BOOTMEM
->   #57 [0002700000 - 000271c000]         BOOTMEM
->   #58 [0002780000 - 000279c000]         BOOTMEM
->   #59 [0080200000 - 008021c000]         BOOTMEM
->   #60 [0080280000 - 008029c000]         BOOTMEM
->   #61 [0080300000 - 008031c000]         BOOTMEM
->   #62 [0080380000 - 008039c000]         BOOTMEM
->   #63 [0131e00000 - 0131e1c000]         BOOTMEM
->   #64 [0131e80000 - 0131e9c000]         BOOTMEM
->   #65 [0131f00000 - 0131f1c000]         BOOTMEM
->   #66 [0131f80000 - 0131f9c000]         BOOTMEM
->   #67 [01b1e00000 - 01b1e1c000]         BOOTMEM
->   #68 [01b1e80000 - 01b1e9c000]         BOOTMEM
->   #69 [01b1f00000 - 01b1f1c000]         BOOTMEM
->   #70 [01b1f80000 - 01b1f9c000]         BOOTMEM
->   #71 [0002403a40 - 0002403a60]         BOOTMEM
->   #72 [0002403a80 - 0002403aa0]         BOOTMEM
->   #73 [0002403ac0 - 0002403b00]         BOOTMEM
->   #74 [0002403b00 - 0002403b80]         BOOTMEM
->   #75 [0002403b80 - 0002403cb0]         BOOTMEM
->   #76 [0002403cc0 - 0002403d10]         BOOTMEM
->   #77 [0002403d40 - 0002403d90]         BOOTMEM
->   #78 [0002405000 - 000240d000]         BOOTMEM
->   #79 [0020000000 - 0024000000]         BOOTMEM
->   #80 [0002403dc0 - 0002403de0]         BOOTMEM
->   #81 [0004800000 - 0008800000]         BOOTMEM
->   #82 [000240d000 - 000242d000]         BOOTMEM
->   #83 [000242d000 - 000246d000]         BOOTMEM
->   #84 [000001ee40 - 0000026e40]         BOOTMEM
->  27 40 - 80 9d
->  100 100 - 1000 1000
->  246d 2480 - 2600 2600
->  261c 2640 - 2680 2680
->  269c 26c0 - 2700 2700
->  271c 2740 - 2780 2780
->  279c 27c0 - 2bc0 2be4
->  2be6 - 2c00
->  8800 8800 - 20000 20000
->  24000 24000 - 37500 3753c
->  37ff0 38000 - 80000 80000
->  80031 80040 - 80200 80200
->  8021c 80240 - 80280 80280
->  8029c 802c0 - 80300 80300
->  8031c 80340 - 80380 80380
->  8039c 803c0 - cff00 cff00
->  100005 100040 - 100200 100200
->  102000 102000 - 130000 130000
->  130026 130040 - 130200 130200
->  131e1c 131e40 - 131e80 131e80
->  131e9c 131ec0 - 131f00 131f00
->  131f1c 131f40 - 131f80 131f80
->  131f9c 131fc0 - 1b0000 1b0000
->  1b0026 1b0040 - 1b0200 1b0200
->  1b1e1c 1b1e40 - 1b1e80 1b1e80
->  1b1e9c 1b1ec0 - 1b1f00 1b1f00
->  1b1f1c 1b1f40 - 1b1f80 1b1f80
->  1b1f9c 1b1fc0 - 230000 230000
-> 
-> === cut here ===
-> 
-> The first part (the early reservations themselves with the names) are 
-> fine, but the numbers that follow without any other explanation seem to be 
-> just completely useless to me ...
-> 
-> I haven't yet looked at which code actually introduced this, but I guess 
-> we should just remove it ... ?
+Full agreement with that. CVS/git/patches and development model is
+next to irrelevant compared to the basic design of the code.
 
-OK, this has been introduced by 
+qemu (and especially qemu-kvm) is surely much closer to perf, than a
+firefox or openoffice, because there is some tight interconnect with
+the kernel API. And the skills required to produce useful patches in
+qemu are similar to the skills requires to produce useful patches for
+the kernel, more often than not a new feature in kvm also requires
+some merging of a qemu-kvm side patch (it always happened to me so far
+;). But clearly we've to draw a barrier somewhere and while I could
+see things like systemtap and util-linux included into the kernel and
+perf already is, I've an hard time to see userland code supporting
+kernels other than linux into the kernel.
 
-	commit 08677214e318297f228237be0042aac754f48f1d
-	Author: Yinghai Lu <yinghai@kernel.org>
-	Date:   Wed Feb 10 01:20:20 2010 -0800
+I think that's probably where I'd draw the line. Let's say somebody
+creates a pure paravirt userland for kvm without full driver emulation
+that only runs on a linux kernel and no other OS, maybe that thing
+wouldn't be so controversial to include into the kernel as qemu
+is. qemu is clearly beyond the "only-running-on-a-linux-kernel"
+barrier...
 
-	    x86: Make 64 bit use early_res instead of bootmem before slab
+I'd definitely start with systemtap, which I think is even more
+suitable than perf to be merged into the kernel. Things useful only
+for developers like perf/systemtap makes even more sense to fetch
+silently hidden in a single pull. Those projects are so ideal to fetch
+together because you run your own compiled userland binary and not an
+rpm, and you need very latest kernel and userland package and sometime
+new userland might not work so well with older kernel too and the
+other way around. they're tool for developers and no developer cares
+about API as they rebuild latest userland code anyway, they almost
+don't require backwards compatibility of kernel.
 
-and is caused by forgotten (I guess) debugging output while freeing the 
-pages when CONFIG_NO_BOOTMEM is set. Please consider applying the 
-following patch to reduce noise.
+> So far your argument would justify pulling all of gdb into the kernel
+> git tree as well, to support the kgdb efforts, or gcc so we can get rid
+> of the gcc version quirks in the kernel header files, e2fsprogs and
+> equivalent for _all_ file systems included in the kernel so we can make
+> sure our fs tools never get out of sync with whats supported in the
+> kernel......
 
+It also boils down to the maintainer, where the code is, defines the
+maintainer who pushes/commits it to the central repository that
+everyone pulls from. And having the code into Linus's tree doesn't
+make sense unless Linus is interested to follow and review qemu. So
+it'd only create blind pulls.
 
+But I entirely see what Ingo is going after and I have no doubt that
+contribution increases if some code is merged into the kernel even if
+it's userland. The more people clones a project, the more people
+builds, uses, reads the code and has incentive to contribute... and
+there's nothing else like the linux git tree to give visibility to a
+project and get more contributions (well as long as the pulled code
+requires similar skills to the kernel code of course). Plus it's
+annoying to go on web, find url to clone, clone.. running make is
+faster. But this purely is a PR effect. It's like free ads, to get
+more people using and looking into the code because it's already on
+the harddisk and you've only to run make. After somebody gets familiar
+with the pulled userland code because it find it in the tree and it
+didn't need to search the web and cut-and-paste and stuff, clone a new
+repo, I think it wouldn't matter anymore to have it into the kernel or
+not. Like for perf, by now I doubt it'd get less contributions if it's
+moved out of the kernel tree. The only reason to leave it there is if
+Linus actively checks the code before pulling it.
 
-From: Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH] x86: remove early_res debug output
+So I think what would be nice maybe to get the PR/ads positive effect
+and get more _users_ (and later developers) involved without actually
+merging, is a command like:
 
-Commit 08677214e318297 ("x86: Make 64 bit use early_res instead of bootmem 
-before slab") introduced early_res replacement for bootmem, but left code 
-in __free_pages_memory() which dumps all the ranges that are beeing freed, 
-without any additional information, causing some noise in dmesg during 
-bootup.
+   git clone linux-2.6
+   cd linux-2.6
+   tools/clone-project qemu-kvm
+   tools/clone-project qemu
+   tools/clone-project systemtap
+   tools/clone-project seabios
+   tools/clone-project e2fsprogs
+   tools/clone-project perf
+   ...
 
-Just remove printing of the ranges, that doesn't provide anything useful 
-anyway.
+And then maybe a git-send-email or similar command that would do the
+right thing and send it to the right list or similar. Learning the
+process of other projects is time consuming and requires some effort.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+But as far as qemu-kvm goes, the visibility is already there, and most
+people that could possibly contribute to the kernel side already has
+the userland cloned and pulls regularly from it so I doubt it'd
+generate anything remotely as beneficial like it did for
+perf. systemtap is really _identical_ to perf. You include it, lots
+more developers toys with it by just running "make", they find a bug
+and they fixes it, and they keep on contributing new features later
+after they got familiar with it. As usual ;).
 
---- 
+In separate mail Ingo said:
 
- mm/bootmem.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+> Btw., i made similar arguments to Avi about 3 years ago when it was
+> going upstream, that qemu should be unified with KVM. This is more
+> true today than ever.
 
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index d7c791e..9754c26 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -180,19 +180,12 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
- 	end_aligned = end & ~(BITS_PER_LONG - 1);
- 
- 	if (end_aligned <= start_aligned) {
--#if 1
--		printk(KERN_DEBUG " %lx - %lx\n", start, end);
--#endif
- 		for (i = start; i < end; i++)
- 			__free_pages_bootmem(pfn_to_page(i), 0);
- 
- 		return;
- 	}
- 
--#if 1
--	printk(KERN_DEBUG " %lx %lx - %lx %lx\n",
--		 start, start_aligned, end_aligned, end);
--#endif
- 	for (i = start; i < start_aligned; i++)
- 		__free_pages_bootmem(pfn_to_page(i), 0);
- 
+Well not sure if with KVM you mean qemu-kvm or KVM kernel code, but I
+would see an huge value and a win-win situation to see qemu-kvm and
+qemu unified. It's out of my reach how there can be still be a
+difference considering that nobody runs qemu with perhaps the
+exception of the maintainers themself. There's not even a qemu/kvm
+directory in qemu. These are the real problems that should be
+solved... Every time I've to send a patch I've to check if it also
+applies to qemu. I usually start with qemu-kvm to do my development
+there, and then I cross fingers and I hope the patch applies clean
+against qemu too, and send it there in that case. qemu and qemu-kvm
+are the same thing, it's the same people, it's the same community,
+it's the same skills, it's an absolute waste that a little amount of
+code isn't merged so we can all work on the same tree.  And it's not
+an huge patch at all if compared to the size of qemu-kvm... so there
+can't be any technical explanation for qemu to take a tangent
+here.
+
+So my suggestion is to start with what will give a _real_ tangible
+benefit to developers (i.e. to all work on the same branch), the PR
+effect of merging it into the kernel would be minor for qemu-kvm,
+it really doesn't matter which url we pull the code from as long as
+there is only 1 url and not 2.
