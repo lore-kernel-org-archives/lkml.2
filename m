@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab0CSKg6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 06:36:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46678 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751309Ab0CSKg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 06:36:56 -0400
-Date: Fri, 19 Mar 2010 21:36:46 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for March 19
-Message-Id: <20100319213646.819d26a9.sfr@canb.auug.org.au>
-In-Reply-To: <20100318.220712.212678037.davem@davemloft.net>
-References: <20100319160030.a71cd836.sfr@canb.auug.org.au>
-	<20100318.220712.212678037.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.0 (GTK+ 2.18.9; i486-pc-linux-gnu)
+	id S1751622Ab0CSLFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 07:05:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60810 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751068Ab0CSLFP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 07:05:15 -0400
+Date: Fri, 19 Mar 2010 11:08:37 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] move tty_kref_put() outside of __cleanup_signal()
+Message-ID: <20100319110837.267458d5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100318231632.GA13591@redhat.com>
+References: <20100318223736.GA12944@redhat.com>
+	<20100318225102.6a5578d9@lxorguk.ukuu.org.uk>
+	<20100318231632.GA13591@redhat.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__19_Mar_2010_21_36_46_+1100__W9AaT3_/QzcB53i"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__19_Mar_2010_21_36_46_+1100__W9AaT3_/QzcB53i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This task is new, nobody can see/use it before we drop the locks. NULL or not,
+> its signal->tty is just uninitialized yet.
 
-Hi Dave,
+Fair enough.
 
-On Thu, 18 Mar 2010 22:07:12 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 19 Mar 2010 16:00:30 +1100
->=20
-> > The net tree still has its build failures for which I reverted 3 commit=
-s.
->=20
-> Sorry, I must have just missed your pull for today.
+> 
+> > > --- 34-rc1/kernel/exit.c~7_TTY_PUT	2010-03-17 20:05:38.000000000 +0100
+> > > +++ 34-rc1/kernel/exit.c	2010-03-18 22:46:41.000000000 +0100
+> > > @@ -150,6 +150,7 @@ static void __exit_signal(struct task_st
+> > >  		 * see account_group_exec_runtime().
+> > >  		 */
+> > >  		task_rq_unlock_wait(tsk);
+> > > +		tty_kref_put(sig->tty);
+> >
+> > and a sig->tty = NULL assignment to trap races might not go amiss here
+> > perhaps ?
+> 
+> Indeed ;)
+> 
+> The subsequent patches will do this, we need more changes anyway. Currently
+> this doesn't matter because we are going to kfree() this memory unconditionally.
+> But when we pin ->signal to task_struct, we should clear ->signal->tty before
+> we drop ->siglock, then tty_kref_put().
 
-No problem, it happens.
-
-> net-next-2.6 should have everything sorted now.
-
-Thanks.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__19_Mar_2010_21_36_46_+1100__W9AaT3_/QzcB53i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkujU74ACgkQjjKRsyhoI8y+LwCgsnNzCxL1muqfF6VogFw1uzkc
-A1kAn3hpt7nnjWCB6eVyaWdaIMH409EJ
-=Wrbt
------END PGP SIGNATURE-----
-
---Signature=_Fri__19_Mar_2010_21_36_46_+1100__W9AaT3_/QzcB53i--
+Ok - yes the moment you start refcounting ->signal that changes (or do you
+expect to free ->tty when you destruct the signals ?)
