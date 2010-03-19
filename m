@@ -1,94 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab0CSUPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 16:15:20 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:47062 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab0CSUPQ (ORCPT
+	id S1751750Ab0CSUTp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:19:45 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:53417 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab0CSUTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 16:15:16 -0400
-X-Auth-Info: +2Kqo+5mdJBPVonLMRfrRh/t3i6DNZsoY6ji+42bHIc=
-Message-ID: <4BA3DAF1.4090206@grandegger.com>
-Date: Fri, 19 Mar 2010 21:13:37 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
-MIME-Version: 1.0
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
-       netdev@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN	module
-References: <> <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu> <4BA33D5A.8070000@grandegger.com> <20100319151914.GB13672@ovro.caltech.edu> <4BA39C05.8050800@grandegger.com> <20100319200325.GE13672@ovro.caltech.edu>
-In-Reply-To: <20100319200325.GE13672@ovro.caltech.edu>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Mar 2010 16:19:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=U/gz9rXzSjZoLSsnxWjniQb4/ZEZtvdKAwCXCVbu/Ib8Fl4G1BiGAlA8xy447+HKFn
+         j51fOlPbcH5Sg3/+3x6R86dSRJpvhaAUq5uuWoY+nDfrf6nJCK/7XPjj7o8u8W+a/gXd
+         l5z+k0HZAZBnRaHN+D2zNqqJdv+Jx9EIXv5BY=
+From: Gorskin Ilya <revent82@gmail.com>
+To: gregkh@suse.de, bzolnier@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Gorskin Ilya <revent82@gmail.com>
+Subject: [PATCH 7/7] Staging:rt2860: fix coding style issue in rt3070.c, rt3090.c, rt30xx.c
+Date: Sat, 20 Mar 2010 01:18:51 +0500
+Message-Id: <1269029931-29399-1-git-send-email-revent82@gmail.com>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ira W. Snyder wrote:
-> On Fri, Mar 19, 2010 at 04:45:09PM +0100, Wolfgang Grandegger wrote:
->> Ira W. Snyder wrote:
->>> On Fri, Mar 19, 2010 at 10:01:14AM +0100, Wolfgang Grandegger wrote:
->>>> Hi Ira,
->>>>
->>>> we already discussed this patch on the SocketCAN mailing list and there
->>>> are just a few minor issues and the request to add support for the new
->>>> "berr-reporting" option, if feasible. See:
->>>>
->>>>   commit 52c793f24054f5dc30d228e37e0e19cc8313f086
->>>>   Author: Wolfgang Grandegger <wg@grandegger.com>
->>>>   Date:   Mon Feb 22 22:21:17 2010 +0000
->>>>
->>>>     can: netlink support for bus-error reporting and counters
->>>>     
->>>>     This patch makes the bus-error reporting configurable and allows to
->>>>     retrieve the CAN TX and RX bus error counters via netlink interface.
->>>>     I have added support for the SJA1000. The TX and RX bus error counters
->>>>     are also copied to the data fields 6..7 of error messages when state
->>>>     changes are reported.
->>>>
->>>> Should not be a big deal.
->>>>
->>> I think this patch came along since my last post of the driver. I must
->>> have missed it. I'll try and add support.
->> No problem, it's really new. Just just need to enable BEI depending on
->> CAN_CTRLMODE_BERR_REPORTING.
->>
-> 
-> I have one final question about this.
-> 
-> The documentation for the firmware isn't very specific here. I believe
-> that in order to get any kind of error messages, I need the bus error
-> feature turned on. What is the expected behavior of an SJA1000 with the
-> BEI (bus error interrupt) turned off? Will you still get warning
-> messages for ERROR_ACTIVE -> ERROR_PASSIVE state transitions?
+This is a patch to the rt3070.c, rt3090.c, rt30xx.c files that fixes up
+errors found by the checkpatch.pl tool
 
-Yes. State transitions are enabled with EI and EPI.
+Signed-off-by: Gorskin Ilya <revent82@gmail.com>
+---
+ drivers/staging/rt2860/chips/rt3070.c |    4 ++--
+ drivers/staging/rt2860/chips/rt3090.c |    4 ++--
+ drivers/staging/rt2860/chips/rt30xx.c |    9 +++------
+ 3 files changed, 7 insertions(+), 10 deletions(-)
 
-> I'm not sure how I would go about testing this feature, either. Ideas?
-
-Send messages without cable connected and watch the error messages with
-"candump any,0:0,#ffffffff". With "ip ... berr-reporting on" you should
-see additional bus-errors.
-
-> I also noticed that I can enable "self test mode" and "listen only mode"
-> using the same firmware command. It appears that there are netlink
-> messages for this as well. Should I try and support these, too? I don't
-> really have any use for them (yet). I assume "self test mode" is
-> equivalent to "loopback mode" in the netlink messages.
-
-List-only is straight forward while "self test mode" is not exactly like
-"loopback mode", IIRC. Feel free to send a follow-up patch when you have
-time for a thorough implementation and testing. It's also on my to-do
-list for the SJA1000.
-
-Wolfgang.
-
-> 
-> Thanks,
-> Ira
-> 
-> 
+diff --git a/drivers/staging/rt2860/chips/rt3070.c b/drivers/staging/rt2860/chips/rt3070.c
+index 627bad9..3a17fd1 100644
+--- a/drivers/staging/rt2860/chips/rt3070.c
++++ b/drivers/staging/rt2860/chips/rt3070.c
+@@ -56,7 +56,7 @@ void NICInitRT3070RFRegisters(struct rt_rtmp_adapter *pAd)
+ 		u32 RfReg = 0;
+ 		u32 data;
+ 
+-		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)& RfReg);
++		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)&RfReg);
+ 		RfReg |= 0x80;
+ 		RT30xxWriteRFRegister(pAd, RF_R30, (u8)RfReg);
+ 		RTMPusecDelay(1000);
+@@ -84,7 +84,7 @@ void NICInitRT3070RFRegisters(struct rt_rtmp_adapter *pAd)
+ 			}
+ 		} else if (IS_RT3071(pAd)) {
+ 			/* Driver should set RF R6 bit6 on before init RF registers */
+-			RT30xxReadRFRegister(pAd, RF_R06, (u8 *)& RfReg);
++			RT30xxReadRFRegister(pAd, RF_R06, (u8 *)&RfReg);
+ 			RfReg |= 0x40;
+ 			RT30xxWriteRFRegister(pAd, RF_R06, (u8)RfReg);
+ 
+diff --git a/drivers/staging/rt2860/chips/rt3090.c b/drivers/staging/rt2860/chips/rt3090.c
+index 5927ba4..c2933c6 100644
+--- a/drivers/staging/rt2860/chips/rt3090.c
++++ b/drivers/staging/rt2860/chips/rt3090.c
+@@ -53,7 +53,7 @@ void NICInitRT3090RFRegisters(struct rt_rtmp_adapter *pAd)
+ 		/* Driver should toggle RF R30 bit7 before init RF registers */
+ 		u32 RfReg = 0, data;
+ 
+-		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)& RfReg);
++		RT30xxReadRFRegister(pAd, RF_R30, (u8 *)&RfReg);
+ 		RfReg |= 0x80;
+ 		RT30xxWriteRFRegister(pAd, RF_R30, (u8)RfReg);
+ 		RTMPusecDelay(1000);
+@@ -90,7 +90,7 @@ void NICInitRT3090RFRegisters(struct rt_rtmp_adapter *pAd)
+ 		}
+ 
+ 		/* Driver should set RF R6 bit6 on before calibration */
+-		RT30xxReadRFRegister(pAd, RF_R06, (u8 *)& RfReg);
++		RT30xxReadRFRegister(pAd, RF_R06, (u8 *)&RfReg);
+ 		RfReg |= 0x40;
+ 		RT30xxWriteRFRegister(pAd, RF_R06, (u8)RfReg);
+ 
+diff --git a/drivers/staging/rt2860/chips/rt30xx.c b/drivers/staging/rt2860/chips/rt30xx.c
+index 6e684a3..4367a19 100644
+--- a/drivers/staging/rt2860/chips/rt30xx.c
++++ b/drivers/staging/rt2860/chips/rt30xx.c
+@@ -170,8 +170,7 @@ void RTMPFilterCalibration(struct rt_rtmp_adapter *pAd)
+ 	pAd->Mlme.CaliBW40RfR24 = 0x2F;	/*Bit[5] must be 1 for BW 40 */
+ 
+ 	do {
+-		if (loop == 1)	/*BandWidth = 40 MHz */
+-		{
++		if (loop == 1) {	/*BandWidth = 40 MHz */
+ 			/* Write 0x27 to RF_R24 to program filter */
+ 			RF_R24_Value = 0x27;
+ 			RT30xxWriteRFRegister(pAd, RF_R24, RF_R24_Value);
+@@ -190,8 +189,7 @@ void RTMPFilterCalibration(struct rt_rtmp_adapter *pAd)
+ 			RT30xxReadRFRegister(pAd, RF_R31, &value);
+ 			value |= 0x20;
+ 			RT30xxWriteRFRegister(pAd, RF_R31, value);
+-		} else		/*BandWidth = 20 MHz */
+-		{
++		} else {	/*BandWidth = 20 MHz */
+ 			/* Write 0x07 to RF_R24 to program filter */
+ 			RF_R24_Value = 0x07;
+ 			RT30xxWriteRFRegister(pAd, RF_R24, RF_R24_Value);
+@@ -353,8 +351,7 @@ void RT30xxLoadRFNormalModeSetup(struct rt_rtmp_adapter *pAd)
+ 	RT30xxReadRFRegister(pAd, RF_R27, &RFValue);
+ 	/* TX to RX IQ glitch(RF_R27) has been fixed in RT3070(F). */
+ 	/* Raising RF voltage is no longer needed for RT3070(F) */
+-	if (IS_RT3090(pAd))	/* RT309x and RT3071/72 */
+-	{
++	if (IS_RT3090(pAd)) {	/* RT309x and RT3071/72 */
+ 		if ((pAd->MACVersion & 0xffff) < 0x0211)
+ 			RFValue = (RFValue & (~0x77)) | 0x3;
+ 		else
+-- 
+1.7.0.2
 
