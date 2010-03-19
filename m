@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219Ab0CSOSk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 10:18:40 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39511 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab0CSOSj (ORCPT
+	id S1751071Ab0CSOUf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 10:20:35 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:51794 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab0CSOUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 10:18:39 -0400
-Date: Fri, 19 Mar 2010 10:18:25 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Roland McGrath <roland@redhat.com>, Jason Baron <jbaron@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH -tip v5] tracepoint: Add signal coredump tracepoint
-Message-ID: <20100319141825.GA3530@hmsreliant.think-freely.org>
-References: <20100319132346.31144.40337.stgit@localhost6.localdomain6>
- <20100319133352.GC19394@redhat.com>
- <4BA385CB.9080706@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA385CB.9080706@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -4.2 (----)
+	Fri, 19 Mar 2010 10:20:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=CPbZHVJaC2gQpY9izkWvbUbfN7l4lRrm6l8ucWN11Mo1RArKpdzYPkSqfZTGCCWYKh
+         Ayhh6R7KCxyg6dK4V9IDkovILohhtXYnu8tfFEHy6/aC2PFYy3yaCBS8Vm6WgQpAVjt5
+         xoMaQ/phQuHduNydJkBeUWJFWBtyjxzOHI5SE=
+From: Maurice Dawson <mauricedawson2699@googlemail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 20/20] Staging: comedi: fix KERN_facility level coding style issue in adl_pci9118.c
+Date: Fri, 19 Mar 2010 14:20:10 +0000
+Message-Id: <1269008410-3556-1-git-send-email-mauricedawson2699@googlemail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 10:10:19AM -0400, Masami Hiramatsu wrote:
-> Oleg Nesterov wrote:
-> > (add Neil)
-> > 
-> > On 03/19, Masami Hiramatsu wrote:
-> >>
-> >>  void do_coredump(long signr, int exit_code, struct pt_regs *regs)
-> >>  {
-> >>  	struct core_state core_state;
-> >> -	char corename[CORENAME_MAX_SIZE + 1];
-> >> +	char corename[CORENAME_MAX_SIZE + 1] = "";
-> >>  	struct mm_struct *mm = current->mm;
-> >>  	struct linux_binfmt * binfmt;
-> >>  	struct inode * inode;
-> >> @@ -1802,6 +1803,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
-> >>  	static atomic_t core_dump_count = ATOMIC_INIT(0);
-> >>  	struct coredump_params cprm = {
-> >>  		.signr = signr,
-> >> +		.file = NULL,
-> >>  		.regs = regs,
-> >>  		.limit = rlimit(RLIMIT_CORE),
-> >>  		/*
-> >> @@ -1815,8 +1817,10 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
-> >>  	audit_core_dumps(signr);
-> >>
-> >>  	binfmt = mm->binfmt;
-> >> -	if (!binfmt || !binfmt->core_dump)
-> >> +	if (!binfmt || !binfmt->core_dump) {
-> >> +		retval = -ENOSYS;
-> >>  		goto fail;
-> >> +	}
-> > 
-> > Oh.
-> > 
-> > Masami, may I ask you to delay these changes a bit?
-> > 
-> > This patch conflicts very much with other changes (hopefully in -mm soon)
-> > we are doing.
-> > 
-> > If your patch comes first, we have to redo 12 patches. Besides, this patch
-> > complicates do_coredump() even more while it really needs the cleanups.
-> 
-> Ah, that's a big conflict :O
-> Yes, sure, I can wait for your commits. I'll update this patch on yours.
-> 
-> > Please see
-> > http://groups.google.com/group/fa.linux.kernel/browse_thread/thread/96f01d85034ca029/3b6bcb9b2d756dbc
-> > I can send you these patches privately if you wish.
-> 
-> OK, I can pick them up from the thread:)
-> 
-> Thank you!
-> 
-Yes, thank you.  I think you may find if you put them on top of the changes Oleg
-and I have made, you'll find this one will be alot cleaner as well.
+This is a patch to the adl_pci9118.c file that fixes WARNING: printk() should include KERN_facility level found by the checkpatch.pl tool
 
-Thanks!
-Neil
+Signed-off-by: Maurice Dawson <mauricedawson2699@googlemail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-> -- 
-> Masami Hiramatsu
-> e-mail: mhiramat@redhat.com
-> 
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 066695a..38d8d5a 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -747,9 +747,8 @@ static void interrupt_pci9118_ai_dma(struct comedi_device *dev,
+ 		comedi_event(dev, s);
+ 		return;
+ 	}
+-
+ 	if (int_adstat & devpriv->ai_maskerr)
+-/* if (int_adstat & 0x106) */
++					/* if (int_adstat & 0x106) */
+ 		if (pci9118_decode_error_status(dev, s, int_adstat))
+ 			return;
+ 
+@@ -2210,10 +2209,10 @@ static int pci9118_attach(struct comedi_device *dev,
+ 
+ 	if (!pcidev) {
+ 		if (opt_bus || opt_slot) {
+-			printk(" - Card at b:s %d:%d %s\n",
++			printk(KERN_ERR " - Card at b:s %d:%d %s\n",
+ 			       opt_bus, opt_slot, errstr);
+ 		} else {
+-			printk(" - Card %s\n", errstr);
++			printk(KERN_ERR " - Card %s\n", errstr);
+ 		}
+ 		return -EIO;
+ 	}
+@@ -2228,8 +2227,8 @@ static int pci9118_attach(struct comedi_device *dev,
+ 	iobase_a = pci_resource_start(pcidev, 0);
+ 	iobase_9 = pci_resource_start(pcidev, 2);
+ 
+-	printk(", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx", pci_bus, pci_slot,
+-	       pci_func, iobase_9, iobase_a);
++	printk(KERN_ERR ", b:s:f=%d:%d:%d, io=0x%4lx, 0x%4lx", pci_bus,
++				pci_slot, pci_func, iobase_9, iobase_a);
+ 
+ 	dev->iobase = iobase_9;
+ 	dev->board_name = this_board->name;
+-- 
+1.6.3.3
+
