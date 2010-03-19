@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab0CSKRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 06:17:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:59514 "EHLO gir.skynet.ie"
+	id S1752287Ab0CSKSg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 06:18:36 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:63020 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751065Ab0CSKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 06:17:12 -0400
-Date: Fri, 19 Mar 2010 10:16:51 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 04/11] Allow CONFIG_MIGRATION to be set without
-	CONFIG_NUMA or memory hot-remove
-Message-ID: <20100319101651.GT12388@csn.ul.ie>
-References: <20100318085226.8726.A69D9226@jp.fujitsu.com> <20100318112414.GL12388@csn.ul.ie> <20100319152106.8775.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100319152106.8775.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1751533Ab0CSKSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 06:18:35 -0400
+Date: Fri, 19 Mar 2010 11:18:31 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: Add basic support for LM64 to lm63.c
+Message-ID: <20100319111831.3a21c245@hyperion.delvare>
+In-Reply-To: <1268919419-2125-1-git-send-email-mjg@redhat.com>
+References: <20100318084135.15fb1996@hyperion.delvare>
+	<1268919419-2125-1-git-send-email-mjg@redhat.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 03:21:20PM +0900, KOSAKI Motohiro wrote:
-> > On Thu, Mar 18, 2010 at 08:56:23AM +0900, KOSAKI Motohiro wrote:
-> > > > On Wed, 17 Mar 2010, Mel Gorman wrote:
-> > > > 
-> > > > > > If select MIGRATION works, we can remove "depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE"
-> > > > > > line from config MIGRATION.
-> > > > > >
-> > > > >
-> > > > > I'm not quite getting why this would be an advantage. COMPACTION
-> > > > > requires MIGRATION but conceivable both NUMA and HOTREMOVE can work
-> > > > > without it.
-> > > > 
-> > > > Avoids having to add additional CONFIG_XXX on the page migration "depends"
-> > > > line in the future.
-> > > 
-> > > Yes, Kconfig mess freqently shot ourself in past days. if we have a chance
-> > > to remove unnecessary dependency, we should do. that's my intention of the last mail.
-> > > 
-> > 
-> > But if the depends line is removed, it could be set without NUMA, memory
-> > hot-remove or compaction enabled. That wouldn't be very useful. I'm
-> > missing something obvious.
+On Thu, 18 Mar 2010 09:36:59 -0400, Matthew Garrett wrote:
+> The LM64 appears to be an LM63 with added GPIO lines. Add support for the
+> hwmon functionality - GPIO can be added at some later stage if someone
+> has a need for them.
 > 
-> Perhaps I'm missing something. 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> ---
 > 
-> my point is, force enabling useless config is not good idea (yes, i agree). but config 
-> selectability doesn't cause any failure. IOW, usefulness and dependency aren't 
-> related so much. personally I dislike _unnecessary_ dependency.
-> 
-> If my opinion cause any bad thing, I'll withdraw it. of course.
-> 
+> Capitalisation fixes and remove an unused variable.
 
-I've changed the MIGRATION entry to
-
-config MIGRATION
-        bool "Page migration"
-        def_bool y
-        depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE 
-
-i.e. it no longer depends on COMPACTION because the "select MIGRATION"
-in that line is enough.
-
-I've left NUMA and HOTREMOVE because migration is an optional feature
-for those configurations.
+Applied, thanks!
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Jean Delvare
