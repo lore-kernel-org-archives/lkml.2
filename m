@@ -1,260 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab0CSCdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 22:33:44 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:59661 "EHLO
+	id S1752577Ab0CSCkq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:40:46 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:35920 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751153Ab0CSCdn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 22:33:43 -0400
-Date: Thu, 18 Mar 2010 22:33:40 -0400
+	by vger.kernel.org with ESMTP id S1751153Ab0CSCkp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 22:40:45 -0400
+Date: Thu, 18 Mar 2010 22:40:42 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Alexey Dobriyan <adobriyan@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
-Message-ID: <20100319023340.GA28941@Krystal>
-References: <20100319013024.GA28456@Krystal> <20100319020835.GB2894@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+	lock
+Message-ID: <20100319024042.GB28941@Krystal>
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere> <20100319010857.GC23020@Krystal> <20100319012337.GA22095@nowhere> <20100319013658.GB28456@Krystal> <20100319022659.GC22095@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <20100319020835.GB2894@linux.vnet.ibm.com>
+In-Reply-To: <20100319022659.GC22095@nowhere>
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:27:18 up 55 days,  5:04,  7 users,  load average: 0.09, 0.12,
-	0.09
+X-Uptime: 22:34:27 up 55 days,  5:11,  7 users,  load average: 0.31, 0.15,
+	0.10
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Thu, Mar 18, 2010 at 09:30:24PM -0400, Mathieu Desnoyers wrote:
-> > Poisoning the rcu_head callback list.
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Thu, Mar 18, 2010 at 09:36:58PM -0400, Mathieu Desnoyers wrote:
+> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > On Thu, Mar 18, 2010 at 09:08:57PM -0400, Mathieu Desnoyers wrote:
+> > > > > I sometimes wonder which trick between jmp optimization and hot patching
+> > > > > would be the best to optimize the tracepoints off-cases.
+> > > > > 
+> > > > > I should look more closely at the jmp optimization. I don't know if
+> > > > > it avoids to push the tracepoints parameters in the off case, in
+> > > > > which case it could be perhaps more efficient than hot patching,
+> > > > 
+> > > > yep, tracepoints with jump patching will branch over the whole stack setup in
+> > > > the off case, which is one of the good reasons for using this solution over
+> > > > patching only a call (leaving the stack setup in place).
+> > > 
+> > > 
+> > > 
+> > > Ok that's good to know. It's a pretty good argument against hot
+> > > patching in this particular case.
+> > > 
+> > > 
+> > >  
+> > > > Note that if the parameters include side-effects (such as a function call),
+> > > > these will be executed even when the tracepoint is disabled. This is why people
+> > > > should implement these calls with side-effects in the appropriate TRACE_EVENT
+> > > > fields.
+> > > 
+> > > 
+> > > Good to know too.
+> > > But this makes me curious. So it guarantees stack setup won't happen but
+> > > can't sort it out with functions as parameters or so?
+> > > 
+> > > I have no idea how this thing works. Please Cc me for the next batch,
+> > > this looks like a cool thing :)
+> > > 
 > > 
-> > Helps finding racy users of call_rcu(), which results in hangs because list
-> > entries are overwritten and/or skipped.
-> > 
-> > A lot of non-initialized rcu list heads will be found with this option enabled.
-> > It is important to do not just blindly initialize them before each call_rcu, but
-> > rather to perform the initialization at the proper location, after the memory
-> > has been allocated, so we can effectively detect incorrect call_rcu users.
-> > 
-> > This patch version does not use "debug objects", although it probably should.
-> > Some day I might find time to look into this transition, but the patch is usable
-> > as is.
-> > 
-> > The weird #ifdef in the networking code comes from an agreement with Eric
-> > Dumazet about how to disable the build check for the networking code.  For those
-> > who wonder about the existence of this build-time check: it generates a build
-> > error when the size of struct dst_entry grows (because it is very performance
-> > sensitive). So the agreement here has been to disable the check when the
-> > DEBUG_RCU_HEAD config option is active.
+> > Well, the now deceased "Linux Kernel Markers" (which were based on a single
+> > macro rather than static inline functions) were able to use the preprocessor to
+> > put function calls passed as argument within the conditional branch. But with
+> > tracepoints, we rely on static inlines to have flexible parameter declaration,
+> > so this is not possible.
 > 
-> If this one finds at least one bug (or if the previous version found
-> at least one bug -- bad memory day here), then I will push it.
+> 
+> Ok.
+> 
+> 
+> 
+> > All the arguments passed to the static inline (eventually used for the stack
+> > setup of the actual function call within the tracepoint) can be moved into the
+> > conditional branch by the compiler optimizations, because they are not needed
+> > otherwise. However, this cannot be done for function calls passed as parameter
+> > to the tracepoint, because the compiler do not know whether or not the function
+> > side-effects are needed outside of the "tracing active" branch.
+> > 
+> > Mathieu
+> 
+> 
+> 
+> Ok. I just read this: http://lwn.net/Articles/362752/ and
+> this: http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
+> 
+> What is funky is that the gcc example takes this jmp/nop patching
+> as an example to explain asm goto, so it all looks clear to me now :-)
 
-I had to create this patch when I was trying to pinpoint some RCU-related
-issues. I think it turned out to be coming more from the cpu hotplug side than
-from the call_rcu() side, but this is really one more tool in the toolbox.
-Trying to find out if it detect actual misuses that we currently have will
-depend on tracking down all the non-initialized rcu_head structures. I already
-got a few for 2.6.32, but there seem to be more in 2.6.33. Again, I'll try to
-spot and correct them as time permits me.
-
-I already have spotted 6 non-initialized rcu heads, with more to come.
-
-> It can
-> always be improved later, right?
-
-Absolutely.
+Well, the use-case that drove the asm goto implementation _is_ the tracepoints.
+;)
 
 > 
-> The patch looks good to me.
+> But, looking at __DO_TRACE:
+> 
+> 	if (it_func) {						\
+> 		do {						\
+> 			((void(*)(proto))(*it_func))(args);	\
+> 		} while (*(++it_func));				\
+> 	}
+> 
+> I would expect the compiler not to load the parameters in the stack
+> before first checking the branch.
 
-Great! :)
+Note that you have to put that in its full context. It's a macro expanded within
+a static inline function. The initial parameters are passed to the static
+inline, not directly as "args" here. So parameters with side-effects have to be
+evaluated before their result can be passed to the static inline function, so in
+that sense their evaluation cannot be moved into the conditional branch.
+
+> So, the fact that parameters are not loaded before we know we'll call
+> the tracepoint is something we already have or is it something that the jump
+> label brings in the package somehow?
+
+It's standard compiler optimization behavior.
+
+Thanks,
 
 Mathieu
 
 > 
-> 							Thanx, Paul
+> Thanks.
 > 
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > CC: mingo@elte.hu
-> > CC: akpm@linux-foundation.org
-> > CC: mingo@elte.hu
-> > CC: laijs@cn.fujitsu.com
-> > CC: dipankar@in.ibm.com
-> > CC: josh@joshtriplett.org
-> > CC: dvhltc@us.ibm.com
-> > CC: niv@us.ibm.com
-> > CC: tglx@linutronix.de
-> > CC: peterz@infradead.org
-> > CC: rostedt@goodmis.org
-> > CC: Valdis.Kletnieks@vt.edu
-> > CC: dhowells@redhat.com
-> > CC: eric.dumazet@gmail.com
-> > CC: Alexey Dobriyan <adobriyan@gmail.com>
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > ---
-> >  include/linux/rcupdate.h |   13 ++++++++++++-
-> >  include/net/dst.h        |    2 ++
-> >  kernel/rcutiny.c         |    9 +++++++++
-> >  kernel/rcutree.c         |   10 ++++++++++
-> >  lib/Kconfig.debug        |    9 +++++++++
-> >  5 files changed, 42 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-2.6-lttng/include/linux/rcupdate.h
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/include/linux/rcupdate.h	2010-03-18 20:27:25.000000000 -0400
-> > +++ linux-2.6-lttng/include/linux/rcupdate.h	2010-03-18 20:30:54.000000000 -0400
-> > @@ -49,6 +49,9 @@
-> >  struct rcu_head {
-> >  	struct rcu_head *next;
-> >  	void (*func)(struct rcu_head *head);
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +	struct rcu_head *debug;
-> > +#endif
-> >  };
-> > 
-> >  /* Exported common interfaces */
-> > @@ -71,11 +74,19 @@ extern void rcu_init(void);
-> >  #error "Unknown RCU implementation specified to kernel configuration"
-> >  #endif
-> > 
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +#define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL, .debug = NULL }
-> > +#define INIT_RCU_HEAD(ptr) do { \
-> > +       (ptr)->next = NULL; (ptr)->func = NULL; (ptr)->debug = NULL; \
-> > +} while (0)
-> > +#else
-> >  #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
-> > -#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
-> >  #define INIT_RCU_HEAD(ptr) do { \
-> >         (ptr)->next = NULL; (ptr)->func = NULL; \
-> >  } while (0)
-> > +#endif
-> > +
-> > +#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
-> > 
-> >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> >  extern struct lockdep_map rcu_lock_map;
-> > Index: linux-2.6-lttng/kernel/rcutree.c
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-18 20:27:25.000000000 -0400
-> > +++ linux-2.6-lttng/kernel/rcutree.c	2010-03-18 20:31:16.000000000 -0400
-> > @@ -39,6 +39,7 @@
-> >  #include <asm/atomic.h>
-> >  #include <linux/bitops.h>
-> >  #include <linux/module.h>
-> > +#include <linux/poison.h>
-> >  #include <linux/completion.h>
-> >  #include <linux/moduleparam.h>
-> >  #include <linux/percpu.h>
-> > @@ -1060,6 +1061,10 @@ static void rcu_do_batch(struct rcu_stat
-> >  		next = list->next;
-> >  		prefetch(next);
-> >  		trace_rcu_tree_callback(list);
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +		WARN_ON_ONCE(list->debug != LIST_POISON1);
-> > +		list->debug = NULL;
-> > +#endif
-> >  		list->func(list);
-> >  		list = next;
-> >  		if (++count >= rdp->blimit)
-> > @@ -1350,6 +1355,11 @@ __call_rcu(struct rcu_head *head, void (
-> >  	unsigned long flags;
-> >  	struct rcu_data *rdp;
-> > 
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +	WARN_ON_ONCE(head->debug);
-> > +	head->debug = LIST_POISON1;
-> > +#endif
-> > +
-> >  	head->func = func;
-> >  	head->next = NULL;
-> > 
-> > Index: linux-2.6-lttng/lib/Kconfig.debug
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/lib/Kconfig.debug	2010-03-18 20:27:25.000000000 -0400
-> > +++ linux-2.6-lttng/lib/Kconfig.debug	2010-03-18 20:27:38.000000000 -0400
-> > @@ -661,6 +661,15 @@ config DEBUG_LIST
-> > 
-> >  	  If unsure, say N.
-> > 
-> > +config DEBUG_RCU_HEAD
-> > +	bool "Debug RCU callbacks"
-> > +	depends on DEBUG_KERNEL
-> > +	depends on TREE_RCU
-> > +	help
-> > +	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-> > +	  Seems to find problems more quickly with stress-tests in single-cpu
-> > +	  mode.
-> > +
-> >  config DEBUG_SG
-> >  	bool "Debug SG table operations"
-> >  	depends on DEBUG_KERNEL
-> > Index: linux-2.6-lttng/include/net/dst.h
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/include/net/dst.h	2010-03-18 20:27:25.000000000 -0400
-> > +++ linux-2.6-lttng/include/net/dst.h	2010-03-18 20:35:02.000000000 -0400
-> > @@ -159,7 +159,9 @@ static inline void dst_hold(struct dst_e
-> >  	 * If your kernel compilation stops here, please check
-> >  	 * __pad_to_align_refcnt declaration in struct dst_entry
-> >  	 */
-> > +#ifndef CONFIG_DEBUG_RCU_HEAD
-> >  	BUILD_BUG_ON(offsetof(struct dst_entry, __refcnt) & 63);
-> > +#endif
-> >  	atomic_inc(&dst->__refcnt);
-> >  }
-> > 
-> > Index: linux-2.6-lttng/kernel/rcutiny.c
-> > ===================================================================
-> > --- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-18 20:35:14.000000000 -0400
-> > +++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-18 20:39:12.000000000 -0400
-> > @@ -35,6 +35,7 @@
-> >  #include <linux/init.h>
-> >  #include <linux/time.h>
-> >  #include <linux/cpu.h>
-> > +#include <linux/poison.h>
-> > 
-> >  /* Global control variables for rcupdate callback mechanism. */
-> >  struct rcu_ctrlblk {
-> > @@ -163,6 +164,10 @@ static void __rcu_process_callbacks(stru
-> >  	while (list) {
-> >  		next = list->next;
-> >  		prefetch(next);
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +		WARN_ON_ONCE(list->debug != LIST_POISON1);
-> > +		list->debug = NULL;
-> > +#endif
-> >  		list->func(list);
-> >  		list = next;
-> >  	}
-> > @@ -210,6 +215,10 @@ static void __call_rcu(struct rcu_head *
-> >  {
-> >  	unsigned long flags;
-> > 
-> > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > +	WARN_ON_ONCE(head->debug);
-> > +	head->debug = LIST_POISON1;
-> > +#endif
-> >  	head->func = func;
-> >  	head->next = NULL;
-> > 
-> > 
-> > -- 
-> > Mathieu Desnoyers
-> > Operating System Efficiency R&D Consultant
-> > EfficiOS Inc.
-> > http://www.efficios.com
 
 -- 
 Mathieu Desnoyers
