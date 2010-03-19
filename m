@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab0CSN3S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 09:29:18 -0400
-Received: from mail-qy0-f181.google.com ([209.85.221.181]:44625 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab0CSN3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 09:29:17 -0400
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Mar 2010 09:29:17 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=RuzCSqFg11zK2hdgtkIIPPSxpwu5yj4zisVntdBBgCIxaVPGYiUDBinTMAJWrYxPfO
-         HynP8QH0B3SQ4Ccf3ECn0VinoIzLq6SsP1tw1f+cZ3txCykCzJHOXNEbUGQYNwJqfyvO
-         iNgINVI5lExSugzfdn52dke37e7m1++h7LVcA=
-Message-ID: <4BA37AE2.5040800@gmail.com>
-Date: Fri, 19 Mar 2010 06:23:46 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1752368Ab0CSNfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 09:35:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab0CSNfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 09:35:44 -0400
+Date: Fri, 19 Mar 2010 14:33:52 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Roland McGrath <roland@redhat.com>, Jason Baron <jbaron@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH -tip v5] tracepoint: Add signal coredump tracepoint
+Message-ID: <20100319133352.GC19394@redhat.com>
+References: <20100319132346.31144.40337.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix a typo in sound/pci/hda/hda_local.h
-References: <1268965573-11829-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1003191053120.18642@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1003191053120.18642@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100319132346.31144.40337.stgit@localhost6.localdomain6>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2010 02:53 AM, Jiri Kosina wrote:
-> On Thu, 18 Mar 2010, Justin P. Mattock wrote:
->
->> I think this should be automatic pin instead of ping.
->> (but could be wrong).
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->> ---
->>   sound/pci/hda/hda_local.h |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/sound/pci/hda/hda_local.h b/sound/pci/hda/hda_local.h
->> index 7cee364..7a97f12 100644
->> --- a/sound/pci/hda/hda_local.h
->> +++ b/sound/pci/hda/hda_local.h
->> @@ -361,7 +361,7 @@ struct hda_bus_unsolicited {
->>   };
->>
->>   /*
->> - * Helper for automatic ping configuration
->> + * Helper for automatic pin configuration
->>    */
->
-> Applied, thanks Justin.
->
+(add Neil)
 
-ahh.. so it is pin
-your welcome.
+On 03/19, Masami Hiramatsu wrote:
+>
+>  void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  {
+>  	struct core_state core_state;
+> -	char corename[CORENAME_MAX_SIZE + 1];
+> +	char corename[CORENAME_MAX_SIZE + 1] = "";
+>  	struct mm_struct *mm = current->mm;
+>  	struct linux_binfmt * binfmt;
+>  	struct inode * inode;
+> @@ -1802,6 +1803,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  	static atomic_t core_dump_count = ATOMIC_INIT(0);
+>  	struct coredump_params cprm = {
+>  		.signr = signr,
+> +		.file = NULL,
+>  		.regs = regs,
+>  		.limit = rlimit(RLIMIT_CORE),
+>  		/*
+> @@ -1815,8 +1817,10 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
+>  	audit_core_dumps(signr);
+>
+>  	binfmt = mm->binfmt;
+> -	if (!binfmt || !binfmt->core_dump)
+> +	if (!binfmt || !binfmt->core_dump) {
+> +		retval = -ENOSYS;
+>  		goto fail;
+> +	}
 
-Justin P. Mattock
+Oh.
+
+Masami, may I ask you to delay these changes a bit?
+
+This patch conflicts very much with other changes (hopefully in -mm soon)
+we are doing.
+
+If your patch comes first, we have to redo 12 patches. Besides, this patch
+complicates do_coredump() even more while it really needs the cleanups.
+
+Please see
+http://groups.google.com/group/fa.linux.kernel/browse_thread/thread/96f01d85034ca029/3b6bcb9b2d756dbc
+I can send you these patches privately if you wish.
+
+Oleg.
+
