@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab0CSR3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 13:29:08 -0400
-Received: from 8bytes.org ([88.198.83.132]:57011 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750935Ab0CSR3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 13:29:07 -0400
-Date: Fri, 19 Mar 2010 18:29:03 +0100
-From: oerg Roedel <joro@8bytes.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
-	host side
-Message-ID: <20100319172903.GI13108@8bytes.org>
-References: <1268717232.2813.36.camel@localhost> <1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
+	id S1752119Ab0CSRs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 13:48:57 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52809 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0CSRsz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 13:48:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319082122.GE12576@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1268987934-22690-1-git-send-email-chripell@fsfe.org>
+References: <cabda6421003190139h344bc172h3556fca78e4b25cb@mail.gmail.com> 
+	<1268987934-22690-1-git-send-email-chripell@fsfe.org>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 19 Mar 2010 11:48:34 -0600
+X-Google-Sender-Auth: a5d8953f747e5d35
+Message-ID: <fa686aa41003191048s5c4c85ablc4588725a3d615ad@mail.gmail.com>
+Subject: Re: [PATCH 1/3] max3100: added raise_threaded_irq
+To: Christian Pellegrin <chripell@fsfe.org>
+Cc: feng.tang@intel.com, akpm@linux-foundation.org, greg@kroah.com,
+       david-b@pacbell.net, alan@lxorguk.ukuu.org.uk,
+       spi-devel-general@lists.sourceforge.net, linux-serial@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 09:21:22AM +0100, Ingo Molnar wrote:
-> Unfortunately, in a previous thread the Qemu maintainer has indicated that he 
-> will essentially NAK any attempt to enhance Qemu to provide an easily 
-> discoverable, self-contained, transparent guest mount on the host side.
-> 
-> No technical justification was given for that NAK, despite my repeated 
-> requests to particulate the exact security problems that such an approach 
-> would cause.
-> 
-> If that NAK does not stand in that form then i'd like to know about it - it 
-> makes no sense for us to try to code up a solution against a standing 
-> maintainer NAK ...
+On Fri, Mar 19, 2010 at 2:38 AM, Christian Pellegrin <chripell@fsfe.org> wrote:
+> raise_threaded_irq schedules the execution of an interrupt thread
+>
+> Signed-off-by: Christian Pellegrin <chripell@fsfe.org>
 
-I still think it is the best and most generic way to let the guest do
-the symbol resolution. This has several advantages:
+You should cc: Thomas and Ingo and lkml (which I just did) on patches
+to the threaded interrupt code.
 
-	1. The guest knows best about its symbol space. So this would be
-	   extensible to other guest operating systems.  A brave
-	   developer may even implement symbol passing for Windows or
-	   the BSDs ;-)
+g.
 
-	2. The guest can decide for its own if it want to pass this
-	   inforamtion to the host-perf. No security issues at all.
+> ---
+>  include/linux/interrupt.h |    3 +++
+>  kernel/irq/manage.c       |   27 +++++++++++++++++++++++++++
+>  2 files changed, 30 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 75f3f00..14c0c13 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -144,6 +144,9 @@ request_threaded_irq(unsigned int irq, irq_handler_t handler,
+>  static inline void exit_irq_thread(void) { }
+>  #endif
+>
+> +extern int raise_threaded_irq(unsigned int irq);
+> +
+> +
+>  extern void free_irq(unsigned int, void *);
+>
+>  struct device;
+> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+> index eb6078c..a7d21e0 100644
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -1088,3 +1088,30 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+>        return retval;
+>  }
+>  EXPORT_SYMBOL(request_threaded_irq);
+> +
+> +/**
+> + *     raise_threaded_irq - triggers a threded interrupt
+> + *     @irq: Interrupt line to trigger
+> + */
+> +int raise_threaded_irq(unsigned int irq)
+> +{
+> +       struct irq_desc *desc = irq_to_desc(irq);
+> +       struct irqaction *action;
+> +
+> +       if (!desc)
+> +               return -ENOENT;
+> +       action = desc->action;
+> +       if (!action)
+> +               return -ENOENT;
+> +       if (unlikely(!action->thread_fn))
+> +               return -EINVAL;
+> +       if (likely(!test_bit(IRQTF_DIED,
+> +                            &action->thread_flags))) {
+> +               set_bit(IRQTF_RUNTHREAD, &action->thread_flags);
+> +               wake_up_process(action->thread);
+> +       } else {
+> +               return -ECHILD;
+> +       }
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(raise_threaded_irq);
+> --
+> 1.5.6.5
+>
+>
 
-	3. The guest can also pass us the call-chain and we don't need
-	   to care about complicated of fetching from the guest
-	   ourself.
 
-	4. This way extensible to nested virtualization too.
 
-How we speak to the guest was already discussed in this thread. My
-personal opinion is that going through qemu is an unnecessary step and
-we can solve that more clever and transparent for perf.
-
-	Joerg
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
