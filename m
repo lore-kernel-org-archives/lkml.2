@@ -1,136 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754270Ab0CSBJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:09:00 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:47436 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752662Ab0CSBI7 (ORCPT
+	id S1752832Ab0CSBNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:13:32 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34285 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab0CSBNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:08:59 -0400
-Date: Thu, 18 Mar 2010 21:08:57 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
-	lock
-Message-ID: <20100319010857.GC23020@Krystal>
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere>
+	Thu, 18 Mar 2010 21:13:31 -0400
+Message-ID: <4BA2CFB7.7070108@kernel.org>
+Date: Thu, 18 Mar 2010 18:13:27 -0700
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100318211633.GG5103@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 20:59:55 up 55 days,  3:37,  5 users,  load average: 0.30, 0.33,
-	0.21
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [KORG] Availability of SSL on kernel.org
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Thu, 18 Mar 2010 18:13:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Thu, Mar 18, 2010 at 02:59:29PM +0900, Hitoshi Mitake wrote:
-> > On 03/17/10 18:52, Ingo Molnar wrote:
-> > >
-> > > * Frederic Weisbecker<fweisbec@gmail.com>  wrote:
-> > >
-> > >>> You add chained indirect calls into all lock ops, that's got to hurt.
-> > >>
-> > >> Well, the idea was not bad at the first glance. It was separating  
-> > lockdep
-> > >> and lock events codes.
-> > >>
-> > >> But indeed, the indirect calls plus the locking are not good for such 
-> > a fast
-> > >> path.
-> > >
-> > > What would be nice to have is some sort of dynamic patching approach  
-> > to enable
-> > > _both_ lockdep, lockstat and perf lock.
-> > >
-> > > If TRACE_EVENT() tracepoints were patchable we could use them. (but  
-> > they arent
-> > > right now)
-> >
-> > I'll try it!
-> 
-> 
-> 
-> I sometimes wonder which trick between jmp optimization and hot patching
-> would be the best to optimize the tracepoints off-cases.
-> 
-> I should look more closely at the jmp optimization. I don't know if
-> it avoids to push the tracepoints parameters in the off case, in
-> which case it could be perhaps more efficient than hot patching,
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-yep, tracepoints with jump patching will branch over the whole stack setup in
-the off case, which is one of the good reasons for using this solution over
-patching only a call (leaving the stack setup in place).
+Afternoon Everyone,
 
-Note that if the parameters include side-effects (such as a function call),
-these will be executed even when the tracepoint is disabled. This is why people
-should implement these calls with side-effects in the appropriate TRACE_EVENT
-fields.
+I would like to go ahead and announce the general availability of SSL
+support for a number of the services on kernel.org! This should help
+provide an additional level of security, in particular for our dynamic
+content like the wiki's, patchwork and bugzilla.
 
-> although perhaps most of the time the given arguments are already in
-> registers because the traced function uses them for its own needs.
-> 
-> Also, adopting hot patching means the tracepoint calls would be
-> in a non-inlined separated function. The result would be probably
-> less i-cache footprint from the caller, and better for the off-case,
-> worse for the on-case. But tracing off-case is most important.
-> 
-> (Adding more people in Cc)
-> 
+The certificates have been very graciously donated and signed by Thawte,
+and we at kernel.org greatly appreciate their support of Open Source!
+These signed certificates make it trivial for our users to make use of
+this additional layer of security, and alleviates a large amount of
+support effort that self-signed certificates would have incurred.
 
-The idea has been discussed to add support in gcc to emit the code for an
-unlikely branch into a separate section, which does have the smaller cache-line
-footprint benefit your are talking about, but without the overhead of the extra
-out-of-line function call in the enabled case. I don't know how this work is
-advanced though. We had determined that the "asm goto" was an higher priority
-item.
+	"Thawte is proud of its open source lineage. Providing free
+	 certificates to community projects is just a small way of not
+	 only supporting the community but returning the favor.  Please
+	 spread the word."
 
-Thanks,
+Services that are now by default using SSL:
 
-Mathieu
+    * Bugzilla
+    * Wikis
+    * Account Requests
+    * Patchwork
 
-> 
-> > And I have a question related to this dynamic patching approach for lockdep.
-> > If dynamic proving turning on/off is provided,
-> > lockdep will be confused by inconsistency of lock acquiring log.
-> >
-> > Will the sequence,
-> >
-> > lock_acquire(l) -> turning off -> lock_release(l) -> turning on ->  
-> > lock_acquire(l)
-> >
-> > detected as double acquiring?
-> >
-> > Should turning on/off lockdep be done in the time
-> > when every processes have no lock?
-> 
-> 
-> There is almost always a process with a lock somewhere ;-)
-> 
-> This is not a big deal, it's very similar to unfinished scenarios
-> due to the end of the tracing that can happen anytime and you miss
-> a lock_release or whatever. We can also begin the tracing anytime,
-> and you may receive orphan lock_release in the very beginning
-> because you missed the lock_acquire that happened before the tracing.
-> 
-> Any locking scenario that doesn't fit into the state machine
-> or is incomplete must be considered as broken and then ignored.
-> 
+    These are using an HTTP redirect so you should need to do anything
+    for these to just work.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Services that have can optionally use SSL:
+
+    * www.kernel.org
+    * boot.kernel.org
+    * git.kernel.org
+    * android.git.kernel.org
+
+    Just use https vs. http, there is no automatic redirection for these
+
+Services that DO NOT offer SSL:
+
+    * mirrors.kernel.org
+
+    These machines move a large amount of data to a large number of
+    users and it would be difficult, and memory intensive, to provide
+    SSL for this service.  I don't foresee enabling SSL for
+    mirrors.kernel.org.
+
+    * *.[us | [nl.|se.]eu | geo | all].kernel.org dns entries
+
+    These would require too many distinct certificates to adequately
+    cover, and are generally not user facing.  These still have
+    the SSL certificates available to them, but the address will not
+    match the CN in the certificate.
+
+As always if you encounter problems, e-mail ftpadmin or catch us on IRC.
+ I've done a fair amount of testing of this on my own - but due to the
+large number of possible clients it's impossible for me to have tested
+this from every possible angle.
+
+- - John 'Warthog9' Hawley
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkuiz7cACgkQ/E3kyWU9dicIAwCfQlTlSDEMn1GP++Cy7IFV9Oqi
+MP4Aniu0hVPdXMopnAG/W/PtWd0aEDus
+=pg6c
+-----END PGP SIGNATURE-----
