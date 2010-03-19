@@ -1,224 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab0CSBab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:30:31 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:55651 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754436Ab0CSBa1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:30:27 -0400
-Date: Thu, 18 Mar 2010 21:30:24 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Alexey Dobriyan <adobriyan@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
-Message-ID: <20100319013024.GA28456@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:28:00 up 55 days,  4:05,  4 users,  load average: 0.18, 0.30,
-	0.22
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754538Ab0CSBav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:30:51 -0400
+Received: from mail.perches.com ([173.55.12.10]:1881 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754341Ab0CSB3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 21:29:49 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Geoff Levand <geoffrey.levand@am.sony.com>, Zhu Yi <yi.zhu@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>, linuxppc-dev@ozlabs.org,
+       cbe-oss-dev@ozlabs.org, netdev@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: [PATCH v3 7/9] drivers/net: Remove local #define IW_IOCTL, use IW_HANDLER
+Date: Thu, 18 Mar 2010 18:29:38 -0700
+Message-Id: <750b3579f93b78508d8ed8ccf7c3636db7e7e074.1268961559.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.0.14.g7e948
+In-Reply-To: <cover.1268961559.git.joe@perches.com>
+References: <cover.1268961559.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Poisoning the rcu_head callback list.
+Use #define IW_HANDLER from wireless.h instead
 
-Helps finding racy users of call_rcu(), which results in hangs because list
-entries are overwritten and/or skipped.
-
-A lot of non-initialized rcu list heads will be found with this option enabled.
-It is important to do not just blindly initialize them before each call_rcu, but
-rather to perform the initialization at the proper location, after the memory
-has been allocated, so we can effectively detect incorrect call_rcu users.
-
-This patch version does not use "debug objects", although it probably should.
-Some day I might find time to look into this transition, but the patch is usable
-as is.
-
-The weird #ifdef in the networking code comes from an agreement with Eric
-Dumazet about how to disable the build check for the networking code.  For those
-who wonder about the existence of this build-time check: it generates a build
-error when the size of struct dst_entry grows (because it is very performance
-sensitive). So the agreement here has been to disable the check when the
-DEBUG_RCU_HEAD config option is active.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: mingo@elte.hu
-CC: akpm@linux-foundation.org
-CC: mingo@elte.hu
-CC: laijs@cn.fujitsu.com
-CC: dipankar@in.ibm.com
-CC: josh@joshtriplett.org
-CC: dvhltc@us.ibm.com
-CC: niv@us.ibm.com
-CC: tglx@linutronix.de
-CC: peterz@infradead.org
-CC: rostedt@goodmis.org
-CC: Valdis.Kletnieks@vt.edu
-CC: dhowells@redhat.com
-CC: eric.dumazet@gmail.com
-CC: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/rcupdate.h |   13 ++++++++++++-
- include/net/dst.h        |    2 ++
- kernel/rcutiny.c         |    9 +++++++++
- kernel/rcutree.c         |   10 ++++++++++
- lib/Kconfig.debug        |    9 +++++++++
- 5 files changed, 42 insertions(+), 1 deletion(-)
+ drivers/net/ps3_gelic_wireless.c       |   35 +++++++-------
+ drivers/net/wireless/ipw2x00/ipw2200.c |   83 ++++++++++++++++----------------
+ 2 files changed, 58 insertions(+), 60 deletions(-)
 
-Index: linux-2.6-lttng/include/linux/rcupdate.h
-===================================================================
---- linux-2.6-lttng.orig/include/linux/rcupdate.h	2010-03-18 20:27:25.000000000 -0400
-+++ linux-2.6-lttng/include/linux/rcupdate.h	2010-03-18 20:30:54.000000000 -0400
-@@ -49,6 +49,9 @@
- struct rcu_head {
- 	struct rcu_head *next;
- 	void (*func)(struct rcu_head *head);
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+	struct rcu_head *debug;
-+#endif
+diff --git a/drivers/net/ps3_gelic_wireless.c b/drivers/net/ps3_gelic_wireless.c
+index 2663b2f..f5fc0f7 100644
+--- a/drivers/net/ps3_gelic_wireless.c
++++ b/drivers/net/ps3_gelic_wireless.c
+@@ -2279,26 +2279,25 @@ void gelic_wl_interrupt(struct net_device *netdev, u64 status)
+ /*
+  * driver helpers
+  */
+-#define IW_IOCTL(n) [(n) - SIOCSIWCOMMIT]
+ static const iw_handler gelic_wl_wext_handler[] =
+ {
+-	IW_IOCTL(SIOCGIWNAME)		= gelic_wl_get_name,
+-	IW_IOCTL(SIOCGIWRANGE)		= gelic_wl_get_range,
+-	IW_IOCTL(SIOCSIWSCAN)		= gelic_wl_set_scan,
+-	IW_IOCTL(SIOCGIWSCAN)		= gelic_wl_get_scan,
+-	IW_IOCTL(SIOCSIWAUTH)		= gelic_wl_set_auth,
+-	IW_IOCTL(SIOCGIWAUTH)		= gelic_wl_get_auth,
+-	IW_IOCTL(SIOCSIWESSID)		= gelic_wl_set_essid,
+-	IW_IOCTL(SIOCGIWESSID)		= gelic_wl_get_essid,
+-	IW_IOCTL(SIOCSIWENCODE)		= gelic_wl_set_encode,
+-	IW_IOCTL(SIOCGIWENCODE)		= gelic_wl_get_encode,
+-	IW_IOCTL(SIOCSIWAP)		= gelic_wl_set_ap,
+-	IW_IOCTL(SIOCGIWAP)		= gelic_wl_get_ap,
+-	IW_IOCTL(SIOCSIWENCODEEXT)	= gelic_wl_set_encodeext,
+-	IW_IOCTL(SIOCGIWENCODEEXT)	= gelic_wl_get_encodeext,
+-	IW_IOCTL(SIOCSIWMODE)		= gelic_wl_set_mode,
+-	IW_IOCTL(SIOCGIWMODE)		= gelic_wl_get_mode,
+-	IW_IOCTL(SIOCGIWNICKN)		= gelic_wl_get_nick,
++	IW_HANDLER(SIOCGIWNAME, gelic_wl_get_name),
++	IW_HANDLER(SIOCGIWRANGE, gelic_wl_get_range),
++	IW_HANDLER(SIOCSIWSCAN, gelic_wl_set_scan),
++	IW_HANDLER(SIOCGIWSCAN, gelic_wl_get_scan),
++	IW_HANDLER(SIOCSIWAUTH, gelic_wl_set_auth),
++	IW_HANDLER(SIOCGIWAUTH, gelic_wl_get_auth),
++	IW_HANDLER(SIOCSIWESSID, gelic_wl_set_essid),
++	IW_HANDLER(SIOCGIWESSID, gelic_wl_get_essid),
++	IW_HANDLER(SIOCSIWENCODE, gelic_wl_set_encode),
++	IW_HANDLER(SIOCGIWENCODE, gelic_wl_get_encode),
++	IW_HANDLER(SIOCSIWAP, gelic_wl_set_ap),
++	IW_HANDLER(SIOCGIWAP, gelic_wl_get_ap),
++	IW_HANDLER(SIOCSIWENCODEEXT, gelic_wl_set_encodeext),
++	IW_HANDLER(SIOCGIWENCODEEXT, gelic_wl_get_encodeext),
++	IW_HANDLER(SIOCSIWMODE, gelic_wl_set_mode),
++	IW_HANDLER(SIOCGIWMODE, gelic_wl_get_mode),
++	IW_HANDLER(SIOCGIWNICKN, gelic_wl_get_nick),
  };
  
- /* Exported common interfaces */
-@@ -71,11 +74,19 @@ extern void rcu_init(void);
- #error "Unknown RCU implementation specified to kernel configuration"
- #endif
- 
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+#define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL, .debug = NULL }
-+#define INIT_RCU_HEAD(ptr) do { \
-+       (ptr)->next = NULL; (ptr)->func = NULL; (ptr)->debug = NULL; \
-+} while (0)
-+#else
- #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
--#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
- #define INIT_RCU_HEAD(ptr) do { \
-        (ptr)->next = NULL; (ptr)->func = NULL; \
- } while (0)
-+#endif
-+
-+#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- extern struct lockdep_map rcu_lock_map;
-Index: linux-2.6-lttng/kernel/rcutree.c
-===================================================================
---- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-18 20:27:25.000000000 -0400
-+++ linux-2.6-lttng/kernel/rcutree.c	2010-03-18 20:31:16.000000000 -0400
-@@ -39,6 +39,7 @@
- #include <asm/atomic.h>
- #include <linux/bitops.h>
- #include <linux/module.h>
-+#include <linux/poison.h>
- #include <linux/completion.h>
- #include <linux/moduleparam.h>
- #include <linux/percpu.h>
-@@ -1060,6 +1061,10 @@ static void rcu_do_batch(struct rcu_stat
- 		next = list->next;
- 		prefetch(next);
- 		trace_rcu_tree_callback(list);
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+		WARN_ON_ONCE(list->debug != LIST_POISON1);
-+		list->debug = NULL;
-+#endif
- 		list->func(list);
- 		list = next;
- 		if (++count >= rdp->blimit)
-@@ -1350,6 +1355,11 @@ __call_rcu(struct rcu_head *head, void (
- 	unsigned long flags;
- 	struct rcu_data *rdp;
- 
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+	WARN_ON_ONCE(head->debug);
-+	head->debug = LIST_POISON1;
-+#endif
-+
- 	head->func = func;
- 	head->next = NULL;
- 
-Index: linux-2.6-lttng/lib/Kconfig.debug
-===================================================================
---- linux-2.6-lttng.orig/lib/Kconfig.debug	2010-03-18 20:27:25.000000000 -0400
-+++ linux-2.6-lttng/lib/Kconfig.debug	2010-03-18 20:27:38.000000000 -0400
-@@ -661,6 +661,15 @@ config DEBUG_LIST
- 
- 	  If unsure, say N.
- 
-+config DEBUG_RCU_HEAD
-+	bool "Debug RCU callbacks"
-+	depends on DEBUG_KERNEL
-+	depends on TREE_RCU
-+	help
-+	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-+	  Seems to find problems more quickly with stress-tests in single-cpu
-+	  mode.
-+
- config DEBUG_SG
- 	bool "Debug SG table operations"
- 	depends on DEBUG_KERNEL
-Index: linux-2.6-lttng/include/net/dst.h
-===================================================================
---- linux-2.6-lttng.orig/include/net/dst.h	2010-03-18 20:27:25.000000000 -0400
-+++ linux-2.6-lttng/include/net/dst.h	2010-03-18 20:35:02.000000000 -0400
-@@ -159,7 +159,9 @@ static inline void dst_hold(struct dst_e
- 	 * If your kernel compilation stops here, please check
- 	 * __pad_to_align_refcnt declaration in struct dst_entry
- 	 */
-+#ifndef CONFIG_DEBUG_RCU_HEAD
- 	BUILD_BUG_ON(offsetof(struct dst_entry, __refcnt) & 63);
-+#endif
- 	atomic_inc(&dst->__refcnt);
+ static const struct iw_handler_def gelic_wl_wext_handler_def = {
+diff --git a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+index 5c7aa1b..9e9c532 100644
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -9995,49 +9995,48 @@ static int ipw_wx_sw_reset(struct net_device *dev,
  }
  
-Index: linux-2.6-lttng/kernel/rcutiny.c
-===================================================================
---- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-18 20:35:14.000000000 -0400
-+++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-18 20:39:12.000000000 -0400
-@@ -35,6 +35,7 @@
- #include <linux/init.h>
- #include <linux/time.h>
- #include <linux/cpu.h>
-+#include <linux/poison.h>
+ /* Rebase the WE IOCTLs to zero for the handler array */
+-#define IW_IOCTL(x) [(x)-SIOCSIWCOMMIT]
+ static iw_handler ipw_wx_handlers[] = {
+-	IW_IOCTL(SIOCGIWNAME) = (iw_handler) cfg80211_wext_giwname,
+-	IW_IOCTL(SIOCSIWFREQ) = ipw_wx_set_freq,
+-	IW_IOCTL(SIOCGIWFREQ) = ipw_wx_get_freq,
+-	IW_IOCTL(SIOCSIWMODE) = ipw_wx_set_mode,
+-	IW_IOCTL(SIOCGIWMODE) = ipw_wx_get_mode,
+-	IW_IOCTL(SIOCSIWSENS) = ipw_wx_set_sens,
+-	IW_IOCTL(SIOCGIWSENS) = ipw_wx_get_sens,
+-	IW_IOCTL(SIOCGIWRANGE) = ipw_wx_get_range,
+-	IW_IOCTL(SIOCSIWAP) = ipw_wx_set_wap,
+-	IW_IOCTL(SIOCGIWAP) = ipw_wx_get_wap,
+-	IW_IOCTL(SIOCSIWSCAN) = ipw_wx_set_scan,
+-	IW_IOCTL(SIOCGIWSCAN) = ipw_wx_get_scan,
+-	IW_IOCTL(SIOCSIWESSID) = ipw_wx_set_essid,
+-	IW_IOCTL(SIOCGIWESSID) = ipw_wx_get_essid,
+-	IW_IOCTL(SIOCSIWNICKN) = ipw_wx_set_nick,
+-	IW_IOCTL(SIOCGIWNICKN) = ipw_wx_get_nick,
+-	IW_IOCTL(SIOCSIWRATE) = ipw_wx_set_rate,
+-	IW_IOCTL(SIOCGIWRATE) = ipw_wx_get_rate,
+-	IW_IOCTL(SIOCSIWRTS) = ipw_wx_set_rts,
+-	IW_IOCTL(SIOCGIWRTS) = ipw_wx_get_rts,
+-	IW_IOCTL(SIOCSIWFRAG) = ipw_wx_set_frag,
+-	IW_IOCTL(SIOCGIWFRAG) = ipw_wx_get_frag,
+-	IW_IOCTL(SIOCSIWTXPOW) = ipw_wx_set_txpow,
+-	IW_IOCTL(SIOCGIWTXPOW) = ipw_wx_get_txpow,
+-	IW_IOCTL(SIOCSIWRETRY) = ipw_wx_set_retry,
+-	IW_IOCTL(SIOCGIWRETRY) = ipw_wx_get_retry,
+-	IW_IOCTL(SIOCSIWENCODE) = ipw_wx_set_encode,
+-	IW_IOCTL(SIOCGIWENCODE) = ipw_wx_get_encode,
+-	IW_IOCTL(SIOCSIWPOWER) = ipw_wx_set_power,
+-	IW_IOCTL(SIOCGIWPOWER) = ipw_wx_get_power,
+-	IW_IOCTL(SIOCSIWSPY) = iw_handler_set_spy,
+-	IW_IOCTL(SIOCGIWSPY) = iw_handler_get_spy,
+-	IW_IOCTL(SIOCSIWTHRSPY) = iw_handler_set_thrspy,
+-	IW_IOCTL(SIOCGIWTHRSPY) = iw_handler_get_thrspy,
+-	IW_IOCTL(SIOCSIWGENIE) = ipw_wx_set_genie,
+-	IW_IOCTL(SIOCGIWGENIE) = ipw_wx_get_genie,
+-	IW_IOCTL(SIOCSIWMLME) = ipw_wx_set_mlme,
+-	IW_IOCTL(SIOCSIWAUTH) = ipw_wx_set_auth,
+-	IW_IOCTL(SIOCGIWAUTH) = ipw_wx_get_auth,
+-	IW_IOCTL(SIOCSIWENCODEEXT) = ipw_wx_set_encodeext,
+-	IW_IOCTL(SIOCGIWENCODEEXT) = ipw_wx_get_encodeext,
++	IW_HANDLER(SIOCGIWNAME, (iw_handler)cfg80211_wext_giwname),
++	IW_HANDLER(SIOCSIWFREQ, ipw_wx_set_freq),
++	IW_HANDLER(SIOCGIWFREQ, ipw_wx_get_freq),
++	IW_HANDLER(SIOCSIWMODE, ipw_wx_set_mode),
++	IW_HANDLER(SIOCGIWMODE, ipw_wx_get_mode),
++	IW_HANDLER(SIOCSIWSENS, ipw_wx_set_sens),
++	IW_HANDLER(SIOCGIWSENS, ipw_wx_get_sens),
++	IW_HANDLER(SIOCGIWRANGE, ipw_wx_get_range),
++	IW_HANDLER(SIOCSIWAP, ipw_wx_set_wap),
++	IW_HANDLER(SIOCGIWAP, ipw_wx_get_wap),
++	IW_HANDLER(SIOCSIWSCAN, ipw_wx_set_scan),
++	IW_HANDLER(SIOCGIWSCAN, ipw_wx_get_scan),
++	IW_HANDLER(SIOCSIWESSID, ipw_wx_set_essid),
++	IW_HANDLER(SIOCGIWESSID, ipw_wx_get_essid),
++	IW_HANDLER(SIOCSIWNICKN, ipw_wx_set_nick),
++	IW_HANDLER(SIOCGIWNICKN, ipw_wx_get_nick),
++	IW_HANDLER(SIOCSIWRATE, ipw_wx_set_rate),
++	IW_HANDLER(SIOCGIWRATE, ipw_wx_get_rate),
++	IW_HANDLER(SIOCSIWRTS, ipw_wx_set_rts),
++	IW_HANDLER(SIOCGIWRTS, ipw_wx_get_rts),
++	IW_HANDLER(SIOCSIWFRAG, ipw_wx_set_frag),
++	IW_HANDLER(SIOCGIWFRAG, ipw_wx_get_frag),
++	IW_HANDLER(SIOCSIWTXPOW, ipw_wx_set_txpow),
++	IW_HANDLER(SIOCGIWTXPOW, ipw_wx_get_txpow),
++	IW_HANDLER(SIOCSIWRETRY, ipw_wx_set_retry),
++	IW_HANDLER(SIOCGIWRETRY, ipw_wx_get_retry),
++	IW_HANDLER(SIOCSIWENCODE, ipw_wx_set_encode),
++	IW_HANDLER(SIOCGIWENCODE, ipw_wx_get_encode),
++	IW_HANDLER(SIOCSIWPOWER, ipw_wx_set_power),
++	IW_HANDLER(SIOCGIWPOWER, ipw_wx_get_power),
++	IW_HANDLER(SIOCSIWSPY, iw_handler_set_spy),
++	IW_HANDLER(SIOCGIWSPY, iw_handler_get_spy),
++	IW_HANDLER(SIOCSIWTHRSPY, iw_handler_set_thrspy),
++	IW_HANDLER(SIOCGIWTHRSPY, iw_handler_get_thrspy),
++	IW_HANDLER(SIOCSIWGENIE, ipw_wx_set_genie),
++	IW_HANDLER(SIOCGIWGENIE, ipw_wx_get_genie),
++	IW_HANDLER(SIOCSIWMLME, ipw_wx_set_mlme),
++	IW_HANDLER(SIOCSIWAUTH, ipw_wx_set_auth),
++	IW_HANDLER(SIOCGIWAUTH, ipw_wx_get_auth),
++	IW_HANDLER(SIOCSIWENCODEEXT, ipw_wx_set_encodeext),
++	IW_HANDLER(SIOCGIWENCODEEXT, ipw_wx_get_encodeext),
+ };
  
- /* Global control variables for rcupdate callback mechanism. */
- struct rcu_ctrlblk {
-@@ -163,6 +164,10 @@ static void __rcu_process_callbacks(stru
- 	while (list) {
- 		next = list->next;
- 		prefetch(next);
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+		WARN_ON_ONCE(list->debug != LIST_POISON1);
-+		list->debug = NULL;
-+#endif
- 		list->func(list);
- 		list = next;
- 	}
-@@ -210,6 +215,10 @@ static void __call_rcu(struct rcu_head *
- {
- 	unsigned long flags;
- 
-+#ifdef CONFIG_DEBUG_RCU_HEAD
-+	WARN_ON_ONCE(head->debug);
-+	head->debug = LIST_POISON1;
-+#endif
- 	head->func = func;
- 	head->next = NULL;
- 
-
+ enum {
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.0.14.g7e948
+
