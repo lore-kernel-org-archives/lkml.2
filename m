@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab0CSUxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 16:53:33 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:45408 "EHLO smtp.polymtl.ca"
+	id S1752624Ab0CSUxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:53:35 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:45409 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab0CSUxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751341Ab0CSUxb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Mar 2010 16:53:31 -0400
-Message-Id: <20100319205233.474028085@efficios.com>
+Message-Id: <20100319205233.738370786@efficios.com>
 References: <20100319204739.574593298@efficios.com>
 User-Agent: quilt/0.46-1
-Date: Fri, 19 Mar 2010 16:47:41 -0400
+Date: Fri, 19 Mar 2010 16:47:42 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
@@ -18,30 +18,15 @@ To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
        dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC patch 2/3] tree/tiny rcu: Add debug RCU head objects (v3)
-Content-Disposition: inline; filename=rcu-head-debug.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri, 19 Mar 2010 20:52:33 +0000
+Subject: [RFC patch 3/3] kernel call_rcu usage: initialize rcu_head structures
+Content-Disposition: inline; filename=rcu-init-null.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri, 19 Mar 2010 20:52:34 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Helps finding racy users of call_rcu(), which results in hangs because list
-entries are overwritten and/or skipped.
-
-This new patch version is based on the debugobjects with the newly introduced
-"active state" tracker.
-
-Non-initialized entries are all considered as "statically initialized". An
-activation fixup (triggered by call_rcu()) takes care of performing the debug
-object initialization without issuing any warning. Since we cannot increase the
-size of struct rcu_head, I don't see much room to put an identifier for
-statically initialized rcu_head structures. So for now, we have to live without
-"activation without explicit init" detection. But the main purpose of this debug
-option is to detect double-activations (double call_rcu() use of a rcu_head
-before the callback is executed), which is correctly addressed here.
-
-This also detects potential internal RCU callback corruption, which would cause
-the callbacks to be executed twice.
+Initialize rcu_head structures with rcu_head_init() before passing them to
+call_rcu().
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
@@ -60,311 +45,440 @@ CC: dhowells@redhat.com
 CC: eric.dumazet@gmail.com
 CC: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- include/linux/rcupdate.h |   61 ++++++++++++++++++-
- kernel/rcupdate.c        |  148 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/rcutiny.c         |    2 
- kernel/rcutree.c         |    2 
- lib/Kconfig.debug        |    6 +
- 5 files changed, 215 insertions(+), 4 deletions(-)
+ block/cfq-iosched.c                 |    2 +-
+ block/genhd.c                       |    2 +-
+ fs/file.c                           |    4 ++--
+ fs/fs-writeback.c                   |   13 +++++++++----
+ fs/partitions/check.c               |    2 +-
+ kernel/fork.c                       |    1 +
+ kernel/pid.c                        |    1 +
+ kernel/rcutiny.c                    |    6 ++++++
+ kernel/rcutorture.c                 |    2 ++
+ kernel/rcutree.c                    |    4 ++++
+ mm/backing-dev.c                    |    2 +-
+ mm/slob.c                           |    2 +-
+ net/core/drop_monitor.c             |    2 +-
+ net/ipv6/sit.c                      |    2 +-
+ net/ipv6/xfrm6_tunnel.c             |    2 +-
+ net/netfilter/nf_conntrack_expect.c |    2 +-
+ net/netfilter/nf_conntrack_extend.c |    2 +-
+ net/netfilter/nfnetlink_queue.c     |    2 +-
+ net/netlabel/netlabel_domainhash.c  |    2 +-
+ net/netlabel/netlabel_unlabeled.c   |    6 +++---
+ net/sctp/bind_addr.c                |    2 +-
+ net/sctp/ipv6.c                     |    2 +-
+ net/sctp/protocol.c                 |    2 +-
+ 23 files changed, 43 insertions(+), 24 deletions(-)
 
-Index: linux-2.6-lttng/include/linux/rcupdate.h
+Index: linux-2.6-lttng/kernel/pid.c
 ===================================================================
---- linux-2.6-lttng.orig/include/linux/rcupdate.h	2010-03-19 15:26:02.000000000 -0400
-+++ linux-2.6-lttng/include/linux/rcupdate.h	2010-03-19 15:26:06.000000000 -0400
-@@ -40,6 +40,7 @@
- #include <linux/seqlock.h>
- #include <linux/lockdep.h>
- #include <linux/completion.h>
-+#include <linux/debugobjects.h>
+--- linux-2.6-lttng.orig/kernel/pid.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/kernel/pid.c	2010-03-19 13:28:06.000000000 -0400
+@@ -265,6 +265,7 @@ struct pid *alloc_pid(struct pid_namespa
  
- /**
-  * struct rcu_head - callback structure for use with RCU
-@@ -71,11 +72,26 @@ extern void rcu_init(void);
- #error "Unknown RCU implementation specified to kernel configuration"
- #endif
- 
-+/* For dynamic initialization of rcu_head allocated in memory */
-+extern void rcu_head_init(struct rcu_head *head);
-+
-+/* For static initialization of rcu_head */
- #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
--#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
--#define INIT_RCU_HEAD(ptr) do { \
--       (ptr)->next = NULL; (ptr)->func = NULL; \
--} while (0)
-+
-+/* For dynamic initialization and destruction of rcu_head on the stack */
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+extern void rcu_head_init_on_stack(struct rcu_head *head);
-+extern void destroy_rcu_head_on_stack(struct rcu_head *head);
-+#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+static inline void rcu_head_init_on_stack(struct rcu_head *head)
-+{
-+	rcu_head_init(head);
-+}
-+
-+static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- extern struct lockdep_map rcu_lock_map;
-@@ -299,4 +315,41 @@ extern void call_rcu(struct rcu_head *he
- extern void call_rcu_bh(struct rcu_head *head,
- 			void (*func)(struct rcu_head *head));
- 
-+/*
-+ * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
-+ * by call_rcu() and rcu callback execution, and are therefore not part of the
-+ * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
-+ */
-+
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+# define STATE_RCU_HEAD_READY	0
-+# define STATE_RCU_HEAD_QUEUED	1
-+
-+extern struct debug_obj_descr rcuhead_debug_descr;
-+
-+static inline void debug_rcu_head_queue(struct rcu_head *head)
-+{
-+	debug_object_activate(head, &rcuhead_debug_descr);
-+	debug_object_active_state(head, &rcuhead_debug_descr,
-+				  STATE_RCU_HEAD_READY,
-+				  STATE_RCU_HEAD_QUEUED);
-+}
-+
-+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
-+{
-+	debug_object_active_state(head, &rcuhead_debug_descr,
-+				  STATE_RCU_HEAD_QUEUED,
-+				  STATE_RCU_HEAD_READY);
-+	debug_object_deactivate(head, &rcuhead_debug_descr);
-+}
-+#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+static inline void debug_rcu_head_queue(struct rcu_head *head)
-+{
-+}
-+
-+static inline void debug_rcu_head_unqueue(struct rcu_head *head)
-+{
-+}
-+#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
- #endif /* __LINUX_RCUPDATE_H */
-Index: linux-2.6-lttng/kernel/rcutree.c
+ 	get_pid_ns(ns);
+ 	pid->level = ns->level;
++	rcu_head_init(&pid->rcu);
+ 	atomic_set(&pid->count, 1);
+ 	for (type = 0; type < PIDTYPE_MAX; ++type)
+ 		INIT_HLIST_HEAD(&pid->tasks[type]);
+Index: linux-2.6-lttng/kernel/fork.c
 ===================================================================
---- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-19 15:26:02.000000000 -0400
-+++ linux-2.6-lttng/kernel/rcutree.c	2010-03-19 16:02:31.000000000 -0400
-@@ -1060,6 +1060,7 @@ static void rcu_do_batch(struct rcu_stat
- 		next = list->next;
- 		prefetch(next);
- 		trace_rcu_tree_callback(list);
-+		debug_rcu_head_unqueue(list);
- 		list->func(list);
- 		list = next;
- 		if (++count >= rdp->blimit)
-@@ -1350,6 +1351,7 @@ __call_rcu(struct rcu_head *head, void (
- 	unsigned long flags;
- 	struct rcu_data *rdp;
+--- linux-2.6-lttng.orig/kernel/fork.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/kernel/fork.c	2010-03-19 13:28:06.000000000 -0400
+@@ -1062,6 +1062,7 @@ static struct task_struct *copy_process(
+ 	INIT_LIST_HEAD(&p->children);
+ 	INIT_LIST_HEAD(&p->sibling);
+ 	rcu_copy_process(p);
++	rcu_head_init(&p->rcu);
+ 	p->vfork_done = NULL;
+ 	spin_lock_init(&p->alloc_lock);
  
-+	debug_rcu_head_queue(head);
- 	head->func = func;
- 	head->next = NULL;
- 
-Index: linux-2.6-lttng/lib/Kconfig.debug
-===================================================================
---- linux-2.6-lttng.orig/lib/Kconfig.debug	2010-03-19 15:26:02.000000000 -0400
-+++ linux-2.6-lttng/lib/Kconfig.debug	2010-03-19 15:26:06.000000000 -0400
-@@ -306,6 +306,12 @@ config DEBUG_OBJECTS_WORK
- 	  work queue routines to track the life time of work objects and
- 	  validate the work operations.
- 
-+config DEBUG_OBJECTS_RCU_HEAD
-+	bool "Debug RCU callbacks objects"
-+	depends on DEBUG_OBJECTS
-+	help
-+	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-+
- config DEBUG_OBJECTS_ENABLE_DEFAULT
- 	int "debug_objects bootup default value (0-1)"
-         range 0 1
 Index: linux-2.6-lttng/kernel/rcutiny.c
 ===================================================================
---- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-19 15:26:02.000000000 -0400
-+++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-19 16:02:31.000000000 -0400
-@@ -163,6 +163,7 @@ static void __rcu_process_callbacks(stru
- 	while (list) {
- 		next = list->next;
- 		prefetch(next);
-+		debug_rcu_head_unqueue(list);
- 		list->func(list);
- 		list = next;
- 	}
-@@ -210,6 +211,7 @@ static void __call_rcu(struct rcu_head *
+--- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-19 13:28:06.000000000 -0400
+@@ -246,11 +246,13 @@ void rcu_barrier(void)
  {
- 	unsigned long flags;
+ 	struct rcu_synchronize rcu;
  
-+	debug_rcu_head_queue(head);
- 	head->func = func;
- 	head->next = NULL;
- 
-Index: linux-2.6-lttng/kernel/rcupdate.c
-===================================================================
---- linux-2.6-lttng.orig/kernel/rcupdate.c	2010-03-19 15:26:02.000000000 -0400
-+++ linux-2.6-lttng/kernel/rcupdate.c	2010-03-19 16:26:12.000000000 -0400
-@@ -63,3 +63,151 @@ void wakeme_after_rcu(struct rcu_head  *
- 	rcu = container_of(head, struct rcu_synchronize, head);
- 	complete(&rcu->completion);
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	/* Will wake me after RCU finished. */
+ 	call_rcu(&rcu.head, wakeme_after_rcu);
+ 	/* Wait for it. */
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
  }
-+
-+#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-+static inline void debug_rcu_head_init(struct rcu_head *head)
-+{
-+	debug_object_init(head, &rcuhead_debug_descr);
-+}
-+
-+static inline void debug_rcu_head_free(struct rcu_head *head)
-+{
-+	debug_object_free(head, &rcuhead_debug_descr);
-+}
-+
-+/*
-+ * fixup_init is called when:
-+ * - an active object is initialized
-+ */
-+static int rcuhead_fixup_init(void *addr, enum debug_obj_state state)
-+{
-+	struct rcu_head *head = addr;
-+
-+	switch (state) {
-+	case ODEBUG_STATE_ACTIVE:
-+		/*
-+		 * Ensure that queued callbacks are all executed.
-+		 * If we detect that we are nested in a RCU read-side critical
-+		 * section, we should simply fail, otherwise we would deadlock.
-+		 */
-+		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-+		    irqs_disabled()) {
-+			WARN_ON(1);
-+			return 0;
-+		}
-+		rcu_barrier();
-+		debug_object_init(head, &rcuhead_debug_descr);
-+		return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+/*
-+ * fixup_activate is called when:
-+ * - an active object is activated
-+ * - an unknown object is activated (might be a statically initialized object)
-+ * Activation is performed internally by call_rcu().
-+ * Let's make it valid to activate a static object.
-+ */
-+static int rcuhead_fixup_activate(void *addr, enum debug_obj_state state)
-+{
-+	struct rcu_head *head = addr;
-+
-+	switch (state) {
-+
-+	case ODEBUG_STATE_NOTAVAILABLE:
-+		/*
-+		 * This is not really a fixup. The work struct was
-+		 * statically initialized. We just make sure that it
-+		 * is tracked in the object tracker.
-+		 */
-+		debug_object_init(head, &rcuhead_debug_descr);
-+		debug_object_activate(head, &rcuhead_debug_descr);
-+		return 0;
-+
-+	case ODEBUG_STATE_ACTIVE:
-+		/*
-+		 * Ensure that queued callbacks are all executed.
-+		 * If we detect that we are nested in a RCU read-side critical
-+		 * section, we should simply fail, otherwise we would deadlock.
-+		 */
-+		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-+		    irqs_disabled()) {
-+			WARN_ON(1);
-+			return 0;
-+		}
-+		rcu_barrier();
-+		debug_object_activate(head, &rcuhead_debug_descr);
-+		return 1;
-+
-+	default:
-+		return 0;
-+	}
-+}
-+
-+/*
-+ * fixup_free is called when:
-+ * - an active object is freed
-+ */
-+static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
-+{
-+	struct rcu_head *head = addr;
-+
-+	switch (state) {
-+	case ODEBUG_STATE_ACTIVE:
-+		/*
-+		 * Ensure that queued callbacks are all executed.
-+		 * If we detect that we are nested in a RCU read-side critical
-+		 * section, we should simply fail, otherwise we would deadlock.
-+		 */
-+		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-+		    irqs_disabled()) {
-+			WARN_ON(1);
-+			return 0;
-+		}
-+		rcu_barrier();
-+		debug_object_free(head, &rcuhead_debug_descr);
-+		return 1;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+void rcu_head_init_on_stack(struct rcu_head *head)
-+{
-+	debug_object_init_on_stack(head, &rcuhead_debug_descr);
-+	rcu_head_init(head);
-+}
-+EXPORT_SYMBOL_GPL(rcu_head_init_on_stack);
-+
-+void destroy_rcu_head_on_stack(struct rcu_head *head)
-+{
-+	debug_object_free(head, &rcuhead_debug_descr);
-+}
-+EXPORT_SYMBOL_GPL(destroy_rcu_head_on_stack);
-+
-+struct debug_obj_descr rcuhead_debug_descr = {
-+	.name = "rcu_head",
-+	.fixup_init = rcuhead_fixup_init,
-+	.fixup_activate = rcuhead_fixup_activate,
-+	.fixup_free = rcuhead_fixup_free,
-+};
-+EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
-+#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+static inline void debug_rcu_head_init(struct rcu_head *head)
-+{
-+}
-+#endif /* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
-+
-+/**
-+ * rcu_head_init - initialize a RCU head
-+ * @head:     the rcu head to be initialized
-+ */
-+void rcu_head_init(struct rcu_head *head)
-+{
-+	debug_rcu_head_init(head);
-+	head->next = NULL;
-+	head->func = NULL;
-+}
-+EXPORT_SYMBOL_GPL(rcu_head_init);
+ EXPORT_SYMBOL_GPL(rcu_barrier);
+ 
+@@ -258,11 +260,13 @@ void rcu_barrier_bh(void)
+ {
+ 	struct rcu_synchronize rcu;
+ 
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	/* Will wake me after RCU finished. */
+ 	call_rcu_bh(&rcu.head, wakeme_after_rcu);
+ 	/* Wait for it. */
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_bh);
+ 
+@@ -270,11 +274,13 @@ void rcu_barrier_sched(void)
+ {
+ 	struct rcu_synchronize rcu;
+ 
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	/* Will wake me after RCU finished. */
+ 	call_rcu_sched(&rcu.head, wakeme_after_rcu);
+ 	/* Wait for it. */
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_sched);
+ 
+Index: linux-2.6-lttng/kernel/rcutorture.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/rcutorture.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/kernel/rcutorture.c	2010-03-19 13:28:06.000000000 -0400
+@@ -450,9 +450,11 @@ static void rcu_bh_torture_synchronize(v
+ {
+ 	struct rcu_bh_torture_synchronize rcu;
+ 
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	call_rcu_bh(&rcu.head, rcu_bh_torture_wakeme_after_cb);
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ 
+ static struct rcu_torture_ops rcu_bh_ops = {
+Index: linux-2.6-lttng/kernel/rcutree.c
+===================================================================
+--- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/kernel/rcutree.c	2010-03-19 13:28:06.000000000 -0400
+@@ -1449,11 +1449,13 @@ void synchronize_sched(void)
+ 	if (rcu_blocking_is_gp())
+ 		return;
+ 
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	/* Will wake me after RCU finished. */
+ 	call_rcu_sched(&rcu.head, wakeme_after_rcu);
+ 	/* Wait for it. */
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_sched);
+ 
+@@ -1473,11 +1475,13 @@ void synchronize_rcu_bh(void)
+ 	if (rcu_blocking_is_gp())
+ 		return;
+ 
++	rcu_head_init_on_stack(&rcu.head);
+ 	init_completion(&rcu.completion);
+ 	/* Will wake me after RCU finished. */
+ 	call_rcu_bh(&rcu.head, wakeme_after_rcu);
+ 	/* Wait for it. */
+ 	wait_for_completion(&rcu.completion);
++	destroy_rcu_head_on_stack(&rcu.head);
+ }
+ EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
+ 
+Index: linux-2.6-lttng/mm/backing-dev.c
+===================================================================
+--- linux-2.6-lttng.orig/mm/backing-dev.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/mm/backing-dev.c	2010-03-19 13:28:06.000000000 -0400
+@@ -653,7 +653,7 @@ int bdi_init(struct backing_dev_info *bd
+ 	bdi->max_ratio = 100;
+ 	bdi->max_prop_frac = PROP_FRAC_BASE;
+ 	spin_lock_init(&bdi->wb_lock);
+-	INIT_RCU_HEAD(&bdi->rcu_head);
++	rcu_head_init(&bdi->rcu_head);
+ 	INIT_LIST_HEAD(&bdi->bdi_list);
+ 	INIT_LIST_HEAD(&bdi->wb_list);
+ 	INIT_LIST_HEAD(&bdi->work_list);
+Index: linux-2.6-lttng/mm/slob.c
+===================================================================
+--- linux-2.6-lttng.orig/mm/slob.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/mm/slob.c	2010-03-19 13:28:06.000000000 -0400
+@@ -647,7 +647,7 @@ void kmem_cache_free(struct kmem_cache *
+ 	if (unlikely(c->flags & SLAB_DESTROY_BY_RCU)) {
+ 		struct slob_rcu *slob_rcu;
+ 		slob_rcu = b + (c->size - sizeof(struct slob_rcu));
+-		INIT_RCU_HEAD(&slob_rcu->head);
++		rcu_head_init(&slob_rcu->head);
+ 		slob_rcu->size = c->size;
+ 		call_rcu(&slob_rcu->head, kmem_rcu_free);
+ 	} else {
+Index: linux-2.6-lttng/fs/file.c
+===================================================================
+--- linux-2.6-lttng.orig/fs/file.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/fs/file.c	2010-03-19 13:28:06.000000000 -0400
+@@ -178,7 +178,7 @@ static struct fdtable * alloc_fdtable(un
+ 	fdt->open_fds = (fd_set *)data;
+ 	data += nr / BITS_PER_BYTE;
+ 	fdt->close_on_exec = (fd_set *)data;
+-	INIT_RCU_HEAD(&fdt->rcu);
++	rcu_head_init(&fdt->rcu);
+ 	fdt->next = NULL;
+ 
+ 	return fdt;
+@@ -312,7 +312,7 @@ struct files_struct *dup_fd(struct files
+ 	new_fdt->close_on_exec = (fd_set *)&newf->close_on_exec_init;
+ 	new_fdt->open_fds = (fd_set *)&newf->open_fds_init;
+ 	new_fdt->fd = &newf->fd_array[0];
+-	INIT_RCU_HEAD(&new_fdt->rcu);
++	rcu_head_init(&new_fdt->rcu);
+ 	new_fdt->next = NULL;
+ 
+ 	spin_lock(&oldf->file_lock);
+Index: linux-2.6-lttng/fs/fs-writeback.c
+===================================================================
+--- linux-2.6-lttng.orig/fs/fs-writeback.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/fs/fs-writeback.c	2010-03-19 13:28:06.000000000 -0400
+@@ -75,9 +75,13 @@ static inline bool bdi_work_on_stack(str
+ }
+ 
+ static inline void bdi_work_init(struct bdi_work *work,
+-				 struct wb_writeback_args *args)
++				 struct wb_writeback_args *args,
++				 int on_stack)
+ {
+-	INIT_RCU_HEAD(&work->rcu_head);
++	if (on_stack)
++		rcu_head_init_on_stack(&work->rcu_head);
++	else
++		rcu_head_init(&work->rcu_head);
+ 	work->args = *args;
+ 	work->state = WS_USED;
+ }
+@@ -201,7 +205,7 @@ static void bdi_alloc_queue_work(struct 
+ 	 */
+ 	work = kmalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (work) {
+-		bdi_work_init(work, args);
++		bdi_work_init(work, args, 0);
+ 		bdi_queue_work(bdi, work);
+ 	} else {
+ 		struct bdi_writeback *wb = &bdi->wb;
+@@ -232,11 +236,12 @@ static void bdi_sync_writeback(struct ba
+ 	};
+ 	struct bdi_work work;
+ 
+-	bdi_work_init(&work, &args);
++	bdi_work_init(&work, &args, 1);
+ 	work.state |= WS_ONSTACK;
+ 
+ 	bdi_queue_work(bdi, &work);
+ 	bdi_wait_on_work_clear(&work);
++	destroy_rcu_head_on_stack(&work.rcu_head);
+ }
+ 
+ /**
+Index: linux-2.6-lttng/fs/partitions/check.c
+===================================================================
+--- linux-2.6-lttng.orig/fs/partitions/check.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/fs/partitions/check.c	2010-03-19 13:28:06.000000000 -0400
+@@ -454,7 +454,7 @@ struct hd_struct *add_partition(struct g
+ 	}
+ 
+ 	/* everything is up and running, commence */
+-	INIT_RCU_HEAD(&p->rcu_head);
++	rcu_head_init(&p->rcu_head);
+ 	rcu_assign_pointer(ptbl->part[partno], p);
+ 
+ 	/* suppress uevent if the disk supresses it */
+Index: linux-2.6-lttng/block/cfq-iosched.c
+===================================================================
+--- linux-2.6-lttng.orig/block/cfq-iosched.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/block/cfq-iosched.c	2010-03-19 13:28:06.000000000 -0400
+@@ -3730,7 +3730,7 @@ static void *cfq_init_queue(struct reque
+ 	 * second, in order to have larger depth for async operations.
+ 	 */
+ 	cfqd->last_delayed_sync = jiffies - HZ;
+-	INIT_RCU_HEAD(&cfqd->rcu);
++	rcu_head_init(&cfqd->rcu);
+ 	return cfqd;
+ }
+ 
+Index: linux-2.6-lttng/block/genhd.c
+===================================================================
+--- linux-2.6-lttng.orig/block/genhd.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/block/genhd.c	2010-03-19 13:28:06.000000000 -0400
+@@ -987,7 +987,7 @@ int disk_expand_part_tbl(struct gendisk 
+ 	if (!new_ptbl)
+ 		return -ENOMEM;
+ 
+-	INIT_RCU_HEAD(&new_ptbl->rcu_head);
++	rcu_head_init(&new_ptbl->rcu_head);
+ 	new_ptbl->len = target;
+ 
+ 	for (i = 0; i < len; i++)
+Index: linux-2.6-lttng/net/netfilter/nfnetlink_queue.c
+===================================================================
+--- linux-2.6-lttng.orig/net/netfilter/nfnetlink_queue.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/net/netfilter/nfnetlink_queue.c	2010-03-19 13:28:06.000000000 -0400
+@@ -112,7 +112,7 @@ instance_create(u_int16_t queue_num, int
+ 	inst->copy_mode = NFQNL_COPY_NONE;
+ 	spin_lock_init(&inst->lock);
+ 	INIT_LIST_HEAD(&inst->queue_list);
+-	INIT_RCU_HEAD(&inst->rcu);
++	rcu_head_init(&inst->rcu);
+ 
+ 	if (!try_module_get(THIS_MODULE)) {
+ 		err = -EAGAIN;
+Index: linux-2.6-lttng/net/core/drop_monitor.c
+===================================================================
+--- linux-2.6-lttng.orig/net/core/drop_monitor.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/core/drop_monitor.c	2010-03-19 13:28:06.000000000 -0400
+@@ -296,7 +296,7 @@ static int dropmon_net_event(struct noti
+ 
+ 		new_stat->dev = dev;
+ 		new_stat->last_rx = jiffies;
+-		INIT_RCU_HEAD(&new_stat->rcu);
++		rcu_head_init(&new_stat->rcu);
+ 		spin_lock(&trace_state_lock);
+ 		list_add_rcu(&new_stat->list, &hw_stats_list);
+ 		spin_unlock(&trace_state_lock);
+Index: linux-2.6-lttng/net/ipv6/sit.c
+===================================================================
+--- linux-2.6-lttng.orig/net/ipv6/sit.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/ipv6/sit.c	2010-03-19 13:28:06.000000000 -0400
+@@ -364,7 +364,7 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t
+ 		goto out;
+ 	}
+ 
+-	INIT_RCU_HEAD(&p->rcu_head);
++	rcu_head_init(&p->rcu_head);
+ 	p->next = t->prl;
+ 	p->addr = a->addr;
+ 	p->flags = a->flags;
+Index: linux-2.6-lttng/net/ipv6/xfrm6_tunnel.c
+===================================================================
+--- linux-2.6-lttng.orig/net/ipv6/xfrm6_tunnel.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/ipv6/xfrm6_tunnel.c	2010-03-19 13:28:06.000000000 -0400
+@@ -187,7 +187,7 @@ alloc_spi:
+ 	if (!x6spi)
+ 		goto out;
+ 
+-	INIT_RCU_HEAD(&x6spi->rcu_head);
++	rcu_head_init(&x6spi->rcu_head);
+ 	memcpy(&x6spi->addr, saddr, sizeof(x6spi->addr));
+ 	x6spi->spi = spi;
+ 	atomic_set(&x6spi->refcnt, 1);
+Index: linux-2.6-lttng/net/netfilter/nf_conntrack_expect.c
+===================================================================
+--- linux-2.6-lttng.orig/net/netfilter/nf_conntrack_expect.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/net/netfilter/nf_conntrack_expect.c	2010-03-19 13:28:06.000000000 -0400
+@@ -232,7 +232,7 @@ struct nf_conntrack_expect *nf_ct_expect
+ 
+ 	new->master = me;
+ 	atomic_set(&new->use, 1);
+-	INIT_RCU_HEAD(&new->rcu);
++	rcu_head_init(&new->rcu);
+ 	return new;
+ }
+ EXPORT_SYMBOL_GPL(nf_ct_expect_alloc);
+Index: linux-2.6-lttng/net/netfilter/nf_conntrack_extend.c
+===================================================================
+--- linux-2.6-lttng.orig/net/netfilter/nf_conntrack_extend.c	2010-03-19 13:23:40.000000000 -0400
++++ linux-2.6-lttng/net/netfilter/nf_conntrack_extend.c	2010-03-19 13:28:06.000000000 -0400
+@@ -59,7 +59,7 @@ nf_ct_ext_create(struct nf_ct_ext **ext,
+ 	if (!*ext)
+ 		return NULL;
+ 
+-	INIT_RCU_HEAD(&(*ext)->rcu);
++	rcu_head_init(&(*ext)->rcu);
+ 	(*ext)->offset[id] = off;
+ 	(*ext)->len = len;
+ 
+Index: linux-2.6-lttng/net/netlabel/netlabel_domainhash.c
+===================================================================
+--- linux-2.6-lttng.orig/net/netlabel/netlabel_domainhash.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/netlabel/netlabel_domainhash.c	2010-03-19 13:28:06.000000000 -0400
+@@ -315,7 +315,7 @@ int netlbl_domhsh_add(struct netlbl_dom_
+ 		entry_old = netlbl_domhsh_search_def(entry->domain);
+ 	if (entry_old == NULL) {
+ 		entry->valid = 1;
+-		INIT_RCU_HEAD(&entry->rcu);
++		rcu_head_init(&entry->rcu);
+ 
+ 		if (entry->domain != NULL) {
+ 			u32 bkt = netlbl_domhsh_hash(entry->domain);
+Index: linux-2.6-lttng/net/netlabel/netlabel_unlabeled.c
+===================================================================
+--- linux-2.6-lttng.orig/net/netlabel/netlabel_unlabeled.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/netlabel/netlabel_unlabeled.c	2010-03-19 13:28:06.000000000 -0400
+@@ -327,7 +327,7 @@ static int netlbl_unlhsh_add_addr4(struc
+ 	entry->list.addr = addr->s_addr & mask->s_addr;
+ 	entry->list.mask = mask->s_addr;
+ 	entry->list.valid = 1;
+-	INIT_RCU_HEAD(&entry->rcu);
++	rcu_head_init(&entry->rcu);
+ 	entry->secid = secid;
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+@@ -373,7 +373,7 @@ static int netlbl_unlhsh_add_addr6(struc
+ 	entry->list.addr.s6_addr32[3] &= mask->s6_addr32[3];
+ 	ipv6_addr_copy(&entry->list.mask, mask);
+ 	entry->list.valid = 1;
+-	INIT_RCU_HEAD(&entry->rcu);
++	rcu_head_init(&entry->rcu);
+ 	entry->secid = secid;
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+@@ -410,7 +410,7 @@ static struct netlbl_unlhsh_iface *netlb
+ 	INIT_LIST_HEAD(&iface->addr4_list);
+ 	INIT_LIST_HEAD(&iface->addr6_list);
+ 	iface->valid = 1;
+-	INIT_RCU_HEAD(&iface->rcu);
++	rcu_head_init(&iface->rcu);
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+ 	if (ifindex > 0) {
+Index: linux-2.6-lttng/net/sctp/bind_addr.c
+===================================================================
+--- linux-2.6-lttng.orig/net/sctp/bind_addr.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/sctp/bind_addr.c	2010-03-19 13:28:06.000000000 -0400
+@@ -186,7 +186,7 @@ int sctp_add_bind_addr(struct sctp_bind_
+ 	addr->valid = 1;
+ 
+ 	INIT_LIST_HEAD(&addr->list);
+-	INIT_RCU_HEAD(&addr->rcu);
++	rcu_head_init(&addr->rcu);
+ 
+ 	/* We always hold a socket lock when calling this function,
+ 	 * and that acts as a writer synchronizing lock.
+Index: linux-2.6-lttng/net/sctp/ipv6.c
+===================================================================
+--- linux-2.6-lttng.orig/net/sctp/ipv6.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/sctp/ipv6.c	2010-03-19 13:28:06.000000000 -0400
+@@ -381,7 +381,7 @@ static void sctp_v6_copy_addrlist(struct
+ 			addr->a.v6.sin6_scope_id = dev->ifindex;
+ 			addr->valid = 1;
+ 			INIT_LIST_HEAD(&addr->list);
+-			INIT_RCU_HEAD(&addr->rcu);
++			rcu_head_init(&addr->rcu);
+ 			list_add_tail(&addr->list, addrlist);
+ 		}
+ 	}
+Index: linux-2.6-lttng/net/sctp/protocol.c
+===================================================================
+--- linux-2.6-lttng.orig/net/sctp/protocol.c	2010-03-19 13:23:39.000000000 -0400
++++ linux-2.6-lttng/net/sctp/protocol.c	2010-03-19 13:28:06.000000000 -0400
+@@ -188,7 +188,7 @@ static void sctp_v4_copy_addrlist(struct
+ 			addr->a.v4.sin_addr.s_addr = ifa->ifa_local;
+ 			addr->valid = 1;
+ 			INIT_LIST_HEAD(&addr->list);
+-			INIT_RCU_HEAD(&addr->rcu);
++			rcu_head_init(&addr->rcu);
+ 			list_add_tail(&addr->list, addrlist);
+ 		}
+ 	}
 
 -- 
 Mathieu Desnoyers
