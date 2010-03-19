@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab0CSSXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 14:23:43 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:41320 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab0CSSXl (ORCPT
+	id S1752036Ab0CSS0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 14:26:41 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:50100 "EHLO
+	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0CSS0k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 14:23:41 -0400
-Message-ID: <4BA3C0CF.6070005@oracle.com>
-Date: Fri, 19 Mar 2010 11:22:07 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 19 Mar 2010 14:26:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=SgibSgMlmGrqjvOkuEdof7xoU2OJUBUCpNpJe6WG2TbbZPJ8CscgHCX9JhTgTrqmmf
+         IoX1P+zc4IDXDU2itis/iO4LYlZYgD7LNsQfIhPlAurkDawEmBldunP0WzQpiUNdk1xH
+         Pc1UhU5eoQRvNrn9AyyRmkXJalOt/M719JHR4=
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: 2.6.33 GP fault only when built with tracing
-References: <4BA2B69D.3000309@oracle.com> <1268956555.758.18.camel@gandalf.stny.rr.com> <20100319005901.GB23020@Krystal>
-In-Reply-To: <20100319005901.GB23020@Krystal>
+In-Reply-To: <73e903671003191123h1b7e1196v336265842f1b29e5@mail.gmail.com>
+References: <de04351e1003190329l2f33447bhe37b963bd4b48c70@mail.gmail.com> 
+	<4BA3C07A.8030204@gmx.net> <73e903671003191123h1b7e1196v336265842f1b29e5@mail.gmail.com>
+From: =?ISO-8859-1?Q?Kristleifur_Da=F0ason?= <kristleifur@gmail.com>
+Date: Fri, 19 Mar 2010 18:26:18 +0000
+Message-ID: <73e903671003191126l6c0bed69q69c32bf37922690d@mail.gmail.com>
+Subject: Re: BUG:write data to degrade raid5
+To: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4BA3C119.0111:SCFMA4539814,ss=1,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/10 17:59, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
->> On Thu, 2010-03-18 at 16:26 -0700, Randy Dunlap wrote:
->>> I can build/boot 2.6.33 with CONFIG_TRACE/TRACING disabled successfully,
->>> but when I enable lots of tracing config options and then boot with
->>> ftrace=nop on the kernel command line, I see a GP fault when the parport &
->>> parport_pc modules are loading/initializing.
+On Fri, Mar 19, 2010 at 6:20 PM, Joachim Otahal <Jou@gmx.net> wrote:
+> jin zhencheng schrieb:
 >>
->> Do you see it without adding the "ftrace=nop"? The only thing that
->> should do is expand the ring buffer on boot up.
+>> hi;
 >>
->>>
->>> It happens in drivers/parport/share.c::parport_register_device(), when that
->>> function calls try_module_get().
->>>
->>> If I comment out the trace_module_get() calls in include/linux/module.h,
->>> the kernel boots with no problems.
+>> i use kernel is 2.6.26.2
 >>
+>> what i do as follow:
 >>
->> Interesting. Well, trace_module_get() is a TRACE_EVENT tracepoint. But
->> should be disabled here. It may be something to do with DEFINE_TRACE. 
+>> 1, I create a raid5:
+>> mdadm -C /dev/md5 -l 5 -n 4 /dev/sda /dev/sdb /dev/sdc  /dev/sdd
+>> --metadata=1.0 --assume-clean
 >>
->> (added Mathieu to Cc since he wrote that code)
-> 
-> can you try replacing the "local_read(__module_ref_addr(module, cpu))" argument
-> with "0" ?
+>> 2, dd if=/dev/zero of=/dev/md5 bs=1M&
+>>
+>> write data to this raid5
+>>
+>> 3, mdadm --manage /dev/md5 -f /dev/sda
+>>
+>> 4 mdadm --manage  /dev/md5 -f /dev/sdb
+>>
+>> if i faild 2 disks ,then the OS kernel display OOP error and kernel down
+>>
+>> do somebody know why ?
+>>
+>> Is MD/RAID5 bug ?
+>>
+>
+> RAID5 can only tolerate ONE drive to fail of ALL members. If you want to be
+> able to fail two drives you will have to use RAID6 or RAID5 with one
+> hot-spare (and give it time to rebuild before failing the second drive).
+> PLEASE read the documentation on raid levels, like on wikipedia.
+>
 
-Yes, that boots with no problems.
+That is true,
 
-> Arguments with side-effects are not skipped by the jump over disabled
-> instrumentation. This is why we should do that part within the probe declaration
-> in the TRACE_EVENT macros.
-> 
-> But if we find out that the problem really is this argument, then it should be
-> fixed, because something would be wrong with it (just moving it to TRACE_EVENT
-> is not a proper solution).
-> 
-> Thanks,
-> 
-> Mathieu
+but should we get a kernel oops and crash if two RAID5 drives are
+failed? (THAT part looks like a bug!)
 
+Jin, can you try a newer kernel, and a newer mdadm?
 
--- 
-~Randy
+-- Kristleifur
