@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab0CSOPm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 10:15:42 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:55159 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab0CSOPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 10:15:40 -0400
-Message-ID: <4BA386FC.2000901@nokia.com>
-Date: Fri, 19 Mar 2010 16:15:24 +0200
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1752766Ab0CSOQk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 10:16:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752453Ab0CSOQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 10:16:39 -0400
+Date: Fri, 19 Mar 2010 15:14:18 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Roland McGrath <roland@redhat.com>, Jason Baron <jbaron@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [PATCH -tip v5] tracepoint: Add signal coredump tracepoint
+Message-ID: <20100319141418.GA22706@redhat.com>
+References: <20100319132346.31144.40337.stgit@localhost6.localdomain6> <20100319133352.GC19394@redhat.com> <4BA385CB.9080706@redhat.com>
 MIME-Version: 1.0
-To: ext Arjan van de Ven <arjan@linux.intel.com>,
-       ext Tony Lindgren <tony@atomide.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] scripts/bootgraph.pl: ignore times until the clock is
- running
-References: <1268934595-22544-1-git-send-email-aaro.koskinen@nokia.com> <4BA26FE8.2070705@linux.intel.com>
-In-Reply-To: <4BA26FE8.2070705@linux.intel.com>
-Content-Type: text/plain; charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2010 14:15:27.0806 (UTC) FILETIME=[9FFE65E0:01CAC76E]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA385CB.9080706@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 03/19, Masami Hiramatsu wrote:
+>
+> Ah, that's a big conflict :O
+> Yes, sure, I can wait for your commits. I'll update this patch on yours.
 
-Arjan van de Ven wrote:
-> On 3/18/2010 10:49, Aaro Koskinen wrote:
->> The clock used for printk.time=1 does not necessarily start running
->> from zero. On such platforms the bootgraph does not work properly as
->> the calculated boottime will be too long.
-> 
-> can we fix the platform to be smarter instead ? I'd think that's needed anyway for various
-> timers etc to actually work well
+Great, thanks ;)
 
-Hmm, on OMAP I have gotten so used to this "feature" that I never
-thought it was a bug. However, I don't think it will affect anything
-else than printk time stamps.
+Oleg.
 
-Anyway, I sent a fix proposal to linux-omap list:
-http://marc.info/?l=linux-omap&m=126900738712041&w=2
-
->> To correct this, the patch modifies the script to accept only non-zero
->> start times. This ensures the report contains entries only from the
->> period when the clock was running.
->>
->> Signed-off-by: Aaro Koskinen<aaro.koskinen@nokia.com>
-> 
-> nothing wrong with the patch itself... just sad that it's needed to work around such bugs ;(
-> 
-> Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-
-I guess we can forget this patch if we agree the platform behaviour is
-not correct.
-
-A.
