@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab0CSGFx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 02:05:53 -0400
-Received: from ozlabs.org ([203.10.76.45]:51754 "EHLO ozlabs.org"
+	id S1751548Ab0CSGG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 02:06:28 -0400
+Received: from quartz.orcorp.ca ([139.142.54.143]:60376 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119Ab0CSGFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 02:05:51 -0400
-From: Jeremy Kerr <jk@ozlabs.org>
-To: users@linux.kernel.org
-Subject: Re: [kernel.org users] [KORG] Availability of SSL on kernel.org
-Date: Fri, 19 Mar 2010 14:05:48 +0800
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
-Cc: Paul Mundt <lethal@linux-sh.org>, "J.H." <warthog9@kernel.org>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>, users@kernel.org
-References: <4BA2CFB7.7070108@kernel.org> <20100319035806.GB25308@linux-sh.org>
-In-Reply-To: <20100319035806.GB25308@linux-sh.org>
+	id S1751099Ab0CSGG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 02:06:26 -0400
+Date: Fri, 19 Mar 2010 00:06:21 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+       Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] PPC: Skip over OF_DT_NOP when unflattening the device tree
+Message-ID: <20100319060621.GC28042@obsidianresearch.com>
+References: <20100309193021.GD30462@obsidianresearch.com> <1268977838.8599.53.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003191405.48716.jk@ozlabs.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268977838.8599.53.camel@pasglop>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Fri, Mar 19, 2010 at 04:50:38PM +1100, Benjamin Herrenschmidt wrote:
+> On Tue, 2010-03-09 at 12:30 -0700, Jason Gunthorpe wrote:
+> > NOPs within the property section are skipped, but NOPs between
+> > OF_DT_END_NODE and OF_DT_BEGIN_NODE were not. My firmware NOPs out
+> > entire nodes depending on various environment parameters.
+> > 
+> > of_scan_flat_dt already handles NOP more generally..
+> 
+> Good catch, though that code has now moved over to drivers/of
+> and is a bit different. Grant is going to fix it up though.
 
-> If I change the pwclientrc url to https:// instead then at least pwclient
-> list and get work, but update bombs out in the same way. I checked the
-> pwclientrc from the project info pages incase there was an update, but
-> those don't seem to have changed in format at all.
+Ah, I based the patch off 2.6.33.. 
 
-Could you send me the backtrace you get when the 'update' fails?
+Grant: let me know if you need some help/testing, nice to run into you
+again.
 
-Cheers,
-
-
-Jeremy
+Jason
