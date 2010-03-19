@@ -1,60 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab0CSQ4w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 12:56:52 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:48248 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab0CSQ4t (ORCPT
+	id S1753667Ab0CSRIz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 13:08:55 -0400
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:58628 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab0CSRIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 12:56:49 -0400
-Message-ID: <4BA3ACA8.1020400@oracle.com>
-Date: Fri, 19 Mar 2010 09:56:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.sourceforge.net
-CC: Jakob Bornecrantz <jakob@vmware.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] vmwgfx: depends on FB to fix build errors
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4BA3ACC2.0181:SCFMA4539814,ss=1,fgs=0
+	Fri, 19 Mar 2010 13:08:54 -0400
+X-SENDER-IP: [83.226.249.136]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsZFAItMo0tT4vmIPGdsb2JhbACHX5NaDAEBAQE3LaxejW6EegQ
+X-IronPort-AV: E=Sophos;i="4.51,275,1267398000"; 
+   d="scan'208";a="53430235"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: mlmetxrx.c Coding style fixes.
+Date: Fri, 19 Mar 2010 18:08:51 +0100
+Message-Id: <1269018531-18891-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+I fixed all coding style issues found by checkpatch.pl
+and converted argument names away from CamelCase and
+hungarian notation.
 
-vmwfgx uses framebuffer interfaces, so it should depend on FB.
-Otherwise it has these build errors (e.g., when CONFIG_FB=m):
-
-drivers/built-in.o: In function `vmw_fb_close':
-(.text+0x97713): undefined reference to `unregister_framebuffer'
-drivers/built-in.o: In function `vmw_fb_close':
-(.text+0x97754): undefined reference to `framebuffer_release'
-drivers/built-in.o: In function `vmw_fb_init':
-(.text+0x97e1c): undefined reference to `framebuffer_alloc'
-drivers/built-in.o: In function `vmw_fb_init':
-(.text+0x9838d): undefined reference to `register_framebuffer'
-drivers/built-in.o: In function `vmw_fb_init':
-(.text+0x9842a): undefined reference to `framebuffer_release'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Jakob Bornecrantz <jakob@vmware.com>
+Signed-off-by: Lars Lindley <lindley@coyote.org>
 ---
- drivers/gpu/drm/vmwgfx/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/winbond/mlmetxrx.c |   79 +++++++++++++++++-------------------
+ 1 files changed, 37 insertions(+), 42 deletions(-)
 
---- lnx-2634-rc1.orig/drivers/gpu/drm/vmwgfx/Kconfig
-+++ lnx-2634-rc1/drivers/gpu/drm/vmwgfx/Kconfig
-@@ -1,6 +1,6 @@
- config DRM_VMWGFX
- 	tristate "DRM driver for VMware Virtual GPU"
--	depends on DRM && PCI
-+	depends on DRM && PCI && FB
- 	select FB_DEFERRED_IO
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
+diff --git a/drivers/staging/winbond/mlmetxrx.c b/drivers/staging/winbond/mlmetxrx.c
+index f856b94..76b79f0 100644
+--- a/drivers/staging/winbond/mlmetxrx.c
++++ b/drivers/staging/winbond/mlmetxrx.c
+@@ -1,28 +1,25 @@
+-//============================================================================
+-//  Module Name:
+-//    MLMETxRx.C
+-//
+-//  Description:
+-//    The interface between MDS (MAC Data Service) and MLME.
+-//
+-//  Revision History:
+-//  --------------------------------------------------------------------------
+-//          200209      UN20 Jennifer Xu
+-//                      Initial Release
+-//          20021108    PD43 Austin Liu
+-//          20030117    PD43 Austin Liu
+-//                      Deleted MLMEReturnPacket and MLMEProcThread()
+-//
+-//  Copyright (c) 1996-2002 Winbond Electronics Corp. All Rights Reserved.
+-//============================================================================
++/*
++ * ============================================================================
++ * Module Name:
++ *    MLMETxRx.C
++ *
++ *  Description:
++ *    The interface between MDS (MAC Data Service) and MLME.
++ *
++ *  Copyright (c) 1996-2002 Winbond Electronics Corp. All Rights Reserved.
++ * ============================================================================
++ */
+ #include "sysdef.h"
+ 
+ #include "mds_f.h"
+ 
+-//=============================================================================
+-u8 MLMESendFrame(struct wbsoft_priv * adapter, u8 *pMMPDU, u16 len, u8 DataType)
+-/*	DataType : FRAME_TYPE_802_11_MANAGEMENT, FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE,
+-				FRAME_TYPE_802_11_DATA */
++/*
++ * ============================================================================
++ * DataType:	FRAME_TYPE_802_11_MANAGEMENT,
++ *		FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE,
++ *		FRAME_TYPE_802_11_DATA
++ */
++u8 MLMESendFrame(struct wbsoft_priv *adapter, u8 *mmpdu, u16 len, u8 datatype)
+ {
+ 	if (adapter->sMlmeFrame.IsInUsed != PACKET_FREE_TO_USE) {
+ 		adapter->sMlmeFrame.wNumTxMMPDUDiscarded++;
+@@ -30,17 +27,19 @@ u8 MLMESendFrame(struct wbsoft_priv * adapter, u8 *pMMPDU, u16 len, u8 DataType)
+ 	}
+ 	adapter->sMlmeFrame.IsInUsed = PACKET_COME_FROM_MLME;
+ 
+-	// Keep information for sending
+-	adapter->sMlmeFrame.pMMPDU = pMMPDU;
+-	adapter->sMlmeFrame.DataType = DataType;
+-	// len must be the last setting due to QUERY_SIZE_SECOND of Mds
++	/* Keep information for sending */
++	adapter->sMlmeFrame.pMMPDU = mmpdu;
++	adapter->sMlmeFrame.DataType = datatype;
++	/* len must be the last setting due to QUERY_SIZE_SECOND of Mds */
+ 	adapter->sMlmeFrame.len = len;
+ 	adapter->sMlmeFrame.wNumTxMMPDU++;
+ 
+-	// H/W will enter power save by set the register. S/W don't send null frame
+-	//with PWRMgt bit enbled to enter power save now.
++	/*
++	 * H/W will enter power save by set the register. S/W don't send null
++	 * frame with PWRMgt bit enbled to enter power save now.
++	 */
+ 
+-	// Transmit NDIS packet
++	/* Transmit NDIS packet */
+ 	Mds_Tx(adapter);
+ 	return true;
+ }
+@@ -56,38 +55,34 @@ void MLME_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *des
+ 	desc->Type = adapter->sMlmeFrame.DataType;
+ }
+ 
+-static void MLMEfreeMMPDUBuffer(struct wbsoft_priv *adapter, s8 *pData)
++static void MLMEfreeMMPDUBuffer(struct wbsoft_priv *adapter, s8 *data)
+ {
+ 	int i;
+ 
+-	// Reclaim the data buffer
++	/* Reclaim the data buffer */
+ 	for (i = 0; i < MAX_NUM_TX_MMPDU; i++) {
+-		if (pData == (s8 *)&(adapter->sMlmeFrame.TxMMPDU[i]))
++		if (data == (s8 *)&(adapter->sMlmeFrame.TxMMPDU[i]))
+ 			break;
+ 	}
+ 	if (adapter->sMlmeFrame.TxMMPDUInUse[i])
+ 		adapter->sMlmeFrame.TxMMPDUInUse[i] = false;
+-	else  {
+-		// Something wrong
+-		// PD43 Add debug code here???
++	else {
++		/* Something wrong */
++		/* PD43 Add debug code here??? */
+ 	}
+ }
+ 
+-void
+-MLME_SendComplete(struct wbsoft_priv * adapter, u8 PacketID, unsigned char SendOK)
++void MLME_SendComplete(struct wbsoft_priv *adapter, u8 packetid, unsigned char sendok)
+ {
+ 	MLME_TXCALLBACK	TxCallback;
+ 
+-    // Reclaim the data buffer
++	/* Reclaim the data buffer */
+ 	adapter->sMlmeFrame.len = 0;
+-	MLMEfreeMMPDUBuffer( adapter, adapter->sMlmeFrame.pMMPDU );
+-
++	MLMEfreeMMPDUBuffer(adapter, adapter->sMlmeFrame.pMMPDU);
+ 
+ 	TxCallback.bResult = MLME_SUCCESS;
+ 
+-	// Return resource
++	/* Return resource */
+ 	adapter->sMlmeFrame.IsInUsed = PACKET_FREE_TO_USE;
+ }
+ 
+-
+-
+-- 
+1.7.0.2
+
