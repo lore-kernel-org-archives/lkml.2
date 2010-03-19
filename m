@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab0CSHbR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 03:31:17 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43126 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab0CSHbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 03:31:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 19 Mar 2010 16:27:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, akpm@linux-foundation.org, andi.kleen@intel.com,
-       fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] [BUGFIX] pagemap: fix pfn calculation for hugepage
-Message-Id: <20100319162732.58633847.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1268979996-12297-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1751832Ab0CSHkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 03:40:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28778 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751527Ab0CSHkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 03:40:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,273,1267430400"; 
+   d="scan'208";a="256482271"
+Subject: Re: [PATCH -v3 0/2] ACPI, APEI, use general HEST tabling parsing
+ in AER firmware_first setup
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+In-Reply-To: <1268636261-31554-1-git-send-email-ying.huang@intel.com>
+References: <1268636261-31554-1-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Mar 2010 15:40:03 +0800
+Message-ID: <1268984403.3596.14.camel@yhuang-dev.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Mar 2010 16:10:23 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Hi, Len,
 
-> On Fri, 19 Mar 2010 15:26:36 +0900
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+What do you think about this patchset?
+
+Best Regards,
+Huang Ying
+
+On Mon, 2010-03-15 at 14:57 +0800, Huang, Ying wrote:
+> Changelog:
 > 
-> > When we look into pagemap using page-types with option -p, the value
-> > of pfn for hugepages looks wrong (see below.)
-> > This is because pte was evaluated only once for one vma
-> > although it should be updated for each hugepage. This patch fixes it.
-> > 
-> > $ page-types -p 3277 -Nl -b huge
-> > voffset   offset  len     flags
-> > 7f21e8a00 11e400  1       ___U___________H_G________________
-> > 7f21e8a01 11e401  1ff     ________________TG________________
-> > 7f21e8c00 11e400  1       ___U___________H_G________________
-> > 7f21e8c01 11e401  1ff     ________________TG________________
-> >              ^^^
-> >              should not be the same
-> > 
-> > With this patch applied:
-> > 
-> > $ page-types -p 3386 -Nl -b huge
-> > voffset   offset   len    flags
-> > 7fec7a600 112c00   1      ___UD__________H_G________________
-> > 7fec7a601 112c01   1ff    ________________TG________________
-> > 7fec7a800 113200   1      ___UD__________H_G________________
-> > 7fec7a801 113201   1ff    ________________TG________________
-> >              ^^^
-> >              OK
-> > 
-> Hmm. Is this bug ? To me, it's just shown in hugepage's pagesize, by design.
+> v3:
 > 
-I'm sorry it seems this is bugfix.
+> - Move pcie_aer_get_firmware_first into aerdrv_acpi.c, and make
+>   aer_set_firmware_first static in aerdrv_acpi.c. This makes external
+>   interface simple and clear.
+> 
+> v2:
+> 
+> - Setup firmware_first for every PCIE end point instead of just root point.
+> 
+> - Wrap firmware_first accessing in a function, because HEST parsing involved.
 
-But, this means hugeltb_entry() is not called per hugetlb entry...isn't it ?
-
-Why hugetlb_entry() cannot be called per hugeltb entry ? Don't we need a code
-for a case as pmd_size != hugetlb_size in walk_page_range() for generic fix ?
-
-Thanks,
--Kame
 
