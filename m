@@ -1,559 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab0CSPik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:38:40 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:19789 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0CSPii (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 19 Mar 2010 11:38:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-       iommu@lists.linux-foundation.org, albert_herranz@yahoo.es
-Cc: chrisw@sous-sol.org, jeremy@goop.org, Ian.Campbell@eu.citrix.com,
-       dwmw2@infradead.org, alex.williamson@hp.com,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/5] swiotlb: Make all bookkeeping functions and variables have same prefix.
-Date: Fri, 19 Mar 2010 11:04:20 -0400
-Message-Id: <1269011062-25915-4-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1269011062-25915-3-git-send-email-konrad.wilk@oracle.com>
-References: <1269011062-25915-1-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-2-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-3-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BA39997.0119:SCFMA4539814,ss=1,fgs=0
+	id S1753259Ab0CSPqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:46:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:52670 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0CSPqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:46:44 -0400
+X-Auth-Info: bHDCFr6PXqVZ7gDgwsZsk9Ek3wavYFHmv6iWM0T3nGs=
+Message-ID: <4BA39C05.8050800@grandegger.com>
+Date: Fri, 19 Mar 2010 16:45:09 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+MIME-Version: 1.0
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+       netdev@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN	module
+References: <> <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu> <4BA33D5A.8070000@grandegger.com> <20100319151914.GB13672@ovro.caltech.edu>
+In-Reply-To: <20100319151914.GB13672@ovro.caltech.edu>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We prefix all book keeping functions and variables with the
-'swiotlb_bk' prefix.
+Ira W. Snyder wrote:
+> On Fri, Mar 19, 2010 at 10:01:14AM +0100, Wolfgang Grandegger wrote:
+>> Hi Ira,
+>>
+>> we already discussed this patch on the SocketCAN mailing list and there
+>> are just a few minor issues and the request to add support for the new
+>> "berr-reporting" option, if feasible. See:
+>>
+>>   commit 52c793f24054f5dc30d228e37e0e19cc8313f086
+>>   Author: Wolfgang Grandegger <wg@grandegger.com>
+>>   Date:   Mon Feb 22 22:21:17 2010 +0000
+>>
+>>     can: netlink support for bus-error reporting and counters
+>>     
+>>     This patch makes the bus-error reporting configurable and allows to
+>>     retrieve the CAN TX and RX bus error counters via netlink interface.
+>>     I have added support for the SJA1000. The TX and RX bus error counters
+>>     are also copied to the data fields 6..7 of error messages when state
+>>     changes are reported.
+>>
+>> Should not be a big deal.
+>>
+> 
+> I think this patch came along since my last post of the driver. I must
+> have missed it. I'll try and add support.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- lib/swiotlb.c |  247 +++++++++++++++++++++++++++++----------------------------
- 1 files changed, 126 insertions(+), 121 deletions(-)
+No problem, it's really new. Just just need to enable BEI depending on
+CAN_CTRLMODE_BERR_REPORTING.
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 5a7d73b..3926c14 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -64,38 +64,38 @@ int swiotlb_force;
-  * swiotlb_bk_sync_single_*, to see if the memory was in fact allocated by this
-  * API.
-  */
--static char *io_tlb_start, *io_tlb_end;
-+static char *swiotlb_bk_start, *swiotlb_bk_end;
- 
- /*
-- * The number of IO TLB blocks (in groups of 64) betweeen io_tlb_start and
-- * io_tlb_end.  This is command line adjustable via setup_io_tlb_npages.
-+ * The number of IO TLB blocks (in groups of 64) betweeen swiotlb_bk_start and
-+ * swiotlb_bk_end.  This is command line adjustable via setup_io_tlb_npages.
-  */
--static unsigned long io_tlb_nslabs;
-+static unsigned long swiotlb_bk_nslabs;
- 
- /*
-  * When the IOMMU overflows we return a fallback buffer. This sets the size.
-  */
--static unsigned long io_tlb_overflow = 32*1024;
-+static unsigned long swiotlb_bk_overflow = 32*1024;
- 
--void *io_tlb_overflow_buffer;
-+void *swiotlb_bk_overflow_buffer;
- 
- /*
-  * This is a free list describing the number of free entries available from
-  * each index
-  */
--static unsigned int *io_tlb_list;
--static unsigned int io_tlb_index;
-+static unsigned int *swiotlb_bk_list;
-+static unsigned int swiotlb_bk_index;
- 
- /*
-  * We need to save away the original address corresponding to a mapped entry
-  * for the sync operations.
-  */
--static phys_addr_t *io_tlb_orig_addr;
-+static phys_addr_t *swiotlb_bk_orig_addr;
- 
- /*
-  * Protect the above data structures in the map and unmap calls
-  */
--static DEFINE_SPINLOCK(io_tlb_lock);
-+static DEFINE_SPINLOCK(swiotlb_bk_lock);
- 
- static int late_alloc;
- 
-@@ -103,9 +103,9 @@ static int __init
- setup_io_tlb_npages(char *str)
- {
- 	if (isdigit(*str)) {
--		io_tlb_nslabs = simple_strtoul(str, &str, 0);
-+		swiotlb_bk_nslabs = simple_strtoul(str, &str, 0);
- 		/* avoid tail segment of size < IO_TLB_SEGSIZE */
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+		swiotlb_bk_nslabs = ALIGN(swiotlb_bk_nslabs, IO_TLB_SEGSIZE);
- 	}
- 	if (*str == ',')
- 		++str;
-@@ -115,7 +115,7 @@ setup_io_tlb_npages(char *str)
- 	return 1;
- }
- __setup("swiotlb=", setup_io_tlb_npages);
--/* make io_tlb_overflow tunable too? */
-+/* make swiotlb_bk_overflow tunable too? */
- 
- /* Note that this doesn't work with highmem page */
- static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
-@@ -126,14 +126,14 @@ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
- 
- void swiotlb_print_info(void)
- {
--	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	unsigned long bytes = swiotlb_bk_nslabs << IO_TLB_SHIFT;
- 	phys_addr_t pstart, pend;
- 
--	pstart = virt_to_phys(io_tlb_start);
--	pend = virt_to_phys(io_tlb_end);
-+	pstart = virt_to_phys(swiotlb_bk_start);
-+	pend = virt_to_phys(swiotlb_bk_end);
- 
- 	printk(KERN_INFO "Placing %luMB software IO TLB between %p - %p\n",
--	       bytes >> 20, io_tlb_start, io_tlb_end);
-+	       bytes >> 20, swiotlb_bk_start, swiotlb_bk_end);
- 	printk(KERN_INFO "software IO TLB at phys %#llx - %#llx\n",
- 	       (unsigned long long)pstart,
- 	       (unsigned long long)pend);
-@@ -148,37 +148,38 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- {
- 	unsigned long i, bytes;
- 
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	if (!swiotlb_bk_nslabs) {
-+		swiotlb_bk_nslabs = (default_size >> IO_TLB_SHIFT);
-+		swiotlb_bk_nslabs = ALIGN(swiotlb_bk_nslabs, IO_TLB_SEGSIZE);
- 	}
- 
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	bytes = swiotlb_bk_nslabs << IO_TLB_SHIFT;
- 
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	io_tlb_start = alloc_bootmem_low_pages(bytes);
--	if (!io_tlb_start)
-+	swiotlb_bk_start = alloc_bootmem_low_pages(bytes);
-+	if (!swiotlb_bk_start)
- 		panic("Cannot allocate SWIOTLB buffer");
--	io_tlb_end = io_tlb_start + bytes;
-+	swiotlb_bk_end = swiotlb_bk_start + bytes;
- 
- 	/*
- 	 * Allocate and initialize the free list array.  This array is used
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
--	 * between io_tlb_start and io_tlb_end.
-+	 * between swiotlb_bk_start and swiotlb_bk_end.
- 	 */
--	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
--	for (i = 0; i < io_tlb_nslabs; i++)
-- 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
--	io_tlb_index = 0;
--	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
-+	swiotlb_bk_list = alloc_bootmem(swiotlb_bk_nslabs * sizeof(int));
-+	for (i = 0; i < swiotlb_bk_nslabs; i++)
-+		swiotlb_bk_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
-+	swiotlb_bk_index = 0;
-+	swiotlb_bk_orig_addr = alloc_bootmem(swiotlb_bk_nslabs *
-+					     sizeof(phys_addr_t));
- 
- 	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
--	if (!io_tlb_overflow_buffer)
-+	swiotlb_bk_overflow_buffer = alloc_bootmem_low(swiotlb_bk_overflow);
-+	if (!swiotlb_bk_overflow_buffer)
- 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
- 	if (verbose)
- 		swiotlb_print_info();
-@@ -198,70 +199,71 @@ swiotlb_init(int verbose)
- int
- swiotlb_late_init_with_default_size(size_t default_size)
- {
--	unsigned long i, bytes, req_nslabs = io_tlb_nslabs;
-+	unsigned long i, bytes, req_nslabs = swiotlb_bk_nslabs;
- 	unsigned int order;
- 
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	if (!swiotlb_bk_nslabs) {
-+		swiotlb_bk_nslabs = (default_size >> IO_TLB_SHIFT);
-+		swiotlb_bk_nslabs = ALIGN(swiotlb_bk_nslabs, IO_TLB_SEGSIZE);
- 	}
- 
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	order = get_order(io_tlb_nslabs << IO_TLB_SHIFT);
--	io_tlb_nslabs = SLABS_PER_PAGE << order;
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+	order = get_order(swiotlb_bk_nslabs << IO_TLB_SHIFT);
-+	swiotlb_bk_nslabs = SLABS_PER_PAGE << order;
-+	bytes = swiotlb_bk_nslabs << IO_TLB_SHIFT;
- 
- 	while ((SLABS_PER_PAGE << order) > IO_TLB_MIN_SLABS) {
--		io_tlb_start = (void *)__get_free_pages(GFP_DMA | __GFP_NOWARN,
-+		swiotlb_bk_start = (void *)__get_free_pages(GFP_DMA |
-+							__GFP_NOWARN,
- 							order);
--		if (io_tlb_start)
-+		if (swiotlb_bk_start)
- 			break;
- 		order--;
- 	}
- 
--	if (!io_tlb_start)
-+	if (!swiotlb_bk_start)
- 		goto cleanup1;
- 
- 	if (order != get_order(bytes)) {
- 		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
- 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
--		io_tlb_nslabs = SLABS_PER_PAGE << order;
--		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+		swiotlb_bk_nslabs = SLABS_PER_PAGE << order;
-+		bytes = swiotlb_bk_nslabs << IO_TLB_SHIFT;
- 	}
--	io_tlb_end = io_tlb_start + bytes;
--	memset(io_tlb_start, 0, bytes);
-+	swiotlb_bk_end = swiotlb_bk_start + bytes;
-+	memset(swiotlb_bk_start, 0, bytes);
- 
- 	/*
- 	 * Allocate and initialize the free list array.  This array is used
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
--	 * between io_tlb_start and io_tlb_end.
-+	 * between swiotlb_bk_start and swiotlb_bk_end.
- 	 */
--	io_tlb_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
--	                              get_order(io_tlb_nslabs * sizeof(int)));
--	if (!io_tlb_list)
-+	swiotlb_bk_list = (unsigned int *)__get_free_pages(GFP_KERNEL,
-+				get_order(swiotlb_bk_nslabs * sizeof(int)));
-+	if (!swiotlb_bk_list)
- 		goto cleanup2;
- 
--	for (i = 0; i < io_tlb_nslabs; i++)
-- 		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
--	io_tlb_index = 0;
-+	for (i = 0; i < swiotlb_bk_nslabs; i++)
-+		swiotlb_bk_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
-+	swiotlb_bk_index = 0;
- 
--	io_tlb_orig_addr = (phys_addr_t *)
--		__get_free_pages(GFP_KERNEL,
--				 get_order(io_tlb_nslabs *
--					   sizeof(phys_addr_t)));
--	if (!io_tlb_orig_addr)
-+	swiotlb_bk_orig_addr = (phys_addr_t *)__get_free_pages(GFP_KERNEL,
-+						get_order(swiotlb_bk_nslabs *
-+						  sizeof(phys_addr_t)));
-+	if (!swiotlb_bk_orig_addr)
- 		goto cleanup3;
- 
--	memset(io_tlb_orig_addr, 0, io_tlb_nslabs * sizeof(phys_addr_t));
-+	memset(swiotlb_bk_orig_addr, 0, swiotlb_bk_nslabs *
-+					sizeof(phys_addr_t));
- 
- 	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	io_tlb_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
--	                                          get_order(io_tlb_overflow));
--	if (!io_tlb_overflow_buffer)
-+	swiotlb_bk_overflow_buffer = (void *)__get_free_pages(GFP_DMA,
-+					  get_order(swiotlb_bk_overflow));
-+	if (!swiotlb_bk_overflow_buffer)
- 		goto cleanup4;
- 
- 	swiotlb_print_info();
-@@ -271,52 +273,52 @@ swiotlb_late_init_with_default_size(size_t default_size)
- 	return 0;
- 
- cleanup4:
--	free_pages((unsigned long)io_tlb_orig_addr,
--		   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
--	io_tlb_orig_addr = NULL;
-+	free_pages((unsigned long)swiotlb_bk_orig_addr,
-+		   get_order(swiotlb_bk_nslabs * sizeof(phys_addr_t)));
-+	swiotlb_bk_orig_addr = NULL;
- cleanup3:
--	free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
-+	free_pages((unsigned long)swiotlb_bk_list, get_order(swiotlb_bk_nslabs *
- 	                                                 sizeof(int)));
--	io_tlb_list = NULL;
-+	swiotlb_bk_list = NULL;
- cleanup2:
--	io_tlb_end = NULL;
--	free_pages((unsigned long)io_tlb_start, order);
--	io_tlb_start = NULL;
-+	swiotlb_bk_end = NULL;
-+	free_pages((unsigned long)swiotlb_bk_start, order);
-+	swiotlb_bk_start = NULL;
- cleanup1:
--	io_tlb_nslabs = req_nslabs;
-+	swiotlb_bk_nslabs = req_nslabs;
- 	return -ENOMEM;
- }
- 
- void __init swiotlb_free(void)
- {
--	if (!io_tlb_overflow_buffer)
-+	if (!swiotlb_bk_overflow_buffer)
- 		return;
- 
- 	if (late_alloc) {
--		free_pages((unsigned long)io_tlb_overflow_buffer,
--			   get_order(io_tlb_overflow));
--		free_pages((unsigned long)io_tlb_orig_addr,
--			   get_order(io_tlb_nslabs * sizeof(phys_addr_t)));
--		free_pages((unsigned long)io_tlb_list, get_order(io_tlb_nslabs *
--								 sizeof(int)));
--		free_pages((unsigned long)io_tlb_start,
--			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
-+		free_pages((unsigned long)swiotlb_bk_overflow_buffer,
-+			   get_order(swiotlb_bk_overflow));
-+		free_pages((unsigned long)swiotlb_bk_orig_addr,
-+			   get_order(swiotlb_bk_nslabs * sizeof(phys_addr_t)));
-+		free_pages((unsigned long)swiotlb_bk_list,
-+			   get_order(swiotlb_bk_nslabs * sizeof(int)));
-+		free_pages((unsigned long)swiotlb_bk_start,
-+			   get_order(swiotlb_bk_nslabs << IO_TLB_SHIFT));
- 	} else {
--		free_bootmem_late(__pa(io_tlb_overflow_buffer),
--				  io_tlb_overflow);
--		free_bootmem_late(__pa(io_tlb_orig_addr),
--				  io_tlb_nslabs * sizeof(phys_addr_t));
--		free_bootmem_late(__pa(io_tlb_list),
--				  io_tlb_nslabs * sizeof(int));
--		free_bootmem_late(__pa(io_tlb_start),
--				  io_tlb_nslabs << IO_TLB_SHIFT);
-+		free_bootmem_late(__pa(swiotlb_bk_overflow_buffer),
-+				  swiotlb_bk_overflow);
-+		free_bootmem_late(__pa(swiotlb_bk_orig_addr),
-+				  swiotlb_bk_nslabs * sizeof(phys_addr_t));
-+		free_bootmem_late(__pa(swiotlb_bk_list),
-+				  swiotlb_bk_nslabs * sizeof(int));
-+		free_bootmem_late(__pa(swiotlb_bk_start),
-+				  swiotlb_bk_nslabs << IO_TLB_SHIFT);
- 	}
- }
- 
- static int is_swiotlb_buffer(phys_addr_t paddr)
- {
--	return paddr >= virt_to_phys(io_tlb_start) &&
--		paddr < virt_to_phys(io_tlb_end);
-+	return paddr >= virt_to_phys(swiotlb_bk_start) &&
-+		paddr < virt_to_phys(swiotlb_bk_end);
- }
- 
- /*
-@@ -402,9 +404,9 @@ swiotlb_bk_map_single(struct device *hwdev, phys_addr_t phys,
- 	 * Find suitable number of IO TLB entries size that will fit this
- 	 * request and allocate a buffer from that IO TLB pool.
- 	 */
--	spin_lock_irqsave(&io_tlb_lock, flags);
--	index = ALIGN(io_tlb_index, stride);
--	if (index >= io_tlb_nslabs)
-+	spin_lock_irqsave(&swiotlb_bk_lock, flags);
-+	index = ALIGN(swiotlb_bk_index, stride);
-+	if (index >= swiotlb_bk_nslabs)
- 		index = 0;
- 	wrap = index;
- 
-@@ -412,7 +414,7 @@ swiotlb_bk_map_single(struct device *hwdev, phys_addr_t phys,
- 		while (iommu_is_span_boundary(index, nslots, offset_slots,
- 					      max_slots)) {
- 			index += stride;
--			if (index >= io_tlb_nslabs)
-+			if (index >= swiotlb_bk_nslabs)
- 				index = 0;
- 			if (index == wrap)
- 				goto not_found;
-@@ -423,34 +425,35 @@ swiotlb_bk_map_single(struct device *hwdev, phys_addr_t phys,
- 		 * contiguous buffers, we allocate the buffers from that slot
- 		 * and mark the entries as '0' indicating unavailable.
- 		 */
--		if (io_tlb_list[index] >= nslots) {
-+		if (swiotlb_bk_list[index] >= nslots) {
- 			int count = 0;
- 
- 			for (i = index; i < (int) (index + nslots); i++)
--				io_tlb_list[i] = 0;
--			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE - 1) && io_tlb_list[i]; i--)
--				io_tlb_list[i] = ++count;
--			dma_addr = io_tlb_start + (index << IO_TLB_SHIFT);
-+				swiotlb_bk_list[i] = 0;
-+			for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE)
-+			     != IO_TLB_SEGSIZE - 1) && swiotlb_bk_list[i]; i--)
-+				swiotlb_bk_list[i] = ++count;
-+			dma_addr = swiotlb_bk_start + (index << IO_TLB_SHIFT);
- 
- 			/*
- 			 * Update the indices to avoid searching in the next
- 			 * round.
- 			 */
--			io_tlb_index = ((index + nslots) < io_tlb_nslabs
-+			swiotlb_bk_index = ((index + nslots) < swiotlb_bk_nslabs
- 					? (index + nslots) : 0);
- 
- 			goto found;
- 		}
- 		index += stride;
--		if (index >= io_tlb_nslabs)
-+		if (index >= swiotlb_bk_nslabs)
- 			index = 0;
- 	} while (index != wrap);
- 
- not_found:
--	spin_unlock_irqrestore(&io_tlb_lock, flags);
-+	spin_unlock_irqrestore(&swiotlb_bk_lock, flags);
- 	return NULL;
- found:
--	spin_unlock_irqrestore(&io_tlb_lock, flags);
-+	spin_unlock_irqrestore(&swiotlb_bk_lock, flags);
- 
- 	/*
- 	 * Save away the mapping from the original address to the DMA address.
-@@ -458,7 +461,7 @@ found:
- 	 * needed.
- 	 */
- 	for (i = 0; i < nslots; i++)
--		io_tlb_orig_addr[index+i] = phys + (i << IO_TLB_SHIFT);
-+		swiotlb_bk_orig_addr[index+i] = phys + (i << IO_TLB_SHIFT);
- 	if (dir == DMA_TO_DEVICE || dir == DMA_BIDIRECTIONAL)
- 		swiotlb_bounce(phys, dma_addr, size, DMA_TO_DEVICE);
- 
-@@ -474,8 +477,8 @@ swiotlb_bk_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
- {
- 	unsigned long flags;
- 	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
--	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
--	phys_addr_t phys = io_tlb_orig_addr[index];
-+	int index = (dma_addr - swiotlb_bk_start) >> IO_TLB_SHIFT;
-+	phys_addr_t phys = swiotlb_bk_orig_addr[index];
- 
- 	/*
- 	 * First, sync the memory before unmapping the entry
-@@ -489,32 +492,33 @@ swiotlb_bk_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
- 	 * While returning the entries to the free list, we merge the entries
- 	 * with slots below and above the pool being returned.
- 	 */
--	spin_lock_irqsave(&io_tlb_lock, flags);
-+	spin_lock_irqsave(&swiotlb_bk_lock, flags);
- 	{
- 		count = ((index + nslots) < ALIGN(index + 1, IO_TLB_SEGSIZE) ?
--			 io_tlb_list[index + nslots] : 0);
-+			 swiotlb_bk_list[index + nslots] : 0);
- 		/*
- 		 * Step 1: return the slots to the free list, merging the
- 		 * slots with superceeding slots
- 		 */
- 		for (i = index + nslots - 1; i >= index; i--)
--			io_tlb_list[i] = ++count;
-+			swiotlb_bk_list[i] = ++count;
- 		/*
- 		 * Step 2: merge the returned slots with the preceding slots,
- 		 * if available (non zero)
- 		 */
--		for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE) != IO_TLB_SEGSIZE -1) && io_tlb_list[i]; i--)
--			io_tlb_list[i] = ++count;
-+		for (i = index - 1; (OFFSET(i, IO_TLB_SEGSIZE)
-+		     != IO_TLB_SEGSIZE - 1) && swiotlb_bk_list[i]; i--)
-+			swiotlb_bk_list[i] = ++count;
- 	}
--	spin_unlock_irqrestore(&io_tlb_lock, flags);
-+	spin_unlock_irqrestore(&swiotlb_bk_lock, flags);
- }
- 
- static void
- swiotlb_bk_sync_single(struct device *hwdev, char *dma_addr, size_t size,
- 	    int dir, int target)
- {
--	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
--	phys_addr_t phys = io_tlb_orig_addr[index];
-+	int index = (dma_addr - swiotlb_bk_start) >> IO_TLB_SHIFT;
-+	phys_addr_t phys = swiotlb_bk_orig_addr[index];
- 
- 	phys += ((unsigned long)dma_addr & ((1 << IO_TLB_SHIFT) - 1));
- 
-@@ -563,7 +567,7 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		 * GFP_DMA memory; fall back on swiotlb_bk_map_single(), which
- 		 * will grab memory from the lowest available address range.
- 		 */
--		start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
-+		start_dma_addr = swiotlb_virt_to_bus(hwdev, swiotlb_bk_start);
- 		ret = swiotlb_bk_map_single(hwdev, 0, start_dma_addr, size,
- 					    DMA_FROM_DEVICE);
- 		if (!ret)
-@@ -616,7 +620,7 @@ swiotlb_full(struct device *dev, size_t size, int dir, int do_panic)
- 	printk(KERN_ERR "DMA: Out of SW-IOMMU space for %zu bytes at "
- 	       "device %s\n", size, dev ? dev_name(dev) : "?");
- 
--	if (size <= io_tlb_overflow || !do_panic)
-+	if (size <= swiotlb_bk_overflow || !do_panic)
- 		return;
- 
- 	if (dir == DMA_BIDIRECTIONAL)
-@@ -656,11 +660,11 @@ dma_addr_t swiotlb_map_page(struct device *dev, struct page *page,
- 	/*
- 	 * Oh well, have to allocate and map a bounce buffer.
- 	 */
--	start_dma_addr = swiotlb_virt_to_bus(dev, io_tlb_start);
-+	start_dma_addr = swiotlb_virt_to_bus(dev, swiotlb_bk_start);
- 	map = swiotlb_bk_map_single(dev, phys, start_dma_addr, size, dir);
- 	if (!map) {
- 		swiotlb_full(dev, size, dir, 1);
--		map = io_tlb_overflow_buffer;
-+		map = swiotlb_bk_overflow_buffer;
- 	}
- 
- 	dev_addr = swiotlb_virt_to_bus(dev, map);
-@@ -818,7 +822,7 @@ swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl, int nelems,
- 
- 	BUG_ON(dir == DMA_NONE);
- 
--	start_dma_addr = swiotlb_virt_to_bus(hwdev, io_tlb_start);
-+	start_dma_addr = swiotlb_virt_to_bus(hwdev, swiotlb_bk_start);
- 	for_each_sg(sgl, sg, nelems, i) {
- 		phys_addr_t paddr = sg_phys(sg);
- 		dma_addr_t dev_addr = phys_to_dma(hwdev, paddr);
-@@ -919,7 +923,8 @@ EXPORT_SYMBOL(swiotlb_sync_sg_for_device);
- int
- swiotlb_dma_mapping_error(struct device *hwdev, dma_addr_t dma_addr)
- {
--	return (dma_addr == swiotlb_virt_to_bus(hwdev, io_tlb_overflow_buffer));
-+	return (dma_addr == swiotlb_virt_to_bus(hwdev,
-+						swiotlb_bk_overflow_buffer));
- }
- EXPORT_SYMBOL(swiotlb_dma_mapping_error);
- 
-@@ -932,6 +937,6 @@ EXPORT_SYMBOL(swiotlb_dma_mapping_error);
- int
- swiotlb_dma_supported(struct device *hwdev, u64 mask)
- {
--	return swiotlb_virt_to_bus(hwdev, io_tlb_end - 1) <= mask;
-+	return swiotlb_virt_to_bus(hwdev, swiotlb_bk_end - 1) <= mask;
- }
- EXPORT_SYMBOL(swiotlb_dma_supported);
--- 
-1.6.2.5
+>> More inline...
+>>
+>> Ira W. Snyder wrote:
+>>> The Janz VMOD-ICAN3 is a MODULbus daughterboard which fits onto any
+>>> MODULbus carrier board. It is an intelligent CAN controller with a
+>>> microcontroller and associated firmware.
+>>>
+>>> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+>>> Cc: socketcan-core@lists.berlios.de
+>>> Cc: netdev@vger.kernel.org
+>>> ---
+>>>  drivers/net/can/Kconfig      |   10 +
+>>>  drivers/net/can/Makefile     |    1 +
+>>>  drivers/net/can/janz-ican3.c | 1659 ++++++++++++++++++++++++++++++++++++++++++
+>>>  3 files changed, 1670 insertions(+), 0 deletions(-)
+>>>  create mode 100644 drivers/net/can/janz-ican3.c
+>>>
+>>> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+>>> index 05b7517..2c5227c 100644
+>>> --- a/drivers/net/can/Kconfig
+>>> +++ b/drivers/net/can/Kconfig
+>>> @@ -63,6 +63,16 @@ config CAN_BFIN
+>>>  	  To compile this driver as a module, choose M here: the
+>>>  	  module will be called bfin_can.
+>>>  
+>>> +config CAN_JANZ_ICAN3
+>>> +	tristate "Janz VMOD-ICAN3 Intelligent CAN controller"
+>>> +	depends on CAN_DEV && MFD_JANZ_CMODIO
+>>> +	---help---
+>>> +	  Driver for Janz VMOD-ICAN3 Intelligent CAN controller module, which
+>>> +	  connects to a MODULbus carrier board.
+>>> +
+>>> +	  This driver can also be built as a module. If so, the module will be
+>>> +	  called janz-ican3.ko.
+>>> +
+>>>  source "drivers/net/can/mscan/Kconfig"
+>>>  
+>>>  source "drivers/net/can/sja1000/Kconfig"
+>>> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+>>> index 7a702f2..9047cd0 100644
+>>> --- a/drivers/net/can/Makefile
+>>> +++ b/drivers/net/can/Makefile
+>>> @@ -15,5 +15,6 @@ obj-$(CONFIG_CAN_AT91)		+= at91_can.o
+>>>  obj-$(CONFIG_CAN_TI_HECC)	+= ti_hecc.o
+>>>  obj-$(CONFIG_CAN_MCP251X)	+= mcp251x.o
+>>>  obj-$(CONFIG_CAN_BFIN)		+= bfin_can.o
+>>> +obj-$(CONFIG_CAN_JANZ_ICAN3)	+= janz-ican3.o
+>>>  
+>>>  ccflags-$(CONFIG_CAN_DEBUG_DEVICES) := -DDEBUG
+>>> diff --git a/drivers/net/can/janz-ican3.c b/drivers/net/can/janz-ican3.c
+>>> new file mode 100644
+>>> index 0000000..94d4995
+>>> --- /dev/null
+>>> +++ b/drivers/net/can/janz-ican3.c
+>> [snip]
+>>  +struct ican3_dev {
+>>> +
+>>> +	/* must be the first member */
+>>> +	struct can_priv can;
+>>> +
+>>> +	/* CAN network device */
+>>> +	struct net_device *ndev;
+>>> +	struct napi_struct napi;
+>>> +
+>>> +	/* Device for printing */
+>>> +	struct device *dev;
+>>> +
+>>> +	/* module number */
+>>> +	unsigned int num;
+>>> +
+>>> +	/* base address of registers and IRQ */
+>>> +	struct janz_cmodio_onboard_regs __iomem *ctrl;
+>>> +	struct ican3_dpm_control *dpmctrl;
+>>> +	void __iomem *dpm;
+>>> +	int irq;
+>>> +
+>>> +	/* old and new style host interface */
+>>> +	unsigned int iftype;
+>>> +	spinlock_t lock;
+>> Please describe what the lock is used for.
+>>
+>>> +	/* new host interface */
+>>> +	unsigned int rx_int;
+>>> +	unsigned int rx_num;
+>>> +	unsigned int tx_num;
+>>> +
+>>> +	/* fast host interface */
+>>> +	unsigned int fastrx_start;
+>>> +	unsigned int fastrx_int;
+>>> +	unsigned int fastrx_num;
+>>> +	unsigned int fasttx_start;
+>>> +	unsigned int fasttx_num;
+>>> +
+>>> +	/* first free DPM page */
+>>> +	unsigned int free_page;
+>>> +};
+>> [snip]
+>>> +static void ican3_to_can_frame(struct ican3_dev *mod,
+>>> +			       struct ican3_fast_desc *desc,
+>>> +			       struct can_frame *cf)
+>>> +{
+>>> +	if ((desc->command & ICAN3_CAN_TYPE_MASK) == ICAN3_CAN_TYPE_SFF) {
+>>> +		dev_dbg(mod->dev, "%s: old frame format\n", __func__);
+>> This prints a debug message for every message which is not really
+>> useful for the user. Please remove.
+>>
+>>> +		if (desc->data[1] & ICAN3_SFF_RTR)
+>>> +			cf->can_id |= CAN_RTR_FLAG;
+>>> +
+>>> +		cf->can_id |= desc->data[0] << 3;
+>>> +		cf->can_id |= (desc->data[1] & 0xe0) >> 5;
+>>> +		cf->can_dlc = desc->data[1] & ICAN3_CAN_DLC_MASK;
+>>> +		memcpy(cf->data, &desc->data[2], sizeof(cf->data));
+>>> +	} else {
+>>> +		dev_dbg(mod->dev, "%s: new frame format\n", __func__);
+>> Ditto.
+>>
+>>> +		cf->can_dlc = desc->data[0] & ICAN3_CAN_DLC_MASK;
+>>> +		if (desc->data[0] & ICAN3_EFF_RTR)
+>>> +			cf->can_id |= CAN_RTR_FLAG;
+>>> +
+>>> +		if (desc->data[0] & ICAN3_EFF) {
+>>> +			cf->can_id |= CAN_EFF_FLAG;
+>>> +			cf->can_id |= desc->data[2] << 21; /* 28-21 */
+>>> +			cf->can_id |= desc->data[3] << 13; /* 20-13 */
+>>> +			cf->can_id |= desc->data[4] << 5;  /* 12-5  */
+>>> +			cf->can_id |= (desc->data[5] & 0xf8) >> 3;
+>>> +		} else {
+>>> +			cf->can_id |= desc->data[2] << 3;  /* 10-3  */
+>>> +			cf->can_id |= desc->data[3] >> 5;  /* 2-0   */
+>>> +		}
+>>> +
+>>> +		memcpy(cf->data, &desc->data[6], sizeof(cf->data));
+>>> +	}
+>>> +}
+>>> +
+>>> +static void can_frame_to_ican3(struct ican3_dev *mod,
+>>> +			       struct can_frame *cf,
+>>> +			       struct ican3_fast_desc *desc)
+>>> +{
+>>> +	/* clear out any stale data in the descriptor */
+>>> +	memset(desc->data, 0, sizeof(desc->data));
+>>> +
+>>> +	/* we always use the extended format, with the ECHO flag set */
+>>> +	desc->command = ICAN3_CAN_TYPE_EFF;
+>>> +	desc->data[0] |= cf->can_dlc;
+>>> +	desc->data[1] |= ICAN3_ECHO;
+>>> +
+>>> +	if (cf->can_id & CAN_RTR_FLAG)
+>>> +		desc->data[0] |= ICAN3_EFF_RTR;
+>>> +
+>>> +	/* pack the id into the correct places */
+>>> +	if (cf->can_id & CAN_EFF_FLAG) {
+>>> +		dev_dbg(mod->dev, "%s: extended frame\n", __func__);
+>> Ditto.
+>>
+>>> +		desc->data[0] |= ICAN3_EFF;
+>>> +		desc->data[2] = (cf->can_id & 0x1fe00000) >> 21; /* 28-21 */
+>>> +		desc->data[3] = (cf->can_id & 0x001fe000) >> 13; /* 20-13 */
+>>> +		desc->data[4] = (cf->can_id & 0x00001fe0) >> 5;  /* 12-5  */
+>>> +		desc->data[5] = (cf->can_id & 0x0000001f) << 3;  /* 4-0   */
+>>> +	} else {
+>>> +		dev_dbg(mod->dev, "%s: standard frame\n", __func__);
+>> Ditto.
+>>
+>>> +		desc->data[2] = (cf->can_id & 0x7F8) >> 3; /* bits 10-3 */
+>>> +		desc->data[3] = (cf->can_id & 0x007) << 5; /* bits 2-0  */
+>>> +	}
+>>> +
+>>> +	/* copy the data bits into the descriptor */
+>>> +	memcpy(&desc->data[6], cf->data, sizeof(cf->data));
+>>> +}
+>> [snip]
+>>> +/*
+>>> + * Handle CAN Event Indication Messages from the firmware
+>>> + *
+>>> + * The ICAN3 firmware provides the values of some SJA1000 registers when it
+>>> + * generates this message. The code below is largely copied from the
+>>> + * drivers/net/can/sja1000/sja1000.c file, and adapted as necessary
+>>> + */
+>>> +static int ican3_handle_cevtind(struct ican3_dev *mod, struct ican3_msg *msg)
+>>> +{
+>>> +	struct net_device *dev = mod->ndev;
+>>> +	struct net_device_stats *stats = &dev->stats;
+>>> +	enum can_state state = mod->can.state;
+>>> +	struct can_frame *cf;
+>>> +	struct sk_buff *skb;
+>>> +	u8 status, isrc;
+>>> +
+>>> +	/* we can only handle the SJA1000 part */
+>>> +	if (msg->data[1] != CEVTIND_CHIP_SJA1000) {
+>>> +		dev_err(mod->dev, "unable to handle errors on non-SJA1000\n");
+>>> +		return -ENODEV;
+>>> +	}
+>>> +
+>>> +	/* check the message length for sanity */
+>>> +	if (msg->len < 6) {
+>>> +		dev_err(mod->dev, "error message too short\n");
+>>> +		return -EINVAL;
+>>> +	}
+>>> +
+>>> +	skb = alloc_can_err_skb(dev, &cf);
+>>> +	if (skb == NULL)
+>>> +		return -ENOMEM;
+>>> +
+>>> +	isrc = msg->data[0];
+>>> +	status = msg->data[3];
+>>> +
+>>> +	/* data overrun interrupt */
+>>> +	if (isrc == CEVTIND_DOI || isrc == CEVTIND_LOST) {
+>> Here and for the other errors below a dev_dbg() would be useful. Please
+>> check sja1000.c.
+>>
+>>> +		cf->can_id |= CAN_ERR_CRTL;
+>>> +		cf->data[1] = CAN_ERR_CRTL_RX_OVERFLOW;
+>>> +		stats->rx_over_errors++;
+>>> +		stats->rx_errors++;
+>>> +		dev_info(mod->dev, "%s: overflow frame generated\n", __func__);
+>> s/dev_info/dev_dbg/ ?
+>>
+> 
+> Whoops, a leftover from debugging. Will change to dev_dbg().
+> 
+>>> +	}
+>>> +
+>>> +	/* error warning interrupt */
+>>> +	if (isrc == CEVTIND_EI) {
+>>> +		if (status & SR_BS) {
+>>> +			state = CAN_STATE_BUS_OFF;
+>>> +			cf->can_id |= CAN_ERR_BUSOFF;
+>>> +			can_bus_off(dev);
+>>> +		} else if (status & SR_ES) {
+>>> +			state = CAN_STATE_ERROR_WARNING;
+>>> +		} else {
+>>> +			state = CAN_STATE_ERROR_ACTIVE;
+>>> +		}
+>>> +	}
+>>> +
+>>> +	/* bus error interrupt */
+>>> +	if (isrc == CEVTIND_BEI) {
+>>> +		u8 ecc = msg->data[2];
+>> Add an empty line, please.
+>>
+>>> +		mod->can.can_stats.bus_error++;
+>>> +		stats->rx_errors++;
+>>> +		cf->can_id |= CAN_ERR_PROT | CAN_ERR_BUSERROR;
+>>> +
+>>> +		switch (ecc & ECC_MASK) {
+>>> +		case ECC_BIT:
+>>> +			cf->data[2] |= CAN_ERR_PROT_BIT;
+>>> +			break;
+>>> +		case ECC_FORM:
+>>> +			cf->data[2] |= CAN_ERR_PROT_FORM;
+>>> +			break;
+>>> +		case ECC_STUFF:
+>>> +			cf->data[2] |= CAN_ERR_PROT_STUFF;
+>>> +			break;
+>>> +		default:
+>>> +			cf->data[2] |= CAN_ERR_PROT_UNSPEC;
+>>> +			cf->data[3] = ecc & ECC_SEG;
+>>> +			break;
+>>> +		}
+>>> +
+>>> +		if ((ecc & ECC_DIR) == 0)
+>>> +			cf->data[2] |= CAN_ERR_PROT_TX;
+>>> +	}
+>>> +
+>>> +	if (state != mod->can.state && (state == CAN_STATE_ERROR_WARNING ||
+>>> +					state == CAN_STATE_ERROR_PASSIVE)) {
+>>> +		u8 rxerr = msg->data[4];
+>>> +		u8 txerr = msg->data[5];
+>> Ditto.
+>>
+>>> +		cf->can_id |= CAN_ERR_CRTL;
+>>> +		if (state == CAN_STATE_ERROR_WARNING) {
+>>> +			mod->can.can_stats.error_warning++;
+>>> +			cf->data[1] = (txerr > rxerr) ?
+>>> +				CAN_ERR_CRTL_TX_WARNING :
+>>> +				CAN_ERR_CRTL_RX_WARNING;
+>>> +		} else {
+>>> +			mod->can.can_stats.error_passive++;
+>>> +			cf->data[1] = (txerr > rxerr) ?
+>>> +				CAN_ERR_CRTL_TX_PASSIVE :
+>>> +				CAN_ERR_CRTL_RX_PASSIVE;
+>>> +		}
+>>> +	}
+>>> +
+>>> +	mod->can.state = state;
+>>> +	stats->rx_errors++;
+>>> +	stats->rx_bytes += cf->can_dlc;
+>>> +	netif_rx(skb);
+>>> +	return 0;
+>>> +}
+>> [snip]
+>>> +static irqreturn_t ican3_irq(int irq, void *dev_id)
+>>> +{
+>>> +	struct ican3_dev *mod = dev_id;
+>>> +	u8 stat;
+>>> +
+>>> +	/*
+>>> +	 * The interrupt status register on this device reports interrupts
+>>> +	 * as zeroes instead of using ones like most other devices
+>>> +	 */
+>>> +	stat = ioread8(&mod->ctrl->int_disable) & (1 << mod->num);
+>>> +	if (stat == (1 << mod->num))
+>>> +		return IRQ_NONE;
+>>> +
+>>> +	dev_dbg(mod->dev, "IRQ: module %d\n", mod->num);
+>> Please remove this dev_dbg() as well.
+>>
+>> [snip]
+>>> +/*
+>>> + * Startup an ICAN module, bringing it into fast mode
+>>> + */
+>>> +static int __devinit ican3_startup_module(struct ican3_dev *mod)
+>>> +{
+>>> +	int ret;
+>>> +
+>>> +	ret = ican3_reset_module(mod);
+>>> +	if (ret) {
+>>> +		dev_err(mod->dev, "unable to reset module\n");
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	/* re-enable interrupts so we can send messages */
+>>> +	iowrite8(1 << mod->num, &mod->ctrl->int_enable);
+>>> +
+>>> +	ret = ican3_msg_connect(mod);
+>>> +	if (ret) {
+>>> +		dev_err(mod->dev, "unable to connect to module\n");
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	ican3_init_new_host_interface(mod);
+>>> +	ret = ican3_msg_newhostif(mod);
+>>> +	if (ret) {
+>>> +		dev_err(mod->dev, "unable to switch to new-style interface\n");
+>>> +		return ret;
+>>> +	}
+>>> +
+>>> +	ret = ican3_set_termination(mod, true);
+>>> +	if (ret) {
+>>> +		dev_err(mod->dev, "unable to enable termination\n");
+>>> +		return ret;
+>>> +	}
+>>
+>> Could you please allow the user to disable termination, e.g. via module parameter
+>> "bus_termination=0" in case he uses a cable with built-in termination.
+>>
+> 
+> What would you think about a sysfs node instead, so it could be changed
+> at runtime, on a per-daughtercard basis? Do you think enabling bus
+> termination is a good default? IMO, it is a pretty safe default for most
+> users.
 
+I have no problem with the default. There should just be a way to
+disable termination somehow. A dev_info(dev, "CAN bus termination
+enabled") would furthermore make clear, that it's active. Setting
+termination via SysFS is the better solution, of course, as it's per
+device. It might even be useful to handle this in future in a common way
+via CAN_CTRLMODE_BUS_TERMINATION.
+
+Wolfgang.
