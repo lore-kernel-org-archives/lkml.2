@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348Ab0CSVfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 17:35:23 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:44874 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab0CSVfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 17:35:22 -0400
-Message-ID: <4BA3EDA7.1080702@nortel.com>
-Date: Fri, 19 Mar 2010 15:33:27 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1751637Ab0CSVhc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 17:37:32 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:42982 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750865Ab0CSVhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 17:37:31 -0400
+X-IronPort-AV: E=Sophos;i="4.51,276,1267419600"; 
+   d="scan'208";a="7630941"
+Subject: Re: [LKML] Re: Infinite loop on boot in free_early_partial due to
+ start==end on tip/master
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, Tejun Heo <tj@kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BA3E9CD.70203@kernel.org>
+References: <1267801390.11737.38014.camel@zakaz.uk.xensource.com>
+	 <20100319182807.GA14985@phenom.dumpdata.com> <4BA3CAB8.7000702@kernel.org>
+	 <1269027289.23584.0.camel@localhost.localdomain>
+	 <20100319200409.GE31908@phenom.dumpdata.com>  <4BA3E9CD.70203@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Organization: Citrix Systems, Inc.
+Date: Fri, 19 Mar 2010 21:37:26 +0000
+Message-ID: <1269034646.28761.29.camel@localhost.localdomain>
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       tglx@linutronix.de, mingo@redhat.com, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org
-Subject: debug registers, write breakpoints, and x86
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Mar 2010 21:35:03.0833 (UTC) FILETIME=[0954B890:01CAC7AC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2010-03-19 at 21:17 +0000, Yinghai Lu wrote: 
+> > index ef6370b..89a3205 100644
+> > --- a/arch/x86/kernel/setup_percpu.c
+> > +++ b/arch/x86/kernel/setup_percpu.c
+> > @@ -140,7 +140,8 @@  static void __init pcpu_fc_free(void *ptr, size_t
+> > size)
+> >  #ifdef CONFIG_NO_BOOTMEM
+> >  	u64 start = __pa(ptr);
+> >  	u64 end = start + size;
+> > -	free_early_partial(start, end);
+> > +	if (start < end)
+> > +		free_early_partial(start, end);
+> 
+> it seems we could remove this line
 
-I'm running 2.6.27 on x86 (64-bit) and I have what appears to be a
-memory trampler.  I'd like to use a write breakpoint on the address
-being trampled to see who's doing it.
+> Tejun, how this could happen? free zero range ?
 
->From what I understand, I'll need to set one of DR0-3 (let's use DR3) to
-my address of interest, then set the L3, G3, RW3, and LEN3 fields in
-DR7.  Then when the exception fires we'll handle it in do_debug().  Is
-this right?
+I was seeing start==end although I never fully understood why. It
+happened somewhere within pcpu_embed_first_chunk and/or
+pcpu_build_alloc_info. My original posting (in
+https://patchwork.kernel.org/patch/83756/) has some speculation.
 
-Given that I want this to be global and permanent, I'm a bit confused by
-the code in __switch_to_xtra().  If any other task has TIF_DEBUG set
-will this end up overwriting my debug register settings?  Is there any
-way (other than modifying the code) to ensure that my settings are
-permanent?
+Ian.
 
-I'd appreciate any comments you might have.
+> 
+> YH
+> 
+> >  #else
+> >  	free_bootmem(__pa(ptr), size);
+> >  #endif
+> > diff --git a/kernel/early_res.c b/kernel/early_res.c
+> > index 3cb2c66..f3a861b 100644
+> > --- a/kernel/early_res.c
+> > +++ b/kernel/early_res.c
+> > @@ -333,6 +333,11 @@  void __init free_early_partial(u64 start, u64 end)
+> >  	struct early_res *r;
+> >  	int i;
+> >  
+> > +	if (WARN_ONCE(start >= end,
+> > +		      "free_early_partial got wrong start/end
+> > %#llx/%#llx\n",
+> > +		      start, end))
+> > +		return;
+> > +
+> >  try_next:
+> >  	i = find_overlapped_early(start, end);
+> >  	if (i >= max_early_res)
+> > 
 
-Thanks,
 
-Chris Friesen
