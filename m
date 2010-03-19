@@ -1,141 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab0CSCkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 22:40:46 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:35920 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751153Ab0CSCkp (ORCPT
+	id S1752740Ab0CSCkv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:40:51 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44069 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab0CSCkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 22:40:45 -0400
-Date: Thu, 18 Mar 2010 22:40:42 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
-	lock
-Message-ID: <20100319024042.GB28941@Krystal>
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere> <20100319010857.GC23020@Krystal> <20100319012337.GA22095@nowhere> <20100319013658.GB28456@Krystal> <20100319022659.GC22095@nowhere>
+	Thu, 18 Mar 2010 22:40:47 -0400
+Date: Fri, 19 Mar 2010 08:10:39 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Suleiman Souhlal <suleiman@google.com>,
+       Greg Thelen <gthelen@google.com>,
+       "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
+Message-ID: <20100319024039.GH18054@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1268609202-15581-1-git-send-email-arighi@develer.com>
+ <1268609202-15581-2-git-send-email-arighi@develer.com>
+ <20100317115855.GS18054@balbir.in.ibm.com>
+ <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318041944.GA18054@balbir.in.ibm.com>
+ <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100318162855.GG18054@balbir.in.ibm.com>
+ <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100319022659.GC22095@nowhere>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:34:27 up 55 days,  5:11,  7 users,  load average: 0.31, 0.15,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> On Thu, Mar 18, 2010 at 09:36:58PM -0400, Mathieu Desnoyers wrote:
-> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
-> > > On Thu, Mar 18, 2010 at 09:08:57PM -0400, Mathieu Desnoyers wrote:
-> > > > > I sometimes wonder which trick between jmp optimization and hot patching
-> > > > > would be the best to optimize the tracepoints off-cases.
-> > > > > 
-> > > > > I should look more closely at the jmp optimization. I don't know if
-> > > > > it avoids to push the tracepoints parameters in the off case, in
-> > > > > which case it could be perhaps more efficient than hot patching,
-> > > > 
-> > > > yep, tracepoints with jump patching will branch over the whole stack setup in
-> > > > the off case, which is one of the good reasons for using this solution over
-> > > > patching only a call (leaving the stack setup in place).
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+
+> On Thu, 18 Mar 2010 21:58:55 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> 
+> > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
+> > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
+> > > fault. But please write "why add new function" to patch description.
 > > > 
-> > > 
-> > > 
-> > > Ok that's good to know. It's a pretty good argument against hot
-> > > patching in this particular case.
-> > > 
-> > > 
-> > >  
-> > > > Note that if the parameters include side-effects (such as a function call),
-> > > > these will be executed even when the tracepoint is disabled. This is why people
-> > > > should implement these calls with side-effects in the appropriate TRACE_EVENT
-> > > > fields.
-> > > 
-> > > 
-> > > Good to know too.
-> > > But this makes me curious. So it guarantees stack setup won't happen but
-> > > can't sort it out with functions as parameters or so?
-> > > 
-> > > I have no idea how this thing works. Please Cc me for the next batch,
-> > > this looks like a cool thing :)
-> > > 
+> > > I'm sorry for wasting your time.
 > > 
-> > Well, the now deceased "Linux Kernel Markers" (which were based on a single
-> > macro rather than static inline functions) were able to use the preprocessor to
-> > put function calls passed as argument within the conditional branch. But with
-> > tracepoints, we rely on static inlines to have flexible parameter declaration,
-> > so this is not possible.
-> 
-> 
-> Ok.
-> 
-> 
-> 
-> > All the arguments passed to the static inline (eventually used for the stack
-> > setup of the actual function call within the tracepoint) can be moved into the
-> > conditional branch by the compiler optimizations, because they are not needed
-> > otherwise. However, this cannot be done for function calls passed as parameter
-> > to the tracepoint, because the compiler do not know whether or not the function
-> > side-effects are needed outside of the "tracing active" branch.
+> > Do we need to go down this route? We could check the stat and do the
+> > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
+> > and for others potentially look at trylock. It is OK for different
+> > stats to be protected via different locks.
 > > 
-> > Mathieu
 > 
-> 
-> 
-> Ok. I just read this: http://lwn.net/Articles/362752/ and
-> this: http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
-> 
-> What is funky is that the gcc example takes this jmp/nop patching
-> as an example to explain asm goto, so it all looks clear to me now :-)
+> I _don't_ want to see a mixture of spinlock and trylock in a function.
+>
 
-Well, the use-case that drove the asm goto implementation _is_ the tracepoints.
-;)
-
-> 
-> But, looking at __DO_TRACE:
-> 
-> 	if (it_func) {						\
-> 		do {						\
-> 			((void(*)(proto))(*it_func))(args);	\
-> 		} while (*(++it_func));				\
-> 	}
-> 
-> I would expect the compiler not to load the parameters in the stack
-> before first checking the branch.
-
-Note that you have to put that in its full context. It's a macro expanded within
-a static inline function. The initial parameters are passed to the static
-inline, not directly as "args" here. So parameters with side-effects have to be
-evaluated before their result can be passed to the static inline function, so in
-that sense their evaluation cannot be moved into the conditional branch.
-
-> So, the fact that parameters are not loaded before we know we'll call
-> the tracepoint is something we already have or is it something that the jump
-> label brings in the package somehow?
-
-It's standard compiler optimization behavior.
-
-Thanks,
-
-Mathieu
-
-> 
-> Thanks.
-> 
+A well documented well written function can help. The other thing is to
+of-course solve this correctly by introducing different locking around
+the statistics. Are you suggesting the later?
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+	Three Cheers,
+	Balbir
