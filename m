@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752756Ab0CSVcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 17:32:01 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59382 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751411Ab0CSVcA (ORCPT
+	id S1752613Ab0CSVcr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 17:32:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35374 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751411Ab0CSVcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 17:32:00 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: users@rt2x00.serialmonkey.com
-Subject: Re: [rt2x00-users] rt2500usb broken since 2.6.29
-Date: Fri, 19 Mar 2010 22:31:48 +0100
-User-Agent: KMail/1.9.10
-Cc: Luis Correia <buga@loide.net>, linux-kernel@vger.kernel.org
-References: <201003182246.54889.linux@rainbow-software.org> <880c1631003181510k1850de40r823418a0b921ecee@mail.gmail.com> <201003191601.48405.linux@rainbow-software.org>
-In-Reply-To: <201003191601.48405.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Fri, 19 Mar 2010 17:32:46 -0400
+Date: Fri, 19 Mar 2010 14:32:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg KH <gregkh@suse.de>
+Cc: "Othman, Ossama" <ossama.othman@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [PATCH] Intel Restricted Access Region Handler
+Message-Id: <20100319143222.72aee474.akpm@linux-foundation.org>
+In-Reply-To: <20100315234508.GB4008@suse.de>
+References: <1268558064-7973-1-git-send-email-ossama.othman@intel.com>
+	<20100314181040.GB28359@suse.de>
+	<A5FE05C4C76E4C4CAB15D9962B96FC950C9A6D184E@orsmsx510.amr.corp.intel.com>
+	<20100315234508.GB4008@suse.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003192231.50287.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 March 2010 16:01:47 Ondrej Zary wrote:
-> On Thursday 18 March 2010, Luis Correia wrote:
-> > Hi,
-> >
-> > On Thu, Mar 18, 2010 at 22:04, Ondrej Zary <linux@rainbow-software.org>
->
-> wrote:
-> > > On Thursday 18 March 2010 22:51:18 Luis Correia wrote:
-> > >> Hi,
-> > >>
-> > >> On Thu, Mar 18, 2010 at 21:46, Ondrej Zary
-> > >
-> > > <linux@rainbow-software.org>wrote:
-> > >> > Hello,
-> > >> > rt2500usb is broken since kernel 2.6.29. It has been discussed
-> > >> > before but never solved:
-> > >> > http://rt2x00.serialmonkey.com/phpBB/viewtopic.php?f=4&t=4834
-> > >> > https://bugzilla.redhat.com/show_bug.cgi?id=484888
-> > >> >
-> > >> > I have Asus WL-167G and it really does not work. Scanning works,
-> > >> > association
-> > >> > too but no packets can be sent (looks like receive works because
-> > >> > tcpdump shows packets from other machines). DHCP fails (No
-> > >> > DHCPOFFERS received).
-> > >> >
-> > >> > The problem is caused by this patch:
-> > >> >
-> > >> > rt2x00: Implement HW encryption (rt2500usb)
-> > >> >
-> > >> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=c
-> > >> >om mit ;h=dddfb478b26e29a2b47f655ec219e743b8111015
-> > >> >
-> > >> > Removing it from 2.6.29 restores the functionality.
-> > >> >
-> > >> > --
-> > >> > Ondrej Zary
-> > >>
-> > >> you can prevent hardware encryption by supplying "nohwcrypt=1" to the
-> > >> driver.
-> > >> (modinfo rt2500usb)
-> > >
-> > > That did not work. Maybe that was because I just unloaded the rt2500usb
-> > > module and loaded it again with nohwcrypt=1 without rebooting the
-> > > machine. Then I removed the HW encryption, recompiled and reloaded and
-> > > it did not work either. It started to work only after reboot.
-> >
-> > did you actually remove the usb module and unloaded the module as well?
-> >
-> > you then need to load the module with the option, wait one sec and
-> > then plug the device back in.
-> >
-> > > Does the HW encryption really work with any rt2500usb hardware? How can
-> > > I help to fix it? Or maybe it should be disabled by default.
-> >
-> > I think the HW encription did work in the past, but I'm unsure of the
-> > proper timeline.
->
-> HW encryption was added in 2.6.29 and it does not work there. In 2.6.30,
-> the driver is broken even more - it does not work even with HW encryption
-> disabled. I'm going to bisect it.
+On Mon, 15 Mar 2010 16:45:08 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-Bisection revealed this commit:
-ac7f9cfa2c3b810e0adfb889ad407a8c79a84dbe
-cfg80211: accept no-op interface mode changes
+> On Mon, Mar 15, 2010 at 04:16:02PM -0700, Othman, Ossama wrote:
+> > Greg, Randy,
+> > 
+> > > Can you also send me a patch, that adds a TODO file to the directory of
+> > > this driver, that explains what you think needs to be done in order to
+> > > get this code merged into the main portion of the kernel tree, and
+> > > include your email address in it so that people who wish to send
+> > > patches, know who to copy on them?
+> > > 
+> > > See the other drivers/staging/*/TODO files for an example of what is
+> > > expected here.
+> > 
+> > I just resubmitted a consolidated patch that includes the TODO file
+> > you requested, as well as the kernel-doc related updates that Randy
+> > requested.  Randy, I know that you were not in a rush to get them.  I
+> > just wanted to get them out of the way.
+> 
+> Looks good, I'll queue it up in a few days.
 
-Removing it from 2.6.30 (and disabling HW encryption) makes rt2500usb work in 
-2.6.30. There are more changes to that code in next kernels so the patch 
-cannot be removed from newer kernels. However, disabling it (by changing "if 
-(change)" to "if (1)" in net/wireless/nl80211.c) and disabling HW encryption 
-makes rt2500usb work even in 2.6.34-rc1.
+Then what happens?  I guess I still don't understand the -staging process.
 
-There seems to be another (third!) problem. With 2.6.29, DHCP works on the 
-first DHCPDISCOVER. With 2.6.30, it takes two to three DHCPDISCOVERs to get a 
-reply. With 2.6.34-rc1, it takes three to five. After one reboot with 
-2.6.34-rc1, it did not work at all with this in log:
-phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 
-(-16).
+Does the code get re-posted for re-review?  If so, who does this?  How
+do we ensure that suitably experienced/motivated reviewers and testers
+take a look at this code?
 
--- 
-Ondrej Zary
+Or does it just fester in -staging until we get bored of it then it
+gets merged anyway?
+
+Regarding the code itself: it appears to implement a userspace
+interface via some /dev node.  But there is no description of this
+interface at all in the changelog and there is no documentation
+provided.  But the userspace-facing interface is the most important
+part of the entire feature, because it is something we cannot ever
+change.  It should be exhaustively described right up-front in the
+changelog so that reviewers can easily and fully understand the
+proposed API.
+
