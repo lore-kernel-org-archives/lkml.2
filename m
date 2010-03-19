@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab0CSVtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 17:49:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37987 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab0CSVti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 17:49:38 -0400
-Message-ID: <4BA3EFAE.9070004@zytor.com>
-Date: Fri, 19 Mar 2010 14:42:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] x86: do not free zero sized per cpu areas
-References: <4B914A61.20409@kernel.org> <4BA3CF67.9000107@kernel.org>
-In-Reply-To: <4BA3CF67.9000107@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752857Ab0CSVto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 17:49:44 -0400
+Received: from outbound-mail-313.bluehost.com ([67.222.54.6]:38892 "HELO
+	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752810Ab0CSVtm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 17:49:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=XqDQWBIDp7xiRvrDaBoc3RDgL+BvP4Lq6MriUv8JiIMqUaUXysqCiqBm0Ff07Q8QFb6JYF/00/Efrq4+qSyXRgtoBEhjvk2ELhjzB6lOqdUMkLMHteRJNyiyyJAezzQM;
+Date: Fri, 19 Mar 2010 14:49:46 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 1/2] pci: Convert pci_lock to raw_spinlock
+Message-ID: <20100319144946.0dbc2c82@jbarnes-piketon>
+In-Reply-To: <20100217143453.570657459@linutronix.de>
+References: <20100217143401.673569070@linutronix.de>
+	<20100217143453.570657459@linutronix.de>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2010 12:24 PM, Yinghai Lu wrote:
-> From: Ian Campbell <ian.campbell@citrix.com>
-> 
-> This avoids an infinite loop in free_early_partial().
-> 
-> Add a warning to free_early_partial to catch future problems.
+On Wed, 17 Feb 2010 14:35:19 -0000
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Wouldn't it make more sense to simply make free_early_partial() a noop
-for the zero range, instead of pushing all those tests into the callers?
- It still might make sense to have a WARN_ONCE() for a *negative* range,
-however...
+> pci_lock must be a real spinlock in preempt-rt. Convert it to
+> raw_spinlock. No change for !RT kernels.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-	-hpa
+Applied these to my linux-next branch, thanks.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
