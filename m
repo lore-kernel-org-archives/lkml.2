@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab0CSPUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:20:23 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:30116 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab0CSPUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:20:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=xIsHteEqY7NERmLimxMqvZJ6yVfmgKHCCGp5CXt1EsRxFw0yQ76RR9r8GRQ00dhsHJ
-         mTWM6AqSpumRQO4tCONUzIiOT3xD1exo3CBoYnSeCy7V6FJ7XVIhZtIQTJCRAHh5kaLu
-         iCSPwkefbDKDALqe5mJzz/2uPk0lBhSArvhok=
-Message-ID: <4BA3963D.5000001@googlemail.com>
-Date: Fri, 19 Mar 2010 16:20:29 +0100
-From: Frank Schaefer <fschaefer.oss@googlemail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
+	id S1752256Ab0CSPTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:19:11 -0400
+Received: from kroah.org ([198.145.64.141]:45902 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752466Ab0CSPTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:19:00 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH][RESEND] x86: add HPET-quirk for nVidia MCP61 LPC Bridge (10de:03e0)
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+       Eric Biederman <ebiederm@xmission.com>
+Subject: [PATCH 04/12] sysfs: fix sysfs lockdep warning in infiniband code
+Date: Fri, 19 Mar 2010 08:18:47 -0700
+Message-Id: <1269011935-8886-4-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.0.2
+In-Reply-To: <20100319151311.GA8541@kroah.com>
+References: <20100319151311.GA8541@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments on this patch ? (N)Ack ? Wrong list ?
+This fixes a sysfs lockdep warning in the infiniband code.
 
-
-
-
-x86: add HPET-quirk for nVidia MCP61 LPC Bridge (10de:03e0)
-
-Tested with an ASUS M2N-VM DH (nForce 430 + GeForce 6150SE).
-
-Cc: stable@kernel.org
-Signed-off-by: Frank Schaefer <fschaefer.oss@googlemail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/kernel/quirks.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/infiniband/core/sysfs.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 12e9fea..7985ba5 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -450,23 +450,25 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0051,
-             nvidia_force_enable_hpet);
+diff --git a/drivers/infiniband/core/sysfs.c b/drivers/infiniband/core/sysfs.c
+index 1558bb7..f901957 100644
+--- a/drivers/infiniband/core/sysfs.c
++++ b/drivers/infiniband/core/sysfs.c
+@@ -461,6 +461,7 @@ alloc_group_attrs(ssize_t (*show)(struct ib_port *,
+ 		element->attr.attr.mode  = S_IRUGO;
+ 		element->attr.show       = show;
+ 		element->index		 = i;
++		sysfs_attr_init(&element->attr.attr);
  
- /* LPC bridges */
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0260,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0260,    /* MCP51 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0360,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0360,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0361,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0361,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0362,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0362,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0363,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0363,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0364,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0364,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0365,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0365,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0366,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0366,    /* MCP55 */
-             nvidia_force_enable_hpet);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0367,
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x0367,    /* MCP55 */
-+            nvidia_force_enable_hpet);
-+DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_NVIDIA, 0x03e0,    /* MCP61 */
-             nvidia_force_enable_hpet);
- 
- void force_hpet_resume(void)
+ 		tab_attr[i] = &element->attr.attr;
+ 	}
 -- 
-1.6.0.2
-
+1.7.0.2
 
