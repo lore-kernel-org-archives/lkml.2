@@ -1,205 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750873Ab0CSEHF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 00:07:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58270 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750695Ab0CSEHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 00:07:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:subject:from:to:cc:in-reply-to;
-        b=wAdkH92QkNUJECjhPleuYx61066zaUT7uN+/eTEj+hbtcIQr4Eyysv3e2mvDAOWJNj
-         Uzn6CtJZ2h2hc1JaSYWasnITElWrP611vCdz/iTfnRA8JXYywtdLcme61+gaxbQ2NwEk
-         ZW2okQRkM92GZTqOM6FvqPZRIY4YDPiqrGjlI=
-Message-ID: <4ba2f862.4902be0a.0815.0d09@mx.google.com>
-Date: Thu, 18 Mar 2010 21:06:58 -0700 (PDT)
-Subject: Re: [PATCH] hpet: factor timer allocate from open
-From: Magnus Lynch <maglyx@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Clemens Ladisch <clemens@ladisch.de>
-Cc: "Venkatesh Pallipadi (Venki)" <venkatesh.pallipadi@intel.com>,
-       "Vojtech Pavlik" <vojtech@suse.cz>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Paul Gortmaker" <paul.gortmaker@windriver.com>,
-       "Suresh Siddha" <suresh.b.siddha@intel.com>,
-       "Thomas Gleixner" <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100318121151.cedeb849.akpm@linux-foundation.org>
+	id S1750911Ab0CSEOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 00:14:05 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60376 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750695Ab0CSEN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 00:13:57 -0400
+Message-ID: <4BA2FA01.30102@cn.fujitsu.com>
+Date: Fri, 19 Mar 2010 12:13:53 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, mingo@elte.hu,
+       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
+References: <20100319013024.GA28456@Krystal>
+In-Reply-To: <20100319013024.GA28456@Krystal>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> Please always retain and maintain the changelog with each version of a patch.
->
-> Please resend this patch with a complete changelog.
+CC: Christoph Lameter <cl@linux-foundation.org>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>
 
-OK, here's my description from the original posting:
-<<
-The current implementation of the /dev/hpet driver couples opening the
-device with allocating one of the (scarce) timers (aka comparators).
-This is a limitation in that the main counter may be valuable to
-applications seeking a high-resolution timer who have no use for the
-interrupt generating functionality of the comparators.
+I have written a patch like this before.
 
-This patch alters the open semantics so that when the device is
-opened, no timer is allocated. Operations that depend on a timer being
-in context implicitly attempt allocating a timer, to maintain backward
-compatibility. There is also an IOCTL (HPET_ALLOC_TIMER _IO) added so
-that the allocation may be done explicitly. (I prefer the explicit
-open then allocate pattern but don't know how practical it would be to
-require all existing code to be changed.)
->>
+but SLUB opposed me, so I did not post it.
 
-The difference between the first and second version of my patch is that
-the first altered the semantics of the HPET_INFO IOCTL so that it didn't
-force allocation of a timer, which would not be strictly backwards compatible;
-the second version keeps it so a device open followed by HPET_INFO call will
-have allocated a timer (or attempted to and given an error).
+@ slub.c
+static void free_slab(struct kmem_cache *s, struct page *page)
+{
+	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+		/*
+		 * RCU free overloads the RCU head over the LRU
+		 */
+		struct rcu_head *head = (void *)&page->lru;
 
-Signed-off-by: Magnus Lynch <maglyx@gmail.com>
+		call_rcu(head, rcu_free_slab);
+	} else
+		__free_slab(s, page);
+}
 
-diff --git a/drivers/char/hpet.c b/drivers/char/hpet.c
-index e481c59..97f8d5b 100644
---- a/drivers/char/hpet.c
-+++ b/drivers/char/hpet.c
-@@ -244,16 +244,40 @@ static void hpet_timer_set_irq(struct hpet_dev *devp)
- 
- static int hpet_open(struct inode *inode, struct file *file)
- {
--	struct hpet_dev *devp;
- 	struct hpets *hpetp;
--	int i;
- 
- 	if (file->f_mode & FMODE_WRITE)
- 		return -EINVAL;
- 
-+	hpetp = hpets;
-+	/* starting with timer-neutral instance */
-+	file->private_data = &hpetp->hp_dev[hpetp->hp_ntimer];
-+
-+	return 0;
-+}
-+
-+static int hpet_alloc_timer(struct file *file)
-+{
-+	struct hpet_dev *devp;
-+	struct hpets *hpetp;
-+	int i;
-+
-+	/* once acquired, will remain */
-+	devp = file->private_data;
-+	if (devp->hd_timer)
-+		return 0;
-+
- 	lock_kernel();
- 	spin_lock_irq(&hpet_lock);
- 
-+	/* check for race acquiring */
-+	devp = file->private_data;
-+	if (devp->hd_timer) {
-+		spin_unlock_irq(&hpet_lock);
-+		unlock_kernel();
-+		return 0;
-+	}
-+
- 	for (devp = NULL, hpetp = hpets; hpetp && !devp; hpetp = hpetp->hp_next)
- 		for (i = 0; i < hpetp->hp_ntimer; i++)
- 			if (hpetp->hp_dev[i].hd_flags & HPET_OPEN)
-@@ -384,6 +408,10 @@ static int hpet_fasync(int fd, struct file *file, int on)
- {
- 	struct hpet_dev *devp;
- 
-+	int r = hpet_alloc_timer(file);
-+	if (r < 0)
-+		return r;
-+
- 	devp = file->private_data;
- 
- 	if (fasync_helper(fd, file, on, &devp->hd_async_queue) >= 0)
-@@ -401,6 +429,9 @@ static int hpet_release(struct inode *inode, struct file *file)
- 	devp = file->private_data;
- 	timer = devp->hd_timer;
- 
-+	if (!timer)
-+		goto out;
-+
- 	spin_lock_irq(&hpet_lock);
- 
- 	writeq((readq(&timer->hpet_config) & ~Tn_INT_ENB_CNF_MASK),
-@@ -425,7 +456,7 @@ static int hpet_release(struct inode *inode, struct file *file)
- 
- 	if (irq)
- 		free_irq(irq, devp);
--
-+out:
- 	file->private_data = NULL;
- 	return 0;
- }
-@@ -438,6 +469,10 @@ hpet_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
- {
- 	struct hpet_dev *devp;
- 
-+	int r = hpet_alloc_timer(file);
-+	if (r < 0)
-+		return r;
-+
- 	devp = file->private_data;
- 	return hpet_ioctl_common(devp, cmd, arg, 0);
- }
-@@ -570,6 +605,9 @@ hpet_ioctl_common(struct hpet_dev *devp, int cmd, unsigned long arg, int kernel)
- 		break;
- 	case HPET_IE_ON:
- 		return hpet_ioctl_ieon(devp);
-+	case HPET_ALLOC_TIMER:
-+		/* nothing to do */
-+		return 0;
- 	default:
- 		return -EINVAL;
- 	}
-@@ -794,7 +832,11 @@ int hpet_alloc(struct hpet_data *hdp)
- 		return 0;
- 	}
- 
--	siz = sizeof(struct hpets) + ((hdp->hd_nirqs - 1) *
-+	/*
-+	 * last hpet_dev will have null timer pointer, gives timer-neutral
-+	 * representation of block
-+	 */
-+	siz = sizeof(struct hpets) + ((hdp->hd_nirqs) *
- 				      sizeof(struct hpet_dev));
- 
- 	hpetp = kzalloc(siz, GFP_KERNEL);
-@@ -860,13 +902,16 @@ int hpet_alloc(struct hpet_data *hdp)
- 		writeq(mcfg, &hpet->hpet_config);
- 	}
- 
--	for (i = 0, devp = hpetp->hp_dev; i < hpetp->hp_ntimer; i++, devp++) {
-+	for (i = 0, devp = hpetp->hp_dev; i < hpetp->hp_ntimer + 1;
-+	     i++, devp++) {
- 		struct hpet_timer __iomem *timer;
- 
--		timer = &hpet->hpet_timers[devp - hpetp->hp_dev];
--
- 		devp->hd_hpets = hpetp;
- 		devp->hd_hpet = hpet;
-+		if (i == hpetp->hp_ntimer)
-+			continue;
-+
-+		timer = &hpet->hpet_timers[devp - hpetp->hp_dev];
- 		devp->hd_timer = timer;
- 
- 		/*
-diff --git a/include/linux/hpet.h b/include/linux/hpet.h
-index 219ca4f..d690c0f 100644
---- a/include/linux/hpet.h
-+++ b/include/linux/hpet.h
-@@ -125,6 +125,7 @@ struct hpet_info {
- #define	HPET_EPI	_IO('h', 0x04)	/* enable periodic */
- #define	HPET_DPI	_IO('h', 0x05)	/* disable periodic */
- #define	HPET_IRQFREQ	_IOW('h', 0x6, unsigned long)	/* IRQFREQ usec */
-+#define	HPET_ALLOC_TIMER _IO('h', 0x7)
- 
- #define MAX_HPET_TBS	8		/* maximum hpet timer blocks */
- 
+I think it is not your patch's fault, but the above code has
+already existed.
+
+In your patch, struct rcu_head::debug will share the same memory of
+the other field of struct page, (especially share the struct page::flags
+which I encountered)
+
+I tested it very long time before, so I can't give you dmesg.
+
+Lai
+
+Mathieu Desnoyers wrote:
+> Poisoning the rcu_head callback list.
+> 
+> Helps finding racy users of call_rcu(), which results in hangs because list
+> entries are overwritten and/or skipped.
+> 
+> A lot of non-initialized rcu list heads will be found with this option enabled.
+> It is important to do not just blindly initialize them before each call_rcu, but
+> rather to perform the initialization at the proper location, after the memory
+> has been allocated, so we can effectively detect incorrect call_rcu users.
+> 
+> This patch version does not use "debug objects", although it probably should.
+> Some day I might find time to look into this transition, but the patch is usable
+> as is.
+> 
+> The weird #ifdef in the networking code comes from an agreement with Eric
+> Dumazet about how to disable the build check for the networking code.  For those
+> who wonder about the existence of this build-time check: it generates a build
+> error when the size of struct dst_entry grows (because it is very performance
+> sensitive). So the agreement here has been to disable the check when the
+> DEBUG_RCU_HEAD config option is active.
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> CC: mingo@elte.hu
+> CC: akpm@linux-foundation.org
+> CC: mingo@elte.hu
+> CC: laijs@cn.fujitsu.com
+> CC: dipankar@in.ibm.com
+> CC: josh@joshtriplett.org
+> CC: dvhltc@us.ibm.com
+> CC: niv@us.ibm.com
+> CC: tglx@linutronix.de
+> CC: peterz@infradead.org
+> CC: rostedt@goodmis.org
+> CC: Valdis.Kletnieks@vt.edu
+> CC: dhowells@redhat.com
+> CC: eric.dumazet@gmail.com
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  include/linux/rcupdate.h |   13 ++++++++++++-
+>  include/net/dst.h        |    2 ++
+>  kernel/rcutiny.c         |    9 +++++++++
+>  kernel/rcutree.c         |   10 ++++++++++
+>  lib/Kconfig.debug        |    9 +++++++++
+>  5 files changed, 42 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6-lttng/include/linux/rcupdate.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/linux/rcupdate.h	2010-03-18 20:27:25.000000000 -0400
+> +++ linux-2.6-lttng/include/linux/rcupdate.h	2010-03-18 20:30:54.000000000 -0400
+> @@ -49,6 +49,9 @@
+>  struct rcu_head {
+>  	struct rcu_head *next;
+>  	void (*func)(struct rcu_head *head);
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +	struct rcu_head *debug;
+> +#endif
+>  };
+>  
+>  /* Exported common interfaces */
+> @@ -71,11 +74,19 @@ extern void rcu_init(void);
+>  #error "Unknown RCU implementation specified to kernel configuration"
+>  #endif
+>  
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +#define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL, .debug = NULL }
+> +#define INIT_RCU_HEAD(ptr) do { \
+> +       (ptr)->next = NULL; (ptr)->func = NULL; (ptr)->debug = NULL; \
+> +} while (0)
+> +#else
+>  #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
+> -#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
+>  #define INIT_RCU_HEAD(ptr) do { \
+>         (ptr)->next = NULL; (ptr)->func = NULL; \
+>  } while (0)
+> +#endif
+> +
+> +#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
+>  
+>  #ifdef CONFIG_DEBUG_LOCK_ALLOC
+>  extern struct lockdep_map rcu_lock_map;
+> Index: linux-2.6-lttng/kernel/rcutree.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-18 20:27:25.000000000 -0400
+> +++ linux-2.6-lttng/kernel/rcutree.c	2010-03-18 20:31:16.000000000 -0400
+> @@ -39,6 +39,7 @@
+>  #include <asm/atomic.h>
+>  #include <linux/bitops.h>
+>  #include <linux/module.h>
+> +#include <linux/poison.h>
+>  #include <linux/completion.h>
+>  #include <linux/moduleparam.h>
+>  #include <linux/percpu.h>
+> @@ -1060,6 +1061,10 @@ static void rcu_do_batch(struct rcu_stat
+>  		next = list->next;
+>  		prefetch(next);
+>  		trace_rcu_tree_callback(list);
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +		WARN_ON_ONCE(list->debug != LIST_POISON1);
+> +		list->debug = NULL;
+> +#endif
+>  		list->func(list);
+>  		list = next;
+>  		if (++count >= rdp->blimit)
+> @@ -1350,6 +1355,11 @@ __call_rcu(struct rcu_head *head, void (
+>  	unsigned long flags;
+>  	struct rcu_data *rdp;
+>  
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +	WARN_ON_ONCE(head->debug);
+> +	head->debug = LIST_POISON1;
+> +#endif
+> +
+>  	head->func = func;
+>  	head->next = NULL;
+>  
+> Index: linux-2.6-lttng/lib/Kconfig.debug
+> ===================================================================
+> --- linux-2.6-lttng.orig/lib/Kconfig.debug	2010-03-18 20:27:25.000000000 -0400
+> +++ linux-2.6-lttng/lib/Kconfig.debug	2010-03-18 20:27:38.000000000 -0400
+> @@ -661,6 +661,15 @@ config DEBUG_LIST
+>  
+>  	  If unsure, say N.
+>  
+> +config DEBUG_RCU_HEAD
+> +	bool "Debug RCU callbacks"
+> +	depends on DEBUG_KERNEL
+> +	depends on TREE_RCU
+> +	help
+> +	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
+> +	  Seems to find problems more quickly with stress-tests in single-cpu
+> +	  mode.
+> +
+>  config DEBUG_SG
+>  	bool "Debug SG table operations"
+>  	depends on DEBUG_KERNEL
+> Index: linux-2.6-lttng/include/net/dst.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/net/dst.h	2010-03-18 20:27:25.000000000 -0400
+> +++ linux-2.6-lttng/include/net/dst.h	2010-03-18 20:35:02.000000000 -0400
+> @@ -159,7 +159,9 @@ static inline void dst_hold(struct dst_e
+>  	 * If your kernel compilation stops here, please check
+>  	 * __pad_to_align_refcnt declaration in struct dst_entry
+>  	 */
+> +#ifndef CONFIG_DEBUG_RCU_HEAD
+>  	BUILD_BUG_ON(offsetof(struct dst_entry, __refcnt) & 63);
+> +#endif
+>  	atomic_inc(&dst->__refcnt);
+>  }
+>  
+> Index: linux-2.6-lttng/kernel/rcutiny.c
+> ===================================================================
+> --- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-18 20:35:14.000000000 -0400
+> +++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-18 20:39:12.000000000 -0400
+> @@ -35,6 +35,7 @@
+>  #include <linux/init.h>
+>  #include <linux/time.h>
+>  #include <linux/cpu.h>
+> +#include <linux/poison.h>
+>  
+>  /* Global control variables for rcupdate callback mechanism. */
+>  struct rcu_ctrlblk {
+> @@ -163,6 +164,10 @@ static void __rcu_process_callbacks(stru
+>  	while (list) {
+>  		next = list->next;
+>  		prefetch(next);
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +		WARN_ON_ONCE(list->debug != LIST_POISON1);
+> +		list->debug = NULL;
+> +#endif
+>  		list->func(list);
+>  		list = next;
+>  	}
+> @@ -210,6 +215,10 @@ static void __call_rcu(struct rcu_head *
+>  {
+>  	unsigned long flags;
+>  
+> +#ifdef CONFIG_DEBUG_RCU_HEAD
+> +	WARN_ON_ONCE(head->debug);
+> +	head->debug = LIST_POISON1;
+> +#endif
+>  	head->func = func;
+>  	head->next = NULL;
+>  
+> 
+
