@@ -1,226 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab0CSQiD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 12:38:03 -0400
-Received: from mga10.intel.com ([192.55.52.92]:13749 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751220Ab0CSQiA (ORCPT
+	id S1752247Ab0CSQkq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 12:40:46 -0400
+Received: from mga06.intel.com ([134.134.136.21]:39992 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751993Ab0CSQkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 12:38:00 -0400
+	Fri, 19 Mar 2010 12:40:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.51,275,1267430400"; 
-   d="scan'208";a="782311031"
-Date: Fri, 19 Mar 2010 17:38:51 +0100
+   d="scan'208";a="605950779"
+Date: Fri, 19 Mar 2010 17:41:36 +0100
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       socketcan-core@lists.berlios.de
-Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus
- Carrier Board
-Message-ID: <20100319163849.GB30409@sortiz.org>
-References: <>
- <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
+To: Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: Add in XIIC to some configurations of timberdale
+Message-ID: <20100319164135.GC30409@sortiz.org>
+References: <1268732608.2020.10.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1268732608.2020.10.camel@debian>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ira,
+Hi Richard,
 
-Some comments below:
-
-On Thu, Mar 18, 2010 at 09:38:42AM -0700, Ira W. Snyder wrote:
-> +/* Module Parameters */
-> +static unsigned int num_modules = CMODIO_MAX_MODULES;
-> +static unsigned char *modules[CMODIO_MAX_MODULES] = {
-> +	"janz-ican3",
-> +	"janz-ican3",
-> +	"",
-> +	"janz-ttl",
-> +};
-That's not very nice, but I honestly dont know how to make it less ugly...
-At least this should be all left blank by default, as Wolfgang hinted.
-
-> +/*
-> + * Subdevice Support
-> + */
-Please use the mfd-core API for building and registering platform sub devices.
-The pieces of code below should shrink significantly.
-
-> +static int cmodio_remove_subdev(struct device *dev, void *data)
-> +{
-> +	platform_device_unregister(to_platform_device(dev));
-> +	return 0;
-> +}
-> +
-> +static void cmodio_subdev_release(struct device *dev)
-> +{
-> +	kfree(to_platform_device(dev));
-> +}
-> +
-> +static struct platform_device *cmodio_create_subdev(struct cmodio_device *priv,
-> +						    char *name,
-> +						    unsigned int res_count,
-> +						    unsigned int pdata_size)
-> +{
-> +	struct platform_device *pdev;
-> +	size_t res_size;
-> +
-> +	res_size = sizeof(struct resource) * res_count;
-> +	pdev = kzalloc(sizeof(*pdev) + res_size + pdata_size, GFP_KERNEL);
-> +	if (!pdev)
-> +		return NULL;
-> +
-> +	pdev->dev.release = cmodio_subdev_release;
-> +	pdev->dev.parent = &priv->pdev->dev;
-> +	pdev->name = name;
-> +
-> +	if (res_count) {
-> +		pdev->resource = (struct resource *)(pdev + 1);
-> +		pdev->num_resources = res_count;
-> +	}
-> +
-> +	if (pdata_size)
-> +		pdev->dev.platform_data = (void *)(pdev + 1) + res_size;
-> +
-> +	return pdev;
-> +}
-> +
-> +/* Create a memory resource for a subdevice */
-> +static void cmodio_create_mem(struct resource *parent, struct resource *res,
-> +			      resource_size_t offset, resource_size_t size)
-> +{
-> +	res->flags = IORESOURCE_MEM;
-> +	res->parent = parent;
-> +	res->start = parent->start + offset;
-> +	res->end = parent->start + offset + size - 1;
-> +}
-> +
-> +/* Create an IRQ resource for a subdevice */
-> +static void cmodio_create_irq(struct resource *res, unsigned int irq)
-> +{
-> +	res->flags = IORESOURCE_IRQ;
-> +	res->parent = NULL;
-> +	res->start = irq;
-> +	res->end = irq;
-> +}
-> +
-> +static int __devinit cmodio_probe_subdevice(struct cmodio_device *priv,
-> +					    char *name, unsigned int modno)
-> +{
-> +	struct janz_platform_data *pdata;
-> +	struct platform_device *pdev;
-> +	resource_size_t offset, size;
-> +	struct pci_dev *pci;
-> +	int ret;
-> +
-> +	pci = priv->pdev;
-> +	pdev = cmodio_create_subdev(priv, name, 3, sizeof(*pdata));
-> +	if (!pdev) {
-> +		dev_err(&pci->dev, "MODULbus slot %d alloc failed\n", modno);
-> +		ret = -ENOMEM;
-> +		goto out_return;
-> +	}
-> +
-> +	pdata = pdev->dev.platform_data;
-> +	pdata->modno = modno;
-> +	pdev->id = priv->subdev_id++;
-> +
-> +	/* MODULbus registers -- PCI BAR3 is big-endian MODULbus access */
-> +	offset = CMODIO_MODULBUS_SIZE * modno;
-> +	size = CMODIO_MODULBUS_SIZE;
-> +	cmodio_create_mem(&pci->resource[3], &pdev->resource[0], offset, size);
-> +
-> +	/* PLX Control Registers -- PCI BAR4 is interrupt and other registers */
-> +	offset = 0;
-> +	size = resource_size(&pci->resource[4]);
-> +	cmodio_create_mem(&pci->resource[4], &pdev->resource[1], offset, size);
-> +
-> +	/* IRQ */
-> +	cmodio_create_irq(&pdev->resource[2], pci->irq);
-> +
-> +	/* Register the device */
-> +	ret = platform_device_register(pdev);
-> +	if (ret) {
-> +		dev_err(&pci->dev, "MODULbus slot %d register failed\n", modno);
-> +		goto out_free;
-> +	}
-> +
-> +	return 0;
-> +
-> +out_free:
-> +	cmodio_subdev_release(&pdev->dev);
-> +out_return:
-> +	return ret;
-> +}
-> +
-> +/* Probe each submodule using kernel parameters */
-> +static int __devinit cmodio_probe_submodules(struct cmodio_device *priv)
-> +{
-> +	char *name;
-> +	int i;
-> +
-> +	for (i = 0; i < num_modules; i++) {
-> +		name = modules[i];
-> +		if (!strcmp(name, ""))
-> +			continue;
-> +
-> +		dev_dbg(&priv->pdev->dev, "MODULbus %d: name %s\n", i, name);
-> +		cmodio_probe_subdevice(priv, name, i);
-> +	}
-> +
-> +	return 0;
-> +}
-
-
-> +/*
-> + * PCI Driver
-> + */
-> +
-> +static int __devinit cmodio_pci_probe(struct pci_dev *dev,
-> +				      const struct pci_device_id *id)
-> +{
-> +	struct cmodio_device *priv;
-> +	int ret;
-> +
-> +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-> +	if (!priv) {
-> +		dev_err(&dev->dev, "unable to allocate private data\n");
-> +		ret = -ENOMEM;
-> +		goto out_return;
-> +	}
-> +
-> +	pci_set_drvdata(dev, priv);
-> +	priv->pdev = dev;
-> +
-> +	/* Hardware Initialization */
-> +	ret = pci_enable_device(dev);
-> +	if (ret) {
-> +		dev_err(&dev->dev, "unable to enable device\n");
-> +		goto out_free_priv;
-> +	}
-> +
-> +	pci_set_master(dev);
-> +	ret = pci_request_regions(dev, DRV_NAME);
-> +	if (ret) {
-> +		dev_err(&dev->dev, "unable to request regions\n");
-> +		goto out_pci_disable_device;
-> +	}
-> +
-> +	/* Onboard configuration registers */
-> +	priv->ctrl = pci_ioremap_bar(dev, 4);
-Why 4 ?
-
-
-> +#define PCI_VENDOR_ID_JANZ		0x13c3
-That probably belongs to pci_ids.h
+On Tue, Mar 16, 2010 at 10:43:28AM +0100, Richard Röjfors wrote:
+> This patch adds in the Xilinx I2C bus driver to some of the
+> configurations of the timberdale MFD.
+> 
+> It provides the I2C devices to the XIIC via platform data in a
+> similar way as done to the ocores driver.
+Thanks, patch applied.
 
 Cheers,
 Samuel.
+
+
+> Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+> ---
+> diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
+> index 1ed44d2..1d52349 100644
+> --- a/drivers/mfd/timberdale.c
+> +++ b/drivers/mfd/timberdale.c
+> @@ -30,6 +30,7 @@
+>  
+>  #include <linux/i2c.h>
+>  #include <linux/i2c-ocores.h>
+> +#include <linux/i2c-xiic.h>
+>  #include <linux/i2c/tsc2007.h>
+>  
+>  #include <linux/spi/spi.h>
+> @@ -68,6 +69,12 @@ static struct i2c_board_info timberdale_i2c_board_info[] = {
+>  	},
+>  };
+>  
+> +static __devinitdata struct xiic_i2c_platform_data
+> +timberdale_xiic_platform_data = {
+> +	.devices = timberdale_i2c_board_info,
+> +	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
+> +};
+> +
+>  static __devinitdata struct ocores_i2c_platform_data
+>  timberdale_ocores_platform_data = {
+>  	.regstep = 4,
+> @@ -76,6 +83,19 @@ timberdale_ocores_platform_data = {
+>  	.num_devices = ARRAY_SIZE(timberdale_i2c_board_info)
+>  };
+>  
+> +const static __devinitconst struct resource timberdale_xiic_resources[] = {
+> +	{
+> +		.start	= XIICOFFSET,
+> +		.end	= XIICEND,
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	{
+> +		.start	= IRQ_TIMBERDALE_I2C,
+> +		.end	= IRQ_TIMBERDALE_I2C,
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+>  const static __devinitconst struct resource timberdale_ocores_resources[] = {
+>  	{
+>  		.start	= OCORESOFFSET,
+> @@ -269,6 +289,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
+>  		.resources = timberdale_uart_resources,
+>  	},
+>  	{
+> +		.name = "xiic-i2c",
+> +		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+> +		.resources = timberdale_xiic_resources,
+> +		.platform_data = &timberdale_xiic_platform_data,
+> +		.data_size = sizeof(timberdale_xiic_platform_data),
+> +	},
+> +	{
+>  		.name = "timb-gpio",
+>  		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+>  		.resources = timberdale_gpio_resources,
+> @@ -313,6 +340,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
+>  		.resources = timberdale_uartlite_resources,
+>  	},
+>  	{
+> +		.name = "xiic-i2c",
+> +		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+> +		.resources = timberdale_xiic_resources,
+> +		.platform_data = &timberdale_xiic_platform_data,
+> +		.data_size = sizeof(timberdale_xiic_platform_data),
+> +	},
+> +	{
+>  		.name = "timb-gpio",
+>  		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+>  		.resources = timberdale_gpio_resources,
+> @@ -357,6 +391,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
+>  		.resources = timberdale_uart_resources,
+>  	},
+>  	{
+> +		.name = "xiic-i2c",
+> +		.num_resources = ARRAY_SIZE(timberdale_xiic_resources),
+> +		.resources = timberdale_xiic_resources,
+> +		.platform_data = &timberdale_xiic_platform_data,
+> +		.data_size = sizeof(timberdale_xiic_platform_data),
+> +	},
+> +	{
+>  		.name = "timb-gpio",
+>  		.num_resources = ARRAY_SIZE(timberdale_gpio_resources),
+>  		.resources = timberdale_gpio_resources,
+> 
+
 -- 
 Intel Open Source Technology Centre
 http://oss.intel.com/
