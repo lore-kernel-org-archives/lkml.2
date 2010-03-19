@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab0CSPsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:48:38 -0400
-Received: from anchor-post-1.mail.demon.net ([195.173.77.132]:32891 "EHLO
-	anchor-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751323Ab0CSPsh (ORCPT
+	id S1753319Ab0CSP6M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:58:12 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:7805 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab0CSP6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:48:37 -0400
-Message-ID: <4BA39CD1.8060900@rsk.demon.co.uk>
-Date: Fri, 19 Mar 2010 15:48:33 +0000
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	Fri, 19 Mar 2010 11:58:10 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2 0/4] hpet: convert from ACPI to PNP driver
+Date: Fri, 19 Mar 2010 08:58:06 -0700
+User-Agent: KMail/1.9.10
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Vojtech Pavlik <vojtech@suse.cz>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org
+References: <20100318175852.15143.2124.stgit@bob.kio> <4BA3359F.8070305@ladisch.de>
+In-Reply-To: <4BA3359F.8070305@ladisch.de>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: tj@kernel.org, fweisbec@gmail.com, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [BUG] percpu misaligned allocation
-References: <20100319013119.GB22095@nowhere>	<20100318.185757.39197211.davem@davemloft.net>	<4BA2DF0B.9080600@kernel.org> <20100318.200205.59696640.davem@davemloft.net>
-In-Reply-To: <20100318.200205.59696640.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201003190958.08006.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/10 03:02, David Miller wrote:
-> From: Tejun Heo <tj@kernel.org>
-> Date: Fri, 19 Mar 2010 11:18:51 +0900
+Andrew, did you see these?  Can you put them in -mm or whatever your
+normal path for HPET patches is?
+
+Thanks,
+  Bjorn
+
+On Friday 19 March 2010 02:28:15 am Clemens Ladisch wrote:
+> Bjorn Helgaas wrote:
+> > Clemens, if you like these,
 > 
->> On 03/19/2010 10:57 AM, David Miller wrote:
->>> I would use u64 so something like:
->>>
->>> 	u64 [FTRACE_MAX_PROFILE_SIZE / sizeof(u64)]
->>
->> <paranoid>DIV_ROUND_UP() would be safer than division</paranoid>
+> Yes.
 > 
-> There's potential real trouble if it isn't a multiple of sizeof(u64)
-> so better:
+> > will you take care of merging them, or do I need to shepherd them
+> > through some other path?
 > 
-> 	BUILD_BUG_ON(FTRACE_MAX_PROFILE_SIZE % sizeof(u64));
+> I don't have a tree for this; HPET patches are usually picked up by akpm.
 > 
-> :-)
 > 
-> What a mess, just because this thing can't be typed properly :-/
-> --
-> To unsubscribe from this list: send the line "unsubscribe sparclinux" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Regards,
+> Clemens
 > 
 
-Couldn't you use a union?
-
-For example if you have
-union test {
-	long t;
-	char buffer[50];
-};
-gcc will then do the right thing.
-
-on x86_64 sizeof(union test) = 56
-but on x86_32 it's only 52.
-
-regards
-Richard
 
