@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab0CSLip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 07:38:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43919 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab0CSLio (ORCPT
+	id S1751607Ab0CSLoZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 07:44:25 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:41794 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab0CSLoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 07:38:44 -0400
-Message-ID: <4BA36239.4070909@infradead.org>
-Date: Fri, 19 Mar 2010 08:38:33 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	Fri, 19 Mar 2010 07:44:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=iu3Lv22Rt35eI1NimWesc+VucolNXTMsZNwLWoP64u0cRkwE4y9lPOz/uLlZqeFUbB
+         oJLJv3ikjPFNsQ+kh08EK1lnMVr0HPaz0ZvB2A7p8wClzyZUzZos79mQAIfPhZV2ZVw2
+         fCgw6YMaVyHbT1agr1ZYPiBNtw2zBOIaL7YVg=
+Date: Fri, 19 Mar 2010 14:44:11 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Alexey Starikovskiy <astarikovskiy@suse.de>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] sbshc: acpi_device_class "smbus_host_controller" too long
+Message-ID: <20100319114411.GM5331@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Alexey Starikovskiy <astarikovskiy@suse.de>,
+	Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-To: Jeremy Kerr <jk@ozlabs.org>
-CC: users@linux.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [kernel.org users] [KORG] Availability of SSL on kernel.org
-References: <4BA2CFB7.7070108@kernel.org> <20100319035806.GB25308@linux-sh.org> <201003191600.13474.jk@ozlabs.org>
-In-Reply-To: <201003191600.13474.jk@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeremy,
+acpi_device_class can only be 19 characters and a NULL terminator.
 
-Jeremy Kerr wrote:
-> Hi Paul,
-> 
-> Thanks for the report and testing - I've just committed a fix, plus a change 
-> to reflect the https URL in the sample .pwclientrc file.
-> 
-> J.H.: If you update to the current git HEAD, the pwclient and .pwclientrc 
-> files served by patchwork.kernel.org will now be more suitable for use with 
-> https.
+With the current name we get a buffer overflow in acpi_smbus_hc_add()
+when we do: 
+	strcpy(acpi_device_class(device), ACPI_SMB_HC_CLASS);
 
-It worked after commenting this line:
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-#        xmlrpclib.SafeTransport.__init__(self)
-
-Without commenting, I get this bug:
-
-Traceback (most recent call last):
-  File "/usr/local/bin/pwclient", line 463, in ?
-    main()
-  File "/usr/local/bin/pwclient", line 381, in main
-    use_https)
-  File "/usr/local/bin/pwclient", line 88, in __init__
-    xmlrpclib.SafeTransport.__init__(self)
-AttributeError: class SafeTransport has no attribute '__init__'
-
-
-Btw, I had to do the same with the older pwclient. I'm using here the python/python libraries
-provided on RHEL5.
-
-
-Cheers,
-Mauro
-
--- 
-
-Cheers,
-Mauro
+diff --git a/drivers/acpi/sbshc.c b/drivers/acpi/sbshc.c
+index fd09229..1fbf073 100644
+--- a/drivers/acpi/sbshc.c
++++ b/drivers/acpi/sbshc.c
+@@ -17,7 +17,7 @@
+ 
+ #define PREFIX "ACPI: "
+ 
+-#define ACPI_SMB_HC_CLASS	"smbus_host_controller"
++#define ACPI_SMB_HC_CLASS	"smbus_host_ctl"
+ #define ACPI_SMB_HC_DEVICE_NAME	"ACPI SMBus HC"
+ 
+ struct acpi_smb_hc {
