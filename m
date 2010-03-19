@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264Ab0CSFu7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 01:50:59 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56238 "EHLO gate.crashing.org"
+	id S1751472Ab0CSGFx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 02:05:53 -0400
+Received: from ozlabs.org ([203.10.76.45]:51754 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab0CSFu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 01:50:58 -0400
-Subject: Re: [PATCH] PPC: Skip over OF_DT_NOP when unflattening the device
- tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-       Grant Likely <grant.likely@secretlab.ca>
-In-Reply-To: <20100309193021.GD30462@obsidianresearch.com>
-References: <20100309193021.GD30462@obsidianresearch.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Mar 2010 16:50:38 +1100
-Message-ID: <1268977838.8599.53.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1751119Ab0CSGFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 02:05:51 -0400
+From: Jeremy Kerr <jk@ozlabs.org>
+To: users@linux.kernel.org
+Subject: Re: [kernel.org users] [KORG] Availability of SSL on kernel.org
+Date: Fri, 19 Mar 2010 14:05:48 +0800
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; x86_64; ; )
+Cc: Paul Mundt <lethal@linux-sh.org>, "J.H." <warthog9@kernel.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>, users@kernel.org
+References: <4BA2CFB7.7070108@kernel.org> <20100319035806.GB25308@linux-sh.org>
+In-Reply-To: <20100319035806.GB25308@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003191405.48716.jk@ozlabs.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-09 at 12:30 -0700, Jason Gunthorpe wrote:
-> NOPs within the property section are skipped, but NOPs between
-> OF_DT_END_NODE and OF_DT_BEGIN_NODE were not. My firmware NOPs out
-> entire nodes depending on various environment parameters.
-> 
-> of_scan_flat_dt already handles NOP more generally..
+Hi Paul,
 
-Good catch, though that code has now moved over to drivers/of
-and is a bit different. Grant is going to fix it up though.
+> If I change the pwclientrc url to https:// instead then at least pwclient
+> list and get work, but update bombs out in the same way. I checked the
+> pwclientrc from the project info pages incase there was an update, but
+> those don't seem to have changed in format at all.
+
+Could you send me the backtrace you get when the 'update' fails?
 
 Cheers,
-Ben.
-
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->  arch/powerpc/kernel/prom.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-> index 4ec3008..92137b2 100644
-> --- a/arch/powerpc/kernel/prom.c
-> +++ b/arch/powerpc/kernel/prom.c
-> @@ -408,8 +408,11 @@ static unsigned long __init unflatten_dt_node(unsigned long mem,
->  		if (!np->type)
->  			np->type = "<NULL>";
->  	}
-> -	while (tag == OF_DT_BEGIN_NODE) {
-> -		mem = unflatten_dt_node(mem, p, np, allnextpp, fpsize);
-> +	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
-> +		if (tag == OF_DT_NOP)
-> +			*p += 4;
-> +		else
-> +			mem = unflatten_dt_node(mem, p, np, allnextpp, fpsize);
->  		tag = *((u32 *)(*p));
->  	}
->  	if (tag != OF_DT_END_NODE) {
 
 
+Jeremy
