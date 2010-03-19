@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284Ab0CSC1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 22:27:10 -0400
-Received: from psi.thgersdorf.net ([188.40.92.130]:53826 "EHLO mail.psioc.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab0CSC1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 22:27:06 -0400
-Date: Fri, 19 Mar 2010 03:26:59 +0100
-From: Dieter Ries <mail@dieterries.net>
-To: Alexander Graf <agraf@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
-Message-ID: <20100319022659.GA13117@Localhorst.asterix.local>
-References: <1258373983-8693-1-git-send-email-avi@redhat.com>
- <1258373983-8693-24-git-send-email-avi@redhat.com>
- <4BA1504A.3090801@dieterries.net>
- <808FF008-53B9-4271-904C-117A24ADF18C@suse.de>
- <20100317224002.GA5156@Localhorst.asterix.local>
- <59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de>
- <20100318071131.GC24062@Localhorst.asterix.local>
- <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de>
+	id S1752492Ab0CSCa0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:30:26 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:44559 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab0CSCaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 22:30:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rzydJ5Y02mLXE24K7LLoeIvdH0uMlOqWfoGeXI+3SDDz7NhphhL9zsaCvdSBcO+S3i
+         6xwGwZT18wOZ84OEH2YQqNrxkpnQu9/v63STGsk3K1miTJf/n1y1c+cS4498u/AQt7xs
+         Y1vmjHyfNpUqpUJale+Ovmv/PbBDZWHiXIzi0=
+Date: Fri, 19 Mar 2010 03:30:29 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [BUG] percpu misaligned allocation
+Message-ID: <20100319023027.GD22095@nowhere>
+References: <4BA1F2BA.30604@kernel.org> <20100318.175413.183069013.davem@davemloft.net> <20100319013119.GB22095@nowhere> <20100318.185757.39197211.davem@davemloft.net> <4BA2DF0B.9080600@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BA2DF0B.9080600@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 08:17:01AM +0100, Alexander Graf wrote:
-> On 18.03.2010, at 08:11, Dieter Ries wrote:
-> > You are right, it seems to be always cpu0. I'll check my BIOS and flash
-> > a newer version if available.
+On Fri, Mar 19, 2010 at 11:18:51AM +0900, Tejun Heo wrote:
+> On 03/19/2010 10:57 AM, David Miller wrote:
+> > I would use u64 so something like:
+> > 
+> > 	u64 [FTRACE_MAX_PROFILE_SIZE / sizeof(u64)]
 > 
-> Please do. If that doesn't help ping me again. I'll write up a quirk patch then.
+> <paranoid>DIV_ROUND_UP() would be safer than division</paranoid>
+> 
+> Thanks.
 
-It seems you were right, I flashed the BIOS to the latest version and
-now it is working.
 
-So thanks everybody, and sorry for the inconvenience.
-
-> Alex
-
-cu
-Dieter
+Ok, thanks guys, I'll try this out.
 
