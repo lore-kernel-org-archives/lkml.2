@@ -1,103 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab0CSUlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 16:41:50 -0400
+	id S1751932Ab0CSUmE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:42:04 -0400
 Received: from mail-bw0-f209.google.com ([209.85.218.209]:63504 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab0CSUls (ORCPT
+	with ESMTP id S1752085Ab0CSUl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 16:41:48 -0400
+	Fri, 19 Mar 2010 16:41:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=xL8mnIkWVQqBTCChkIolpdOG5Tr3ywScmrZX5NdEq3z1HzxqRT6yNqWyEY9G1Mf/uU
-         i0vnjzOWmhYRrLQMngvTM8tRO1C6coYH3eVrhR/LZdDJ3sWaVBYm8GbkDhbbBuwpy8fe
-         fCBYwtPICc6v5ydhnWUx/nD1X06nfjVza6cUk=
+        b=V/rAZwiVyvAZlBSqQetGo7WGI1ccG0Mp4yZyxvNTzit+ZYu03J9SFzIxl+05r+s2b9
+         Bq2ZvMCjurOd68/u784CZPeAXhtD990NvX7rdMCJlbFTC/xpinJ3YOP0fpp0gW3cihSM
+         5IzFwvEYdF9ULQ9JVQHfcBXQ5xXguts9qtJTY=
 From: Sankar P <sankar.curiosity@gmail.com>
 To: gregkh@suse.de, pavel@ucw.cz, penberg@cs.helsinki.fi,
        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        sankar.curiosity@gmail.com
-Subject: [PATCH 3/6] staging: winbond: Convert typedef struct _STRUCT_SELECTOR
-Date: Sat, 20 Mar 2010 02:11:01 +0530
-Message-Id: <1269031264-2327-4-git-send-email-sankar.curiosity@gmail.com>
+Subject: [PATCH 5/6] staging: winbond: Convert typedef struct _MLME_FRAME to struct
+Date: Sat, 20 Mar 2010 02:11:03 +0530
+Message-Id: <1269031264-2327-6-git-send-email-sankar.curiosity@gmail.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
+In-Reply-To: <1269031264-2327-5-git-send-email-sankar.curiosity@gmail.com>
 References: <1269031264-2327-1-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-2-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
+ <1269031264-2327-4-git-send-email-sankar.curiosity@gmail.com>
+ <1269031264-2327-5-git-send-email-sankar.curiosity@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the declaration typedef struct _STRUCT_SELECTOR
-to struct struct_selector and also the places where it was used.
+This patch converts the typedef struct _MLME_FRAME to
+struct mlme_frame and updates the places where it is used.
 
 Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
 ---
- drivers/staging/winbond/mac_structures.h |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/winbond/core.h   |    2 +-
+ drivers/staging/winbond/mlme_s.h |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/winbond/mac_structures.h b/drivers/staging/winbond/mac_structures.h
-index 7eb0e57..4130cf6 100644
---- a/drivers/staging/winbond/mac_structures.h
-+++ b/drivers/staging/winbond/mac_structures.h
-@@ -436,7 +436,7 @@ struct Extended_Supported_Rates_Element
- #define OUI_CIPHER_CCMP				0x04
- #define OUI_CIPHER_WEP_104			0x05
+diff --git a/drivers/staging/winbond/core.h b/drivers/staging/winbond/core.h
+index 0a2060b..372053a 100644
+--- a/drivers/staging/winbond/core.h
++++ b/drivers/staging/winbond/core.h
+@@ -16,7 +16,7 @@ struct wbsoft_priv {
  
--typedef struct _SUITE_SELECTOR_
-+struct suite_selector
+ 	struct wb_local_para sLocalPara;	// Myself connected parameters
+ 
+-	MLME_FRAME sMlmeFrame;	// connect to peerSTA parameters
++	struct mlme_frame sMlmeFrame;	/* connect to peerSTA parameters */
+ 
+ 	struct wb35_mto_params sMtoPara;	// MTO_struct ...
+ 	struct hw_data sHwData;	//For HAL
+diff --git a/drivers/staging/winbond/mlme_s.h b/drivers/staging/winbond/mlme_s.h
+index 1217a1c..c95debf 100644
+--- a/drivers/staging/winbond/mlme_s.h
++++ b/drivers/staging/winbond/mlme_s.h
+@@ -131,7 +131,7 @@
+ #define boMLME_IdleScanState(_BB_)	(_BB_->wState==IDLE_SCAN)
+ #define boMLME_FoundSTAinfo(_CC_)	(_CC_->wState>=IDLE_SCAN)
+ 
+-typedef struct _MLME_FRAME
++struct mlme_frame
  {
- 	union
- 	{
-@@ -447,23 +447,23 @@ typedef struct _SUITE_SELECTOR_
- 			u8	Type;
- 		}SuitSelector;
- 	};
--}SUITE_SELECTOR;
+ 	//NDIS_PACKET		MLME_Packet;
+ 	s8 *			pMMPDU;
+@@ -156,7 +156,7 @@ typedef struct _MLME_FRAME
+ 	u16		wNumRxMMPDUInMLME; 	// Number of the Rx MMPDU
+ 	u16		reserved_1;			//  in MLME.
+                     	            //  excluding the discarded
+-} MLME_FRAME, *psMLME_FRAME;
 +};
  
- //--  WPA  --
- struct	RSN_Information_Element
- {
- 	u8					Element_ID;
- 	u8					Length;
--	SUITE_SELECTOR	OuiWPAAdditional;//WPA version 2.0 additional field, and should be 00:50:F2:01
-+	struct suite_selector	OuiWPAAdditional; /* WPA version 2.0 additional field, and should be 00:50:F2:01 */
- 	u16					Version;
--	SUITE_SELECTOR		GroupKeySuite;
-+	struct suite_selector		GroupKeySuite;
- 	u16					PairwiseKeySuiteCount;
--	SUITE_SELECTOR		PairwiseKeySuite[1];
-+	struct suite_selector		PairwiseKeySuite[1];
- }__attribute__ ((packed));
- struct RSN_Auth_Sub_Information_Element
- {
- 	u16				AuthKeyMngtSuiteCount;
--	SUITE_SELECTOR	AuthKeyMngtSuite[1];
-+	struct suite_selector	AuthKeyMngtSuite[1];
- }__attribute__ ((packed));
- 
- //--  WPA2  --
-@@ -508,16 +508,16 @@ struct	WPA2_RSN_Information_Element
- 	u8					Element_ID;
- 	u8					Length;
- 	u16					Version;
--	SUITE_SELECTOR		GroupKeySuite;
-+	struct suite_selector		GroupKeySuite;
- 	u16					PairwiseKeySuiteCount;
--	SUITE_SELECTOR		PairwiseKeySuite[1];
-+	struct suite_selector		PairwiseKeySuite[1];
- 
- }__attribute__ ((packed));
- 
- struct WPA2_RSN_Auth_Sub_Information_Element
- {
- 	u16				AuthKeyMngtSuiteCount;
--	SUITE_SELECTOR	AuthKeyMngtSuite[1];
-+	struct suite_selector	AuthKeyMngtSuite[1];
- }__attribute__ ((packed));
- 
+ typedef struct _AUTHREQ {
  
 -- 
 1.6.4.2
