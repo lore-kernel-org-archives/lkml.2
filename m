@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab0CSPSj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:18:39 -0400
-Received: from kroah.org ([198.145.64.141]:45856 "EHLO coco.kroah.org"
+	id S1752786Ab0CSPXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:23:22 -0400
+Received: from kroah.org ([198.145.64.141]:45868 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab0CSPSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:18:38 -0400
+	id S1751579Ab0CSPSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:18:40 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ari Entlich <atrigent@ccs.neu.edu>,
-       Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 1/7] Revert "tty: Add a new VT mode which is like VT_PROCESS but doesn't require a VT_RELDISP ioctl call"
-Date: Fri, 19 Mar 2010 08:18:30 -0700
-Message-Id: <1269011916-8836-1-git-send-email-gregkh@suse.de>
+Cc: Amit Shah <amit.shah@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       linuxppc-dev@ozlabs.org, Rusty Russell <rusty@rustcorp.com.au>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 4/7] hvc_console: Fix race between hvc_close and hvc_remove
+Date: Fri, 19 Mar 2010 08:18:33 -0700
+Message-Id: <1269011916-8836-4-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <20100319151326.GC8541@kroah.com>
 References: <20100319151326.GC8541@kroah.com>
@@ -20,124 +21,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit eec9fe7d1ab4a0dfac4cb43047a7657fffd0002f.
+From: Amit Shah <amit.shah@redhat.com>
 
-Ari writes as the reason this should be reverted:
-	The problems with this patch include:
-	1. There's at least one subtlety I overlooked - switching
-	between X servers (i.e. from one X VT to another) still requires
-	the cooperation of both X servers. I was assuming that KMS
-	eliminated this.
-	2. It hasn't been tested at all (no X server patch exists which
-	uses the new mode).
+Alan pointed out a race in the code where hvc_remove is invoked. The
+recent virtio_console work is the first user of hvc_remove().
 
-As he was the original author of the patch, I'll revert it.
+Alan describes it thus:
 
-Cc: Ari Entlich <atrigent@ccs.neu.edu>
-Cc: Alan Cox <alan@linux.intel.com>
+The hvc_console assumes that a close and remove call can't occur at the
+same time.
+
+In addition tty_hangup(tty) is problematic as tty_hangup is asynchronous
+itself....
+
+So this can happen
+
+        hvc_close                               hvc_remove
+        hung up ? - no
+                                                lock
+                                                tty = hp->tty
+                                                unlock
+        lock
+        hp->tty = NULL
+        unlock
+        notify del
+        kref_put the hvc struct
+        close completes
+        tty is destroyed
+                                                tty_hangup dead tty
+                                                tty->ops will be NULL
+                                                NULL->...
+
+This patch adds some tty krefs and also converts to using tty_vhangup().
+
+Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linuxppc-dev@ozlabs.org
+CC: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/vt_ioctl.c |   39 +++++++++++++++++++--------------------
- include/linux/vt.h      |    3 +--
- 2 files changed, 20 insertions(+), 22 deletions(-)
+ drivers/char/hvc_console.c |   31 +++++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/char/vt_ioctl.c b/drivers/char/vt_ioctl.c
-index 87778dc..6aa1028 100644
---- a/drivers/char/vt_ioctl.c
-+++ b/drivers/char/vt_ioctl.c
-@@ -888,7 +888,7 @@ int vt_ioctl(struct tty_struct *tty, struct file * file,
- 			ret = -EFAULT;
- 			goto out;
- 		}
--		if (tmp.mode != VT_AUTO && tmp.mode != VT_PROCESS && tmp.mode != VT_PROCESS_AUTO) {
-+		if (tmp.mode != VT_AUTO && tmp.mode != VT_PROCESS) {
- 			ret = -EINVAL;
- 			goto out;
- 		}
-@@ -1622,7 +1622,7 @@ static void complete_change_console(struct vc_data *vc)
- 	 * telling it that it has acquired. Also check if it has died and
- 	 * clean up (similar to logic employed in change_console())
- 	 */
--	if (vc->vt_mode.mode == VT_PROCESS || vc->vt_mode.mode == VT_PROCESS_AUTO) {
-+	if (vc->vt_mode.mode == VT_PROCESS) {
- 		/*
- 		 * Send the signal as privileged - kill_pid() will
- 		 * tell us if the process has gone or something else
-@@ -1682,7 +1682,7 @@ void change_console(struct vc_data *new_vc)
- 	 * vt to auto control.
- 	 */
- 	vc = vc_cons[fg_console].d;
--	if (vc->vt_mode.mode == VT_PROCESS || vc->vt_mode.mode == VT_PROCESS_AUTO) {
-+	if (vc->vt_mode.mode == VT_PROCESS) {
- 		/*
- 		 * Send the signal as privileged - kill_pid() will
- 		 * tell us if the process has gone or something else
-@@ -1693,28 +1693,27 @@ void change_console(struct vc_data *new_vc)
- 		 */
- 		vc->vt_newvt = new_vc->vc_num;
- 		if (kill_pid(vc->vt_pid, vc->vt_mode.relsig, 1) == 0) {
--			if(vc->vt_mode.mode == VT_PROCESS)
--				/*
--				 * It worked. Mark the vt to switch to and
--				 * return. The process needs to send us a
--				 * VT_RELDISP ioctl to complete the switch.
--				 */
--				return;
--		} else {
- 			/*
--			 * The controlling process has died, so we revert back to
--			 * normal operation. In this case, we'll also change back
--			 * to KD_TEXT mode. I'm not sure if this is strictly correct
--			 * but it saves the agony when the X server dies and the screen
--			 * remains blanked due to KD_GRAPHICS! It would be nice to do
--			 * this outside of VT_PROCESS but there is no single process
--			 * to account for and tracking tty count may be undesirable.
-+			 * It worked. Mark the vt to switch to and
-+			 * return. The process needs to send us a
-+			 * VT_RELDISP ioctl to complete the switch.
- 			 */
--			reset_vc(vc);
-+			return;
- 		}
+diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+index 465185f..ba55bba 100644
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -312,6 +312,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+ 	spin_lock_irqsave(&hp->lock, flags);
+ 	/* Check and then increment for fast path open. */
+ 	if (hp->count++ > 0) {
++		tty_kref_get(tty);
+ 		spin_unlock_irqrestore(&hp->lock, flags);
+ 		hvc_kick();
+ 		return 0;
+@@ -319,7 +320,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
  
- 		/*
--		 * Fall through to normal (VT_AUTO and VT_PROCESS_AUTO) handling of the switch...
-+		 * The controlling process has died, so we revert back to
-+		 * normal operation. In this case, we'll also change back
-+		 * to KD_TEXT mode. I'm not sure if this is strictly correct
-+		 * but it saves the agony when the X server dies and the screen
-+		 * remains blanked due to KD_GRAPHICS! It would be nice to do
-+		 * this outside of VT_PROCESS but there is no single process
-+		 * to account for and tracking tty count may be undesirable.
-+		 */
-+		reset_vc(vc);
+ 	tty->driver_data = hp;
+ 
+-	hp->tty = tty;
++	hp->tty = tty_kref_get(tty);
+ 
+ 	spin_unlock_irqrestore(&hp->lock, flags);
+ 
+@@ -336,6 +337,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+ 		spin_lock_irqsave(&hp->lock, flags);
+ 		hp->tty = NULL;
+ 		spin_unlock_irqrestore(&hp->lock, flags);
++		tty_kref_put(tty);
+ 		tty->driver_data = NULL;
+ 		kref_put(&hp->kref, destroy_hvc_struct);
+ 		printk(KERN_ERR "hvc_open: request_irq failed with rc %d.\n", rc);
+@@ -363,13 +365,18 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
+ 		return;
+ 
+ 	hp = tty->driver_data;
 +
-+		/*
-+		 * Fall through to normal (VT_AUTO) handling of the switch...
- 		 */
+ 	spin_lock_irqsave(&hp->lock, flags);
++	tty_kref_get(tty);
+ 
+ 	if (--hp->count == 0) {
+ 		/* We are done with the tty pointer now. */
+ 		hp->tty = NULL;
+ 		spin_unlock_irqrestore(&hp->lock, flags);
+ 
++		/* Put the ref obtained in hvc_open() */
++		tty_kref_put(tty);
++
+ 		if (hp->ops->notifier_del)
+ 			hp->ops->notifier_del(hp, hp->data);
+ 
+@@ -389,6 +396,7 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
+ 		spin_unlock_irqrestore(&hp->lock, flags);
  	}
  
-diff --git a/include/linux/vt.h b/include/linux/vt.h
-index 778b7b2..d5dd0bc 100644
---- a/include/linux/vt.h
-+++ b/include/linux/vt.h
-@@ -27,7 +27,7 @@ struct vt_mode {
- #define VT_SETMODE	0x5602	/* set mode of active vt */
- #define		VT_AUTO		0x00	/* auto vt switching */
- #define		VT_PROCESS	0x01	/* process controls switching */
--#define		VT_PROCESS_AUTO 0x02	/* process is notified of switching */
-+#define		VT_ACKACQ	0x02	/* acknowledge switch */
++	tty_kref_put(tty);
+ 	kref_put(&hp->kref, destroy_hvc_struct);
+ }
  
- struct vt_stat {
- 	unsigned short v_active;	/* active vt */
-@@ -38,7 +38,6 @@ struct vt_stat {
- #define VT_SENDSIG	0x5604	/* signal to send to bitmask of vts */
+@@ -424,10 +432,11 @@ static void hvc_hangup(struct tty_struct *tty)
+ 	spin_unlock_irqrestore(&hp->lock, flags);
  
- #define VT_RELDISP	0x5605	/* release display */
--#define		VT_ACKACQ	0x02	/* acknowledge switch */
+ 	if (hp->ops->notifier_hangup)
+-			hp->ops->notifier_hangup(hp, hp->data);
++		hp->ops->notifier_hangup(hp, hp->data);
  
- #define VT_ACTIVATE	0x5606	/* make vt active */
- #define VT_WAITACTIVE	0x5607	/* wait for vt active */
+ 	while(temp_open_count) {
+ 		--temp_open_count;
++		tty_kref_put(tty);
+ 		kref_put(&hp->kref, destroy_hvc_struct);
+ 	}
+ }
+@@ -592,7 +601,7 @@ int hvc_poll(struct hvc_struct *hp)
+ 	}
+ 
+ 	/* No tty attached, just skip */
+-	tty = hp->tty;
++	tty = tty_kref_get(hp->tty);
+ 	if (tty == NULL)
+ 		goto bail;
+ 
+@@ -672,6 +681,8 @@ int hvc_poll(struct hvc_struct *hp)
+ 
+ 		tty_flip_buffer_push(tty);
+ 	}
++	if (tty)
++		tty_kref_put(tty);
+ 
+ 	return poll_mask;
+ }
+@@ -807,7 +818,7 @@ int hvc_remove(struct hvc_struct *hp)
+ 	struct tty_struct *tty;
+ 
+ 	spin_lock_irqsave(&hp->lock, flags);
+-	tty = hp->tty;
++	tty = tty_kref_get(hp->tty);
+ 
+ 	if (hp->index < MAX_NR_HVC_CONSOLES)
+ 		vtermnos[hp->index] = -1;
+@@ -819,18 +830,18 @@ int hvc_remove(struct hvc_struct *hp)
+ 	/*
+ 	 * We 'put' the instance that was grabbed when the kref instance
+ 	 * was initialized using kref_init().  Let the last holder of this
+-	 * kref cause it to be removed, which will probably be the tty_hangup
++	 * kref cause it to be removed, which will probably be the tty_vhangup
+ 	 * below.
+ 	 */
+ 	kref_put(&hp->kref, destroy_hvc_struct);
+ 
+ 	/*
+-	 * This function call will auto chain call hvc_hangup.  The tty should
+-	 * always be valid at this time unless a simultaneous tty close already
+-	 * cleaned up the hvc_struct.
++	 * This function call will auto chain call hvc_hangup.
+ 	 */
+-	if (tty)
+-		tty_hangup(tty);
++	if (tty) {
++		tty_vhangup(tty);
++		tty_kref_put(tty);
++	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(hvc_remove);
 -- 
 1.7.0.2
 
