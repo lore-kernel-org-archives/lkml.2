@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab0CSQ4l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 12:56:41 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:33160 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751439Ab0CSQ4k (ORCPT
+	id S1752321Ab0CSQ4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 12:56:52 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:48248 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab0CSQ4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 12:56:40 -0400
-Date: Fri, 19 Mar 2010 12:56:38 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, mingo@elte.hu,
-       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
-Message-ID: <20100319165637.GA28123@Krystal>
-References: <20100319013024.GA28456@Krystal> <4BA2FA01.30102@cn.fujitsu.com> <alpine.DEB.2.00.1003190730440.9184@router.home> <20100319144434.GA2520@linux.vnet.ibm.com>
+	Fri, 19 Mar 2010 12:56:49 -0400
+Message-ID: <4BA3ACA8.1020400@oracle.com>
+Date: Fri, 19 Mar 2010 09:56:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319144434.GA2520@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:55:47 up 55 days, 19:32,  9 users,  load average: 1.01, 1.07,
-	1.08
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.sourceforge.net
+CC: Jakob Bornecrantz <jakob@vmware.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] vmwgfx: depends on FB to fix build errors
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4BA3ACC2.0181:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Mar 19, 2010 at 07:34:07AM -0500, Christoph Lameter wrote:
-> > On Fri, 19 Mar 2010, Lai Jiangshan wrote:
-> > 
-> > > but SLUB opposed me, so I did not post it.
-> > >
-> > > @ slub.c
-> > > static void free_slab(struct kmem_cache *s, struct page *page)
-> > > {
-> > > 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
-> > > 		/*
-> > > 		 * RCU free overloads the RCU head over the LRU
-> > > 		 */
-> > > 		struct rcu_head *head = (void *)&page->lru;
-> > >
-> > > 		call_rcu(head, rcu_free_slab);
-> > > 	} else
-> > > 		__free_slab(s, page);
-> > > }
-> > >
-> > > I think it is not your patch's fault, but the above code has
-> > > already existed.
-> > >
-> > > In your patch, struct rcu_head::debug will share the same memory of
-> > > the other field of struct page, (especially share the struct page::flags
-> > > which I encountered)
-> > 
-> > Right. I like the smallness of the RCU structure but if you must
-> > increase its size then we could:
-> > 
-> > A) put the rcu structure at the end of each page like SLOB
-> >    but that will take away memory that could be used by objects.
-> > 
-> > B) Move the rcu object up by a word so that it overloads the index field
-> >    in the page struct. That would give another exact fit but will cause
-> >    trouble again if you bloat the structure some more.
-> 
-> The size increase is strictly under a debug option -- the non-debug
-> size remains the same as always.  And I expect that in the longer term,
-> we will be able to shrink the size back down even with this debug option
-> available.
-> 
-> One question: do any of the other allocators care about the size of the
-> struct rcu_head?  If not, a temporary work-around would be to simply
-> prohibit use of this debug option when running with SLUB.
-> 
-> 							Thanx, Paul
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Don't worry about the struct rcu_head size too much. I'm currently working on a
-debugobjects implementation. I should have something by the end of the day.
+vmwfgx uses framebuffer interfaces, so it should depend on FB.
+Otherwise it has these build errors (e.g., when CONFIG_FB=m):
 
-Thanks,
+drivers/built-in.o: In function `vmw_fb_close':
+(.text+0x97713): undefined reference to `unregister_framebuffer'
+drivers/built-in.o: In function `vmw_fb_close':
+(.text+0x97754): undefined reference to `framebuffer_release'
+drivers/built-in.o: In function `vmw_fb_init':
+(.text+0x97e1c): undefined reference to `framebuffer_alloc'
+drivers/built-in.o: In function `vmw_fb_init':
+(.text+0x9838d): undefined reference to `register_framebuffer'
+drivers/built-in.o: In function `vmw_fb_init':
+(.text+0x9842a): undefined reference to `framebuffer_release'
 
-Mathieu
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Jakob Bornecrantz <jakob@vmware.com>
+---
+ drivers/gpu/drm/vmwgfx/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--- lnx-2634-rc1.orig/drivers/gpu/drm/vmwgfx/Kconfig
++++ lnx-2634-rc1/drivers/gpu/drm/vmwgfx/Kconfig
+@@ -1,6 +1,6 @@
+ config DRM_VMWGFX
+ 	tristate "DRM driver for VMware Virtual GPU"
+-	depends on DRM && PCI
++	depends on DRM && PCI && FB
+ 	select FB_DEFERRED_IO
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
