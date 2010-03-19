@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0CSA3o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 20:29:44 -0400
-Received: from kroah.org ([198.145.64.141]:46530 "EHLO coco.kroah.org"
+	id S1753112Ab0CSA3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 20:29:52 -0400
+Received: from kroah.org ([198.145.64.141]:46573 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab0CSA3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 20:29:42 -0400
-Date: Thu, 18 Mar 2010 17:04:38 -0700
+	id S1751735Ab0CSA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 20:29:48 -0400
+Date: Thu, 18 Mar 2010 17:25:58 -0700
 From: Greg KH <greg@kroah.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: Greg KH <gregkh@suse.de>, Peter Stuge <peter@stuge.se>,
-       linux-kernel@vger.kernel.org,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-       stable-review@kernel.org, "Justin P. Mattock" <justinmattock@gmail.com>,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       stable@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [Stable-review] [patch 070/123] ath9k: re-enable ps
- by default for new single chip families
-Message-ID: <20100319000438.GV5454@kroah.com>
-References: <20100313001618.GA9811@kroah.com>
- <20100313001511.285517122@kvm.kroah.org>
- <43e72e891003151804s617659f8o6dcbf0b5ab63cb5d@mail.gmail.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       Hisashi Hifumi <hifumi.hisashi@oss.ntt.co.jp>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Ronald <intercommit@gmail.com>,
+       Bart Van Assche <bart.vanassche@gmail.com>,
+       Vladislav Bolkhovitin <vst@vlnb.net>,
+       Randy Dunlap <randy.dunlap@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [RFC PATCH] Fix Readahead stalling by plugged device queues
+Message-ID: <20100319002558.GD5454@kroah.com>
+References: <4B979104.6010907@linux.vnet.ibm.com>
+ <20100310130932.GB18509@localhost>
+ <4B97AD52.7080201@linux.vnet.ibm.com>
+ <20100311014542.GA8134@localhost>
+ <4B98BEB0.6020800@linux.vnet.ibm.com>
+ <20100311132913.GB6692@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <43e72e891003151804s617659f8o6dcbf0b5ab63cb5d@mail.gmail.com>
+In-Reply-To: <20100311132913.GB6692@localhost>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 15, 2010 at 06:04:15PM -0700, Luis R. Rodriguez wrote:
-> On Fri, Mar 12, 2010 at 5:12 PM, Greg KH <gregkh@suse.de> wrote:
-> > 2.6.33-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Mar 11, 2010 at 09:29:13PM +0800, Wu Fengguang wrote:
+> On Thu, Mar 11, 2010 at 05:58:08PM +0800, Christian Ehrhardt wrote:
+> > Wu Fengguang wrote:
+> > > On Wed, Mar 10, 2010 at 10:31:46PM +0800, Christian Ehrhardt wrote:
+> > >>
+> > >> Wu Fengguang wrote:
+> > >> [...]
+> > >>> Christian, did you notice this commit for 2.6.33?
+> > >>>
+> > >>> commit 65a80b4c61f5b5f6eb0f5669c8fb120893bfb388
+> > >> [...]
+> > >>
+> > >> I didn't see that particular one, due to the fact that whatever the 
+> > >> result is it needs to work .32
+> > >>
+> > >> Anyway I'll test it tomorrow and if that already accepted one fixes my 
+> > >> issue as well I'll recommend distros older than 2.6.33 picking that one 
+> > >> up in their on top patches.
+> > > 
+> > > OK, thanks!
+> > 
+> > That patch fixes my issue completely and is as we discussed less 
+> > aggressive which is fine - thanks for pointing it out - Now I have 
+> > something already upstream accepted to fix the issue, thats much better!
 > 
-> This was intended for 2.6.32 as well. Thanks
+> That's great news, it works beyond my expectation.. :)
+> 
+> > >>> It should at least improve performance between .32 and .33, because
+> > >>> once two readahead requests are merged into one single IO request,
+> > >>> the PageUptodate() will be true at next readahead, and hence
+> > >>> blk_run_backing_dev() get called to break out of the suboptimal
+> > >>> situation.
+> > >> As you saw from my blktrace thats already the case without that patch.
+> > >> Once the second readahead comes in and merged it gets unplugged in 
+> > >> 2.6.32 too - but still that is bad behavior as it denies my things like 
+> > >> 68% throughput improvement :-).
+> > > 
+> > > I mean, when readahead windows A and B are submitted in one IO --
+> > > let's call it AB -- commit 65a80b4c61 will explicitly unplug on doing
+> > > readahead C.  While in your trace, the unplug appears on AB.
+> > > 
+> > > The 68% improvement is very impressive. Wondering if commit 65a80b4c61
+> > > (the _conditional_ unplug) can achieve the same level of improvement :)
+> > 
+> > Yep it can !
+> > We can post update the patch description to bigger numbers :-)
+> 
+> Andrew/Greg, shall we push the patch to .32 stable?
 
-Great, but it didn't apply there, so I didn't try to force it :)
-
-Care to provide a backport?
+I've now queued it up.
 
 thanks,
 
