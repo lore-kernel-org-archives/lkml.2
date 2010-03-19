@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab0CSTxT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 15:53:19 -0400
-Received: from outbound-mail-313.bluehost.com ([67.222.54.6]:38578 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751197Ab0CSTxR (ORCPT
+	id S1751472Ab0CSUD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:03:29 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:36690 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab0CSUD1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 15:53:17 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=tRERGKLZHCKZvmyBiAl1wv2x2sai2ImYSPwMRz1E6eSIL4q0sft1/tXwXn5yOygTFO4xyXPrffYQIcV+Tmr6DXeoEVP6kq9btlAOkMz8blWdydlr6GhO6OzOYWPUfF8G;
-Date: Fri, 19 Mar 2010 12:53:20 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Surbhi Palande <surbhi.palande@canonical.com>
-Cc: dri-devel@lists.sourceforge.net, Chris Wilson <chris@chris-wilson.co.uk>,
-       Eric Anholt <eric@anholt.net>, linux-kernel@vger.kernel.org,
-       airlied@linux.ie, yakui.zhao@intel.com, zhenyuw@linux.intel.com,
-       Len Brown <lenb@kernel.org>
-Subject: Re: ACPI _LID failures
-Message-ID: <20100319125320.22d8b25d@jbarnes-piketon>
-In-Reply-To: <cover.1268680514.git.surbhi.palande@canonical.com>
-References: <89k83ahv05c@azsmga001.ch.intel.com>
-	<cover.1268680514.git.surbhi.palande@canonical.com>
-X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Fri, 19 Mar 2010 16:03:27 -0400
+Date: Fri, 19 Mar 2010 13:03:25 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+       netdev@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN	module
+Message-ID: <20100319200325.GE13672@ovro.caltech.edu>
+References: <>
+ <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu>
+ <4BA33D5A.8070000@grandegger.com>
+ <20100319151914.GB13672@ovro.caltech.edu>
+ <4BA39C05.8050800@grandegger.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA39C05.8050800@grandegger.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 19 Mar 2010 13:03:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Mar 2010 21:32:41 +0200
-Surbhi Palande <surbhi.palande@canonical.com> wrote:
-
-> The following two patches are quirks that blacklist bios which report
-> incorrect lid status. These are bioses for machines with a 900 GM.
-> The first one is tested by Ubuntu users and the second one isn't.
-> Further testing will be appreciated.
+On Fri, Mar 19, 2010 at 04:45:09PM +0100, Wolfgang Grandegger wrote:
+> Ira W. Snyder wrote:
+> > On Fri, Mar 19, 2010 at 10:01:14AM +0100, Wolfgang Grandegger wrote:
+> >> Hi Ira,
+> >>
+> >> we already discussed this patch on the SocketCAN mailing list and there
+> >> are just a few minor issues and the request to add support for the new
+> >> "berr-reporting" option, if feasible. See:
+> >>
+> >>   commit 52c793f24054f5dc30d228e37e0e19cc8313f086
+> >>   Author: Wolfgang Grandegger <wg@grandegger.com>
+> >>   Date:   Mon Feb 22 22:21:17 2010 +0000
+> >>
+> >>     can: netlink support for bus-error reporting and counters
+> >>     
+> >>     This patch makes the bus-error reporting configurable and allows to
+> >>     retrieve the CAN TX and RX bus error counters via netlink interface.
+> >>     I have added support for the SJA1000. The TX and RX bus error counters
+> >>     are also copied to the data fields 6..7 of error messages when state
+> >>     changes are reported.
+> >>
+> >> Should not be a big deal.
+> >>
+> > 
+> > I think this patch came along since my last post of the driver. I must
+> > have missed it. I'll try and add support.
 > 
+> No problem, it's really new. Just just need to enable BEI depending on
+> CAN_CTRLMODE_BERR_REPORTING.
 > 
-> Surbhi Palande (2):
->   drm/i915: blacklist lid status: Sony VGN-BX196VP
->   drm/i915: blacklist lid status: Elite Co. G335
-> 
->  drivers/gpu/drm/i915/intel_lvds.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
 
-Patches look ok to me.  Len was curious about whether some recent ACPI
-EC fixes will fix some of our lid detection bugs though.
+I have one final question about this.
 
-Len, is there any particular patch or version people should try?
+The documentation for the firmware isn't very specific here. I believe
+that in order to get any kind of error messages, I need the bus error
+feature turned on. What is the expected behavior of an SJA1000 with the
+BEI (bus error interrupt) turned off? Will you still get warning
+messages for ERROR_ACTIVE -> ERROR_PASSIVE state transitions?
+
+I'm not sure how I would go about testing this feature, either. Ideas?
+
+I also noticed that I can enable "self test mode" and "listen only mode"
+using the same firmware command. It appears that there are netlink
+messages for this as well. Should I try and support these, too? I don't
+really have any use for them (yet). I assume "self test mode" is
+equivalent to "loopback mode" in the netlink messages.
 
 Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Ira
