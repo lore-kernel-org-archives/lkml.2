@@ -1,135 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab0CSCoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 22:44:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47719 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0CSCoT (ORCPT
+	id S1752723Ab0CSCrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:47:36 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52881 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab0CSCre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 22:44:19 -0400
-X-Authority-Analysis: v=1.0 c=1 a=qZ4rcf0kavUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=-eGxAq5vGyx-T57c5gMA:9 a=6Iz1nZuTp5IZqeb4b9kA:7 a=8uMsRL5d07qWVaObvcJoFW1APlEA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=GbQXIhYNWpNwKYfg:21 a=hIADOTQmEVP8H7k9:21
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [PATCH][GIT PULL][v2.6.34] ring-buffer: Do 8 byte alignment for 64
- bit that can not handle 4 byte align
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Sparc <sparclinux@vger.kernel.org>, David Miller <davem@davemloft.net>,
-       Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 18 Mar 2010 22:44:17 -0400
-Message-ID: <1268966657.758.28.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 22:47:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Np1KnJ8n23qsRWTnS1PxxkQk3gd/AkxSi9VGI2gE6kbFzCCJXA/b4N+I+3KIZUlivh
+         +bALqeFatajZqlRX1PRFIpM7C4hIezMEmBHA0kUtaY6q1BdFSpqRPG6Hxtr+AtlVPZnw
+         ohZPG4dQWJC2ww0rah+MGCT+6gROTtJbTJMgQ=
+From: Imtiaz Rahi <imtiaz.rahi@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Imtiaz Rahi <imtiaz.rahi@gmail.com>
+Subject: [PATCH] Staging: rtl8192su: fix various coding style issues in r8180_93cx6.c
+Date: Fri, 19 Mar 2010 08:47:03 +0600
+Message-Id: <1268966823-15418-1-git-send-email-imtiaz.rahi@gmail.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is patch to the r8180_93cx6.c file that fixes various coding style
+warnings and errors found by checkpatch.pl
 
-Ingo,
+Signed-off-by: Imtiaz Rahi <imtiaz.rahi@gmail.com>
+---
+ drivers/staging/rtl8192su/r8180_93cx6.c |   92 ++++++++++++++++---------------
+ 1 files changed, 47 insertions(+), 45 deletions(-)
 
-This patch fixes a bug in the ring buffer that breaks 64bit boxes that
-can not write a long on a 4byte alignment.
-
-Please pull the latest tip/tracing/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/tracing/urgent
-
-
-Steven Rostedt (1):
-      ring-buffer: Do 8 byte alignment for 64 bit that can not handle 4 byte align
-
-----
- kernel/trace/ring_buffer.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
----------------------------
-commit fb6b926d6be02e0767c92cbde4c8574f6a9eca27
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Thu Mar 18 17:54:19 2010 -0400
-
-    ring-buffer: Do 8 byte alignment for 64 bit that can not handle 4 byte align
-    
-    The ring buffer uses 4 byte alignment while recording events into the
-    buffer, even on 64bit machines. This saves space when there are lots
-    of events being recorded at 4 byte boundaries.
-    
-    The ring buffer has a zero copy method to write into the buffer, with
-    the reserving of space and then committing it. This may cause problems
-    when writing an 8 byte word into a 4 byte alignment (not 8). For x86 and
-    PPC this is not an issue, but on some architectures this would cause an
-    out-of-alignment exception.
-    
-    This patch uses CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
-    if it is OK to use 4 byte alignments on 64 bit machines. If it is not,
-    it forces the ring buffer event header to be 8 bytes and not 4,
-    and will align the length of the data to be 8 byte aligned.
-    This keeps the data payload at 8 byte alignments and will allow these
-    machines to run without issue.
-    
-    The trick to this is that the header can be either 4 bytes or 8 bytes
-    depending on the length of the data payload. The 4 byte header
-    has a length field that supports up to 112 bytes. If the length of
-    the data is more than 112, the length field is set to zero, and the actual
-    length is stored in the next 4 bytes after the header.
-    
-    When CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is not set, the code forces
-    zero in the 4 byte header forcing the length to be stored in the 4 byte
-    array, even with a small data load. It also forces the length of the
-    data load to be 8 byte aligned. The combination of these two guarantee
-    that the data is always at 8 byte alignment.
-    
-    Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
-               (on sparc64)
-    Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 05a9f83..d1187ef 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -207,6 +207,14 @@ EXPORT_SYMBOL_GPL(tracing_is_on);
- #define RB_MAX_SMALL_DATA	(RB_ALIGNMENT * RINGBUF_TYPE_DATA_TYPE_LEN_MAX)
- #define RB_EVNT_MIN_SIZE	8U	/* two 32bit words */
+diff --git a/drivers/staging/rtl8192su/r8180_93cx6.c b/drivers/staging/rtl8192su/r8180_93cx6.c
+index 8878cfe..5f581db 100644
+--- a/drivers/staging/rtl8192su/r8180_93cx6.c
++++ b/drivers/staging/rtl8192su/r8180_93cx6.c
+@@ -22,13 +22,14 @@
  
-+#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-+# define RB_FORCE_8BYTE_ALIGNMENT	0
-+# define RB_ARCH_ALIGNMENT		RB_ALIGNMENT
-+#else
-+# define RB_FORCE_8BYTE_ALIGNMENT	1
-+# define RB_ARCH_ALIGNMENT		8U
-+#endif
-+
- /* define RINGBUF_TYPE_DATA for 'case RINGBUF_TYPE_DATA:' */
- #define RINGBUF_TYPE_DATA 0 ... RINGBUF_TYPE_DATA_TYPE_LEN_MAX
+ void eprom_cs(struct net_device *dev, short bit)
+ {
+-	if(bit)
+-		write_nic_byte_E(dev, EPROM_CMD,
+-			       (1<<EPROM_CS_SHIFT) | \
+-			       read_nic_byte_E(dev, EPROM_CMD)); //enable EPROM
++	if (bit)
++		/* enable EPROM */
++		write_nic_byte_E(dev, EPROM_CMD, (1<<EPROM_CS_SHIFT) | \
++					read_nic_byte_E(dev, EPROM_CMD));
+ 	else
+-		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev, EPROM_CMD)\
+-			       &~(1<<EPROM_CS_SHIFT)); //disable EPROM
++		/* disable EPROM */
++		write_nic_byte_E(dev, EPROM_CMD,
++			read_nic_byte_E(dev, EPROM_CMD) & ~(1<<EPROM_CS_SHIFT));
  
-@@ -1547,7 +1555,7 @@ rb_update_event(struct ring_buffer_event *event,
- 
- 	case 0:
- 		length -= RB_EVNT_HDR_SIZE;
--		if (length > RB_MAX_SMALL_DATA)
-+		if (length > RB_MAX_SMALL_DATA || RB_FORCE_8BYTE_ALIGNMENT)
- 			event->array[0] = length;
- 		else
- 			event->type_len = DIV_ROUND_UP(length, RB_ALIGNMENT);
-@@ -1722,11 +1730,11 @@ static unsigned rb_calculate_event_length(unsigned length)
- 	if (!length)
- 		length = 1;
- 
--	if (length > RB_MAX_SMALL_DATA)
-+	if (length > RB_MAX_SMALL_DATA || RB_FORCE_8BYTE_ALIGNMENT)
- 		length += sizeof(event.array[0]);
- 
- 	length += RB_EVNT_HDR_SIZE;
--	length = ALIGN(length, RB_ALIGNMENT);
-+	length = ALIGN(length, RB_ARCH_ALIGNMENT);
- 
- 	return length;
+ 	force_pci_posting(dev);
+ 	udelay(EPROM_DELAY);
+@@ -38,24 +39,24 @@ void eprom_cs(struct net_device *dev, short bit)
+ void eprom_ck_cycle(struct net_device *dev)
+ {
+ 	write_nic_byte_E(dev, EPROM_CMD,
+-		       (1<<EPROM_CK_SHIFT) | read_nic_byte_E(dev,EPROM_CMD));
++			(1<<EPROM_CK_SHIFT) | read_nic_byte_E(dev, EPROM_CMD));
+ 	force_pci_posting(dev);
+ 	udelay(EPROM_DELAY);
+ 	write_nic_byte_E(dev, EPROM_CMD,
+-		       read_nic_byte_E(dev, EPROM_CMD) &~ (1<<EPROM_CK_SHIFT));
++			read_nic_byte_E(dev, EPROM_CMD) & ~(1<<EPROM_CK_SHIFT));
+ 	force_pci_posting(dev);
+ 	udelay(EPROM_DELAY);
  }
-
+ 
+ 
+-void eprom_w(struct net_device *dev,short bit)
++void eprom_w(struct net_device *dev, short bit)
+ {
+-	if(bit)
++	if (bit)
+ 		write_nic_byte_E(dev, EPROM_CMD, (1<<EPROM_W_SHIFT) | \
+-			       read_nic_byte_E(dev,EPROM_CMD));
++					read_nic_byte_E(dev, EPROM_CMD));
+ 	else
+-		write_nic_byte_E(dev, EPROM_CMD, read_nic_byte_E(dev,EPROM_CMD)\
+-			       &~(1<<EPROM_W_SHIFT));
++		write_nic_byte_E(dev, EPROM_CMD,
++			read_nic_byte_E(dev, EPROM_CMD) & ~(1<<EPROM_W_SHIFT));
+ 
+ 	force_pci_posting(dev);
+ 	udelay(EPROM_DELAY);
+@@ -66,10 +67,11 @@ short eprom_r(struct net_device *dev)
+ {
+ 	short bit;
+ 
+-	bit=(read_nic_byte_E(dev, EPROM_CMD) & (1<<EPROM_R_SHIFT) );
++	bit = (read_nic_byte_E(dev, EPROM_CMD) & (1<<EPROM_R_SHIFT));
+ 	udelay(EPROM_DELAY);
+ 
+-	if(bit) return 1;
++	if (bit)
++		return 1;
+ 	return 0;
+ }
+ 
+@@ -78,7 +80,7 @@ void eprom_send_bits_string(struct net_device *dev, short b[], int len)
+ {
+ 	int i;
+ 
+-	for(i=0; i<len; i++){
++	for (i = 0; i < len; i++) {
+ 		eprom_w(dev, b[i]);
+ 		eprom_ck_cycle(dev);
+ 	}
+@@ -88,50 +90,50 @@ void eprom_send_bits_string(struct net_device *dev, short b[], int len)
+ u32 eprom_read(struct net_device *dev, u32 addr)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	short read_cmd[]={1,1,0};
++	short read_cmd[] = {1, 1, 0};
+ 	short addr_str[8];
+ 	int i;
+ 	int addr_len;
+ 	u32 ret;
+ 
+-	ret=0;
+-        //enable EPROM programming
++	ret = 0;
++	/* enable EPROM programming */
+ 	write_nic_byte_E(dev, EPROM_CMD,
+-		       (EPROM_CMD_PROGRAM<<EPROM_CMD_OPERATING_MODE_SHIFT));
++			(EPROM_CMD_PROGRAM<<EPROM_CMD_OPERATING_MODE_SHIFT));
+ 	force_pci_posting(dev);
+ 	udelay(EPROM_DELAY);
+ 
+-	if (priv->epromtype==EPROM_93c56){
+-		addr_str[7]=addr & 1;
+-		addr_str[6]=addr & (1<<1);
+-		addr_str[5]=addr & (1<<2);
+-		addr_str[4]=addr & (1<<3);
+-		addr_str[3]=addr & (1<<4);
+-		addr_str[2]=addr & (1<<5);
+-		addr_str[1]=addr & (1<<6);
+-		addr_str[0]=addr & (1<<7);
+-		addr_len=8;
+-	}else{
+-		addr_str[5]=addr & 1;
+-		addr_str[4]=addr & (1<<1);
+-		addr_str[3]=addr & (1<<2);
+-		addr_str[2]=addr & (1<<3);
+-		addr_str[1]=addr & (1<<4);
+-		addr_str[0]=addr & (1<<5);
+-		addr_len=6;
++	if (priv->epromtype == EPROM_93c56) {
++		addr_str[7] = addr & 1;
++		addr_str[6] = addr & (1<<1);
++		addr_str[5] = addr & (1<<2);
++		addr_str[4] = addr & (1<<3);
++		addr_str[3] = addr & (1<<4);
++		addr_str[2] = addr & (1<<5);
++		addr_str[1] = addr & (1<<6);
++		addr_str[0] = addr & (1<<7);
++		addr_len = 8;
++	} else {
++		addr_str[5] = addr & 1;
++		addr_str[4] = addr & (1<<1);
++		addr_str[3] = addr & (1<<2);
++		addr_str[2] = addr & (1<<3);
++		addr_str[1] = addr & (1<<4);
++		addr_str[0] = addr & (1<<5);
++		addr_len = 6;
+ 	}
+ 	eprom_cs(dev, 1);
+ 	eprom_ck_cycle(dev);
+ 	eprom_send_bits_string(dev, read_cmd, 3);
+ 	eprom_send_bits_string(dev, addr_str, addr_len);
+ 
+-	//keep chip pin D to low state while reading.
+-	//I'm unsure if it is necessary, but anyway shouldn't hurt
++	/* keep chip pin D to low state while reading.
++	   I'm unsure if it is necessary, but anyway shouldn't hurt */
+ 	eprom_w(dev, 0);
+ 
+-	for(i=0;i<16;i++){
+-		//eeprom needs a clk cycle between writing opcode&adr
+-		//and reading data. (eeprom outs a dummy 0)
++	for (i = 0; i < 16; i++) {
++		/* eeprom needs a clk cycle between writing opcode&adr
++		   and reading data. (eeprom outs a dummy 0) */
+ 		eprom_ck_cycle(dev);
+ 		ret |= (eprom_r(dev)<<(15-i));
+ 	}
+@@ -139,8 +141,8 @@ u32 eprom_read(struct net_device *dev, u32 addr)
+ 	eprom_cs(dev, 0);
+ 	eprom_ck_cycle(dev);
+ 
+-	//disable EPROM programming
++	/* disable EPROM programming */
+ 	write_nic_byte_E(dev, EPROM_CMD,
+-		       (EPROM_CMD_NORMAL<<EPROM_CMD_OPERATING_MODE_SHIFT));
++			(EPROM_CMD_NORMAL<<EPROM_CMD_OPERATING_MODE_SHIFT));
+ 	return ret;
+ }
+-- 
+1.7.0
 
