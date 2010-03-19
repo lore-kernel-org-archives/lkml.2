@@ -1,190 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab0CSBTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:19:11 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:44033 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab0CSBTJ (ORCPT
+	id S1753086Ab0CSBXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:23:21 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:43070 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab0CSBXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:19:09 -0400
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-kernel@vger.kernel.org,
-       Kerstin Jonsson <kerstin.jonsson@ericsson.com>, jbohac@novell.com,
-       "Yinghai Lu" <yinghai@kernel.org>, akpm@linux-foundation.org,
-       mingo@elte.hu, "Avi Kivity" <avi@redhat.com>
-Subject: Re: [PATCH] x86 apic: Ack all pending irqs when crashed/on kexec - V5
-References: <4B96116A.6090705@ericsson.com>
-	<1268131954-13845-1-git-send-email-trenn@suse.de>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 18 Mar 2010 18:18:59 -0700
-In-Reply-To: <1268131954-13845-1-git-send-email-trenn@suse.de> (Thomas Renninger's message of "Tue\,  9 Mar 2010 11\:52\:34 +0100")
-Message-ID: <m11vfhaz24.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 18 Mar 2010 21:23:20 -0400
+Date: Fri, 19 Mar 2010 01:22:33 +0000
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: munroesj@us.ibm.com, Andreas Schwab <schwab@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ulrich Drepper <drepper@redhat.com>,
+       David Miller <davem@davemloft.net>, ralf@linux-mips.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel@teksavvy.com, torvalds@linux-foundation.org
+Subject: Re: 64-syscall args on 32-bit vs syscall()
+Message-ID: <20100319012232.GA14108@shareable.org>
+References: <4BA06E1B.2040706@redhat.com> <1268816179.2335.187.camel@pasglop> <4BA11FD2.2090104@zytor.com> <1268858134.2335.198.camel@pasglop> <4BA1412C.6070008@zytor.com> <1268866720.2335.204.camel@pasglop> <1268928480.19726.123.camel@spokane1.rchland.ibm.com> <m37hp9y51p.fsf@hase.home> <1268931823.19726.127.camel@spokane1.rchland.ibm.com> <1268947102.2335.236.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: trenn@suse.de, avi@redhat.com, mingo@elte.hu, akpm@linux-foundation.org, yinghai@kernel.org, jbohac@novell.com, kerstin.jonsson@ericsson.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Disposition: inline
+In-Reply-To: <1268947102.2335.236.camel@pasglop>
+>From: Jamie Lokier <jamie@shareable.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
+From: Jamie Lokier <jamie@shareable.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Benjamin Herrenschmidt wrote:
+> On Thu, 2010-03-18 at 12:03 -0500, Steven Munroe wrote:
+> > Sorry in and long are compatible in 32-bit but not long long.
+> > 
+> > int and long are not compatible in 64-bit
+> > 
+> > It is hard the keep all the nodes and arguments straight.
+> > 
+> > But the concern about changing the prototype and are people actually
+> > using the prototype are still valid.
+> 
+> Well, using the macro trick instead would fix that problem, code
+> wouldn't build if it doesn't include unistd.h :-)
 
-Andrew thanks for finding this.  I have a test case for this that
-reproduces about every other time, and I will plug this patch in and
-see it helps.  I'm not wild about how the max_loops variable is
-reused both as a timer and as a countdown timer, but the basic
-principle feels solid.
+Or it will build, but call the old ABI version - no change to those programs.
 
-I have been seeing this and for some reason I thought I was dying
-in calibrate_delay_loop().  But this is much later and much easier
-to deal with.  Since we make it to smp_init() there isn't any
-good excuse for us to fail to come up.
-
-I'm curious how much testing have you been able to do on this piece
-of code?
-
-Eric
-
-
-Thomas Renninger <trenn@suse.de> writes:
-
-> From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
->
-> When the SMP kernel decides to crash_kexec() the local APICs may have
-> pending interrupts in their vector tables.
-> The setup routine for the local APIC has a deficient mechanism for
-> clearing these interrupts, it only handles interrupts that has already
-> been dispatched to the local core for servicing (the ISR register)
-> safely, it doesn't consider lower prioritized queued interrupts stored
-> in the IRR register.
->
-> If you have more than one pending interrupt within the same 32 bit word
-> in the LAPIC vector table registers you may find yourself entering the
-> IO APIC setup with pending interrupts left in the LAPIC. This is a
-> situation for wich the IO APIC setup is not prepared. Depending of
-> what/which interrupt vector/vectors are stuck in the APIC tables your
-> system may show various degrees of malfunctioning.
-> That was the reason why the check_timer() failed in our system, the
-> timer interrupts was blocked by pending interrupts from the old kernel
-> when routed trough the IO APIC.
->
-> Additional comment from Jiri Bohac:
-> ==============
-> If this should go into stable release,
-> I'd add some kind of limit on the number of iterations, just to be safe from
-> hard to debug lock-ups:
->
-> +if (loops++  > MAX_LOOPS) {
-> +        printk("LAPIC pending clean-up")
-> +        break;
-> +}
->  while (queued);
->
-> with MAX_LOOPS something like 1E9 this would leave plenty of time for the
-> pending IRQs to be cleared and would and still cause at most a second of delay
-> if the loop were to lock-up for whatever reason.
-> ==============
->
->>From trenn@suse.de:
-> V2: Use tsc if avail to bail out after 1 sec due to possible virtual apic_read
->     calls which may take rather long (suggested by: Avi Kivity <avi@redhat.com>)
->     If no tsc is available bail out quickly after cpu_khz, if we broke out too
->     early and still have irqs pending (which should never happen?) we still
->     get a WARN_ON...
->
-> V3: - Fixed indentation -> checkpatch clean
->     - max_loops must be signed
->
-> V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
->
-> V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case
->
-> CC: jbohac@novell.com
-> CC: "Yinghai Lu" <yinghai@kernel.org>
-> CC: akpm@linux-foundation.org
-> CC: mingo@elte.hu
-> CC: "Kerstin Jonsson" <kerstin.jonsson@ericsson.com>
-> CC: "Avi Kivity" <avi@redhat.com>
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> ---
->  arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
->  1 files changed, 33 insertions(+), 8 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 00187f1..cfcc87f 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -51,6 +51,7 @@
->  #include <asm/smp.h>
->  #include <asm/mce.h>
->  #include <asm/kvm_para.h>
-> +#include <asm/tsc.h>
->  
->  unsigned int num_processors;
->  
-> @@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(void)
->   */
->  void __cpuinit setup_local_APIC(void)
->  {
-> -	unsigned int value;
-> -	int i, j;
-> +	unsigned int value, queued;
-> +	int i, j, acked = 0;
-> +	unsigned long long tsc = 0, ntsc;
-> +	long long max_loops = cpu_khz;
-> +
-> +	if (cpu_has_tsc)
-> +		rdtscll(tsc);
->  
->  	if (disable_apic) {
->  		arch_disable_smp_support();
-> @@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
->  	 * the interrupt. Hence a vector might get locked. It was noticed
->  	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
->  	 */
-> -	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
-> -		value = apic_read(APIC_ISR + i*0x10);
-> -		for (j = 31; j >= 0; j--) {
-> -			if (value & (1<<j))
-> -				ack_APIC_irq();
-> +	do {
-> +		queued = 0;
-> +		for (i = APIC_ISR_NR - 1; i >= 0; i--)
-> +			queued |= apic_read(APIC_IRR + i*0x10);
-> +
-> +		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
-> +			value = apic_read(APIC_ISR + i*0x10);
-> +			for (j = 31; j >= 0; j--) {
-> +				if (value & (1<<j)) {
-> +					ack_APIC_irq();
-> +					acked++;
-> +				}
-> +			}
->  		}
-> -	}
-> +		if (acked > 256) {
-> +			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
-> +			       acked);
-> +			break;
-> +		}
-> +		if (cpu_has_tsc) {
-> +			rdtscll(ntsc);
-> +			max_loops = (cpu_khz << 10) - (ntsc - tsc);
-> +		} else
-> +			max_loops--;
-> +	} while (queued && max_loops > 0);
-> +	WARN_ON(max_loops <= 0);
->  
->  	/*
->  	 * Now that we are all set up, enable the APIC
-> -- 
-> 1.6.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- Jamie
