@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0CSPXW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:23:22 -0400
-Received: from kroah.org ([198.145.64.141]:45868 "EHLO coco.kroah.org"
+	id S1752761Ab0CSPXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:23:42 -0400
+Received: from kroah.org ([198.145.64.141]:45860 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579Ab0CSPSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:18:40 -0400
+	id S1751381Ab0CSPSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:18:38 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Amit Shah <amit.shah@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       linuxppc-dev@ozlabs.org, Rusty Russell <rusty@rustcorp.com.au>,
+Cc: Mel Gorman <mel@csn.ul.ie>, stable <stable@kernel.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 4/7] hvc_console: Fix race between hvc_close and hvc_remove
-Date: Fri, 19 Mar 2010 08:18:33 -0700
-Message-Id: <1269011916-8836-4-git-send-email-gregkh@suse.de>
+Subject: [PATCH 2/7] tty: Take a 256 byte padding into account when buffering below sub-page units
+Date: Fri, 19 Mar 2010 08:18:31 -0700
+Message-Id: <1269011916-8836-2-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <20100319151326.GC8541@kroah.com>
 References: <20100319151326.GC8541@kroah.com>
@@ -21,170 +20,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amit Shah <amit.shah@redhat.com>
+From: Mel Gorman <mel@csn.ul.ie>
 
-Alan pointed out a race in the code where hvc_remove is invoked. The
-recent virtio_console work is the first user of hvc_remove().
+The TTY layer takes some care to ensure that only sub-page allocations
+are made with interrupts disabled. It does this by setting a goal of
+"TTY_BUFFER_PAGE" to allocate. Unfortunately, while TTY_BUFFER_PAGE takes the
+size of tty_buffer into account, it fails to account that tty_buffer_find()
+rounds the buffer size out to the next 256 byte boundary before adding on
+the size of the tty_buffer.
 
-Alan describes it thus:
+This patch adjusts the TTY_BUFFER_PAGE calculation to take into account the
+size of the tty_buffer and the padding. Once applied, tty_buffer_alloc()
+should not require high-order allocations.
 
-The hvc_console assumes that a close and remove call can't occur at the
-same time.
-
-In addition tty_hangup(tty) is problematic as tty_hangup is asynchronous
-itself....
-
-So this can happen
-
-        hvc_close                               hvc_remove
-        hung up ? - no
-                                                lock
-                                                tty = hp->tty
-                                                unlock
-        lock
-        hp->tty = NULL
-        unlock
-        notify del
-        kref_put the hvc struct
-        close completes
-        tty is destroyed
-                                                tty_hangup dead tty
-                                                tty->ops will be NULL
-                                                NULL->...
-
-This patch adds some tty krefs and also converts to using tty_vhangup().
-
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Amit Shah <amit.shah@redhat.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: linuxppc-dev@ozlabs.org
-CC: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Cc: stable <stable@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/hvc_console.c |   31 +++++++++++++++++++++----------
- 1 files changed, 21 insertions(+), 10 deletions(-)
+ include/linux/tty.h |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
-index 465185f..ba55bba 100644
---- a/drivers/char/hvc_console.c
-+++ b/drivers/char/hvc_console.c
-@@ -312,6 +312,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
- 	spin_lock_irqsave(&hp->lock, flags);
- 	/* Check and then increment for fast path open. */
- 	if (hp->count++ > 0) {
-+		tty_kref_get(tty);
- 		spin_unlock_irqrestore(&hp->lock, flags);
- 		hvc_kick();
- 		return 0;
-@@ -319,7 +320,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 568369a..593228a 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -70,12 +70,13 @@ struct tty_buffer {
  
- 	tty->driver_data = hp;
+ /*
+  * We default to dicing tty buffer allocations to this many characters
+- * in order to avoid multiple page allocations. We assume tty_buffer itself
+- * is under 256 bytes. See tty_buffer_find for the allocation logic this
+- * must match
++ * in order to avoid multiple page allocations. We know the size of
++ * tty_buffer itself but it must also be taken into account that the
++ * the buffer is 256 byte aligned. See tty_buffer_find for the allocation
++ * logic this must match
+  */
  
--	hp->tty = tty;
-+	hp->tty = tty_kref_get(tty);
+-#define TTY_BUFFER_PAGE		((PAGE_SIZE  - 256) / 2)
++#define TTY_BUFFER_PAGE	(((PAGE_SIZE - sizeof(struct tty_buffer)) / 2) & ~0xFF)
  
- 	spin_unlock_irqrestore(&hp->lock, flags);
  
-@@ -336,6 +337,7 @@ static int hvc_open(struct tty_struct *tty, struct file * filp)
- 		spin_lock_irqsave(&hp->lock, flags);
- 		hp->tty = NULL;
- 		spin_unlock_irqrestore(&hp->lock, flags);
-+		tty_kref_put(tty);
- 		tty->driver_data = NULL;
- 		kref_put(&hp->kref, destroy_hvc_struct);
- 		printk(KERN_ERR "hvc_open: request_irq failed with rc %d.\n", rc);
-@@ -363,13 +365,18 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
- 		return;
- 
- 	hp = tty->driver_data;
-+
- 	spin_lock_irqsave(&hp->lock, flags);
-+	tty_kref_get(tty);
- 
- 	if (--hp->count == 0) {
- 		/* We are done with the tty pointer now. */
- 		hp->tty = NULL;
- 		spin_unlock_irqrestore(&hp->lock, flags);
- 
-+		/* Put the ref obtained in hvc_open() */
-+		tty_kref_put(tty);
-+
- 		if (hp->ops->notifier_del)
- 			hp->ops->notifier_del(hp, hp->data);
- 
-@@ -389,6 +396,7 @@ static void hvc_close(struct tty_struct *tty, struct file * filp)
- 		spin_unlock_irqrestore(&hp->lock, flags);
- 	}
- 
-+	tty_kref_put(tty);
- 	kref_put(&hp->kref, destroy_hvc_struct);
- }
- 
-@@ -424,10 +432,11 @@ static void hvc_hangup(struct tty_struct *tty)
- 	spin_unlock_irqrestore(&hp->lock, flags);
- 
- 	if (hp->ops->notifier_hangup)
--			hp->ops->notifier_hangup(hp, hp->data);
-+		hp->ops->notifier_hangup(hp, hp->data);
- 
- 	while(temp_open_count) {
- 		--temp_open_count;
-+		tty_kref_put(tty);
- 		kref_put(&hp->kref, destroy_hvc_struct);
- 	}
- }
-@@ -592,7 +601,7 @@ int hvc_poll(struct hvc_struct *hp)
- 	}
- 
- 	/* No tty attached, just skip */
--	tty = hp->tty;
-+	tty = tty_kref_get(hp->tty);
- 	if (tty == NULL)
- 		goto bail;
- 
-@@ -672,6 +681,8 @@ int hvc_poll(struct hvc_struct *hp)
- 
- 		tty_flip_buffer_push(tty);
- 	}
-+	if (tty)
-+		tty_kref_put(tty);
- 
- 	return poll_mask;
- }
-@@ -807,7 +818,7 @@ int hvc_remove(struct hvc_struct *hp)
- 	struct tty_struct *tty;
- 
- 	spin_lock_irqsave(&hp->lock, flags);
--	tty = hp->tty;
-+	tty = tty_kref_get(hp->tty);
- 
- 	if (hp->index < MAX_NR_HVC_CONSOLES)
- 		vtermnos[hp->index] = -1;
-@@ -819,18 +830,18 @@ int hvc_remove(struct hvc_struct *hp)
- 	/*
- 	 * We 'put' the instance that was grabbed when the kref instance
- 	 * was initialized using kref_init().  Let the last holder of this
--	 * kref cause it to be removed, which will probably be the tty_hangup
-+	 * kref cause it to be removed, which will probably be the tty_vhangup
- 	 * below.
- 	 */
- 	kref_put(&hp->kref, destroy_hvc_struct);
- 
- 	/*
--	 * This function call will auto chain call hvc_hangup.  The tty should
--	 * always be valid at this time unless a simultaneous tty close already
--	 * cleaned up the hvc_struct.
-+	 * This function call will auto chain call hvc_hangup.
- 	 */
--	if (tty)
--		tty_hangup(tty);
-+	if (tty) {
-+		tty_vhangup(tty);
-+		tty_kref_put(tty);
-+	}
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(hvc_remove);
+ struct tty_bufhead {
 -- 
 1.7.0.2
 
