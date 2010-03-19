@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab0CSBGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:06:36 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:41232 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab0CSBGe (ORCPT
+	id S1754270Ab0CSBJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:09:00 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47436 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752662Ab0CSBI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:06:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=Ki2x1XrDLDIYtGKacLUOpVmSPSpods8mvyP2kAR9QB4ld6laqciHqJVbWBU9aiKOp5
-         3kABLuQXSOiBYsmTRZe+FiTB+wezn+X1Wko9EWh8bf6ZFja0Qi09qkbs4ZaUtDfPgO96
-         GqQ4CLSmLrzw5s2kmAiCZQr10Xzfnkbx1JGwc=
+	Thu, 18 Mar 2010 21:08:59 -0400
+Date: Thu, 18 Mar 2010 21:08:57 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+	lock
+Message-ID: <20100319010857.GC23020@Krystal>
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere>
 MIME-Version: 1.0
-In-Reply-To: <49f90a801003181747m5078d9c2y3cc8421203a7b1e6@mail.gmail.com>
-References: <21512362.post@talk.nabble.com> <3e8340490901162016y268e3936k4b2d3fcb2afcf216@mail.gmail.com> 
-	<21512985.post@talk.nabble.com> <3e8340490901162126u109da9cbu7292fddf6d832723@mail.gmail.com> 
-	<49f90a801003181710v5e08ccc8jdd26ec899e75bdb9@mail.gmail.com> 
-	<3e8340491003181728r766245edo91ecc1db75f3a6df@mail.gmail.com> 
-	<49f90a801003181747m5078d9c2y3cc8421203a7b1e6@mail.gmail.com>
-From: Bryan Donlan <bdonlan@gmail.com>
-Date: Thu, 18 Mar 2010 21:06:12 -0400
-Message-ID: <3e8340491003181806t201218acod8ea408d1993cbfc@mail.gmail.com>
-Subject: Re: Kernel vs user memory
-To: Siddhartha Chhabra <siddhartha.chhabra@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100318211633.GG5103@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 20:59:55 up 55 days,  3:37,  5 users,  load average: 0.30, 0.33,
+	0.21
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 20:47, Siddhartha Chhabra
-<siddhartha.chhabra@gmail.com> wrote:
-> On Thu, Mar 18, 2010 at 8:28 PM, Bryan Donlan <bdonlan@gmail.com> wrote:
->>
->> > If the kernel's doing a copy_from_user or copy_to_user family of calls
->> > (ie, the calls used in system call handlers when accessing user space
->> > buffers referenced in the arguments), this will trigger a page fault
->> > exactly like the userspace process would, and the PF handler will then
->> > deal with any copy on write or whatever may be needed. Of course, if a
->> > userspace access wouldn't trigger a PF, the kernel access won't
->> > either.
->>
->> > For the actual copy-on-write process itself, it would be a Bad Thing
->> > to trigger a recursive page fault, so instead the kernel will directly
->> > access the page via the direct mapped section of the address space -
->> > this will never cause a PF (on x86, this may require creating a
->> > temporary mapping for memory at a high physical address, but this
->> > still won't be a PF as it will be set up before the first access).
->> > Additionally, memory mapped IO involves direct DMA to/from pages that
->> > are simultaneously in use by userspace - this won't cause a PF in
->> > kernel mode either. Same with swap.
->>
->> > In short, some kernel accesses to user space do go through normal
->> > channels which may or may not PF; other accesses will never PF. So
->> > it's a bad idea to rely on all kernel accesses triggering a page
->> > fault.
->
->
->>
->> > Hope this helps,
->>
->> > Bryan
->
-> In other words, without tying the kernel access to any specific operation
-> (like COW, or copy-from/to-user, DMA, Memory mapped IO etc.), is it safe to
-> say that a possibly compromised kernel wanting to read application's pages
-> can do so without mapping the page to its address space, that is, without
-> resulting in a page fault in the kernel mode on an attempt to access a page
-> ?
->
-> For example:
->
-> Lets say for App A frame 5 on physical memory is mapped to its address space
-> and its currently using it. The OS does a context switch, however, A's
-> frames are still in the main memory. Now can the OS read these page frames
-> (frame 5 in main memory) without mapping them to its address space, maybe
-> just to read the application's contents and send it out to a potential
-> attacker wanting to compromise the system's security ?
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Thu, Mar 18, 2010 at 02:59:29PM +0900, Hitoshi Mitake wrote:
+> > On 03/17/10 18:52, Ingo Molnar wrote:
+> > >
+> > > * Frederic Weisbecker<fweisbec@gmail.com>  wrote:
+> > >
+> > >>> You add chained indirect calls into all lock ops, that's got to hurt.
+> > >>
+> > >> Well, the idea was not bad at the first glance. It was separating  
+> > lockdep
+> > >> and lock events codes.
+> > >>
+> > >> But indeed, the indirect calls plus the locking are not good for such 
+> > a fast
+> > >> path.
+> > >
+> > > What would be nice to have is some sort of dynamic patching approach  
+> > to enable
+> > > _both_ lockdep, lockstat and perf lock.
+> > >
+> > > If TRACE_EVENT() tracepoints were patchable we could use them. (but  
+> > they arent
+> > > right now)
+> >
+> > I'll try it!
+> 
+> 
+> 
+> I sometimes wonder which trick between jmp optimization and hot patching
+> would be the best to optimize the tracepoints off-cases.
+> 
+> I should look more closely at the jmp optimization. I don't know if
+> it avoids to push the tracepoints parameters in the off case, in
+> which case it could be perhaps more efficient than hot patching,
 
-That is correct. The kernel can avoid a PF if it wants to by ensuring
-the page tables are set up properly from the start; and physical
-addresses below a certain value (which varies by architecture) can be
-accessed directly without any setup at all.
+yep, tracepoints with jump patching will branch over the whole stack setup in
+the off case, which is one of the good reasons for using this solution over
+patching only a call (leaving the stack setup in place).
+
+Note that if the parameters include side-effects (such as a function call),
+these will be executed even when the tracepoint is disabled. This is why people
+should implement these calls with side-effects in the appropriate TRACE_EVENT
+fields.
+
+> although perhaps most of the time the given arguments are already in
+> registers because the traced function uses them for its own needs.
+> 
+> Also, adopting hot patching means the tracepoint calls would be
+> in a non-inlined separated function. The result would be probably
+> less i-cache footprint from the caller, and better for the off-case,
+> worse for the on-case. But tracing off-case is most important.
+> 
+> (Adding more people in Cc)
+> 
+
+The idea has been discussed to add support in gcc to emit the code for an
+unlikely branch into a separate section, which does have the smaller cache-line
+footprint benefit your are talking about, but without the overhead of the extra
+out-of-line function call in the enabled case. I don't know how this work is
+advanced though. We had determined that the "asm goto" was an higher priority
+item.
+
+Thanks,
+
+Mathieu
+
+> 
+> > And I have a question related to this dynamic patching approach for lockdep.
+> > If dynamic proving turning on/off is provided,
+> > lockdep will be confused by inconsistency of lock acquiring log.
+> >
+> > Will the sequence,
+> >
+> > lock_acquire(l) -> turning off -> lock_release(l) -> turning on ->  
+> > lock_acquire(l)
+> >
+> > detected as double acquiring?
+> >
+> > Should turning on/off lockdep be done in the time
+> > when every processes have no lock?
+> 
+> 
+> There is almost always a process with a lock somewhere ;-)
+> 
+> This is not a big deal, it's very similar to unfinished scenarios
+> due to the end of the tracing that can happen anytime and you miss
+> a lock_release or whatever. We can also begin the tracing anytime,
+> and you may receive orphan lock_release in the very beginning
+> because you missed the lock_acquire that happened before the tracing.
+> 
+> Any locking scenario that doesn't fit into the state machine
+> or is incomplete must be considered as broken and then ignored.
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
