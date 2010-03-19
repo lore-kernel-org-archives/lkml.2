@@ -1,94 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752832Ab0CSBNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 21:13:32 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:34285 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0CSBNb (ORCPT
+	id S1752939Ab0CSBTL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 21:19:11 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44033 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751875Ab0CSBTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 21:13:31 -0400
-Message-ID: <4BA2CFB7.7070108@kernel.org>
-Date: Thu, 18 Mar 2010 18:13:27 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.1
+	Thu, 18 Mar 2010 21:19:09 -0400
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org,
+       Kerstin Jonsson <kerstin.jonsson@ericsson.com>, jbohac@novell.com,
+       "Yinghai Lu" <yinghai@kernel.org>, akpm@linux-foundation.org,
+       mingo@elte.hu, "Avi Kivity" <avi@redhat.com>
+Subject: Re: [PATCH] x86 apic: Ack all pending irqs when crashed/on kexec - V5
+References: <4B96116A.6090705@ericsson.com>
+	<1268131954-13845-1-git-send-email-trenn@suse.de>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 18 Mar 2010 18:18:59 -0700
+In-Reply-To: <1268131954-13845-1-git-send-email-trenn@suse.de> (Thomas Renninger's message of "Tue\,  9 Mar 2010 11\:52\:34 +0100")
+Message-ID: <m11vfhaz24.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: users@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [KORG] Availability of SSL on kernel.org
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Thu, 18 Mar 2010 18:13:28 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: trenn@suse.de, avi@redhat.com, mingo@elte.hu, akpm@linux-foundation.org, yinghai@kernel.org, jbohac@novell.com, kerstin.jonsson@ericsson.com, linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
 
-Afternoon Everyone,
+Andrew thanks for finding this.  I have a test case for this that
+reproduces about every other time, and I will plug this patch in and
+see it helps.  I'm not wild about how the max_loops variable is
+reused both as a timer and as a countdown timer, but the basic
+principle feels solid.
 
-I would like to go ahead and announce the general availability of SSL
-support for a number of the services on kernel.org! This should help
-provide an additional level of security, in particular for our dynamic
-content like the wiki's, patchwork and bugzilla.
+I have been seeing this and for some reason I thought I was dying
+in calibrate_delay_loop().  But this is much later and much easier
+to deal with.  Since we make it to smp_init() there isn't any
+good excuse for us to fail to come up.
 
-The certificates have been very graciously donated and signed by Thawte,
-and we at kernel.org greatly appreciate their support of Open Source!
-These signed certificates make it trivial for our users to make use of
-this additional layer of security, and alleviates a large amount of
-support effort that self-signed certificates would have incurred.
+I'm curious how much testing have you been able to do on this piece
+of code?
 
-	"Thawte is proud of its open source lineage. Providing free
-	 certificates to community projects is just a small way of not
-	 only supporting the community but returning the favor.  Please
-	 spread the word."
+Eric
 
-Services that are now by default using SSL:
 
-    * Bugzilla
-    * Wikis
-    * Account Requests
-    * Patchwork
+Thomas Renninger <trenn@suse.de> writes:
 
-    These are using an HTTP redirect so you should need to do anything
-    for these to just work.
-
-Services that have can optionally use SSL:
-
-    * www.kernel.org
-    * boot.kernel.org
-    * git.kernel.org
-    * android.git.kernel.org
-
-    Just use https vs. http, there is no automatic redirection for these
-
-Services that DO NOT offer SSL:
-
-    * mirrors.kernel.org
-
-    These machines move a large amount of data to a large number of
-    users and it would be difficult, and memory intensive, to provide
-    SSL for this service.  I don't foresee enabling SSL for
-    mirrors.kernel.org.
-
-    * *.[us | [nl.|se.]eu | geo | all].kernel.org dns entries
-
-    These would require too many distinct certificates to adequately
-    cover, and are generally not user facing.  These still have
-    the SSL certificates available to them, but the address will not
-    match the CN in the certificate.
-
-As always if you encounter problems, e-mail ftpadmin or catch us on IRC.
- I've done a fair amount of testing of this on my own - but due to the
-large number of possible clients it's impossible for me to have tested
-this from every possible angle.
-
-- - John 'Warthog9' Hawley
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkuiz7cACgkQ/E3kyWU9dicIAwCfQlTlSDEMn1GP++Cy7IFV9Oqi
-MP4Aniu0hVPdXMopnAG/W/PtWd0aEDus
-=pg6c
------END PGP SIGNATURE-----
+> From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
+>
+> When the SMP kernel decides to crash_kexec() the local APICs may have
+> pending interrupts in their vector tables.
+> The setup routine for the local APIC has a deficient mechanism for
+> clearing these interrupts, it only handles interrupts that has already
+> been dispatched to the local core for servicing (the ISR register)
+> safely, it doesn't consider lower prioritized queued interrupts stored
+> in the IRR register.
+>
+> If you have more than one pending interrupt within the same 32 bit word
+> in the LAPIC vector table registers you may find yourself entering the
+> IO APIC setup with pending interrupts left in the LAPIC. This is a
+> situation for wich the IO APIC setup is not prepared. Depending of
+> what/which interrupt vector/vectors are stuck in the APIC tables your
+> system may show various degrees of malfunctioning.
+> That was the reason why the check_timer() failed in our system, the
+> timer interrupts was blocked by pending interrupts from the old kernel
+> when routed trough the IO APIC.
+>
+> Additional comment from Jiri Bohac:
+> ==============
+> If this should go into stable release,
+> I'd add some kind of limit on the number of iterations, just to be safe from
+> hard to debug lock-ups:
+>
+> +if (loops++  > MAX_LOOPS) {
+> +        printk("LAPIC pending clean-up")
+> +        break;
+> +}
+>  while (queued);
+>
+> with MAX_LOOPS something like 1E9 this would leave plenty of time for the
+> pending IRQs to be cleared and would and still cause at most a second of delay
+> if the loop were to lock-up for whatever reason.
+> ==============
+>
+>>From trenn@suse.de:
+> V2: Use tsc if avail to bail out after 1 sec due to possible virtual apic_read
+>     calls which may take rather long (suggested by: Avi Kivity <avi@redhat.com>)
+>     If no tsc is available bail out quickly after cpu_khz, if we broke out too
+>     early and still have irqs pending (which should never happen?) we still
+>     get a WARN_ON...
+>
+> V3: - Fixed indentation -> checkpatch clean
+>     - max_loops must be signed
+>
+> V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
+>
+> V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case
+>
+> CC: jbohac@novell.com
+> CC: "Yinghai Lu" <yinghai@kernel.org>
+> CC: akpm@linux-foundation.org
+> CC: mingo@elte.hu
+> CC: "Kerstin Jonsson" <kerstin.jonsson@ericsson.com>
+> CC: "Avi Kivity" <avi@redhat.com>
+> Signed-off-by: Thomas Renninger <trenn@suse.de>
+> ---
+>  arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
+>  1 files changed, 33 insertions(+), 8 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 00187f1..cfcc87f 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -51,6 +51,7 @@
+>  #include <asm/smp.h>
+>  #include <asm/mce.h>
+>  #include <asm/kvm_para.h>
+> +#include <asm/tsc.h>
+>  
+>  unsigned int num_processors;
+>  
+> @@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(void)
+>   */
+>  void __cpuinit setup_local_APIC(void)
+>  {
+> -	unsigned int value;
+> -	int i, j;
+> +	unsigned int value, queued;
+> +	int i, j, acked = 0;
+> +	unsigned long long tsc = 0, ntsc;
+> +	long long max_loops = cpu_khz;
+> +
+> +	if (cpu_has_tsc)
+> +		rdtscll(tsc);
+>  
+>  	if (disable_apic) {
+>  		arch_disable_smp_support();
+> @@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
+>  	 * the interrupt. Hence a vector might get locked. It was noticed
+>  	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
+>  	 */
+> -	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
+> -		value = apic_read(APIC_ISR + i*0x10);
+> -		for (j = 31; j >= 0; j--) {
+> -			if (value & (1<<j))
+> -				ack_APIC_irq();
+> +	do {
+> +		queued = 0;
+> +		for (i = APIC_ISR_NR - 1; i >= 0; i--)
+> +			queued |= apic_read(APIC_IRR + i*0x10);
+> +
+> +		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
+> +			value = apic_read(APIC_ISR + i*0x10);
+> +			for (j = 31; j >= 0; j--) {
+> +				if (value & (1<<j)) {
+> +					ack_APIC_irq();
+> +					acked++;
+> +				}
+> +			}
+>  		}
+> -	}
+> +		if (acked > 256) {
+> +			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
+> +			       acked);
+> +			break;
+> +		}
+> +		if (cpu_has_tsc) {
+> +			rdtscll(ntsc);
+> +			max_loops = (cpu_khz << 10) - (ntsc - tsc);
+> +		} else
+> +			max_loops--;
+> +	} while (queued && max_loops > 0);
+> +	WARN_ON(max_loops <= 0);
+>  
+>  	/*
+>  	 * Now that we are all set up, enable the APIC
+> -- 
+> 1.6.3
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
