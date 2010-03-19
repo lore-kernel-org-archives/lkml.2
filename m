@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0CSI3d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 04:29:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37391 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab0CSI3a (ORCPT
+	id S1752932Ab0CSIcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 04:32:21 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64886 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab0CSIcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 04:29:30 -0400
-Subject: Re: [Patch] fix MTD CFI/LPDDR flash driver huge latency bug
-From: David Woodhouse <dwmw2@infradead.org>
-To: Jamie Lokier <jamie@shareable.org>
-Cc: Stefani Seibold <stefani@seibold.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Kreuzer, Michael (NSN - DE/Ulm)" <michael.kreuzer@nsn.com>,
-       linux-mtd@lists.infradead.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100315142421.GB15133@shareable.org>
-References: <1267894137.18869.0.camel@wall-e>
-	 <20100312142344.174bd46f.akpm@linux-foundation.org>
-	 <20100312233820.GH6491@shareable.org> <1268483744.6339.25.camel@wall-e>
-	 <20100315030338.GR6491@shareable.org>
-	 <1268633754.6012.4.camel@wall-e.seibold.net>
-	 <20100315142421.GB15133@shareable.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Mar 2010 08:29:15 +0000
-Message-ID: <1268987355.4028.33.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 19 Mar 2010 04:32:20 -0400
+Date: Fri, 19 Mar 2010 17:30:25 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       akpm@linux-foundation.org, andi.kleen@intel.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 1/2] pagemap: add #ifdefs CONFIG_HUGETLB_PAGE on code
+	walking hugetlb vma
+Message-ID: <20100319083025.GA13107@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <1268979996-12297-1-git-send-email-n-horiguchi@ah.jp.nec.com> <20100319152934.c4243698.kamezawa.hiroyu@jp.fujitsu.com> <20100319065334.GB12389@spritzerA.linux.bs1.fc.nec.co.jp> <20100319161504.2c5c65b5.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100319161504.2c5c65b5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-15 at 14:24 +0000, Jamie Lokier wrote:
-> > > > The problem is the memcpy operation which is very slow. A cond_resched
-> > > > wouldn't help, since the cpu bus is blocked during the transfer of the
-> > > > word.
+On Fri, Mar 19, 2010 at 04:15:04PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Fri, 19 Mar 2010 15:53:34 +0900
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > On Fri, Mar 19, 2010 at 03:29:34PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Fri, 19 Mar 2010 15:26:35 +0900
+> > > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 > > > 
-> > > I mean split the memcpy into multiple smaller memcpys, so that the
-> > > total time in each memcpy is limited to something reasonable.
+> > > > If !CONFIG_HUGETLB_PAGE, pagemap_hugetlb_range() is never called.
+> > > > So put it (and its calling function) into #ifdef block.
+> > > > 
+> > > > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 > > > 
-> > > The check in cond_resched() is fast, especially once cached.  memcpy
-> > > speed depends a lot on the attached flash and how everything's
-> > > configured, varying from 2.5MB/s up to hundreds of MB/s.  So how about
-> > > doing cond_resched() every 256 bytes?
+> > > Hmm? What is benefit ? Is this broken now ?
 > > > 
-> > > -- Jamie
 > > 
-> > I thoght about this aporoach and i don't like this idea. Why not using a
-> > preemptible kernel?
+> > Not broken, but this is needed to avoid build error with patch 2/2 applied,
+> > where I move huge_pte_offset() (not defined when !HUGETLB_PAGE)
+> > into pagemap_hugetlb_range().
+> > 
 > 
-> Because it introduces too many risks to enable CONFIG_PREEMPT in a
-> stable rolled out device which isn't using it already.  Especially on
-> devices where it's not well tested by other people, and with drivers
-> that nobody ever used with CONFIG_PREEMPT before.
+> I think this should be merged with 2/2....if necessary.
 > 
-> And because CONFIG_PREEMPT isn't always better.  (Why do you think
-> it's a config option?)
-> 
-> As a bug fix for observed high scheduling latency when a flash I/O is
-> occurring, splitting the memcpys is a good choice.  I will be trying
-> it on my kernels, even if it doesn't get mainlined.  Thanks for the idea ;-)
 
-Rather than pulling a number our of our posterior like "every 256 bytes"
-which might _really_ screw up performance of some architectures' memcpy
-routines, I suspect we might want the platform to provide an optimised
-"sleepable_memcpy" function which does it at whatever interval is
-appropriate for the memcpy routine in use. Or magically makes it
-preemptable. Or uses a DMA engine. Or whatever.
+I split them for ease of review.
+Also removing unused code is beneficial as it reduces kernel binary size.
 
-I wonder where else we could use such a function...
+But if you really want, I can merge them into one patch.
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Thanks,
+Naoya Horiguchi
