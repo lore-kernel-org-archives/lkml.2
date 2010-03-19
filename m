@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0CSA3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 20:29:52 -0400
-Received: from kroah.org ([198.145.64.141]:46573 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751735Ab0CSA3s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 20:29:48 -0400
-Date: Thu, 18 Mar 2010 17:25:58 -0700
-From: Greg KH <greg@kroah.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Hisashi Hifumi <hifumi.hisashi@oss.ntt.co.jp>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Ronald <intercommit@gmail.com>,
-       Bart Van Assche <bart.vanassche@gmail.com>,
-       Vladislav Bolkhovitin <vst@vlnb.net>,
-       Randy Dunlap <randy.dunlap@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [RFC PATCH] Fix Readahead stalling by plugged device queues
-Message-ID: <20100319002558.GD5454@kroah.com>
-References: <4B979104.6010907@linux.vnet.ibm.com>
- <20100310130932.GB18509@localhost>
- <4B97AD52.7080201@linux.vnet.ibm.com>
- <20100311014542.GA8134@localhost>
- <4B98BEB0.6020800@linux.vnet.ibm.com>
- <20100311132913.GB6692@localhost>
+	id S1753109Ab0CSAbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 20:31:07 -0400
+Received: from mail-iw0-f196.google.com ([209.85.223.196]:57988 "EHLO
+	mail-iw0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab0CSAbF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Mar 2010 20:31:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KEdYs/8IJ8nYwW68Ia2UbIPhMxVDNRk0x1J/T6Ua+ys0ie8JUIaeP80HzsXQGJy4dC
+         bQaa/kzQ/DKz/9/Gbsct5tDBjXMMZAq5W9E0T/Mi0UADPWpTjcG6FjY/Xr4CTtpJp42X
+         DOMCRMSqAoemZzIuo0r787b9sj1jusXruFIXM=
+Date: Thu, 18 Mar 2010 17:30:54 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [RFC] Input: implement sysrq as an input handler
+Message-ID: <20100319003054.GA5825@core.coreip.homeip.net>
+References: <20100317061952.GA19789@core.coreip.homeip.net>
+ <4BA2C1AF.7010205@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100311132913.GB6692@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BA2C1AF.7010205@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 11, 2010 at 09:29:13PM +0800, Wu Fengguang wrote:
-> On Thu, Mar 11, 2010 at 05:58:08PM +0800, Christian Ehrhardt wrote:
-> > Wu Fengguang wrote:
-> > > On Wed, Mar 10, 2010 at 10:31:46PM +0800, Christian Ehrhardt wrote:
-> > >>
-> > >> Wu Fengguang wrote:
-> > >> [...]
-> > >>> Christian, did you notice this commit for 2.6.33?
-> > >>>
-> > >>> commit 65a80b4c61f5b5f6eb0f5669c8fb120893bfb388
-> > >> [...]
-> > >>
-> > >> I didn't see that particular one, due to the fact that whatever the 
-> > >> result is it needs to work .32
-> > >>
-> > >> Anyway I'll test it tomorrow and if that already accepted one fixes my 
-> > >> issue as well I'll recommend distros older than 2.6.33 picking that one 
-> > >> up in their on top patches.
-> > > 
-> > > OK, thanks!
+On Thu, Mar 18, 2010 at 05:13:35PM -0700, Randy Dunlap wrote:
+> On 03/16/10 23:19, Dmitry Torokhov wrote:
+> > Instead of keeping SysRq support inside of legacy keyboard driver split
+> > it out into a separate input handler (filter). This stops most SysRq input
+> > events from leaking into evdev clients (some events, such as first SysRq
+> > scancode - not keycode - event, are still leaked into both legacy keyboard
+> > and evdev).
 > > 
-> > That patch fixes my issue completely and is as we discussed less 
-> > aggressive which is fine - thanks for pointing it out - Now I have 
-> > something already upstream accepted to fix the issue, thats much better!
-> 
-> That's great news, it works beyond my expectation.. :)
-> 
-> > >>> It should at least improve performance between .32 and .33, because
-> > >>> once two readahead requests are merged into one single IO request,
-> > >>> the PageUptodate() will be true at next readahead, and hence
-> > >>> blk_run_backing_dev() get called to break out of the suboptimal
-> > >>> situation.
-> > >> As you saw from my blktrace thats already the case without that patch.
-> > >> Once the second readahead comes in and merged it gets unplugged in 
-> > >> 2.6.32 too - but still that is bad behavior as it denies my things like 
-> > >> 68% throughput improvement :-).
-> > > 
-> > > I mean, when readahead windows A and B are submitted in one IO --
-> > > let's call it AB -- commit 65a80b4c61 will explicitly unplug on doing
-> > > readahead C.  While in your trace, the unplug appears on AB.
-> > > 
-> > > The 68% improvement is very impressive. Wondering if commit 65a80b4c61
-> > > (the _conditional_ unplug) can achieve the same level of improvement :)
+> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > ---
 > > 
-> > Yep it can !
-> > We can post update the patch description to bigger numbers :-)
+> >  drivers/char/keyboard.c |   40 +-------
+> >  drivers/char/sysrq.c    |  222 +++++++++++++++++++++++++++++++++++++++++------
+> >  include/linux/sysrq.h   |   23 +----
+> >  kernel/sysctl.c         |   23 +++++
+> >  4 files changed, 224 insertions(+), 84 deletions(-)
 > 
-> Andrew/Greg, shall we push the patch to .32 stable?
+> 
+> > +/* Simple translation table for the SysRq keys */
+> > +static const unsigned char sysrq_xlate[KEY_MAX + 1] =
+> > +        "\000\0331234567890-=\177\t"                    /* 0x00 - 0x0f */
+> > +        "qwertyuiop[]\r\000as"                          /* 0x10 - 0x1f */
+> > +        "dfghjkl;'`\000\\zxcv"                          /* 0x20 - 0x2f */
+> > +        "bnm,./\000*\000 \000\201\202\203\204\205"      /* 0x30 - 0x3f */
+> > +        "\206\207\210\211\212\000\000789-456+1"         /* 0x40 - 0x4f */
+> > +        "230\177\000\000\213\214\000\000\000\000\000\000\000\000\000\000" /* 0x50 - 0x5f */
+> > +        "\r\000/";                                      /* 0x60 - 0x6f */
+> 
+> We are running out of these precious sysrq keys.
+> Do you have any ideas of how to have a larger xlate table?
+> 
 
-I've now queued it up.
+When we run out we could add shift modifiers I guess.
 
-thanks,
-
-greg k-h
+-- 
+Dmitry
