@@ -1,254 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab0CSSWN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 14:22:13 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:59980 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab0CSSWM (ORCPT
+	id S1751957Ab0CSSXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 14:23:33 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:51636 "EHLO
+	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab0CSSXb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 14:22:12 -0400
-Date: Fri, 19 Mar 2010 11:22:09 -0700
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       socketcan-core@lists.berlios.de
-Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus
- Carrier Board
-Message-ID: <20100319182209.GD13672@ovro.caltech.edu>
-References: <>
- <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
- <20100319163849.GB30409@sortiz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319163849.GB30409@sortiz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 19 Mar 2010 11:22:10 -0700 (PDT)
+	Fri, 19 Mar 2010 14:23:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=IdtZk39IUzIjecR0qm/6vTBUdfmO4/zZFjZ+IWuXBGR6WAe1ysV29xPZAQvzamcm81
+         iySmXz21mW4BmZvGbotKce9pVGRtu6CB9IUSjvi1SkAN899VLuvITa58Vyf+qGeahL3F
+         /WpdYc4AlT9bQ/3LAAa7b0XZT+0O1sAKnqtAA=
+From: Gorskin Ilya <revent82@gmail.com>
+To: gregkh@suse.de, bzolnier@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Gorskin Ilya <revent82@gmail.com>
+Subject: [PATCH 6/6] Staging:rt2860: fix coding style issue in rt_usb.c This is a patch to the rt_usb.c file that fixes up errors found by the checkpatch.pl tool
+Date: Fri, 19 Mar 2010 23:22:41 +0500
+Message-Id: <1269022961-26103-1-git-send-email-revent82@gmail.com>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 05:38:51PM +0100, Samuel Ortiz wrote:
-> Hi Ira,
-> 
-> Some comments below:
-> 
-> On Thu, Mar 18, 2010 at 09:38:42AM -0700, Ira W. Snyder wrote:
-> > +/* Module Parameters */
-> > +static unsigned int num_modules = CMODIO_MAX_MODULES;
-> > +static unsigned char *modules[CMODIO_MAX_MODULES] = {
-> > +	"janz-ican3",
-> > +	"janz-ican3",
-> > +	"",
-> > +	"janz-ttl",
-> > +};
-> That's not very nice, but I honestly dont know how to make it less ugly...
-> At least this should be all left blank by default, as Wolfgang hinted.
-> 
+Signed-off-by: Gorskin Ilya <revent82@gmail.com>
+---
+ drivers/staging/rt2860/rt_usb.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
 
-Agreed, I've made the change in my tree.
+diff --git a/drivers/staging/rt2860/rt_usb.c b/drivers/staging/rt2860/rt_usb.c
+index 01a7eb4..bcfc0f5 100644
+--- a/drivers/staging/rt2860/rt_usb.c
++++ b/drivers/staging/rt2860/rt_usb.c
+@@ -233,8 +233,7 @@ static void rtusb_dataout_complete(unsigned long data)
+ 		FREE_HTTX_RING(pAd, BulkOutPipeId, pHTTXContext);
+ 		/*RTMP_IRQ_UNLOCK(&pAd->TxContextQueueLock[BulkOutPipeId], IrqFlags); */
+ 
+-	} else			/* STATUS_OTHER */
+-	{
++	} else {		/* STATUS_OTHER */
+ 		u8 *pBuf;
+ 
+ 		pAd->BulkOutCompleteOther++;
+@@ -316,8 +315,7 @@ static void rtusb_null_frame_done_tasklet(unsigned long data)
+ 		RTMP_IRQ_UNLOCK(&pAd->BulkOutLock[0], irqFlag);
+ 
+ 		RTMPDeQueuePacket(pAd, FALSE, NUM_OF_TX_RING, MAX_TX_PROCESS);
+-	} else			/* STATUS_OTHER */
+-	{
++	} else {		/* STATUS_OTHER */
+ 		if ((!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_RESET_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_NIC_NOT_EXIST)) &&
+@@ -362,8 +360,7 @@ static void rtusb_rts_frame_done_tasklet(unsigned long data)
+ 	if (Status == USB_ST_NOERROR) {
+ 		RTMP_IRQ_UNLOCK(&pAd->BulkOutLock[0], irqFlag);
+ 		RTMPDeQueuePacket(pAd, FALSE, NUM_OF_TX_RING, MAX_TX_PROCESS);
+-	} else			/* STATUS_OTHER */
+-	{
++	} else {		/* STATUS_OTHER */
+ 		if ((!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_RESET_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_NIC_NOT_EXIST)) &&
+@@ -410,8 +407,7 @@ static void rtusb_pspoll_frame_done_tasklet(unsigned long data)
+ 
+ 	if (Status == USB_ST_NOERROR) {
+ 		RTMPDeQueuePacket(pAd, FALSE, NUM_OF_TX_RING, MAX_TX_PROCESS);
+-	} else			/* STATUS_OTHER */
+-	{
++	} else {		/* STATUS_OTHER */
+ 		if ((!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_RESET_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS)) &&
+ 		    (!RTMP_TEST_FLAG(pAd, fRTMP_ADAPTER_NIC_NOT_EXIST)) &&
+@@ -473,14 +469,12 @@ static void rx_done_tasklet(unsigned long data)
+ 	if (Status == USB_ST_NOERROR) {
+ 		pAd->BulkInComplete++;
+ 		pAd->NextRxBulkInPosition = 0;
+-		if (pRxContext->BulkInOffset)	/* As jan's comment, it may bulk-in success but size is zero. */
+-		{
++		if (pRxContext->BulkInOffset) { /* As jan's comment, it may bulk-in success but size is zero. */
+ 			pRxContext->Readable = TRUE;
+ 			INC_RING_INDEX(pAd->NextRxBulkInIndex, RX_RING_SIZE);
+ 		}
+ 		RTMP_IRQ_UNLOCK(&pAd->BulkInLock, IrqFlags);
+-	} else			/* STATUS_OTHER */
+-	{
++	} else {			/* STATUS_OTHER */
+ 		pAd->BulkInCompleteFail++;
+ 		/* Still read this packet although it may comtain wrong bytes. */
+ 		pRxContext->Readable = FALSE;
+@@ -584,7 +578,7 @@ static void rtusb_mgmt_dma_done_tasklet(unsigned long data)
+ 			/* The protectioon of rest bulk should be in BulkOut routine */
+ 			if (pAd->MgmtRing.TxSwFreeIdx <
+ 			    MGMT_RING_SIZE
+-			    /* pMLMEContext->bWaitingBulkOut == TRUE */ ) {
++			    /* pMLMEContext->bWaitingBulkOut == TRUE */) {
+ 				RTUSB_SET_BULK_FLAG(pAd, fRTUSB_BULK_OUT_MLME);
+ 			}
+ 			RTUSBKickBulkOut(pAd);
+-- 
+1.7.0.2
 
-> > +/*
-> > + * Subdevice Support
-> > + */
-> Please use the mfd-core API for building and registering platform sub devices.
-> The pieces of code below should shrink significantly.
-> 
-
-Using this framework, how is it possible to create  the devices that I
-do down below. For each subdevice, I need three resources:
-
-1) MODULbus registers -- PCI BAR3 + (0x200 * module_num)
-2) PLX Control Registers -- PCI BAR4
-3) IRQ
-
-Specifically, the way IORESOURCE_MEM resources are copied seems wrong.
-They start at the base address of only one resource and use the offsets
-provided in the struct mfd_cell. See the if-statement at
-drivers/mfd/mfd-core.c line 48.
-
-I need two use two different parent resources. The mfd_add_devices()
-function doesn't support this.
-
-> > +static int cmodio_remove_subdev(struct device *dev, void *data)
-> > +{
-> > +	platform_device_unregister(to_platform_device(dev));
-> > +	return 0;
-> > +}
-> > +
-> > +static void cmodio_subdev_release(struct device *dev)
-> > +{
-> > +	kfree(to_platform_device(dev));
-> > +}
-> > +
-> > +static struct platform_device *cmodio_create_subdev(struct cmodio_device *priv,
-> > +						    char *name,
-> > +						    unsigned int res_count,
-> > +						    unsigned int pdata_size)
-> > +{
-> > +	struct platform_device *pdev;
-> > +	size_t res_size;
-> > +
-> > +	res_size = sizeof(struct resource) * res_count;
-> > +	pdev = kzalloc(sizeof(*pdev) + res_size + pdata_size, GFP_KERNEL);
-> > +	if (!pdev)
-> > +		return NULL;
-> > +
-> > +	pdev->dev.release = cmodio_subdev_release;
-> > +	pdev->dev.parent = &priv->pdev->dev;
-> > +	pdev->name = name;
-> > +
-> > +	if (res_count) {
-> > +		pdev->resource = (struct resource *)(pdev + 1);
-> > +		pdev->num_resources = res_count;
-> > +	}
-> > +
-> > +	if (pdata_size)
-> > +		pdev->dev.platform_data = (void *)(pdev + 1) + res_size;
-> > +
-> > +	return pdev;
-> > +}
-> > +
-> > +/* Create a memory resource for a subdevice */
-> > +static void cmodio_create_mem(struct resource *parent, struct resource *res,
-> > +			      resource_size_t offset, resource_size_t size)
-> > +{
-> > +	res->flags = IORESOURCE_MEM;
-> > +	res->parent = parent;
-> > +	res->start = parent->start + offset;
-> > +	res->end = parent->start + offset + size - 1;
-> > +}
-> > +
-> > +/* Create an IRQ resource for a subdevice */
-> > +static void cmodio_create_irq(struct resource *res, unsigned int irq)
-> > +{
-> > +	res->flags = IORESOURCE_IRQ;
-> > +	res->parent = NULL;
-> > +	res->start = irq;
-> > +	res->end = irq;
-> > +}
-> > +
-> > +static int __devinit cmodio_probe_subdevice(struct cmodio_device *priv,
-> > +					    char *name, unsigned int modno)
-> > +{
-> > +	struct janz_platform_data *pdata;
-> > +	struct platform_device *pdev;
-> > +	resource_size_t offset, size;
-> > +	struct pci_dev *pci;
-> > +	int ret;
-> > +
-> > +	pci = priv->pdev;
-> > +	pdev = cmodio_create_subdev(priv, name, 3, sizeof(*pdata));
-> > +	if (!pdev) {
-> > +		dev_err(&pci->dev, "MODULbus slot %d alloc failed\n", modno);
-> > +		ret = -ENOMEM;
-> > +		goto out_return;
-> > +	}
-> > +
-> > +	pdata = pdev->dev.platform_data;
-> > +	pdata->modno = modno;
-> > +	pdev->id = priv->subdev_id++;
-> > +
-> > +	/* MODULbus registers -- PCI BAR3 is big-endian MODULbus access */
-> > +	offset = CMODIO_MODULBUS_SIZE * modno;
-> > +	size = CMODIO_MODULBUS_SIZE;
-> > +	cmodio_create_mem(&pci->resource[3], &pdev->resource[0], offset, size);
-> > +
-> > +	/* PLX Control Registers -- PCI BAR4 is interrupt and other registers */
-> > +	offset = 0;
-> > +	size = resource_size(&pci->resource[4]);
-> > +	cmodio_create_mem(&pci->resource[4], &pdev->resource[1], offset, size);
-> > +
-> > +	/* IRQ */
-> > +	cmodio_create_irq(&pdev->resource[2], pci->irq);
-> > +
-> > +	/* Register the device */
-> > +	ret = platform_device_register(pdev);
-> > +	if (ret) {
-> > +		dev_err(&pci->dev, "MODULbus slot %d register failed\n", modno);
-> > +		goto out_free;
-> > +	}
-> > +
-> > +	return 0;
-> > +
-> > +out_free:
-> > +	cmodio_subdev_release(&pdev->dev);
-> > +out_return:
-> > +	return ret;
-> > +}
-> > +
-> > +/* Probe each submodule using kernel parameters */
-> > +static int __devinit cmodio_probe_submodules(struct cmodio_device *priv)
-> > +{
-> > +	char *name;
-> > +	int i;
-> > +
-> > +	for (i = 0; i < num_modules; i++) {
-> > +		name = modules[i];
-> > +		if (!strcmp(name, ""))
-> > +			continue;
-> > +
-> > +		dev_dbg(&priv->pdev->dev, "MODULbus %d: name %s\n", i, name);
-> > +		cmodio_probe_subdevice(priv, name, i);
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> 
-> 
-> > +/*
-> > + * PCI Driver
-> > + */
-> > +
-> > +static int __devinit cmodio_pci_probe(struct pci_dev *dev,
-> > +				      const struct pci_device_id *id)
-> > +{
-> > +	struct cmodio_device *priv;
-> > +	int ret;
-> > +
-> > +	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-> > +	if (!priv) {
-> > +		dev_err(&dev->dev, "unable to allocate private data\n");
-> > +		ret = -ENOMEM;
-> > +		goto out_return;
-> > +	}
-> > +
-> > +	pci_set_drvdata(dev, priv);
-> > +	priv->pdev = dev;
-> > +
-> > +	/* Hardware Initialization */
-> > +	ret = pci_enable_device(dev);
-> > +	if (ret) {
-> > +		dev_err(&dev->dev, "unable to enable device\n");
-> > +		goto out_free_priv;
-> > +	}
-> > +
-> > +	pci_set_master(dev);
-> > +	ret = pci_request_regions(dev, DRV_NAME);
-> > +	if (ret) {
-> > +		dev_err(&dev->dev, "unable to request regions\n");
-> > +		goto out_pci_disable_device;
-> > +	}
-> > +
-> > +	/* Onboard configuration registers */
-> > +	priv->ctrl = pci_ioremap_bar(dev, 4);
-> Why 4 ?
-> 
-> 
-
-Because that is how the device works ;) There is a comment up above that
-describes them as the "PLX control registers". Are you suggesting that I
-add a comment here too?
-
-I think lots of other PCI devices just use hard-coded numbers here.
-They're device specific. You won't be able to program for the device at
-all if you don't know the meaning of each PCI BAR.
-
-> > +#define PCI_VENDOR_ID_JANZ		0x13c3
-> That probably belongs to pci_ids.h
-> 
-
-Should I add a patch to the series for this?
-
-Thanks,
-Ira
