@@ -1,124 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0CSA2E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 20:28:04 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33500 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab0CSA2A (ORCPT
+	id S1752947Ab0CSA25 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 20:28:57 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58009 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab0CSA24 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 20:28:00 -0400
-Subject: Re: [Bugme-new] [Bug 15494] New: BUG: key ffff88013d4f4c70 not in
- .data! when loading microcode.ko
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: avillaci@ceibo.fiec.espol.edu.ec, Ingo Molnar <mingo@elte.hu>,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-In-Reply-To: <20100318143544.33374942.akpm@linux-foundation.org>
-References: <bug-15494-10286@http.bugzilla.kernel.org/>
-	 <20100318143544.33374942.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Mar 2010 01:27:54 +0100
-Message-ID: <1268958474.9440.451.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 20:28:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=aCsdp3bjSCxsxp1fqtMWaxDDu9evxCKhxmG3rTVFpNXoF6hA97cENW9a2pNKc2w25U
+         PE//ZSCQUmRbDuQrnwSeBtCnzXryCXHrBHWzApXv0FTXEUWSrYb0FGI+eGcdR7deK35+
+         YKFsmeeB/iPDm2cIzisw2ar1LosAlasfSuHXk=
+MIME-Version: 1.0
+In-Reply-To: <49f90a801003181710v5e08ccc8jdd26ec899e75bdb9@mail.gmail.com>
+References: <21512362.post@talk.nabble.com> <3e8340490901162016y268e3936k4b2d3fcb2afcf216@mail.gmail.com> 
+	<21512985.post@talk.nabble.com> <3e8340490901162126u109da9cbu7292fddf6d832723@mail.gmail.com> 
+	<49f90a801003181710v5e08ccc8jdd26ec899e75bdb9@mail.gmail.com>
+From: Bryan Donlan <bdonlan@gmail.com>
+Date: Thu, 18 Mar 2010 20:28:34 -0400
+Message-ID: <3e8340491003181728r766245edo91ecc1db75f3a6df@mail.gmail.com>
+Subject: Re: Kernel vs user memory
+To: Siddhartha Chhabra <siddhartha.chhabra@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-18 at 14:35 -0700, Andrew Morton wrote:
-> (switched to email.  Please respond via emailed reply-to-all, not via the
-> bugzilla web interface).
-> 
-> On Tue, 9 Mar 2010 16:28:21 GMT
-> bugzilla-daemon@bugzilla.kernel.org wrote:
-> 
-> > http://bugzilla.kernel.org/show_bug.cgi?id=15494
-> 
-> Seems to be a post-2.6.33 regression.
-> 
-> >            Summary: BUG: key ffff88013d4f4c70 not in .data! when loading
-> >                     microcode.ko
-> >            Product: Drivers
-> >            Version: 2.5
-> >     Kernel Version: 2.6.34-rc1
-> >           Platform: All
-> >         OS/Version: Linux
-> >               Tree: Mainline
-> >             Status: NEW
-> >           Severity: normal
-> >           Priority: P1
-> >          Component: Other
-> >         AssignedTo: drivers_other@kernel-bugs.osdl.org
-> >         ReportedBy: avillaci@ceibo.fiec.espol.edu.ec
-> >         Regression: Yes
-> > 
-> > 
-> > Created an attachment (id=25426)
-> >  --> (http://bugzilla.kernel.org/attachment.cgi?id=25426)
-> > Full dmesg output for 2.6.34-rc1 on my machine
-> > 
-> > When loading the module microcode.ko on my 64-bit system, I get the following
-> > dump on the kernel log:
-> > 
-> > [   10.774690] ------------[ cut here ]------------
-> > [   10.774726] WARNING: at kernel/lockdep.c:2706 lockdep_init_map+0x114/0x130()
-> > [   10.774759] Hardware name:         
-> > [   10.774774] Modules linked in: microcode(+) kvm_intel kvm uinput
-> > snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_seq
-> > snd_seq_device snd_pcm snd_timer snd i2c_i801 soundcore iTCO_wdt snd_page_alloc
-> > iTCO_vendor_support ppdev parport_pc parport pcspkr r8169 mii dm_multipath i915
-> > drm_kms_helper drm i2c_algo_bit i2c_core video output [last unloaded:
-> > scsi_wait_scan]
-> > [   10.775026] Pid: 1939, comm: modprobe Not tainted 2.6.34-rc1 #9
-> > [   10.775048] Call Trace:
-> > [   10.775063]  [<ffffffff81048006>] warn_slowpath_common+0x76/0xb0
-> > [   10.775087]  [<ffffffff8104804f>] warn_slowpath_null+0xf/0x20
-> > [   10.775109]  [<ffffffff81073c34>] lockdep_init_map+0x114/0x130
-> > [   10.775139]  [<ffffffff8115b3aa>] sysfs_add_file_mode+0x6a/0xc0
-> > [   10.775163]  [<ffffffff8115b40c>] sysfs_add_file+0xc/0x10
-> > [   10.775185]  [<ffffffff8115d8a1>] sysfs_create_bin_file+0x21/0x30
-> > [   10.775209]  [<ffffffff812945bd>] _request_firmware+0x21d/0x4e0
-> > [   10.775232]  [<ffffffff8129490e>] request_firmware+0xe/0x10
-> > [   10.775256]  [<ffffffffa00f1bc1>] request_microcode_fw+0x61/0xa0 [microcode]
-> > [   10.775283]  [<ffffffff8115db01>] ? internal_create_group+0xc1/0x1a0
-> > [   10.775309]  [<ffffffffa00f13b8>] microcode_init_cpu+0xb8/0xd0 [microcode]
-> > [   10.775336]  [<ffffffffa00f1426>] mc_sysdev_add+0x56/0x70 [microcode]
-> > [   10.775361]  [<ffffffff8128a04e>] sysdev_driver_register+0x9e/0x130
-> > [   10.775386]  [<ffffffffa0130000>] ? microcode_init+0x0/0x12b [microcode]
-> > [   10.775412]  [<ffffffffa01300be>] microcode_init+0xbe/0x12b [microcode]
-> > [   10.775438]  [<ffffffff810001d7>] do_one_initcall+0x37/0x190
-> > [   10.775462]  [<ffffffff8107fe4b>] sys_init_module+0xdb/0x250
-> > [   10.775485]  [<ffffffff81002e6b>] system_call_fastpath+0x16/0x1b
-> > [   10.775508] ---[ end trace e0218cb5fc4c0bc8 ]---
-> > 
-> > This dump did not appear with vanilla 2.6.33.
-> > 
-> > Steps to reproduce:
-> > 1) compile 2.6.34-rc1 with attached configuration
-> > 2) run on 64-bit intel machine
-> > 3) load microcode.ko or make system configuration load it.
-> > 
-> > Actual results:
-> > kernel dump as shown above
-> > 
-> > Expected results: 
-> > no dump, microcode should load normally
-> > 
-> 
-> Methinks 6992f5334995af474c2b58d010d08bc597f0f2fe ("sysfs: Use one
-> lockdep class per sysfs attribute") is implicated.  
+On Thu, Mar 18, 2010 at 20:10, Siddhartha Chhabra
+<siddhartha.chhabra@gmail.com> wrote:
+> When the kernel tries to access user space pages, for example, for copying
+> on a copy on write, in order to do so, does it need to get the page mapped
+> to its address space, that is, will a page fault happen for the kernel when
+> it first tries to access the user space page that it needs to copy ?
+>
+> I read a paper that provides security to the OS based on the assumption that
+> every time, the OS tries to access the user space, it will page fault and by
+> intercepting this page fault, they can check whether the kernel should be
+> accessing the page or not ? But based on the discussion below, I guess, the
+> kernel is free to access all the pages in memory (or atleast the first 700MB
+> on a 32-bit system) without causing a page fault in the kernel space ?
+>
+> Am I right on this? I greatly appreciate you taking time to answer this
+> question
 
-You're right, that patch adds a key to struct attribute, and the
-firmware stuff seems to dynamically allocate these things in
-firmware_priv::bin_attribute::attr.
+It depends.
 
-The allocation seems to happen in fw_register_device().
+If the kernel's doing a copy_from_user or copy_to_user family of calls
+(ie, the calls used in system call handlers when accessing user space
+buffers referenced in the arguments), this will trigger a page fault
+exactly like the userspace process would, and the PF handler will then
+deal with any copy on write or whatever may be needed. Of course, if a
+userspace access wouldn't trigger a PF, the kernel access won't
+either.
 
-So yes, that patch is incompatible with the firmware usage, as struct
-lock_class_key's are required to be in static storage.
+For the actual copy-on-write process itself, it would be a Bad Thing
+to trigger a recursive page fault, so instead the kernel will directly
+access the page via the direct mapped section of the address space -
+this will never cause a PF (on x86, this may require creating a
+temporary mapping for memory at a high physical address, but this
+still won't be a PF as it will be set up before the first access).
+Additionally, memory mapped IO involves direct DMA to/from pages that
+are simultaneously in use by userspace - this won't cause a PF in
+kernel mode either. Same with swap.
 
+In short, some kernel accesses to user space do go through normal
+channels which may or may not PF; other accesses will never PF. So
+it's a bad idea to rely on all kernel accesses triggering a page
+fault.
 
+Hope this helps,
 
+Bryan
