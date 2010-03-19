@@ -1,36 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612Ab0CSGwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 02:52:23 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:38945 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab0CSGwW (ORCPT
+	id S1751819Ab0CSGzd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 02:55:33 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59602 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab0CSGzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 02:52:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=twMgCRfyb+r97My717EcK0rGqLbf6Z1j+hE2c7KcBGp8hdThxyQIupX0xvqU4XdPYZ
-         Vux7vu/wix51UjrLxYuIJkEMy+e0zW1VWQWhJBkBWT/AsVPIGCvTSTsvl96HXA3hSGp/
-         JIoAvA0yEWdDrSRfi5HgNHWSctEldqm9bC+fg=
+	Fri, 19 Mar 2010 02:55:32 -0400
+Date: Fri, 19 Mar 2010 15:53:34 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       akpm@linux-foundation.org, andi.kleen@intel.com, fengguang.wu@intel.com
+Subject: Re: [PATCH 1/2] pagemap: add #ifdefs CONFIG_HUGETLB_PAGE on code
+	walking hugetlb vma
+Message-ID: <20100319065334.GB12389@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <1268979996-12297-1-git-send-email-n-horiguchi@ah.jp.nec.com> <20100319152934.c4243698.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20100319031850.GB3137@localhost.localdomain>
-References: <20100319031850.GB3137@localhost.localdomain>
-Date: Fri, 19 Mar 2010 08:52:21 +0200
-Message-ID: <b6fcc0a1003182352t2bef04f6k2c4c64f539b802c0@mail.gmail.com>
-Subject: Re: [PATCH] Netfilter: Remove unused headers in net/ipv6/netfilter/ip6t_LOG.c
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: wzt.wzt@gmail.com
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-       kaber@trash.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100319152934.c4243698.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 5:18 AM,  <wzt.wzt@gmail.com> wrote:
-> Remove unused headers in net/ipv6/netfilter/ip6t_LOG.c
+On Fri, Mar 19, 2010 at 03:29:34PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Fri, 19 Mar 2010 15:26:35 +0900
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > If !CONFIG_HUGETLB_PAGE, pagemap_hugetlb_range() is never called.
+> > So put it (and its calling function) into #ifdef block.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> 
+> Hmm? What is benefit ? Is this broken now ?
+> 
 
-It'd be better to search whole tree and send one patch
-that send one by one.
+Not broken, but this is needed to avoid build error with patch 2/2 applied,
+where I move huge_pte_offset() (not defined when !HUGETLB_PAGE)
+into pagemap_hugetlb_range().
+
+Thanks,
+Naoya Horiguchi
