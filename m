@@ -1,288 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab0CSNyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 09:54:55 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:38747 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752203Ab0CSNyy (ORCPT
+	id S1752600Ab0CSN5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 09:57:44 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34250 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752486Ab0CSN5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 09:54:54 -0400
-Date: Fri, 19 Mar 2010 09:54:51 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, mingo@elte.hu,
-       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
-       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
-Message-ID: <20100319135451.GA18079@Krystal>
-References: <20100319013024.GA28456@Krystal> <4BA2FA01.30102@cn.fujitsu.com> <20100319050532.GE2894@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319050532.GE2894@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:52:05 up 55 days, 16:29,  8 users,  load average: 1.20, 1.10,
-	1.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 19 Mar 2010 09:57:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=bLSZ/wXOJxfks8P76ZQo8nBGM5rOL+Wx1jjLTaul43BUVqyPjfL9zKjFJCJQ9iwn8M
+         /eM6CcZ8FN2uuK8Q7HT3plo2NPPpBkqWYqzhwvl+NnRGxO4lIMMDXLzhVgUj6zvgY8d0
+         H9cj77EO9E7x0R9/Shxybh4z9WAXmfPVIodkc=
+From: Maurice Dawson <mauricedawson2699@googlemail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu, linux-kernel@vger.kernel.org,
+       devel@driverdev.osuosl.org
+Subject: [PATCH 19/19] Staging: comedi: fix brace coding style issue in adl_pci9118.c
+Date: Fri, 19 Mar 2010 13:57:31 +0000
+Message-Id: <1269007051-3187-1-git-send-email-mauricedawson2699@googlemail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Fri, Mar 19, 2010 at 12:13:53PM +0800, Lai Jiangshan wrote:
-> > CC: Christoph Lameter <cl@linux-foundation.org>
-> > CC: Pekka Enberg <penberg@cs.helsinki.fi>
-> > 
-> > I have written a patch like this before.
-> > 
-> > but SLUB opposed me, so I did not post it.
-> > 
-> > @ slub.c
-> > static void free_slab(struct kmem_cache *s, struct page *page)
-> > {
-> > 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
-> > 		/*
-> > 		 * RCU free overloads the RCU head over the LRU
-> > 		 */
-> > 		struct rcu_head *head = (void *)&page->lru;
-> > 
-> > 		call_rcu(head, rcu_free_slab);
-> > 	} else
-> > 		__free_slab(s, page);
-> > }
-> > 
-> > I think it is not your patch's fault, but the above code has
-> > already existed.
-> > 
-> > In your patch, struct rcu_head::debug will share the same memory of
-> > the other field of struct page, (especially share the struct page::flags
-> > which I encountered)
-> > 
-> > I tested it very long time before, so I can't give you dmesg.
-> 
-> Ouch!!!
-> 
-> If this only causes a problem for SLUB, maybe a workaround is to make
-> the config variable depend on !SLUB.  But this would seem to increase
-> the urgency of using the debug objects
+This is a patch to the adl_pci9118.c file that fixes up all brace warnings found by the checkpatch.pl tool
 
-Hrm.. looking into the port to debugobjects, there are a few things that are not
-precisely well set at the moment for it:
+Signed-off-by: Maurice Dawson <mauricedawson2699@googlemail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |   62 ++++++++++++--------------
+ 1 files changed, 28 insertions(+), 34 deletions(-)
 
-- We need to have two distinct active states, with a check that we move between
-  the two. This does not seem to be currently supported by debugobjects.
-- RCU heads are never explicitely freed. So yeah, that means we will have to
-  modify a lot of callers.
-
-Thanks,
-
-Mathieu
-
-
-> 
-> 							Thanx, Paul
-> 
-> > Lai
-> > 
-> > Mathieu Desnoyers wrote:
-> > > Poisoning the rcu_head callback list.
-> > > 
-> > > Helps finding racy users of call_rcu(), which results in hangs because list
-> > > entries are overwritten and/or skipped.
-> > > 
-> > > A lot of non-initialized rcu list heads will be found with this option enabled.
-> > > It is important to do not just blindly initialize them before each call_rcu, but
-> > > rather to perform the initialization at the proper location, after the memory
-> > > has been allocated, so we can effectively detect incorrect call_rcu users.
-> > > 
-> > > This patch version does not use "debug objects", although it probably should.
-> > > Some day I might find time to look into this transition, but the patch is usable
-> > > as is.
-> > > 
-> > > The weird #ifdef in the networking code comes from an agreement with Eric
-> > > Dumazet about how to disable the build check for the networking code.  For those
-> > > who wonder about the existence of this build-time check: it generates a build
-> > > error when the size of struct dst_entry grows (because it is very performance
-> > > sensitive). So the agreement here has been to disable the check when the
-> > > DEBUG_RCU_HEAD config option is active.
-> > > 
-> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > CC: mingo@elte.hu
-> > > CC: akpm@linux-foundation.org
-> > > CC: mingo@elte.hu
-> > > CC: laijs@cn.fujitsu.com
-> > > CC: dipankar@in.ibm.com
-> > > CC: josh@joshtriplett.org
-> > > CC: dvhltc@us.ibm.com
-> > > CC: niv@us.ibm.com
-> > > CC: tglx@linutronix.de
-> > > CC: peterz@infradead.org
-> > > CC: rostedt@goodmis.org
-> > > CC: Valdis.Kletnieks@vt.edu
-> > > CC: dhowells@redhat.com
-> > > CC: eric.dumazet@gmail.com
-> > > CC: Alexey Dobriyan <adobriyan@gmail.com>
-> > > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > > ---
-> > >  include/linux/rcupdate.h |   13 ++++++++++++-
-> > >  include/net/dst.h        |    2 ++
-> > >  kernel/rcutiny.c         |    9 +++++++++
-> > >  kernel/rcutree.c         |   10 ++++++++++
-> > >  lib/Kconfig.debug        |    9 +++++++++
-> > >  5 files changed, 42 insertions(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6-lttng/include/linux/rcupdate.h
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/include/linux/rcupdate.h	2010-03-18 20:27:25.000000000 -0400
-> > > +++ linux-2.6-lttng/include/linux/rcupdate.h	2010-03-18 20:30:54.000000000 -0400
-> > > @@ -49,6 +49,9 @@
-> > >  struct rcu_head {
-> > >  	struct rcu_head *next;
-> > >  	void (*func)(struct rcu_head *head);
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +	struct rcu_head *debug;
-> > > +#endif
-> > >  };
-> > >  
-> > >  /* Exported common interfaces */
-> > > @@ -71,11 +74,19 @@ extern void rcu_init(void);
-> > >  #error "Unknown RCU implementation specified to kernel configuration"
-> > >  #endif
-> > >  
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +#define RCU_HEAD_INIT 	{ .next = NULL, .func = NULL, .debug = NULL }
-> > > +#define INIT_RCU_HEAD(ptr) do { \
-> > > +       (ptr)->next = NULL; (ptr)->func = NULL; (ptr)->debug = NULL; \
-> > > +} while (0)
-> > > +#else
-> > >  #define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
-> > > -#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
-> > >  #define INIT_RCU_HEAD(ptr) do { \
-> > >         (ptr)->next = NULL; (ptr)->func = NULL; \
-> > >  } while (0)
-> > > +#endif
-> > > +
-> > > +#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
-> > >  
-> > >  #ifdef CONFIG_DEBUG_LOCK_ALLOC
-> > >  extern struct lockdep_map rcu_lock_map;
-> > > Index: linux-2.6-lttng/kernel/rcutree.c
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/kernel/rcutree.c	2010-03-18 20:27:25.000000000 -0400
-> > > +++ linux-2.6-lttng/kernel/rcutree.c	2010-03-18 20:31:16.000000000 -0400
-> > > @@ -39,6 +39,7 @@
-> > >  #include <asm/atomic.h>
-> > >  #include <linux/bitops.h>
-> > >  #include <linux/module.h>
-> > > +#include <linux/poison.h>
-> > >  #include <linux/completion.h>
-> > >  #include <linux/moduleparam.h>
-> > >  #include <linux/percpu.h>
-> > > @@ -1060,6 +1061,10 @@ static void rcu_do_batch(struct rcu_stat
-> > >  		next = list->next;
-> > >  		prefetch(next);
-> > >  		trace_rcu_tree_callback(list);
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +		WARN_ON_ONCE(list->debug != LIST_POISON1);
-> > > +		list->debug = NULL;
-> > > +#endif
-> > >  		list->func(list);
-> > >  		list = next;
-> > >  		if (++count >= rdp->blimit)
-> > > @@ -1350,6 +1355,11 @@ __call_rcu(struct rcu_head *head, void (
-> > >  	unsigned long flags;
-> > >  	struct rcu_data *rdp;
-> > >  
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +	WARN_ON_ONCE(head->debug);
-> > > +	head->debug = LIST_POISON1;
-> > > +#endif
-> > > +
-> > >  	head->func = func;
-> > >  	head->next = NULL;
-> > >  
-> > > Index: linux-2.6-lttng/lib/Kconfig.debug
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/lib/Kconfig.debug	2010-03-18 20:27:25.000000000 -0400
-> > > +++ linux-2.6-lttng/lib/Kconfig.debug	2010-03-18 20:27:38.000000000 -0400
-> > > @@ -661,6 +661,15 @@ config DEBUG_LIST
-> > >  
-> > >  	  If unsure, say N.
-> > >  
-> > > +config DEBUG_RCU_HEAD
-> > > +	bool "Debug RCU callbacks"
-> > > +	depends on DEBUG_KERNEL
-> > > +	depends on TREE_RCU
-> > > +	help
-> > > +	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
-> > > +	  Seems to find problems more quickly with stress-tests in single-cpu
-> > > +	  mode.
-> > > +
-> > >  config DEBUG_SG
-> > >  	bool "Debug SG table operations"
-> > >  	depends on DEBUG_KERNEL
-> > > Index: linux-2.6-lttng/include/net/dst.h
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/include/net/dst.h	2010-03-18 20:27:25.000000000 -0400
-> > > +++ linux-2.6-lttng/include/net/dst.h	2010-03-18 20:35:02.000000000 -0400
-> > > @@ -159,7 +159,9 @@ static inline void dst_hold(struct dst_e
-> > >  	 * If your kernel compilation stops here, please check
-> > >  	 * __pad_to_align_refcnt declaration in struct dst_entry
-> > >  	 */
-> > > +#ifndef CONFIG_DEBUG_RCU_HEAD
-> > >  	BUILD_BUG_ON(offsetof(struct dst_entry, __refcnt) & 63);
-> > > +#endif
-> > >  	atomic_inc(&dst->__refcnt);
-> > >  }
-> > >  
-> > > Index: linux-2.6-lttng/kernel/rcutiny.c
-> > > ===================================================================
-> > > --- linux-2.6-lttng.orig/kernel/rcutiny.c	2010-03-18 20:35:14.000000000 -0400
-> > > +++ linux-2.6-lttng/kernel/rcutiny.c	2010-03-18 20:39:12.000000000 -0400
-> > > @@ -35,6 +35,7 @@
-> > >  #include <linux/init.h>
-> > >  #include <linux/time.h>
-> > >  #include <linux/cpu.h>
-> > > +#include <linux/poison.h>
-> > >  
-> > >  /* Global control variables for rcupdate callback mechanism. */
-> > >  struct rcu_ctrlblk {
-> > > @@ -163,6 +164,10 @@ static void __rcu_process_callbacks(stru
-> > >  	while (list) {
-> > >  		next = list->next;
-> > >  		prefetch(next);
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +		WARN_ON_ONCE(list->debug != LIST_POISON1);
-> > > +		list->debug = NULL;
-> > > +#endif
-> > >  		list->func(list);
-> > >  		list = next;
-> > >  	}
-> > > @@ -210,6 +215,10 @@ static void __call_rcu(struct rcu_head *
-> > >  {
-> > >  	unsigned long flags;
-> > >  
-> > > +#ifdef CONFIG_DEBUG_RCU_HEAD
-> > > +	WARN_ON_ONCE(head->debug);
-> > > +	head->debug = LIST_POISON1;
-> > > +#endif
-> > >  	head->func = func;
-> > >  	head->next = NULL;
-> > >  
-> > > 
-> > 
-
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index 2c39430..066695a 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -57,7 +57,7 @@ Configuration options:
+ 		long delay is requested in ns and sign polarity of the hold
+ 		(in this case external multiplexor can serve only 128 channels)
+   [5] - 0=stop measure on all hardware errors
+-	2| = ignore ADOR - A/D Overrun status
++	2 | = ignore ADOR - A/D Overrun status
+ 	8|=ignore Bover - A/D Burst Mode Overrun status
+ 	256|=ignore nFull - A/D FIFO Full status
+ 
+@@ -495,11 +495,10 @@ static int pci9118_insn_write_ao(struct comedi_device *dev,
+ 	int n, chanreg, ch;
+ 
+ 	ch = CR_CHAN(insn->chanspec);
+-	if (ch) {
++	if (ch)
+ 		chanreg = PCI9118_DA2;
+-	} else {
++	else
+ 		chanreg = PCI9118_DA1;
+-	}
+ 
+ 	for (n = 0; n < insn->n; n++) {
+ 		outl(data[n], dev->iobase + chanreg);
+@@ -662,11 +661,10 @@ static void pci9118_ai_munge(struct comedi_device *dev,
+ 	for (i = 0; i < num_samples; i++) {
+ 		if (devpriv->usedma)
+ 			array[i] = be16_to_cpu(array[i]);
+-		if (devpriv->ai16bits) {
++		if (devpriv->ai16bits)
+ 			array[i] ^= 0x8000;
+-		} else {
++		else
+ 			array[i] = (array[i] >> 4) & 0x0fff;
+-		}
+ 	}
+ }
+ 
+@@ -930,20 +928,20 @@ static int pci9118_ai_cmdtest(struct comedi_device *dev,
+ 		err++;
+ 
+ 	tmp = cmd->scan_begin_src;
+-	if (devpriv->master) {
++	if (devpriv->master)
+ 		cmd->scan_begin_src &= TRIG_TIMER | TRIG_EXT | TRIG_FOLLOW;
+-	} else {
++	else
+ 		cmd->scan_begin_src &= TRIG_FOLLOW;
+-	}
++
+ 	if (!cmd->scan_begin_src || tmp != cmd->scan_begin_src)
+ 		err++;
+ 
+ 	tmp = cmd->convert_src;
+-	if (devpriv->master) {
++	if (devpriv->master)
+ 		cmd->convert_src &= TRIG_TIMER | TRIG_EXT | TRIG_NOW;
+-	} else {
++	else
+ 		cmd->convert_src &= TRIG_TIMER | TRIG_EXT;
+-	}
++
+ 	if (!cmd->convert_src || tmp != cmd->convert_src)
+ 		err++;
+ 
+@@ -1538,12 +1536,12 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	}
+ 
+ 	/* use sample&hold signal? */
+-	if (cmd->convert_src == TRIG_NOW) {
++	if (cmd->convert_src == TRIG_NOW)
+ 		devpriv->usessh = 1;
+-	} /* yes */
+-	else {
++	/* yes */
++	else
+ 		devpriv->usessh = 0;
+-	}			/*  no */
++				/*  no */
+ 
+ 	DPRINTK("1 neverending=%d scans=%u usessh=%d ai_startstop=0x%2x\n",
+ 		devpriv->ai_neverending, devpriv->ai_scans, devpriv->usessh,
+@@ -1560,9 +1558,8 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 		devpriv->usedma = 1;
+ 		if ((cmd->flags & TRIG_WAKE_EOS) &&
+ 		    (devpriv->ai_n_scanlen == 1)) {
+-			if (cmd->convert_src == TRIG_NOW) {
++			if (cmd->convert_src == TRIG_NOW)
+ 				devpriv->ai_add_back = 1;
+-			}
+ 			if (cmd->convert_src == TRIG_TIMER) {
+ 				devpriv->usedma = 0;
+ 					/*
+@@ -1657,11 +1654,11 @@ static int pci9118_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 		(cmd->scan_begin_src == TRIG_INT)) &&
+ 		(cmd->convert_src == TRIG_TIMER)) {
+ 					/* both timer is used for one time */
+-		if (cmd->scan_begin_src == TRIG_EXT) {
++		if (cmd->scan_begin_src == TRIG_EXT)
+ 			devpriv->ai_do = 4;
+-		} else {
++		else
+ 			devpriv->ai_do = 1;
+-		}
++
+ 		pci9118_calc_divisors(devpriv->ai_do, dev, s,
+ 				      &cmd->scan_begin_arg, &cmd->convert_arg,
+ 				      devpriv->ai_flags,
+@@ -1908,9 +1905,9 @@ static int setup_channel_list(struct comedi_device *dev,
+ 	}
+ #ifdef PCI9118_EXTDEBUG
+ 	DPRINTK("CHL: ");
+-	for (i = 0; i <= (useeos * n_chan); i++) {
++	for (i = 0; i <= (useeos * n_chan); i++)
+ 		DPRINTK("%04x ", devpriv->chanlist[i]);
+-	}
++
+ 	DPRINTK("\n ");
+ #endif
+ #endif
+@@ -2175,11 +2172,10 @@ static int pci9118_attach(struct comedi_device *dev,
+ 
+ 	opt_bus = it->options[0];
+ 	opt_slot = it->options[1];
+-	if (it->options[3] & 1) {
++	if (it->options[3] & 1)
+ 		master = 0;	/* user don't want use bus master */
+-	} else {
++	else
+ 		master = 1;
+-	}
+ 
+ 	ret = alloc_private(dev, sizeof(struct pci9118_private));
+ 	if (ret < 0) {
+@@ -2222,9 +2218,8 @@ static int pci9118_attach(struct comedi_device *dev,
+ 		return -EIO;
+ 	}
+ 
+-	if (master) {
++	if (master)
+ 		pci_set_master(pcidev);
+-	}
+ 
+ 	pci_bus = pcidev->bus->number;
+ 	pci_slot = PCI_SLOT(pcidev->devfn);
+@@ -2335,11 +2330,11 @@ static int pci9118_attach(struct comedi_device *dev,
+ 	dev->read_subdev = s;
+ 	s->type = COMEDI_SUBD_AI;
+ 	s->subdev_flags = SDF_READABLE | SDF_COMMON | SDF_GROUND | SDF_DIFF;
+-	if (devpriv->usemux) {
++	if (devpriv->usemux)
+ 		s->n_chan = devpriv->usemux;
+-	} else {
++	else
+ 		s->n_chan = this_board->n_aichan;
+-	}
++
+ 	s->maxdata = this_board->ai_maxdata;
+ 	s->len_chanlist = this_board->n_aichanlist;
+ 	s->range_table = this_board->rangelist_ai;
+@@ -2411,9 +2406,8 @@ static int pci9118_detach(struct comedi_device *dev)
+ 		if (dev->irq)
+ 			free_irq(dev->irq, dev);
+ 		if (devpriv->pcidev) {
+-			if (dev->iobase) {
++			if (dev->iobase)
+ 				comedi_pci_disable(devpriv->pcidev);
+-			}
+ 			pci_dev_put(devpriv->pcidev);
+ 		}
+ 		if (devpriv->dmabuf_virt[0])
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.6.3.3
+
