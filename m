@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0CSW2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 18:28:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47927 "EHLO mail.zytor.com"
+	id S1751812Ab0CSWdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 18:33:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52565 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab0CSW2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 18:28:30 -0400
-Message-ID: <4BA3F8ED.2090600@zytor.com>
-Date: Fri, 19 Mar 2010 15:21:33 -0700
+	id S1751212Ab0CSWda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 18:33:30 -0400
+Message-ID: <4BA3FBB5.2050008@zytor.com>
+Date: Fri, 19 Mar 2010 15:33:25 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH -v3] x86: do not free zero sized per cpu areas
-References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org>
-In-Reply-To: <4BA3F82D.5090807@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Brian Gerst <brgerst@gmail.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] x86-32: Split cache flush handler from simd handler
+References: <1268936453-3727-1-git-send-email-brgerst@gmail.com> <1268936453-3727-2-git-send-email-brgerst@gmail.com>
+In-Reply-To: <1268936453-3727-2-git-send-email-brgerst@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2010 03:18 PM, Yinghai Lu wrote:
-> From: Ian Campbell <ian.campbell@citrix.com>
-> 
-> This avoids an infinite loop in free_early_partial().
-> 
-> Add a warning to free_early_partial to catch future problems.
-> 
-> -v3: according to hpa, don't bother caller.
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/early_res.c             |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/early_res.c b/kernel/early_res.c
-> index 3cb2c66..f3a861b 100644
-> --- a/kernel/early_res.c
-> +++ b/kernel/early_res.c
-> @@ -333,6 +333,11 @@ void __init free_early_partial(u64 start, u64 end)
->  	struct early_res *r;
->  	int i;
+On 03/18/2010 11:20 AM, Brian Gerst wrote:
+> Make the cache flush handler a seperate function, and use
+> an alternative to call the appropriate handler.
 >  
-> +	if (WARN_ONCE(start >= end,
-> +		      "free_early_partial got wrong start/end %#llx/%#llx\n",
-> +		      start, end))
-> +		return;
+> +#ifdef CONFIG_X86_32
+> +dotraplinkage void
+> +do_cache_flush_error(struct pt_regs *regs, long error_code)
+> +{
+> +	conditional_sti(regs);
 > +
->  try_next:
->  	i = find_overlapped_early(start, end);
->  	if (i >= max_early_res)
+> +	/*
+> +	 * Handle strange cache flush from user space exception.
+> +	 * This is undocumented behaviour.
+> +	 */
+> +	if (regs->flags & X86_VM_MASK) {
+> +		handle_vm86_fault((struct kernel_vm86_regs *)regs, error_code);
+> +		return;
+> +	}
+> +	current->thread.trap_no = 19;
+> +	current->thread.error_code = error_code;
+> +	die_if_kernel("cache flush denied", regs, error_code);
+> +	force_sig(SIGSEGV, current);
+> +}
+> +#endif
 
-No, that's wrong.
+Does anyone have *any idea* what processor this applies to?  I've
+tracked the code back all the way to the original inclusion in the
+kernel, and there isn't even the slightest hint.
 
-The workaround is still needed for the case of equality to avoid the
-infinite loop.
-
-So you need an:
-
-	if (start == end)
-		return;
+The comment, of course, is a great example on how *not* to write
+comments... it should have mentioned the CPU in question.
 
 	-hpa
