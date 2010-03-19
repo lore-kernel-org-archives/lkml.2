@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335Ab0CSTey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 15:34:54 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:11766 "EHLO SMTP.CITRIX.COM"
+	id S1751424Ab0CSTrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 15:47:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54748 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750966Ab0CSTex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 15:34:53 -0400
-X-IronPort-AV: E=Sophos;i="4.51,276,1267419600"; 
-   d="scan'208";a="7629189"
-Subject: Re: Infinite loop on boot in free_early_partial due to start==end
- on tip/master
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BA3CAB8.7000702@kernel.org>
-References: <1267801390.11737.38014.camel@zakaz.uk.xensource.com>
-	 <20100319182807.GA14985@phenom.dumpdata.com>  <4BA3CAB8.7000702@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: Citrix Systems, Inc.
-Date: Fri, 19 Mar 2010 19:34:49 +0000
-Message-ID: <1269027289.23584.0.camel@localhost.localdomain>
+	id S1751197Ab0CSTq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 15:46:59 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: mgross@linux.intel.com
+Subject: Re: [PATCH] PM_QOS updates for 2.6.34-rc1
+Date: Fri, 19 Mar 2010 20:49:34 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, 640E9920 <640e9920@gmail.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       dwalker@codeaurora.org, tiwai@suse.de, bruce.w.allan@intel.com,
+       aili@codeaurora.org, khilman@deeprootsystems.com
+References: <20100314003425.GA17812@mgross-acer> <20100314062637.GA12064@elf.ucw.cz> <20100319143055.GA6124@linux.intel.com>
+In-Reply-To: <20100319143055.GA6124@linux.intel.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003192049.34665.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-19 at 19:04 +0000, Yinghai Lu wrote: 
-> On 03/19/2010 11:28 AM, Konrad Rzeszutek Wilk wrote:
-> >> Subject: x86: do not free zero sized per cpu areas
-> >>
-> >> This avoids an infinite loop in free_early_partial().
+On Friday 19 March 2010, mark gross wrote:
+> On Sun, Mar 14, 2010 at 07:26:37AM +0100, Pavel Machek wrote:
+> > On Sat 2010-03-13 16:34:25, 640E9920 wrote:
+> > > The following patch series implements to following:
+> > > 1) pm_qos now uses a handle based implementation.  No more string
+> > > compares while walking lists.
+> > > 2) renames the exports to using more accurate names.
+> > > 3) updates kernel clients of pm_qos per this change
+> > > 4) added ascii interface to pmqos recognizing strings formatted in 10
+> > > charactor format "0x12345678"
+> > > 5) added new pm_qos class, "system_bus_throughput"
+> > > 
+> > > I would like to see this series make it into 2.6.34 if its not too late. 
 > > 
-> > The patch fixed PV guests booting on Xen. I've added my
-> > Tested-by .. Please merge it in the release.
-> > 
-> > Thanks!
-> >>
-> >> Add a warning to free_early_partial to catch future problems.
-> >>
-> >> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > I believe it is... -rc1 is past us.
 > 
-> please check update version...
+> crap.  I'll guess I'll redo them for next then.
 > 
-> please check if this patch help...
 > 
-> http://patchwork.kernel.org/patch/83832/
+>  
+> > Also... the way the patches are structured... that will break bisect,
+> > no?
+> 
+> Um not sure, how would you recomend I structure them?
 
-Sorry Konrad, looks like I directed you to an older version of the patch
-by mistake.
+Generally speaking, the kernel should build and should work correctly after
+applying each consecutive patch in the series.
 
-Ian.
-
-
+Rafael
