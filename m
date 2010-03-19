@@ -1,57 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751013Ab0CSESv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 00:18:51 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52564 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab0CSESt (ORCPT
+	id S1751069Ab0CSETg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 00:19:36 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40512
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750717Ab0CSETe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 00:18:49 -0400
-Date: Fri, 19 Mar 2010 09:48:42 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>, trivial@kernel.org,
-       linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] memcg: fix typo in memcg documentation
-Message-ID: <20100319041842.GI18054@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1268949879-29478-1-git-send-email-gthelen@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1268949879-29478-1-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Fri, 19 Mar 2010 00:19:34 -0400
+Date: Thu, 18 Mar 2010 21:19:56 -0700 (PDT)
+Message-Id: <20100318.211956.15229498.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-03-18
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100318203532.GE17357@tuxdriver.com>
+References: <20100318203532.GE17357@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg Thelen <gthelen@google.com> [2010-03-18 15:04:39]:
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 18 Mar 2010 16:35:32 -0400
 
-> Updated memory.txt to be more consistent: s/swapiness/swappiness/
+> Three more intended for 2.6.34...  The biggest one is for ath9k, which
+> removes some unused code along with the one-liner that makes the code
+> unused.  (Did you follow that?)  The others are a null-pointer fix and a
+> "hush dawg" for a noisy warning message.
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
->  Documentation/cgroups/memory.txt |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index f8bc802..3a6aecd 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -340,7 +340,7 @@ Note:
->  5.3 swappiness
->    Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-> 
-> -  Following cgroups' swapiness can't be changed.
-> +  Following cgroups' swappiness can't be changed.
+> Please let me know if there are problems!
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
-
--- 
-	Three Cheers,
-	Balbir
+Pulled, thanks a lot John.
