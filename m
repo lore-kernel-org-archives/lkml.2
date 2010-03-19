@@ -1,173 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab0CSRLJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 13:11:09 -0400
-Received: from smtprelay-h11.telenor.se ([62.127.194.4]:43093 "EHLO
-	smtprelay-h11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab0CSRLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 13:11:08 -0400
-X-SENDER-IP: [83.226.249.136]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al9HAItMo0tT4vmIPGdsb2JhbACBPIQsgXeTZgEBAQE3unmEegQ
-X-IronPort-AV: E=Sophos;i="4.51,275,1267398000"; 
-   d="scan'208";a="53430738"
-Message-ID: <4BA3B029.7070403@coyote.org>
-Date: Fri, 19 Mar 2010 18:11:05 +0100
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100308 Thunderbird/3.0.3
+	id S1753720Ab0CSRLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 13:11:13 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:38684 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753660Ab0CSRLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 13:11:10 -0400
+Date: Fri, 19 Mar 2010 10:11:05 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, mingo@elte.hu,
+       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
+Message-ID: <20100319171105.GB2520@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100319013024.GA28456@Krystal>
+ <4BA2FA01.30102@cn.fujitsu.com>
+ <alpine.DEB.2.00.1003190730440.9184@router.home>
+ <20100319144434.GA2520@linux.vnet.ibm.com>
+ <20100319165637.GA28123@Krystal>
 MIME-Version: 1.0
-To: Lars Lindley <lindley@coyote.org>
-CC: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: mlmetxrx.c Coding style fixes.
-References: <1269018531-18891-1-git-send-email-lindley@coyote.org>
-In-Reply-To: <1269018531-18891-1-git-send-email-lindley@coyote.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100319165637.GA28123@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It builds fine and generated .o file is identical to the one from a clean tree.
-
-/Lars
-
-On 2010-03-19 18:08, Lars Lindley wrote:
-> I fixed all coding style issues found by checkpatch.pl
-> and converted argument names away from CamelCase and
-> hungarian notation.
+On Fri, Mar 19, 2010 at 12:56:38PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Fri, Mar 19, 2010 at 07:34:07AM -0500, Christoph Lameter wrote:
+> > > On Fri, 19 Mar 2010, Lai Jiangshan wrote:
+> > > 
+> > > > but SLUB opposed me, so I did not post it.
+> > > >
+> > > > @ slub.c
+> > > > static void free_slab(struct kmem_cache *s, struct page *page)
+> > > > {
+> > > > 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+> > > > 		/*
+> > > > 		 * RCU free overloads the RCU head over the LRU
+> > > > 		 */
+> > > > 		struct rcu_head *head = (void *)&page->lru;
+> > > >
+> > > > 		call_rcu(head, rcu_free_slab);
+> > > > 	} else
+> > > > 		__free_slab(s, page);
+> > > > }
+> > > >
+> > > > I think it is not your patch's fault, but the above code has
+> > > > already existed.
+> > > >
+> > > > In your patch, struct rcu_head::debug will share the same memory of
+> > > > the other field of struct page, (especially share the struct page::flags
+> > > > which I encountered)
+> > > 
+> > > Right. I like the smallness of the RCU structure but if you must
+> > > increase its size then we could:
+> > > 
+> > > A) put the rcu structure at the end of each page like SLOB
+> > >    but that will take away memory that could be used by objects.
+> > > 
+> > > B) Move the rcu object up by a word so that it overloads the index field
+> > >    in the page struct. That would give another exact fit but will cause
+> > >    trouble again if you bloat the structure some more.
+> > 
+> > The size increase is strictly under a debug option -- the non-debug
+> > size remains the same as always.  And I expect that in the longer term,
+> > we will be able to shrink the size back down even with this debug option
+> > available.
+> > 
+> > One question: do any of the other allocators care about the size of the
+> > struct rcu_head?  If not, a temporary work-around would be to simply
+> > prohibit use of this debug option when running with SLUB.
+> > 
+> > 							Thanx, Paul
 > 
-> Signed-off-by: Lars Lindley <lindley@coyote.org>
-> ---
->  drivers/staging/winbond/mlmetxrx.c |   79 +++++++++++++++++-------------------
->  1 files changed, 37 insertions(+), 42 deletions(-)
-> 
-> diff --git a/drivers/staging/winbond/mlmetxrx.c b/drivers/staging/winbond/mlmetxrx.c
-> index f856b94..76b79f0 100644
-> --- a/drivers/staging/winbond/mlmetxrx.c
-> +++ b/drivers/staging/winbond/mlmetxrx.c
-> @@ -1,28 +1,25 @@
-> -//============================================================================
-> -//  Module Name:
-> -//    MLMETxRx.C
-> -//
-> -//  Description:
-> -//    The interface between MDS (MAC Data Service) and MLME.
-> -//
-> -//  Revision History:
-> -//  --------------------------------------------------------------------------
-> -//          200209      UN20 Jennifer Xu
-> -//                      Initial Release
-> -//          20021108    PD43 Austin Liu
-> -//          20030117    PD43 Austin Liu
-> -//                      Deleted MLMEReturnPacket and MLMEProcThread()
-> -//
-> -//  Copyright (c) 1996-2002 Winbond Electronics Corp. All Rights Reserved.
-> -//============================================================================
-> +/*
-> + * ============================================================================
-> + * Module Name:
-> + *    MLMETxRx.C
-> + *
-> + *  Description:
-> + *    The interface between MDS (MAC Data Service) and MLME.
-> + *
-> + *  Copyright (c) 1996-2002 Winbond Electronics Corp. All Rights Reserved.
-> + * ============================================================================
-> + */
->  #include "sysdef.h"
->  
->  #include "mds_f.h"
->  
-> -//=============================================================================
-> -u8 MLMESendFrame(struct wbsoft_priv * adapter, u8 *pMMPDU, u16 len, u8 DataType)
-> -/*	DataType : FRAME_TYPE_802_11_MANAGEMENT, FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE,
-> -				FRAME_TYPE_802_11_DATA */
-> +/*
-> + * ============================================================================
-> + * DataType:	FRAME_TYPE_802_11_MANAGEMENT,
-> + *		FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE,
-> + *		FRAME_TYPE_802_11_DATA
-> + */
-> +u8 MLMESendFrame(struct wbsoft_priv *adapter, u8 *mmpdu, u16 len, u8 datatype)
->  {
->  	if (adapter->sMlmeFrame.IsInUsed != PACKET_FREE_TO_USE) {
->  		adapter->sMlmeFrame.wNumTxMMPDUDiscarded++;
-> @@ -30,17 +27,19 @@ u8 MLMESendFrame(struct wbsoft_priv * adapter, u8 *pMMPDU, u16 len, u8 DataType)
->  	}
->  	adapter->sMlmeFrame.IsInUsed = PACKET_COME_FROM_MLME;
->  
-> -	// Keep information for sending
-> -	adapter->sMlmeFrame.pMMPDU = pMMPDU;
-> -	adapter->sMlmeFrame.DataType = DataType;
-> -	// len must be the last setting due to QUERY_SIZE_SECOND of Mds
-> +	/* Keep information for sending */
-> +	adapter->sMlmeFrame.pMMPDU = mmpdu;
-> +	adapter->sMlmeFrame.DataType = datatype;
-> +	/* len must be the last setting due to QUERY_SIZE_SECOND of Mds */
->  	adapter->sMlmeFrame.len = len;
->  	adapter->sMlmeFrame.wNumTxMMPDU++;
->  
-> -	// H/W will enter power save by set the register. S/W don't send null frame
-> -	//with PWRMgt bit enbled to enter power save now.
-> +	/*
-> +	 * H/W will enter power save by set the register. S/W don't send null
-> +	 * frame with PWRMgt bit enbled to enter power save now.
-> +	 */
->  
-> -	// Transmit NDIS packet
-> +	/* Transmit NDIS packet */
->  	Mds_Tx(adapter);
->  	return true;
->  }
-> @@ -56,38 +55,34 @@ void MLME_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *des
->  	desc->Type = adapter->sMlmeFrame.DataType;
->  }
->  
-> -static void MLMEfreeMMPDUBuffer(struct wbsoft_priv *adapter, s8 *pData)
-> +static void MLMEfreeMMPDUBuffer(struct wbsoft_priv *adapter, s8 *data)
->  {
->  	int i;
->  
-> -	// Reclaim the data buffer
-> +	/* Reclaim the data buffer */
->  	for (i = 0; i < MAX_NUM_TX_MMPDU; i++) {
-> -		if (pData == (s8 *)&(adapter->sMlmeFrame.TxMMPDU[i]))
-> +		if (data == (s8 *)&(adapter->sMlmeFrame.TxMMPDU[i]))
->  			break;
->  	}
->  	if (adapter->sMlmeFrame.TxMMPDUInUse[i])
->  		adapter->sMlmeFrame.TxMMPDUInUse[i] = false;
-> -	else  {
-> -		// Something wrong
-> -		// PD43 Add debug code here???
-> +	else {
-> +		/* Something wrong */
-> +		/* PD43 Add debug code here??? */
->  	}
->  }
->  
-> -void
-> -MLME_SendComplete(struct wbsoft_priv * adapter, u8 PacketID, unsigned char SendOK)
-> +void MLME_SendComplete(struct wbsoft_priv *adapter, u8 packetid, unsigned char sendok)
->  {
->  	MLME_TXCALLBACK	TxCallback;
->  
-> -    // Reclaim the data buffer
-> +	/* Reclaim the data buffer */
->  	adapter->sMlmeFrame.len = 0;
-> -	MLMEfreeMMPDUBuffer( adapter, adapter->sMlmeFrame.pMMPDU );
-> -
-> +	MLMEfreeMMPDUBuffer(adapter, adapter->sMlmeFrame.pMMPDU);
->  
->  	TxCallback.bResult = MLME_SUCCESS;
->  
-> -	// Return resource
-> +	/* Return resource */
->  	adapter->sMlmeFrame.IsInUsed = PACKET_FREE_TO_USE;
->  }
->  
-> -
-> -
+> Don't worry about the struct rcu_head size too much. I'm currently working on a
+> debugobjects implementation. I should have something by the end of the day.
+
+Even better!!!  Thank you, Mathieu!!!
+
+							Thanx, Paul
