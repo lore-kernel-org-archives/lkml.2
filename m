@@ -1,82 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0CSIB2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 04:01:28 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:53623 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751868Ab0CSIB1 (ORCPT
+	id S1752581Ab0CSIQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 04:16:57 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42470 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752465Ab0CSIQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 04:01:27 -0400
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
- Intel x86 CPUs)
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, Dave Jones <davej@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-In-Reply-To: <201003182143.22929.trenn@suse.de>
-References: <1268399863.3407.15.camel@localhost>
-	 <201003171736.00550.trenn@suse.de> <4BA10642.8070208@linux.intel.com>
-	 <201003182143.22929.trenn@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Mar 2010 09:01:19 +0100
-Message-ID: <1268985679.3395.47.camel@localhost>
+	Fri, 19 Mar 2010 04:16:54 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 19 Mar 2010 17:13:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, akpm@linux-foundation.org, andi.kleen@intel.com,
+       fengguang.wu@intel.com
+Subject: Re: [PATCH 2/2] [BUGFIX] pagemap: fix pfn calculation for hugepage
+Message-Id: <20100319171310.7d82f8eb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100319162732.58633847.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1268979996-12297-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100319162732.58633847.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 18.03.2010, 21:43 +0100 schrieb Thomas Renninger:
-> On Wednesday 17 March 2010 05:41:38 pm Arjan van de Ven wrote:
-> > On 3/17/2010 9:36, Thomas Renninger wrote:
-> > > On Tuesday 16 March 2010 17:40:18 Arjan van de Ven wrote:
-> > >> On 3/16/2010 7:50, Thomas Renninger wrote:
-> > >>> Still, as this is totally broken:
-> > >>>      - by design ->   only one of a dozen cpufreq drivers is supported
-> > >>
-> > >> the one I care about is supported.
-> > >
-> > > And that's the problem, before it's not removed, you do not care to
-> > > provide/suggest a proper solution that could fit others as well.
-> >
-> > why don't you provide the others then?
-> Is it possible somehow to provide a kind of wrapper/backup function:
-> trace_power_frequency_cpu(POWER_PSTATE, frequency, cpu);
-As I understood the tracing correctly this would imply the usage of
-smp_call_function_single which should be aoided.
-> or another trace interface with eventually some more overhead?
-> Then it should be easy to support all drivers.
-> Otherwise you'll for example miss the pcc driver which supports
-> latest/upcoming Intel CPUs and which does IO based switching which needs not
-> to run on the cpu that gets switched.
+On Fri, 19 Mar 2010 16:27:32 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Fri, 19 Mar 2010 16:10:23 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
->      Thomas
-This wrapper would make things easier of course, since one might add the
-same line for every driver. Or even call it from
-cpufreq_notify_transition (POSTCHANGE) which would add this event for
-other architectures then x86 (which I would approve).
-But - and here's the problem - the tracing infrastructure should provide
-as less overhead as possible. It should be called directly after writing
-the new frequency for the specific cpu and by this optimally in a
-funtion wich is already executed on the cpu.
+> > On Fri, 19 Mar 2010 15:26:36 +0900
+> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> > 
+> > > When we look into pagemap using page-types with option -p, the value
+> > > of pfn for hugepages looks wrong (see below.)
+> > > This is because pte was evaluated only once for one vma
+> > > although it should be updated for each hugepage. This patch fixes it.
+> > > 
+> > > $ page-types -p 3277 -Nl -b huge
+> > > voffset   offset  len     flags
+> > > 7f21e8a00 11e400  1       ___U___________H_G________________
+> > > 7f21e8a01 11e401  1ff     ________________TG________________
+> > > 7f21e8c00 11e400  1       ___U___________H_G________________
+> > > 7f21e8c01 11e401  1ff     ________________TG________________
+> > >              ^^^
+> > >              should not be the same
+> > > 
+> > > With this patch applied:
+> > > 
+> > > $ page-types -p 3386 -Nl -b huge
+> > > voffset   offset   len    flags
+> > > 7fec7a600 112c00   1      ___UD__________H_G________________
+> > > 7fec7a601 112c01   1ff    ________________TG________________
+> > > 7fec7a800 113200   1      ___UD__________H_G________________
+> > > 7fec7a801 113201   1ff    ________________TG________________
+> > >              ^^^
+> > >              OK
+> > > 
+> > Hmm. Is this bug ? To me, it's just shown in hugepage's pagesize, by design.
+> > 
+> I'm sorry it seems this is bugfix.
+> 
+> But, this means hugeltb_entry() is not called per hugetlb entry...isn't it ?
+> 
+> Why hugetlb_entry() cannot be called per hugeltb entry ? Don't we need a code
+> for a case as pmd_size != hugetlb_size in walk_page_range() for generic fix ?
+> 
 
-Otherwise the following might happen (4 cpu system):
-cpu 3 wants to change freq of cpu 0:
-...
-switch to cpu 0 (some overhead)
-write new frequency
-switch back (some overhead)
-switch to cpu 0 (some overhead)
-write trace
-switch back (some overhead)
-...
-It's easy to see, that writing of the frequency and writing the trace
-should be called directly one after another. It increases the accuracy
-of the trace and decreases the overhead.
+How about this style ? This is an idea-level patch. not tested at all.
+(I have no test enviroment for multiple hugepage size.)
 
-Robert
+feel free to reuse fragments from this patch.
+==
+
+Not-tested-at-all!!
+
+Now, walk_page_range() support page-table-walk on hugetlb.
+But, it assumes that hugepage-size == pmd_size and hugetlb callback
+is called per pmd not per pte of hugepage.
+
+In some arch (ia64), hugepage-size is not pmd size (by config.)
+
+This patch modifies hugetlb callback is called per hugetlb-ptes.
+
+---
+ mm/pagewalk.c |   81 +++++++++++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 67 insertions(+), 14 deletions(-)
+
+Index: mmotm-2.6.34-Mar11/mm/pagewalk.c
+===================================================================
+--- mmotm-2.6.34-Mar11.orig/mm/pagewalk.c
++++ mmotm-2.6.34-Mar11/mm/pagewalk.c
+@@ -79,7 +79,65 @@ static int walk_pud_range(pgd_t *pgd, un
+ 
+ 	return err;
+ }
++#ifdef CONFIG_HUGELB_PAGE
++static unsigned long
++__hugepage_next_offset(struct vm_area_struct *vma,
++		unsigned long addr, unsigned long end)
++{
++	struct hstate *hs = hstate_vma(vma);
++	unsigned long size = huge_page_size(hs);
++	unsigned long base = addr & huge_page_mask(hs);
++	unsigned long limit;
++	/* Hugepage is very tighty coupled with vma. */
++	if (end > vma->end)
++		limit = vma->end;
++	else
++		limit = end;
++
++	if (base + size < limit)
++		return base + size;
++	return limit;
++}
+ 
++static int walk_hugepage_range(struct mm_struct *mm, struct vm_area_struct *vma,
++		unsigned long addr, unsigned long end)
++{
++	pte_t *pte;
++	struct hstate *hs = hstate_vma(vma);
++	unsigned long size = huge_page_size(hs);
++	
++	/*
++	 * [addr...end) is guaranteeed to be under a vma
++	 *  (see __hugepage_next_offset())
++	 */
++
++	hs = hstate_vma(vma);
++	do {
++		pte = huge_pte_offset(walk->mm, addr & huge_page_mask(hs));
++		next = (addr & huge_page_mask(hs)) + size;
++		if (next > end)
++			next = end;
++		if (pte && !huge_pte_none(huge_ptep_get(pte))
++			&& walk->hugetlb_entry)
++			err = walk->hugetlb_entry(pte, addr, next, walk);
++	} while (addr = next, addr != end);
++
++	return err;
++}
++#else
++static unsigned long
++__hugepage_next_offset(struct vm_area_struct *vma,
++		unsigned long addr, unsigned long end)
++{
++	BUG();
++	return 0;
++}
++static int walk_hugepage_range(struct mm_struct *mm,
++	struct vm_area_struct *vma, unsigned long addr, unsigned long end)
++{
++	return 0;
++}
++#endif
+ /**
+  * walk_page_range - walk a memory map's page tables with a callback
+  * @mm: memory map to walk
+@@ -126,25 +184,20 @@ int walk_page_range(unsigned long addr, 
+ 		 * we can't handled it in the same manner as non-huge pages.
+ 		 */
+ 		vma = find_vma(walk->mm, addr);
+-#ifdef CONFIG_HUGETLB_PAGE
+-		if (vma && is_vm_hugetlb_page(vma)) {
+-			pte_t *pte;
+-			struct hstate *hs;
+ 
+-			if (vma->vm_end < next)
+-				next = vma->vm_end;
+-			hs = hstate_vma(vma);
+-			pte = huge_pte_offset(walk->mm,
+-					      addr & huge_page_mask(hs));
+-			if (pte && !huge_pte_none(huge_ptep_get(pte))
+-			    && walk->hugetlb_entry)
+-				err = walk->hugetlb_entry(pte, addr,
+-							  next, walk);
++		if (vma && is_vm_hugetlb_page(vma)) {
++			/*
++			 * In many archs, hugepage-size fits pmd size. But in
++			 * some arch, we cannot assume that.
++			 */
++			next = __hugepage_next_offset(vma, addr, end);
++			err = walk_hugepage_range(walk->mm, vma, addr, next);
+ 			if (err)
+ 				break;
++			/* We don't know next's pgd == pgd+1 */
++			pgd = pgd_offset(walk->mm, next);
+ 			continue;
+ 		}
+-#endif
+ 		if (pgd_none_or_clear_bad(pgd)) {
+ 			if (walk->pte_hole)
+ 				err = walk->pte_hole(addr, next, walk);
+
+
+
 
