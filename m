@@ -1,120 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0CSPhA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:37:00 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:47375 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab0CSPg5 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 19 Mar 2010 11:36:57 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-       iommu@lists.linux-foundation.org, albert_herranz@yahoo.es
-Cc: chrisw@sous-sol.org, jeremy@goop.org, Ian.Campbell@eu.citrix.com,
-       dwmw2@infradead.org, alex.williamson@hp.com,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 5/5] swiotlb: EXPORT_SYMBOL_GPL functions + variables that are defined in the header file.
-Date: Fri, 19 Mar 2010 11:04:22 -0400
-Message-Id: <1269011062-25915-6-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1269011062-25915-5-git-send-email-konrad.wilk@oracle.com>
-References: <1269011062-25915-1-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-2-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-3-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-4-git-send-email-konrad.wilk@oracle.com>
- <1269011062-25915-5-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BA39998.0069:SCFMA4539814,ss=1,fgs=0
+	id S1753338Ab0CSPhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:37:11 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:56517 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab0CSPhI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:37:08 -0400
+X-Auth-Info: JaP5cwFqA8RwviryO58clNBZSF2t/L50Rsr9MYAIxUk=
+Message-ID: <4BA399C1.4040904@grandegger.com>
+Date: Fri, 19 Mar 2010 16:35:29 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+MIME-Version: 1.0
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+       netdev@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus Carrier
+ Board
+References: <> <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu> <4BA34026.8010806@grandegger.com> <20100319151326.GA13672@ovro.caltech.edu>
+In-Reply-To: <20100319151326.GA13672@ovro.caltech.edu>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the functions and variables that are now declared in the swiotlb.h
-header file visible by the linker.
+Ira W. Snyder wrote:
+> On Fri, Mar 19, 2010 at 10:13:10AM +0100, Wolfgang Grandegger wrote:
+>> Ira W. Snyder wrote:
+>>> The Janz CMOD-IO PCI MODULbus carrier board is a PCI to MODULbus bridge,
+>>> which may host many different types of MODULbus daughterboards, including
+>>> CAN and GPIO controllers.
+>>>
+>>> Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
+>>> Cc: Samuel Ortiz <sameo@linux.intel.com>
+>> You can add my "Reviewed-by: Wolfgang Grandegger <wg@grandegger.com>".
+>>
+>> Just one concern:
+>>
+>>> ---
+>>>  drivers/mfd/Kconfig       |    8 +
+>>>  drivers/mfd/Makefile      |    1 +
+>>>  drivers/mfd/janz-cmodio.c |  339 +++++++++++++++++++++++++++++++++++++++++++++
+>>>  include/linux/mfd/janz.h  |   54 +++++++
+>>>  4 files changed, 402 insertions(+), 0 deletions(-)
+>>>  create mode 100644 drivers/mfd/janz-cmodio.c
+>>>  create mode 100644 include/linux/mfd/janz.h
+>>>
+>>> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+>>> index 8782978..f1858d7 100644
+>>> --- a/drivers/mfd/Kconfig
+>>> +++ b/drivers/mfd/Kconfig
+>>> @@ -27,6 +27,14 @@ config MFD_SM501_GPIO
+>>>  	 lines on the SM501. The platform data is used to supply the
+>>>  	 base number for the first GPIO line to register.
+>>>  
+>>> +config MFD_JANZ_CMODIO
+>>> +	tristate "Support for Janz CMOD-IO PCI MODULbus Carrier Board"
+>>> +	---help---
+>>> +	  This is the core driver for the Janz CMOD-IO PCI MODULbus
+>>> +	  carrier board. This device is a PCI to MODULbus bridge which may
+>>> +	  host many different types of MODULbus daughterboards, including
+>>> +	  CAN and GPIO controllers.
+>>> +
+>>>  config MFD_ASIC3
+>>>  	bool "Support for Compaq ASIC3"
+>>>  	depends on GENERIC_HARDIRQS && GPIOLIB && ARM
+>>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>>> index e09eb48..e8fa905 100644
+>>> --- a/drivers/mfd/Makefile
+>>> +++ b/drivers/mfd/Makefile
+>>> @@ -3,6 +3,7 @@
+>>>  #
+>>>  
+>>>  obj-$(CONFIG_MFD_SM501)		+= sm501.o
+>>> +obj-$(CONFIG_MFD_JANZ_CMODIO)	+= janz-cmodio.o
+>>>  obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+>>>  obj-$(CONFIG_MFD_SH_MOBILE_SDHI)		+= sh_mobile_sdhi.o
+>>>  
+>>> diff --git a/drivers/mfd/janz-cmodio.c b/drivers/mfd/janz-cmodio.c
+>>> new file mode 100644
+>>> index 0000000..914280e
+>>> --- /dev/null
+>>> +++ b/drivers/mfd/janz-cmodio.c
+>>> @@ -0,0 +1,339 @@
+>>> +/*
+>>> + * Janz CMOD-IO MODULbus Carrier Board PCI Driver
+>>> + *
+>>> + * Copyright (c) 2010 Ira W. Snyder <iws@ovro.caltech.edu>
+>>> + *
+>>> + * Lots of inspiration and code was copied from drivers/mfd/sm501.c
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify it
+>>> + * under the terms of the GNU General Public License as published by the
+>>> + * Free Software Foundation; either version 2 of the License, or (at your
+>>> + * option) any later version.
+>>> + */
+>>> +
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/init.h>
+>>> +#include <linux/pci.h>
+>>> +#include <linux/interrupt.h>
+>>> +#include <linux/delay.h>
+>>> +#include <linux/platform_device.h>
+>>> +
+>>> +#include <linux/mfd/janz.h>
+>>> +
+>>> +#define DRV_NAME "janz-cmodio"
+>>> +
+>>> +/* Size of each MODULbus module in PCI BAR4 */
+>>> +#define CMODIO_MODULBUS_SIZE	0x200
+>>> +
+>>> +/* Maximum number of MODULbus modules on a CMOD-IO carrier board */
+>>> +#define CMODIO_MAX_MODULES	4
+>>> +
+>>> +/* Module Parameters */
+>>> +static unsigned int num_modules = CMODIO_MAX_MODULES;
+>>> +static unsigned char *modules[CMODIO_MAX_MODULES] = {
+>>> +	"janz-ican3",
+>>> +	"janz-ican3",
+>>> +	"",
+>>> +	"janz-ttl",
+>>> +};
+>> This is probably not a good default but just your private configuration.
+>>
+> 
+> Yep, that's the configuration I have. Do you have any suggestions for a
+> better default? I could make them all blank strings, which means "no
+> daughtercard in this slot". That is my only idea for a different
+> default.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- lib/swiotlb.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+That's probably better. And if no boards are defined via module
+parameter, return with an error and print an error message telling the
+user what to do. Also maybe s/""/"empty"/ and a better the
+MODULE_DESCRIPTION could be useful.
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index b3eef1c..c6bfa5d 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -57,19 +57,24 @@ int swiotlb_force;
-  * API.
-  */
- char *swiotlb_bk_start, *swiotlb_bk_end;
-+EXPORT_SYMBOL_GPL(swiotlb_bk_start);
-+EXPORT_SYMBOL_GPL(swiotlb_bk_end);
- 
- /*
-  * The number of IO TLB blocks (in groups of 64) betweeen swiotlb_bk_start and
-  * swiotlb_bk_end.  This is command line adjustable via setup_io_tlb_npages.
-  */
- unsigned long swiotlb_bk_nslabs;
-+EXPORT_SYMBOL_GPL(swiotlb_bk_nslabs);
- 
- /*
-  * When the IOMMU overflows we return a fallback buffer. This sets the size.
-  */
- unsigned long swiotlb_bk_overflow = 32*1024;
-+EXPORT_SYMBOL_GPL(swiotlb_bk_overflow);
- 
- void *swiotlb_bk_overflow_buffer;
-+EXPORT_SYMBOL_GPL(swiotlb_bk_overflow_buffer);
- 
- /*
-  * This is a free list describing the number of free entries available from
-@@ -312,6 +317,7 @@ int is_swiotlb_buffer(phys_addr_t paddr)
- 	return paddr >= virt_to_phys(swiotlb_bk_start) &&
- 		paddr < virt_to_phys(swiotlb_bk_end);
- }
-+EXPORT_SYMBOL_GPL(is_swiotlb_buffer);
- 
- /*
-  * Bounce: copy the swiotlb buffer back to the original dma location
-@@ -353,6 +359,7 @@ void swiotlb_bounce(phys_addr_t phys, char *dma_addr, size_t size,
- 			memcpy(phys_to_virt(phys), dma_addr, size);
- 	}
- }
-+EXPORT_SYMBOL_GPL(swiotlb_bounce);
- 
- /*
-  * Allocates bounce buffer and returns its kernel virtual address.
-@@ -459,6 +466,7 @@ found:
- 
- 	return dma_addr;
- }
-+EXPORT_SYMBOL_GPL(swiotlb_bk_map_single);
- 
- /*
-  * dma_addr is the kernel virtual address of the bounce buffer to unmap.
-@@ -504,6 +512,7 @@ swiotlb_bk_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
- 	}
- 	spin_unlock_irqrestore(&swiotlb_bk_lock, flags);
- }
-+EXPORT_SYMBOL_GPL(swiotlb_bk_unmap_single);
- 
- void
- swiotlb_bk_sync_single(struct device *hwdev, char *dma_addr, size_t size,
-@@ -531,6 +540,7 @@ swiotlb_bk_sync_single(struct device *hwdev, char *dma_addr, size_t size,
- 		BUG();
- 	}
- }
-+EXPORT_SYMBOL_GPL(swiotlb_bk_sync_single);
- 
- void *
- swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-@@ -622,6 +632,7 @@ swiotlb_full(struct device *dev, size_t size, int dir, int do_panic)
- 	if (dir == DMA_TO_DEVICE)
- 		panic("DMA: Random memory could be DMA read\n");
- }
-+EXPORT_SYMBOL_GPL(swiotlb_full);
- 
- /*
-  * Map a single buffer of the indicated size for DMA in streaming mode.  The
--- 
-1.6.2.5
+Wolfgang.
 
