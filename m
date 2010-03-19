@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab0CSDEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 23:04:37 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41585 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab0CSDEg (ORCPT
+	id S1752220Ab0CSDGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 23:06:11 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:39636 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751458Ab0CSDGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 23:04:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 19 Mar 2010 12:00:49 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: balbir@linux.vnet.ibm.com
-Cc: Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-Id: <20100319120049.3dbf8440.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100319024039.GH18054@balbir.in.ibm.com>
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
-	<1268609202-15581-2-git-send-email-arighi@develer.com>
-	<20100317115855.GS18054@balbir.in.ibm.com>
-	<20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318041944.GA18054@balbir.in.ibm.com>
-	<20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100318162855.GG18054@balbir.in.ibm.com>
-	<20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100319024039.GH18054@balbir.in.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Mar 2010 23:06:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fBQKnbovtngua5fVVUMvDlWAZ9MorkQXr00T4AnlvG1A4uuryuxEjvz94TwnFWOU3L
+         R7/jYnyslxxAGQTYDSHDBiWkFUscPc82qbH4g4O0wlNA0/tPpn0D5vBxAVmvhs9LBAQ/
+         iP0J6qG/eHFxbLjGJcBKU98VAMr6ikghjMBeo=
+Date: Fri, 19 Mar 2010 04:06:13 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+	lock
+Message-ID: <20100319030611.GE22095@nowhere>
+References: <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere> <20100319010857.GC23020@Krystal> <20100319012337.GA22095@nowhere> <20100319013658.GB28456@Krystal> <20100319022659.GC22095@nowhere> <20100319024042.GB28941@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100319024042.GB28941@Krystal>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Mar 2010 08:10:39 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-
-> * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
+On Thu, Mar 18, 2010 at 10:40:42PM -0400, Mathieu Desnoyers wrote:
+> Well, the use-case that drove the asm goto implementation _is_ the tracepoints.
+> ;)
 > 
-> > On Thu, 18 Mar 2010 21:58:55 +0530
-> > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
 > > 
-> > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
+> > But, looking at __DO_TRACE:
 > > 
-> > > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
-> > > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
-> > > > fault. But please write "why add new function" to patch description.
-> > > > 
-> > > > I'm sorry for wasting your time.
-> > > 
-> > > Do we need to go down this route? We could check the stat and do the
-> > > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
-> > > and for others potentially look at trylock. It is OK for different
-> > > stats to be protected via different locks.
-> > > 
+> > 	if (it_func) {						\
+> > 		do {						\
+> > 			((void(*)(proto))(*it_func))(args);	\
+> > 		} while (*(++it_func));				\
+> > 	}
 > > 
-> > I _don't_ want to see a mixture of spinlock and trylock in a function.
-> >
+> > I would expect the compiler not to load the parameters in the stack
+> > before first checking the branch.
 > 
-> A well documented well written function can help. The other thing is to
-> of-course solve this correctly by introducing different locking around
-> the statistics. Are you suggesting the later?
+> Note that you have to put that in its full context. It's a macro expanded within
+> a static inline function. The initial parameters are passed to the static
+> inline, not directly as "args" here. So parameters with side-effects have to be
+> evaluated before their result can be passed to the static inline function, so in
+> that sense their evaluation cannot be moved into the conditional branch.
+
+
+Evaluation yeah, I agree. A function passed as an argument is
+going to be evaluated indeed, or whatever thing that has a side effect.
+But there is nothing here that need to setup the parameters to the stack
+right before the true tracepoint call, not until we passed the branch check
+once.
+
+ 
+> > So, the fact that parameters are not loaded before we know we'll call
+> > the tracepoint is something we already have or is it something that the jump
+> > label brings in the package somehow?
 > 
+> It's standard compiler optimization behavior.
 
-No. As I wrote.
-	- don't modify codes around FILE_MAPPED in this series.
-	- add a new functions for new statistics
-Then,
-	- think about clean up later, after we confirm all things work as expected.
 
-Thanks,
--Kame
+Sure. My doubt is: currently with the upstream version, does the
+compiler tend to load the parameters to the stack before the branch is
+checked? Or is this a magic that jmp labels bring for whatever reason?
 
+Thanks.
 
