@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753408Ab0CSQPi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 12:15:38 -0400
-Received: from mail-yx0-f182.google.com ([209.85.210.182]:43906 "EHLO
-	mail-yx0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab0CSQPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 12:15:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <1269011916-8836-3-git-send-email-gregkh@suse.de>
-References: <20100319151326.GC8541@kroah.com> <1269011916-8836-3-git-send-email-gregkh@suse.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 19 Mar 2010 10:15:16 -0600
-X-Google-Sender-Auth: 90166d3f8fdc2cdc
-Message-ID: <fa686aa41003190915n5ec4901eya3eaf11f0b8ea63d@mail.gmail.com>
-Subject: Re: [PATCH 3/7] uartlite: Fix build on sparc.
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753424Ab0CSQRN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 12:17:13 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:46564 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab0CSQRL convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Fri, 19 Mar 2010 12:17:11 -0400
+Message-Id: <4BA3B1980200007800035F13@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 19 Mar 2010 16:17:12 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Rusty Russell" <rusty@rustcorp.com.au>, <travis@sgi.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix the output from /sys/devices/system/cpu/offline
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 9:18 AM, Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> From: David Miller <davem@davemloft.net>
->
-> We can get this driver enabled via MFD_TIMBERDALE which only
-> requires GPIO to be on.
->
-> But the of_address_to_resource() function is only present on
-> powerpc and microblaze, so we have to conditionalize the
-> CONFIG_OF probing bits on that.
->
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Without CONFIG_CPUMASK_OFFSTACK, simply inverting cpu_online_mask leads
+to CPUs beyond nr_cpu_ids to be displayed twice and CPUs not even
+possible to be displayed as offline.
 
-Hi Greg,
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-In the end I ended up merging this one through my tree.  I picked it
-up when I needed it for my own testing and so it was in my last merge
-request for Linus.
+---
+ drivers/base/cpu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-g.
+--- linux-2.6.34-rc1/drivers/base/cpu.c
++++ 2.6.34-rc1-cpus-offline-display/drivers/base/cpu.c
+@@ -185,7 +185,7 @@ static ssize_t print_cpus_offline(struct
+ 	/* display offline cpus < nr_cpu_ids */
+ 	if (!alloc_cpumask_var(&offline, GFP_KERNEL))
+ 		return -ENOMEM;
+-	cpumask_complement(offline, cpu_online_mask);
++	cpumask_andnot(offline, cpu_possible_mask, cpu_online_mask);
+ 	n = cpulist_scnprintf(buf, len, offline);
+ 	free_cpumask_var(offline);
+ 
+
+
+
