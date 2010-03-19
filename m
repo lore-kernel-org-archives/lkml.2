@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751832Ab0CSHkJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 03:40:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28778 "EHLO mga03.intel.com"
+	id S1751942Ab0CSHld (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 03:41:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38858 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751527Ab0CSHkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 03:40:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,273,1267430400"; 
-   d="scan'208";a="256482271"
-Subject: Re: [PATCH -v3 0/2] ACPI, APEI, use general HEST tabling parsing
- in AER firmware_first setup
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-In-Reply-To: <1268636261-31554-1-git-send-email-ying.huang@intel.com>
-References: <1268636261-31554-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Mar 2010 15:40:03 +0800
-Message-ID: <1268984403.3596.14.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1751323Ab0CSHlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 03:41:31 -0400
+Date: Fri, 19 Mar 2010 08:41:09 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>,
+       akpm@linux-foundation.org, fweisbec@gmail.com,
+       sparclinux@vger.kernel.org, tj@kernel.org
+Subject: Re: [PATCH v2][GIT PULL][v2.6.34] ring-buffer: Do 8 byte alignment
+ for 64 bit that can not handle 4 byte align
+Message-ID: <20100319074109.GB12576@elte.hu>
+References: <1268966657.758.28.camel@gandalf.stny.rr.com>
+ <20100318.200347.115945905.davem@davemloft.net>
+ <1268968559.758.31.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268968559.758.31.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Len,
 
-What do you think about this patchset?
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Best Regards,
-Huang Ying
+> Rebased to add David's ACK.
+> 
+> Ingo,
+> 
+> Please pull the latest tip/tracing/urgent tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/tracing/urgent
+> 
+> 
+> Steven Rostedt (1):
+>       ring-buffer: Do 8 byte alignment for 64 bit that can not handle 4 byte align
 
-On Mon, 2010-03-15 at 14:57 +0800, Huang, Ying wrote:
-> Changelog:
-> 
-> v3:
-> 
-> - Move pcie_aer_get_firmware_first into aerdrv_acpi.c, and make
->   aer_set_firmware_first static in aerdrv_acpi.c. This makes external
->   interface simple and clear.
-> 
-> v2:
-> 
-> - Setup firmware_first for every PCIE end point instead of just root point.
-> 
-> - Wrap firmware_first accessing in a function, because HEST parsing involved.
+Pulled, thanks a lot Steve!
 
-
+	Ingo
