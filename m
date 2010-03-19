@@ -1,76 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924Ab0CSUl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 16:41:59 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:63504 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab0CSUly (ORCPT
+	id S1751792Ab0CSUn1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:43:27 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:46515 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab0CSUn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 16:41:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=we2gQT6Wj4Ui3IrYmyJlYK9RHnez7oDsz6/e30P8KYS4YNQW4aHNpoCZLSuCJYlKNb
-         d8IxphuohbLF5jgcgpp0IPaCWZgJZQdfWkQk1U67OYpfEVfx/0l1BejRZvTP4DnAScO/
-         wD6J7xWZ8xBTRWqjOGGy+0/foWv0MMm5E9utM=
-From: Sankar P <sankar.curiosity@gmail.com>
-To: gregkh@suse.de, pavel@ucw.cz, penberg@cs.helsinki.fi,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       sankar.curiosity@gmail.com
-Subject: [PATCH 4/6] staging: winbond: Remove typedef for standard types
-Date: Sat, 20 Mar 2010 02:11:02 +0530
-Message-Id: <1269031264-2327-5-git-send-email-sankar.curiosity@gmail.com>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269031264-2327-4-git-send-email-sankar.curiosity@gmail.com>
-References: <1269031264-2327-1-git-send-email-sankar.curiosity@gmail.com>
- <1269031264-2327-2-git-send-email-sankar.curiosity@gmail.com>
- <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
- <1269031264-2327-4-git-send-email-sankar.curiosity@gmail.com>
+	Fri, 19 Mar 2010 16:43:26 -0400
+X-SENDER-IP: [83.226.249.136]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArI1AO5+o0tT4vmIPGdsb2JhbACHXpNeDAEBAQE3Law4jXGEegQ
+X-IronPort-AV: E=Sophos;i="4.51,276,1267398000"; 
+   d="scan'208";a="53472649"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: mto.h Coding style fixes
+Date: Fri, 19 Mar 2010 21:43:25 +0100
+Message-Id: <1269031405-28978-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the typedef named "fixed" used for the standard type s32
+I fixed all problems reported by checkpatch.pl except for a couple of
+long lines. I also removed version comments and removed "commented away"
+code.
 
-Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
+Signed-off-by: Lars Lindley <lindley@coyote.org>
 ---
- drivers/staging/winbond/phy_calibration.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/staging/winbond/mto.h |  179 +++++++++++++++++++----------------------
+ 1 files changed, 82 insertions(+), 97 deletions(-)
 
-diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
-index 8c56962..a8334f9 100644
---- a/drivers/staging/winbond/phy_calibration.c
-+++ b/drivers/staging/winbond/phy_calibration.c
-@@ -25,10 +25,7 @@
- #define FIXED(X)        ((s32)((X) * 32768.0))
- #define DEG2RAD(X)      0.017453 * (X)
+diff --git a/drivers/staging/winbond/mto.h b/drivers/staging/winbond/mto.h
+index fb4781d..a0f659c 100644
+--- a/drivers/staging/winbond/mto.h
++++ b/drivers/staging/winbond/mto.h
+@@ -1,13 +1,10 @@
+-//==================================================================
+-// MTO.H
+-//
+-// Revision history
+-//=================================
+-//          20030110    UN20 Pete Chao
+-//                      Initial Release
+-//
+-// Copyright (c) 2003 Winbond Electronics Corp. All rights reserved.
+-//==================================================================
++/*
++ * ==================================================================
++ * MTO.H
++ *
++ * Copyright (c) 2003 Winbond Electronics Corp. All rights reserved.
++ * ==================================================================
++ */
+ #ifndef __MTO_H__
+ #define __MTO_H__
  
--/****************** LOCAL TYPE DEFINITION SECTION ***************************/
--typedef s32         fixed; /* 16.16 fixed-point */
+@@ -15,115 +12,104 @@
+ 
+ struct wbsoft_priv;
+ 
+-// LA20040210_DTO kevin
+-//#define MTO_PREAMBLE_LONG               0
+-//#define MTO_PREAMBLE_SHORT              1
+ #define MTO_PREAMBLE_LONG               WLAN_PREAMBLE_TYPE_LONG
+ #define MTO_PREAMBLE_SHORT              WLAN_PREAMBLE_TYPE_SHORT
+ 
+-//============================================================================
+-// struct _MTOParameters --
+-//
+-//   Defines the parameters used in the MAC Throughput Optimization algorithm
+-//============================================================================
++/* Defines the parameters used in the MAC Throughput Optimization algorithm */
+ struct wb35_mto_params {
+-	//---------        wkchen added      -------------
+-	u32		TxFlowCount;	//to judge what kind the tx flow(sparse or busy) is
+-	//------------------------------------------------
++	u32	TxFlowCount; /* to judge what kind the tx flow(sparse or busy) is */
+ 
+-	//--------- DTO threshold parameters -------------
+-	u16		DTO_PeriodicCheckCycle;
+-	u16		DTO_RssiThForAntDiv;
++	/* --------- DTO threshold parameters ------------- */
++	u16	DTO_PeriodicCheckCycle;
++	u16	DTO_RssiThForAntDiv;
+ 
+-	u16		DTO_TxCountThForCalcNewRate;
+-	u16		DTO_TxRateIncTh;
++	u16	DTO_TxCountThForCalcNewRate;
++	u16	DTO_TxRateIncTh;
+ 
+-	u16		DTO_TxRateDecTh;
+-	u16		DTO_TxRateEqTh;
++	u16	DTO_TxRateDecTh;
++	u16	DTO_TxRateEqTh;
+ 
+-	u16		DTO_TxRateBackOff;
+-	u16		DTO_TxRetryRateReduce;
++	u16	DTO_TxRateBackOff;
++	u16	DTO_TxRetryRateReduce;
+ 
+-	u16		DTO_TxPowerIndex;	//0 ~ 31
+-	u16		reserved_1;
+-	//------------------------------------------------
++	u16	DTO_TxPowerIndex;		/* 0 ~ 31 */
++	u16	reserved_1;
++	/* ------------------------------------------------ */
+ 
+-	u8      PowerChangeEnable;
+-	u8      AntDiversityEnable;
+-	u8      CCA_Mode;
+-	u8      CCA_Mode_Setup;
+-	u8      Preamble_Type;
+-	u8      PreambleChangeEnable;
++	u8	PowerChangeEnable;
++	u8	AntDiversityEnable;
++	u8	CCA_Mode;
++	u8	CCA_Mode_Setup;
++	u8	Preamble_Type;
++	u8	PreambleChangeEnable;
+ 
+-	u8      DataRateLevel;
+-	u8      DataRateChangeEnable;
+-	u8      FragThresholdLevel;
+-	u8      FragThresholdChangeEnable;
++	u8	DataRateLevel;
++	u8	DataRateChangeEnable;
++	u8	FragThresholdLevel;
++	u8	FragThresholdChangeEnable;
+ 
+-	u16     RTSThreshold;
+-	u16     RTSThreshold_Setup;
++	u16	RTSThreshold;
++	u16	RTSThreshold_Setup;
+ 
+-	u32     AvgIdleSlot;
+-	u32     Pr_Interf;
+-	u32     AvgGapBtwnInterf;
++	u32	AvgIdleSlot;
++	u32	Pr_Interf;
++	u32	AvgGapBtwnInterf;
+ 
+-	u8	   RTSChangeEnable;
+-	u8      Ant_sel;
+-	u8      aging_timeout;
+-	u8	   reserved_2;
++	u8	RTSChangeEnable;
++	u8	Ant_sel;
++	u8	aging_timeout;
++	u8	reserved_2;
+ 
+-	u32     Cnt_Ant[2];
+-	u32     SQ_Ant[2];
++	u32	Cnt_Ant[2];
++	u32	SQ_Ant[2];
+ 
+-// 20040510 remove from globe vairable
+-	u8		FallbackRateLevel;
+-	u8		OfdmRateLevel;
++	u8	FallbackRateLevel;
++	u8	OfdmRateLevel;
+ 
+-	u8		RatePolicy;
+-	u8		reserved_3[3];
 -
--static const fixed Angles[]=
-+static const s32 Angles[] =
- {
-     FIXED(DEG2RAD(45.0)),    FIXED(DEG2RAD(26.565)),  FIXED(DEG2RAD(14.0362)),
-     FIXED(DEG2RAD(7.12502)), FIXED(DEG2RAD(3.57633)), FIXED(DEG2RAD(1.78991)),
-@@ -300,7 +297,7 @@ u32 _sqrt(u32 sqsum)
- /****************************************************************************/
- void _sin_cos(s32 angle, s32 *sin, s32 *cos)
- {
--    fixed       X, Y, TargetAngle, CurrAngle;
-+    s32 X, Y, TargetAngle, CurrAngle;
-     unsigned    Step;
+-	// For RSSI turning
+-	s32		RSSI_high;
+-	s32		RSSI_low;
++	u8	RatePolicy;
++	u8	reserved_3[3];
  
-     X=FIXED(AG_CONST);      // AG_CONST * cos(0)
-@@ -310,7 +307,7 @@ void _sin_cos(s32 angle, s32 *sin, s32 *cos)
++	/* For RSSI turning */
++	s32	RSSI_high;
++	s32	RSSI_low;
+ };
  
-     for (Step=0; Step < 12; Step++)
-     {
--        fixed NewX;
-+	s32 NewX;
  
-         if(TargetAngle > CurrAngle)
-         {
+-#define MTO_DATA()                  (adapter->sMtoPara)
+-#define MTO_HAL()                   (&adapter->sHwData)
+-#define MTO_SET_PREAMBLE_TYPE(x)    // 20040511 Turbo mark LM_PREAMBLE_TYPE(&pcore_data->lm_data) = (x)
+-#define MTO_ENABLE					(adapter->sLocalPara.TxRateMode == RATE_AUTO)
+-#define MTO_TXPOWER_FROM_EEPROM		(adapter->sHwData.PowerIndexFromEEPROM)
+-#define LOCAL_ANTENNA_NO()			(adapter->sLocalPara.bAntennaNo)
+-#define LOCAL_IS_CONNECTED()		(adapter->sLocalPara.wConnectedSTAindex != 0)
+-#define MTO_INITTXRATE_MODE			(adapter->sHwData.SoftwareSet&0x2)	//bit 1
++#define MTO_DATA()		(adapter->sMtoPara)
++#define MTO_HAL()		(&adapter->sHwData)
++#define MTO_SET_PREAMBLE_TYPE(x) /* Turbo mark LM_PREAMBLE_TYPE(&pcore_data->lm_data) = (x) */
++#define MTO_ENABLE		(adapter->sLocalPara.TxRateMode == RATE_AUTO)
++#define MTO_TXPOWER_FROM_EEPROM	(adapter->sHwData.PowerIndexFromEEPROM)
++#define LOCAL_ANTENNA_NO()	(adapter->sLocalPara.bAntennaNo)
++#define LOCAL_IS_CONNECTED()	(adapter->sLocalPara.wConnectedSTAindex != 0)
++#define MTO_INITTXRATE_MODE	(adapter->sHwData.SoftwareSet&0x2) /* bit 1 */
+ 
+-#define MTO_POWER_CHANGE_ENABLE()   MTO_DATA().PowerChangeEnable
+-#define MTO_CCA_MODE()              MTO_DATA().CCA_Mode
+-#define MTO_CCA_MODE_SETUP()        MTO_DATA().CCA_Mode_Setup
+-#define MTO_PREAMBLE_TYPE()         MTO_DATA().Preamble_Type
+-#define MTO_PREAMBLE_CHANGE_ENABLE()         MTO_DATA().PreambleChangeEnable
++#define MTO_POWER_CHANGE_ENABLE()	MTO_DATA().PowerChangeEnable
++#define MTO_CCA_MODE()			MTO_DATA().CCA_Mode
++#define MTO_CCA_MODE_SETUP()		MTO_DATA().CCA_Mode_Setup
++#define MTO_PREAMBLE_TYPE()		MTO_DATA().Preamble_Type
++#define MTO_PREAMBLE_CHANGE_ENABLE()	MTO_DATA().PreambleChangeEnable
+ 
+-#define MTO_RATE_LEVEL()            MTO_DATA().DataRateLevel
++#define MTO_RATE_LEVEL()		MTO_DATA().DataRateLevel
+ #define MTO_OFDM_RATE_LEVEL()		MTO_DATA().OfdmRateLevel
+-#define MTO_RATE_CHANGE_ENABLE()    MTO_DATA().DataRateChangeEnable
+-#define MTO_FRAG_TH_LEVEL()         MTO_DATA().FragThresholdLevel
+-#define MTO_FRAG_CHANGE_ENABLE()    MTO_DATA().FragThresholdChangeEnable
+-#define MTO_RTS_THRESHOLD()         MTO_DATA().RTSThreshold
+-#define MTO_RTS_CHANGE_ENABLE()     MTO_DATA().RTSChangeEnable
+-#define MTO_RTS_THRESHOLD_SETUP()   MTO_DATA().RTSThreshold_Setup
++#define MTO_RATE_CHANGE_ENABLE()	MTO_DATA().DataRateChangeEnable
++#define MTO_FRAG_TH_LEVEL()		MTO_DATA().FragThresholdLevel
++#define MTO_FRAG_CHANGE_ENABLE()	MTO_DATA().FragThresholdChangeEnable
++#define MTO_RTS_THRESHOLD()		MTO_DATA().RTSThreshold
++#define MTO_RTS_CHANGE_ENABLE()		MTO_DATA().RTSChangeEnable
++#define MTO_RTS_THRESHOLD_SETUP()	MTO_DATA().RTSThreshold_Setup
+ 
+-#define MTO_AVG_IDLE_SLOT()         MTO_DATA().AvgIdleSlot
+-#define MTO_PR_INTERF()             MTO_DATA().Pr_Interf
+-#define MTO_AVG_GAP_BTWN_INTERF()   MTO_DATA().AvgGapBtwnInterf
++#define MTO_AVG_IDLE_SLOT()		MTO_DATA().AvgIdleSlot
++#define MTO_PR_INTERF()			MTO_DATA().Pr_Interf
++#define MTO_AVG_GAP_BTWN_INTERF()	MTO_DATA().AvgGapBtwnInterf
+ 
+-#define MTO_CNT_ANT(x)              MTO_DATA().Cnt_Ant[(x)]
+-#define MTO_SQ_ANT(x)               MTO_DATA().SQ_Ant[(x)]
+-#define MTO_AGING_TIMEOUT()         MTO_DATA().aging_timeout
++#define MTO_CNT_ANT(x)			MTO_DATA().Cnt_Ant[(x)]
++#define MTO_SQ_ANT(x)			MTO_DATA().SQ_Ant[(x)]
++#define MTO_AGING_TIMEOUT()		MTO_DATA().aging_timeout
+ 
++#define MTO_TXFLOWCOUNT()		MTO_DATA().TxFlowCount
+ 
+-#define MTO_TXFLOWCOUNT()			MTO_DATA().TxFlowCount
+-//--------- DTO threshold parameters -------------
++/* --------- DTO threshold parameters ------------- */
+ #define	MTOPARA_PERIODIC_CHECK_CYCLE()		MTO_DATA().DTO_PeriodicCheckCycle
+ #define	MTOPARA_RSSI_TH_FOR_ANTDIV()		MTO_DATA().DTO_RssiThForAntDiv
+ #define	MTOPARA_TXCOUNT_TH_FOR_CALC_RATE()	MTO_DATA().DTO_TxCountThForCalcNewRate
+@@ -133,13 +119,13 @@ struct wb35_mto_params {
+ #define	MTOPARA_TXRATE_BACKOFF()		MTO_DATA().DTO_TxRateBackOff
+ #define	MTOPARA_TXRETRYRATE_REDUCE()		MTO_DATA().DTO_TxRetryRateReduce
+ #define MTOPARA_TXPOWER_INDEX()			MTO_DATA().DTO_TxPowerIndex
+-//------------------------------------------------
++/* ------------------------------------------------ */
+ 
+ 
+-extern u16  MTO_Frag_Th_Tbl[];
++extern u16 MTO_Frag_Th_Tbl[];
+ 
+-#define MTO_DATA_RATE()          MTO_Data_Rate_Tbl[MTO_RATE_LEVEL()]
+-#define MTO_FRAG_TH()            MTO_Frag_Th_Tbl[MTO_FRAG_TH_LEVEL()]
++#define MTO_DATA_RATE()			MTO_Data_Rate_Tbl[MTO_RATE_LEVEL()]
++#define MTO_FRAG_TH()			MTO_Frag_Th_Tbl[MTO_FRAG_TH_LEVEL()]
+ 
+ extern void MTO_Init(struct wbsoft_priv *);
+ extern void MTO_PeriodicTimerExpired(struct wbsoft_priv *);
+@@ -148,6 +134,5 @@ extern u8 MTO_GetTxRate(struct wbsoft_priv *adapter, u32 fpdu_len);
+ extern u8 MTO_GetTxFallbackRate(struct wbsoft_priv *adapter);
+ extern void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
+ 
+-#endif //__MTO_H__
+-
++#endif /* __MTO_H__ */
+ 
 -- 
-1.6.4.2
+1.7.0.2
 
