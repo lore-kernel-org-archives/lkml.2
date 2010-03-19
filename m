@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab0CSObN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 10:31:13 -0400
-Received: from mga10.intel.com ([192.55.52.92]:14190 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751824Ab0CSObL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 10:31:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,274,1267430400"; 
-   d="scan'208";a="550511148"
-Date: Fri, 19 Mar 2010 07:30:55 -0700
-From: mark gross <mgross@linux.intel.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: 640E9920 <640e9920@gmail.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, dwalker@codeaurora.org, tiwai@suse.de,
-       bruce.w.allan@intel.com, aili@codeaurora.org,
-       khilman@deeprootsystems.com
-Subject: Re: [PATCH] PM_QOS updates for 2.6.34-rc1
-Message-ID: <20100319143055.GA6124@linux.intel.com>
-Reply-To: mgross@linux.intel.com
-References: <20100314003425.GA17812@mgross-acer>
- <20100314062637.GA12064@elf.ucw.cz>
+	id S1752612Ab0CSOom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 10:44:42 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:54096 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751532Ab0CSOok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 10:44:40 -0400
+Date: Fri, 19 Mar 2010 07:44:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, mingo@elte.hu,
+       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
+Message-ID: <20100319144434.GA2520@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100319013024.GA28456@Krystal>
+ <4BA2FA01.30102@cn.fujitsu.com>
+ <alpine.DEB.2.00.1003190730440.9184@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100314062637.GA12064@elf.ucw.cz>
+In-Reply-To: <alpine.DEB.2.00.1003190730440.9184@router.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 14, 2010 at 07:26:37AM +0100, Pavel Machek wrote:
-> On Sat 2010-03-13 16:34:25, 640E9920 wrote:
-> > The following patch series implements to following:
-> > 1) pm_qos now uses a handle based implementation.  No more string
-> > compares while walking lists.
-> > 2) renames the exports to using more accurate names.
-> > 3) updates kernel clients of pm_qos per this change
-> > 4) added ascii interface to pmqos recognizing strings formatted in 10
-> > charactor format "0x12345678"
-> > 5) added new pm_qos class, "system_bus_throughput"
-> > 
-> > I would like to see this series make it into 2.6.34 if its not too late. 
+On Fri, Mar 19, 2010 at 07:34:07AM -0500, Christoph Lameter wrote:
+> On Fri, 19 Mar 2010, Lai Jiangshan wrote:
 > 
-> I believe it is... -rc1 is past us.
+> > but SLUB opposed me, so I did not post it.
+> >
+> > @ slub.c
+> > static void free_slab(struct kmem_cache *s, struct page *page)
+> > {
+> > 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+> > 		/*
+> > 		 * RCU free overloads the RCU head over the LRU
+> > 		 */
+> > 		struct rcu_head *head = (void *)&page->lru;
+> >
+> > 		call_rcu(head, rcu_free_slab);
+> > 	} else
+> > 		__free_slab(s, page);
+> > }
+> >
+> > I think it is not your patch's fault, but the above code has
+> > already existed.
+> >
+> > In your patch, struct rcu_head::debug will share the same memory of
+> > the other field of struct page, (especially share the struct page::flags
+> > which I encountered)
+> 
+> Right. I like the smallness of the RCU structure but if you must
+> increase its size then we could:
+> 
+> A) put the rcu structure at the end of each page like SLOB
+>    but that will take away memory that could be used by objects.
+> 
+> B) Move the rcu object up by a word so that it overloads the index field
+>    in the page struct. That would give another exact fit but will cause
+>    trouble again if you bloat the structure some more.
 
-crap.  I'll guess I'll redo them for next then.
+The size increase is strictly under a debug option -- the non-debug
+size remains the same as always.  And I expect that in the longer term,
+we will be able to shrink the size back down even with this debug option
+available.
 
+One question: do any of the other allocators care about the size of the
+struct rcu_head?  If not, a temporary work-around would be to simply
+prohibit use of this debug option when running with SLUB.
 
- 
-> Also... the way the patches are structured... that will break bisect,
-> no?
-
-Um not sure, how would you recomend I structure them?
-
---mgross
-
-> 									Pavel
-> -- 
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+							Thanx, Paul
