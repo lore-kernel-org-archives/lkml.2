@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0CSDTc (ORCPT <rfc822;w@1wt.eu>);
+	id S1752988Ab0CSDTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 23:19:34 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:56699 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab0CSDTc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Mar 2010 23:19:32 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:44542 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364Ab0CSDTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 23:19:31 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] ntp: Remove tickadj
-Date: Thu, 18 Mar 2010 20:19:28 -0700
-Message-Id: <1268968769-19209-2-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH] ntp: Make time_adjust static
+Date: Thu, 18 Mar 2010 20:19:27 -0700
+Message-Id: <1268968769-19209-1-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1268968769-19209-1-git-send-email-johnstul@us.ibm.com>
-References: <1268968769-19209-1-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are zero users of tickadj. So remove it.
+Now that no arches are accessing time_adjust directly,
+make it static.
 
 CC: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 ---
- include/linux/timex.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ include/linux/timex.h |    1 -
+ kernel/time/ntp.c     |    2 +-
+ 2 files changed, 1 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/timex.h b/include/linux/timex.h
-index e2de51e..32d852f 100644
+index 7a082b3..e2de51e 100644
 --- a/include/linux/timex.h
 +++ b/include/linux/timex.h
-@@ -232,7 +232,6 @@ struct timex {
-  */
- extern unsigned long tick_usec;		/* USER_HZ period (usec) */
- extern unsigned long tick_nsec;		/* ACTHZ          period (nsec) */
--extern int tickadj;			/* amount of adjustment per tick */
- 
- /*
+@@ -238,7 +238,6 @@ extern int tickadj;			/* amount of adjustment per tick */
   * phase-lock loop variables
-@@ -270,9 +269,6 @@ extern void second_overflow(void);
- extern void update_ntp_one_tick(void);
- extern int do_adjtimex(struct timex *);
+  */
+ extern int time_status;		/* clock synchronization status bits */
+-extern long time_adjust;	/* The amount of adjtime left */
  
--/* Don't use! Compatibility define for existing users. */
--#define tickadj	(500/HZ ? : 1)
--
- int read_current_timer(unsigned long *timer_val);
+ extern void ntp_init(void);
+ extern void ntp_clear(void);
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 7c0f180..c631168 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -69,7 +69,7 @@ static s64			time_freq;
+ /* time at last adjustment (secs):					*/
+ static long			time_reftime;
  
- /* The clock frequency of the i8253/i8254 PIT */
+-long				time_adjust;
++static long			time_adjust;
+ 
+ /* constant (boot-param configurable) NTP tick adjustment (upscaled)	*/
+ static s64			ntp_tick_adj;
 -- 
 1.6.0.4
 
