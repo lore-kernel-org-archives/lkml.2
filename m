@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab0CSMZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 08:25:52 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:35638 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab0CSMZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 08:25:51 -0400
-Message-ID: <4BA36D49.7080703@bfs.de>
-Date: Fri, 19 Mar 2010 13:25:45 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1752208Ab0CSMfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 08:35:30 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:47333 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095Ab0CSMf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 08:35:29 -0400
+Date: Fri, 19 Mar 2010 07:34:07 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, mingo@elte.hu,
+       akpm@linux-foundation.org, dipankar@in.ibm.com, josh@joshtriplett.org,
+       dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] tree/tiny rcu: Add debug RCU head option (v2)
+In-Reply-To: <4BA2FA01.30102@cn.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1003190730440.9184@router.home>
+References: <20100319013024.GA28456@Krystal> <4BA2FA01.30102@cn.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
-       Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Chen Gong <gong.chen@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] acpi_pad: "processor_aggregator" name too long
-References: <20100319114806.GN5331@bicker>
-In-Reply-To: <20100319114806.GN5331@bicker>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 19 Mar 2010, Lai Jiangshan wrote:
 
+> but SLUB opposed me, so I did not post it.
+>
+> @ slub.c
+> static void free_slab(struct kmem_cache *s, struct page *page)
+> {
+> 	if (unlikely(s->flags & SLAB_DESTROY_BY_RCU)) {
+> 		/*
+> 		 * RCU free overloads the RCU head over the LRU
+> 		 */
+> 		struct rcu_head *head = (void *)&page->lru;
+>
+> 		call_rcu(head, rcu_free_slab);
+> 	} else
+> 		__free_slab(s, page);
+> }
+>
+> I think it is not your patch's fault, but the above code has
+> already existed.
+>
+> In your patch, struct rcu_head::debug will share the same memory of
+> the other field of struct page, (especially share the struct page::flags
+> which I encountered)
 
-Dan Carpenter schrieb:
-> cpi_device_class can only be 19 characters and a NULL terminator.
-> 
-> With the current name we get a buffer overflow in acpi_pad_add()
->         strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
-> Feel free to pick your own name if you don't like mine.  :)
-> 
-> 
-> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-> index 7e52295..2db89d9 100644
-> --- a/drivers/acpi/acpi_pad.c
-> +++ b/drivers/acpi/acpi_pad.c
-> @@ -30,7 +30,7 @@
->  #include <acpi/acpi_bus.h>
->  #include <acpi/acpi_drivers.h>
->  
-> -#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"processor_aggregator"
-> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"proc_aggregator"
->  #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
->  #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
->  static DEFINE_MUTEX(isolated_cpus_lock);
+Right. I like the smallness of the RCU structure but if you must
+increase its size then we could:
 
+A) put the rcu structure at the end of each page like SLOB
+   but that will take away memory that could be used by objects.
 
-Hi Dan,
-IMHO this does not solve the core problem. acpi should use kstrncpy or better a pointer.
-The next guy that use "my_great_indentifier_is_longer_than_yours" will cause the same
-problem.
-But this is something that the acpi group needs to answer (fast).
-
-re,
- wh
+B) Move the rcu object up by a word so that it overloads the index field
+   in the page struct. That would give another exact fit but will cause
+   trouble again if you bloat the structure some more.
 
