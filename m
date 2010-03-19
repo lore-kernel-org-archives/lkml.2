@@ -1,92 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab0CSPSo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:18:44 -0400
-Received: from kroah.org ([198.145.64.141]:45885 "EHLO coco.kroah.org"
+	id S1752613Ab0CSPTB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:19:01 -0400
+Received: from kroah.org ([198.145.64.141]:45898 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532Ab0CSPSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:18:42 -0400
+	id S1752353Ab0CSPS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:18:59 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>, Alan Cox <alan@linux.intel.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Oliver Neukum <oliver@neukum.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 7/7] tty_port,usb-console: Fix usb serial console open/close regression
-Date: Fri, 19 Mar 2010 08:18:36 -0700
-Message-Id: <1269011916-8836-7-git-send-email-gregkh@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Yinghai Lu <yinghai@kernel.org>,
+       Eric Biederman <ebiederm@xmission.com>
+Subject: [PATCH 03/12] sysfs: fix sysfs lockdep warning in ipmi code
+Date: Fri, 19 Mar 2010 08:18:46 -0700
+Message-Id: <1269011935-8886-3-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <20100319151326.GC8541@kroah.com>
-References: <20100319151326.GC8541@kroah.com>
+In-Reply-To: <20100319151311.GA8541@kroah.com>
+References: <20100319151311.GA8541@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wessel <jason.wessel@windriver.com>
+This fixes a sysfs lockdep warning in the ipmi code.
 
-Commit e1108a63e10d344284011cccc06328b2cd3e5da3 ("usb_serial: Use the
-shutdown() operation") breaks the ability to use a usb console
-starting in 2.6.33.  This was observed when using
-console=ttyUSB0,115200 as a boot argument with an FTDI device.  The
-error is:
+Thanks to Eric Biederman and Yinghai Lu for the original versions of the
+patch, unfortunatly they did not submit them in a form they could be
+applied in.
 
-ftdi_sio ttyUSB0: ftdi_submit_read_urb - failed submitting read urb, error -22
-
-The handling of the ASYNCB_INITIALIZED changed in 2.6.32 such that in
-tty_port_shutdown() it always clears the flag if it is set.  The fix
-is to add a variable to the tty_port struct to indicate when the tty
-port is a console.
-
-CC: Alan Cox <alan@linux.intel.com>
-CC: Alan Stern <stern@rowland.harvard.edu>
-CC: Oliver Neukum <oliver@neukum.org>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Eric Biederman <ebiederm@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/tty_port.c      |    2 +-
- drivers/usb/serial/console.c |    1 +
- include/linux/tty.h          |    1 +
- 3 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/char/ipmi/ipmi_msghandler.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/tty_port.c b/drivers/char/tty_port.c
-index be492dd..a3bd1d0 100644
---- a/drivers/char/tty_port.c
-+++ b/drivers/char/tty_port.c
-@@ -119,7 +119,7 @@ EXPORT_SYMBOL(tty_port_tty_set);
- static void tty_port_shutdown(struct tty_port *port)
- {
- 	mutex_lock(&port->mutex);
--	if (port->ops->shutdown &&
-+	if (port->ops->shutdown && !port->console &&
- 		test_and_clear_bit(ASYNCB_INITIALIZED, &port->flags))
- 			port->ops->shutdown(port);
- 	mutex_unlock(&port->mutex);
-diff --git a/drivers/usb/serial/console.c b/drivers/usb/serial/console.c
-index b22ac32..f347da2 100644
---- a/drivers/usb/serial/console.c
-+++ b/drivers/usb/serial/console.c
-@@ -181,6 +181,7 @@ static int usb_console_setup(struct console *co, char *options)
- 	/* The console is special in terms of closing the device so
- 	 * indicate this port is now acting as a system console. */
- 	port->console = 1;
-+	port->port.console = 1;
+diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+index ec5e3f8..c6ad423 100644
+--- a/drivers/char/ipmi/ipmi_msghandler.c
++++ b/drivers/char/ipmi/ipmi_msghandler.c
+@@ -2272,42 +2272,52 @@ static int create_files(struct bmc_device *bmc)
+ 	bmc->device_id_attr.attr.name = "device_id";
+ 	bmc->device_id_attr.attr.mode = S_IRUGO;
+ 	bmc->device_id_attr.show = device_id_show;
++	sysfs_attr_init(&bmc->device_id_attr.attr);
  
- 	mutex_unlock(&serial->disc_mutex);
- 	return retval;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 593228a..4409967 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -224,6 +224,7 @@ struct tty_port {
- 	wait_queue_head_t	close_wait;	/* Close waiters */
- 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
- 	unsigned long		flags;		/* TTY flags ASY_*/
-+	unsigned char		console:1;	/* port is a console */
- 	struct mutex		mutex;		/* Locking */
- 	struct mutex		buf_mutex;	/* Buffer alloc lock */
- 	unsigned char		*xmit_buf;	/* Optional buffer */
+ 	bmc->provides_dev_sdrs_attr.attr.name = "provides_device_sdrs";
+ 	bmc->provides_dev_sdrs_attr.attr.mode = S_IRUGO;
+ 	bmc->provides_dev_sdrs_attr.show = provides_dev_sdrs_show;
++	sysfs_attr_init(&bmc->provides_dev_sdrs_attr.attr);
+ 
+ 	bmc->revision_attr.attr.name = "revision";
+ 	bmc->revision_attr.attr.mode = S_IRUGO;
+ 	bmc->revision_attr.show = revision_show;
++	sysfs_attr_init(&bmc->revision_attr.attr);
+ 
+ 	bmc->firmware_rev_attr.attr.name = "firmware_revision";
+ 	bmc->firmware_rev_attr.attr.mode = S_IRUGO;
+ 	bmc->firmware_rev_attr.show = firmware_rev_show;
++	sysfs_attr_init(&bmc->firmware_rev_attr.attr);
+ 
+ 	bmc->version_attr.attr.name = "ipmi_version";
+ 	bmc->version_attr.attr.mode = S_IRUGO;
+ 	bmc->version_attr.show = ipmi_version_show;
++	sysfs_attr_init(&bmc->version_attr.attr);
+ 
+ 	bmc->add_dev_support_attr.attr.name = "additional_device_support";
+ 	bmc->add_dev_support_attr.attr.mode = S_IRUGO;
+ 	bmc->add_dev_support_attr.show = add_dev_support_show;
++	sysfs_attr_init(&bmc->add_dev_support_attr.attr);
+ 
+ 	bmc->manufacturer_id_attr.attr.name = "manufacturer_id";
+ 	bmc->manufacturer_id_attr.attr.mode = S_IRUGO;
+ 	bmc->manufacturer_id_attr.show = manufacturer_id_show;
++	sysfs_attr_init(&bmc->manufacturer_id_attr.attr);
+ 
+ 	bmc->product_id_attr.attr.name = "product_id";
+ 	bmc->product_id_attr.attr.mode = S_IRUGO;
+ 	bmc->product_id_attr.show = product_id_show;
++	sysfs_attr_init(&bmc->product_id_attr.attr);
+ 
+ 	bmc->guid_attr.attr.name = "guid";
+ 	bmc->guid_attr.attr.mode = S_IRUGO;
+ 	bmc->guid_attr.show = guid_show;
++	sysfs_attr_init(&bmc->guid_attr.attr);
+ 
+ 	bmc->aux_firmware_rev_attr.attr.name = "aux_firmware_revision";
+ 	bmc->aux_firmware_rev_attr.attr.mode = S_IRUGO;
+ 	bmc->aux_firmware_rev_attr.show = aux_firmware_rev_show;
++	sysfs_attr_init(&bmc->aux_firmware_rev_attr.attr);
+ 
+ 	err = device_create_file(&bmc->dev->dev,
+ 			   &bmc->device_id_attr);
 -- 
 1.7.0.2
 
