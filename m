@@ -1,399 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751908Ab0CSX07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 19:26:59 -0400
-Received: from smtprelay-b12.telenor.se ([62.127.194.21]:57205 "EHLO
-	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0CSX06 (ORCPT
+	id S1752111Ab0CSX11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 19:27:27 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:45765 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab0CSX1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 19:26:58 -0400
-X-SENDER-IP: [83.226.249.136]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmQ4AJqlo0tT4vmIPGdsb2JhbACbPQwBAQEBNy2tOwkJjW2CaYITBA
-X-IronPort-AV: E=Sophos;i="4.51,276,1267398000"; 
-   d="scan'208";a="53434201"
-From: Lars Lindley <lindley@coyote.org>
-To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Lars Lindley <lindley@coyote.org>
-Subject: [PATCH] staging: winbond: mto.c Coding style fixes
-Date: Sat, 20 Mar 2010 00:26:45 +0100
-Message-Id: <1269041205-23129-1-git-send-email-lindley@coyote.org>
-X-Mailer: git-send-email 1.7.0.2
+	Fri, 19 Mar 2010 19:27:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=J4NMhUHFm0MW5vnZndz8PRPJ7h9vRhaRFoQqc8B1TfOvlcs6M850AD4ZY1d3+Kl9X/
+         yoLNFNHckKTGnJJel1jxvAn+uv1rwoc62F4Rp4TOTn7XJftSlmNkiuiv3LwZytCGOJB2
+         6MeoTec5IBid9Cth+T2H5HzSbiHPChzWoOHwA=
+Message-ID: <4BA40864.3080204@googlemail.com>
+Date: Sat, 20 Mar 2010 00:27:32 +0100
+From: =?UTF-8?B?UmVuw6kgQm9sbGRvcmY=?= <xsecute@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] arch/x86/kernel/head_32.S Warning: shift count out
+ of range (32 is not between 0 and 31)
+References: <4BA2A45B.6060004@googlemail.com> <4BA3F088.8040203@zytor.com>
+In-Reply-To: <4BA3F088.8040203@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I changed all things reported by checkpatch.pl except some long lines
-and the use of externs in a .c file. I also removed revision comments
-and "commented out" code.
-Please review this closely as the generated .o differs from the
-mainline one but I suspect that is because I removed the explicit
-initialization to 0 in a couple of statics..
-There are also some very deep if-if-else-if-ifs that I might have messed
-up :)
+On 03/19/10 22:45, H. Peter Anvin wrote:
+> On 03/18/2010 03:08 PM, Ren� Bolldorf wrote:
+>> Signed-off-by: Rene Bolldorf<xsecute@googlemail.com>
+>>
+>> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+>> index 37c3d4b..8bfba5e 100644
+>> --- a/arch/x86/kernel/head_32.S
+>> +++ b/arch/x86/kernel/head_32.S
+>> @@ -62,7 +62,7 @@
+>>
+>>    /* Enough space to fit pagetables for the low memory linear map */
+>>    MAPPING_BEYOND_END = \
+>> -	PAGE_TABLE_SIZE(((1<<32) - __PAGE_OFFSET)>>  PAGE_SHIFT)<<  PAGE_SHIFT
+>> +	PAGE_TABLE_SIZE(((1<<31) - __PAGE_OFFSET)>>  PAGE_SHIFT)<<  PAGE_SHIFT
+>>
+>>    /*
+>>     * Worst-case size of the kernel mapping we need to make:
+>
+> NAK... this is in fact doubly wrong... the assembler handles this case
+> just fine -- it's a .S file after all -- and the result is wrong.
+>
+> If you want to change it change it to 0x100000000.
+>
+> 	-hpa
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/winbond/mto.c |  299 ++++++++++++++++++-----------------------
- 1 files changed, 129 insertions(+), 170 deletions(-)
-
-diff --git a/drivers/staging/winbond/mto.c b/drivers/staging/winbond/mto.c
-index 5e7fa1c..9cd2127 100644
---- a/drivers/staging/winbond/mto.c
-+++ b/drivers/staging/winbond/mto.c
-@@ -1,222 +1,181 @@
--//============================================================================
--//  MTO.C -
--//
--//  Description:
--//    MAC Throughput Optimization for W89C33 802.11g WLAN STA.
--//
--//    The following MIB attributes or internal variables will be affected
--//    while the MTO is being executed:
--//       dot11FragmentationThreshold,
--//       dot11RTSThreshold,
--//       transmission rate and PLCP preamble type,
--//       CCA mode,
--//       antenna diversity.
--//
--//  Revision history:
--//  --------------------------------------------------------------------------
--//           20031227  UN20 Pete Chao
--//                     First draft
--//  20031229           Turbo                copy from PD43
--//  20040210           Kevin                revised
--//  Copyright (c) 2003 Winbond Electronics Corp. All rights reserved.
--//============================================================================
--
--// LA20040210_DTO kevin
-+/*
-+ * ============================================================================
-+ * MTO.C -
-+ *
-+ * Description:
-+ * MAC Throughput Optimization for W89C33 802.11g WLAN STA.
-+ *
-+ * The following MIB attributes or internal variables will be affected
-+ * while the MTO is being executed:
-+ *	dot11FragmentationThreshold,
-+ *	dot11RTSThreshold,
-+ *	transmission rate and PLCP preamble type,
-+ *	CCA mode,
-+ *	antenna diversity.
-+ *
-+ * Copyright (c) 2003 Winbond Electronics Corp. All rights reserved.
-+ * ============================================================================
-+ */
-+
- #include "sysdef.h"
- #include "sme_api.h"
- #include "wbhal_f.h"
- 
--// Declare SQ3 to rate and fragmentation threshold table
--// Declare fragmentation thresholds table
--#define MTO_MAX_FRAG_TH_LEVELS                  5
--#define MTO_MAX_DATA_RATE_LEVELS                12
-+/* Declare SQ3 to rate and fragmentation threshold table */
-+/* Declare fragmentation thresholds table */
-+#define MTO_MAX_FRAG_TH_LEVELS		5
-+#define MTO_MAX_DATA_RATE_LEVELS	12
- 
--u16 MTO_Frag_Th_Tbl[MTO_MAX_FRAG_TH_LEVELS] =
--{
--    256, 384, 512, 768, 1536
-+u16 MTO_Frag_Th_Tbl[MTO_MAX_FRAG_TH_LEVELS] = {
-+	256, 384, 512, 768, 1536
- };
- 
--// Declare data rate table
--//The following table will be changed at anytime if the opration rate supported by AP don't
--//match the table
-+/*
-+ * Declare data rate table:
-+ * The following table will be changed at anytime if the opration rate
-+ * supported by AP don't match the table
-+ */
- static u8 MTO_Data_Rate_Tbl[MTO_MAX_DATA_RATE_LEVELS] = {
--    2, 4, 11, 22, 12, 18, 24, 36, 48, 72, 96, 108
-+	2, 4, 11, 22, 12, 18, 24, 36, 48, 72, 96, 108
- };
- 
--static int TotalTxPkt = 0;
--static int TotalTxPktRetry = 0;
--static int retryrate_rec[MTO_MAX_DATA_RATE_LEVELS];//this record the retry rate at different data rate
-+static int TotalTxPkt;
-+static int TotalTxPktRetry;
-+/* this record the retry rate at different data rate */
-+static int retryrate_rec[MTO_MAX_DATA_RATE_LEVELS];
- 
--static int PeriodTotalTxPkt = 0;
--static int PeriodTotalTxPktRetry = 0;
-+static int PeriodTotalTxPkt;
-+static int PeriodTotalTxPktRetry;
- 
--static u8 boSparseTxTraffic = false;
-+static u8 boSparseTxTraffic;
- 
- void MTO_Init(struct wbsoft_priv *adapter);
- void TxRateReductionCtrl(struct wbsoft_priv *adapter);
--/** 1.1.31.1000 Turbo modify */
- void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 t0, u8 index);
- void MTO_TxFailed(struct wbsoft_priv *adapter);
- void hal_get_dto_para(struct wbsoft_priv *adapter, char *buffer);
- 
--//===========================================================================
--//  MTO_Init --
--//
--//  Description:
--//    Initialize MTO parameters.
--//
--//    This function should be invoked during system initialization.
--//
--//  Arguments:
--//    adapter      - The pointer to the Miniport adapter Context
--//
--//  Return Value:
--//    None
--//============================================================================
-+/*
-+ * ===========================================================================
-+ * MTO_Init --
-+ *
-+ *  Description:
-+ *    Initialize MTO parameters.
-+ *
-+ *    This function should be invoked during system initialization.
-+ *
-+ *  Arguments:
-+ *    adapter      - The pointer to the Miniport adapter Context
-+ * ===========================================================================
-+ */
- void MTO_Init(struct wbsoft_priv *adapter)
- {
--    int i;
--
--    //[WKCHEN]MTO_CCA_MODE_SETUP()= (u8) hal_get_cca_mode(MTO_HAL());
--    //[WKCHEN]MTO_CCA_MODE()      = MTO_CCA_MODE_SETUP();
--
--    //MTO_PREAMBLE_TYPE() = MTO_PREAMBLE_LONG;
--    MTO_PREAMBLE_TYPE() = MTO_PREAMBLE_SHORT;   // for test
--
--    MTO_CNT_ANT(0)      = 0;
--    MTO_CNT_ANT(1)      = 0;
--    MTO_SQ_ANT(0)       = 0;
--    MTO_SQ_ANT(1)       = 0;
--
--    MTO_AGING_TIMEOUT() = 0;
--
--    // The following parameters should be initialized to the values set by user
--    //
--    //MTO_RATE_LEVEL()            = 10;
--    MTO_RATE_LEVEL()            = 0;
--    MTO_FRAG_TH_LEVEL()         = 4;
--    /** 1.1.23.1000 Turbo modify from -1 to +1
--	MTO_RTS_THRESHOLD()         = MTO_FRAG_TH() - 1;
--    MTO_RTS_THRESHOLD_SETUP()   = MTO_FRAG_TH() - 1;
--	*/
--	MTO_RTS_THRESHOLD()         = MTO_FRAG_TH() + 1;
--    MTO_RTS_THRESHOLD_SETUP()   = MTO_FRAG_TH() + 1;
--    // 1.1.23.1000 Turbo add for mto change preamble from 0 to 1
--	MTO_RATE_CHANGE_ENABLE()    = 1;
--    MTO_FRAG_CHANGE_ENABLE()    = 0;          // 1.1.29.1000 Turbo add don't support frag
--	//The default valud of ANTDIV_DEFAULT_ON will be decided by EEPROM
--	//#ifdef ANTDIV_DEFAULT_ON
--	//#else
--	//#endif
--    MTO_POWER_CHANGE_ENABLE()   = 1;
--	MTO_PREAMBLE_CHANGE_ENABLE()= 1;
--    MTO_RTS_CHANGE_ENABLE()     = 0;          // 1.1.29.1000 Turbo add don't support frag
--    // 20040512 Turbo add
--	//old_antenna[0] = 1;
--	//old_antenna[1] = 0;
--	//old_antenna[2] = 1;
--	//old_antenna[3] = 0;
--	for (i=0;i<MTO_MAX_DATA_RATE_LEVELS;i++)
--		retryrate_rec[i]=5;
-+	int i;
-+
-+	MTO_PREAMBLE_TYPE() = MTO_PREAMBLE_SHORT;   /* for test */
-+
-+	MTO_CNT_ANT(0)			= 0;
-+	MTO_CNT_ANT(1)			= 0;
-+	MTO_SQ_ANT(0)			= 0;
-+	MTO_SQ_ANT(1)			= 0;
-+
-+	MTO_AGING_TIMEOUT()		= 0;
-+
-+	/* The following parameters should be initialized to the values set by user */
-+	MTO_RATE_LEVEL()		= 0;
-+	MTO_FRAG_TH_LEVEL()		= 4;
-+	MTO_RTS_THRESHOLD()		= MTO_FRAG_TH() + 1;
-+	MTO_RTS_THRESHOLD_SETUP()	= MTO_FRAG_TH() + 1;
-+	MTO_RATE_CHANGE_ENABLE()	= 1;
-+	MTO_FRAG_CHANGE_ENABLE()	= 0;
-+	MTO_POWER_CHANGE_ENABLE()	= 1;
-+	MTO_PREAMBLE_CHANGE_ENABLE()	= 1;
-+	MTO_RTS_CHANGE_ENABLE()		= 0;
-+
-+	for (i = 0; i < MTO_MAX_DATA_RATE_LEVELS; i++)
-+		retryrate_rec[i] = 5;
- 
- 	MTO_TXFLOWCOUNT() = 0;
--	//--------- DTO threshold parameters -------------
--	//MTOPARA_PERIODIC_CHECK_CYCLE() = 50;
--	MTOPARA_PERIODIC_CHECK_CYCLE() = 10;
--	MTOPARA_RSSI_TH_FOR_ANTDIV() = 10;
--	MTOPARA_TXCOUNT_TH_FOR_CALC_RATE() = 50;
--	MTOPARA_TXRATE_INC_TH()	= 10;
--	MTOPARA_TXRATE_DEC_TH() = 30;
--	MTOPARA_TXRATE_EQ_TH() = 40;
--	MTOPARA_TXRATE_BACKOFF() = 12;
--	MTOPARA_TXRETRYRATE_REDUCE() = 6;
--	if ( MTO_TXPOWER_FROM_EEPROM == 0xff)
--	{
--		switch( MTO_HAL()->phy_type)
--		{
--			case RF_AIROHA_2230:
--			case RF_AIROHA_2230S: // 20060420 Add this
--				MTOPARA_TXPOWER_INDEX() = 46; // MAX-8 // @@ Only for AL 2230
--				break;
--			case RF_AIROHA_7230:
--				MTOPARA_TXPOWER_INDEX() = 49;
--				break;
--			case RF_WB_242:
--				MTOPARA_TXPOWER_INDEX() = 10;
--				break;
--			case RF_WB_242_1:
--				MTOPARA_TXPOWER_INDEX() = 24; // ->10 20060316.1 modify
--				break;
-+	/* --------- DTO threshold parameters ------------- */
-+	MTOPARA_PERIODIC_CHECK_CYCLE()		= 10;
-+	MTOPARA_RSSI_TH_FOR_ANTDIV()		= 10;
-+	MTOPARA_TXCOUNT_TH_FOR_CALC_RATE()	= 50;
-+	MTOPARA_TXRATE_INC_TH()			= 10;
-+	MTOPARA_TXRATE_DEC_TH()			= 30;
-+	MTOPARA_TXRATE_EQ_TH()			= 40;
-+	MTOPARA_TXRATE_BACKOFF()		= 12;
-+	MTOPARA_TXRETRYRATE_REDUCE()		= 6;
-+	if (MTO_TXPOWER_FROM_EEPROM == 0xff) {
-+		switch (MTO_HAL()->phy_type) {
-+		case RF_AIROHA_2230:
-+		case RF_AIROHA_2230S:
-+			MTOPARA_TXPOWER_INDEX() = 46; /* MAX-8 @@ Only for AL 2230 */
-+			break;
-+		case RF_AIROHA_7230:
-+			MTOPARA_TXPOWER_INDEX() = 49;
-+			break;
-+		case RF_WB_242:
-+			MTOPARA_TXPOWER_INDEX() = 10;
-+			break;
-+		case RF_WB_242_1:
-+			MTOPARA_TXPOWER_INDEX() = 24;
-+			break;
- 		}
--	}
--	else	//follow the setting from EEPROM
-+	} else { /* follow the setting from EEPROM */
- 		MTOPARA_TXPOWER_INDEX() = MTO_TXPOWER_FROM_EEPROM;
--	RFSynthesizer_SetPowerIndex(MTO_HAL(), (u8)MTOPARA_TXPOWER_INDEX());
--	//------------------------------------------------
-+	}
-+	RFSynthesizer_SetPowerIndex(MTO_HAL(), (u8) MTOPARA_TXPOWER_INDEX());
-+	/* ------------------------------------------------ */
- 
--	// For RSSI turning 20060808.4 Cancel load from EEPROM
-+	/* For RSSI turning -- Cancel load from EEPROM */
- 	MTO_DATA().RSSI_high = -41;
- 	MTO_DATA().RSSI_low = -60;
- }
- 
--//===========================================================================
--//  Description:
--//      If we enable DTO, we will ignore the tx count with different tx rate from
--//      DTO rate. This is because when we adjust DTO tx rate, there could be some
--//      packets in the tx queue with previous tx rate
-+/* ===========================================================================
-+ * Description:
-+ *	If we enable DTO, we will ignore the tx count with different tx rate
-+ *	from DTO rate. This is because when we adjust DTO tx rate, there could
-+ *	be some packets in the tx queue with previous tx rate
-+ */
-+
- void MTO_SetTxCount(struct wbsoft_priv *adapter, u8 tx_rate, u8 index)
- {
- 	MTO_TXFLOWCOUNT()++;
--	if ((MTO_ENABLE==1) && (MTO_RATE_CHANGE_ENABLE()==1))
--	{
--		if(tx_rate == MTO_DATA_RATE())
--		{
--			if (index == 0)
--			{
-+	if ((MTO_ENABLE == 1) && (MTO_RATE_CHANGE_ENABLE() == 1)) {
-+		if (tx_rate == MTO_DATA_RATE()) {
-+			if (index == 0) {
- 				if (boSparseTxTraffic)
- 					MTO_HAL()->dto_tx_frag_count += MTOPARA_PERIODIC_CHECK_CYCLE();
- 				else
- 					MTO_HAL()->dto_tx_frag_count += 1;
--			}
--			else
--			{
--				if (index<8)
--				{
-+			} else {
-+				if (index < 8) {
- 					MTO_HAL()->dto_tx_retry_count += index;
--					MTO_HAL()->dto_tx_frag_count += (index+1);
--				}
--				else
--				{
-+					MTO_HAL()->dto_tx_frag_count += (index + 1);
-+				} else {
- 					MTO_HAL()->dto_tx_retry_count += 7;
- 					MTO_HAL()->dto_tx_frag_count += 7;
- 				}
- 			}
--		}
--		else if(MTO_DATA_RATE()>48 && tx_rate ==48)
--		{//ALFRED
--			if (index<3) //for reduciing data rate scheme ,
--				         //do not calcu different data rate
--						 //3 is the reducing data rate at retry
--			{
-+		} else if (MTO_DATA_RATE() > 48 && tx_rate == 48) {
-+			/* for reducing data rate scheme, do not calculate different data rate. 3 is the reducing data rate at retry. */
-+			if (index < 3) {
- 				MTO_HAL()->dto_tx_retry_count += index;
--				MTO_HAL()->dto_tx_frag_count += (index+1);
--			}
--			else
--			{
-+				MTO_HAL()->dto_tx_frag_count += (index + 1);
-+			} else {
- 				MTO_HAL()->dto_tx_retry_count += 3;
- 				MTO_HAL()->dto_tx_frag_count += 3;
- 			}
- 
- 		}
--	}
--	else
--	{
-+	} else {
- 		MTO_HAL()->dto_tx_retry_count += index;
--		MTO_HAL()->dto_tx_frag_count += (index+1);
-+		MTO_HAL()->dto_tx_frag_count += (index + 1);
- 	}
--	TotalTxPkt ++;
--	TotalTxPktRetry += (index+1);
-+	TotalTxPkt++;
-+	TotalTxPktRetry += (index + 1);
- 
--	PeriodTotalTxPkt ++;
--	PeriodTotalTxPktRetry += (index+1);
-+	PeriodTotalTxPkt++;
-+	PeriodTotalTxPktRetry += (index + 1);
- }
--- 
-1.7.0.2
-
+The funny thing is even if i change to 0x100000000 or 0 etc., the 
+compiler warns me. Is this normal or a compiler issue?
