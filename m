@@ -1,53 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab0CSO1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 10:27:49 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:35935 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab0CSO1r (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 19 Mar 2010 10:27:47 -0400
-Date: Fri, 19 Mar 2010 09:56:06 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Olivier Galibert <galibert@pobox.com>, Paul Mundt <lethal@linux-sh.org>,
-       Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-       Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [LKML] Re: [RFC] Unify KVM kernel-space and user-space code
-	into a single project
-Message-ID: <20100319135606.GA24262@phenom.dumpdata.com>
-References: <20100318105013.GB24464@elte.hu> <4BA20EB8.60707@redhat.com> <20100318114821.GB13168@elte.hu> <4BA21B09.6060706@redhat.com> <20100318130047.GA7424@elte.hu> <4BA23FE1.5050402@codemonkey.ws> <20100318151737.GA2875@elte.hu> <4BA250BF.80704@codemonkey.ws> <20100319091904.GF10003@linux-sh.org> <20100319095207.GA31068@dspnet.fr.eu.org>
+	id S1752107Ab0CSOai (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 10:30:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43644 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab0CSOag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 10:30:36 -0400
+Date: Fri, 19 Mar 2010 15:30:34 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Confusing bootmem messages on bootup
+Message-ID: <alpine.LNX.2.00.1003191526560.18642@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100319095207.GA31068@dspnet.fr.eu.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4BA3893B.0069:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 10:52:08AM +0100, Olivier Galibert wrote:
-> On Fri, Mar 19, 2010 at 06:19:04PM +0900, Paul Mundt wrote:
-> > Implementing a virtualized DRM/KMS driver would at least get you the
-> > framebuffer interface more or less for free, while allowing you to deal
-> > with the userspace side of things incrementally (ie, running a dummy xorg
-> > on top of the virtualized fbdev until the DRI side catches up). It would
-> > also enable you to focus on the 2D and 3D parts independently.
-> 
-> Guys, have a look at Gallium.  In many ways it's a pile of crap, but
-> at least it's a pile of crap designed by vmware for *exactly* your
-> problem space.
+Hi,
 
-Or perhaps Chromium, which was designed years ago and can pass-through
-OpenGL commands via a pipe. VirtualBox uses it for their PV drivers.
-Naturally it is not a FB, just a OpenGL command pass-through interface.
+current tree (HEAD on 39710479303fd3a) gives quite non-informative and 
+confusing output during bootup:
+
+
+=== cut here ===
+Subtract (85 early reservations)
+  #1 [0001000000 - 00023dc5e8]   TEXT DATA BSS
+  #2 [003753c000 - 0037fefdaa]         RAMDISK
+  #3 [00023dd000 - 00023dd214]             BRK
+  #4 [00000f8390 - 0000100000]   BIOS reserved
+  #5 [00000f8380 - 00000f8390]    MP-table mpf
+  #6 [000009dc00 - 000009e271]   BIOS reserved
+  #7 [000009e54d - 00000f8380]   BIOS reserved
+  #8 [000009e271 - 000009e54d]    MP-table mpc
+  #9 [0000010000 - 0000012000]      TRAMPOLINE
+  #10 [0000012000 - 0000016000]     ACPI WAKEUP
+  #11 [0000016000 - 0000018000]         PGTABLE
+  #12 [0000018000 - 0000019000]         PGTABLE
+  #13 [0000019000 - 000001d640]      MEMNODEMAP
+  #14 [00023dd240 - 00023e2240]       NODE_DATA
+  #15 [0100000000 - 0100005000]       NODE_DATA
+  #16 [0130000000 - 0130005000]       NODE_DATA
+  #17 [01b0000000 - 01b0005000]       NODE_DATA
+  #18 [00023e2240 - 00023e3240]         BOOTMEM
+  #19 [00023dc600 - 00023dc780]         BOOTMEM
+  #20 [0080000000 - 0080000180]         BOOTMEM
+  #21 [0130005000 - 0130005180]         BOOTMEM
+  #22 [01b0005000 - 01b0005180]         BOOTMEM
+  #23 [0002be4000 - 0002be5000]         BOOTMEM
+  #24 [0002be5000 - 0002be6000]         BOOTMEM
+  #25 [0002c00000 - 0004800000]        MEMMAP 0
+  #26 [0100200000 - 0102000000]        MEMMAP 1
+  #27 [0130200000 - 0131e00000]        MEMMAP 2
+  #28 [01b0200000 - 01b1e00000]        MEMMAP 3
+  #29 [00023dc780 - 00023dcb80]         BOOTMEM
+  #30 [00023e3240 - 0002403240]         BOOTMEM
+  #31 [0080000180 - 0080020180]         BOOTMEM
+  #32 [0080020180 - 0080030180]         BOOTMEM
+  #33 [0130005180 - 0130025180]         BOOTMEM
+  #34 [01b0005180 - 01b0025180]         BOOTMEM
+  #35 [0002404000 - 0002405000]         BOOTMEM
+  #36 [00023dcb80 - 00023dcbc1]         BOOTMEM
+  #37 [00023dcc00 - 00023dccc9]         BOOTMEM
+  #38 [00023dcd00 - 00023dcfd8]         BOOTMEM
+  #39 [0002403240 - 00024032a8]         BOOTMEM
+  #40 [00024032c0 - 0002403328]         BOOTMEM
+  #41 [0002403340 - 00024033a8]         BOOTMEM
+  #42 [00024033c0 - 0002403428]         BOOTMEM
+  #43 [0002403440 - 00024034a8]         BOOTMEM
+  #44 [00024034c0 - 0002403528]         BOOTMEM
+  #45 [0002403540 - 00024035a8]         BOOTMEM
+  #46 [00024035c0 - 0002403628]         BOOTMEM
+  #47 [0002403640 - 00024036a8]         BOOTMEM
+  #48 [00024036c0 - 0002403728]         BOOTMEM
+  #49 [0002403740 - 00024037a8]         BOOTMEM
+  #50 [00024037c0 - 0002403828]         BOOTMEM
+  #51 [0002403840 - 0002403860]         BOOTMEM
+  #52 [0002403880 - 00024038a0]         BOOTMEM
+  #53 [00024038c0 - 0002403958]         BOOTMEM
+  #54 [0002403980 - 0002403a18]         BOOTMEM
+  #55 [0002600000 - 000261c000]         BOOTMEM
+  #56 [0002680000 - 000269c000]         BOOTMEM
+  #57 [0002700000 - 000271c000]         BOOTMEM
+  #58 [0002780000 - 000279c000]         BOOTMEM
+  #59 [0080200000 - 008021c000]         BOOTMEM
+  #60 [0080280000 - 008029c000]         BOOTMEM
+  #61 [0080300000 - 008031c000]         BOOTMEM
+  #62 [0080380000 - 008039c000]         BOOTMEM
+  #63 [0131e00000 - 0131e1c000]         BOOTMEM
+  #64 [0131e80000 - 0131e9c000]         BOOTMEM
+  #65 [0131f00000 - 0131f1c000]         BOOTMEM
+  #34 [01b0005180 - 01b0025180]         BOOTMEM
+  #35 [0002404000 - 0002405000]         BOOTMEM
+  #36 [00023dcb80 - 00023dcbc1]         BOOTMEM
+  #37 [00023dcc00 - 00023dccc9]         BOOTMEM
+  #38 [00023dcd00 - 00023dcfd8]         BOOTMEM
+  #39 [0002403240 - 00024032a8]         BOOTMEM
+  #40 [00024032c0 - 0002403328]         BOOTMEM
+  #41 [0002403340 - 00024033a8]         BOOTMEM
+  #42 [00024033c0 - 0002403428]         BOOTMEM
+  #43 [0002403440 - 00024034a8]         BOOTMEM
+  #44 [00024034c0 - 0002403528]         BOOTMEM
+  #45 [0002403540 - 00024035a8]         BOOTMEM
+  #46 [00024035c0 - 0002403628]         BOOTMEM
+  #47 [0002403640 - 00024036a8]         BOOTMEM
+  #48 [00024036c0 - 0002403728]         BOOTMEM
+  #49 [0002403740 - 00024037a8]         BOOTMEM
+  #50 [00024037c0 - 0002403828]         BOOTMEM
+  #51 [0002403840 - 0002403860]         BOOTMEM
+  #52 [0002403880 - 00024038a0]         BOOTMEM
+  #53 [00024038c0 - 0002403958]         BOOTMEM
+  #54 [0002403980 - 0002403a18]         BOOTMEM
+  #55 [0002600000 - 000261c000]         BOOTMEM
+  #56 [0002680000 - 000269c000]         BOOTMEM
+  #57 [0002700000 - 000271c000]         BOOTMEM
+  #58 [0002780000 - 000279c000]         BOOTMEM
+  #59 [0080200000 - 008021c000]         BOOTMEM
+  #60 [0080280000 - 008029c000]         BOOTMEM
+  #61 [0080300000 - 008031c000]         BOOTMEM
+  #62 [0080380000 - 008039c000]         BOOTMEM
+  #63 [0131e00000 - 0131e1c000]         BOOTMEM
+  #64 [0131e80000 - 0131e9c000]         BOOTMEM
+  #65 [0131f00000 - 0131f1c000]         BOOTMEM
+  #66 [0131f80000 - 0131f9c000]         BOOTMEM
+  #67 [01b1e00000 - 01b1e1c000]         BOOTMEM
+  #68 [01b1e80000 - 01b1e9c000]         BOOTMEM
+  #69 [01b1f00000 - 01b1f1c000]         BOOTMEM
+  #70 [01b1f80000 - 01b1f9c000]         BOOTMEM
+  #71 [0002403a40 - 0002403a60]         BOOTMEM
+  #72 [0002403a80 - 0002403aa0]         BOOTMEM
+  #73 [0002403ac0 - 0002403b00]         BOOTMEM
+  #74 [0002403b00 - 0002403b80]         BOOTMEM
+  #75 [0002403b80 - 0002403cb0]         BOOTMEM
+  #76 [0002403cc0 - 0002403d10]         BOOTMEM
+  #77 [0002403d40 - 0002403d90]         BOOTMEM
+  #78 [0002405000 - 000240d000]         BOOTMEM
+  #79 [0020000000 - 0024000000]         BOOTMEM
+  #80 [0002403dc0 - 0002403de0]         BOOTMEM
+  #81 [0004800000 - 0008800000]         BOOTMEM
+  #82 [000240d000 - 000242d000]         BOOTMEM
+  #83 [000242d000 - 000246d000]         BOOTMEM
+  #84 [000001ee40 - 0000026e40]         BOOTMEM
+ 27 40 - 80 9d
+ 100 100 - 1000 1000
+ 246d 2480 - 2600 2600
+ 261c 2640 - 2680 2680
+ 269c 26c0 - 2700 2700
+ 271c 2740 - 2780 2780
+ 279c 27c0 - 2bc0 2be4
+ 2be6 - 2c00
+ 8800 8800 - 20000 20000
+ 24000 24000 - 37500 3753c
+ 37ff0 38000 - 80000 80000
+ 80031 80040 - 80200 80200
+ 8021c 80240 - 80280 80280
+ 8029c 802c0 - 80300 80300
+ 8031c 80340 - 80380 80380
+ 8039c 803c0 - cff00 cff00
+ 100005 100040 - 100200 100200
+ 102000 102000 - 130000 130000
+ 130026 130040 - 130200 130200
+ 131e1c 131e40 - 131e80 131e80
+ 131e9c 131ec0 - 131f00 131f00
+ 131f1c 131f40 - 131f80 131f80
+ 131f9c 131fc0 - 1b0000 1b0000
+ 1b0026 1b0040 - 1b0200 1b0200
+ 1b1e1c 1b1e40 - 1b1e80 1b1e80
+ 1b1e9c 1b1ec0 - 1b1f00 1b1f00
+ 1b1f1c 1b1f40 - 1b1f80 1b1f80
+ 1b1f9c 1b1fc0 - 230000 230000
+
+=== cut here ===
+
+The first part (the early reservations themselves with the names) are 
+fine, but the numbers that follow without any other explanation seem to be 
+just completely useless to me ...
+
+I haven't yet looked at which code actually introduced this, but I guess 
+we should just remove it ... ?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
