@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab0CSDGL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 23:06:11 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:39636 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab0CSDGJ (ORCPT
+	id S1752507Ab0CSDOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 23:14:11 -0400
+Received: from mail-qy0-f182.google.com ([209.85.221.182]:61017 "EHLO
+	mail-qy0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab0CSDOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 23:06:09 -0400
+	Thu, 18 Mar 2010 23:14:09 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Mar 2010 23:14:09 EDT
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=fBQKnbovtngua5fVVUMvDlWAZ9MorkQXr00T4AnlvG1A4uuryuxEjvz94TwnFWOU3L
-         R7/jYnyslxxAGQTYDSHDBiWkFUscPc82qbH4g4O0wlNA0/tPpn0D5vBxAVmvhs9LBAQ/
-         iP0J6qG/eHFxbLjGJcBKU98VAMr6ikghjMBeo=
-Date: Fri, 19 Mar 2010 04:06:13 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
-	lock
-Message-ID: <20100319030611.GE22095@nowhere>
-References: <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere> <20100319010857.GC23020@Krystal> <20100319012337.GA22095@nowhere> <20100319013658.GB28456@Krystal> <20100319022659.GC22095@nowhere> <20100319024042.GB28941@Krystal>
-MIME-Version: 1.0
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=o1RumBeJpFtdFo/l+Gyv7ZPrW0PxPScyc/Gvv5l3HifAFyzHLCqiC0O3YWM77oczlK
+         9rI/WgBQBxxSsv+I9iwH+LIUn2juVPPJ3fPlRqjHUEX17n3V1zVGOmM/RrhJ28K4VA5Q
+         r0PXKy50Nib7BpctleukWOdZlFVDxD1OGTZCg=
+Date: Fri, 19 Mar 2010 19:05:52 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: netfilter-devel@vger.kernel.org, kaber@trash.net
+Subject: [PATCH] Netfilter: Remove unused headers in net/ipv4/netfilter/nf_nat_h323.c
+Message-ID: <20100319110552.GA3048@localhost.localdomain>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100319024042.GB28941@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 10:40:42PM -0400, Mathieu Desnoyers wrote:
-> Well, the use-case that drove the asm goto implementation _is_ the tracepoints.
-> ;)
-> 
-> > 
-> > But, looking at __DO_TRACE:
-> > 
-> > 	if (it_func) {						\
-> > 		do {						\
-> > 			((void(*)(proto))(*it_func))(args);	\
-> > 		} while (*(++it_func));				\
-> > 	}
-> > 
-> > I would expect the compiler not to load the parameters in the stack
-> > before first checking the branch.
-> 
-> Note that you have to put that in its full context. It's a macro expanded within
-> a static inline function. The initial parameters are passed to the static
-> inline, not directly as "args" here. So parameters with side-effects have to be
-> evaluated before their result can be passed to the static inline function, so in
-> that sense their evaluation cannot be moved into the conditional branch.
+Remove unused headers in net/ipv4/netfilter/nf_nat_h323.c
 
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-Evaluation yeah, I agree. A function passed as an argument is
-going to be evaluated indeed, or whatever thing that has a side effect.
-But there is nothing here that need to setup the parameters to the stack
-right before the true tracepoint call, not until we passed the branch check
-once.
+---
+ net/ipv4/netfilter/nf_nat_h323.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
+diff --git a/net/ipv4/netfilter/nf_nat_h323.c b/net/ipv4/netfilter/nf_nat_h323.c
+index ee47bf2..bf6a120 100644
+--- a/net/ipv4/netfilter/nf_nat_h323.c
++++ b/net/ipv4/netfilter/nf_nat_h323.c
+@@ -10,7 +10,6 @@
+  */
  
-> > So, the fact that parameters are not loaded before we know we'll call
-> > the tracepoint is something we already have or is it something that the jump
-> > label brings in the package somehow?
-> 
-> It's standard compiler optimization behavior.
-
-
-Sure. My doubt is: currently with the upstream version, does the
-compiler tend to load the parameters to the stack before the branch is
-checked? Or is this a magic that jmp labels bring for whatever reason?
-
-Thanks.
+ #include <linux/module.h>
+-#include <linux/moduleparam.h>
+ #include <linux/tcp.h>
+ #include <net/tcp.h>
+ 
+-- 
+1.6.5.3
 
