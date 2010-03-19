@@ -1,71 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab0CSCkv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Mar 2010 22:40:51 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44069 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab0CSCkr (ORCPT
+	id S1752649Ab0CSCoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Mar 2010 22:44:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47719 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab0CSCoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Mar 2010 22:40:47 -0400
-Date: Fri, 19 Mar 2010 08:10:39 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Suleiman Souhlal <suleiman@google.com>,
-       Greg Thelen <gthelen@google.com>,
-       "Kirill A. Shutemov" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH -mmotm 1/5] memcg: disable irq at page cgroup lock
-Message-ID: <20100319024039.GH18054@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1268609202-15581-1-git-send-email-arighi@develer.com>
- <1268609202-15581-2-git-send-email-arighi@develer.com>
- <20100317115855.GS18054@balbir.in.ibm.com>
- <20100318085411.834e1e46.kamezawa.hiroyu@jp.fujitsu.com>
- <20100318041944.GA18054@balbir.in.ibm.com>
- <20100318133527.420b2f25.kamezawa.hiroyu@jp.fujitsu.com>
- <20100318162855.GG18054@balbir.in.ibm.com>
- <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100319102332.f1d81c8d.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 18 Mar 2010 22:44:19 -0400
+X-Authority-Analysis: v=1.0 c=1 a=qZ4rcf0kavUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=-eGxAq5vGyx-T57c5gMA:9 a=6Iz1nZuTp5IZqeb4b9kA:7 a=8uMsRL5d07qWVaObvcJoFW1APlEA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=GbQXIhYNWpNwKYfg:21 a=hIADOTQmEVP8H7k9:21
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL][v2.6.34] ring-buffer: Do 8 byte alignment for 64
+ bit that can not handle 4 byte align
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Sparc <sparclinux@vger.kernel.org>, David Miller <davem@davemloft.net>,
+       Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 18 Mar 2010 22:44:17 -0400
+Message-ID: <1268966657.758.28.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-19 10:23:32]:
 
-> On Thu, 18 Mar 2010 21:58:55 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> 
-> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-18 13:35:27]:
-> 
-> > > Then, no probelm. It's ok to add mem_cgroup_udpate_stat() indpendent from
-> > > mem_cgroup_update_file_mapped(). The look may be messy but it's not your
-> > > fault. But please write "why add new function" to patch description.
-> > > 
-> > > I'm sorry for wasting your time.
-> > 
-> > Do we need to go down this route? We could check the stat and do the
-> > correct thing. In case of FILE_MAPPED, always grab page_cgroup_lock
-> > and for others potentially look at trylock. It is OK for different
-> > stats to be protected via different locks.
-> > 
-> 
-> I _don't_ want to see a mixture of spinlock and trylock in a function.
->
+Ingo,
 
-A well documented well written function can help. The other thing is to
-of-course solve this correctly by introducing different locking around
-the statistics. Are you suggesting the later?
+This patch fixes a bug in the ring buffer that breaks 64bit boxes that
+can not write a long on a 4byte alignment.
 
--- 
-	Three Cheers,
-	Balbir
+Please pull the latest tip/tracing/urgent tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/urgent
+
+
+Steven Rostedt (1):
+      ring-buffer: Do 8 byte alignment for 64 bit that can not handle 4 byte align
+
+----
+ kernel/trace/ring_buffer.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+---------------------------
+commit fb6b926d6be02e0767c92cbde4c8574f6a9eca27
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu Mar 18 17:54:19 2010 -0400
+
+    ring-buffer: Do 8 byte alignment for 64 bit that can not handle 4 byte align
+    
+    The ring buffer uses 4 byte alignment while recording events into the
+    buffer, even on 64bit machines. This saves space when there are lots
+    of events being recorded at 4 byte boundaries.
+    
+    The ring buffer has a zero copy method to write into the buffer, with
+    the reserving of space and then committing it. This may cause problems
+    when writing an 8 byte word into a 4 byte alignment (not 8). For x86 and
+    PPC this is not an issue, but on some architectures this would cause an
+    out-of-alignment exception.
+    
+    This patch uses CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS to determine
+    if it is OK to use 4 byte alignments on 64 bit machines. If it is not,
+    it forces the ring buffer event header to be 8 bytes and not 4,
+    and will align the length of the data to be 8 byte aligned.
+    This keeps the data payload at 8 byte alignments and will allow these
+    machines to run without issue.
+    
+    The trick to this is that the header can be either 4 bytes or 8 bytes
+    depending on the length of the data payload. The 4 byte header
+    has a length field that supports up to 112 bytes. If the length of
+    the data is more than 112, the length field is set to zero, and the actual
+    length is stored in the next 4 bytes after the header.
+    
+    When CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is not set, the code forces
+    zero in the 4 byte header forcing the length to be stored in the 4 byte
+    array, even with a small data load. It also forces the length of the
+    data load to be 8 byte aligned. The combination of these two guarantee
+    that the data is always at 8 byte alignment.
+    
+    Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
+               (on sparc64)
+    Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 05a9f83..d1187ef 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -207,6 +207,14 @@ EXPORT_SYMBOL_GPL(tracing_is_on);
+ #define RB_MAX_SMALL_DATA	(RB_ALIGNMENT * RINGBUF_TYPE_DATA_TYPE_LEN_MAX)
+ #define RB_EVNT_MIN_SIZE	8U	/* two 32bit words */
+ 
++#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
++# define RB_FORCE_8BYTE_ALIGNMENT	0
++# define RB_ARCH_ALIGNMENT		RB_ALIGNMENT
++#else
++# define RB_FORCE_8BYTE_ALIGNMENT	1
++# define RB_ARCH_ALIGNMENT		8U
++#endif
++
+ /* define RINGBUF_TYPE_DATA for 'case RINGBUF_TYPE_DATA:' */
+ #define RINGBUF_TYPE_DATA 0 ... RINGBUF_TYPE_DATA_TYPE_LEN_MAX
+ 
+@@ -1547,7 +1555,7 @@ rb_update_event(struct ring_buffer_event *event,
+ 
+ 	case 0:
+ 		length -= RB_EVNT_HDR_SIZE;
+-		if (length > RB_MAX_SMALL_DATA)
++		if (length > RB_MAX_SMALL_DATA || RB_FORCE_8BYTE_ALIGNMENT)
+ 			event->array[0] = length;
+ 		else
+ 			event->type_len = DIV_ROUND_UP(length, RB_ALIGNMENT);
+@@ -1722,11 +1730,11 @@ static unsigned rb_calculate_event_length(unsigned length)
+ 	if (!length)
+ 		length = 1;
+ 
+-	if (length > RB_MAX_SMALL_DATA)
++	if (length > RB_MAX_SMALL_DATA || RB_FORCE_8BYTE_ALIGNMENT)
+ 		length += sizeof(event.array[0]);
+ 
+ 	length += RB_EVNT_HDR_SIZE;
+-	length = ALIGN(length, RB_ALIGNMENT);
++	length = ALIGN(length, RB_ARCH_ALIGNMENT);
+ 
+ 	return length;
+ }
+
+
