@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab0CSPNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 11:13:46 -0400
-Received: from kroah.org ([198.145.64.141]:51545 "EHLO coco.kroah.org"
+	id S1751944Ab0CSPSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 11:18:41 -0400
+Received: from kroah.org ([198.145.64.141]:45863 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0CSPNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 11:13:32 -0400
-Date: Fri, 19 Mar 2010 08:13:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] TTY fixes for 2.6.34-git
-Message-ID: <20100319151326.GC8541@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751532Ab0CSPSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Mar 2010 11:18:39 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 3/7] uartlite: Fix build on sparc.
+Date: Fri, 19 Mar 2010 08:18:32 -0700
+Message-Id: <1269011916-8836-3-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.0.2
+In-Reply-To: <20100319151326.GC8541@kroah.com>
+References: <20100319151326.GC8541@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some tty bugfixes for your 2.6.34-git tree.
+From: David Miller <davem@davemloft.net>
 
-The biggest here is a revert of a patch that went into 2.6.34-rc1 that
-shouldn't have gone in (no proper testing and no userspace need just
-yet.)  Other than that, just a number of bugfixes.
+We can get this driver enabled via MFD_TIMBERDALE which only
+requires GPIO to be on.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/
+But the of_address_to_resource() function is only present on
+powerpc and microblaze, so we have to conditionalize the
+CONFIG_OF probing bits on that.
 
-These patches have been in the linux-next tree for a while now.
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/uartlite.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Patches will be sent to the linux-kernel mailing list, if anyone wants
-to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- drivers/char/hvc_console.c              |   31 ++++++++++++++++--------
- drivers/char/tty_buffer.c               |    4 +-
- drivers/char/tty_port.c                 |    2 +-
- drivers/char/vt_ioctl.c                 |   39 +++++++++++++++----------------
- drivers/serial/cpm_uart/cpm_uart_cpm2.c |    4 +-
- drivers/serial/uartlite.c               |   10 ++++----
- drivers/usb/serial/console.c            |    1 +
- include/linux/tty.h                     |   10 ++++---
- include/linux/vt.h                      |    3 +-
- 9 files changed, 58 insertions(+), 46 deletions(-)
-
----------------
-
-Amit Shah (1):
-      hvc_console: Fix race between hvc_close and hvc_remove
-
-David Miller (1):
-      uartlite: Fix build on sparc.
-
-Fang Wenqi (1):
-      tty_buffer: Fix distinct type warning
-
-Greg Kroah-Hartman (1):
-      Revert "tty: Add a new VT mode which is like VT_PROCESS but doesn't require a VT_RELDISP ioctl call"
-
-Jason Wessel (1):
-      tty_port,usb-console: Fix usb serial console open/close regression
-
-Mel Gorman (1):
-      tty: Take a 256 byte padding into account when buffering below sub-page units
-
-Tobias Klauser (1):
-      tty: cpm_uart: use resource_size()
+diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
+index ab2ab3c..f0a6c61 100644
+--- a/drivers/serial/uartlite.c
++++ b/drivers/serial/uartlite.c
+@@ -19,7 +19,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/init.h>
+ #include <asm/io.h>
+-#if defined(CONFIG_OF)
++#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_platform.h>
+@@ -581,7 +581,7 @@ static struct platform_driver ulite_platform_driver = {
+ /* ---------------------------------------------------------------------
+  * OF bus bindings
+  */
+-#if defined(CONFIG_OF)
++#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
+ static int __devinit
+ ulite_of_probe(struct of_device *op, const struct of_device_id *match)
+ {
+@@ -631,11 +631,11 @@ static inline void __exit ulite_of_unregister(void)
+ {
+ 	of_unregister_platform_driver(&ulite_of_driver);
+ }
+-#else /* CONFIG_OF */
+-/* CONFIG_OF not enabled; do nothing helpers */
++#else /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
++/* Appropriate config not enabled; do nothing helpers */
+ static inline int __init ulite_of_register(void) { return 0; }
+ static inline void __exit ulite_of_unregister(void) { }
+-#endif /* CONFIG_OF */
++#endif /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
+ 
+ /* ---------------------------------------------------------------------
+  * Module setup/teardown
+-- 
+1.7.0.2
 
