@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab0CSUmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 16:42:04 -0400
+	id S1752196Ab0CSUmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 16:42:09 -0400
 Received: from mail-bw0-f209.google.com ([209.85.218.209]:63504 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0CSUl7 (ORCPT
+	with ESMTP id S1752138Ab0CSUmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 16:41:59 -0400
+	Fri, 19 Mar 2010 16:42:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=V/rAZwiVyvAZlBSqQetGo7WGI1ccG0Mp4yZyxvNTzit+ZYu03J9SFzIxl+05r+s2b9
-         Bq2ZvMCjurOd68/u784CZPeAXhtD990NvX7rdMCJlbFTC/xpinJ3YOP0fpp0gW3cihSM
-         5IzFwvEYdF9ULQ9JVQHfcBXQ5xXguts9qtJTY=
+        b=a0Z/gOJij/U9b+bQMFz+YomUbYIM5UnaXN+kpwk+TMI7Wpz8wWg9ekxP/0v5/5f93Z
+         YJlxQJwPliJW5Gt8zlVHr2rM14x54JgSw4hB8iU/APWQBUqBRF65Yun2nuvZRectPhMY
+         OPk7vbSsy24lasDv2/nZpJKUoetU5td5iU9ZA=
 From: Sankar P <sankar.curiosity@gmail.com>
 To: gregkh@suse.de, pavel@ucw.cz, penberg@cs.helsinki.fi,
        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        sankar.curiosity@gmail.com
-Subject: [PATCH 5/6] staging: winbond: Convert typedef struct _MLME_FRAME to struct
-Date: Sat, 20 Mar 2010 02:11:03 +0530
-Message-Id: <1269031264-2327-6-git-send-email-sankar.curiosity@gmail.com>
+Subject: [PATCH 6/6] staging: winbond: Convert typedef struct _SCAN_REQ_PARA to struct
+Date: Sat, 20 Mar 2010 02:11:04 +0530
+Message-Id: <1269031264-2327-7-git-send-email-sankar.curiosity@gmail.com>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269031264-2327-5-git-send-email-sankar.curiosity@gmail.com>
+In-Reply-To: <1269031264-2327-6-git-send-email-sankar.curiosity@gmail.com>
 References: <1269031264-2327-1-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-2-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-4-git-send-email-sankar.curiosity@gmail.com>
  <1269031264-2327-5-git-send-email-sankar.curiosity@gmail.com>
+ <1269031264-2327-6-git-send-email-sankar.curiosity@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the typedef struct _MLME_FRAME to
-struct mlme_frame and updates the places where it is used.
+This patch converts typedef struct _SCAN_REQ_PARA to
+struct scan_req_para and the places where it is used.
 
 Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
 ---
- drivers/staging/winbond/core.h   |    2 +-
- drivers/staging/winbond/mlme_s.h |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/winbond/scan_s.h |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/winbond/core.h b/drivers/staging/winbond/core.h
-index 0a2060b..372053a 100644
---- a/drivers/staging/winbond/core.h
-+++ b/drivers/staging/winbond/core.h
-@@ -16,7 +16,7 @@ struct wbsoft_priv {
+diff --git a/drivers/staging/winbond/scan_s.h b/drivers/staging/winbond/scan_s.h
+index 209717f..e677fc4 100644
+--- a/drivers/staging/winbond/scan_s.h
++++ b/drivers/staging/winbond/scan_s.h
+@@ -31,7 +31,9 @@
  
- 	struct wb_local_para sLocalPara;	// Myself connected parameters
- 
--	MLME_FRAME sMlmeFrame;	// connect to peerSTA parameters
-+	struct mlme_frame sMlmeFrame;	/* connect to peerSTA parameters */
- 
- 	struct wb35_mto_params sMtoPara;	// MTO_struct ...
- 	struct hw_data sHwData;	//For HAL
-diff --git a/drivers/staging/winbond/mlme_s.h b/drivers/staging/winbond/mlme_s.h
-index 1217a1c..c95debf 100644
---- a/drivers/staging/winbond/mlme_s.h
-+++ b/drivers/staging/winbond/mlme_s.h
-@@ -131,7 +131,7 @@
- #define boMLME_IdleScanState(_BB_)	(_BB_->wState==IDLE_SCAN)
- #define boMLME_FoundSTAinfo(_CC_)	(_CC_->wState>=IDLE_SCAN)
- 
--typedef struct _MLME_FRAME
-+struct mlme_frame
+ ///////////////////////////////////////////////////////////////////////////
+ //Global data structures, Initial Scan & Background Scan
+-typedef struct _SCAN_REQ_PARA	//mandatory parameters for SCAN request
++
++/* Mandatory parameters for SCAN request */
++struct scan_req_para
  {
- 	//NDIS_PACKET		MLME_Packet;
- 	s8 *			pMMPDU;
-@@ -156,7 +156,7 @@ typedef struct _MLME_FRAME
- 	u16		wNumRxMMPDUInMLME; 	// Number of the Rx MMPDU
- 	u16		reserved_1;			//  in MLME.
-                     	            //  excluding the discarded
--} MLME_FRAME, *psMLME_FRAME;
+ 	u32				ScanType;			//passive/active scan
+ 
+@@ -40,14 +42,14 @@ typedef struct _SCAN_REQ_PARA	//mandatory parameters for SCAN request
+ 	struct SSID_Element	sSSID; // 34B. scan only for this SSID
+ 	u8			reserved_2[2];
+ 
+-} SCAN_REQ_PARA, *psSCAN_REQ_PARA;
 +};
  
- typedef struct _AUTHREQ {
+ typedef struct _SCAN_PARAMETERS
+ {
+ 	u16				wState;
+ 	u16				iCurrentChannelIndex;
+ 
+-	SCAN_REQ_PARA	sScanReq;
++	struct scan_req_para	sScanReq;
+ 
+ 	u8				BSSID[MAC_ADDR_LENGTH + 2];		//scan only for this BSSID
  
 -- 
 1.6.4.2
