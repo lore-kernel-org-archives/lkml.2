@@ -1,183 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab0CTH55 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 03:57:57 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55607 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752247Ab0CTH5z (ORCPT
+	id S1752801Ab0CTIJF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 04:09:05 -0400
+Received: from smtprelay-h12.telenor.se ([62.127.194.5]:33849 "EHLO
+	smtprelay-h12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259Ab0CTIJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 03:57:55 -0400
-Date: Sat, 20 Mar 2010 08:57:22 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Greg KH <gregkh@suse.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux-Scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix lockdep warning
-Message-ID: <20100320075722.GE26934@pengutronix.de>
-References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com> <86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com> <m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org> <m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org> <4BA47692.7040401@kernel.org>
+	Sat, 20 Mar 2010 04:09:00 -0400
+X-SENDER-IP: [83.226.250.30]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApQ8AIUfpEtT4voePGdsb2JhbACBO4QsgXeTawEBAQE3u0aEfQQ
+X-IronPort-AV: E=Sophos;i="4.51,278,1267398000"; 
+   d="scan'208";a="53480912"
+Message-ID: <4BA4829D.3060600@coyote.org>
+Date: Sat, 20 Mar 2010 09:09:01 +0100
+From: Lars Lindley <lindley@coyote.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100308 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KuLpqunXa7jZSBt+"
-Content-Disposition: inline
-In-Reply-To: <4BA47692.7040401@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Pavel Machek <pavel@ucw.cz>
+CC: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: winbond: mlmetxrx.c Coding style fixes.
+References: <1269018531-18891-1-git-send-email-lindley@coyote.org> <20100320001048.GA1477@ucw.cz>
+In-Reply-To: <20100320001048.GA1477@ucw.cz>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---KuLpqunXa7jZSBt+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No problem..It's fun to make a contribution.
 
-On Sat, Mar 20, 2010 at 12:17:38AM -0700, Yinghai Lu wrote:
->=20
-> with qlogic and emulex card etc.
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->=20
-> ---
->  drivers/base/attribute_container.c |    1 +
->  drivers/scsi/lpfc/lpfc_attr.c      |    3 +++
->  drivers/scsi/scsi_sysfs.c          |   15 ++++++++++++---
->  3 files changed, 16 insertions(+), 3 deletions(-)
->=20
-> Index: linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.orig/drivers/scsi/lpfc/lpfc_attr.c
-> +++ linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
-> @@ -3780,6 +3780,7 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
->  	struct Scsi_Host *shost =3D lpfc_shost_from_vport(vport);
->  	int error;
-> =20
-> +	sysfs_bin_attr_init(&sysfs_drvr_stat_data_attr);
->  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
->  				      &sysfs_drvr_stat_data_attr);
-> =20
-> @@ -3787,11 +3788,13 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
->  	if (error || vport->port_type =3D=3D LPFC_NPIV_PORT)
->  		goto out;
-> =20
-> +	sysfs_bin_attr_init(&sysfs_ctlreg_attr);
->  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
->  				      &sysfs_ctlreg_attr);
->  	if (error)
->  		goto out_remove_stat_attr;
-> =20
-> +	sysfs_bin_attr_init(&sysfs_mbox_attr);
->  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
->  				      &sysfs_mbox_attr);
+On 2010-03-20 01:10, Pavel Machek wrote:
+> Hi!
+> 
+> And thanks for the effort.
+>
+>> +	adapter->sMlmeFrame.pMMPDU = mmpdu;
+> 
+> I'm not sure if 'mmpdu' is good name. But I don't know what it stands
+> for, either, so...
+> 
+I have no idea what it is either. Someone who knows what it is might have
+a better name up their sleeve..
 
-Huh, why is this? They are statically declared.
+>> +	adapter->sMlmeFrame.DataType = datatype;
+> 
+> data_type, please...
+> 
+> 									Pavel
+> 
+
+Fixed..And also send_ok and packet_id..
+
+The generated .o is identical to the one from a clean tree..
+
+Here's a patch that applies after the old one..
 
 
->  	if (error)
-> Index: linux-2.6/drivers/scsi/scsi_sysfs.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.orig/drivers/scsi/scsi_sysfs.c
-> +++ linux-2.6/drivers/scsi/scsi_sysfs.c
-> @@ -907,20 +907,27 @@ int scsi_sysfs_add_sdev(struct scsi_devi
-> =20
->  	/* create queue files, which may be writable, depending on the host */
->  	if (sdev->host->hostt->change_queue_depth) {
-> +		sysfs_bin_attr_init(&sdev_attr_queue_depth_rw);
->  		error =3D device_create_file(&sdev->sdev_gendev,
->  					   &sdev_attr_queue_depth_rw);
-> +		sysfs_bin_attr_init(&sdev_attr_queue_ramp_up_period);
->  		error =3D device_create_file(&sdev->sdev_gendev,
->  					   &sdev_attr_queue_ramp_up_period);
 
-ditto
+[PATCH] staging: winbond: mlmetxrx.c func. argument name change.
 
->  	}
-> -	else
-> +	else {
-> +		sysfs_bin_attr_init(&dev_attr_queue_depth);
->  		error =3D device_create_file(&sdev->sdev_gendev, &dev_attr_queue_depth=
-);
-> +	}
->  	if (error)
->  		return error;
-> =20
-> -	if (sdev->host->hostt->change_queue_type)
-> +	if (sdev->host->hostt->change_queue_type)  {
-> +		sysfs_bin_attr_init(&sdev_attr_queue_type_rw);
->  		error =3D device_create_file(&sdev->sdev_gendev, &sdev_attr_queue_type=
-_rw);
+I changed some function argument names to make them more readable.
 
-ditto
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/mlmetxrx.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-> -	else
-> +	} else {
-> +		sysfs_bin_attr_init(&dev_attr_queue_type);
->  		error =3D device_create_file(&sdev->sdev_gendev, &dev_attr_queue_type);
-> +	}
->  	if (error)
->  		return error;
-> =20
-> @@ -935,6 +942,7 @@ int scsi_sysfs_add_sdev(struct scsi_devi
->  	/* add additional host specific attributes */
->  	if (sdev->host->hostt->sdev_attrs) {
->  		for (i =3D 0; sdev->host->hostt->sdev_attrs[i]; i++) {
-> +			sysfs_bin_attr_init(sdev->host->hostt->sdev_attrs[i]);
->  			error =3D device_create_file(&sdev->sdev_gendev,
->  					sdev->host->hostt->sdev_attrs[i]);
->  			if (error)
-> @@ -1060,6 +1068,7 @@ int scsi_sysfs_add_host(struct Scsi_Host
->  	/* add host specific attributes */
->  	if (shost->hostt->shost_attrs) {
->  		for (i =3D 0; shost->hostt->shost_attrs[i]; i++) {
-> +			sysfs_bin_attr_init(shost->hostt->shost_attrs[i]);
->  			error =3D device_create_file(&shost->shost_dev,
->  					shost->hostt->shost_attrs[i]);
->  			if (error)
-> Index: linux-2.6/drivers/base/attribute_container.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.orig/drivers/base/attribute_container.c
-> +++ linux-2.6/drivers/base/attribute_container.c
-> @@ -328,6 +328,7 @@ attribute_container_add_attrs(struct dev
->  		return sysfs_create_group(&classdev->kobj, cont->grp);
-> =20
->  	for (i =3D 0; attrs[i]; i++) {
-> +		sysfs_bin_attr_init(attrs[i]);
->  		error =3D device_create_file(classdev, attrs[i]);
->  		if (error)
->  			return error;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---KuLpqunXa7jZSBt+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkukf+IACgkQD27XaX1/VRsVTACeJj5UN4UCN/Gw+L57s5XOcZxA
-LygAn1yTjTKFCpchnaqzRZApCD9SUE/u
-=vTRO
------END PGP SIGNATURE-----
-
---KuLpqunXa7jZSBt+--
+diff --git a/drivers/staging/winbond/mlmetxrx.c b/drivers/staging/winbond/mlmetxrx.c
+index 76b79f0..a8f4b8b 100644
+--- a/drivers/staging/winbond/mlmetxrx.c
++++ b/drivers/staging/winbond/mlmetxrx.c
+@@ -19,7 +19,7 @@
+  *		FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE,
+  *		FRAME_TYPE_802_11_DATA
+  */
+-u8 MLMESendFrame(struct wbsoft_priv *adapter, u8 *mmpdu, u16 len, u8 datatype)
++u8 MLMESendFrame(struct wbsoft_priv *adapter, u8 *mmpdu, u16 len, u8 data_type)
+ {
+ 	if (adapter->sMlmeFrame.IsInUsed != PACKET_FREE_TO_USE) {
+ 		adapter->sMlmeFrame.wNumTxMMPDUDiscarded++;
+@@ -29,7 +29,7 @@ u8 MLMESendFrame(struct wbsoft_priv *adapter, u8 *mmpdu, u16 len, u8 datatype)
+ 
+ 	/* Keep information for sending */
+ 	adapter->sMlmeFrame.pMMPDU = mmpdu;
+-	adapter->sMlmeFrame.DataType = datatype;
++	adapter->sMlmeFrame.DataType = data_type;
+ 	/* len must be the last setting due to QUERY_SIZE_SECOND of Mds */
+ 	adapter->sMlmeFrame.len = len;
+ 	adapter->sMlmeFrame.wNumTxMMPDU++;
+@@ -72,7 +72,7 @@ static void MLMEfreeMMPDUBuffer(struct wbsoft_priv *adapter, s8 *data)
+ 	}
+ }
+ 
+-void MLME_SendComplete(struct wbsoft_priv *adapter, u8 packetid, unsigned char sendok)
++void MLME_SendComplete(struct wbsoft_priv *adapter, u8 packet_id, unsigned char send_ok)
+ {
+ 	MLME_TXCALLBACK	TxCallback;
+ 
+-- 
+1.7.0.2
