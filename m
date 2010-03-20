@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab0CTF4T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 01:56:19 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51895 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab0CTF4S (ORCPT
+	id S1751875Ab0CTF6o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 01:58:44 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52976 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751472Ab0CTF6n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 01:56:18 -0400
-Message-ID: <4BA4638C.40307@dcl.info.waseda.ac.jp>
-Date: Sat, 20 Mar 2010 14:56:28 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
- lock
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp> <20100318211633.GG5103@nowhere>
-In-Reply-To: <20100318211633.GG5103@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 20 Mar 2010 01:58:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=jP5XJsVAquiWOEzHD8eSU4NsYRkXoO8K4hERrNYRVHWcfJKiwlI05jCV8GF1hZFVs8
+         q7lfoK65qVuFu5MTTMdMwNcC2vj5PLq7ScPBds/wmJ8c9idb0J3i0rDE+klDGbiGXYb6
+         eS7m9wWHgzch3P5/hEAmFsmfTN8rpV93kmoUc=
+Subject: Re: Balance taking a lot longer than before
+Mime-Version: 1.0 (Apple Message framework v1077)
+Content-Type: text/plain; charset=windows-1252
+From: Mark Rada <markrada26@gmail.com>
+In-Reply-To: <C514E3D1-A4EB-4460-9994-EBD29CCC6817@gmail.com>
+Date: Sat, 20 Mar 2010 01:58:39 -0400
+Cc: Zheng Yan <yanzheng@21cn.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0FB2627B-B950-4062-80D5-0BAEC3AF7AB3@gmail.com>
+References: <77201DCC-CC67-4B00-8FFE-AAB17A5D18DA@mailservices.uwaterloo.ca> <3d0408631003182019i1509d363j98f94661679ea30b@mail.gmail.com> <E9D4D14F-3CAA-487B-8651-97C43CF418B6@mailservices.uwaterloo.ca> <3d0408631003190032s663624c1o528674f8010309f2@mail.gmail.com> <C514E3D1-A4EB-4460-9994-EBD29CCC6817@gmail.com>
+To: linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/10 06:16, Frederic Weisbecker wrote:
- >> And I have a question related to this dynamic patching approach for 
-lockdep.
- >> If dynamic proving turning on/off is provided,
- >> lockdep will be confused by inconsistency of lock acquiring log.
- >>
- >> Will the sequence,
- >>
- >> lock_acquire(l) ->  turning off ->  lock_release(l) ->  turning on ->
- >> lock_acquire(l)
- >>
- >> detected as double acquiring?
- >>
- >> Should turning on/off lockdep be done in the time
- >> when every processes have no lock?
- >
- >
- > There is almost always a process with a lock somewhere ;-)
+I'm happy to report that defragmenting fixed my problem. In fact, it did a really good job; I had to wrap it to recurse through a few folders I suspected were highly fragmented which took about half an hour run it a few times. Then I tried to rebalance again and not only did it work, but it only took a few hours.
 
-Yeah :)
+—
+Mark Rada
+markrada26@gmail.com
 
- >
- > This is not a big deal, it's very similar to unfinished scenarios
- > due to the end of the tracing that can happen anytime and you miss
- > a lock_release or whatever. We can also begin the tracing anytime,
- > and you may receive orphan lock_release in the very beginning
- > because you missed the lock_acquire that happened before the tracing.
- >
- > Any locking scenario that doesn't fit into the state machine
- > or is incomplete must be considered as broken and then ignored.
- >
- >
 
-I see, thanks.
-I have to fix state machine of perf lock.
-Now it doesn't consider read, try and orphan events,
-it is very incompletely..
+On 2010-03-19, at 10:18 AM, Mark Rada wrote:
+
+> I don't have any files bigger than 5GB, and I'm using less than a quarter of my total disk space but I already have a lot of fragmentation?
+> 
+> Defragmenting won't help, will it? Is there anything I can do other than deleting the files?
+> 
+> —
+> Mark Rada
+> markrada26@gmail.com
+> 
+> 
+> On 2010-03-19, at 3:32 AM, Yan, Zheng wrote:
+> 
+>> The loop is caused by fragmentaion of free space. Balance code is trying to
+>> relocate a large file extent, but it can't find a free space that is
+>> large enough.
+>> 
+>> On Fri, Mar 19, 2010 at 11:28 AM, Mark Rada <marada@uwaterloo.ca> wrote:
+>>> Hmm, there seems to be a very very long list of "btrfs: found 1 extents" messages and nothing else in between them.
+>>> 
+>>> Why would deleting large files help? I don't want to delete files on my server unless I have no other option.
+>>> 
+>>> —
+>>> Mark Rada
+>>> marada@uwaterloo.ca
+>>> 
+>>> 
+>>> On 2010-03-18, at 11:19 PM, Yan, Zheng wrote:
+>>> 
+>>>> On Fri, Mar 19, 2010 at 9:44 AM, Mark Rada <marada@uwaterloo.ca> wrote:
+>>>>> Hi devs,
+>>>>> 
+>>>>> I've been using btrfs on my file server since 2.6.32 and after upgrading to .33 I noticed that rebalancing took way longer than before.
+>>>>> 
+>>>>> I have a 5 disk array used for a btrfs md setup, different hard drive sizes, brands, and interfaces.
+>>>>> 
+>>>>> The last time I rebalanced I was using about 800GB of space on the 4.6TB array, and I started before I went to sleep and it was done when I woke up.
+>>>>> 
+>>>>> I'm in the middle of a rebalance right now, currently using 950GB, and it has been a full day and the rebalancing is not done yet. Is this an expected change? Is there any way to tell how much longer it will take? Do you need to know more info about the setup?
+>>>>> 
+>>>> 
+>>>> I guess it enters infinite loops. you can check it by checking if
+>>>> there are a lots of
+>>>> repeats messages in the kernel log.  If it is true, you can try
+>>>> deleting some large
+>>>> files in that FS.
+>>> 
+> 
+
