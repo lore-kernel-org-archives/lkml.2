@@ -1,61 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab0CTGkF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 02:40:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56012 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab0CTGkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 02:40:03 -0400
-Message-ID: <4BA46D66.3050306@kernel.org>
-Date: Fri, 19 Mar 2010 23:38:30 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752495Ab0CTGmn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 02:42:43 -0400
+Received: from web110305.mail.gq1.yahoo.com ([67.195.8.205]:38780 "HELO
+	web110305.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752123Ab0CTGmm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 02:42:42 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=wQR9D3B/EEKtdmOB8/OLiG4lEE8QKdfJmotZ+FwRE1ziiCWbhv9Fv1C+J9jEplFSn7nBSlPA8yigx2CbC+O6g1vAFtk47/jYydKZwOPw7vcJ0B03EDSnzLd+1EGdHXlOfF/Xxr/BWN9zMa8tAI/o44cBLsVo017e1hpHOCULZHc=;
+Message-ID: <687582.96058.qm@web110305.mail.gq1.yahoo.com>
+X-YMail-OSG: JCyiOtUVM1k9f_XHOfggfSTNJrEwmfIUHqs2z1XIo7D.akL
+ 72ffQvK63UOAWgrA7KukH0X38VFTVitq3CFcMs_00UD1KWrAxzAmTFFN.Mea
+ 4uohlaKNqJZSceTxzswSXtuKnh5aVfydmsPRhiMjoqGiUckmwdYMvp9M4urB
+ uT9gO.fHww5nNR8aqDLnRccxSG2YkpWiAE.ozWmnxngO59_68Ui1BszbzKBJ
+ V_tX_TuzeS0_kq69XfDp2KRADUmu1X9BfXrCwyfy7DxhhoaL76ZDX6Cw1DvN
+ 9lfi.BgPSe2I44ciSZqXRY4dyVRQfTJjoS3zVk12bCyIyRnyeUs7f0ElO0Qg
+ TqL4F.KNHr79rnz8SPD6UDPAt_WHVs5kyYQc-
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Fri, 19 Mar 2010 23:42:41 -0700 (PDT)
+From: Valery Reznic <valery_reznic@yahoo.com>
+Subject: Re: execve for script don't return ENOEXEC, bug ?
+To: David Newall <davidn@davidnewall.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <4BA418B2.8090200@davidnewall.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH -v6] x86: do not free zero sized per cpu areas
-References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org> <4BA3F8ED.2090600@zytor.com> <4BA407B8.7070503@kernel.org> <4BA408EE.5000001@zytor.com> <4BA40C83.1030202@kernel.org> <alpine.LFD.2.00.1003191758460.18017@i5.linux-foundation.org> <4BA42C05.3060800@kernel.org> <alpine.LFD.2.00.1003191940060.18017@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1003191940060.18017@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Campbell <ian.campbell@citrix.com>
 
-This avoids an infinite loop in free_early_partial().
 
-Add a warning to free_early_partial to catch future problems.
+--- On Sat, 3/20/10, David Newall <davidn@davidnewall.com> wrote:
 
--v5: put back start > end back into WARN_ONCE()
--v6: use one line for if according to linus
+> From: David Newall <davidn@davidnewall.com>
+> Subject: Re: execve for script don't return ENOEXEC, bug ?
+> To: "Valery Reznic" <valery_reznic@yahoo.com>
+> Cc: linux-kernel@vger.kernel.org
+> Date: Saturday, March 20, 2010, 2:37 AM
+> On Thu, 11 Mar 2010 02:56:16 -0800
+> (PST) Valery Reznic <valery_reznic@yahoo.com>
+> wrote:
+> > Hi,
+> > 
+> > I Have following to scripts:
+> > 
+> > a.sh
+> > #!/bin/sh
+> > echo "It's a.sh
+> > 
+> > and b.sh:
+> > #! ./b.sh
+> > echo "It's b.sh"
+> >   
+> [...]
+> > When I run same scripts on Fedora 12 x86_64 box with
+> stock kernel 2.6.31.5-127.fc12.x86_64 I got following:
+> > 
+> > strace -f -e execve setarch i386  ./b.sh
+> execve("/usr/bin/setarch", ["setarch", "i386", "./b.sh"],
+> [/* 41 vars */]) = 0
+> > execve("./b.sh", ["./b.sh"], [/* 41 vars */]) = 0
+> > It's a.sh
+> 
+> I see no circumstance which would make b.sh invoke a.sh
+> (and thus emit "It's a.sh"). Are you sure these are the
+> actual scripts and output?
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- kernel/early_res.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+Of course you are right. Somehow I messed up b.sh
+(OK, this file is so long and complicated, so no wonder :)
+Anyway my bad, sorry.
 
-Index: linux-2.6/kernel/early_res.c
-===================================================================
---- linux-2.6.orig/kernel/early_res.c
-+++ linux-2.6/kernel/early_res.c
-@@ -333,6 +333,12 @@ void __init free_early_partial(u64 start
- 	struct early_res *r;
- 	int i;
- 
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
- try_next:
- 	i = find_overlapped_early(start, end);
- 	if (i >= max_early_res)
+In the b.sh interpreter should be ./a.sh
+
+Another attempt to provide correct data:
+
+[valery@localhost ~]$ cat a.sh 
+#!/bin/sh
+echo "It's a.sh"
+[valery@localhost ~]$ cat b.sh 
+#! ./a.sh
+echo "It's b.sh"
+[valery@localhost ~]$ 
+[valery@localhost ~]$ strace -f -e execve setarch i386 ./b.sh 
+execve("/usr/bin/setarch", ["setarch", "i386", "./b.sh"], [/* 40 vars */]) = 0
+execve("./b.sh", ["./b.sh"], [/* 40 vars */]) = 0
+It's a.sh
+[valery@localhost ~]$ 
+
+
+
+
+> 
+> On the other hand, if the output was "It's b.sh", this is
+> compatible with many historical versions of UNIX, which
+> assumed /bin/sh to be the script interpreter. On
+> 2.6.28-16-generic #55-Ubuntu SMP i686 GNU/Linux I get
+> successful output for the following variants of "x.sh":
+> 
+> :
+> echo worked
+> 
+> and
+> 
+> #!
+> echo worked
+> 
+> and
+> 
+> #! ./x.sh
+> echo worked
+My problem is not incorrect output, but successful execve, when script's interpreter is interpreter itself.
+
+Somewhere between Fedora 8 and Fedora 12 execve's behaviour changed.
+
+@Andrew:
+When b.sh has interpreter ./b.sh I got expected ENOEXEC, same as you.
+
+Regards,
+Valery.
+
+> 
+
+
+      
