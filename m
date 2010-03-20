@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849Ab0CTN4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 09:56:24 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54301 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab0CTN4W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 09:56:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=N3QWquJBNwzDS7kzNTR35rIgFFCjaGwSlZn8j/oMxPtEG93ERHDs5JcZP8D1pTSCho
-         wDsENayZUH7rP+ptRU2vsEa4+t73b3zBd13BfTpoFJJonZDDA/VosHH/wpCyZ6AAUOfl
-         hk8pOY+YKGr7YpGAwv4gy1GI/7cJehUM/aMrw=
-Date: Sat, 20 Mar 2010 16:56:04 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Tom Zanussi <tzanussi@gmail.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] trace: find the correct ftrace event
-Message-ID: <20100320135604.GA28881@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Li Zefan <lizf@cn.fujitsu.com>, Tom Zanussi <tzanussi@gmail.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20100320131923.GA20922@bicker> <1269092233.28658.9.camel@localhost>
+	id S1752024Ab0CTOEe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 10:04:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56559 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab0CTOEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 10:04:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [Regression, post-2.6.34-rc1][PATCH] x86 / perf: Fix suspend to RAM on HP nx6325
+Date: Sat, 20 Mar 2010 15:07:15 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269092233.28658.9.camel@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003201507.15358.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 09:37:13AM -0400, Steven Rostedt wrote:
-> On Sat, 2010-03-20 at 16:19 +0300, Dan Carpenter wrote:
-> > The original code doesn't work because "call" is never NULL there.
-> 
-> A one line change would have done the same ;-)
-> 
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> > ---
-> > My code should work, but it seems like there should but it seems like
-> > there should be a more elegant way to do this?
-> > 
-> > diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> > index 4615f62..6070c70 100644
-> > --- a/kernel/trace/trace_events_filter.c
-> > +++ b/kernel/trace/trace_events_filter.c
-> > @@ -1388,16 +1388,19 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
-> >  	struct event_filter *filter;
-> >  	struct filter_parse_state *ps;
-> >  	struct ftrace_event_call *call = NULL;
-> > +	int found = 0;
-> >  
-> >  	mutex_lock(&event_mutex);
-> >  
-> >  	list_for_each_entry(call, &ftrace_events, list) {
-> > -		if (call->id == event_id)
-> > +		if (call->id == event_id) {
-> > +			found = 1;
-> >  			break;
-> > +		}
-> >  	}
-> >  
-> >  	err = -EINVAL;
-> > -	if (!call)
-> 
-> 	if (call == &ftrace_events)
-> 
+Hi Peter,
 
-Man...  That makes my head hurt.  It only works because ->list is the 
-first element in the struct.
+Your commit 3f6da3905398826d85731247e7fbcf53400c18bd
+(perf: Rework and fix the arch CPU-hotplug hooks) unfortunately broke suspend
+to RAM (probably hibernation too, but I haven't checked) on my HP nx6325.
+I also expect more (if not all) AMD-based boxes to be broken by it.
 
-We'd need a cast.
+The machine simply hangs solid while trying to disable CPU1 during suspend.
 
-Is that really cleaner?
+The patch below fixes it, although I'm not exactly sure why calling
+amd_pmu_cpu_offline() during suspend causes the hang to happen.  If there's a
+better way to fix this, please let me know.
 
-regards,
-dan carpenter
+Rafael
 
-> -- Steve
-> 
-> > +	if (!found)
-> >  		goto out_unlock;
-> >  
-> >  	err = -EEXIST;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: x86 / perf: Fix suspend to RAM on HP nx6325
+
+Commit 3f6da3905398826d85731247e7fbcf53400c18bd
+(perf: Rework and fix the arch CPU-hotplug hooks) broke suspend to
+RAM on my HP nx6325 (and most likely on other AMD-based boxes too)
+by allowing amd_pmu_cpu_offline() to be executed for CPUs that are
+going offline as part of the suspend process.  Fix this by modifying
+x86_pmu_notifier() so that x86_pmu.cpu_dead(cpu) is only called if
+the CPU_TASK_FROZEN bit is unset.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ arch/x86/kernel/cpu/perf_event.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
+@@ -1334,18 +1334,21 @@ x86_pmu_notifier(struct notifier_block *
+ {
+ 	unsigned int cpu = (long)hcpu;
+ 
+-	switch (action & ~CPU_TASKS_FROZEN) {
++	switch (action) {
+ 	case CPU_UP_PREPARE:
++	case CPU_UP_PREPARE_FROZEN:
+ 		if (x86_pmu.cpu_prepare)
+ 			x86_pmu.cpu_prepare(cpu);
+ 		break;
+ 
+ 	case CPU_STARTING:
++	case CPU_STARTING_FROZEN:
+ 		if (x86_pmu.cpu_starting)
+ 			x86_pmu.cpu_starting(cpu);
+ 		break;
+ 
+ 	case CPU_DYING:
++	case CPU_DYING_FROZEN:
+ 		if (x86_pmu.cpu_dying)
+ 			x86_pmu.cpu_dying(cpu);
+ 		break;
