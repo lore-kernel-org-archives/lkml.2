@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0CTOZC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 10:25:02 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37805 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab0CTOZA (ORCPT
+	id S1752723Ab0CTOZO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 10:25:14 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49187 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0CTOZK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 10:25:00 -0400
+	Sat, 20 Mar 2010 10:25:10 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -18,100 +18,70 @@ Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        "Frank Ch. Eigler" <fche@redhat.com>,
        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 20 Mar 2010 19:54:55 +0530
-Message-Id: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v1 0/10] Uprobes patches.
+Date: Sat, 20 Mar 2010 19:55:05 +0530
+Message-Id: <20100320142505.11427.30133.sendpatchset@localhost6.localdomain6>
+In-Reply-To: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
+Subject: [PATCH v1 1/10] Move Macro W to insn.h
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Move Macro W to asm/insn.h
 
-This patchset implements Uprobes which enables you to dynamically break
-into any routine in a user space application and collect information
-non-disruptively.
+Macro W used to know if the instructions are valid for
+user-space/kernel space.  This macro is used by kprobes and
+user_bkpt. (i.e user space breakpoint assistance layer.) So moving it
+to a common header file asm/insn.h.
 
-This patchset is a rework based on suggestions from discussions on lkml
-in January this year (http://lkml.org/lkml/2010/1/11/92 and
-http://lkml.org/lkml/2010/1/27/19).  This implementation of uprobes
-doesnt depend on utrace.
-
-When a uprobe is registered, Uprobes makes a copy of the probed
-instruction, replaces the first byte(s) of the probed instruction with a
-breakpoint instruction. (Uprobes uses background page replacement
-mechanism and ensures that the breakpoint affects only that process.)
-
-When a CPU hits the breakpoint instruction, Uprobes gets notified of
-trap and finds the associated uprobe. It then executes the associated
-handler. Uprobes single-steps its copy of the probed instruction and
-resumes execution of the probed process at the instruction following the
-probepoint. Instruction copies to be single-stepped are stored in a
-per-process "execution out of line (XOL) area". Currently XOL area is
-allocated as one page vma.
-
-Advantages of uprobes over conventional debugging include:
-1. Non-disruptive.
-2. Much better handling of multithreaded programs because of XOL.
-3. No context switch between tracer, tracee.
-4. Allows multiple processes to trace same tracee.
-
-Here is the list of TODO Items.
-
-- Provide a perf interface to uprobes. (coming in next version)
-- Allowing probes across fork/exec.
-- Allowing probes on per-executable/per dso.
-- Allow multiple probes to share a probepoint.
-- Support for other architectures.
-- Return probes.
-- Uprobes booster.
-
-This patchset is based on 2.6.34-rc2.
-
-Please do provide your valuable comments.
-
-Thanks in advance.
-Srikar
-
-
-Srikar Dronamraju (10):
- 1.  X86 instruction analysis: Move Macro W to insn.h
- 2.  mm: Move replace_page() to mm/memory.c
- 3.  mm: Enhance replace_page() to support pagecache
- 4.  user_bkpt: User Space Breakpoint Assistance Layer
- 5.  user_bkpt: X86 details for User space breakpoint assistance
- 6.  user_bkpt: Slot allocation for Execution out of line
- 7.  uprobes: Uprobes Implementation
- 8.  uprobes: X86 details for Uprobes
- 9.  uprobes: Uprobes Documentation patch
- 10. samples: Uprobes samples
-
- Documentation/uprobes.txt        |  244 ++++++++++++
- arch/Kconfig                     |   31 ++
- arch/x86/Kconfig                 |    2 +
- arch/x86/include/asm/insn.h      |    7 +
- arch/x86/include/asm/user_bkpt.h |   43 ++
- arch/x86/kernel/Makefile         |    3 +
- arch/x86/kernel/kprobes.c        |    7 -
- arch/x86/kernel/uprobes.c        |   87 ++++
- arch/x86/kernel/user_bkpt.c      |  574 +++++++++++++++++++++++++++
- include/linux/mm.h               |    2 +
- include/linux/sched.h            |    3 +
- include/linux/tracehook.h        |   18 +
- include/linux/uprobes.h          |  178 +++++++++
- include/linux/user_bkpt.h        |  296 ++++++++++++++
- include/linux/user_bkpt_xol.h    |   61 +++
- kernel/Makefile                  |    3 +
- kernel/fork.c                    |    3 +
- kernel/uprobes.c                 |  798 ++++++++++++++++++++++++++++++++++++++
- kernel/user_bkpt.c               |  572 +++++++++++++++++++++++++++
- kernel/user_bkpt_xol.c           |  290 ++++++++++++++
- mm/ksm.c                         |   59 ---
- mm/memory.c                      |   62 +++
- samples/Kconfig                  |    7 +
- samples/uprobes/Makefile         |   17 +
- samples/uprobes/uprobe_example.c |   83 ++++
- 25 files changed, 3384 insertions(+), 66 deletions(-)
+Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
- 0 files changed, 0 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/insn.h |    7 +++++++
+ arch/x86/kernel/kprobes.c   |    7 -------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
 
+diff --git a/arch/x86/include/asm/insn.h b/arch/x86/include/asm/insn.h
+index 96c2e0a..8586820 100644
+--- a/arch/x86/include/asm/insn.h
++++ b/arch/x86/include/asm/insn.h
+@@ -23,6 +23,13 @@
+ /* insn_attr_t is defined in inat.h */
+ #include <asm/inat.h>
+ 
++#define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
++	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
++	  (b4##UL << 0x4)|(b5##UL << 0x5)|(b6##UL << 0x6)|(b7##UL << 0x7) |   \
++	  (b8##UL << 0x8)|(b9##UL << 0x9)|(ba##UL << 0xa)|(bb##UL << 0xb) |   \
++	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
++	 << (row % 32))
++
+ struct insn_field {
+ 	union {
+ 		insn_value_t value;
+diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+index b43bbae..4379b40 100644
+--- a/arch/x86/kernel/kprobes.c
++++ b/arch/x86/kernel/kprobes.c
+@@ -66,12 +66,6 @@ DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
+ 
+ #define stack_addr(regs) ((unsigned long *)kernel_stack_pointer(regs))
+ 
+-#define W(row, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, ba, bb, bc, bd, be, bf)\
+-	(((b0##UL << 0x0)|(b1##UL << 0x1)|(b2##UL << 0x2)|(b3##UL << 0x3) |   \
+-	  (b4##UL << 0x4)|(b5##UL << 0x5)|(b6##UL << 0x6)|(b7##UL << 0x7) |   \
+-	  (b8##UL << 0x8)|(b9##UL << 0x9)|(ba##UL << 0xa)|(bb##UL << 0xb) |   \
+-	  (bc##UL << 0xc)|(bd##UL << 0xd)|(be##UL << 0xe)|(bf##UL << 0xf))    \
+-	 << (row % 32))
+ 	/*
+ 	 * Undefined/reserved opcodes, conditional jump, Opcode Extension
+ 	 * Groups, and some special opcodes can not boost.
+@@ -98,7 +92,6 @@ static const u32 twobyte_is_boostable[256 / 32] = {
+ 	/*      -----------------------------------------------         */
+ 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f          */
+ };
+-#undef W
+ 
+ struct kretprobe_blackpoint kretprobe_blacklist[] = {
+ 	{"__switch_to", }, /* This function switches only current task, but
