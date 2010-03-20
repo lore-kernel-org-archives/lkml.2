@@ -1,62 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab0CTTKH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 15:10:07 -0400
-Received: from smtp826.mail.ird.yahoo.com ([217.146.189.240]:35280 "HELO
-	smtp826.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751154Ab0CTTKF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 15:10:05 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Mar 2010 15:10:05 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=btinternet.com;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=Nqe4ZgiqH1fO824AeywGkL7Hdnna//XQNTxhKXM1okI+iY7Uox4a6bvxImmt9S2CkU4Qp/q5vU8fu89kFDQhMHC9Xy+ODiT2VkNR/2Hapd9JcPvldRB31V1koXMyxpE470RLpSGPMhQ4mEKBubvCdVp12X8A1jRhz+L/zQnREac=  ;
-X-Yahoo-SMTP: k5SysT6swBB9P.tkS3lzIbg6PUzaCV7jCcJpLj9TyF3meik1xcwV.g--
-X-YMail-OSG: OM6s6jEVM1k26qJ1APmy1qSbXbQ57U2Sr_4uUOEUw33DLS8RjkiF24vCyYKIYr6V0gWspqSJnHyiZOMWrnJ0d_M82MnLLp7uIt83m0eNEGZp1Ojp32_4CR6E1BVqF4U8L86NhjzsbLsUXQwu5j1WM3FPMl7.0._UKVTPa40.83UODVBFrNXdi0F4gkOj.hgSfH1aP6M8og8F5qcH.3e2_8aBG7TOCq4rAk9LmOcfAhnaWFBBanO0MM0vQaKc.TxSDA8svlpRyxZZu00d7Aay
-X-Yahoo-Newman-Property: ymail-3
-From: Laura Parkes <laura_parkes@btinternet.com>
-To: "Greg Kroah-Hartman" <gregkh@suse.de>, Andre Haupt <andre@bitwigglers.org>,
-       Andi Kleen <ak@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>,
-       "Kevin A. Granade" <kevin.granade@gmail.com>
-Subject: [PATCH] Staging: asus_oled: fix spaces coding style in asus_oled.c
-Date: Sat, 20 Mar 2010 19:03:31 +0000
-User-Agent: KMail/1.12.2 (Linux/2.6.31-17-generic; KDE/4.3.2; i686; ; )
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+	id S1751889Ab0CTTT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 15:19:27 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:58014 "EHLO
+	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab0CTTT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 15:19:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=qkGwhTAjA9LdC7EKHWgwpCWV76dG+yBaiAGrfND4q13JzQvpQbZGmXxN4c5ajHFQFE
+         ZFuoq0/O4NUiWSxFdiyndEp/y6n4wgI7ZKdJbfr29+VUmqZKyTzXV7bvJravIEppU1NN
+         7LhuLtw6GOCDtcrE2oKvJ98h08uVYtSEsPW0k=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201003201903.32025.laura_parkes@btinternet.com>
+Date: Sat, 20 Mar 2010 21:19:24 +0200
+Message-ID: <371405281003201219r7063f047g60024f726776615e@mail.gmail.com>
+Subject: [PATCH] checkpatch: list.h
+From: Vladimir Kondratiev <vladimir.kondratiev@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ada5a2f3c991cbbf8f6fbd97d72718c9bb806580 Mon Sep 17 00:00:00 2001
-From: Laura Parkes <laura_parkes@btinternet.com>
-Date: Sat, 20 Mar 2010 17:16:19 +0000
-Subject: [PATCH] Staging: asus_oled: fix spaces coding style in asus_oled.c
- This is a patch to the asus_oled.c file that fixes a spaces
- warning found by checkpatch.pl tool.
- Signed-off-by: Laura Parkes <laura_parkes@btinternet.com>
+Hi,
 
----
- drivers/staging/asus_oled/asus_oled.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I'd like to clean up (make checkpatch happy) at least most useful headers.
 
-diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
-index 7ebecc9..9e7e677 100644
---- a/drivers/staging/asus_oled/asus_oled.c
-+++ b/drivers/staging/asus_oled/asus_oled.c
-@@ -771,7 +771,7 @@ static struct usb_driver oled_driver = {
- };
- 
- static CLASS_ATTR_STRING(version, S_IRUGO,
--		 	ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
-+	ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
- 
- static int __init asus_oled_init(void)
- {
+Following is patch that cleans list.h
+
+If it is welcomed, I'll continue this effort.
 -- 
-1.6.3.3
+Thanks, Vladimir
 
+
+>From a6b57aea7777d8110ac9023840260fe487611d73 Mon Sep 17 00:00:00 2001
+From: Vladimir Kondratiev <vladimir.kondratiev@gmail.com>
+Date: Sat, 20 Mar 2010 20:43:44 +0200
+Subject: [PATCH] checkpatch: list.h
+
+made it checkpatch clean
+
+Signed-off-by: Vladimir Kondratiev <vladimir.kondratiev@gmail.com>
+---
+ include/linux/list.h |   57 +++++++++++++++++++++++++------------------------
+ 1 files changed, 29 insertions(+), 28 deletions(-)
+
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 8392884..da313e7 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -87,7 +87,7 @@ static inline void list_add_tail(struct list_head
+*new, struct list_head *head)
+  * This is only for internal list manipulation where we know
+  * the prev/next entries already!
+  */
+-static inline void __list_del(struct list_head * prev, struct list_head * next)
++static inline void __list_del(struct list_head *prev, struct list_head *next)
+ {
+ 	next->prev = prev;
+ 	prev->next = next;
+@@ -366,7 +366,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  */
+ #define list_for_each(pos, head) \
+ 	for (pos = (head)->next; prefetch(pos->next), pos != (head); \
+-        	pos = pos->next)
++		pos = pos->next)
+
+ /**
+  * __list_for_each	-	iterate over a list
+@@ -388,7 +388,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  */
+ #define list_for_each_prev(pos, head) \
+ 	for (pos = (head)->prev; prefetch(pos->prev), pos != (head); \
+-        	pos = pos->prev)
++		pos = pos->prev)
+
+ /**
+  * list_for_each_safe - iterate over a list safe against removal of list entry
+@@ -419,7 +419,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  */
+ #define list_for_each_entry(pos, head, member)				\
+ 	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+-	     prefetch(pos->member.next), &pos->member != (head); 	\
++	     prefetch(pos->member.next), &pos->member != (head);	\
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+
+ /**
+@@ -430,7 +430,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  */
+ #define list_for_each_entry_reverse(pos, head, member)			\
+ 	for (pos = list_entry((head)->prev, typeof(*pos), member);	\
+-	     prefetch(pos->member.prev), &pos->member != (head); 	\
++	     prefetch(pos->member.prev), &pos->member != (head);	\
+ 	     pos = list_entry(pos->member.prev, typeof(*pos), member))
+
+ /**
+@@ -439,7 +439,8 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  * @head:	the head of the list
+  * @member:	the name of the list_struct within the struct.
+  *
+- * Prepares a pos entry for use as a start point in
+list_for_each_entry_continue().
++ * Prepares a pos entry for use as a start point in
++ * list_for_each_entry_continue().
+  */
+ #define list_prepare_entry(pos, head, member) \
+ 	((pos) ? : list_entry(head, typeof(*pos), member))
+@@ -453,7 +454,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  * Continue to iterate over list of given type, continuing after
+  * the current position.
+  */
+-#define list_for_each_entry_continue(pos, head, member) 		\
++#define list_for_each_entry_continue(pos, head, member)			\
+ 	for (pos = list_entry(pos->member.next, typeof(*pos), member);	\
+ 	     prefetch(pos->member.next), &pos->member != (head);	\
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+@@ -480,7 +481,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  *
+  * Iterate over list of given type, continuing from current position.
+  */
+-#define list_for_each_entry_from(pos, head, member) 			\
++#define list_for_each_entry_from(pos, head, member)			\
+ 	for (; prefetch(pos->member.next), &pos->member != (head);	\
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+
+@@ -494,7 +495,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+ #define list_for_each_entry_safe(pos, n, head, member)			\
+ 	for (pos = list_entry((head)->next, typeof(*pos), member),	\
+ 		n = list_entry(pos->member.next, typeof(*pos), member);	\
+-	     &pos->member != (head); 					\
++	     &pos->member != (head);					\
+ 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+
+ /**
+@@ -507,10 +508,10 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  * Iterate over list of given type, continuing after current point,
+  * safe against removal of list entry.
+  */
+-#define list_for_each_entry_safe_continue(pos, n, head, member) 		\
+-	for (pos = list_entry(pos->member.next, typeof(*pos), member), 		\
+-		n = list_entry(pos->member.next, typeof(*pos), member);		\
+-	     &pos->member != (head);						\
++#define list_for_each_entry_safe_continue(pos, n, head, member)		\
++	for (pos = list_entry(pos->member.next, typeof(*pos), member),	\
++		n = list_entry(pos->member.next, typeof(*pos), member);	\
++	     &pos->member != (head);					\
+ 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+
+ /**
+@@ -523,9 +524,9 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+  * Iterate over list of given type from current point, safe against
+  * removal of list entry.
+  */
+-#define list_for_each_entry_safe_from(pos, n, head, member) 			\
+-	for (n = list_entry(pos->member.next, typeof(*pos), member);		\
+-	     &pos->member != (head);						\
++#define list_for_each_entry_safe_from(pos, n, head, member)		\
++	for (n = list_entry(pos->member.next, typeof(*pos), member);	\
++	     &pos->member != (head);					\
+ 	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
+
+ /**
+@@ -541,7 +542,7 @@ static inline void list_splice_tail_init(struct
+list_head *list,
+ #define list_for_each_entry_safe_reverse(pos, n, head, member)		\
+ 	for (pos = list_entry((head)->prev, typeof(*pos), member),	\
+ 		n = list_entry(pos->member.prev, typeof(*pos), member);	\
+-	     &pos->member != (head); 					\
++	     &pos->member != (head);					\
+ 	     pos = n, n = list_entry(n->member.prev, typeof(*n), member))
+
+ /*
+@@ -629,7 +630,7 @@ static inline void hlist_add_after(struct hlist_node *n,
+ 	n->next = next;
+ 	next->pprev = &n->next;
+
+-	if(next->next)
++	if (next->next)
+ 		next->next->pprev  = &next->next;
+ }
+
+@@ -646,7 +647,7 @@ static inline void hlist_move_list(struct hlist_head *old,
+ 	old->first = NULL;
+ }
+
+-#define hlist_entry(ptr, type, member) container_of(ptr,type,member)
++#define hlist_entry(ptr, type, member) container_of(ptr, type, member)
+
+ #define hlist_for_each(pos, head) \
+ 	for (pos = (head)->first; pos && ({ prefetch(pos->next); 1; }); \
+@@ -665,8 +666,8 @@ static inline void hlist_move_list(struct hlist_head *old,
+  */
+ #define hlist_for_each_entry(tpos, pos, head, member)			 \
+ 	for (pos = (head)->first;					 \
+-	     pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos && ({ prefetch(pos->next); 1; }) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; });\
+ 	     pos = pos->next)
+
+ /**
+@@ -677,8 +678,8 @@ static inline void hlist_move_list(struct hlist_head *old,
+  */
+ #define hlist_for_each_entry_continue(tpos, pos, member)		 \
+ 	for (pos = (pos)->next;						 \
+-	     pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos && ({ prefetch(pos->next); 1; }) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; });\
+ 	     pos = pos->next)
+
+ /**
+@@ -688,8 +689,8 @@ static inline void hlist_move_list(struct hlist_head *old,
+  * @member:	the name of the hlist_node within the struct.
+  */
+ #define hlist_for_each_entry_from(tpos, pos, member)			 \
+-	for (; pos && ({ prefetch(pos->next); 1;}) &&			 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	for (; pos && ({ prefetch(pos->next); 1; }) &&			 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; });\
+ 	     pos = pos->next)
+
+ /**
+@@ -700,10 +701,10 @@ static inline void hlist_move_list(struct hlist_head *old,
+  * @head:	the head for your list.
+  * @member:	the name of the hlist_node within the struct.
+  */
+-#define hlist_for_each_entry_safe(tpos, pos, n, head, member) 		 \
++#define hlist_for_each_entry_safe(tpos, pos, n, head, member)		 \
+ 	for (pos = (head)->first;					 \
+-	     pos && ({ n = pos->next; 1; }) && 				 \
+-		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
++	     pos && ({ n = pos->next; 1; }) &&				 \
++		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1; });\
+ 	     pos = n)
+
+ #endif
+-- 
+1.6.2.1
