@@ -1,118 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab0CTH44 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 03:56:56 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:43607 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab0CTH4y (ORCPT
+	id S1752816Ab0CTH55 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 03:57:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55607 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab0CTH5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 03:56:54 -0400
-X-Auth-Info: 006NIwdRGlGMYn5nL+aAQunDhiSbT4Xq6R0WQf8wuPU=
-Message-ID: <4BA47F64.8030108@grandegger.com>
-Date: Sat, 20 Mar 2010 08:55:16 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+	Sat, 20 Mar 2010 03:57:55 -0400
+Date: Sat, 20 Mar 2010 08:57:22 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Greg KH <gregkh@suse.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linux-Scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH] scsi: fix lockdep warning
+Message-ID: <20100320075722.GE26934@pengutronix.de>
+References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com> <86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com> <m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org> <m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org> <4BA47692.7040401@kernel.org>
 MIME-Version: 1.0
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
-       netdev@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN	module
-References: <> <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu> <4BA33D5A.8070000@grandegger.com> <20100319151914.GB13672@ovro.caltech.edu> <4BA39C05.8050800@grandegger.com> <20100319200325.GE13672@ovro.caltech.edu> <4BA3DAF1.4090206@grandegger.com> <20100319215227.GF13672@ovro.caltech.edu>
-In-Reply-To: <20100319215227.GF13672@ovro.caltech.edu>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KuLpqunXa7jZSBt+"
+Content-Disposition: inline
+In-Reply-To: <4BA47692.7040401@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ira W. Snyder wrote:
-> On Fri, Mar 19, 2010 at 09:13:37PM +0100, Wolfgang Grandegger wrote:
->> Ira W. Snyder wrote:
->>> On Fri, Mar 19, 2010 at 04:45:09PM +0100, Wolfgang Grandegger wrote:
->>>> Ira W. Snyder wrote:
->>>>> On Fri, Mar 19, 2010 at 10:01:14AM +0100, Wolfgang Grandegger wrote:
->>>>>> Hi Ira,
->>>>>>
->>>>>> we already discussed this patch on the SocketCAN mailing list and there
->>>>>> are just a few minor issues and the request to add support for the new
->>>>>> "berr-reporting" option, if feasible. See:
->>>>>>
->>>>>>   commit 52c793f24054f5dc30d228e37e0e19cc8313f086
->>>>>>   Author: Wolfgang Grandegger <wg@grandegger.com>
->>>>>>   Date:   Mon Feb 22 22:21:17 2010 +0000
->>>>>>
->>>>>>     can: netlink support for bus-error reporting and counters
->>>>>>     
->>>>>>     This patch makes the bus-error reporting configurable and allows to
->>>>>>     retrieve the CAN TX and RX bus error counters via netlink interface.
->>>>>>     I have added support for the SJA1000. The TX and RX bus error counters
->>>>>>     are also copied to the data fields 6..7 of error messages when state
->>>>>>     changes are reported.
->>>>>>
->>>>>> Should not be a big deal.
->>>>>>
->>>>> I think this patch came along since my last post of the driver. I must
->>>>> have missed it. I'll try and add support.
->>>> No problem, it's really new. Just just need to enable BEI depending on
->>>> CAN_CTRLMODE_BERR_REPORTING.
->>>>
->>> I have one final question about this.
->>>
->>> The documentation for the firmware isn't very specific here. I believe
->>> that in order to get any kind of error messages, I need the bus error
->>> feature turned on. What is the expected behavior of an SJA1000 with the
->>> BEI (bus error interrupt) turned off? Will you still get warning
->>> messages for ERROR_ACTIVE -> ERROR_PASSIVE state transitions?
->> Yes. State transitions are enabled with EI and EPI.
->>
-> 
-> I cannot set the registers directly, but I think I got it right. See
-> below.
-> 
->>> I'm not sure how I would go about testing this feature, either. Ideas?
->> Send messages without cable connected and watch the error messages with
->> "candump any,0:0,#ffffffff". With "ip ... berr-reporting on" you should
->> see additional bus-errors.
->>
-> 
-> Ok, I tried this. On one controller, I turned on bus-error reporting. On
-> the other, I turn off bus-error reporting. I then tried sending lots of
-> messages with the cable unplugged. Here is what happened:
-> 
-> bus-error reporting on:
-> Lots of CAN_ERR_BUSERR messages are flooded in candump. There is also a
-> CAN_ERR_CRTL_TX_WARNING message, when there are too many TX errors.
 
-OK, you will now also understand why bus-error reporting is off by
-default. On low-end systems bus-error flooding may even hang the system.
+--KuLpqunXa7jZSBt+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> bus-error reporting off:
-> There was only one message reported before the controller went into
-> ERROR-WARNING state. It was the same CAN_ERR_CRTL_TX_WARNING message as
-> above. There was no flooding of CAN_ERR_BUSERR messages.
-> 
-> Does this seem right? It seems pretty good to me.
+On Sat, Mar 20, 2010 at 12:17:38AM -0700, Yinghai Lu wrote:
+>=20
+> with qlogic and emulex card etc.
+>=20
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>=20
+> ---
+>  drivers/base/attribute_container.c |    1 +
+>  drivers/scsi/lpfc/lpfc_attr.c      |    3 +++
+>  drivers/scsi/scsi_sysfs.c          |   15 ++++++++++++---
+>  3 files changed, 16 insertions(+), 3 deletions(-)
+>=20
+> Index: linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.orig/drivers/scsi/lpfc/lpfc_attr.c
+> +++ linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
+> @@ -3780,6 +3780,7 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
+>  	struct Scsi_Host *shost =3D lpfc_shost_from_vport(vport);
+>  	int error;
+> =20
+> +	sysfs_bin_attr_init(&sysfs_drvr_stat_data_attr);
+>  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
+>  				      &sysfs_drvr_stat_data_attr);
+> =20
+> @@ -3787,11 +3788,13 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
+>  	if (error || vport->port_type =3D=3D LPFC_NPIV_PORT)
+>  		goto out;
+> =20
+> +	sysfs_bin_attr_init(&sysfs_ctlreg_attr);
+>  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
+>  				      &sysfs_ctlreg_attr);
+>  	if (error)
+>  		goto out_remove_stat_attr;
+> =20
+> +	sysfs_bin_attr_init(&sysfs_mbox_attr);
+>  	error =3D sysfs_create_bin_file(&shost->shost_dev.kobj,
+>  				      &sysfs_mbox_attr);
 
-Yes, I'm just missing an error-passive message. What state does "ip -d
-link show can0" report.
+Huh, why is this? They are statically declared.
 
->>> I also noticed that I can enable "self test mode" and "listen only mode"
->>> using the same firmware command. It appears that there are netlink
->>> messages for this as well. Should I try and support these, too? I don't
->>> really have any use for them (yet). I assume "self test mode" is
->>> equivalent to "loopback mode" in the netlink messages.
->> List-only is straight forward while "self test mode" is not exactly like
->> "loopback mode", IIRC. Feel free to send a follow-up patch when you have
->> time for a thorough implementation and testing. It's also on my to-do
->> list for the SJA1000.
->>
-> 
-> Ok, then I'll put this off for a while. Feel free to pester me about it
-> when there is a working implementation in the SJA1000 driver for me to
-> borrow from. :)
 
-I will let you know when I have something working.
+>  	if (error)
+> Index: linux-2.6/drivers/scsi/scsi_sysfs.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.orig/drivers/scsi/scsi_sysfs.c
+> +++ linux-2.6/drivers/scsi/scsi_sysfs.c
+> @@ -907,20 +907,27 @@ int scsi_sysfs_add_sdev(struct scsi_devi
+> =20
+>  	/* create queue files, which may be writable, depending on the host */
+>  	if (sdev->host->hostt->change_queue_depth) {
+> +		sysfs_bin_attr_init(&sdev_attr_queue_depth_rw);
+>  		error =3D device_create_file(&sdev->sdev_gendev,
+>  					   &sdev_attr_queue_depth_rw);
+> +		sysfs_bin_attr_init(&sdev_attr_queue_ramp_up_period);
+>  		error =3D device_create_file(&sdev->sdev_gendev,
+>  					   &sdev_attr_queue_ramp_up_period);
 
-Wolfgang.
+ditto
+
+>  	}
+> -	else
+> +	else {
+> +		sysfs_bin_attr_init(&dev_attr_queue_depth);
+>  		error =3D device_create_file(&sdev->sdev_gendev, &dev_attr_queue_depth=
+);
+> +	}
+>  	if (error)
+>  		return error;
+> =20
+> -	if (sdev->host->hostt->change_queue_type)
+> +	if (sdev->host->hostt->change_queue_type)  {
+> +		sysfs_bin_attr_init(&sdev_attr_queue_type_rw);
+>  		error =3D device_create_file(&sdev->sdev_gendev, &sdev_attr_queue_type=
+_rw);
+
+ditto
+
+> -	else
+> +	} else {
+> +		sysfs_bin_attr_init(&dev_attr_queue_type);
+>  		error =3D device_create_file(&sdev->sdev_gendev, &dev_attr_queue_type);
+> +	}
+>  	if (error)
+>  		return error;
+> =20
+> @@ -935,6 +942,7 @@ int scsi_sysfs_add_sdev(struct scsi_devi
+>  	/* add additional host specific attributes */
+>  	if (sdev->host->hostt->sdev_attrs) {
+>  		for (i =3D 0; sdev->host->hostt->sdev_attrs[i]; i++) {
+> +			sysfs_bin_attr_init(sdev->host->hostt->sdev_attrs[i]);
+>  			error =3D device_create_file(&sdev->sdev_gendev,
+>  					sdev->host->hostt->sdev_attrs[i]);
+>  			if (error)
+> @@ -1060,6 +1068,7 @@ int scsi_sysfs_add_host(struct Scsi_Host
+>  	/* add host specific attributes */
+>  	if (shost->hostt->shost_attrs) {
+>  		for (i =3D 0; shost->hostt->shost_attrs[i]; i++) {
+> +			sysfs_bin_attr_init(shost->hostt->shost_attrs[i]);
+>  			error =3D device_create_file(&shost->shost_dev,
+>  					shost->hostt->shost_attrs[i]);
+>  			if (error)
+> Index: linux-2.6/drivers/base/attribute_container.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux-2.6.orig/drivers/base/attribute_container.c
+> +++ linux-2.6/drivers/base/attribute_container.c
+> @@ -328,6 +328,7 @@ attribute_container_add_attrs(struct dev
+>  		return sysfs_create_group(&classdev->kobj, cont->grp);
+> =20
+>  	for (i =3D 0; attrs[i]; i++) {
+> +		sysfs_bin_attr_init(attrs[i]);
+>  		error =3D device_create_file(classdev, attrs[i]);
+>  		if (error)
+>  			return error;
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--KuLpqunXa7jZSBt+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkukf+IACgkQD27XaX1/VRsVTACeJj5UN4UCN/Gw+L57s5XOcZxA
+LygAn1yTjTKFCpchnaqzRZApCD9SUE/u
+=vTRO
+-----END PGP SIGNATURE-----
+
+--KuLpqunXa7jZSBt+--
