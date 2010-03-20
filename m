@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab0CTPAY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 11:00:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49912 "EHLO mx1.redhat.com"
+	id S1753150Ab0CTPGu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 11:06:50 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:56754 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752492Ab0CTPAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 11:00:22 -0400
-Date: Sat, 20 Mar 2010 15:59:43 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Zachary Amsden <zamsden@redhat.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100320145943.GI29874@random.random>
-References: <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <4BA1FC80.2000401@redhat.com>
- <20100318105013.GB24464@elte.hu>
- <4BA294D4.2060700@redhat.com>
- <20100318211529.GA21367@elte.hu>
- <4BA2A70B.5080101@redhat.com>
- <20100318224446.GC19669@elte.hu>
- <4BA3260D.5090407@redhat.com>
+	id S1753033Ab0CTPGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 11:06:48 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA3260D.5090407@redhat.com>
+Content-Transfer-Encoding: 7bit
+Message-ID: <19364.58488.817538.692599@pilspetsen.it.uu.se>
+Date: Sat, 20 Mar 2010 16:06:32 +0100
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, nico@cam.org,
+       rth@twiddle.net, nico@fluxnic.net, linux-kernel@vger.kernel.org,
+       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
+       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
+In-Reply-To: <1269086286.4028.6039.camel@macbook.infradead.org>
+References: <20100320085507.4038.96426.stgit@pauliusz>
+	<1269078083.4028.5586.camel@macbook.infradead.org>
+	<badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com>
+	<1269086286.4028.6039.camel@macbook.infradead.org>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 09:21:49AM +0200, Avi Kivity wrote:
-> On 03/19/2010 12:44 AM, Ingo Molnar wrote:
-> >
-> > Too bad - there was heavy initial opposition to the arch/x86 unification as
-> > well [and heavy opposition to tools/perf/ as well], still both worked out
-> > extremely well :-)
-> >    
-> 
-> Did you forget that arch/x86 was a merging of a code fork that happened 
-> several years previously?  Maybe that fork shouldn't have been done to 
-> begin with.
+David Woodhouse writes:
+ > On Sat, 2010-03-20 at 13:20 +0200, Paulius Zaleckas wrote:
+ > > On Sat, Mar 20, 2010 at 11:41 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+ > > > On Sat, 2010-03-20 at 10:55 +0200, Paulius Zaleckas wrote:
+ > > >> -             uint64_t x;
+ > > >> +             /*
+ > > >> +              * force x variable to r2/r3 registers since ldrd instruction
+ > > >> +              * requires first register to be even.
+ > > >> +              */
+ > > >> +             register uint64_t x asm ("r2");
+ > > >> +
+ > > >>               asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+ > > >
+ > > > Hm, isn't there an asm constraint which will force it into an
+ > > > appropriate register pair?
+ > > 
+ > > Not that I know of...
+ > > 
+ > > > Failing that, "=&r2,r4,r6,r8" ought to work.
+ > > 
+ > > No, fails with error: matching constraint not valid in output operand
+ > 
+ > Hm, crap -- GCC on ARM doesn't let you give specific registers, so that
+ > trick doesn't work.
 
-We discussed and probably timidly tried to share the sharable
-initially but we realized it was too time wasteful. In addition to
-having to adapt the code to 64bit we would also had to constantly
-solve another problem on top of it (see the various split on _32/_64,
-those takes time to achieve, maybe not huge time but still definitely
-some time and effort). Even in retrospect I am quite sure the way
-x86-64 happened was optimal and if we would go back we would do it
-again the exact same way even if the final object was to have a common
-arch/x86 (and thankfully Linus is flexible and smart enough to realize
-that code that isn't risking to destabilize anything shouldn't be
-forced out just because it's not to a totally
-theoretical-perfect-nitpicking-clean-state yet). It's still a lot of
-work do the unification later as a separate task, but it's not like if
-we did it immediately it would have been a lot less work. It's about
-the same amount of effort and we were able to defer it for later and
-decrease the time to market which surely has contributed to the
-success of x86-64.
+I missed the start of this thread, but looking at orion_nand.c I fail to
+see why you'd need to mess with inline asm for reading a sequence of u64
+values from an I/O location to an array.
 
-Problem of qemu is not some lack of GUI or that it's not included in
-the linux kernel git tree, the definitive problem is how to merge
-qemu-kvm/kvm and qlx into it. If you (Avi) were the qemu maintainer I
-am sure there wouldn't two trees so as a developer I would totally
-love it, and I am sure that with you as maintainer it would have a
-chance to move forward with qlx on desktop virtualization without
-proposing to extend vnc instead to achieve a "similar" result (imagine
-if btrfs is published on a website and people starts to discuss if it
-should ever be merged ever because reinventing some part of btrfs
-inside ext5 might achieve ""similar"" results).
-
-About a GUI for KVM to use on desktop distributions, that is an
-irrelevant concern compared to the lack of protocol more efficient
-than rdesktop/rdp/vnc for desktop virtualization. I've people asking
-me to migrate hundreds of desktops to desktop virtualization on KVM in
-their organizations and I tell them to use spice because I believe
-it's the most efficient option available (at least as far as we stick
-to open source open protocols), there are universities using spice on
-thousand of student desktops, and I think we need paravirt graphics to
-happen ASAP in the main qemu tree too.
-
-In short: running KVM on the desktop is irrelevant compared to running
-the desktop on KVM so I suggest to focus on what is more important
-first ;).
-
-Thanks,
-Andrea
+Rewriting that to proper C generates a nice ldrd;strd loop with my gcc-4.4.3.
