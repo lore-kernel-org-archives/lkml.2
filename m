@@ -1,33 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab0CTLiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 07:38:08 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:46328 "EHLO
+	id S1752323Ab0CTLjE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 07:39:04 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:38959 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab0CTLiC (ORCPT
+	with ESMTP id S1752075Ab0CTLjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 07:38:02 -0400
+	Sat, 20 Mar 2010 07:39:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=SNxY7eltHmnS4Qt9KmqpSj1ulaaoj+IgQVAIRYt9jTFhYBIaYI3/4jbpKyCVsJjjif
-         D0a7rOJWRXt7soE4AxzHxHNDmmHSBJ1BJDpYXSjdgtpDtqlcGXbBqBgD+umXxCPOTyri
-         JGxvKX0xkiNaT0/qTHsTrj3JgS7Lt122XWpwc=
-Date: Sat, 20 Mar 2010 14:37:52 +0300
+        b=in/ds0SjLxCYbgBj24skPh7FNCJ9nTWGL9AnUNxHFAh/k8eGrkw5CE0z6Hdj7u1RNj
+         NS6YADfWbFE5rQDUCZfjAgoiRWvyo0PVuwzR+x8QoCLw8HnFqGfcUPXeZIB4XmjYFvKh
+         2EQ8TcBf1BtaiuxhUkz/r3Nqg41f5XEGIN4KU=
+Date: Sat, 20 Mar 2010 14:38:51 +0300
 From: Dan Carpenter <error27@gmail.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Josef Bacik <josef@redhat.com>, Yan Zheng <zheng.yan@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch 3/3] btrfs cleanup: unneeded null check
-Message-ID: <20100320113752.GA5331@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Chris Mason <chris.mason@oracle.com>,
-	Josef Bacik <josef@redhat.com>, Yan Zheng <zheng.yan@oracle.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+To: chris.mason@oracle.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: locking problems: Btrfs: be more selective in the defrag ioctl
+Message-ID: <20100320113851.GB5331@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>, chris.mason@oracle.com,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -36,28 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-old_inode cannot be null here so I removed the check.
-This fixes a smatch warning:
-fs/btrfs/inode.c +5545 btrfs_rename(88) warn: variable dereferenced 
-	before check 'old_inode'
+Hi Chris,
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-linux-next material
+There is a locking problem in 
+	940100a4a7b78 "Btrfs: be more selective in the defrag ioctl"
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 02bb099..647ce41 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -5541,10 +5541,8 @@ static int btrfs_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	 * make sure the inode gets flushed if it is replacing
- 	 * something.
- 	 */
--	if (new_inode && new_inode->i_size &&
--	    old_inode && S_ISREG(old_inode->i_mode)) {
-+	if (new_inode && new_inode->i_size && S_ISREG(old_inode->i_mode))
- 		btrfs_add_ordered_operation(trans, root, old_inode);
--	}
- 
- 	old_dir->i_ctime = old_dir->i_mtime = ctime;
- 	new_dir->i_ctime = new_dir->i_mtime = ctime;
+There are two places where we break out of the while loop under the 
+lock.
+
+fs/btrfs/ioctl.c +708 btrfs_defrag_file(159) error: double lock 'mutex:&inode->i_mutex'
+   600                  mutex_lock(&inode->i_mutex);
+   601                  if (range->flags & BTRFS_DEFRAG_RANGE_COMPRESS)
+   602                          BTRFS_I(inode)->force_compress = 1;
+   603  
+   604                  ret = btrfs_check_data_free_space(root, inode, PAGE_CACHE_SIZE);
+   605                  if (ret) {
+   606                          ret = -ENOSPC;
+   607                          break;
+
+	Here.
+
+   608                  }
+   609  
+   610                  ret = btrfs_reserve_metadata_for_delalloc(root, inode, 1);
+   611                  if (ret) {
+   612                          btrfs_free_reserved_data_space(root, inode,
+   613                                                         PAGE_CACHE_SIZE);
+   614                          ret = -ENOSPC;
+   615                          break;
+
+	And here.
+
+   616                  }
+
+Maybe we should have "goto err_reservations;" instead of break?  I
+don't know the code well enough to say.
+
+regards,
+dan carpenter
