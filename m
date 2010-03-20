@@ -1,70 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752323Ab0CTLjE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 07:39:04 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:38959 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752075Ab0CTLjA (ORCPT
+	id S1751533Ab0CTL6h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 07:58:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56104 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006Ab0CTL6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 07:39:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=in/ds0SjLxCYbgBj24skPh7FNCJ9nTWGL9AnUNxHFAh/k8eGrkw5CE0z6Hdj7u1RNj
-         NS6YADfWbFE5rQDUCZfjAgoiRWvyo0PVuwzR+x8QoCLw8HnFqGfcUPXeZIB4XmjYFvKh
-         2EQ8TcBf1BtaiuxhUkz/r3Nqg41f5XEGIN4KU=
-Date: Sat, 20 Mar 2010 14:38:51 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: chris.mason@oracle.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: locking problems: Btrfs: be more selective in the defrag ioctl
-Message-ID: <20100320113851.GB5331@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>, chris.mason@oracle.com,
-	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 20 Mar 2010 07:58:36 -0400
+Subject: Re: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
+From: David Woodhouse <dwmw2@infradead.org>
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>, nico@cam.org,
+       rth@twiddle.net
+Cc: nico@fluxnic.net, akpm@linux-foundation.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com>
+References: <20100320085507.4038.96426.stgit@pauliusz>
+	 <1269078083.4028.5586.camel@macbook.infradead.org>
+	 <badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 20 Mar 2010 11:58:06 +0000
+Message-ID: <1269086286.4028.6039.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Sat, 2010-03-20 at 13:20 +0200, Paulius Zaleckas wrote:
+> On Sat, Mar 20, 2010 at 11:41 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> > On Sat, 2010-03-20 at 10:55 +0200, Paulius Zaleckas wrote:
+> >> -             uint64_t x;
+> >> +             /*
+> >> +              * force x variable to r2/r3 registers since ldrd instruction
+> >> +              * requires first register to be even.
+> >> +              */
+> >> +             register uint64_t x asm ("r2");
+> >> +
+> >>               asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+> >
+> > Hm, isn't there an asm constraint which will force it into an
+> > appropriate register pair?
+> 
+> Not that I know of...
+> 
+> > Failing that, "=&r2,r4,r6,r8" ought to work.
+> 
+> No, fails with error: matching constraint not valid in output operand
 
-There is a locking problem in 
-	940100a4a7b78 "Btrfs: be more selective in the defrag ioctl"
+Hm, crap -- GCC on ARM doesn't let you give specific registers, so that
+trick doesn't work.
 
-There are two places where we break out of the while loop under the 
-lock.
+Strictly speaking, I think your version is wrong -- although you force
+the variable 'x' to be stored in r2/r3, you don't actually force GCC to
+use r2/r3 as the output registers for the asm statement -- it could
+happily use other registers, then move their contents into r2/r3
+afterwards.
 
-fs/btrfs/ioctl.c +708 btrfs_defrag_file(159) error: double lock 'mutex:&inode->i_mutex'
-   600                  mutex_lock(&inode->i_mutex);
-   601                  if (range->flags & BTRFS_DEFRAG_RANGE_COMPRESS)
-   602                          BTRFS_I(inode)->force_compress = 1;
-   603  
-   604                  ret = btrfs_check_data_free_space(root, inode, PAGE_CACHE_SIZE);
-   605                  if (ret) {
-   606                          ret = -ENOSPC;
-   607                          break;
+Obviously it _won't_ do that most of the time, but it _could_. GCC PR
+#15089 was filed for the fact that sometimes it does, but I think Nico
+was missing the point -- GCC is _allowed_ to do that, and if it makes
+you sad then you should be asking for better assembly constraints which
+would allow you to tell it not to.
 
-	Here.
+See the __asmeq() macro in <asm/system.h> for a dirty hack which will
+check which registers are used and abort at compile time, although your
+compilation is going to fail anyway so I'm not sure it makes much of a
+difference in this particular case.
 
-   608                  }
-   609  
-   610                  ret = btrfs_reserve_metadata_for_delalloc(root, inode, 1);
-   611                  if (ret) {
-   612                          btrfs_free_reserved_data_space(root, inode,
-   613                                                         PAGE_CACHE_SIZE);
-   614                          ret = -ENOSPC;
-   615                          break;
+The real fix here is to add an asm constraint to GCC which allows you to
+specify "any even GPR" (or whatever's most suitable for the ldrd
+instruction). Being able to give specific registers, like you can on
+other architectures, would be useful too.
 
-	And here.
+Please file a PR, then resubmit your patch with a comment explaining
+that the code is known to be broken because GCC doesn't allow you to do
+any better, and containing a reference to your PR. If people copy your
+code, I want them to at least know that they're propagating a bug.
 
-   616                  }
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Maybe we should have "goto err_reservations;" instead of break?  I
-don't know the code well enough to say.
-
-regards,
-dan carpenter
