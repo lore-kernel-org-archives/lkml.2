@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0CTAhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 20:37:15 -0400
-Received: from hawking.rebel.net.au ([203.20.69.83]:49884 "EHLO
-	hawking.rebel.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0CTAhN (ORCPT
+	id S1752778Ab0CTBDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 21:03:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54565 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752111Ab0CTBDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 20:37:13 -0400
-Message-ID: <4BA418B2.8090200@davidnewall.com>
-Date: Sat, 20 Mar 2010 11:07:06 +1030
-From: David Newall <davidn@davidnewall.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 19 Mar 2010 21:03:50 -0400
+Date: Fri, 19 Mar 2010 18:00:09 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+       Ian Campbell <ian.campbell@citrix.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -v4] x86: do not free zero sized per cpu areas
+In-Reply-To: <4BA40C83.1030202@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003191758460.18017@i5.linux-foundation.org>
+References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org> <4BA3F8ED.2090600@zytor.com> <4BA407B8.7070503@kernel.org> <4BA408EE.5000001@zytor.com> <4BA40C83.1030202@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Valery Reznic <valery_reznic@yahoo.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: execve for script don't return ENOEXEC, bug ?
-References: <812529.11018.qm@web110312.mail.gq1.yahoo.com> <20100319140704.794dec89.akpm@linux-foundation.org>
-In-Reply-To: <20100319140704.794dec89.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Mar 2010 02:56:16 -0800 (PST) Valery Reznic 
-<valery_reznic@yahoo.com> wrote:
-> Hi,
->
-> I Have following to scripts:
->
-> a.sh
-> #!/bin/sh
-> echo "It's a.sh
->
-> and b.sh:
-> #! ./b.sh
-> echo "It's b.sh"
->   
-[...]
-> When I run same scripts on Fedora 12 x86_64 box with stock kernel 2.6.31.5-127.fc12.x86_64 I got following:
->
-> strace -f -e execve setarch i386  ./b.sh 
-> execve("/usr/bin/setarch", ["setarch", "i386", "./b.sh"], [/* 41 vars */]) = 0
-> execve("./b.sh", ["./b.sh"], [/* 41 vars */]) = 0
-> It's a.sh
 
-I see no circumstance which would make b.sh invoke a.sh (and thus emit 
-"It's a.sh"). Are you sure these are the actual scripts and output?
 
-On the other hand, if the output was "It's b.sh", this is compatible 
-with many historical versions of UNIX, which assumed /bin/sh to be the 
-script interpreter. On
-2.6.28-16-generic #55-Ubuntu SMP i686 GNU/Linux I get successful output 
-for the following variants of "x.sh":
+On Fri, 19 Mar 2010, Yinghai Lu wrote:
+> +
+> +	if (start > end) {
+> +		WARN_ONCE(1,
+> +		      "free_early_partial got wrong start/end %#llx/%#llx\n",
+> +		      start, end);
+> +
+> +		return;
 
-:
-echo worked
+This should be written as
 
-and
+	if (WARN_ONCE(start > end, "free_early_partial(%#llx/%#llx)\n", start, end))
+		return;
 
-#!
-echo worked
+rather than having a separate conditional.
 
-and
-
-#! ./x.sh
-echo worked
+			Linus
