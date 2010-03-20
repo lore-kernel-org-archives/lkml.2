@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab0CTNDV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 09:03:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43392 "EHLO mx2.suse.de"
+	id S1752585Ab0CTNDZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 09:03:25 -0400
+Received: from kroah.org ([198.145.64.141]:46685 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab0CTNDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 09:03:20 -0400
-Date: Sat, 20 Mar 2010 05:58:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux-Scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH] scsi: fix lockdep warning
-Message-ID: <20100320125838.GA13626@suse.de>
-References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com> <86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com> <m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org> <m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org> <4BA47692.7040401@kernel.org>
+	id S1752501Ab0CTNDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 09:03:22 -0400
+Date: Sat, 20 Mar 2010 06:01:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Marin Mitov <mitov@issp.bas.bg>
+Cc: Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Yet another (third) dt3155 driver PCI/video4linux
+	compliant
+Message-ID: <20100320130158.GA13682@kroah.com>
+References: <201003201118.36736.mitov@issp.bas.bg>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BA47692.7040401@kernel.org>
+In-Reply-To: <201003201118.36736.mitov@issp.bas.bg>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 12:17:38AM -0700, Yinghai Lu wrote:
+On Sat, Mar 20, 2010 at 11:18:36AM +0200, Marin Mitov wrote:
+> Hi Scott, Greg, all,
 > 
-> with qlogic and emulex card etc.
+> Here you will find a link to the source code for a dt3155 driver
+> rewritten to be  PCI/video4linux compliant.
+> 
+> http://lfb.issp.bas.bg/~mitov/linux/dt3155v4l/
+> 
+> It works with xawtv (if the window is bigger than the acquired image).
+> See 
+> 
+> http://lfb.issp.bas.bg/~mitov/linux/dt3155v4l/00README
+> 
+> for more details.
+> 
+> Any critics/comments will be appreciated.
 
-Is this still needed with 2.6.34-rc2?
-
-And as was pointed out, this does not look correct as you are doing it
-on static attributes.
-
-thanks,
+Can you send it in patch form?  I can't really do anything with it like
+this, sorry.
 
 greg k-h
