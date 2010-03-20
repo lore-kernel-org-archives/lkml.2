@@ -1,127 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661Ab0CTHSq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 03:18:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34749 "EHLO hera.kernel.org"
+	id S1752562Ab0CTHXP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 03:23:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34871 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752508Ab0CTHSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 03:18:45 -0400
-Message-ID: <4BA47692.7040401@kernel.org>
-Date: Sat, 20 Mar 2010 00:17:38 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752163Ab0CTHXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 03:23:14 -0400
+Message-ID: <4BA449E2.3080707@kernel.org>
+Date: Sat, 20 Mar 2010 13:06:58 +0900
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Greg KH <gregkh@suse.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux-Scsi <linux-scsi@vger.kernel.org>
-Subject: [PATCH] scsi: fix lockdep warning
-References: <a4423d671003081547v5c955d58t248db945c06d2a7f@mail.gmail.com>	<86802c441003081612r2f44efd6n9664b4b7c98a636a@mail.gmail.com>	<m1d3zel4b4.fsf@fess.ebiederm.org> <4B95F37E.6060309@kernel.org> <m14okqnczd.fsf@fess.ebiederm.org> <4B99A6F0.4080203@kernel.org>
-In-Reply-To: <4B99A6F0.4080203@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: graff.yang@gmail.com
+CC: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, uclinux-dist-devel@blackfin.uclinux.org
+Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
+References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>
+In-Reply-To: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 20 Mar 2010 07:22:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-with qlogic and emulex card etc.
+On 03/19/2010 06:02 PM, graff.yang@gmail.com wrote:
+> From: Graff Yang<graff.yang@gmail.com>
+>
+> This patch supports dynamic alloc/free percpu area for nommu arch like
+> blackfin.
+> It allocates contiguous pages in funtion pcpu_get_vm_areas() instead of
+> getting none contiguous pages then vmap it in mmu arch.
+> As we can not get the real page structure through vmalloc_to_page(), so
+> it also modified the nommu version vmalloc_to_page()/vmalloc_to_pfn().
+>
+> Signed-off-by: Graff Yang<graff.yang@gmail.com>
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Heh heh... I've never imagined there would be a SMP architecture w/o
+mmu.  That's pretty interesting.  I mean, there is real estate for
+multiple cores but not for mmu?
 
----
- drivers/base/attribute_container.c |    1 +
- drivers/scsi/lpfc/lpfc_attr.c      |    3 +++
- drivers/scsi/scsi_sysfs.c          |   15 ++++++++++++---
- 3 files changed, 16 insertions(+), 3 deletions(-)
+> diff --git a/mm/nommu.c b/mm/nommu.c
+> index 605ace8..98bbdf4 100644
+> --- a/mm/nommu.c
+> +++ b/mm/nommu.c
+> @@ -255,13 +255,15 @@ EXPORT_SYMBOL(vmalloc_user);
+>
+>   struct page *vmalloc_to_page(const void *addr)
+>   {
+> -	return virt_to_page(addr);
+> +	return (struct page *)
+> +			(virt_to_page(addr)->index) ? : virt_to_page(addr);
 
-Index: linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/lpfc/lpfc_attr.c
-+++ linux-2.6/drivers/scsi/lpfc/lpfc_attr.c
-@@ -3780,6 +3780,7 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
- 	struct Scsi_Host *shost = lpfc_shost_from_vport(vport);
- 	int error;
- 
-+	sysfs_bin_attr_init(&sysfs_drvr_stat_data_attr);
- 	error = sysfs_create_bin_file(&shost->shost_dev.kobj,
- 				      &sysfs_drvr_stat_data_attr);
- 
-@@ -3787,11 +3788,13 @@ lpfc_alloc_sysfs_attr(struct lpfc_vport
- 	if (error || vport->port_type == LPFC_NPIV_PORT)
- 		goto out;
- 
-+	sysfs_bin_attr_init(&sysfs_ctlreg_attr);
- 	error = sysfs_create_bin_file(&shost->shost_dev.kobj,
- 				      &sysfs_ctlreg_attr);
- 	if (error)
- 		goto out_remove_stat_attr;
- 
-+	sysfs_bin_attr_init(&sysfs_mbox_attr);
- 	error = sysfs_create_bin_file(&shost->shost_dev.kobj,
- 				      &sysfs_mbox_attr);
- 	if (error)
-Index: linux-2.6/drivers/scsi/scsi_sysfs.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/scsi_sysfs.c
-+++ linux-2.6/drivers/scsi/scsi_sysfs.c
-@@ -907,20 +907,27 @@ int scsi_sysfs_add_sdev(struct scsi_devi
- 
- 	/* create queue files, which may be writable, depending on the host */
- 	if (sdev->host->hostt->change_queue_depth) {
-+		sysfs_bin_attr_init(&sdev_attr_queue_depth_rw);
- 		error = device_create_file(&sdev->sdev_gendev,
- 					   &sdev_attr_queue_depth_rw);
-+		sysfs_bin_attr_init(&sdev_attr_queue_ramp_up_period);
- 		error = device_create_file(&sdev->sdev_gendev,
- 					   &sdev_attr_queue_ramp_up_period);
- 	}
--	else
-+	else {
-+		sysfs_bin_attr_init(&dev_attr_queue_depth);
- 		error = device_create_file(&sdev->sdev_gendev, &dev_attr_queue_depth);
-+	}
- 	if (error)
- 		return error;
- 
--	if (sdev->host->hostt->change_queue_type)
-+	if (sdev->host->hostt->change_queue_type)  {
-+		sysfs_bin_attr_init(&sdev_attr_queue_type_rw);
- 		error = device_create_file(&sdev->sdev_gendev, &sdev_attr_queue_type_rw);
--	else
-+	} else {
-+		sysfs_bin_attr_init(&dev_attr_queue_type);
- 		error = device_create_file(&sdev->sdev_gendev, &dev_attr_queue_type);
-+	}
- 	if (error)
- 		return error;
- 
-@@ -935,6 +942,7 @@ int scsi_sysfs_add_sdev(struct scsi_devi
- 	/* add additional host specific attributes */
- 	if (sdev->host->hostt->sdev_attrs) {
- 		for (i = 0; sdev->host->hostt->sdev_attrs[i]; i++) {
-+			sysfs_bin_attr_init(sdev->host->hostt->sdev_attrs[i]);
- 			error = device_create_file(&sdev->sdev_gendev,
- 					sdev->host->hostt->sdev_attrs[i]);
- 			if (error)
-@@ -1060,6 +1068,7 @@ int scsi_sysfs_add_host(struct Scsi_Host
- 	/* add host specific attributes */
- 	if (shost->hostt->shost_attrs) {
- 		for (i = 0; shost->hostt->shost_attrs[i]; i++) {
-+			sysfs_bin_attr_init(shost->hostt->shost_attrs[i]);
- 			error = device_create_file(&shost->shost_dev,
- 					shost->hostt->shost_attrs[i]);
- 			if (error)
-Index: linux-2.6/drivers/base/attribute_container.c
-===================================================================
---- linux-2.6.orig/drivers/base/attribute_container.c
-+++ linux-2.6/drivers/base/attribute_container.c
-@@ -328,6 +328,7 @@ attribute_container_add_attrs(struct dev
- 		return sysfs_create_group(&classdev->kobj, cont->grp);
- 
- 	for (i = 0; attrs[i]; i++) {
-+		sysfs_bin_attr_init(attrs[i]);
- 		error = device_create_file(classdev, attrs[i]);
- 		if (error)
- 			return error;
+Nothing major but isn't it more usual to write ?: without the
+intervening space?
+
+> +#ifdef CONFIG_SMP
+> +int map_kernel_range_noflush(unsigned long addr, unsigned long size,
+> +					pgprot_t prot, struct page **pages)
+> +{
+
+More nitpicks.
+
+> +	int i, nr_page = size>>  PAGE_SHIFT;
+
+	       nr_pages = size >> PAGE_SHIFT;
+
+> +	for (i = 0; i<  nr_page; i++, addr += PAGE_SIZE)
+
+		    i < nr_pages
+
+> +		virt_to_page(addr)->index = (pgoff_t)pages[i];
+> +	return size>>  PAGE_SHIFT;
+
+	return size >> PAGE_SHIFT;
+
+I think checkpatch would whine about these too.
+
+> +void unmap_kernel_range_noflush(unsigned long addr, unsigned long size)
+> +{
+> +	int i, nr_page = size>>  PAGE_SHIFT;
+> +	for (i = 0; i<  nr_page; i++, addr += PAGE_SIZE)
+> +		virt_to_page(addr)->index = 0;
+> +}
+> +
+> +struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+> +					const size_t *sizes, int nr_vms,
+> +						size_t align, gfp_t gfp_mask)
+
+Hmmm... in general, one of the reasons the percpu allocation is
+complex is to avoid contiguous allocations while avoiding additional
+TLB / NUMA overhead on machines with rather complex memory
+configuration (which is pretty common these days).  If the memory has
+to be allocated contiguous anyway, it probably would be much simpler
+to hook at higher level and simply allocate each chunk contiguously.
+I'll look into it.
+
+Thanks.
+
+-- 
+tejun
