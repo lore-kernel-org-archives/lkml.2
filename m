@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015Ab0CTUIa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 16:08:30 -0400
-Received: from authsmtp-0-5.virt.iitsp.net ([66.197.170.103]:39678 "EHLO
-	authsmtp-0-5.virt.iitsp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750808Ab0CTUI3 (ORCPT
+	id S1752351Ab0CTUIv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 16:08:51 -0400
+Received: from ns1.siteground211.com ([209.62.36.12]:55560 "EHLO
+	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab0CTUIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 16:08:29 -0400
-Message-ID: <4BA52B6F.2060402@lbsd.net>
-Date: Sat, 20 Mar 2010 20:09:19 +0000
-From: Nigel Kukard <nkukard@lbsd.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091201 IceDove/3.0
+	Sat, 20 Mar 2010 16:08:49 -0400
+Date: Sat, 20 Mar 2010 22:09:07 +0200
+From: Felipe Balbi <me@felipebalbi.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 03/24] usb/otg/isp1301_omap: Fix dangling pointer
+Message-ID: <20100320200907.GA3861@gandalf>
+Reply-To: me@felipebalbi.com
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
+ <1269094385-16114-4-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] kernel 2.6.33-rc4 OOPS's with large initramfs
-References: <4B519F14.7020104@lbsd.net> <4B5CD711.7050204@zytor.com> <4BA51022.4010309@lbsd.net> <4BA51A48.6010509@zytor.com>
-In-Reply-To: <4BA51A48.6010509@zytor.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269094385-16114-4-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - serv01.siteground211.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 20, 2010 at 03:12:44PM +0100, Wolfram Sang wrote:
+> Fix this i2c-driver which missed setting clientdata to NULL before freeing the
+> structure it points to. Found by a semantic patch, but fixed by hand.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
->>>> Generating a initramfs with the following, one of about 30Mb, one of 77Mb.
->>>> find . | cpio -o -H newc > ../initramfs.cpio
->>>>
->>>> Only difference is adding of more files to the 77Mb image.
->>>>
->>>> It makes no difference if its compiled into kernel or used as initrd.
->>>> Compression types makes no difference either.
->>>>
->>>> Tested on 2.6.32.3->2.6.33-rc4 , all fail with the below.
->>>>
->>>> The 30Mb initramfs loads fine, the 77Mb image throws the following...
->>>>
->>>>     
->>>>         
->>> What are the exact compressed and uncompressed files (or is that an
->>> uncompressed initramfs)?
->>>   
->>>       
->> Ok ... I revisited this, sorry for the delay, all tests done on kernel
->> 2.6.33.1
->>
->> (initramfs uploaded, link below)
->>
->> It is generated using two commands...
->> find . | cpio -o --quiet -H newc -A -O ../initramfs.cpio
->>
->> and the kernel modules are appended to this using...
->> find . | cpio -o --quiet -H newc -A -O ../initramfs.cpio
->>
->> The exact size is ..
->> % ls -la initramfs.cpio
->> -rw-r--r-- 1 nkukard nkukard 115944448 Mar 19 22:15 initramfs.cpio
->>
->>     
-> How much RAM are you giving your VM?  The default for Qemu is 128 MB,
-> and if you have a 110 MB initramfs it's hardly surprising that you get
-> an out of memory error.
+Acked-by: Felipe Balbi <felipe.balbi@nokia.com>
 
-The kernel now boots where it booted for my 64bit box.
+Greg,
 
-The main problem though is the instant reboots for bzip2 and lzma
-compressed initramfs images. The change for printf to /usr/bin/printf
-both render the sane end result when run with the same commandline being
-run in the makefile, so this isn't the issue.
+if you wish, you can take queue it already unless Dave has any comments.
 
--N
+-- 
+balbi
