@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab0CTPs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 11:48:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12811 "EHLO mx1.redhat.com"
+	id S1753240Ab0CTPuz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 11:50:55 -0400
+Received: from mail.tmr.com ([64.65.253.246]:51672 "EHLO partygirl.tmr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab0CTPs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 11:48:28 -0400
-Message-ID: <4BA4EEAE.10202@redhat.com>
-Date: Sat, 20 Mar 2010 11:50:06 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
+	id S1753171Ab0CTPuy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 11:50:54 -0400
+Message-ID: <4BA4EED7.5070700@tmr.com>
+Date: Sat, 20 Mar 2010 11:50:47 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+Organization: TMR Associates Inc, Schenectady NY
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Mel Gorman <mel@csn.ul.ie>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v1 1/10] Move Macro W to insn.h
-References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6> <20100320142505.11427.30133.sendpatchset@localhost6.localdomain6>
-In-Reply-To: <20100320142505.11427.30133.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
+To: jin zhencheng <zhenchengjin@gmail.com>
+CC: neilb@suse.de, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG:write data to degrade raid5
+References: <de04351e1003190329l2f33447bhe37b963bd4b48c70@mail.gmail.com>
+In-Reply-To: <de04351e1003190329l2f33447bhe37b963bd4b48c70@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srikar Dronamraju wrote:
-> Move Macro W to asm/insn.h
-> 
-> Macro W used to know if the instructions are valid for
-> user-space/kernel space.  This macro is used by kprobes and
-> user_bkpt. (i.e user space breakpoint assistance layer.) So moving it
-> to a common header file asm/insn.h.
+jin zhencheng wrote:
+> hi;
+>
+> i use kernel is 2.6.26.2
+>
+> what i do as follow:
+>
+> 1, I create a raid5:
+> mdadm -C /dev/md5 -l 5 -n 4 /dev/sda /dev/sdb /dev/sdc  /dev/sdd
+> --metadata=1.0 --assume-clean
+>
+> 2, dd if=/dev/zero of=/dev/md5 bs=1M &
+>
+> write data to this raid5
+>
+> 3, mdadm --manage /dev/md5 -f /dev/sda
+>
+> 4 mdadm --manage  /dev/md5 -f /dev/sdb
+>
+> if i faild 2 disks ,then the OS kernel display OOP error and kernel down
+>
+>
+> do somebody know why ?
+>
+> Is MD/RAID5 bug ?
+>   
 
-Hmm, I don't think this shortest macro name is good to expose
-commonly... And also, since we already have inat (instruction
-attribute) table, we'd better expand an inat bit to indicate
-which instruction can be probed/boosted.
-
-Thank you,
+I would usually say that any kernel OOPS is a bug, but in this case, 
+what are you running your Linux on, given that you just trashed the 
+first four drives? While it's possible to run off of other drives, you 
+have to make an effort to configure Linux to do so.
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Bill Davidsen <davidsen@tmr.com>
+  "We can't solve today's problems by using the same thinking we
+   used in creating them." - Einstein
 
