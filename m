@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751637Ab0CTLTt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 07:19:49 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:49298 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab0CTLTr (ORCPT
+	id S1751687Ab0CTLUx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 07:20:53 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:59268 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315Ab0CTLUw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 07:19:47 -0400
+	Sat, 20 Mar 2010 07:20:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=PW0xFekhLWCofxDcguB0BNISHLADrItK220b/rdzgF3MRD/glvu4eGjrLAm3V2aGNL
-         JD3BkTPFnrfOapqJ4wdq2+hEG1AQTv220POUSWsnNdGquRKvZYElrviWnyqvSCi116E5
-         8xK3fqI9Tk6pNglDPrMU71cKnEyrxa8HMEz40=
-Date: Sat, 20 Mar 2010 14:19:38 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] afs: potential null dereference
-Message-ID: <20100320111938.GT5331@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ppN5Jefxy9MxuBaJDhmbmYkB5IFk8P//3Y8T2GzqQmYfgoOmp5DtqDuNWKwY1EjqsO
+         59fz+D8vPSOmZMdIuxrN8iZ/BNvuRX1JUYQB82gKlEZ7vPGQCS8+10DC0n7yoRk4+/DY
+         VbOQaJ5SviHBIczT3okvA20vZVeuyDaTBxWws=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1269078083.4028.5586.camel@macbook.infradead.org>
+References: <20100320085507.4038.96426.stgit@pauliusz>
+	 <1269078083.4028.5586.camel@macbook.infradead.org>
+Date: Sat, 20 Mar 2010 13:20:50 +0200
+Message-ID: <badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com>
+Subject: Re: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: nico@fluxnic.net, akpm@linux-foundation.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems clear from the surrounding code that xpermits is allowed to be 
-NULL here.
+On Sat, Mar 20, 2010 at 11:41 AM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Sat, 2010-03-20 at 10:55 +0200, Paulius Zaleckas wrote:
+>> We must tell GCC to use even register for variable passed
+>> to ldrd instruction. Without this patch GCC 4.2.1 puts this
+>> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
+>> r2/r3. This does not change anything when EABI and OABI
+>> compilation works OK.
+>>
+>> Without this patch and with OABI I get:
+>> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
+>> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
+>
+>  ...
+>> -             uint64_t x;
+>> +             /*
+>> +              * force x variable to r2/r3 registers since ldrd instruction
+>> +              * requires first register to be even.
+>> +              */
+>> +             register uint64_t x asm ("r2");
+>> +
+>>               asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+>
+> Hm, isn't there an asm constraint which will force it into an
+> appropriate register pair?
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Not that I know of...
 
-diff --git a/fs/afs/security.c b/fs/afs/security.c
-index 3ef5043..bb4ed14 100644
---- a/fs/afs/security.c
-+++ b/fs/afs/security.c
-@@ -189,8 +189,9 @@ void afs_cache_permit(struct afs_vnode *vnode, struct key *key, long acl_order)
- 	if (!permits)
- 		goto out_unlock;
- 
--	memcpy(permits->permits, xpermits->permits,
--	       count * sizeof(struct afs_permit));
-+	if (xpermits)
-+		memcpy(permits->permits, xpermits->permits,
-+			count * sizeof(struct afs_permit));
- 
- 	_debug("key %x access %x",
- 	       key_serial(key), vnode->status.caller_access);
+> Failing that, "=&2,4,6,8" ought to work.
+
+No, fails with error: matching constraint not valid in output operand
+
+> (Um, and why the earlyclobber? Why can't io_base be passed in in one of
+> the same registers?)
+>
+> We should try to avoid making our constraints more restrictive than they
+> need to be.
+>
+> --
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
