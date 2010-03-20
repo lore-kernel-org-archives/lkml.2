@@ -1,34 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab0CTLhn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 07:37:43 -0400
+	id S1752259Ab0CTLiI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 07:38:08 -0400
 Received: from mail-bw0-f209.google.com ([209.85.218.209]:46328 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab0CTLhl (ORCPT
+	with ESMTP id S1752163Ab0CTLiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 07:37:41 -0400
+	Sat, 20 Mar 2010 07:38:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=WjfwDS04J7JCC+Bs2Abe8HGbAHcOHpFMAMTTVsIIDbr0V8288VXkas9jZ4ECHkCGXc
-         swmLmNvlhtlOUQk1iV1qeCIpk5T9jOO4cSMk6KczaCAmWJzUBt6B80XVqikpczkXB5qJ
-         fb4/+3L5lcSa77qBKBrTuGMgb4z10we7CG+iQ=
-Date: Sat, 20 Mar 2010 14:37:31 +0300
+        b=SNxY7eltHmnS4Qt9KmqpSj1ulaaoj+IgQVAIRYt9jTFhYBIaYI3/4jbpKyCVsJjjif
+         D0a7rOJWRXt7soE4AxzHxHNDmmHSBJ1BJDpYXSjdgtpDtqlcGXbBqBgD+umXxCPOTyri
+         JGxvKX0xkiNaT0/qTHsTrj3JgS7Lt122XWpwc=
+Date: Sat, 20 Mar 2010 14:37:52 +0300
 From: Dan Carpenter <error27@gmail.com>
 To: Chris Mason <chris.mason@oracle.com>
-Cc: Dan Carpenter <error27@gmail.com>, Christoph Hellwig <hch@lst.de>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch 2/3] btrfs cleanup: remove more dead code
-Message-ID: <20100320113730.GZ5331@bicker>
+Cc: Josef Bacik <josef@redhat.com>, Yan Zheng <zheng.yan@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch 3/3] btrfs cleanup: unneeded null check
+Message-ID: <20100320113752.GA5331@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
 	Chris Mason <chris.mason@oracle.com>,
-	Christoph Hellwig <hch@lst.de>,
-	Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-	=?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
+	Josef Bacik <josef@redhat.com>, Yan Zheng <zheng.yan@oracle.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
 	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
 	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
@@ -39,34 +36,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rb_node cannot be an ERR_PTR() here so I removed the misleading check.
-Also I removed some more dead code at the bottom.
-
-It looks like the code from lookup_extent_mapping() may have been 
-copy and pasted into search_extent_mapping()?
+old_inode cannot be null here so I removed the check.
+This fixes a smatch warning:
+fs/btrfs/inode.c +5545 btrfs_rename(88) warn: variable dereferenced 
+	before check 'old_inode'
 
 Signed-off-by: Dan Carpenter <error27@gmail.com>
 ---
-This doesn't change anything.  Could you put it into linux-next?
+linux-next material
 
-diff --git a/fs/btrfs/extent_map.c b/fs/btrfs/extent_map.c
-index 94668b1..010f299 100644
---- a/fs/btrfs/extent_map.c
-+++ b/fs/btrfs/extent_map.c
-@@ -380,16 +380,7 @@ struct extent_map *search_extent_mapping(struct extent_map_tree *tree,
- 		em = NULL;
- 		goto out;
- 	}
--	if (IS_ERR(rb_node)) {
--		em = ERR_PTR(PTR_ERR(rb_node));
--		goto out;
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 02bb099..647ce41 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -5541,10 +5541,8 @@ static int btrfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+ 	 * make sure the inode gets flushed if it is replacing
+ 	 * something.
+ 	 */
+-	if (new_inode && new_inode->i_size &&
+-	    old_inode && S_ISREG(old_inode->i_mode)) {
++	if (new_inode && new_inode->i_size && S_ISREG(old_inode->i_mode))
+ 		btrfs_add_ordered_operation(trans, root, old_inode);
 -	}
- 	em = rb_entry(rb_node, struct extent_map, rb_node);
--	goto found;
--
--	em = NULL;
--	goto out;
--
- found:
- 	atomic_inc(&em->refs);
- out:
+ 
+ 	old_dir->i_ctime = old_dir->i_mtime = ctime;
+ 	new_dir->i_ctime = new_dir->i_mtime = ctime;
