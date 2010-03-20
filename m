@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751336Ab0CTKiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 06:38:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64156 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802Ab0CTKiQ (ORCPT
+	id S1751351Ab0CTKk7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 06:40:59 -0400
+Received: from www84.your-server.de ([213.133.104.84]:48525 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750802Ab0CTKk6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 06:38:16 -0400
-Date: Sat, 20 Mar 2010 03:37:56 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Ian Campbell <ijc@hellion.org.uk>
-cc: LKML <linux-kernel@vger.kernel.org>, jeremy@goop.org
-Subject: Re: 2.6.34-rc2: xen DomU not booting
-In-Reply-To: <1269077602.28761.42.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.01.1003200335110.5493@bogon.housecafe.de>
-References: <alpine.DEB.2.01.1003200058030.5493@bogon.housecafe.de> <1269077602.28761.42.camel@localhost.localdomain>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V01U2FsdGVkX1+WMzQl02QVPSmSONnbdXFguHGclL22l6BUgYH
- /bE0Cdlqnz9Pz7kWmsvm6jPAng2O7+foRl+Pum4XQT1Rmf3108
- 525LZyruOIJDRpkA/jTBw==
+	Sat, 20 Mar 2010 06:40:58 -0400
+Subject: Re: [PATCH] fix KFIFO_INIT in include/linux/kfifo.h
+From: Stefani Seibold <stefani@seibold.net>
+To: David =?ISO-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100320084157.GA5050@hardeman.nu>
+References: <20100320084157.GA5050@hardeman.nu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 20 Mar 2010 11:41:22 +0100
+Message-ID: <1269081682.32116.3.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3.1 
+Content-Transfer-Encoding: 8BIT
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Mar 2010 at 09:33, Ian Campbell wrote:
-> Can you try this patch please, I think it will resolve the issue you
-> see.
-> https://patchwork.kernel.org/patch/87081/
+include/linux/kfifo.h first defines and then undefines __kfifo_initializer
+which is used by INIT_KFIFO (which is also a macro, so building a module
+which uses INIT_KFIFO will fail).
 
-Wow, thanks for the swift response! And yes, it does indeed resolve the 
-issue, the domU is now booting again.
+Signed-off-by: David Härdeman <david@hardeman.nu>
+Acked-by: Stefani Seibold <stefani@seibold.net>
+CC: stable@kernel.org
+CC: stefani@seibold.net
 
-For the record, I've put the .config and dmesg on:
-http://nerdbynature.de/bits/2.6.34-rc2/xen/
+---
+ include/linux/kfifo.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Thanks again!
-Christian.
--- 
-BOFH excuse #239:
+diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
+index bc0fc79..ece0b1c 100644
+--- a/include/linux/kfifo.h
++++ b/include/linux/kfifo.h
+@@ -102,8 +102,6 @@ union { \
+ 	unsigned char name##kfifo_buffer[size]; \
+ 	struct kfifo name = __kfifo_initializer(size, name##kfifo_buffer)
+ 
+-#undef __kfifo_initializer
+-
+ extern void kfifo_init(struct kfifo *fifo, void *buffer,
+ 			unsigned int size);
+ extern __must_check int kfifo_alloc(struct kfifo *fifo, unsigned int size,
 
-CPU needs bearings repacked
+
