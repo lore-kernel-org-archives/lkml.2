@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113Ab0CTV7l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 17:59:41 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36503 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751597Ab0CTV7k (ORCPT
+	id S1752253Ab0CTWAj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 18:00:39 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:25841 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751597Ab0CTWAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 17:59:40 -0400
-Message-ID: <4BA54541.5030900@euromail.se>
-Date: Sat, 20 Mar 2010 22:59:29 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Sat, 20 Mar 2010 18:00:37 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Mar 2010 18:00:37 EDT
+Message-ID: <4BA543F1.6080504@bluewatersys.com>
+Date: Sun, 21 Mar 2010 10:53:53 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Henrik Rydberg <rydberg@enmesh.se>,
-       linux-input <linux-input@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: input: mt: Software finger tracking in the kernel?
-References: <4BA358DB.20708@enmesh.se> <20100320194424.GC28402@core.coreip.homeip.net>
-In-Reply-To: <20100320194424.GC28402@core.coreip.homeip.net>
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH 02/24] power/ds2782: really clear i2c_clientdata on exit
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-3-git-send-email-w.sang@pengutronix.de>
+In-Reply-To: <1269094385-16114-3-git-send-email-w.sang@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Nt6hi-0007PQ-Ai.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Nt6hi-0007PQ-Ai 792bf8d631e7e47dd88ef50a57f4b993
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> Hi Henrik
-[...]
-> I am not sure if input core itself is the proper place to do such
-> thing, I'd envisioned something more like a library providing common
-> code that drivers could opt in to use, like we hane ff-memless for
-> memory-less force-feedback devices.
+Wolfram Sang wrote:
+> Probably due to a copy & paste bug, clientdata was set again to the data
+> structure (which is freed immediately afterwards) when it should be NULLed.
+
+Good catch. Thanks.
+
+Acked-by: Ryan Mallon <ryan@bluewatersys.com>
+
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Ryan Mallon <ryan@bluewatersys.com>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+> ---
+>  drivers/power/ds2782_battery.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Does it make any sense? I guess post the skeleton of the code and we can
-> discuss further.
+> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+> index da14f37..6971b85 100644
+> --- a/drivers/power/ds2782_battery.c
+> +++ b/drivers/power/ds2782_battery.c
+> @@ -236,7 +236,7 @@ static int ds2782_battery_remove(struct i2c_client *client)
+>  	idr_remove(&battery_id, info->id);
+>  	mutex_unlock(&battery_lock);
+>  
+> -	i2c_set_clientdata(client, info);
+> +	i2c_set_clientdata(client, NULL);
+>  
+>  	kfree(info);
+>  	return 0;
+> @@ -289,7 +289,7 @@ static int ds2782_battery_probe(struct i2c_client *client,
+>  fail_register:
+>  	kfree(info->battery.name);
+>  fail_name:
+> -	i2c_set_clientdata(client, info);
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(info);
+>  fail_info:
+>  	mutex_lock(&battery_lock);
 
-Yes, input core as in input*.c might be wrong. The big thing is that the events
-most likely have to be deferred to the bottom half. Otherwise, the scheme would
-have fit rather nicely on top of the current filtering in input_device. The
-ideas I am currently looking at are:
-
-1. Expand on the new event filtering mechanism, providing a sort of rewrite
-functionality which can schedule events for later injection into the event stream.
-
-2. Add additional logic to evdev so that it buffers MT events and flushes the
-reworked events directly onto the clients.
-
-3. Add a new multitouch handler, mtdev, which by default does event deferral,
-only emitting events by scheduling them upon SYN_REPORT requests.
-
-To my untrained eye, all three options could be made to work with acceptable
-latency. Number three probably means applications (read X) have to keep open
-both evdev and mtdev, which might be confusing. Number one is quite general, but
-probably contains hidden (to me) difficulties. Number two sounds pretty
-straight-forward, although tapping into the code somewhat through the back door.
-
-Henrik
