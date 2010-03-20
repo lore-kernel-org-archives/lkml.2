@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751566Ab0CTFps (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 01:45:48 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59098 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197Ab0CTFpr (ORCPT
+	id S1751655Ab0CTFvF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 01:51:05 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:51843 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab0CTFvB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 01:45:47 -0400
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/9] oprofile, perf, x86: introduce new functions to reserve perfctrs by index
-From: Andi Kleen <andi@firstfloor.org>
-References: <1267716131-17908-1-git-send-email-robert.richter@amd.com>
-	<1267716131-17908-4-git-send-email-robert.richter@amd.com>
-Date: Sat, 20 Mar 2010 06:45:44 +0100
-In-Reply-To: <1267716131-17908-4-git-send-email-robert.richter@amd.com> (Robert Richter's message of "Thu, 4 Mar 2010 16:22:05 +0100")
-Message-ID: <87eijfczqv.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	Sat, 20 Mar 2010 01:51:01 -0400
+Message-ID: <4BA4624F.4030208@dcl.info.waseda.ac.jp>
+Date: Sat, 20 Mar 2010 14:51:11 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       h.mitake@gmail.com, Ingo Molnar <mingo@elte.hu>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+ lock
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere> <4BA0852D.1090300@dcl.info.waseda.ac.jp> <20100317153858.GA5059@nowhere> <4BA1BEF2.4050706@dcl.info.waseda.ac.jp> <20100318203047.GF5103@nowhere>
+In-Reply-To: <20100318203047.GF5103@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Richter <robert.richter@amd.com> writes:
+On 03/19/10 05:30, Frederic Weisbecker wrote:
+> On Thu, Mar 18, 2010 at 02:49:38PM +0900, Hitoshi Mitake wrote:
+>> Unfortunately, we cannot use this detection method.
+>> Because trylock series (e.g. spin_trylock()) only issues
+>> lock_acquire() like this,
+>>
+>> static inline int __raw_spin_trylock(raw_spinlock_t *lock)
+>> {
+>> 	preempt_disable();
+>> 	if (do_raw_spin_trylock(lock)) {
+>> 		spin_acquire(&lock->monitor, 0, 1, _RET_IP_);<- spin_acquire() only
+>> issues lock_acquire()
+>> 		return 1;
+>> 	}
+>> 	preempt_enable();
+>> 	return 0;
+>> }
+>>
+>> So distinguishing trylocks and lock_acquire()/lock_release() pairs from
+>> might_lock_read(), might_fault() and etc is hard.
+>>
+>> It seems that turning off PROVE_LOCKING must be required
+>> for state machine of perf lock.
+>
+>
+> No that's really not a problem. trylocks are pointless in latency
+> profiling because by definition they don't content. OTOH, they
+> grab the lock and other locks might wait and raise latencies. So
+> they are part of the profile. But we don't care about having the
+> usual acquire/aquired/release sequence as we have the flags that
+> tell us if this is a trylock.
+>
+> So we just need to consider that acquire:try_lock - release is
+> a right lock scenario, but that acquire - release is only a lockdep
+> check.
 
-> Current perfctr reservation code allocates single pmu msrs. The msr
-> addresses may differ depending on the model and offset calculation is
-> necessary. This can be easier implemented by reserving a counter by
-> its index only.
+Ah, I see. The argument flags of lock_acquire event can be used for
+distinguishing try or read lock and pure verifying.
 
-Sorry reviewing old patch. This doesn't work for the fixed counters on intel,
-which don't have a index (or rather they have a separate number space)
-
-I had a old patch to fix the reservation for them (and a matching
-patch to perf to use it).
-
-How to resolve this?
-
--Andi
-
----
-
----
- arch/x86/kernel/cpu/perfctr-watchdog.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.32-ak/arch/x86/kernel/cpu/perfctr-watchdog.c
-===================================================================
---- linux-2.6.32-ak.orig/arch/x86/kernel/cpu/perfctr-watchdog.c
-+++ linux-2.6.32-ak/arch/x86/kernel/cpu/perfctr-watchdog.c
-@@ -70,9 +70,13 @@ static inline unsigned int nmi_perfctr_m
- 	case X86_VENDOR_AMD:
- 		return msr - MSR_K7_PERFCTR0;
- 	case X86_VENDOR_INTEL:
--		if (cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON))
-+		if (cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
-+			if (msr >= MSR_CORE_PERF_FIXED_CTR0 &&
-+			    msr < MSR_CORE_PERF_FIXED_CTR0 + 8)
-+				return NMI_MAX_COUNTER_BITS -
-+						(msr - MSR_CORE_PERF_FIXED_CTR0);
- 			return msr - MSR_ARCH_PERFMON_PERFCTR0;
--
-+		}
- 		switch (boot_cpu_data.x86) {
- 		case 6:
- 			return msr - MSR_P6_PERFCTR0;
-
-
-
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Thanks,
+	Hitoshi
