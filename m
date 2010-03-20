@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab0CTImF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 04:42:05 -0400
-Received: from 1-1-12-13a.han.sth.bostream.se ([82.182.30.168]:37296 "EHLO
-	palpatine.hardeman.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab0CTImB (ORCPT
+	id S1752889Ab0CTIzQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 04:55:16 -0400
+Received: from mail-fx0-f219.google.com ([209.85.220.219]:57008 "EHLO
+	mail-fx0-f219.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0CTIzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 04:42:01 -0400
-Date: Sat, 20 Mar 2010 09:41:57 +0100
-From: David =?iso-8859-1?Q?H=E4rdeman?= <david@hardeman.nu>
-To: linux-kernel@vger.kernel.org
-Cc: stefani@seibold.net
-Subject: [PATCH] fix KFIFO_INIT in include/linux/kfifo.h
-Message-ID: <20100320084157.GA5050@hardeman.nu>
-Mail-Followup-To: linux-kernel@vger.kernel.org, stefani@seibold.net
+	Sat, 20 Mar 2010 04:55:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=bF3fxImjYZoutE+9+owNwgAH/o5qPqS2w++vWA9BnzXEzdDnWM0Z9OrQOxylnL4gHW
+         O0OCxLXsaOSgjiIcGbx71umJTfqfUfeRrmWVVxWKHSf2Dbl1PynPP28gx0IFupYiA1DC
+         eJAJofl04sYsNzvGLp0TIT6+TlTvsos227FeA=
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Subject: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
+To: dwmw2@infradead.org
+Cc: nico@fluxnic.net, akpm@linux-foundation.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Date: Sat, 20 Mar 2010 10:55:07 +0200
+Message-ID: <20100320085507.4038.96426.stgit@pauliusz>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-include/linux/kfifo.h first defines and then undefines __kfifo_initializer
-which is used by INIT_KFIFO (which is also a macro, so building a module
-which uses INIT_KFIFO will fail).
+We must tell GCC to use even register for variable passed
+to ldrd instruction. Without this patch GCC 4.2.1 puts this
+variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
+r2/r3. This does not change anything when EABI and OABI
+compilation works OK.
 
-Signed-off-by: David Härdeman <david@hardeman.nu>
-CC: stable@kernel.org
-CC: stefani@seibold.net
+Without this patch and with OABI I get:
+  CC      drivers/mtd/nand/orion_nand.o
+/tmp/ccMkwOCs.s: Assembler messages:
+/tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
+make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
+
+Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
 ---
- include/linux/kfifo.h |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index bc0fc79..ece0b1c 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -102,8 +102,6 @@ union { \
- 	unsigned char name##kfifo_buffer[size]; \
- 	struct kfifo name = __kfifo_initializer(size, name##kfifo_buffer)
- 
--#undef __kfifo_initializer
--
- extern void kfifo_init(struct kfifo *fifo, void *buffer,
- 			unsigned int size);
- extern __must_check int kfifo_alloc(struct kfifo *fifo, unsigned int size,
--- 
-1.7.0
+ drivers/mtd/nand/orion_nand.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+index f59c074..cb5175e 100644
+--- a/drivers/mtd/nand/orion_nand.c
++++ b/drivers/mtd/nand/orion_nand.c
+@@ -60,7 +60,12 @@ static void orion_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+ 	}
+ 	buf64 = (uint64_t *)buf;
+ 	while (i < len/8) {
+-		uint64_t x;
++		/*
++		 * force x variable to r2/r3 registers since ldrd instruction
++		 * requires first register to be even.
++		 */
++		register uint64_t x asm ("r2");
++
+ 		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+ 		buf64[i++] = x;
+ 	}
 
