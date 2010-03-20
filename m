@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab0CTAOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 20:14:10 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:51928 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab0CTAOH (ORCPT
+	id S1752645Ab0CTAOU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 20:14:20 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:47548 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752485Ab0CTAOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 20:14:07 -0400
-Message-ID: <4BA41305.7070403@oracle.com>
-Date: Fri, 19 Mar 2010 17:12:53 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 19 Mar 2010 20:14:16 -0400
+Date: Sat, 20 Mar 2010 01:14:04 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Sankar P <sankar.curiosity@gmail.com>
+Cc: gregkh@suse.de, penberg@cs.helsinki.fi, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] staging: winbond: Remove unused enum
+	enum_PowerManagementMode
+Message-ID: <20100320001404.GC1477@ucw.cz>
+References: <1269031264-2327-1-git-send-email-sankar.curiosity@gmail.com> <1269031264-2327-2-git-send-email-sankar.curiosity@gmail.com> <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: 2.6.33 GP fault only when built with tracing
-References: <4BA2B69D.3000309@oracle.com> <1268956555.758.18.camel@gandalf.stny.rr.com>
-In-Reply-To: <1268956555.758.18.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BA41348.005F:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269031264-2327-3-git-send-email-sankar.curiosity@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/10 16:55, Steven Rostedt wrote:
-> On Thu, 2010-03-18 at 16:26 -0700, Randy Dunlap wrote:
->> I can build/boot 2.6.33 with CONFIG_TRACE/TRACING disabled successfully,
->> but when I enable lots of tracing config options and then boot with
->> ftrace=nop on the kernel command line, I see a GP fault when the parport &
->> parport_pc modules are loading/initializing.
-> 
-> Do you see it without adding the "ftrace=nop"? The only thing that
-> should do is expand the ring buffer on boot up.
+On Sat 2010-03-20 02:11:00, Sankar P wrote:
+> Signed-off-by: Sankar P <sankar.curiosity@gmail.com>
 
-Yes, it happens with or without "ftrace=nop" as a kernel boot argument.
+ACK.
 
-
->>
->> It happens in drivers/parport/share.c::parport_register_device(), when that
->> function calls try_module_get().
->>
->> If I comment out the trace_module_get() calls in include/linux/module.h,
->> the kernel boots with no problems.
+> ---
+>  drivers/staging/winbond/mac_structures.h |    7 -------
+>  1 files changed, 0 insertions(+), 7 deletions(-)
 > 
-> 
-> Interesting. Well, trace_module_get() is a TRACE_EVENT tracepoint. But
-> should be disabled here. It may be something to do with DEFINE_TRACE. 
-> 
-> (added Mathieu to Cc since he wrote that code)
-
+> diff --git a/drivers/staging/winbond/mac_structures.h b/drivers/staging/winbond/mac_structures.h
+> index ad19c88..7eb0e57 100644
+> --- a/drivers/staging/winbond/mac_structures.h
+> +++ b/drivers/staging/winbond/mac_structures.h
+> @@ -116,13 +116,6 @@
+>  #define WLAN_MAX_PAIRWISE_CIPHER_SUITE_COUNT    ((u16) 6)
+>  #define WLAN_MAX_AUTH_KEY_MGT_SUITE_LIST_COUNT  ((u16) 2)
+>  
+> -//========================================================
+> -typedef enum enum_PowerManagementMode
+> -{
+> -    ACTIVE = 0,
+> -    POWER_SAVE
+> -} WB_PM_Mode, *PWB_PM_MODE;
+> -
+>  //===================================================================
+>  //  Reason Code (Table 18): indicate the reason of DisAssoc, DeAuthen
+>  //  length of ReasonCode is 2 Octs.
 
 -- 
-~Randy
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
