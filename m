@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab0CTLUx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 07:20:53 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:59268 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751315Ab0CTLUw convert rfc822-to-8bit (ORCPT
+	id S1751922Ab0CTLWW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 07:22:22 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:61111 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab0CTLWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 07:20:52 -0400
+	Sat, 20 Mar 2010 07:22:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ppN5Jefxy9MxuBaJDhmbmYkB5IFk8P//3Y8T2GzqQmYfgoOmp5DtqDuNWKwY1EjqsO
-         59fz+D8vPSOmZMdIuxrN8iZ/BNvuRX1JUYQB82gKlEZ7vPGQCS8+10DC0n7yoRk4+/DY
-         VbOQaJ5SviHBIczT3okvA20vZVeuyDaTBxWws=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=w34IBrJq1MzKsGg0xScQhCd9tqEmwcJhbacnf5fZQKS4RvGewi1LXPYosKVA2joIQs
+         5pDVNYRafGUlpgmGlLNIeHUTS5S3p6iY2yYNHVQmQcKM26vc+cTSPy9tLRKsWDeZGL6q
+         2ezEeIvYShoErryEUQA2ECnKvbisnAzfamCOE=
+Date: Sat, 20 Mar 2010 14:22:10 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Yan Zheng <zheng.yan@oracle.com>, Josef Bacik <josef@redhat.com>,
+       Sage Weil <sage@newdream.net>, Al Viro <viro@zeniv.linux.org.uk>,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch 1/3] btrfs: checking for NULL instead of IS_ERR()
+Message-ID: <20100320112210.GV5331@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Yan Zheng <zheng.yan@oracle.com>, Josef Bacik <josef@redhat.com>,
+	Sage Weil <sage@newdream.net>, Al Viro <viro@zeniv.linux.org.uk>,
+	linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1269078083.4028.5586.camel@macbook.infradead.org>
-References: <20100320085507.4038.96426.stgit@pauliusz>
-	 <1269078083.4028.5586.camel@macbook.infradead.org>
-Date: Sat, 20 Mar 2010 13:20:50 +0200
-Message-ID: <badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com>
-Subject: Re: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: nico@fluxnic.net, akpm@linux-foundation.org,
-       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
-       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 11:41 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Sat, 2010-03-20 at 10:55 +0200, Paulius Zaleckas wrote:
->> We must tell GCC to use even register for variable passed
->> to ldrd instruction. Without this patch GCC 4.2.1 puts this
->> variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
->> r2/r3. This does not change anything when EABI and OABI
->> compilation works OK.
->>
->> Without this patch and with OABI I get:
->> /tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
->> make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
->
->  ...
->> -             uint64_t x;
->> +             /*
->> +              * force x variable to r2/r3 registers since ldrd instruction
->> +              * requires first register to be even.
->> +              */
->> +             register uint64_t x asm ("r2");
->> +
->>               asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
->
-> Hm, isn't there an asm constraint which will force it into an
-> appropriate register pair?
+btrfs_get_extent() never returns NULL, only a valid pointer or ERR_PTR()
 
-Not that I know of...
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-> Failing that, "=&2,4,6,8" ought to work.
-
-No, fails with error: matching constraint not valid in output operand
-
-> (Um, and why the earlyclobber? Why can't io_base be passed in in one of
-> the same registers?)
->
-> We should try to avoid making our constraints more restrictive than they
-> need to be.
->
-> --
-> David Woodhouse                            Open Source Technology Centre
-> David.Woodhouse@intel.com                              Intel Corporation
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 2845c6c..15f661d 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -511,7 +511,7 @@ static int should_defrag_range(struct inode *inode, u64 start, u64 len,
+ 		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
+ 		unlock_extent(io_tree, start, start + len - 1, GFP_NOFS);
+ 
+-		if (!em)
++		if (IS_ERR(em))
+ 			return 0;
+ 	}
+ 
