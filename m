@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751608Ab0CTVwW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 17:52:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58576 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750808Ab0CTVwV (ORCPT
+	id S1752113Ab0CTV7l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 17:59:41 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36503 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751597Ab0CTV7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 17:52:21 -0400
-X-Authority-Analysis: v=1.0 c=1 a=d0FnPKeSovcA:10 a=IkcTkHD0fZMA:10 a=D19gQVrFAAAA:8 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=nzjOwup3y9Dx0Z0um4YA:9 a=PW9lE0IWkD-WOXem4ucA:7 a=x58srdDR-dDVQpUdiqY0RyFapbEA:4 a=QEXdDO2ut3YA:10 a=x8gzFH9gYPwA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] kconfig: recalc symbol value before showing search
- results
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <4BA3206B.9020405@cn.fujitsu.com>
-References: <4BA3206B.9020405@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Mar 2010 17:52:16 -0400
-Message-ID: <1269121936.5363.199.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+	Sat, 20 Mar 2010 17:59:40 -0400
+Message-ID: <4BA54541.5030900@euromail.se>
+Date: Sat, 20 Mar 2010 22:59:29 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Henrik Rydberg <rydberg@enmesh.se>,
+       linux-input <linux-input@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: input: mt: Software finger tracking in the kernel?
+References: <4BA358DB.20708@enmesh.se> <20100320194424.GC28402@core.coreip.homeip.net>
+In-Reply-To: <20100320194424.GC28402@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1Nt6hi-0007PQ-Ai.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Nt6hi-0007PQ-Ai 792bf8d631e7e47dd88ef50a57f4b993
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-19 at 14:57 +0800, Li Zefan wrote:
-> A symbol's value won't be recalc-ed until we save config file or
-> enter the menu where the symbol sits.
+Dmitry Torokhov wrote:
+> Hi Henrik
+[...]
+> I am not sure if input core itself is the proper place to do such
+> thing, I'd envisioned something more like a library providing common
+> code that drivers could opt in to use, like we hane ff-memless for
+> memory-less force-feedback devices.
 > 
-> So If I enable OPTIMIZE_FOR_SIZE, and search FUNCTION_GRAPH_TRACER:
-> 
->   Symbol: FUNCTION_GRAPH_TRACER [=y]
->   Prompt: Kernel Function Graph Tracer
->     Defined at kernel/trace/Kconfig:140
->     Depends on: ... [=y] && (!X86_32 [=y] || !CC_OPTIMIZE_FOR_SIZE [=y])
+> Does it make any sense? I guess post the skeleton of the code and we can
+> discuss further.
 
-[ off topic ]
+Yes, input core as in input*.c might be wrong. The big thing is that the events
+most likely have to be deferred to the bottom half. Otherwise, the scheme would
+have fit rather nicely on top of the current filtering in input_device. The
+ideas I am currently looking at are:
 
-I'm not sure we need that anymore. I think Thomas added a patch that can
-disable the cases that gcc causes the function graph to fail.
+1. Expand on the new event filtering mechanism, providing a sort of rewrite
+functionality which can schedule events for later injection into the event stream.
 
-I pushed a patch before that also runs a check at compile time to make
-sure that gcc does not produce a bad mcount setup that would screw up
-the function graph tracer.
+2. Add additional logic to evdev so that it buffers MT events and flushes the
+reworked events directly onto the clients.
 
-http://lkml.org/lkml/2009/11/20/2
+3. Add a new multitouch handler, mtdev, which by default does event deferral,
+only emitting events by scheduling them upon SYN_REPORT requests.
 
-It probably still makes sense to add it.
+To my untrained eye, all three options could be made to work with acceptable
+latency. Number three probably means applications (read X) have to keep open
+both evdev and mtdev, which might be confusing. Number one is quite general, but
+probably contains hidden (to me) difficulties. Number two sounds pretty
+straight-forward, although tapping into the code somewhat through the back door.
 
--- Steve
-
->     ...
-> 
-> >From the dependency it should result in FUNCTION_GRAPH_TRACER=n,
-> but it still shows FUNCTION_GRAPH_TRACER=y.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  scripts/kconfig/symbol.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-> index 6c8fbbb..dfef8d1 100644
-> --- a/scripts/kconfig/symbol.c
-> +++ b/scripts/kconfig/symbol.c
-> @@ -750,6 +750,7 @@ struct symbol **sym_re_search(const char *pattern)
->  				return NULL;
->  			}
->  		}
-> +		sym_calc_value(sym);
->  		sym_arr[cnt++] = sym;
->  	}
->  	if (sym_arr)
-> -- 1.6.3 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Henrik
