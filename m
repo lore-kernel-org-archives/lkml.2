@@ -1,35 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0CTWbt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 18:31:49 -0400
-Received: from csmtp1.one.com ([195.47.247.21]:60395 "EHLO csmtp1.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab0CTWbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 18:31:48 -0400
-Message-ID: <4BA54CD1.6060706@bitmath.org>
-Date: Sat, 20 Mar 2010 23:31:45 +0100
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1752560Ab0CTWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 18:32:28 -0400
+Received: from authsmtp-0-4.virt.iitsp.net ([66.197.186.71]:52077 "EHLO
+	authsmtp-0-4.virt.iitsp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751397Ab0CTWc1 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 18:32:27 -0400
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Mar 2010 18:32:27 EDT
+Message-ID: <4BA54BA1.6020304@lbsd.net>
+Date: Sat, 20 Mar 2010 22:26:41 +0000
+From: Nigel Kukard <nkukard@lbsd.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091201 IceDove/3.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Henrik Rydberg <rydberg@enmesh.se>,
-       linux-input <linux-input@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: input: mt: Software finger tracking in the kernel?
-References: <4BA358DB.20708@enmesh.se> <20100320194424.GC28402@core.coreip.homeip.net>
-In-Reply-To: <20100320194424.GC28402@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] kernel 2.6.33-rc4 OOPS's with large initramfs
+References: <4B519F14.7020104@lbsd.net> <4B5CD711.7050204@zytor.com> <4BA51022.4010309@lbsd.net> <4BA51A48.6010509@zytor.com> <4BA52B6F.2060402@lbsd.net> <4BA52D01.1070506@zytor.com> <4BA52E9F.2080005@lbsd.net> <4BA54012.2080106@zytor.com>
+In-Reply-To: <4BA54012.2080106@zytor.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> [...] I'd envisioned something more like a library providing common
-> code that drivers could opt in to use, like we hane ff-memless for
-> memory-less force-feedback devices.
 
-As long as one can queue work with such a method, it looks like a good idea.
+>>>>> How much RAM are you giving your VM?  The default for Qemu is 128 MB,
+>>>>> and if you have a 110 MB initramfs it's hardly surprising that you get
+>>>>> an out of memory error.
+>>>>>       
+>>>>>           
+>>>> The kernel now boots where it booted for my 64bit box.
+>>>>
+>>>> The main problem though is the instant reboots for bzip2 and lzma
+>>>> compressed initramfs images. The change for printf to /usr/bin/printf
+>>>> both render the sane end result when run with the same commandline being
+>>>> run in the makefile, so this isn't the issue.
+>>>>
+>>>>     
+>>>>         
+>>> Oh, you have *that* problem.
+>>>
+>>> What printf is being used?
+>>>       
+>> coreutils 8.4 and 7.5 and bash all give me the same result for the
+>> commandline being run. This was just one of the things I tried and it
+>> didn't fix the problem.
+>>
+>> Here is what is run from the buildlog...
+>>   (cat arch/x86/boot/compressed/vmlinux.bin | lzma -9 && printf
+>> \\150\\111\\241\\007) > arch/x86/boot/compressed/vmlinux.bin.lzma || (rm
+>> -f arch/x86/boot/compressed/vmlinux.bin.lzma ; false)
+>>
+>> I tested printf out...
+>> # printf \\150\\111\\241\\007 | xxd
+>> 0000000: 6849 a107                                hI..
+>>
+>> coreutils 7.5
+>> # /usr/bin/printf \\150\\111\\241\\007 | xxd
+>> 0000000: 6849 a107                                hI..
+>>
+>> coreutils 8.4
+>> # /usr/bin/printf \\150\\111\\241\\007 | xxd
+>> 0000000: 6849 a107                                hI..
+>>
+>>
+>> That confirms it? its not the b0rked printf issue afaics :)
+>>
+>>     
+> Okay, so why the f*ck did you mention that instead of answering the
+> question I asked?  *How much memory does your VM have?*
 
-Henrik
+Sorry, had 128M , now has 2G. The tests now render the same results
+between qemu and plain hardware.
+
+The reason I mentioned the printf issue is it causes this exact problem,
+I just wanted you to know that I've already touched that base to rule it
+out. Sorry.
+
+
 
