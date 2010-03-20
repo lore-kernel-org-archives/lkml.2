@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab0CTUq1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 16:46:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45779 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521Ab0CTUqZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 16:46:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=bmx2XQ8p5OeY8fXNdBCY/m95tJ+YLkYkjyt13c+FWSmgJn7iH3OR7XDcVw9aZnrNNY
-         Bv3nVDH/MpB6Pub8bXdFiAGTYKeBENYMrv6omfr+seYWexFKkBMlhz+LqzdRuyEJCsxz
-         2UbDKixeV+jBvwVKCbwPIGW5F/5nqhEYn/Nyo=
+	id S1752667Ab0CTUuL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 16:50:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57260 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581Ab0CTUuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 16:50:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Peter Zijlstra <peterz@infradead.org>, Sachin Sant <sachinp@in.ibm.com>
+Subject: Re: 2.6.34-rc2: cpu hotplug test failure on x86_64
+Date: Sat, 20 Mar 2010 21:53:16 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>
+References: <4BA50319.3040301@in.ibm.com> <1269106149.9440.517.camel@laptop>
+In-Reply-To: <1269106149.9440.517.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20100320184907.8036.82488.stgit@localhost.localdomain>
-References: <20100320184907.8036.82488.stgit@localhost.localdomain>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 20 Mar 2010 16:46:03 -0400
-Message-ID: <8bd0f97a1003201346xc927340r39f33b9a6b599792@mail.gmail.com>
-Subject: Re: [PATCH] uImage: Allow to specify MKIMAGE
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
-       hskinnemoen@atmel.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003202153.16547.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 20, 2010 at 14:49, Paulius Zaleckas wrote:
-> --- a/arch/blackfin/boot/Makefile
-> +++ b/arch/blackfin/boot/Makefile
-> @@ -6,7 +6,7 @@
->  # for more details.
->  #
->
-> -MKIMAGE := $(srctree)/scripts/mkuboot.sh
-> +MKIMAGE := $(CONFIG_SHELL) $(srctree)/scripts/mkuboot.sh
->
->  targets := vmImage vmImage.bin vmImage.bz2 vmImage.gz vmImage.lzma vmImage.xip
->  extra-y += vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xip
-> @@ -16,7 +16,7 @@ UIMAGE_OPTS-$(CONFIG_RAMKERNEL) += -a $(CONFIG_BOOT_LOAD)
->  UIMAGE_OPTS-$(CONFIG_ROMKERNEL) += -a $(CONFIG_ROM_BASE) -x
->
->  quiet_cmd_uimage = UIMAGE  $@
-> -      cmd_uimage = $(CONFIG_SHELL) $(MKIMAGE) -A $(ARCH) -O linux -T kernel \
-> +      cmd_uimage = $(MKIMAGE) -A $(ARCH) -O linux -T kernel \
->                    -C $(2) -n '$(MACHINE)-$(KERNELRELEASE)' \
->                    -e $(shell $(NM) vmlinux | awk '$$NF == "__start" {print $$1}') \
->                    $(UIMAGE_OPTS-y) -d $< $@
+On Saturday 20 March 2010, Peter Zijlstra wrote:
+> On Sat, 2010-03-20 at 22:47 +0530, Sachin Sant wrote:
+> > Running cpu hotplug tests on a x86_64 box results in
+> > the following BUG.
+> > 
+> > BUG: unable to handle kernel NULL pointer dereference at 0000000000000004
+> > IP: [<ffffffff81037388>] amd_pmu_cpu_offline+0x38/0x67
+> 
+> I guess something like the below might work.
 
-looks straightforward, and doesnt matter to me, so
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+Not really.  Sachin, please try this patch instead:
+https://patchwork.kernel.org/patch/87189/
+
+Rafael
