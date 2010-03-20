@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab0CTTVr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 15:21:47 -0400
-Received: from smtprelay-h11.telenor.se ([62.127.194.4]:47159 "EHLO
-	smtprelay-h11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0CTTVq (ORCPT
+	id S1752036Ab0CTTYr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 15:24:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36449 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751457Ab0CTTYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 15:21:46 -0400
-X-SENDER-IP: [83.226.250.190]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhY1AK+9pEtT4vq+PGdsb2JhbACBO4QslWEBAQEBN7xPhH0E
-X-IronPort-AV: E=Sophos;i="4.51,279,1267398000"; 
-   d="scan'208";a="53662484"
-Message-ID: <4BA5204C.9050208@coyote.org>
-Date: Sat, 20 Mar 2010 20:21:48 +0100
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100308 Thunderbird/3.0.3
+	Sat, 20 Mar 2010 15:24:46 -0400
+Date: Sat, 20 Mar 2010 12:20:58 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>, Neil Horman <nhorman@tuxdriver.com>,
+       Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [git pull] pull request for writable limits for 2.6.34-rc0
+In-Reply-To: <4B9136F4.4010007@gmail.com>
+Message-ID: <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org>
+References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, gregkh@suse.de, greg@kroah.com,
-       penberg@cs.helsinki.fi, pavel@ucw.cz, harvey.harrison@gmail.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: reg.c Coding style fixes.
-References: <1269098051-6594-1-git-send-email-lindley@coyote.org> <20100320162426.GB28881@bicker>
-In-Reply-To: <20100320162426.GB28881@bicker>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 2010-03-20 17:24, Dan Carpenter wrote:
-> On Sat, Mar 20, 2010 at 04:14:11PM +0100, Lars Lindley wrote:
->> I fixed all problems reported by checkpatch.pl except some
->> (a lot of) long lines and some printk:s.
->> I removed "commented away" code and version comments.
->>
+On Fri, 5 Mar 2010, Jiri Slaby wrote:
 > 
-> 	[snip]
-> 
->> -		msleep(10); // Modify 20051221.1.b
->> -		Wb35Reg_WriteSync( pHwData, 0x03d4, 0xb8 );// REG_ON RF_RSTN on, and
->> -		msleep(10); // Modify 20051221.1.b
-> 
-> 	You removed this msleep().
-> 
+> please pull the writable limits tree below.
 
-Oops! I think I was fooled by the strange comment on the line before..
+Ok, sorry for the long delay - I spent 5 days at two separate intel events 
+over the last two weeks, which ended up sucking up a lot of my spare time 
+that I normally use to try to judge the merge window stuff. As a result, I 
+pulled mainly code that wasn't new (ie existing models), or that was 
+"obviously independent" (liek the new ceph filesystem) and didn't have any 
+contentious issues.
 
->> -
->> +	if (pHwData->phy_type <= RF_MAXIM_V1)
->> +		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xffffff38);
->> +	else {
->> +		Wb35Reg_WriteSync(pHwData, 0x03f4, 0xFF5807FF);
->> +		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
->> +		msleep(10);
->> +		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and msleep(10); */
-> 
-> In the new version it's commented out.                                             ^^^^^^^^^^^^
-> 
-> I used a program to try verify that only white space changed.
-> http://lkml.indiana.edu/hypermail/linux/kernel/1003.1/01012.html
-> 
-> Then when it failed I grovelled through to find what changed.
-> 
-> Actually my tool complained about removed parenthesis as well.  I think 
-> this patch only removes one set of parenthesis.  Please don't do that.  
-> With a patch this size, it's nice to be able to use tools to verify that 
-> it doesn't change anything, instead of checking it by hand. Tabs, spaces
-> and newlines only, please.
-> 
-Point taken. Will keep it in mind from now on..
+As a result, I ended up looking at the writable limits only today.
 
-> Obviously in the next patch you can send the one liner that remove the
-> parenthesis.  We can eyeball one liners quite quickly.
-> 
-> regards,
-> dan carpenter
-> 
+And I'm not entirely happy. For example, I absolutely _detest_ seeing new 
+compat code for a feature that was just added. My immediate reaction is 
+"WTF? What kind of moron doesn't make things 64-bit safe to begin with?". 
+It's really annoying.
 
+Why doesn't the new set/getprlimit things just take a pointer to a 
+well-defined pair of 64-bit values? Why is there any compat cruft at all 
+there? That is beyond insane. Just make the user level interface work 
+right in the first place, instead of adding crazy compat crap. This is 
+_not_ a legacy interface.
 
-Here's a patch to fix my screw up :)
-Now the .o doesn't differ before and after..
+I'd also like to hear more about actual uses. Does _any_ other Unix-like 
+system actually implement this writable limits thing? Who is asking for 
+it? 
 
-
-[PATCH] staging: winbond: reg.c Fix accidental commenting of msleep(10)
-
-I accidentaly commented out msleep() in one place.
-This applies after previous patch:
-Message-Id: <1269098051-6594-1-git-send-email-lindley@coyote.org>
-
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/winbond/reg.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/winbond/reg.c b/drivers/staging/winbond/reg.c
-index 2bddf8f..d9a8128 100644
---- a/drivers/staging/winbond/reg.c
-+++ b/drivers/staging/winbond/reg.c
-@@ -890,7 +890,8 @@ void Uxx_power_on_procedure(struct hw_data *pHwData)
- 		Wb35Reg_WriteSync(pHwData, 0x03f4, 0xFF5807FF);
- 		Wb35Reg_WriteSync(pHwData, 0x03d4, 0x80); /* regulator on only */
- 		msleep(10);
--		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and msleep(10); */
-+		Wb35Reg_WriteSync(pHwData, 0x03d4, 0xb8); /* REG_ON RF_RSTN on, and */
-+		msleep(10);
- 		ltmp = 0x4968;
- 		if ((pHwData->phy_type == RF_WB_242) ||
- 			(RF_WB_242_1 == pHwData->phy_type))
--- 
-1.7.0.2
+			Linus
