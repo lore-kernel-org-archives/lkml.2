@@ -1,66 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0CTJSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 05:18:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46297 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab0CTJSI convert rfc822-to-8bit (ORCPT
+	id S1752014Ab0CTJdc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 05:33:32 -0400
+Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:58267 "EHLO
+	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751386Ab0CTJda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 05:18:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pyiBb7eEIWxwcl6IhWLngfRm9VldGnYrzL37DPUifZyA0XRm9sF5GqvmecMN1/CWb1
-         0B5uDOefb8WF9AdA2Kr+8/aSPT1PoBLy/fBp9WMTTfjle6pY8oF/zyr5ujkyjAshLMHM
-         CRdCd0eAR2TNfIIr+D+xbGufMft9cBle0zTOg=
-MIME-Version: 1.0
-In-Reply-To: <201003192353.o2JNrPR0019366@imap1.linux-foundation.org>
-References: <201003192353.o2JNrPR0019366@imap1.linux-foundation.org>
-Date: Sat, 20 Mar 2010 10:18:05 +0100
-Message-ID: <8aa016e11003200218i1f5fa5d1sd1eb21ab76f7b0d1@mail.gmail.com>
-Subject: Re: + kernel-user-remove-unreachable-code.patch added to -mm tree
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, jslaby@suse.cz, a.p.zijlstra@chello.nl,
-       mingo@elte.hu, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 20 Mar 2010 05:33:30 -0400
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Christian Kujau <lists@nerdbynature.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, jeremy@goop.org
+In-Reply-To: <alpine.DEB.2.01.1003200058030.5493@bogon.housecafe.de>
+References: <alpine.DEB.2.01.1003200058030.5493@bogon.housecafe.de>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-5dDxDhWm6jBG3MQ3V/TQ"
+Date: Sat, 20 Mar 2010 09:33:22 +0000
+Message-ID: <1269077602.28761.42.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+X-SA-Exim-Connect-IP: 192.168.1.5
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: 2.6.34-rc2: xen DomU not booting
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=W3tOLUehizD4qj6VhtReFuw5MKb8d+XqjIxlDsIazEA= c=1 sm=0 a=VwQbUJbxAAAA:8 a=y4SIFWps7tDG8s910BgA:9 a=kaKq-uZD5yrd7BEiL1GzOxGg8rwA:4 a=wPNLvfGTeEIA:10 a=Sa4oUCdbiRavKDJs:21 a=C3zsyzHwsrc6wsf1:21 a=IWuEwS1lsXtoGzHoj9UA:9 a=Zy-cH7wCqQY4Toj4O7BFPO7Woi0A:4 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Sat, Mar 20, 2010 at 12:53 AM,  <akpm@linux-foundation.org> wrote:
->
-> The patch titled
->     kernel/user: remove unreachable code
-> has been added to the -mm tree.  Its filename is
->     kernel-user-remove-unreachable-code.patch
->
-> Before you just go and hit "reply", please:
->   a) Consider who else should be cc'ed
->   b) Prefer to cc a suitable mailing list as well
->   c) Ideally: find the original patch on the mailing list and do a
->      reply-to-all to that, adding suitable additional cc's
->
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
-> See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-> out what to do about this
->
-> The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
->
-> ------------------------------------------------------
-> Subject: kernel/user: remove unreachable code
-> From: Jiri Slaby <jslaby@suse.cz>
->
-> The code which executed this code was removed in 7c9414385ebfdd87cc542
-> (sched: Remove USER_SCHED).  Remove the dangling code too.
->
+--=-5dDxDhWm6jBG3MQ3V/TQ
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-This one is already fixed and merged via http://lkml.org/lkml/2010/3/16/210 .
+On Sat, 2010-03-20 at 01:14 -0700, Christian Kujau wrote:=20
+> Hi there,
+>=20
+> again a bit late in the game, I tried to upgrade one of my DomUs from=20
+> 2.6.33 to 2.6.34-git (tried -rc1 yesterday, pulled again today, so I'm on=
+=20
+> -rc2 now):
+>=20
+> ------
+> dom0# xm create sid.cfg -c
+> Using config file "/etc/xen/sid.cfg".
+> Started domain sid
+>=20
+> ------
+>=20
+> Then it just "hangs" there:
 
-Thanks,
-Dhaval
+Can you try this patch please, I think it will resolve the issue you
+see.
+
+https://patchwork.kernel.org/patch/87081/
+
+> it won't return to the shellprompt (as if the=20
+> domU crashed) but it won't connect to the domU console either (as it does=
+=20
+> perfectly with 2.6.33). And indeed, the domU is listed as running:
+>=20
+> dom0# (xm list sid ; sleep 3; xm list sid) | grep ^sid
+> sid        55   256     1     r-----    140.8
+> sid        55   256     1     r-----    144.3
+>=20
+> Also, "xm dmesg" is blank and netconsole doesn't work inside a domU, IIRC=
+.=20
+>=20
+> Hints how to debug this (besides doing git bisect, again) are very much=20
+> welcome!
+>=20
+> Oh, the Dom0 is Ubuntu 8.04 (2.6.24-24, Xen 3.2.0) on a Mac Mini.
+>=20
+> Thanks,
+> Christian.
+
+--=20
+Ian Campbell
+
+You!  What PLANET is this!
+		-- McCoy, "The City on the Edge of Forever", stardate 3134.0
+
+--=-5dDxDhWm6jBG3MQ3V/TQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkukll4ACgkQM0+0qS9rzVmM+wCfSzBT9FjRAYa71hbkTK/lTN0x
+BL8AnRk3NzVLTgT0W9h8N+w/fkwZwX15
+=Us2U
+-----END PGP SIGNATURE-----
+
+--=-5dDxDhWm6jBG3MQ3V/TQ--
+
