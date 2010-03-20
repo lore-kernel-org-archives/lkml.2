@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016Ab0CTEx7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 00:53:59 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:54920 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751666Ab0CTEx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 00:53:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=PKnuWlDGubnu3ScVLUlxiKKbG4fl/AWPsHk5boN+fJUshxmMOhQJjfZP2iP86S4vQE
-         teHyUG/HI2xsj/jhaJbbsumRGuRrVAw0ou7VJ7BfeTXvZyVNqoIqxsD7bOLLinPTwm8E
-         Y9CgmmQK5ZOx6QijpJEpvzjHC40zLknj2S52A=
-Date: Sat, 20 Mar 2010 12:53:52 +0800
-From: wzt.wzt@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org, flamingice@sourmilk.net
-Subject: [PATCH] Wireless: Make cfg80211_dev_rename() check sscanf return value in net/wireless/core.c
-Message-ID: <20100320045352.GA2949@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1752075Ab0CTEzK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 00:55:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51004 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751684Ab0CTEzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 00:55:08 -0400
+Message-ID: <4BA45527.5050202@zytor.com>
+Date: Fri, 19 Mar 2010 21:55:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Brian Gerst <brgerst@gmail.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] x86-32: Split cache flush handler from simd handler
+References: <1268936453-3727-1-git-send-email-brgerst@gmail.com>	 <1268936453-3727-2-git-send-email-brgerst@gmail.com>	 <4BA3FBB5.2050008@zytor.com> <73c1f2161003192108n72311e00h49fcf9eac5a2b4fc@mail.gmail.com>
+In-Reply-To: <73c1f2161003192108n72311e00h49fcf9eac5a2b4fc@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make cfg80211_dev_rename() check sscanf return value.
+On 03/19/2010 09:08 PM, Brian Gerst wrote:
+>>
+>> Does anyone have *any idea* what processor this applies to?  I've
+>> tracked the code back all the way to the original inclusion in the
+>> kernel, and there isn't even the slightest hint.
+>>
+>> The comment, of course, is a great example on how *not* to write
+>> comments... it should have mentioned the CPU in question.
+> 
+> This thread appears to describe the problem:
+> http://marc.info/?t=104960872800014&r=1&w=2
+> 
+> And the initial patch:
+> http://marc.info/?l=linux-kernel&m=104960870106838&w=2
+> 
+> It looks like to me, that an AMD 486 clone has an erratum where the
+> invd instruction from userspace generates exception 19 (13 hex)
+> instead of #GP (13 dec).
+> 
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+Ah, guess it was even older than I first realized ... I should have
+searched for the string "cache flush denied" instead.
 
----
- net/wireless/core.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Sounds like we should do three things:
 
-diff --git a/net/wireless/core.c b/net/wireless/core.c
-index 80afacd..8e815b4 100644
---- a/net/wireless/core.c
-+++ b/net/wireless/core.c
-@@ -146,7 +146,9 @@ int cfg80211_dev_rename(struct cfg80211_registered_device *rdev,
- 	int idx, taken = -1, result, digits;
- 
- 	/* prohibit calling the thing phy%d when %d is not its number */
--	sscanf(newname, PHY_NAME "%d%n", &idx, &taken);
-+	if (sscanf(newname, PHY_NAME "%d%n", &idx, &taken) != 2)
-+		return -EINVAL;
-+
- 	if (taken == strlen(newname) && idx != rdev->idx) {
- 		/* count number of places needed to print idx */
- 		digits = 1;
+a) update the comment to actually reflect what is going on;
+b) compile it out for > 486;
+c) report the error as trap 13 rather than 19.
+
+	-hpa
+
 -- 
-1.6.5.3
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
