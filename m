@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab0CTBDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Mar 2010 21:03:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54565 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752111Ab0CTBDu (ORCPT
+	id S1752756Ab0CTBWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Mar 2010 21:22:23 -0400
+Received: from qw-out-2122.google.com ([74.125.92.25]:28867 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752365Ab0CTBWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Mar 2010 21:03:50 -0400
-Date: Fri, 19 Mar 2010 18:00:09 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH -v4] x86: do not free zero sized per cpu areas
-In-Reply-To: <4BA40C83.1030202@kernel.org>
-Message-ID: <alpine.LFD.2.00.1003191758460.18017@i5.linux-foundation.org>
-References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org> <4BA3F8ED.2090600@zytor.com> <4BA407B8.7070503@kernel.org> <4BA408EE.5000001@zytor.com> <4BA40C83.1030202@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 19 Mar 2010 21:22:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=u+V+WChF9Qqx/AqpJcpM0ojDOc/IBFxSglSa5Kl0rPlbHn3WFtW/xCjDSj5yUgpi3M
+         74EgLBOa620FaMYesMIGZfTlqmqGMpPm3J2l7HLThuZJmUeVMEe3WM1H6JnUGOzyZ+KM
+         rwMAj0mV/b8gY4q2VDJbSfNO9zG3Cnizc0630=
+Message-ID: <4BA42345.3080703@gmail.com>
+Date: Sat, 20 Mar 2010 12:22:13 +1100
+From: Graeme Russ <graeme.russ@gmail.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Fixed] x86 - Boot hangs at Calibrating delay loop on AMD SC520
+References: <4BA0CE4B.90508@gmail.com>
+In-Reply-To: <4BA0CE4B.90508@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Graeme Russ wrote:
+> 
+> During boot I was getting a warning at arch/x86/kernel/rtc.c:125 and the
+> kernel hung at Calibrating delay loop... Also, all boot messages have a
+> zero time-stamp.
+> 
 
+> I have tried with and without the AMD Elan Extended (non-PC) x86 platform
+> 
 
-On Fri, 19 Mar 2010, Yinghai Lu wrote:
-> +
-> +	if (start > end) {
-> +		WARN_ONCE(1,
-> +		      "free_early_partial got wrong start/end %#llx/%#llx\n",
-> +		      start, end);
-> +
-> +		return;
+I tracked down the problem - The SC520 has allows interrupts sources to be
+routed to practically any IRQ (it even has a third interrupt controller
+providing more IRQ lines). I have been using the more advanced programmable
+timer available in the SC520 and had routed its interrupt output to IRQ0.
+There are a few other timer and interrupt related configurations which also
+need to be set 'just right' as well. Basically, you need to make the SC520
+fully PC/AT compatible for Linux to work. I'll be posting all my
+development work onto the U-Boot mailing list, so you should be able to use
+to the U-Boot source for future reference.
 
-This should be written as
+I know have a fully functional boot loader and Linux kernel to the point of
+looking for /sbin/init - Now to create a JFSS2 file system and get a fully
+functional GNU/Linux system up and running.
 
-	if (WARN_ONCE(start > end, "free_early_partial(%#llx/%#llx)\n", start, end))
-		return;
+I just want to say a huge thanks to all the Linux Kernel developers for
+their generous donations of time, knowledge and skill such that others like
+myself can learn. You are the real drivers of innovation, not just because
+you come up with new ideas, but you allow everyone the _see_ how those
+ideas are implemented - This gives us all the tools to realise our own ideas.
 
-rather than having a separate conditional.
+Thanks,
 
-			Linus
+Graeme
