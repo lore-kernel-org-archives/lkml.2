@@ -1,54 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab0CTMao (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 08:30:44 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:35225 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751965Ab0CTMam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 08:30:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=p9l3ysur9nsulr/kNxsz5nW9ZlsN4GywheoyQ41/I40qngQOhzsRw/W/+tbyvSdZoF
-         3wpI192p11rAJ8Ia4Kf5jlO7MvvIzAmBWi0r4yf0GK8MhlXGXlLCxtx9jd1ndqc5k3qx
-         bSTeaKFKM7Aw2NVSaSQeh7c/TWSYv7Pm2bssY=
-Date: Sat, 20 Mar 2010 15:30:16 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Sage Weil <sage@newdream.net>
-Cc: Yehuda Sadeh <yehuda@hq.newdream.net>, ceph-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] ceph: handle kmalloc() failure
-Message-ID: <20100320123015.GA29929@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Sage Weil <sage@newdream.net>,
-	Yehuda Sadeh <yehuda@hq.newdream.net>,
-	ceph-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	id S1752200Ab0CTMhB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 08:37:01 -0400
+Received: from mail1.gtek.biz ([65.90.11.10]:46398 "EHLO mail1.gtek.biz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751810Ab0CTMhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 08:37:00 -0400
+Message-ID: <07764c149c248837976cad0ebba73549.squirrel@www.gtek.biz>
+Date: Sat, 20 Mar 2010 07:19:46 -0500
+Subject: 
+From: "Tobacco Office" <info@tobacco.org>
+Reply-To: paycenterlondon12@9.cn
+User-Agent: SquirrelMail/1.4.20-RC2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return ERR_PTR(-ENOMEM) if kmalloc() fails.  We handle allocation 
-failures the same way later in the function.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
-index a260010..655b005 100644
---- a/fs/ceph/mds_client.c
-+++ b/fs/ceph/mds_client.c
-@@ -328,6 +328,8 @@ static struct ceph_mds_session *register_session(struct ceph_mds_client *mdsc,
- 	struct ceph_mds_session *s;
- 
- 	s = kzalloc(sizeof(*s), GFP_NOFS);
-+	if (!s)
-+		return ERR_PTR(-ENOMEM);
- 	s->s_mdsc = mdsc;
- 	s->s_mds = mds;
- 	s->s_state = CEPH_MDS_SESSION_NEW;
+Send your Names,Sex,Country,Tell,occupation
