@@ -1,200 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524Ab0CTGnI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 02:43:08 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:49798 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123Ab0CTGnF (ORCPT
+	id S1752544Ab0CTHBi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 03:01:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50730 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752123Ab0CTHBh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 02:43:05 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-       Kerstin Jonsson <kerstin.jonsson@ericsson.com>, jbohac@novell.com,
-       "Yinghai Lu" <yinghai@kernel.org>, mingo@elte.hu,
-       "Avi Kivity" <avi@redhat.com>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH] x86 apic: Ack all pending irqs when crashed/on kexec - V5
-References: <4B96116A.6090705@ericsson.com>
-	<1268131954-13845-1-git-send-email-trenn@suse.de>
-	<m11vfhaz24.fsf@fess.ebiederm.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Fri, 19 Mar 2010 23:42:54 -0700
-In-Reply-To: <m11vfhaz24.fsf@fess.ebiederm.org> (Eric W. Biederman's message of "Thu\, 18 Mar 2010 18\:18\:59 -0700")
-Message-ID: <m1pr2z8pe9.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Sat, 20 Mar 2010 03:01:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XxearSQFd0cpEbRVZLCHDfPdT3hyj0XD+bZrMpDKgX9EoqcMKX68zp9Omwq4yaQCVB
+         PImylKuxm0QCa+yhZoaJFFTIX/qff6TQSA6bdNF9Hqt7hfYnXE3bRchPbCBElLfTDvqz
+         lgJp2aFlV/0EM5SR2RDxeYokWzXkTFr1cc/4w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: akpm@linux-foundation.org, trenn@suse.de, avi@redhat.com, mingo@elte.hu, yinghai@kernel.org, jbohac@novell.com, kerstin.jonsson@ericsson.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <d311c6a81003180906i1b28b5c6k1c20d8bbb4c2fc37@mail.gmail.com>
+References: <d311c6a81003180906i1b28b5c6k1c20d8bbb4c2fc37@mail.gmail.com>
+Date: Sat, 20 Mar 2010 00:01:36 -0700
+X-Google-Sender-Auth: 4e60974be7a3eb11
+Message-ID: <86802c441003200001v237617e8pc1294b673e9a7947@mail.gmail.com>
+Subject: Re: Memory Loss
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tomasz Grzegurzko <tomasz89@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ebiederm@xmission.com (Eric W. Biederman) writes:
-
-> Andrew thanks for finding this.  I have a test case for this that
-> reproduces about every other time, and I will plug this patch in and
-> see it helps.  I'm not wild about how the max_loops variable is
-> reused both as a timer and as a countdown timer, but the basic
-> principle feels solid.
+On Thu, Mar 18, 2010 at 9:06 AM, Tomasz Grzegurzko <tomasz89@gmail.com> wrote:
+> Hi,
 >
-> I have been seeing this and for some reason I thought I was dying
-> in calibrate_delay_loop().  But this is much later and much easier
-> to deal with.  Since we make it to smp_init() there isn't any
-> good excuse for us to fail to come up.
+> I have a Dell PowerEdge 2900 reporting the loss of some memory at boot
+> time. It runs Ubuntu Karmic kernel 2.6.31-19-server (internal name).
+> The server is loaded with 42 GB of RAM but I get a little over 40GB,
+> and the following message from dmesg after bootup accounting for the
+> loss of RAM.
 >
-> I'm curious how much testing have you been able to do on this piece
-> of code?
+> [    0.000000] Initializing cgroup subsys cpuset
+> [    0.000000] Initializing cgroup subsys cpu
+> [    0.000000] Linux version 2.6.31-19-server (buildd@crested) (gcc
+> version 4.4.1 (Ubuntu 4.4.1-4ubuntu8) ) #56-Ubuntu SMP Thu Jan 28
+> 03:40:48 UTC 2010 (Ubuntu 2.6.31-19.56-server)
+> [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-2.6.31-19-server
+> root=UUID=53c9e374-ff9a-4c43-96ef-d5e3039d0eba ro
+> [    0.000000] KERNEL supported cpus:
+> [    0.000000]   Intel GenuineIntel
+> [    0.000000]   AMD AuthenticAMD
+> [    0.000000]   Centaur CentaurHauls
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  BIOS-e820: 0000000000000000 - 00000000000a0000 (usable)
+> [    0.000000]  BIOS-e820: 0000000000100000 - 00000000cfb50000 (usable)
+> [    0.000000]  BIOS-e820: 00000000cfb50000 - 00000000cfb66000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000cfb66000 - 00000000cfb85c00 (ACPI data)
+> [    0.000000]  BIOS-e820: 00000000cfb85c00 - 00000000d0000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fe000000 - 0000000100000000 (reserved)
+> [    0.000000]  BIOS-e820: 0000000100000000 - 0000000ab0000000 (usable)
+> [    0.000000] DMI 2.5 present.
+> [    0.000000] last_pfn = 0xab0000 max_arch_pfn = 0x400000000
+> [    0.000000] MTRR default type: uncachable
+> [    0.000000] MTRR fixed ranges enabled:
+> [    0.000000]   00000-9FFFF write-back
+> [    0.000000]   A0000-BFFFF uncachable
+> [    0.000000]   C0000-D3FFF write-protect
+> [    0.000000]   D4000-EBFFF uncachable
+> [    0.000000]   EC000-FFFFF write-protect
+> [    0.000000] MTRR variable ranges enabled:
+> [    0.000000]   0 base 000000000 mask F80000000 write-back
+> [    0.000000]   1 base 100000000 mask F00000000 write-back
+> [    0.000000]   2 base 200000000 mask E00000000 write-back
+> [    0.000000]   3 base 400000000 mask C00000000 write-back
+> [    0.000000]   4 base 800000000 mask C00000000 write-back
+> [    0.000000]   5 disabled
+> [    0.000000]   6 disabled
+> [    0.000000]   7 disabled
+> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
+> [    0.000000] e820 update range: 0000000080000000 - 0000000100000000
+> (usable) ==> (reserved)
+> [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory,
+> losing 1275MB of RAM.
+> [    0.000000] ------------[ cut here ]------------
+> [    0.000000] WARNING: at
+> /build/buildd/linux-2.6.31/arch/x86/kernel/cpu/mtrr/cleanup.c:1091
+> mtrr_trim_uncached_memory+0x2a6/0x2d1()
+> [    0.000000] Hardware name: PowerEdge 2900
+> [    0.000000] Modules linked in:
+> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.31-19-server #56-Ubuntu
+> [    0.000000] Call Trace:
+> [    0.000000]  [<ffffffff8105e508>] warn_slowpath_common+0x78/0xb0
+> [    0.000000]  [<ffffffff8105e54f>] warn_slowpath_null+0xf/0x20
+> [    0.000000]  [<ffffffff8184150e>] mtrr_trim_uncached_memory+0x2a6/0x2d1
+> [    0.000000]  [<ffffffff8183ccfa>] setup_arch+0x3d0/0x647
+> [    0.000000]  [<ffffffff81524b0d>] ? printk+0x3c/0x3f
+> [    0.000000]  [<ffffffff81837db3>] start_kernel+0xbe/0x35b
+> [    0.000000]  [<ffffffff8183759a>] x86_64_start_reservations+0x125/0x129
+> [    0.000000]  [<ffffffff81837698>] x86_64_start_kernel+0xfa/0x109
+> [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
+> [    0.000000] update e820 for mtrr
+> [    0.000000] modified physical RAM map:
+> [    0.000000]  modified: 0000000000000000 - 00000000000a0000 (usable)
+> [    0.000000]  modified: 0000000000100000 - 0000000080000000 (usable)
+> [    0.000000]  modified: 0000000080000000 - 00000000cfb66000 (reserved)
+> [    0.000000]  modified: 00000000cfb66000 - 00000000cfb85c00 (ACPI data)
+> [    0.000000]  modified: 00000000cfb85c00 - 00000000d0000000 (reserved)
+> [    0.000000]  modified: 00000000e0000000 - 00000000f0000000 (reserved)
+> [    0.000000]  modified: 00000000fe000000 - 0000000100000000 (reserved)
+> [    0.000000]  modified: 0000000100000000 - 0000000ab0000000 (usable)
+> [    0.000000] last_pfn = 0xab0000 max_arch_pfn = 0x400000000
+> [    0.000000] last_pfn = 0x80000 max_arch_pfn = 0x400000000
+> [    0.000000] e820 update range: 0000000000001000 - 0000000000006000
+> (usable) ==> (reserved)
 
-This code definitely makes things better in my test case.
-I had the patience to wait for 12 iterations and I was
-expecting 6 failures and I saw none.
+because your BIOS doesn't set var mtrr correctly to cover all memory.
+so kernel trim those memory.
+otherwise system could be very slow when use those range.
+[0x8000000, 0xd0000000)
 
-I have reservations about the timeout, but the rest of the patch
-is definitely doing the right thing, and something is a lot better
-than nothing.
+you can specify "disable_mtrr_trim" in your boot command line of
+/boot/grub/menu.lst.
 
-Tested-by: "Eric W. Biederman" <ebiederm@xmission.com>
+then after boot, you could input that in command line after log on
 
+echo "base=0x80000000 size=0x40000000 type=write-back" > /proc/mtrr
+echo "base=0xc0000000 size=0x10000000 type=write-back" > /proc/mtrr
 
-> Thomas Renninger <trenn@suse.de> writes:
->
->> From: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
->>
->> When the SMP kernel decides to crash_kexec() the local APICs may have
->> pending interrupts in their vector tables.
->> The setup routine for the local APIC has a deficient mechanism for
->> clearing these interrupts, it only handles interrupts that has already
->> been dispatched to the local core for servicing (the ISR register)
->> safely, it doesn't consider lower prioritized queued interrupts stored
->> in the IRR register.
->>
->> If you have more than one pending interrupt within the same 32 bit word
->> in the LAPIC vector table registers you may find yourself entering the
->> IO APIC setup with pending interrupts left in the LAPIC. This is a
->> situation for wich the IO APIC setup is not prepared. Depending of
->> what/which interrupt vector/vectors are stuck in the APIC tables your
->> system may show various degrees of malfunctioning.
->> That was the reason why the check_timer() failed in our system, the
->> timer interrupts was blocked by pending interrupts from the old kernel
->> when routed trough the IO APIC.
->>
->> Additional comment from Jiri Bohac:
->> ==============
->> If this should go into stable release,
->> I'd add some kind of limit on the number of iterations, just to be safe from
->> hard to debug lock-ups:
->>
->> +if (loops++  > MAX_LOOPS) {
->> +        printk("LAPIC pending clean-up")
->> +        break;
->> +}
->>  while (queued);
->>
->> with MAX_LOOPS something like 1E9 this would leave plenty of time for the
->> pending IRQs to be cleared and would and still cause at most a second of delay
->> if the loop were to lock-up for whatever reason.
->> ==============
->>
->>>From trenn@suse.de:
->> V2: Use tsc if avail to bail out after 1 sec due to possible virtual apic_read
->>     calls which may take rather long (suggested by: Avi Kivity <avi@redhat.com>)
->>     If no tsc is available bail out quickly after cpu_khz, if we broke out too
->>     early and still have irqs pending (which should never happen?) we still
->>     get a WARN_ON...
->>
->> V3: - Fixed indentation -> checkpatch clean
->>     - max_loops must be signed
->>
->> V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
->>
->> V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case
->>
->> CC: jbohac@novell.com
->> CC: "Yinghai Lu" <yinghai@kernel.org>
->> CC: akpm@linux-foundation.org
->> CC: mingo@elte.hu
->> CC: "Kerstin Jonsson" <kerstin.jonsson@ericsson.com>
->> CC: "Avi Kivity" <avi@redhat.com>
->> Signed-off-by: Thomas Renninger <trenn@suse.de>
->> ---
->>  arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
->>  1 files changed, 33 insertions(+), 8 deletions(-)
->>
->> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
->> index 00187f1..cfcc87f 100644
->> --- a/arch/x86/kernel/apic/apic.c
->> +++ b/arch/x86/kernel/apic/apic.c
->> @@ -51,6 +51,7 @@
->>  #include <asm/smp.h>
->>  #include <asm/mce.h>
->>  #include <asm/kvm_para.h>
->> +#include <asm/tsc.h>
->>  
->>  unsigned int num_processors;
->>  
->> @@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(void)
->>   */
->>  void __cpuinit setup_local_APIC(void)
->>  {
->> -	unsigned int value;
->> -	int i, j;
->> +	unsigned int value, queued;
->> +	int i, j, acked = 0;
->> +	unsigned long long tsc = 0, ntsc;
->> +	long long max_loops = cpu_khz;
->> +
->> +	if (cpu_has_tsc)
->> +		rdtscll(tsc);
->>  
->>  	if (disable_apic) {
->>  		arch_disable_smp_support();
->> @@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
->>  	 * the interrupt. Hence a vector might get locked. It was noticed
->>  	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
->>  	 */
->> -	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
->> -		value = apic_read(APIC_ISR + i*0x10);
->> -		for (j = 31; j >= 0; j--) {
->> -			if (value & (1<<j))
->> -				ack_APIC_irq();
->> +	do {
->> +		queued = 0;
->> +		for (i = APIC_ISR_NR - 1; i >= 0; i--)
->> +			queued |= apic_read(APIC_IRR + i*0x10);
->> +
->> +		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
->> +			value = apic_read(APIC_ISR + i*0x10);
->> +			for (j = 31; j >= 0; j--) {
->> +				if (value & (1<<j)) {
->> +					ack_APIC_irq();
->> +					acked++;
->> +				}
->> +			}
->>  		}
->> -	}
->> +		if (acked > 256) {
->> +			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
->> +			       acked);
->> +			break;
->> +		}
->> +		if (cpu_has_tsc) {
->> +			rdtscll(ntsc);
->> +			max_loops = (cpu_khz << 10) - (ntsc - tsc);
->> +		} else
->> +			max_loops--;
->> +	} while (queued && max_loops > 0);
->> +	WARN_ON(max_loops <= 0);
->>  
->>  	/*
->>  	 * Now that we are all set up, enable the APIC
->> -- 
->> 1.6.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+or call them with inittab or rc.d
+
+YH
