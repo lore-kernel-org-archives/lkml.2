@@ -1,78 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403Ab0CTEIi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 00:08:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50307 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056Ab0CTEIh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 00:08:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=d3hEWPFPKWm1Vefy3CLBBxKiHI1bVd9ys0sxORrG4SEfb0vTLPnWHcBrPYPvjwR3Kd
-         NYsneEGDfsu/y4LkU20dun2rZwPm6D3mptM4AKoVbZeCExZtyF8QhRE6oaQet0Hrvxul
-         5eYQjYZD5uHcy7S6aTFPFN3V46eGMgo3nkgRE=
+	id S1751232Ab0CTEU7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 00:20:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750808Ab0CTEU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Mar 2010 00:20:58 -0400
+Message-ID: <4BA44CFC.2030205@redhat.com>
+Date: Sat, 20 Mar 2010 00:20:12 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <4BA3FBB5.2050008@zytor.com>
-References: <1268936453-3727-1-git-send-email-brgerst@gmail.com>
-	 <1268936453-3727-2-git-send-email-brgerst@gmail.com>
-	 <4BA3FBB5.2050008@zytor.com>
-Date: Sat, 20 Mar 2010 00:08:36 -0400
-Message-ID: <73c1f2161003192108n72311e00h49fcf9eac5a2b4fc@mail.gmail.com>
-Subject: Re: [PATCH 1/5] x86-32: Split cache flush handler from simd handler
-From: Brian Gerst <brgerst@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+CC: Mark Wielaard <mjw@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, Mike Galbraith <efault@gmx.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH -tip 10/10] perf probe: Accessing members in data	structures
+References: <20100316220515.32050.82185.stgit@localhost6.localdomain6> <20100316220626.32050.57552.stgit@localhost6.localdomain6> <1268821537.6022.12.camel@springer.wildebeest.org> <4BA12A23.4030109@redhat.com> <20100318032804.GA5045@nowhere>
+In-Reply-To: <20100318032804.GA5045@nowhere>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 6:33 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/18/2010 11:20 AM, Brian Gerst wrote:
->> Make the cache flush handler a seperate function, and use
->> an alternative to call the appropriate handler.
+Frederic Weisbecker wrote:
+> On Wed, Mar 17, 2010 at 03:14:43PM -0400, Masami Hiramatsu wrote:
+>> Mark Wielaard wrote:
+>>> On Tue, 2010-03-16 at 18:06 -0400, Masami Hiramatsu wrote:
+>>>> Support accessing members in the data structures. With this,
+>>>> perf-probe accepts data-structure members(IOW, it now accepts
+>>>> dot '.' and arrow '->' operators) as probe arguemnts.
+>>>>
+>>>> e.g.
+>>>>
+>>>>  ./perf probe --add 'schedule:44 rq->curr'
+>>>>
+>>>>  ./perf probe --add 'vfs_read file->f_op->read file->f_path.dentry'
+>>>>
+>>>> Note that '>' can be interpreted as redirection in command-line.
+>>>
+>>> If you find that a problem then you can do like SystemTap does and allow
+>>> '.' in place of '->'. In the code you already use the
+>>> perf_probe_arg_field ref flag only to check that the DIE gives you the
+>>> same information. So you could just drop that and use any separator.
+>>> Then you decide based on whether you see a DW_TAG_pointer_type. This
+>>> gives the user some extra flexibility by letting them not having to care
+>>> about specifying extra type information already available elsewhere.
 >>
->> +#ifdef CONFIG_X86_32
->> +dotraplinkage void
->> +do_cache_flush_error(struct pt_regs *regs, long error_code)
->> +{
->> +     conditional_sti(regs);
->> +
->> +     /*
->> +      * Handle strange cache flush from user space exception.
->> +      * This is undocumented behaviour.
->> +      */
->> +     if (regs->flags & X86_VM_MASK) {
->> +             handle_vm86_fault((struct kernel_vm86_regs *)regs, error_code);
->> +             return;
->> +     }
->> +     current->thread.trap_no = 19;
->> +     current->thread.error_code = error_code;
->> +     die_if_kernel("cache flush denied", regs, error_code);
->> +     force_sig(SIGSEGV, current);
->> +}
->> +#endif
->
-> Does anyone have *any idea* what processor this applies to?  I've
-> tracked the code back all the way to the original inclusion in the
-> kernel, and there isn't even the slightest hint.
->
-> The comment, of course, is a great example on how *not* to write
-> comments... it should have mentioned the CPU in question.
+>> Thanks, when designing this feature, I considered it too.
+>>
+>> Since perf probe already support displaying source code by --line option,
+>> users will read the probed code itself and try to probe it. In that case,
+>> I think they naturally use '.' and '->' as they read (they might try to
+>> copy & paste it).
+>>
+>> So, I think that it would be good to support both of '.' and '->' as
+>> they are used in the code, because it will not confuse users.
+>>
+>> Thank you,
+> 
+> 
+> Agreed.
+> 
+> And lets people use what is common for them: expressions that follow
+> C rules in the context.
+> 
+> And those who will be more familiar with perf probe will know they can
+> use the simplified "." based scheme.
 
-This thread appears to describe the problem:
-http://marc.info/?t=104960872800014&r=1&w=2
+Hi Frederic, Steven,
 
-And the initial patch:
-http://marc.info/?l=linux-kernel&m=104960870106838&w=2
+BTW, currently perf trace can't parse these 'data structure' type
+field yet.
 
-It looks like to me, that an AMD 486 clone has an erratum where the
-invd instruction from userspace generates exception 19 (13 hex)
-instead of #GP (13 dec).
+e.g.
+execute following commands;
 
---
-Brian Gerst
+./perf probe vfs_read 'file->f_mode'
+./perf record -e probe:vfs_read -afR ls  -l
+./perf trace
+  Warning: Error: expected ';' but read '->'
+  Warning: failed to read event format for vfs_read
+
+Because perf trace expects that the field name should be a
+C-variable name. Moreover, if perf probe supports array element,
+it becomes more problematic, e.g. 'field:u8 array[8]'! oops!
+what does the field contain? an array with 8 elements? or
+8th element of 'array' array? :(
+
+Should I suppose that trace event format only accept C-style
+variable name for field?
+
+
+Thank you,
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
