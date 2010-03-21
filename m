@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322Ab0CUJ6M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 05:58:12 -0400
-Received: from dallas.jonmasters.org ([72.29.103.172]:55001 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab0CUJ6K (ORCPT
+	id S1752564Ab0CUKB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 06:01:27 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:32924 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab0CUKBZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 05:58:10 -0400
-X-Greylist: delayed 1542 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Mar 2010 05:58:10 EDT
-Date: Sun, 21 Mar 2010 05:32:08 -0400
-From: Jon Masters <jonathan@jonmasters.org>
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-Cc: Tilman Schmidt <t.schmidt@phoenixsoftware.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: should new kfifo implementation really be exporting that much?
-Message-ID: <20100321093207.GX4426@perihelion.bos.jonmasters.org>
-References: <alpine.LFD.2.00.1003140929350.4644@localhost>
- <alpine.LFD.2.00.1003141053380.5987@localhost>
- <4B9D10D1.1060602@phoenixsoftware.de>
- <alpine.LFD.2.00.1003141244280.7806@localhost>
+	Sun, 21 Mar 2010 06:01:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=tNybHLUwPAue3xKhlTB+StwNry1w71m+cE5t1n/OlU1HO6DIc6+f/Zm3SnUzSpC1rk
+         8gz+LkTWrzzk75B2VVox5veF01lq/+FFcPGSJ355fFtercAboMFP/eM6EtdF+fEtff7S
+         dBvwpOxHqGi6p73s/lCQE4+BXNzsCgK1tfELQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003141244280.7806@localhost>
-Organization: World Organi[sz]ation of Broken Dreams
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jcm@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+Date: Sun, 21 Mar 2010 11:01:24 +0100
+X-Google-Sender-Auth: dcd553d6088cbb58
+Message-ID: <10f740e81003210301m5886c85dwd20eb0991657fc8d@mail.gmail.com>
+Subject: [PATCH] m68k: Fix asm constraints for atomic_sub_and_test() and 
+	atomic_add_negative() (was: Re: atomic_sub_and_test() asm constraints)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 14, 2010 at 12:49:08PM -0400, Robert P. J. Day wrote:
-> On Sun, 14 Mar 2010, Tilman Schmidt wrote:
-> 
-> > Am 14.03.2010 15:57 schrieb Robert P. J. Day:
-> > >   as a short followup, kfifo.h strongly implies that a lot of the
-> > > above shouldn't be exported:
-> > >
-> > > ...
-> > > /*
-> > >  * __kfifo_in_... internal functions for put date into the fifo
-> > >  * do not call it directly, use kfifo_in_rec() instead
-> > >  */
-> > > ...
-> > >
-> > >   anyway, you get the idea.  it would seem that a lot of those EXPORTs
-> > > should be removed, no?
-> >
-> > If you look at kfifo_in_rec(), it's a static inline void function
-> > defined in kfifo.h and which calls __kfifo_in_generic() or
-> > __kfifo_in_rec(). I don't think you'll be able to make that work
-> > without exporting those functions.
-> 
->   huh.  i believe you're correct.  i'll take a closer look but i still
-> get this feeling that there's something ... messy about that API.
-> case in point:  kfifo_in_rec() is *not* being exported, but a routine
-> that it invokes -- __kfifo_in_generic() -- *is* being exported.
-> doesn't that just seem a bit backwards?
+On Sun, Mar 14, 2010 at 15:30, Andreas Schwab <schwab@linux-m68k.org> wrote:
+> Geert Uytterhoeven <geert@linux-m68k.org> writes:
+>
+>> |   CC      mm/memcontrol.o
+>> | {standard input}: Assembler messages:
+>> | {standard input}:4076: Error: operands mismatch -- statement `subl
+>> 12(%fp),170(%a0)' ignored
+>>
+>> Seems like we have bad asm constraints in
+>>
+>> static inline int atomic_sub_and_test(int i, atomic_t *v)
+>> {
+>>         char c;
+>>         __asm__ __volatile__("subl %2,%1; seq %0" : "=d" (c), "+m"
+>> (*v): "g" (i));
+>
+> Surely "g" is wrong, sub only accepts a data register as source operand
+> when the destination is in memory.
 
-I believe it would be a good idea to have an export type explicitly
-covering symbols that are exported solely for the use of inlines,
-just for tidying up these situations. EXPORT_SYMBOL_INTERNAL?
+>From cd2b57976949934df61c4406af344294011d5c16 Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Sun, 21 Mar 2010 10:52:21 +0100
+Subject: [PATCH] m68k: Fix asm constraints for atomic_sub_and_test()
+and atomic_add_negative()
 
-Jon.
+Recently, we started seeing this on allmodconfig builds:
+
+  CC      mm/memcontrol.o
+{standard input}: Assembler messages:
+{standard input}:4076: Error: operands mismatch -- statement `subl
+12(%fp),170(%a0)' ignored
+
+Correct the asm constraint, like done for m68knommu.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ arch/m68k/include/asm/atomic_mm.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/m68k/include/asm/atomic_mm.h
+b/arch/m68k/include/asm/atomic_mm.h
+index 88b7af2..d9d2ed6 100644
+--- a/arch/m68k/include/asm/atomic_mm.h
++++ b/arch/m68k/include/asm/atomic_mm.h
+@@ -148,14 +148,18 @@ static inline int atomic_xchg(atomic_t *v, int new)
+ static inline int atomic_sub_and_test(int i, atomic_t *v)
+ {
+ 	char c;
+-	__asm__ __volatile__("subl %2,%1; seq %0" : "=d" (c), "+m" (*v): "g" (i));
++	__asm__ __volatile__("subl %2,%1; seq %0"
++			     : "=d" (c), "+m" (*v)
++			     : "id" (i));
+ 	return c != 0;
+ }
+
+ static inline int atomic_add_negative(int i, atomic_t *v)
+ {
+ 	char c;
+-	__asm__ __volatile__("addl %2,%1; smi %0" : "=d" (c), "+m" (*v): "g" (i));
++	__asm__ __volatile__("addl %2,%1; smi %0"
++			     : "=d" (c), "+m" (*v)
++			     : "id" (i));
+ 	return c != 0;
+ }
+
+-- 
+1.6.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
