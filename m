@@ -1,94 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0CUNrF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 09:47:05 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:62880 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752571Ab0CUNrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 09:47:01 -0400
-Date: Sun, 21 Mar 2010 14:46:55 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, kernel-janitors@vger.kernel.org,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
-Message-ID: <20100321144655.4747fd2a@hyperion.delvare>
-In-Reply-To: <201003202302.49526.hverkuil@xs4all.nl>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
-	<1269094385-16114-13-git-send-email-w.sang@pengutronix.de>
-	<201003202302.49526.hverkuil@xs4all.nl>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753095Ab0CUNtV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 09:49:21 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:35727 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab0CUNtT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 09:49:19 -0400
+To: Julia Lawall <julia@diku.dk>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] genericirq: make irq_chip related function to take desc
+References: <1267697339-5491-1-git-send-email-yinghai@kernel.org>
+	<1267697339-5491-7-git-send-email-yinghai@kernel.org>
+	<alpine.LFD.2.00.1003041142460.2014@localhost.localdomain>
+	<4B900250.8020100@kernel.org>
+	<Pine.LNX.4.64.1003050847170.21768@ask.diku.dk>
+	<m1eije71et.fsf@fess.ebiederm.org>
+	<Pine.LNX.4.64.1003211153470.7805@ask.diku.dk>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Sun, 21 Mar 2010 06:49:12 -0700
+In-Reply-To: <Pine.LNX.4.64.1003211153470.7805@ask.diku.dk> (Julia Lawall's message of "Sun\, 21 Mar 2010 12\:03\:45 +0100 \(CET\)")
+Message-ID: <m1iq8p23af.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: julia@diku.dk, linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu, yinghai@kernel.org, tglx@linutronix.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+Julia Lawall <julia@diku.dk> writes:
 
-On Sat, 20 Mar 2010 23:02:49 +0100, Hans Verkuil wrote:
-> On Saturday 20 March 2010 15:12:53 Wolfram Sang wrote:
-> > Fix I2C-drivers which missed setting clientdata to NULL before freeing the
-> > structure it points to. Also fix drivers which do this _after_ the structure
-> > was freed already.
-> 
-> I feel I am missing something here. Why does clientdata have to be set to
-> NULL when we are tearing down the device anyway?
+> I also worked on this, but only sent it to Thomas and Yinghai.  Onthe 
+> other hand, I mostly like your solution better, because it has the 
+> unintended side-effect of getting rid of some blank spaces after {s.
 
-We're not tearing down the device, that's the point. We are only
-unbinding it from its driver. The device itself survives the operation.
+Wow I hadn't noticed that {s removal. That is an old coding style
+violation on alpha.  There was an intentional effect of not breaking
+up { }'s.  But I hadn't realized I was also fixing whitespace.
 
-(This is different from the legacy i2c binding model where the device
-itself would indeed be removed at that point, and that would be the
-reason why so many i2c drivers have it wrong now.)
+> My rule was also more complicated in that it also searches for conditions 
+> in which it is not sure to be doing the right thing.  I will send those in 
+> another message.
+>
+>> @ DECL @
+>> struct irq_chip CHIP;
+>> identifier METHOD;
+>> identifier METHOD_NAME;
+>> @@
+>>  CHIP.METHOD_NAME = METHOD;
+>> 
+>> @ @
+>> identifier DECL.METHOD;
+>> identifier IRQ;
+>> @@
+>>  METHOD(
+>> -		unsigned int IRQ
+>> +		struct irq_desc *unused
+>>  , ...) {
+>>  }
+>
+> I didn't think of making a special rule for this.  It could consider any 
+> case where the body is ... when != IRQ
 
-> And if there is a good reason for doing this, then it should be done in
-> v4l2_device_unregister_subdev or even in the i2c core, not in each drivers.
+Nice addition.
 
-Mark Brown (Cc'd) suggested this already, but I have mixed feelings
-about this. My reasoning is:
+>> @ @
+>> identifier DECL.METHOD;
+>> identifier IRQ;
+>> identifier DESC;
+>> @@
+>>  METHOD(
+>> -		unsigned int IRQ
+>> +		struct irq_desc *DESC
+>>  , ...) {
+>> +	unsigned int IRQ = DESC->irq;
+>>  	...
+>> -	struct irq_desc *DESC = irq_to_desc(IRQ);
+>> 	...
+>>  }
+>> 
+>> @ @
+>> identifier DECL.METHOD;
+>> identifier IRQ;
+>> identifier DESC;
+>> @@
+>>  METHOD(
+>> -		unsigned int IRQ
+>> +		struct irq_desc *DESC
+>>  , ...) {
+>> +	unsigned int IRQ = DESC->irq;
+>>  	...
+>> -	struct irq_desc *DESC;
+>> 	...
+>> -	DESC = irq_to_desc(IRQ);
+>> 	...
+>>  }
+>> 
+>> @ @
+>> identifier DECL.METHOD;
+>> identifier IRQ;
+>> @@
+>>  METHOD(
+>> -		unsigned int IRQ
+>> +		struct irq_desc *desc
+>>  , ...) {
+>> +	unsigned int IRQ = desc->irq;
+>>  ...
+>>  }
+>> 
+>> @ @
+>> identifier DECL.METHOD;
+>> identifier FUNC;
+>> identifier IRQ;
+>> @@
+>>  FUNC(...) {
+>>  <...
+>> 	METHOD(
+>> -		IRQ
+>> +		irq_to_desc(IRQ)
+>>  		, ... )
+>>  ...>
+>>  }
+>
+> I don't think FUNC(...) { <... and ...> } are needed here.  The goal is to 
+> make the change everywhere the call appears.
 
-1* It is good practice to have memory freed not too far from where it
-was allocated, otherwise there is always a risk of unmatched pairs. In
-this regard, it seems preferable to let each i2c driver kfree the
-device memory it kalloc'd, be it in probe() or remove().
+That is a reasonable simplification.
 
-2* References to allocated memory should be dropped before that memory
-is freed. This means that we want to call i2c_set_clientdata(c, NULL)
-before kfree(d). As a corollary, we can't do the former in i2c-core and
-the later in device drivers.
+>> @ @
+>> identifier FUNC;
+>> identifier DESC;
+>> identifier IRQ;
+>> @@
+>>  FUNC(..., struct irq_desc *DESC, ...) {
+>>  ...
+>>  	unsigned int IRQ = DESC->irq;
+>>  <...
+>> -	irq_to_desc(IRQ)
+>> +	DESC
+>>  ...>
+>>  }
+>
+> This rule can be extended as follows:
 
-So we are in the difficult situation where we can't do both in i2c-core
-because that violates point 1 above, we can't do half in i2c-core and
-half in device drivers because this violates point 2 above, so we fall
-back to doing both in device drivers, which doesn't violate any point
-but duplicates the code all around.
+Nice.  I had not picked up on the or operator.
 
-Now, if we decide to handle this at a deeper driver model layer
-(i2c-core instead of device drivers) then I'm not sure why we would
-stop there... Wouldn't it be the driver core's job to clear the
-reference and free the allocated memory?
+> @ @
+> identifier FUNC;
+> identifier DESC;
+> identifier IRQ;
+> identifier FLD;
+> @@
+>  FUNC(..., struct irq_desc *DESC, ...) {
+>  ...
+>         unsigned int IRQ = DESC->irq;
+>  <...
+> (
+> -       irq_to_desc(IRQ)
+> +       DESC
+> |
+> -       irq_desc[IRQ].FLD
+> +       DESC->FLD
+> )
+>  ...>
+>  }
+>
+> Doing so gets rid of more references to IRQ.
 
-I get the feeling that this would be a job for managed resources as
-some drivers already do for I/O ports and IRQs. Managed resources don't
-care about symmetry of allocation and freeing, by design (so it can
-violate point 1 above.) Aha! Isn't it exactly what devm_kzalloc() is
-all about?
+Very reasonable, especially on arches like alpha where none of the
+sparse irq work has hit.
 
-At this point, I guess that each subsystem maintainer can decide to
-either apply Wolfram's patch, or switch the drivers to managed
-resources. Very nice that we don't have to make this a subsystem-wide
-decision, so every actor can do the changes if/when they see fit.
 
-> And why does coccinelle apparently find this in e.g. cs5345.c but not in
-> saa7115.c, which has exactly the same construct? For that matter, I think
-> almost all v4l i2c drivers do this.
+> Another case that can be treated is method calls via a pointer:
 
-That I can't say, sorry.
+I didn't actually find any cases where that rule hit on arch/x86
+so I did not include it, but it makes sense.
 
--- 
-Jean Delvare
+> @@
+> expression arg;
+> struct irq_desc *desc;
+> struct irq_chip *ic;
+> identifier fun;
+> @@
+>
+> (
+>   desc->chip->fun(
+> -   arg
+> +   desc
+>     ,...)
+> |
+>   ic->fun(
+> -   arg
+> +   irq_to_desc(arg)
+>     ,...)
+> )
+
+
+My paranoid sense says this rule should be:
+@ @
+expresion IRQ_EXPR;
+struct irq_desc *DESC;
+struct irq_chip *CHIP;
+identifier METHOD;
+@@
+(
+ 	DESC->chip->METHOD(
+-			   IRQ_EXPR
++			   irq_to_desc(IRQ_EXPR)
+			   , ... )
+|
+	CHIP->METHOD(
+-		     IRQ_EXPR
++		     irq_to_desc(IRQ_EXPR)
+		     , ... )
+
+If this is before my irq_to_desc removal rule.  We should not
+see any new irq_to_desc calls popping up.
+
+> julia
+>
+>> @ @
+>> identifier FUNC;
+>> identifier DESC;
+>> identifier IRQ;
+>> @@
+>>  FUNC(..., struct irq_desc *DESC, ...) {
+>>  ...
+>> -	unsigned int IRQ = DESC->irq;
+>>  ... when != IRQ
+>>  }
