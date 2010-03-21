@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0CUVQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:16:59 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:55523 "EHLO solo.fdn.fr"
+	id S1753841Ab0CUVRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:17:52 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50387 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab0CUVQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:16:57 -0400
-Date: Sun, 21 Mar 2010 22:16:53 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       alan@lxorguk.ukuu.org.uk, mgarski@post.pl, linux-input@vger.kernel.org,
-       Vojtech Pavlik <vojtech@suse.cz>, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer (5th version)
-Message-ID: <20100321211653.GS12469@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Alexey Dobriyan <adobriyan@gmail.com>, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-	mgarski@post.pl, linux-input@vger.kernel.org,
-	Vojtech Pavlik <vojtech@suse.cz>,
-	Richard Purdie <rpurdie@rpsys.net>
-References: <20100307200250.GA9340@const.famille.thibault.fr> <20100310133004.GM5127@const.bordeaux.inria.fr> <20100321210938.GB2057@elf.ucw.cz>
+	id S1753443Ab0CUVRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 17:17:50 -0400
+Date: Sun, 21 Mar 2010 22:17:47 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: "Digi International, Inc" <Eng.Linux@digi.com>, Eng.Linux@digi.com,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] drivers/char/epca.c: eliminate unnecessary NULL test
+Message-ID: <Pine.LNX.4.64.1003212217300.12371@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100321210938.GB2057@elf.ucw.cz>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek, le Sun 21 Mar 2010 22:09:38 +0100, a écrit :
-> Now, minor comments:
-> 
-> sometimes it uses "numl" (led name), sometimes it uses "numlock"
-> trigger name.
+From: Julia Lawall <julia@diku.dk>
 
-Yes, I preferred to stick to the existing names: numl like LED_NUML, and
-numlock like VC_NUMLOCK.  I don't have any opinion on this however.
+Since chan0 must be a valid pointer at this point, it seems very unlikely
+that ch could be NULL.  If ch could be NULL, without channel >=
+bd->numports, then something else has to be done to avoid the NULL pointer
+dereference in the subsequent initialization of bc.
 
-> root@amd:/sys/class/leds/input5::numl# echo heartbeat > trigger
-> 
-> did not do the trick on my thinkpad. It still acts as numlock led. Is
-> it driven by hw? input5::capsl works as expected.
+The semantic match that finds the problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-If it is a laptop, it is likely, depending on the BIOS & such.
-On my laptop, doing this works fine.
+// <smpl>
+@r exists@
+expression E, E1;
+identifier f;
+statement S1,S3;
+iterator iter;
+@@
 
-Samuel
+if ((E == NULL && ...) || ...)
+{
+  ... when != false ((E == NULL && ...) || ...)
+      when != true  ((E != NULL && ...) || ...)
+      when != iter(E,...) S1
+      when != E = E1
+(
+  sizeof(E->f)
+|
+* E->f
+)
+  ... when any
+  return ...;
+}
+else S3
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/char/epca.c                 |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/epca.c b/drivers/char/epca.c
+index 17b044a..ea78e6f 100644
+--- a/drivers/char/epca.c
++++ b/drivers/char/epca.c
+@@ -1500,9 +1500,8 @@ static void doevent(int crd)
+ 		lstat = readb(eventbuf + 3);
+ 
+ 		ch = chan0 + channel;
+-		if ((unsigned)channel >= bd->numports || !ch)  {
+-			if (channel >= bd->numports)
+-				ch = chan0;
++		if ((unsigned)channel >= bd->numports)  {
++			ch = chan0;
+ 			bc = ch->brdchan;
+ 			goto next;
+ 		}
