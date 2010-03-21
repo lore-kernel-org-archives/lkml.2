@@ -1,133 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab0CUUtG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 16:49:06 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:53258 "EHLO mgw1.diku.dk"
+	id S1753467Ab0CUUzs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 16:55:48 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39258 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753369Ab0CUUtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 16:49:01 -0400
-Date: Sun, 21 Mar 2010 21:48:53 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH] arch/arm/mach-pxa: avoid NULL dereference in error handling
- code
-Message-ID: <Pine.LNX.4.64.1003212147360.12371@ask.diku.dk>
+	id S1752739Ab0CUUzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 16:55:46 -0400
+Date: Sun, 21 Mar 2010 21:55:31 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100321205531.GC30194@elte.hu>
+References: <4BA256FE.5080501@codemonkey.ws>
+ <84144f021003180951s5207de16p1cdf4b9b04040222@mail.gmail.com>
+ <20100318170223.GB9756@elte.hu>
+ <4BA25E66.2050800@redhat.com>
+ <20100318172805.GB26067@elte.hu>
+ <4BA32E1A.2060703@redhat.com>
+ <20100319085346.GG12576@elte.hu>
+ <4BA47AD0.2010509@redhat.com>
+ <20100321190656.GC25922@elte.hu>
+ <4BA68009.5010906@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA68009.5010906@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-The assignments of res to the results of the two calls to
-platform_get_resource make it impossible to use res in the error handling
-code in the arguments to release_mem_region.
+* Avi Kivity <avi@redhat.com> wrote:
 
-At the same time, code of the form res->end - res->start + 1 is converted
-to use resource_size.
+> On 03/21/2010 09:06 PM, Ingo Molnar wrote:
+> >* Avi Kivity<avi@redhat.com>  wrote:
+> >
+> >>>>[...] Second, from my point of view all contributors are volunteers
+> >>>>(perhaps their employer volunteered them, but there's no difference from
+> >>>>my perspective). Asking them to repaint my apartment as a condition to
+> >>>>get a patch applied is abuse.  If a patch is good, it gets applied.
+> >>>This is one of the weirdest arguments i've seen in this thread. Almost all
+> >>>the time do we make contributions conditional on the general shape of the
+> >>>project. Developers dont get to do just the fun stuff.
+> >>So, do you think a reply to a patch along the lines of
+> >>
+> >>   NAK.  Improving scalability is pointless while we don't have a decent GUI.
+> >>I'll review you RCU patches
+> >>   _after_ you've contributed a usable GUI.
+> >>
+> >>?
+> >What does this have to do with RCU?
+> 
+> The example was rcuifying kvm which took place a bit ago.  Sorry, it wasn't 
+> clear.
+> 
+> > I'm talking about KVM, which is a Linux kernel feature that is useless 
+> > without a proper, KVM-specific app making use of it.
+> >
+> > RCU is a general kernel performance feature that works across the board. 
+> > It helps KVM indirectly, and it helps many other kernel subsystems as 
+> > well. It needs no user-space tool to be useful.
+> 
+> Correct.  So should I tell someone that has sent a patch that rcu-ified kvm 
+> in order to scale it, that I won't accept the patch unless they do some 
+> usability userspace work?  say, implementing an eject button. That's what I 
+> understood you to mean.
 
-The semantic match that finds the former problem is as follows:
-(http://coccinelle.lip6.fr/)
+Of course you could say the following:
 
-// <smpl>
-@r exists@
-expression E, E1;
-identifier f;
-statement S1,S3;
-iterator iter;
-@@
+  ' Thanks, I'll mark this for v2.6.36 integration. Note that we are not
+    able to add this to the v2.6.35 kernel queue anymore as the ongoing 
+    usability work already takes up all of the project's maintainer and 
+    testing bandwidth. If you want the feature to be merged sooner than that 
+    then please help us cut down on the TODO and BUGS list that can be found 
+    at XYZ. There's quite a few low hanging fruits there. '
 
-if ((E == NULL && ...) || ...)
-{
-  ... when != false ((E == NULL && ...) || ...)
-      when != true  ((E != NULL && ...) || ...)
-      when != iter(E,...) S1
-      when != E = E1
-(
-  sizeof(E->f)
-|
-* E->f
-)
-  ... when any
-  return ...;
-}
-else S3
-// </smpl>
+Although this RCU example is 'worst' possible example, as it's a pure speedup 
+change with no functionality effect.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Consider the _other_ examples that are a lot more clear:
 
----
- arch/arm/mach-pxa/ssp.c             |   20 ++++++++++----------
- 1 files changed, 10 insertions(+), 10 deletions(-)
+   ' If you expose paravirt spilocks via KVM please also make sure the KVM
+     tooling can make use of it, has an option for it to configure it, and 
+     that it has sufficient efficiency statistics displayed in the tool for 
+     admins to monitor.'
 
-diff --git a/arch/arm/mach-pxa/ssp.c b/arch/arm/mach-pxa/ssp.c
-index a81d6db..9fdbd38 100644
---- a/arch/arm/mach-pxa/ssp.c
-+++ b/arch/arm/mach-pxa/ssp.c
-@@ -349,6 +349,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
- {
- 	const struct platform_device_id *id = platform_get_device_id(pdev);
- 	struct resource *res;
-+	struct resource *pres;
- 	struct ssp_device *ssp;
- 	int ret = 0;
- 
-@@ -372,8 +373,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
- 		goto err_free_clk;
- 	}
- 
--	res = request_mem_region(res->start, res->end - res->start + 1,
--			pdev->name);
-+	res = request_mem_region(res->start, resource_size(res), pdev->name);
- 	if (res == NULL) {
- 		dev_err(&pdev->dev, "failed to request memory resource\n");
- 		ret = -EBUSY;
-@@ -382,7 +382,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
- 
- 	ssp->phys_base = res->start;
- 
--	ssp->mmio_base = ioremap(res->start, res->end - res->start + 1);
-+	ssp->mmio_base = ioremap(res->start, resource_size(res));
- 	if (ssp->mmio_base == NULL) {
- 		dev_err(&pdev->dev, "failed to ioremap() registers\n");
- 		ret = -ENODEV;
-@@ -396,21 +396,21 @@ static int __devinit ssp_probe(struct platform_device *pdev)
- 		goto err_free_io;
- 	}
- 
--	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
--	if (res == NULL) {
-+	pres = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-+	if (pres == NULL) {
- 		dev_err(&pdev->dev, "no SSP RX DRCMR defined\n");
- 		ret = -ENODEV;
- 		goto err_free_io;
- 	}
--	ssp->drcmr_rx = res->start;
-+	ssp->drcmr_rx = pres->start;
- 
--	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
--	if (res == NULL) {
-+	pres = platform_get_resource(pdev, IORESOURCE_DMA, 1);
-+	if (pres == NULL) {
- 		dev_err(&pdev->dev, "no SSP TX DRCMR defined\n");
- 		ret = -ENODEV;
- 		goto err_free_io;
- 	}
--	ssp->drcmr_tx = res->start;
-+	ssp->drcmr_tx = pres->start;
- 
- 	/* PXA2xx/3xx SSP ports starts from 1 and the internal pdev->id
- 	 * starts from 0, do a translation here
-@@ -429,7 +429,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
- err_free_io:
- 	iounmap(ssp->mmio_base);
- err_free_mem:
--	release_mem_region(res->start, res->end - res->start + 1);
-+	release_mem_region(res->start, resource_size(res));
- err_free_clk:
- 	clk_put(ssp->clk);
- err_free:
+   ' If you create this new paravirt driver then please also make sure it can
+     be configured in the tooling. '
+
+   ' Please also add a testcase for this bug to tools/kvm/testcases/ so we dont
+     repeat this same mistake in the future. '
+
+I'd say most of the high-level feature work in KVM has tooling impact.
+
+And note the important arguement that the 'eject button' thing would not occur 
+naturally in a project that is well designed and has a good quality balance. 
+It would only occur in the transitionary period if a big lump of lower-quality 
+code is unified with higher-quality code. Then indeed a lot of pressure gets 
+created on the people working on the high-quality portion to go over and fix 
+the low-quality portion.
+
+Which, btw., is an unconditonally good thing ...
+
+But even an RCU speedup can be fairly linked/ordered to more pressing needs of 
+a project.
+
+Really, the unification of two tightly related pieces of code has numerous 
+clear advantages. Please give it some thought before rejecting it.
+
+Thanks,
+
+	Ingo
