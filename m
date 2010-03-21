@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0CUHRI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 03:17:08 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:30594 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0CUHQ6 (ORCPT
+	id S1753102Ab0CUHRY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 03:17:24 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:20977 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab0CUHRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 03:16:58 -0400
+	Sun, 21 Mar 2010 03:17:00 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,177 +15,129 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Jesse Barnes <jbarnes@virtuousgeek.org>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/20] x86: add find_e820_area_node
-Date: Sun, 21 Mar 2010 00:13:02 -0700
-Message-Id: <1269155601-18247-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 20/20] x86/pci: add mmconf range into e820 for when it is from MSR with amd faml0h
+Date: Sun, 21 Mar 2010 00:13:21 -0700
+Message-Id: <1269155601-18247-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
 References: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BA5C78B.01CB,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4BA5C78C.0041,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller pointed out that early_res have problem to find node data on correct node
-when we have
-node0: [0, 2g), [4g, 6g), [10g, 14g)
-node1: [6g, 10g), [14g, 18g)
-the cross node case
+for AMD Fam10h, it we read mmconf from MSR early, we should just trust it
+because we check it and correct it already.
 
-the problem is there for x86 bits even before we are using early_res for bootmem replacement.
-after early_res for bootmem replacement, alloc_bootmem_node still can get range on correct node
-
-this patch is fixing problem before bootmem or early_res replacement for bootmem.
-
-now only user is for x86 64bit numa to find node data.
-
-the point is use early_node_map with find_e820_area_node()
+so add it to e820
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    1 +
- arch/x86/kernel/e820.c      |   15 +++++++++++++++
- arch/x86/mm/numa_64.c       |    4 ++--
- include/linux/mm.h          |    2 ++
- mm/page_alloc.c             |   37 +++++++++++++++++++++++--------------
- 5 files changed, 43 insertions(+), 16 deletions(-)
+ arch/x86/kernel/mmconf-fam10h_64.c |   40 ++++++++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 0e22296..b48f371 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -111,6 +111,7 @@ extern unsigned long end_user_pfn;
+diff --git a/arch/x86/kernel/mmconf-fam10h_64.c b/arch/x86/kernel/mmconf-fam10h_64.c
+index 7182580..4426fd2 100644
+--- a/arch/x86/kernel/mmconf-fam10h_64.c
++++ b/arch/x86/kernel/mmconf-fam10h_64.c
+@@ -16,6 +16,7 @@
+ #include <asm/acpi.h>
+ #include <asm/mmconfig.h>
+ #include <asm/pci_x86.h>
++#include <asm/e820.h>
  
- extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
- extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
-+u64 find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
- #include <linux/early_res.h>
+ struct pci_hostbridge_probe {
+ 	u32 bus;
+@@ -27,23 +28,26 @@ struct pci_hostbridge_probe {
+ static u64 __cpuinitdata fam10h_pci_mmconf_base;
+ static int __cpuinitdata fam10h_pci_mmconf_base_status;
  
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 740b440..05ee724 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -787,6 +787,21 @@ u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
- 	return -1ULL;
- }
- 
-+u64 __init find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align)
++/* only on BSP */
++static void __init_refok e820_add_mmconf_range(int busnbits)
 +{
-+	u64 addr;
-+	/*
-+	 * need to call this function after e820_register_active_regions
-+	 * so early_node_map[] is set
-+	 */
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != -1ULL)
-+		return addr;
++	u64 end;
 +
-+	/* fallback, should already have start end in the node range */
-+	return find_e820_area(start, end, size, align);
++	end = fam10h_pci_mmconf_base + (1ULL<<(busnbits + 20)) - 1;
++	if (!e820_all_mapped(fam10h_pci_mmconf_base, end+1, E820_RESERVED)) {
++		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n",
++				 fam10h_pci_mmconf_base, end);
++		e820_add_region(fam10h_pci_mmconf_base, 1ULL<<(busnbits + 20),
++				 E820_RESERVED);
++		sanitize_e820_map();
++	}
 +}
 +
- /*
-  * pre allocated 4k and reserved it in e820
-  */
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 8948f47..ffc5ad5 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -174,7 +174,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
- 	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
- 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
--	mem = find_e820_area(start, end, size, align);
-+	mem = find_e820_area_node(nodeid, start, end, size, align);
- 	if (mem != -1L)
- 		return __va(mem);
+ static struct pci_hostbridge_probe pci_probes[] __cpuinitdata = {
+ 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
+ 	{ 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
+ };
  
-@@ -184,7 +184,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
- 	else
- 		start = MAX_DMA_PFN<<PAGE_SHIFT;
--	mem = find_e820_area(start, end, size, align);
-+	mem = find_e820_area_node(nodeid, start, end, size, align);
- 	if (mem != -1L)
- 		return __va(mem);
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e70f21b..5c2d17e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1160,6 +1160,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d03c946..eef3757 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3408,12 +3408,11 @@ int __init add_from_early_node_map(struct range *range, int az,
- 	return nr_range;
- }
- 
--#ifdef CONFIG_NO_BOOTMEM
--void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-+#ifdef CONFIG_HAVE_EARLY_RES
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
- 					u64 goal, u64 limit)
- {
- 	int i;
--	void *ptr;
- 
- 	/* need to go over early_node_map to find out good range for node */
- 	for_each_active_range_index_in_nid(i, nid) {
-@@ -3430,20 +3429,30 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
- 		if (addr == -1ULL)
+-static int __cpuinit cmp_range(const void *x1, const void *x2)
+-{
+-	const struct range *r1 = x1;
+-	const struct range *r2 = x2;
+-	int start1, start2;
+-
+-	start1 = r1->start >> 32;
+-	start2 = r2->start >> 32;
+-
+-	return start1 - start2;
+-}
+-
+ /*[47:0] */
+ /* need to avoid (0xfd<<32) and (0xfe<<32), ht used space */
+ #define FAM10H_PCI_MMCONF_BASE (0xfcULL<<32)
+@@ -115,6 +119,7 @@ static void __cpuinit get_fam10h_pci_mmconf_base(void)
+ 	 * above 4G
+ 	 */
+ 	hi_mmio_num = 0;
++	memset(range, 0, sizeof(range));
+ 	for (i = 0; i < 8; i++) {
+ 		u32 reg;
+ 		u64 start;
+@@ -130,16 +135,14 @@ static void __cpuinit get_fam10h_pci_mmconf_base(void)
+ 		if (!end)
  			continue;
  
--#if 0
--		printk(KERN_DEBUG "alloc (nid=%d %llx - %llx) (%llx - %llx) %llx %llx => %llx\n",
--				nid,
--				ei_start, ei_last, goal, limit, size,
--				align, addr);
-+		return addr;
-+	}
-+
-+	return -1ULL;
-+}
- #endif
+-		range[hi_mmio_num].start = start;
+-		range[hi_mmio_num].end = end;
+-		hi_mmio_num++;
++		hi_mmio_num = add_range(range, 8, hi_mmio_num, start, end);
+ 	}
  
--		ptr = phys_to_virt(addr);
--		memset(ptr, 0, size);
--		reserve_early_without_check(addr, addr + size, "BOOTMEM");
--		return ptr;
--	}
-+#ifdef CONFIG_NO_BOOTMEM
-+void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
-+{
-+	void *ptr;
+ 	if (!hi_mmio_num)
+ 		goto out;
  
--	return NULL;
-+	u64 addr;
-+
-+	addr = find_memory_core_early(nid, size, align, goal, limit);
-+
-+	if (addr == -1ULL)
-+		return NULL;
-+
-+	ptr = phys_to_virt(addr);
-+	memset(ptr, 0, size);
-+	reserve_early_without_check(addr, addr + size, "BOOTMEM");
-+	return ptr;
+ 	/* sort the range */
+-	sort(range, hi_mmio_num, sizeof(struct range), cmp_range, NULL);
++	sort_range(range, hi_mmio_num);
+ 
+ 	if (range[hi_mmio_num - 1].end < base)
+ 		goto out;
+@@ -169,6 +172,7 @@ fail:
+ out:
+ 	fam10h_pci_mmconf_base = base;
+ 	fam10h_pci_mmconf_base_status = 1;
++	e820_add_mmconf_range(8);
  }
- #endif
  
+ void __cpuinit fam10h_check_enable_mmcfg(void)
+@@ -191,10 +195,12 @@ void __cpuinit fam10h_check_enable_mmcfg(void)
+ 		/* only trust the one handle 256 buses, if acpi=off */
+ 		if (!acpi_pci_disabled || busnbits >= 8) {
+ 			u64 base;
+-			base = val & (0xffffULL << 32);
++			base = val & (FAM10H_MMIO_CONF_BASE_MASK <<
++					FAM10H_MMIO_CONF_BASE_SHIFT);
+ 			if (fam10h_pci_mmconf_base_status <= 0) {
+ 				fam10h_pci_mmconf_base = base;
+ 				fam10h_pci_mmconf_base_status = 1;
++				e820_add_mmconf_range(busnbits);
+ 				return;
+ 			} else if (fam10h_pci_mmconf_base ==  base)
+ 				return;
 -- 
 1.6.4.2
 
