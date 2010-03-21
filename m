@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab0CUN1R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 09:27:17 -0400
-Received: from relay02.digicable.hu ([92.249.128.188]:46130 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab0CUN1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 09:27:15 -0400
-Date: Sun, 21 Mar 2010 14:27:10 +0100
-From: Gabor Gombas <gombasg@digikabel.hu>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100321132709.GA7962@twister.home>
-Mail-Followup-To: Ingo Molnar <mingo@elte.hu>,
-	Anthony Liguori <anthony@codemonkey.ws>,
-	Avi Kivity <avi@redhat.com>,
-	"Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-	kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-	oerg Roedel <joro@8bytes.org>,
-	Jes Sorensen <Jes.Sorensen@redhat.com>,
-	Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-	ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Fr?d?ric Weisbecker <fweisbec@gmail.com>
-References: <4BA00F1F.1090907@codemonkey.ws>
- <20100317081041.GC16374@elte.hu>
- <4BA1E24B.6090904@redhat.com>
- <20100318085607.GB2157@elte.hu>
- <4BA1FC80.2000401@redhat.com>
- <20100318105013.GB24464@elte.hu>
- <4BA20EB8.60707@redhat.com>
- <20100318114821.GB13168@elte.hu>
- <4BA23E61.4080003@codemonkey.ws>
- <20100318161310.GA447@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100318161310.GA447@elte.hu>
-X-Copyright: Forwarding or publishing without permission is prohibited.
-X-Original: 94.21.185.220
+	id S1753108Ab0CUNrF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 09:47:05 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:62880 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752571Ab0CUNrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 09:47:01 -0400
+Date: Sun, 21 Mar 2010 14:46:55 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, kernel-janitors@vger.kernel.org,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
+Message-ID: <20100321144655.4747fd2a@hyperion.delvare>
+In-Reply-To: <201003202302.49526.hverkuil@xs4all.nl>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
+	<1269094385-16114-13-git-send-email-w.sang@pengutronix.de>
+	<201003202302.49526.hverkuil@xs4all.nl>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 18, 2010 at 05:13:10PM +0100, Ingo Molnar wrote:
+Hi Hans,
 
-> > Why does Linux AIO still suck?  Why do we not have a proper interface in 
-> > userspace for doing asynchronous file system operations?
+On Sat, 20 Mar 2010 23:02:49 +0100, Hans Verkuil wrote:
+> On Saturday 20 March 2010 15:12:53 Wolfram Sang wrote:
+> > Fix I2C-drivers which missed setting clientdata to NULL before freeing the
+> > structure it points to. Also fix drivers which do this _after_ the structure
+> > was freed already.
 > 
-> Good that you mention it, i think it's an excellent example.
-> 
-> The suckage of kernel async IO is for similar reasons: there's an ugly package 
-> separation problem between the kernel and between glibc - and between the apps 
-> that would make use of it.
+> I feel I am missing something here. Why does clientdata have to be set to
+> NULL when we are tearing down the device anyway?
 
-No, kernel async IO sucks because it still does not play well with
-buffered I/O. Last time I checked (about a year ago or so), AIO syscall
-latencies were much worse when buffered I/O was used compared to direct
-I/O. Unfortunately, to achieve good performance with direct I/O, you
-need a HW RAID card with lots of on-board cache.
+We're not tearing down the device, that's the point. We are only
+unbinding it from its driver. The device itself survives the operation.
 
-Gabor
+(This is different from the legacy i2c binding model where the device
+itself would indeed be removed at that point, and that would be the
+reason why so many i2c drivers have it wrong now.)
+
+> And if there is a good reason for doing this, then it should be done in
+> v4l2_device_unregister_subdev or even in the i2c core, not in each drivers.
+
+Mark Brown (Cc'd) suggested this already, but I have mixed feelings
+about this. My reasoning is:
+
+1* It is good practice to have memory freed not too far from where it
+was allocated, otherwise there is always a risk of unmatched pairs. In
+this regard, it seems preferable to let each i2c driver kfree the
+device memory it kalloc'd, be it in probe() or remove().
+
+2* References to allocated memory should be dropped before that memory
+is freed. This means that we want to call i2c_set_clientdata(c, NULL)
+before kfree(d). As a corollary, we can't do the former in i2c-core and
+the later in device drivers.
+
+So we are in the difficult situation where we can't do both in i2c-core
+because that violates point 1 above, we can't do half in i2c-core and
+half in device drivers because this violates point 2 above, so we fall
+back to doing both in device drivers, which doesn't violate any point
+but duplicates the code all around.
+
+Now, if we decide to handle this at a deeper driver model layer
+(i2c-core instead of device drivers) then I'm not sure why we would
+stop there... Wouldn't it be the driver core's job to clear the
+reference and free the allocated memory?
+
+I get the feeling that this would be a job for managed resources as
+some drivers already do for I/O ports and IRQs. Managed resources don't
+care about symmetry of allocation and freeing, by design (so it can
+violate point 1 above.) Aha! Isn't it exactly what devm_kzalloc() is
+all about?
+
+At this point, I guess that each subsystem maintainer can decide to
+either apply Wolfram's patch, or switch the drivers to managed
+resources. Very nice that we don't have to make this a subsystem-wide
+decision, so every actor can do the changes if/when they see fit.
+
+> And why does coccinelle apparently find this in e.g. cs5345.c but not in
+> saa7115.c, which has exactly the same construct? For that matter, I think
+> almost all v4l i2c drivers do this.
+
+That I can't say, sorry.
+
+-- 
+Jean Delvare
