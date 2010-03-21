@@ -1,100 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753191Ab0CUN6l (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 09:58:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:52604 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752973Ab0CUN6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 09:58:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,283,1267430400"; 
-   d="asc'?scan'208";a="606298535"
-Date: Sun, 21 Mar 2010 21:58:36 +0800
-From: Zhenyu Wang <zhenyuw@linux.intel.com>
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       David.Woodhouse@intel.com, dwmw2@infradead.org, eric@anholt.net,
-       ben@decadent.org.uk, gregkh@suse.de
-Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT
- entries in i915
-Message-ID: <20100321135836.GA11661@zhen-devel.sh.intel.com>
-Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
-Mail-Followup-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, David.Woodhouse@intel.com,
-	dwmw2@infradead.org, eric@anholt.net, ben@decadent.org.uk,
-	gregkh@suse.de
-References: <1268258994.2183.14.camel@carter>
- <ca2dc2821003102331x3d1a7a0fgadb63612e49f77db@mail.gmail.com>
- <20100311083404.GG6896@zhen-devel.sh.intel.com>
- <ca2dc2821003110754r65ab170at39a61fb11fa285e0@mail.gmail.com>
- <20100319132723.118cc16a.akpm@linux-foundation.org>
- <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
+	id S1753300Ab0CUOOV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 10:14:21 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54596 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753040Ab0CUOOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 10:14:20 -0400
+Date: Sun, 21 Mar 2010 14:14:17 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Wolfram Sang <w.sang@pengutronix.de>,
+       kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
+Message-ID: <20100321141417.GA19626@opensource.wolfsonmicro.com>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-13-git-send-email-w.sang@pengutronix.de> <201003202302.49526.hverkuil@xs4all.nl> <20100321144655.4747fd2a@hyperion.delvare>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100321144655.4747fd2a@hyperion.delvare>
+X-Cookie: Just to have it is enough.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 21, 2010 at 02:46:55PM +0100, Jean Delvare wrote:
+> On Sat, 20 Mar 2010 23:02:49 +0100, Hans Verkuil wrote:
 
---0OAP2g/MAC+5xKAE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > I feel I am missing something here. Why does clientdata have to be set to
+> > NULL when we are tearing down the device anyway?
 
-On 2010.03.20 14:04:56 +0100, Miguel Ojeda wrote:
-> On Fri, Mar 19, 2010 at 9:27 PM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Thu, 11 Mar 2010 16:54:26 +0100
-> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
-> >
-> >> Attached dmesg, lspci -vv, config and xorg.
-> >>
-> >> When the X server crashes, the kernel does not report anything
-> >
-> > This seems to have gone all quiet?
->=20
-> It seems so, I was about to ping Zhenyu.
+> We're not tearing down the device, that's the point. We are only
+> unbinding it from its driver. The device itself survives the operation.
 
-Could you try recent X.org intel driver release? Your failure X log=20
-showed some pretty old UMS driver's render flush time out message,=20
-I think whose version never has been well tested with new kms/gem stuff.
+That's the subsystem point of view, not the driver point of view.  As
+far as the driver is concerned the device appears when probe() is called
+and vanishes after remove() has completed, any management the subsystem
+does in between is up to it.
 
->=20
-> >
-> > As this was a 2.6.32->2.6.32.4 regression, I assume that it's also a
-> > 2.6.32->2.6.33 regression?
->=20
-> Yep. All kernels I tested since 2.6.32.4 crash, including 2.6.32.10,
-> 2.6.33 and 2.6.34-rc1. See my original message for more details about
-> the crash.
->=20
+> 1* It is good practice to have memory freed not too far from where it
+> was allocated, otherwise there is always a risk of unmatched pairs. In
+> this regard, it seems preferable to let each i2c driver kfree the
+> device memory it kalloc'd, be it in probe() or remove().
 
-Could you bisect? I doubt it's caused by David's patch, as if it is, you
-will have trouble at early agp init time, instead of current problem looks
-like something causing rendering hang..and I can't think of how mapping GTT
-to a scratch page could cause problem in case GTT bar is truely 256K.
+I agree with this.  There are also some use cases where the device data
+is actually static (eg, a generic description of the device or a
+reference to some other shared resource rather than per device allocated
+data).
 
---=20
-Open Source Technology Center, Intel ltd.
+> 2* References to allocated memory should be dropped before that memory
+> is freed. This means that we want to call i2c_set_clientdata(c, NULL)
+> before kfree(d). As a corollary, we can't do the former in i2c-core and
+> the later in device drivers.
 
-$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
+This is where the mismatch between the subsystem view of the device
+lifetime and the driver view of the device lifetime comes into play.
+For the driver once the device is unregistered the device no longer
+exists - if the driver tries to work with the device it's buggy.  This
+means that to the driver returning from the remove() function is
+dropping the reference to the data and there's no reason for the driver
+to take any other action.
 
---0OAP2g/MAC+5xKAE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+The device may hang around after the remove() has happened, but if the
+device driver knows or cares about it then it's doing something wrong.
+Similarly on probe() we can't assme anything about the pointer since
+even if we saw the device before we can't guarantee that some other
+driver didn't do so as well.  The situation is similar to that with
+kfree() - we don't memset() data we're freeing with that, even though it
+might contain pointers to other things.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> So we are in the difficult situation where we can't do both in i2c-core
+> because that violates point 1 above, we can't do half in i2c-core and
+> half in device drivers because this violates point 2 above, so we fall
+> back to doing both in device drivers, which doesn't violate any point
+> but duplicates the code all around.
 
-iEYEARECAAYFAkumJgwACgkQsQQaM014GCe2cgCbB8LJnqn7n7J++lA8Pd+TfBQb
-2BQAn2sYv0DZuSniLTcf9F3cX+cGIgVl
-=gQHY
------END PGP SIGNATURE-----
-
---0OAP2g/MAC+5xKAE--
+Personally I'd much rather just not bother setting the driver data in
+the removal path, it seems unneeded.  I had assumed that the subsystem
+code cared for some reason when I saw the patch series.
