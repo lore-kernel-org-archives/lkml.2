@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab0CUVC5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:02:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59520 "EHLO ogre.sisk.pl"
+	id S1753944Ab0CUVDI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:03:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59534 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874Ab0CUVCf convert rfc822-to-8bit (ORCPT
+	id S1753839Ab0CUVDD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:02:35 -0400
+	Sun, 21 Mar 2010 17:03:03 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Alex Villacis Lasso" <avillaci@ceibo.fiec.espol.edu.ec>
+       "Alex Fiestas" <alex@eyeos.org>
 References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
 In-Reply-To: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <hTwaxgnIZ2O.A.kfD.NOopLB@chimera>
-Subject: [Bug #15494] BUG: key ffff88013d4f4c70 not in .data! when loading microcode.ko
+Message-ID: <hTwaxgnIZ2O.A.ERD.8NopLB@chimera>
+Subject: [Bug #15534] 07ca:b808 crashing and breaking usb's
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 21 Mar 2010 21:30:51 +0100 (CET)
+Date: Sun, 21 Mar 2010 21:30:52 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +33,9 @@ introduced between 2.6.32 and 2.6.33.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15494
-Subject		: BUG: key ffff88013d4f4c70 not in .data! when loading microcode.ko
-Submitter	: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-Date		: 2010-03-09 16:28 (13 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15534
+Subject		: 07ca:b808 crashing and breaking usb's
+Submitter	: Alex Fiestas <alex@eyeos.org>
+Date		: 2010-03-14 15:56 (8 days old)
 
 
