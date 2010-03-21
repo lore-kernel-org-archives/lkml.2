@@ -1,109 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0CUKB1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 06:01:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:32924 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0CUKBZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 06:01:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=tNybHLUwPAue3xKhlTB+StwNry1w71m+cE5t1n/OlU1HO6DIc6+f/Zm3SnUzSpC1rk
-         8gz+LkTWrzzk75B2VVox5veF01lq/+FFcPGSJ355fFtercAboMFP/eM6EtdF+fEtff7S
-         dBvwpOxHqGi6p73s/lCQE4+BXNzsCgK1tfELQ=
+	id S1752632Ab0CUKDk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 06:03:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40772 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752022Ab0CUKDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 06:03:38 -0400
+Message-ID: <4BA5EED9.8020801@redhat.com>
+Date: Sun, 21 Mar 2010 12:03:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Date: Sun, 21 Mar 2010 11:01:24 +0100
-X-Google-Sender-Auth: dcd553d6088cbb58
-Message-ID: <10f740e81003210301m5886c85dwd20eb0991657fc8d@mail.gmail.com>
-Subject: [PATCH] m68k: Fix asm constraints for atomic_sub_and_test() and 
-	atomic_add_negative() (was: Re: atomic_sub_and_test() asm constraints)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: "Linux/m68k" <linux-m68k@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Zachary Amsden <zamsden@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100317081041.GC16374@elte.hu> <4BA1E24B.6090904@redhat.com> <20100318085607.GB2157@elte.hu> <4BA1FC80.2000401@redhat.com> <20100318105013.GB24464@elte.hu> <4BA294D4.2060700@redhat.com> <20100318211529.GA21367@elte.hu> <4BA2A70B.5080101@redhat.com> <20100318224446.GC19669@elte.hu> <4BA3260D.5090407@redhat.com> <20100320145943.GI29874@random.random>
+In-Reply-To: <20100320145943.GI29874@random.random>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 14, 2010 at 15:30, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> writes:
->
->> |   CC      mm/memcontrol.o
->> | {standard input}: Assembler messages:
->> | {standard input}:4076: Error: operands mismatch -- statement `subl
->> 12(%fp),170(%a0)' ignored
->>
->> Seems like we have bad asm constraints in
->>
->> static inline int atomic_sub_and_test(int i, atomic_t *v)
->> {
->>         char c;
->>         __asm__ __volatile__("subl %2,%1; seq %0" : "=d" (c), "+m"
->> (*v): "g" (i));
->
-> Surely "g" is wrong, sub only accepts a data register as source operand
-> when the destination is in memory.
+On 03/20/2010 04:59 PM, Andrea Arcangeli wrote:
+> On Fri, Mar 19, 2010 at 09:21:49AM +0200, Avi Kivity wrote:
+>    
+>> On 03/19/2010 12:44 AM, Ingo Molnar wrote:
+>>      
+>>> Too bad - there was heavy initial opposition to the arch/x86 unification as
+>>> well [and heavy opposition to tools/perf/ as well], still both worked out
+>>> extremely well :-)
+>>>
+>>>        
+>> Did you forget that arch/x86 was a merging of a code fork that happened
+>> several years previously?  Maybe that fork shouldn't have been done to
+>> begin with.
+>>      
+> We discussed and probably timidly tried to share the sharable
+> initially but we realized it was too time wasteful. In addition to
+> having to adapt the code to 64bit we would also had to constantly
+> solve another problem on top of it (see the various split on _32/_64,
+> those takes time to achieve, maybe not huge time but still definitely
+> some time and effort). Even in retrospect I am quite sure the way
+> x86-64 happened was optimal and if we would go back we would do it
+> again the exact same way even if the final object was to have a common
+> arch/x86 (and thankfully Linus is flexible and smart enough to realize
+> that code that isn't risking to destabilize anything shouldn't be
+> forced out just because it's not to a totally
+> theoretical-perfect-nitpicking-clean-state yet). It's still a lot of
+> work do the unification later as a separate task, but it's not like if
+> we did it immediately it would have been a lot less work. It's about
+> the same amount of effort and we were able to defer it for later and
+> decrease the time to market which surely has contributed to the
+> success of x86-64.
+>    
 
->From cd2b57976949934df61c4406af344294011d5c16 Mon Sep 17 00:00:00 2001
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Sun, 21 Mar 2010 10:52:21 +0100
-Subject: [PATCH] m68k: Fix asm constraints for atomic_sub_and_test()
-and atomic_add_negative()
+In hindsight decisions are much easier.  I agree it was less risky to 
+fork than to share.  But if another instruction set forks out a 64-bit 
+not-exactly-compatible variant, I'm sure we'll start out shared and not 
+fork it, especially if the platform remains the same.
 
-Recently, we started seeing this on allmodconfig builds:
+> Problem of qemu is not some lack of GUI or that it's not included in
+> the linux kernel git tree, the definitive problem is how to merge
+> qemu-kvm/kvm and qlx into it. If you (Avi) were the qemu maintainer I
+> am sure there wouldn't two trees so as a developer I would totally
+> love it, and I am sure that with you as maintainer it would have a
+> chance to move forward with qlx on desktop virtualization without
+> proposing to extend vnc instead to achieve a "similar" result (imagine
+> if btrfs is published on a website and people starts to discuss if it
+> should ever be merged ever because reinventing some part of btrfs
+> inside ext5 might achieve ""similar"" results).
+>    
 
-  CC      mm/memcontrol.o
-{standard input}: Assembler messages:
-{standard input}:4076: Error: operands mismatch -- statement `subl
-12(%fp),170(%a0)' ignored
+The qemu/qemu-kvm fork is definitely hurting.  Some history: when kvm 
+started out I pulled qemu for fast hacking and, much like arch/x86_64, I 
+couldn't destabilize qemu for something that was completely experimental 
+(and closed source at the time).  Moreover, it wasn't clear if the qemu 
+community would be interested.
 
-Correct the asm constraint, like done for m68knommu.
+The qemu-kvm fork was designed for minimal intrusion so I could merge 
+upstream qemu regularly.  This resulted in kvm integration that was 
+fairly ugly.  Later Anthony merged a well-integrated alternative 
+implementation (in retrospect this was a mistake IMO - we were left with 
+a well tested high performing ugly implementation and a clean, slow, 
+untested, and unfeatured implementation, and no one who wants to merge 
+the two).  So now it is pretty confusing to read the code which has the 
+two alternate implementation sometimes sharing code and sometimes diverging.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/m68k/include/asm/atomic_mm.h |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/m68k/include/asm/atomic_mm.h
-b/arch/m68k/include/asm/atomic_mm.h
-index 88b7af2..d9d2ed6 100644
---- a/arch/m68k/include/asm/atomic_mm.h
-+++ b/arch/m68k/include/asm/atomic_mm.h
-@@ -148,14 +148,18 @@ static inline int atomic_xchg(atomic_t *v, int new)
- static inline int atomic_sub_and_test(int i, atomic_t *v)
- {
- 	char c;
--	__asm__ __volatile__("subl %2,%1; seq %0" : "=d" (c), "+m" (*v): "g" (i));
-+	__asm__ __volatile__("subl %2,%1; seq %0"
-+			     : "=d" (c), "+m" (*v)
-+			     : "id" (i));
- 	return c != 0;
- }
+> About a GUI for KVM to use on desktop distributions, that is an
+> irrelevant concern compared to the lack of protocol more efficient
+> than rdesktop/rdp/vnc for desktop virtualization. I've people asking
+> me to migrate hundreds of desktops to desktop virtualization on KVM in
+> their organizations and I tell them to use spice because I believe
+> it's the most efficient option available (at least as far as we stick
+> to open source open protocols), there are universities using spice on
+> thousand of student desktops, and I think we need paravirt graphics to
+> happen ASAP in the main qemu tree too.
+>    
 
- static inline int atomic_add_negative(int i, atomic_t *v)
- {
- 	char c;
--	__asm__ __volatile__("addl %2,%1; smi %0" : "=d" (c), "+m" (*v): "g" (i));
-+	__asm__ __volatile__("addl %2,%1; smi %0"
-+			     : "=d" (c), "+m" (*v)
-+			     : "id" (i));
- 	return c != 0;
- }
+That effort will have to wait for the spice project to mature.
+
+> In short: running KVM on the desktop is irrelevant compared to running
+> the desktop on KVM so I suggest to focus on what is more important
+> first ;).
+>    
+
+Anyone can focus on what interests them, if someone has an interest in a 
+good desktop-on-desktop experience they should start hacking and sending 
+patches.
 
 -- 
-1.6.0.4
+error compiling committee.c: too many arguments to function
 
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
