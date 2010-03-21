@@ -1,347 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab0CUQy7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 12:54:59 -0400
-Received: from smtprelay-h12.telenor.se ([62.127.194.5]:50387 "EHLO
-	smtprelay-h12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab0CUQy5 (ORCPT
+	id S1752598Ab0CURRR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 13:17:17 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:59569 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab0CURRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 12:54:57 -0400
-X-SENDER-IP: [83.226.249.129]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Amk2AAbspUtT4vmBPGdsb2JhbACbOgwBAQEBNy2rUIxZhH0E
-X-IronPort-AV: E=Sophos;i="4.51,283,1267398000"; 
-   d="scan'208";a="53857162"
-From: Lars Lindley <lindley@coyote.org>
-To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Lars Lindley <lindley@coyote.org>
-Subject: [PATCH] staging: winbond: sme_api.h Coding style fixes.
-Date: Sun, 21 Mar 2010 17:55:03 +0100
-Message-Id: <1269190503-12050-1-git-send-email-lindley@coyote.org>
-X-Mailer: git-send-email 1.7.0.2
+	Sun, 21 Mar 2010 13:17:15 -0400
+Date: Sun, 21 Mar 2010 17:16:34 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Paulius Zaleckas <paulius.zaleckas@gmail.com>, nico@cam.org,
+       rth@twiddle.net, nico@fluxnic.net, linux-kernel@vger.kernel.org,
+       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
+       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] MTD: Fix Orion NAND driver compilation with ARM OABI
+Message-ID: <20100321171634.GB4174@shareable.org>
+References: <20100320085507.4038.96426.stgit@pauliusz> <1269078083.4028.5586.camel@macbook.infradead.org> <badfd5ba1003200420xc0680c1h8b4cccd02a8fdaba@mail.gmail.com> <1269086286.4028.6039.camel@macbook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269086286.4028.6039.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I fixed the things reported by checkpatch.pl except
-one long line and a __inline.
-I also removed commented away code and versioning comments.
+David Woodhouse wrote:
+> Strictly speaking, I think your version is wrong -- although you force
+> the variable 'x' to be stored in r2/r3, you don't actually force GCC to
+> use r2/r3 as the output registers for the asm statement -- it could
+> happily use other registers, then move their contents into r2/r3
+> afterwards.
 
-Signed-off-by: Lars Lindley <lindley@coyote.org>
----
- drivers/staging/winbond/sme_api.h |  211 +++++++++++++------------------------
- 1 files changed, 71 insertions(+), 140 deletions(-)
+We used to do that a lot in the syscall macros in <asm/unistd.h>, on a
+lot of architectures.  Were they all broken?
 
-diff --git a/drivers/staging/winbond/sme_api.h b/drivers/staging/winbond/sme_api.h
-index b589829..8f4596c 100644
---- a/drivers/staging/winbond/sme_api.h
-+++ b/drivers/staging/winbond/sme_api.h
-@@ -2,12 +2,6 @@
-  * sme_api.h
-  *
-  * Copyright(C) 2002 Winbond Electronics Corp.
-- *
-- * modification history
-- * ---------------------------------------------------------------------------
-- * 1.00.001, 2003-04-21, Kevin       created
-- * 1.00.002, 2003-05-14, PD43 & PE20 modified
-- *
-  */
- 
- #ifndef __SME_API_H__
-@@ -18,42 +12,42 @@
- #include "localpara.h"
- 
- /****************** CONSTANT AND MACRO SECTION ******************************/
--#define _INLINE      __inline
-+#define _INLINE				__inline
- 
--#define MEDIA_STATE_DISCONNECTED    0
--#define MEDIA_STATE_CONNECTED       1
-+#define MEDIA_STATE_DISCONNECTED	0
-+#define MEDIA_STATE_CONNECTED		1
- 
--//ARRAY CHECK
--#define MAX_POWER_TO_DB 32
-+/* ARRAY CHECK */
-+#define MAX_POWER_TO_DB			32
- 
- /****************** TYPE DEFINITION SECTION *********************************/
- 
- /****************** EXPORTED FUNCTION DECLARATION SECTION *******************/
- 
--// OID_802_11_BSSID
-+/* OID_802_11_BSSID */
- s8 sme_get_bssid(void *pcore_data, u8 *pbssid);
--s8 sme_get_desired_bssid(void *pcore_data, u8 *pbssid);//Not use
-+s8 sme_get_desired_bssid(void *pcore_data, u8 *pbssid); /* Not use */
- s8 sme_set_desired_bssid(void *pcore_data, u8 *pbssid);
- 
--// OID_802_11_SSID
-+/* OID_802_11_SSID */
- s8 sme_get_ssid(void *pcore_data, u8 *pssid, u8 *pssid_len);
--s8 sme_get_desired_ssid(void *pcore_data, u8 *pssid, u8 *pssid_len);// Not use
-+s8 sme_get_desired_ssid(void *pcore_data, u8 *pssid, u8 *pssid_len);/* Not use */
- s8 sme_set_desired_ssid(void *pcore_data, u8 *pssid, u8 ssid_len);
- 
--// OID_802_11_INFRASTRUCTURE_MODE
-+/* OID_802_11_INFRASTRUCTURE_MODE */
- s8 sme_get_bss_type(void *pcore_data, u8 *pbss_type);
--s8 sme_get_desired_bss_type(void *pcore_data, u8 *pbss_type);//Not use
-+s8 sme_get_desired_bss_type(void *pcore_data, u8 *pbss_type); /* Not use */
- s8 sme_set_desired_bss_type(void *pcore_data, u8 bss_type);
- 
--// OID_802_11_FRAGMENTATION_THRESHOLD
-+/* OID_802_11_FRAGMENTATION_THRESHOLD */
- s8 sme_get_fragment_threshold(void *pcore_data, u32 *pthreshold);
- s8 sme_set_fragment_threshold(void *pcore_data, u32 threshold);
- 
--// OID_802_11_RTS_THRESHOLD
-+/* OID_802_11_RTS_THRESHOLD */
- s8 sme_get_rts_threshold(void *pcore_data, u32 *pthreshold);
- s8 sme_set_rts_threshold(void *pcore_data, u32 threshold);
- 
--// OID_802_11_CONFIGURATION
-+/* OID_802_11_CONFIGURATION */
- s8 sme_get_beacon_period(void *pcore_data, u16 *pbeacon_period);
- s8 sme_set_beacon_period(void *pcore_data, u16 beacon_period);
- 
-@@ -64,116 +58,69 @@ s8 sme_get_current_channel(void *pcore_data, u8 *pcurrent_channel);
- s8 sme_get_current_band(void *pcore_data, u8 *pcurrent_band);
- s8 sme_set_current_channel(void *pcore_data, u8 current_channel);
- 
--// OID_802_11_BSSID_LIST
-+/* OID_802_11_BSSID_LIST */
- s8 sme_get_scan_bss_count(void *pcore_data, u8 *pcount);
- s8 sme_get_scan_bss(void *pcore_data, u8 index, void **ppbss);
- 
- s8 sme_get_connected_bss(void *pcore_data, void **ppbss_now);
- 
--// OID_802_11_AUTHENTICATION_MODE
-+/* OID_802_11_AUTHENTICATION_MODE */
- s8 sme_get_auth_mode(void *pcore_data, u8 *pauth_mode);
- s8 sme_set_auth_mode(void *pcore_data, u8 auth_mode);
- 
--// OID_802_11_WEP_STATUS / OID_802_11_ENCRYPTION_STATUS
-+/* OID_802_11_WEP_STATUS / OID_802_11_ENCRYPTION_STATUS */
- s8 sme_get_wep_mode(void *pcore_data, u8 *pwep_mode);
- s8 sme_set_wep_mode(void *pcore_data, u8 wep_mode);
--//s8 sme_get_encryption_status(void *pcore_data, u8 *pstatus);
--//s8 sme_set_encryption_status(void *pcore_data, u8 status);
--
--// ???????????????????????????????????????
- 
--// OID_GEN_VENDOR_ID
--// OID_802_3_PERMANENT_ADDRESS
-+/* OID_GEN_VENDOR_ID */
-+/* OID_802_3_PERMANENT_ADDRESS */
- s8 sme_get_permanent_mac_addr(void *pcore_data, u8 *pmac_addr);
- 
--// OID_802_3_CURRENT_ADDRESS
-+/* OID_802_3_CURRENT_ADDRESS */
- s8 sme_get_current_mac_addr(void *pcore_data, u8 *pmac_addr);
- 
--// OID_802_11_NETWORK_TYPE_IN_USE
-+/* OID_802_11_NETWORK_TYPE_IN_USE */
- s8 sme_get_network_type_in_use(void *pcore_data, u8 *ptype);
- s8 sme_set_network_type_in_use(void *pcore_data, u8 type);
- 
--// OID_802_11_SUPPORTED_RATES
-+/* OID_802_11_SUPPORTED_RATES */
- s8 sme_get_supported_rate(void *pcore_data, u8 *prates);
- 
--// OID_802_11_ADD_WEP
--//12/29/03' wkchen
-+/* OID_802_11_ADD_WEP */
- s8 sme_set_add_wep(void *pcore_data, u32 key_index, u32 key_len,
- 					 u8 *Address, u8 *key);
- 
--// OID_802_11_REMOVE_WEP
-+/* OID_802_11_REMOVE_WEP */
- s8 sme_set_remove_wep(void *pcre_data, u32 key_index);
- 
--// OID_802_11_DISASSOCIATE
-+/* OID_802_11_DISASSOCIATE */
- s8 sme_set_disassociate(void *pcore_data);
- 
--// OID_802_11_POWER_MODE
-+/* OID_802_11_POWER_MODE */
- s8 sme_get_power_mode(void *pcore_data, u8 *pmode);
- s8 sme_set_power_mode(void *pcore_data, u8 mode);
- 
--// OID_802_11_BSSID_LIST_SCAN
-+/* OID_802_11_BSSID_LIST_SCAN */
- s8 sme_set_bssid_list_scan(void *pcore_data, void *pscan_para);
- 
--// OID_802_11_RELOAD_DEFAULTS
-+/* OID_802_11_RELOAD_DEFAULTS */
- s8 sme_set_reload_defaults(void *pcore_data, u8 reload_type);
- 
- 
--// The following SME API functions are used for WPA
--//
--// Mandatory OIDs for WPA
--//
--
--// OID_802_11_ADD_KEY
--//s8 sme_set_add_key(void *pcore_data, NDIS_802_11_KEY *pkey);
--
--// OID_802_11_REMOVE_KEY
--//s8 sme_set_remove_key(void *pcore_data, NDIS_802_11_REMOVE_KEY *pkey);
--
--// OID_802_11_ASSOCIATION_INFORMATION
--//s8 sme_set_association_information(void *pcore_data,
--//                    NDIS_802_11_ASSOCIATION_INFORMATION *pinfo);
--
--// OID_802_11_TEST
--//s8 sme_set_test(void *pcore_data, NDIS_802_11_TEST *ptest_data);
--
--//--------------------------------------------------------------------------//
--/*
--// The left OIDs
--
--// OID_802_11_NETWORK_TYPES_SUPPORTED
--// OID_802_11_TX_POWER_LEVEL
--// OID_802_11_RSSI_TRIGGER
--// OID_802_11_NUMBER_OF_ANTENNAS
--// OID_802_11_RX_ANTENNA_SELECTED
--// OID_802_11_TX_ANTENNA_SELECTED
--// OID_802_11_STATISTICS
--// OID_802_11_DESIRED_RATES
--// OID_802_11_PRIVACY_FILTER
--
--*/
--
- /*------------------------- none-standard ----------------------------------*/
- s8 sme_get_connect_status(void *pcore_data, u8 *pstatus);
--
--/*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
--//s8 sme_get_scan_type(void *pcore_data, u8 *pscan_type);
--//s8 sme_set_scan_type(void *pcore_data, u8 scan_type);
--
--//s8 sme_get_scan_channel_list(void *pcore_data, u8 *pscan_type);
--//s8 sme_set_scan_channel_list(void *pcore_data, u8 scan_type);
--
-+/*--------------------------------------------------------------------------*/
- 
- void sme_get_encryption_status(void *pcore_data, u8 *EncryptStatus);
- void sme_set_encryption_status(void *pcore_data, u8 EncryptStatus);
--s8 sme_add_key(void		*pcore_data,
--					u32		key_index,
--					u8		key_len,
--					u8		key_type,
--					u8		*key_bssid,
--					//u8		*key_rsc,
--					u8		*ptx_tsc,
--					u8		*prx_tsc,
--					u8		*key_material);
-+s8 sme_add_key(void	*pcore_data,
-+		u32	key_index,
-+		u8	key_len,
-+		u8	key_type,
-+		u8	*key_bssid,
-+		u8	*ptx_tsc,
-+		u8	*prx_tsc,
-+		u8	*key_material);
- void sme_remove_default_key(void *pcore_data, int index);
- void sme_remove_mapping_key(void *pcore_data, u8 *pmac_addr);
- void sme_clear_all_mapping_key(void *pcore_data);
-@@ -202,60 +149,44 @@ u8 sme_set_rx_antenna(void *pcore_data, u32 RxAntenna);
- void sme_get_tx_antenna(void *pcore_data, u32 *TxAntenna);
- s8 sme_set_tx_antenna(void *pcore_data, u32 TxAntenna);
- s8 sme_set_IBSS_chan(void *pcore_data, struct chan_info chan);
--
--//20061108 WPS
- s8 sme_set_IE_append(void *pcore_data, u8 *buffer, u16 buf_len);
- 
--
--
--
--//================== Local functions ======================
--//#ifdef _HSINCHU
--//void drv_translate_rssi();   // HW RSSI bit -> NDIS RSSI representation
--//void drv_translate_bss_description(); // Local bss desc -> NDIS bss desc
--//void drv_translate_channel(u8 NetworkType, u8 ChannelNumber, u32 *freq); // channel number -> channel /freq.
--//#endif _HSINCHU
--//
--static const u32 PowerDbToMw[] =
--{
--	56,	//mW, MAX - 0,	17.5 dbm
--	40,	//mW, MAX - 1,	16.0 dbm
--	30,	//mW, MAX - 2,	14.8 dbm
--	20,	//mW, MAX - 3,	13.0 dbm
--	15,	//mW, MAX - 4,	11.8 dbm
--	12,	//mW, MAX - 5,	10.6 dbm
--	9,	//mW, MAX - 6,	 9.4 dbm
--	7,	//mW, MAX - 7,	 8.3 dbm
--	5,	//mW, MAX - 8,	 6.4 dbm
--	4,	//mW, MAX - 9,	 5.3 dbm
--	3,	//mW, MAX - 10,  4.0 dbm
--	2,	//mW, MAX - 11,  ? dbm
--	2,	//mW, MAX - 12,  ? dbm
--	2,	//mW, MAX - 13,  ? dbm
--	2,	//mW, MAX - 14,  ? dbm
--	2,	//mW, MAX - 15,  ? dbm
--	2,	//mW, MAX - 16,  ? dbm
--	2,	//mW, MAX - 17,  ? dbm
--	2,	//mW, MAX - 18,  ? dbm
--	1,	//mW, MAX - 19,  ? dbm
--	1,	//mW, MAX - 20,  ? dbm
--	1,	//mW, MAX - 21,  ? dbm
--	1,	//mW, MAX - 22,  ? dbm
--	1,	//mW, MAX - 23,  ? dbm
--	1,	//mW, MAX - 24,  ? dbm
--	1,	//mW, MAX - 25,  ? dbm
--	1,	//mW, MAX - 26,  ? dbm
--	1,	//mW, MAX - 27,  ? dbm
--	1,	//mW, MAX - 28,  ? dbm
--	1,	//mW, MAX - 29,  ? dbm
--	1,	//mW, MAX - 30,  ? dbm
--	1	//mW, MAX - 31,  ? dbm
-+/* ================== Local functions ====================== */
-+static const u32 PowerDbToMw[] = {
-+	56,	/* mW, MAX - 0,	17.5 dbm */
-+	40,	/* mW, MAX - 1,	16.0 dbm */
-+	30,	/* mW, MAX - 2,	14.8 dbm */
-+	20,	/* mW, MAX - 3,	13.0 dbm */
-+	15,	/* mW, MAX - 4,	11.8 dbm */
-+	12,	/* mW, MAX - 5,	10.6 dbm */
-+	9,	/* mW, MAX - 6,	 9.4 dbm */
-+	7,	/* mW, MAX - 7,	 8.3 dbm */
-+	5,	/* mW, MAX - 8,	 6.4 dbm */
-+	4,	/* mW, MAX - 9,	 5.3 dbm */
-+	3,	/* mW, MAX - 10,  4.0 dbm */
-+	2,	/* mW, MAX - 11,  ? dbm */
-+	2,	/* mW, MAX - 12,  ? dbm */
-+	2,	/* mW, MAX - 13,  ? dbm */
-+	2,	/* mW, MAX - 14,  ? dbm */
-+	2,	/* mW, MAX - 15,  ? dbm */
-+	2,	/* mW, MAX - 16,  ? dbm */
-+	2,	/* mW, MAX - 17,  ? dbm */
-+	2,	/* mW, MAX - 18,  ? dbm */
-+	1,	/* mW, MAX - 19,  ? dbm */
-+	1,	/* mW, MAX - 20,  ? dbm */
-+	1,	/* mW, MAX - 21,  ? dbm */
-+	1,	/* mW, MAX - 22,  ? dbm */
-+	1,	/* mW, MAX - 23,  ? dbm */
-+	1,	/* mW, MAX - 24,  ? dbm */
-+	1,	/* mW, MAX - 25,  ? dbm */
-+	1,	/* mW, MAX - 26,  ? dbm */
-+	1,	/* mW, MAX - 27,  ? dbm */
-+	1,	/* mW, MAX - 28,  ? dbm */
-+	1,	/* mW, MAX - 29,  ? dbm */
-+	1,	/* mW, MAX - 30,  ? dbm */
-+	1	/* mW, MAX - 31,  ? dbm */
- };
- 
--
--
--
--
- #endif /* __SME_API_H__ */
- 
- 
--- 
-1.7.0.2
+> Obviously it _won't_ do that most of the time, but it _could_. GCC PR
+> #15089 was filed for the fact that sometimes it does, but I think Nico
+> was missing the point -- GCC is _allowed_ to do that, and if it makes
+> you sad then you should be asking for better assembly constraints which
+> would allow you to tell it not to.
 
+>From the GCC info documentation:
+
+    Sometimes you need to make an `asm' operand be a specific register,
+    but there's no matching constraint letter for that register _by
+    itself_.  To force the operand into that register, use a local variable
+    for the operand and specify the register in the variable declaration.
+    *Note Explicit Reg Vars::.  Then for the `asm' operand, use any
+    register constraint letter that matches the register:
+
+         register int *p1 asm ("r0") = ...;
+         register int *p2 asm ("r1") = ...;
+         register int *result asm ("r0");
+         asm ("sysint" : "=r" (result) : "0" (p1), "r" (p2));
+
+Fwiw, that note is present in GCC-4.0.1, but not GCC-3.3.6.  But we've
+depended on that behaviour for a long time.
+
+Note that we've depended on GCC not copying values with a dereferenced
+memory location for a long time too: E.g. "+m" (*ptr) is used a lot in
+spinlocks.
+
+I'm sure I've read email confirmation (on these very lists) that GCC
+will always work with a memory constraint used in that way, without
+copying the value to/from a different location such as a stack slot.
+
+But suprisingly, the GCC documentation says:
+
+    Extended asm supports input-output or read-write operands.  Use
+    the constraint character `+' to indicate such an operand and list
+    it with the output operands.  You should only use read-write
+    operands when the constraints for the operand (or the operand in
+    which only some of the bits are to be changed) allow a register.
+                                                   ^^^^^^^^^^^^^^^^
+
+Maybe we're relying on undefined GCC behaviour for the "+m" constraint?
+
+> See the __asmeq() macro in <asm/system.h> for a dirty hack which will
+> check which registers are used and abort at compile time, although your
+> compilation is going to fail anyway so I'm not sure it makes much of a
+> difference in this particular case.
+> 
+> The real fix here is to add an asm constraint to GCC which allows you to
+> specify "any even GPR" (or whatever's most suitable for the ldrd
+> instruction). Being able to give specific registers, like you can on
+> other architectures, would be useful too.
+
+See above GCC documentation for using register variables to designate
+specific registers.  Many supported architectures don't have asm
+letter constraints for each register - hence so many of the old
+_syscallN macros in <asm/unistd.h> having to use register variables.
+
+I am surprised GCC doesn't have a constraint for "any even register
+suitable for ldrd" on ARM, but I've just checked gcc-4.4.3 and it doesn't.
+
+However, if I'm reading the source correctly, if not compiling for
+Thumb-1, and GCC believes the target machine supports ldrd, then all
+doubleword values are constrained to an even register pair anyway.
+That's why GCC itself does not need an even-register constraint letter.
+
+...Which is I guess why it throws up only with OABI, or with pre-arm5e
+archs: GCC doesn't consider OABI targets to support ldrd.  (It's
+actually some more obscure condition, let's not go there).
+
+Something else from the lovely GCC source:
+
+    mfix-cortex-m3-ldrd
+    Target Report Var(fix_cm3_ldrd) Init(2)
+    Avoid overlapping destination and address registers on LDRD instructions
+    that may trigger Cortex-M3 errata.
+
+In other words, the "=&" earlyclobber *is* needed on Cortex-M3.
+
+Enjoy!
+-- Jamie
