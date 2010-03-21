@@ -1,19 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab0CUVo7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:44:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59622 "EHLO mx1.redhat.com"
+	id S1753547Ab0CUVwY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:52:24 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38800 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab0CUVo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:44:57 -0400
-Message-ID: <4BA69344.40504@redhat.com>
-Date: Sun, 21 Mar 2010 23:44:36 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Antoine Martin <antoine@nagafix.co.uk>,
-       Anthony Liguori <anthony@codemonkey.ws>,
+	id S1753308Ab0CUVwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 17:52:22 -0400
+Date: Sun, 21 Mar 2010 22:52:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
        Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -25,47 +21,74 @@ CC: Antoine Martin <antoine@nagafix.co.uk>,
        Fr?d?ric Weisbecker <fweisbec@gmail.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-References: <20100318170223.GB9756@elte.hu> <4BA25E66.2050800@redhat.com> <20100318172805.GB26067@elte.hu> <4BA32E1A.2060703@redhat.com> <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA674F1.6070603@nagafix.co.uk> <20100321195903.GA29490@elte.hu> <4BA67D0B.9030705@redhat.com> <20100321210011.GD30194@elte.hu>
-In-Reply-To: <20100321210011.GD30194@elte.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20100321215207.GA13219@elte.hu>
+References: <20100318170223.GB9756@elte.hu>
+ <4BA25E66.2050800@redhat.com>
+ <20100318172805.GB26067@elte.hu>
+ <4BA32E1A.2060703@redhat.com>
+ <20100319085346.GG12576@elte.hu>
+ <4BA3747F.60401@codemonkey.ws>
+ <20100321191742.GD25922@elte.hu>
+ <4BA67B2F.4030101@redhat.com>
+ <20100321203121.GA30194@elte.hu>
+ <4BA6900B.1040408@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA6900B.1040408@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2010 11:00 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 03/21/2010 09:59 PM, Ingo Molnar wrote:
->>      
->>> Frankly, i was surprised (and taken slightly off base) by both Avi and Anthony
->>> suggesting such a clearly inferior "add a demon to the guest space" solution.
->>> It's a usability and deployment non-starter.
->>>        
->> It's only clearly inferior if you ignore every consideration against it.
->> It's definitely not a deployment non-starter, see the tons of daemons that
->> come with any Linux system. [...]
->>      
-> Avi, please dont put arguments into my mouth that i never made.
->    
 
-Sorry, that was not the intent.  I meant that putting things into the 
-kernel have disadvantages that must be considered.
+* Avi Kivity <avi@redhat.com> wrote:
 
-> My (clearly expressed) argument was that:
->
->      _a new guest-side demon is a transparent instrumentation non-starter_
->
-> What is so hard to understand about that simple concept? Instrumentation is
-> good if it's as transparent as possible.
->
-> Of course lots of other features can be done via a new user-space package ...
->    
+> > I.e. you are arguing for microkernel Linux, while you see me as arguing 
+> > for a monolithic kernel.
+> 
+> No. I'm arguing for reducing bloat wherever possible.  Kernel code is more 
+> expensive than userspace code in every metric possible.
 
-I believe you can deploy this daemon via a (default) package, without 
-any hassle to users.
+1)
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+One of the primary design arguments of the micro-kernel design as well was to 
+push as much into user-space as possible without impacting performance too 
+much so you very much seem to be arguing for a micro-kernel design for the 
+kernel.
 
+I think history has given us the answer for that fight between microkernels 
+and monolithic kernels.
+
+Furthermore, to not engage in hypotheticals about microkernels: by your 
+argument the Oprofile design was perfect (it was minimalistic kernel-space, 
+with all the complexity in user-space), while perf was over-complex (which 
+does many things in the kernel that could have been done in user-space).
+
+Practical results suggest the exact opposite happened - Oprofile is being 
+replaced by perf. How do you explain that?
+
+2)
+
+In your analysis you again ignore the package boundary costs and artifacts as 
+if they didnt exist.
+
+That was my main argument, and that is what we saw with oprofile and perf: 
+while maintaining more kernel-code may be more expensive, it sure pays off for 
+getting us a much better solution in the end.
+
+And getting a 'much better solution' to users is the goal of all this, isnt 
+it?
+
+I dont mind what you call 'bloat' per se if it's for a purpose that users find 
+like a good deal. I have quite a bit of RAM in most of my systems, having 50K 
+more or less included in the kernel image is far less important than having a 
+healthy and vibrant development model and having satisfied users ...
+
+	Ingo
