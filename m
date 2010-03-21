@@ -1,90 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988Ab0CUAG0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 20:06:26 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:52363 "EHLO
+	id S1753081Ab0CUAGl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 20:06:41 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:42413 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752929Ab0CUAGV (ORCPT
+	with ESMTP id S1752907Ab0CUAGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 20:06:21 -0400
+	Sat, 20 Mar 2010 20:06:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:date:subject:mime-version:x-tuid:x-uid:x-length:to
-         :reply-to:content-type:message-id;
-        b=UnwLixwrwP91ssjXWZz18faJoWW7FYgoAwyYX3n7OOpOfjvsooAGiAhBNGrLT7HoMU
-         K+SZBaCkmQxZgJ9PEy0rN9gHh4/aKlGkZkfvtVk+zkad2+FOas70ebow+4a38A7aIWHg
-         gO+EC9Q1D9qgcaWqtOemojWn+dLFmYvvoqt2o=
+         :reply-to:content-type:content-transfer-encoding:message-id;
+        b=upTW2vWHZZ38qph4w/ETdZQlDZYmwKeNIo9rek4IYGdwMwNYaylDUKsz+7m+3SFMj+
+         Vi0x0+jbzRqkFR0r4pjwErMPaa7wKCCNPay53inwEGUPzqlDzMFWVUY7UBiDYMX8flI3
+         EkQpSr0FZMw7z9LOTiZZMs71aBuZXwZSP0GTE=
 From: Florian Fainelli <florian@openwrt.org>
-Date: Sun, 21 Mar 2010 01:06:17 +0100
-Subject: [PATCH 4/4 v3] x86: remove rdc321x_defs.h
+Date: Sun, 21 Mar 2010 01:06:13 +0100
+Subject: [PATCH 3/4 v3] WATCHDOG: convert rdc321x_wdt to use southbridge pci device
 MIME-Version: 1.0
-X-TUID: 0be376bb144ead0b
-X-Length: 1559
-To: linux-kernel@vger.kernel.org, sameo@linux.intel.com,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>
+X-TUID: 8ce79f50676f65a6
+X-Length: 5710
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, wim@iguana.be
 Reply-To: Florian Fainelli <florian@openwrt.org>
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_6LWpL4rz4hEMbjZ"
-Message-Id: <201003210106.18169.florian@openwrt.org>
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003210106.14270.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---Boundary-00=_6LWpL4rz4hEMbjZ
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+The RDC321x MFD southbridge driver will pass a reference to the southbridge
+PCI device which should be used by the watchdog driver for its operations.
+This patch converts the watchdog driver to use the pci_dev pointer and make use
+of the base register resource which is passed along with the platform device.
 
-This file is replaced by a cleaner version with the adding of a MFD driver for
-the southbridge.
-
+Acked-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Florian Fainelli <florian@openwrt.org>
 ---
-diff --git a/arch/x86/include/asm/rdc321x_defs.h b/arch/x86/include/asm/rdc321x_defs.h
-deleted file mode 100644
-index c8e9c8b..0000000
---- a/arch/x86/include/asm/rdc321x_defs.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#define PFX	"rdc321x: "
--
--/* General purpose configuration and data registers */
--#define RDC3210_CFGREG_ADDR     0x0CF8
--#define RDC3210_CFGREG_DATA     0x0CFC
--
--#define RDC321X_GPIO_CTRL_REG1	0x48
--#define RDC321X_GPIO_CTRL_REG2	0x84
--#define RDC321X_GPIO_DATA_REG1	0x4c
--#define RDC321X_GPIO_DATA_REG2	0x88
--
--#define RDC321X_MAX_GPIO	58
+Changes from v2:
+- replaced rdc321x_pci_{read,write}
+- use the pci_dev pointer passed as platform_data
 
---Boundary-00=_6LWpL4rz4hEMbjZ
-Content-Type: text/x-patch;
-  name="d4af98bfffe3e385b7a8f903789fd680d3b967e2.diff"
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline; filename="d4af98bfffe3e385b7a8f903789fd680d3b967e2.diff"
-
-diff --git a/arch/x86/include/asm/rdc321x_defs.h b/arch/x86/include/asm/rdc321x_defs.h
-deleted file mode 100644
-index c8e9c8b..0000000
---- a/arch/x86/include/asm/rdc321x_defs.h
-+++ /dev/null
-@@ -1,12 +0,0 @@
--#define PFX	"rdc321x: "
+diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
+index 69c6adb..4733a99 100644
+--- a/drivers/watchdog/rdc321x_wdt.c
++++ b/drivers/watchdog/rdc321x_wdt.c
+@@ -1,7 +1,7 @@
+ /*
+  * RDC321x watchdog driver
+  *
+- * Copyright (C) 2007 Florian Fainelli <florian@openwrt.org>
++ * Copyright (C) 2007-2010 Florian Fainelli <florian@openwrt.org>
+  *
+  * This driver is highly inspired from the cpu5_wdt driver
+  *
+@@ -36,8 +36,7 @@
+ #include <linux/watchdog.h>
+ #include <linux/io.h>
+ #include <linux/uaccess.h>
 -
--/* General purpose configuration and data registers */
--#define RDC3210_CFGREG_ADDR     0x0CF8
--#define RDC3210_CFGREG_DATA     0x0CFC
--
--#define RDC321X_GPIO_CTRL_REG1	0x48
--#define RDC321X_GPIO_CTRL_REG2	0x84
--#define RDC321X_GPIO_DATA_REG1	0x4c
--#define RDC321X_GPIO_DATA_REG2	0x88
--
--#define RDC321X_MAX_GPIO	58
-
---Boundary-00=_6LWpL4rz4hEMbjZ--
-
-
+-#include <asm/rdc321x_defs.h>
++#include <linux/mfd/rdc321x.h>
+ 
+ #define RDC_WDT_MASK	0x80000000 /* Mask */
+ #define RDC_WDT_EN	0x00800000 /* Enable bit */
+@@ -63,6 +62,8 @@ static struct {
+ 	int default_ticks;
+ 	unsigned long inuse;
+ 	spinlock_t lock;
++	struct pci_dev *sb_pdev;
++	int base_reg;
+ } rdc321x_wdt_device;
+ 
+ /* generic helper functions */
+@@ -70,14 +71,18 @@ static struct {
+ static void rdc321x_wdt_trigger(unsigned long unused)
+ {
+ 	unsigned long flags;
++	u32 val;
+ 
+ 	if (rdc321x_wdt_device.running)
+ 		ticks--;
+ 
+ 	/* keep watchdog alive */
+ 	spin_lock_irqsave(&rdc321x_wdt_device.lock, flags);
+-	outl(RDC_WDT_EN | inl(RDC3210_CFGREG_DATA),
+-		RDC3210_CFGREG_DATA);
++	pci_read_config_dword(rdc321x_wdt_device.sb_pdev,
++					rdc321x_wdt_device.base_reg, &val);
++	val |= RDC_WDT_EN;
++	pci_write_config_dword(rdc321x_wdt_device.sb_pdev,
++					rdc321x_wdt_device.base_reg, val);
+ 	spin_unlock_irqrestore(&rdc321x_wdt_device.lock, flags);
+ 
+ 	/* requeue?? */
+@@ -105,10 +110,13 @@ static void rdc321x_wdt_start(void)
+ 
+ 		/* Clear the timer */
+ 		spin_lock_irqsave(&rdc321x_wdt_device.lock, flags);
+-		outl(RDC_CLS_TMR, RDC3210_CFGREG_ADDR);
++		pci_write_config_dword(rdc321x_wdt_device.sb_pdev,
++				rdc321x_wdt_device.base_reg, RDC_CLS_TMR);
+ 
+ 		/* Enable watchdog and set the timeout to 81.92 us */
+-		outl(RDC_WDT_EN | RDC_WDT_CNT, RDC3210_CFGREG_DATA);
++		pci_write_config_dword(rdc321x_wdt_device.sb_pdev,
++					rdc321x_wdt_device.base_reg,
++					RDC_WDT_EN | RDC_WDT_CNT);
+ 		spin_unlock_irqrestore(&rdc321x_wdt_device.lock, flags);
+ 
+ 		mod_timer(&rdc321x_wdt_device.timer,
+@@ -148,7 +156,7 @@ static long rdc321x_wdt_ioctl(struct file *file, unsigned int cmd,
+ 				unsigned long arg)
+ {
+ 	void __user *argp = (void __user *)arg;
+-	unsigned int value;
++	u32 value;
+ 	static const struct watchdog_info ident = {
+ 		.options = WDIOF_CARDRESET,
+ 		.identity = "RDC321x WDT",
+@@ -162,9 +170,10 @@ static long rdc321x_wdt_ioctl(struct file *file, unsigned int cmd,
+ 	case WDIOC_GETSTATUS:
+ 		/* Read the value from the DATA register */
+ 		spin_lock_irqsave(&rdc321x_wdt_device.lock, flags);
+-		value = inl(RDC3210_CFGREG_DATA);
++		pci_read_config_dword(rdc321x_wdt_device.sb_pdev,
++					rdc321x_wdt_device.base_reg, &value);
+ 		spin_unlock_irqrestore(&rdc321x_wdt_device.lock, flags);
+-		if (copy_to_user(argp, &value, sizeof(int)))
++		if (copy_to_user(argp, &value, sizeof(u32)))
+ 			return -EFAULT;
+ 		break;
+ 	case WDIOC_GETSUPPORT:
+@@ -219,17 +228,35 @@ static struct miscdevice rdc321x_wdt_misc = {
+ static int __devinit rdc321x_wdt_probe(struct platform_device *pdev)
+ {
+ 	int err;
++	struct resource *r;
++	struct rdc321x_wdt_pdata *pdata;
++
++	pdata = pdev->dev.platform_data;
++	if (!pdata) {
++		dev_err(&pdev->dev, "no platform data supplied\n");
++		return -ENODEV;
++	}
++
++	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "wdt-reg");
++	if (!r) {
++		dev_err(&pdev->dev, "failed to get wdt-reg resource\n");
++		return -ENODEV;
++	}
++
++	rdc321x_wdt_device.sb_pdev = pdata->sb_pdev;
++	rdc321x_wdt_device.base_reg = r->start;
+ 
+ 	err = misc_register(&rdc321x_wdt_misc);
+ 	if (err < 0) {
+-		printk(KERN_ERR PFX "watchdog misc_register failed\n");
++		dev_err(&pdev->dev, "misc_register failed\n");
+ 		return err;
+ 	}
+ 
+ 	spin_lock_init(&rdc321x_wdt_device.lock);
+ 
+ 	/* Reset the watchdog */
+-	outl(RDC_WDT_RST, RDC3210_CFGREG_DATA);
++	pci_write_config_dword(rdc321x_wdt_device.sb_pdev,
++				rdc321x_wdt_device.base_reg, RDC_WDT_RST);
+ 
+ 	init_completion(&rdc321x_wdt_device.stop);
+ 	rdc321x_wdt_device.queue = 0;
+@@ -240,7 +267,7 @@ static int __devinit rdc321x_wdt_probe(struct platform_device *pdev)
+ 
+ 	rdc321x_wdt_device.default_ticks = ticks;
+ 
+-	printk(KERN_INFO PFX "watchdog init success\n");
++	dev_info(&pdev->dev, "watchdog init success\n");
+ 
+ 	return 0;
+ }
