@@ -1,238 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab0CUKNM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 06:13:12 -0400
-Received: from mail-fx0-f227.google.com ([209.85.220.227]:42710 "EHLO
-	mail-fx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431Ab0CUKNJ (ORCPT
+	id S1752671Ab0CUKVN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 06:21:13 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:43445 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab0CUKVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 06:13:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=fd3mU9ZGleikFV60aBLJLubIvI3YY/ywtUMNPf9Vj2/kgRtUC3ZJI5VLlJjV1URbeK
-         jIoGHIXDYHreZtzYhmvYZMRz1H7i5l2OaRNazBVy0I8rAr/MSCo9Mbg95gEYbYn9sR30
-         XEptjiSlNVhkF3TZSkKphs45c0XPhRcknpsYc=
-Message-ID: <4BA5F0C3.6040709@gmail.com>
-Date: Sun, 21 Mar 2010 11:11:15 +0100
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	Sun, 21 Mar 2010 06:21:11 -0400
+X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Mar 2010 06:21:10 EDT
+Date: Sun, 21 Mar 2010 11:12:25 +0100
+From: Marc Koschewski <marc@osknowledge.org>
+To: Linux-LKLM <linux-kernel@vger.kernel.org>
+Subject: BUG: scheduling while atomic: eix-update/4126/0x10000002
+Message-ID: <20100321101223.GA32201@shmoo>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux Embedded <linux-embedded@vger.kernel.org>, akpm@linux-foundation.org,
-       David.Woodhouse@intel.com, anders.grafstrom@netinsight.net,
-       simon.kagstrom@netinsight.net, yuasa@linux-mips.org, gregkh@suse.de
-Subject: [PATCH v3] char drivers: Ram oops/panic logger
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.osknowledge.org/~marc/pubkey.asc
+X-Operating-System: Linux shmoo 2.6.34-rc2-marc-19754-g220bf99
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
 
-Ramoops, like mtdoops, can log oops/panic information but in RAM. It can
-be used with persistent RAM for systems without flash support. In
-addition, for this systems, with this driver, it's no more needed
-add to the kernel the mtd subsystem with advantage in footprint.
-
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-Changelog:
--v1: first draft
--v2: fixed compilation warning when using request_mem_region
--v3: changed permissions from 0600 to 0400 for size and address
-of ram buffer. Fixed the lack of 'ramoops:' in some printk.
-
---- linux-2.6.33-orig/drivers/char/Kconfig	2010-02-24 19:52:17.000000000 +0100
-+++ linux-2.6.33/drivers/char/Kconfig	2010-02-28 10:47:29.000000000 +0100
-@@ -1105,5 +1105,12 @@ config DEVPORT
- 
- source "drivers/s390/char/Kconfig"
- 
-+config RAMOOPS
-+	tristate "Log panic/oops to a RAM buffer"
-+	default n
-+	help
-+	  This enables panic and oops messages to be logged to a circular
-+	  buffer in RAM where it can be read back at some later point.
-+
- endmenu
- 
---- linux-2.6.33-orig/drivers/char/Makefile	2010-02-24 19:52:17.000000000 +0100
-+++ linux-2.6.33/drivers/char/Makefile	2010-02-28 10:49:17.000000000 +0100
-@@ -107,6 +107,7 @@ obj-$(CONFIG_HANGCHECK_TIMER)	+= hangche
- obj-$(CONFIG_TCG_TPM)		+= tpm/
- 
- obj-$(CONFIG_PS3_FLASH)		+= ps3flash.o
-+obj-$(CONFIG_RAMOOPS)		+= ramoops.o
- 
- obj-$(CONFIG_JS_RTC)		+= js-rtc.o
- js-rtc-y = rtc.o
---- linux-2.6.33-orig/drivers/char/ramoops.c	2009-12-16 00:58:07.000000000 +0100
-+++ linux-2.6.33/drivers/char/ramoops.c	2010-03-21 11:06:40.000000000 +0100
-@@ -0,0 +1,162 @@
-+/*
-+ * RAM Oops/Panic logger
-+ *
-+ * Copyright (C) 2010 Marco Stornelli <marco.stornelli@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-+ * 02110-1301 USA
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/kmsg_dump.h>
-+#include <linux/time.h>
-+#include <linux/io.h>
-+#include <linux/ioport.h>
-+
-+#define RAMOOPS_KERNMSG_HDR "===="
-+#define RAMOOPS_HEADER_SIZE   (5 + sizeof(struct timeval))
-+
-+#define RECORD_SIZE 4096
-+
-+static ulong mem_address;
-+module_param(mem_address, ulong, 0400);
-+MODULE_PARM_DESC(mem_address,
-+		"start of reserved RAM used to store oops/panic logs");
-+
-+static ulong mem_size;
-+module_param(mem_size, ulong, 0400);
-+MODULE_PARM_DESC(mem_size,
-+		"size of reserved RAM used to store oops/panic logs");
-+
-+static int dump_oops = 1;
-+module_param(dump_oops, int, 0600);
-+MODULE_PARM_DESC(dump_oops,
-+		"set to 1 to dump oopses, 0 to only dump panics (default 1)");
-+
-+static struct ramoops_context {
-+	struct kmsg_dumper dump;
-+	void *virt_addr;
-+	phys_addr_t phys_addr;
-+	unsigned long size;
-+	int count;
-+	int max_count;
-+} oops_cxt;
-+
-+static void ramoops_do_dump(struct kmsg_dumper *dumper,
-+		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
-+		const char *s2, unsigned long l2)
-+{
-+	struct ramoops_context *cxt = container_of(dumper,
-+			struct ramoops_context, dump);
-+	unsigned long s1_start, s2_start;
-+	unsigned long l1_cpy, l2_cpy;
-+	int res;
-+	char *buf;
-+	struct timeval timestamp;
-+
-+	/* Only dump oopses if dump_oops is set */
-+	if (reason == KMSG_DUMP_OOPS && !dump_oops)
-+		return;
-+
-+	buf = (char *)(cxt->virt_addr + (cxt->count * RECORD_SIZE));
-+	memset(buf, '\0', RECORD_SIZE);
-+	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
-+	buf += res;
-+	do_gettimeofday(&timestamp);
-+	res = sprintf(buf, "%lu.%lu\n", (long)timestamp.tv_sec, (long)timestamp.tv_usec);
-+	buf += res;
-+
-+	l2_cpy = min(l2, (unsigned long)(RECORD_SIZE - RAMOOPS_HEADER_SIZE));
-+	l1_cpy = min(l1, (unsigned long)(RECORD_SIZE - RAMOOPS_HEADER_SIZE) - l2_cpy);
-+
-+	s2_start = l2 - l2_cpy;
-+	s1_start = l1 - l1_cpy;
-+
-+	memcpy(buf, s1 + s1_start, l1_cpy);
-+	memcpy(buf + l1_cpy, s2 + s2_start, l2_cpy);
-+
-+	cxt->count = (cxt->count + 1) % cxt->max_count;
-+}
-+
-+static int __init ramoops_init(void)
-+{
-+	struct ramoops_context *cxt = &oops_cxt;
-+	int err = -EINVAL;
-+
-+	if (!mem_size) {
-+		printk(KERN_ERR "ramoops: invalid size specification");
-+		goto fail3;
-+	}
-+
-+	rounddown_pow_of_two(mem_size);
-+
-+	if (mem_size < RECORD_SIZE) {
-+		printk(KERN_ERR "ramoops: size too small");
-+		goto fail3;
-+	}
-+
-+	cxt->max_count = mem_size / RECORD_SIZE;
-+	cxt->count = 0;
-+	cxt->size = mem_size;
-+	cxt->phys_addr = mem_address;
-+
-+	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
-+		printk(KERN_ERR "ramoops: request mem region failed");
-+		err = -EINVAL;
-+		goto fail3;
-+	}
-+
-+	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
-+	if (!cxt->virt_addr) {
-+		printk(KERN_ERR "ramoops: ioremap failed");
-+		goto fail2;
-+	}
-+
-+	cxt->dump.dump = ramoops_do_dump;
-+	err = kmsg_dump_register(&cxt->dump);
-+	if (err) {
-+		printk(KERN_ERR "ramoops: registering kmsg dumper failed");
-+		goto fail1;
-+	}
-+
-+	return 0;
-+
-+fail1:
-+	iounmap(cxt->virt_addr);
-+fail2:
-+	release_mem_region(cxt->phys_addr, cxt->size);
-+fail3:
-+	return err;
-+}
-+
-+static void __exit ramoops_exit(void)
-+{
-+	struct ramoops_context *cxt = &oops_cxt;
-+
-+	if (kmsg_dump_unregister(&cxt->dump) < 0)
-+		printk(KERN_WARNING "ramoops: could not unregister kmsg_dumper");
-+
-+	iounmap(cxt->virt_addr);
-+	release_mem_region(cxt->phys_addr, cxt->size);
-+}
-+
-+
-+module_init(ramoops_init);
-+module_exit(ramoops_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Marco Stornelli <marco.stornelli@gmail.com>");
-+MODULE_DESCRIPTION("RAM Oops/Panic logger/driver");
-
+[ 1134.683978] BUG: scheduling while atomic: eix-update/4126/0x10000002
+[ 1134.683987] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
+[ 1134.684088] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
+[ 1134.684091] Call Trace:
+[ 1134.684107]  [<c03ec5b2>] ? printk+0x18/0x1e
+[ 1134.684117]  [<c011f850>] __schedule_bug+0x58/0x5a
+[ 1134.684121]  [<c03ec999>] schedule+0x3ad/0x4b1
+[ 1134.684127]  [<c011fab9>] __cond_resched+0x16/0x26
+[ 1134.684131]  [<c03ecb35>] _cond_resched+0x20/0x27
+[ 1134.684137]  [<c017f115>] unmap_vmas+0x5ca/0x678
+[ 1134.684144]  [<c018343c>] exit_mmap+0x9f/0x150
+[ 1134.684150]  [<c0125273>] mmput+0x2a/0xb9
+[ 1134.684155]  [<c0128b37>] exit_mm+0xce/0xe1
+[ 1134.684163]  [<c0153d23>] ? acct_collect+0x141/0x143
+[ 1134.684168]  [<c012a0ae>] do_exit+0xd0/0x6b4
+[ 1134.684175]  [<c0105562>] oops_end+0x6e/0x97
+[ 1134.684184]  [<c0118ce6>] no_context+0xb0/0x17d
+[ 1134.684189]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
+[ 1134.684195]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
+[ 1134.684200]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
+[ 1134.684205]  [<c01191ec>] do_page_fault+0x213/0x2a7
+[ 1134.684211]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.684217]  [<c03eea1a>] error_code+0x5e/0x64
+[ 1134.684223]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.684228]  [<c01878f0>] ? page_referenced+0x17a/0x204
+[ 1134.684235]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
+[ 1134.684240]  [<c0175523>] shrink_active_list+0x148/0x257
+[ 1134.684246]  [<c017625f>] shrink_zone+0x2c5/0x371
+[ 1134.684251]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
+[ 1134.684256]  [<c0176e39>] try_to_free_pages+0x6b/0x73
+[ 1134.684261]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
+[ 1134.684266]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
+[ 1134.684272]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
+[ 1134.684277]  [<c0172d0f>] ra_submit+0x21/0x27
+[ 1134.684282]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
+[ 1134.684289]  [<c016bcbd>] ? find_get_page+0x84/0xca
+[ 1134.684300]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
+[ 1134.684306]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
+[ 1134.684314]  [<c01940fa>] do_sync_read+0x98/0xc5
+[ 1134.684319]  [<c0170a7d>] ? __free_pages+0x28/0x2c
+[ 1134.684324]  [<c0170aa9>] ? free_pages+0x28/0x2a
+[ 1134.684329]  [<c0194b20>] vfs_read+0x89/0x147
+[ 1134.684334]  [<c0194062>] ? do_sync_read+0x0/0xc5
+[ 1134.684339]  [<c0194c7f>] sys_read+0x3d/0x64
+[ 1134.684344]  [<c0102a8c>] sysenter_do_call+0x12/0x22
+[ 1134.691059] BUG: scheduling while atomic: eix-update/4126/0x10000002
+[ 1134.691067] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
+[ 1134.691157] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
+[ 1134.691161] Call Trace:
+[ 1134.691175]  [<c03ec5b2>] ? printk+0x18/0x1e
+[ 1134.691183]  [<c011f850>] __schedule_bug+0x58/0x5a
+[ 1134.691188]  [<c03ec999>] schedule+0x3ad/0x4b1
+[ 1134.691193]  [<c011fab9>] __cond_resched+0x16/0x26
+[ 1134.691198]  [<c03ecb35>] _cond_resched+0x20/0x27
+[ 1134.691203]  [<c017f115>] unmap_vmas+0x5ca/0x678
+[ 1134.691210]  [<c018343c>] exit_mmap+0x9f/0x150
+[ 1134.691216]  [<c0125273>] mmput+0x2a/0xb9
+[ 1134.691221]  [<c0128b37>] exit_mm+0xce/0xe1
+[ 1134.691229]  [<c0153d23>] ? acct_collect+0x141/0x143
+[ 1134.691233]  [<c012a0ae>] do_exit+0xd0/0x6b4
+[ 1134.691240]  [<c0105562>] oops_end+0x6e/0x97
+[ 1134.691248]  [<c0118ce6>] no_context+0xb0/0x17d
+[ 1134.691254]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
+[ 1134.691260]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
+[ 1134.691265]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
+[ 1134.691270]  [<c01191ec>] do_page_fault+0x213/0x2a7
+[ 1134.691275]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.691282]  [<c03eea1a>] error_code+0x5e/0x64
+[ 1134.691288]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.691293]  [<c01878f0>] ? page_referenced+0x17a/0x204
+[ 1134.691300]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
+[ 1134.691305]  [<c0175523>] shrink_active_list+0x148/0x257
+[ 1134.691311]  [<c017625f>] shrink_zone+0x2c5/0x371
+[ 1134.691317]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
+[ 1134.691322]  [<c0176e39>] try_to_free_pages+0x6b/0x73
+[ 1134.691327]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
+[ 1134.691332]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
+[ 1134.691338]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
+[ 1134.691343]  [<c0172d0f>] ra_submit+0x21/0x27
+[ 1134.691348]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
+[ 1134.691354]  [<c016bcbd>] ? find_get_page+0x84/0xca
+[ 1134.691359]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
+[ 1134.691364]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
+[ 1134.691372]  [<c01940fa>] do_sync_read+0x98/0xc5
+[ 1134.691378]  [<c0170a7d>] ? __free_pages+0x28/0x2c
+[ 1134.691384]  [<c0170aa9>] ? free_pages+0x28/0x2a
+[ 1134.691389]  [<c0194b20>] vfs_read+0x89/0x147
+[ 1134.691394]  [<c0194062>] ? do_sync_read+0x0/0xc5
+[ 1134.691400]  [<c0194c7f>] sys_read+0x3d/0x64
+[ 1134.691405]  [<c0102a8c>] sysenter_do_call+0x12/0x22
+[ 1134.694372] BUG: scheduling while atomic: eix-update/4126/0x10000002
+[ 1134.694380] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
+[ 1134.694467] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
+[ 1134.694471] Call Trace:
+[ 1134.694483]  [<c03ec5b2>] ? printk+0x18/0x1e
+[ 1134.694492]  [<c011f850>] __schedule_bug+0x58/0x5a
+[ 1134.694497]  [<c03ec999>] schedule+0x3ad/0x4b1
+[ 1134.694502]  [<c011fab9>] __cond_resched+0x16/0x26
+[ 1134.694506]  [<c03ecb35>] _cond_resched+0x20/0x27
+[ 1134.694512]  [<c0128cc2>] put_files_struct+0x7d/0xc5
+[ 1134.694517]  [<c0128d41>] exit_files+0x37/0x48
+[ 1134.694521]  [<c012a63d>] do_exit+0x65f/0x6b4
+[ 1134.694528]  [<c0105562>] oops_end+0x6e/0x97
+[ 1134.694536]  [<c0118ce6>] no_context+0xb0/0x17d
+[ 1134.694541]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
+[ 1134.694547]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
+[ 1134.694553]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
+[ 1134.694558]  [<c01191ec>] do_page_fault+0x213/0x2a7
+[ 1134.694563]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.694569]  [<c03eea1a>] error_code+0x5e/0x64
+[ 1134.694575]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.694582]  [<c01878f0>] ? page_referenced+0x17a/0x204
+[ 1134.694588]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
+[ 1134.694594]  [<c0175523>] shrink_active_list+0x148/0x257
+[ 1134.694599]  [<c017625f>] shrink_zone+0x2c5/0x371
+[ 1134.694605]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
+[ 1134.694610]  [<c0176e39>] try_to_free_pages+0x6b/0x73
+[ 1134.694615]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
+[ 1134.694620]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
+[ 1134.694626]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
+[ 1134.694631]  [<c0172d0f>] ra_submit+0x21/0x27
+[ 1134.694636]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
+[ 1134.694642]  [<c016bcbd>] ? find_get_page+0x84/0xca
+[ 1134.694647]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
+[ 1134.694652]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
+[ 1134.694660]  [<c01940fa>] do_sync_read+0x98/0xc5
+[ 1134.694665]  [<c0170a7d>] ? __free_pages+0x28/0x2c
+[ 1134.694669]  [<c0170aa9>] ? free_pages+0x28/0x2a
+[ 1134.694675]  [<c0194b20>] vfs_read+0x89/0x147
+[ 1134.694680]  [<c0194062>] ? do_sync_read+0x0/0xc5
+[ 1134.694685]  [<c0194c7f>] sys_read+0x3d/0x64
+[ 1134.694689]  [<c0102a8c>] sysenter_do_call+0x12/0x22
+[ 1134.696751] BUG: scheduling while atomic: eix-update/4126/0x10000002
+[ 1134.696759] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
+[ 1134.696843] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
+[ 1134.696847] Call Trace:
+[ 1134.696859]  [<c03ec5b2>] ? printk+0x18/0x1e
+[ 1134.696868]  [<c011f850>] __schedule_bug+0x58/0x5a
+[ 1134.696873]  [<c03ec999>] schedule+0x3ad/0x4b1
+[ 1134.696878]  [<c011fab9>] __cond_resched+0x16/0x26
+[ 1134.696882]  [<c03ecb35>] _cond_resched+0x20/0x27
+[ 1134.696888]  [<c0128cc2>] put_files_struct+0x7d/0xc5
+[ 1134.696893]  [<c0128d41>] exit_files+0x37/0x48
+[ 1134.696897]  [<c012a63d>] do_exit+0x65f/0x6b4
+[ 1134.696903]  [<c0105562>] oops_end+0x6e/0x97
+[ 1134.696911]  [<c0118ce6>] no_context+0xb0/0x17d
+[ 1134.696916]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
+[ 1134.696921]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
+[ 1134.696927]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
+[ 1134.696932]  [<c01191ec>] do_page_fault+0x213/0x2a7
+[ 1134.696937]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.696942]  [<c03eea1a>] error_code+0x5e/0x64
+[ 1134.696948]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
+[ 1134.696954]  [<c01878f0>] ? page_referenced+0x17a/0x204
+[ 1134.696960]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
+[ 1134.696966]  [<c0175523>] shrink_active_list+0x148/0x257
+[ 1134.696971]  [<c017625f>] shrink_zone+0x2c5/0x371
+[ 1134.696977]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
+[ 1134.696981]  [<c0176e39>] try_to_free_pages+0x6b/0x73
+[ 1134.696986]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
+[ 1134.696991]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
+[ 1134.696997]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
+[ 1134.697026]  [<c0172d0f>] ra_submit+0x21/0x27
+[ 1134.697031]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
+[ 1134.697037]  [<c016bcbd>] ? find_get_page+0x84/0xca
+[ 1134.697042]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
+[ 1134.697047]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
+[ 1134.697055]  [<c01940fa>] do_sync_read+0x98/0xc5
+[ 1134.697060]  [<c0170a7d>] ? __free_pages+0x28/0x2c
+[ 1134.697064]  [<c0170aa9>] ? free_pages+0x28/0x2a
+[ 1134.697069]  [<c0194b20>] vfs_read+0x89/0x147
+[ 1134.697073]  [<c0194062>] ? do_sync_read+0x0/0xc5
+[ 1134.697079]  [<c0194c7f>] sys_read+0x3d/0x64
+[ 1134.697083]  [<c0102a8c>] sysenter_do_call+0x12/0x22
+-- 
+Marc Koschewski
