@@ -1,47 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab0CUVDz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:03:55 -0400
-Received: from mail-px0-f184.google.com ([209.85.216.184]:33789 "EHLO
-	mail-px0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab0CUVDw (ORCPT
+	id S1754000Ab0CUVEr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:04:47 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59504 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753450Ab0CUVC2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:03:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=oLDGqyWlUggFq4C7PcpPBMg4bVytLnBzKu8uYcSIe21Vu1FLyEaP1h4FM5G2eHZsBB
-         bdUvAz451gen3R/UBYHsbV1/F4VJn5iVEq3v4oqtPFH+rtQbh5g0W1Z3NrT5ELARF90s
-         aY/yWcddCidZ/d1/+Pu8q/m+SXWmrI5cOeLFE=
+	Sun, 21 Mar 2010 17:02:28 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Conrad Kostecki" <ConiKost@gmx.de>
+References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
+In-Reply-To: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Date: Sun, 21 Mar 2010 22:03:51 +0100
-Message-ID: <c384c5ea1003211403t494bd794hece06d8b8cfcb54@mail.gmail.com>
-Subject: CrystalHD driver safe on big endian systems?
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: jarod@wilsonet.com, "Naren (Narendra) Sankar" <nsankar@broadcom.com>,
-       "hancockrwd@gmail.com" <hancockrwd@gmail.com>,
-       "jarod@redhat.com" <jarod@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "davilla@4pi.com" <davilla@4pi.com>,
-       "abraham.manu@gmail.com" <abraham.manu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <hTwaxgnIZ2O.A.V-D.dOopLB@chimera>
+Subject: [Bug #15454] r8169 exits with error -22 since 2.6.33
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Sun, 21 Mar 2010 21:30:51 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+This message has been generated automatically as a part of a report
+of regressions introduced between 2.6.32 and 2.6.33.
 
-has the CrystalHD driver/library been tested on big endian systems?
+The following bug entry is on the current list of known regressions
+introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+be listed and let the tracking team know (either way).
 
-The (staging GIT tree) driver sources seem to use bitfields in C, is
-this safe under different endianess?
 
-I'm currently testing two BCM70012 modules on a big-endian PowerPC
-system and it fails changing the clock PLL to 175 MHz. This could be a
-pair of defective modules, or the wrong bits being modified.
-Unfortunately, I do not have a little endian system with mini-PCIe
-available to do a A-B check.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15454
+Subject		: r8169 exits with error -22 since 2.6.33
+Submitter	: Conrad Kostecki <ConiKost@gmx.de>
+Date		: 2010-03-05 22:32 (17 days old)
 
-Regards,
--- 
-Leon
+
