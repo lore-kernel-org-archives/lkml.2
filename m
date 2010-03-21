@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0CUUpu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 16:45:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59228 "EHLO ogre.sisk.pl"
+	id S1753667Ab0CUUqF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 16:46:05 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59226 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484Ab0CUUnf convert rfc822-to-8bit (ORCPT
+	id S1753408Ab0CUUne convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 16:43:35 -0400
+	Sun, 21 Mar 2010 16:43:34 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Daniel Vetter" <daniel@ffwll.ch>
+       "Thomas Meyer" <thomas@m3y3r.de>
 References: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 In-Reply-To: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <3Qs6IGJaRe.A.BzC.CCopLB@chimera>
-Subject: [Bug #15518] CONFIG_NO_BOOTMEM=y breaks boot on 32bit
+Message-ID: <3Qs6IGJaRe.A.m8C.YCopLB@chimera>
+Subject: [Bug #15496] 2.6.34-rc1 crashes early while startup
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 21 Mar 2010 21:13:28 +0100 (CET)
+Date: Sun, 21 Mar 2010 21:13:27 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,9 +33,9 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15518
-Subject		: CONFIG_NO_BOOTMEM=y breaks boot on 32bit
-Submitter	: Daniel Vetter <daniel@ffwll.ch>
-Date		: 2010-03-11 15:37 (11 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15496
+Subject		: 2.6.34-rc1 crashes early while startup
+Submitter	: Thomas Meyer <thomas@m3y3r.de>
+Date		: 2010-03-09 19:40 (13 days old)
 
 
