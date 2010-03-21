@@ -1,190 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab0CULDu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 07:03:50 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38464 "EHLO mgw2.diku.dk"
+	id S1753293Ab0CULHT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 07:07:19 -0400
+Received: from www.tglx.de ([62.245.132.106]:56458 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752828Ab0CULDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 07:03:49 -0400
-Date: Sun, 21 Mar 2010 12:03:45 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/12] genericirq: make irq_chip related function to take
- desc
-In-Reply-To: <m1eije71et.fsf@fess.ebiederm.org>
-Message-ID: <Pine.LNX.4.64.1003211153470.7805@ask.diku.dk>
-References: <1267697339-5491-1-git-send-email-yinghai@kernel.org>
- <1267697339-5491-7-git-send-email-yinghai@kernel.org>
- <alpine.LFD.2.00.1003041142460.2014@localhost.localdomain> <4B900250.8020100@kernel.org>
- <Pine.LNX.4.64.1003050847170.21768@ask.diku.dk> <m1eije71et.fsf@fess.ebiederm.org>
+	id S1752613Ab0CULHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 07:07:16 -0400
+Date: Sun, 21 Mar 2010 12:06:22 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: rt-users <linux-rt-users@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Clark Williams <williams@redhat.com>, nando@ccrma.Stanford.EDU,
+       Carsten Emde <ce@ceag.ch>, Wu Zhangjin <wuzhangjin@gmail.com>,
+       Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [ANNOUNCE] 2.6.33.1-rt11
+In-Reply-To: <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1003211158130.3147@localhost.localdomain>
+References: <alpine.LFD.2.00.1002241740410.4245@localhost.localdomain> <alpine.LFD.2.00.1002262041020.4245@localhost.localdomain> <alpine.LFD.2.00.1003121124120.22855@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I also worked on this, but only sent it to Thomas and Yinghai.  Onthe 
-other hand, I mostly like your solution better, because it has the 
-unintended side-effect of getting rid of some blank spaces after {s.
+We are pleased to announce the next update to our new preempt-rt
+series.
 
-My rule was also more complicated in that it also searches for conditions 
-in which it is not sure to be doing the right thing.  I will send those in 
-another message.
+I pushed out a bunch of updates while traveling w/o a release mail, so
+here is the change log from rt6 to rt11
 
-> @ DECL @
-> struct irq_chip CHIP;
-> identifier METHOD;
-> identifier METHOD_NAME;
-> @@
->  CHIP.METHOD_NAME = METHOD;
-> 
-> @ @
-> identifier DECL.METHOD;
-> identifier IRQ;
-> @@
->  METHOD(
-> -		unsigned int IRQ
-> +		struct irq_desc *unused
->  , ...) {
->  }
+Changes from rt10 to rt11
+318e45e: sched: Fix pick_next_highest_task_rt() for cgroups
+6d79084: ARM: Eliminate decompressor -Dstatic= PIC hack
 
-I didn't think of making a special rule for this.  It could consider any 
-case where the body is ... when != IRQ
+Changes from rt9 to rt10
+e89fab2: x86: Fix the highmem fallout really
 
-> @ @
-> identifier DECL.METHOD;
-> identifier IRQ;
-> identifier DESC;
-> @@
->  METHOD(
-> -		unsigned int IRQ
-> +		struct irq_desc *DESC
->  , ...) {
-> +	unsigned int IRQ = DESC->irq;
->  	...
-> -	struct irq_desc *DESC = irq_to_desc(IRQ);
-> 	...
->  }
-> 
-> @ @
-> identifier DECL.METHOD;
-> identifier IRQ;
-> identifier DESC;
-> @@
->  METHOD(
-> -		unsigned int IRQ
-> +		struct irq_desc *DESC
->  , ...) {
-> +	unsigned int IRQ = DESC->irq;
->  	...
-> -	struct irq_desc *DESC;
-> 	...
-> -	DESC = irq_to_desc(IRQ);
-> 	...
->  }
-> 
-> @ @
-> identifier DECL.METHOD;
-> identifier IRQ;
-> @@
->  METHOD(
-> -		unsigned int IRQ
-> +		struct irq_desc *desc
->  , ...) {
-> +	unsigned int IRQ = desc->irq;
->  ...
->  }
-> 
-> @ @
-> identifier DECL.METHOD;
-> identifier FUNC;
-> identifier IRQ;
-> @@
->  FUNC(...) {
->  <...
-> 	METHOD(
-> -		IRQ
-> +		irq_to_desc(IRQ)
->  		, ... )
->  ...>
->  }
+Changes from rt8 to rt9
+Update to 2.6.33.1, see http://lwn.net/Articles/378613/
 
-I don't think FUNC(...) { <... and ...> } are needed here.  The goal is to 
-make the change everywhere the call appears.
+Changes from rt7 to rt8
+5d2740b: sched: Break out from load_balancing on rq_lock contention
+cd4ac9b: x86: Fix iomap_atomic with highmem=y again
 
-> @ @
-> identifier FUNC;
-> identifier DESC;
-> identifier IRQ;
-> @@
->  FUNC(..., struct irq_desc *DESC, ...) {
->  ...
->  	unsigned int IRQ = DESC->irq;
->  <...
-> -	irq_to_desc(IRQ)
-> +	DESC
->  ...>
->  }
+Changes from rt6 to rt7
+2c5f66a: Revert "Loongson: add a new option FUJITSU_QUIRKS"
 
-This rule can be extended as follows:
+Download locations:
+   
+   http://www.kernel.org/pub/linux/kernel/projects/rt/
 
-@ @
-identifier FUNC;
-identifier DESC;
-identifier IRQ;
-identifier FLD;
-@@
- FUNC(..., struct irq_desc *DESC, ...) {
- ...
-        unsigned int IRQ = DESC->irq;
- <...
-(
--       irq_to_desc(IRQ)
-+       DESC
-|
--       irq_desc[IRQ].FLD
-+       DESC->FLD
-)
- ...>
- }
+Git development branch:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git rt/head
 
-Doing so gets rid of more references to IRQ.
+Git release branch:
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git rt/2.6.33
 
-Another case that can be treated is method calls via a pointer:
+Gitweb:
+   http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=shortlog;h=rt/2.6.33
 
-@@
-expression arg;
-struct irq_desc *desc;
-struct irq_chip *ic;
-identifier fun;
-@@
+Information on the RT patch can be found at:
 
-(
-  desc->chip->fun(
--   arg
-+   desc
-    ,...)
-|
-  ic->fun(
--   arg
-+   irq_to_desc(arg)
-    ,...)
-)
+   http://rt.wiki.kernel.org/index.php/Main_Page
+ 
+To build the 2.6.33-rt11 tree, the following patches should be
+applied:
 
-julia
+   http://www.kernel.org/pub/linux/kernel/v2.6/linux-2.6.33.1.tar.bz2
+   http://www.kernel.org/pub/linux/kernel/projects/rt/patch-2.6.33.1-rt11.bz2
 
-> @ @
-> identifier FUNC;
-> identifier DESC;
-> identifier IRQ;
-> @@
->  FUNC(..., struct irq_desc *DESC, ...) {
->  ...
-> -	unsigned int IRQ = DESC->irq;
->  ... when != IRQ
->  }
+Enjoy !
+
+      tglx
