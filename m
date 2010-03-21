@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0CUVI3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:08:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59409 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab0CUVBN convert rfc822-to-8bit (ORCPT
+	id S1753733Ab0CUVJv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:09:51 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:56492 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753470Ab0CUVJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:01:13 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Matti Aarnio" <matti.aarnio--kernel-bugzilla@zmailer.org>,
-       "NeilBrown" <neilb@suse.de>
-References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
-In-Reply-To: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 21 Mar 2010 17:09:49 -0400
+Date: Sun, 21 Mar 2010 22:09:38 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       alan@lxorguk.ukuu.org.uk, mgarski@post.pl, linux-input@vger.kernel.org,
+       Vojtech Pavlik <vojtech@suse.cz>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer (5th
+ version)
+Message-ID: <20100321210938.GB2057@elf.ucw.cz>
+References: <20100307200250.GA9340@const.famille.thibault.fr>
+ <20100310133004.GM5127@const.bordeaux.inria.fr>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <hTwaxgnIZ2O.A.J8F.wQopLB@chimera>
-Subject: [Bug #15142] sysfs-related lockdep warning in __blkdev_get
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 21 Mar 2010 21:30:45 +0100 (CET)
+In-Reply-To: <20100310133004.GM5127@const.bordeaux.inria.fr>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.32 and 2.6.33.
+Hi!
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.32 and 2.6.33.  Please verify if it still should
-be listed and let the tracking team know (either way).
+> Route keyboard LEDs through the generic LEDs layer.
+> 
+> This permits to reassign keyboard LEDs to something else than keyboard "leds"
+> state, by adding keyboard led and modifier triggers connected to a series
+> of global input LEDs, themselves connected to global input triggers, which
+> per-input device LEDs use by default.  Userland can thus easily change the LED
+> behavior of (a priori) all input devices, or of particular input devices.
+> 
+> This also permits to fix #7063 from userland by using a modifier to implement
+> proper CapsLock behavior and have the keyboard caps lock led show that modifier
+> state.
+> 
+> Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
 
+I like it.
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15142
-Subject		: sysfs-related lockdep warning in __blkdev_get
-Submitter	: Matti Aarnio <matti.aarnio--kernel-bugzilla@zmailer.org>
-Date		: 2010-01-25 13:38 (56 days old)
-Handled-By	: NeilBrown <neilb@suse.de>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=25085
+Tested-by: Pavel Machek <pavel@ucw.cz>
 
+Now, minor comments:
 
+sometimes it uses "numl" (led name), sometimes it uses "numlock"
+trigger name.
+
+root@amd:/sys/class/leds/input5::numl# echo heartbeat > trigger
+
+did not do the trick on my thinkpad. It still acts as numlock led. Is
+it driven by hw? input5::capsl works as expected.
+
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
