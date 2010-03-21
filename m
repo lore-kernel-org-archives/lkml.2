@@ -1,84 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab0CULIO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 07:08:14 -0400
-Received: from mail-bw0-f211.google.com ([209.85.218.211]:43495 "EHLO
-	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab0CULIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 07:08:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=bpB0OZj8xuvffc/7pJMwvei8kCSEjucG+Wy36hSKP1yhKamFG7owwhYpkqxAwwzpSp
-         1tch5ZiQckglEpUW2FRBN9QsJDWC259FQ2HizXOgkosGLe89v/09l4nkHrV7XlKCayhH
-         8adiRSqdMWSHPdP/g4IeygoeN9wbRPxeGWvjI=
-Date: Sun, 21 Mar 2010 14:07:58 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
-       penberg@cs.helsinki.fi, pavel@ucw.cz, harvey.harrison@gmail.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: strip_whitespace.pl
-Message-ID: <20100321110758.GL5331@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
-	penberg@cs.helsinki.fi, pavel@ucw.cz, harvey.harrison@gmail.com,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <1269098051-6594-1-git-send-email-lindley@coyote.org> <20100320162426.GB28881@bicker> <4BA5204C.9050208@coyote.org> <20100321105541.GK5331@bicker>
+	id S1753338Ab0CULId (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 07:08:33 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:38560 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753021Ab0CULIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 07:08:31 -0400
+Date: Sun, 21 Mar 2010 12:08:28 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] genericirq: make irq_chip related function to take
+ desc
+In-Reply-To: <m1eije71et.fsf@fess.ebiederm.org>
+Message-ID: <Pine.LNX.4.64.1003211206380.7805@ask.diku.dk>
+References: <1267697339-5491-1-git-send-email-yinghai@kernel.org>
+ <1267697339-5491-7-git-send-email-yinghai@kernel.org>
+ <alpine.LFD.2.00.1003041142460.2014@localhost.localdomain> <4B900250.8020100@kernel.org>
+ <Pine.LNX.4.64.1003050847170.21768@ask.diku.dk> <m1eije71et.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100321105541.GK5331@bicker>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 21, 2010 at 01:55:42PM +0300, Dan Carpenter wrote:
-> I've written a new script called strip_whitespace.pl (included).
-> 
-> One bug is that, if you split or unsplit a string literal that
-> confuses it.  Otherwise it seems to work.
-> 
-> strip_whitespace.pl drivers/staging/winbond/reg.c > before
-> apply patch
-> strip_whitespace.pl drivers/staging/winbond/reg.c > after
-> 
-> `diff before after`.  If they are the same then resend the patch.
+Another detail is that the type of irq is not always unsigned int.  
+Coccinelle will match unsigned int to just unsigned, but there are also 
+occurrences of uint32_t and u_int.  I don't know if it is desirable to 
+preserve these names, or if it would be just as well to put unsigned int 
+everywhere?
 
-On further reflection your new patch looks fine, if you combine the two.  
-But next time could you use my script?
+julia
 
-Acked-by:  Dan Carpenter <error27@gmail.com>
 
-regards,
-dan carpenter
+
+On Sat, 20 Mar 2010, Eric W. Biederman wrote:
 
 > 
-> regards,
-> dan carpenter
+> I haven't heard anything more on this, but I had reason to play with
+> coccinelle http://coccinelle.lip6.fr/ which I think is think think is
+> the semantic patcher you referred to.
 > 
-> #!/usr/bin/perl
+> In any case I was playing with it and I believe I have managed to whip
+> up a fairly robust semantic patch.  The last two hunks are to cleanup
+> earlier transforms, by removing unnecessary irq_to_desc chatter, and
+> removing unused variables.  I am a big grumpy that I couldn't figure
+> out how to add comments to my patch to explain the tricky bits,
+> but otherwise I am happy.
 > 
-> use strict;
+> The patch appears to have the limitation that methods that are not in
+> the file where struct irq_chip is defined, which is an issue for the
+> msi irq_chip helper routines.  Other than that I don't know of any
+> issues.
 > 
-> my $file = shift();
-> open FILE, "<$file";
-> my $txt = do { local $/;  <FILE> };
+> I would suggest changing as much of the x86 non irq_chip helpers to
+> use irq_desc before applying this so it this the conversion can have
+> the chance to remove any irq variables.
 > 
-> # strip C99 comments
-> $txt =~ s/\/\/.*//g;
-> # strip newlines
-> $txt =~ s/\n//g;
-> # strip remaining comments
-> $txt =~ s/\/\*.*?\*\///g;
-> # strip tabs
-> $txt =~ s/\t//g;
-> # strip spaces
-> $txt =~ s/ //g;
-> # add newlines again
-> $txt =~ s/;/;\n/g;
+> Eric
 > 
-> print "$txt\n";
+> 
+> @ DECL @
+> struct irq_chip CHIP;
+> identifier METHOD;
+> identifier METHOD_NAME;
+> @@
+>  CHIP.METHOD_NAME = METHOD;
+> 
+> @ @
+> identifier DECL.METHOD;
+> identifier IRQ;
+> @@
+>  METHOD(
+> -		unsigned int IRQ
+> +		struct irq_desc *unused
+>  , ...) {
+>  }
+> 
+> @ @
+> identifier DECL.METHOD;
+> identifier IRQ;
+> identifier DESC;
+> @@
+>  METHOD(
+> -		unsigned int IRQ
+> +		struct irq_desc *DESC
+>  , ...) {
+> +	unsigned int IRQ = DESC->irq;
+>  	...
+> -	struct irq_desc *DESC = irq_to_desc(IRQ);
+> 	...
+>  }
+> 
+> @ @
+> identifier DECL.METHOD;
+> identifier IRQ;
+> identifier DESC;
+> @@
+>  METHOD(
+> -		unsigned int IRQ
+> +		struct irq_desc *DESC
+>  , ...) {
+> +	unsigned int IRQ = DESC->irq;
+>  	...
+> -	struct irq_desc *DESC;
+> 	...
+> -	DESC = irq_to_desc(IRQ);
+> 	...
+>  }
+> 
+> @ @
+> identifier DECL.METHOD;
+> identifier IRQ;
+> @@
+>  METHOD(
+> -		unsigned int IRQ
+> +		struct irq_desc *desc
+>  , ...) {
+> +	unsigned int IRQ = desc->irq;
+>  ...
+>  }
+> 
+> @ @
+> identifier DECL.METHOD;
+> identifier FUNC;
+> identifier IRQ;
+> @@
+>  FUNC(...) {
+>  <...
+> 	METHOD(
+> -		IRQ
+> +		irq_to_desc(IRQ)
+>  		, ... )
+>  ...>
+>  }
+> 
+> @ @
+> identifier FUNC;
+> identifier DESC;
+> identifier IRQ;
+> @@
+>  FUNC(..., struct irq_desc *DESC, ...) {
+>  ...
+>  	unsigned int IRQ = DESC->irq;
+>  <...
+> -	irq_to_desc(IRQ)
+> +	DESC
+>  ...>
+>  }
+> 
+> @ @
+> identifier FUNC;
+> identifier DESC;
+> identifier IRQ;
+> @@
+>  FUNC(..., struct irq_desc *DESC, ...) {
+>  ...
+> -	unsigned int IRQ = DESC->irq;
+>  ... when != IRQ
+>  }
+> 
