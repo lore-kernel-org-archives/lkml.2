@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab0CUVEp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 17:04:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59511 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab0CUVCc convert rfc822-to-8bit (ORCPT
+	id S1753958Ab0CUVFJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 17:05:09 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:58431 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753869Ab0CUVEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 17:02:32 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "=?utf-8?q?Am=C3=A9rico=20Wang?=" <xiyou.wangcong@gmail.com>,
-       "M G Berberich" <berberic@fmi.uni-passau.de>
-References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
-In-Reply-To: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 21 Mar 2010 17:04:43 -0400
+X-Sasl-enc: owfkU30ajAKv7qVACewuly5YLiI6+pxlGvIctd3Few5f 1269205482
+Message-ID: <4BA689EA.4050102@imap.cc>
+Date: Sun, 21 Mar 2010 22:04:42 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <hTwaxgnIZ2O.A.Q1D.XOopLB@chimera>
-Subject: [Bug #15466] 2.6.33 dies on modprobe
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 21 Mar 2010 21:30:51 +0100 (CET)
+To: linux-kernel@vger.kernel.org
+Subject: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a report
-of regressions introduced between 2.6.32 and 2.6.33.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-The following bug entry is on the current list of known regressions
-introduced between 2.6.32 and 2.6.33.  Please verify if it still should
-be listed and let the tracking team know (either way).
+I know there's not much sympathy for troubles with proprietary modules
+here, but the following might save some trouble to kernel developers as
+well as users forced to resort to proprietary drivers:
 
+Setting the kernel configuration option PROVE_RCU creates a reference to
+the GPL-exported global variable rcu_lock_map even in modules that do
+not use RCU. In the case of non-GPL modules, this leads to a build
+failure because of the license incompatibility.
+(I did not find out where that reference comes from.)
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15466
-Subject		: 2.6.33 dies on modprobe
-Submitter	: M G Berberich <berberic@fmi.uni-passau.de>
-Date		: 2010-02-28 22:12 (22 days old)
-Message-ID	: <20100228221257.GA8858@invalid>
-References	: http://marc.info/?l=linux-kernel&m=126739570819208&w=2
-Handled-By	: Américo Wang <xiyou.wangcong@gmail.com>
+So if building a proprietary module fails with the message:
 
+FATAL: modpost: GPL-incompatible module <module> uses GPL-only symbol
+'rcu_lock_map'
 
+try rebuilding your kernel with the PROVE_RCU option disabled.
+
+Hope it helps someone.
+
+Tilman
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkumieoACgkQQ3+did9BuFtC4gCggSE8DNVc8k9tasN7VOoQMR4G
+IKUAnj+SkzZjmJQPmUScvaY4zP8hR19o
+=2rDg
+-----END PGP SIGNATURE-----
