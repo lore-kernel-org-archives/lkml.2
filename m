@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013Ab0CUJTV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 05:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab0CUJTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 05:19:19 -0400
-Message-ID: <4BA5E493.9050108@redhat.com>
-Date: Sun, 21 Mar 2010 11:19:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1752430Ab0CUJ3A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 05:29:00 -0400
+Received: from mail-bw0-f211.google.com ([209.85.218.211]:53744 "EHLO
+	mail-bw0-f211.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751993Ab0CUJ24 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 05:28:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=cj/b64PxIh4No89o5Fyi2bEAwbOufEXK9hK00sR4drjv451vAs4jTQBCfQJWiCGGTH
+         m8mGuuRjKFLfvUBfLeNT/xMTua7vkWKUuaS6ZVW5dI2nArOnN66MDciVqdw3avq/oXSE
+         mKdN4+8SnFpkSeA/nWOo1k3B4pwcQnLP7puwI=
+Date: Sun, 21 Mar 2010 12:28:47 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Steffen Klassert <steffen.klassert@secunet.com>,
+       linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] pcrypt: handle crypto_get_attr_type() errors
+Message-ID: <20100321092847.GJ5331@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	Steffen Klassert <steffen.klassert@secunet.com>,
+	linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-To: Dmitry Torokhov <dtor@dtor-ws.eng.vmware.com>
-CC: Dmitry Torokhov <dtor@vmware.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-       Alok Kataria <akataria@vmware.com>,
-       Shaileshkumar Jain <sajain@vmware.com>,
-       Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 4/4] Add VMware memory balloon driver
-References: <20100319204628.4418.84674.stgit@localhost.localdomain> <20100319204702.4418.92437.stgit@localhost.localdomain> <4BA4C961.9060006@redhat.com> <20100320195359.GA11536@dtor-ws.eng.vmware.com>
-In-Reply-To: <20100320195359.GA11536@dtor-ws.eng.vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2010 09:54 PM, Dmitry Torokhov wrote:
->> So while I'd love to see other hypervisors adopt virtio, I think in this
->> case it makes more sense to have your own balloon driver.
->>
->>      
-> Fair enough. If this is a common sentiment we'll gladly prepare our
-> standalone driver for submission.
->    
+crypto_get_attr_type() can returns ERR_PTRs if there is a problem. 
 
-It's also possible to split out a "balloon core" that can be shared.  In 
-this case it isn't worth it however as there any user visible interfaces 
-and the shared code would amount to couple dozen lines or so.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
--- 
-error compiling committee.c: too many arguments to function
-
+diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
+index 8020124..41bd80f 100644
+--- a/crypto/pcrypt.c
++++ b/crypto/pcrypt.c
+@@ -322,6 +322,8 @@ static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb)
+ 	struct crypto_attr_type *algt;
+ 
+ 	algt = crypto_get_attr_type(tb);
++	if (IS_ERR(algt))
++		return ERR_CAST(algt);
+ 
+ 	alg = crypto_get_attr_alg(tb, algt->type,
+ 				  (algt->mask & CRYPTO_ALG_TYPE_MASK));
