@@ -1,228 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab0CUUDa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 16:03:30 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38343 "EHLO
+	id S1753324Ab0CUUEP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 16:04:15 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38389 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752456Ab0CUUD3 (ORCPT
+	by vger.kernel.org with ESMTP id S1752496Ab0CUUEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 16:03:29 -0400
-Date: Sun, 21 Mar 2010 21:03:20 +0100
+	Sun, 21 Mar 2010 16:04:13 -0400
+Date: Sun, 21 Mar 2010 21:04:06 +0100
 From: Pavel Machek <pavel@ucw.cz>
 To: Lars Lindley <lindley@coyote.org>
 Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: phy_calibration.h coding style
- cleanup.
-Message-ID: <20100321200320.GB1933@elf.ucw.cz>
-References: <1268861607-11039-1-git-send-email-lindley@coyote.org>
+Subject: Re: [PATCH] staging: winbond: mds_f.h whitespace and CamelCase
+ corrections.
+Message-ID: <20100321200406.GC1933@elf.ucw.cz>
+References: <1268902493-27493-1-git-send-email-lindley@coyote.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1268861607-11039-1-git-send-email-lindley@coyote.org>
+In-Reply-To: <1268902493-27493-1-git-send-email-lindley@coyote.org>
 X-Warning: Reading this can be dangerous to your mental health.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2010-03-17 22:33:27, Lars Lindley wrote:
-> I fixed all checkpatch.pl problems, removed versioning comments and
-> "commented away" code.
+On Thu 2010-03-18 09:54:53, Lars Lindley wrote:
+> I fixed the whitespaces, the C99 comment and the CamelCase
+> parameter names.
+> New patch against master -> forget the old patch:
+> Message-Id: <1268899193-16034-1-git-send-email-lindley@coyote.org>
 > 
 > Signed-off-by: Lars Lindley <lindley@coyote.org>
 
 ACK.
 
 > ---
->  drivers/staging/winbond/phy_calibration.h |  177 +++++++++++++----------------
->  1 files changed, 77 insertions(+), 100 deletions(-)
+>  drivers/staging/winbond/mds_f.h |   20 ++++++++++----------
+>  1 files changed, 10 insertions(+), 10 deletions(-)
 > 
-> diff --git a/drivers/staging/winbond/phy_calibration.h b/drivers/staging/winbond/phy_calibration.h
-> index 51c8fde..3032031 100644
-> --- a/drivers/staging/winbond/phy_calibration.h
-> +++ b/drivers/staging/winbond/phy_calibration.h
-> @@ -3,105 +3,82 @@
+> diff --git a/drivers/staging/winbond/mds_f.h b/drivers/staging/winbond/mds_f.h
+> index e09dd4b..20e97bf 100644
+> --- a/drivers/staging/winbond/mds_f.h
+> +++ b/drivers/staging/winbond/mds_f.h
+> @@ -4,17 +4,17 @@
+>  #include "wbhal_s.h"
+>  #include "core.h"
 >  
->  #include "wbhal_f.h"
+> -unsigned char Mds_initial(  struct wbsoft_priv *adapter );
+> -void Mds_Destroy(  struct wbsoft_priv *adapter );
+> -void Mds_Tx(  struct wbsoft_priv *adapter );
+> -void Mds_SendComplete(  struct wbsoft_priv *adapter,  PT02_DESCRIPTOR pT02 );
+> -void Mds_MpduProcess(  struct wbsoft_priv *adapter,  struct wb35_descriptor *pRxDes );
+> +unsigned char Mds_initial(struct wbsoft_priv *adapter);
+> +void Mds_Destroy(struct wbsoft_priv *adapter);
+> +void Mds_Tx(struct wbsoft_priv *adapter);
+> +void Mds_SendComplete(struct wbsoft_priv *adapter, PT02_DESCRIPTOR pt02);
+> +void Mds_MpduProcess(struct wbsoft_priv *adapter, struct wb35_descriptor *prxdes);
+>  extern void DataDmp(u8 *pdata, u32 len, u32 offset);
 >  
-> -// 20031229 Turbo add
-> -#define REG_AGC_CTRL1               0x1000
-> -#define REG_AGC_CTRL2               0x1004
-> -#define REG_AGC_CTRL3               0x1008
-> -#define REG_AGC_CTRL4               0x100C
-> -#define REG_AGC_CTRL5               0x1010
-> -#define REG_AGC_CTRL6               0x1014
-> -#define REG_AGC_CTRL7               0x1018
-> -#define REG_AGC_CTRL8               0x101C
-> -#define REG_AGC_CTRL9               0x1020
-> -#define REG_AGC_CTRL10              0x1024
-> -#define REG_CCA_CTRL                0x1028
-> -#define REG_A_ACQ_CTRL              0x102C
-> -#define REG_B_ACQ_CTRL              0x1030
-> -#define REG_A_TXRX_CTRL             0x1034
-> -#define REG_B_TXRX_CTRL             0x1038
-> -#define REG_A_TX_COEF3              0x103C
-> -#define REG_A_TX_COEF2              0x1040
-> -#define REG_A_TX_COEF1              0x1044
-> -#define REG_B_TX_COEF2              0x1048
-> -#define REG_B_TX_COEF1              0x104C
-> -#define REG_MODE_CTRL               0x1050
-> -#define REG_CALIB_DATA              0x1054
-> -#define REG_IQ_ALPHA                0x1058
-> -#define REG_DC_CANCEL               0x105C
-> -#define REG_WTO_READ                0x1060
-> -#define REG_OFFSET_READ             0x1064
-> -#define REG_CALIB_READ1             0x1068
-> -#define REG_CALIB_READ2             0x106C
-> -#define REG_A_FREQ_EST              0x1070
-> -
-> -
-> -
-> -
-> -//  20031101 Turbo add
-> -#define MASK_AMER_OFF_REG          BIT(31)
-> -
-> -#define MASK_BMER_OFF_REG          BIT(31)
-> -
-> -#define MASK_LNA_FIX_GAIN          (BIT(3)|BIT(4))
-> -#define MASK_AGC_FIX               BIT(1)
-> -
-> -#define MASK_AGC_FIX_GAIN          0xFF00
-> -
-> -#define MASK_ADC_DC_CAL_STR        BIT(10)
-> -#define MASK_CALIB_START           BIT(4)
-> -#define MASK_IQCAL_TONE_SEL        (BIT(3)|BIT(2))
-> -#define MASK_IQCAL_MODE            (BIT(1)|BIT(0))
-> -
-> -#define MASK_TX_CAL_0              0xF0000000
-> -#define TX_CAL_0_SHIFT             28
-> -#define MASK_TX_CAL_1              0x0F000000
-> -#define TX_CAL_1_SHIFT             24
-> -#define MASK_TX_CAL_2              0x00F00000
-> -#define TX_CAL_2_SHIFT             20
-> -#define MASK_TX_CAL_3              0x000F0000
-> -#define TX_CAL_3_SHIFT             16
-> -#define MASK_RX_CAL_0              0x0000F000
-> -#define RX_CAL_0_SHIFT             12
-> -#define MASK_RX_CAL_1              0x00000F00
-> -#define RX_CAL_1_SHIFT             8
-> -#define MASK_RX_CAL_2              0x000000F0
-> -#define RX_CAL_2_SHIFT             4
-> -#define MASK_RX_CAL_3              0x0000000F
-> -#define RX_CAL_3_SHIFT             0
-> -
-> -#define MASK_CANCEL_DC_I           0x3E0
-> -#define CANCEL_DC_I_SHIFT          5
-> -#define MASK_CANCEL_DC_Q           0x01F
-> -#define CANCEL_DC_Q_SHIFT          0
-> -
-> -// LA20040210 kevin
-> -//#define MASK_ADC_DC_CAL_I(x)       (((x)&0x1FE00)>>9)
-> -//#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x1FF)
-> -#define MASK_ADC_DC_CAL_I(x)       (((x)&0x0003FE00)>>9)
-> -#define MASK_ADC_DC_CAL_Q(x)       ((x)&0x000001FF)
-> -
-> -// LA20040210 kevin (Turbo has wrong definition)
-> -//#define MASK_IQCAL_TONE_I          0x7FFC000
-> -//#define SHIFT_IQCAL_TONE_I(x)      ((x)>>13)
-> -//#define MASK_IQCAL_TONE_Q          0x1FFF
-> -//#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>0)
-> -#define MASK_IQCAL_TONE_I          0x00001FFF
-> -#define SHIFT_IQCAL_TONE_I(x)      ((x)>>0)
-> -#define MASK_IQCAL_TONE_Q          0x03FFE000
-> -#define SHIFT_IQCAL_TONE_Q(x)      ((x)>>13)
-> -
-> -// LA20040210 kevin (Turbo has wrong definition)
-> -//#define MASK_IQCAL_IMAGE_I         0x7FFC000
-> -//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>13)
-> -//#define MASK_IQCAL_IMAGE_Q         0x1FFF
-> -//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>0)
-> -
-> -//#define MASK_IQCAL_IMAGE_I         0x00001FFF
-> -//#define SHIFT_IQCAL_IMAGE_I(x)     ((x)>>0)
-> -//#define MASK_IQCAL_IMAGE_Q         0x03FFE000
-> -//#define SHIFT_IQCAL_IMAGE_Q(x)     ((x)>>13)
-> -
-> -void phy_set_rf_data(  struct hw_data * pHwData,  u32 index,  u32 value );
-> -#define phy_init_rf( _A )	//RFSynthesizer_initial( _A )
-> +#define REG_AGC_CTRL1		0x1000
-> +#define REG_AGC_CTRL2		0x1004
-> +#define REG_AGC_CTRL3		0x1008
-> +#define REG_AGC_CTRL4		0x100C
-> +#define REG_AGC_CTRL5		0x1010
-> +#define REG_AGC_CTRL6		0x1014
-> +#define REG_AGC_CTRL7		0x1018
-> +#define REG_AGC_CTRL8		0x101C
-> +#define REG_AGC_CTRL9		0x1020
-> +#define REG_AGC_CTRL10		0x1024
-> +#define REG_CCA_CTRL		0x1028
-> +#define REG_A_ACQ_CTRL		0x102C
-> +#define REG_B_ACQ_CTRL		0x1030
-> +#define REG_A_TXRX_CTRL		0x1034
-> +#define REG_B_TXRX_CTRL		0x1038
-> +#define REG_A_TX_COEF3		0x103C
-> +#define REG_A_TX_COEF2		0x1040
-> +#define REG_A_TX_COEF1		0x1044
-> +#define REG_B_TX_COEF2		0x1048
-> +#define REG_B_TX_COEF1		0x104C
-> +#define REG_MODE_CTRL		0x1050
-> +#define REG_CALIB_DATA		0x1054
-> +#define REG_IQ_ALPHA		0x1058
-> +#define REG_DC_CANCEL		0x105C
-> +#define REG_WTO_READ		0x1060
-> +#define REG_OFFSET_READ		0x1064
-> +#define REG_CALIB_READ1		0x1068
-> +#define REG_CALIB_READ2		0x106C
-> +#define REG_A_FREQ_EST		0x1070
-> +
-> +
-> +#define MASK_AMER_OFF_REG	BIT(31)
-> +
-> +#define MASK_BMER_OFF_REG	BIT(31)
-> +
-> +#define MASK_LNA_FIX_GAIN	(BIT(3) | BIT(4))
-> +#define MASK_AGC_FIX		BIT(1)
-> +
-> +#define MASK_AGC_FIX_GAIN	0xFF00
-> +
-> +#define MASK_ADC_DC_CAL_STR	BIT(10)
-> +#define MASK_CALIB_START	BIT(4)
-> +#define MASK_IQCAL_TONE_SEL	(BIT(3) | BIT(2))
-> +#define MASK_IQCAL_MODE		(BIT(1) | BIT(0))
-> +
-> +#define MASK_TX_CAL_0		0xF0000000
-> +#define TX_CAL_0_SHIFT		28
-> +#define MASK_TX_CAL_1		0x0F000000
-> +#define TX_CAL_1_SHIFT		24
-> +#define MASK_TX_CAL_2		0x00F00000
-> +#define TX_CAL_2_SHIFT		20
-> +#define MASK_TX_CAL_3		0x000F0000
-> +#define TX_CAL_3_SHIFT		16
-> +#define MASK_RX_CAL_0		0x0000F000
-> +#define RX_CAL_0_SHIFT		12
-> +#define MASK_RX_CAL_1		0x00000F00
-> +#define RX_CAL_1_SHIFT		8
-> +#define MASK_RX_CAL_2		0x000000F0
-> +#define RX_CAL_2_SHIFT		4
-> +#define MASK_RX_CAL_3		0x0000000F
-> +#define RX_CAL_3_SHIFT		0
-> +
-> +#define MASK_CANCEL_DC_I	0x3E0
-> +#define CANCEL_DC_I_SHIFT	5
-> +#define MASK_CANCEL_DC_Q	0x01F
-> +#define CANCEL_DC_Q_SHIFT	0
-> +
-> +#define MASK_ADC_DC_CAL_I(x)	(((x) & 0x0003FE00) >> 9)
-> +#define MASK_ADC_DC_CAL_Q(x)	((x) & 0x000001FF)
-> +
-> +#define MASK_IQCAL_TONE_I	0x00001FFF
-> +#define SHIFT_IQCAL_TONE_I(x)	((x) >> 0)
-> +#define MASK_IQCAL_TONE_Q	0x03FFE000
-> +#define SHIFT_IQCAL_TONE_Q(x)	((x) >> 13)
-> +
-> +void phy_set_rf_data(struct hw_data *pHwData, u32 index, u32 value);
-> +#define phy_init_rf(_A)		/* RFSynthesizer_initial(_A) */
+> -// For data frame sending 20060802
+> -u16 MDS_GetPacketSize(  struct wbsoft_priv *adapter );
+> -void MDS_GetNextPacket(  struct wbsoft_priv *adapter,  struct wb35_descriptor *pDes );
+> -void MDS_GetNextPacketComplete(  struct wbsoft_priv *adapter,  struct wb35_descriptor *pDes );
+> -void MDS_SendResult(  struct wbsoft_priv *adapter,  u8 PacketId,  unsigned char SendOK );
+> +/* For data frame sending */
+> +u16 MDS_GetPacketSize(struct wbsoft_priv *adapter);
+> +void MDS_GetNextPacket(struct wbsoft_priv *adapter, struct wb35_descriptor *pdes);
+> +void MDS_GetNextPacketComplete(struct wbsoft_priv *adapter, struct wb35_descriptor *pdes);
+> +void MDS_SendResult(struct wbsoft_priv *adapter, u8 packetid, unsigned char sendok);
 >  
 >  #endif
 
