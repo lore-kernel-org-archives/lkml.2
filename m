@@ -1,117 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752882Ab0CUTHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 15:07:13 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40708 "EHLO mx3.mail.elte.hu"
+	id S1753036Ab0CUTJb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 15:09:31 -0400
+Received: from mx01.qsc.de ([213.148.129.14]:38799 "EHLO mx01.qsc.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab0CUTHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 15:07:11 -0400
-Date: Sun, 21 Mar 2010 20:06:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100321190656.GC25922@elte.hu>
-References: <4BA250BF.80704@codemonkey.ws>
- <20100318162853.GB447@elte.hu>
- <4BA256FE.5080501@codemonkey.ws>
- <84144f021003180951s5207de16p1cdf4b9b04040222@mail.gmail.com>
- <20100318170223.GB9756@elte.hu>
- <4BA25E66.2050800@redhat.com>
- <20100318172805.GB26067@elte.hu>
- <4BA32E1A.2060703@redhat.com>
- <20100319085346.GG12576@elte.hu>
- <4BA47AD0.2010509@redhat.com>
+	id S1751295Ab0CUTJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 15:09:29 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Mar 2010 15:09:28 EDT
+Date: Sun, 21 Mar 2010 20:02:45 +0100
+From: Andreas Bombe <aeb@debian.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       devel@driverdev.osuosl.org, Antoine Jacquet <royale@zerezo.com>,
+       linux-usb@vger.kernel.org
+Subject: [PATCH] V4L2: Replace loops for finding max buffers in
+ VIDIOC_REQBUFS callbacks
+Message-ID: <20100321190243.GA4533@amos.infernal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BA47AD0.2010509@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Due to obvious copy and paste coding a number of video capture drivers
+which implement a limit on the buffer memory decremented the user
+supplied buffer count in a while loop until it reaches an acceptable
+value.
 
-* Avi Kivity <avi@redhat.com> wrote:
+This is a silly thing to do when the maximum value can be directly
+computed.
 
-> >> [...] Second, from my point of view all contributors are volunteers 
-> >> (perhaps their employer volunteered them, but there's no difference from 
-> >> my perspective). Asking them to repaint my apartment as a condition to 
-> >> get a patch applied is abuse.  If a patch is good, it gets applied.
-> >
-> > This is one of the weirdest arguments i've seen in this thread. Almost all 
-> > the time do we make contributions conditional on the general shape of the 
-> > project. Developers dont get to do just the fun stuff.
-> 
-> So, do you think a reply to a patch along the lines of
-> 
->   NAK.  Improving scalability is pointless while we don't have a decent GUI.  
-> I'll review you RCU patches
->   _after_ you've contributed a usable GUI.
-> 
-> ?
+Signed-off-by: Andreas Bombe <aeb@debian.org>
+---
 
-What does this have to do with RCU?
+I tested the looping variants (represented by vivi.c) with large numbers
+of requested buffers.  There was no easily measurable delay on my
+desktop machine, but still.  At least the buffer count isn't 64 bit on
+any architecture.
 
-I'm talking about KVM, which is a Linux kernel feature that is useless without 
-a proper, KVM-specific app making use of it.
+I think I got them all.  These are the files which I grepped as
+candidates (correct = no loop, unlimited = no limit on buffer count,
+fixed = in this patch), relative to drivers/media/video:
 
-RCU is a general kernel performance feature that works across the board. It 
-helps KVM indirectly, and it helps many other kernel subsystems as well. It 
-needs no user-space tool to be useful.
+../common/saa7146_video.c: correct
+au0828/au0828-video.c:     unlimited
+bt8xx/bttv-driver.c:       fixed
+cx231xx/cx231xx-video.c:   unlimited
+cx23885/cx23885-video.c:   fixed
+cx88/cx88-video.c:         fixed
+davinci/vpfe_capture.c:    unlimited
+davinci/vpif_capture.c:    unlimited
+davinci/vpif_display.c:    unlimited
+em28xx/em28xx-video.c:     unlimited
+mx1_camera.c:              fixed
+mx3_camera.c:              correct
+omap24xxcam.c:             fixed
+pxa_camera.c:              fixed
+s2255drv.c:                fixed
+saa7134/saa7134-core.c:    correct
+sh_mobile_ceu_camera.c:    fixed
+tlg2300/pd-video.c:        unlimited
+vivi.c:                    fixed
+zr364xx.c:                 fixed
+../../staging/cx25821/cx25821-video.c: fixed
 
-KVM on the other hand is useless without a user-space tool.
+ drivers/media/video/bt8xx/bttv-driver.c     |    4 ++--
+ drivers/media/video/cx23885/cx23885-video.c |    4 ++--
+ drivers/media/video/cx88/cx88-video.c       |    4 ++--
+ drivers/media/video/mx1_camera.c            |    4 ++--
+ drivers/media/video/omap24xxcam.c           |    4 ++--
+ drivers/media/video/pxa_camera.c            |    4 ++--
+ drivers/media/video/s2255drv.c              |    4 ++--
+ drivers/media/video/sh_mobile_ceu_camera.c  |    4 ++--
+ drivers/media/video/vivi.c                  |    4 ++--
+ drivers/media/video/zr364xx.c               |    4 ++--
+ drivers/staging/cx25821/cx25821-video.c     |    4 ++--
+ 11 files changed, 22 insertions(+), 22 deletions(-)
 
-[ Theoretically you might have a fair point if it were a critical feature of 
-  RCU for it to have a GUI, and if the main tool that made use of it sucked. 
-  But it isnt and you should know that. ]
+diff --git a/drivers/media/video/bt8xx/bttv-driver.c b/drivers/media/video/bt8xx/bttv-driver.c
+index cb46e8f..79af895 100644
+--- a/drivers/media/video/bt8xx/bttv-driver.c
++++ b/drivers/media/video/bt8xx/bttv-driver.c
+@@ -1805,8 +1805,8 @@ buffer_setup(struct videobuf_queue *q, unsigned int *count, unsigned int *size)
+ 	*size = fh->fmt->depth*fh->width*fh->height >> 3;
+ 	if (0 == *count)
+ 		*count = gbuffers;
+-	while (*size * *count > gbuffers * gbufsize)
+-		(*count)--;
++	if (*size * *count > gbuffers * gbufsize)
++		*count = (gbuffers * gbufsize) / *size;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/video/cx23885/cx23885-video.c b/drivers/media/video/cx23885/cx23885-video.c
+index 2d3ac8b..543b854 100644
+--- a/drivers/media/video/cx23885/cx23885-video.c
++++ b/drivers/media/video/cx23885/cx23885-video.c
+@@ -514,8 +514,8 @@ static int buffer_setup(struct videobuf_queue *q, unsigned int *count,
+ 	*size = fh->fmt->depth*fh->width*fh->height >> 3;
+ 	if (0 == *count)
+ 		*count = 32;
+-	while (*size * *count > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/video/cx88/cx88-video.c b/drivers/media/video/cx88/cx88-video.c
+index 48c450f..9c0ca79 100644
+--- a/drivers/media/video/cx88/cx88-video.c
++++ b/drivers/media/video/cx88/cx88-video.c
+@@ -561,8 +561,8 @@ buffer_setup(struct videobuf_queue *q, unsigned int *count, unsigned int *size)
+ 	*size = fh->fmt->depth*fh->width*fh->height >> 3;
+ 	if (0 == *count)
+ 		*count = 32;
+-	while (*size * *count > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/video/mx1_camera.c b/drivers/media/video/mx1_camera.c
+index c167cc3..d07af13 100644
+--- a/drivers/media/video/mx1_camera.c
++++ b/drivers/media/video/mx1_camera.c
+@@ -140,8 +140,8 @@ static int mx1_videobuf_setup(struct videobuf_queue *vq, unsigned int *count,
+ 	if (!*count)
+ 		*count = 32;
+ 
+-	while (*size * *count > MAX_VIDEO_MEM * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > MAX_VIDEO_MEM * 1024 * 1024)
++		*count = (MAX_VIDEO_MEM * 1024 * 1024) / *size;
+ 
+ 	dev_dbg(icd->dev.parent, "count=%d, size=%d\n", *count, *size);
+ 
+diff --git a/drivers/media/video/omap24xxcam.c b/drivers/media/video/omap24xxcam.c
+index 142c327..c910e86 100644
+--- a/drivers/media/video/omap24xxcam.c
++++ b/drivers/media/video/omap24xxcam.c
+@@ -451,8 +451,8 @@ static int omap24xxcam_vbq_setup(struct videobuf_queue *vbq, unsigned int *cnt,
+ 	*size = fh->pix.sizeimage;
+ 
+ 	/* accessing fh->cam->capture_mem is ok, it's constant */
+-	while (*size * *cnt > fh->cam->capture_mem)
+-		(*cnt)--;
++	if (*size * *cnt > fh->cam->capture_mem)
++		*cnt = fh->cam->capture_mem / *size;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/video/pxa_camera.c b/drivers/media/video/pxa_camera.c
+index 322ac4e..520a35b 100644
+--- a/drivers/media/video/pxa_camera.c
++++ b/drivers/media/video/pxa_camera.c
+@@ -252,8 +252,8 @@ static int pxa_videobuf_setup(struct videobuf_queue *vq, unsigned int *count,
+ 
+ 	if (0 == *count)
+ 		*count = 32;
+-	while (*size * *count > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/video/s2255drv.c b/drivers/media/video/s2255drv.c
+index fb742f1..b932d28 100644
+--- a/drivers/media/video/s2255drv.c
++++ b/drivers/media/video/s2255drv.c
+@@ -702,8 +702,8 @@ static int buffer_setup(struct videobuf_queue *vq, unsigned int *count,
+ 	if (0 == *count)
+ 		*count = S2255_DEF_BUFS;
+ 
+-	while (*size * (*count) > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/video/sh_mobile_ceu_camera.c b/drivers/media/video/sh_mobile_ceu_camera.c
+index fb88c63..d2eb339 100644
+--- a/drivers/media/video/sh_mobile_ceu_camera.c
++++ b/drivers/media/video/sh_mobile_ceu_camera.c
+@@ -212,8 +212,8 @@ static int sh_mobile_ceu_videobuf_setup(struct videobuf_queue *vq,
+ 		*count = 2;
+ 
+ 	if (pcdev->video_limit) {
+-		while (PAGE_ALIGN(*size) * *count > pcdev->video_limit)
+-			(*count)--;
++		if (PAGE_ALIGN(*size) * *count > pcdev->video_limit)
++			*count = pcdev->video_limit / PAGE_ALIGN(*size);
+ 	}
+ 
+ 	dev_dbg(icd->dev.parent, "count=%d, size=%d\n", *count, *size);
+diff --git a/drivers/media/video/vivi.c b/drivers/media/video/vivi.c
+index cdbe703..5a736b8 100644
+--- a/drivers/media/video/vivi.c
++++ b/drivers/media/video/vivi.c
+@@ -749,8 +749,8 @@ buffer_setup(struct videobuf_queue *vq, unsigned int *count, unsigned int *size)
+ 	if (0 == *count)
+ 		*count = 32;
+ 
+-	while (*size * *count > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 
+ 	dprintk(dev, 1, "%s, count=%d, size=%d\n", __func__,
+ 		*count, *size);
+diff --git a/drivers/media/video/zr364xx.c b/drivers/media/video/zr364xx.c
+index 3d4bac2..a82b5bd 100644
+--- a/drivers/media/video/zr364xx.c
++++ b/drivers/media/video/zr364xx.c
+@@ -376,8 +376,8 @@ static int buffer_setup(struct videobuf_queue *vq, unsigned int *count,
+ 	if (*count == 0)
+ 		*count = ZR364XX_DEF_BUFS;
+ 
+-	while (*size * (*count) > ZR364XX_DEF_BUFS * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > ZR364XX_DEF_BUFS * 1024 * 1024)
++		*count = (ZR364XX_DEF_BUFS * 1024 * 1024) / *size;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/staging/cx25821/cx25821-video.c b/drivers/staging/cx25821/cx25821-video.c
+index 8cd3986..33d75ab 100644
+--- a/drivers/staging/cx25821/cx25821-video.c
++++ b/drivers/staging/cx25821/cx25821-video.c
+@@ -516,8 +516,8 @@ int buffer_setup(struct videobuf_queue *q, unsigned int *count,
+ 	if (0 == *count)
+ 		*count = 32;
+ 
+-	while (*size * *count > vid_limit * 1024 * 1024)
+-		(*count)--;
++	if (*size * *count > vid_limit * 1024 * 1024)
++		*count = (vid_limit * 1024 * 1024) / *size;
+ 
+ 	return 0;
+ }
+-- 
+1.7.0.2
 
-Had you suggested the following 'NAK', applied to a different, relevant 
-subsystem:
-
-  |   NAK.  Improving scalability is pointless while we don't have a usable 
-  | tool.  I'll review you perf patches _after_ you've contributed a usable 
-  | tool.
-
-you would have a fair point. In fact, we are doing that we are living by that. 
-It makes absolutely zero sense to improve the scalability of perf if its 
-usability sucks.
-
-So where you are trying to point out an inconsistency in my argument there is 
-none.
-
-> > This is a basic quid pro quo: new features introduce risks and create 
-> > additional workload not just to the originating developer but on the rest 
-> > of the community as well. You should check how Linus has pulled new 
-> > features in the past 15 years: he very much requires the existing code to 
-> > first be top-notch before he accepts new features for a given area of 
-> > functionality.
-> 
-> For a given area, yes. [...]
-
-That is my precise point.
-
-KVM is a specific subsystem or "area" that makes no sense without the 
-user-space tooling it relates to. You seem to argue that you have no 'right' 
-to insist on good quality of that tooling - and IMO you are fundamentally 
-wrong with that.
-
-Thanks,
-
-	Ingo
