@@ -1,248 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab0CUHT6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 03:19:58 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:47018 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623Ab0CUHSG (ORCPT
+	id S1752263Ab0CUHYj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 03:24:39 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62877 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750808Ab0CUHYh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 03:18:06 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/20] x86: make e820 to be static
-Date: Sun, 21 Mar 2010 00:13:04 -0700
-Message-Id: <1269155601-18247-4-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
-References: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BA5C78F.0041,ss=1,fgs=0
+	Sun, 21 Mar 2010 03:24:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=S71WaqyIkOrzLBF3hyXkED6BNWy7E7oYzVcSVy4AESFM47Y/N42r7G8tlipOMPx99X
+         y7OK984w3K4Lxo5eZueRfXJsEI6g8jpkDpl6IkR+n8NNIMA4ggKh3vSNAuI6SeVicGgd
+         +tgvQ/VAsjX7J1ju8B8vSvJWglfmb2g8plKhY=
+MIME-Version: 1.0
+In-Reply-To: <20100320170415.6ee219c8@neptune.home>
+References: <20100320170014.440959a8@neptune.home>
+	 <20100320170415.6ee219c8@neptune.home>
+Date: Sun, 21 Mar 2010 15:24:36 +0800
+Message-ID: <45a44e481003210024l2c66938fp9436d34f6473f811@mail.gmail.com>
+Subject: Re: [PATCH v2 2/6] hid: add framebuffer support to PicoLCD device
+From: Jaya Kumar <jayakumar.lkml@gmail.com>
+To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make sanitize_e820_map() not take e820.map directly.
+Hi Bruno,
 
-and could change e820_saved to initdata
+On Sun, Mar 21, 2010 at 12:04 AM, Bruno Prémont
+<bonbons@linux-vserver.org> wrote:
+> Add framebuffer support to PicoLCD device with use of deferred-io.
+>
+> Only changed areas of framebuffer get sent to device in order to
+> save USB bandwidth and especially resources on PicoLCD device or
+> allow higher refresh rate for a small area.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/e820.h |    7 ++-----
- arch/x86/kernel/e820.c      |   28 +++++++++++++++++++---------
- arch/x86/kernel/efi.c       |    2 +-
- arch/x86/kernel/setup.c     |   10 +++++-----
- arch/x86/xen/setup.c        |    4 +---
- 5 files changed, 28 insertions(+), 23 deletions(-)
+Interesting work. One minor comment, defio doesn't currently guarantee
+that it is "changed areas". Just that it is "written" pages which
+typically equates to "changed" but does not guarantee this.
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 38828c7..71c0348 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -68,9 +68,6 @@ struct e820map {
- #define BIOS_END		0x00100000
- 
- #ifdef __KERNEL__
--/* see comment in arch/x86/kernel/e820.c */
--extern struct e820map e820;
--extern struct e820map e820_saved;
- 
- #ifdef CONFIG_X86_OOSTORE
- extern int centaur_ram_top;
-@@ -86,8 +83,8 @@ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
- extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
--extern int
--sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
-+int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 119c0e1..40c04cf 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -34,8 +34,8 @@
-  * user can e.g. boot the original kernel with mem=1G while still booting the
-  * next kernel with full memory.
-  */
--struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map e820;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -224,7 +224,7 @@ void __init e820_print_map(char *who)
-  *	   ______________________4_
-  */
- 
--int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
-+static int __init __sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 			     u32 *pnr_map)
- {
- 	struct change_member {
-@@ -383,6 +383,11 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 	return 0;
- }
- 
-+int __init sanitize_e820_map(void)
-+{
-+	return __sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+}
-+
- static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
- {
- 	while (nr_map) {
-@@ -555,7 +560,7 @@ void __init update_e820(void)
- 	u32 nr_map;
- 
- 	nr_map = e820.nr_map;
--	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
-+	if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
- 		return;
- 	e820.nr_map = nr_map;
- 	printk(KERN_INFO "modified physical RAM map:\n");
-@@ -566,7 +571,7 @@ static void __init update_e820_saved(void)
- 	u32 nr_map;
- 
- 	nr_map = e820_saved.nr_map;
--	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
-+	if (__sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
- 		return;
- 	e820_saved.nr_map = nr_map;
- }
-@@ -661,7 +666,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
- 		sdata = early_ioremap(pa_data, map_len);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 	if (map_len > PAGE_SIZE)
- 		early_iounmap(sdata, map_len);
- 	printk(KERN_INFO "extended physical RAM map:\n");
-@@ -1043,7 +1048,7 @@ void __init finish_e820_parsing(void)
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
-+		if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
- 			early_panic("Invalid user supplied memory map");
- 		e820.nr_map = nr;
- 
-@@ -1173,7 +1178,7 @@ char *__init default_machine_specific_memory_setup(void)
- 	 * the next section from 1mb->appropriate_mem_k
- 	 */
- 	new_nr = boot_params.e820_entries;
--	sanitize_e820_map(boot_params.e820_map,
-+	__sanitize_e820_map(boot_params.e820_map,
- 			ARRAY_SIZE(boot_params.e820_map),
- 			&new_nr);
- 	boot_params.e820_entries = new_nr;
-@@ -1200,12 +1205,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
- }
- 
-+void __init save_e820_map(void)
-+{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+}
-+
- void __init setup_memory_map(void)
- {
- 	char *who;
- 
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
-index c2fa9b8..299f03f 100644
---- a/arch/x86/kernel/efi.c
-+++ b/arch/x86/kernel/efi.c
-@@ -272,7 +272,7 @@ static void __init do_add_efi_memmap(void)
- 		}
- 		e820_add_region(start, size, e820_type);
- 	}
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- void __init efi_reserve_early(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c5ea524..82533cf 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -461,8 +461,8 @@ static void __init e820_reserve_setup_data(void)
- 	if (!found)
- 		return;
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	sanitize_e820_map();
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
- }
-@@ -614,7 +614,7 @@ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
- 		d->ident);
- 
- 	e820_update_range(0, 0x10000, E820_RAM, E820_RESERVED);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return 0;
- }
-@@ -683,7 +683,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- /*
-@@ -854,7 +854,7 @@ void __init setup_arch(char **cmdline_p)
- 	if (ppro_with_ram_bug()) {
- 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
- 				  E820_RESERVED);
--		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+		sanitize_e820_map();
- 		printk(KERN_INFO "fixed physical RAM map:\n");
- 		e820_print_map("bad_ppro");
- 	}
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index ad0047f..3f2c411 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -43,8 +43,6 @@ char * __init xen_memory_setup(void)
- 
- 	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
- 
--	e820.nr_map = 0;
--
- 	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
- 
- 	/*
-@@ -65,7 +63,7 @@ char * __init xen_memory_setup(void)
- 		      __pa(xen_start_info->pt_base),
- 			"XEN START INFO");
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return "Xen";
- }
--- 
-1.6.4.2
+>
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+>  drivers/hid/Kconfig       |    7 +-
+>  drivers/hid/hid-picolcd.c |  454 +++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 460 insertions(+), 1 deletions(-)
 
+It is customary for framebuffer drivers to live in drivers/video. This
+is the first one I've reviewed that is outside of it. Is there a good
+reason for this one to be outside of it? If so, could you put it in
+the comments.
+
+>
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index 7097f0a..a474bcd 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -230,6 +230,11 @@ config HID_PETALYNX
+>  config HID_PICOLCD
+>        tristate "PicoLCD (graphic version)"
+>        depends on USB_HID
+> +       select FB_DEFERRED_IO if FB
+> +       select FB_SYS_FILLRECT if FB
+> +       select FB_SYS_COPYAREA if FB
+> +       select FB_SYS_IMAGEBLIT if FB
+> +       select FB_SYS_FOPS if FB
+
+I think all of that "if FB" stuff looks odd, it would disappear if it
+were in the right Kconfig.
+
+> +/* Framebuffer visual structures */
+> +static const struct fb_fix_screeninfo picolcdfb_fix = {
+> +       .id          = PICOLCDFB_NAME,
+> +       .type        = FB_TYPE_PACKED_PIXELS,
+> +       .visual      = FB_VISUAL_MONO01,
+
+Interesting choice. Out of curiosity, which fb client application are
+you testing/using this with?
+
+> +       /*
+> +        * Translate the XBM format screen_base into the format needed by the
+> +        * PicoLCD. See display layout above.
+> +        * Do this one tile after the other and push those tiles that changed.
+> +        */
+
+I think screen_base is in standard fb format, which you've specified
+as MONO01 above. When you say, XBM format, in the above comment is it
+exactly the same?
+
+Thanks,
+jaya
