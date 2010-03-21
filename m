@@ -1,240 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753095Ab0CUNtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 09:49:21 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:35727 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab0CUNtT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 09:49:19 -0400
-To: Julia Lawall <julia@diku.dk>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/12] genericirq: make irq_chip related function to take desc
-References: <1267697339-5491-1-git-send-email-yinghai@kernel.org>
-	<1267697339-5491-7-git-send-email-yinghai@kernel.org>
-	<alpine.LFD.2.00.1003041142460.2014@localhost.localdomain>
-	<4B900250.8020100@kernel.org>
-	<Pine.LNX.4.64.1003050847170.21768@ask.diku.dk>
-	<m1eije71et.fsf@fess.ebiederm.org>
-	<Pine.LNX.4.64.1003211153470.7805@ask.diku.dk>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 21 Mar 2010 06:49:12 -0700
-In-Reply-To: <Pine.LNX.4.64.1003211153470.7805@ask.diku.dk> (Julia Lawall's message of "Sun\, 21 Mar 2010 12\:03\:45 +0100 \(CET\)")
-Message-ID: <m1iq8p23af.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1753191Ab0CUN6l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 09:58:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52604 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752973Ab0CUN6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 09:58:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,283,1267430400"; 
+   d="asc'?scan'208";a="606298535"
+Date: Sun, 21 Mar 2010 21:58:36 +0800
+From: Zhenyu Wang <zhenyuw@linux.intel.com>
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       David.Woodhouse@intel.com, dwmw2@infradead.org, eric@anholt.net,
+       ben@decadent.org.uk, gregkh@suse.de
+Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT
+ entries in i915
+Message-ID: <20100321135836.GA11661@zhen-devel.sh.intel.com>
+Reply-To: Zhenyu Wang <zhenyuw@linux.intel.com>
+Mail-Followup-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org, David.Woodhouse@intel.com,
+	dwmw2@infradead.org, eric@anholt.net, ben@decadent.org.uk,
+	gregkh@suse.de
+References: <1268258994.2183.14.camel@carter>
+ <ca2dc2821003102331x3d1a7a0fgadb63612e49f77db@mail.gmail.com>
+ <20100311083404.GG6896@zhen-devel.sh.intel.com>
+ <ca2dc2821003110754r65ab170at39a61fb11fa285e0@mail.gmail.com>
+ <20100319132723.118cc16a.akpm@linux-foundation.org>
+ <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: julia@diku.dk, linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu, yinghai@kernel.org, tglx@linutronix.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
+Content-Disposition: inline
+In-Reply-To: <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall <julia@diku.dk> writes:
 
-> I also worked on this, but only sent it to Thomas and Yinghai.  Onthe 
-> other hand, I mostly like your solution better, because it has the 
-> unintended side-effect of getting rid of some blank spaces after {s.
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Wow I hadn't noticed that {s removal. That is an old coding style
-violation on alpha.  There was an intentional effect of not breaking
-up { }'s.  But I hadn't realized I was also fixing whitespace.
+On 2010.03.20 14:04:56 +0100, Miguel Ojeda wrote:
+> On Fri, Mar 19, 2010 at 9:27 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Thu, 11 Mar 2010 16:54:26 +0100
+> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+> >
+> >> Attached dmesg, lspci -vv, config and xorg.
+> >>
+> >> When the X server crashes, the kernel does not report anything
+> >
+> > This seems to have gone all quiet?
+>=20
+> It seems so, I was about to ping Zhenyu.
 
-> My rule was also more complicated in that it also searches for conditions 
-> in which it is not sure to be doing the right thing.  I will send those in 
-> another message.
->
->> @ DECL @
->> struct irq_chip CHIP;
->> identifier METHOD;
->> identifier METHOD_NAME;
->> @@
->>  CHIP.METHOD_NAME = METHOD;
->> 
->> @ @
->> identifier DECL.METHOD;
->> identifier IRQ;
->> @@
->>  METHOD(
->> -		unsigned int IRQ
->> +		struct irq_desc *unused
->>  , ...) {
->>  }
->
-> I didn't think of making a special rule for this.  It could consider any 
-> case where the body is ... when != IRQ
+Could you try recent X.org intel driver release? Your failure X log=20
+showed some pretty old UMS driver's render flush time out message,=20
+I think whose version never has been well tested with new kms/gem stuff.
 
-Nice addition.
+>=20
+> >
+> > As this was a 2.6.32->2.6.32.4 regression, I assume that it's also a
+> > 2.6.32->2.6.33 regression?
+>=20
+> Yep. All kernels I tested since 2.6.32.4 crash, including 2.6.32.10,
+> 2.6.33 and 2.6.34-rc1. See my original message for more details about
+> the crash.
+>=20
 
->> @ @
->> identifier DECL.METHOD;
->> identifier IRQ;
->> identifier DESC;
->> @@
->>  METHOD(
->> -		unsigned int IRQ
->> +		struct irq_desc *DESC
->>  , ...) {
->> +	unsigned int IRQ = DESC->irq;
->>  	...
->> -	struct irq_desc *DESC = irq_to_desc(IRQ);
->> 	...
->>  }
->> 
->> @ @
->> identifier DECL.METHOD;
->> identifier IRQ;
->> identifier DESC;
->> @@
->>  METHOD(
->> -		unsigned int IRQ
->> +		struct irq_desc *DESC
->>  , ...) {
->> +	unsigned int IRQ = DESC->irq;
->>  	...
->> -	struct irq_desc *DESC;
->> 	...
->> -	DESC = irq_to_desc(IRQ);
->> 	...
->>  }
->> 
->> @ @
->> identifier DECL.METHOD;
->> identifier IRQ;
->> @@
->>  METHOD(
->> -		unsigned int IRQ
->> +		struct irq_desc *desc
->>  , ...) {
->> +	unsigned int IRQ = desc->irq;
->>  ...
->>  }
->> 
->> @ @
->> identifier DECL.METHOD;
->> identifier FUNC;
->> identifier IRQ;
->> @@
->>  FUNC(...) {
->>  <...
->> 	METHOD(
->> -		IRQ
->> +		irq_to_desc(IRQ)
->>  		, ... )
->>  ...>
->>  }
->
-> I don't think FUNC(...) { <... and ...> } are needed here.  The goal is to 
-> make the change everywhere the call appears.
+Could you bisect? I doubt it's caused by David's patch, as if it is, you
+will have trouble at early agp init time, instead of current problem looks
+like something causing rendering hang..and I can't think of how mapping GTT
+to a scratch page could cause problem in case GTT bar is truely 256K.
 
-That is a reasonable simplification.
+--=20
+Open Source Technology Center, Intel ltd.
 
->> @ @
->> identifier FUNC;
->> identifier DESC;
->> identifier IRQ;
->> @@
->>  FUNC(..., struct irq_desc *DESC, ...) {
->>  ...
->>  	unsigned int IRQ = DESC->irq;
->>  <...
->> -	irq_to_desc(IRQ)
->> +	DESC
->>  ...>
->>  }
->
-> This rule can be extended as follows:
+$gpg --keyserver wwwkeys.pgp.net --recv-keys 4D781827
 
-Nice.  I had not picked up on the or operator.
+--0OAP2g/MAC+5xKAE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-> @ @
-> identifier FUNC;
-> identifier DESC;
-> identifier IRQ;
-> identifier FLD;
-> @@
->  FUNC(..., struct irq_desc *DESC, ...) {
->  ...
->         unsigned int IRQ = DESC->irq;
->  <...
-> (
-> -       irq_to_desc(IRQ)
-> +       DESC
-> |
-> -       irq_desc[IRQ].FLD
-> +       DESC->FLD
-> )
->  ...>
->  }
->
-> Doing so gets rid of more references to IRQ.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Very reasonable, especially on arches like alpha where none of the
-sparse irq work has hit.
+iEYEARECAAYFAkumJgwACgkQsQQaM014GCe2cgCbB8LJnqn7n7J++lA8Pd+TfBQb
+2BQAn2sYv0DZuSniLTcf9F3cX+cGIgVl
+=gQHY
+-----END PGP SIGNATURE-----
 
-
-> Another case that can be treated is method calls via a pointer:
-
-I didn't actually find any cases where that rule hit on arch/x86
-so I did not include it, but it makes sense.
-
-> @@
-> expression arg;
-> struct irq_desc *desc;
-> struct irq_chip *ic;
-> identifier fun;
-> @@
->
-> (
->   desc->chip->fun(
-> -   arg
-> +   desc
->     ,...)
-> |
->   ic->fun(
-> -   arg
-> +   irq_to_desc(arg)
->     ,...)
-> )
-
-
-My paranoid sense says this rule should be:
-@ @
-expresion IRQ_EXPR;
-struct irq_desc *DESC;
-struct irq_chip *CHIP;
-identifier METHOD;
-@@
-(
- 	DESC->chip->METHOD(
--			   IRQ_EXPR
-+			   irq_to_desc(IRQ_EXPR)
-			   , ... )
-|
-	CHIP->METHOD(
--		     IRQ_EXPR
-+		     irq_to_desc(IRQ_EXPR)
-		     , ... )
-
-If this is before my irq_to_desc removal rule.  We should not
-see any new irq_to_desc calls popping up.
-
-> julia
->
->> @ @
->> identifier FUNC;
->> identifier DESC;
->> identifier IRQ;
->> @@
->>  FUNC(..., struct irq_desc *DESC, ...) {
->>  ...
->> -	unsigned int IRQ = DESC->irq;
->>  ... when != IRQ
->>  }
+--0OAP2g/MAC+5xKAE--
