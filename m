@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab0CUUpB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 16:45:01 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59246 "EHLO ogre.sisk.pl"
+	id S1753604Ab0CUUpe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 16:45:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59230 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753529Ab0CUUnp convert rfc822-to-8bit (ORCPT
+	id S1753496Ab0CUUng convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 16:43:45 -0400
+	Sun, 21 Mar 2010 16:43:36 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Sergey Senozhatsky" <sergey.senozhatsky@gmail.com>
+       "Pete Zaitcev" <zaitcev@yahoo.com>
 References: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 In-Reply-To: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <3Qs6IGJaRe.A.IrC.uBopLB@chimera>
-Subject: [Bug #15548] BUG: key f70f4b50 not in .data
+Message-ID: <3Qs6IGJaRe.A.GxC.2BopLB@chimera>
+Subject: [Bug #15533] i915 fails to set mode in 2.6.34-rc1, ok in 2.6.33-rc8
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 21 Mar 2010 21:13:28 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -33,11 +33,9 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15548
-Subject		: BUG: key f70f4b50 not in .data
-Submitter	: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Date		: 2010-03-09 10:27 (13 days old)
-Message-ID	: <20100309102754.GA3316@swordfish.minsk.epam.com>
-References	: http://marc.info/?l=linux-kernel&m=126813046113130&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15533
+Subject		: i915 fails to set mode in 2.6.34-rc1, ok in 2.6.33-rc8
+Submitter	: Pete Zaitcev <zaitcev@yahoo.com>
+Date		: 2010-03-13 20:37 (9 days old)
 
 
