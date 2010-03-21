@@ -1,75 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab0CUTOV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 15:14:21 -0400
-Received: from bar.sig21.net ([80.81.252.164]:33591 "EHLO bar.sig21.net"
+	id S1752431Ab0CUTQf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 15:16:35 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34663 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab0CUTOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 15:14:19 -0400
-Date: Sun, 21 Mar 2010 20:16:19 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Valery Reznic <valery_reznic@yahoo.com>
-Cc: David Newall <davidn@davidnewall.com>, linux-kernel@vger.kernel.org,
-       Michael Kerrisk <mtk.manpages@gmail.com>, linux-man@vger.kernel.org
-Subject: Re: execve for script don't return ENOEXEC, bug ?
-Message-ID: <20100321191619.GA5235@sig21.net>
-References: <4BA50C76.9070603@davidnewall.com>
- <876436.86374.qm@web110307.mail.gq1.yahoo.com>
+	id S1751337Ab0CUTQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 15:16:34 -0400
+Date: Sun, 21 Mar 2010 20:16:31 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/12] genericirq: make irq_chip related function to take
+ desc
+In-Reply-To: <m1eije71et.fsf@fess.ebiederm.org>
+Message-ID: <Pine.LNX.4.64.1003212016040.12371@ask.diku.dk>
+References: <1267697339-5491-1-git-send-email-yinghai@kernel.org>
+ <1267697339-5491-7-git-send-email-yinghai@kernel.org>
+ <alpine.LFD.2.00.1003041142460.2014@localhost.localdomain> <4B900250.8020100@kernel.org>
+ <Pine.LNX.4.64.1003050847170.21768@ask.diku.dk> <m1eije71et.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <876436.86374.qm@web110307.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.6 (---)
-X-Spam-21-Report: No, score=-3.6 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.781,BAYES_00=-2.599 autolearn=no
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Cc: man page maintainer)
+Here is my semantic patch:
 
-On Sun, Mar 21, 2010 at 01:33:28AM -0700, Valery Reznic wrote:
-> --- On Sat, 3/20/10, David Newall <davidn@davidnewall.com> wrote:
-> > Valery Reznic wrote:
-> > > execve's man page state that script's interprtert
-> > > should not be interpreter itself:
-...
-> > > To me it looks like  execve and it's man page
-> > > disagree. Do you know is it new intended behaviour of execve
-> > > and just man page wasn't update or it's a bug in execve ?
-> > 
-> > Code and man pages do sometimes disagree.  I shan't
-> > address what the correct behaviour is, because if you ask
-> > three people you're sure to get four different answers,
-> > rather let's discuss what is desirable.  Without
-> > looking at how it works, we observe that a.sh can be
-> > executed without error.  If a.out were written in C it
-> > would qualify as an acceptable interpreter according to the
-> > man page, so why should it not qualify if it is
-> > interpreted?  I think it's desirable that it does
-> > qualify.  There could be sound reasons why only one
-> > level of interpreter can be invoked.  Perhaps loading a
-> > script interpreter is done as an exception in exec, and it's
-> > too ugly to allow recursive exceptions.  That would be
-> > a fair reason.  But if there's no reason, then don't
-> > have the restriction*.  Linux now apparently does
-> > permit interpreted interpreters, and I say that is the
-> > desirable result.
-> For some reason I tough that ENOEXEC for 'interpreted interpreter' is posix
-> requirement. But after closer look it appear to be only arbitrary restriction
-> now lifted in Linux.
-> 
-> I had a look at the source http://tomoyo.sourceforge.jp/cgi-bin/lxr/source/fs/binfmt_misc.c
-> and it's obvious that 'interpreted interpreter' is intentional (and recursion depth is 4).
-> So, execve is behave as it should and only man page is lag behind.
-> Thank you for you help/
-> 
-> 
-> Just curios - who use this feature in the real world and what for ?
+// -----------------------------------------------------------------------
+// find functions
 
-It seems to have been changed in commit bf2a9a39639b8b51377905397a5005f444e9a892.
-Maybe you could ask the author for details.
+@ignore@
+struct irq_chip i;
+identifier x;
+local idexpression l;
+position p;
+@@
 
+i.x@p = \(NULL\|l\);
 
-Johannes
+@r@
+struct irq_chip i;
+identifier x!={name,typename},fn;
+position p!=ignore.p;
+@@
+
+i.x@p = fn;
+
+// -----------------------------------------------------------------------
+// normalize code
+
+@@
+expression irq;
+@@
+
+(
+- irq_desc + irq
++ irq_to_desc(irq)
+|
+- &irq_desc[irq]
++ irq_to_desc(irq)
+)
+
+// -----------------------------------------------------------------------
+// find their calls
+
+@@
+identifier r.fn;
+expression irq;
+@@
+
+fn(
+-  irq
++  irq_to_desc(irq)
+   ,...)
+
+@@
+struct irq_chip *ic;
+struct irq_desc *desc;
+identifier fun != {name,typename};
+expression irq;
+@@
+
+ \(ic\|desc->chip\)->fun(
+-  irq
++  irq_to_desc(irq)
+   ,...)
+
+// -----------------------------------------------------------------------
+// find their definitions
+
+@unused@
+identifier r.fn,irq;
+type T;
+@@
+
+fn(
+-   T irq
++   struct irq_desc *unused
+    , ...) {
+  ... when != irq
+      when != unused
+      when strict
+}
+
+@with_desc@
+identifier r.fn,irqv,desc;
+type T;
+@@
+
+fn(
+-   T irqv
++   struct irq_desc *desc
+    , ...) {
++ unsigned int irqv = desc->irq;
+  ...
+(
+- struct irq_desc *desc = irq_to_desc(irqv);
+|
+- struct irq_desc *desc;
+  ...
+- desc = irq_to_desc(irqv);
+)
+  ...
+}
+
+@depends on !unused && !with_desc@
+identifier r.fn,irqv;
+type T;
+@@
+
+fn(
+-   T irqv
++   struct irq_desc *desc
+    , ...) {
++ unsigned int irqv = desc->irq;
+  ... when != desc
+      when strict
+}
+
+// -----------------------------------------------------------------------
+// simplify definitions
+
+@@
+struct irq_desc *desc;
+expression irq,E1,E2;
+@@
+
+desc = irq_to_desc(irq)
+<...
+- irq_to_desc(irq)
++ desc
+...>
+(
+return;
+|
+desc = E1
+|
+?irq = E2
+)
+
+@@
+identifier r.fn,irqv,desc,fld;
+@@
+
+fn(struct irq_desc *desc, ...) {
+  unsigned int irqv = desc->irq;
+  <...
+(
+- irq_to_desc(irqv)
++ desc
+|
+- irq_desc[irqv].fld
++ desc->fld
+)
+  ...>
+}
+
+@@
+struct irq_desc *desc;
+@@
+
+- desc = desc;
+
+@@
+identifier r.fn,irqv,desc;
+@@
+
+fn(struct irq_desc *desc, ...) {
+- unsigned int irqv = desc->irq;
+  ... when != irqv
+      when strict
+}
