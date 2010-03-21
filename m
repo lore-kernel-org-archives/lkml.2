@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab0CUKVN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 06:21:13 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:43445 "EHLO
+	id S1752746Ab0CUK0M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 06:26:12 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:41732 "EHLO
 	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab0CUKVL (ORCPT
+	with ESMTP id S1752595Ab0CUK0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 06:21:11 -0400
-X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Mar 2010 06:21:10 EDT
-Date: Sun, 21 Mar 2010 11:12:25 +0100
+	Sun, 21 Mar 2010 06:26:11 -0400
+Date: Sun, 21 Mar 2010 11:16:44 +0100
 From: Marc Koschewski <marc@osknowledge.org>
 To: Linux-LKLM <linux-kernel@vger.kernel.org>
-Subject: BUG: scheduling while atomic: eix-update/4126/0x10000002
-Message-ID: <20100321101223.GA32201@shmoo>
+Subject: BUG: unable to handle kernel paging request at 437d5ff0
+Message-ID: <20100321101643.GB32201@shmoo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,179 +24,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-[ 1134.683978] BUG: scheduling while atomic: eix-update/4126/0x10000002
-[ 1134.683987] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
-[ 1134.684088] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
-[ 1134.684091] Call Trace:
-[ 1134.684107]  [<c03ec5b2>] ? printk+0x18/0x1e
-[ 1134.684117]  [<c011f850>] __schedule_bug+0x58/0x5a
-[ 1134.684121]  [<c03ec999>] schedule+0x3ad/0x4b1
-[ 1134.684127]  [<c011fab9>] __cond_resched+0x16/0x26
-[ 1134.684131]  [<c03ecb35>] _cond_resched+0x20/0x27
-[ 1134.684137]  [<c017f115>] unmap_vmas+0x5ca/0x678
-[ 1134.684144]  [<c018343c>] exit_mmap+0x9f/0x150
-[ 1134.684150]  [<c0125273>] mmput+0x2a/0xb9
-[ 1134.684155]  [<c0128b37>] exit_mm+0xce/0xe1
-[ 1134.684163]  [<c0153d23>] ? acct_collect+0x141/0x143
-[ 1134.684168]  [<c012a0ae>] do_exit+0xd0/0x6b4
-[ 1134.684175]  [<c0105562>] oops_end+0x6e/0x97
-[ 1134.684184]  [<c0118ce6>] no_context+0xb0/0x17d
-[ 1134.684189]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
-[ 1134.684195]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
-[ 1134.684200]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
-[ 1134.684205]  [<c01191ec>] do_page_fault+0x213/0x2a7
-[ 1134.684211]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.684217]  [<c03eea1a>] error_code+0x5e/0x64
-[ 1134.684223]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.684228]  [<c01878f0>] ? page_referenced+0x17a/0x204
-[ 1134.684235]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
-[ 1134.684240]  [<c0175523>] shrink_active_list+0x148/0x257
-[ 1134.684246]  [<c017625f>] shrink_zone+0x2c5/0x371
-[ 1134.684251]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
-[ 1134.684256]  [<c0176e39>] try_to_free_pages+0x6b/0x73
-[ 1134.684261]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
-[ 1134.684266]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
-[ 1134.684272]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
-[ 1134.684277]  [<c0172d0f>] ra_submit+0x21/0x27
-[ 1134.684282]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
-[ 1134.684289]  [<c016bcbd>] ? find_get_page+0x84/0xca
-[ 1134.684300]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
-[ 1134.684306]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
-[ 1134.684314]  [<c01940fa>] do_sync_read+0x98/0xc5
-[ 1134.684319]  [<c0170a7d>] ? __free_pages+0x28/0x2c
-[ 1134.684324]  [<c0170aa9>] ? free_pages+0x28/0x2a
-[ 1134.684329]  [<c0194b20>] vfs_read+0x89/0x147
-[ 1134.684334]  [<c0194062>] ? do_sync_read+0x0/0xc5
-[ 1134.684339]  [<c0194c7f>] sys_read+0x3d/0x64
-[ 1134.684344]  [<c0102a8c>] sysenter_do_call+0x12/0x22
-[ 1134.691059] BUG: scheduling while atomic: eix-update/4126/0x10000002
-[ 1134.691067] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
-[ 1134.691157] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
-[ 1134.691161] Call Trace:
-[ 1134.691175]  [<c03ec5b2>] ? printk+0x18/0x1e
-[ 1134.691183]  [<c011f850>] __schedule_bug+0x58/0x5a
-[ 1134.691188]  [<c03ec999>] schedule+0x3ad/0x4b1
-[ 1134.691193]  [<c011fab9>] __cond_resched+0x16/0x26
-[ 1134.691198]  [<c03ecb35>] _cond_resched+0x20/0x27
-[ 1134.691203]  [<c017f115>] unmap_vmas+0x5ca/0x678
-[ 1134.691210]  [<c018343c>] exit_mmap+0x9f/0x150
-[ 1134.691216]  [<c0125273>] mmput+0x2a/0xb9
-[ 1134.691221]  [<c0128b37>] exit_mm+0xce/0xe1
-[ 1134.691229]  [<c0153d23>] ? acct_collect+0x141/0x143
-[ 1134.691233]  [<c012a0ae>] do_exit+0xd0/0x6b4
-[ 1134.691240]  [<c0105562>] oops_end+0x6e/0x97
-[ 1134.691248]  [<c0118ce6>] no_context+0xb0/0x17d
-[ 1134.691254]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
-[ 1134.691260]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
-[ 1134.691265]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
-[ 1134.691270]  [<c01191ec>] do_page_fault+0x213/0x2a7
-[ 1134.691275]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.691282]  [<c03eea1a>] error_code+0x5e/0x64
-[ 1134.691288]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.691293]  [<c01878f0>] ? page_referenced+0x17a/0x204
-[ 1134.691300]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
-[ 1134.691305]  [<c0175523>] shrink_active_list+0x148/0x257
-[ 1134.691311]  [<c017625f>] shrink_zone+0x2c5/0x371
-[ 1134.691317]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
-[ 1134.691322]  [<c0176e39>] try_to_free_pages+0x6b/0x73
-[ 1134.691327]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
-[ 1134.691332]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
-[ 1134.691338]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
-[ 1134.691343]  [<c0172d0f>] ra_submit+0x21/0x27
-[ 1134.691348]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
-[ 1134.691354]  [<c016bcbd>] ? find_get_page+0x84/0xca
-[ 1134.691359]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
-[ 1134.691364]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
-[ 1134.691372]  [<c01940fa>] do_sync_read+0x98/0xc5
-[ 1134.691378]  [<c0170a7d>] ? __free_pages+0x28/0x2c
-[ 1134.691384]  [<c0170aa9>] ? free_pages+0x28/0x2a
-[ 1134.691389]  [<c0194b20>] vfs_read+0x89/0x147
-[ 1134.691394]  [<c0194062>] ? do_sync_read+0x0/0xc5
-[ 1134.691400]  [<c0194c7f>] sys_read+0x3d/0x64
-[ 1134.691405]  [<c0102a8c>] sysenter_do_call+0x12/0x22
-[ 1134.694372] BUG: scheduling while atomic: eix-update/4126/0x10000002
-[ 1134.694380] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
-[ 1134.694467] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
-[ 1134.694471] Call Trace:
-[ 1134.694483]  [<c03ec5b2>] ? printk+0x18/0x1e
-[ 1134.694492]  [<c011f850>] __schedule_bug+0x58/0x5a
-[ 1134.694497]  [<c03ec999>] schedule+0x3ad/0x4b1
-[ 1134.694502]  [<c011fab9>] __cond_resched+0x16/0x26
-[ 1134.694506]  [<c03ecb35>] _cond_resched+0x20/0x27
-[ 1134.694512]  [<c0128cc2>] put_files_struct+0x7d/0xc5
-[ 1134.694517]  [<c0128d41>] exit_files+0x37/0x48
-[ 1134.694521]  [<c012a63d>] do_exit+0x65f/0x6b4
-[ 1134.694528]  [<c0105562>] oops_end+0x6e/0x97
-[ 1134.694536]  [<c0118ce6>] no_context+0xb0/0x17d
-[ 1134.694541]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
-[ 1134.694547]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
-[ 1134.694553]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
-[ 1134.694558]  [<c01191ec>] do_page_fault+0x213/0x2a7
-[ 1134.694563]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.694569]  [<c03eea1a>] error_code+0x5e/0x64
-[ 1134.694575]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.694582]  [<c01878f0>] ? page_referenced+0x17a/0x204
-[ 1134.694588]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
-[ 1134.694594]  [<c0175523>] shrink_active_list+0x148/0x257
-[ 1134.694599]  [<c017625f>] shrink_zone+0x2c5/0x371
-[ 1134.694605]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
-[ 1134.694610]  [<c0176e39>] try_to_free_pages+0x6b/0x73
-[ 1134.694615]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
-[ 1134.694620]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
-[ 1134.694626]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
-[ 1134.694631]  [<c0172d0f>] ra_submit+0x21/0x27
-[ 1134.694636]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
-[ 1134.694642]  [<c016bcbd>] ? find_get_page+0x84/0xca
-[ 1134.694647]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
-[ 1134.694652]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
-[ 1134.694660]  [<c01940fa>] do_sync_read+0x98/0xc5
-[ 1134.694665]  [<c0170a7d>] ? __free_pages+0x28/0x2c
-[ 1134.694669]  [<c0170aa9>] ? free_pages+0x28/0x2a
-[ 1134.694675]  [<c0194b20>] vfs_read+0x89/0x147
-[ 1134.694680]  [<c0194062>] ? do_sync_read+0x0/0xc5
-[ 1134.694685]  [<c0194c7f>] sys_read+0x3d/0x64
-[ 1134.694689]  [<c0102a8c>] sysenter_do_call+0x12/0x22
-[ 1134.696751] BUG: scheduling while atomic: eix-update/4126/0x10000002
-[ 1134.696759] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
-[ 1134.696843] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1
-[ 1134.696847] Call Trace:
-[ 1134.696859]  [<c03ec5b2>] ? printk+0x18/0x1e
-[ 1134.696868]  [<c011f850>] __schedule_bug+0x58/0x5a
-[ 1134.696873]  [<c03ec999>] schedule+0x3ad/0x4b1
-[ 1134.696878]  [<c011fab9>] __cond_resched+0x16/0x26
-[ 1134.696882]  [<c03ecb35>] _cond_resched+0x20/0x27
-[ 1134.696888]  [<c0128cc2>] put_files_struct+0x7d/0xc5
-[ 1134.696893]  [<c0128d41>] exit_files+0x37/0x48
-[ 1134.696897]  [<c012a63d>] do_exit+0x65f/0x6b4
-[ 1134.696903]  [<c0105562>] oops_end+0x6e/0x97
-[ 1134.696911]  [<c0118ce6>] no_context+0xb0/0x17d
-[ 1134.696916]  [<c0118e2e>] __bad_area_nosemaphore+0x7b/0x110
-[ 1134.696921]  [<c0170af9>] ? __pagevec_free+0x1d/0x2a
-[ 1134.696927]  [<c0118ed5>] bad_area_nosemaphore+0x12/0x14
-[ 1134.696932]  [<c01191ec>] do_page_fault+0x213/0x2a7
-[ 1134.696937]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.696942]  [<c03eea1a>] error_code+0x5e/0x64
-[ 1134.696948]  [<c0118fd9>] ? do_page_fault+0x0/0x2a7
-[ 1134.696954]  [<c01878f0>] ? page_referenced+0x17a/0x204
-[ 1134.696960]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
-[ 1134.696966]  [<c0175523>] shrink_active_list+0x148/0x257
-[ 1134.696971]  [<c017625f>] shrink_zone+0x2c5/0x371
-[ 1134.696977]  [<c0176c27>] do_try_to_free_pages+0x120/0x23b
-[ 1134.696981]  [<c0176e39>] try_to_free_pages+0x6b/0x73
-[ 1134.696986]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
-[ 1134.696991]  [<c0171231>] __alloc_pages_nodemask+0x2bb/0x546
-[ 1134.696997]  [<c0172be8>] __do_page_cache_readahead+0xe0/0x1e6
-[ 1134.697026]  [<c0172d0f>] ra_submit+0x21/0x27
-[ 1134.697031]  [<c0172e76>] ondemand_readahead+0x8f/0x1d6
-[ 1134.697037]  [<c016bcbd>] ? find_get_page+0x84/0xca
-[ 1134.697042]  [<c017307c>] page_cache_sync_readahead+0x32/0x4a
-[ 1134.697047]  [<c016d84b>] generic_file_aio_read+0x32e/0x623
-[ 1134.697055]  [<c01940fa>] do_sync_read+0x98/0xc5
-[ 1134.697060]  [<c0170a7d>] ? __free_pages+0x28/0x2c
-[ 1134.697064]  [<c0170aa9>] ? free_pages+0x28/0x2a
-[ 1134.697069]  [<c0194b20>] vfs_read+0x89/0x147
-[ 1134.697073]  [<c0194062>] ? do_sync_read+0x0/0xc5
-[ 1134.697079]  [<c0194c7f>] sys_read+0x3d/0x64
-[ 1134.697083]  [<c0102a8c>] sysenter_do_call+0x12/0x22
+[ 1134.673953] BUG: unable to handle kernel paging request at 437d5ff0
+[ 1134.673965] IP: [<c01878f0>] page_referenced+0x17a/0x204
+[ 1134.673979] *pdpt = 0000000035d84001 *pde = 000000007bab0067 
+[ 1134.673984] Oops: 0000 [#2] PREEMPT 
+[ 1134.673988] last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+[ 1134.673993] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet bridge stp llc snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table p54pci p54common mac80211 cfg80211 snd_intel8x0 mousedev snd_intel8x0m usbmouse firewire_ohci snd_ac97_codec usbhid firewire_core rfkill ac97_bus prism54 snd_pcm crc_itu_t snd_timer ohci1394 3c59x psmouse snd pcmcia rtc_cmos ieee1394 intel_agp sr_mod yenta_socket rsrc_nonstatic soundcore uhci_hcd dcdbas intel_rng rng_core mii serio_raw rtc_core pcmcia_core cdrom snd_page_alloc usbcore sg evdev rtc_lib floppy [last unloaded: microcode]
+[ 1134.674015] 
+[ 1134.674015] Pid: 4126, comm: eix-update Tainted: G      DA   2.6.34-rc2-marc-19754-g220bf99 #1 Inspiron 8200            /Inspiron 8200                   
+[ 1134.674015] EIP: 0060:[<c01878f0>] EFLAGS: 00010286 CPU: 0
+[ 1134.674015] EIP is at page_referenced+0x17a/0x204
+[ 1134.674015] EAX: 464c457f EBX: 437d5ff0 ECX: f22d9750 EDX: 437d6000
+[ 1134.674015] ESI: c1536740 EDI: 00000000 EBP: f5d17be0 ESP: f5d17ba0
+[ 1134.674015]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+[ 1134.674015] Process eix-update (pid: 4126, ti=f5d17000 task=f5d5f000 task.ti=f5d17000)
+[ 1134.674015] Stack:
+[ 1134.674015]  f5d17be0 c017480f f22d974c 00000000 f22d9750 ffffffff c057234c 00000020
+[ 1134.674015] <0> 00000001 00000020 00000000 00000020 00000001 c1536740 f5d17ce0 c1536758
+[ 1134.674015] <0> f5d17c48 c0175523 f5d17c34 00000001 c05720e0 00000000 00000001 00000000
+[ 1134.674015] Call Trace:
+[ 1134.674015]  [<c017480f>] ? isolate_pages_global+0x8f/0x1d0
+[ 1134.674015]  [<c0175523>] ? shrink_active_list+0x148/0x257
+[ 1134.674015]  [<c017625f>] ? shrink_zone+0x2c5/0x371
+[ 1134.674015]  [<c0176c27>] ? do_try_to_free_pages+0x120/0x23b
+[ 1134.674015]  [<c0176e39>] ? try_to_free_pages+0x6b/0x73
+[ 1134.674015]  [<c0174780>] ? isolate_pages_global+0x0/0x1d0
+[ 1134.674015]  [<c0171231>] ? __alloc_pages_nodemask+0x2bb/0x546
+[ 1134.674015]  [<c0172be8>] ? __do_page_cache_readahead+0xe0/0x1e6
+[ 1134.674015]  [<c0172d0f>] ? ra_submit+0x21/0x27
+[ 1134.674015]  [<c0172e76>] ? ondemand_readahead+0x8f/0x1d6
+[ 1134.674015]  [<c016bcbd>] ? find_get_page+0x84/0xca
+[ 1134.674015]  [<c017307c>] ? page_cache_sync_readahead+0x32/0x4a
+[ 1134.674015]  [<c016d84b>] ? generic_file_aio_read+0x32e/0x623
+[ 1134.674015]  [<c01940fa>] ? do_sync_read+0x98/0xc5
+[ 1134.674015]  [<c0170a7d>] ? __free_pages+0x28/0x2c
+[ 1134.674015]  [<c0170aa9>] ? free_pages+0x28/0x2a
+[ 1134.674015]  [<c0194b20>] ? vfs_read+0x89/0x147
+[ 1134.674015]  [<c0194062>] ? do_sync_read+0x0/0xc5
+[ 1134.674015]  [<c0194c7f>] ? sys_read+0x3d/0x64
+[ 1134.674015]  [<c0102a8c>] ? sysenter_do_call+0x12/0x22
+[ 1134.674015] Code: 00 00 00 8b 46 08 83 c0 01 89 45 f0 8b 45 c8 8b 50 04 8d 5a f0 8b 43 10 0f 18 00 90 8b 4d c8 83 c1 04 89 4d d0 31 ff 39 d1 74 4b <8b> 13 8b 4e 14 2b 4a 48 c1 e1 0c 03 4a 04 72 2a 3b 4a 08 73 25 
+[ 1134.674015] EIP: [<c01878f0>] page_referenced+0x17a/0x204 SS:ESP 0068:f5d17ba0
 -- 
 Marc Koschewski
