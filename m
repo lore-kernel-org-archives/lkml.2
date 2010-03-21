@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab0CUSBT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 14:01:19 -0400
-Received: from smtp1.rdslink.ro ([81.196.12.70]:54791 "EHLO smtp.rdslink.ro"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751428Ab0CUSBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 14:01:18 -0400
-X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
-Subject: 0004-Staging-cx25821-fix-coding-style-issues-in-cx25821-i.patch
-From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-To: gregkh@suse.de, mchehab@redhat.com, palash.bandyopadhyay@conexant.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Sun, 21 Mar 2010 20:01:13 +0200
-Message-ID: <1269194473.6971.8.camel@tuxtm-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1752192Ab0CUSmM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 14:42:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41492 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751295Ab0CUSmK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 14:42:10 -0400
+Date: Sun, 21 Mar 2010 11:38:08 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Neil Horman <nhorman@tuxdriver.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [git pull] pull request for writable limits for 2.6.34-rc0
+In-Reply-To: <20100321060607.GA4062@x200>
+Message-ID: <alpine.LFD.2.00.1003211128520.18017@i5.linux-foundation.org>
+References: <4B1D32D1.4090404@gmail.com> <4B9136F4.4010007@gmail.com> <alpine.LFD.2.00.1003201207160.18017@i5.linux-foundation.org> <20100321060607.GA4062@x200>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 5f02f6af270ce061174806a039d8d44a35b2ce5e Mon Sep 17 00:00:00 2001
-From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-Date: Sun, 21 Mar 2010 19:52:31 +0200
-Subject: [PATCH 4/4] Staging: cx25821: fix coding style issues in cx25821-i2c.c
- This is a patch to cx25821-i2c.c file that fixes up warnings and errors found by the checkpatch.pl tool
- Signed-off-by: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-
----
- drivers/staging/cx25821/cx25821-i2c.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/staging/cx25821/cx25821-i2c.c b/drivers/staging/cx25821/cx25821-i2c.c
-index f4f2681..f727b85 100644
---- a/drivers/staging/cx25821/cx25821-i2c.c
-+++ b/drivers/staging/cx25821/cx25821-i2c.c
-@@ -159,9 +159,9 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
- 
- 	return msg->len;
- 
--      eio:
-+eio:
- 	retval = -EIO;
--      err:
-+err:
- 	if (i2c_debug)
- 		printk(KERN_ERR " ERR: %d\n", retval);
- 	return retval;
-@@ -223,9 +223,9 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
- 	}
- 
- 	return msg->len;
--      eio:
-+eio:
- 	retval = -EIO;
--      err:
-+err:
- 	if (i2c_debug)
- 		printk(KERN_ERR " ERR: %d\n", retval);
- 	return retval;
-@@ -266,7 +266,7 @@ static int i2c_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs, int num)
- 	}
- 	return num;
- 
--      err:
-+err:
- 	return retval;
- }
- 
-@@ -319,7 +319,7 @@ int cx25821_i2c_register(struct cx25821_i2c *bus)
- 
- 	bus->i2c_client.adapter = &bus->i2c_adap;
- 
--	//set up the I2c
-+	/* set up the I2c */
- 	bus->i2c_client.addr = (0x88 >> 1);
- 
- 	return bus->i2c_rc;
--- 
-1.7.0
 
 
+On Sun, 21 Mar 2010, Alexey Dobriyan wrote:
+> 
+> It's a perfect opportunity to introduce getrlimit64(2), setrlimit64(2)
+> _without_ involving /proc, without all bugs in setrlimit(2), without
+> compat code, with all resources equal across arches, and, optionally,
+> with infinity setting clearly separate from value (useful for C/R).
 
+Yeah, the infinity setting should be cleaned up. I also wonder if we 
+should clean up the odd file limit rules, and make them all be about 
+bytes. Correct me if I'm wrong, but don't we do that whole file size thing 
+in kilobytes right now?
+
+I do also agree that maybe we could/should skip the whole "writable /proc" 
+thing.
+
+So introducing it as just two system calls:
+
+	int getprlimit64(pid, limit, struct rlimit64 *);
+	int setprlimit64(pid, limit, const struct rlimit64 *);
+
+and having perhaps something like 'pid=0 means current' would look a lot 
+prettier to me.
+
+Or even just _one_ system call that takes two pointers, and can do an 
+atomic replace-and-return-the-old-value, like 'sigaction()' does, ie 
+something like
+
+	int prlimit64(pid, limit, const struct rlimit64 *new, struct rlimit64 *old);
+
+wouldn't that be a nice generic interface?
+
+(Somebody should really check me on the whole "limit in kilobytes" thing - 
+I may be _totally_ off there. I am too lazy to check the actual source 
+code)
+
+			Linus
