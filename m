@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab0CUUoD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 16:44:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59255 "EHLO ogre.sisk.pl"
+	id S1753618Ab0CUUnw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 16:43:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59236 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753652Ab0CUUn6 convert rfc822-to-8bit (ORCPT
+	id S1753520Ab0CUUnn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 16:43:58 -0400
+	Sun, 21 Mar 2010 16:43:43 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Christian Kujau" <lists@nerdbynature.de>
+       "Andrew Benton" <b3nton@gmail.com>, "Jeff Garzik" <jgarzik@pobox.com>
 References: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 In-Reply-To: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -17,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <3Qs6IGJaRe.A.6SC.hBopLB@chimera>
-Subject: [Bug #15589] 2.6.34-rc1: Badness at fs/proc/generic.c:316
+Message-ID: <3Qs6IGJaRe.A.RvC.xBopLB@chimera>
+Subject: [Bug #15537] 2.6.34-rc1 hangs for 30 seconds when trying to access the disk
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 21 Mar 2010 21:13:29 +0100 (CET)
+Date: Sun, 21 Mar 2010 21:13:28 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,11 +33,11 @@ from 2.6.33.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15589
-Subject		: 2.6.34-rc1: Badness at fs/proc/generic.c:316
-Submitter	: Christian Kujau <lists@nerdbynature.de>
-Date		: 2010-03-13 23:53 (9 days old)
-Message-ID	: <alpine.DEB.2.01.1003131544340.5493@bogon.housecafe.de>
-References	: http://marc.info/?l=linux-kernel&m=126852442903680&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15537
+Subject		: 2.6.34-rc1 hangs for 30 seconds when trying to access the disk
+Submitter	: Andrew Benton <b3nton@gmail.com>
+Date		: 2010-03-14 23:26 (8 days old)
+Handled-By	: Jeff Garzik <jgarzik@pobox.com>
+Patch		: http://bugzilla.kernel.org/attachment.cgi?id=25516
 
 
