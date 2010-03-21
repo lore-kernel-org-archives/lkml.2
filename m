@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752945Ab0CUB7a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Mar 2010 21:59:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33419 "EHLO
+	id S1753016Ab0CUCJr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Mar 2010 22:09:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40762 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab0CUB72 (ORCPT
+	with ESMTP id S1752838Ab0CUCJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Mar 2010 21:59:28 -0400
-Date: Sun, 21 Mar 2010 02:59:26 +0100
+	Sat, 20 Mar 2010 22:09:41 -0400
+Date: Sun, 21 Mar 2010 03:09:33 +0100
 From: Wolfram Sang <w.sang@pengutronix.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 06/24] input/keyboard: fix dangling pointers
-Message-ID: <20100321015925.GA26625@pengutronix.de>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-7-git-send-email-w.sang@pengutronix.de> <20100320192007.GA28402@core.coreip.homeip.net>
+       linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH 13/24] mfd: fix dangling pointers
+Message-ID: <20100321020933.GB26625@pengutronix.de>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-14-git-send-email-w.sang@pengutronix.de> <20100320172241.GD1549@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EVF5PPMfhYS0aIcm"
+	protocol="application/pgp-signature"; boundary="61jdw2sOBCFtR2d/"
 Content-Disposition: inline
-In-Reply-To: <20100320192007.GA28402@core.coreip.homeip.net>
+In-Reply-To: <20100320172241.GD1549@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
 X-SA-Exim-Mail-From: wsa@pengutronix.de
@@ -30,38 +30,30 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---EVF5PPMfhYS0aIcm
+--61jdw2sOBCFtR2d/
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hello Dmitry,
+Hello Mark,
 
-On Sat, Mar 20, 2010 at 12:20:07PM -0700, Dmitry Torokhov wrote:
-> Hi Wolfram,
->=20
-> On Sat, Mar 20, 2010 at 03:12:47PM +0100, Wolfram Sang wrote:
-> > Fix I2C-drivers which missed setting clientdata to NULL before freeing =
-the
-> > structure it points to. Also fix drivers which do this _after_ the stru=
-cture
-> > was freed already.
-> >=20
->=20
-> I am not sure if setting clientdata to NULL before freeing the data is
-> that important; we really want to be sure that we don't leave clientdata
-> dangling when we finish unbinding the driver. If there are another
-> thread the change will not really help the problem of accessing
-> non-existing client data.
+> but it really does seem like this is something that the I2C core ought
+> to handle - the assignment to null is boiler plate code that's getting
+> added to the overwhelming majority of I2C devices in their teardown
+> path, it'd seem a lot more sensible for the core to just trash driver
+> data after the driver is unbound if it's important that this happens.
 
-I agree it won't matter in practice. Jean and I concluded it is better
-style, though (http://comments.gmane.org/gmane.linux.drivers.i2c/5392).
-Still, I will not insist and leave it up the subsystem maintainers, of
-course. I also won't check for that case again in the future.
+While working on this, I got the same impression that it should be handled =
+at
+core-level. I wondered if functions ala i2c_alloc_clientdata() and
+i2c_free_clientdata() could help. But seeing the myriad ways of setting up
+private data in those drivers, I thought this to be the next step after
+cleaning up the status quo, because it surely needs discussion. I wanted to
+write about all this in the introductory message but sadly forgot. Thanks f=
+or
+starting the discussion, very welcome.
 
-> I will apply lm8323 portion of the patch but leave qt2160 as is.
-
-Thanks!
+Regards,
 
    Wolfram
 
@@ -69,7 +61,7 @@ Thanks!
 Pengutronix e.K.                           | Wolfram Sang                |
 Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
---EVF5PPMfhYS0aIcm
+--61jdw2sOBCFtR2d/
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -77,9 +69,9 @@ Content-Disposition: inline
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkulfX0ACgkQD27XaX1/VRtgIwCeP3ARt+wII1Xeva9Lnytebcsr
-IQcAnApsmX1e9BfUoF/0kyJ4U7XWnSgu
-=lIAk
+iEYEARECAAYFAkulf90ACgkQD27XaX1/VRt09gCgjSrBPxPmyQsA+FPnAYKGUqVW
+MjgAn3DFPETnj7nqH76Qp2QjJxdK4koV
+=9unb
 -----END PGP SIGNATURE-----
 
---EVF5PPMfhYS0aIcm--
+--61jdw2sOBCFtR2d/--
