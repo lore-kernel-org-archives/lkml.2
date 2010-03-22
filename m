@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab0CVWky (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 18:40:54 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:64156 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0CVWkx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 18:40:53 -0400
-Date: Fri, 19 Mar 2010 17:40:23 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       akpm@linux-foundation.org, andi.kleen@intel.com, fengguang.wu@intel.com
-Subject: Re: [PATCH 2/2] [BUGFIX] pagemap: fix pfn calculation for hugepage
-Message-ID: <20100319084023.GC13107@spritzerA.linux.bs1.fc.nec.co.jp>
-References: <1268979996-12297-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100319161023.d6a4ea8d.kamezawa.hiroyu@jp.fujitsu.com> <20100319162732.58633847.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1756654Ab0CVWti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 18:49:38 -0400
+Received: from quartz.orcorp.ca ([139.142.54.143]:52027 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab0CVWth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 18:49:37 -0400
+Date: Mon, 22 Mar 2010 16:49:32 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH] kbuild: Include gen_initramfs_list.sh and the file list in
+	the .d file
+Message-ID: <20100322224932.GA26068@obsidianresearch.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100319162732.58633847.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 04:27:32PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Fri, 19 Mar 2010 16:10:23 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > On Fri, 19 Mar 2010 15:26:36 +0900
-> > Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
-> > 
-> > > When we look into pagemap using page-types with option -p, the value
-> > > of pfn for hugepages looks wrong (see below.)
-> > > This is because pte was evaluated only once for one vma
-> > > although it should be updated for each hugepage. This patch fixes it.
-> > > 
-> > > $ page-types -p 3277 -Nl -b huge
-> > > voffset   offset  len     flags
-> > > 7f21e8a00 11e400  1       ___U___________H_G________________
-> > > 7f21e8a01 11e401  1ff     ________________TG________________
-> > > 7f21e8c00 11e400  1       ___U___________H_G________________
-> > > 7f21e8c01 11e401  1ff     ________________TG________________
-> > >              ^^^
-> > >              should not be the same
-> > > 
-> > > With this patch applied:
-> > > 
-> > > $ page-types -p 3386 -Nl -b huge
-> > > voffset   offset   len    flags
-> > > 7fec7a600 112c00   1      ___UD__________H_G________________
-> > > 7fec7a601 112c01   1ff    ________________TG________________
-> > > 7fec7a800 113200   1      ___UD__________H_G________________
-> > > 7fec7a801 113201   1ff    ________________TG________________
-> > >              ^^^
-> > >              OK
-> > > 
-> > Hmm. Is this bug ? To me, it's just shown in hugepage's pagesize, by design.
-> > 
-> I'm sorry it seems this is bugfix.
-> 
-> But, this means hugeltb_entry() is not called per hugetlb entry...isn't it ?
-> 
+Expand the dependency set used for the initrd to include the
+CONFIG_INITRAMFS_SOURCE file and the generator script itself.
 
-Correct. Hugetlb_entry() is called per vma.
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ scripts/gen_initramfs_list.sh |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> Why hugetlb_entry() cannot be called per hugeltb entry ? Don't we need a code
-> for a case as pmd_size != hugetlb_size in walk_page_range() for generic fix ?
-> 
+Otherwise changing the initramfs file list does not rebuild the CPIO..
 
-Because in some architecture there is no generic means to know whether
-a pgd/pmd/pud/pte is hugetlb entry or not.
-For second question, vma-based walking is generic solution and
-works for "pmd_size != hugetlb_size" case.
+diff --git a/scripts/gen_initramfs_list.sh b/scripts/gen_initramfs_list.sh
+index 76af5f9..f3b5c05 100644
+--- a/scripts/gen_initramfs_list.sh
++++ b/scripts/gen_initramfs_list.sh
+@@ -202,6 +202,7 @@ input_file() {
+ 			print_mtime "$1" >> ${output}
+ 			cat "$1"         >> ${output}
+ 		else
++		        echo "$1 \\"
+ 			cat "$1" | while read type dir file perm ; do
+ 				if [ "$type" == "file" ]; then
+ 					echo "$file \\";
+@@ -231,7 +232,7 @@ arg="$1"
+ case "$arg" in
+ 	"-l")	# files included in initramfs - used by kbuild
+ 		dep_list="list_"
+-		echo "deps_initramfs := \\"
++		echo "deps_initramfs := $0 \\"
+ 		shift
+ 		;;
+ 	"-o")	# generate compressed cpio image named $1
+-- 
+1.5.4.2
 
-Thanks,
-Naoya Horiguchi
