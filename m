@@ -1,455 +1,357 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0CVBkD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 21:40:03 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:32575 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955Ab0CVBj4 (ORCPT
+	id S1753946Ab0CVBjo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 21:39:44 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:28408 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891Ab0CVBjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 21:39:56 -0400
+	Sun, 21 Mar 2010 21:39:40 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        "Eric W. Biederman" <ebiederm@xmission.com>,
        Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-       Thomas Renninger <trenn@suse.de>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com
-Subject: [PATCH 02/10] x86: fix out of order of gsi - full
-Date: Sun, 21 Mar 2010 18:36:02 -0700
-Message-Id: <1269221770-9667-3-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 08/10] genericirq: add set_irq_desc_chip/data ...
+Date: Sun, 21 Mar 2010 18:36:08 -0700
+Message-Id: <1269221770-9667-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
 References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BA6CA39.006B,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4BA6CA3A.0076,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iranna D Ankad reported that IBM x3950 systems have boot problems
-after this commit:
+with set_irq_chip/data...
 
- |
- | commit b9c61b70075c87a8612624736faf4a2de5b1ed30
- |
- |    x86/pci: update pirq_enable_irq() to setup io apic routing
- |
-  ACPI: IOAPIC (id[0x10] address[0xfecff000] gsi_base[0])
-  IOAPIC[0]: apic_id 16, version 0, address 0xfecff000, GSI 0-2
-  ACPI: IOAPIC (id[0x0f] address[0xfec00000] gsi_base[3])
-  IOAPIC[1]: apic_id 15, version 0, address 0xfec00000, GSI 3-38
-  ACPI: IOAPIC (id[0x0e] address[0xfec01000] gsi_base[39])
-  IOAPIC[2]: apic_id 14, version 0, address 0xfec01000, GSI 39-74
+to take desc instead of irq
 
-  As explained in the previous patch ("x86: Fix out of order gsi)
-
-  need to remap those gsis
-
-  This patch adds boot_ioapic_idx and gsi_to_irq/irq_to_gsi
-  So we could make sure for those kind of system will have
-        irq: 0 - 15 for legacy irq
-        irq:  16 after will be gsi + 16
-
- -v13: move gsi_to_irq/irq_to_gsi to acpi/boot.c
-
-Reported-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
-Bisected-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
-Tested-by: Gary Hade <garyhade@us.ibm.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: len.brown@intel.com
 ---
- arch/x86/include/asm/io_apic.h |    2 +-
- arch/x86/include/asm/mpspec.h  |   14 ++++++++
- arch/x86/kernel/acpi/boot.c    |   64 +++++++++++++++++++++++++++++------
- arch/x86/kernel/apic/io_apic.c |   72 +++++++++++++++++++++++++++++----------
- drivers/pnp/pnpacpi/rsparser.c |    4 ++
- 5 files changed, 125 insertions(+), 31 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    4 +-
+ include/linux/irq.h            |   10 +++-
+ include/linux/irqnr.h          |    1 +
+ kernel/irq/chip.c              |  127 +++++++++++++++++++++++-----------------
+ 4 files changed, 85 insertions(+), 57 deletions(-)
 
-diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
-index 35832a0..c4683b9 100644
---- a/arch/x86/include/asm/io_apic.h
-+++ b/arch/x86/include/asm/io_apic.h
-@@ -158,7 +158,7 @@ extern int io_apic_get_redir_entries(int ioapic);
- struct io_apic_irq_attr;
- extern int io_apic_set_pci_routing(struct device *dev, int irq,
- 		 struct io_apic_irq_attr *irq_attr);
--void setup_IO_APIC_irq_extra(u32 gsi);
-+void setup_IO_APIC_irq_extra(u32 gsi, unsigned int *irq);
- extern int (*ioapic_renumber_irq)(int ioapic, int irq);
- extern void ioapic_init_mappings(void);
- extern void ioapic_insert_resources(void);
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index d8bf23a..1a221e0 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -109,6 +109,9 @@ extern int acpi_probe_gsi(void);
- #ifdef CONFIG_X86_IO_APIC
- extern int mp_find_ioapic(int gsi);
- extern int mp_find_ioapic_pin(int ioapic, int gsi);
-+extern int gsi_delta;
-+int gsi_to_irq(unsigned int gsi);
-+unsigned int irq_to_gsi(int irq);
- #endif
- #else /* !CONFIG_ACPI: */
- static inline int acpi_probe_gsi(void)
-@@ -117,6 +120,17 @@ static inline int acpi_probe_gsi(void)
- }
- #endif /* CONFIG_ACPI */
- 
-+#if !defined(CONFIG_ACPI) || !defined(CONFIG_X86_IO_APIC)
-+static inline int gsi_to_irq(unsigned int gsi)
-+{
-+	return gsi;
-+}
-+static inline unsigned int irq_to_gsi(int irq)
-+{
-+	return irq;
-+}
-+#endif
-+
- #define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_APICS)
- 
- struct physid_mask {
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 37de00f..2450c95 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -311,7 +311,8 @@ acpi_parse_ioapic(struct acpi_subtable_header * header, const unsigned long end)
- /*
-  * Parse Interrupt Source Override for the ACPI SCI
-  */
--static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
-+static void __init
-+acpi_sci_ioapic_setup(u8 bus_irq, u32 gsi, u16 polarity, u16 trigger)
- {
- 	if (trigger == 0)	/* compatible SCI trigger is level */
- 		trigger = 3;
-@@ -331,7 +332,7 @@ static void __init acpi_sci_ioapic_setup(u32 gsi, u16 polarity, u16 trigger)
- 	 * If GSI is < 16, this will update its flags,
- 	 * else it will create a new mp_irqs[] entry.
- 	 */
--	mp_override_legacy_irq(gsi, polarity, trigger, gsi);
-+	mp_override_legacy_irq(bus_irq, polarity, trigger, gsi);
- 
- 	/*
- 	 * stash over-ride to indicate we've been here
-@@ -355,7 +356,8 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
- 	acpi_table_print_madt_entry(header);
- 
- 	if (intsrc->source_irq == acpi_gbl_FADT.sci_interrupt) {
--		acpi_sci_ioapic_setup(intsrc->global_irq,
-+		acpi_sci_ioapic_setup(intsrc->source_irq,
-+				      intsrc->global_irq,
- 				      intsrc->inti_flags & ACPI_MADT_POLARITY_MASK,
- 				      (intsrc->inti_flags & ACPI_MADT_TRIGGER_MASK) >> 2);
- 		return 0;
-@@ -446,11 +448,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
- 
- int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
- {
--	*irq = gsi;
-+	*irq = gsi_to_irq(gsi);
- 
- #ifdef CONFIG_X86_IO_APIC
- 	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
--		setup_IO_APIC_irq_extra(gsi);
-+		setup_IO_APIC_irq_extra(gsi, irq);
- #endif
- 
- 	return 0;
-@@ -914,6 +916,40 @@ static void save_mp_irq(struct mpc_intsrc *m)
- 		panic("Max # of irq sources exceeded!!\n");
- }
- 
-+/* By default isa irqs are identity mapped to gsis */
-+static unsigned int isa_irq_to_gsi[NR_IRQS_LEGACY] = {
-+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-+};
-+
-+int gsi_delta;
-+int gsi_to_irq(unsigned int gsi)
-+{
-+	unsigned int irq = gsi;
-+	unsigned int i;
-+
-+	irq += gsi_delta;
-+	for (i = 0; i < NR_IRQS_LEGACY; i++) {
-+		if (isa_irq_to_gsi[i] == gsi) {
-+			irq = i;
-+			break;
-+		}
-+	}
-+
-+	return irq;
-+}
-+
-+unsigned int irq_to_gsi(int irq)
-+{
-+	unsigned int gsi;
-+
-+	if (irq < NR_IRQS_LEGACY)
-+		gsi = isa_irq_to_gsi[irq];
-+	else
-+		gsi = irq - gsi_delta;
-+
-+	return gsi;
-+}
-+
- void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
- {
- 	int ioapic;
-@@ -945,6 +981,8 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
- 	mp_irq.dstirq = pin;	/* INTIN# */
- 
- 	save_mp_irq(&mp_irq);
-+
-+	isa_irq_to_gsi[bus_irq] = gsi;
- }
- 
- void __init mp_config_acpi_legacy_irqs(void)
-@@ -974,7 +1012,7 @@ void __init mp_config_acpi_legacy_irqs(void)
- 	/*
- 	 * Locate the IOAPIC that manages the ISA IRQs (0-15).
- 	 */
--	ioapic = mp_find_ioapic(0);
-+	ioapic = mp_find_ioapic(irq_to_gsi(0));
- 	if (ioapic < 0)
- 		return;
- 	dstapic = mp_ioapics[ioapic].apicid;
-@@ -1057,6 +1095,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- {
- 	int ioapic;
- 	int ioapic_pin;
-+	int irq;
- 	struct io_apic_irq_attr irq_attr;
- 
- 	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
-@@ -1079,11 +1118,12 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 		gsi = ioapic_renumber_irq(ioapic, gsi);
- #endif
- 
-+	irq = gsi_to_irq(gsi);
- 	if (ioapic_pin > MP_MAX_IOAPIC_PIN) {
- 		printk(KERN_ERR "Invalid reference to IOAPIC pin "
- 		       "%d-%d\n", mp_ioapics[ioapic].apicid,
- 		       ioapic_pin);
--		return gsi;
-+		return irq;
- 	}
- 
- 	if (enable_update_mptable)
-@@ -1092,9 +1132,9 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
- 	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
- 			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
- 			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
--	io_apic_set_pci_routing(dev, gsi, &irq_attr);
-+	io_apic_set_pci_routing(dev, irq, &irq_attr);
- 
--	return gsi;
-+	return irq;
- }
- 
- /*
-@@ -1151,8 +1191,10 @@ static int __init acpi_parse_madt_ioapic_entries(void)
- 	 * If BIOS did not supply an INT_SRC_OVR for the SCI
- 	 * pretend we got one so we can set the SCI flags.
- 	 */
--	if (!acpi_sci_override_gsi)
--		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0);
-+	if (!acpi_sci_override_gsi) {
-+		int irq = gsi_to_irq(acpi_gbl_FADT.sci_interrupt);
-+		acpi_sci_ioapic_setup(irq, acpi_gbl_FADT.sci_interrupt, 0, 0);
-+	}
- 
- 	/* Fill in identity legacy mappings where no override */
- 	mp_config_acpi_legacy_irqs();
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index a917fdf..61b59ef 100644
+index f908af5..432bea1 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -97,6 +97,8 @@ int mp_irq_entries;
- /* GSI interrupts */
- static int nr_irqs_gsi = NR_IRQS_LEGACY;
+@@ -3302,7 +3302,7 @@ unsigned int create_irq_nr(unsigned int irq_want, int node)
+ 	raw_spin_unlock_irqrestore(&vector_lock, flags);
  
-+static int boot_ioapic_idx;
-+
- #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
- int mp_bus_id_to_type[MAX_MP_BUSSES];
- #endif
-@@ -1032,7 +1034,7 @@ static inline int irq_trigger(int idx)
- int (*ioapic_renumber_irq)(int ioapic, int irq);
- static int pin_2_irq(int idx, int apic, int pin)
- {
--	int irq, i;
-+	int irq;
- 	int bus = mp_irqs[idx].srcbus;
+ 	if (irq > 0)
+-		dynamic_irq_init_keep_chip_data(irq);
++		dynamic_irq_init_keep_chip_data(irq_to_desc(irq));
  
- 	/*
-@@ -1044,18 +1046,28 @@ static int pin_2_irq(int idx, int apic, int pin)
- 	if (test_bit(bus, mp_bus_not_pci)) {
- 		irq = mp_irqs[idx].srcbusirq;
- 	} else {
--		/*
--		 * PCI IRQs are mapped in order
--		 */
--		i = irq = 0;
--		while (i < apic)
--			irq += nr_ioapic_registers[i++];
--		irq += pin;
-+		unsigned int gsi;
-+		if (!acpi_ioapic) {
-+			int i;
-+			/*
-+			 * PCI IRQs are mapped in order
-+			 */
-+			i = gsi = 0;
-+			while (i < apic)
-+				gsi += nr_ioapic_registers[i++];
-+			gsi += pin;
-+		} else
-+			gsi = pin + mp_gsi_routing[apic].gsi_base;
-+
-+#ifdef CONFIG_X86_32
- 		/*
-                  * For MPS mode, so far only needed by ES7000 platform
-                  */
- 		if (ioapic_renumber_irq)
--			irq = ioapic_renumber_irq(apic, irq);
-+			gsi = ioapic_renumber_irq(apic, gsi);
-+#endif
-+
-+		irq = gsi_to_irq(gsi);
- 	}
- 
- #ifdef CONFIG_X86_32
-@@ -1505,9 +1517,10 @@ static void __init setup_IO_APIC_irqs(void)
+ 	return irq;
+ }
+@@ -3328,7 +3328,7 @@ void destroy_irq(unsigned int irq)
+ 	struct irq_desc *desc;
  	struct irq_cfg *cfg;
- 	int node = cpu_to_node(boot_cpu_id);
  
-+	apic_id = boot_ioapic_idx;
+-	dynamic_irq_cleanup_keep_chip_data(irq);
++	dynamic_irq_cleanup_keep_chip_data(irq_to_desc(irq));
+ 
+ 	free_irte(irq);
+ 	raw_spin_lock_irqsave(&vector_lock, flags);
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index 36ea6ac..1f5d112 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -420,9 +420,9 @@ static inline int irq_has_action(unsigned int irq)
+ 
+ /* Dynamic irq helper functions */
+ extern void dynamic_irq_init(unsigned int irq);
+-void dynamic_irq_init_keep_chip_data(unsigned int irq);
++void dynamic_irq_init_keep_chip_data(struct irq_desc *desc);
+ extern void dynamic_irq_cleanup(unsigned int irq);
+-void dynamic_irq_cleanup_keep_chip_data(unsigned int irq);
++void dynamic_irq_cleanup_keep_chip_data(struct irq_desc *desc);
+ 
+ /* Set/get chip/data for an IRQ: */
+ extern int set_irq_chip(unsigned int irq, struct irq_chip *chip);
+@@ -431,6 +431,12 @@ extern int set_irq_chip_data(unsigned int irq, void *data);
+ extern int set_irq_type(unsigned int irq, unsigned int type);
+ extern int set_irq_msi(unsigned int irq, struct msi_desc *entry);
+ 
++int set_irq_desc_chip(struct irq_desc *desc, struct irq_chip *chip);
++int set_irq_desc_data(struct irq_desc *desc, void *data);
++int set_irq_desc_chip_data(struct irq_desc *desc, void *data);
++int set_irq_desc_type(struct irq_desc *desc, unsigned int type);
++int set_irq_desc_msi(struct irq_desc *desc, struct msi_desc *entry);
 +
- 	apic_printk(APIC_VERBOSE, KERN_DEBUG "init IO_APIC IRQs\n");
+ #define get_irq_chip(irq)	(irq_to_desc(irq)->chip)
+ #define get_irq_chip_data(irq)	(irq_to_desc(irq)->chip_data)
+ #define get_irq_data(irq)	(irq_to_desc(irq)->handler_data)
+diff --git a/include/linux/irqnr.h b/include/linux/irqnr.h
+index 7bf89bc..dee8f2b 100644
+--- a/include/linux/irqnr.h
++++ b/include/linux/irqnr.h
+@@ -43,6 +43,7 @@ extern struct irq_desc *irq_to_desc(unsigned int irq);
  
--	for (apic_id = 0; apic_id < nr_ioapics; apic_id++)
- 	for (pin = 0; pin < nr_ioapic_registers[apic_id]; pin++) {
- 		idx = find_irq_entry(apic_id, pin, mp_INT);
- 		if (idx == -1) {
-@@ -1529,9 +1542,6 @@ static void __init setup_IO_APIC_irqs(void)
+ #ifdef CONFIG_SMP
+ #define irq_node(irq)	(irq_to_desc(irq)->node)
++#define irq_desc_node(desc) ((desc)->node)
+ #else
+ #define irq_node(irq)	0
+ #endif
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 190360d..6725334 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -18,17 +18,10 @@
  
- 		irq = pin_2_irq(idx, apic_id, pin);
+ #include "internals.h"
  
--		if ((apic_id > 0) && (irq > 16))
--			continue;
--
- 		/*
- 		 * Skip the timer IRQ if there's a quirk handler
- 		 * installed and if it returns 1:
-@@ -1565,7 +1575,7 @@ static void __init setup_IO_APIC_irqs(void)
-  * but could not use acpi_register_gsi()
-  * like some special sci in IBM x3330
-  */
--void setup_IO_APIC_irq_extra(u32 gsi)
-+void setup_IO_APIC_irq_extra(u32 gsi, unsigned int *pirq)
+-static void dynamic_irq_init_x(unsigned int irq, bool keep_chip_data)
++static void dynamic_irq_init_x(struct irq_desc *desc, bool keep_chip_data)
  {
- 	int apic_id = 0, pin, idx, irq;
- 	int node = cpu_to_node(boot_cpu_id);
-@@ -1585,6 +1595,7 @@ void setup_IO_APIC_irq_extra(u32 gsi)
- 		return;
+-	struct irq_desc *desc;
+ 	unsigned long flags;
  
- 	irq = pin_2_irq(idx, apic_id, pin);
-+	*pirq = irq;
- #ifdef CONFIG_SPARSE_IRQ
- 	desc = irq_to_desc(irq);
- 	if (desc)
-@@ -2028,6 +2039,30 @@ void __init enable_IO_APIC(void)
- 	clear_IO_APIC();
+-	desc = irq_to_desc(irq);
+-	if (!desc) {
+-		WARN(1, KERN_ERR "Trying to initialize invalid IRQ%d\n", irq);
+-		return;
+-	}
+-
+ 	/* Ensure we don't have left over values from a previous use of this irq */
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	desc->status = IRQ_DISABLED;
+@@ -57,7 +50,15 @@ static void dynamic_irq_init_x(unsigned int irq, bool keep_chip_data)
+  */
+ void dynamic_irq_init(unsigned int irq)
+ {
+-	dynamic_irq_init_x(irq, false);
++	struct irq_desc *desc;
++
++	desc = irq_to_desc(irq);
++	if (!desc) {
++		WARN(1, KERN_ERR "Trying to initialize invalid IRQ%d\n", irq);
++		return;
++	}
++
++	dynamic_irq_init_x(desc, false);
  }
  
-+static void __init probe_ioapic_i8259(void)
-+{
-+	/* probe boot ioapic idx */
-+	boot_ioapic_idx = ioapic_i8259.apic;
-+	if (boot_ioapic_idx < 0)
-+		boot_ioapic_idx = find_isa_irq_apic(0, mp_INT);
-+#ifdef CONFIG_ACPI
-+	if (!acpi_disabled && acpi_ioapic && boot_ioapic_idx < 0)
-+		boot_ioapic_idx = mp_find_ioapic(irq_to_gsi(0));
-+#endif
-+	if (boot_ioapic_idx < 0)
-+		boot_ioapic_idx = 0;
-+
-+#ifdef CONFIG_ACPI
-+	if (mp_gsi_routing[boot_ioapic_idx].gsi_base) {
-+		gsi_delta = NR_IRQS_LEGACY;
-+		nr_irqs_gsi += NR_IRQS_LEGACY;
-+		printk(KERN_DEBUG "new nr_irqs_gsi: %d\n", nr_irqs_gsi);
-+	}
-+#endif
-+
-+	printk(KERN_INFO "boot_ioapic_idx: %d\n", boot_ioapic_idx);
-+}
-+
- /*
-  * Not an __init, needed by the reboot code
+ /**
+@@ -66,26 +67,20 @@ void dynamic_irq_init(unsigned int irq)
+  *
+  *	does not set irq_to_desc(irq)->chip_data to NULL
   */
-@@ -3045,7 +3080,7 @@ static inline void __init check_timer(void)
- 				legacy_pic->chip->unmask(0);
- 			}
- 			if (disable_timer_pin_1 > 0)
--				clear_IO_APIC_pin(0, pin1);
-+				clear_IO_APIC_pin(apic1, pin1);
- 			goto out;
- 		}
- 		if (intr_remapping_enabled)
-@@ -3165,6 +3200,7 @@ void __init setup_IO_APIC(void)
- 	x86_init.mpparse.setup_ioapic_ids();
+-void dynamic_irq_init_keep_chip_data(unsigned int irq)
++void dynamic_irq_init_keep_chip_data(struct irq_desc *desc)
+ {
+-	dynamic_irq_init_x(irq, true);
++	dynamic_irq_init_x(desc, true);
+ }
  
- 	sync_Arb_IDs();
-+	probe_ioapic_i8259();
- 	setup_IO_APIC_irqs();
- 	init_IO_APIC_traps();
- 	if (legacy_pic->nr_legacy_irqs)
-@@ -4156,16 +4192,14 @@ void __init setup_ioapic_dest(void)
- 	if (skip_ioapic_setup == 1)
- 		return;
+-static void dynamic_irq_cleanup_x(unsigned int irq, bool keep_chip_data)
++static void dynamic_irq_cleanup_x(struct irq_desc *desc, bool keep_chip_data)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
  
--	for (ioapic = 0; ioapic < nr_ioapics; ioapic++)
-+	ioapic = boot_ioapic_idx;
-+
- 	for (pin = 0; pin < nr_ioapic_registers[ioapic]; pin++) {
- 		irq_entry = find_irq_entry(ioapic, pin, mp_INT);
- 		if (irq_entry == -1)
- 			continue;
- 		irq = pin_2_irq(irq_entry, ioapic, pin);
- 
--		if ((ioapic > 0) && (irq > 16))
--			continue;
+-	if (!desc) {
+-		WARN(1, KERN_ERR "Trying to cleanup invalid IRQ%d\n", irq);
+-		return;
+-	}
 -
- 		desc = irq_to_desc(irq);
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	if (desc->action) {
+ 		raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 		WARN(1, KERN_ERR "Destroying IRQ%d without calling free_irq\n",
+-			irq);
++			desc->irq);
+ 		return;
+ 	}
+ 	desc->msi_desc = NULL;
+@@ -105,7 +100,14 @@ static void dynamic_irq_cleanup_x(unsigned int irq, bool keep_chip_data)
+  */
+ void dynamic_irq_cleanup(unsigned int irq)
+ {
+-	dynamic_irq_cleanup_x(irq, false);
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc) {
++		WARN(1, KERN_ERR "Trying to cleanup invalid IRQ%d\n", irq);
++		return;
++	}
++
++	dynamic_irq_cleanup_x(desc, false);
+ }
  
- 		/*
-diff --git a/drivers/pnp/pnpacpi/rsparser.c b/drivers/pnp/pnpacpi/rsparser.c
-index 54514aa..1dcf64d 100644
---- a/drivers/pnp/pnpacpi/rsparser.c
-+++ b/drivers/pnp/pnpacpi/rsparser.c
-@@ -123,6 +123,10 @@ static void pnpacpi_parse_allocated_irqresource(struct pnp_dev *dev,
+ /**
+@@ -114,9 +116,9 @@ void dynamic_irq_cleanup(unsigned int irq)
+  *
+  *	does not set irq_to_desc(irq)->chip_data to NULL
+  */
+-void dynamic_irq_cleanup_keep_chip_data(unsigned int irq)
++void dynamic_irq_cleanup_keep_chip_data(struct irq_desc *desc)
+ {
+-	dynamic_irq_cleanup_x(irq, true);
++	dynamic_irq_cleanup_x(desc, true);
+ }
+ 
+ 
+@@ -152,26 +154,31 @@ EXPORT_SYMBOL(set_irq_chip);
+  *	@irq:	irq number
+  *	@type:	IRQ_TYPE_{LEVEL,EDGE}_* value - see include/linux/irq.h
+  */
+-int set_irq_type(unsigned int irq, unsigned int type)
++int set_irq_desc_type(struct irq_desc *desc, unsigned int type)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+ 	int ret = -ENXIO;
+ 
+-	if (!desc) {
+-		printk(KERN_ERR "Trying to set irq type for IRQ%d\n", irq);
+-		return -ENODEV;
+-	}
+-
+ 	type &= IRQ_TYPE_SENSE_MASK;
+ 	if (type == IRQ_TYPE_NONE)
+ 		return 0;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+-	ret = __irq_set_trigger(desc, irq, type);
++	ret = __irq_set_trigger(desc, desc->irq, type);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
+ }
++int set_irq_type(unsigned int irq, unsigned int type)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc) {
++		printk(KERN_ERR "Trying to set irq type for IRQ%d\n", irq);
++		return -ENODEV;
++	}
++
++	return set_irq_desc_type(desc, type);
++}
+ EXPORT_SYMBOL(set_irq_type);
+ 
+ /**
+@@ -181,10 +188,18 @@ EXPORT_SYMBOL(set_irq_type);
+  *
+  *	Set the hardware irq controller data for an irq
+  */
++int set_irq_desc_data(struct irq_desc *desc, void *data)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	desc->handler_data = data;
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++	return 0;
++}
+ int set_irq_data(unsigned int irq, void *data)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+-	unsigned long flags;
+ 
+ 	if (!desc) {
+ 		printk(KERN_ERR
+@@ -192,10 +207,7 @@ int set_irq_data(unsigned int irq, void *data)
+ 		return -EINVAL;
  	}
  
- 	flags = irq_flags(triggering, polarity, shareable);
-+#ifdef CONFIG_X86
-+	/* bus_irq or gsi ? */
-+	gsi = irq_to_gsi(gsi);
-+#endif
- 	irq = acpi_register_gsi(&dev->dev, gsi, triggering, polarity);
- 	if (irq >= 0)
- 		pcibios_penalize_isa_irq(irq, 1);
+-	raw_spin_lock_irqsave(&desc->lock, flags);
+-	desc->handler_data = data;
+-	raw_spin_unlock_irqrestore(&desc->lock, flags);
+-	return 0;
++	return set_irq_desc_data(desc, data);
+ }
+ EXPORT_SYMBOL(set_irq_data);
+ 
+@@ -206,24 +218,28 @@ EXPORT_SYMBOL(set_irq_data);
+  *
+  *	Set the MSI descriptor entry for an irq
+  */
+-int set_irq_msi(unsigned int irq, struct msi_desc *entry)
++int set_irq_desc_msi(struct irq_desc *desc, struct msi_desc *entry)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+ 
+-	if (!desc) {
+-		printk(KERN_ERR
+-		       "Trying to install msi data for IRQ%d\n", irq);
+-		return -EINVAL;
+-	}
+-
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+ 	desc->msi_desc = entry;
+ 	if (entry)
+-		entry->irq = irq;
++		entry->irq = desc->irq;
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return 0;
+ }
++int set_irq_msi(unsigned int irq, struct msi_desc *entry)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	if (!desc) {
++		printk(KERN_ERR
++		       "Trying to install msi data for IRQ%d\n", desc->irq);
++		return -EINVAL;
++	}
++
++	return set_irq_desc_msi(desc, entry);
++}
+ 
+ /**
+  *	set_irq_chip_data - set irq chip data for an irq
+@@ -232,19 +248,12 @@ int set_irq_msi(unsigned int irq, struct msi_desc *entry)
+  *
+  *	Set the hardware irq chip data for an irq
+  */
+-int set_irq_chip_data(unsigned int irq, void *data)
++int set_irq_desc_chip_data(struct irq_desc *desc, void *data)
+ {
+-	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+ 
+-	if (!desc) {
+-		printk(KERN_ERR
+-		       "Trying to install chip data for IRQ%d\n", irq);
+-		return -EINVAL;
+-	}
+-
+ 	if (!desc->chip) {
+-		printk(KERN_ERR "BUG: bad set_irq_chip_data(IRQ#%d)\n", irq);
++		printk(KERN_ERR "BUG: bad set_irq_chip_data(IRQ#%d)\n", desc->irq);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -254,6 +263,18 @@ int set_irq_chip_data(unsigned int irq, void *data)
+ 
+ 	return 0;
+ }
++int set_irq_chip_data(unsigned int irq, void *data)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	if (!desc) {
++		printk(KERN_ERR
++		       "Trying to install chip data for IRQ%d\n", irq);
++		return -EINVAL;
++	}
++
++	return set_irq_desc_chip_data(desc, data);
++}
+ EXPORT_SYMBOL(set_irq_chip_data);
+ 
+ /**
 -- 
 1.6.4.2
 
