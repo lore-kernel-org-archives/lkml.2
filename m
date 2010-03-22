@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab0CVOM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:12:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5119 "EHLO mx1.redhat.com"
+	id S1754789Ab0CVOQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:16:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:50313 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754016Ab0CVOM4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:12:56 -0400
-Date: Mon, 22 Mar 2010 14:01:06 +0000
-From: "Richard W.M. Jones" <rjones@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Avi Kivity <avi@redhat.com>,
-       Antoine Martin <antoine@nagafix.co.uk>,
-       Olivier Galibert <galibert@pobox.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>, libguestfs@redhat.com
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
-	project
-Message-ID: <20100322140106.GN23276@amd.home.annexia.org>
-References: <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu> <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu> <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com> <20100322123726.GH21874@redhat.com> <20100322125440.GB12475@elte.hu> <20100322130513.GJ21874@redhat.com> <20100322135647.GA14201@elte.hu>
+	id S1754693Ab0CVOQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:16:47 -0400
+Date: Mon, 22 Mar 2010 15:16:30 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] x86: use vector_desc instead of vector_irq
+In-Reply-To: <m17hp4wiz0.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LFD.2.00.1003221506300.3147@localhost.localdomain>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org> <1269221770-9667-6-git-send-email-yinghai@kernel.org> <alpine.LFD.2.00.1003221435480.3147@localhost.localdomain> <m17hp4wiz0.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322135647.GA14201@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:56:47PM +0100, Ingo Molnar wrote:
-> Just curious: any plans to extend this to include live read/write access as 
-> well?
->
-> I.e. to have the 'agent' (guestfsd) running universally, so that
-> tools such as perf and by users could rely on the VFS integration as
-> well, not just disaster recovery tools?
+> >> -typedef int vector_irq_t[NR_VECTORS];
+> >> -DECLARE_PER_CPU(vector_irq_t, vector_irq);
+> >> -extern void setup_vector_irq(int cpu);
+> >> +typedef struct irq_desc *vector_desc_t[NR_VECTORS];
+> >
+> >   Why do we need that typedef ? Please use plain struct irq_desc *
+> 
+> Well at least originally DECLARE_PER_CPU chocked when given a complex
+> type. Does:
+> DECLARE_PER_CPU(struct irq_desc *[NR_VECTORS], vector_desc);
+> work?
 
-Totally.  That's not to say there is a definite plan, but we're very
-open to doing this.  We already wrote the daemon in such a way that it
-doesn't require the appliance part, but could run inside any existing
-guest (we've even ported bits of it to Windoze ...).
+Hmm, I thought that was fixed, but I might be wrong as usual.
+ 
+> 
+> >> +DECLARE_PER_CPU(vector_desc_t, vector_desc);
+> >> +extern void setup_vector_desc(int cpu);
+> > ...
+> >>  void destroy_irq(unsigned int irq)
+> >>  {
+> >>  	unsigned long flags;
+> >> +	struct irq_desc *desc;
+> >> +	struct irq_cfg *cfg;
+> >>  
+> >>  	dynamic_irq_cleanup_keep_chip_data(irq);
+> >>  
+> >>  	free_irte(irq);
+> >>  	raw_spin_lock_irqsave(&vector_lock, flags);
+> >> -	__clear_irq_vector(irq, get_irq_chip_data(irq));
+> >> +	desc = irq_to_desc(irq);
+> >> +	cfg = desc->chip_data;
+> >> +	__clear_irq_vector(desc, cfg);
+> >
+> > 	__clear_irq_vector(desc, desc->chip_data);
+> >
+> >  should be sufficient, right ?
+> 
+> You want to deliberately loose a modicum of type safety?
 
-The only remaining issue is how access control would be handled.  You
-obviously wouldn't want anything in the host that can get access to
-the vmchannel socket to start sending destructive write commands into
-guests.
+I really have a hard time to see how assigning a void pointer to a
+struct irq_cfg pointer is anymore type safe than using the void
+pointer as for the function argument right away. 
 
-Rich.
+> >>  		if (printk_ratelimit())
+> >> -			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+> >> -				__func__, smp_processor_id(), vector, irq);
+> >> +			pr_emerg("%s: %d.%d No irq handler for vector\n",
+> >
+> >   That printk is confusing. It's not lacking an irq handler. The
+> >   vector is simply not assigned.
+> 
+> Long evolution.  Do you have a suggestion of better wording?
 
--- 
-Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
-virt-df lists disk usage of guests without needing to install any
-software inside the virtual machine.  Supports Linux and Windows.
-http://et.redhat.com/~rjones/virt-df/
+You mean hysterical raisins. Ok, how about:
+
+    pr_emerg("irq: %d.d irq vector not assigned\n", ...);
+
+Thanks,
+
+	tglx
