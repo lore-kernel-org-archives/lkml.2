@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755978Ab0CVTjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:39:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60592 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755385Ab0CVTjY convert rfc822-to-8bit (ORCPT
+	id S1755896Ab0CVToM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:44:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45099 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752727Ab0CVToK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:39:24 -0400
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <20100322193100.GB28709@redhat.com>
-Date: Mon, 22 Mar 2010 20:39:15 +0100
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E548536E-4D62-4B17-BA09-9C12EB1A2717@suse.de>
-References: <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <4BA7C1D7.5070208@codemonkey.ws> <20100322193100.GB28709@redhat.com>
-To: "Daniel P. Berrange" <berrange@redhat.com>
-X-Mailer: Apple Mail (2.1077)
+	Mon, 22 Mar 2010 15:44:10 -0400
+Date: Mon, 22 Mar 2010 12:43:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-mmc@vger.kernel.org, Chaithrika U S <chaithrika@ti.com>,
+       Vipin Bhandari <vipin.bhandari@ti.com>,
+       Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] davinci: MMC: updates to suspend/resume
+ implementation
+Message-Id: <20100322124333.40d728bb.akpm@linux-foundation.org>
+In-Reply-To: <1268771425-6277-2-git-send-email-khilman@deeprootsystems.com>
+References: <1268771425-6277-1-git-send-email-khilman@deeprootsystems.com>
+	<1268771425-6277-2-git-send-email-khilman@deeprootsystems.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 16 Mar 2010 13:30:25 -0700
+Kevin Hilman <khilman@deeprootsystems.com> wrote:
 
-On 22.03.2010, at 20:31, Daniel P. Berrange wrote:
+> +static struct dev_pm_ops davinci_mmcsd_pm = {
+> +	.suspend        = davinci_mmcsd_suspend,
+> +	.resume         = davinci_mmcsd_resume,
+> +};
 
-> On Mon, Mar 22, 2010 at 02:15:35PM -0500, Anthony Liguori wrote:
->> On 03/22/2010 12:55 PM, Avi Kivity wrote:
->>>> Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
->>>> Anthony.
->>>> There's numerous ways that this can break:
->>> 
->>> I don't like it either.  We have libvirt for enumerating guests.
->> 
->> We're stuck in a rut with libvirt and I think a lot of the 
->> dissatisfaction with qemu is rooted in that.  It's not libvirt that's 
->> the probably, but the relationship between qemu and libvirt.
->> 
->> We add a feature to qemu and maybe after six month it gets exposed by 
->> libvirt.  Release time lines of the two projects complicate the 
->> situation further.  People that write GUIs are limited by libvirt 
->> because that's what they're told to use and when they need something 
->> simple, they're presented with first getting that feature implemented in 
->> qemu, then plumbed through libvirt.
-> 
-> That is somewhat unfair as a blanket statement! 
-> 
-> While some features have had a long time delay & others are not supported
-> at all, in many cases we have had zero delay. We have been supporting QMP,
-> qdev, vhost-net since before the patches for those features were even merged
-> in QEMU GIT! It varies depending on how closely QEMU & libvirt people have
-> been working together on a feature, and on how strongly end users are demanding
-> the features. 
+checkpatch said
 
-Yes. I think the point was that every layer in between brings potential slowdown and loss of features.
+WARNING: struct dev_pm_ops should normally be const
+#83: FILE: drivers/mmc/host/davinci_mmc.c:1379:
++static struct dev_pm_ops davinci_mmcsd_pm = {
 
-Hopefully this will go away with QMP. By then people can decide if they want to be hypervisor agnostic (libvirt) or tightly coupled with qemu (QMP). The best of both worlds would of course be a QMP pass-through in libvirt. No idea if that's easily possible.
-
-Either way, things are improving. What people see at the end is virt-manager though. And if you compare if feature-wise as well as looks-wise vbox is simply superior. Several features lacking in lower layers too (pv graphics, always working absolute pointers, clipboard sharing, ...).
-
-That said it doesn't mean we should resign. It means we know which areas to work on :-). And we know that our problem is not the kernel/userspace interface, but the qemu and above interfaces.
-
-Alex
+I'll make that change.  Please check.
