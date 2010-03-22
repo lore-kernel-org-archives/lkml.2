@@ -1,92 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756214Ab0CVUmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:42:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754944Ab0CVUmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:42:21 -0400
-Message-ID: <4BA7D5CD.7050008@redhat.com>
-Date: Mon, 22 Mar 2010 22:40:45 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1756204Ab0CVUng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:43:36 -0400
+Received: from LION.seas.upenn.edu ([158.130.12.194]:49754 "EHLO
+	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab0CVUne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:43:34 -0400
+Message-ID: <4BA7D666.5030608@seas.upenn.edu>
+Date: Mon, 22 Mar 2010 16:43:18 -0400
+From: Rafi Rubin <rafi@seas.upenn.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100316 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <20100322192033.GC21919@elte.hu> <4BA7C885.5010901@redhat.com> <20100322200617.GD3306@elte.hu> <4BA7CFF4.8080102@redhat.com> <20100322202937.GA18126@elte.hu>
-In-Reply-To: <20100322202937.GA18126@elte.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Micki Balanga <micki@n-trig.com>
+CC: jkosina@suse.cz, chatty@enac.fr, peterhuewe@gmx.de,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Henrik Rydberg <rydberg@euromail.se>
+Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to driver
+References: <1269260173-2543-1-git-send-email-micki@n-trig.com> <20100322172920.GA18658@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEE8@Exchange-IL.n-trig.com> <20100322181722.GA24483@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEEB@Exchange-IL.n-trig.com>
+In-Reply-To: <48A28051AC6D7A48B64F28272458190326DEEB@Exchange-IL.n-trig.com>
+Content-Type: multipart/mixed;
+ boundary="------------030605050506000909020204"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 10:29 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
+This is a multi-part message in MIME format.
+--------------030605050506000909020204
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 03/22/2010 03:58 PM, Micki Balanga wrote:
 >
->    
->>> I think you didnt understand my point. I am talking about 'perf kvm top'
->>> hanging if Qemu hangs.
->>>        
->> Use non-blocking I/O, report that guest as dead.  No point in profiling it,
->> it isn't making any progress.
->>      
-> Erm, at what point do i decide that a guest is 'dead' versus 'just lagged due
-> to lots of IO' ?
->    
+> Hi
+> I would like to add more information about the Fake button.
+> I will explain using this scenario:
+> You touch the sensor with one finger and then remove the finger,
+> Firmware will report six frames with fake fingers,(Indicate end of session)
+> The driver will report this as fake fingers (Will send 3 events) and
+> input_sync
+> to inform user space application that the user removed finger from sensor.
+> this information is needed in order to analyze the data received from
+> N-trig firmware.
+> Micki
 
-qemu shouldn't block due to I/O (it does now, but there is work to fix 
-it).  Of course it could be swapping or other things.
+Thank you for taking this to a discussion format.
 
-Pick a timeout, everything we do has timeouts these days.  It's the 
-price we pay for protection: if you put something where a failure can't 
-hurt you, you have to be prepared for failure, and you might have false 
-alarms.
+It seems you have raised an issue that is an active discussion for multi 
+touch handling in general and an issue that I have considered for n-trig 
+support in specific.
 
-Is it so horrible for 'perf kvm top'?  No user data loss will happen, 
-surely?
 
-On the other hand, if it's in the kernel and it fails, you will lose 
-service or perhaps data.
+The current published version of the driver does send one more sequence 
+of events after it decides all fingers are off the screen.  That final 
+sequence is necessary to tell single touch drivers that the tools are 
+released (BTN_TOUCH is set to zero, etc).  This also resets the active 
+contact count to zero for multi touch handlers, which look to see how 
+many MT events come from each frame.
 
-> Also, do you realize that you increase complexity (the use of non-blocking
-> IO), just to protect against something that wouldnt happen if the right
-> solution was used in the first place?
->    
+I had observed that sometimes the tablet looses contacts semi 
+arbitrarily, and we get a zero contact group as a mistake.  In the 
+patches I sent in early in February you will notice a solution that I 
+was considering at the time.  I was also playing with correcting for 
+events that looked like real contacts but were also just noise.  After 
+rethinking my patches and reading the multi touch doc in the Documents 
+tree, I chose to leave out these corrections.
 
-It's a tradeoff.  Increasing the kernel code size vs. increasing 
-userspace size.
+That being said, I do have a specific patch to handle the set of end of 
+stream events.  All that's needed is to count the empty groups and send 
+the terminal events only when a counter hits the specified value 
+(attached is a tiny patch I wrote when I needed that feature back really 
+quickly when my screen started misbehaving during a meeting).
 
->>> With a proper in-kernel enumeration the kernel would always guarantee the
->>> functionality, even if the vcpu does not make progress (i.e. it's "hung").
->>>
->>> With this implemented in Qemu we lose that kind of robustness guarantee.
->>>        
->> If qemu has a bug in the resource enumeration code, you can't profile one
->> guest.  If the kernel has a bug in the resource enumeration code, the system
->> either panics or needs to be rebooted later.
->>      
-> This is really simple code, not rocket science. If there's a bug in it we'll
-> fix it. On the other hand a 500KLOC+ piece of Qemu code has lots of places to
-> hang, so that is a large cross section.
->
->    
+Note I have submitted that as a patch for 2 reasons.  First I couldn't 
+be completely sure that there was a specific number of empty groups to 
+signal end of stream which would be expected to be maintained over time. 
+  And secondly the erroneous termination of stream has not been much of 
+a problem in general.
 
-The kernel has tons of very simple code (and some very complex code as 
-well), and tons of -stable updates as well.
+You will note, that this is something that is simple enough that it 
+makes perfect sense to put into the kernel.  There's little point in 
+wasting the cycles to push that decision to user space.
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+--------------030605050506000909020204
+Content-Type: text/plain;
+ name="commit-4c6fffa"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="commit-4c6fffa"
 
+commit 4c6fffa347e529672dfb858b07168f49ba4bbe97
+Author: Rafi Rubin <rafi@seas.upenn.edu>
+Date:   Tue Feb 23 12:11:41 2010 -0500
+
+    Quick and dirty avoidance of erroneous end of contact events.
+
+diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+index 3234c72..25ee5a4 100644
+--- a/drivers/hid/hid-ntrig.c
++++ b/drivers/hid/hid-ntrig.c
+@@ -35,6 +35,9 @@ struct ntrig_data {
+ 
+ 	__u8 mt_footer[4];
+ 	__u8 mt_foot_count;
++
++	__u8 deactivate_slack;
++	__u8 deactivate_state; 
+ };
+ 
+ /*
+@@ -192,6 +195,7 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+ 			/* Pen activity signal, trigger end of touch. */
+ 			if (nd->mt_footer[2]) {
+ 				nd->confidence = 0;
++				nd->deactivate_state = 0;
+ 				break;
+ 			}
+ 
+@@ -252,14 +256,16 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+ 							BTN_TOOL_QUADTAP, 1);
+ 				}
+ 				input_report_key(input, BTN_TOUCH, 1);
+-			} else {
++				nd->deactivate_state = nd->deactivate_slack;
++			} else if (! nd->deactivate_state) {
+ 				input_report_key(input,
+ 						BTN_TOOL_DOUBLETAP, 0);
+ 				input_report_key(input,
+ 						BTN_TOOL_TRIPLETAP, 0);
+ 				input_report_key(input,
+ 						BTN_TOOL_QUADTAP, 0);
+-			}
++			} else
++				nd->deactivate_state--;
+ 			break;
+ 
+ 		default:
+@@ -292,6 +298,8 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	}
+ 
+ 	nd->reading_mt = 0;
++	nd->deactivate_slack = 4;
++	nd->deactivate_state = 0; 
+ 	hid_set_drvdata(hdev, nd);
+ 
+ 	ret = hid_parse(hdev);
+
+--------------030605050506000909020204--
