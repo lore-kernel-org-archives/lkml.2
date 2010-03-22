@@ -1,126 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0CVSHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:07:46 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:54656 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab0CVSHp (ORCPT
+	id S1755560Ab0CVSKy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:10:54 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:60154 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754855Ab0CVSKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:07:45 -0400
-Date: Mon, 22 Mar 2010 13:07:37 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Andi Kleen <andi@firstfloor.org>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Add PGM protocol support to the IP stack
-In-Reply-To: <877hp4i76d.fsf@basil.nowhere.org>
-Message-ID: <alpine.DEB.2.00.1003221300180.17230@router.home>
-References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home>
- <877hp4i76d.fsf@basil.nowhere.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 22 Mar 2010 14:10:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=hI+hPUYwjSqmj6x9TjePKiSHtpm9vBlMKZrZ+ZkxBZkexdK+74BAS0x3e65lbbwW3t
+         DOKjuwcTxD9vU3Ez3DHEySEFilF+hN4uBEhLHecP5KWmh1M0hVmhiZn+ehMUymLoi2q4
+         Hfs8PZSMm2QHPkBlu0ygxvslYn47krVdmXiTY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4BA7B119.1070800@redhat.com>
+References: <20100318172805.GB26067@elte.hu>
+	 <20100322111040.GL13108@8bytes.org> <20100322122228.GH3483@elte.hu>
+	 <20100322134633.GD1940@8bytes.org> <20100322163215.GC18796@elte.hu>
+	 <y0mmxy0wa1r.fsf@fche.csb>
+	 <84144f021003221027t1a3e7d6ft64612654c5e50da@mail.gmail.com>
+	 <4BA7A9AF.3010806@redhat.com>
+	 <84144f021003221052lb693f15ped0b432c34cdd8dc@mail.gmail.com>
+	 <4BA7B119.1070800@redhat.com>
+Date: Mon, 22 Mar 2010 20:10:50 +0200
+X-Google-Sender-Auth: bb9963e880b3a883
+Message-ID: <84144f021003221110p79db476fpae25f6997b61b0b9@mail.gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
+	project
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010, Andi Kleen wrote:
-
-> > What I have right now is:
-> >
-> > 1. Opening a socket
+On Mon, Mar 22, 2010 at 8:04 PM, Avi Kivity <avi@redhat.com> wrote:
+>> That said, pulling 400 KLOC of code into the kernel sounds really
+>> excessive. Would we need all that if we just do native virtualization
+>> and no actual emulation?
 >
-> >
-> >         A. Native PGM
-> >
-> >                 fd = socket(AF_INET, SOCK_RDM, IPPROTO_PGM)
->
-> RDM = Reliable ? Multicast ?
+> What is native virtualization and no actual emulation?
 
-RDM is Reliable Datagram Multicast I believe. I'd rather have SOCK_PGM if
-I could choose.
-
->
-> >         B. PGM over UDP
-> >
-> >                 fd = socket(AF_INET, SOCK_RDM, IPPROTO_UDP)
-> >
-> >         C. PGM over SHM (?)
-> >
-> >                 fd = socket(AF_UNIX, SOCK_RDM, 0)
->
-> Not sure how that should work.
-
-Multiple processes would communicate via shm segments. Maybe defer to the
-future but its an important operation mode as the systems grow bigger and bigger.
-SHM segment would have to contain some sort of ring buffer that the
-receivers could tap into. But that mode has not really been thought
-through.
-
-> > 3. Sending and receiving
-> >
-> >         Use the usual socket read and write operations and the various flavors of waiting
-> >         for a packet via select, poll, epoll etc.
-> >
-> >         Packet sizes are determined by the number of  packets in a single sendmsg() unless
->
-> Number of bytes surely?
-
-Sorry yes you are right.
-
-> >         overridden by the RM_SET_MESSAGE_BOUNDARY socket option.
->
-> That's unusual to have such a option (except the MTU). What is it good for?
-
-No idea why it was implemented. It can be used to use send() for portions
-of a message. Triggers the send() only when all bytes have been provided.
-Probably necessary if one wants to have very long (megabytes) messages.
-Esoteric and likely not going to be in a first release.
-
-> > 4.      Transmitter Socket Options
-> >
-> >
-> >         A. Setting the window size / rate.
-> >
-> >                 struct pgm_send_window x;
-> >                 x.RateKbitsPerSec = 56;
-> >                 x.WindowSizeInMsecs = 60000;
-> >                 x.WindowSizeinBytes = 10000000;
-> >
-> >                 setsockopt(fd, SOCK_RDM, RM_RATE_WINDOW_SIZE, &x, sizeof(x));
-> >
-> >                 Default is sending at 56Kbps with a buffer of 10 Megabytes and buffering for a minute.
->
-> That's a very large buffer for a socket. It would be better to use the usual
-> auto shrinking/increasing mechanisms.
-
-Reliable multicast protocols have a defined time period / "reliabilty
-buffer" so that they can resend a message that was missed for a time
-period. It is customary to either specify a time period or define the size
-of the "reliability buffer".
-
-> >         B. FEC mode
-> >
-> >                 struct pgm_fec_info x;
-> >
-> >                 x.FECBlocksize = 255;
-> >                 x.FECProActivePackets = 0;
-> >                 x.FECGroupSize = 0;
-> >                 x.fFECOnDemandParityEnabled = 1;
-> >
-> >                 setsockopt(fd, SOCK_RDM, RM_FEC_MODE, &x, sizeof(x));
->
-> Is that mode really needed?
-
-Never used it. I'd rather skip for now. Maybe later.
-
->
-> > /* Socket API structures (established by M$DN) */
-> > struct pgm_receiver_stats {
-> >         u64     NumODataPacketsReceived;        /* Number of ODATA (original) sequences */
->
-> It's difficult to maintain 64 bit counters on 32bit hosts on all targets.
-> But I guess it would be ok to only fill in 32bit in this case.
-
-32 bit counters have the awful habit of overflowing.
+What I meant with "actual emulation" was running architecture A code
+on architecture B what was qemu's traditional use case. So the
+question was how much of the 400 KLOC do we need for just KVM on all
+the architectures that it supports?
