@@ -1,224 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab0CVXQp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 19:16:45 -0400
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:39376 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab0CVXQn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 19:16:43 -0400
-Message-ID: <4BA7FA89.208@cs.columbia.edu>
-Date: Mon, 22 Mar 2010 19:17:29 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1755125Ab0CVXS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 19:18:26 -0400
+Received: from rekin26.go2.pl ([193.17.41.76]:58596 "EHLO rekin26.go2.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab0CVXSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 19:18:25 -0400
+X-Greylist: delayed 82474 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 19:18:25 EDT
+From: Zbigniew Luszpinski <zbiggy@go2.pl>
+To: "Justin P. mattock" <justinmattock@gmail.com>
+Subject: Re: 2.6.32 help needed with reverting APIC patches.
+Date: Tue, 23 Mar 2010 00:18:15 +0100
+User-Agent: KMail/1.13.1 (Linux/2.6.32.10; KDE/4.4.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201003220123.37341.zbiggy@go2.pl> <4BA716E5.2060800@gmail.com>
+In-Reply-To: <4BA716E5.2060800@gmail.com>
 MIME-Version: 1.0
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-CC: Linux Containers <containers@lists.osdl.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-cr] nested pid namespaces (v2)
-References: <20100319213955.GA17912@us.ibm.com>
-In-Reply-To: <20100319213955.GA17912@us.ibm.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+Message-Id: <201003230018.15750.zbiggy@go2.pl>
+X-O2-Trust: 2, 68
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Serge E. Hallyn wrote:
-> Support checkpoint and restart of tasks in nested pid namespaces.  At
-> Oren's request here is an alternative to my previous implementation.  In
-> this one, we keep the original single pids_array to minimize memory
-> allocations.  The pids array entries are augmented with a pidns depth
-
-Thanks for adapting the patch.
-
-FWIW, not only minimize memory allocations, but also permit a more
-regular structure of the image data (array of fixed size elements
-followed by an array of vpids), which simplifies the code that needs
-to read/write/access this data.
-
-> (relative to the container init's pidns, and an "rpid" which is the pid
-> in the checkpointer's pidns (or 0 if no valid pid exists).  The rpid
-> will be used by userspace to gather more information (like
-> /proc/$$/mountinfo) after the kernel sys_checkpoint.  If any tasks are
-> in nested pid namespace, another single array holds all of the vpids.
-> At restart those are used by userspace to determine how to call
-> eclone().  Kernel ignores them.
+> best would be todo a bisect. but if your for sure these
+> are the commits, then you probably wont need too.
 > 
-> All cr_tests including the new pid_ns testcase pass.
+> if your doing git revert xxxx
+> and the commit reverts for you then your good,
+> but if there's too much happening(big merge), then
+> a git rebase probably is the best bet(but could be wrong).
 > 
-> Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-> ---
+> hope this helps.
+> 
+> Justin P. Mattock
+> 
 
-[...]
+Yeah I imagine reverting patches from kernel 2.6.32.10 up to 2.6.20 and seeing all these conflicts in git.
+I have just done this in different way: downloaded official 2.6.32.10 and manually reinserted the removed code.
+I resolved IRQ_DELAYED_DISABLE irq.h conflict by moving it to higher bitfield position.
+The patched kernel booted OK but these reverts did not resolve the OHCI hangs in APIC mode.
+The final verdict is: idea #1 was false.
+Now I focus on #2 and #3 ideas.
 
-> @@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
->  		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
->  		ret = -EPERM;
->  	}
-> -	/* no support for >1 private pidns */
-> -	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
-> -		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
-> -		ret = -EPERM;
-> +	/* pidns must be descendent of root_nsproxy */
-> +	pidns = nsproxy->pid_ns;
-> +	while (pidns != ctx->root_nsproxy->pid_ns) {
-> +		if (pidns == &init_pid_ns) {
-> +			ret = -EPERM;
-> +			_ckpt_err(ctx, ret, "%(T)stranger pid_ns\n");
-> +			break;
-> +		}
-> +		pidns = pidns->parent;
+Call for action:
+1. If you have any idea why ohci hangs in APIC mode let me know.
+2. If you have Nvidia MCP78S mainboard with AMD CPU please send me ACPI dump:
+acpidump > dump.bin
+bzip2 -9v dump.bin
+This will be good APIC code comparison to check the #3 idea.
+Do not mess the ML with attachments - send me the file(s) PM.
 
-Currently we do this while() loop twice - once here and once when
-we collect the vpids. While I doubt if this has any performance
-impact, is there an advantage to doing it also here ?  (a violation
-will be observed there too).
+On my mainboard almost all onboard devices are sitting on INT A according to ACPI code.
+Only USB 2.0 EHCI controller sits on INT B alone.
 
-[...]
-
->  
->  	if (nsproxy != task_nsproxy(current)) {
-> +		/*
-> +		 * This is *kinda* shady to do without any locking.  However
-> +		 * it is safe because each task is restarted separately in
-> +		 * serial.  If that ever changes, we'll need a spinlock?
-> +		 */
-
-Maybe add the lock/rcu already, so it is never forgotten later ?
-
-> +		if (!nsproxy->pid_ns)
-> +			nsproxy->pid_ns = get_pid_ns(current->nsproxy->pid_ns);
->  		get_nsproxy(nsproxy);
->  		switch_task_namespaces(current, nsproxy);
->  	}
-
-[...]
-
-> +/*
-> + * read all the vpids - we don't actually care about them,
-> + * userspace did
-> + */
-
-How about ckpt_read_consume() for this ?
-
-> +static int restore_slurp_vpids(struct ckpt_ctx *ctx)
-> +{
-> +	struct ckpt_hdr_vpids *h;
-> +	int size, ret;
-> +	void *junk;
-> +
-> +	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_VPIDS);
-> +	if (IS_ERR(h))
-> +		return PTR_ERR(h);
-> +	ctx->nr_vpids = h->nr_vpids;
-> +	ckpt_hdr_put(ctx, h);
-> +
-> +	if (!ctx->nr_vpids)
-> +		return 0;
-> +
-> +	size = sizeof(struct ckpt_vpid) * ctx->nr_vpids;
-> +	if (size < 0)		/* overflow ? */
-> +		return -EINVAL;
-> +
-> +	junk = kmalloc(size, GFP_KERNEL);
-> +	if (!junk)
-> +		return -ENOMEM;
-> +
-> +	ret = _ckpt_read_buffer(ctx, junk, size);
-> +	kfree(junk);
-> +
-> +	return ret;
-> +}
-> +
-
-[...]
-
-> @@ -1237,6 +1271,11 @@ static int do_restore_coord(struct ckpt_ctx *ctx, pid_t pid)
->  	if (ret < 0)
->  		return ret;
->  
-> +	ret = restore_slurp_vpids(ctx);
-
-instead:
-	ret = ckpt_read_consume(ctx, ..., ...);
-
-[...]
-
->  struct ckpt_pids {
-> +	/* These pids are in the root_nsproxy's pid ns */
->  	__s32 vpid;
->  	__s32 vppid;
->  	__s32 vtgid;
->  	__s32 vpgid;
->  	__s32 vsid;
-> +	__s32 rpid;  /* real pid - in checkpointer's pidns */
-
-This comes from an unrelated patch/purpose, right - maybe mention
-in the patch description ?
-
-> +	__s32 depth; /* pid depth */
-> +} __attribute__((aligned(8)));
-> +
-> +/* number of vpids */
-> +struct ckpt_hdr_vpids {
-> +	struct ckpt_hdr h;
-> +	__s32 nr_vpids;
-> +} __attribute__((aligned(8)));
-> +
-> +struct ckpt_vpid {
-> +	__s32 pid;
-> +	__s32 pad;
-
-@pad is redundant as last element.
-
->  } __attribute__((aligned(8)));
->  
->  /* pids */
-> diff --git a/include/linux/checkpoint_types.h b/include/linux/checkpoint_types.h
-> index ecd3e91..2fb79cf 100644
-> --- a/include/linux/checkpoint_types.h
-> +++ b/include/linux/checkpoint_types.h
-> @@ -72,6 +72,9 @@ struct ckpt_ctx {
->  	struct task_struct **tasks_arr; /* array of all tasks [checkpoint] */
->  	int nr_tasks;                   /* size of tasks array */
->  
-> +	int nr_vpids;
-> +	struct pid_namespace *coord_pidns;	/* coordinator pid_ns */
-> +
->  	/* [multi-process restart] */
->  	struct ckpt_pids *pids_arr;	/* array of all pids [restart] */
->  	int nr_pids;			/* size of pids array */
-> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> index 0da0d83..6d86240 100644
-> --- a/kernel/nsproxy.c
-> +++ b/kernel/nsproxy.c
-> @@ -364,8 +364,13 @@ static struct nsproxy *do_restore_ns(struct ckpt_ctx *ctx)
->  		get_net(net_ns);
->  		nsproxy->net_ns = net_ns;
->  
-> -		get_pid_ns(current->nsproxy->pid_ns);
-> -		nsproxy->pid_ns = current->nsproxy->pid_ns;
-> +		/*
-> +		 * The pid_ns will get assigned the first time that we
-> +		 * assign the nsproxy to a task.  The task had unshared
-> +		 * its pid_ns in userspace before calling restart, and
-> +		 * we want to keep using that pid_ns.
-> +		 */
-> +		nsproxy->pid_ns = NULL;
-
-This doesn't look healthy.
-
-If it is (or will be) possible for another process to look at the
-restarting process, not having a pid-ns may confuse other code in
-the kernel ?
-
->  	}
->   out:
->  	if (ret < 0)
-
-Oren.
+have a nice day,
+Zbigniew Luszpinski
