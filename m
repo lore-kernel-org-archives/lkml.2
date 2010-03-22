@@ -1,17 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab0CVNBb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 09:01:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754504Ab0CVNB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 09:01:29 -0400
-Date: Mon, 22 Mar 2010 12:54:52 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
+	id S1754843Ab0CVNBh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:01:37 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:42053 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754504Ab0CVNBe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:01:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=cnIyFfynCG4vGsuRZQoVA61fGeV+oGdyVD3bwp5ZNXLkjlw1xDk8zV4j2z/A/dMUEp
+         xAhegQsati6oOB+aaKrunmlmlQrs5XVYcGqZTRJb/S6GY1lnvaJJ0+Vhh8EZ8caRSkxx
+         IlWVZnANIaIPUteVKFEFF6+0YFBX2n2amzkH8=
+MIME-Version: 1.0
+In-Reply-To: <4BA76746.1000505@redhat.com>
+References: <20100318172805.GB26067@elte.hu> <4BA3747F.60401@codemonkey.ws>
+	 <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com>
+	 <20100321203121.GA30194@elte.hu> <4BA6900B.1040408@redhat.com>
+	 <20100321215207.GA13219@elte.hu> <4BA712F0.5030806@redhat.com>
+	 <20100322112340.GD3483@elte.hu> <4BA76746.1000505@redhat.com>
+Date: Mon, 22 Mar 2010 15:01:32 +0200
+X-Google-Sender-Auth: 6a1a290b8279ef3d
+Message-ID: <84144f021003220601q1b4b9050x5eb87dfaf10c3c85@mail.gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
+	project
+From: Pekka Enberg <penberg@cs.helsinki.fi>
 To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Olivier Galibert <galibert@pobox.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
+Cc: Ingo Molnar <mingo@elte.hu>, Anthony Liguori <anthony@codemonkey.ws>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
@@ -19,57 +37,31 @@ Cc: Ingo Molnar <mingo@elte.hu>, Olivier Galibert <galibert@pobox.com>,
        oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
        Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
        ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
-Message-ID: <20100322125452.GI21874@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <20100321203704.GB30194@elte.hu> <4BA71012.7070004@redhat.com> <20100322113931.GE3483@elte.hu> <4BA76649.5080307@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA76649.5080307@redhat.com>
-User-Agent: Mutt/1.4.1i
+       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>, sandmann@daimi.au.dk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:44:57PM +0200, Avi Kivity wrote:
-> On 03/22/2010 01:39 PM, Ingo Molnar wrote:
-> >Reality is, the server space never was and never will be self-sustaining in
-> >the long run (as Novell has found it out with Netware), it is the desktop 
-> >that
-> >dictates future markets. This is why i find your views about this naive and
-> >shortsighted.
-> >   
-> 
-> Yet Linux is gaining ground in the server and embedded space while 
-> struggling on the desktop.  Apple is gaining ground on the desktop but 
-> is invisible on the server side (despite having a nice product - Xserve).
-> 
-> It's true Windows achieved server dominance through it's desktop power, 
-> but I don't think that's what keeping them there now.
-> 
-> In any case, I'm not going to write a kvm GUI.  It doesn't match my 
-> skills, interest, or my employer's interest.  If you wish to see a kvm 
-> GUI you have to write one yourself or convince someone to write it 
-> (perhaps convince Red Hat to fund such an effort beyond virt-manager).
+Hi Avi,
 
-It is planned to add support for SPICE remote desktop to virt-manager
-once that matures & is accepted into upstream KVM/QEMU. That will improve
-the guest/desktop interaction in many ways compared to VNC or SDL, with
-improved display resolution changing, copy+paste between host & guest,
-much better graphics performance, etc. 
+On Mon, Mar 22, 2010 at 2:49 PM, Avi Kivity <avi@redhat.com> wrote:
+> Seems like perf is also split, with sysprof being developed outside the
+> kernel.  Will you bring sysprof into the kernel?  Will every feature be
+> duplicated in prof and sysprof?
 
-Development efforts aren't totally ignoring the desktop, more that they
-are focusing on remoting guest desktops, rather than interaction host 
-desktop since that's where alot of demand is. This benefits single host
-desktops scenarios too, since there's alot of overlap in the problems
-faced there.
+I am glad you brought it up! Sysprof was historically outside of the
+kernel (with it's own kernel module, actually). While the GUI was
+nice, it was much harder to set up compared to oprofile so it wasn't
+all that popular. Things improved slightly when Ingo merged the custom
+kernel module but the _userspace_ part of sysprof was lagging behind a
+bit. I don't know what's the situation now that they've switched over
+to perf syscalls but you probably get my point.
 
-Regards,
-Daniel
--- 
-|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
-|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
-|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
-|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
+It would be nice if the two projects merged but I honestly don't see
+any fundamental problem with two (or more) co-existing projects.
+Friendly competition will ultimately benefit the users (think KDE and
+Gnome here).
+
+                        Pekka
