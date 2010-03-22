@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754165Ab0CVPb1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 11:31:27 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:43129 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753808Ab0CVPbZ (ORCPT
+	id S1754086Ab0CVPcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 11:32:15 -0400
+Received: from comsmtp1.singnet.com.sg ([165.21.101.74]:54778 "EHLO
+	comsmtp1.singnet.com.sg" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753517Ab0CVPcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 11:31:25 -0400
-Message-ID: <4BA78D3D.9090007@oracle.com>
-Date: Mon, 22 Mar 2010 08:31:09 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Mon, 22 Mar 2010 11:32:14 -0400
+To: info@win.org
+Subject: Winner
+Message-ID: <1269271630.4ba78c4ed4638@arrowana.singnet.com.sg>
+Date: Mon, 22 Mar 2010 23:27:10 +0800 (SGT)
+From: Camelot Board <super1@singnet.com.sg>
+Reply-To: camelot_info9@ymail.com
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Netdev <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for March 22 (net-sysfs.c)
-References: <20100322171937.d753bdba.sfr@canb.auug.org.au>
-In-Reply-To: <20100322171937.d753bdba.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4BA78D47.0147:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: SingNet WebMail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/10 23:19, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20100319:
-> 
-> 
-> The net tree lost its build failures.
 
 
-When CONFIG_SYSFS is not enabled:
+File REF No: CGL/74-A0802742009
+BATCH No:2009CGL-01
 
-net/core/net-sysfs.c:742: error: implicit declaration of function 'rx_queue_remove_kobjects'
-net/core/net-sysfs.c:783: error: implicit declaration of function 'rx_queue_register_kobjects'
+Your email ID have won 891,934.00.pounds on
+our online monthly promomtion,to claim your
+prize, contact Mr.Brain Johnson with the
+following informations given below:
 
--- 
-~Randy
+Your Full Name, Address, Age, Occupation, 
+Country, Tell
+
+Email: camelot_info9@ymail.com
+Regards
+Mr Brian Johnson
+TEL:(+44)704 570 7372
