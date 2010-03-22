@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab0CVFVY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 01:21:24 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:61636 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752047Ab0CVFVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 01:21:23 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] slab: Report caller of kzalloc() rather than kzalloc() itself.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Message-Id: <201003221421.EBG18222.FJQtSOLMOVHFFO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 22 Mar 2010 14:21:21 +0900
+	id S1753525Ab0CVF2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 01:28:43 -0400
+Received: from mail.gmx.net ([213.165.64.20]:52111 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752959Ab0CVF2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 01:28:41 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+HN39I0lCHSycsImjjwgFPaMRYQY8JWNEao/Jhig
+	283SNYilYeeU5f
+Subject: Re: [Bug #15192] netperf ~50% regression with 2.6.33-rc1, bisect
+ to 1b9508f
+From: Mike Galbraith <efault@gmx.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+In-Reply-To: <hTwaxgnIZ2O.A.81F.hQopLB@chimera>
+References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
+	 <hTwaxgnIZ2O.A.81F.hQopLB@chimera>
+Content-Type: text/plain
+Date: Mon, 22 Mar 2010 06:28:37 +0100
+Message-Id: <1269235717.19079.4.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.52000000000000002
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/slab_allocators may report kzalloc() itself rather than caller of
-kzalloc() if CONFIG_OPTIMIZE_INLINING=y .
+On Sun, 2010-03-21 at 21:30 +0100, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.32 and 2.6.33.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15192
+> Subject		: netperf ~50% regression with 2.6.33-rc1, bisect to 1b9508f
+> Submitter	: Lin Ming <ming.m.lin@intel.com>
+> Date		: 2010-01-25 10:03 (56 days old)
+> First-Bad-Commit: http://git.kernel.org/git/linus/1b9508f6831e10d53256825de8904caa22d1ca2c
+> References	: http://marc.info/?l=linux-kernel&m=126441481427331&w=4
+> Handled-By	: Mike Galbraith <efault@gmx.de>
+> 		  Peter Zijlstra <peterz@infradead.org>
+> 		  Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+> Patch		: http://patchwork.kernel.org/patch/78544/
 
-  # grep zalloc /proc/slab_allocators | head
-  scsi_cmd_cache: 2 kmem_cache_zalloc+0xb/0xd
-  vm_area_struct: 355 kmem_cache_zalloc+0xb/0xd
-  debug_objects_cache: 555 kmem_cache_zalloc+0xb/0xd
-  size-2048: 3 kzalloc+0xb/0xd
-  size-2048: 8 kzalloc+0xb/0xd
-  size-2048: 1 kzalloc+0xb/0xd
-  size-2048: 3 kzalloc+0xb/0xd
-  size-2048: 2 kzalloc+0xb/0xd
-  size-1024: 19 kzalloc+0xb/0xd
-  size-1024: 1 kzalloc+0xb/0xd
+That patch swam upstream as d306ebc28649b89877a22158fe0076f06cc46f60.
 
-This behavior is not helpful for finding allocators.
-Report caller of kzalloc() rather than kzalloc() itself by changing
-"inline" to "__always_inline".
+	-Mike
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- slab.h |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 4884462..907b277 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -305,7 +305,8 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
- /*
-  * Shortcuts
-  */
--static inline void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
-+static __always_inline void *kmem_cache_zalloc(struct kmem_cache *k,
-+					       gfp_t flags)
- {
- 	return kmem_cache_alloc(k, flags | __GFP_ZERO);
- }
-@@ -315,7 +316,7 @@ static inline void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
-  * @size: how many bytes of memory are required.
-  * @flags: the type of memory to allocate (see kmalloc).
-  */
--static inline void *kzalloc(size_t size, gfp_t flags)
-+static __always_inline void *kzalloc(size_t size, gfp_t flags)
- {
- 	return kmalloc(size, flags | __GFP_ZERO);
- }
-@@ -326,7 +327,7 @@ static inline void *kzalloc(size_t size, gfp_t flags)
-  * @flags: the type of memory to allocate (see kmalloc).
-  * @node: memory node from which to allocate
-  */
--static inline void *kzalloc_node(size_t size, gfp_t flags, int node)
-+static __always_inline void *kzalloc_node(size_t size, gfp_t flags, int node)
- {
- 	return kmalloc_node(size, flags | __GFP_ZERO, node);
- }
