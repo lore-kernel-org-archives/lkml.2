@@ -1,217 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0CVKyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 06:54:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47496 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754118Ab0CVKyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 06:54:49 -0400
-Date: Mon, 22 Mar 2010 21:54:42 +1100
-From: Nick Piggin <npiggin@suse.de>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
-Message-ID: <20100322105442.GH17637@laptop>
-References: <20100322053937.GA17637@laptop>
- <4BA7359B.2060603@panasas.com>
+	id S1754530Ab0CVKzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 06:55:25 -0400
+Received: from smtprelay-h12.telenor.se ([62.127.194.5]:59918 "EHLO
+	smtprelay-h12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab0CVKzX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 06:55:23 -0400
+X-SENDER-IP: [83.226.248.59]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al1BACfppktT4vg7PGdsb2JhbACBO4QsgXeTWAEBAQE3uiqEfQQ
+X-IronPort-AV: E=Sophos;i="4.51,286,1267398000"; 
+   d="scan'208";a="54014397"
+Message-ID: <4BA74CA2.7070305@coyote.org>
+Date: Mon, 22 Mar 2010 11:55:30 +0100
+From: Lars Lindley <lindley@coyote.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100322 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7359B.2060603@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: gregkh@suse.de, greg@kroah.com, pavel@ucw.cz, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: winbond: wb35reg_f.h Coding style fixes.
+References: <1269210658-9518-1-git-send-email-lindley@coyote.org>	 <4BA71949.9040809@cs.helsinki.fi> <4BA73C4C.4020708@coyote.org> <84144f021003220257k1bd88315x3eb21057b4696a8f@mail.gmail.com>
+In-Reply-To: <84144f021003220257k1bd88315x3eb21057b4696a8f@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 11:17:15AM +0200, Boaz Harrosh wrote:
-> On 03/22/2010 07:39 AM, Nick Piggin wrote:
-> > It's ugly and lazy that we do these default aops in case it has not
-> > been filled in by the filesystem.
-> > 
-> > A NULL operation should always mean either: we don't support the
-> > operation; we don't require any action; or a bug in the filesystem,
-> > depending on the context.
-> > 
-> > In practice, if we get rid of these fallbacks, it will be clearer
-> > what operations are used by a given address_space_operations struct,
-> > reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
-> > rid of all the buffer_head knowledge from core mm and fs code.
-> > 
-> > We could add a patch like this which spits out a recipe for how to fix
-> > up filesystems and get them all converted quite easily.
-> > 
+On 2010-03-22 10:57, Pekka Enberg wrote:
+> On Mon, Mar 22, 2010 at 11:45 AM, Lars Lindley <lindley@coyote.org> wrote:
+>> On 2010-03-22 08:16, Pekka Enberg wrote:
+>>>> +unsigned char Wb35Reg_initial(struct hw_data *HwData);
+>>>
+>>> Lets avoid CamelCase for the arguments so "hw_data" here, for example. I
+>>> see the same thing elsewhere in this patch as well.
+>>>
+>> I thought struct hw_data *hw_data looked a bit confusing..Thats why I left
+>> CamelCase alone for now. I can make it like that if you want..
 > 
-> Guilty as charged.
-
-Well, everyone's a bit guilty.
-
-
-> It could be nice if the first thing this patch will
-> do is: Add a comment at struct address_space_operations that states
-> that all operations should be defined and perhaps what are the minimum
-> defaults for some of these, as below. I do try to be good, I was under
-> the impression that defaults are OK.
-
-Defaults will usually be OK for aops that use buffer head functions for
-their other operations.
-
-
-> Below are changes to exofs as proposed by this mail. Please comment?
-> I will push such a patch to exofs later.
-
-OK, thanks very much for being such a proactive fs maintainer. And
-for the comments.
-
-
+> Yes please.
 > 
-> > Index: linux-2.6/mm/filemap.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/filemap.c
-> > +++ linux-2.6/mm/filemap.c
-> > @@ -2472,7 +2472,14 @@ int try_to_release_page(struct page *pag
-> >  
-> >  	if (mapping && mapping->a_ops->releasepage)
-> >  		return mapping->a_ops->releasepage(page, gfp_mask);
-> > -	return try_to_free_buffers(page);
-> > +	else {
-> > +		static bool warned = false;
-> > +		if (!warned) {
-> > +			warned = true;
-> > +			print_symbol("address_space_operations %s missing releasepage method. Use try_to_free_buffers.\n", (unsigned long)page->mapping->a_ops);
-> > +		}
-> > +		return try_to_free_buffers(page);
-> 
-> This is not nice! we should have an export that looks like:
-> 
-> int default_releasepage(struct page *page, gfp_t gfp)
-> {
-> 	return try_to_free_buffers(page);
-> }
-> 
-> otherwise 3ton FSes would have to define the same thing all over again
-
-Yes definitely (or block_releasepage really).
-
-> 
-> > +	}
-> >  }
-> >  
-> >  EXPORT_SYMBOL(try_to_release_page);
-> > Index: linux-2.6/mm/page-writeback.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/page-writeback.c
-> > +++ linux-2.6/mm/page-writeback.c
-> > @@ -1159,8 +1159,14 @@ int set_page_dirty(struct page *page)
-> >  	if (likely(mapping)) {
-> >  		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
-> >  #ifdef CONFIG_BLOCK
-> > -		if (!spd)
-> > +		if (!spd) {
-> > +			static bool warned = false;
-> > +			if (!warned) {
-> > +				warned = true;
-> > +				print_symbol("address_space_operations %s missing set_page_dirty method. Use __set_page_dirty_buffers.\n", (unsigned long)page->mapping->a_ops);
-> > +			}
-> >  			spd = __set_page_dirty_buffers;
-> > +		}
-> 
-> We could do better then __set_page_dirty_buffers for something lots of FSes use
-
-block_set_page_dirty? I don't know, not such a big deal and it's already
-widely used. Probably worry about renames as another issue. (I do agree
-that good names are important though)
 
 
-> > @@ -311,8 +312,14 @@ void clear_inode(struct inode *inode)
-> >  
-> >  	might_sleep();
-> >  	/* XXX: filesystems should invalidate this before calling */
-> > -	if (!mapping->a_ops->release)
-> > +	if (!mapping->a_ops->release) {
-> 
-> Where is this code from? As of 2.6.34-rc2 I don't have a release in a_ops->
-
-Sorry this is from the earlier patch I posted (get rid of buffer heads
-from mm/fs). That is what prompted this patch.
+Here's a new patch against master that fixes CamelCase too.
 
 
-> > @@ -827,9 +828,14 @@ int simple_fsync(struct file *file, stru
-> >  	int err;
-> >  	int ret;
-> >  
-> > -	if (!mapping->a_ops->sync)
-> > +	if (!mapping->a_ops->sync) {
-> 
-> And this one is new as well, right?
-> 
-> New added vectors should be added to all in-tree FSes by the submitter.
 
-Yes they should. Although maybe not trivial because the fs may not
-use that functionality even if it uses buffer-heads. We don't want
-to fill in an operation if it is unused. But the patches should go
-through fs maintainers trees.
+[PATCH] staging: winbond: wb35reg_f.h Coding style fixes.
 
+I fixed the checkpatch things except a couple of long lines.
+I also removed hungarian notation and CamelCase from the argument names
+and some "commented away" code.
 
-> and a deprecate warning for out of tree FSes (If we care)
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/wb35reg_f.h |  104 ++++++++++++++++++-----------------
+ 1 files changed, 54 insertions(+), 50 deletions(-)
 
-We do care, and yes this is another good reason for the warnings (even
-once we do fix up all in-tree filesystems).
-
-> 
-> > +		static bool warned = false;
-> > +		if (!warned) {
-> > +			warned = true;
-> > +			print_symbol("address_space_operations %s missing sync method. Using sync_mapping_buffers.\n", (unsigned long)mapping->a_ops);
-> > +		}
-> >  		ret = sync_mapping_buffers(mapping);
-> > -	else
-> > +	} else
-> >  		ret = mapping->a_ops->sync(mapping, AOP_SYNC_WRITE|AOP_SYNC_WAIT);
-> >  
-> >  	if (!(inode->i_state & I_DIRTY))
-> > --
-> ---
-> exofs: Add default address_space_operations
-> 
-> All vectors of address_space_operations should be initialized by the filesystem.
-> Add the missing parts.
-> 
-> ---
-> git diff --stat -p -M fs/exofs/inode.c
->  fs/exofs/inode.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-> index a17e4b7..85dd847 100644
-> --- a/fs/exofs/inode.c
-> +++ b/fs/exofs/inode.c
-> @@ -754,6 +754,11 @@ static int exofs_write_end(struct file *file, struct address_space *mapping,
->  	return ret;
->  }
->  
-> +static int exofs_releasepage(struct page *page, gfp_t gfp)
-> +{
-> +	return try_to_free_buffers(page);
-> +}
-> +
->  const struct address_space_operations exofs_aops = {
->  	.readpage	= exofs_readpage,
->  	.readpages	= exofs_readpages,
-> @@ -761,6 +766,9 @@ const struct address_space_operations exofs_aops = {
->  	.writepages	= exofs_writepages,
->  	.write_begin	= exofs_write_begin_export,
->  	.write_end	= exofs_write_end,
-> +	.releasepage	= exofs_releasepage,
-> +	.set_page_dirty	= __set_page_dirty_buffers,
-> +	.invalidatepage = block_invalidatepage,
->  };
-
-AFAIKS, you aren't using buffer heads at all (except nobh_truncate,
-which will not attach buffers to pages)?
-
-If so, you should only need __set_page_dirty_nobuffers.
-
-Thanks,
-Nick
-
+diff --git a/drivers/staging/winbond/wb35reg_f.h b/drivers/staging/winbond/wb35reg_f.h
+index d352bce..bf23c10 100644
+--- a/drivers/staging/winbond/wb35reg_f.h
++++ b/drivers/staging/winbond/wb35reg_f.h
+@@ -3,59 +3,63 @@
+ 
+ #include "wbhal_s.h"
+ 
+-//====================================
+-// Interface function declare
+-//====================================
+-unsigned char Wb35Reg_initial(  struct hw_data * pHwData );
+-void Uxx_power_on_procedure(  struct hw_data * pHwData );
+-void Uxx_power_off_procedure(  struct hw_data * pHwData );
+-void Uxx_ReadEthernetAddress(  struct hw_data * pHwData );
+-void Dxx_initial(  struct hw_data * pHwData );
+-void Mxx_initial(  struct hw_data * pHwData );
+-void RFSynthesizer_initial(  struct hw_data * pHwData );
+-//void RFSynthesizer_SwitchingChannel(  struct hw_data * pHwData,  s8 Channel );
+-void RFSynthesizer_SwitchingChannel(  struct hw_data * pHwData,  struct chan_info Channel );
+-void BBProcessor_initial(  struct hw_data * pHwData );
+-void BBProcessor_RateChanging(  struct hw_data * pHwData,  u8 rate ); // 20060613.1
+-//void RF_RateChanging(  struct hw_data * pHwData,  u8 rate ); // 20060626.5.c Add
+-u8 RFSynthesizer_SetPowerIndex(  struct hw_data * pHwData,  u8 PowerIndex );
+-u8 RFSynthesizer_SetMaxim2828_24Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetMaxim2828_50Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetMaxim2827_24Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetMaxim2827_50Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetMaxim2825Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetAiroha2230Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetAiroha7230Power(  struct hw_data *,  u8 index );
+-u8 RFSynthesizer_SetWinbond242Power(  struct hw_data *,  u8 index );
+-void GetTxVgaFromEEPROM(  struct hw_data * pHwData );
+-void EEPROMTxVgaAdjust(  struct hw_data * pHwData ); // 20060619.5 Add
+-
+-#define RFWriteControlData( _A, _V ) Wb35Reg_Write( _A, 0x0864, _V )
+-
+-void Wb35Reg_destroy(  struct hw_data * pHwData );
+-
+-unsigned char Wb35Reg_Read(  struct hw_data * pHwData,  u16 RegisterNo,   u32 * pRegisterValue );
+-unsigned char Wb35Reg_ReadSync(  struct hw_data * pHwData,  u16 RegisterNo,   u32 * pRegisterValue );
+-unsigned char Wb35Reg_Write(  struct hw_data * pHwData,  u16 RegisterNo,  u32 RegisterValue );
+-unsigned char Wb35Reg_WriteSync(  struct hw_data * pHwData,  u16 RegisterNo,  u32 RegisterValue );
+-unsigned char Wb35Reg_WriteWithCallbackValue(  struct hw_data * pHwData,
+-								 u16 RegisterNo,
+-								 u32 RegisterValue,
+-								 s8 *pValue,
+-								 s8 Len);
+-unsigned char Wb35Reg_BurstWrite(  struct hw_data * pHwData,  u16 RegisterNo,  u32 * pRegisterData,  u8 NumberOfData,  u8 Flag );
+-
+-void Wb35Reg_EP0VM(  struct hw_data * pHwData );
+-void Wb35Reg_EP0VM_start(  struct hw_data * pHwData );
++/*
++ * ====================================
++ * Interface function declare
++ * ====================================
++ */
++unsigned char Wb35Reg_initial(struct hw_data *hw_data);
++void Uxx_power_on_procedure(struct hw_data *hw_data);
++void Uxx_power_off_procedure(struct hw_data *hw_data);
++void Uxx_ReadEthernetAddress(struct hw_data *hw_data);
++void Dxx_initial(struct hw_data *hw_data);
++void Mxx_initial(struct hw_data *hw_data);
++void RFSynthesizer_initial(struct hw_data *hw_data);
++void RFSynthesizer_SwitchingChannel(struct hw_data *hw_data, struct chan_info channel);
++void BBProcessor_initial(struct hw_data *hw_data);
++void BBProcessor_RateChanging(struct hw_data *hw_data, u8 rate);
++u8 RFSynthesizer_SetPowerIndex(struct hw_data *hw_data, u8 power_index);
++u8 RFSynthesizer_SetMaxim2828_24Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetMaxim2828_50Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetMaxim2827_24Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetMaxim2827_50Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetMaxim2825Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetAiroha2230Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetAiroha7230Power(struct hw_data *, u8 index);
++u8 RFSynthesizer_SetWinbond242Power(struct hw_data *, u8 index);
++void GetTxVgaFromEEPROM(struct hw_data *hw_data);
++void EEPROMTxVgaAdjust(struct hw_data *hw_data);
++
++#define RFWriteControlData(_A, _V) Wb35Reg_Write(_A, 0x0864, _V)
++
++void Wb35Reg_destroy(struct hw_data *hw_data);
++
++unsigned char Wb35Reg_Read(struct hw_data *hw_data, u16 register_no, u32 *register_value);
++unsigned char Wb35Reg_ReadSync(struct hw_data *hw_data, u16 register_no, u32 *register_value);
++unsigned char Wb35Reg_Write(struct hw_data *hw_data, u16 register_no, u32 register_value);
++unsigned char Wb35Reg_WriteSync(struct hw_data *hw_data, u16 register_no, u32 register_value);
++unsigned char Wb35Reg_WriteWithCallbackValue(struct hw_data *hw_data,
++							 u16 register_no,
++							 u32 register_value,
++							 s8 *value,
++							 s8 len);
++unsigned char Wb35Reg_BurstWrite(struct hw_data *hw_data,
++					u16 register_no,
++					u32 *register_data,
++					u8 number_of_data,
++					u8 flag);
++
++void Wb35Reg_EP0VM(struct hw_data *hw_data);
++void Wb35Reg_EP0VM_start(struct hw_data *hw_data);
+ void Wb35Reg_EP0VM_complete(struct urb *urb);
+ 
+-u32 BitReverse( u32 dwData, u32 DataLength);
++u32 BitReverse(u32 data, u32 data_length);
+ 
+-void CardGetMulticastBit(   u8 Address[MAC_ADDR_LENGTH],  u8 *Byte,  u8 *Value );
+-u32 CardComputeCrc(  u8 * Buffer,  u32 Length );
++void CardGetMulticastBit(u8 address[MAC_ADDR_LENGTH], u8 *byte, u8 *value);
++u32 CardComputeCrc(u8 *buffer, u32 length);
+ 
+-void Wb35Reg_phy_calibration(  struct hw_data * pHwData );
+-void Wb35Reg_Update(  struct hw_data * pHwData,  u16 RegisterNo,  u32 RegisterValue );
+-unsigned char adjust_TXVGA_for_iq_mag(  struct hw_data * pHwData );
++void Wb35Reg_phy_calibration(struct hw_data *hw_data);
++void Wb35Reg_Update(struct hw_data *hw_data, u16 register_no, u32 register_value);
++unsigned char adjust_TXVGA_for_iq_mag(struct hw_data *hw_data);
+ 
+ #endif
+-- 
+1.7.0.2
