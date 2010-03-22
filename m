@@ -1,53 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150Ab0CVILK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:11:10 -0400
-Received: from mail-px0-f184.google.com ([209.85.216.184]:33740 "EHLO
-	mail-px0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab0CVILI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:11:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=a2Q0xWuRGjh5goM2LU28ZYHd7DPCDa3YV3QS3ik5OYKH6kjaKS2hL91nfX8LnHIhDS
-         IaSiC7um4CL+60/EJQFhLV4G3Q6EG7nfwNDZJjIvskaS8baznp5Yd1igHqqh+I1td1ow
-         OTlUZXUPi6jPkQ7JN30N3NVm1u8s9rQzSMGTk=
-MIME-Version: 1.0
-In-Reply-To: <87wrx5m1h3.fsf@pollan.anholt.net>
-References: <ho2jal$oqs$1@dough.gmane.org> <87wrx5m1h3.fsf@pollan.anholt.net>
-Date: Mon, 22 Mar 2010 09:11:06 +0100
-Message-ID: <bad735c81003220111y44bfb828vfd4c9fbbcabf3419@mail.gmail.com>
-Subject: Re: i915 lockup / extreme delay
-From: Karl Vogel <karl.vogel@gmail.com>
-To: Eric Anholt <eric@anholt.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754223Ab0CVIR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:17:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55914 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753851Ab0CVIRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 04:17:55 -0400
+Date: Mon, 22 Mar 2010 04:17:17 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Amerigo Wang <amwang@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Message-Id: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
+Subject: [RFC Patch 1/3] netpoll: add generic support for bridge and bonding devices
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 5:20 AM, Eric Anholt <eric@anholt.net> wrote:
-> On Sat, 20 Mar 2010 14:41:41 +0100, Karl Vogel <karl.vogel@gmail.com> wrote:
->> The 'effect' is that only the mouse pointer works in the X server. The
->> cpu usage on the laptop during the sluggishness is minimal. When I
->> suspend the game with winedbg, the X server slowly becomes responsive again.
->>
->> The output from latencytop seems to point to i915 being the culprit:
->
-> If there's some code doing glFlush()es, it's probably that code at
-> fault.  You don't need to do that unless you're doing frontbuffer
-> rendering, and if you're doing frontbuffer rendering you should really
-> be doing backbuffer rendering.  I don't see a kernel issue here.
 
-That doesnt explain why the box completely locks up on 2.6.34-rc2
-though, where only a cold reboot works.
+This whole patchset is for adding netpoll support to bridge and bonding
+devices. I already tested it for bridge, bonding, bridge over bonding,
+and bonding over bridge. It looks fine now.
 
-It also seems a bit odd that 1 opengl application is able to entirely
-lockup user interaction of the X server, then again that might be more
-of an X issue than a kernel one.. or is it expected behaviour?
-(the only thing you can do is wiggle the pointer, nothing else.. no
-window selection, no window dragging, not even start new apps that
-open windows)
+Please comment.
+
+
+To make bridge and bonding support netpoll, we need to adjust
+some netpoll generic code. This patch does the following things:
+
+1) introduce two new priv_flags for struct net_device:
+   IFF_IN_NETPOLL which identifies we are processing a netpoll;
+   IFF_DISABLE_NETPOLL is used to disable netpoll support for a device
+   at run-time;
+
+2) introduce three new methods for netdev_ops:
+   ->ndo_netpoll_setup() is used to setup netpoll for a device;
+   ->ndo_netpoll_xmit() is used to transmit netpoll requests;
+   ->ndo_netpoll_cleanup() is used to clean up netpoll when a device is
+     removed.
+
+3) introduce netpoll_poll_dev() which takes a struct net_device * parameter;
+
+4) export netpoll_send_skb() and netpoll_poll_dev() which will be used later;
+
+5) hide a pointer to struct netpoll in struct netpoll_info, ditto.
+
+Cc: David Miller <davem@davemloft.net>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: WANG Cong <amwang@redhat.com>
+
+---
+Index: linux-2.6/include/linux/if.h
+===================================================================
+--- linux-2.6.orig/include/linux/if.h
++++ linux-2.6/include/linux/if.h
+@@ -71,6 +71,8 @@
+ 					 * release skb->dst
+ 					 */
+ #define IFF_DONT_BRIDGE 0x800		/* disallow bridging this ether dev */
++#define IFF_IN_NETPOLL	0x1000		/* whether we are processing netpoll */
++#define IFF_DISABLE_NETPOLL	0x2000	/* disable netpoll at run-time */
+ 
+ #define IF_GET_IFACE	0x0001		/* for querying only */
+ #define IF_GET_PROTO	0x0002
+Index: linux-2.6/include/linux/netdevice.h
+===================================================================
+--- linux-2.6.orig/include/linux/netdevice.h
++++ linux-2.6/include/linux/netdevice.h
+@@ -530,6 +530,8 @@ struct netdev_queue {
+ 	unsigned long		tx_dropped;
+ } ____cacheline_aligned_in_smp;
+ 
++struct netpoll;
++struct netpoll_info;
+ 
+ /*
+  * This structure defines the management hooks for network devices.
+@@ -667,6 +669,12 @@ struct net_device_ops {
+ 						        unsigned short vid);
+ #ifdef CONFIG_NET_POLL_CONTROLLER
+ 	void                    (*ndo_poll_controller)(struct net_device *dev);
++	void			(*ndo_netpoll_setup)(struct net_device *dev,
++						     struct netpoll_info *npinfo);
++	int			(*ndo_netpoll_xmit)(struct netpoll *np,
++						    struct sk_buff *skb,
++						    struct net_device *dev);
++	void			(*ndo_netpoll_cleanup)(struct net_device *dev);
+ #endif
+ 	int			(*ndo_set_vf_mac)(struct net_device *dev,
+ 						  int queue, u8 *mac);
+Index: linux-2.6/include/linux/netpoll.h
+===================================================================
+--- linux-2.6.orig/include/linux/netpoll.h
++++ linux-2.6/include/linux/netpoll.h
+@@ -36,8 +36,11 @@ struct netpoll_info {
+ 	struct sk_buff_head txq;
+ 
+ 	struct delayed_work tx_work;
++
++	struct netpoll *netpoll;
+ };
+ 
++void netpoll_poll_dev(struct net_device *dev);
+ void netpoll_poll(struct netpoll *np);
+ void netpoll_send_udp(struct netpoll *np, const char *msg, int len);
+ void netpoll_print_options(struct netpoll *np);
+@@ -47,6 +50,7 @@ int netpoll_trap(void);
+ void netpoll_set_trap(int trap);
+ void netpoll_cleanup(struct netpoll *np);
+ int __netpoll_rx(struct sk_buff *skb);
++void netpoll_send_skb(struct netpoll *np, struct sk_buff *skb);
+ 
+ 
+ #ifdef CONFIG_NETPOLL
+Index: linux-2.6/net/core/netpoll.c
+===================================================================
+--- linux-2.6.orig/net/core/netpoll.c
++++ linux-2.6/net/core/netpoll.c
+@@ -178,9 +178,8 @@ static void service_arp_queue(struct net
+ 	}
+ }
+ 
+-void netpoll_poll(struct netpoll *np)
++void netpoll_poll_dev(struct net_device *dev)
+ {
+-	struct net_device *dev = np->dev;
+ 	const struct net_device_ops *ops;
+ 
+ 	if (!dev || !netif_running(dev))
+@@ -200,6 +199,13 @@ void netpoll_poll(struct netpoll *np)
+ 	zap_completion_queue();
+ }
+ 
++void netpoll_poll(struct netpoll *np)
++{
++	if (!np->dev)
++		return;
++	netpoll_poll_dev(np->dev);
++}
++
+ static void refill_skbs(void)
+ {
+ 	struct sk_buff *skb;
+@@ -281,7 +287,7 @@ static int netpoll_owner_active(struct n
+ 	return 0;
+ }
+ 
+-static void netpoll_send_skb(struct netpoll *np, struct sk_buff *skb)
++void netpoll_send_skb(struct netpoll *np, struct sk_buff *skb)
+ {
+ 	int status = NETDEV_TX_BUSY;
+ 	unsigned long tries;
+@@ -307,7 +313,10 @@ static void netpoll_send_skb(struct netp
+ 		     tries > 0; --tries) {
+ 			if (__netif_tx_trylock(txq)) {
+ 				if (!netif_tx_queue_stopped(txq)) {
+-					status = ops->ndo_start_xmit(skb, dev);
++					if (ops->ndo_netpoll_xmit)
++						status = ops->ndo_netpoll_xmit(np, skb, dev);
++					else
++						status = ops->ndo_start_xmit(skb, dev);
+ 					if (status == NETDEV_TX_OK)
+ 						txq_trans_update(txq);
+ 				}
+@@ -752,7 +761,10 @@ int netpoll_setup(struct netpoll *np)
+ 		atomic_inc(&npinfo->refcnt);
+ 	}
+ 
+-	if (!ndev->netdev_ops->ndo_poll_controller) {
++	npinfo->netpoll = np;
++
++	if (ndev->priv_flags & IFF_DISABLE_NETPOLL
++			|| !ndev->netdev_ops->ndo_poll_controller) {
+ 		printk(KERN_ERR "%s: %s doesn't support polling, aborting.\n",
+ 		       np->name, np->dev_name);
+ 		err = -ENOTSUPP;
+@@ -830,6 +842,9 @@ int netpoll_setup(struct netpoll *np)
+ 	/* last thing to do is link it to the net device structure */
+ 	ndev->npinfo = npinfo;
+ 
++	if (ndev->netdev_ops->ndo_netpoll_setup)
++		ndev->netdev_ops->ndo_netpoll_setup(ndev, npinfo);
++
+ 	/* avoid racing with NAPI reading npinfo */
+ 	synchronize_rcu();
+ 
+@@ -904,6 +919,7 @@ void netpoll_set_trap(int trap)
+ 		atomic_dec(&trapped);
+ }
+ 
++EXPORT_SYMBOL(netpoll_send_skb);
+ EXPORT_SYMBOL(netpoll_set_trap);
+ EXPORT_SYMBOL(netpoll_trap);
+ EXPORT_SYMBOL(netpoll_print_options);
+@@ -911,4 +927,5 @@ EXPORT_SYMBOL(netpoll_parse_options);
+ EXPORT_SYMBOL(netpoll_setup);
+ EXPORT_SYMBOL(netpoll_cleanup);
+ EXPORT_SYMBOL(netpoll_send_udp);
++EXPORT_SYMBOL(netpoll_poll_dev);
+ EXPORT_SYMBOL(netpoll_poll);
