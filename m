@@ -1,114 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0CVSPi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:15:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8210 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199Ab0CVSPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:15:37 -0400
-Message-ID: <4BA7B3B2.7050600@redhat.com>
-Date: Mon, 22 Mar 2010 20:15:14 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1755677Ab0CVSRf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:17:35 -0400
+Received: from stag.seas.upenn.edu ([158.130.70.79]:55475 "EHLO
+	stag.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab0CVSRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:17:33 -0400
+Date: Mon, 22 Mar 2010 14:17:22 -0400
+From: Rafi Rubin <rafi@seas.upenn.edu>
+To: Micki Balanga <micki@n-trig.com>
+Cc: jkosina@suse.cz, chatty@enac.fr, peterhuewe@gmx.de,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to driver
+Message-ID: <20100322181722.GA24483@seas.upenn.edu>
+References: <1269260173-2543-1-git-send-email-micki@n-trig.com> <20100322172920.GA18658@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEE8@Exchange-IL.n-trig.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321203121.GA30194@elte.hu> <4BA6900B.1040408@redhat.com> <20100321215207.GA13219@elte.hu> <4BA712F0.5030806@redhat.com> <20100322112340.GD3483@elte.hu> <4BA76746.1000505@redhat.com> <20100322144701.GF14201@elte.hu>
-In-Reply-To: <20100322144701.GF14201@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <48A28051AC6D7A48B64F28272458190326DEE8@Exchange-IL.n-trig.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 04:47 PM, Ingo Molnar wrote:
->
->>> If you are interested in the first-hand experience of the people who are
->>> doing the perf work then here it is: by far the biggest reason for perf
->>> success and perf usability is the integration of the user-space tooling
->>> with the kernel-space bits, into a single repository and project.
->>>        
->> Please take a look at the kvm integration code in qemu as a fraction of the
->> whole code base.
->>      
-> You have to admit that much of Qemu's past 2-3 years of development was
-> motivated by Linux/KVM (i'd say more than 50% of the code).
+On Mon, Mar 22, 2010 at 07:39:56PM +0200, Micki Balanga wrote:
+> 
+> Hi 
+> Thank you for you comment but the driver as been tested on kernel 2.6.31 and above,
+> and i got the module to kill himself this is the reason i deleted the code.
+> I put the task in my TODO list so the next version of the driver we release 
+> will include  input->name.
 
-kvm certainly revitalized qemu development.
+Please explain where its dying.  Is it a NULL report?  In the case where 
+it dies, do you have the multi-input quirk cleared?
 
-> As such it's one
-> and the same code base - you just continue to define Qemu to be different from
-> KVM.
->    
+Have you considered the possibility that perhaps setting the features 
+_after_ hw_start (which results in changing the reports) might not be such 
+a good idea?  If you have specific probing and setup code, perhaps its 
+best to do that before initializing data structures, parsing the records, 
+and activating the device.
 
-It's not the same code base.  kvm provides a cpu virtualization service, 
-qemu uses it.  There could be other users.  qemu could go away one day 
-and be replaced by something else (tools/kvm?), and kvm would be unaffected.
+I haven't tried out your feature enabling code yet, so haven't had a 
+chance to debug it.  Does the MT enable change the behavior of all 
+firmwares or just those from the 2.59 software package?
 
-> I very much remember how Qemu looked like _before_ KVM: it was a struggling,
-> dying project. KVM clearly changed that.
->    
+(Again, easier to test if you want to make firmware blobs and loader 
+available)
 
-I'm a hero.
-
->>> The very move you are opposing so vehemently for KVM.
->>>        
->> I don't want to fracture a working community.
->>      
-> Would you accept (or at least not NAK) a new tools/kvm/ tool that builds
-> tooling from grounds up, while leaving Qemu untouched? [assuming it's all
-> clean code, etc.]
->    
-
-I couldn't NAK tools/kvm any more than I could NAK a new project outside 
-the kernel repository.  IMO it would be duplicated effort, but like I 
-mentioned before, I can't tell volunteers what to do, only recommend 
-that they join the existing effort.
-
-> Although i have doubts about how well that would work 'against' your opinion:
-> such a tool would need lots of KVM-side features and a positive attitude from
-> you to be really useful. There's a lot of missing functionality to cover.
->    
-
-Functionality that can be implemented in userspace will not be accepted 
-into kvm unless there are very good reasons why it should be.  Things 
-that belong in kvm will be more than welcome.
-
->> Seems like perf is also split, with sysprof being developed outside the
->> kernel.  Will you bring sysprof into the kernel?  Will every feature be
->> duplicated in prof and sysprof?
->>      
-> I'd prefer if sysprof merged into perf as 'perf view' - but its maintainer
-> does not want that - which is perfectly OK.
-
-You spared him the flamewar, I hope.
-
-> So we are building equivalent
-> functionality into perf instead.
->    
-
-Ah, duplicating effort.  Great.
-
-> Think about it like Firefox plugins: the main Firefox project picks up the
-> functionality of the most popular Firefox plugins all the time. Session Saver,
-> Tab Mix Plus, etc. were all in essence 'merged' (in functionality, not in
-> code) into the 'reference' Firefox project.
->    
-
-There's a difference between absorbing a small plugin and duplicating a 
-project.
-
--- 
-error compiling committee.c: too many arguments to function
-
+> -----Original Message-----
+> From: Rafi Rubin [mailto:rafi@seas.upenn.edu]
+> Sent: Mon 3/22/2010 7:29 PM
+> To: Micki Balanga
+> Cc: jkosina@suse.cz; chatty@enac.fr; peterhuewe@gmx.de; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to driver
+>  
+> On Mon, Mar 22, 2010 at 02:16:12PM +0200, micki@n-trig.com wrote:
+> > From: micki <micki@micki-laptop.(none)>
+> > 
+> > Add set feature commands to initialize N-trig firwmare.
+> > Add debug option to driver, Add Macro.
+> > Update probe function, delete name allocation caused kernel panaic
+> 
+> Its been brought to my attention that the probe code you are having 
+> trouble with is incompatible with older kernels due to a bug which was 
+> fixed shortly before 2.6.30.
+> 
+> It seems to me that your patches suggest that you've been working with an 
+> older version of the kernel and that has greatly influenced the design of 
+> the changes you suggested.
+> 
+> I'm sorry I wasn't able to catch this sooner.  But that's part of the risk 
+> you take with developing with out of date branches.
+> 
+> 
+> Anyway, I suggest you either try applying your changes bit by bit to a 
+> newer kernel, or move the multi-input quirk to usbhid/hid-quirks.c (I 
+> should probably do that anyway to keep things cleaner).
+> 
+> Once you have valid multiple input devices with the pen events routed to a 
+> separate device, I'm sure you will see how much it simplifies the design 
+> of this driver.  After that we can discuss what does or does not need 
+> handling in the ntrig specific event handler and which mappings should or 
+> should not be changed.
+> 
+> Also when you break up your changes into multiple patches, I ask that you 
+> add you #defines where needed.  In this case your feature commands defines 
+> make sense, but none of the rest make sense in the scope of this patch.
+>  
+> > Signed-off-by: Micki Balanga <micki@n-trig.com>
+> > ---
+> >  drivers/hid/hid-ntrig.c |  169 +++++++++++++++++++++++++++++++++++-----------
+> >  1 files changed, 128 insertions(+), 41 deletions(-)
+> > 
+> > diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+> > index edcc0c4..b4a573b 100644
+> > --- a/drivers/hid/hid-ntrig.c
+> > +++ b/drivers/hid/hid-ntrig.c
+> > @@ -3,6 +3,7 @@
+> >   *
+> >   *  Copyright (c) 2008 Rafi Rubin
+> >   *  Copyright (c) 2009 Stephane Chatty
+> > + *  Copyright (c) 2010 N-TRIG
+> >   *
+> >   */
+> >  
+> > @@ -16,8 +17,77 @@
+> >  #include <linux/device.h>
+> >  #include <linux/hid.h>
+> >  #include <linux/module.h>
+> > +#include <linux/usb.h>
+> >  
+> >  #include "hid-ids.h"
+> > +#include "usbhid/usbhid.h"
+> > +/*
+> > + * Pen Event Field Declaration
+> > + */
+> > +#define	EVENT_PEN_TIP		0x03
+> > +#define	EVENT_PEN_RIGHT		0x05
+> > +#define	EVENT_TOUCH_PEN		0x07
+> > +#define EVENT_PEN_IN_RANGE	0x01
+> > +
+> > +/*
+> > + * MTM 4 last bytes of report descriptor
+> > + */
+> > +#define REPORT_GENERIC1		0x01
+> > +#define REPORT_MT		0x02
+> > +#define REPORT_PALM		0x03
+> > +#define REPORT_GENERIC2		0x04
+> > +
+> > +#define NTRIG_USB_DEVICE_ID	0x0001
+> > +
+> > +/*
+> > + * MTM fields
+> > + */
+> > +#define MAX_FINGERS_SUPPORT	0x06
+> > +#define END_OF_REPORT		0x64
+> > +
+> > +/*
+> > + * Dummy Finger Declaration
+> > + */
+> > +#define DUMMY_X_CORD_VAL	0x00
+> > +#define DUMMY_Y_CORD_VAL	0x00
+> > +#define DUMMY_DX_CORD_VAL	0xFA
+> > +#define DUMMY_DY_CORD_VAL	0x96
+> > +#define DUMMY_GENERIC_BYTE_VAL	0x0D
+> > +
+> > +/*
+> > + * MTM Parse Event
+> > + */
+> > +#define MTM_FRAME_INDEX		0xff000001
+> > +#define MTM_PROPROETARY		0xff000002
+> > +
+> > +/*
+> > + * MTM  Set Feature Commands
+> > + */
+> > +#define REPORTID_DRIVER_ALIVE	0x0A
+> > +#define REPORTID_CALIBRATION	0x0B
+> > +#define REPORTID_GET_VERSION	0x0C
+> > +#define REPORTID_GET_MODE	0x0D
+> > +#define REPORTID_SET_MODE_PEN	0x0E
+> > +#define REPORTID_SET_MODE_TOUCH	0x0F
+> > +#define REPORTID_SET_MODE_DUAL	0x10
+> > +#define REPORTID_CALIBRATION_RESPOND	0x11
+> > +#define HID_CAPACITORS_CALIB	0x12
+> > +#define HID_GET_CAPACITORS_CALIB_DONE	0x13
+> > +
+> > +
+> > +static int debug;
+> > +
+> > +#define MODULE_NAME "hid_ntrig"
+> > +
+> > +
+> > +#define info(format, arg...) \
+> > +	printk(KERN_INFO "%s: " format , MODULE_NAME , ## arg)
+> > +#define ntrig_dbg(format, arg...) \
+> > +	do { \
+> > +		if (debug) \
+> > +			printk(KERN_DEBUG "%s: " format, \
+> > +			MODULE_NAME , ## arg); \
+> > +	} while (0)
+> >  
+> >  #define NTRIG_DUPLICATE_USAGES	0x001
+> >  
+> > @@ -123,8 +193,8 @@ static int ntrig_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+> >   * decide whether we are in multi or single touch mode
+> >   * and call input_mt_sync after each point if necessary
+> >   */
+> > -static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+> > -		                        struct hid_usage *usage, __s32 value)
+> > +static int ntrig_event(struct hid_device *hid, struct hid_field *field,
+> > +			struct hid_usage *usage, __s32 value)
+> >  {
+> >  	struct input_dev *input = field->hidinput->input;
+> >  	struct ntrig_data *nd = hid_get_drvdata(hid);
+> > @@ -133,7 +203,7 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+> >  	if (field->application == HID_DG_PEN)
+> >  		return 0;
+> >  
+> > -        if (hid->claimed & HID_CLAIMED_INPUT) {
+> > +	if (hid->claimed & HID_CLAIMED_INPUT) {
+> >  		switch (usage->hid) {
+> >  		case 0xff000001:
+> >  			/* Tag indicating the start of a multitouch group */
+> > @@ -279,12 +349,58 @@ static int ntrig_event (struct hid_device *hid, struct hid_field *field,
+> >  	return 1;
+> >  }
+> >  
+> > +/*
+> > + * This function used to configure N-trig firmware
+> > + * The first command we need to send to firmware is change
+> > + * to Multi-touch Mode we don't receive a reply
+> > + */
+> > +static int ntrig_send_report(struct hid_device *hid)
+> > +{
+> > +	struct hid_report *report;
+> > +	struct list_head *report_list =
+> > +			&hid->report_enum[HID_FEATURE_REPORT].report_list;
+> > +
+> > +	if (list_empty(report_list)) {
+> > +		ntrig_dbg("no feature reports found\n");
+> > +		return -ENODEV;
+> > +	}
+> > +	report = list_first_entry(report_list, struct hid_report, list);
+> > +	if (report->maxfield < 1)
+> > +		return -ENODEV;
+> > +
+> > +	list_for_each_entry(report,
+> > +			    report_list, list) {
+> > +		if (report->maxfield < 1) {
+> > +		      ntrig_dbg("no fields in the report\n");
+> > +		      continue;
+> > +		}
+> > +		ntrig_dbg("report id %x\n", report->id);
+> > +		switch (report->id) {
+> > +		case REPORTID_DRIVER_ALIVE:
+> > +		      usbhid_submit_report(hid, report, USB_DIR_OUT);
+> > +		      break;
+> > +		      /*
+> > +		       * These command will implement later accroding to demand
+> > +		       */
+> > +		case REPORTID_GET_VERSION:	/* FALLTHRU */
+> > +		case REPORTID_SET_MODE_DUAL:	/* FALLTHRU */
+> > +		case REPORTID_CALIBRATION:	/* FALLTHRU */
+> > +		case REPORTID_GET_MODE:		/* FALLTHRU */
+> > +		case REPORTID_SET_MODE_PEN:	/* FALLTHRU */
+> > +		case REPORTID_SET_MODE_TOUCH:	/* FALLTHRU */
+> > +		case REPORTID_CALIBRATION_RESPOND:/* FALLTHRU */
+> > +		case HID_CAPACITORS_CALIB:	/* FALLTHRU */
+> > +		case HID_GET_CAPACITORS_CALIB_DONE:
+> > +		      break;
+> > +		}
+> > +	}
+> > +	return 0;
+> > +}
+> > +
+> >  static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> >  {
+> >  	int ret;
+> >  	struct ntrig_data *nd;
+> > -	struct hid_input *hidinput;
+> > -	struct input_dev *input;
+> >  
+> >  	if (id->driver_data)
+> >  		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
+> > @@ -310,42 +426,10 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+> >  		goto err_free;
+> >  	}
+> >  
+> > -
+> > -	list_for_each_entry(hidinput, &hdev->inputs, list) {
+> > -		if (hidinput->report->maxfield < 1)
+> > -			continue;
+> > -
+> > -		input = hidinput->input;
+> > -		switch (hidinput->report->field[0]->application) {
+> > -		case HID_DG_PEN:
+> > -			input->name = "N-Trig Pen";
+> > -			break;
+> > -		case HID_DG_TOUCHSCREEN:
+> > -			/* These keys are redundant for fingers, clear them
+> > -			 * to prevent incorrect identification */
+> > -			__clear_bit(BTN_TOOL_PEN, input->keybit);
+> > -			__clear_bit(BTN_TOOL_FINGER, input->keybit);
+> > -			__clear_bit(BTN_0, input->keybit);
+> > -			/*
+> > -			 * A little something special to enable
+> > -			 * two and three finger taps.
+> > -			 */
+> > -			__set_bit(BTN_TOOL_DOUBLETAP, input->keybit);
+> > -			__set_bit(BTN_TOOL_TRIPLETAP, input->keybit);
+> > -			__set_bit(BTN_TOOL_QUADTAP, input->keybit);
+> > -			/*
+> > -			 * The physical touchscreen (single touch)
+> > -			 * input has a value for physical, whereas
+> > -			 * the multitouch only has logical input
+> > -			 * fields.
+> > -			 */
+> > -			input->name =
+> > -				(hidinput->report->field[0]
+> > -				 ->physical) ?
+> > -				"N-Trig Touchscreen" :
+> > -				"N-Trig MultiTouch";
+> > -			break;
+> > -		}
+> > +	ret = ntrig_send_report(hdev);
+> > +	if (ret) {
+> > +		dev_err(&hdev->dev, "send set feature failed\n");
+> > +		goto err_free;
+> >  	}
+> >  
+> >  	return 0;
+> > @@ -395,4 +479,7 @@ static void __exit ntrig_exit(void)
+> >  
+> >  module_init(ntrig_init);
+> >  module_exit(ntrig_exit);
+> > +
+> > +MODULE_PARM_DESC(debug, "Debug mode enable disable");
+> > +module_param(debug, bool, 0644);
+> >  MODULE_LICENSE("GPL");
+> > -- 
+> > 1.6.3.3
+> > 
+> 
