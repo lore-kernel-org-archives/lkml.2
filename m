@@ -1,80 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab0CVU3z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:29:55 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33443 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754979Ab0CVU3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:29:53 -0400
-Date: Mon, 22 Mar 2010 21:29:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100322202937.GA18126@elte.hu>
-References: <20100322155505.GA18796@elte.hu>
- <4BA796DF.7090005@redhat.com>
- <20100322165107.GD18796@elte.hu>
- <4BA7A406.9050203@redhat.com>
- <20100322173400.GB15795@elte.hu>
- <4BA7AF2D.7060306@redhat.com>
- <20100322192033.GC21919@elte.hu>
- <4BA7C885.5010901@redhat.com>
- <20100322200617.GD3306@elte.hu>
- <4BA7CFF4.8080102@redhat.com>
+	id S1756171Ab0CVUaJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:30:09 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:37276 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab0CVUaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:30:04 -0400
+X-Auth-Info: 6wgeMKfUWk7aa1APQnIgwSYve5xI38IGg3NqoHIuhzo=
+Message-ID: <4BA7D2E9.6010007@grandegger.com>
+Date: Mon, 22 Mar 2010 21:28:25 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7CFF4.8080102@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN	module
+References: <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu>	<4BA33D5A.8070000@grandegger.com>	<20100319151914.GB13672@ovro.caltech.edu>	<4BA39C05.8050800@grandegger.com>	<20100319200325.GE13672@ovro.caltech.edu>	<4BA3DAF1.4090206@grandegger.com>	<20100319215227.GF13672@ovro.caltech.edu>	<4BA47F64.8030108@grandegger.com>	<20100322155318.GA19251@ovro.caltech.edu>	<4BA7C236.9060609@grandegger.com> <20100322201039.GA19327@ovro.caltech.edu>
+In-Reply-To: <20100322201039.GA19327@ovro.caltech.edu>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Avi Kivity <avi@redhat.com> wrote:
-
-> > I think you didnt understand my point. I am talking about 'perf kvm top' 
-> > hanging if Qemu hangs.
+Ira W. Snyder wrote:
+> On Mon, Mar 22, 2010 at 08:17:10PM +0100, Wolfgang Grandegger wrote:
+>> Ira W. Snyder wrote:
+>>> On Sat, Mar 20, 2010 at 08:55:16AM +0100, Wolfgang Grandegger wrote:
+>>>> Ira W. Snyder wrote:
+>> [snip]
+>>>>> Does this seem right? It seems pretty good to me.
+>>>> Yes, I'm just missing an error-passive message. What state does "ip -d
+>>>> link show can0" report.
+>>>>
+>>> Ok, here is what I did:
+>>>
+>>> $ ip link set can0 up type can bitrate 1000000
+>>> $ ip link set can1 up type can bitrate 1000000 berr-reporting on
+>>> $ ip -d -s link
+>>> 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>>>     link/can       
+>>>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>     bitrate 1000000 sample-point 0.750
+>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>     clock 8000000  
+>>>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>>>     0          0          0          0          0          0
+>>>     RX: bytes  packets  errors  dropped overrun mcast
+>>>     0          0        0       0       0       0
+>>>     TX: bytes  packets  errors  dropped carrier collsns
+>>>     0          0        0       0       0       0
+>>> 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>>>     link/can       
+>>>     can <BERR-REPORTING> state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+>>>     bitrate 1000000 sample-point 0.750
+>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>     clock 8000000  
+>>>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>>>     0          0          0          0          0          0
+>>>     RX: bytes  packets  errors  dropped overrun mcast
+>>>     0          0        0       0       0       0
+>>>     TX: bytes  packets  errors  dropped carrier collsns
+>>>     0          0        0       0       0       0
+>>>
+>>> Now, in seperate windows, I ran cansequence and candump. I stopped
+>>> cansequence when it could not send any more packets (due to the cable
+>>> being unplugged).
+>>>
+>>> $ cansequence -v -e -p can0
+>>> $ cansequence -v -e -p can1
+>>> $ candump any,0~0,#FFFFFFFF
+>>>   can0  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+>>>
+>>> This last message is repeated lots more times. That's the flooding we're
+>>> avoiding with berr-reporting off.
+>>>
+>>> I see two types of messages here:
+>>> 1) bus error (only on can1)
+>>> 2) controller problems -- tx warning limit reached (both)
+>>>
+>>> Am I missing some message? My error frame generation was mostly copied
+>>> from the sja1000 driver.
+>> It seem that you are not getting the error passive interrupt even...
+>>
+>>> $ ip -d -s link
+>>> 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>>>     link/can 
+>>>     can state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
+>> if the hardware already reports >= 128 errors --^.
+>>
 > 
-> Use non-blocking I/O, report that guest as dead.  No point in profiling it, 
-> it isn't making any progress.
-
-Erm, at what point do i decide that a guest is 'dead' versus 'just lagged due 
-to lots of IO' ?
-
-Also, do you realize that you increase complexity (the use of non-blocking 
-IO), just to protect against something that wouldnt happen if the right 
-solution was used in the first place?
-
-> > With a proper in-kernel enumeration the kernel would always guarantee the 
-> > functionality, even if the vcpu does not make progress (i.e. it's "hung").
-> >
-> > With this implemented in Qemu we lose that kind of robustness guarantee.
+> Re-reading the documentation, it appears that the firmware uses the
+> error interrupt for two different indications. In the SJA1000 driver,
+> they map to IRQ_EI and IRQ_EPI.
 > 
-> If qemu has a bug in the resource enumeration code, you can't profile one 
-> guest.  If the kernel has a bug in the resource enumeration code, the system 
-> either panics or needs to be rebooted later.
+> The documentation says that you can tell when you get an error-passive
+> only by checking the rxerr + txerr registers in the message. You'll note
+> I omitted the IRQ_EPI-equivalent code from my driver when I copied the
+> sja1000.c implementation.
+> 
+> I've added an if-statement in the CEVTIND_EI path, which now looks like
+> this. It handles both cases now.
+> 
+> /* error warning interrupt */
+> if (isrc == CEVTIND_EI) {
+> 	u8 rxerr = msg->data[4];
+> 	u8 txerr = msg->data[5];
+> 
+> 	dev_dbg(mod->dev, "error warning interrupt\n");
+> 	if (status & SR_BS) {
+> 		state = CAN_STATE_BUS_OFF;
+> 		cf->can_id |= CAN_ERR_BUSOFF;
+> 		can_bus_off(dev);
+> 	} else if (status & SR_ES) {
+> 		if (rxerr >= 127 || txerr >= 127)
+> 			state = CAN_STATE_ERROR_PASSIVE;
+> 		else
+> 			state = CAN_STATE_ERROR_WARNING;
+> 	} else {
+> 		state = CAN_STATE_ERROR_ACTIVE;
+> 	}
+> }
+> 
+> The only change is in the "else if (status & SR_ES)" path. I had to add
+> the if-statement that checks the rxerr and txerr registers. Does that
+> seem ok? I got the 127 values from this webpage (provided to me on this
+> mailing list).
 
-This is really simple code, not rocket science. If there's a bug in it we'll 
-fix it. On the other hand a 500KLOC+ piece of Qemu code has lots of places to 
-hang, so that is a large cross section.
+It should be >= 128.
 
-	Ingo
+> http://www.softing.com/home/en/industrial-automation/products/can-bus/more-can-bus/error-handling/error-states.php?navanchor=3010510
+> 
+>>>     bitrate 1000000 sample-point 0.750 
+>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>     clock 8000000
+>>>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>>>     0          0          0          1          0          0         
+>>>     RX: bytes  packets  errors  dropped overrun mcast   
+>>>     16         0        2       0       0       0      
+>>>     TX: bytes  packets  errors  dropped carrier collsns 
+>>>     513        513      0       0       0       0      
+>>> 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>>>     link/can 
+>>>     can <BERR-REPORTING> state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
+>>>     bitrate 1000000 sample-point 0.750 
+>>>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>>>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>>     clock 8000000
+>>>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>>>     0          126        0          1          0          0         
+>> But that's mabe because you stopped the test too early (just 126 bus errors).
+>>
+> 
+> This is the best I could do. Without the cable connected, that's where
+> the controller stops sending messages (cansequence just hangs waiting
+> for buffer space to become available).
+> 
+>>>     RX: bytes  packets  errors  dropped overrun mcast   
+>>>     1024       0        254     0       0       0      
+>>>     TX: bytes  packets  errors  dropped carrier collsns 
+>>>     513        513      0       0       0       0      
+>> When I send out messages without cable connected I get:
+>>
+>> -bash-3.2# ./ip -d -s link show can0
+>> 2: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>>     link/can 
+>>     can <BERR-REPORTING> state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0 
+>>     bitrate 500000 sample-point 0.875 
+>>     tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1
+>>     sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>>     clock 8000000
+>>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>>     0          54101      0          1          1          0         
+>>     RX: bytes  packets  errors  dropped overrun mcast   
+>>     432808     54101    54101   0       0       0      
+>>     TX: bytes  packets  errors  dropped carrier collsns 
+>>     0          0        0       0       0       0      
+>>
+>> The following output is without BERR-REPORTING:
+>>
+>> -bash-3.2# ./candump -t d any,0:0,#FFFFFFFF
+>>  (0.000000)  can0  20000004  [8] 00 08 00 00 00 00 60 00   ERRORFRAME
+>>  (0.000474)  can0  20000004  [8] 00 20 00 00 00 00 80 00   ERRORFRAME
+>>                                                     ^  ^
+>>                                                    TX RX error counter
+> 
+> With my newest changes, I get:
+> 
+> 8: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>     link/can 
+>     can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0 
+>     bitrate 1000000 sample-point 0.750 
+>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>     clock 8000000
+>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>     0          0          0          3          3          0         
+>     RX: bytes  packets  errors  dropped overrun mcast   
+>     236045     235949   12      0       0       0      
+>     TX: bytes  packets  errors  dropped carrier collsns 
+>     235938     235938   0       0       0       0      
+> 
+>   can1  20000004  [8] 00 08 00 00 00 00 60 00   ERRORFRAME
+>   can1  20000004  [8] 00 20 00 00 00 00 80 00   ERRORFRAME
+> 
+> So it looks like both drivers agree (finally!). :)
+> 
+> With berr-reporting on, I get the same flood of bus-error messages, with
+> these two messages as well.
+
+Looks good now.
+
+>> The patch I mentioned also copies the rx and tx error counter values to
+>> the data field 6 and 7.
+>>
+> 
+> I missed this. It has been added. Thanks for pointing it out.
+
+You could even add the tx/rx values for each error message (for both,
+state changes and bus-errors).
+
+> I haven't heard back from Samuel Ortiz yet about the changes for the mfd
+> layer. Would you like me to send out my latest CAN driver changes, or
+> should I just wait until I hear back?
+
+As you need patch 1/3 anyway, just wait some more time. From my point of
+ view the next version of the patch will be OK.
+
+Wolfgang.
