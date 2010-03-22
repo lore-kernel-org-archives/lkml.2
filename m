@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab0CVU5e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:57:34 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:44458 "EHLO mx2.mail.elte.hu"
+	id S1755565Ab0CVU7A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:59:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49820 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137Ab0CVU5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:57:32 -0400
-Date: Mon, 22 Mar 2010 21:57:03 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       tglx@linutronix.de, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.c
-Message-ID: <20100322205703.GA25254@elte.hu>
-References: <4BA6EA62.1030603@kernel.org>
- <20100321.210023.209981130.davem@davemloft.net>
- <4BA6F1F6.3070102@kernel.org>
- <20100321.213350.176660494.davem@davemloft.net>
- <20100322092809.GA20607@elte.hu>
- <1269290862.8599.77.camel@pasglop>
-MIME-Version: 1.0
+	id S1752137Ab0CVU66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:58:58 -0400
+Date: Mon, 22 Mar 2010 20:58:21 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Antoine Martin <antoine@nagafix.co.uk>
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Message-ID: <20100322205821.GF28709@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <4BA7C1D7.5070208@codemonkey.ws> <4BA7CC5C.3020008@nagafix.co.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269290862.8599.77.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+In-Reply-To: <4BA7CC5C.3020008@nagafix.co.uk>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Mar 23, 2010 at 03:00:28AM +0700, Antoine Martin wrote:
+> On 03/23/2010 02:15 AM, Anthony Liguori wrote:
+> >On 03/22/2010 12:55 PM, Avi Kivity wrote:
+> >>>Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
+> >>>Anthony.
+> >>>There's numerous ways that this can break:
+> >>
+> >>I don't like it either.  We have libvirt for enumerating guests.
+> >
+> >We're stuck in a rut with libvirt and I think a lot of the 
+> >dissatisfaction with qemu is rooted in that.  It's not libvirt that's 
+> >the probably, but the relationship between qemu and libvirt.
+> +1
+> The obvious reason why so many people still use shell scripts rather 
+> than libvirt is because if it just doesn't provide what they need.
+> Every time I've looked at it (and I've been looking for a better 
+> solution for many years), it seems that it would have provided most of 
+> the things I needed, but the remaining bits were unsolvable.
 
-* Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+If you happen to remember what missing features prevented you choosing
+libvirt, that would be invaluable information for us, to see if there
+are quick wins that will help out. We got very useful feedback when
+recently asking people this same question
 
-> On Mon, 2010-03-22 at 10:28 +0100, Ingo Molnar wrote:
+http://rwmj.wordpress.com/2010/01/07/quick-quiz-what-stops-you-from-using-libvirt/
 
-> > Note the other side of the coin: LMB appears to be deployed on only 4 
-> > non-x86 architectures that muster ~1% of the Linux boxes while early_res 
-> > is deployed on more than 95%.
-> 
-> You use that arguemnt ONE MORE FUCKING TIME and you'll end up in my killfile 
-> with a auto-NACK reply of anything that looks like a patch from you.
+Allowing arbitrary passthrough of QEMU commands/args will solve some of
+these issues, but certainly far from solving all of them. eg guest cut+
+paste, host side control of guest screen resolution, easier x509/TLS 
+configuration for remote management, soft reboot, Windows desktop support
+for virt-manager, host network interface management/setup, etc
 
-Does this mean you disagree with that? (I think it's pretty factual, last i 
-checked the usage stats of devel kernels was somewhere around 99.7%.)
-
-In any case, i dont dispute that LMB is a bit cleaner than kernel/early_res.c 
-- and both are much cleaner than the new e820 kernel/fw_memmap.c code posted 
-here by Yinghai.
-
-If you dont disagree then please spare me the insults. (or move me into your 
-killfile)
-
-Thanks,
-
-	Ingo
+Regards,
+Daniel
+-- 
+|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
+|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
+|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
+|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
