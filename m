@@ -1,46 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab0CVQlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:41:49 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:36837 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab0CVQls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:41:48 -0400
-Date: Mon, 22 Mar 2010 17:41:37 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-       john stultz <johnstul@us.ibm.com>, Richard Henderson <rth@twiddle.net>,
-       lkml <linux-kernel@vger.kernel.org>, Matt Turner <mattst88@gmail.com>
-Subject: Re: [RFC][PATCH] Convert alpha to use clocksource
-Message-ID: <20100322164137.GA12625@cmpxchg.org>
-References: <1268877702-2236-1-git-send-email-johnstul@us.ibm.com> <4BA23974.5030503@twiddle.net> <1268934923.1855.8.camel@work-vm> <20100318214030.GA8934@jurassic.park.msu.ru> <20100322111744.GB10420@cmpxchg.org> <alpine.LFD.2.00.1003221521440.3147@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003221521440.3147@localhost.localdomain>
+	id S1755294Ab0CVQvT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:51:19 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:55468 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab0CVQvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 12:51:17 -0400
+Date: Mon, 22 Mar 2010 11:51:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <20100322163609.GZ20695@one.firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1003221146260.17230@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 03:22:12PM +0100, Thomas Gleixner wrote:
-> On Mon, 22 Mar 2010, Johannes Weiner wrote:
-> > > Though, even after a glance over the clocksource code, I've not
-> > > gotten yet to how one could estimate the "shift" value...
-> > > Any hints?
-> > 
-> > I had the same problem with xtensa and added a comment about what I
-> > did in there, maybe it helps:
-> > 
-> > 	arch/xtensa/kernel/time.c
-> > 
-> > I took the upper bound of the multiplicator (nsecs per counter unit)
-> > and subtracted its logarithm from my available 32 bits.  The result
-> > is the highest possible shift value that works for the clocksource.
-> 
-> clocks_calc_mult_shift() is what you are looking for.
+On Mon, 22 Mar 2010, Andi Kleen wrote:
 
-Oh, thanks!  That was not yet around at the time.
+> Multicast reliable kernel protocols are somewhat new, I guess one
+> would need to make sure to come up with a clean generic interface
+> for them first.
 
-	Hannes
+It has been around for a long time in another OS. I wonder if I should use
+the socket API realized there as a model or come up with something new
+from scratch?
+
+What I have right now is:
+
+1. Opening a socket
+
+        A. Native PGM
+
+                fd = socket(AF_INET, SOCK_RDM, IPPROTO_PGM)
+
+        B. PGM over UDP
+
+                fd = socket(AF_INET, SOCK_RDM, IPPROTO_UDP)
+
+        C. PGM over SHM (?)
+
+                fd = socket(AF_UNIX, SOCK_RDM, 0)
+
+
+2. Binding to a multicast address
+
+        A. Sender
+
+                Connect the socket to a MC address and port using connect().
+
+                Note that the port is significant since multiple streams on different
+                ports can be run over the same MC addr.
+
+        B. Receiver
+
+                I. Bind the socket to the MC address and port of interest.
+
+                II. Listen to the socket.
+
+                        Process will wait until a PGM packet destined to the port of interest
+                        is received.
+
+                III. Accept a connection.
+
+                        Establishes a session. Data can then be received.
+
+
+3. Sending and receiving
+
+        Use the usual socket read and write operations and the various flavors of waiting
+        for a packet via select, poll, epoll etc.
+
+        Packet sizes are determined by the number of  packets in a single sendmsg() unless
+        overridden by the RM_SET_MESSAGE_BOUNDARY socket option.
+
+        The sender will block when the send window is full unless a non blocking write is performed.
+
+        The receiver shows the usual wait semantics. If the stream is set to unreliable then
+        packets may arrive in random order. If the set is set to RM_LISTEN_ONLY then packets may
+        just be missing.
+
+4.      Transmitter Socket Options
+
+
+        A. Setting the window size / rate.
+
+                struct pgm_send_window x;
+                x.RateKbitsPerSec = 56;
+                x.WindowSizeInMsecs = 60000;
+                x.WindowSizeinBytes = 10000000;
+
+                setsockopt(fd, SOCK_RDM, RM_RATE_WINDOW_SIZE, &x, sizeof(x));
+
+                Default is sending at 56Kbps with a buffer of 10 Megabytes and buffering for a minute.
+
+        B. FEC mode
+
+                struct pgm_fec_info x;
+
+                x.FECBlocksize = 255;
+                x.FECProActivePackets = 0;
+                x.FECGroupSize = 0;
+                x.fFECOnDemandParityEnabled = 1;
+
+                setsockopt(fd, SOCK_RDM, RM_FEC_MODE, &x, sizeof(x));
+
+
+5.      Receiver Socket Options
+
+        None?
+
+
+Possible Extensions
+
+        RM_UNORDERED    accept unordered packet avoiding delays when packets arrive out of sequence.
+                        packet is still NAKed.
+
+        RM_RECEIVE_ONLY Simply ignore missed packets. Do not send any replies.
+
+
+
+Existing socket options in the other OS (X denotes that this looks like
+its screwy and should be avoided)
+
+/* PGM socket options */
+
+/* Transmitter */
+#define RM_LATEJOIN                             1       /* X Not supported on receive so why have it? */
+#define RM_RATE_WINDOW_SIZE                     2       /* See struct pgm_send_window */
+#define RM_SEND_WINDOW_ADV_RATE                 3       /* X Increase of send window in percentage of window */
+#define RM_SENDER_STATISTICS                    4       /* see struct pgm_sender_stats */
+#define RM_SENDER_WINDOW_ADVANCE_METHOD         5       /* X seems obsolete */
+#define RM_SET_MCAST_TTL                        6       /* X Can be set via IP_MULTICAST_TTL */
+#define RM_SET_MESSAGE_BOUNDARY                 7       /* Fix the size of the messages in bytes */
+#define RM_SET_SEND_IF                          8       /* X use IP_MULTICAST_IF etc instead */
+#define RM_USE_FEC                              9
+
+/* Receiver */
+#define RM_ADD_RECEIVE_IF                       100     /* X ???? IP_MULTICAST_IF instead? */
+#define RM_DEL_RECEIVE_IF                       101     /* X IP_MULTICAST_IF */
+#define RM_HIGH_SPEED_INTRANET_OPT              102     /* X PGM should adapt automatically to high speed networks */
+#define RM_RECEIVER_STATISTICS                  103     /* See struct pgm_receiver_stats */
+
+
+/* Socket API structures (established by M$DN) */
+struct pgm_receiver_stats {
+        u64     NumODataPacketsReceived;        /* Number of ODATA (original) sequences */
+        u64     NumRDataPacketsReceived;        /* Number of RDATA (repair) sequences */
+        u64     NumDuplicateDataPackets;        /* Duplicate sequences */
+        u64     DataBytesReceived;
+        u64     TotalBytesReceived;
+        u64     RateKBitsPerSecOverall;         /* Receive rate since start of session X */
+        u64     RateKBitsPerSecLast;            /* Receive rate for last second X*/
+        u64     TrailingEdgeSeqId;              /* Oldest sequence in the receive window */
+        u64     LeadingEdgeSeqId;               /* Newest sequence in the receive window */
+        u64     AverageSequencesInWindow;       /* Average number of sequences in receive window X */
+        u64     MinSequencesInWindow;           /* The mininum number of sequences */
+        u64     MaxSequencesInWindow;           /* The maximum number of sequences */
+        u64     FirstNakSequenceNumber;         /* First outstanding nack sequence number */
+        u64     NumPendingNaks;                 /* Number of sequences waiting for NCF */
+        u64     NumOutstandingNaks;             /* Number of sequences waiting for RDATA */
+        u64     NumDataPacketsBuffered;         /* Number of packets currently buffered */
+        u64     TotalSelectiveNaksSent;         /* Number of NAKs sent total */
+        u64     TotalParityNaksSent;            /* Number of parity NAKs sent */
+};
+
+struct pgm_sender_stats {
+        u64     DataBytesSent;
+        u64     TotalBytesSent;
+        u64     NaksReceived;
+        u64     NaksReceivedTooLate;            /* NAKs received after receive window advanced */
+        u64     NumOutstandingNaks;             /* Number of NAKs awaiting response */
+        u64     NumNaksAfterRData;              /* Number of NAKs after RDATA sequences were sent which were ignored */
+        u64     RepairPacketsSent;
+        u64     BufferSpaceAvailable;           /* Number of partial messages dropped */
+        u64     TrailingEdgeSeqId;              /* Oldest sequence id in window */
+        u64     LeadingEdgeSeqId;               /* Newest sequence id in window */
+        u64     RateKBitsPerSecOverall;         /* Rate since start of session X */
+        u64     RateKBitsPerSecLast;            /* Rate in last second X */
+        u64     TotalODataPacketsSent;          /* Total data packets transmitted */
+};
+
+/* Setup of sender RateKbitsPerSec = WindowSizeBytes / WindowSizeMSecs */
+struct pgm_send_window {
+        u64     RateKbitsPerSec;                /* Allowed rate for the sender in kbits per second */
+        u64     WindowSizeInMSecs;              /* Send window size in time */
+        u64     WindowSizeInBytes;              /* Window size in bytes */
+};
+
+struct pgm_fec_info {
+        u16     FECBlockSize;                   /* Maximum number of packets for a group. Default and max = 255 */
+        u16     FECProActivePackets;            /* Number of proactive packets per group. */
+        u8      FECGroupSize;                   /* Number of packets to be treated as a group. Power of two */
+        int     fFECOnDemandParityEnabled;      /* Allow sender to sent parity repair packets */
+};
+
 
