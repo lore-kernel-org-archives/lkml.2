@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314Ab0CVETM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 00:19:12 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59782
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750850Ab0CVETK (ORCPT
+	id S1751722Ab0CVEU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 00:20:29 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:38190 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab0CVEU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 00:19:10 -0400
-Date: Sun, 21 Mar 2010 21:19:33 -0700 (PDT)
-Message-Id: <20100321.211933.35812457.davem@davemloft.net>
-To: paulius.zaleckas@gmail.com
-Cc: contact@saschahlusiak.de, eric.dumazet@gmail.com,
-       Fred.L.Templin@boeing.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] if_tunnel.h: add missing ams/byteorder.h include
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100319150926.11037.39136.stgit@pauliusz>
-References: <20100319150926.11037.39136.stgit@pauliusz>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Mar 2010 00:20:28 -0400
+From: Eric Anholt <eric@anholt.net>
+To: Karl Vogel <karl.vogel@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: i915 lockup / extreme delay
+In-Reply-To: <ho2jal$oqs$1@dough.gmane.org>
+References: <ho2jal$oqs$1@dough.gmane.org>
+Date: Sun, 21 Mar 2010 21:20:24 -0700
+Message-ID: <87wrx5m1h3.fsf@pollan.anholt.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Date: Fri, 19 Mar 2010 17:09:26 +0200
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> When compiling userspace application which includes
-> if_tunnel.h and uses GRE_* defines you will get undefined
-> reference to __cpu_to_be16.
-> 
-> Fix this by adding missing #include <asm/byteorder.h>
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+On Sat, 20 Mar 2010 14:41:41 +0100, Karl Vogel <karl.vogel@gmail.com> wrote:
+> I have been experiencing a very sluggish X server right after starting=20
+> my laptop. The effect goes away after a few minutes, so it was rather=20
+> hard to track down.
+>=20
+> Recently after updating WINE to a newer release, I've been able to=20
+> trigger the effect by running a certain game under wine on a remote=20
+> computer and using VirtualGL to transport the GL display to my laptop.=20
+> As I first thought the issue was somewhere with wine/virtualgl, I posted=
+=20
+> the question to the virtualgl mailing list. The thread is here:
+>=20
+> http://thread.gmane.org/gmane.comp.video.opengl.virtualgl.user/170
+>=20
+> But after some further investigation, it seems the issue is with the=20
+> i915 driver.
+>=20
+> The 'effect' is that only the mouse pointer works in the X server. The=20
+> cpu usage on the laptop during the sluggishness is minimal. When I=20
+> suspend the game with winedbg, the X server slowly becomes responsive aga=
+in.
+>=20
+> The output from latencytop seems to point to i915 being the culprit:
 
-This slipped through the cracks, someone else submitted something
-similar back in August 2009 it seems.
+If there's some code doing glFlush()es, it's probably that code at
+fault.  You don't need to do that unless you're doing frontbuffer
+rendering, and if you're doing frontbuffer rendering you should really
+be doing backbuffer rendering.  I don't see a kernel issue here.
 
-Thanks for sending this, applied.
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkum8AgACgkQHUdvYGzw6vf7/wCdEmZL7zfFR8ttwi7w4hhsG3DT
+8W8An2fksvrjugbkvf8KzY9iqRnw04WX
+=lUCx
+-----END PGP SIGNATURE-----
+--=-=-=--
