@@ -1,74 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285Ab0CVQpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:45:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34007 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755202Ab0CVQpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:45:15 -0400
-Date: Mon, 22 Mar 2010 13:44:37 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
-	host side
-Message-ID: <20100322164437.GB4066@ghostprotocols.net>
-References: <1268717232.2813.36.camel@localhost> <1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu> <1269242687.2078.25.camel@ymzhang.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269242687.2078.25.camel@ymzhang.sh.intel.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1755256Ab0CVQnj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:43:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52504 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab0CVQni (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 12:43:38 -0400
+X-Authority-Analysis: v=1.0 c=1 a=i2IbFqu-QsYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=20KFwNOVAAAA:8 a=8dKhW-9Dc8ooV2TIDAAA:9 a=mUQmdB-cJXDWBT1fcQoA:7 a=o-rNazGlxWiy9cmYtQxErAxLWx8A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 4/5] jump label: tracepoint support
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com
+In-Reply-To: <6ede473837c2c7c55dde179690c2ae73223417c6.1269272444.git.jbaron@redhat.com>
+References: <cover.1269272444.git.jbaron@redhat.com>
+	 <6ede473837c2c7c55dde179690c2ae73223417c6.1269272444.git.jbaron@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 22 Mar 2010 12:43:34 -0400
+Message-ID: <1269276214.2957.7.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 22, 2010 at 03:24:47PM +0800, Zhang, Yanmin escreveu:
-> On Fri, 2010-03-19 at 09:21 +0100, Ingo Molnar wrote:
-> > So some sort of --guestmount option would be the natural solution, which 
-> > points to the guest system's root: and a Qemu enumeration of guest mounts 
-> > (which would be off by default and configurable) from which perf can pick up 
-> > the target guest all automatically. (obviously only under allowed permissions 
-> > so that such access is secure)
-> If sshfs could access /proc/ and /sys correctly, here is a design:
-> --guestmount points to a directory which consists of a list of sub-directories.
-> Every sub-directory's name is just the qemu process id of guest os. Admin/developer
-> mounts every guest os instance's root directory to corresponding sub-directory.
+On Mon, 2010-03-22 at 12:07 -0400, Jason Baron wrote:
+> Make use of the jump label infrastructure for tracepoints.
 > 
-> Then, perf could access all files. It's possible because guest os instance
-> happens to be multi-threading in a process. One of the defects is the accessing to
-> guest os becomes slow or impossible when guest os is very busy.
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
+> ---
+>  include/linux/tracepoint.h |   34 +++++++++++++++++++---------------
+>  kernel/tracepoint.c        |    8 ++++++++
+>  2 files changed, 27 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index f59604e..c18b9c0 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -16,6 +16,7 @@
+>  
+>  #include <linux/types.h>
+>  #include <linux/rcupdate.h>
+> +#include <linux/jump_label.h>
+>  
+>  struct module;
+>  struct tracepoint;
+> @@ -63,20 +64,22 @@ struct tracepoint {
+>   * not add unwanted padding between the beginning of the section and the
+>   * structure. Force alignment to the same alignment as the section start.
+>   */
+> -#define DECLARE_TRACE(name, proto, args)				\
+> -	extern struct tracepoint __tracepoint_##name;			\
+> -	static inline void trace_##name(proto)				\
+> -	{								\
+> -		if (unlikely(__tracepoint_##name.state))		\
+> -			__DO_TRACE(&__tracepoint_##name,		\
+> -				TP_PROTO(proto), TP_ARGS(args));	\
+> -	}								\
+> -	static inline int register_trace_##name(void (*probe)(proto))	\
+> -	{								\
+> -		return tracepoint_probe_register(#name, (void *)probe);	\
+> -	}								\
+> -	static inline int unregister_trace_##name(void (*probe)(proto))	\
+> -	{								\
+> +#define DECLARE_TRACE(name, proto, args)				 \
+> +	extern struct tracepoint __tracepoint_##name;			 \
+> +	static inline void trace_##name(proto)				 \
+> +	{								 \
+> +		JUMP_LABEL(name, do_trace, __tracepoint_##name.state);   \
+> +		return;							 \
+> +do_trace:								 \
+> +		__DO_TRACE(&__tracepoint_##name,			 \
+> +			   TP_PROTO(proto), TP_ARGS(args));		 \
 
-If the MMAP events on the guest included a cookie that could later be
-used to query for the symtab of that DSO, we wouldn't need to access the
-guest FS at all, right?
+Does this still work on all archs, and when jump labels are not
+supported?
 
-With build-ids and debuginfo-install like tools the symbol resolution
-could be performed by using the cookies (build-ids) as keys to get to
-the *-debuginfo packages with matching symtabs (and DWARF for source
-annotation, etc).
+I may have missed a patch (I have not received patch 2 yet).
 
-We have that for the kernel as:
+-- Steve
 
-[acme@doppio linux-2.6-tip]$ l /sys/kernel/notes 
--r--r--r-- 1 root root 36 2010-03-22 13:14 /sys/kernel/notes
-[acme@doppio linux-2.6-tip]$ l /sys/module/ipv6/sections/.note.gnu.build-id 
--r--r--r-- 1 root root 4096 2010-03-22 13:38 /sys/module/ipv6/sections/.note.gnu.build-id
-[acme@doppio linux-2.6-tip]$
+> +	}								 \
+> +	static inline int register_trace_##name(void (*probe)(proto))	 \
+> +	{								 \
+> +		return tracepoint_probe_register(#name, (void *)probe);	 \
+> +	}								 \
+> +	static inline int unregister_trace_##name(void (*probe)(proto))	 \
+> +	{								 \
+>  		return tracepoint_probe_unregister(#name, (void *)probe);\
+>  	}
+>  
+> @@ -86,7 +89,8 @@ struct tracepoint {
+>  	__attribute__((section("__tracepoints_strings"))) = #name;	\
+>  	struct tracepoint __tracepoint_##name				\
+>  	__attribute__((section("__tracepoints"), aligned(32))) =	\
+> -		{ __tpstrtab_##name, 0, reg, unreg, NULL }
+> +		{ __tpstrtab_##name, 0, reg, unreg, NULL };		\
+> +	DEFINE_JUMP_LABEL(name);
+>  
+>  #define DEFINE_TRACE(name)						\
+>  	DEFINE_TRACE_FN(name, NULL, NULL);
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index cc89be5..8acced8 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/err.h>
+>  #include <linux/slab.h>
+>  #include <linux/sched.h>
+> +#include <linux/jump_label.h>
+>  
+>  extern struct tracepoint __start___tracepoints[];
+>  extern struct tracepoint __stop___tracepoints[];
+> @@ -256,6 +257,10 @@ static void set_tracepoint(struct tracepoint_entry **entry,
+>  	 * is used.
+>  	 */
+>  	rcu_assign_pointer(elem->funcs, (*entry)->funcs);
+> +	if (!elem->state && active)
+> +		enable_jump_label(elem->name);
+> +	if (elem->state && !active)
+> +		disable_jump_label(elem->name);
+>  	elem->state = active;
+>  }
+>  
+> @@ -270,6 +275,9 @@ static void disable_tracepoint(struct tracepoint *elem)
+>  	if (elem->unregfunc && elem->state)
+>  		elem->unregfunc();
+>  
+> +	if (elem->state)
+> +		disable_jump_label(elem->name);
+> +
+>  	elem->state = 0;
+>  	rcu_assign_pointer(elem->funcs, NULL);
+>  }
 
-That way we would cover DSOs being reinstalled in long running 'perf
-record' sessions too.
 
-This was discussed some time ago but would require help from the bits
-that load DSOs.
-
-build-ids then would be first class citizens.
-
-- Arnaldo
