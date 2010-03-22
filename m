@@ -1,206 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab0CVQvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:51:19 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:55468 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab0CVQvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:51:17 -0400
-Date: Mon, 22 Mar 2010 11:51:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Andi Kleen <andi@firstfloor.org>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Add PGM protocol support to the IP stack
-In-Reply-To: <20100322163609.GZ20695@one.firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1003221146260.17230@router.home>
-References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755310Ab0CVQvk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:51:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:49685 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755299Ab0CVQvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 12:51:37 -0400
+Date: Mon, 22 Mar 2010 17:51:07 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322165107.GD18796@elte.hu>
+References: <20100321215455.GB13219@elte.hu>
+ <4BA7187E.3050405@redhat.com>
+ <20100322111411.GC3483@elte.hu>
+ <4BA7629B.7020604@redhat.com>
+ <20100322124428.GA12475@elte.hu>
+ <4BA76810.4040609@redhat.com>
+ <20100322143212.GE14201@elte.hu>
+ <4BA7821C.7090900@codemonkey.ws>
+ <20100322155505.GA18796@elte.hu>
+ <4BA796DF.7090005@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA796DF.7090005@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010, Andi Kleen wrote:
 
-> Multicast reliable kernel protocols are somewhat new, I guess one
-> would need to make sure to come up with a clean generic interface
-> for them first.
+* Avi Kivity <avi@redhat.com> wrote:
 
-It has been around for a long time in another OS. I wonder if I should use
-the socket API realized there as a model or come up with something new
-from scratch?
+> > The crux of the problem is very simple. To quote my earlier mail:
+> >
+> >  |
+> >  | - The inconvenience of having to type:
+> >  |      perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms \
+> >  |               --guestmodules=/home/ymzhang/guest/modules top
+> >  |
+> >  |
+> >  |   is very obvious even with a single guest. Now multiply that by more guests ...
+> >  |
+> >
+> > For example we want 'perf kvm top' to do something useful by default: it
+> > should find the first guest running and it should report its profile.
+> >
+> > The tool shouldnt have to guess about where the guests are, what their
+> > namespaces is and how to talk to them. We also want easy symbolic access to
+> > guest, for example:
+> >
+> >   perf kvm -g OpenSuse-2 record sleep 1
 
-What I have right now is:
+[ Sidenote: i still received no adequate suggestions about how to provide this
+  category of technical features. ]
 
-1. Opening a socket
+> > I.e.:
+> >
+> >  - Easy default reference to guest instances, and a way for tools to
+> >    reference them symbolically as well in the multi-guest case. Preferably
+> >    something trustable and kernel-provided - not some indirect information
+> >    like a PID file created by libvirt-manager or so.
+> 
+> Usually 'layering violation' is trotted out at such suggestions.
+> [...]
 
-        A. Native PGM
+That's weird, how can a feature request be a 'layering violation'?
 
-                fd = socket(AF_INET, SOCK_RDM, IPPROTO_PGM)
+If something that users find straightforward and usable is a layering 
+violation to you (such as easily being able to access their own files on the 
+host as well ...) then i think you need to revisit the definition of that term 
+instead of trying to fix the user.
 
-        B. PGM over UDP
+> [...]  I don't like using the term, because sometimes the layers are 
+> incorrect and need to be violated.  But it should be done explicitly, not as 
+> a shortcut for a minor feature (and profiling is a minor feature, most users 
+> will never use it, especially guest-from-host).
+> 
+> The fact is we have well defined layers today, kvm virtualizes the cpu and 
+> memory, qemu emulates devices for a single guest, libvirt manages guests.  
+> We break this sometimes but there has to be a good reason.  So perf needs to 
+> talk to libvirt if it wants names.  Could be done via linking, or can be 
+> done using a pluging libvirt drops into perf.
+> 
+> >  - Guest-transparent VFS integration into the host, to recover symbols and
+> >    debug info in binaries, etc.
+> >
+> > There were a few responses to that but none really addressed those 
+> > problems - they mostly tried to re-define the problem and suggested that i 
+> > was wrong to want such capabilities and suggested various inferior 
+> > approaches instead. See the thread for the details - i think i covered 
+> > every technical suggestion that was made.
+> 
+> You simply kept ignoring me when I said that if something can be kept out of 
+> the kernel without impacting performance, it should be. I don't want 
+> emergency patches closing some security hole or oops in a kernel symbol 
+> server.
 
-                fd = socket(AF_INET, SOCK_RDM, IPPROTO_UDP)
+I never suggested an "in kernel space symbol server" which could oops, why 
+would i have suggested that? Please point me to an email where i suggested 
+that.
 
-        C. PGM over SHM (?)
+> The usability argument is a red herring.  True, it takes time for things to 
+> trickle down to distributions and users.  Those who can't wait can download 
+> the code and compile, it isn't that difficult.
 
-                fd = socket(AF_UNIX, SOCK_RDM, 0)
+It's not just "download and compile", it's also "configure correctly for 
+several separate major distributions" and "configure to per guest instance 
+local rules".
 
+It's far more fragile in practice than you make it appear to be, and since you 
+yourself expressed that you are not interested much in the tooling side, how 
+can you have adequate experience to judge such matters?
 
-2. Binding to a multicast address
+In fact for instrumentation it's beyond a critical threshold of fragility - 
+instrumentation above all needs to be accessible, transparent and robust.
 
-        A. Sender
+If you cannot see the advantages of a properly integrated solution then i 
+suspect there's not much i can do to convince you.
 
-                Connect the socket to a MC address and port using connect().
+And you ignored not just me but you ignored several people in this thread who 
+thought the current status quo was inadequate and expressed interest in both 
+the VFS integration and in the guest enumeration features.
 
-                Note that the port is significant since multiple streams on different
-                ports can be run over the same MC addr.
+Thanks,
 
-        B. Receiver
-
-                I. Bind the socket to the MC address and port of interest.
-
-                II. Listen to the socket.
-
-                        Process will wait until a PGM packet destined to the port of interest
-                        is received.
-
-                III. Accept a connection.
-
-                        Establishes a session. Data can then be received.
-
-
-3. Sending and receiving
-
-        Use the usual socket read and write operations and the various flavors of waiting
-        for a packet via select, poll, epoll etc.
-
-        Packet sizes are determined by the number of  packets in a single sendmsg() unless
-        overridden by the RM_SET_MESSAGE_BOUNDARY socket option.
-
-        The sender will block when the send window is full unless a non blocking write is performed.
-
-        The receiver shows the usual wait semantics. If the stream is set to unreliable then
-        packets may arrive in random order. If the set is set to RM_LISTEN_ONLY then packets may
-        just be missing.
-
-4.      Transmitter Socket Options
-
-
-        A. Setting the window size / rate.
-
-                struct pgm_send_window x;
-                x.RateKbitsPerSec = 56;
-                x.WindowSizeInMsecs = 60000;
-                x.WindowSizeinBytes = 10000000;
-
-                setsockopt(fd, SOCK_RDM, RM_RATE_WINDOW_SIZE, &x, sizeof(x));
-
-                Default is sending at 56Kbps with a buffer of 10 Megabytes and buffering for a minute.
-
-        B. FEC mode
-
-                struct pgm_fec_info x;
-
-                x.FECBlocksize = 255;
-                x.FECProActivePackets = 0;
-                x.FECGroupSize = 0;
-                x.fFECOnDemandParityEnabled = 1;
-
-                setsockopt(fd, SOCK_RDM, RM_FEC_MODE, &x, sizeof(x));
-
-
-5.      Receiver Socket Options
-
-        None?
-
-
-Possible Extensions
-
-        RM_UNORDERED    accept unordered packet avoiding delays when packets arrive out of sequence.
-                        packet is still NAKed.
-
-        RM_RECEIVE_ONLY Simply ignore missed packets. Do not send any replies.
-
-
-
-Existing socket options in the other OS (X denotes that this looks like
-its screwy and should be avoided)
-
-/* PGM socket options */
-
-/* Transmitter */
-#define RM_LATEJOIN                             1       /* X Not supported on receive so why have it? */
-#define RM_RATE_WINDOW_SIZE                     2       /* See struct pgm_send_window */
-#define RM_SEND_WINDOW_ADV_RATE                 3       /* X Increase of send window in percentage of window */
-#define RM_SENDER_STATISTICS                    4       /* see struct pgm_sender_stats */
-#define RM_SENDER_WINDOW_ADVANCE_METHOD         5       /* X seems obsolete */
-#define RM_SET_MCAST_TTL                        6       /* X Can be set via IP_MULTICAST_TTL */
-#define RM_SET_MESSAGE_BOUNDARY                 7       /* Fix the size of the messages in bytes */
-#define RM_SET_SEND_IF                          8       /* X use IP_MULTICAST_IF etc instead */
-#define RM_USE_FEC                              9
-
-/* Receiver */
-#define RM_ADD_RECEIVE_IF                       100     /* X ???? IP_MULTICAST_IF instead? */
-#define RM_DEL_RECEIVE_IF                       101     /* X IP_MULTICAST_IF */
-#define RM_HIGH_SPEED_INTRANET_OPT              102     /* X PGM should adapt automatically to high speed networks */
-#define RM_RECEIVER_STATISTICS                  103     /* See struct pgm_receiver_stats */
-
-
-/* Socket API structures (established by M$DN) */
-struct pgm_receiver_stats {
-        u64     NumODataPacketsReceived;        /* Number of ODATA (original) sequences */
-        u64     NumRDataPacketsReceived;        /* Number of RDATA (repair) sequences */
-        u64     NumDuplicateDataPackets;        /* Duplicate sequences */
-        u64     DataBytesReceived;
-        u64     TotalBytesReceived;
-        u64     RateKBitsPerSecOverall;         /* Receive rate since start of session X */
-        u64     RateKBitsPerSecLast;            /* Receive rate for last second X*/
-        u64     TrailingEdgeSeqId;              /* Oldest sequence in the receive window */
-        u64     LeadingEdgeSeqId;               /* Newest sequence in the receive window */
-        u64     AverageSequencesInWindow;       /* Average number of sequences in receive window X */
-        u64     MinSequencesInWindow;           /* The mininum number of sequences */
-        u64     MaxSequencesInWindow;           /* The maximum number of sequences */
-        u64     FirstNakSequenceNumber;         /* First outstanding nack sequence number */
-        u64     NumPendingNaks;                 /* Number of sequences waiting for NCF */
-        u64     NumOutstandingNaks;             /* Number of sequences waiting for RDATA */
-        u64     NumDataPacketsBuffered;         /* Number of packets currently buffered */
-        u64     TotalSelectiveNaksSent;         /* Number of NAKs sent total */
-        u64     TotalParityNaksSent;            /* Number of parity NAKs sent */
-};
-
-struct pgm_sender_stats {
-        u64     DataBytesSent;
-        u64     TotalBytesSent;
-        u64     NaksReceived;
-        u64     NaksReceivedTooLate;            /* NAKs received after receive window advanced */
-        u64     NumOutstandingNaks;             /* Number of NAKs awaiting response */
-        u64     NumNaksAfterRData;              /* Number of NAKs after RDATA sequences were sent which were ignored */
-        u64     RepairPacketsSent;
-        u64     BufferSpaceAvailable;           /* Number of partial messages dropped */
-        u64     TrailingEdgeSeqId;              /* Oldest sequence id in window */
-        u64     LeadingEdgeSeqId;               /* Newest sequence id in window */
-        u64     RateKBitsPerSecOverall;         /* Rate since start of session X */
-        u64     RateKBitsPerSecLast;            /* Rate in last second X */
-        u64     TotalODataPacketsSent;          /* Total data packets transmitted */
-};
-
-/* Setup of sender RateKbitsPerSec = WindowSizeBytes / WindowSizeMSecs */
-struct pgm_send_window {
-        u64     RateKbitsPerSec;                /* Allowed rate for the sender in kbits per second */
-        u64     WindowSizeInMSecs;              /* Send window size in time */
-        u64     WindowSizeInBytes;              /* Window size in bytes */
-};
-
-struct pgm_fec_info {
-        u16     FECBlockSize;                   /* Maximum number of packets for a group. Default and max = 255 */
-        u16     FECProActivePackets;            /* Number of proactive packets per group. */
-        u8      FECGroupSize;                   /* Number of packets to be treated as a group. Power of two */
-        int     fFECOnDemandParityEnabled;      /* Allow sender to sent parity repair packets */
-};
-
-
+	Ingo
