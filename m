@@ -1,186 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab0CVEvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 00:51:48 -0400
-Received: from mail-yx0-f182.google.com ([209.85.210.182]:43011 "EHLO
+	id S1752399Ab0CVE7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 00:59:17 -0400
+Received: from mail-yx0-f182.google.com ([209.85.210.182]:62864 "EHLO
 	mail-yx0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750896Ab0CVEvr (ORCPT
+	with ESMTP id S1751175Ab0CVE7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 00:51:47 -0400
+	Mon, 22 Mar 2010 00:59:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=JHYxAiKHSg0DhZ/i/eUqozuBWUKqG0kucqEwGuEZlTa0E/0ueiczE6qY7J9qGsNXGE
-         mgxJyLq299rxmO1pXyw3Tkf0Q3MRBQgNVJXM/lbm5eq1thmpthyNBex4WBbgjESQGPdT
-         uxyUlc+8PnPpRFSMPuMAAcH27RyjBoZv5Oafk=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vyWb+R5tRKARu3OiSSZhkJDlP6SXdAq7pU5HDLM3DnyTiEAxLgD95UnBxBM+vrb1lW
+         tJipjw3ZhwWOkSALJVdY9mn4M9SxpHr1fnllVCQq5bx7pu5tNYRDI+Hr2UwVlscAvXNh
+         x2xmwix4LQmJFEAHWUH/uOsahRMz6MLehzhUY=
+Date: Sun, 21 Mar 2010 21:59:10 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [RFC] Input: implement sysrq as an input handler
+Message-ID: <20100322045910.GE31621@core.coreip.homeip.net>
+References: <20100317061952.GA19789@core.coreip.homeip.net>
+ <20100319000043.GC12017@khazad-dum.debian.net>
+ <20100319000931.GA5671@core.coreip.homeip.net>
+ <20100319160641.GC16743@khazad-dum.debian.net>
+ <20100319180314.GB12143@core.coreip.homeip.net>
+ <20100320025329.GA2468@khazad-dum.debian.net>
 MIME-Version: 1.0
-In-Reply-To: <90b950fc1003212148h5fd0359ay3e21a99b0c16387a@mail.gmail.com>
-References: <90b950fc1003182136n73d54c2di4be84f16e4c3534f@mail.gmail.com>
-	 <1269004294.4292.18.camel@rex>
-	 <90b950fc1003212018h69bb0fa0t9dd62815b08eb7b3@mail.gmail.com>
-	 <90b950fc1003212148h5fd0359ay3e21a99b0c16387a@mail.gmail.com>
-Date: Mon, 22 Mar 2010 13:51:45 +0900
-Message-ID: <90b950fc1003212151q4e91cf77re0f8e031c777c48b@mail.gmail.com>
-Subject: Re: [PATCH] fixed sparkling issue on lcd panel when fb_blank mode is 
-	changed.
-From: InKi Dae <daeinki@gmail.com>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Pavel Machek <pavel@ucw.cz>,
-       Kyungmin Park <kmpark@infradead.org>,
-       linux-fbdev-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=005045016fbb45e36504825c74c9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100320025329.GA2468@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---005045016fbb45e36504825c74c9
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 19, 2010 at 11:53:29PM -0300, Henrique de Moraes Holschuh wrote:
+> On Fri, 19 Mar 2010, Dmitry Torokhov wrote:
+> > On Fri, Mar 19, 2010 at 01:06:41PM -0300, Henrique de Moraes Holschuh wrote:
+> > > On Thu, 18 Mar 2010, Dmitry Torokhov wrote:
+> > > > On Thu, Mar 18, 2010 at 09:00:43PM -0300, Henrique de Moraes Holschuh wrote:
+> > > > > Any chance of the user being able to avoid the SysRQ events getting to the
+> > > > > handle, e.g. by opening the input device in exclusive mode or something like
+> > > > > that?
+> > > > 
+> > > > Yes, it is a possible to suppress SysRq by grabbing an input device.
+> > > > This possibility exisst with the current implementation too though -
+> > > > after all legacy keyboard driver implemented as an input handler as
+> > > > well.
+> > > > 
+> > > > ... or am I answering a question different from the one you asked? ;)
+> > > 
+> > > No, that's exactly what I wanted to know.
+> > > 
+> > > What about SAK?  That thing *has* to be untrappable.
+> > 
+> > On what level untrapable? And what exactly is SAK? There is not a
+> > special key, at least not in general case, it is an action assigned to a
+> > key comboi.  Root can "trap" legacy keyboard SAK with loadkeys; it can
+> > also disable sysrq, unload modules and do other nasty things. But
+> > ordinary users can not trap it.
+> 
+> root isn't really a problem from a security PoV (well, maybe it is if the
+> operation isn't constrained by capabilities).  SAK can't protect you from
+> root.
+> 
+> _Normal_ userspace behaviour running a root process is a problem if it
+> blocks these handles, though, both for SAK and regular SysRQ.  I have lost
+> count of how many times SysRQ+SUB delivered me from filesystem corruption
+> and very annoying problems, both at home and at work.
+> 
+> We are sort of trusting userspace to not break the one way out from severly
+> hung systems while doing its normal day-to-day operations (as opposed to
+> deliberately disabling SysRQ or remapping SAK, etc).
+> 
+> > > Even for the SysRQ debug events, I'd feel better if we could have a class of
+> > > system input handlers that cannot be suppressed to use for these things.
+> > 
+> > That would require moving "these things", including their state
+> > machines, into input core otherwise it would not know what events can be
+> > trappable and which should be passed through. Or we should get rid of
+> > EVIOCGRAB.
+> 
+> Maybe we can add a flags field to input devices and input handlers, to be
+> able to have the core behave differently when needed, without moving
+> everything into the input core?  Would that work, or would it need too much
+> churn in the core?
 
-Sorry, I have modified typing error.
+The problem is that device does not know what SysRq and especially SAK are.
+User can reassign key codes and key symbols easily.
 
-2010/3/22 InKi Dae <daeinki@gmail.com>:
-> I have modified my patch.
->
-> this patch would change order only in case of FB_BLANK_POWERDOWN
-> with Richard's opinion.
->
-> if requested blank mode is less then FB_BLANK_POWERDOWN then
-> it would call device specific fb_blank and then fb_notifer_call_chan
-> otherwise fb_notifier_call_chain first, this case means power up
-----> otherwise fb_notifier_call_chain first, this case means power down
+> 
+> > Given the fact that event devices are accessible only to root I think
+> > that current behavior is acceptable.
+> 
+> I don't trust the class of programs that would want to open input devices as
+> root in exclusive mode.  Desktop fluff might decide to use EVIOCGRAB or open
+> input devices in exclusive mode for some reason, and break SysRQ.  I'd like
+> to preserve the hability of userspace to EVIOCGRAB if it feels there's a
+> need to, while preserving the kernel's hability to NEVER ignore SysRQ and
+> SAK while enabled.
 
-> and display controller should become on earlier then other devices
-> like lcd panel.
->
-> Please review this path again.
->
-> signed-off-by : InKi Dae <inki.dae@samsung.com>
->
-> Best Regards,
-> InKi Dae.
->
-> 2010/3/22 InKi Dae <daeinki@gmail.com>:
->> yes, you are right.
->>
->> when fb_blank mode is changed to FB_BLANK_NORMAL or
->> FB_BLANK_UNBLANK(power down -> power up)
->> it has a possibility that we would encounter same issue.
->>
->> I'd try to modify my patch to be considered with your opinion and will
->> send it again.
->> Thank you for your answer.
->>
->> Best Regards,
->> InKi Dae.
->>
->> 2010/3/19 Richard Purdie <rpurdie@rpsys.net>:
->>> Hi,
->>>
->>> On Fri, 2010-03-19 at 13:36 +0900, InKi Dae wrote:
->>>> This issue is a problem that lcd panel is spakled when fb_blank mode i=
-s changed
->>>> From FB_BLANK_UNBLANK to FB_BLANK_POWER or FB_BLANK_POWER to FB_BLANK_=
-UNBLANK.
->>>>
->>>> In case of FB_BLANK_UNBLANK, screen =3D on, vsync =3D on, hsync =3D on=
- and
->>>> For FB_BLANK_POWERDOWN screen =3D blanked, vsync =3D off, hsync =3D of=
-f
->>>> So like this when fb_blank mode becomes FB_BLANK_POWERDOWN,
->>>> Display controller and lcd panel should become off to reduce power con=
-sumption.
->>>>
->>>> Let's see fb_blank function of fbmem.c file.
->>>>
->>>> fb_blank()
->>>> {
->>>> =A0 =A0 if (info->fbops->fb_blank)
->>>> =A0 =A0 =A0 =A0 =A0 =A0 ret =3D info->fbops->fb_blank(blank, info(
->>>> =A0 =A0 if (!ret)
->>>> =A0 =A0 =A0 =A0 =A0 =A0 fb_notifier_call_chain(FB_EVENT_BLANK, &event)=
-;
->>>> }
->>>>
->>>> This problem is because this code calls fb_blank (fb_blank of device
->>>> specific framebuffer driver)
->>>> Earlier then fb_notifier_call_chain.
->>>>
->>>> For example,
->>>> Device specific fb_blank function is registered to generic framebuffer
->>>> driver through register_framebuffer function
->>>> And fb_notifier_call_chain calls any callback function registered to
->>>> lcd class(lcd.c) through fb_notifier_callback function.
->>>> So if fb_blank mode is changed to FB_BLANK_POWERDOWN then display
->>>> controller would become off(clock disable)
->>>> On the other hand, lcd panel would still be on. at this time, some
->>>> situation on lcd panel occers like sparkling
->>>> Because video clock to be delivered to ldi module of lcd panel is disa=
-bled also.
->>>>
->>>> This patch get fb_notifier_call_chain to be called earlier then fb_bla=
-nk.
->>>> Please, review this patch.
->>>
->>> So to summarise the problem more succinctly the LCD and the display
->>> controllers power off in the wrong order causing visual defects
->>> (sparkling) on the display.
->>>
->>> I was a bit worried about event order and loops with this change so I
->>> checked and there are three consumers of these events in the kernel:
->>> consoles, LCD and backlight. None of them have a problem with this
->>> change of order for power down so from that point of view I'm ok with
->>> the change.
->>>
->>> However this function also covers powerup from a screen blank to an
->>> active screen. When powering up it makes sense to power up the video
->>> device first, then the LCD, backlight and console as per the current
->>> code, otherwise I can imagine "sparkling" upon powerup.
->>>
->>> So it looks like we need to change order only on powerdown, not upon
->>> resume, otherwise we'll get further regression reports on poweron?
->>>
->>> Cheers,
->>>
->>> Richard
->>>
->>>
->>>
->>>
->>>
->>
->
+I am afraid that you chose wrong verb then. You can not _preserve_ what
+you do not have - legacy keyboard driver is still an input handler, and
+thus can still interfere with SysRq by grabbing input devices.
 
---005045016fbb45e36504825c74c9
-Content-Type: application/octet-stream; name="fbmem.patch"
-Content-Disposition: attachment; filename="fbmem.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g72stgzx1
+I don't think we had any issues like this since 2.5 so I would not worry
+about userspace too much. If anything we just need to review what stuff
+we run as root (we do that anyway, right?).
 
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvdmlkZW8vZmJtZW0uYyBiL2RyaXZlcnMvdmlkZW8vZmJtZW0u
-YwppbmRleCBhMTViNDRlLi5kODBlMDk3IDEwMDY0NAotLS0gYS9kcml2ZXJzL3ZpZGVvL2ZibWVt
-LmMKKysrIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCkBAIC0xMDA3LDI0ICsxMDA3LDMzIEBAIGZi
-X3NldF92YXIoc3RydWN0IGZiX2luZm8gKmluZm8sIHN0cnVjdCBmYl92YXJfc2NyZWVuaW5mbyAq
-dmFyKQogCiBpbnQKIGZiX2JsYW5rKHN0cnVjdCBmYl9pbmZvICppbmZvLCBpbnQgYmxhbmspCi17
-CQotIAlpbnQgcmV0ID0gLUVJTlZBTDsKK3sKKwlzdHJ1Y3QgZmJfZXZlbnQgZXZlbnQ7CisJaW50
-IHJldCA9IC1FSU5WQUw7CiAKLSAJaWYgKGJsYW5rID4gRkJfQkxBTktfUE9XRVJET1dOKQotIAkJ
-YmxhbmsgPSBGQl9CTEFOS19QT1dFUkRPV047CisJaWYgKGJsYW5rID4gRkJfQkxBTktfUE9XRVJE
-T1dOKQorCQlibGFuayA9IEZCX0JMQU5LX1BPV0VSRE9XTjsKIAotCWlmIChpbmZvLT5mYm9wcy0+
-ZmJfYmxhbmspCi0gCQlyZXQgPSBpbmZvLT5mYm9wcy0+ZmJfYmxhbmsoYmxhbmssIGluZm8pOwor
-CWV2ZW50LmluZm8gPSBpbmZvOworCWV2ZW50LmRhdGEgPSAmYmxhbms7CiAKLSAJaWYgKCFyZXQp
-IHsKLQkJc3RydWN0IGZiX2V2ZW50IGV2ZW50OworCWlmIChibGFuayA8ICBGQl9CTEFOS19QT1dF
-UkRPV04pIHsKKwkJaWYgKGluZm8tPmZib3BzLT5mYl9ibGFuaykKKwkJCXJldCA9IGluZm8tPmZi
-b3BzLT5mYl9ibGFuayhibGFuaywgaW5mbyk7CiAKLQkJZXZlbnQuaW5mbyA9IGluZm87Ci0JCWV2
-ZW50LmRhdGEgPSAmYmxhbms7Ci0JCWZiX25vdGlmaWVyX2NhbGxfY2hhaW4oRkJfRVZFTlRfQkxB
-TkssICZldmVudCk7CisJCXJldCA9IGZiX25vdGlmaWVyX2NhbGxfY2hhaW4oRkJfRVZFTlRfQkxB
-TkssICZldmVudCk7CisJCWlmICgocmV0ICYgTk9USUZZX1NUT1BfTUFTSykgPT0gTk9USUZZX1NU
-T1BfTUFTSykKKwkJCXByaW50ayhLRVJOX0VSUiAibm90aWZpZXJfY2FsbCBmYWlsZWQuXG4iKTsK
-Kwl9IGVsc2UgeworCQlyZXQgPSBmYl9ub3RpZmllcl9jYWxsX2NoYWluKEZCX0VWRU5UX0JMQU5L
-LCAmZXZlbnQpOworCQlpZiAoKHJldCAmIE5PVElGWV9TVE9QX01BU0spID09IE5PVElGWV9TVE9Q
-X01BU0spCisJCQlwcmludGsoS0VSTl9FUlIgIm5vdGlmaWVyX2NhbGwgZmFpbGVkLlxuIik7CisK
-KwkJaWYgKGluZm8tPmZib3BzLT5mYl9ibGFuaykKKwkJCXJldCA9IGluZm8tPmZib3BzLT5mYl9i
-bGFuayhibGFuaywgaW5mbyk7CiAJfQogCi0gCXJldHVybiByZXQ7CisJcmV0dXJuIHJldDsKIH0K
-IAogc3RhdGljIGxvbmcgZG9fZmJfaW9jdGwoc3RydWN0IGZiX2luZm8gKmluZm8sIHVuc2lnbmVk
-IGludCBjbWQsCg==
---005045016fbb45e36504825c74c9--
+-- 
+Dmitry
