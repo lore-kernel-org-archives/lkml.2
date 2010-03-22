@@ -1,74 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0CVQPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:15:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755103Ab0CVQPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:15:23 -0400
-Message-ID: <4BA79718.9060606@redhat.com>
-Date: Mon, 22 Mar 2010 18:13:12 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100321205531.GC30194@elte.hu> <4BA692C3.7010408@redhat.com> <20100321215455.GB13219@elte.hu> <4BA7187E.3050405@redhat.com> <20100322111411.GC3483@elte.hu> <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu> <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA782D1.70607@redhat.com> <20100322160849.GB18796@elte.hu>
-In-Reply-To: <20100322160849.GB18796@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755181Ab0CVQP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:15:28 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:32877 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755154Ab0CVQP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 12:15:26 -0400
+Date: Mon, 22 Mar 2010 09:14:20 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 1/3] Add tracing_off_event() to stop tracing when a bug
+ or warning occur
+Message-Id: <20100322091420.a12739f2.randy.dunlap@oracle.com>
+In-Reply-To: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
+References: <1268920132-30512-1-git-send-email-chase.douglas@canonical.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BA79799.00F4:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 06:08 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 03/22/2010 04:32 PM, Ingo Molnar wrote:
->>      
->>> * Avi Kivity<avi@redhat.com>   wrote:
->>>
->>>        
->>>> On 03/22/2010 02:44 PM, Ingo Molnar wrote:
->>>>          
->>>>> This is why i consider that line of argument rather dishonest ...
->>>>>            
->>>> I am not going to reply to any more email from you on this thread.
->>>>          
->>> Because i pointed out that i consider a line of argument intellectually
->>> dishonest?
->>>
->>> I did not say _you_ as a person are dishonest - doing that would be an ad
->>> honimen attack against your person. (In fact i dont think you are, to the
->>> contrary)
->>>
->>> An argument can certainly be labeled dishonest in a fair discussion and it
->>> is not a personal attack against you to express my opinion about that.
->>>
->>>        
->> Sigh, why am I drawn into this.
->>
->> A person who uses dishonest arguments is a dishonest person. [...]
->>      
-> That's not how i understood that phrase - and i did not mean to suggest that
-> you are dishonest and i do not think that you are dishonest (to the contrary).
->    
+On Thu, 18 Mar 2010 09:48:50 -0400 Chase Douglas wrote:
 
-Word games.
+> The tracing_off_event() function calls tracing_off() to stop tracing
+> when an event occurs. By default, only BUG-type events stop tracing,
+> while WARNING type events do not. This is controlled through the
+> tracing_off={none,warn,bug} commandline parameter.
+> 
+> Call this function from bug and warning event handlers to enable a user
+> to debug their kernel by starting a trace, hitting an event, and then
+> retrieving trace info knowing that the trace was stopped right after the
+> event was hit.
+> 
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> ---
+>  include/linux/kernel.h     |    5 +++++
+>  kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
+>  2 files changed, 39 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 7f07074..107091f 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -478,16 +478,21 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
+>   *
+>   * Most likely, you want to use tracing_on/tracing_off.
+>   */
+> +#define TRACE_EVENT_BUG 0
+> +#define TRACE_EVENT_WARN 1
+> +
+>  #ifdef CONFIG_RING_BUFFER
+>  void tracing_on(void);
+>  void tracing_off(void);
+>  /* trace_off_permanent stops recording with no way to bring it back */
+>  void tracing_off_permanent(void);
+> +void tracing_off_event(long event);
+>  int tracing_is_on(void);
+>  #else
+>  static inline void tracing_on(void) { }
+>  static inline void tracing_off(void) { }
+>  static inline void tracing_off_permanent(void) { }
+> +static inline void tracing_off_event(long event) { }
+>  static inline int tracing_is_on(void) { return 0; }
+>  #endif
+>  #ifdef CONFIG_TRACING
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 0287f9f..b148862 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -193,6 +193,40 @@ void tracing_off_permanent(void)
+>  	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
+>  }
+>  
+> +static long tracing_event_mask = TRACE_EVENT_BUG;
+> +
+> +/**
+> + * tracing_off_event - turn off tracing depending on event type
 
--- 
-error compiling committee.c: too many arguments to function
+Please add the function parameter to the kernel-doc to make it complete
+& prevent warnings;  something like:
 
+ * @event: which event happened
+
+
+> + *
+> + * This function checks the event type to determine whether tracing should be
+> + * disabled. Useful for disabling tracing on bugs or warnings.
+> + */
+> +void tracing_off_event(long event)
+> +{
+> +	if (event <= tracing_event_mask)
+> +		tracing_off();
+> +}
+> +EXPORT_SYMBOL_GPL(tracing_off_event);
+> +
+> +static int __init tracing_off_event_setup(char *str)
+> +{
+> +	if (!strcmp("none", str))
+> +		tracing_event_mask = -1;
+> +	else if (!strcmp("bug", str))
+> +		tracing_event_mask = TRACE_EVENT_BUG;
+> +	else if (!strcmp("warn", str))
+> +		tracing_event_mask = TRACE_EVENT_WARN;
+> +	else
+> +	{
+> +		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
+> +		return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +__setup("tracing_off=", tracing_off_event_setup);
+> +
+>  /**
+>   * tracing_is_on - show state of ring buffers enabled
+>   */
+> -- 
+
+
+---
+~Randy
