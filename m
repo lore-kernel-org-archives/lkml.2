@@ -1,62 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0CVD3M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 23:29:12 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39510 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab0CVD3L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 23:29:11 -0400
-To: "Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: Re: Questions about SMP bootup control
-From: Andi Kleen <andi@firstfloor.org>
-References: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
-	<1269155601-18247-7-git-send-email-yinghai@kernel.org>
-	<1269225435.8599.70.camel@pasglop>
-	<2234BBB33B4B2048B28E3B3ACFC9795C01B53251@CNBEEXC007.nsn-intra.net>
-Date: Mon, 22 Mar 2010 04:29:05 +0100
-In-Reply-To: <2234BBB33B4B2048B28E3B3ACFC9795C01B53251@CNBEEXC007.nsn-intra.net> (Yijun Zhu's message of "Mon, 22 Mar 2010 10:46:32 +0800")
-Message-ID: <87tys9dofy.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1754079Ab0CVDdj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 23:33:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61929 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab0CVDdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 23:33:38 -0400
+Message-ID: <4BA6E515.4040001@cn.fujitsu.com>
+Date: Mon, 22 Mar 2010 11:33:41 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
+       dipankar@in.ibm.com, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com, adobriyan@gmail.com
+Subject: Re: [RFC patch 2/3] tree/tiny rcu: Add debug RCU head objects (v3)
+References: <20100319204739.574593298@efficios.com> <20100319205233.474028085@efficios.com>
+In-Reply-To: <20100319205233.474028085@efficios.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com> writes:
+Very nice you do not touch struct rcu_head.
 
-> Hi All:
->
-> I want to do some modification on the SMP architecture.
->
-> Purpose:
-> Only the first CPU is running the linux OS, while others do some private
-> services processing.
->
-> My solution:
-> In the end of the start_secondary() function, I try to schedu the slave
-> cpu to call my private endless loop instead of cpu_idle();
->
-> Result:
-> The system can NOT up, there is no interactive cli.
->
-> Question:
-> Is there some wrong with my modification or I go to the wrong way?
+Mathieu Desnoyers wrote:
 
-Presumably you're doing this to own that CPU exclusively.
+> +
+> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+> +# define STATE_RCU_HEAD_READY	0
+> +# define STATE_RCU_HEAD_QUEUED	1
+> +
+> +extern struct debug_obj_descr rcuhead_debug_descr;
+> +
+> +static inline void debug_rcu_head_queue(struct rcu_head *head)
+> +{
+> +	debug_object_activate(head, &rcuhead_debug_descr);
+> +	debug_object_active_state(head, &rcuhead_debug_descr,
+> +				  STATE_RCU_HEAD_READY,
+> +				  STATE_RCU_HEAD_QUEUED);
+> +}
+> +
+> +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+> +{
+> +	debug_object_active_state(head, &rcuhead_debug_descr,
+> +				  STATE_RCU_HEAD_QUEUED,
+> +				  STATE_RCU_HEAD_READY);
+> +	debug_object_deactivate(head, &rcuhead_debug_descr);
+> +}
 
-Hooking at cpu_idle is not very useful then because interrupts will be
-already enabled and the system participate in IPIs etc, so you can't
-simply disable them, the others will miss them.
+I'm a little foolish. I don't know why we need
+STATE_RCU_HEAD_READY/QUEUED.
 
-You would rather need to prevent them from being started in the
-first place, e.g. by exluding them with maxcpus=..
+1) obj->astate does not be set to STATE_RCU_HEAD_READY in
+debug_object_activate/init().
 
-A better alternative might be to use isolcpus=... and schedule
-a standard program.
+Maybe you need to add a function:
+debug_object_activate_with_astate(head, descr, init_astate);
+(the same as debug_object_activate(), but init obj->astate also)
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Or you need:
+@debugobjects.h
+# define DEBUG_OBJECT_ASTATE_INIT 0
+@rcupdate.c
+# define STATE_RCU_HEAD_READY	DEBUG_OBJECT_ASTATE_INIT
+# define STATE_RCU_HEAD_QUEUED	(STATE_RCU_HEAD_READY + 1)
+
+2) In debug_rcu_head_queue(), debug_object_active_state()
+   is always success when debug_object_activate() is success.
+
+   In debug_rcu_head_unqueue(), debug_object_active_state()
+   is always success if RCU subsystem is running correctly.
+
+(Correct me if I'm wrong) So we don't need debug_object_active_state()
+here if we just find racy users of call_rcu().
+
+> + */
+> +static int rcuhead_fixup_init(void *addr, enum debug_obj_state state)
+> +{
+> +	struct rcu_head *head = addr;
+> +
+> +	switch (state) {
+> +	case ODEBUG_STATE_ACTIVE:
+> +		/*
+> +		 * Ensure that queued callbacks are all executed.
+> +		 * If we detect that we are nested in a RCU read-side critical
+> +		 * section, we should simply fail, otherwise we would deadlock.
+> +		 */
+> +		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
+> +		    irqs_disabled()) {
+> +			WARN_ON(1);
+> +			return 0;
+> +		}
+
+preempt_count() != 0 ??? What happen when !CONFIG_PREEMPT?
+
+> +		rcu_barrier();
+
+We may need call rcu_barrier(), rcu_barrier_sched(), rcu_barrier_bh() together?
+rcu_barrier() does not ensure to flush callbacks of RCU_BH, RCU_SCHED.
+
+> +		debug_object_init(head, &rcuhead_debug_descr);
+> +		return 1;
+> +	default:
+> +		return 0;
+> +	}
+> +}
+> +
+
