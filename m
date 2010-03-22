@@ -1,287 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab0CVJLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 05:11:45 -0400
-Received: from mga05.intel.com ([192.55.52.89]:24518 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752459Ab0CVJLn (ORCPT
+	id S1754394Ab0CVJYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 05:24:35 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:39892 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab0CVJYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 05:11:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,286,1267430400"; 
-   d="scan'208";a="782781513"
-Message-ID: <4BA7344C.6030108@linux.intel.com>
-Date: Mon, 22 Mar 2010 17:11:40 +0800
-From: Haicheng Li <haicheng.li@linux.intel.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
+	Mon, 22 Mar 2010 05:24:33 -0400
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 05:24:32 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=h8V/267qeaCaa/Lv6MHpkVuH/5KFNT2M5Hluam5bq1s9+yDfdy37OEgIEq2KzV6H/t
+         lXj9fMfJscJzVFD6IYPfMqeqVDXCzwCjajvUfNWGz2B3wqqpOYpGWId7vYvteYyZV+LY
+         mBl79q/k/VRCiv6wvKa4pEtSeTRdgLhrx89ek=
+Message-ID: <4BA7359B.2060603@panasas.com>
+Date: Mon, 22 Mar 2010 11:17:15 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: ak@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>, "Li, Haicheng" <haicheng.li@intel.com>,
+To: Nick Piggin <npiggin@suse.de>
+CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
        linux-kernel@vger.kernel.org
-Subject: [BUGFIX] [PATCH] x86: update all PGDs for direct mapping changes
- on 64bit.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
+References: <20100322053937.GA17637@laptop>
+In-Reply-To: <20100322053937.GA17637@laptop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 03/22/2010 07:39 AM, Nick Piggin wrote:
+> It's ugly and lazy that we do these default aops in case it has not
+> been filled in by the filesystem.
+> 
+> A NULL operation should always mean either: we don't support the
+> operation; we don't require any action; or a bug in the filesystem,
+> depending on the context.
+> 
+> In practice, if we get rid of these fallbacks, it will be clearer
+> what operations are used by a given address_space_operations struct,
+> reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
+> rid of all the buffer_head knowledge from core mm and fs code.
+> 
+> We could add a patch like this which spits out a recipe for how to fix
+> up filesystems and get them all converted quite easily.
+> 
 
-In our recent CPU/MEM hotplug testing, a kernel BUG() was found:
+Guilty as charged. It could be nice if the first thing this patch will
+do is: Add a comment at struct address_space_operations that states
+that all operations should be defined and perhaps what are the minimum
+defaults for some of these, as below. I do try to be good, I was under
+the impression that defaults are OK.
 
-[ 1139.243192] BUG: soft lockup - CPU#0 stuck for 61s! [bash:6534]
-[ 1139.243195] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc 
-dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc 
-lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib 
-i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
-[ 1139.243229] irq event stamp: 8538759
-[ 1139.243230] hardirqs last  enabled at (8538759): [<ffffffff8100c3fc>] restore_args+0x0/0x30
-[ 1139.243236] hardirqs last disabled at (8538757): [<ffffffff810422df>] __do_softirq+0x106/0x146
-[ 1139.243240] softirqs last  enabled at (8538758): [<ffffffff81042310>] __do_softirq+0x137/0x146
-[ 1139.243245] softirqs last disabled at (8538743): [<ffffffff8100cb5c>] call_softirq+0x1c/0x34
-[ 1139.243249] CPU 0:
-[ 1139.243250] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc 
-dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc 
-lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib 
-i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
-[ 1139.243284] Pid: 6534, comm: bash Tainted: G   M       2.6.32-haicheng-cpuhp #7 QSSC-S4R
-[ 1139.243287] RIP: 0010:[<ffffffff810ace35>]  [<ffffffff810ace35>] alloc_arraycache+0x35/0x69
-[ 1139.243292] RSP: 0018:ffff8802799f9d78  EFLAGS: 00010286
-[ 1139.243295] RAX: ffff8884ffc00000 RBX: ffff8802799f9d98 RCX: 0000000000000000
-[ 1139.243297] RDX: 0000000000190018 RSI: 0000000000000001 RDI: ffff8884ffc00010
-[ 1139.243300] RBP: ffffffff8100c34e R08: 0000000000000002 R09: 0000000000000000
-[ 1139.243303] R10: ffffffff8246dda0 R11: 000000d08246dda0 R12: ffff8802599bfff0
-[ 1139.243305] R13: ffff88027904c040 R14: ffff8802799f8000 R15: 0000000000000001
-[ 1139.243308] FS:  00007fe81bfe86e0(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
-[ 1139.243311] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1139.243313] CR2: ffff8884ffc00000 CR3: 000000026cf2d000 CR4: 00000000000006f0
-[ 1139.243316] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1139.243318] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1139.243321] Call Trace:
-[ 1139.243324]  [<ffffffff810ace29>] ? alloc_arraycache+0x29/0x69
-[ 1139.243328]  [<ffffffff8135004e>] ? cpuup_callback+0x1b0/0x32a
-[ 1139.243333]  [<ffffffff8105385d>] ? notifier_call_chain+0x33/0x5b
-[ 1139.243337]  [<ffffffff810538a4>] ? __raw_notifier_call_chain+0x9/0xb
-[ 1139.243340]  [<ffffffff8134ecfc>] ? cpu_up+0xb3/0x152
-[ 1139.243344]  [<ffffffff813388ce>] ? store_online+0x4d/0x75
-[ 1139.243348]  [<ffffffff811e53f3>] ? sysdev_store+0x1b/0x1d
-[ 1139.243351]  [<ffffffff8110589f>] ? sysfs_write_file+0xe5/0x121
-[ 1139.243355]  [<ffffffff810b539d>] ? vfs_write+0xae/0x14a
-[ 1139.243358]  [<ffffffff810b587f>] ? sys_write+0x47/0x6f
-[ 1139.243362]  [<ffffffff8100b9ab>] ? system_call_fastpath+0x16/0x1b
+Below are changes to exofs as proposed by this mail. Please comment?
+I will push such a patch to exofs later.
 
-Below is the patch to fix this bug.
+> Index: linux-2.6/mm/filemap.c
+> ===================================================================
+> --- linux-2.6.orig/mm/filemap.c
+> +++ linux-2.6/mm/filemap.c
+> @@ -2472,7 +2472,14 @@ int try_to_release_page(struct page *pag
+>  
+>  	if (mapping && mapping->a_ops->releasepage)
+>  		return mapping->a_ops->releasepage(page, gfp_mask);
+> -	return try_to_free_buffers(page);
+> +	else {
+> +		static bool warned = false;
+> +		if (!warned) {
+> +			warned = true;
+> +			print_symbol("address_space_operations %s missing releasepage method. Use try_to_free_buffers.\n", (unsigned long)page->mapping->a_ops);
+> +		}
+> +		return try_to_free_buffers(page);
+
+This is not nice! we should have an export that looks like:
+
+int default_releasepage(struct page *page, gfp_t gfp)
+{
+	return try_to_free_buffers(page);
+}
+
+otherwise 3ton FSes would have to define the same thing all over again
+
+> +	}
+>  }
+>  
+>  EXPORT_SYMBOL(try_to_release_page);
+> Index: linux-2.6/mm/page-writeback.c
+> ===================================================================
+> --- linux-2.6.orig/mm/page-writeback.c
+> +++ linux-2.6/mm/page-writeback.c
+> @@ -1159,8 +1159,14 @@ int set_page_dirty(struct page *page)
+>  	if (likely(mapping)) {
+>  		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
+>  #ifdef CONFIG_BLOCK
+> -		if (!spd)
+> +		if (!spd) {
+> +			static bool warned = false;
+> +			if (!warned) {
+> +				warned = true;
+> +				print_symbol("address_space_operations %s missing set_page_dirty method. Use __set_page_dirty_buffers.\n", (unsigned long)page->mapping->a_ops);
+> +			}
+>  			spd = __set_page_dirty_buffers;
+> +		}
+
+We could do better then __set_page_dirty_buffers for something lots of FSes use
+
+>  #endif
+>  		return (*spd)(page);
+>  	}
+> Index: linux-2.6/mm/truncate.c
+> ===================================================================
+> --- linux-2.6.orig/mm/truncate.c
+> +++ linux-2.6/mm/truncate.c
+> @@ -16,8 +16,8 @@
+>  #include <linux/highmem.h>
+>  #include <linux/pagevec.h>
+>  #include <linux/task_io_accounting_ops.h>
+> -#include <linux/buffer_head.h>	/* grr. try_to_release_page,
+> -				   do_invalidatepage */
+> +#include <linux/buffer_head.h>	/* block_invalidatepage */
+> +#include <linux/kallsyms.h>
+>  #include "internal.h"
+>  
+>  
+> @@ -40,8 +40,14 @@ void do_invalidatepage(struct page *page
+>  	void (*invalidatepage)(struct page *, unsigned long);
+>  	invalidatepage = page->mapping->a_ops->invalidatepage;
+>  #ifdef CONFIG_BLOCK
+> -	if (!invalidatepage)
+> +	if (!invalidatepage) {
+> +		static bool warned = false;
+> +		if (!warned) {
+> +			warned = true;
+> +			print_symbol("address_space_operations %s missing invalidatepage method. Use block_invalidatepage.\n", (unsigned long)page->mapping->a_ops);
+> +		}
+>  		invalidatepage = block_invalidatepage;
+> +	}
+>  #endif
+>  	if (invalidatepage)
+>  		(*invalidatepage)(page, offset);
+> Index: linux-2.6/fs/inode.c
+> ===================================================================
+> --- linux-2.6.orig/fs/inode.c
+> +++ linux-2.6/fs/inode.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/mount.h>
+>  #include <linux/async.h>
+>  #include <linux/posix_acl.h>
+> +#include <linux/kallsyms.h>
+>  
+>  /*
+>   * This is needed for the following functions:
+> @@ -311,8 +312,14 @@ void clear_inode(struct inode *inode)
+>  
+>  	might_sleep();
+>  	/* XXX: filesystems should invalidate this before calling */
+> -	if (!mapping->a_ops->release)
+> +	if (!mapping->a_ops->release) {
+
+Where is this code from? As of 2.6.34-rc2 I don't have a release in a_ops->
+
+> +		static bool warned = false;
+> +		if (!warned) {
+> +			warned = true;
+> +			print_symbol("address_space_operations %s missing release method. Use invalidate_inode_buffers.\n", (unsigned long)mapping->a_ops);
+> +		}
+>  		invalidate_inode_buffers(inode);
+> +	}
+>  
+>  	BUG_ON(mapping_has_private(mapping));
+>  	BUG_ON(mapping->nrpages);
+> @@ -393,9 +400,14 @@ static int invalidate_list(struct list_h
+>  		if (inode->i_state & I_NEW)
+>  			continue;
+>  		mapping = &inode->i_data;
+> -		if (!mapping->a_ops->release)
+> +		if (!mapping->a_ops->release) {
+
+And here
+
+> +			static bool warned = false;
+> +			if (!warned) {
+> +				warned = true;
+> +				print_symbol("address_space_operations %s missing release method. Using invalidate_inode_buffers.\n", (unsigned long)mapping->a_ops);
+> +			}
+>  			invalidate_inode_buffers(inode);
+> -		else
+> +		} else
+>  			mapping->a_ops->release(mapping, AOP_RELEASE_FORCE);
+>  		BUG_ON(mapping_has_private(mapping));
+>  		if (!atomic_read(&inode->i_count)) {
+> @@ -497,8 +509,14 @@ static void prune_icache(int nr_to_scan)
+>  			spin_unlock(&inode_lock);
+>  			if (mapping->a_ops->release)
+>  				ret = mapping->a_ops->release(mapping, 0);
+> -			else
+> +			else {
+> +				static bool warned = false;
+> +				if (!warned) {
+> +					warned = true;
+> +					print_symbol("address_space_operations %s missing release method. Using remove_inode_buffers.\n", (unsigned long)mapping->a_ops);
+> +				}
+>  				ret = !remove_inode_buffers(inode);
+> +			}
+>  			if (ret)
+>  				reap += invalidate_mapping_pages(&inode->i_data,
+>  								0, -1);
+> Index: linux-2.6/fs/libfs.c
+> ===================================================================
+> --- linux-2.6.orig/fs/libfs.c
+> +++ linux-2.6/fs/libfs.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/exportfs.h>
+>  #include <linux/writeback.h>
+>  #include <linux/buffer_head.h>
+> +#include <linux/kallsyms.h>
+>  
+>  #include <asm/uaccess.h>
+>  
+> @@ -827,9 +828,14 @@ int simple_fsync(struct file *file, stru
+>  	int err;
+>  	int ret;
+>  
+> -	if (!mapping->a_ops->sync)
+> +	if (!mapping->a_ops->sync) {
+
+And this one is new as well, right?
+
+New added vectors should be added to all in-tree FSes by the submitter.
+and a deprecate warning for out of tree FSes (If we care)
+
+> +		static bool warned = false;
+> +		if (!warned) {
+> +			warned = true;
+> +			print_symbol("address_space_operations %s missing sync method. Using sync_mapping_buffers.\n", (unsigned long)mapping->a_ops);
+> +		}
+>  		ret = sync_mapping_buffers(mapping);
+> -	else
+> +	} else
+>  		ret = mapping->a_ops->sync(mapping, AOP_SYNC_WRITE|AOP_SYNC_WAIT);
+>  
+>  	if (!(inode->i_state & I_DIRTY))
+> --
+---
+exofs: Add default address_space_operations
+
+All vectors of address_space_operations should be initialized by the filesystem.
+Add the missing parts.
 
 ---
-x86: update all PGDs for direct mapping changes on 64bit.
+git diff --stat -p -M fs/exofs/inode.c
+ fs/exofs/inode.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-When memory hotadd/removal happens for a large enough area
-that a new PGD entry is needed for the direct mapping, the PGDs
-of other processes would not get updated. This leads to some CPUs
-oopsing when they have to access the unmapped areas.
-
-This patch makes sure to always replicate new direct mapping PGD entries
-to the PGDs of all processes.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
----
-  arch/x86/mm/init_64.c |   82 ++++++++++++++++++++++++++++++++++++++++---------
-  1 files changed, 67 insertions(+), 15 deletions(-)
-
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index e9b040e..384ca43 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -96,6 +96,37 @@ static int __init nonx32_setup(char *str)
-  }
-  __setup("noexec32=", nonx32_setup);
-
-+
-+/*
-+ * When memory was added/removed make sure all the processes MM have
-+ * suitable PGD entries in the local PGD level page.
-+ * Caller must flush global TLBs if needed (old mapping changed)
-+ */
-+static void sync_global_pgds(unsigned long start, unsigned long end)
+diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
+index a17e4b7..85dd847 100644
+--- a/fs/exofs/inode.c
++++ b/fs/exofs/inode.c
+@@ -754,6 +754,11 @@ static int exofs_write_end(struct file *file, struct address_space *mapping,
+ 	return ret;
+ }
+ 
++static int exofs_releasepage(struct page *page, gfp_t gfp)
 +{
-+	unsigned long flags;
-+	struct page *page;
-+	unsigned long addr;
-+
-+	spin_lock_irqsave(&pgd_lock, flags);
-+	for (addr = start; addr < end; addr += PGDIR_SIZE) {
-+		pgd_t *ref_pgd = pgd_offset_k(addr);
-+		list_for_each_entry(page, &pgd_list, lru) {
-+			pgd_t *pgd_base = page_address(page);
-+			pgd_t *pgd = pgd_base + pgd_index(addr);
-+
-+			/*
-+			 * When the state is the same in one other,
-+			 * assume it's the same everywhere.
-+			 */
-+			if (pgd_base != init_mm.pgd &&
-+			    !!pgd_none(*pgd) != !!pgd_none(*ref_pgd))
-+				set_pgd(pgd, *ref_pgd);
-+		}
-+	}
-+	spin_unlock_irqrestore(&pgd_lock, flags);
++	return try_to_free_buffers(page);
 +}
 +
-  /*
-   * NOTE: This function is marked __ref because it calls __init function
-   * (alloc_bootmem_pages). It's safe to do it ONLY when after_bootmem == 0.
-@@ -217,6 +248,8 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
-  	pgd_t *pgd;
-  	pud_t *pud;
-  	pmd_t *pmd;
-+	int pgd_changed = 0;
-+	unsigned long addr = phys;
-
-  	BUG_ON((phys & ~PMD_MASK) || (size & ~PMD_MASK));
-  	for (; size; phys += PMD_SIZE, size -= PMD_SIZE) {
-@@ -225,6 +258,7 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
-  			pud = (pud_t *) spp_getpage();
-  			set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE |
-  						_PAGE_USER));
-+			pgd_changed = 1;
-  		}
-  		pud = pud_offset(pgd, (unsigned long)__va(phys));
-  		if (pud_none(*pud)) {
-@@ -236,6 +270,11 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
-  		BUG_ON(!pmd_none(*pmd));
-  		set_pmd(pmd, __pmd(phys | pgprot_val(prot)));
-  	}
-+	if (pgd_changed) {
-+		sync_global_pgds(addr, addr + size);
-+		/* Might not be needed if the previous mapping was always zero*/
-+		__flush_tlb_all();
-+	}
-  }
-
-  void __init init_extra_mapping_wb(unsigned long phys, unsigned long size)
-@@ -533,36 +572,41 @@ kernel_physical_mapping_init(unsigned long start,
-  			     unsigned long end,
-  			     unsigned long page_size_mask)
-  {
--
-+	int pgd_changed = 0;
-  	unsigned long next, last_map_addr = end;
-+	unsigned long addr;
-
-  	start = (unsigned long)__va(start);
-  	end = (unsigned long)__va(end);
-
--	for (; start < end; start = next) {
--		pgd_t *pgd = pgd_offset_k(start);
-+	for (addr = start; addr < end; addr = next) {
-+		pgd_t *pgd = pgd_offset_k(addr);
-  		unsigned long pud_phys;
-  		pud_t *pud;
-
--		next = (start + PGDIR_SIZE) & PGDIR_MASK;
-+		next = (addr + PGDIR_SIZE) & PGDIR_MASK;
-  		if (next > end)
-  			next = end;
-
-  		if (pgd_val(*pgd)) {
--			last_map_addr = phys_pud_update(pgd, __pa(start),
-+			last_map_addr = phys_pud_update(pgd, __pa(addr),
-  						 __pa(end), page_size_mask);
-  			continue;
-  		}
-
-  		pud = alloc_low_page(&pud_phys);
--		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
-+		last_map_addr = phys_pud_init(pud, __pa(addr), __pa(next),
-  						 page_size_mask);
-  		unmap_low_page(pud);
-
-  		spin_lock(&init_mm.page_table_lock);
-  		pgd_populate(&init_mm, pgd, __va(pud_phys));
-  		spin_unlock(&init_mm.page_table_lock);
-+		pgd_changed = 1;
-  	}
-+
-+	if (pgd_changed)
-+		sync_global_pgds(start, end);
-  	__flush_tlb_all();
-
-  	return last_map_addr;
-@@ -938,35 +982,37 @@ static int __meminitdata node_start;
-  int __meminit
-  vmemmap_populate(struct page *start_page, unsigned long size, int node)
-  {
--	unsigned long addr = (unsigned long)start_page;
-+	unsigned long start = (unsigned long)start_page;
-  	unsigned long end = (unsigned long)(start_page + size);
--	unsigned long next;
-+	unsigned long addr, next;
-  	pgd_t *pgd;
-  	pud_t *pud;
-  	pmd_t *pmd;
-+	int err = -ENOMEM;
-
--	for (; addr < end; addr = next) {
-+	for (addr = start; addr < end; addr = next) {
-  		void *p = NULL;
-
-+		err = -ENOMEM;
-  		pgd = vmemmap_pgd_populate(addr, node);
-  		if (!pgd)
--			return -ENOMEM;
-+			break;
-
-  		pud = vmemmap_pud_populate(pgd, addr, node);
-  		if (!pud)
--			return -ENOMEM;
-+			break;
-
-  		if (!cpu_has_pse) {
-  			next = (addr + PAGE_SIZE) & PAGE_MASK;
-  			pmd = vmemmap_pmd_populate(pud, addr, node);
-
-  			if (!pmd)
--				return -ENOMEM;
-+				break;
-
-  			p = vmemmap_pte_populate(pmd, addr, node);
-
-  			if (!p)
--				return -ENOMEM;
-+				break;
-
-  			addr_end = addr + PAGE_SIZE;
-  			p_end = p + PAGE_SIZE;
-@@ -979,7 +1025,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
-
-  				p = vmemmap_alloc_block_buf(PMD_SIZE, node);
-  				if (!p)
--					return -ENOMEM;
-+					break;
-
-  				entry = pfn_pte(__pa(p) >> PAGE_SHIFT,
-  						PAGE_KERNEL_LARGE);
-@@ -1000,9 +1046,15 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
-  			} else
-  				vmemmap_verify((pte_t *)pmd, node, addr, next);
-  		}
-+		err = 0;
-+	}
-
-+	if (!err) {
-+		sync_global_pgds(start, end);
-+		__flush_tlb_all();
-  	}
--	return 0;
-+
-+	return err;
-  }
-
-  void __meminit vmemmap_populate_print_last(void)
--- 
-1.5.6.1
-
--haicheng
+ const struct address_space_operations exofs_aops = {
+ 	.readpage	= exofs_readpage,
+ 	.readpages	= exofs_readpages,
+@@ -761,6 +766,9 @@ const struct address_space_operations exofs_aops = {
+ 	.writepages	= exofs_writepages,
+ 	.write_begin	= exofs_write_begin_export,
+ 	.write_end	= exofs_write_end,
++	.releasepage	= exofs_releasepage,
++	.set_page_dirty	= __set_page_dirty_buffers,
++	.invalidatepage = block_invalidatepage,
+ };
+ 
+ /******************************************************************************
