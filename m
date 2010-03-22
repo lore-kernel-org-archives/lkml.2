@@ -1,69 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab0CVTUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:20:25 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36487 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755597Ab0CVTSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:18:15 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-       Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 1/8] Move kernel/kgdb.c to kernel/debug/debug_core.c
-Date: Mon, 22 Mar 2010 14:17:22 -0500
-Message-Id: <1269285449-1424-2-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1269285449-1424-1-git-send-email-jason.wessel@windriver.com>
-References: <1269285449-1424-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 22 Mar 2010 19:17:36.0314 (UTC) FILETIME=[54AA71A0:01CAC9F4]
+	id S1756003Ab0CVTUt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:20:49 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46526 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755521Ab0CVTUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:20:47 -0400
+Date: Mon, 22 Mar 2010 20:20:33 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322192033.GC21919@elte.hu>
+References: <20100322124428.GA12475@elte.hu>
+ <4BA76810.4040609@redhat.com>
+ <20100322143212.GE14201@elte.hu>
+ <4BA7821C.7090900@codemonkey.ws>
+ <20100322155505.GA18796@elte.hu>
+ <4BA796DF.7090005@redhat.com>
+ <20100322165107.GD18796@elte.hu>
+ <4BA7A406.9050203@redhat.com>
+ <20100322173400.GB15795@elte.hu>
+ <4BA7AF2D.7060306@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7AF2D.7060306@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move kgdb.c in preparation to separate the gdbstub from the debug
-core and exception handling.
 
-CC: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/Makefile                       |    2 +-
- kernel/debug/Makefile                 |    5 +++++
- kernel/{kgdb.c => debug/debug_core.c} |    0
- 3 files changed, 6 insertions(+), 1 deletions(-)
- create mode 100644 kernel/debug/Makefile
- rename kernel/{kgdb.c => debug/debug_core.c} (100%)
+* Avi Kivity <avi@redhat.com> wrote:
 
-diff --git a/kernel/Makefile b/kernel/Makefile
-index a987aa1..80b17ce 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -75,7 +75,7 @@ obj-$(CONFIG_AUDITSYSCALL) += auditsc.o
- obj-$(CONFIG_GCOV_KERNEL) += gcov/
- obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
- obj-$(CONFIG_KPROBES) += kprobes.o
--obj-$(CONFIG_KGDB) += kgdb.o
-+obj-$(CONFIG_KGDB) += debug/
- obj-$(CONFIG_DETECT_SOFTLOCKUP) += softlockup.o
- obj-$(CONFIG_DETECT_HUNG_TASK) += hung_task.o
- obj-$(CONFIG_GENERIC_HARDIRQS) += irq/
-diff --git a/kernel/debug/Makefile b/kernel/debug/Makefile
-new file mode 100644
-index 0000000..5287fc8
---- /dev/null
-+++ b/kernel/debug/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the linux kernel debugger
-+#
-+
-+obj-$(CONFIG_KGDB) += debug_core.o
-\ No newline at end of file
-diff --git a/kernel/kgdb.c b/kernel/debug/debug_core.c
-similarity index 100%
-rename from kernel/kgdb.c
-rename to kernel/debug/debug_core.c
--- 
-1.6.4.rc1
+> > Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
+> > Anthony. There's numerous ways that this can break:
+> 
+> I don't like it either.  We have libvirt for enumerating guests.
 
+Which has pretty much the same problems to the ${HOME}/.qemu/qmp/ solution, 
+obviously.
+
+> >  - Those special files can get corrupted, mis-setup, get out of sync, or can
+> >    be hard to discover.
+> >
+> >  - The ${HOME}/.qemu/qmp/ solution suggested by Anthony has a very obvious
+> >    design flaw: it is per user. When i'm root i'd like to query _all_ current
+> >    guest images, not just the ones started by root. A system might not even
+> >    have a notion of '${HOME}'.
+> >
+> >  - Apps might start KVM vcpu instances without adhering to the
+> >    ${HOME}/.qemu/qmp/ access method.
+> 
+> - it doesn't work with nfs.
+
+So out of a list of 4 disadvantages your reply is that you agree with 3?
+
+> >  - There is no guarantee for the Qemu process to reply to a request - while
+> >    the kernel can always guarantee an enumeration result. I dont want 'perf
+> >    kvm' to hang or misbehave just because Qemu has hung.
+> 
+> If qemu doesn't reply, your guest is dead anyway.
+
+Erm, but i'm talking about a dead tool here. There's a world of a difference 
+between 'kvm top' not showing new entries (because the guest is dead), and 
+'perf kvm top' hanging due to Qemu hanging.
+
+So it's essentially 4 our of 4. Yet your reply isnt "Ingo you are right" but 
+"hey, too bad" ?
+
+> > Really, for such reasons user-space is pretty poor at doing system-wide 
+> > enumeration and resource management. Microkernels lost for a reason.
+> 
+> Take a look at your desktop, userspace is doing all of that everywhere, from 
+> enumerating users and groups, to deciding how your disks are named.  The 
+> kernel only provides the bare facilities.
+
+We dont do that for robust system instrumentation, for heaven's sake!
+
+By your argument it would be perfectly fine to implement /proc purely via 
+user-space, correct?
+
+> > You are committing several grave design mistakes here.
+> 
+> I am committing on the shoulders of giants.
+
+Really, this is getting outright ridiculous. You agree with me that Anothony 
+suggested a technically inferior solution, yet you even seem to be proud of it 
+and are joking about it?
+
+And _you_ are complaining about lkml-style hard-talk discussions?
+
+Thanks,
+
+	Ingo
