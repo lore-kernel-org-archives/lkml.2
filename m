@@ -1,175 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab0CVSTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:19:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:52904 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752837Ab0CVSTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:19:04 -0400
-Date: Mon, 22 Mar 2010 19:18:36 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Ingo Molnar <mingo@elte.hu>
-cc: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-In-Reply-To: <20100322092809.GA20607@elte.hu>
-Message-ID: <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
-References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754816Ab0CVS2v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:28:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46189 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab0CVS2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:28:49 -0400
+Message-ID: <4BA7B6CB.9050304@codemonkey.ws>
+Date: Mon, 22 Mar 2010 13:28:27 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@elte.hu>
+CC: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100321215455.GB13219@elte.hu> <4BA7187E.3050405@redhat.com> <20100322111411.GC3483@elte.hu> <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu> <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA7960A.4020504@codemonkey.ws> <20100322165906.GA12546@elte.hu>
+In-Reply-To: <20100322165906.GA12546@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
-
-On Mon, 22 Mar 2010, Ingo Molnar wrote:
-> 
-> ( Cc:-ed Andrew and Linus as this is a general design/policy matter wrt. 
->   memory management. )
-> 
-> * David Miller <davem@davemloft.net> wrote:
-> 
-> > From: Yinghai Lu <yinghai@kernel.org>
-> > Date: Sun, 21 Mar 2010 21:28:38 -0700
-> > 
-> > >> 
-> > >> That action means you absolutely don't value our feedback at all.
-> > > 
-> > > [PATCH 01/20] x86: add find_e820_area_node
-> > > is addressing your concern that early_res didn't handle memory cross the nodes problem.
-> > 
-> > Now I know that you _REALLY_ aren't listening to us.
-
-> [ He has done a bit more than just to simply listen: he seems to
-> have written a patch which he thinks is addressing the concerns you
-> pointed out. It might not be the response you wished for (and it
-> might be inadequate) for but it sure gives me the impression of him
-> listening to you - unless by 'listening' you mean 'follow my exact
-> opinion without argument'. ]
-
-I tend to disagree. Fixing the bug pointed out by Dave is not really a
-good argument about listening.
-
-The main point is that there is still no answer why lmb cannot be used
-and the reposted patch still is a full move of the x86 e820 functions
-into kernel/fw_memmap.c.
-
-That's not a generalization, that's simply a relocation of x86 code to
-kernel/. And I agree with Dave and Ben that this is an useless
-exercise.
-
-> > We said to use LMB because 1) it already exists 2) many platforms
-> > have been using it for years and 3) it doesn't lack the features
-> > you're now having to add to e820.
+On 03/22/2010 11:59 AM, Ingo Molnar wrote:
 >
-> The thing is, lib/lmb.c was librarized two years ago by you (much
-> after early_res has been written for x86), but was not properly
-> integrated into the core kernel nor into x86. It was first suggested
-> by you in the early_res context about ten days ago, when Yinghai
-> started posting Sparc64 patches.
+> Ok, that sounds interesting! I'd rather see some raw mechanism that 'perf kvm'
+> could use instead of having to require yet another library (which generally
+> dampens adoption of a tool). So i think we can work from there.
+>    
+
+You can access the protocol directly if you don't want a library dependency.
+
+> Btw., have you considered using Qemu's command name (task->comm[]) as the
+> symbolic name? That way we could see the guest name in 'top' on the host - a
+> nice touch.
+>    
+
+qemu-system-x86_64 -name Fedora,process=qemu-Fedora
+
+Does exactly that.  We don't make this default based on the element of 
+least surprise.  Many users expect to be able to do killall 
+qemu-system-x86 and if we did this by default, that wouldn't work.
+
+>> The sockets are named based on UUID and you'll have to connect to a guest
+>> and ask it for it's name.  Some guests don't have names so we'll have to
+>> come up with a clever way to describe a nameless VM.
+>>      
+> I think just exposing the UUID in that lazy case would be adequate? It creates
+> pressure for VM launchers to use better symbolic names.
+>    
+
+Yup.
+
+>>> I.e.:
+>>>
+>>>   - Easy default reference to guest instances, and a way for tools to
+>>>     reference them symbolically as well in the multi-guest case. Preferably
+>>>     something trustable and kernel-provided - not some indirect information
+>>>     like a PID file created by libvirt-manager or so.
+>>>        
+>> A guest is not a KVM concept.  It's a qemu concept so it needs to be
+>> something provided by qemu.  The other caveat is that you won't see guests
+>> created by libvirt because we're implementing this in terms of a default QMP
+>> device and libvirt will disable defaults.  This is desired behaviour.
+>> libvirt wants to be in complete control and doesn't want a tool like perf
+>> interacting with a guest directly.
+>>      
+> Hm, this sucks for multiple reasons. Firstly, perf isnt a tool that
+> 'interacts', it's an observation tool: just like 'top' is an observation tool.
 >
-> Which is about half a year after the whole very difficult
-> early_res/bootmem work was started by Yinghai :-(
-
-Well, the early_res split out from x86 was mostly an x86 related
-effort and there is no point on enforcing that to archs which are
-happily using lmb for quite a while.
-
-You have to admit, that we did not notice either that lmb could be
-reused for that purpose as well, so blaming Dave now for not paying
-attention to the x86 early_res bits is unfair at least.
- 
-> I dont mind LMB per se, logically it seems quite similar to the
-> early_res bits Yinghai has generalized (to a certain degree), and is
-> quite a bit cleaner as you are writing very clean code.
+> We want to enable developers to see all activities on the system - regardless
+> of who started the VM or who started the process. Imagine if we had a way to
+> hide tasks to hide from 'top'. It would be rather awful.
 >
-> Note the other side of the coin: LMB appears to be deployed on only
-> 4 non-x86 architectures that muster ~1% of the Linux boxes while
-> early_res is deployed on more than 95%.
+> Secondly, it tells us that the concept is fragile if it doesnt automatically
+> enumerate all guests, regardless of how they were created.
+>    
 
-Come on, that's a stupid argument. The lmb code looks well structured
-and understandable which I can't say about early_res.c. And it
-definitly got a fair amount of testing and shakeout.
+Perf does interact with a guest though because it queries a guest to 
+read it's file system.
 
-> So there's a very real hardship of testing and conversion here that
-> we cannot ignore and an even better path may be to gradually
-> transform the more tested and more deployed early_res code to meet
-> the interface details of LMB.
+I understand the point you're making though.  If instead of doing a pull 
+interface where the host queries the guest for files, if the guest 
+pushed a small set of files at startup which the host cached, then you 
+could potentially unconditionally expose a "read-only" socket that only 
+exposed limited information.
 
-I'd rather see moving that code to the cleaner code base of lmb.
+> Full system enumeration is generally best left to the kernel, as it can offer
+> coherent access.
+>    
 
-> Please also realize the difficulties Yinghai has gone through
-> already: converting and generalizing _all_ of the x86 early
-> allocation code to a more generic core kernel approach, with
-> essentially zero interest from _any_ non-x86 person ...  Those
-> early_res patches were posted all over on lkml, it was literally
-> hundreds of difficult patches, and now, months down the line, after
-> we've tested and upstreamed it (with many nasty regressions fixed on
-> x86 during the development of it) you come with a rigid "do it some
-> other way, convert all of x86 over again or else" position.
+I don't see why qemu can't offer coherent access.  The limitation today 
+is intentional and if it's overly restrictive, we can figure out a means 
+to change it.
 
-That's not what Dave and Ben said. They just opposed that we push the
-e820 horror into kernel/ and enforce it on everybody else.
- 
-> I really wish non-x86 architectures apprecitated (and helped) the
-> core kernel work x86 is doing, because it is subsidizing non-x86
-> architectures all the time.
+Regards,
 
-Can we just stop that "x86 is the center of the universe" chant? 
+Anthony Liguori
 
-Most of the core kernel work is done by core kernel developers. Just
-because you and I ended up being x86 maintainers does not change that
-at all.
 
-In some areas the core code actually suffers from x86. Just look at
-timers. At least 50% of the code in kernel/time/clock* and tick-* is
-just there to cope with x86 specific hardware wreckage.
+> 	Ingo
+>    
 
-I don't see a point in doing the same thing with the e820 horror. That
-code drop in kernel/fw_memmap.c is _NOT_ what I consider core kernel
-work in the sense of providing generalized non arch specific
-infrastructure.
-
-Also I consider lmb core infrastructure. It does not have to be placed
-in kernel/ to be accounted for it. It's pretty generic and easy to
-extend.
-
-> For example when LMB was plopped into lib/lmb.c in 2008 why was it
-> not ported to x86, our most popular architecture? Did you consider
-
-Why did _we_ not look at LMB? The early res code of x86 was (and still
-is to some degree) a tangled mess and I wouldn't have expected that
-some non x86 person would touch that with a ten foot pole.
-
-We made a mistake and it got pointed out, so we better sit down and
-make our homework instead of insisting that early_res/fw_memmap is
-something set in stone.
-
-> posting LMB patches for x86 instead of expecting Yinghai to post
-> Sparc64, PowerPC, SH and Microblaze patches?
-
-Well, it's pretty easy to move those archs over, but I cannot see any
-reason why they should move to something which they consider inferior.
- 
-> Anyway, i'm sure we can work out an approach, and yes, LMB looks
-> pretty good and could be picked up if it can be done gradually -
-> given some mutual willingness to work on this as equals.
-
-I think it was made entirely clear, that nobody is opposing to extend
-lmb if the need arises. 
-
-So before going any further on this early_res stuff, it needs to be
-analysed what has to be done (if at all) to make lmb usable for
-x86. From that we can figure out on a technical argument how to
-proceed, not by reposting e820 -> kernel patches over and over.
-
-Thanks,
-
-	tglx
