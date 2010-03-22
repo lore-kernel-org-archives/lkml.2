@@ -1,115 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab0CVUMo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:12:44 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42085 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab0CVUMm (ORCPT
+	id S1755078Ab0CVUNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:13:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57217 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab0CVUNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:12:42 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Subject: [PATCH 1/3 v4] Add tracing_off_event() to stop tracing when a bug or warning occur
-Date: Mon, 22 Mar 2010 16:12:38 -0400
-Message-Id: <1269288758-7286-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 22 Mar 2010 16:13:12 -0400
+To: James Kosin <jkosin@intcomgrp.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [OT] Style Issues / Concerns
+From: Andi Kleen <andi@firstfloor.org>
+References: <4BA7CCC5.5020302@intcomgrp.com>
+Date: Mon, 22 Mar 2010 21:13:06 +0100
+In-Reply-To: <4BA7CCC5.5020302@intcomgrp.com> (James Kosin's message of "Mon, 22 Mar 2010 16:02:13 -0400")
+Message-ID: <87wrx45d4d.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The tracing_off_event() function calls tracing_off() to stop tracing
-when an event occurs. By default, only BUG-type events stop tracing,
-while WARNING type events do not. This is controlled through the
-tracing_off={none,warn,bug} commandline parameter.
+James Kosin <jkosin@intcomgrp.com> writes:
+>
+> Before everyone jumps in at once, this is a simple example that will
+> produce a compiler error about the misplaced else.  However if there are
+> many if statements above this that may allow the else to be paired up
+> with it then the code will compile and there will be a serious and very
+> difficult bug in the code that will take days or months to find.
 
-Call this function from bug and warning event handlers to enable a user
-to debug their kernel by starting a trace, hitting an event, and then
-retrieving trace info knowing that the trace was stopped right after the
-event was hit.
+Modern editors with auto indent mode makes it actually very easy
+to find such bugs.
 
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
----
- include/linux/kernel.h     |    7 +++++++
- kernel/trace/ring_buffer.c |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+), 0 deletions(-)
+Also checkpatch.pl checks for it now I believe.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 7f07074..2e31efa 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -478,16 +478,23 @@ static inline char *pack_hex_byte(char *buf, u8 byte)
-  *
-  * Most likely, you want to use tracing_on/tracing_off.
-  */
-+enum trace_off_event {
-+	TRACE_EVENT_BUG = 0,
-+	TRACE_EVENT_WARN,
-+};
-+
- #ifdef CONFIG_RING_BUFFER
- void tracing_on(void);
- void tracing_off(void);
- /* trace_off_permanent stops recording with no way to bring it back */
- void tracing_off_permanent(void);
-+void tracing_off_event(enum trace_off_event event);
- int tracing_is_on(void);
- #else
- static inline void tracing_on(void) { }
- static inline void tracing_off(void) { }
- static inline void tracing_off_permanent(void) { }
-+static inline void tracing_off_event(enum trace_off_event event) { }
- static inline int tracing_is_on(void) { return 0; }
- #endif
- #ifdef CONFIG_TRACING
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 0287f9f..a83b729 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -193,6 +193,40 @@ void tracing_off_permanent(void)
- 	set_bit(RB_BUFFERS_DISABLED_BIT, &ring_buffer_flags);
- }
- 
-+static enum trace_off_event tracing_off_event_ctrl = TRACE_EVENT_BUG;
-+
-+/**
-+ * tracing_off_event - turn off tracing depending on event type
-+ * @event: type of event that occurred
-+ *
-+ * This function checks the event type to determine whether tracing should be
-+ * disabled. Useful for disabling tracing on bugs or warnings.
-+ */
-+void tracing_off_event(enum trace_off_event event)
-+{
-+	if (event <= tracing_off_event_ctrl)
-+		tracing_off();
-+}
-+EXPORT_SYMBOL_GPL(tracing_off_event);
-+
-+static int __init tracing_off_event_setup(char *str)
-+{
-+	if (!strcmp("none", str))
-+		tracing_off_event_ctrl = -1;
-+	else if (!strcmp("bug", str))
-+		tracing_off_event_ctrl = TRACE_EVENT_BUG;
-+	else if (!strcmp("warn", str))
-+		tracing_off_event_ctrl = TRACE_EVENT_WARN;
-+	else {
-+		printk(KERN_NOTICE "Invalid value passed for tracing_off parameter\n");
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+__setup("tracing_off=", tracing_off_event_setup);
-+
- /**
-  * tracing_is_on - show state of ring buffers enabled
-  */
+> Does the compiler produce smaller code without the braces {}?
+
+No, it's very arbitary.
+
+-Andi
+
 -- 
-1.6.3.3
-
+ak@linux.intel.com -- Speaking for myself only.
