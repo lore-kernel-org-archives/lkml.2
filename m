@@ -1,82 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab0CVS4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:56:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56243 "EHLO hera.kernel.org"
+	id S1755890Ab0CVS4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:56:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56270 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab0CVS4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:56:07 -0400
-Date: Mon, 22 Mar 2010 18:55:36 GMT
-From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-       fweisbec@gmail.com, tglx@linutronix.de, mhiramat@redhat.com,
+	id S1755786Ab0CVS4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:56:46 -0400
+Date: Mon, 22 Mar 2010 18:54:43 GMT
+From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+       acme@ghostprotocols.net, fweisbec@gmail.com, tglx@linutronix.de,
        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
-       mhiramat@redhat.com, mingo@elte.hu
-In-Reply-To: <1269274229-20442-3-git-send-email-acme@infradead.org>
-References: <1269274229-20442-3-git-send-email-acme@infradead.org>
+       a.p.zijlstra@chello.nl, acme@ghostprotocols.net, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1269274173-20328-1-git-send-email-acme@infradead.org>
+References: <1269274173-20328-1-git-send-email-acme@infradead.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf probe: Add NO_DWARF make option
-Message-ID: <tip-ca721e45b39209415d2288dbac3667b26d9d1def@git.kernel.org>
-Git-Commit-ID: ca721e45b39209415d2288dbac3667b26d9d1def
+Subject: [tip:perf/core] perf: Fix orphan callchain branches
+Message-ID: <tip-301fde27c7fcd0380b02b175d547e894ff65d78a@git.kernel.org>
+Git-Commit-ID: 301fde27c7fcd0380b02b175d547e894ff65d78a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 22 Mar 2010 18:55:36 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 22 Mar 2010 18:54:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ca721e45b39209415d2288dbac3667b26d9d1def
-Gitweb:     http://git.kernel.org/tip/ca721e45b39209415d2288dbac3667b26d9d1def
-Author:     Masami Hiramatsu <mhiramat@redhat.com>
-AuthorDate: Mon, 22 Mar 2010 13:10:27 -0300
+Commit-ID:  301fde27c7fcd0380b02b175d547e894ff65d78a
+Gitweb:     http://git.kernel.org/tip/301fde27c7fcd0380b02b175d547e894ff65d78a
+Author:     Frederic Weisbecker <fweisbec@gmail.com>
+AuthorDate: Mon, 22 Mar 2010 13:09:33 -0300
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 22 Mar 2010 18:47:35 +0100
+CommitDate: Mon, 22 Mar 2010 18:47:34 +0100
 
-perf probe: Add NO_DWARF make option
+perf: Fix orphan callchain branches
 
-Add NO_DWARF make option for testing build without libdw.
+Callchains have markers inside their capture to tell we
+enter a context (kernel, user, ...).
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Those are not displayed in the callchains but they are
+incidentally an active part of the radix tree where
+callchains are stored, just like any other address.
+
+If we have the two following callchains:
+
+addr1 -> addr2 -> user context -> addr3
+addr1 -> addr2 -> user context -> addr4
+addr1 -> addr2 -> addr 5
+
+This is pretty common if addr1 and addr2 are part of an
+interrupt path, addr3 and addr4 are user addresses and
+addr5 is a kernel non interrupt path.
+
+This will be stored as follows in the tree:
+
+                   addr1
+                   addr2
+                   /   \
+                  /     addr5
+            user context
+               /    \
+             addr3  addr4
+
+But we ignore the context markers in the report, hence
+the addr3 and addr4 will appear as orphan branches:
+
+    |--28.30%-- hrtimer_interrupt
+    |          smp_apic_timer_interrupt
+    |          apic_timer_interrupt
+    |          |           <------------- here, no parent!
+    |          |          |
+    |          |          |--11.11%-- 0x7fae7bccb875
+    |          |          |
+    |          |          |--11.11%-- 0xffffffffff60013b
+    |          |          |
+    |          |          |--11.11%-- __pthread_mutex_lock_internal
+    |          |          |
+    |          |          |--11.11%-- __errno_location
+
+Fix this by removing the context markers when we process the
+callchains to the tree.
+
+Reported-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Mike Galbraith <efault@gmx.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1269274229-20442-3-git-send-email-acme@infradead.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <1269274173-20328-1-git-send-email-acme@infradead.org>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/Makefile |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ tools/perf/builtin-report.c |    6 ++-
+ tools/perf/util/callchain.c |  109 ++++++++++++++++++++++++++++++++-----------
+ tools/perf/util/callchain.h |    4 +-
+ tools/perf/util/hist.c      |    5 --
+ 4 files changed, 88 insertions(+), 36 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index c991818..6903645 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -150,6 +150,8 @@ all::
- # Define LDFLAGS=-static to build a static binary.
- #
- # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
-+#
-+# Define NO_DWARF if you do not want debug-info analysis feature at all.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 1f9f869..d609afb 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -83,6 +83,7 @@ static int perf_session__add_hist_entry(struct perf_session *self,
+ {
+ 	struct symbol **syms = NULL, *parent = NULL;
+ 	bool hit;
++	int err;
+ 	struct hist_entry *he;
+ 	struct event_stat_id *stats;
+ 	struct perf_event_attr *attr;
+@@ -109,8 +110,11 @@ static int perf_session__add_hist_entry(struct perf_session *self,
+ 	if (symbol_conf.use_callchain) {
+ 		if (!hit)
+ 			callchain_init(&he->callchain);
+-		append_chain(&he->callchain, data->callchain, syms);
++		err = append_chain(&he->callchain, data->callchain, syms);
+ 		free(syms);
++
++		if (err)
++			return err;
+ 	}
  
- PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
- 	@$(SHELL_PATH) util/PERF-VERSION-GEN
-@@ -507,10 +509,12 @@ endif
- ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
- else
-+ifndef NO_DWARF
- 	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
- 	EXTLIBS += -lelf -ldw
- 	LIB_OBJS += util/probe-finder.o
- endif
-+endif
+ 	return 0;
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index b3b7125..883844e 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2009, Frederic Weisbecker <fweisbec@gmail.com>
++ * Copyright (C) 2009-2010, Frederic Weisbecker <fweisbec@gmail.com>
+  *
+  * Handle the callchains from the stream in an ad-hoc radix tree and then
+  * sort them in an rbtree.
+@@ -183,12 +183,23 @@ create_child(struct callchain_node *parent, bool inherit_children)
+ 	return new;
+ }
  
- ifneq ($(shell sh -c "(echo '\#include <newt.h>'; echo 'int main(void) { newtInit(); newtCls(); return newtFinished(); }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -lnewt -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
- 	msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
++
++struct resolved_ip {
++	u64		ip;
++	struct symbol	*sym;
++};
++
++struct resolved_chain {
++	u64			nr;
++	struct resolved_ip	ips[0];
++};
++
++
+ /*
+  * Fill the node with callchain values
+  */
+ static void
+-fill_node(struct callchain_node *node, struct ip_callchain *chain,
+-	  int start, struct symbol **syms)
++fill_node(struct callchain_node *node, struct resolved_chain *chain, int start)
+ {
+ 	unsigned int i;
+ 
+@@ -200,8 +211,8 @@ fill_node(struct callchain_node *node, struct ip_callchain *chain,
+ 			perror("not enough memory for the code path tree");
+ 			return;
+ 		}
+-		call->ip = chain->ips[i];
+-		call->sym = syms[i];
++		call->ip = chain->ips[i].ip;
++		call->sym = chain->ips[i].sym;
+ 		list_add_tail(&call->list, &node->val);
+ 	}
+ 	node->val_nr = chain->nr - start;
+@@ -210,13 +221,13 @@ fill_node(struct callchain_node *node, struct ip_callchain *chain,
+ }
+ 
+ static void
+-add_child(struct callchain_node *parent, struct ip_callchain *chain,
+-	  int start, struct symbol **syms)
++add_child(struct callchain_node *parent, struct resolved_chain *chain,
++	  int start)
+ {
+ 	struct callchain_node *new;
+ 
+ 	new = create_child(parent, false);
+-	fill_node(new, chain, start, syms);
++	fill_node(new, chain, start);
+ 
+ 	new->children_hit = 0;
+ 	new->hit = 1;
+@@ -228,9 +239,8 @@ add_child(struct callchain_node *parent, struct ip_callchain *chain,
+  * Then create another child to host the given callchain of new branch
+  */
+ static void
+-split_add_child(struct callchain_node *parent, struct ip_callchain *chain,
+-		struct callchain_list *to_split, int idx_parents, int idx_local,
+-		struct symbol **syms)
++split_add_child(struct callchain_node *parent, struct resolved_chain *chain,
++		struct callchain_list *to_split, int idx_parents, int idx_local)
+ {
+ 	struct callchain_node *new;
+ 	struct list_head *old_tail;
+@@ -257,7 +267,7 @@ split_add_child(struct callchain_node *parent, struct ip_callchain *chain,
+ 	/* create a new child for the new branch if any */
+ 	if (idx_total < chain->nr) {
+ 		parent->hit = 0;
+-		add_child(parent, chain, idx_total, syms);
++		add_child(parent, chain, idx_total);
+ 		parent->children_hit++;
+ 	} else {
+ 		parent->hit = 1;
+@@ -265,32 +275,33 @@ split_add_child(struct callchain_node *parent, struct ip_callchain *chain,
+ }
+ 
+ static int
+-__append_chain(struct callchain_node *root, struct ip_callchain *chain,
+-	       unsigned int start, struct symbol **syms);
++__append_chain(struct callchain_node *root, struct resolved_chain *chain,
++	       unsigned int start);
+ 
+ static void
+-__append_chain_children(struct callchain_node *root, struct ip_callchain *chain,
+-			struct symbol **syms, unsigned int start)
++__append_chain_children(struct callchain_node *root,
++			struct resolved_chain *chain,
++			unsigned int start)
+ {
+ 	struct callchain_node *rnode;
+ 
+ 	/* lookup in childrens */
+ 	chain_for_each_child(rnode, root) {
+-		unsigned int ret = __append_chain(rnode, chain, start, syms);
++		unsigned int ret = __append_chain(rnode, chain, start);
+ 
+ 		if (!ret)
+ 			goto inc_children_hit;
+ 	}
+ 	/* nothing in children, add to the current node */
+-	add_child(root, chain, start, syms);
++	add_child(root, chain, start);
+ 
+ inc_children_hit:
+ 	root->children_hit++;
+ }
+ 
+ static int
+-__append_chain(struct callchain_node *root, struct ip_callchain *chain,
+-	       unsigned int start, struct symbol **syms)
++__append_chain(struct callchain_node *root, struct resolved_chain *chain,
++	       unsigned int start)
+ {
+ 	struct callchain_list *cnode;
+ 	unsigned int i = start;
+@@ -302,13 +313,19 @@ __append_chain(struct callchain_node *root, struct ip_callchain *chain,
+ 	 * anywhere inside a function.
+ 	 */
+ 	list_for_each_entry(cnode, &root->val, list) {
++		struct symbol *sym;
++
+ 		if (i == chain->nr)
+ 			break;
+-		if (cnode->sym && syms[i]) {
+-			if (cnode->sym->start != syms[i]->start)
++
++		sym = chain->ips[i].sym;
++
++		if (cnode->sym && sym) {
++			if (cnode->sym->start != sym->start)
+ 				break;
+-		} else if (cnode->ip != chain->ips[i])
++		} else if (cnode->ip != chain->ips[i].ip)
+ 			break;
++
+ 		if (!found)
+ 			found = true;
+ 		i++;
+@@ -320,7 +337,7 @@ __append_chain(struct callchain_node *root, struct ip_callchain *chain,
+ 
+ 	/* we match only a part of the node. Split it and add the new chain */
+ 	if (i - start < root->val_nr) {
+-		split_add_child(root, chain, cnode, start, i - start, syms);
++		split_add_child(root, chain, cnode, start, i - start);
+ 		return 0;
+ 	}
+ 
+@@ -331,15 +348,51 @@ __append_chain(struct callchain_node *root, struct ip_callchain *chain,
+ 	}
+ 
+ 	/* We match the node and still have a part remaining */
+-	__append_chain_children(root, chain, syms, i);
++	__append_chain_children(root, chain, i);
+ 
+ 	return 0;
+ }
+ 
+-void append_chain(struct callchain_node *root, struct ip_callchain *chain,
++static void
++filter_context(struct ip_callchain *old, struct resolved_chain *new,
++	       struct symbol **syms)
++{
++	int i, j = 0;
++
++	for (i = 0; i < (int)old->nr; i++) {
++		if (old->ips[i] >= PERF_CONTEXT_MAX)
++			continue;
++
++		new->ips[j].ip = old->ips[i];
++		new->ips[j].sym = syms[i];
++		j++;
++	}
++
++	new->nr = j;
++}
++
++
++int append_chain(struct callchain_node *root, struct ip_callchain *chain,
+ 		  struct symbol **syms)
+ {
++	struct resolved_chain *filtered;
++
+ 	if (!chain->nr)
+-		return;
+-	__append_chain_children(root, chain, syms, 0);
++		return 0;
++
++	filtered = malloc(sizeof(*filtered) +
++			  chain->nr * sizeof(struct resolved_ip));
++	if (!filtered)
++		return -ENOMEM;
++
++	filter_context(chain, filtered, syms);
++
++	if (!filtered->nr)
++		goto end;
++
++	__append_chain_children(root, filtered, 0);
++end:
++	free(filtered);
++
++	return 0;
+ }
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index ad4626d..bbd76da 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -56,6 +56,6 @@ static inline u64 cumul_hits(struct callchain_node *node)
+ }
+ 
+ int register_callchain_param(struct callchain_param *param);
+-void append_chain(struct callchain_node *root, struct ip_callchain *chain,
+-		  struct symbol **syms);
++int append_chain(struct callchain_node *root, struct ip_callchain *chain,
++		 struct symbol **syms);
+ #endif	/* __PERF_CALLCHAIN_H */
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index c37da8b..5843a9c 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -328,8 +328,6 @@ static size_t __callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
+ 						   left_margin);
+ 		i = 0;
+ 		list_for_each_entry(chain, &child->val, list) {
+-			if (chain->ip >= PERF_CONTEXT_MAX)
+-				continue;
+ 			ret += ipchain__fprintf_graph(fp, chain, depth,
+ 						      new_depth_mask, i++,
+ 						      new_total,
+@@ -368,9 +366,6 @@ static size_t callchain__fprintf_graph(FILE *fp, struct callchain_node *self,
+ 	int ret = 0;
+ 
+ 	list_for_each_entry(chain, &self->val, list) {
+-		if (chain->ip >= PERF_CONTEXT_MAX)
+-			continue;
+-
+ 		if (!i++ && sort__first_dimension == SORT_SYM)
+ 			continue;
+ 
