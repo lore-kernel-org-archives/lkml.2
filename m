@@ -1,16 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0CVMpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:45:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:43187 "EHLO mx3.mail.elte.hu"
+	id S1754751Ab0CVMq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:46:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26265 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550Ab0CVMpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:45:00 -0400
-Date: Mon, 22 Mar 2010 13:44:28 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+	id S1754550Ab0CVMqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 08:46:55 -0400
+Message-ID: <4BA76649.5080307@redhat.com>
+Date: Mon, 22 Mar 2010 14:44:57 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Olivier Galibert <galibert@pobox.com>,
        Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
@@ -18,95 +22,36 @@ Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
        oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
        Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
        ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-Message-ID: <20100322124428.GA12475@elte.hu>
-References: <20100319085346.GG12576@elte.hu>
- <4BA47AD0.2010509@redhat.com>
- <20100321190656.GC25922@elte.hu>
- <4BA68009.5010906@redhat.com>
- <20100321205531.GC30194@elte.hu>
- <4BA692C3.7010408@redhat.com>
- <20100321215455.GB13219@elte.hu>
- <4BA7187E.3050405@redhat.com>
- <20100322111411.GC3483@elte.hu>
- <4BA7629B.7020604@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7629B.7020604@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+References: <20100318172805.GB26067@elte.hu> <4BA32E1A.2060703@redhat.com> <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <20100321203704.GB30194@elte.hu> <4BA71012.7070004@redhat.com> <20100322113931.GE3483@elte.hu>
+In-Reply-To: <20100322113931.GE3483@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2010 01:39 PM, Ingo Molnar wrote:
+> Reality is, the server space never was and never will be self-sustaining in
+> the long run (as Novell has found it out with Netware), it is the desktop that
+> dictates future markets. This is why i find your views about this naive and
+> shortsighted.
+>    
 
-* Avi Kivity <avi@redhat.com> wrote:
+Yet Linux is gaining ground in the server and embedded space while 
+struggling on the desktop.  Apple is gaining ground on the desktop but 
+is invisible on the server side (despite having a nice product - Xserve).
 
-> On 03/22/2010 01:14 PM, Ingo Molnar wrote:
-> >
-> >>I think we agree at last.  Neither I nor my employer are interested in
-> >>running qemu as a desktop-on-desktop tool, therefore I don't invest any
-> >>effort in that direction, or require it from volunteers.
-> >Obviously your employer at least in part defers to you when it comes to KVM
-> >priorities.
-> 
-> In part, yes.
-> 
-> > So, just to make this really clear, _you_ are not interested in running 
-> > qemu as a desktop-on-desktop tool, subsequently this kind of 
-> > disinterest-for-desktop-usability trickled through the whole KVM stack and 
-> > poisoned your attitude and your contributor's attitude.
-> 
-> I am also disinterested in ppc virtualization, yet it happened.  I am 
-> disinterested in ia64 virtualization, yet it happened.  I am disinterested 
-> in s390 virtualization, yet it happened.
-> 
-> Linus doesn't care about virtualization, yet it happened.
+It's true Windows achieved server dominance through it's desktop power, 
+but I don't think that's what keeping them there now.
 
-You should know the answer yourself: the difference is that usability is a 
-core quality of any project.
+In any case, I'm not going to write a kvm GUI.  It doesn't match my 
+skills, interest, or my employer's interest.  If you wish to see a kvm 
+GUI you have to write one yourself or convince someone to write it 
+(perhaps convince Red Hat to fund such an effort beyond virt-manager).
 
-I as a maintainer can be neutral towards a number of features and patch 
-attributes that i dont consider key aspects. (although they can grow out to 
-become key features in the future. SMP was a fringe thing 15 years ago.)
+-- 
+error compiling committee.c: too many arguments to function
 
-Usability is not an attribute you can ignore and i for sure am never neutral 
-towards usability deficiencies in patches - i consider usability a key 
-quality.
-
-> I don't tell my contributor what to be interested in, only whether their 
-> patches are good or not. [...]
-
-Whether a feature is usable or not is sure a metric of 'goodness'.
-
-You have restricted your metric of goodness artificially to not include 
-usability. You do that by claiming that the user-space tooling of KVM, while 
-being functionally absolutely essential for any user to even try out KVM, is 
-'separate' and has no quality connection with the kernel bits of KVM.
-
-It is a convenient argument that allows you to do the kernel bits only. It is 
-absolutely catastrophic to the user who'd like to see a usable solution and a 
-single project who stands behind their tech.
-
-Thus, _today_, after years of neglect, you can claim that none of the dozens 
-of usability problems of KVM has anything to do with the features you are 
-working on today. It's in a separate project (the so-called 'Qemu' package) 
-after all - none of KVM's business.
-
-In reality if you consider it a single project then those bugs were all 
-usability problems introduced earlier on, years ago, when a piece of 
-functionality was exposed via KVM. It adds up and now you claim they have 
-nothing to do with current work.
-
-This is why i consider that line of argument rather dishonest ...
-
-	Ingo
