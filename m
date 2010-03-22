@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab0CVQgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:36:12 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54740 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755031Ab0CVQgL (ORCPT
+	id S1755237Ab0CVQkS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:40:18 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:42664 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755078Ab0CVQkQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:36:11 -0400
-Date: Mon, 22 Mar 2010 17:36:09 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Add PGM protocol support to the IP stack
-Message-ID: <20100322163609.GZ20695@one.firstfloor.org>
-References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003220916170.15360@router.home>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 22 Mar 2010 12:40:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XSn08diyzPxqtcxoH/2nsXah2beTEOZBXb6/7kVe1ZUZhX3R062rN3upLwRmrAgOs8
+         b9nite9oXmM23SQ1pNake42nDTZuIu9LQWplXtnRDTg6ugV+cn9onDo5C6dUeeMBKUpo
+         BzoU0KoFIMxm/zScX6VeINDj/1SRrDOhLa9h0=
+MIME-Version: 1.0
+In-Reply-To: <4BA797C9.2030703@redhat.com>
+References: <20100321205531.GC30194@elte.hu> <20100322111411.GC3483@elte.hu>
+	 <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu>
+	 <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu>
+	 <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu>
+	 <4BA796DF.7090005@redhat.com> <4BA797C9.2030703@redhat.com>
+Date: Mon, 22 Mar 2010 18:40:15 +0200
+X-Google-Sender-Auth: 7707906cd8f6c2b8
+Message-ID: <84144f021003220940x25e40624pb0b86f62b79fd707@mail.gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
+	project
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 09:20:42AM -0500, Christoph Lameter wrote:
-> On Fri, 19 Mar 2010, Andi Kleen wrote:
-> 
-> > Christoph Lameter <cl@linux-foundation.org> writes:
-> > >
-> > > I know about the openpgm implementation. Openpbm does this at the user
-> > > level and requires linking to a library. It is essentially a communication
-> > > protocol done in user space. It has privilege issues because it has to
-> > > create PGM packets via a raw socket.
-> >
-> > That seems like a poor reason alone to put something into the kernel
-> > Perhaps you rather need some way to have unpriviledged raw sockets?
-> 
-> Not the only reason. There are also performance implications. NAKing and
-> other control messages from user space are a pain and the available
-> implementations add numerous threads just to control the timing of control
-> messages and the expiration of data etc. Its difficult to listen to a PGM
-> port from user space. You have to get all messages for the PGM protocol
-> and then filter in each process.
+On Mon, Mar 22, 2010 at 6:16 PM, Avi Kivity <avi@redhat.com> wrote:
+>> You simply kept ignoring me when I said that if something can be kept out
+>> of the kernel without impacting performance, it should be.  I don't want
+>> emergency patches closing some security hole or oops in a kernel symbol
+>> server.
+>
+> Or rather, explained how I am a wicked microkernelist.  The herring were out
+> in force today.
 
-Ok that sounds like a good reason to have a kernel protocol.
-Thanks.
+Well, if it's not being a "wicked microkernelist" then what is it?
+Performance is hardly the only motivation to put things into the
+kernel. Think kernel mode-setting and devtmpfs (with the ironic twist
+of original devfs being removed from the kernel) here, for example.
 
-Multicast reliable kernel protocols are somewhat new, I guess one
-would need to make sure to come up with a clean generic interface 
-for them first.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+                        Pekka
