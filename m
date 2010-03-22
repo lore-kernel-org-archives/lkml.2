@@ -1,67 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab0CVUKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:10:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33251 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754826Ab0CVUKS (ORCPT
+	id S1755652Ab0CVUKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:10:43 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:58004 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754768Ab0CVUKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:10:18 -0400
-Subject: [GIT PULL] regulator fixes for 2.6.34-rc3
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Mar 2010 20:10:16 +0000
-Message-ID: <1269288616.3754.26.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Mar 2010 16:10:41 -0400
+Date: Mon, 22 Mar 2010 13:10:39 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Wolfgang Grandegger <wg@grandegger.com>
+Cc: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
+ CAN	module
+Message-ID: <20100322201039.GA19327@ovro.caltech.edu>
+References: <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu>
+ <4BA33D5A.8070000@grandegger.com>
+ <20100319151914.GB13672@ovro.caltech.edu>
+ <4BA39C05.8050800@grandegger.com>
+ <20100319200325.GE13672@ovro.caltech.edu>
+ <4BA3DAF1.4090206@grandegger.com>
+ <20100319215227.GF13672@ovro.caltech.edu>
+ <4BA47F64.8030108@grandegger.com>
+ <20100322155318.GA19251@ovro.caltech.edu>
+ <4BA7C236.9060609@grandegger.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7C236.9060609@grandegger.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Mon, 22 Mar 2010 13:10:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Mar 22, 2010 at 08:17:10PM +0100, Wolfgang Grandegger wrote:
+> Ira W. Snyder wrote:
+> > On Sat, Mar 20, 2010 at 08:55:16AM +0100, Wolfgang Grandegger wrote:
+> >> Ira W. Snyder wrote:
+> [snip]
+> >>> Does this seem right? It seems pretty good to me.
+> >> Yes, I'm just missing an error-passive message. What state does "ip -d
+> >> link show can0" report.
+> >>
+> > 
+> > Ok, here is what I did:
+> > 
+> > $ ip link set can0 up type can bitrate 1000000
+> > $ ip link set can1 up type can bitrate 1000000 berr-reporting on
+> > $ ip -d -s link
+> > 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+> >     link/can       
+> >     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+> >     bitrate 1000000 sample-point 0.750
+> >     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+> >     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+> >     clock 8000000  
+> >     re-started bus-errors arbit-lost error-warn error-pass bus-off
+> >     0          0          0          0          0          0
+> >     RX: bytes  packets  errors  dropped overrun mcast
+> >     0          0        0       0       0       0
+> >     TX: bytes  packets  errors  dropped carrier collsns
+> >     0          0        0       0       0       0
+> > 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+> >     link/can       
+> >     can <BERR-REPORTING> state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
+> >     bitrate 1000000 sample-point 0.750
+> >     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+> >     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+> >     clock 8000000  
+> >     re-started bus-errors arbit-lost error-warn error-pass bus-off
+> >     0          0          0          0          0          0
+> >     RX: bytes  packets  errors  dropped overrun mcast
+> >     0          0        0       0       0       0
+> >     TX: bytes  packets  errors  dropped carrier collsns
+> >     0          0        0       0       0       0
+> > 
+> > Now, in seperate windows, I ran cansequence and candump. I stopped
+> > cansequence when it could not send any more packets (due to the cable
+> > being unplugged).
+> > 
+> > $ cansequence -v -e -p can0
+> > $ cansequence -v -e -p can1
+> > $ candump any,0~0,#FFFFFFFF
+> >   can0  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> >   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
+> > 
+> > This last message is repeated lots more times. That's the flooding we're
+> > avoiding with berr-reporting off.
+> > 
+> > I see two types of messages here:
+> > 1) bus error (only on can1)
+> > 2) controller problems -- tx warning limit reached (both)
+> > 
+> > Am I missing some message? My error frame generation was mostly copied
+> > from the sja1000 driver.
+> 
+> It seem that you are not getting the error passive interrupt even...
+> 
+> > $ ip -d -s link
+> > 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+> >     link/can 
+> >     can state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
+> 
+> if the hardware already reports >= 128 errors --^.
+> 
 
-Please pull the following voltage regulator fixes for 2.6.34-rc3.
+Re-reading the documentation, it appears that the firmware uses the
+error interrupt for two different indications. In the SJA1000 driver,
+they map to IRQ_EI and IRQ_EPI.
 
-Thanks
+The documentation says that you can tell when you get an error-passive
+only by checking the rxerr + txerr registers in the message. You'll note
+I omitted the IRQ_EPI-equivalent code from my driver when I copied the
+sja1000.c implementation.
 
-Liam
+I've added an if-statement in the CEVTIND_EI path, which now looks like
+this. It handles both cases now.
 
----
+/* error warning interrupt */
+if (isrc == CEVTIND_EI) {
+	u8 rxerr = msg->data[4];
+	u8 txerr = msg->data[5];
 
-The following changes since commit 220bf991b0366cc50a94feede3d7341fa5710ee4:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc2
+	dev_dbg(mod->dev, "error warning interrupt\n");
+	if (status & SR_BS) {
+		state = CAN_STATE_BUS_OFF;
+		cf->can_id |= CAN_ERR_BUSOFF;
+		can_bus_off(dev);
+	} else if (status & SR_ES) {
+		if (rxerr >= 127 || txerr >= 127)
+			state = CAN_STATE_ERROR_PASSIVE;
+		else
+			state = CAN_STATE_ERROR_WARNING;
+	} else {
+		state = CAN_STATE_ERROR_ACTIVE;
+	}
+}
 
-are available in the git repository at:
+The only change is in the "else if (status & SR_ES)" path. I had to add
+the if-statement that checks the rxerr and txerr registers. Does that
+seem ok? I got the 127 values from this webpage (provided to me on this
+mailing list).
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+http://www.softing.com/home/en/industrial-automation/products/can-bus/more-can-bus/error-handling/error-states.php?navanchor=3010510
 
-Ameya Palande (1):
-      regulator: Get rid of lockdep warning
+> >     bitrate 1000000 sample-point 0.750 
+> >     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+> >     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+> >     clock 8000000
+> >     re-started bus-errors arbit-lost error-warn error-pass bus-off
+> >     0          0          0          1          0          0         
+> >     RX: bytes  packets  errors  dropped overrun mcast   
+> >     16         0        2       0       0       0      
+> >     TX: bytes  packets  errors  dropped carrier collsns 
+> >     513        513      0       0       0       0      
+> > 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+> >     link/can 
+> >     can <BERR-REPORTING> state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
+> >     bitrate 1000000 sample-point 0.750 
+> >     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+> >     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+> >     clock 8000000
+> >     re-started bus-errors arbit-lost error-warn error-pass bus-off
+> >     0          126        0          1          0          0         
+> 
+> But that's mabe because you stopped the test too early (just 126 bus errors).
+> 
 
-Axel Lin (2):
-      lp3971: Fix setting val for LDO2 and LDO4
-      lp3971: Fix BUCK_VOL_CHANGE_SHIFT logic
+This is the best I could do. Without the cable connected, that's where
+the controller stops sending messages (cansequence just hangs waiting
+for buffer space to become available).
 
-Dan Carpenter (1):
-      regulator: handle kcalloc() failure
+> >     RX: bytes  packets  errors  dropped overrun mcast   
+> >     1024       0        254     0       0       0      
+> >     TX: bytes  packets  errors  dropped carrier collsns 
+> >     513        513      0       0       0       0      
+> 
+> When I send out messages without cable connected I get:
+> 
+> -bash-3.2# ./ip -d -s link show can0
+> 2: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+>     link/can 
+>     can <BERR-REPORTING> state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0 
+>     bitrate 500000 sample-point 0.875 
+>     tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1
+>     sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+>     clock 8000000
+>     re-started bus-errors arbit-lost error-warn error-pass bus-off
+>     0          54101      0          1          1          0         
+>     RX: bytes  packets  errors  dropped overrun mcast   
+>     432808     54101    54101   0       0       0      
+>     TX: bytes  packets  errors  dropped carrier collsns 
+>     0          0        0       0       0       0      
+> 
+> The following output is without BERR-REPORTING:
+> 
+> -bash-3.2# ./candump -t d any,0:0,#FFFFFFFF
+>  (0.000000)  can0  20000004  [8] 00 08 00 00 00 00 60 00   ERRORFRAME
+>  (0.000474)  can0  20000004  [8] 00 20 00 00 00 00 80 00   ERRORFRAME
+>                                                     ^  ^
+>                                                    TX RX error counter
 
-Dmitry Torokhov (1):
-      Regulators: max8925-regulator - clean up driver data after removal
+With my newest changes, I get:
 
-Wolfram Sang (1):
-      regulator: fix dangling pointers
+8: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
+    link/can 
+    can state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0 
+    bitrate 1000000 sample-point 0.750 
+    tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
+    janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
+    clock 8000000
+    re-started bus-errors arbit-lost error-warn error-pass bus-off
+    0          0          0          3          3          0         
+    RX: bytes  packets  errors  dropped overrun mcast   
+    236045     235949   12      0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    235938     235938   0       0       0       0      
 
- drivers/regulator/core.c              |    1 +
- drivers/regulator/lp3971.c            |   10 ++++++++--
- drivers/regulator/max1586.c           |    2 +-
- drivers/regulator/max8649.c           |    3 ++-
- drivers/regulator/max8660.c           |    2 +-
- drivers/regulator/max8925-regulator.c |    6 ++++--
- 6 files changed, 17 insertions(+), 7 deletions(-)
+  can1  20000004  [8] 00 08 00 00 00 00 60 00   ERRORFRAME
+  can1  20000004  [8] 00 20 00 00 00 00 80 00   ERRORFRAME
 
+So it looks like both drivers agree (finally!). :)
 
+With berr-reporting on, I get the same flood of bus-error messages, with
+these two messages as well.
+
+> 
+> The patch I mentioned also copies the rx and tx error counter values to
+> the data field 6 and 7.
+> 
+
+I missed this. It has been added. Thanks for pointing it out.
+
+I haven't heard back from Samuel Ortiz yet about the changes for the mfd
+layer. Would you like me to send out my latest CAN driver changes, or
+should I just wait until I hear back?
+
+Ira
