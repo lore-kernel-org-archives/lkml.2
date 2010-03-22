@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab0CVIsb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:48:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58086 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab0CVIs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:48:29 -0400
-Date: Mon, 22 Mar 2010 09:48:25 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 0/4] tracing: function graph output for
- preempt/irqs-off tracers
-Message-ID: <20100322084825.GC1851@jolsa.sde>
-References: <1268207470-2880-1-git-send-email-jolsa@redhat.com>
+	id S1753836Ab0CVIwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:52:24 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55245 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751507Ab0CVIwW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 04:52:22 -0400
+X-Sasl-enc: He39VkulevC6/nOrTZRU2px9hFmtnWhZOF+bAiBJyy/5 1269247941
+Message-ID: <4BA72FC0.6060002@ladisch.de>
+Date: Mon, 22 Mar 2010 09:52:16 +0100
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Alex Deucher <alexdeucher@gmail.com>
+CC: linux-pci@vger.kernel.org, dri-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI quirks: RS780/RS880: work around missing MSI initialization
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268207470-2880-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 10, 2010 at 08:51:06AM +0100, Jiri Olsa wrote:
-> hi,
-> 
-> I'm sending reworked version of the graph output support for
-> preemptirqsoff/preemptoff/irqsoff tracers.
-> 
-> I made the graph output as an output event, so it could be shared
-> within tracers - patch 1/4.
-> 
-> I also added raw trace output for graph tracer. I have this one around
-> for long time and it was quite handy for investigating graph tracer issues.
-> (patch 4/4)
-> 
-> attached patches:
-> - 1/4 adding ftrace events for graph tracer
-> - 2/4 graph output support for irqsoff tracer
-> - 3/4 graph output support for preemptirqsoff/preemptoff tracers
-> - 4/4 raw output for graph tracer
-> 
-> v2 changes:
-> - keeping the current function graph output format
-> 
-> 
-> wbr,
-> jirka
-> ---
->  kernel/trace/trace.c                 |    2 +-
->  kernel/trace/trace.h                 |   15 ++--
->  kernel/trace/trace_functions_graph.c |  124 +++++++++++++++++++++----
->  kernel/trace/trace_irqsoff.c         |  174 ++++++++++++++++++++++++++++++++--
->  4 files changed, 283 insertions(+), 32 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+AMD says in section 2.5.4 (GFX MSI Enable) of #43291 (AMD 780G Family
+Register Programming Requirements):
 
+  The SBIOS must enable internal graphics MSI capability in GCCFG by
+  setting the following: NBCFG.NB_CNTL.STRAP_MSI_ENABLE='1'
 
-hi,
+Quite a few BIOS writers misinterpret this sentence and think that
+enabling MSI is an optional feature.  However, clearing that bit just
+prevents delivery of MSI messages but does not remove the MSI PCI
+capabilities registers, and so leaves these devices unusable for any
+driver that attempts to use MSI.
 
-any feedback for the new version?
+Setting that bit is not possible after the BIOS has locked down the
+configuration registers, so we have to manually disable MSI for the
+affected devices.
 
-thanks,
-jirka
+This fixes the codec communication errors in the HDA driver when
+accessing the HDMI audio device, and allows us to get rid of the
+overcautious quirk in radeon_irq_kms.c.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Cc: <stable@kernel.org>
+---
+ drivers/pci/quirks.c                    |   31 +++++++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 +-------
+ 2 files changed, 32 insertions(+), 7 deletions(-)
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2479,6 +2479,39 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+ 			quirk_msi_intx_disable_bug);
+ 
++/*
++ * MSI does not work with the AMD RS780/RS880 internal graphics and HDMI audio
++ * devices unless the BIOS has initialized the nb_cntl.strap_msi_enable bit.
++ */
++static void __init rs780_int_gfx_disable_msi(struct pci_dev *int_gfx_bridge)
++{
++	u32 nb_cntl;
++
++	if (!int_gfx_bridge->subordinate)
++		return;
++
++	pci_bus_write_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
++				   0x60, 0);
++	pci_bus_read_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
++				  0x64, &nb_cntl);
++
++	if (!(nb_cntl & BIT(10))) {
++		dev_warn(&int_gfx_bridge->dev,
++			 FW_WARN "RS780: MSI for internal graphics disabled\n");
++		int_gfx_bridge->subordinate->bus_flags |= PCI_BUS_FLAGS_NO_MSI;
++	}
++}
++
++#define PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX	0x9602
++
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,
++			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
++			rs780_int_gfx_disable_msi);
++/* wrong vendor ID on M4A785TD motherboard: */
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK,
++			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
++			rs780_int_gfx_disable_msi);
++
+ #endif /* CONFIG_PCI_MSI */
+ 
+ #ifdef CONFIG_PCI_IOV
+--- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
++++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
+@@ -116,13 +116,7 @@ int radeon_irq_kms_init(struct radeon_de
+ 	}
+ 	/* enable msi */
+ 	rdev->msi_enabled = 0;
+-	/* MSIs don't seem to work on my rs780;
+-	 * not sure about rs880 or other rs780s.
+-	 * Needs more investigation.
+-	 */
+-	if ((rdev->family >= CHIP_RV380) &&
+-	    (rdev->family != CHIP_RS780) &&
+-	    (rdev->family != CHIP_RS880)) {
++	if (rdev->family >= CHIP_RV380) {
+ 		int ret = pci_enable_msi(rdev->pdev);
+ 		if (!ret) {
+ 			rdev->msi_enabled = 1;
