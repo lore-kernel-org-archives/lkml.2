@@ -1,35 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642Ab0CVMFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:05:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010Ab0CVMFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:05:31 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100320111938.GT5331@bicker>
-References: <20100320111938.GT5331@bicker>
-To: Dan Carpenter <error27@gmail.com>
-Cc: dhowells@redhat.com, kernel-janitors@vger.kernel.org,
-       linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] afs: potential null dereference
-Date: Mon, 22 Mar 2010 12:05:20 +0000
-Message-ID: <28809.1269259520@redhat.com>
+	id S1754678Ab0CVMF5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:05:57 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:13183 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752315Ab0CVMFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 08:05:55 -0400
+Message-ID: <4BA75D20.2060905@panasas.com>
+Date: Mon, 22 Mar 2010 14:05:52 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Nick Piggin <npiggin@suse.de>
+CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
+References: <20100322053937.GA17637@laptop> <4BA7359B.2060603@panasas.com> <20100322105442.GH17637@laptop>
+In-Reply-To: <20100322105442.GH17637@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Mar 2010 12:05:54.0420 (UTC) FILETIME=[05EF1340:01CAC9B8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter <error27@gmail.com> wrote:
+On 03/22/2010 12:54 PM, Nick Piggin wrote:
+> On Mon, Mar 22, 2010 at 11:17:15AM +0200, Boaz Harrosh wrote:
+>> ---
+>> git diff --stat -p -M fs/exofs/inode.c
+>>  fs/exofs/inode.c |    8 ++++++++
+>>  1 files changed, 8 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
+>> index a17e4b7..85dd847 100644
+>> --- a/fs/exofs/inode.c
+>> +++ b/fs/exofs/inode.c
+>> @@ -754,6 +754,11 @@ static int exofs_write_end(struct file *file, struct address_space *mapping,
+>>  	return ret;
+>>  }
+>>  
+>> +static int exofs_releasepage(struct page *page, gfp_t gfp)
+>> +{
+>> +	return try_to_free_buffers(page);
+>> +}
+>> +
+>>  const struct address_space_operations exofs_aops = {
+>>  	.readpage	= exofs_readpage,
+>>  	.readpages	= exofs_readpages,
+>> @@ -761,6 +766,9 @@ const struct address_space_operations exofs_aops = {
+>>  	.writepages	= exofs_writepages,
+>>  	.write_begin	= exofs_write_begin_export,
+>>  	.write_end	= exofs_write_end,
+>> +	.releasepage	= exofs_releasepage,
+>> +	.set_page_dirty	= __set_page_dirty_buffers,
+>> +	.invalidatepage = block_invalidatepage,
+>>  };
+> 
+> AFAIKS, you aren't using buffer heads at all (except nobh_truncate,
+> which will not attach buffers to pages)?
+> 
+> If so, you should only need __set_page_dirty_nobuffers.
+> 
 
-> It seems clear from the surrounding code that xpermits is allowed to be 
-> NULL here.
+Ho, thanks, that one is much better, yes.
 
-Interesting.  The memcpy() won't oops due to this because if it is given a
-NULL pointer, it will also be given a zero count.  I wonder if this means the
-if-statement your patch adds is actually unnecessary...
+BTW:
+The use of nobh_truncate, I hope will go away after your:
+	fs: truncate introduce new sequence
+with these two helpers you added I can actually get rid of
+that as well. (I think. I keep postponing this work ;-))
 
-David
+> Thanks,
+> Nick
+> 
+
+Thanks
+Boaz
