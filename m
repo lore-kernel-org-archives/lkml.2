@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab0CVQHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 12:07:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41946 "EHLO mx1.redhat.com"
+	id S1753734Ab0CVQHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 12:07:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab0CVQHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 12:07:46 -0400
-Date: Mon, 22 Mar 2010 12:07:20 -0400
+	id S1753282Ab0CVQHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 12:07:47 -0400
+Date: Mon, 22 Mar 2010 12:07:14 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com
-Message-Id: <48e5099e36e4e69d0671e4c16fa8c2f5f3cf5d59.1269272444.git.jbaron@redhat.com>
-In-Reply-To: <cover.1269272444.git.jbaron@redhat.com>
-References: <cover.1269272444.git.jbaron@redhat.com>
-Subject: [PATCH 1/5] jump label: notifier atomic call chain notrace
+Message-Id: <cover.1269272444.git.jbaron@redhat.com>
+Subject: [PATCH 0/5] jump label v5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Hi,
 
-In LTTng, being able to use the atomic notifier from cpu idle entry to
-ensure the tracer flush the last events in the current subbuffer
-requires the rcu read-side to be marked "notrace", otherwise it can end
-up calling back into lockdep and the tracer.
+Refresh of jump labeling patches aginst latest -tip tree. For bacground see:
+ see previous posting: http://marc.info/?l=linux-kernel&m=125858436505941&w=2
 
-Also apply to the the die notifier.
+The biggest change is dropping Masami's 'text_poke_smp()' since its now
+in the -tip tree.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- kernel/notifier.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+thanks,
 
-diff --git a/kernel/notifier.c b/kernel/notifier.c
-index 2488ba7..88453a7 100644
---- a/kernel/notifier.c
-+++ b/kernel/notifier.c
-@@ -148,7 +148,7 @@ int atomic_notifier_chain_unregister(struct atomic_notifier_head *nh,
- 	spin_lock_irqsave(&nh->lock, flags);
- 	ret = notifier_chain_unregister(&nh->head, n);
- 	spin_unlock_irqrestore(&nh->lock, flags);
--	synchronize_rcu();
-+	synchronize_sched();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
-@@ -178,9 +178,9 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
- {
- 	int ret;
- 
--	rcu_read_lock();
-+	rcu_read_lock_sched_notrace();
- 	ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
--	rcu_read_unlock();
-+	rcu_read_unlock_sched_notrace();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
--- 
-1.6.5.1
+-Jason
+
+Jason Baron (4):
+  jump label: base patch
+  jump label: x86 support
+  jump label: tracepoint support
+  jump label: add module support
+
+Mathieu Desnoyers (1):
+  jump label: notifier atomic call chain notrace
+
+ arch/x86/include/asm/jump_label.h |   31 ++++
+ arch/x86/kernel/Makefile          |    2 +-
+ arch/x86/kernel/jump_label.c      |   53 +++++++
+ arch/x86/kernel/ptrace.c          |    1 +
+ include/asm-generic/vmlinux.lds.h |   10 +-
+ include/linux/jump_label.h        |   58 +++++++
+ include/linux/module.h            |    5 +-
+ include/linux/tracepoint.h        |   34 +++--
+ kernel/Makefile                   |    2 +-
+ kernel/jump_label.c               |  301 +++++++++++++++++++++++++++++++++++++
+ kernel/module.c                   |    7 +
+ kernel/notifier.c                 |    6 +-
+ kernel/tracepoint.c               |    8 +
+ 13 files changed, 496 insertions(+), 22 deletions(-)
+ create mode 100644 arch/x86/include/asm/jump_label.h
+ create mode 100644 arch/x86/kernel/jump_label.c
+ create mode 100644 include/linux/jump_label.h
+ create mode 100644 kernel/jump_label.c
 
