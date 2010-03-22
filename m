@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab0CVH5K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 03:57:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59506 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750997Ab0CVH5I (ORCPT
+	id S1753809Ab0CVH6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 03:58:09 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:57803 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752767Ab0CVH6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 03:57:08 -0400
-Date: Mon, 22 Mar 2010 00:56:10 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	Mon, 22 Mar 2010 03:58:07 -0400
+Date: Mon, 22 Mar 2010 08:57:39 +0100
+From: Daniel Mack <daniel@caiaq.de>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
        linux-kernel@vger.kernel.org
-Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
-Message-Id: <20100322005610.5dfa70b1.akpm@linux-foundation.org>
-In-Reply-To: <20100322053937.GA17637@laptop>
-References: <20100322053937.GA17637@laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: PXA3xx internal SRAM
+Message-ID: <20100322075739.GI30801@buzzloop.caiaq.de>
+References: <20100321124739.GG30801@buzzloop.caiaq.de>
+ <771cded01003211747n29be55a3p7608578ff1744f51@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <771cded01003211747n29be55a3p7608578ff1744f51@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010 16:39:37 +1100 Nick Piggin <npiggin@suse.de> wrote:
-
-> It's ugly and lazy that we do these default aops in case it has not
-> been filled in by the filesystem.
+On Sun, Mar 21, 2010 at 08:47:22PM -0400, Haojian Zhuang wrote:
+> On Sun, Mar 21, 2010 at 8:47 AM, Daniel Mack <daniel@caiaq.de> wrote:
+> > The pxa3xx series features a comparatively big and fast internal SRAM of
+> > 256KB which is currently unused by the Linux kernel except for a 4-byte
+> > return vector from suspend.
+> >
+> > I wonder what this could be used for. Is there any kind of cache that
+> > would be worth putting there to speed up things for example?
+> > And could the uncompressor probably benfit from that?
+> >
+> > Daniel
 > 
-> A NULL operation should always mean either: we don't support the
-> operation; we don't require any action; or a bug in the filesystem,
-> depending on the context.
-> 
-> In practice, if we get rid of these fallbacks, it will be clearer
-> what operations are used by a given address_space_operations struct,
-> reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
-> rid of all the buffer_head knowledge from core mm and fs code.
+> The size of internal SRAM isn't always 256KB. It could be 128KB, 256KB
+> or 702KB. In marvell BSP, there's a memory management driver (aka IMM)
+> to handle internal SRAM. So driver or user application could make use
+> of it. And one part of internal SRAM is reserved for low power idle
+> mode. But both of these two features aren't pushed into community yet.
 
-I guess this is one way of waking people up.
+Ok. I was more thinking about any kernel specific kind of cache that has
+a fix size of 128kb or 256kb and which is consulted regularily. But I
+don't know which kind of cache that could be.
 
-What happens is that hundreds of bug reports land in my inbox and I get
-to route them to various maintainers, most of whom don't exist, so
-warnings keep on landing in my inbox.  Please send a mailing address for
-my invoices.
+As that's not neccessarily ARM-related, I copied LKML. Maybe anyone has
+an idea.
 
-It would be more practical, more successful and quicker to hunt down
-the miscreants and send them rude emails.  Plus it would save you
-money.
-
-> We could add a patch like this which spits out a recipe for how to fix
-> up filesystems and get them all converted quite easily.
-> 
-> ...
->
-> @@ -40,8 +40,14 @@ void do_invalidatepage(struct page *page
->  	void (*invalidatepage)(struct page *, unsigned long);
->  	invalidatepage = page->mapping->a_ops->invalidatepage;
->  #ifdef CONFIG_BLOCK
-> -	if (!invalidatepage)
-> +	if (!invalidatepage) {
-> +		static bool warned = false;
-> +		if (!warned) {
-> +			warned = true;
-> +			print_symbol("address_space_operations %s missing invalidatepage method. Use block_invalidatepage.\n", (unsigned long)page->mapping->a_ops);
-> +		}
->  		invalidatepage = block_invalidatepage;
-> +	}
-
-erk, I realise 80 cols can be a pain, but 165 cols is just out of
-bounds.  Why not
-
-	/* this fs should use block_invalidatepage() */
-	WARN_ON_ONCE(!invalidatepage);
-
+Thanks,
+Daniel
 
