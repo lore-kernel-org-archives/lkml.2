@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754838Ab0CVOUL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:20:11 -0400
-Received: from 8bytes.org ([88.198.83.132]:37341 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754693Ab0CVOUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:20:09 -0400
-Date: Mon, 22 Mar 2010 15:20:08 +0100
-From: oerg Roedel <joro@8bytes.org>
-To: "Richard W.M. Jones" <rjones@redhat.com>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Avi Kivity <avi@redhat.com>,
-       Antoine Martin <antoine@nagafix.co.uk>,
-       Olivier Galibert <galibert@pobox.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
-	project
-Message-ID: <20100322142008.GE1940@8bytes.org>
-References: <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu> <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu> <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com> <20100322123726.GH21874@redhat.com> <20100322125440.GB12475@elte.hu> <20100322130513.GJ21874@redhat.com> <20100322132326.GA15923@amd.home.annexia.org>
+	id S1754893Ab0CVOUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:20:55 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:34489 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693Ab0CVOUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:20:53 -0400
+Date: Mon, 22 Mar 2010 09:20:42 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <87tysccjrn.fsf@basil.nowhere.org>
+Message-ID: <alpine.DEB.2.00.1003220916170.15360@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322132326.GA15923@amd.home.annexia.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 01:23:26PM +0000, Richard W.M. Jones wrote:
-> On Mon, Mar 22, 2010 at 01:05:13PM +0000, Daniel P. Berrange wrote:
-> > This is close to the way libguestfs already works. It boots QEMU/KVM pointing
-> > to a minimal stripped down appliance linux OS image, containing a small agent
-> > it talks to over some form of vmchannel/serial/virtio-serial device. Thus the
-> > kernel in the appliance it runs is the only thing that needs to know about the
-> > filesystem/lvm/dm on-disk formats - libguestfs definitely does not want to be
-> > duplicating this detailed knowledge of on disk format itself. It is doing
-> > full read-write access to the guest filesystem in offline mode - one of the
-> > major use cases is disaster recovery from a unbootable guest OS image.
-> 
-> As Dan said, the 'daemon' part is separate and could be run as a
-> standard part of a guest install, talking over vmchannel to the host.
-> The only real issue I can see is adding access control to the daemon
-> (currently it doesn't need it and doesn't do any).  Doing it this way
-> you'd be leveraging the ~250,000 lines of existing libguestfs code,
-> bindings in multiple languages, tools etc.
+On Fri, 19 Mar 2010, Andi Kleen wrote:
 
-I think we don't need per-guest-file access control. Probably we could
-apply the image-file permissions to all guestfs files. This would cover
-the usecases:
+> Christoph Lameter <cl@linux-foundation.org> writes:
+> >
+> > I know about the openpgm implementation. Openpbm does this at the user
+> > level and requires linking to a library. It is essentially a communication
+> > protocol done in user space. It has privilege issues because it has to
+> > create PGM packets via a raw socket.
+>
+> That seems like a poor reason alone to put something into the kernel
+> Perhaps you rather need some way to have unpriviledged raw sockets?
 
-	* perf for reading symbol information (needs ro-access only
-	  anyway)
-	* Desktop like host<->guest file copy
+Not the only reason. There are also performance implications. NAKing and
+other control messages from user space are a pain and the available
+implementations add numerous threads just to control the timing of control
+messages and the expiration of data etc. Its difficult to listen to a PGM
+port from user space. You have to get all messages for the PGM protocol
+and then filter in each process.
 
-I have not looked into libguestfs yet but I guess this approach is
-easier to achieve.
+PGM operates on the same level as TCP and UDP.
 
-	Joerg
+> The classical way to do this is to start suid root, only open
+> the socket and then drop privileges.
 
+Yes those solutions exist and the experience with their limitations are
+the reason to try to get PGM in the kernel.
