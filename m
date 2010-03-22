@@ -1,35 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0CVVTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:19:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47861 "EHLO arroyo.ext.ti.com"
+	id S1756429Ab0CVVTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:19:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45951 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab0CVVT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:19:28 -0400
+	id S1756361Ab0CVVTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 17:19:31 -0400
 From: pavan_savoy@ti.com
 To: gregkh@suse.de
 Cc: alan@lxorguk.ukuu.org.uk, pavan_savoy@ti.com, linux-kernel@vger.kernel.org
-Subject: [re-worked] New ldisc for WiLink7.0
-Date: Mon, 22 Mar 2010 16:19:10 -0500
-Message-Id: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 6/6] drivers:misc: sources for ST header file
+Date: Mon, 22 Mar 2010 16:19:16 -0500
+Message-Id: <1269292756-7469-7-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1269292756-7469-6-git-send-email-pavan_savoy@ti.com>
+References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com>
+ <1269292756-7469-2-git-send-email-pavan_savoy@ti.com>
+ <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
+ <1269292756-7469-4-git-send-email-pavan_savoy@ti.com>
+ <1269292756-7469-5-git-send-email-pavan_savoy@ti.com>
+ <1269292756-7469-6-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Pavan Savoy <pavan_savoy@ti.com>
 
+Texas Instruments BT, FM and GPS combo chips/drivers
+make use of a single TTY to communicate with the chip.
+This is the common header file for both the ST driver and the
+protocol drivers which intend to use ST as their mode of
+transport.
 
-Greg/Alan & the linux-kernel community,
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/misc/ti-st/fm.h |   13 +++++++
+ drivers/misc/ti-st/st.h |   85 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 98 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/ti-st/fm.h
+ create mode 100644 drivers/misc/ti-st/st.h
 
-Texas Instruments has introduced it's new series of WiLink chipsets
-which has Bluetooth, WLAN, FM-Rx and FM-Tx and GPS on 1 single chip.
-This series of chipsets allow apps processor to interface with the chip
-over a single UART mux-ed for all 3 (BT,FM and GPS) cores on chip and
-SDIO for WLAN.
+diff --git a/drivers/misc/ti-st/fm.h b/drivers/misc/ti-st/fm.h
+new file mode 100644
+index 0000000..be41453
+--- /dev/null
++++ b/drivers/misc/ti-st/fm.h
+@@ -0,0 +1,13 @@
++struct fm_event_hdr {
++	unsigned char plen;
++} __attribute__ ((packed));
++
++#define FM_MAX_FRAME_SIZE 0xFF	/* TODO: */
++#define FM_EVENT_HDR_SIZE 1	/* size of fm_event_hdr */
++#define ST_FM_CH8_PKT 0x8
++
++/* gps stuff */
++struct gps_event_hdr {
++unsigned char opcode;
++unsigned short plen;
++} __attribute__ ((packed));
+diff --git a/drivers/misc/ti-st/st.h b/drivers/misc/ti-st/st.h
+new file mode 100644
+index 0000000..ec821d2
+--- /dev/null
++++ b/drivers/misc/ti-st/st.h
+@@ -0,0 +1,85 @@
++/*
++ *  Shared Transport Header file
++ *	To be included by the protocol stack drivers for
++ *	Texas Instruments BT,FM and GPS combo chip drivers
++ *
++ *  Copyright (C) 2009 Texas Instruments
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#ifndef ST_H
++#define ST_H
++
++#include <linux/skbuff.h>
++/*
++ * st.h
++ */
++
++/* some gpios have active high, others like fm have
++ * active low
++ */
++enum kim_gpio_state {
++	KIM_GPIO_INACTIVE,
++	KIM_GPIO_ACTIVE,
++};
++/*
++ * the list of protocols on chip
++ */
++enum proto_type {
++	ST_BT,
++	ST_FM,
++	ST_GPS,
++	ST_MAX,
++};
++
++enum {
++	ST_ERR_FAILURE = -1,	/* check struct */
++	ST_SUCCESS,
++	ST_ERR_PENDING = -5,	/* to call reg_complete_cb */
++	ST_ERR_ALREADY,		/* already registered */
++	ST_ERR_INPROGRESS,
++	ST_ERR_NOPROTO,		/* protocol not supported */
++};
++
++/* per protocol structure
++ * for BT/FM and GPS
++ */
++struct st_proto_s {
++	enum proto_type type;
++/*
++ * to be called by ST when data arrives
++ */
++	long (*recv) (struct sk_buff *);
++/*
++ * for future use, logic now to be in ST
++ */
++	unsigned char (*match_packet) (const unsigned char *data);
++/*
++ * subsequent registration return PENDING,
++ * signalled complete by this callback function
++ */
++	void (*reg_complete_cb) (char data);
++/*
++ * write function, sent in as NULL and to be returned to
++ * protocol drivers
++ */
++	long (*write) (struct sk_buff *skb);
++};
++
++extern long st_register(struct st_proto_s *new_proto);
++extern long st_unregister(enum proto_type type);
++
++#endif /* ST_H */
+-- 
+1.5.4.3
 
-The following list of patches introduces a new line discipline which allows
-such muxing to happen, and 3 different BT, FM and GPS drivers would sit on
-top of this driver (registering/unregistering) and glue this to relevant s/w
-stacks.
-
-This has been verified to work on TI's OMAP platforms(34xx,36xx and 44xx).
