@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab0CVThf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:37:35 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57621 "EHLO mx2.mail.elte.hu"
+	id S1755978Ab0CVTjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:39:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60592 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755210Ab0CVThd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:37:33 -0400
-Date: Mon, 22 Mar 2010 20:37:20 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-Message-ID: <20100322193720.GA2844@elte.hu>
-References: <4BA6EA62.1030603@kernel.org>
- <20100321.210023.209981130.davem@davemloft.net>
- <4BA6F1F6.3070102@kernel.org>
- <20100321.213350.176660494.davem@davemloft.net>
- <20100322092809.GA20607@elte.hu>
- <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
-MIME-Version: 1.0
+	id S1755385Ab0CVTjY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:39:24 -0400
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Mime-Version: 1.0 (Apple Message framework v1077)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20100322193100.GB28709@redhat.com>
+Date: Mon, 22 Mar 2010 20:39:15 +0100
+Cc: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E548536E-4D62-4B17-BA09-9C12EB1A2717@suse.de>
+References: <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <4BA7C1D7.5070208@codemonkey.ws> <20100322193100.GB28709@redhat.com>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Thomas Gleixner <tglx@linutronix.de> wrote:
+On 22.03.2010, at 20:31, Daniel P. Berrange wrote:
 
-> Ingo,
+> On Mon, Mar 22, 2010 at 02:15:35PM -0500, Anthony Liguori wrote:
+>> On 03/22/2010 12:55 PM, Avi Kivity wrote:
+>>>> Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
+>>>> Anthony.
+>>>> There's numerous ways that this can break:
+>>> 
+>>> I don't like it either.  We have libvirt for enumerating guests.
+>> 
+>> We're stuck in a rut with libvirt and I think a lot of the 
+>> dissatisfaction with qemu is rooted in that.  It's not libvirt that's 
+>> the probably, but the relationship between qemu and libvirt.
+>> 
+>> We add a feature to qemu and maybe after six month it gets exposed by 
+>> libvirt.  Release time lines of the two projects complicate the 
+>> situation further.  People that write GUIs are limited by libvirt 
+>> because that's what they're told to use and when they need something 
+>> simple, they're presented with first getting that feature implemented in 
+>> qemu, then plumbed through libvirt.
 > 
-> On Mon, 22 Mar 2010, Ingo Molnar wrote:
-> > 
-> > ( Cc:-ed Andrew and Linus as this is a general design/policy matter wrt. 
-> >   memory management. )
-> > 
-> > * David Miller <davem@davemloft.net> wrote:
-> > 
-> > > From: Yinghai Lu <yinghai@kernel.org>
-> > > Date: Sun, 21 Mar 2010 21:28:38 -0700
-> > > 
-> > > >> 
-> > > >> That action means you absolutely don't value our feedback at all.
-> > > > 
-> > > > [PATCH 01/20] x86: add find_e820_area_node
-> > > > is addressing your concern that early_res didn't handle memory cross the nodes problem.
-> > > 
-> > > Now I know that you _REALLY_ aren't listening to us.
+> That is somewhat unfair as a blanket statement! 
 > 
-> > [ He has done a bit more than just to simply listen: he seems to
-> > have written a patch which he thinks is addressing the concerns you
-> > pointed out. It might not be the response you wished for (and it
-> > might be inadequate) for but it sure gives me the impression of him
-> > listening to you - unless by 'listening' you mean 'follow my exact
-> > opinion without argument'. ]
-> 
-> I tend to disagree. Fixing the bug pointed out by Dave is not really a
-> good argument about listening.
-> 
-> The main point is that there is still no answer why lmb cannot be used and 
-> the reposted patch still is a full move of the x86 e820 functions into 
-> kernel/fw_memmap.c.
-> 
-> That's not a generalization, that's simply a relocation of x86 code to 
-> kernel/. And I agree with Dave and Ben that this is an useless exercise.
+> While some features have had a long time delay & others are not supported
+> at all, in many cases we have had zero delay. We have been supporting QMP,
+> qdev, vhost-net since before the patches for those features were even merged
+> in QEMU GIT! It varies depending on how closely QEMU & libvirt people have
+> been working together on a feature, and on how strongly end users are demanding
+> the features. 
 
-ok - i think you are right. Yinghai, mind having a look at using lib/lmb.c for 
-all this?
+Yes. I think the point was that every layer in between brings potential slowdown and loss of features.
 
-	Ingo
+Hopefully this will go away with QMP. By then people can decide if they want to be hypervisor agnostic (libvirt) or tightly coupled with qemu (QMP). The best of both worlds would of course be a QMP pass-through in libvirt. No idea if that's easily possible.
+
+Either way, things are improving. What people see at the end is virt-manager though. And if you compare if feature-wise as well as looks-wise vbox is simply superior. Several features lacking in lower layers too (pv graphics, always working absolute pointers, clipboard sharing, ...).
+
+That said it doesn't mean we should resign. It means we know which areas to work on :-). And we know that our problem is not the kernel/userspace interface, but the qemu and above interfaces.
+
+Alex
