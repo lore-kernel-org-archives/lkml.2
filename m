@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755876Ab0CVVKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:10:47 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:42727 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab0CVVKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:10:45 -0400
-Date: Mon, 22 Mar 2010 21:10:41 +0000
-From: Chris Webb <chris@arachsys.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, balbir@linux.vnet.ibm.com,
-       KVM development list <kvm@vger.kernel.org>,
-       Rik van Riel <riel@surriel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH][RF C/T/D] Unmapped page cache control - via boot
- parameter
-Message-ID: <20100322211041.GD12635@arachsys.com>
-References: <4B9DE635.8030208@redhat.com>
- <20100315080726.GB18054@balbir.in.ibm.com>
- <4B9DEF81.6020802@redhat.com>
- <20100315202353.GJ3840@arachsys.com>
- <4B9EC60A.2070101@codemonkey.ws>
- <20100317151409.GY31148@arachsys.com>
- <4BA0FB83.1010502@codemonkey.ws>
- <20100317162711.GK1997@arachsys.com>
- <20100322210448.GA12635@arachsys.com>
- <4BA7DBFB.8000808@redhat.com>
+	id S1755970Ab0CVVMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:12:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755530Ab0CVVMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 17:12:05 -0400
+Date: Mon, 22 Mar 2010 18:11:47 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 1/1] perf report: newt callgraphs
+Message-ID: <20100322211147.GQ2873@ghostprotocols.net>
+References: <1269291169-29820-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4BA7DBFB.8000808@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1269291169-29820-1-git-send-email-acme@infradead.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity <avi@redhat.com> writes:
-
-> On 03/22/2010 11:04 PM, Chris Webb wrote:
->
-> >Unless I'm missing something, the risk to guest OSes in this configuration
-> >should therefore be exactly the same as the risk from running on normal
-> >commodity hardware with such drives and no expensive battery-backed RAM.
+Em Mon, Mar 22, 2010 at 05:52:49PM -0300, Arnaldo Carvalho de Melo escreveu:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 > 
-> A host crash will destroy your data.  If  your machine is connected
-> to a UPS, only a firmware crash can destroy your data.
+> Starts collapsed, allows annotating by pressing 'A' or 'a' on the symbol, be it
+> the top level one or any of the symbols in the chains.
+> 
+> It (ab)uses the only tree widget in newt, that is actually a checkbox tree that
+> we use with just one option ('.'), end result is usable but we really need to
+> create a custom widget tree so that we can use the data structures we have
+> (hist_entry rb_tree + callchain rb_tree + lists), so that we reduce the memory
+> footprint by not creating a mirror set of data structures in the
+> newtCheckboxTree widget.
+> 
+> Thanks to Frédéric Weisbacker for fixing the orphanage problem in
+> 301fde2, without that we were tripping a newt bug (fix already sent to
+> newt's maintainer).
 
-Yes, that's a good point: in this configuration a host crash is equivalent
-to a power failure rather than a OS crash in terms of data loss.
+For the curious, here is a screenshot:
 
-Cheers,
+http://tglx.de/~acme/perf-newt-callgraph.png
 
-Chris.
+- Arnaldo
