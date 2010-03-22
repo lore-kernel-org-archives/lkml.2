@@ -1,733 +1,692 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0CVBi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 21:38:26 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:27447 "EHLO
+	id S1753874Ab0CVBie (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 21:38:34 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:27472 "EHLO
 	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab0CVBiX (ORCPT
+	with ESMTP id S1753707Ab0CVBiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 21:38:23 -0400
+	Sun, 21 Mar 2010 21:38:25 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        "Eric W. Biederman" <ebiederm@xmission.com>,
        Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-kernel@vger.kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 06/10] irq: Start the transition of irq_chip methods taking a desc
-Date: Sun, 21 Mar 2010 18:36:06 -0700
-Message-Id: <1269221770-9667-7-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 09/10] x86/iommu/dmar: update iommu/inter_remapping to use desc
+Date: Sun, 21 Mar 2010 18:36:09 -0700
+Message-Id: <1269221770-9667-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
 References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BA6C9E7.01AE,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4BA6C9EE.004E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+to make irq_remapped() not going to call irq_to_desc() ....
 
-With SPARSE_IRQ irq_to_desc becomes an unnecessary lookup operation on
-the fast path of dispatching irqs to their handlers.  We can avoid
-this cost by passing an irq_desc pointer instead of using an integer
-irq token to the irq_chip methods.
-
-A single patch to convert all of the architectures is an unreviewable
-2000+ line patch.  A gradual transition scenario with two sets of
-irq_chip methods in irq_chip is an unmanageable mess in kernel/irq.
-
-So instead I define some macros so the generic irq code in kernel/irq/
-can compile either way based on a boolean Kconfig variable
-CONFIG_CHIP_PARAM_DESC.  This allows us to convert one architecture at
-a time, reducing the follow on patches to manageable proportions.  It
-is a little bit ugly but it is much better than the alternatives, and
-as soon as we finish the transition we can kill the macros.
-
-I introduce the macros CHIP_ARG, CHIP_VAR, and CHIP_PARAM where
-appropriate.  I change a few declarations of irq as int to unsigned
-int.  I normalize the variables names in the functions that call
-chip methods to ensure that I have the variables irq and desc present
-allowing CHIP_ARG to work properly.  Most importantly none of the irq
-logic changes with this patch.
-
--v2: add CHIP_VAR_IRQ
-
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/Kconfig           |    3 ++
- include/linux/irq.h    |   60 ++++++++++++++++++++++++++++-------------------
- kernel/irq/autoprobe.c |   39 ++++++++++++++++---------------
- kernel/irq/chip.c      |   40 ++++++++++++++++----------------
- kernel/irq/handle.c    |   18 +++++++-------
- kernel/irq/internals.h |    4 +-
- kernel/irq/manage.c    |   22 ++++++++--------
- kernel/irq/migration.c |   10 ++++----
- kernel/irq/pm.c        |    6 ++--
- kernel/irq/resend.c    |    5 ++-
- kernel/irq/spurious.c  |    4 +-
- 11 files changed, 114 insertions(+), 97 deletions(-)
+ arch/x86/include/asm/io_apic.h |    4 --
+ arch/x86/kernel/apic/io_apic.c |   78 +++++++++++++++++++---------------------
+ drivers/pci/intr_remapping.c   |   69 +++++++++++++++--------------------
+ include/linux/dmar.h           |   36 ++++++++++---------
+ 4 files changed, 85 insertions(+), 102 deletions(-)
 
-diff --git a/arch/Kconfig b/arch/Kconfig
-index f06010f..7331bbb 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -2,6 +2,9 @@
- # General architecture dependent options
- #
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index c4683b9..d249186 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -171,10 +171,6 @@ extern int restore_IO_APIC_setup(struct IO_APIC_route_entry **ioapic_entries);
  
-+config CHIP_PARAM_DESC
-+       def_bool n
-+
- config OPROFILE
- 	tristate "OProfile system profiling"
- 	depends on PROFILING
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 60f3368..5a110a4 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -83,6 +83,18 @@ typedef	void (*irq_flow_handler_t)(unsigned int irq,
- struct proc_dir_entry;
- struct msi_desc;
+ extern void probe_nr_irqs_gsi(void);
  
-+#ifdef CONFIG_CHIP_PARAM_DESC
-+#define CHIP_PARAM struct irq_desc *desc
-+#define CHIP_VAR
-+#define CHIP_VAR_IRQ unsigned int irq = desc->irq;
-+#define CHIP_ARG   desc
-+#else
-+#define CHIP_PARAM unsigned int irq
-+#define CHIP_VAR   struct irq_desc *desc = irq_to_desc(irq);
-+#define CHIP_VAR_IRQ
-+#define CHIP_ARG   irq
-+#endif
-+
- /**
-  * struct irq_chip - hardware interrupt chip descriptor
-  *
-@@ -110,30 +122,30 @@ struct msi_desc;
-  */
- struct irq_chip {
- 	const char	*name;
--	unsigned int	(*startup)(unsigned int irq);
--	void		(*shutdown)(unsigned int irq);
--	void		(*enable)(unsigned int irq);
--	void		(*disable)(unsigned int irq);
--
--	void		(*ack)(unsigned int irq);
--	void		(*mask)(unsigned int irq);
--	void		(*mask_ack)(unsigned int irq);
--	void		(*unmask)(unsigned int irq);
--	void		(*eoi)(unsigned int irq);
--
--	void		(*end)(unsigned int irq);
--	int		(*set_affinity)(unsigned int irq,
-+	unsigned int	(*startup)(CHIP_PARAM);
-+	void		(*shutdown)(CHIP_PARAM);
-+	void		(*enable)(CHIP_PARAM);
-+	void		(*disable)(CHIP_PARAM);
-+
-+	void		(*ack)(CHIP_PARAM);
-+	void		(*mask)(CHIP_PARAM);
-+	void		(*mask_ack)(CHIP_PARAM);
-+	void		(*unmask)(CHIP_PARAM);
-+	void		(*eoi)(CHIP_PARAM);
-+
-+	void		(*end)(CHIP_PARAM);
-+	int		(*set_affinity)(CHIP_PARAM,
- 					const struct cpumask *dest);
--	int		(*retrigger)(unsigned int irq);
--	int		(*set_type)(unsigned int irq, unsigned int flow_type);
--	int		(*set_wake)(unsigned int irq, unsigned int on);
-+	int		(*retrigger)(CHIP_PARAM);
-+	int		(*set_type)(CHIP_PARAM, unsigned int flow_type);
-+	int		(*set_wake)(CHIP_PARAM, unsigned int on);
+-extern int setup_ioapic_entry(int apic, int irq,
+-			      struct IO_APIC_route_entry *entry,
+-			      unsigned int destination, int trigger,
+-			      int polarity, int vector, int pin);
+ extern void ioapic_write_entry(int apic, int pin,
+ 			       struct IO_APIC_route_entry e);
+ extern void setup_ioapic_ids_from_mpc(void);
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 432bea1..ce93428 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1340,7 +1340,7 @@ static void ioapic_register_intr(int irq, struct irq_desc *desc, unsigned long t
+ 	else
+ 		desc->status &= ~IRQ_LEVEL;
  
--	void		(*bus_lock)(unsigned int irq);
--	void		(*bus_sync_unlock)(unsigned int irq);
-+	void		(*bus_lock)(CHIP_PARAM);
-+	void		(*bus_sync_unlock)(CHIP_PARAM);
+-	if (irq_remapped(irq)) {
++	if (irq_remapped(desc)) {
+ 		desc->status |= IRQ_MOVE_PCNTXT;
+ 		if (trigger)
+ 			set_irq_chip_and_handler_name(irq, &ir_ioapic_chip,
+@@ -1362,7 +1362,7 @@ static void ioapic_register_intr(int irq, struct irq_desc *desc, unsigned long t
+ 					      handle_edge_irq, "edge");
+ }
  
- 	/* Currently used only by UML, might disappear one day.*/
- #ifdef CONFIG_IRQ_RELEASE_METHOD
--	void		(*release)(unsigned int irq, void *dev_id);
-+	void		(*release)(CHIP_PARAM, void *dev_id);
- #endif
+-int setup_ioapic_entry(int apic_id, int irq,
++static int setup_ioapic_entry(int apic_id, struct irq_desc *desc,
+ 		       struct IO_APIC_route_entry *entry,
+ 		       unsigned int destination, int trigger,
+ 		       int polarity, int vector, int pin)
+@@ -1382,7 +1382,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+ 		if (!iommu)
+ 			panic("No mapping iommu for ioapic %d\n", apic_id);
+ 
+-		index = alloc_irte(iommu, irq, 1);
++		index = alloc_irte(iommu, desc, 1);
+ 		if (index < 0)
+ 			panic("Failed to allocate IRTE for ioapic %d\n", apic_id);
+ 
+@@ -1405,7 +1405,7 @@ int setup_ioapic_entry(int apic_id, int irq,
+ 		/* Set source-id of interrupt request */
+ 		set_ioapic_sid(&irte, apic_id);
+ 
+-		modify_irte(irq, &irte);
++		modify_irte(desc, &irte);
+ 
+ 		ir_entry->index2 = (index >> 15) & 0x1;
+ 		ir_entry->zero = 0;
+@@ -1467,7 +1467,7 @@ static void setup_IO_APIC_irq(int apic_id, int pin, unsigned int irq, struct irq
+ 		    irq, trigger, polarity);
+ 
+ 
+-	if (setup_ioapic_entry(mp_ioapics[apic_id].apicid, irq, &entry,
++	if (setup_ioapic_entry(mp_ioapics[apic_id].apicid, desc, &entry,
+ 			       dest, trigger, polarity, cfg->vector, pin)) {
+ 		printk("Failed to setup ioapic entry for ioapic  %d, pin %d\n",
+ 		       mp_ioapics[apic_id].apicid, pin);
+@@ -2334,7 +2334,7 @@ void send_cleanup_vector(struct irq_cfg *cfg)
+ 	cfg->move_in_progress = 0;
+ }
+ 
+-static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq_cfg *cfg)
++static void __target_IO_APIC_irq(struct irq_desc *desc, unsigned int dest, struct irq_cfg *cfg)
+ {
+ 	int apic, pin;
+ 	struct irq_pin_list *entry;
+@@ -2349,7 +2349,7 @@ static void __target_IO_APIC_irq(unsigned int irq, unsigned int dest, struct irq
+ 		 * With interrupt-remapping, destination information comes
+ 		 * from interrupt-remapping table entry.
+ 		 */
+-		if (!irq_remapped(irq))
++		if (!irq_remapped(desc))
+ 			io_apic_write(apic, 0x11 + pin*2, dest);
+ 		reg = io_apic_read(apic, 0x10 + pin*2);
+ 		reg &= ~IO_APIC_REDIR_VECTOR_MASK;
+@@ -2388,10 +2388,8 @@ set_ioapic_affinity_irq_desc(struct irq_desc *desc, const struct cpumask *mask)
+ 	struct irq_cfg *cfg;
+ 	unsigned long flags;
+ 	unsigned int dest;
+-	unsigned int irq;
+ 	int ret = -1;
+ 
+-	irq = desc->irq;
+ 	cfg = desc->chip_data;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+@@ -2399,7 +2397,7 @@ set_ioapic_affinity_irq_desc(struct irq_desc *desc, const struct cpumask *mask)
+ 	if (!ret) {
+ 		/* Only the high 8 bits are valid. */
+ 		dest = SET_APIC_LOGICAL_ID(dest);
+-		__target_IO_APIC_irq(irq, dest, cfg);
++		__target_IO_APIC_irq(desc, dest, cfg);
+ 	}
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ 
+@@ -2431,14 +2429,12 @@ migrate_ioapic_irq_desc(struct irq_desc *desc, const struct cpumask *mask)
+ 	struct irq_cfg *cfg;
+ 	struct irte irte;
+ 	unsigned int dest;
+-	unsigned int irq;
+ 	int ret = -1;
+ 
+ 	if (!cpumask_intersects(mask, cpu_online_mask))
+ 		return ret;
+ 
+-	irq = desc->irq;
+-	if (get_irte(irq, &irte))
++	if (get_irte(desc, &irte))
+ 		return ret;
+ 
+ 	cfg = desc->chip_data;
+@@ -2453,7 +2449,7 @@ migrate_ioapic_irq_desc(struct irq_desc *desc, const struct cpumask *mask)
  	/*
- 	 * For compatibility, ->typename is copied into ->name.
-@@ -252,20 +264,20 @@ extern void remove_irq(unsigned int irq, struct irqaction *act);
- 
- #ifdef CONFIG_GENERIC_PENDING_IRQ
- 
--void move_native_irq(int irq);
--void move_masked_irq(int irq);
-+void move_native_irq(unsigned int irq);
-+void move_masked_irq(unsigned int irq);
- 
- #else /* CONFIG_GENERIC_PENDING_IRQ */
- 
--static inline void move_irq(int irq)
-+static inline void move_irq(unsigned int irq)
- {
- }
- 
--static inline void move_native_irq(int irq)
-+static inline void move_native_irq(unsigned int irq)
- {
- }
- 
--static inline void move_masked_irq(int irq)
-+static inline void move_masked_irq(unsigned int irq)
- {
- }
- 
-diff --git a/kernel/irq/autoprobe.c b/kernel/irq/autoprobe.c
-index 2295a31..2a8702f 100644
---- a/kernel/irq/autoprobe.c
-+++ b/kernel/irq/autoprobe.c
-@@ -33,7 +33,7 @@ unsigned long probe_irq_on(void)
- 	struct irq_desc *desc;
- 	unsigned long mask = 0;
- 	unsigned int status;
--	int i;
-+	unsigned int irq;
- 
- 	/*
- 	 * quiesce the kernel, or at least the asynchronous portion
-@@ -44,7 +44,7 @@ unsigned long probe_irq_on(void)
- 	 * something may have generated an irq long ago and we want to
- 	 * flush such a longstanding irq before considering it as spurious.
+ 	 * Modified the IRTE and flushes the Interrupt entry cache.
  	 */
--	for_each_irq_desc_reverse(i, desc) {
-+	for_each_irq_desc_reverse(irq, desc) {
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && !(desc->status & IRQ_NOPROBE)) {
- 			/*
-@@ -58,8 +58,8 @@ unsigned long probe_irq_on(void)
- 			 * progress:
+-	modify_irte(irq, &irte);
++	modify_irte(desc, &irte);
+ 
+ 	if (cfg->move_in_progress)
+ 		send_cleanup_vector(cfg);
+@@ -2591,7 +2587,7 @@ atomic_t irq_mis_count;
+  * Otherwise, we simulate the EOI message manually by changing the trigger
+  * mode to edge and then back to level, with RTE being masked during this.
+ */
+-static void __eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
++static void __eoi_ioapic_irq(struct irq_desc *desc, struct irq_cfg *cfg)
+ {
+ 	struct irq_pin_list *entry;
+ 
+@@ -2603,7 +2599,7 @@ static void __eoi_ioapic_irq(unsigned int irq, struct irq_cfg *cfg)
+ 			 * intr-remapping table entry. Hence for the io-apic
+ 			 * EOI we use the pin number.
  			 */
- 			if (desc->chip->set_type)
--				desc->chip->set_type(i, IRQ_TYPE_PROBE);
--			desc->chip->startup(i);
-+				desc->chip->set_type(CHIP_ARG, IRQ_TYPE_PROBE);
-+			desc->chip->startup(CHIP_ARG);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -72,11 +72,11 @@ unsigned long probe_irq_on(void)
- 	 * (we must startup again here because if a longstanding irq
- 	 * happened in the previous stage, it may have masked itself)
- 	 */
--	for_each_irq_desc_reverse(i, desc) {
-+	for_each_irq_desc_reverse(irq, desc) {
- 		raw_spin_lock_irq(&desc->lock);
- 		if (!desc->action && !(desc->status & IRQ_NOPROBE)) {
- 			desc->status |= IRQ_AUTODETECT | IRQ_WAITING;
--			if (desc->chip->startup(i))
-+			if (desc->chip->startup(CHIP_ARG))
- 				desc->status |= IRQ_PENDING;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
-@@ -90,7 +90,7 @@ unsigned long probe_irq_on(void)
- 	/*
- 	 * Now filter out any obviously spurious interrupts
- 	 */
--	for_each_irq_desc(i, desc) {
-+	for_each_irq_desc(irq, desc) {
- 		raw_spin_lock_irq(&desc->lock);
- 		status = desc->status;
- 
-@@ -98,10 +98,10 @@ unsigned long probe_irq_on(void)
- 			/* It triggered already - consider it spurious. */
- 			if (!(status & IRQ_WAITING)) {
- 				desc->status = status & ~IRQ_AUTODETECT;
--				desc->chip->shutdown(i);
-+				desc->chip->shutdown(CHIP_ARG);
- 			} else
--				if (i < 32)
--					mask |= 1 << i;
-+				if (irq < 32)
-+					mask |= 1 << irq;
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-@@ -126,18 +126,18 @@ unsigned int probe_irq_mask(unsigned long val)
+-			if (irq_remapped(irq))
++			if (irq_remapped(desc))
+ 				io_apic_eoi(entry->apic, entry->pin);
+ 			else
+ 				io_apic_eoi(entry->apic, cfg->vector);
+@@ -2618,13 +2614,11 @@ static void eoi_ioapic_irq(struct irq_desc *desc)
  {
- 	unsigned int status, mask = 0;
+ 	struct irq_cfg *cfg;
+ 	unsigned long flags;
+-	unsigned int irq;
+ 
+-	irq = desc->irq;
+ 	cfg = desc->chip_data;
+ 
+ 	raw_spin_lock_irqsave(&ioapic_lock, flags);
+-	__eoi_ioapic_irq(irq, cfg);
++	__eoi_ioapic_irq(desc, cfg);
+ 	raw_spin_unlock_irqrestore(&ioapic_lock, flags);
+ }
+ 
+@@ -3328,11 +3322,11 @@ void destroy_irq(unsigned int irq)
  	struct irq_desc *desc;
--	int i;
+ 	struct irq_cfg *cfg;
+ 
+-	dynamic_irq_cleanup_keep_chip_data(irq_to_desc(irq));
++	desc = irq_to_desc(irq);
++	dynamic_irq_cleanup_keep_chip_data(desc);
+ 
+-	free_irte(irq);
++	free_irte(desc);
+ 	raw_spin_lock_irqsave(&vector_lock, flags);
+-	desc = irq_to_desc(irq);
+ 	cfg = desc->chip_data;
+ 	__clear_irq_vector(desc, cfg);
+ 	raw_spin_unlock_irqrestore(&vector_lock, flags);
+@@ -3345,7 +3339,6 @@ void destroy_irq(unsigned int irq)
+ static int msi_compose_msg(struct pci_dev *pdev, struct irq_desc *desc,
+ 			   struct msi_msg *msg, u8 hpet_id)
+ {
+-	unsigned int irq = desc->irq;
+ 	struct irq_cfg *cfg;
+ 	int err;
+ 	unsigned dest;
+@@ -3360,15 +3353,15 @@ static int msi_compose_msg(struct pci_dev *pdev, struct irq_desc *desc,
+ 
+ 	dest = apic->cpu_mask_to_apicid_and(cfg->domain, apic->target_cpus());
+ 
+-	if (irq_remapped(irq)) {
++	if (irq_remapped(desc)) {
+ 		struct irte irte;
+ 		int ir_index;
+ 		u16 sub_handle;
+ 
+-		ir_index = map_irq_to_irte_handle(irq, &sub_handle);
++		ir_index = map_irq_to_irte_handle(desc, &sub_handle);
+ 		BUG_ON(ir_index == -1);
+ 
+-		memset (&irte, 0, sizeof(irte));
++		memset(&irte, 0, sizeof(irte));
+ 
+ 		irte.present = 1;
+ 		irte.dst_mode = apic->irq_dest_mode;
+@@ -3383,7 +3376,7 @@ static int msi_compose_msg(struct pci_dev *pdev, struct irq_desc *desc,
+ 		else
+ 			set_hpet_sid(&irte, hpet_id);
+ 
+-		modify_irte(irq, &irte);
++		modify_irte(desc, &irte);
+ 
+ 		msg->address_hi = MSI_ADDR_BASE_HI;
+ 		msg->data = sub_handle;
+@@ -3451,12 +3444,11 @@ set_msi_irq_affinity(struct irq_desc *desc, const struct cpumask *mask)
+ static int
+ ir_set_msi_irq_affinity(struct irq_desc *desc, const struct cpumask *mask)
+ {
+-	unsigned int irq = desc->irq;
+ 	struct irq_cfg *cfg = desc->chip_data;
+ 	unsigned int dest;
+ 	struct irte irte;
+ 
+-	if (get_irte(irq, &irte))
++	if (get_irte(desc, &irte))
+ 		return -1;
+ 
+ 	if (set_desc_affinity(desc, mask, &dest))
+@@ -3468,7 +3460,7 @@ ir_set_msi_irq_affinity(struct irq_desc *desc, const struct cpumask *mask)
+ 	/*
+ 	 * atomically update the IRTE with the new destination and vector.
+ 	 */
+-	modify_irte(irq, &irte);
++	modify_irte(desc, &irte);
+ 
+ 	/*
+ 	 * After this point, all the interrupts will start arriving
+@@ -3523,7 +3515,7 @@ static struct irq_chip msi_ir_chip = {
+  * and allocate 'nvec' consecutive interrupt-remapping table entries
+  * in it.
+  */
+-static int msi_alloc_irte(struct pci_dev *dev, int irq, int nvec)
++static int msi_alloc_irte(struct pci_dev *dev, struct irq_desc *desc, int nvec)
+ {
+ 	struct intel_iommu *iommu;
+ 	int index;
+@@ -3535,7 +3527,7 @@ static int msi_alloc_irte(struct pci_dev *dev, int irq, int nvec)
+ 		return -ENOENT;
+ 	}
+ 
+-	index = alloc_irte(iommu, irq, nvec);
++	index = alloc_irte(iommu, desc, nvec);
+ 	if (index < 0) {
+ 		printk(KERN_ERR
+ 		       "Unable to allocate %d IRTE for PCI %s\n", nvec,
+@@ -3545,20 +3537,22 @@ static int msi_alloc_irte(struct pci_dev *dev, int irq, int nvec)
+ 	return index;
+ }
+ 
+-static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
++static int
++setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, struct irq_desc *desc)
+ {
+ 	int ret;
+ 	struct msi_msg msg;
+-	struct irq_desc *desc = irq_to_desc(irq);
 +	unsigned int irq;
  
--	for_each_irq_desc(i, desc) {
-+	for_each_irq_desc(irq, desc) {
- 		raw_spin_lock_irq(&desc->lock);
- 		status = desc->status;
+ 	ret = msi_compose_msg(dev, desc, &msg, -1);
+ 	if (ret < 0)
+ 		return ret;
  
- 		if (status & IRQ_AUTODETECT) {
--			if (i < 16 && !(status & IRQ_WAITING))
--				mask |= 1 << i;
-+			if (irq < 16 && !(status & IRQ_WAITING))
-+				mask |= 1 << irq;
+-	set_irq_msi(irq, msidesc);
++	set_irq_desc_msi(desc, msidesc);
+ 	write_msi_msg(desc, &msg);
  
- 			desc->status = status & ~IRQ_AUTODETECT;
--			desc->chip->shutdown(i);
-+			desc->chip->shutdown(CHIP_ARG);
+-	if (irq_remapped(irq)) {
++	irq = desc->irq;
++	if (irq_remapped(desc)) {
+ 		/*
+ 		 * irq migration in process context
+ 		 */
+@@ -3575,6 +3569,7 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
+ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ {
+ 	unsigned int irq;
++	struct irq_desc *desc;
+ 	int ret, sub_handle;
+ 	struct msi_desc *msidesc;
+ 	unsigned int irq_want;
+@@ -3594,6 +3589,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 		if (irq == 0)
+ 			return -1;
+ 		irq_want = irq + 1;
++		desc = irq_to_desc(irq);
+ 		if (!intr_remapping_enabled)
+ 			goto no_ir;
+ 
+@@ -3602,7 +3598,7 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 			 * allocate the consecutive block of IRTE's
+ 			 * for 'nvec'
+ 			 */
+-			index = msi_alloc_irte(dev, irq, nvec);
++			index = msi_alloc_irte(dev, desc, nvec);
+ 			if (index < 0) {
+ 				ret = index;
+ 				goto error;
+@@ -3618,10 +3614,10 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 			 * base index, the sub_handle pointing to the
+ 			 * appropriate interrupt remap table entry.
+ 			 */
+-			set_irte_irq(irq, iommu, index, sub_handle);
++			set_irte_irq(desc, iommu, index, sub_handle);
  		}
- 		raw_spin_unlock_irq(&desc->lock);
+ no_ir:
+-		ret = setup_msi_irq(dev, msidesc, irq);
++		ret = setup_msi_irq(dev, msidesc, desc);
+ 		if (ret < 0)
+ 			goto error;
+ 		sub_handle++;
+@@ -3768,7 +3764,7 @@ int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
+ 		if (!iommu)
+ 			return -1;
+ 
+-		index = alloc_irte(iommu, irq, 1);
++		index = alloc_irte(iommu, desc, 1);
+ 		if (index < 0)
+ 			return -1;
  	}
-@@ -166,22 +166,23 @@ EXPORT_SYMBOL(probe_irq_mask);
-  */
- int probe_irq_off(unsigned long val)
+@@ -3779,7 +3775,7 @@ int arch_setup_hpet_msi(unsigned int irq, unsigned int id)
+ 
+ 	hpet_msi_write(desc, &msg);
+ 	desc->status |= IRQ_MOVE_PCNTXT;
+-	if (irq_remapped(irq))
++	if (irq_remapped(desc))
+ 		set_irq_chip_and_handler_name(irq, &ir_hpet_msi_type,
+ 					      handle_edge_irq, "edge");
+ 	else
+diff --git a/drivers/pci/intr_remapping.c b/drivers/pci/intr_remapping.c
+index 95b8491..1c03bc7 100644
+--- a/drivers/pci/intr_remapping.c
++++ b/drivers/pci/intr_remapping.c
+@@ -45,33 +45,27 @@ static struct irq_2_iommu *get_one_free_irq_2_iommu(int node)
+ 	return iommu;
+ }
+ 
+-static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
++static struct irq_2_iommu *irq_2_iommu(struct irq_desc *desc)
  {
--	int i, irq_found = 0, nr_of_irqs = 0;
-+	int irq_found = 0, nr_of_irqs = 0;
- 	struct irq_desc *desc;
- 	unsigned int status;
-+	unsigned int irq;
+-	struct irq_desc *desc;
+-
+-	desc = irq_to_desc(irq);
+-
+ 	if (WARN_ON_ONCE(!desc))
+ 		return NULL;
  
--	for_each_irq_desc(i, desc) {
-+	for_each_irq_desc(irq, desc) {
- 		raw_spin_lock_irq(&desc->lock);
- 		status = desc->status;
+ 	return desc->irq_2_iommu;
+ }
  
- 		if (status & IRQ_AUTODETECT) {
- 			if (!(status & IRQ_WAITING)) {
- 				if (!nr_of_irqs)
--					irq_found = i;
-+					irq_found = irq;
- 				nr_of_irqs++;
- 			}
- 			desc->status = status & ~IRQ_AUTODETECT;
--			desc->chip->shutdown(i);
-+			desc->chip->shutdown(CHIP_ARG);
- 		}
- 		raw_spin_unlock_irq(&desc->lock);
- 	}
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 3dcdd2f..190360d 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -287,40 +287,40 @@ EXPORT_SYMBOL_GPL(set_irq_nested_thread);
- /*
-  * default enable function
-  */
--static void default_enable(unsigned int irq)
-+static void default_enable(CHIP_PARAM)
+-static struct irq_2_iommu *irq_2_iommu_alloc(unsigned int irq)
++static struct irq_2_iommu *irq_2_iommu_alloc(struct irq_desc *desc)
  {
--	struct irq_desc *desc = irq_to_desc(irq);
-+	CHIP_VAR
+-	struct irq_desc *desc;
+ 	struct irq_2_iommu *irq_iommu;
  
--	desc->chip->unmask(irq);
-+	desc->chip->unmask(CHIP_ARG);
- 	desc->status &= ~IRQ_MASKED;
- }
- 
- /*
-  * default disable function
-  */
--static void default_disable(unsigned int irq)
-+static void default_disable(CHIP_PARAM)
- {
- }
- 
- /*
-  * default startup function
-  */
--static unsigned int default_startup(unsigned int irq)
-+static unsigned int default_startup(CHIP_PARAM)
- {
--	struct irq_desc *desc = irq_to_desc(irq);
-+	CHIP_VAR;
- 
--	desc->chip->enable(irq);
-+	desc->chip->enable(CHIP_ARG);
- 	return 0;
- }
- 
- /*
-  * default shutdown function
-  */
--static void default_shutdown(unsigned int irq)
-+static void default_shutdown(CHIP_PARAM)
- {
--	struct irq_desc *desc = irq_to_desc(irq);
-+	CHIP_VAR;
- 
--	desc->chip->mask(irq);
-+	desc->chip->mask(CHIP_ARG);
- 	desc->status |= IRQ_MASKED;
- }
- 
-@@ -353,11 +353,11 @@ void irq_chip_set_defaults(struct irq_chip *chip)
- static inline void mask_ack_irq(struct irq_desc *desc, int irq)
- {
- 	if (desc->chip->mask_ack)
--		desc->chip->mask_ack(irq);
-+		desc->chip->mask_ack(CHIP_ARG);
- 	else {
--		desc->chip->mask(irq);
-+		desc->chip->mask(CHIP_ARG);
- 		if (desc->chip->ack)
--			desc->chip->ack(irq);
-+			desc->chip->ack(CHIP_ARG);
- 	}
- 	desc->status |= IRQ_MASKED;
- }
-@@ -365,7 +365,7 @@ static inline void mask_ack_irq(struct irq_desc *desc, int irq)
- static inline void mask_irq(struct irq_desc *desc, int irq)
- {
- 	if (desc->chip->mask) {
--		desc->chip->mask(irq);
-+		desc->chip->mask(CHIP_ARG);
- 		desc->status |= IRQ_MASKED;
- 	}
- }
-@@ -373,7 +373,7 @@ static inline void mask_irq(struct irq_desc *desc, int irq)
- static inline void unmask_irq(struct irq_desc *desc, int irq)
- {
- 	if (desc->chip->unmask) {
--		desc->chip->unmask(irq);
-+		desc->chip->unmask(CHIP_ARG);
- 		desc->status &= ~IRQ_MASKED;
- 	}
- }
-@@ -554,7 +554,7 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
- 	raw_spin_lock(&desc->lock);
- 	desc->status &= ~IRQ_INPROGRESS;
- out:
--	desc->chip->eoi(irq);
-+	desc->chip->eoi(CHIP_ARG);
- 
- 	raw_spin_unlock(&desc->lock);
- }
-@@ -597,7 +597,7 @@ handle_edge_irq(unsigned int irq, struct irq_desc *desc)
- 
- 	/* Start handling the irq */
- 	if (desc->chip->ack)
--		desc->chip->ack(irq);
-+		desc->chip->ack(CHIP_ARG);
- 
- 	/* Mark the IRQ currently in progress.*/
- 	desc->status |= IRQ_INPROGRESS;
-@@ -651,14 +651,14 @@ handle_percpu_irq(unsigned int irq, struct irq_desc *desc)
- 	kstat_incr_irqs_this_cpu(irq, desc);
- 
- 	if (desc->chip->ack)
--		desc->chip->ack(irq);
-+		desc->chip->ack(CHIP_ARG);
- 
- 	action_ret = handle_IRQ_event(irq, desc->action);
- 	if (!noirqdebug)
- 		note_interrupt(irq, desc, action_ret);
- 
- 	if (desc->chip->eoi)
--		desc->chip->eoi(irq);
-+		desc->chip->eoi(CHIP_ARG);
- }
- 
- void
-@@ -706,7 +706,7 @@ __set_irq_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
- 		desc->status &= ~IRQ_DISABLED;
- 		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
- 		desc->depth = 0;
--		desc->chip->startup(irq);
-+		desc->chip->startup(CHIP_ARG);
- 	}
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	chip_bus_sync_unlock(irq, desc);
-diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
-index f30c9c7..9e4a0a0 100644
---- a/kernel/irq/handle.c
-+++ b/kernel/irq/handle.c
-@@ -295,22 +295,22 @@ void clear_kstat_irqs(struct irq_desc *desc)
-  * What should we do if we get a hw irq event on an illegal vector?
-  * Each architecture has to answer this themself.
-  */
--static void ack_bad(unsigned int irq)
-+static void ack_bad(CHIP_PARAM)
- {
--	struct irq_desc *desc = irq_to_desc(irq);
-+	CHIP_VAR;
- 
--	print_irq_desc(irq, desc);
--	ack_bad_irq(irq);
-+	print_irq_desc(desc->irq, desc);
-+	ack_bad_irq(desc->irq);
- }
- 
- /*
-  * NOP functions
-  */
--static void noop(unsigned int irq)
-+static void noop(CHIP_PARAM)
- {
- }
- 
--static unsigned int noop_ret(unsigned int irq)
-+static unsigned int noop_ret(CHIP_PARAM)
- {
- 	return 0;
- }
-@@ -470,13 +470,13 @@ unsigned int __do_IRQ(unsigned int irq)
- 			if (!noirqdebug)
- 				note_interrupt(irq, desc, action_ret);
- 		}
--		desc->chip->end(irq);
-+		desc->chip->end(CHIP_ARG);
- 		return 1;
+-	desc = irq_to_desc(irq);
+ 	if (!desc) {
+-		printk(KERN_INFO "can not get irq_desc for %d\n", irq);
++		printk(KERN_INFO "can not get irq_desc\n");
+ 		return NULL;
  	}
  
- 	raw_spin_lock(&desc->lock);
- 	if (desc->chip->ack)
--		desc->chip->ack(irq);
-+		desc->chip->ack(CHIP_ARG);
- 	/*
- 	 * REPLAY is when Linux resends an IRQ that was dropped earlier
- 	 * WAITING is used by probe to mark irqs that are being tested
-@@ -536,7 +536,7 @@ out:
- 	 * The ->end() handler has to deal with interrupts which got
- 	 * disabled while the handler was running.
- 	 */
--	desc->chip->end(irq);
-+	desc->chip->end(CHIP_ARG);
- 	raw_spin_unlock(&desc->lock);
+ 	irq_iommu = desc->irq_2_iommu;
  
- 	return 1;
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index c63f3bc..2a9ec5e 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -44,13 +44,13 @@ extern void irq_set_thread_affinity(struct irq_desc *desc);
- static inline void chip_bus_lock(unsigned int irq, struct irq_desc *desc)
+ 	if (!irq_iommu)
+-		desc->irq_2_iommu = get_one_free_irq_2_iommu(irq_node(irq));
++		desc->irq_2_iommu = get_one_free_irq_2_iommu(irq_desc_node(desc));
+ 
+ 	return desc->irq_2_iommu;
+ }
+@@ -80,26 +74,27 @@ static struct irq_2_iommu *irq_2_iommu_alloc(unsigned int irq)
+ 
+ static struct irq_2_iommu irq_2_iommuX[NR_IRQS];
+ 
+-static struct irq_2_iommu *irq_2_iommu(unsigned int irq)
++static struct irq_2_iommu *irq_2_iommu(struct irq_desc *desc)
  {
- 	if (unlikely(desc->chip->bus_lock))
--		desc->chip->bus_lock(irq);
-+		desc->chip->bus_lock(CHIP_ARG);
- }
++	unsigned int irq = desc->irq;
+ 	if (irq < nr_irqs)
+ 		return &irq_2_iommuX[irq];
  
- static inline void chip_bus_sync_unlock(unsigned int irq, struct irq_desc *desc)
+ 	return NULL;
+ }
+-static struct irq_2_iommu *irq_2_iommu_alloc(unsigned int irq)
++static struct irq_2_iommu *irq_2_iommu_alloc(struct irq_desc *desc)
  {
- 	if (unlikely(desc->chip->bus_sync_unlock))
--		desc->chip->bus_sync_unlock(irq);
-+		desc->chip->bus_sync_unlock(CHIP_ARG);
+-	return irq_2_iommu(irq);
++	return irq_2_iommu(desc);
  }
- 
- /*
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 69a3d7b..706b320 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -118,7 +118,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
- 
- #ifdef CONFIG_GENERIC_PENDING_IRQ
- 	if (desc->status & IRQ_MOVE_PCNTXT) {
--		if (!desc->chip->set_affinity(irq, cpumask)) {
-+		if (!desc->chip->set_affinity(CHIP_ARG, cpumask)) {
- 			cpumask_copy(desc->affinity, cpumask);
- 			irq_set_thread_affinity(desc);
- 		}
-@@ -128,7 +128,7 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
- 		cpumask_copy(desc->pending_mask, cpumask);
- 	}
- #else
--	if (!desc->chip->set_affinity(irq, cpumask)) {
-+	if (!desc->chip->set_affinity(CHIP_ARG, cpumask)) {
- 		cpumask_copy(desc->affinity, cpumask);
- 		irq_set_thread_affinity(desc);
- 	}
-@@ -161,7 +161,7 @@ static int setup_affinity(unsigned int irq, struct irq_desc *desc)
- 
- 	cpumask_and(desc->affinity, cpu_online_mask, irq_default_affinity);
- set_affinity:
--	desc->chip->set_affinity(irq, desc->affinity);
-+	desc->chip->set_affinity(CHIP_ARG, desc->affinity);
- 
- 	return 0;
- }
-@@ -207,7 +207,7 @@ void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
- 
- 	if (!desc->depth++) {
- 		desc->status |= IRQ_DISABLED;
--		desc->chip->disable(irq);
-+		desc->chip->disable(CHIP_ARG);
- 	}
- }
- 
-@@ -321,7 +321,7 @@ static int set_irq_wake_real(unsigned int irq, unsigned int on)
- 	int ret = -ENXIO;
- 
- 	if (desc->chip->set_wake)
--		ret = desc->chip->set_wake(irq, on);
-+		ret = desc->chip->set_wake(CHIP_ARG, on);
- 
- 	return ret;
- }
-@@ -425,7 +425,7 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
- 	}
- 
- 	/* caller masked out all except trigger mode flags */
--	ret = chip->set_type(irq, flags);
-+	ret = chip->set_type(CHIP_ARG, flags);
- 
- 	if (ret)
- 		pr_err("setting trigger mode %d for irq %u failed (%pF)\n",
-@@ -505,7 +505,7 @@ again:
- 
- 	if (!(desc->status & IRQ_DISABLED) && (desc->status & IRQ_MASKED)) {
- 		desc->status &= ~IRQ_MASKED;
--		desc->chip->unmask(irq);
-+		desc->chip->unmask(CHIP_ARG);
- 	}
- 	raw_spin_unlock_irq(&desc->lock);
- 	chip_bus_sync_unlock(irq, desc);
-@@ -756,7 +756,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		if (!(desc->status & IRQ_NOAUTOEN)) {
- 			desc->depth = 0;
- 			desc->status &= ~IRQ_DISABLED;
--			desc->chip->startup(irq);
-+			desc->chip->startup(CHIP_ARG);
- 		} else
- 			/* Undo nested disables: */
- 			desc->depth = 1;
-@@ -890,16 +890,16 @@ static struct irqaction *__free_irq(unsigned int irq, void *dev_id)
- 	/* Currently used only by UML, might disappear one day: */
- #ifdef CONFIG_IRQ_RELEASE_METHOD
- 	if (desc->chip->release)
--		desc->chip->release(irq, dev_id);
-+		desc->chip->release(CHIP_ARG, dev_id);
  #endif
  
- 	/* If this was the last handler, shut down the IRQ line: */
- 	if (!desc->action) {
- 		desc->status |= IRQ_DISABLED;
- 		if (desc->chip->shutdown)
--			desc->chip->shutdown(irq);
-+			desc->chip->shutdown(CHIP_ARG);
- 		else
--			desc->chip->disable(irq);
-+			desc->chip->disable(CHIP_ARG);
- 	}
+ static DEFINE_SPINLOCK(irq_2_ir_lock);
  
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
-diff --git a/kernel/irq/migration.c b/kernel/irq/migration.c
-index 2419622..5821159 100644
---- a/kernel/irq/migration.c
-+++ b/kernel/irq/migration.c
-@@ -4,7 +4,7 @@
- 
- #include "internals.h"
- 
--void move_masked_irq(int irq)
-+void move_masked_irq(unsigned int irq)
+-static struct irq_2_iommu *valid_irq_2_iommu(unsigned int irq)
++static struct irq_2_iommu *valid_irq_2_iommu(struct irq_desc *desc)
  {
- 	struct irq_desc *desc = irq_to_desc(irq);
+ 	struct irq_2_iommu *irq_iommu;
  
-@@ -43,7 +43,7 @@ void move_masked_irq(int irq)
- 	 */
- 	if (likely(cpumask_any_and(desc->pending_mask, cpu_online_mask)
- 		   < nr_cpu_ids))
--		if (!desc->chip->set_affinity(irq, desc->pending_mask)) {
-+		if (!desc->chip->set_affinity(CHIP_ARG, desc->pending_mask)) {
- 			cpumask_copy(desc->affinity, desc->pending_mask);
- 			irq_set_thread_affinity(desc);
- 		}
-@@ -51,7 +51,7 @@ void move_masked_irq(int irq)
- 	cpumask_clear(desc->pending_mask);
+-	irq_iommu = irq_2_iommu(irq);
++	irq_iommu = irq_2_iommu(desc);
+ 
+ 	if (!irq_iommu)
+ 		return NULL;
+@@ -110,12 +105,12 @@ static struct irq_2_iommu *valid_irq_2_iommu(unsigned int irq)
+ 	return irq_iommu;
  }
  
--void move_native_irq(int irq)
-+void move_native_irq(unsigned int irq)
+-int irq_remapped(int irq)
++int irq_remapped(struct irq_desc *desc)
  {
- 	struct irq_desc *desc = irq_to_desc(irq);
- 
-@@ -61,8 +61,8 @@ void move_native_irq(int irq)
- 	if (unlikely(desc->status & IRQ_DISABLED))
- 		return;
- 
--	desc->chip->mask(irq);
-+	desc->chip->mask(CHIP_ARG);
- 	move_masked_irq(irq);
--	desc->chip->unmask(irq);
-+	desc->chip->unmask(CHIP_ARG);
+-	return valid_irq_2_iommu(irq) != NULL;
++	return valid_irq_2_iommu(desc) != NULL;
  }
  
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index 0d4005d..94767d1 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -23,7 +23,7 @@
- void suspend_device_irqs(void)
+-int get_irte(int irq, struct irte *entry)
++int get_irte(struct irq_desc *desc, struct irte *entry)
  {
- 	struct irq_desc *desc;
--	int irq;
-+	unsigned int irq;
+ 	int index;
+ 	struct irq_2_iommu *irq_iommu;
+@@ -125,7 +120,7 @@ int get_irte(int irq, struct irte *entry)
+ 		return -1;
  
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
-@@ -48,7 +48,7 @@ EXPORT_SYMBOL_GPL(suspend_device_irqs);
- void resume_device_irqs(void)
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+@@ -138,7 +133,7 @@ int get_irte(int irq, struct irte *entry)
+ 	return 0;
+ }
+ 
+-int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
++int alloc_irte(struct intel_iommu *iommu, struct irq_desc *desc, u16 count)
  {
- 	struct irq_desc *desc;
--	int irq;
-+	unsigned int irq;
+ 	struct ir_table *table = iommu->ir_table;
+ 	struct irq_2_iommu *irq_iommu;
+@@ -150,12 +145,6 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	if (!count)
+ 		return -1;
  
- 	for_each_irq_desc(irq, desc) {
- 		unsigned long flags;
-@@ -69,7 +69,7 @@ EXPORT_SYMBOL_GPL(resume_device_irqs);
- int check_wakeup_irqs(void)
- {
- 	struct irq_desc *desc;
--	int irq;
-+	unsigned int irq;
- 
- 	for_each_irq_desc(irq, desc)
- 		if ((desc->status & IRQ_WAKEUP) && (desc->status & IRQ_PENDING))
-diff --git a/kernel/irq/resend.c b/kernel/irq/resend.c
-index 090c376..dc9dff8 100644
---- a/kernel/irq/resend.c
-+++ b/kernel/irq/resend.c
-@@ -60,7 +60,7 @@ void check_irq_resend(struct irq_desc *desc, unsigned int irq)
+-#ifndef CONFIG_SPARSE_IRQ
+-	/* protect irq_2_iommu_alloc later */
+-	if (irq >= nr_irqs)
+-		return -1;
+-#endif
+-
  	/*
- 	 * Make sure the interrupt is enabled, before resending it:
+ 	 * start the IRTE search from index 0.
  	 */
--	desc->chip->enable(irq);
-+	desc->chip->enable(CHIP_ARG);
+@@ -195,7 +184,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
+ 	for (i = index; i < index + count; i++)
+ 		table->base[i].present = 1;
  
- 	/*
- 	 * We do not resend level type interrupts. Level type
-@@ -70,7 +70,8 @@ void check_irq_resend(struct irq_desc *desc, unsigned int irq)
- 	if ((status & (IRQ_LEVEL | IRQ_PENDING | IRQ_REPLAY)) == IRQ_PENDING) {
- 		desc->status = (status & ~IRQ_PENDING) | IRQ_REPLAY;
+-	irq_iommu = irq_2_iommu_alloc(irq);
++	irq_iommu = irq_2_iommu_alloc(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		printk(KERN_ERR "can't allocate irq_2_iommu\n");
+@@ -223,14 +212,14 @@ static int qi_flush_iec(struct intel_iommu *iommu, int index, int mask)
+ 	return qi_submit_sync(&desc, iommu);
+ }
  
--		if (!desc->chip->retrigger || !desc->chip->retrigger(irq)) {
-+		if (!desc->chip->retrigger ||
-+		    !desc->chip->retrigger(CHIP_ARG)) {
- #ifdef CONFIG_HARDIRQS_SW_RESEND
- 			/* Set it pending and activate the softirq: */
- 			set_bit(irq, irqs_resend);
-diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
-index 89fb90a..6cc2cb9 100644
---- a/kernel/irq/spurious.c
-+++ b/kernel/irq/spurious.c
-@@ -79,7 +79,7 @@ static int try_one_irq(int irq, struct irq_desc *desc)
- 	 * IRQ controller clean up too
- 	 */
- 	if (work && desc->chip && desc->chip->end)
--		desc->chip->end(irq);
-+		desc->chip->end(CHIP_ARG);
- 	raw_spin_unlock(&desc->lock);
+-int map_irq_to_irte_handle(int irq, u16 *sub_handle)
++int map_irq_to_irte_handle(struct irq_desc *desc, u16 *sub_handle)
+ {
+ 	int index;
+ 	struct irq_2_iommu *irq_iommu;
+ 	unsigned long flags;
  
- 	return ok;
-@@ -254,7 +254,7 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
- 		printk(KERN_EMERG "Disabling IRQ #%d\n", irq);
- 		desc->status |= IRQ_DISABLED | IRQ_SPURIOUS_DISABLED;
- 		desc->depth++;
--		desc->chip->disable(irq);
-+		desc->chip->disable(CHIP_ARG);
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+@@ -242,14 +231,14 @@ int map_irq_to_irte_handle(int irq, u16 *sub_handle)
+ 	return index;
+ }
  
- 		mod_timer(&poll_spurious_irq_timer,
- 			  jiffies + POLL_SPURIOUS_IRQ_INTERVAL);
+-int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
++int set_irte_irq(struct irq_desc *desc, struct intel_iommu *iommu, u16 index, u16 subhandle)
+ {
+ 	struct irq_2_iommu *irq_iommu;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+ 
+-	irq_iommu = irq_2_iommu_alloc(irq);
++	irq_iommu = irq_2_iommu_alloc(desc);
+ 
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+@@ -267,13 +256,13 @@ int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index, u16 subhandle)
+ 	return 0;
+ }
+ 
+-int clear_irte_irq(int irq, struct intel_iommu *iommu, u16 index)
++int clear_irte_irq(struct irq_desc *desc, struct intel_iommu *iommu, u16 index)
+ {
+ 	struct irq_2_iommu *irq_iommu;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+@@ -282,14 +271,14 @@ int clear_irte_irq(int irq, struct intel_iommu *iommu, u16 index)
+ 	irq_iommu->iommu = NULL;
+ 	irq_iommu->irte_index = 0;
+ 	irq_iommu->sub_handle = 0;
+-	irq_2_iommu(irq)->irte_mask = 0;
++	irq_2_iommu(desc)->irte_mask = 0;
+ 
+ 	spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 
+ 	return 0;
+ }
+ 
+-int modify_irte(int irq, struct irte *irte_modified)
++int modify_irte(struct irq_desc *desc, struct irte *irte_modified)
+ {
+ 	int rc;
+ 	int index;
+@@ -299,7 +288,7 @@ int modify_irte(int irq, struct irte *irte_modified)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+@@ -320,7 +309,7 @@ int modify_irte(int irq, struct irte *irte_modified)
+ 	return rc;
+ }
+ 
+-int flush_irte(int irq)
++int flush_irte(struct irq_desc *desc)
+ {
+ 	int rc;
+ 	int index;
+@@ -329,7 +318,7 @@ int flush_irte(int irq)
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+@@ -399,14 +388,14 @@ static int clear_entries(struct irq_2_iommu *irq_iommu)
+ 	return qi_flush_iec(iommu, index, irq_iommu->irte_mask);
+ }
+ 
+-int free_irte(int irq)
++int free_irte(struct irq_desc *desc)
+ {
+ 	int rc = 0;
+ 	struct irq_2_iommu *irq_iommu;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&irq_2_ir_lock, flags);
+-	irq_iommu = valid_irq_2_iommu(irq);
++	irq_iommu = valid_irq_2_iommu(desc);
+ 	if (!irq_iommu) {
+ 		spin_unlock_irqrestore(&irq_2_ir_lock, flags);
+ 		return -1;
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 425c38a..8b0e4f5 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -113,17 +113,17 @@ extern int enable_intr_remapping(int);
+ extern void disable_intr_remapping(void);
+ extern int reenable_intr_remapping(int);
+ 
+-extern int get_irte(int irq, struct irte *entry);
+-extern int modify_irte(int irq, struct irte *irte_modified);
+-extern int alloc_irte(struct intel_iommu *iommu, int irq, u16 count);
+-extern int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index,
+-   			u16 sub_handle);
+-extern int map_irq_to_irte_handle(int irq, u16 *sub_handle);
+-extern int clear_irte_irq(int irq, struct intel_iommu *iommu, u16 index);
+-extern int flush_irte(int irq);
+-extern int free_irte(int irq);
+-
+-extern int irq_remapped(int irq);
++int get_irte(struct irq_desc *desc, struct irte *entry);
++int modify_irte(struct irq_desc *desc, struct irte *irte_modified);
++int alloc_irte(struct intel_iommu *iommu, struct irq_desc *desc, u16 count);
++int set_irte_irq(struct irq_desc *desc, struct intel_iommu *iommu, u16 index,
++			u16 sub_handle);
++int map_irq_to_irte_handle(struct irq_desc *desc, u16 *sub_handle);
++int clear_irte_irq(struct irq_desc *desc, struct intel_iommu *iommu, u16 index);
++int flush_irte(struct irq_desc *desc);
++int free_irte(struct irq_desc *desc);
++
++extern int irq_remapped(struct irq_desc *desc);
+ extern struct intel_iommu *map_dev_to_ir(struct pci_dev *dev);
+ extern struct intel_iommu *map_ioapic_to_ir(int apic);
+ extern struct intel_iommu *map_hpet_to_ir(u8 id);
+@@ -131,23 +131,25 @@ extern int set_ioapic_sid(struct irte *irte, int apic);
+ extern int set_hpet_sid(struct irte *irte, u8 id);
+ extern int set_msi_sid(struct irte *irte, struct pci_dev *dev);
+ #else
+-static inline int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
++static inline int
++alloc_irte(struct intel_iommu *iommu, struct irq_desc *desc, u16 count)
+ {
+ 	return -1;
+ }
+-static inline int modify_irte(int irq, struct irte *irte_modified)
++static inline int modify_irte(struct irq_desc *desc, struct irte *irte_modified)
+ {
+ 	return -1;
+ }
+-static inline int free_irte(int irq)
++static inline int free_irte(struct irq_desc *desc)
+ {
+ 	return -1;
+ }
+-static inline int map_irq_to_irte_handle(int irq, u16 *sub_handle)
++static inline int map_irq_to_irte_handle(struct irq_desc *desc, u16 *sub_handle)
+ {
+ 	return -1;
+ }
+-static inline int set_irte_irq(int irq, struct intel_iommu *iommu, u16 index,
++static inline int
++set_irte_irq(struct irq_desc *desc, struct intel_iommu *iommu, u16 index,
+ 			       u16 sub_handle)
+ {
+ 	return -1;
+@@ -177,7 +179,7 @@ static inline int set_msi_sid(struct irte *irte, struct pci_dev *dev)
+ 	return 0;
+ }
+ 
+-#define irq_remapped(irq)		(0)
++#define irq_remapped(desc)		(0)
+ #define enable_intr_remapping(mode)	(-1)
+ #define disable_intr_remapping()	(0)
+ #define reenable_intr_remapping(mode)	(0)
 -- 
 1.6.4.2
 
