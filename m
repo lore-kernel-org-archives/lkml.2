@@ -1,365 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616Ab0CVLmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 07:42:05 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:60007 "EHLO vps.mortis.eu"
+	id S1754636Ab0CVLrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 07:47:46 -0400
+Received: from 8bytes.org ([88.198.83.132]:36133 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188Ab0CVLmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 07:42:04 -0400
-Date: Mon, 22 Mar 2010 12:41:57 +0100
-From: Giel van Schijndel <me@mortis.eu>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Hwmon: f71882fg: use strict_stro(l|ul) instead of
- simple_strto$1
-Message-ID: <20100322114157.GA14077@salidar.me.mortis.eu>
-References: <1269185834-10266-1-git-send-email-me@mortis.eu>
- <1269185834-10266-2-git-send-email-me@mortis.eu>
- <20100322112308.13d58db4@hyperion.delvare>
+	id S1754599Ab0CVLrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 07:47:45 -0400
+Date: Mon, 22 Mar 2010 12:47:44 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+	host side
+Message-ID: <20100322114744.GC1940@8bytes.org>
+References: <1268717232.2813.36.camel@localhost> <1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu> <20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu> <20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322112308.13d58db4@hyperion.delvare>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100322105927.GB3483@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 22, 2010 at 11:59:27AM +0100, Ingo Molnar wrote:
+> Best would be if you demonstrated any problems of the perf symbol lookup code 
+> you are aware of on the host side, as it has that exact design you are 
+> criticising here. We are eager to fix any bugs in it.
+> 
+> If you claim that it's buggy then that should very much be demonstratable - no 
+> need to go into theoretical arguments about it.
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I am not claiming anything. I just try to imagine how your proposal
+will look like in practice and forgot that symbol resolution is done at
+a later point.
+But even with defered symbol resolution we need more information from
+the guest than just the rip falling out of KVM. The guest needs to tell
+us about the process where the event happened (information that the host
+has about itself without any hassle) and which executable-files it was
+loaded from.
 
-On Mon, Mar 22, 2010 at 11:23:08AM +0100, Jean Delvare wrote:
-> On Sun, 21 Mar 2010 16:37:14 +0100, Giel van Schijndel wrote:
->> Use the strict_strol and strict_stroul functions instead of simple_strol
->> and simple_stroul respectively in sysfs functions.
->>=20
->> Signed-off-by: Giel van Schijndel <me@mortis.eu>
->> ---
->>  drivers/hwmon/f71882fg.c |   89 ++++++++++++++++++++++++++++++++++++++-=
--------
->>  1 files changed, 74 insertions(+), 15 deletions(-)
->>=20
->> diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
->> index 21bc661..5c725a3 100644
->> --- a/drivers/hwmon/f71882fg.c
->> +++ b/drivers/hwmon/f71882fg.c
->> @@ -1128,7 +1128,10 @@ static ssize_t store_fan_full_speed(struct device=
- *dev,
->>  {
->>  	struct f71882fg_data *data =3D dev_get_drvdata(dev);
->>  	int nr =3D to_sensor_dev_attr_2(devattr)->index;
->> -	long val =3D simple_strtol(buf, NULL, 10);
->> +	long val;
->> +
->> +	if (strict_strtol(buf, 10, &val) =3D=3D -EINVAL)
->> +		return -EINVAL;
->
-> That's not correct. You want to return an error if strict_strtol()
-> returns _any_ error, not just -EINVAL. Maybe the current
-> implementation can't return any other error code, but you should not
-> assume this will always be the case in the future.
+> > Avi was against that but I think it would make sense to give names to 
+> > virtual machines (with a default, similar to network interface names). Then 
+> > we can create a directory in /dev/ with that name (e.g. /dev/vm/fedora/). 
+> > Inside the guest a (priviledged) process can create some kind of named 
+> > virt-pipe which results in a device file created in the guests directory 
+> > (perf could create /dev/vm/fedora/perf for example). This file is used for 
+> > guest-host communication.
+> 
+> That is kind of half of my suggestion - the built-in enumeration guests and a 
+> guaranteed channel to them accessible to tools. (KVM already has its own 
+> special channel so it's not like channels of communication are useless.)
+> 
+> The other half of my suggestion is that if we bring this thought to its 
+> logical conclusion then we might as well walk the whole mile and not use 
+> quirky, binary API single-channel pipes. I.e. we could use this convenient, 
+> human-readable, structured, hierarchical abstraction to expose information in 
+> a finegrained, scalable way, which has a world-class implementation in Linux: 
+> the 'VFS namespace'.
 
-Agreed. New patch follows this line:
-------------------------------------------------------------------------
-Hwmon: f71882fg: use strict_stro(l|ul) instead of simple_strto$1
+Probably. At least it is the solution that fits best into the current
+design of perf. But we should think about how this will be done. Raw
+disk access is no solution because we need to access virtual
+file-systems of the guest too. Network filesystems may be a solution but
+then we come back to the 'deployment-nightmare'.
 
-Use the strict_strol and strict_stroul functions instead of simple_strol
-and simple_stroul respectively in sysfs functions.
+	Joerg
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
----
- drivers/hwmon/f71882fg.c |  133 ++++++++++++++++++++++++++++++++++++------=
-----
- 1 files changed, 104 insertions(+), 29 deletions(-)
-
-diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-index 21bc661..4230729 100644
---- a/drivers/hwmon/f71882fg.c
-+++ b/drivers/hwmon/f71882fg.c
-@@ -1127,8 +1127,12 @@ static ssize_t store_fan_full_speed(struct device *d=
-ev,
- 				    const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	val =3D SENSORS_LIMIT(val, 23, 1500000);
- 	val =3D fan_to_reg(val);
-@@ -1157,8 +1161,12 @@ static ssize_t store_fan_beep(struct device *dev, st=
-ruct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	unsigned long val =3D simple_strtoul(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	unsigned long val;
-+
-+	err =3D strict_strtoul(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	mutex_lock(&data->update_lock);
- 	data->fan_beep =3D f71882fg_read8(data, F71882FG_REG_FAN_BEEP);
-@@ -1206,7 +1214,14 @@ static ssize_t store_in_max(struct device *dev, stru=
-ct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	long val =3D simple_strtol(buf, NULL, 10) / 8;
-+	int err;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 8;
- 	val =3D SENSORS_LIMIT(val, 0, 255);
-=20
- 	mutex_lock(&data->update_lock);
-@@ -1233,8 +1248,12 @@ static ssize_t store_in_beep(struct device *dev, str=
-uct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	unsigned long val =3D simple_strtoul(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	unsigned long val;
-+
-+	err =3D strict_strtoul(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	mutex_lock(&data->update_lock);
- 	data->in_beep =3D f71882fg_read8(data, F71882FG_REG_IN_BEEP);
-@@ -1299,8 +1318,14 @@ static ssize_t store_temp_max(struct device *dev, st=
-ruct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10) / 1000;
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 1000;
- 	val =3D SENSORS_LIMIT(val, 0, 255);
-=20
- 	mutex_lock(&data->update_lock);
-@@ -1333,10 +1358,16 @@ static ssize_t store_temp_max_hyst(struct device *d=
-ev, struct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10) / 1000;
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
- 	ssize_t ret =3D count;
- 	u8 reg;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 1000;
-=20
- 	mutex_lock(&data->update_lock);
-=20
-@@ -1372,8 +1403,14 @@ static ssize_t store_temp_crit(struct device *dev, s=
-truct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10) / 1000;
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 1000;
- 	val =3D SENSORS_LIMIT(val, 0, 255);
-=20
- 	mutex_lock(&data->update_lock);
-@@ -1427,8 +1464,12 @@ static ssize_t store_temp_beep(struct device *dev, s=
-truct device_attribute
- 	*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	unsigned long val =3D simple_strtoul(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	unsigned long val;
-+
-+	err =3D strict_strtoul(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	mutex_lock(&data->update_lock);
- 	data->temp_beep =3D f71882fg_read8(data, F71882FG_REG_TEMP_BEEP);
-@@ -1490,8 +1531,13 @@ static ssize_t store_pwm(struct device *dev,
- 			 size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
- 	val =3D SENSORS_LIMIT(val, 0, 255);
-=20
- 	mutex_lock(&data->update_lock);
-@@ -1551,8 +1597,12 @@ static ssize_t store_pwm_enable(struct device *dev, =
-struct device_attribute
- 				*devattr, const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	/* Special case for F8000 pwm channel 3 which only does auto mode */
- 	if (data->type =3D=3D f8000 && nr =3D=3D 2 && val !=3D 2)
-@@ -1626,9 +1676,14 @@ static ssize_t store_pwm_auto_point_pwm(struct devic=
-e *dev,
- 					const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int pwm =3D to_sensor_dev_attr_2(devattr)->index;
-+	int err, pwm =3D to_sensor_dev_attr_2(devattr)->index;
- 	int point =3D to_sensor_dev_attr_2(devattr)->nr;
--	long val =3D simple_strtol(buf, NULL, 10);
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
- 	val =3D SENSORS_LIMIT(val, 0, 255);
-=20
- 	mutex_lock(&data->update_lock);
-@@ -1674,10 +1729,16 @@ static ssize_t store_pwm_auto_point_temp_hyst(struc=
-t device *dev,
- 					      const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
- 	int point =3D to_sensor_dev_attr_2(devattr)->nr;
--	long val =3D simple_strtol(buf, NULL, 10) / 1000;
- 	u8 reg;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 1000;
-=20
- 	mutex_lock(&data->update_lock);
- 	data->pwm_auto_point_temp[nr][point] =3D
-@@ -1716,8 +1777,12 @@ static ssize_t store_pwm_interpolate(struct device *=
-dev,
- 				     const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	unsigned long val =3D simple_strtoul(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	unsigned long val;
-+
-+	err =3D strict_strtoul(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	mutex_lock(&data->update_lock);
- 	data->pwm_auto_point_mapping[nr] =3D
-@@ -1752,8 +1817,12 @@ static ssize_t store_pwm_auto_point_channel(struct d=
-evice *dev,
- 					    const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int nr =3D to_sensor_dev_attr_2(devattr)->index;
--	long val =3D simple_strtol(buf, NULL, 10);
-+	int err, nr =3D to_sensor_dev_attr_2(devattr)->index;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-=20
- 	switch (val) {
- 	case 1:
-@@ -1798,9 +1867,15 @@ static ssize_t store_pwm_auto_point_temp(struct devi=
-ce *dev,
- 					 const char *buf, size_t count)
- {
- 	struct f71882fg_data *data =3D dev_get_drvdata(dev);
--	int pwm =3D to_sensor_dev_attr_2(devattr)->index;
-+	int err, pwm =3D to_sensor_dev_attr_2(devattr)->index;
- 	int point =3D to_sensor_dev_attr_2(devattr)->nr;
--	long val =3D simple_strtol(buf, NULL, 10) / 1000;
-+	long val;
-+
-+	err =3D strict_strtol(buf, 10, &val);
-+	if (err)
-+		return err;
-+
-+	val /=3D 1000;
-=20
- 	if (data->type =3D=3D f71889fg)
- 		val =3D SENSORS_LIMIT(val, -128, 127);
---=20
-1.6.4.4
-
-
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
-
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkunV4MACgkQZBYm/87l50JrmACguMS4waD+AoK3fSVKlxyql4fA
-uqMAmwcieqPEluCBYzdApPJBJMG/rart
-=bmE5
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
