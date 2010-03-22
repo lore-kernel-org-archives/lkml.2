@@ -1,73 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab0CVR6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:58:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab0CVR6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:58:48 -0400
-Message-ID: <4BA7AFBF.60503@redhat.com>
-Date: Mon, 22 Mar 2010 19:58:23 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Frank Ch. Eigler" <fche@redhat.com>, Joerg Roedel <joro@8bytes.org>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321203121.GA30194@elte.hu> <20100322111040.GL13108@8bytes.org> <20100322122228.GH3483@elte.hu> <20100322134633.GD1940@8bytes.org> <20100322163215.GC18796@elte.hu> <y0mmxy0wa1r.fsf@fche.csb> <84144f021003221027t1a3e7d6ft64612654c5e50da@mail.gmail.com> <4BA7A9AF.3010806@redhat.com> <20100322173923.GA25498@elte.hu>
-In-Reply-To: <20100322173923.GA25498@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755605Ab0CVSAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:00:49 -0400
+Received: from smtprelay-b11.telenor.se ([62.127.194.20]:59992 "EHLO
+	smtprelay-b11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab0CVSAr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:00:47 -0400
+X-SENDER-IP: [83.226.248.59]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Am9LAMNMp0tT4vg7PGdsb2JhbACHXpNFDAEBAQE3La9AjR2CRQWCMwQ
+X-IronPort-AV: E=Sophos;i="4.51,289,1267398000"; 
+   d="scan'208";a="54268635"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: wb35reg_s.h Coding styls fixes.
+Date: Mon, 22 Mar 2010 18:59:58 +0100
+Message-Id: <1269280798-7848-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 07:39 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 03/22/2010 07:27 PM, Pekka Enberg wrote:
->>      
->>> It's kinda funny to see people argue that having an external repository is
->>> not a problem and that it's not a big deal if building something from the
->>> repository is slightly painful as long as it doesn't require a PhD when we
->>> have _real world_ experience that it _does_ limit developer base in some
->>> cases. Whether or not that applies to kvm remains to be seen but I've yet
->>> to see a convincing argument why it doesn't.
->>>        
->> qemu has non-Linux developers.  Not all of their contributions are relevant
->> to kvm but some are.  If we pull qemu into tools/kvm, we lose them.
->>      
-> Qemu had very few developers before KVM made use of it - i know it because i
-> followed the project prior KVM.
->    
+I fixed all problems reported by checkpatch.pl except
+some long lines. I also removed commented away code and
+revision comments.
+Checked for regressions with Dan Carpenters
+strip_whitespace.pl and diff.
 
-No argument.
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/wb35reg_s.h |  221 +++++++++++++++++------------------
+ 1 files changed, 110 insertions(+), 111 deletions(-)
 
-> So whatever development activitity Qemu has today, it's 99% [WAG] attributable
-> to KVM. It might have non-Linux contributors, but they wouldnt be there if it
-> wasnt for all the Linux contributors ...
->
-> Furthermore, those contributors wouldnt have to leave - they could simply use
-> a different Git URI ...
->    
-
-tools/kvm would drop support for non-Linux hosts, for tcg, and for 
-architectures which kvm doesn't support ("clean and minimal").  That 
-would be the real win, not sharing the repository.  But those other 
-contributors would just stay with the original qemu.
-
+diff --git a/drivers/staging/winbond/wb35reg_s.h b/drivers/staging/winbond/wb35reg_s.h
+index 32ef4b8..4eff009 100644
+--- a/drivers/staging/winbond/wb35reg_s.h
++++ b/drivers/staging/winbond/wb35reg_s.h
+@@ -5,98 +5,100 @@
+ #include <linux/types.h>
+ #include <asm/atomic.h>
+ 
+-//=======================================================================================
+-/*
+-				HAL setting function
+-
+-		========================================
+-		|Uxx| 	|Dxx|	|Mxx|	|BB|	|RF|
+-		========================================
+-			|					|
+-		Wb35Reg_Read		Wb35Reg_Write
+-
+-		----------------------------------------
+-				WbUsb_CallUSBDASync					supplied By WbUsb module
+-*/
+-//=======================================================================================
+-
+-#define     GetBit( dwData, i)      ( dwData & (0x00000001 << i))
+-#define     SetBit( dwData, i)      ( dwData | (0x00000001 << i))
+-#define     ClearBit( dwData, i)    ( dwData & ~(0x00000001 << i))
+-
+-#define		IGNORE_INCREMENT	0
+-#define		AUTO_INCREMENT		0
+-#define		NO_INCREMENT		1
+-#define REG_DIRECTION(_x,_y)   ((_y)->DIRECT ==0 ? usb_rcvctrlpipe(_x,0) : usb_sndctrlpipe(_x,0))
+-#define REG_BUF_SIZE(_x)       ((_x)->bRequest== 0x04 ? cpu_to_le16((_x)->wLength) : 4)
+-
+-// 20060613.2 Add the follow definition
++/* =========================================================================
++ *
++ *			HAL setting function
++ *
++ *		========================================
++ *		|Uxx| 	|Dxx|	|Mxx|	|BB|	|RF|
++ *		========================================
++ *			|					|
++ *		Wb35Reg_Read		Wb35Reg_Write
++ *
++ *		----------------------------------------
++ *				WbUsb_CallUSBDASync	supplied By WbUsb module
++ * ==========================================================================
++ */
++#define GetBit(dwData, i)	(dwData & (0x00000001 << i))
++#define SetBit(dwData, i)	(dwData | (0x00000001 << i))
++#define ClearBit(dwData, i)	(dwData & ~(0x00000001 << i))
++
++#define	IGNORE_INCREMENT	0
++#define	AUTO_INCREMENT		0
++#define	NO_INCREMENT		1
++#define REG_DIRECTION(_x, _y)	((_y)->DIRECT == 0 ? usb_rcvctrlpipe(_x, 0) : usb_sndctrlpipe(_x, 0))
++#define REG_BUF_SIZE(_x)	((_x)->bRequest == 0x04 ? cpu_to_le16((_x)->wLength) : 4)
++
+ #define BB48_DEFAULT_AL2230_11B		0x0033447c
+ #define BB4C_DEFAULT_AL2230_11B		0x0A00FEFF
+ #define BB48_DEFAULT_AL2230_11G		0x00332C1B
+ #define BB4C_DEFAULT_AL2230_11G		0x0A00FEFF
+ 
+ 
+-#define BB48_DEFAULT_WB242_11B		0x00292315	//backoff  2dB
+-#define BB4C_DEFAULT_WB242_11B		0x0800FEFF	//backoff  2dB
+-//#define BB48_DEFAULT_WB242_11B		0x00201B11	//backoff  4dB
+-//#define BB4C_DEFAULT_WB242_11B		0x0600FF00	//backoff  4dB
++#define BB48_DEFAULT_WB242_11B		0x00292315	/* backoff  2dB */
++#define BB4C_DEFAULT_WB242_11B		0x0800FEFF	/* backoff  2dB */
+ #define BB48_DEFAULT_WB242_11G		0x00453B24
+ #define BB4C_DEFAULT_WB242_11G		0x0E00FEFF
+ 
+-//====================================
+-// Default setting for Mxx
+-//====================================
+-#define DEFAULT_CWMIN					31		//(M2C) CWmin. Its value is in the range 0-31.
+-#define DEFAULT_CWMAX					1023	//(M2C) CWmax. Its value is in the range 0-1023.
+-#define DEFAULT_AID						1		//(M34) AID. Its value is in the range 1-2007.
++/*
++ * ====================================
++ *  Default setting for Mxx
++ * ====================================
++ */
++#define DEFAULT_CWMIN			31	/* (M2C) CWmin. Its value is in the range 0-31. */
++#define DEFAULT_CWMAX			1023	/* (M2C) CWmax. Its value is in the range 0-1023. */
++#define DEFAULT_AID			1	/* (M34) AID. Its value is in the range 1-2007. */
+ 
+ #ifdef _USE_FALLBACK_RATE_
+-#define DEFAULT_RATE_RETRY_LIMIT		2		//(M38) as named
++#define DEFAULT_RATE_RETRY_LIMIT	2	/* (M38) as named */
+ #else
+-#define DEFAULT_RATE_RETRY_LIMIT		7		//(M38) as named
++#define DEFAULT_RATE_RETRY_LIMIT	7	/* (M38) as named */
+ #endif
+ 
+-#define DEFAULT_LONG_RETRY_LIMIT		7		//(M38) LongRetryLimit. Its value is in the range 0-15.
+-#define DEFAULT_SHORT_RETRY_LIMIT		7		//(M38) ShortRetryLimit. Its value is in the range 0-15.
+-#define DEFAULT_PIFST					25		//(M3C) PIFS Time. Its value is in the range 0-65535.
+-#define DEFAULT_EIFST					354		//(M3C) EIFS Time. Its value is in the range 0-1048575.
+-#define DEFAULT_DIFST					45		//(M3C) DIFS Time. Its value is in the range 0-65535.
+-#define DEFAULT_SIFST					5		//(M3C) SIFS Time. Its value is in the range 0-65535.
+-#define DEFAULT_OSIFST					10		//(M3C) Original SIFS Time. Its value is in the range 0-15.
+-#define DEFAULT_ATIMWD					0		//(M40) ATIM Window. Its value is in the range 0-65535.
+-#define DEFAULT_SLOT_TIME				20		//(M40) ($) SlotTime. Its value is in the range 0-255.
+-#define DEFAULT_MAX_TX_MSDU_LIFE_TIME	512	//(M44) MaxTxMSDULifeTime. Its value is in the range 0-4294967295.
+-#define DEFAULT_BEACON_INTERVAL			500		//(M48) Beacon Interval. Its value is in the range 0-65535.
+-#define DEFAULT_PROBE_DELAY_TIME		200		//(M48) Probe Delay Time. Its value is in the range 0-65535.
+-#define DEFAULT_PROTOCOL_VERSION		0		//(M4C)
+-#define DEFAULT_MAC_POWER_STATE			2		//(M4C) 2: MAC at power active
+-#define DEFAULT_DTIM_ALERT_TIME			0
++#define DEFAULT_LONG_RETRY_LIMIT	7	/* (M38) LongRetryLimit. Its value is in the range 0-15. */
++#define DEFAULT_SHORT_RETRY_LIMIT	7	/* (M38) ShortRetryLimit. Its value is in the range 0-15. */
++#define DEFAULT_PIFST			25	/* (M3C) PIFS Time. Its value is in the range 0-65535. */
++#define DEFAULT_EIFST			354	/* (M3C) EIFS Time. Its value is in the range 0-1048575. */
++#define DEFAULT_DIFST			45	/* (M3C) DIFS Time. Its value is in the range 0-65535. */
++#define DEFAULT_SIFST			5	/* (M3C) SIFS Time. Its value is in the range 0-65535. */
++#define DEFAULT_OSIFST			10	/* (M3C) Original SIFS Time. Its value is in the range 0-15. */
++#define DEFAULT_ATIMWD			0	/* (M40) ATIM Window. Its value is in the range 0-65535. */
++#define DEFAULT_SLOT_TIME		20	/* (M40) ($) SlotTime. Its value is in the range 0-255. */
++#define DEFAULT_MAX_TX_MSDU_LIFE_TIME	512	/* (M44) MaxTxMSDULifeTime. Its value is in the range 0-4294967295. */
++#define DEFAULT_BEACON_INTERVAL		500	/* (M48) Beacon Interval. Its value is in the range 0-65535. */
++#define DEFAULT_PROBE_DELAY_TIME	200	/* (M48) Probe Delay Time. Its value is in the range 0-65535. */
++#define DEFAULT_PROTOCOL_VERSION	0	/* (M4C) */
++#define DEFAULT_MAC_POWER_STATE		2	/* (M4C) 2: MAC at power active */
++#define DEFAULT_DTIM_ALERT_TIME		0
+ 
+ 
+ struct wb35_reg_queue {
+-	struct urb 	*urb;
++	struct urb	*urb;
+ 	void		*pUsbReq;
+ 	void		*Next;
+ 	union {
+ 		u32	VALUE;
+ 		u32	*pBuffer;
+ 	};
+-	u8		RESERVED[4]; // space reserved for communication
+-	u16		INDEX; // For storing the register index
+-	u8		RESERVED_VALID;	// Indicate whether the RESERVED space is valid at this command.
+-	u8		DIRECT; // 0:In   1:Out
++	u8		RESERVED[4];	/* space reserved for communication */
++	u16		INDEX;		/* For storing the register index */
++	u8		RESERVED_VALID;	/* Indicate whether the RESERVED space is valid at this command. */
++	u8		DIRECT;		/* 0:In   1:Out */
+ };
+ 
+-//====================================
+-// Internal variable for module
+-//====================================
++/*
++ * ====================================
++ * Internal variable for module
++ * ====================================
++ */
+ #define MAX_SQ3_FILTER_SIZE		5
+ struct wb35_reg {
+-	//============================
+-	// Register Bank backup
+-	//============================
+-	u32	U1B0;			//bit16 record the h/w radio on/off status
++	/*
++	 * ============================
++	 *  Register Bank backup
++	 * ============================
++	 */
++	u32	U1B0;			/* bit16 record the h/w radio on/off status */
+ 	u32	U1BC_LEDConfigure;
+ 	u32	D00_DmaControl;
+ 	u32	M00_MacControl;
+@@ -105,68 +107,65 @@ struct wb35_reg {
+ 			u32	M04_MulticastAddress1;
+ 			u32	M08_MulticastAddress2;
+ 		};
+-		u8		Multicast[8];	// contents of card multicast registers
++		u8		Multicast[8];	/* contents of card multicast registers */
+ 	};
+ 
+ 	u32	M24_MacControl;
+ 	u32	M28_MacControl;
+ 	u32	M2C_MacControl;
+ 	u32	M38_MacControl;
+-	u32	M3C_MacControl; // 20060214 backup only
++	u32	M3C_MacControl;
+ 	u32	M40_MacControl;
+-	u32	M44_MacControl; // 20060214 backup only
+-	u32	M48_MacControl; // 20060214 backup only
++	u32	M44_MacControl;
++	u32	M48_MacControl;
+ 	u32	M4C_MacStatus;
+-	u32	M60_MacControl; // 20060214 backup only
+-	u32	M68_MacControl; // 20060214 backup only
+-	u32	M70_MacControl; // 20060214 backup only
+-	u32	M74_MacControl; // 20060214 backup only
+-	u32	M78_ERPInformation;//930206.2.b
+-	u32	M7C_MacControl; // 20060214 backup only
+-	u32	M80_MacControl; // 20060214 backup only
+-	u32	M84_MacControl; // 20060214 backup only
+-	u32	M88_MacControl; // 20060214 backup only
+-	u32	M98_MacControl; // 20060214 backup only
+-
+-	//[20040722 WK]
+-	//Baseband register
+-	u32	BB0C;	// Used for LNA calculation
+-	u32	BB2C;	//
+-	u32	BB30;	//11b acquisition control register
++	u32	M60_MacControl;
++	u32	M68_MacControl;
++	u32	M70_MacControl;
++	u32	M74_MacControl;
++	u32	M78_ERPInformation;
++	u32	M7C_MacControl;
++	u32	M80_MacControl;
++	u32	M84_MacControl;
++	u32	M88_MacControl;
++	u32	M98_MacControl;
++
++	/* Baseband register */
++	u32	BB0C;	/* Used for LNA calculation */
++	u32	BB2C;
++	u32	BB30;	/* 11b acquisition control register */
+ 	u32	BB3C;
+-	u32	BB48;	// 20051221.1.a 20060613.1 Fix OBW issue of 11b/11g rate
+-	u32	BB4C;	// 20060613.1  Fix OBW issue of 11b/11g rate
+-	u32	BB50;	//mode control register
++	u32	BB48;
++	u32	BB4C;
++	u32	BB50;	/* mode control register */
+ 	u32	BB54;
+-	u32 	BB58;	//IQ_ALPHA
+-	u32	BB5C;	// For test
+-	u32	BB60;	// for WTO read value
+-
+-	//-------------------
+-	// VM
+-	//-------------------
+-	spinlock_t	EP0VM_spin_lock; // 4B
+-	u32	        EP0VM_status;//$$
++	u32	BB58;	/* IQ_ALPHA */
++	u32	BB5C;	/* For test */
++	u32	BB60;	/* for WTO read value */
++
++	/* VM */
++	spinlock_t	EP0VM_spin_lock; /* 4B */
++	u32		EP0VM_status; /* $$ */
+ 	struct wb35_reg_queue *reg_first;
+ 	struct wb35_reg_queue *reg_last;
+-	atomic_t       RegFireCount;
++	atomic_t	RegFireCount;
+ 
+-	// Hardware status
++	/* Hardware status */
+ 	u8	EP0vm_state;
+ 	u8	mac_power_save;
+-	u8	EEPROMPhyType; // 0 ~ 15 for Maxim (0 ĄV MAX2825, 1 ĄV MAX2827, 2 ĄV MAX2828, 3 ĄV MAX2829),
+-						   // 16 ~ 31 for Airoha (16 ĄV AL2230, 11 - AL7230)
+-						   // 32 ~ Reserved
+-						   // 33 ~ 47 For WB242 ( 33 - WB242, 34 - WB242 with new Txvga 0.5 db step)
+-						   // 48 ~ 255 ARE RESERVED.
+-	u8	EEPROMRegion;	//Region setting in EEPROM
+-
+-	u32	SyncIoPause; // If user use the Sync Io to access Hw, then pause the async access
+-
+-	u8	LNAValue[4]; //Table for speed up running
++	u8	EEPROMPhyType; /*
++				* 0 ~ 15 for Maxim (0 ĄV MAX2825, 1 ĄV MAX2827, 2 ĄV MAX2828, 3 ĄV MAX2829),
++				* 16 ~ 31 for Airoha (16 ĄV AL2230, 11 - AL7230)
++				* 32 ~ Reserved
++				* 33 ~ 47 For WB242 ( 33 - WB242, 34 - WB242 with new Txvga 0.5 db step)
++				* 48 ~ 255 ARE RESERVED.
++				*/
++	u8	EEPROMRegion;	/* Region setting in EEPROM */
++
++	u32	SyncIoPause; /* If user use the Sync Io to access Hw, then pause the async access */
++
++	u8	LNAValue[4]; /* Table for speed up running */
+ 	u32	SQ3_filter[MAX_SQ3_FILTER_SIZE];
+ 	u32	SQ3_index;
+-
+ };
+-
+ #endif
 -- 
-error compiling committee.c: too many arguments to function
+1.7.0.2
 
