@@ -1,70 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0CVSlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:41:47 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:21062 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754971Ab0CVSlp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:41:45 -0400
-Message-ID: <4BA7B9E0.5080009@codemonkey.ws>
-Date: Mon, 22 Mar 2010 13:41:36 -0500
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
+	id S1755844Ab0CVSm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:42:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51915 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755723Ab0CVSmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:42:55 -0400
+Date: Mon, 22 Mar 2010 19:41:30 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm 1/3] proc: get_nr_threads() doesn't need ->siglock any
+	longer
+Message-ID: <20100322184130.GA3957@redhat.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100322111411.GC3483@elte.hu> <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu> <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu>
-In-Reply-To: <20100322173400.GB15795@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 12:34 PM, Ingo Molnar wrote:
-> This is really just the much-discredited microkernel approach for keeping
-> global enumeration data that should be kept by the kernel ...
->
-> Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by Anthony.
-> There's numerous ways that this can break:
->
->   - Those special files can get corrupted, mis-setup, get out of sync, or can
->     be hard to discover.
->
->   - The ${HOME}/.qemu/qmp/ solution suggested by Anthony has a very obvious
->     design flaw: it is per user. When i'm root i'd like to query _all_ current
->     guest images, not just the ones started by root. A system might not even
->     have a notion of '${HOME}'.
->
->   - Apps might start KVM vcpu instances without adhering to the
->     ${HOME}/.qemu/qmp/ access method.
->
->   - There is no guarantee for the Qemu process to reply to a request - while
->     the kernel can always guarantee an enumeration result. I dont want 'perf
->     kvm' to hang or misbehave just because Qemu has hung.
->    
+Now that task->signal can't go away get_nr_threads() doesn't need
+->siglock to read signal->count.
 
-If your position basically boils down to, we can't trust userspace and 
-we can always trust the kernel, I want to eliminate any userspace path, 
-then I can't really help you out.
+Also, make it inline, move into sched.h, and convert 2 other proc
+users of signal->count to use this (now trivial) helper.
 
-I believe we can come up with an infrastructure that satisfies your 
-actual requirements within qemu but if you're also insisting upon the 
-above implementation detail then there's nothing I can do.
+Henceforth get_nr_threads() is the only valid user of signal->count,
+we are ready to turn it into "int nr_threads" or, perhaps, kill it.
 
-Regards,
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-Anthony Liguori
+ include/linux/sched.h |    5 +++++
+ fs/proc/array.c       |    4 ++--
+ fs/proc/base.c        |   12 ------------
+ 3 files changed, 7 insertions(+), 14 deletions(-)
+
+--- 34-rc1/include/linux/sched.h~PROC_1_GNT_DONT_USE_SIGLOCK	2010-03-22 16:35:43.000000000 +0100
++++ 34-rc1/include/linux/sched.h	2010-03-22 16:41:53.000000000 +0100
+@@ -2148,6 +2148,11 @@ extern bool current_is_single_threaded(v
+ #define while_each_thread(g, t) \
+ 	while ((t = next_thread(t)) != g)
+ 
++static inline int get_nr_threads(struct task_struct *tsk)
++{
++	return atomic_read(&tsk->signal->count);
++}
++
+ /* de_thread depends on thread_group_leader not being a pid based check */
+ #define thread_group_leader(p)	(p == p->group_leader)
+ 
+--- 34-rc1/fs/proc/array.c~PROC_1_GNT_DONT_USE_SIGLOCK	2010-03-11 13:11:50.000000000 +0100
++++ 34-rc1/fs/proc/array.c	2010-03-22 17:04:44.000000000 +0100
+@@ -269,7 +269,7 @@ static inline void task_sig(struct seq_f
+ 		shpending = p->signal->shared_pending.signal;
+ 		blocked = p->blocked;
+ 		collect_sigign_sigcatch(p, &ignored, &caught);
+-		num_threads = atomic_read(&p->signal->count);
++		num_threads = get_nr_threads(p);
+ 		rcu_read_lock();  /* FIXME: is this correct? */
+ 		qsize = atomic_read(&__task_cred(p)->user->sigpending);
+ 		rcu_read_unlock();
+@@ -412,7 +412,7 @@ static int do_task_stat(struct seq_file 
+ 			tty_nr = new_encode_dev(tty_devnum(sig->tty));
+ 		}
+ 
+-		num_threads = atomic_read(&sig->count);
++		num_threads = get_nr_threads(task);
+ 		collect_sigign_sigcatch(task, &sigign, &sigcatch);
+ 
+ 		cmin_flt = sig->cmin_flt;
+--- 34-rc1/fs/proc/base.c~PROC_1_GNT_DONT_USE_SIGLOCK	2010-03-22 16:35:43.000000000 +0100
++++ 34-rc1/fs/proc/base.c	2010-03-22 16:36:28.000000000 +0100
+@@ -165,18 +165,6 @@ static int get_fs_path(struct task_struc
+ 	return result;
+ }
+ 
+-static int get_nr_threads(struct task_struct *tsk)
+-{
+-	unsigned long flags;
+-	int count = 0;
+-
+-	if (lock_task_sighand(tsk, &flags)) {
+-		count = atomic_read(&tsk->signal->count);
+-		unlock_task_sighand(tsk, &flags);
+-	}
+-	return count;
+-}
+-
+ static int proc_cwd_link(struct inode *inode, struct path *path)
+ {
+ 	struct task_struct *task = get_proc_task(inode);
 
