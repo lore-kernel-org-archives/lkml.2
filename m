@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0CVMbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:31:01 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:45572 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686Ab0CVMa6 (ORCPT
+	id S1754700Ab0CVMby (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:31:54 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:49607 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab0CVMbw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:30:58 -0400
-Date: Mon, 22 Mar 2010 08:30:46 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, elendil@planet.nl,
-       David Miller <davem@davemloft.net>
-Subject: Re: [Patch v2] netpoll: warn when there are spaces in parameters
-Message-ID: <20100322123046.GA4288@hmsreliant.think-freely.org>
-References: <20100322090341.5289.10770.sendpatchset@localhost.localdomain>
+	Mon, 22 Mar 2010 08:31:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uvW5yAWqjWqGLeEcn8nmF8aeKQ6KcTkioyExww1VTfDwX3Sakz0XEDlp8lnMeOp+8K
+         ESFh1t+rq295jEuMyjGUu8ZoMF6nsk6pDR1tSeOZXTDk4ErlAsXtbOQuFx9DVNP1xpfS
+         iwA+GO7MbTCMzMplGVOrClafBuTuLcM3y9jEI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322090341.5289.10770.sendpatchset@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -4.2 (----)
+In-Reply-To: <20100322114824.GF3483@elte.hu>
+References: <20100321191742.GD25922@elte.hu>
+	 <20100321200849.GA51323@dspnet.fr.eu.org>
+	 <4BA67D75.8060809@redhat.com> <4BA67F12.6030501@nagafix.co.uk>
+	 <4BA68063.2050800@redhat.com> <4BA68234.1060804@nagafix.co.uk>
+	 <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu>
+	 <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu>
+Date: Mon, 22 Mar 2010 14:31:49 +0200
+X-Google-Sender-Auth: 360c0cb31576dcef
+Message-ID: <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
+	project
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Avi Kivity <avi@redhat.com>, Antoine Martin <antoine@nagafix.co.uk>,
+       Olivier Galibert <galibert@pobox.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 04:59:58AM -0400, Amerigo Wang wrote:
-> v2: update according to Frans' comments.
-> 
-> Currently, if we leave spaces before dst port,
-> netconsole will silently accept it as 0. Warn about this.
-> 
-> Also, when spaces appear in other places, make them
-> visible in error messages.
-> 
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> Cc: David Miller <davem@davemloft.net>
-> 
-> ---
-> 
-> diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-> index 7aa6972..6df1863 100644
-> --- a/net/core/netpoll.c
-> +++ b/net/core/netpoll.c
-> @@ -614,7 +614,7 @@ void netpoll_print_options(struct netpoll *np)
->  			 np->name, np->local_port);
->  	printk(KERN_INFO "%s: local IP %pI4\n",
->  			 np->name, &np->local_ip);
-> -	printk(KERN_INFO "%s: interface %s\n",
-> +	printk(KERN_INFO "%s: interface '%s'\n",
->  			 np->name, np->dev_name);
->  	printk(KERN_INFO "%s: remote port %d\n",
->  			 np->name, np->remote_port);
-> @@ -661,6 +661,9 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
->  		if ((delim = strchr(cur, '@')) == NULL)
->  			goto parse_failed;
->  		*delim = 0;
-> +		if (*cur == ' ' || *cur == '\t')
-> +			printk(KERN_INFO "%s: warning: whitespace"
-> +					"is not allowed\n", np->name);
->  		np->remote_port = simple_strtol(cur, NULL, 10);
->  		cur = delim;
->  	}
-> @@ -708,7 +711,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
->  	return 0;
->  
->   parse_failed:
-> -	printk(KERN_INFO "%s: couldn't parse config at %s!\n",
-> +	printk(KERN_INFO "%s: couldn't parse config at '%s'!\n",
->  	       np->name, cur);
->  	return -1;
->  }
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+On Mon, Mar 22, 2010 at 1:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> What about line number information?  And the source?  Into the kernel with
+>> them as well?
+>
+> Sigh. Please read the _very first_ suggestion i made, which solves all that. I
+> rarely go into discussions without suggesting technical solutions - i'm not
+> interested in flaming, i'm interested in real solutions.
+>
+> Here it is, repeated for the Nth time:
+>
+> Allow a guest to (optionally) integrate its VFS namespace with the host side
+> as well. An example scheme would be:
+>
+>   /guests/Fedora-G1/
+>   /guests/Fedora-G1/proc/
+>   /guests/Fedora-G1/usr/
+>   /guests/Fedora-G1/.../
+>   /guests/OpenSuse-G2/
+>   /guests/OpenSuse-G2/proc/
+>   /guests/OpenSuse-G2/usr/
+>   /guests/OpenSuse-G2/.../
+>
+>  ( This feature would be configurable and would be default-off, to maintain
+>    the current status quo. )
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Heh, funny. That would also solve my number one gripe with
+virtualization these days: how to get files in and out of guests
+without having to install extra packages on the guest side and
+fiddling with mount points on every single guest image I want to play
+with.
+
+                        Pekka
