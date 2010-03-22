@@ -1,224 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab0CVISL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:18:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65033 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab0CVISF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:18:05 -0400
-Date: Mon, 22 Mar 2010 04:17:40 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Amerigo Wang <amwang@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Message-Id: <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
-In-Reply-To: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
-Subject: [RFC Patch 3/3] bonding: make bonding support netpoll
+	id S1754281Ab0CVI0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:26:21 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:37945 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752165Ab0CVI0S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 04:26:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=LoRux0jY+xYqrJdxnvinCTKU9HVk+6YkvJhOvKwNfXhOo7uwY6+hPwPCWjgJOXtUzv
+         FzoRetWt8tJase/sEMutgCe7AWewkMo4kR79nbs/+7+vIcHYZdUi6egY8arNjHgWt0GR
+         tLjOH5wLkhtljJXLA/p0YmPJqLuG9ZQC4UHO0=
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1003212147360.12371@ask.diku.dk>
+References: <Pine.LNX.4.64.1003212147360.12371@ask.diku.dk>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 22 Mar 2010 16:19:04 +0800
+Message-ID: <f17812d71003220119i68ecc705ud1422161b77ab2ef@mail.gmail.com>
+Subject: Re: [PATCH] arch/arm/mach-pxa: avoid NULL dereference in error 
+	handling code
+To: Julia Lawall <julia@diku.dk>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 22, 2010 at 4:48 AM, Julia Lawall <julia@diku.dk> wrote:
+> From: Julia Lawall <julia@diku.dk>
+>
+> The assignments of res to the results of the two calls to
+> platform_get_resource make it impossible to use res in the error handling
+> code in the arguments to release_mem_region.
+>
 
-Based on Andy's work, but I modify a lot.
+Nice catch, I've yet made a small change to move the block of getting
+dma resource earlier so to avoid introducing another variable pres.
 
-Similar to the patch for bridge, this patch does:
+> At the same time, code of the form res->end - res->start + 1 is converted
+> to use resource_size.
+>
 
-1) implement the 4 methods to support netpoll for bonding;
+OK, I've separated this into an individual patch with the above one,
+rebased against my 'ssp_cleanup' branch as follows (note: the ssp.c
+has been moved to plat-pxa for code sharing):
 
-2) modify netpoll during forwarding packets in bonding;
+=====================================================
+commit 97be6e52dc0aabaea07222bd0486e3b2df3e1baa
+Author: Julia Lawall <julia@diku.dk>
+Date:   Mon Mar 22 16:11:55 2010 +0800
 
-3) disable netpoll support of bridge when a netpoll-unabled device
-   is added to bonding;
+    [ARM] pxa: avoid NULL dereferencing in error handling of ssp.c
 
-4) enable netpoll support when all underlying devices support netpoll.
+    The assignments of res to the results of the two calls to
+    platform_get_resource make it impossible to use res in the error handling
+    code in the arguments to release_mem_region.
 
-Cc: Andy Gospodarek <gospo@redhat.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: WANG Cong <amwang@redhat.com>
+    The semantic match that finds the former problem is as follows:
+    (http://coccinelle.lip6.fr/)
 
+    // <smpl>
+    @r exists@
+    expression E, E1;
+    identifier f;
+    statement S1,S3;
+    iterator iter;
+    @@
 
----
-Index: linux-2.6/drivers/net/bonding/bond_main.c
-===================================================================
---- linux-2.6.orig/drivers/net/bonding/bond_main.c
-+++ linux-2.6/drivers/net/bonding/bond_main.c
-@@ -59,6 +59,7 @@
- #include <linux/uaccess.h>
- #include <linux/errno.h>
- #include <linux/netdevice.h>
-+#include <linux/netpoll.h>
- #include <linux/inetdevice.h>
- #include <linux/igmp.h>
- #include <linux/etherdevice.h>
-@@ -430,7 +431,17 @@ int bond_dev_queue_xmit(struct bonding *
+    if ((E == NULL && ...) || ...)
+    {
+     ... when != false ((E == NULL && ...) || ...)
+         when != true  ((E != NULL && ...) || ...)
+         when != iter(E,...) S1
+         when != E = E1
+    (
+     sizeof(E->f)
+    |
+    * E->f
+    )
+     ... when any
+     return ...;
+    }
+    else S3
+    // </smpl>
+
+    Signed-off-by: Julia Lawall <julia@diku.dk>
+    Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+
+diff --git a/arch/arm/plat-pxa/ssp.c b/arch/arm/plat-pxa/ssp.c
+index cfebcd8..3bf704d 100644
+--- a/arch/arm/plat-pxa/ssp.c
++++ b/arch/arm/plat-pxa/ssp.c
+@@ -92,6 +92,22 @@ static int __devinit ssp_probe(struct platform_device *pdev)
+ 		goto err_free;
  	}
- 
- 	skb->priority = 1;
--	dev_queue_xmit(skb);
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
-+		bond->dev->npinfo->netpoll->dev = skb->dev;
-+		if (!slave_dev->npinfo)
-+			slave_dev->npinfo = bond->dev->npinfo;
-+		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-+		netpoll_send_skb(bond->dev->npinfo->netpoll, skb);
-+		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
-+	} else
-+#endif
-+		dev_queue_xmit(skb);
- 
- 	return 0;
- }
-@@ -1324,6 +1335,87 @@ static void bond_detach_slave(struct bon
- 	bond->slave_cnt--;
- }
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+static bool slaves_support_netpoll(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	int i = 0;
-+	bool ret = true;
-+
-+	read_lock_bh(&bond->lock);
-+	bond_for_each_slave(bond, slave, i) {
-+		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
-+				|| !slave->dev->netdev_ops->ndo_poll_controller)
-+			ret = false;
+
++	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "no SSP RX DRCMR defined\n");
++		ret = -ENODEV;
++		goto err_free_clk;
 +	}
-+	read_unlock_bh(&bond->lock);
-+	return i != 0 && ret;
-+}
++	ssp->drcmr_rx = res->start;
 +
-+static void bond_poll_controller(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	int i;
-+
-+	read_lock(&bond->lock);
-+	bond_for_each_slave(bond, slave, i) {
-+		if (slave->dev->netdev_ops->ndo_poll_controller)
-+			netpoll_poll_dev(slave->dev);
++	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
++	if (res == NULL) {
++		dev_err(&pdev->dev, "no SSP TX DRCMR defined\n");
++		ret = -ENODEV;
++		goto err_free_clk;
 +	}
-+	read_unlock(&bond->lock);
-+}
++	ssp->drcmr_tx = res->start;
 +
-+static void bond_netpoll_setup(struct net_device *bond_dev,
-+			      struct netpoll_info *npinfo)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	int i;
-+
-+	write_lock_bh(&bond->lock);
-+	bond_for_each_slave(bond, slave, i) {
-+		if (slave->dev)
-+			slave->dev->npinfo = npinfo;
-+	}
-+	write_unlock_bh(&bond->lock);
-+}
-+
-+static void bond_netpoll_cleanup(struct net_device *bond_dev)
-+{
-+	struct bonding *bond = netdev_priv(bond_dev);
-+	struct slave *slave;
-+	const struct net_device_ops *ops;
-+	int i;
-+
-+	write_lock_bh(&bond->lock);
-+	bond_dev->npinfo = NULL;
-+	bond_for_each_slave(bond, slave, i) {
-+		if (slave->dev) {
-+			ops = slave->dev->netdev_ops;
-+			if (ops->ndo_netpoll_cleanup)
-+				ops->ndo_netpoll_cleanup(slave->dev);
-+			else
-+				slave->dev->npinfo = NULL;
-+		}
-+	}
-+	write_unlock_bh(&bond->lock);
-+}
-+
-+static int bond_netpoll_xmit(struct netpoll *np, struct sk_buff *skb,
-+			     struct net_device *dev)
-+{
-+	int ret;
-+
-+	dev->priv_flags |= IFF_IN_NETPOLL;
-+	ret = dev->netdev_ops->ndo_start_xmit(skb, dev);
-+	np->dev = dev;
-+	dev->priv_flags &= ~IFF_IN_NETPOLL;
-+	return ret;
-+}
-+#endif
-+
- /*---------------------------------- IOCTL ----------------------------------*/
- 
- static int bond_sethwaddr(struct net_device *bond_dev,
-@@ -1741,6 +1833,18 @@ int bond_enslave(struct net_device *bond
- 		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
- 		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (slaves_support_netpoll(bond_dev)) {
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+		if (bond_dev->npinfo)
-+			slave_dev->npinfo = bond_dev->npinfo;
-+	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
-+		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
-+		pr_info("New slave device %s does not support netpoll\n",
-+			slave_dev->name);
-+		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
-+	}
-+#endif
- 	/* enslave is successful */
- 	return 0;
- 
-@@ -1924,6 +2028,15 @@ int bond_release(struct net_device *bond
- 
- 	netdev_set_master(slave_dev, NULL);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	if (slaves_support_netpoll(bond_dev))
-+		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-+	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
-+		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
-+	else
-+		slave_dev->npinfo = NULL;
-+#endif
-+
- 	/* close slave before restoring its mac address */
- 	dev_close(slave_dev);
- 
-@@ -2032,6 +2145,9 @@ static int bond_release_all(struct net_d
- 
- 		netdev_set_master(slave_dev, NULL);
- 
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+		slave_dev->npinfo = NULL;
-+#endif
- 		/* close slave before restoring its mac address */
- 		dev_close(slave_dev);
- 
-@@ -4424,6 +4540,12 @@ static const struct net_device_ops bond_
- 	.ndo_vlan_rx_register	= bond_vlan_rx_register,
- 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
- 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
-+#ifdef CONFIG_NET_POLL_CONTROLLER
-+	.ndo_netpoll_setup	= bond_netpoll_setup,
-+	.ndo_netpoll_xmit	= bond_netpoll_xmit,
-+	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
-+	.ndo_poll_controller	= bond_poll_controller,
-+#endif
- };
- 
- static void bond_setup(struct net_device *bond_dev)
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "no memory resource defined\n");
+@@ -123,22 +139,6 @@ static int __devinit ssp_probe(struct
+platform_device *pdev)
+ 		goto err_free_io;
+ 	}
+
+-	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no SSP RX DRCMR defined\n");
+-		ret = -ENODEV;
+-		goto err_free_io;
+-	}
+-	ssp->drcmr_rx = res->start;
+-
+-	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+-	if (res == NULL) {
+-		dev_err(&pdev->dev, "no SSP TX DRCMR defined\n");
+-		ret = -ENODEV;
+-		goto err_free_io;
+-	}
+-	ssp->drcmr_tx = res->start;
+-
+ 	/* PXA2xx/3xx SSP ports starts from 1 and the internal pdev->id
+ 	 * starts from 0, do a translation here
+ 	 */
+
+===============================================================================
+
+commit 00921f0d5f21f213b8407d348b53fdce4ad383bd
+Author: Julia Lawall <julia@diku.dk>
+Date:   Mon Mar 22 16:16:24 2010 +0800
+
+    [ARM] pxa: use resource_size() in ssp.c
+
+    Signed-off-by: Julia Lawall <julia@diku.dk>
+    Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+
+diff --git a/arch/arm/plat-pxa/ssp.c b/arch/arm/plat-pxa/ssp.c
+index 3bf704d..52c07cc 100644
+--- a/arch/arm/plat-pxa/ssp.c
++++ b/arch/arm/plat-pxa/ssp.c
+@@ -115,7 +115,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
+ 		goto err_free_clk;
+ 	}
+
+-	res = request_mem_region(res->start, res->end - res->start + 1,
++	res = request_mem_region(res->start, resource_size(res),
+ 			pdev->name);
+ 	if (res == NULL) {
+ 		dev_err(&pdev->dev, "failed to request memory resource\n");
+@@ -125,7 +125,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
+
+ 	ssp->phys_base = res->start;
+
+-	ssp->mmio_base = ioremap(res->start, res->end - res->start + 1);
++	ssp->mmio_base = ioremap(res->start, resource_size(res));
+ 	if (ssp->mmio_base == NULL) {
+ 		dev_err(&pdev->dev, "failed to ioremap() registers\n");
+ 		ret = -ENODEV;
+@@ -156,7 +156,7 @@ static int __devinit ssp_probe(struct platform_device *pdev)
+ err_free_io:
+ 	iounmap(ssp->mmio_base);
+ err_free_mem:
+-	release_mem_region(res->start, res->end - res->start + 1);
++	release_mem_region(res->start, resource_size(res));
+ err_free_clk:
+ 	clk_put(ssp->clk);
+ err_free:
+@@ -176,7 +176,7 @@ static int __devexit ssp_remove(struct
+platform_device *pdev)
+ 	iounmap(ssp->mmio_base);
+
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(res->start, res->end - res->start + 1);
++	release_mem_region(res->start, resource_size(res));
+
+ 	clk_put(ssp->clk);
