@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab0CVMig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:38:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753646Ab0CVMie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:38:34 -0400
-Date: Mon, 22 Mar 2010 12:37:26 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>,
-       Antoine Martin <antoine@nagafix.co.uk>,
-       Olivier Galibert <galibert@pobox.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
-Message-ID: <20100322123726.GH21874@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <4BA67F12.6030501@nagafix.co.uk> <4BA68063.2050800@redhat.com> <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu> <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu> <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com>
-User-Agent: Mutt/1.4.1i
+	id S1754741Ab0CVMis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:38:48 -0400
+Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:34336 "EHLO
+	ppsw-6.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab0CVMiq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 08:38:46 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4BA76568.4070002@jic23.retrosnub.co.uk>
+Date: Mon, 22 Mar 2010 12:41:12 +0000
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+MIME-Version: 1.0
+To: Wolfram Sang <w.sang@pengutronix.de>
+CC: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH 21/24] staging/iio/adc: fix dangling pointers
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-22-git-send-email-w.sang@pengutronix.de>
+In-Reply-To: <1269094385-16114-22-git-send-email-w.sang@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:31:49PM +0200, Pekka Enberg wrote:
-> On Mon, Mar 22, 2010 at 1:48 PM, Ingo Molnar <mingo@elte.hu> wrote:
-> >> What about line number information?  And the source?  Into the kernel with
-> >> them as well?
-> >
-> > Sigh. Please read the _very first_ suggestion i made, which solves all that. I
-> > rarely go into discussions without suggesting technical solutions - i'm not
-> > interested in flaming, i'm interested in real solutions.
-> >
-> > Here it is, repeated for the Nth time:
-> >
-> > Allow a guest to (optionally) integrate its VFS namespace with the host side
-> > as well. An example scheme would be:
-> >
-> >   /guests/Fedora-G1/
-> >   /guests/Fedora-G1/proc/
-> >   /guests/Fedora-G1/usr/
-> >   /guests/Fedora-G1/.../
-> >   /guests/OpenSuse-G2/
-> >   /guests/OpenSuse-G2/proc/
-> >   /guests/OpenSuse-G2/usr/
-> >   /guests/OpenSuse-G2/.../
-> >
-> >  ( This feature would be configurable and would be default-off, to maintain
-> >    the current status quo. )
+On 03/20/10 14:13, Wolfram Sang wrote:
+> Fix I2C-drivers which missed setting clientdata to NULL before freeing the
+> structure it points to. Also fix drivers which do this _after_ the structure
+> was freed already.
 > 
-> Heh, funny. That would also solve my number one gripe with
-> virtualization these days: how to get files in and out of guests
-> without having to install extra packages on the guest side and
-> fiddling with mount points on every single guest image I want to play
-> with.
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-FYI, for offline guests, you can use libguestfs[1] to access & change files
-inside the guest, and read-only access to running guests files. It provides
-access via a interactive shell, APIs in all major languages, and also has a
-FUSE mdule to expose it directly in the host VFS.  It could probably be made
-to work read-write for running guests too if its agent were installed inside
-the guest & leverage the new Virtio-Serial channel for comms (avoiding any
-network setup requirements).
+Thanks,
+> ---
+> 
+> Found using coccinelle, then reviewed. Full patchset is available via
+> kernel-janitors, linux-i2c, and LKML.
+> ---
+>  drivers/staging/iio/adc/max1363_core.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
+> index 9703881..1682fd0 100644
+> --- a/drivers/staging/iio/adc/max1363_core.c
+> +++ b/drivers/staging/iio/adc/max1363_core.c
+> @@ -556,6 +556,7 @@ error_put_reg:
+>  	if (!IS_ERR(st->reg))
+>  		regulator_put(st->reg);
+>  error_free_st:
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(st);
+>  
+>  error_ret:
+> @@ -573,6 +574,7 @@ static int max1363_remove(struct i2c_client *client)
+>  		regulator_disable(st->reg);
+>  		regulator_put(st->reg);
+>  	}
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(st);
+>  
+>  	return 0;
 
-Regards,
-Daniel
-
-[1] http://libguestfs.org/
--- 
-|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
-|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
-|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
-|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
