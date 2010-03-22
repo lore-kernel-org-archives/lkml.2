@@ -1,145 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab0CVBEB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 21:04:01 -0400
-Received: from mail-yx0-f182.google.com ([209.85.210.182]:62650 "EHLO
-	mail-yx0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab0CVBD6 (ORCPT
+	id S1753790Ab0CVBFv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 21:05:51 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:59083 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab0CVBFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 21:03:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=lHmvoGfPDpjG7udp6eriKaMhsIOikHVoS5ryHr7O+4tZr+Zqu/noX7gT+n43Pdhdvh
-         CcQgXWVsF85Oh2gvZsMtm2f8f9K92hQQYHr64VdcgxnZyWUj0ToPT9jAfxxUGq05cgtj
-         Y+Z5i/Vs43b/+U8u+ssUji/bg81DvxMws7y20=
-Message-ID: <4BA6C208.6010000@gmail.com>
-Date: Sun, 21 Mar 2010 18:04:08 -0700
-From: "Justin P. mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: trivial@kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-audit@redhat.com, uclinux-dist-devel@blackfin.uclinux.org,
-       linux-cris-kernel@axis.com, linux-ia64@vger.kernel.org,
-       linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
-       linux-s390@vger.kernel.org, selinux@tycho.nsa.gov,
-       sparclinux@vger.kernel.org, x86@kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Cosmetic:Partially remove deprecated __initcall() and
- change to
-References: <1269028291-9103-1-git-send-email-justinmattock@gmail.com> <4BA40115.2000509@xenotime.net> <4BA407AC.5030506@gmail.com> <4BA6BAF3.10603@xenotime.net>
-In-Reply-To: <4BA6BAF3.10603@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 21 Mar 2010 21:05:49 -0400
+From: Christoffer Dall <christofferdall@christofferdall.dk>
+To: containers <containers@lists.linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Christoffer Dall <christofferdall@christofferdall.dk>,
+       Roland McGrath <roland@redhat.com>
+Subject: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
+Date: Sun, 21 Mar 2010 21:06:03 -0400
+Message-Id: <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2010 05:33 PM, Randy Dunlap wrote:
-> On 03/19/10 16:24, Justin P. Mattock wrote:
->> On 03/19/2010 03:56 PM, Randy Dunlap wrote:
->>> On 03/19/10 12:51, Justin P. Mattock wrote:
->>>> After doing some things on a small issue,
->>>> I noticed through web surfing, that there were patches
->>>> submitted pertaining that __initcall is deprecated,
->>>> and device_initcall should be used.
->>>
->>> Where was this discussion?  Do you have any pointers to it?
->>>
->>
->> The best info on this is scripts/checkpatch.pl
->> line #2664
->>
->> when I found this I just did a quick search of __initcall
->> (which gives hits here and there)
->> https://patchwork.kernel.org/patch/23344/
->> (also found others at around 2008 or so)
->
-> Thanks.  IMO there should be something in the kernel source tree
-> that says explicitly that __initcall is deprecated and should be
-> replaced by using<whatever should be used>.  That's missing.
->
+This small commit introduces a global state of system calls for ARM
+making it possible for a debugger or checkpointing to gain information
+about another process' state with respect to system calls.
 
-agree..
+The patch is based on this proposal from Roland McGrath:
+https://patchwork.kernel.org/patch/32101/
 
-I should of searched the source tree for something
-that says deprecated and so forth before doing anything(the 
-checkpatch.pl was something I noticed down the line but doesn't say 
-deprecated(say's explicitly).
+Cc: Roland McGrath <roland@redhat.com>
+Signed-off-by: Christoffer Dall <christofferdall@christofferdall.dk>
+Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+---
+ arch/arm/include/asm/syscall.h |   31 +++++++++++++++++++++++++++++++
+ arch/arm/kernel/asm-offsets.c  |    1 +
+ arch/arm/kernel/entry-common.S |    8 +++++++-
+ arch/arm/kernel/ptrace.c       |    2 --
+ arch/arm/kernel/signal.c       |   14 +++++++-------
+ 5 files changed, 46 insertions(+), 10 deletions(-)
+ create mode 100644 arch/arm/include/asm/syscall.h
 
-
->
->>> I don't see any mention of __initcall being deprecated in
->>> Linus' mainline git tree, or in linux-next, or in mmotm.
->>> Where are those patches?
->>>
->>
->> I don't know(I'm out of the social pipeline when it comes to Linux news,
->> and updates)..
->> like in the explanation part of the patch
->> I was looking into something else, then ran into this,
->> so as a break(from what I was originally doing)
->> decided to do this and submit.
->>
->>>
->>>> So as a change of subject(since what I was looking at
->>>> was frustrating me),I decided to grep the whole tree
->>>> and make the change(partially).
->>>>
->>>> Currently I'm running this patch on my system, kernel compiles
->>>> without any errors or warnings.(thought there would be a speed increase
->>>> but didn't see much(if any)).
->>>
->>> No, __initcall(x) is just a shorthand version of typing
->>> device_initcall(x).  They do the same thing.
->>>
->>
->> yep, that's what I found out as well(reason for the cosmetic
->> in the subject line).
->>
->>>> Biggest problem I have though is testing this on other hardware types
->>>> (I only have a macbook,and an iMac).
->>>> So please if you have the access to other arch/hardware types please
->>>> test.
->>>>
->>>> Now what I mean by partially is the __initcall function is still
->>>> there, so(if any) userspace apps/libs depend on this it's there
->>>> so they dont break and/or any other subsystem, that needs time
->>>> to make the changes.
->>>
->>> The only thing that might be affected is building out-of-tree drivers,
->>> but those are easy to fix.
->>>
->>
->> alright..main concern is making sure things don't break in the
->> kernel(even though things do).
->>
->> I can have a go at the header files, submit
->> then if it's something people agree they want to do, then they
->> can go from there(if not it's fine as well).
->>
->>>> Note:
->>>> the remaining files that still have __initcall in them are:
->>>> (according to grep)
->>>>
->>>> arch/um/include/shared/init.h
->>>> include/linux/init.h
->>>> scripts/checkpatch.pl
->>>>
->>>> either I or somebody else, can change this(although a bit
->>>> concerned about breaking things).
->>>>
->>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>>> ---
->
->
-
-
-In any case I'll leave this to you guys to decide.
-The patch is in cyberspace now, so if/when this ever
-is decided it's there(patch), then can be used then.
-
-Justin P. Mattock
+diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+new file mode 100644
+index 0000000..3b3248f
+--- /dev/null
++++ b/arch/arm/include/asm/syscall.h
+@@ -0,0 +1,31 @@
++/*
++ * syscalls.h - Linux syscall interfaces for ARM
++ *
++ * Copyright (c) 2010 Christoffer Dall
++ *
++ * This file is released under the GPLv2.
++ * See the file COPYING for more details.
++ */
++
++#ifndef _ASM_ARM_SYSCALLS_H
++#define _ASM_ARM_SYSCALLS_H
++
++static inline int syscall_get_nr(struct task_struct *task,
++				 struct pt_regs *regs)
++{
++	return (int)(task_thread_info(task)->syscall);
++}
++
++static inline long syscall_get_return_value(struct task_struct *task,
++					    struct pt_regs *regs)
++{
++	return regs->ARM_r0;
++}
++
++static inline long syscall_get_error(struct task_struct *task,
++				     struct pt_regs *regs)
++{
++	return regs->ARM_r0;
++}
++
++#endif /* _ASM_ARM_SYSCALLS_H */
+diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
+index 4a88125..726a0ad 100644
+--- a/arch/arm/kernel/asm-offsets.c
++++ b/arch/arm/kernel/asm-offsets.c
+@@ -48,6 +48,7 @@ int main(void)
+   DEFINE(TI_CPU,		offsetof(struct thread_info, cpu));
+   DEFINE(TI_CPU_DOMAIN,		offsetof(struct thread_info, cpu_domain));
+   DEFINE(TI_CPU_SAVE,		offsetof(struct thread_info, cpu_context));
++  DEFINE(TI_SYSCALL,		offsetof(struct thread_info, syscall));
+   DEFINE(TI_USED_CP,		offsetof(struct thread_info, used_cp));
+   DEFINE(TI_TP_VALUE,		offsetof(struct thread_info, tp_value));
+   DEFINE(TI_FPSTATE,		offsetof(struct thread_info, fpstate));
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 2c1db77..f694f4d 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -30,6 +30,9 @@ ret_fast_syscall:
+ 	tst	r1, #_TIF_WORK_MASK
+ 	bne	fast_work_pending
+ 
++	mov	r2, #-1
++	str	r2, [tsk, #TI_SYSCALL]
++
+ 	/* perform architecture specific actions before user return */
+ 	arch_ret_to_user r1, lr
+ 
+@@ -47,7 +50,6 @@ work_pending:
+ 	tst	r1, #_TIF_SIGPENDING|_TIF_NOTIFY_RESUME
+ 	beq	no_work_pending
+ 	mov	r0, sp				@ 'regs'
+-	mov	r2, why				@ 'syscall'
+ 	bl	do_notify_resume
+ 	b	ret_slow_syscall		@ Check work again
+ 
+@@ -62,6 +64,9 @@ ret_slow_syscall:
+ 	ldr	r1, [tsk, #TI_FLAGS]
+ 	tst	r1, #_TIF_WORK_MASK
+ 	bne	work_pending
++
++	mov	r2, #-1
++	str	r2, [tsk, #TI_SYSCALL]
+ no_work_pending:
+ 	/* perform architecture specific actions before user return */
+ 	arch_ret_to_user r1, lr
+@@ -274,6 +279,7 @@ ENTRY(vector_swi)
+ 	eor	scno, scno, #__NR_SYSCALL_BASE	@ check OS number
+ #endif
+ 
++	str	scno, [tsk, #TI_SYSCALL]	@ store syscall nr. globally
+ 	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
+ 	tst	ip, #_TIF_SYSCALL_TRACE		@ are we tracing syscalls?
+ 	bne	__sys_trace
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index a2ea385..44ab437 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -863,8 +863,6 @@ asmlinkage int syscall_trace(int why, struct pt_regs *regs, int scno)
+ 	ip = regs->ARM_ip;
+ 	regs->ARM_ip = why;
+ 
+-	current_thread_info()->syscall = scno;
+-
+ 	/* the 0x80 provides a way for the tracing parent to distinguish
+ 	   between a syscall stop and SIGTRAP delivery */
+ 	ptrace_notify(SIGTRAP | ((current->ptrace & PT_TRACESYSGOOD)
+diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
+index e7714f3..f695239 100644
+--- a/arch/arm/kernel/signal.c
++++ b/arch/arm/kernel/signal.c
+@@ -527,7 +527,7 @@ static inline void setup_syscall_restart(struct pt_regs *regs)
+ static int
+ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	      siginfo_t *info, sigset_t *oldset,
+-	      struct pt_regs * regs, int syscall)
++	      struct pt_regs *regs)
+ {
+ 	struct thread_info *thread = current_thread_info();
+ 	struct task_struct *tsk = current;
+@@ -537,7 +537,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+ 	/*
+ 	 * If we were from a system call, check for system call restarting...
+ 	 */
+-	if (syscall) {
++	if (thread->syscall != -1) {
+ 		switch (regs->ARM_r0) {
+ 		case -ERESTART_RESTARTBLOCK:
+ 		case -ERESTARTNOHAND:
+@@ -601,7 +601,7 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
+  * the kernel can handle, and then we build all the user-level signal handling
+  * stack-frames in one go after that.
+  */
+-static void do_signal(struct pt_regs *regs, int syscall)
++static void do_signal(struct pt_regs *regs)
+ {
+ 	struct k_sigaction ka;
+ 	siginfo_t info;
+@@ -629,7 +629,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 			oldset = &current->saved_sigmask;
+ 		else
+ 			oldset = &current->blocked;
+-		if (handle_signal(signr, &ka, &info, oldset, regs, syscall) == 0) {
++		if (handle_signal(signr, &ka, &info, oldset, regs) == 0) {
+ 			/*
+ 			 * A signal was successfully delivered; the saved
+ 			 * sigmask will have been stored in the signal frame,
+@@ -647,7 +647,7 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ 	/*
+ 	 * No signal to deliver to the process - restart the syscall.
+ 	 */
+-	if (syscall) {
++	if (current_thread_info()->syscall != -1) {
+ 		if (regs->ARM_r0 == -ERESTART_RESTARTBLOCK) {
+ 			if (thumb_mode(regs)) {
+ 				regs->ARM_r7 = __NR_restart_syscall - __NR_SYSCALL_BASE;
+@@ -689,10 +689,10 @@ static void do_signal(struct pt_regs *regs, int syscall)
+ }
+ 
+ asmlinkage void
+-do_notify_resume(struct pt_regs *regs, unsigned int thread_flags, int syscall)
++do_notify_resume(struct pt_regs *regs, unsigned int thread_flags)
+ {
+ 	if (thread_flags & _TIF_SIGPENDING)
+-		do_signal(regs, syscall);
++		do_signal(regs);
+ 
+ 	if (thread_flags & _TIF_NOTIFY_RESUME) {
+ 		clear_thread_flag(TIF_NOTIFY_RESUME);
+-- 
+1.5.6.5
 
