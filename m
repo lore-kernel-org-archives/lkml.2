@@ -1,72 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0CVR1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:27:11 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:17189 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab0CVR1I convert rfc822-to-8bit (ORCPT
+	id S1755390Ab0CVR3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:29:20 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:52605 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0CVR3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:27:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xeUc1+GQMyBZAAqs8EPVVotqUI6bYZD5nGP8TOGcSHe013dVddxbZAO2msDbIqtlg4
-         mAsP9GYgGvkGlV6lz709pLJvjfbZhHlGNntEbRoZGozJ3HYpIDPuWa4K9ON50wbVsdBU
-         A27WIuVXZ9/m4V2hnXZwdRrBgC1OQCfrcFJj8=
-MIME-Version: 1.0
-In-Reply-To: <y0mmxy0wa1r.fsf@fche.csb>
-References: <20100318172805.GB26067@elte.hu> <4BA3747F.60401@codemonkey.ws>
-	 <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com>
-	 <20100321203121.GA30194@elte.hu> <20100322111040.GL13108@8bytes.org>
-	 <20100322122228.GH3483@elte.hu> <20100322134633.GD1940@8bytes.org>
-	 <20100322163215.GC18796@elte.hu> <y0mmxy0wa1r.fsf@fche.csb>
-Date: Mon, 22 Mar 2010 19:27:06 +0200
-X-Google-Sender-Auth: 38f4b447c2bf9ef7
-Message-ID: <84144f021003221027t1a3e7d6ft64612654c5e50da@mail.gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
-	project
+	Mon, 22 Mar 2010 13:29:18 -0400
+Message-ID: <4BA7A8D6.4000706@cs.helsinki.fi>
+Date: Mon, 22 Mar 2010 19:28:54 +0200
 From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Joerg Roedel <joro@8bytes.org>,
-       Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Nick Piggin <npiggin@suse.de>
+CC: David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org, haicheng.li@intel.com,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [patch] slab: add memory hotplug support
+References: <alpine.DEB.2.00.1002242357450.26099@chino.kir.corp.google.com> <alpine.DEB.2.00.1002251228140.18861@router.home> <20100226114136.GA16335@basil.fritz.box> <alpine.DEB.2.00.1002260904311.6641@router.home> <20100226155755.GE16335@basil.fritz.box> <alpine.DEB.2.00.1002261123520.7719@router.home> <alpine.DEB.2.00.1002261555030.32111@chino.kir.corp.google.com> <alpine.DEB.2.00.1003010224170.26824@chino.kir.corp.google.com> <20100305062002.GV8653@laptop> <alpine.DEB.2.00.1003081502400.30456@chino.kir.corp.google.com> <20100309134633.GM8653@laptop>
+In-Reply-To: <20100309134633.GM8653@laptop>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frank,
+Nick Piggin wrote:
+> On Mon, Mar 08, 2010 at 03:19:48PM -0800, David Rientjes wrote:
+>> On Fri, 5 Mar 2010, Nick Piggin wrote:
+>>
+>>>> +#if defined(CONFIG_NUMA) && defined(CONFIG_MEMORY_HOTPLUG)
+>>>> +/*
+>>>> + * Drains and frees nodelists for a node on each slab cache, used for memory
+>>>> + * hotplug.  Returns -EBUSY if all objects cannot be drained on memory
+>>>> + * hot-remove so that the node is not removed.  When used because memory
+>>>> + * hot-add is canceled, the only result is the freed kmem_list3.
+>>>> + *
+>>>> + * Must hold cache_chain_mutex.
+>>>> + */
+>>>> +static int __meminit free_cache_nodelists_node(int node)
+>>>> +{
+>>>> +	struct kmem_cache *cachep;
+>>>> +	int ret = 0;
+>>>> +
+>>>> +	list_for_each_entry(cachep, &cache_chain, next) {
+>>>> +		struct array_cache *shared;
+>>>> +		struct array_cache **alien;
+>>>> +		struct kmem_list3 *l3;
+>>>> +
+>>>> +		l3 = cachep->nodelists[node];
+>>>> +		if (!l3)
+>>>> +			continue;
+>>>> +
+>>>> +		spin_lock_irq(&l3->list_lock);
+>>>> +		shared = l3->shared;
+>>>> +		if (shared) {
+>>>> +			free_block(cachep, shared->entry, shared->avail, node);
+>>>> +			l3->shared = NULL;
+>>>> +		}
+>>>> +		alien = l3->alien;
+>>>> +		l3->alien = NULL;
+>>>> +		spin_unlock_irq(&l3->list_lock);
+>>>> +
+>>>> +		if (alien) {
+>>>> +			drain_alien_cache(cachep, alien);
+>>>> +			free_alien_cache(alien);
+>>>> +		}
+>>>> +		kfree(shared);
+>>>> +
+>>>> +		drain_freelist(cachep, l3, l3->free_objects);
+>>>> +		if (!list_empty(&l3->slabs_full) ||
+>>>> +					!list_empty(&l3->slabs_partial)) {
+>>>> +			/*
+>>>> +			 * Continue to iterate through each slab cache to free
+>>>> +			 * as many nodelists as possible even though the
+>>>> +			 * offline will be canceled.
+>>>> +			 */
+>>>> +			ret = -EBUSY;
+>>>> +			continue;
+>>>> +		}
+>>>> +		kfree(l3);
+>>>> +		cachep->nodelists[node] = NULL;
+>>> What's stopping races of other CPUs trying to access l3 and array
+>>> caches while they're being freed?
+>>>
+>> numa_node_id() will not return an offlined nodeid and cache_alloc_node() 
+>> already does a fallback to other onlined nodes in case a nodeid is passed 
+>> to kmalloc_node() that does not have a nodelist.  l3->shared and l3->alien 
+>> cannot be accessed without l3->list_lock (drain, cache_alloc_refill, 
+>> cache_flusharray) or cache_chain_mutex (kmem_cache_destroy, cache_reap).
+> 
+> Yeah, but can't it _have_ a nodelist (ie. before it is set to NULL here)
+> while it is being accessed by another CPU and concurrently being freed
+> on this one? 
+> 
+> 
+>>>> +	}
+>>>> +	return ret;
+>>>> +}
+>>>> +
+>>>> +/*
+>>>> + * Onlines nid either as the result of memory hot-add or canceled hot-remove.
+>>>> + */
+>>>> +static int __meminit slab_node_online(int nid)
+>>>> +{
+>>>> +	int ret;
+>>>> +	mutex_lock(&cache_chain_mutex);
+>>>> +	ret = init_cache_nodelists_node(nid);
+>>>> +	mutex_unlock(&cache_chain_mutex);
+>>>> +	return ret;
+>>>> +}
+>>>> +
+>>>> +/*
+>>>> + * Offlines nid either as the result of memory hot-remove or canceled hot-add.
+>>>> + */
+>>>> +static int __meminit slab_node_offline(int nid)
+>>>> +{
+>>>> +	int ret;
+>>>> +	mutex_lock(&cache_chain_mutex);
+>>>> +	ret = free_cache_nodelists_node(nid);
+>>>> +	mutex_unlock(&cache_chain_mutex);
+>>>> +	return ret;
+>>>> +}
+>>>> +
+>>>> +static int __meminit slab_memory_callback(struct notifier_block *self,
+>>>> +					unsigned long action, void *arg)
+>>>> +{
+>>>> +	struct memory_notify *mnb = arg;
+>>>> +	int ret = 0;
+>>>> +	int nid;
+>>>> +
+>>>> +	nid = mnb->status_change_nid;
+>>>> +	if (nid < 0)
+>>>> +		goto out;
+>>>> +
+>>>> +	switch (action) {
+>>>> +	case MEM_GOING_ONLINE:
+>>>> +	case MEM_CANCEL_OFFLINE:
+>>>> +		ret = slab_node_online(nid);
+>>>> +		break;
+>>> This would explode if CANCEL_OFFLINE fails. Call it theoretical and
+>>> put a panic() in here and I don't mind. Otherwise you get corruption
+>>> somewhere in the slab code.
+>>>
+>> MEM_CANCEL_ONLINE would only fail here if a struct kmem_list3 couldn't be 
+>> allocated anywhere on the system and if that happens then the node simply 
+>> couldn't be allocated from (numa_node_id() would never return it as the 
+>> cpu's node, so it's possible to fallback in this scenario).
+> 
+> Why would it never return the CPU's node? It's CANCEL_OFFLINE that is
+> the problem.
 
-On Mon, Mar 22, 2010 at 7:17 PM, Frank Ch. Eigler <fche@redhat.com> wrote:
-> In your very previous paragraphs, you enumerate two separate causes:
-> "repository structure" and "development/maintenance process" as being
-> sources of "fun".  Please simply accept that the former is considered
-> by many as absolutely trivial compared to the latter, and additional
-> verbose repetition of your thesis will not change this.
+So I was thinking of pushing this towards Linus but I didn't see anyone 
+respond to Nick's concerns. I'm not that familiar with all this hotplug 
+stuff so can someone make also Nick happy so we can move forward?
 
-I can accept that many people consider it trivial but the problem is
-that we have _real data_ on kmemtrace and now perf that the amount of
-contributors is significantly smaller when your code is outside the
-kernel repository. Now admittedly both of them are pretty intimate
-with the kernel but Ingo's suggestion of putting kvm-qemu in tools/ is
-an interesting idea nevertheless.
-
-It's kinda funny to see people argue that having an external
-repository is not a problem and that it's not a big deal if building
-something from the repository is slightly painful as long as it
-doesn't require a PhD when we have _real world_ experience that it
-_does_ limit developer base in some cases. Whether or not that applies
-to kvm remains to be seen but I've yet to see a convincing argument
-why it doesn't.
-
-                        Pekka
+			Pekka
