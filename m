@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab0CVMis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:38:48 -0400
-Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:34336 "EHLO
+	id S1754735Ab0CVMjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:39:17 -0400
+Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:34611 "EHLO
 	ppsw-6.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab0CVMiq (ORCPT
+	with ESMTP id S1754631Ab0CVMjP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:38:46 -0400
+	Mon, 22 Mar 2010 08:39:15 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BA76568.4070002@jic23.retrosnub.co.uk>
-Date: Mon, 22 Mar 2010 12:41:12 +0000
+Message-ID: <4BA76586.6040200@jic23.retrosnub.co.uk>
+Date: Mon, 22 Mar 2010 12:41:42 +0000
 From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
 MIME-Version: 1.0
@@ -19,9 +19,9 @@ To: Wolfram Sang <w.sang@pengutronix.de>
 CC: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
        devel@driverdev.osuosl.org
-Subject: Re: [PATCH 21/24] staging/iio/adc: fix dangling pointers
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-22-git-send-email-w.sang@pengutronix.de>
-In-Reply-To: <1269094385-16114-22-git-send-email-w.sang@pengutronix.de>
+Subject: Re: [PATCH 22/24] staging/iio/light: fix dangling pointers
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-23-git-send-email-w.sang@pengutronix.de>
+In-Reply-To: <1269094385-16114-23-git-send-email-w.sang@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,35 +35,36 @@ On 03/20/10 14:13, Wolfram Sang wrote:
 > 
 > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+
 Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-Thanks,
+Thanks for this one as well!
 > ---
 > 
 > Found using coccinelle, then reviewed. Full patchset is available via
 > kernel-janitors, linux-i2c, and LKML.
 > ---
->  drivers/staging/iio/adc/max1363_core.c |    2 ++
+>  drivers/staging/iio/light/tsl2563.c |    2 ++
 >  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/staging/iio/adc/max1363_core.c b/drivers/staging/iio/adc/max1363_core.c
-> index 9703881..1682fd0 100644
-> --- a/drivers/staging/iio/adc/max1363_core.c
-> +++ b/drivers/staging/iio/adc/max1363_core.c
-> @@ -556,6 +556,7 @@ error_put_reg:
->  	if (!IS_ERR(st->reg))
->  		regulator_put(st->reg);
->  error_free_st:
+> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+> index 78b9432..286559d 100644
+> --- a/drivers/staging/iio/light/tsl2563.c
+> +++ b/drivers/staging/iio/light/tsl2563.c
+> @@ -681,6 +681,7 @@ static int __devinit tsl2563_probe(struct i2c_client *client,
+>  fail2:
+>  	iio_device_unregister(chip->indio_dev);
+>  fail1:
 > +	i2c_set_clientdata(client, NULL);
->  	kfree(st);
+>  	kfree(chip);
+>  	return err;
+>  }
+> @@ -691,6 +692,7 @@ static int tsl2563_remove(struct i2c_client *client)
 >  
->  error_ret:
-> @@ -573,6 +574,7 @@ static int max1363_remove(struct i2c_client *client)
->  		regulator_disable(st->reg);
->  		regulator_put(st->reg);
->  	}
+>  	iio_device_unregister(chip->indio_dev);
+>  
 > +	i2c_set_clientdata(client, NULL);
->  	kfree(st);
->  
+>  	kfree(chip);
 >  	return 0;
+>  }
 
