@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab0CVHFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 03:05:01 -0400
-Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:59760 "EHLO
-	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753321Ab0CVHFA (ORCPT
+	id S1754200Ab0CVHFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 03:05:46 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:38754 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753743Ab0CVHFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 03:05:00 -0400
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
- Intel x86 CPUs)
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Thomas Renninger <trenn@suse.de>, Dave Jones <davej@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-In-Reply-To: <4BA6BD0A.6030303@linux.intel.com>
-References: <1268399863.3407.15.camel@localhost>
-	 <201003182143.22929.trenn@suse.de> <1268985679.3395.47.camel@localhost>
-	 <201003202237.57477.trenn@suse.de>  <4BA6BD0A.6030303@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Mar 2010 08:04:52 +0100
-Message-ID: <1269241492.3485.16.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
+	Mon, 22 Mar 2010 03:05:44 -0400
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c to fw_memmap.c
+References: <1269155601-18247-1-git-send-email-yinghai@kernel.org>
+	<1269155601-18247-7-git-send-email-yinghai@kernel.org>
+	<1269225435.8599.70.camel@pasglop> <4BA6EA62.1030603@kernel.org>
+	<1269234723.8599.76.camel@pasglop> <4BA709AC.6070902@kernel.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 22 Mar 2010 00:05:25 -0700
+In-Reply-To: <4BA709AC.6070902@kernel.org> (Yinghai Lu's message of "Sun\, 21 Mar 2010 23\:09\:48 -0700")
+Message-ID: <m1vdcox2dm.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: yinghai@kernel.org, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org, davem@davemloft.net, akpm@linux-foundation.org, hpa@zytor.com, tglx@linutronix.de, mingo@elte.hu, benh@kernel.crashing.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, den 21.03.2010, 17:42 -0700 schrieb Arjan van de Ven:
-> On 3/20/2010 14:37, Thomas Renninger wrote:
-> 
-> > It also seem to be (hopefully) a minor feature for timechart, so this should
-> > not hurt that much (yet).
-> 
-> It's actually a major feature for timechart, and one of the key things I and a bunch of others
-> inside Intel use timechart for.
-> 
-It's a major feature for us too.
-I suppose, the cpufreq_notify_transition calls are correct (meaning
-being called for all related cpus) for every driver. So there's still
-the option to include it in the POST_CHANGE section of this function.
-Could this be okay for the both of you?
+Yinghai Lu <yinghai@kernel.org> writes:
 
+> On 03/21/2010 10:12 PM, Benjamin Herrenschmidt wrote:
+>> It -may- well be that adapting x86 to lmb isn't a practical approach,
+>> but if that was the case, then please justify why with precise technical
+>> reasons, which we can discuss then in details and make a decision based
+>> on that.
+>
+> 1. lmb is merging region when you add one new reserved region. 
+> early_res doesn't do that merge. so later it could figure wrong freeing.
+> <recently add free_early_partial, for per cpu setup only>
 
--- 
-Robert Schoene
-Technische Universitaet Dresden
-Zentrum fuer Informationsdienste und Hochleistungsrechnen
-01062 Dresden
+> 2. mem type in e820 map has more than RAM, it include RAM, reserved, ACPI, acpi nvs, and type 9?, and KERN_RESERVED...
+lmb has a reserved type as well.
 
-Tel.: (0351) 463-42483, Fax: (0351) 463-37773
-E-Mail: Robert.Schoene@tu-dresden.de
+Beyond that does anything except /proc/iomem and acpi care?
 
+> 3. early res, every range has one name tag.
+> 4. early_res is array based, and it could auto double the array size and copy the old one to new one. and first entry in new array is for array itself.
+>
+> if want x86 to use lmb, the e820 map and the lmb.memory are duplicated.
+> also need to have lmb.memory to support more type, otherwise still need to go back to check e820 about e820 reserved etc.
+
+lmb clearly supports reserved regions, as well as ram regions.
+
+Eric
