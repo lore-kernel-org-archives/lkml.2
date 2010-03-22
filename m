@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab0CVHp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 03:45:56 -0400
-Received: from demumfd001.nsn-inter.net ([93.183.12.32]:10066 "EHLO
-	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab0CVHpz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 03:45:55 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1754238Ab0CVHqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 03:46:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58955 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753512Ab0CVHqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 03:46:30 -0400
+Date: Mon, 22 Mar 2010 07:45:51 GMT
+From: tip-bot for Colin Ian King <colin.king@canonical.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+       colin.king@canonical.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+       colin.king@canonical.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1268994482.1798.6.camel@lenovo>
+References: <1268994482.1798.6.camel@lenovo>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/urgent] softlockup: Stop spurious softlockup messages due to overflow
+Message-ID: <tip-8c2eb4805d422bdbf60ba00ff233c794d23c3c00@git.kernel.org>
+Git-Commit-ID: 8c2eb4805d422bdbf60ba00ff233c794d23c3c00
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Questions about SMP bootup control
-Date: Mon, 22 Mar 2010 15:45:36 +0800
-Message-ID: <2234BBB33B4B2048B28E3B3ACFC9795C01B53656@CNBEEXC007.nsn-intra.net>
-In-Reply-To: <87tys9dofy.fsf@basil.nowhere.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Questions about SMP bootup control
-Thread-Index: AcrJb9jT/dBmxl1BSHCnN4ArtWRJ+wAIommw
-References: <1269155601-18247-1-git-send-email-yinghai@kernel.org><1269155601-18247-7-git-send-email-yinghai@kernel.org><1269225435.8599.70.camel@pasglop><2234BBB33B4B2048B28E3B3ACFC9795C01B53251@CNBEEXC007.nsn-intra.net> <87tys9dofy.fsf@basil.nowhere.org>
-From: "Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com>
-To: "ext Andi Kleen" <andi@firstfloor.org>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-X-OriginalArrivalTime: 22 Mar 2010 07:45:46.0839 (UTC) FILETIME=[AF173670:01CAC993]
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 22 Mar 2010 07:45:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  8c2eb4805d422bdbf60ba00ff233c794d23c3c00
+Gitweb:     http://git.kernel.org/tip/8c2eb4805d422bdbf60ba00ff233c794d23c3c00
+Author:     Colin Ian King <colin.king@canonical.com>
+AuthorDate: Fri, 19 Mar 2010 10:28:02 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 21 Mar 2010 19:30:13 +0100
+
+softlockup: Stop spurious softlockup messages due to overflow
+
+Ensure additions on touch_ts do not overflow.  This can occur
+when the top 32 bits of the TSC reach 0xffffffff causing
+additions to touch_ts to overflow and this in turn generates
+spurious softlockup warnings.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: <stable@kernel.org>
+LKML-Reference: <1268994482.1798.6.camel@lenovo>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/softlockup.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/softlockup.c b/kernel/softlockup.c
+index 0d4c789..4b493f6 100644
+--- a/kernel/softlockup.c
++++ b/kernel/softlockup.c
+@@ -155,11 +155,11 @@ void softlockup_tick(void)
+ 	 * Wake up the high-prio watchdog task twice per
+ 	 * threshold timespan.
+ 	 */
+-	if (now > touch_ts + softlockup_thresh/2)
++	if (time_after(now - softlockup_thresh/2, touch_ts))
+ 		wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
  
-
------Original Message-----
-From: ext Andi Kleen [mailto:andi@firstfloor.org] 
-Sent: Monday, March 22, 2010 11:29 AM
-To: Zhu, Yijun (NSN - CN/Beijing)
-Cc: linux-kernel@vger.kernel.org; linux-arch@vger.kernel.org
-Subject: Re: Questions about SMP bootup control
-
-"Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com> writes:
-
-> Hi All:
->
-> I want to do some modification on the SMP architecture.
->
-> Purpose:
-> Only the first CPU is running the linux OS, while others do some
-private
-> services processing.
->
-> My solution:
-> In the end of the start_secondary() function, I try to schedu the
-slave
-> cpu to call my private endless loop instead of cpu_idle();
->
-> Result:
-> The system can NOT up, there is no interactive cli.
->
-> Question:
-> Is there some wrong with my modification or I go to the wrong way?
-
-
-> Presumably you're doing this to own that CPU exclusively.
-> 
-> Hooking at cpu_idle is not very useful then because interrupts will be
-> already enabled and the system participate in IPIs etc, so you can't
-> simply disable them, the others will miss them.
-> 
-> You would rather need to prevent them from being started in the
-> first place, e.g. by exluding them with maxcpus=..
-> 
-> A better alternative might be to use isolcpus=... and schedule
-> a standard program.
-> 
-> -Andi
-> -- 
-> ak@linux.intel.com -- Speaking for myself only.
-
-Thank you very much. But when I try to apply with the isolcpus opinion,
-It seems it still can NOT work.
-All other CPUs are isolated, only the first one is left.
-Then I found all others are still initialized by the start_secondary()
-even I use the isolated opinion, in the end,
-I add an endless loop instead of cpu_idle(), The system still can NOT
-up.
-
-So is there any mistake in what I did, could someone be kindness to give
-me more suggestions.
-
-Thanks in advance.
-
-
-
+ 	/* Warn about unreasonable delays: */
+-	if (now <= (touch_ts + softlockup_thresh))
++	if (time_before_eq(now - softlockup_thresh, touch_ts))
+ 		return;
+ 
+ 	per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
