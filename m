@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab0CVCq4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 22:46:56 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:10629 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753845Ab0CVCqz convert rfc822-to-8bit (ORCPT
+	id S1753872Ab0CVC4H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 22:56:07 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:37208 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab0CVC4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 22:46:55 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Sun, 21 Mar 2010 22:56:05 -0400
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Sun, 21 Mar 2010 22:56:05 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=H++ZQmRQFFXVgns8/f/zNirCjzVggUkHNaoXalfNwfQ7eLfcapxi3LSilZmtD99FK8
+         fqaemwTdfpYlgwNdouWgjSo3gM4uO10XIscwTHk5s/kRn4vsHDer958LewgZk1tyrwvW
+         s6l/AFlIGKSzUOshxh2X0wdDRI6ZEv9Wd4GTo=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+In-Reply-To: <hTwaxgnIZ2O.A.DEE.3OopLB@chimera>
+References: <QQGfxbJf48H.A.NFD.uNopLB@chimera> <hTwaxgnIZ2O.A.DEE.3OopLB@chimera>
+From: =?UTF-8?B?UkFMT1ZJQ0gsIEtyaXN0w7Nm?= <kristof.ralovich@gmail.com>
+Date: Sun, 21 Mar 2010 22:47:57 -0400
+Message-ID: <5712ce4f1003211947i1a2ac84ch269885f7c2888c4f@mail.gmail.com>
+Subject: Re: [Bug #15392] The kernel does not start up.
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Subject: Questions about SMP bootup control
-Date: Mon, 22 Mar 2010 10:46:32 +0800
-Message-ID: <2234BBB33B4B2048B28E3B3ACFC9795C01B53251@CNBEEXC007.nsn-intra.net>
-In-Reply-To: <1269225435.8599.70.camel@pasglop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Questions about SMP bootup control
-Thread-Index: AcrJaLuy9BJ5rzGqTTiK/wIfAP+fqgAAC35A
-References: <1269155601-18247-1-git-send-email-yinghai@kernel.org> <1269155601-18247-7-git-send-email-yinghai@kernel.org> <1269225435.8599.70.camel@pasglop>
-From: "Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-X-OriginalArrivalTime: 22 Mar 2010 02:46:52.0622 (UTC) FILETIME=[ED76DEE0:01CAC969]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All:
+The issue is still there with 2.6.33-rc1, 2.6.33 and 2.6.33.1 too.
 
-I want to do some modification on the SMP architecture.
+Kristof
 
-Purpose:
-Only the first CPU is running the linux OS, while others do some private
-services processing.
-
-My solution:
-In the end of the start_secondary() function, I try to schedu the slave
-cpu to call my private endless loop instead of cpu_idle();
-
-Result:
-The system can NOT up, there is no interactive cli.
-
-Question:
-Is there some wrong with my modification or I go to the wrong way?
-
-Thank you very much.
+On Sun, Mar 21, 2010 at 16:30, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.32 and 2.6.33.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15392
+> Subject         : The kernel does not start up.
+> Submitter       : Kristóf Ralovich <kristof.ralovich@gmail.com>
+> Date            : 2010-02-25 06:52 (25 days old)
+>
+>
+>
