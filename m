@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab0CVLcb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 07:32:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37435 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab0CVLca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 07:32:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=AiA1Yj1wTsnkaiLDfa2SZC0WJSRJLB2CYJfG2wOXWUjtqEXPRtd98+Hb7EZV/G16wy
-         9Sn2LtCQcnjujkMlENMZ6Uj6gqrHhHuNmG+nyO5nOswYM7g+uTg17pFju+zo/xcFq01y
-         vYFBaXIwxQD6QszDnQizaDYNJnCDEpSwlFe6o=
+	id S1754573Ab0CVLdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 07:33:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750997Ab0CVLdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 07:33:21 -0400
+Date: Mon, 22 Mar 2010 22:33:17 +1100
+From: Nick Piggin <npiggin@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
+Message-ID: <20100322113317.GK17637@laptop>
+References: <20100322053937.GA17637@laptop>
+ <20100322110758.GA13690@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <p06240805c7cc98bdf217@192.168.9.6>
-References: <c384c5ea1003211403t494bd794hece06d8b8cfcb54@mail.gmail.com>
-	 <p06240805c7cc98bdf217@192.168.9.6>
-Date: Mon, 22 Mar 2010 12:32:25 +0100
-Message-ID: <c384c5ea1003220432i78883b0fof64f3ffa666a0776@mail.gmail.com>
-Subject: Re: CrystalHD driver safe on big endian systems?
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: "Scott D. Davilla" <davilla@4pi.com>
-Cc: jarod@wilsonet.com, "Naren (Narendra) Sankar" <nsankar@broadcom.com>,
-       "hancockrwd@gmail.com" <hancockrwd@gmail.com>,
-       "jarod@redhat.com" <jarod@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "abraham.manu@gmail.com" <abraham.manu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100322110758.GA13690@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Scott and others,
+On Mon, Mar 22, 2010 at 07:07:58AM -0400, Christoph Hellwig wrote:
+> > @@ -2472,7 +2472,14 @@ int try_to_release_page(struct page *pag
+> >  
+> >  	if (mapping && mapping->a_ops->releasepage)
+> >  		return mapping->a_ops->releasepage(page, gfp_mask);
+> > -	return try_to_free_buffers(page);
+> > +	else {
+> > +		static bool warned = false;
+> > +		if (!warned) {
+> > +			warned = true;
+> > +			print_symbol("address_space_operations %s missing releasepage method. Use try_to_free_buffers.\n", (unsigned long)page->mapping->a_ops);
+> > +		}
+> > +		return try_to_free_buffers(page);
+> > +	}
+> 
+> I don't think this is correct.  We currently also call
+> try_to_free_buffers if the page does not have a mapping, and from
+> conversations with Andrew long time ago that case actually does seem to
+> be nessecary due to behaviour in ext3/jbd.  So you really should
+> only warn if there is a mapping to start with.  In fact your code will
+> dereference a potential NULL pointer in that case.
 
-On Mon, Mar 22, 2010 at 4:53 AM, Scott D. Davilla <davilla@4pi.com> wrote:
->
-> <..> From what I've seen in code, it looks definite little endian based and would need
-> a look over regarding byte swap.
->
-What parts of the code assumes little endian from what you've seen?
+Good point.
 
-Now, byte swap endianess is one thing, C bitfields in combination with
-it, another. I have given it a first shot here (mailer unsuitable for
-sending patches), still failed on PowerPC:
-http://www.sidebranch.com/crystalhd/
+I think some of that code is actually dead.
 
-May I suggest we instrument all register access functions with a
-printk() of the register being written? Then I can compare little
-endian access patterns with big endian, to be sure we get the
-bitfields, code assumptions and byte swap correctly.
+is_page_cache_freeable will check for the page reclaim reference,
+the pagecache reference, and the PagePrivate reference.
 
-Regards,
--- 
-Leon
+If the page is removed from pagecache, that reference will be
+dropped but is_page_cache_freeable() will not consider that and
+fail.
+
+NULL page can still come in there from buffer_heads_over_limit AFAIKS,
+but if we are relying on that for freeing pages then it can break if a
+lot of memory is tied up in other things.
+
+That's all really ugly too. It means no other filesystem may take an 
+action to take in case of NULL page->mapping, which means it is really
+the wrong thing to do. Fortunately fsblock has proper refcounting so it
+would never need to handle this case.
+
+> 
+> And as others said, this patch only makes sense after the existing
+> filesystems are updated to fill out all methods, and for the case
+> of try_to_free_buffers and set_page_dirty until we have suitable
+> and well-named default operations available.
+
+__set_page_dirty_nobuffers seems OK. Everyone has had to use that
+until now anyway. Agreed about try_to_free_buffers.
+
+> 
+> Btw, any reason this doesn't use the %pf specifier to printk
+> instead of dragging in print_symbol?  Even better would
+> be to just print the fs type from mapping->host->i_sb->s_type->name.
+
+Ah, because I didn't know about it. Thanks. Name I guess can be
+ambiguous if there is more than one aop. I'll make it a macro and
+print both maybe.
+
