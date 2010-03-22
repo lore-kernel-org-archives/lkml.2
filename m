@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab0CVP1L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 11:27:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57284 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab0CVP1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 11:27:09 -0400
-Date: Mon, 22 Mar 2010 16:27:05 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Stephane Chatty <chatty@enac.fr>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
-       Michael Poole <mdpoole@troilus.org>, simon.windows@gmail.com,
-       Sean Hildebrand <silverwraithii@gmail.com>,
-       Sid Boyce <sboyce@blueyonder.co.uk>, linux-kernel@vger.kernel.org,
-       linux-doc@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 2/2] Updated hid_blacklist, reformatted code and removed
- unused variable
-In-Reply-To: <201003221614.38424.erazor_de@users.sourceforge.net>
-Message-ID: <alpine.LNX.2.00.1003221626070.18642@pobox.suse.cz>
-References: <1268926981.11269.3.camel@localhost> <1269269304.2236.1.camel@localhost> <alpine.LNX.2.00.1003221552360.18642@pobox.suse.cz> <201003221614.38424.erazor_de@users.sourceforge.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753619Ab0CVP25 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 11:28:57 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:32892 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab0CVP2z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 11:28:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Aa2FlVT+Ma2KJCb1KXt1nGW58xgtlupAsPmvGJ0yj5W/X2Dk/hNKYjnLY0HzWg69pU
+         eZQyiXftiGWJGXFuci5Smsxq8yPIZoLc5VOs2ZhzQYIB8lpaFcDdBEM8l9GoZA7Pnpo8
+         wUAmVZ9N3KdfJgwkiSx3rZwJ/MFlULz5HE0YA=
+Date: Mon, 22 Mar 2010 18:28:45 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+       "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch v3] pcrypt: handle crypto_get_attr_type() errors
+Message-ID: <20100322152845.GT21571@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Steffen Klassert <steffen.klassert@secunet.com>,
+	Herbert Xu <herbert@gondor.apana.org.au>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20100321092847.GJ5331@bicker> <20100322132342.GJ20508@secunet.com> <20100322135319.GQ21571@bicker> <20100322145357.GK20508@secunet.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100322145357.GK20508@secunet.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010, Stefan Achatz wrote:
+I was concerned about the error handling for crypto_get_attr_type() in
+pcrypt_alloc_aead().  Steffen Klassert pointed out that we could simply
+avoid calling crypto_get_attr_type() if we passed the type and mask as a
+parameters.
 
-> > > diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> > > index 368fbb0..dbd6fb8 100644
-> > > --- a/drivers/hid/hid-core.c
-> > > +++ b/drivers/hid/hid-core.c
-> > > @@ -1346,6 +1346,7 @@ static const struct hid_device_id hid_blacklist[] =
-> > > { { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
-> > > USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) }, {
-> > > HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH)
-> > > }, { HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-> > > USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) }, +	{
-> > > HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) }, {
-> > > HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
-> > > { HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER)
-> > > }, { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY,
-> > > USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
-> >
-> > Thanks for the fix. I only wonder how well has the driver been tested, as
-> > without this change it couldn't get to operate the device at all ... ?
-> >
-> > Thanks,
-> 
-> Hi,
-> 
-> As most testing was done with external module compilation on different kernel 
-> versions with generic hid compiled as internal or as module I have a script 
-> that uses the drivers sysfs bind/unbind funtionality to switch from generic 
-> hid to kone driver. Thats issued via udev and was active all the time.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+All three versions have basically been the same except for style issues.
+I will confess that this (hopefully final :P) version looks much nicer 
+than the earlier ones.
 
-OK, thanks.
-
-I will fold the patches into one, and I will also make the driver 
-independent on CONFIG_EMBEDDED, to be comopatible with other HID drivers 
-which are not simple quirks, but rather full, stand-alone HID device 
-drivers.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
+index 8020124..247178c 100644
+--- a/crypto/pcrypt.c
++++ b/crypto/pcrypt.c
+@@ -315,16 +315,13 @@ out_free_inst:
+ 	goto out;
+ }
+ 
+-static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb)
++static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb,
++						 u32 type, u32 mask)
+ {
+ 	struct crypto_instance *inst;
+ 	struct crypto_alg *alg;
+-	struct crypto_attr_type *algt;
+-
+-	algt = crypto_get_attr_type(tb);
+ 
+-	alg = crypto_get_attr_alg(tb, algt->type,
+-				  (algt->mask & CRYPTO_ALG_TYPE_MASK));
++	alg = crypto_get_attr_alg(tb, type, (mask & CRYPTO_ALG_TYPE_MASK));
+ 	if (IS_ERR(alg))
+ 		return ERR_CAST(alg);
+ 
+@@ -365,7 +362,7 @@ static struct crypto_instance *pcrypt_alloc(struct rtattr **tb)
+ 
+ 	switch (algt->type & algt->mask & CRYPTO_ALG_TYPE_MASK) {
+ 	case CRYPTO_ALG_TYPE_AEAD:
+-		return pcrypt_alloc_aead(tb);
++		return pcrypt_alloc_aead(tb, algt->type, algt->mask);
+ 	}
+ 
+ 	return ERR_PTR(-EINVAL);
