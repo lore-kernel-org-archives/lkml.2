@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab0CVOJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:09:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15438 "EHLO mx1.redhat.com"
+	id S1754706Ab0CVOKL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:10:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18904 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753687Ab0CVOJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:09:25 -0400
-Date: Mon, 22 Mar 2010 10:09:20 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Dan Carpenter <error27@gmail.com>, Josef Bacik <josef@redhat.com>,
-       chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: locking problems: Btrfs: be more selective in the defrag ioctl
-Message-ID: <20100322140920.GB2383@localhost.localdomain>
-References: <20100320113851.GB5331@bicker> <20100322134720.GA2383@localhost.localdomain> <20100322140330.GR21571@bicker>
+	id S1752935Ab0CVOKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:10:08 -0400
+Message-ID: <4BA77A86.2040109@redhat.com>
+Date: Mon, 22 Mar 2010 10:11:18 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc11 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322140330.GR21571@bicker>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Mel Gorman <mel@csn.ul.ie>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 1/10] Move Macro W to insn.h
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6> <20100320142505.11427.30133.sendpatchset@localhost6.localdomain6> <4BA4EEAE.10202@redhat.com> <20100322062450.GD30463@linux.vnet.ibm.com>
+In-Reply-To: <20100322062450.GD30463@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 05:03:30PM +0300, Dan Carpenter wrote:
-> On Mon, Mar 22, 2010 at 09:47:21AM -0400, Josef Bacik wrote:
-> > On Sat, Mar 20, 2010 at 02:38:51PM +0300, Dan Carpenter wrote:
-> > > Hi Chris,
-> > > 
-> > > There is a locking problem in 
-> > > 	940100a4a7b78 "Btrfs: be more selective in the defrag ioctl"
-> > > 
-> > > There are two places where we break out of the while loop under the 
-> > > lock.
-> > > 
-> > > fs/btrfs/ioctl.c +708 btrfs_defrag_file(159) error: double lock 'mutex:&inode->i_mutex'
-> > >    600                  mutex_lock(&inode->i_mutex);
-> > >    601                  if (range->flags & BTRFS_DEFRAG_RANGE_COMPRESS)
-> > >    602                          BTRFS_I(inode)->force_compress = 1;
-> > >    603  
-> > >    604                  ret = btrfs_check_data_free_space(root, inode, PAGE_CACHE_SIZE);
-> > >    605                  if (ret) {
-> > >    606                          ret = -ENOSPC;
-> > >    607                          break;
-> > > 
-> > > 	Here.
-> > > 
-> > >    608                  }
-> > >    609  
-> > >    610                  ret = btrfs_reserve_metadata_for_delalloc(root, inode, 1);
-> > >    611                  if (ret) {
-> > >    612                          btrfs_free_reserved_data_space(root, inode,
-> > >    613                                                         PAGE_CACHE_SIZE);
-> > >    614                          ret = -ENOSPC;
-> > >    615                          break;
-> > > 
-> > > 	And here.
-> > > 
-> > >    616                  }
-> > > 
-> > > Maybe we should have "goto err_reservations;" instead of break?  I
-> > > don't know the code well enough to say.
-> > 
-> > No, everything is accounted for correctly.  If the metadata reservation fails,
-> > we free the data space reservation and break.  If the data space reservation
-> > fails, we're good to go and can just exit.  Thanks,
-> > 
+Srikar Dronamraju wrote:
+> * Masami Hiramatsu <mhiramat@redhat.com> [2010-03-20 11:50:06]:
 > 
-> What about the lock on line 606?
+>> Srikar Dronamraju wrote:
+>>> Move Macro W to asm/insn.h
+>>>
+>>> Macro W used to know if the instructions are valid for
+>>> user-space/kernel space.  This macro is used by kprobes and
+>>> user_bkpt. (i.e user space breakpoint assistance layer.) So moving it
+>>> to a common header file asm/insn.h.
+>>
+>> Hmm, I don't think this shortest macro name is good to expose
+>> commonly... And also, since we already have inat (instruction
+>> attribute) table, we'd better expand an inat bit to indicate
+>> which instruction can be probed/boosted.
+>>
 > 
-> > >    600                  mutex_lock(&inode->i_mutex);
-> 
-> If we break on line 615 or 607 that means that we return with the lock 
-> held, or if (range->flags & BTRFS_DEFRAG_RANGE_COMPRESS) is true then we
-> dead lock.
-> 
+> Guess we would need three bits, 
+> - Instruction can be probed in kernel.
 
-Ahh yeah you are right, should probably just put a mutex_unlock before the break
-in both cases.  Thanks,
+Currently, we don't have any maps for this bit.
 
-Josef
+> - Instruction can be probed in user space.
+> - Instruction can be boosted.
+
+Other two bits are ok for me :)
+
+Thank you,
+
+> 
+> Or do you have other ideas?
+> 
+> --
+> Thanks and Regards
+> Srikar
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
+
