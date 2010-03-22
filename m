@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755668Ab0CVWKU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 18:10:20 -0400
-Received: from www.tglx.de ([62.245.132.106]:59508 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab0CVWKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 18:10:18 -0400
-Date: Mon, 22 Mar 2010 23:09:26 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-In-Reply-To: <4BA7CE1B.9070109@kernel.org>
-Message-ID: <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain>
-References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
- <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756000Ab0CVWMo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 18:12:44 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37807 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755492Ab0CVWMm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 18:12:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=U4pw1w56oq3UOf8sSkUNKTqeCrzJwWuJLl4XGX49gU/EsOqYWXBN2UI+5G8ZmhugW0
+         NLZPJph0UJzHvjWKuDwT8WQp71m3rFDM7mV6euNITD+fcnM43d1u/z8hjA/vrbTQWU7X
+         xp9PeWVFkHWIKyhV3quYhiQQAimhW4l4ZupWY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100322201637.GA8476@bombe-desk.opditex>
+References: <c384c5ea1003221218o2dfcf445s8b7fd5c08076bdab@mail.gmail.com>
+	 <20100322201637.GA8476@bombe-desk.opditex>
+Date: Mon, 22 Mar 2010 23:12:40 +0100
+Message-ID: <c384c5ea1003221512s229d1d94ta7690d109b75843a@mail.gmail.com>
+Subject: Re: Memory-mapped I/O barriers, state of affairs?
+From: Leon Woestenberg <leon.woestenberg@gmail.com>
+To: Leon Woestenberg <leon.woestenberg@gmail.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai,
+Hello Andreas, all,
 
-On Mon, 22 Mar 2010, Yinghai Lu wrote:
-> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
-> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+On Mon, Mar 22, 2010 at 9:16 PM, Andreas Bombe <aeb@debian.org> wrote:
+> On Mon, Mar 22, 2010 at 08:18:49PM +0100, Leon Woestenberg wrote:
+>> What is the current solution for that particular problem, i.e. how
+>> should I make sure host memory writes are committed before I have an
+>> external DMA device act on it?
 >
-> >> The main point is that there is still no answer why lmb cannot be used and 
-> >> the reposted patch still is a full move of the x86 e820 functions into 
-> >> kernel/fw_memmap.c.
-> >>
-> >> That's not a generalization, that's simply a relocation of x86 code to 
-> >> kernel/. And I agree with Dave and Ben that this is an useless exercise.
-> > 
-> > ok - i think you are right. Yinghai, mind having a look at using
-> > lib/lmb.c for all this?
-> 
-> 1. need to keep e820
+> The dma_sync_* functions, if you reuse DMA buffers without unmapping,
+> take care of that.  Otherwise the process of mapping them handles it.
+>
+The mapping makes the memory cache-coherent. I already use that.
 
-  That's neither an argument for using lmb nor an argument not to use
-  lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
-  just to feed information into a (hopefully) generic early resource
-  management facility.
+But does that mean that this coherency is guaranteed to occur before I
+start MMIO access to a device, i.e. is there a guaranteed ordering
+between the writes?
 
-  e820 _CANNOT_ be generalized. Period.
-
-> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
-
-  What's finizing_e820 ???
-
-> 3. use lmb.reserved to replace early_res.
-
-  What's the implication of doing that ?
- 
-> current lmb is merging the region, we can not use name tag any more.
-
-  What's wrong with merging of regions ? Are you arguing about a
-  specific region ("the region") ?
-
-  Which name tag ? And why is that name tag important ?
- 
-> may need to dump early_memtest, and use early_res for bootmem at
-> first.
-
-  Why exactly might early_memtest not longer be possible ?
-
-  What means "early_res for bootmem" ?
-
-Please take some time to explain in detail. Throwing one liners and
-buzzwords w/o context into such a discussion is more than counter
-productive.
-
-Thanks,
-
-	tglx
+Regards,
+-- 
+Leon
