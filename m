@@ -1,112 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab0CVTZW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:25:22 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:50616 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752920Ab0CVTZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:25:19 -0400
-X-Auth-Info: 9aZ+3OUYeTnwoRcq5IA/ua+W/e2Ri9NdALrFkHZTfXs=
-Message-ID: <4BA7C3BE.8040306@grandegger.com>
-Date: Mon, 22 Mar 2010 20:23:42 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
+	id S1755157Ab0CVT1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:27:50 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40661 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab0CVT1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:27:49 -0400
+Date: Mon, 22 Mar 2010 20:27:39 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322192739.GE21919@elte.hu>
+References: <20100322124428.GA12475@elte.hu>
+ <4BA76810.4040609@redhat.com>
+ <20100322143212.GE14201@elte.hu>
+ <4BA7821C.7090900@codemonkey.ws>
+ <20100322155505.GA18796@elte.hu>
+ <4BA796DF.7090005@redhat.com>
+ <20100322165107.GD18796@elte.hu>
+ <4BA7A406.9050203@redhat.com>
+ <20100322173400.GB15795@elte.hu>
+ <4BA7B9E0.5080009@codemonkey.ws>
 MIME-Version: 1.0
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN	module
-References: <>	<1268930324-29841-3-git-send-email-iws@ovro.caltech.edu>	<4BA33D5A.8070000@grandegger.com>	<20100319151914.GB13672@ovro.caltech.edu>	<4BA39C05.8050800@grandegger.com>	<20100319200325.GE13672@ovro.caltech.edu>	<4BA3DAF1.4090206@grandegger.com>	<20100319215227.GF13672@ovro.caltech.edu>	<4BA47F64.8030108@grandegger.com>	<20100322155318.GA19251@ovro.caltech.edu> <4BA7C236.9060609@grandegger.com>
-In-Reply-To: <4BA7C236.9060609@grandegger.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7B9E0.5080009@codemonkey.ws>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfgang Grandegger wrote:
-> Ira W. Snyder wrote:
->> On Sat, Mar 20, 2010 at 08:55:16AM +0100, Wolfgang Grandegger wrote:
->>> Ira W. Snyder wrote:
-> [snip]
->>>> Does this seem right? It seems pretty good to me.
->>> Yes, I'm just missing an error-passive message. What state does "ip -d
->>> link show can0" report.
->>>
->> Ok, here is what I did:
->>
->> $ ip link set can0 up type can bitrate 1000000
->> $ ip link set can1 up type can bitrate 1000000 berr-reporting on
->> $ ip -d -s link
->> 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->>     link/can       
->>     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
->>     bitrate 1000000 sample-point 0.750
->>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->>     clock 8000000  
->>     re-started bus-errors arbit-lost error-warn error-pass bus-off
->>     0          0          0          0          0          0
->>     RX: bytes  packets  errors  dropped overrun mcast
->>     0          0        0       0       0       0
->>     TX: bytes  packets  errors  dropped carrier collsns
->>     0          0        0       0       0       0
->> 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->>     link/can       
->>     can <BERR-REPORTING> state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
->>     bitrate 1000000 sample-point 0.750
->>     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->>     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->>     clock 8000000  
->>     re-started bus-errors arbit-lost error-warn error-pass bus-off
->>     0          0          0          0          0          0
->>     RX: bytes  packets  errors  dropped overrun mcast
->>     0          0        0       0       0       0
->>     TX: bytes  packets  errors  dropped carrier collsns
->>     0          0        0       0       0       0
->>
->> Now, in seperate windows, I ran cansequence and candump. I stopped
->> cansequence when it could not send any more packets (due to the cable
->> being unplugged).
->>
->> $ cansequence -v -e -p can0
->> $ cansequence -v -e -p can1
->> $ candump any,0~0,#FFFFFFFF
->>   can0  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->>
->> This last message is repeated lots more times. That's the flooding we're
->> avoiding with berr-reporting off.
->>
->> I see two types of messages here:
->> 1) bus error (only on can1)
->> 2) controller problems -- tx warning limit reached (both)
->>
->> Am I missing some message? My error frame generation was mostly copied
->> from the sja1000 driver.
+
+* Anthony Liguori <anthony@codemonkey.ws> wrote:
+
+> On 03/22/2010 12:34 PM, Ingo Molnar wrote:
+> >This is really just the much-discredited microkernel approach for keeping
+> >global enumeration data that should be kept by the kernel ...
+> >
+> >Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by Anthony.
+> >There's numerous ways that this can break:
+> >
+> >  - Those special files can get corrupted, mis-setup, get out of sync, or can
+> >    be hard to discover.
+> >
+> >  - The ${HOME}/.qemu/qmp/ solution suggested by Anthony has a very obvious
+> >    design flaw: it is per user. When i'm root i'd like to query _all_ current
+> >    guest images, not just the ones started by root. A system might not even
+> >    have a notion of '${HOME}'.
+> >
+> >  - Apps might start KVM vcpu instances without adhering to the
+> >    ${HOME}/.qemu/qmp/ access method.
+> >
+> >  - There is no guarantee for the Qemu process to reply to a request - while
+> >    the kernel can always guarantee an enumeration result. I dont want 'perf
+> >    kvm' to hang or misbehave just because Qemu has hung.
 > 
-> It seem that you are not getting the error passive interrupt even...
+> If your position basically boils down to, we can't trust userspace
+> and we can always trust the kernel, I want to eliminate any
+> userspace path, then I can't really help you out.
 
-Because you do not enable/handle it. CEVTIND_EPI seems to be missing:
+Why would you want to 'help me out'? I can tell a good solution from a bad one 
+just fine.
 
-http://lxr.linux.no/#linux+v2.6.33/drivers/net/can/sja1000/sja1000.c#L403
+You should instead read the long list of disadvantages above, invert them and 
+list then as advantages for the kernel-based vcpu enumeration solution, apply 
+common sense and go admit to yourself that indeed in this situation a kernel 
+provided enumeration of vcpu contexts is the most robust solution.
 
-Wolfgang.
+It's really as simple as that :-)
+
+Thanks,
+
+	Ingo
