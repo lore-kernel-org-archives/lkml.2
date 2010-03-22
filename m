@@ -1,132 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0CVK7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 06:59:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55384 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab0CVK7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 06:59:37 -0400
-Date: Mon, 22 Mar 2010 11:59:27 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: oerg Roedel <joro@8bytes.org>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-Message-ID: <20100322105927.GB3483@elte.hu>
-References: <1268717232.2813.36.camel@localhost>
- <1268969929.2813.184.camel@localhost>
- <20100319082122.GE12576@elte.hu>
- <20100319172903.GI13108@8bytes.org>
- <20100321184300.GB25922@elte.hu>
- <20100322101451.GK13108@8bytes.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754577Ab0CVLAT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 07:00:19 -0400
+Received: from bohort.kerlabs.com ([62.160.40.57]:46609 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab0CVLAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 07:00:16 -0400
+X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 07:00:15 EDT
+Date: Mon, 22 Mar 2010 11:55:03 +0100
+From: Louis Rilling <Louis.Rilling@kerlabs.com>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: Oren Laadan <orenl@cs.columbia.edu>,
+       Linux Containers <containers@lists.osdl.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH linux-cr] nested pid namespaces (v2)
+Message-ID: <20100322105502.GB5569@localdomain>
+Reply-To: Louis.Rilling@kerlabs.com
+References: <20100319213955.GA17912@us.ibm.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-4448-1269255224-0001-2"
 Content-Disposition: inline
-In-Reply-To: <20100322101451.GK13108@8bytes.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100319213955.GA17912@us.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME-formatted message.  If you see this text it means that your
+E-mail software does not support MIME-formatted messages.
 
-* oerg Roedel <joro@8bytes.org> wrote:
+--=_bohort-4448-1269255224-0001-2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Sun, Mar 21, 2010 at 07:43:00PM +0100, Ingo Molnar wrote:
-> > Having access to the actual executable files that include the symbols achieves 
-> > precisely that - with the additional robustness that all this functionality is 
-> > concentrated into the host, while the guest side is kept minimal (and 
-> > transparent).
-> 
-> If you want to access the guests file-system you need a piece of software 
-> running in the guest which gives you this access. But when you get an event 
-> this piece of software may not be runnable (if the guest is in an interrupt 
-> handler or any other non-preemptible code path). When the host finally gets 
-> access to the guests filesystem again the source of that event may already 
-> be gone (process has exited, module unloaded...). The only way to solve that 
-> is to pass the event information to the guest immediatly and let it collect 
-> the information we want.
+On Fri, Mar 19, 2010 at 04:39:55PM -0500, Serge E. Hallyn wrote:
+> Support checkpoint and restart of tasks in nested pid namespaces.  At
+> Oren's request here is an alternative to my previous implementation.  In
+> this one, we keep the original single pids_array to minimize memory
+> allocations.  The pids array entries are augmented with a pidns depth
+> (relative to the container init's pidns, and an "rpid" which is the pid
+> in the checkpointer's pidns (or 0 if no valid pid exists).  The rpid
+> will be used by userspace to gather more information (like
+> /proc/$$/mountinfo) after the kernel sys_checkpoint.  If any tasks are
+> in nested pid namespace, another single array holds all of the vpids.
+> At restart those are used by userspace to determine how to call
+> eclone().  Kernel ignores them.
+>=20
+> All cr_tests including the new pid_ns testcase pass.
+>=20
 
-The very same is true of profiling in the host space as well (KVM is nothing 
-special here, other than its unreasonable insistence on not enumerating 
-readily available information in a more usable way).
+IMHO this approach looks ok too. I just feel that checkpoint_vpids() could
+be re-worked a bit in order to not impose an artificial limit of
+CKPT_HDR_PIDS_CHUNK to the depth of pid namespaces, even if it is 256 (see
+suggested changes below).
 
-So are you suggesting a solution to a perf problem we already solved 
-differently? (and which i argue we solved in a better way)
-
-We have solved that in the host space already (and quite elaborately so), and 
-not via your suggestion of moving symbol resolution to a different stage, but 
-by properly generating the right events to allow the post-processing stage to 
-see processes that have already exited, to robustly handle files that have 
-been rebuilt, etc.
-
->From an instrumentation POV it is fundamentally better to acquire the right 
-data and delay any complexities to the analysis stage (the perf model) than to 
-complicate sampling (the oprofile dcookies model).
-
-Your proposal of 'doing the symbol resolution in the guest context' is in 
-essence re-arguing that very similar point that oprofile lost. Did you really 
-intend to re-argue that point as well? If yes then please propose an 
-alternative implementation for everything that perf does wrt. symbol lookups.
-
-What we propose for 'perf kvm' right now is simply a straight-forward 
-extension of the existing (and well working) symbol handling code to 
-virtualization.
-
-> > You need to be aware of the fact that symbol resolution is a separate step 
-> > from call chain generation.
-> 
-> Same concern as above applies to call-chain generation too.
-
-Best would be if you demonstrated any problems of the perf symbol lookup code 
-you are aware of on the host side, as it has that exact design you are 
-criticising here. We are eager to fix any bugs in it.
-
-If you claim that it's buggy then that should very much be demonstratable - no 
-need to go into theoretical arguments about it.
-
-( You should be aware of the fact that perf currently works with 'processes
-  exiting prematurely' and similar scenarios just fine, so if you want to
-  demonstrate that it's broken you will probably need a different example. )
-
-> > > How we speak to the guest was already discussed in this thread. My 
-> > > personal opinion is that going through qemu is an unnecessary step and 
-> > > we can solve that more clever and transparent for perf.
-> > 
-> > Meaning exactly what?
-> 
-> Avi was against that but I think it would make sense to give names to 
-> virtual machines (with a default, similar to network interface names). Then 
-> we can create a directory in /dev/ with that name (e.g. /dev/vm/fedora/). 
-> Inside the guest a (priviledged) process can create some kind of named 
-> virt-pipe which results in a device file created in the guests directory 
-> (perf could create /dev/vm/fedora/perf for example). This file is used for 
-> guest-host communication.
-
-That is kind of half of my suggestion - the built-in enumeration guests and a 
-guaranteed channel to them accessible to tools. (KVM already has its own 
-special channel so it's not like channels of communication are useless.)
-
-The other half of my suggestion is that if we bring this thought to its 
-logical conclusion then we might as well walk the whole mile and not use 
-quirky, binary API single-channel pipes. I.e. we could use this convenient, 
-human-readable, structured, hierarchical abstraction to expose information in 
-a finegrained, scalable way, which has a world-class implementation in Linux: 
-the 'VFS namespace'.
+It would probably be safer too to use task_active_pid_ns() instead of
+task->nsproxy->pid_ns, just in case some PID namespace unsharing like propo=
+sed
+by Eric makes it to mainline.
 
 Thanks,
 
-	Ingo
+Louis
+
+> Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
+> ---
+>  checkpoint/checkpoint.c          |  113 ++++++++++++++++++++++++++++++++=
+++----
+>  checkpoint/process.c             |   18 +++++-
+>  checkpoint/restart.c             |   45 ++++++++++++++-
+>  checkpoint/sys.c                 |    2 +
+>  include/linux/checkpoint.h       |    2 +-
+>  include/linux/checkpoint_hdr.h   |   16 +++++
+>  include/linux/checkpoint_types.h |    3 +
+>  kernel/nsproxy.c                 |    9 ++-
+>  8 files changed, 186 insertions(+), 22 deletions(-)
+>=20
+> diff --git a/checkpoint/checkpoint.c b/checkpoint/checkpoint.c
+> index f27af41..fe3546a 100644
+> --- a/checkpoint/checkpoint.c
+> +++ b/checkpoint/checkpoint.c
+> @@ -27,6 +27,7 @@
+>  #include <linux/deferqueue.h>
+>  #include <linux/checkpoint.h>
+>  #include <linux/checkpoint_hdr.h>
+> +#include <linux/pid_namespace.h>
+> =20
+>  /* unique checkpoint identifier (FIXME: should be per-container ?) */
+>  static atomic_t ctx_count =3D ATOMIC_INIT(0);
+> @@ -242,6 +243,7 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, =
+struct task_struct *t)
+>  	struct task_struct *root =3D ctx->root_task;
+>  	struct nsproxy *nsproxy;
+>  	int ret =3D 0;
+> +	struct pid_namespace *pidns;
+> =20
+>  	ckpt_debug("check %d\n", task_pid_nr_ns(t, ctx->root_nsproxy->pid_ns));
+> =20
+> @@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx=
+, struct task_struct *t)
+>  		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
+>  		ret =3D -EPERM;
+>  	}
+> -	/* no support for >1 private pidns */
+> -	if (nsproxy->pid_ns !=3D ctx->root_nsproxy->pid_ns) {
+> -		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
+> -		ret =3D -EPERM;
+> +	/* pidns must be descendent of root_nsproxy */
+> +	pidns =3D nsproxy->pid_ns;
+> +	while (pidns !=3D ctx->root_nsproxy->pid_ns) {
+> +		if (pidns =3D=3D &init_pid_ns) {
+> +			ret =3D -EPERM;
+> +			_ckpt_err(ctx, ret, "%(T)stranger pid_ns\n");
+> +			break;
+> +		}
+> +		pidns =3D pidns->parent;
+>  	}
+>  	rcu_read_unlock();
+> =20
+> @@ -305,15 +312,19 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx=
+, struct task_struct *t)
+> =20
+>  #define CKPT_HDR_PIDS_CHUNK	256
+> =20
+> +/*
+> + * Write the pids in ctx->root_nsproxy->pidns.  This info is
+> + * needed at restart to unambiguously dereference tasks.
+> + */
+>  static int checkpoint_pids(struct ckpt_ctx *ctx)
+>  {
+>  	struct ckpt_pids *h;
+> -	struct pid_namespace *ns;
+> +	struct pid_namespace *root_pidns;
+>  	struct task_struct *task;
+>  	struct task_struct **tasks_arr;
+>  	int nr_tasks, n, pos =3D 0, ret =3D 0;
+> =20
+> -	ns =3D ctx->root_nsproxy->pid_ns;
+> +	root_pidns =3D ctx->root_nsproxy->pid_ns;
+>  	tasks_arr =3D ctx->tasks_arr;
+>  	nr_tasks =3D ctx->nr_tasks;
+>  	BUG_ON(nr_tasks <=3D 0);
+> @@ -331,15 +342,21 @@ static int checkpoint_pids(struct ckpt_ctx *ctx)
+>  	do {
+>  		rcu_read_lock();
+>  		for (n =3D 0; n < min(nr_tasks, CKPT_HDR_PIDS_CHUNK); n++) {
+> +			struct pid_namespace *task_pidns;
+>  			task =3D tasks_arr[pos];
+> =20
+> -			h[n].vpid =3D task_pid_nr_ns(task, ns);
+> -			h[n].vtgid =3D task_tgid_nr_ns(task, ns);
+> -			h[n].vpgid =3D task_pgrp_nr_ns(task, ns);
+> -			h[n].vsid =3D task_session_nr_ns(task, ns);
+> -			h[n].vppid =3D task_tgid_nr_ns(task->real_parent, ns);
+> +			h[n].vpid =3D task_pid_nr_ns(task, root_pidns);
+> +			h[n].vtgid =3D task_tgid_nr_ns(task, root_pidns);
+> +			h[n].vpgid =3D task_pgrp_nr_ns(task, root_pidns);
+> +			h[n].vsid =3D task_session_nr_ns(task, root_pidns);
+> +			h[n].vppid =3D task_tgid_nr_ns(task->real_parent,
+> +					root_pidns);
+> +			task_pidns =3D task_nsproxy(task)->pid_ns;
+> +			h[n].rpid =3D task_pid_vnr(task);
+> +			h[n].depth =3D task_pidns->level - root_pidns->level;
+>  			ckpt_debug("task[%d]: vpid %d vtgid %d parent %d\n",
+>  				   pos, h[n].vpid, h[n].vtgid, h[n].vppid);
+> +			ctx->nr_vpids +=3D h[n].depth;
+>  			pos++;
+>  		}
+>  		rcu_read_unlock();
+> @@ -356,6 +373,61 @@ static int checkpoint_pids(struct ckpt_ctx *ctx)
+>  	return ret;
+>  }
+> =20
+> +static int checkpoint_vpids(struct ckpt_ctx *ctx)
+> +{
+> +	struct ckpt_vpid *h;
+> +	struct pid_namespace *root_pidns, *task_pidns;
+> +	struct task_struct *task;
+> +	int ret, nr_tasks =3D ctx->nr_tasks;
+> +	int tidx =3D 0, /* index into task array */
+> +		hidx =3D 0; /* pids written into current ckpt_vpids chunk */
+> +
+> +	root_pidns =3D ctx->root_nsproxy->pid_ns;
+> +	nr_tasks =3D ctx->nr_tasks;
+> +
+> +	ret =3D ckpt_write_obj_type(ctx, NULL,
+> +				  sizeof(*h) * ctx->nr_vpids,
+> +				  CKPT_HDR_BUFFER);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	h =3D ckpt_hdr_get(ctx, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
+> +	if (!h)
+> +		return -ENOMEM;
+> +
+> +	do {
+> +		rcu_read_lock();
+> +		while (tidx < nr_tasks) {
+> +			int vidx; /* vpid index */
+> +			int nsdelta;
+> +
+> +			task =3D ctx->tasks_arr[tidx];
+> +			task_pidns =3D task_nsproxy(task)->pid_ns;
+> +			nsdelta =3D task_pidns->level - root_pidns->level;
+> +			if (hidx + nsdelta >=3D CKPT_HDR_PIDS_CHUNK)
+
+I think that (hidx + nsdelta > CKPT_HDR_PIDS_CHUNK) checks more accurately =
+the limit.
+
+> +				break;
+> +
+> +			for (vidx =3D 0; vidx < nsdelta; vidx++) {
+> +				h[vidx].pid =3D task_pid_nr_ns(task, task_pidns);
+
+Here:
+				h[hidx + vidx]
+
+> +				task_pidns =3D task_pidns->parent;
+> +			}
+> +
+> +			hidx +=3D nsdelta;
+> +			tidx++;
+> +		}
+> +		rcu_read_unlock();
+> +
+> +		ret =3D ckpt_kwrite(ctx, h, hidx * sizeof(*h));
+> +		if (ret < 0)
+> +			break;
+> +
+> +		hidx =3D 0;
+> +	} while (tidx < nr_tasks);
+> +
+> +	_ckpt_hdr_put(ctx, h, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
+> +	return ret;
+> +}
+
+Maybe re-work it this way:
+
+static int checkpoint_vpids(struct ckpt_ctx *ctx)
+{
+	struct ckpt_vpid *h;
+	struct pid_namespace *root_pidns, *task_pidns, *active_pidns;
+	struct task_struct *task;
+	int ret, nr_tasks =3D ctx->nr_tasks;
+	int tidx =3D 0, /* index into task array */
+		hidx =3D 0; /* pids written into current ckpt_vpids chunk */
+		vidx =3D 0; /* vpid index for current task */
+
+	root_pidns =3D ctx->root_nsproxy->pid_ns;
+	nr_tasks =3D ctx->nr_tasks;
+
+	ret =3D ckpt_write_obj_type(ctx, NULL,
+				  sizeof(*h) * ctx->nr_vpids,
+				  CKPT_HDR_BUFFER);
+	if (ret < 0)
+		return ret;
+
+	h =3D ckpt_hdr_get(ctx, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
+	if (!h)
+		return -ENOMEM;
+
+	do {
+		rcu_read_lock();
+		while (tidx < nr_tasks && hidx < CKPT_HDR_PIDS_CHUNK) {
+			int nsdelta;
+
+			task =3D ctx->tasks_arr[tidx];
+			active_pidns =3D task_active_pid_ns(task);
+			nsdelta =3D active_pidns->level - root_pidns->level;
+			if (hidx + nsdelta - vidx > CKPT_HDR_PIDS_CHUNK)
+				/*
+				 * We will release rcu before recording the
+				 * remaining vpids, but neither task nor its
+				 * pid can disappear.
+				 */
+				nsdelta =3D CKPT_HDR_PIDS_CHUNK - hidx + vidx;
+
+			if (vidx =3D=3D 0)
+				task_pidns =3D active_pidns;
+			for (; vidx < nsdelta; vidx++) {
+				h[hidx].pid =3D task_pid_nr_ns(task, task_pidns);
+				hidx++;
+				task_pidns =3D task_pidns->parent;
+			}
+
+			if (task_pidns =3D=3D root_pidns) {
+				tidx++;
+				vidx =3D 0;
+			}
+		}
+		rcu_read_unlock();
+
+		ret =3D ckpt_kwrite(ctx, h, hidx * sizeof(*h));
+		if (ret < 0)
+			break;
+
+		hidx =3D 0;
+	} while (tidx < nr_tasks);
+
+	_ckpt_hdr_put(ctx, h, sizeof(*h) * CKPT_HDR_PIDS_CHUNK);
+	return ret;
+}
+
+[...]
+
+--=20
+Dr Louis Rilling			Kerlabs
+Skype: louis.rilling			Batiment Germanium
+Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
+http://www.kerlabs.com/			35700 Rennes
+
+--=_bohort-4448-1269255224-0001-2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Transfer-Encoding: 7bit
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkunTIYACgkQVKcRuvQ9Q1TgEgCgx+Uog0SGKcxkRXZ020hdP9OF
+t1AAnj+iiqeBJtggEWD8FCTfaMtkmEO5
+=YLgZ
+-----END PGP SIGNATURE-----
+
+--=_bohort-4448-1269255224-0001-2--
