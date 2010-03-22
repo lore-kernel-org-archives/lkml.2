@@ -1,197 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab0CVTwV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:52:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65470 "EHLO mx1.redhat.com"
+	id S1756113Ab0CVTyT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:54:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45708 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755966Ab0CVTwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:52:19 -0400
-Date: Mon, 22 Mar 2010 15:51:50 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: catalin.marinas@arm.com, jbarnes@virtuousgeek.org, prarit@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH RFC] kmemleak vs. memory hotplug
-Message-ID: <20100322195149.GA2278@redhat.com>
+	id S1755966Ab0CVTyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:54:17 -0400
+Date: Mon, 22 Mar 2010 20:54:03 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alexander Graf <agraf@suse.de>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322195403.GC3306@elte.hu>
+References: <4BA7821C.7090900@codemonkey.ws>
+ <20100322155505.GA18796@elte.hu>
+ <4BA796DF.7090005@redhat.com>
+ <20100322165107.GD18796@elte.hu>
+ <4BA7A406.9050203@redhat.com>
+ <20100322173400.GB15795@elte.hu>
+ <4BA7AF2D.7060306@redhat.com>
+ <4BA7C1D7.5070208@codemonkey.ws>
+ <20100322193100.GB28709@redhat.com>
+ <E548536E-4D62-4B17-BA09-9C12EB1A2717@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <E548536E-4D62-4B17-BA09-9C12EB1A2717@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-I noticed in the Kconfig that kmemleak can not be set without
-MEMORY_HOTPLUG being unset. I'd like to be able to enable both. Below,
-is an rfc patch, completely untested, as a starting point. Hopefully,
-ppl more knowledgeable in this area can comment.
+* Alexander Graf <agraf@suse.de> wrote:
 
-thanks,
+> Yes. I think the point was that every layer in between brings potential 
+> slowdown and loss of features.
 
--Jason
+Exactly. The more 'fragmented' a project is into sub-projects, without a 
+single, unified, functional reference implementation in the center of it, the 
+longer it takes to fix 'unsexy' problems like trivial usability bugs.
 
+Furthermore, another negative effect is that many times features are 
+implemented not in their technically best way, but in a way to keep them local 
+to the project that originates them. This is done to keep deployment latencies 
+and general contribution overhead down to a minimum. The moment you have to 
+work with yet another project, the overhead adds up.
 
+So developers rather go for the quicker (yet inferior) hack within the 
+sub-project they have best access to.
 
-diff --git a/include/linux/kmemleak.h b/include/linux/kmemleak.h
-index 99d9a67..ad89f2d 100644
---- a/include/linux/kmemleak.h
-+++ b/include/linux/kmemleak.h
-@@ -54,6 +54,18 @@ static inline void kmemleak_erase(void **ptr)
- 	*ptr = NULL;
- }
- 
-+extern struct mutex kmemleak_hotplug;
-+
-+static inline void lock_system_kmemleak(void)
-+{
-+        mutex_lock(&kmemleak_hotplug);
-+}
-+
-+static inline void unlock_system_kmemleak(void)
-+{
-+        mutex_unlock(&kmemleak_hotplug);
-+}
-+
- #else
- 
- static inline void kmemleak_init(void)
-@@ -93,6 +105,14 @@ static inline void kmemleak_no_scan(const void *ptr)
- {
- }
- 
-+static inline void lock_system_kmemleak(void)
-+{
-+}
-+
-+static inline void unlock_system_kmemleak(void) 
-+{
-+}
-+
- #endif	/* CONFIG_DEBUG_KMEMLEAK */
- 
- #endif	/* __KMEMLEAK_H */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 4a50fc1..2e89153 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -365,14 +365,13 @@ config SLUB_STATS
- 
- config DEBUG_KMEMLEAK
- 	bool "Kernel memory leak detector"
--	depends on DEBUG_KERNEL && EXPERIMENTAL && !MEMORY_HOTPLUG && \
-+	depends on DEBUG_KERNEL && EXPERIMENTAL && \
- 		(X86 || ARM || PPC || S390 || SUPERH)
- 
- 	select DEBUG_FS if SYSFS
- 	select STACKTRACE if STACKTRACE_SUPPORT
- 	select KALLSYMS
- 	select CRC32
--	depends on 0
- 	help
- 	  Say Y here if you want to enable the memory leak
- 	  detector. The memory allocation/freeing is traced in a way
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 5b069e4..509a728 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -102,6 +102,9 @@
- #include <linux/kmemcheck.h>
- #include <linux/kmemleak.h>
- 
-+/* exlcludes memory hotplug */
-+DEFINE_MUTEX(kmemleak_hotplug);
-+
- /*
-  * Kmemleak configuration and common defines.
-  */
-@@ -1178,6 +1181,7 @@ static void kmemleak_scan(void)
- 	 * Struct page scanning for each node. The code below is not yet safe
- 	 * with MEMORY_HOTPLUG.
- 	 */
-+	mutex_lock(&kmemleak_hotplug);
- 	for_each_online_node(i) {
- 		pg_data_t *pgdat = NODE_DATA(i);
- 		unsigned long start_pfn = pgdat->node_start_pfn;
-@@ -1196,6 +1200,7 @@ static void kmemleak_scan(void)
- 			scan_block(page, page + 1, NULL, 1);
- 		}
- 	}
-+	mutex_unlock(&kmemleak_hotplug);
- 
- 	/*
- 	 * Scanning the task stacks (may introduce false negatives).
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 78e34e6..01fc57d 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -34,6 +34,23 @@
- 
- #include "internal.h"
- 
-+/* exclude subsystems that hotplug might conflict with */
-+static void lock_hotplug_exlucde(void)
-+{
-+	/* exclude hotplug */
-+	lock_system_sleep();
-+	/* exlucde kmemleak */
-+	lock_system_kmemleak();
-+}
-+
-+static void unlock_hotplug_exlucde(void)
-+{
-+	/* exclude hotplug */
-+	unlock_system_sleep();
-+	/* exlucde kmemleak */
-+	unlock_system_kmemleak();
-+}
-+
- /* add this memory to iomem resource */
- static struct resource *register_memory_resource(u64 start, u64 size)
- {
-@@ -490,7 +507,7 @@ int __ref add_memory(int nid, u64 start, u64 size)
- 	struct resource *res;
- 	int ret;
- 
--	lock_system_sleep();
-+	lock_hotplug_exclude();
- 
- 	res = register_memory_resource(start, size);
- 	ret = -EEXIST;
-@@ -537,7 +554,7 @@ error:
- 		release_memory_resource(res);
- 
- out:
--	unlock_system_sleep();
-+	unlock_hotplug_exclude();
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(add_memory);
-@@ -777,7 +794,7 @@ static int offline_pages(unsigned long start_pfn,
- 	if (!test_pages_in_a_zone(start_pfn, end_pfn))
- 		return -EINVAL;
- 
--	lock_system_sleep();
-+	lock_hotplug_exclude();
- 
- 	zone = page_zone(pfn_to_page(start_pfn));
- 	node = zone_to_nid(zone);
-@@ -868,7 +885,7 @@ repeat:
- 	writeback_set_ratelimit();
- 
- 	memory_notify(MEM_OFFLINE, &arg);
--	unlock_system_sleep();
-+	unlock_hotplug_exclude();
- 	return 0;
- 
- failed_removal:
-@@ -879,7 +896,7 @@ failed_removal:
- 	undo_isolate_page_range(start_pfn, end_pfn);
- 
- out:
--	unlock_system_sleep();
-+	unlock_hotplug_exclude();
- 	return ret;
- }
- 
+Tell me this isnt happening in this space ;-)
 
+Thanks,
+
+	Ingo
