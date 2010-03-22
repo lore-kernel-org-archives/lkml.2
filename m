@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab0CVRRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:17:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41268 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754688Ab0CVRRl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:17:41 -0400
-Date: Mon, 22 Mar 2010 10:12:38 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.34-rc2: Reported regressions from 2.6.33
-In-Reply-To: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
-Message-ID: <alpine.LFD.2.00.1003221012270.18017@i5.linux-foundation.org>
-References: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755175Ab0CVRSC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:18:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755039Ab0CVRR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 13:17:59 -0400
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Joerg Roedel <joro@8bytes.org>, Avi Kivity <avi@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+References: <20100318172805.GB26067@elte.hu> <4BA32E1A.2060703@redhat.com>
+	<20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws>
+	<20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com>
+	<20100321203121.GA30194@elte.hu> <20100322111040.GL13108@8bytes.org>
+	<20100322122228.GH3483@elte.hu> <20100322134633.GD1940@8bytes.org>
+	<20100322163215.GC18796@elte.hu>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Mon, 22 Mar 2010 13:17:20 -0400
+In-Reply-To: <20100322163215.GC18796@elte.hu> (Ingo Molnar's message of "Mon, 22 Mar 2010 17:32:15 +0100")
+Message-ID: <y0mmxy0wa1r.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On Sun, 21 Mar 2010, Rafael J. Wysocki wrote:
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15495
-> Subject		: Flood of SELinux denials on polkitd
-> Submitter	: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
-> Date		: 2010-03-09 16:47 (13 days old)
+mingo wrote:
 
-Fixed by commit 3836a03d978e68b0ae00d3589089343c998cd4ff ("anon_inodes: 
-mark the anon inode private"), I'm pretty sure.
+> [...]
+>> No, the split-repository situation was the smallest problem after all. Its 
+>> was a community thing. If the community doesn't work a single-repo project 
+>> will also fail. [...]
+>
+> So, what do you think creates code communities and keeps them alive? 
+> Developers and code. And the wellbeing of developers are primarily influenced 
+> by the repository structure and by the development/maintenance process - i.e. 
+> by the 'fun' aspect. (i'm simplifying things there but that's the crux of it.)
+>
+> So yes, i do claim that what stiffled and eventually killed off the Oprofile 
+> community was the split repository.  [...]
 
-		Linus
+In your very previous paragraphs, you enumerate two separate causes:
+"repository structure" and "development/maintenance process" as being
+sources of "fun".  Please simply accept that the former is considered
+by many as absolutely trivial compared to the latter, and additional
+verbose repetition of your thesis will not change this.
+
+- FChE
