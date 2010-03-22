@@ -1,43 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0CVA4a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 20:56:30 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45860
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751347Ab0CVA43 (ORCPT
+	id S1753751Ab0CVBEB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 21:04:01 -0400
+Received: from mail-yx0-f182.google.com ([209.85.210.182]:62650 "EHLO
+	mail-yx0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab0CVBD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 20:56:29 -0400
-Date: Sun, 21 Mar 2010 17:56:51 -0700 (PDT)
-Message-Id: <20100321.175651.91333124.davem@davemloft.net>
-To: stefani@seibold.net
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, tglx@linutronix.de
-Subject: Re: [PATCH] fix PHY polling system blocking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1269208490.5748.44.camel@wall-e.seibold.net>
-References: <1267894258.18869.2.camel@wall-e>
-	<20100312144248.ade8b700.akpm@linux-foundation.org>
-	<1269208490.5748.44.camel@wall-e.seibold.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Sun, 21 Mar 2010 21:03:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=lHmvoGfPDpjG7udp6eriKaMhsIOikHVoS5ryHr7O+4tZr+Zqu/noX7gT+n43Pdhdvh
+         CcQgXWVsF85Oh2gvZsMtm2f8f9K92hQQYHr64VdcgxnZyWUj0ToPT9jAfxxUGq05cgtj
+         Y+Z5i/Vs43b/+U8u+ssUji/bg81DvxMws7y20=
+Message-ID: <4BA6C208.6010000@gmail.com>
+Date: Sun, 21 Mar 2010 18:04:08 -0700
+From: "Justin P. mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: trivial@kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-audit@redhat.com, uclinux-dist-devel@blackfin.uclinux.org,
+       linux-cris-kernel@axis.com, linux-ia64@vger.kernel.org,
+       linux-mips@linux-mips.org, linux-parisc@vger.kernel.org,
+       linux-s390@vger.kernel.org, selinux@tycho.nsa.gov,
+       sparclinux@vger.kernel.org, x86@kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Cosmetic:Partially remove deprecated __initcall() and
+ change to
+References: <1269028291-9103-1-git-send-email-justinmattock@gmail.com> <4BA40115.2000509@xenotime.net> <4BA407AC.5030506@gmail.com> <4BA6BAF3.10603@xenotime.net>
+In-Reply-To: <4BA6BAF3.10603@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
-Date: Sun, 21 Mar 2010 22:54:50 +0100
+On 03/21/2010 05:33 PM, Randy Dunlap wrote:
+> On 03/19/10 16:24, Justin P. Mattock wrote:
+>> On 03/19/2010 03:56 PM, Randy Dunlap wrote:
+>>> On 03/19/10 12:51, Justin P. Mattock wrote:
+>>>> After doing some things on a small issue,
+>>>> I noticed through web surfing, that there were patches
+>>>> submitted pertaining that __initcall is deprecated,
+>>>> and device_initcall should be used.
+>>>
+>>> Where was this discussion?  Do you have any pointers to it?
+>>>
+>>
+>> The best info on this is scripts/checkpatch.pl
+>> line #2664
+>>
+>> when I found this I just did a quick search of __initcall
+>> (which gives hits here and there)
+>> https://patchwork.kernel.org/patch/23344/
+>> (also found others at around 2008 or so)
+>
+> Thanks.  IMO there should be something in the kernel source tree
+> that says explicitly that __initcall is deprecated and should be
+> replaced by using<whatever should be used>.  That's missing.
+>
 
-> The phylib has also a drawback, because it polls the PHY despite if it
-> has interrupt support for it or not. I can't see a reason for this
-> behavior.
+agree..
 
-Careful, in my experience many PHYs that do have interrupt
-support have buggy implementations to the point where the
-interrupt support cannot be used at all.
+I should of searched the source tree for something
+that says deprecated and so forth before doing anything(the 
+checkpatch.pl was something I noticed down the line but doesn't say 
+deprecated(say's explicitly).
 
-Typically the problem is that events aren't reported reliably.
 
-So I just wanted you to keep in mind that a chip having
-interrupt support doesn't automatically mean it can be used.
+>
+>>> I don't see any mention of __initcall being deprecated in
+>>> Linus' mainline git tree, or in linux-next, or in mmotm.
+>>> Where are those patches?
+>>>
+>>
+>> I don't know(I'm out of the social pipeline when it comes to Linux news,
+>> and updates)..
+>> like in the explanation part of the patch
+>> I was looking into something else, then ran into this,
+>> so as a break(from what I was originally doing)
+>> decided to do this and submit.
+>>
+>>>
+>>>> So as a change of subject(since what I was looking at
+>>>> was frustrating me),I decided to grep the whole tree
+>>>> and make the change(partially).
+>>>>
+>>>> Currently I'm running this patch on my system, kernel compiles
+>>>> without any errors or warnings.(thought there would be a speed increase
+>>>> but didn't see much(if any)).
+>>>
+>>> No, __initcall(x) is just a shorthand version of typing
+>>> device_initcall(x).  They do the same thing.
+>>>
+>>
+>> yep, that's what I found out as well(reason for the cosmetic
+>> in the subject line).
+>>
+>>>> Biggest problem I have though is testing this on other hardware types
+>>>> (I only have a macbook,and an iMac).
+>>>> So please if you have the access to other arch/hardware types please
+>>>> test.
+>>>>
+>>>> Now what I mean by partially is the __initcall function is still
+>>>> there, so(if any) userspace apps/libs depend on this it's there
+>>>> so they dont break and/or any other subsystem, that needs time
+>>>> to make the changes.
+>>>
+>>> The only thing that might be affected is building out-of-tree drivers,
+>>> but those are easy to fix.
+>>>
+>>
+>> alright..main concern is making sure things don't break in the
+>> kernel(even though things do).
+>>
+>> I can have a go at the header files, submit
+>> then if it's something people agree they want to do, then they
+>> can go from there(if not it's fine as well).
+>>
+>>>> Note:
+>>>> the remaining files that still have __initcall in them are:
+>>>> (according to grep)
+>>>>
+>>>> arch/um/include/shared/init.h
+>>>> include/linux/init.h
+>>>> scripts/checkpatch.pl
+>>>>
+>>>> either I or somebody else, can change this(although a bit
+>>>> concerned about breaking things).
+>>>>
+>>>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>>> ---
+>
+>
+
+
+In any case I'll leave this to you guys to decide.
+The patch is in cyberspace now, so if/when this ever
+is decided it's there(patch), then can be used then.
+
+Justin P. Mattock
+
