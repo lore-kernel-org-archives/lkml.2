@@ -1,295 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab0CVOdJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:33:09 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:52961 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab0CVOdF (ORCPT
+	id S1751098Ab0CVOem (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:34:42 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:50347 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779Ab0CVOek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:33:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Vbu2MyzVv/VllVoZqPeXNM3JZMbY8b9tieoKwNLSfvaZxN4FuJIhufz3t/4M4e3t7A
-         78HEt97lETFyERpG9EiWECBG6yGaf1KLbtj77qjLI1RcpdtZ7qwSgrAKPAz7G9UlqUcs
-         pVD078g5SgtZta7if6zJyxADNuvl56p9eNJis=
-Date: Mon, 22 Mar 2010 17:32:55 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Lars Lindley <lindley@coyote.org>
-Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: phy_calibration.c Coding style fixes
-	2/2
-Message-ID: <20100322143255.GB23411@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
-	penberg@cs.helsinki.fi, pavel@ucw.cz, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1269267447-6245-1-git-send-email-lindley@coyote.org> <1269267447-6245-2-git-send-email-lindley@coyote.org>
+	Mon, 22 Mar 2010 10:34:40 -0400
+Date: Mon, 22 Mar 2010 10:32:32 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@localhost
+To: Jon Masters <jonathan@jonmasters.org>
+cc: Tilman Schmidt <t.schmidt@phoenixsoftware.de>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: should new kfifo implementation really be exporting that much?
+In-Reply-To: <20100321093207.GX4426@perihelion.bos.jonmasters.org>
+Message-ID: <alpine.LFD.2.00.1003221030360.25001@localhost>
+References: <alpine.LFD.2.00.1003140929350.4644@localhost> <alpine.LFD.2.00.1003141053380.5987@localhost> <4B9D10D1.1060602@phoenixsoftware.de> <alpine.LFD.2.00.1003141244280.7806@localhost> <20100321093207.GX4426@perihelion.bos.jonmasters.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269267447-6245-2-git-send-email-lindley@coyote.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 03:17:27PM +0100, Lars Lindley wrote:
-> I fixed the rest of the checkpatch.pl problems except long lines.
-> I removed () from returns and added () to a macro.
-> I removed a lot of unneccesary {}.
-> Generated .o file is still identical to before.
-> 
-> This patch applies after the 1/2 one.
-> 
+On Sun, 21 Mar 2010, Jon Masters wrote:
 
-Acked-by: Dan Carpenter <error27@gmail.com>
+> On Sun, Mar 14, 2010 at 12:49:08PM -0400, Robert P. J. Day wrote:
+> > On Sun, 14 Mar 2010, Tilman Schmidt wrote:
+> >
+> > > Am 14.03.2010 15:57 schrieb Robert P. J. Day:
+> > > >   as a short followup, kfifo.h strongly implies that a lot of the
+> > > > above shouldn't be exported:
+> > > >
+> > > > ...
+> > > > /*
+> > > >  * __kfifo_in_... internal functions for put date into the fifo
+> > > >  * do not call it directly, use kfifo_in_rec() instead
+> > > >  */
+> > > > ...
+> > > >
+> > > >   anyway, you get the idea.  it would seem that a lot of those EXPORTs
+> > > > should be removed, no?
+> > >
+> > > If you look at kfifo_in_rec(), it's a static inline void
+> > > function defined in kfifo.h and which calls __kfifo_in_generic()
+> > > or __kfifo_in_rec(). I don't think you'll be able to make that
+> > > work without exporting those functions.
+> >
+> >   huh.  i believe you're correct.  i'll take a closer look but i
+> > still get this feeling that there's something ... messy about that
+> > API. case in point:  kfifo_in_rec() is *not* being exported, but a
+> > routine that it invokes -- __kfifo_in_generic() -- *is* being
+> > exported. doesn't that just seem a bit backwards?
+>
+> I believe it would be a good idea to have an export type explicitly
+> covering symbols that are exported solely for the use of inlines,
+> just for tidying up these situations. EXPORT_SYMBOL_INTERNAL?
 
-regards,
-dan carpenter
+  i wasn't suggesting anything as drastic as inventing a new export
+level :-), i just wanted to verify that the current situation as to
+what's currently exported related to kfifo just seemed a bit odd and
+inconsistent.  but a new export level might support the removal of a
+considerable amount from the fully-exported namespace.
 
-> Signed-off-by: Lars Lindley <lindley@coyote.org>
-> ---
->  drivers/staging/winbond/phy_calibration.c |   73 +++++++++++------------------
->  1 files changed, 28 insertions(+), 45 deletions(-)
-> 
-> diff --git a/drivers/staging/winbond/phy_calibration.c b/drivers/staging/winbond/phy_calibration.c
-> index e5df155..5e53af3 100644
-> --- a/drivers/staging/winbond/phy_calibration.c
-> +++ b/drivers/staging/winbond/phy_calibration.c
-> @@ -18,7 +18,7 @@
->  
->  #define AG_CONST	0.6072529350
->  #define FIXED(X)	((s32)((X) * 32768.0))
-> -#define DEG2RAD(X)	0.017453 * (X)
-> +#define DEG2RAD(X)	(0.017453 * (X))
->  
->  /****************** LOCAL TYPE DEFINITION SECTION ***************************/
->  typedef s32		fixed; /* 16.16 fixed-point */
-> @@ -46,22 +46,20 @@ s32 _s13_to_s32(u32 data)
->  
->  	val = (data & 0x0FFF);
->  
-> -	if ((data & BIT(12)) != 0) {
-> +	if ((data & BIT(12)) != 0)
->  		val |= 0xFFFFF000;
-> -	}
->  
-> -	return ((s32) val);
-> +	return (s32) val;
->  }
->  
->  u32 _s32_to_s13(s32 data)
->  {
->  	u32	val;
->  
-> -	if (data > 4095) {
-> +	if (data > 4095)
->  		data = 4095;
-> -	} else if (data < -4096) {
-> +	else if (data < -4096)
->  		data = -4096;
-> -	}
->  
->  	val = data & 0x1FFF;
->  
-> @@ -75,9 +73,8 @@ s32 _s4_to_s32(u32 data)
->  
->  	val = (data & 0x0007);
->  
-> -	if ((data & BIT(3)) != 0) {
-> +	if ((data & BIT(3)) != 0)
->  		val |= 0xFFFFFFF8;
-> -	}
->  
->  	return val;
->  }
-> @@ -86,11 +83,10 @@ u32 _s32_to_s4(s32 data)
->  {
->  	u32	val;
->  
-> -	if (data > 7) {
-> +	if (data > 7)
->  		data = 7;
-> -	} else if (data < -8) {
-> +	else if (data < -8)
->  		data = -8;
-> -	}
->  
->  	val = data & 0x000F;
->  
-> @@ -104,9 +100,8 @@ s32 _s5_to_s32(u32 data)
->  
->  	val = (data & 0x000F);
->  
-> -	if ((data & BIT(4)) != 0) {
-> +	if ((data & BIT(4)) != 0)
->  		val |= 0xFFFFFFF0;
-> -	}
->  
->  	return val;
->  }
-> @@ -115,11 +110,10 @@ u32 _s32_to_s5(s32 data)
->  {
->  	u32	val;
->  
-> -	if (data > 15) {
-> +	if (data > 15)
->  		data = 15;
-> -	} else if (data < -16) {
-> +	else if (data < -16)
->  		data = -16;
-> -	}
->  
->  	val = data & 0x001F;
->  
-> @@ -133,9 +127,8 @@ s32 _s6_to_s32(u32 data)
->  
->  	val = (data & 0x001F);
->  
-> -	if ((data & BIT(5)) != 0) {
-> +	if ((data & BIT(5)) != 0)
->  		val |= 0xFFFFFFE0;
-> -	}
->  
->  	return val;
->  }
-> @@ -144,11 +137,10 @@ u32 _s32_to_s6(s32 data)
->  {
->  	u32	val;
->  
-> -	if (data > 31) {
-> +	if (data > 31)
->  		data = 31;
-> -	} else if (data < -32) {
-> +	else if (data < -32)
->  		data = -32;
-> -	}
->  
->  	val = data & 0x003F;
->  
-> @@ -162,9 +154,8 @@ s32 _s9_to_s32(u32 data)
->  
->  	val = data & 0x00FF;
->  
-> -	if ((data & BIT(8)) != 0) {
-> +	if ((data & BIT(8)) != 0)
->  		val |= 0xFFFFFF00;
-> -	}
->  
->  	return val;
->  }
-> @@ -173,11 +164,10 @@ u32 _s32_to_s9(s32 data)
->  {
->  	u32	val;
->  
-> -	if (data > 255) {
-> +	if (data > 255)
->  		data = 255;
-> -	} else if (data < -256) {
-> +	else if (data < -256)
->  		data = -256;
-> -	}
->  
->  	val = data & 0x01FF;
->  
-> @@ -187,13 +177,12 @@ u32 _s32_to_s9(s32 data)
->  /****************************************************************************/
->  s32 _floor(s32 n)
->  {
-> -	if (n > 0) {
-> +	if (n > 0)
->  		n += 5;
-> -	} else {
-> +	else
->  		n -= 5;
-> -	}
->  
-> -	return (n/10);
-> +	return n / 10;
->  }
->  
->  /*
-> @@ -330,11 +319,10 @@ void _reset_rx_cal(struct hw_data *phw_data)
->  
->  	hw_get_dxx_reg(phw_data, 0x54, &val);
->  
-> -	if (phw_data->revision == 0x2002) { /* 1st-cut */
-> +	if (phw_data->revision == 0x2002) /* 1st-cut */
->  		val &= 0xFFFF0000;
-> -	} else { /* 2nd-cut */
-> +	else /* 2nd-cut */
->  		val &= 0x000003FF;
-> -	}
->  
->  	hw_set_dxx_reg(phw_data, 0x54, val);
->  }
-> @@ -525,9 +513,8 @@ void _txidac_dc_offset_cancellation_winbond(struct hw_data *phw_data)
->  		if (mag_0 != mag_1) {
->  			fix_cancel_dc_i = (mag_0 * 10000) / (mag_0 * 10000 - mag_1 * 10000);
->  		} else {
-> -			if (mag_0 == mag_1) {
-> +			if (mag_0 == mag_1)
->  				PHY_DEBUG(("[CAL]   ***** mag_0 = mag_1 !!\n"));
-> -			}
->  
->  			fix_cancel_dc_i = 0;
->  		}
-> @@ -535,9 +522,8 @@ void _txidac_dc_offset_cancellation_winbond(struct hw_data *phw_data)
->  		PHY_DEBUG(("[CAL]    ** fix_cancel_dc_i = %d (0x%04X)\n",
->  				   fix_cancel_dc_i, _s32_to_s5(fix_cancel_dc_i)));
->  
-> -		if ((abs(mag_1 - mag_0) * 6) > mag_0) {
-> +		if ((abs(mag_1 - mag_0) * 6) > mag_0)
->  			break;
-> -		}
->  	}
->  
->  	if (loop >= 19)
-> @@ -641,9 +627,8 @@ void _txqdac_dc_offset_cacellation_winbond(struct hw_data *phw_data)
->  		if (mag_0 != mag_1) {
->  			fix_cancel_dc_q = (mag_0*10000) / (mag_0*10000 - mag_1*10000);
->  		} else {
-> -			if (mag_0 == mag_1) {
-> +			if (mag_0 == mag_1)
->  				PHY_DEBUG(("[CAL]   ***** mag_0 = mag_1 !!\n"));
-> -			}
->  
->  			fix_cancel_dc_q = 0;
->  		}
-> @@ -651,9 +636,8 @@ void _txqdac_dc_offset_cacellation_winbond(struct hw_data *phw_data)
->  		PHY_DEBUG(("[CAL]    ** fix_cancel_dc_q = %d (0x%04X)\n",
->  				   fix_cancel_dc_q, _s32_to_s5(fix_cancel_dc_q)));
->  
-> -		if ((abs(mag_1 - mag_0) * 6) > mag_0) {
-> +		if ((abs(mag_1 - mag_0) * 6) > mag_0)
->  			break;
-> -		}
->  	}
->  
->  	if (loop >= 19)
-> @@ -834,11 +818,10 @@ u8 _tx_iq_calibration_loop_winbond(struct hw_data *phw_data,
->  		/* 1280 * 32768 = 41943040 */
->  		temp1 = (41943040 / cos_2b) * cos_b;
->  
-> -		if (phw_data->revision == 0x2002) { /* 1st-cut */
-> +		if (phw_data->revision == 0x2002) /* 1st-cut */
->  			temp2 = (41943040 / cos_2b) * sin_b * (-1);
-> -		} else { /* 2nd-cut */
-> +		else /* 2nd-cut */
->  			temp2 = (41943040 * 4 / cos_2b) * sin_b * (-1);
-> -		}
->  
->  		tx_cal_flt_b[0] = _floor(temp1 / (32768 + a_2));
->  		tx_cal_flt_b[1] = _floor(temp2 / (32768 + a_2));
-> -- 
-> 1.7.0.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+rday
+--
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+
+            Linux Consulting, Training and Kernel Pedantry.
+
+Web page:                                          http://crashcourse.ca
+Twitter:                                       http://twitter.com/rpjday
+========================================================================
