@@ -1,53 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754897Ab0CVN5T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 09:57:19 -0400
-Received: from mga07.intel.com ([143.182.124.22]:29488 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754813Ab0CVN5Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 09:57:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,287,1267430400"; 
-   d="scan'208";a="257284588"
-Message-ID: <4BA7773A.5080206@linux.intel.com>
-Date: Mon, 22 Mar 2010 06:57:14 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1754889Ab0CVN7H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:59:07 -0400
+Received: from www.tglx.de ([62.245.132.106]:44071 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822Ab0CVN7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:59:03 -0400
+Date: Mon, 22 Mar 2010 14:58:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/10] x86: use vector_desc instead of vector_irq
+In-Reply-To: <1269221770-9667-6-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003221435480.3147@localhost.localdomain>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org> <1269221770-9667-6-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Robert_Sch=F6ne?= <robert.schoene@tu-dresden.de>
-CC: Thomas Renninger <trenn@suse.de>, Dave Jones <davej@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
-Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
- Intel x86 CPUs)
-References: <1268399863.3407.15.camel@localhost>	 <201003182143.22929.trenn@suse.de> <1268985679.3395.47.camel@localhost>	 <201003202237.57477.trenn@suse.de>  <4BA6BD0A.6030303@linux.intel.com> <1269241492.3485.16.camel@localhost>
-In-Reply-To: <1269241492.3485.16.camel@localhost>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/22/2010 0:04, Robert Schöne wrote:
-> Am Sonntag, den 21.03.2010, 17:42 -0700 schrieb Arjan van de Ven:
->> On 3/20/2010 14:37, Thomas Renninger wrote:
->>
->>> It also seem to be (hopefully) a minor feature for timechart, so this should
->>> not hurt that much (yet).
->>
->> It's actually a major feature for timechart, and one of the key things I and a bunch of others
->> inside Intel use timechart for.
->>
-> It's a major feature for us too.
-> I suppose, the cpufreq_notify_transition calls are correct (meaning
-> being called for all related cpus) for every driver. So there's still
-> the option to include it in the POST_CHANGE section of this function.
-> Could this be okay for the both of you?
+On Sun, 21 Mar 2010, Yinghai Lu wrote:
 
-post change would work... that gets frequency afaik..
+> Eric pointed out that radix tree version of irq_to_desc will magnify delay on
+> the path of handle_irq.
+> 
+> use vector_desc to reduce the calling of irq_to_desc.
+> 
+> next step: need to change all ack, mask, umask, eoi for all irq_chip to take irq_desc
 
->
->
+That's not relevant for this change.
+ 
+>  
+> -typedef int vector_irq_t[NR_VECTORS];
+> -DECLARE_PER_CPU(vector_irq_t, vector_irq);
+> -extern void setup_vector_irq(int cpu);
+> +typedef struct irq_desc *vector_desc_t[NR_VECTORS];
 
+  Why do we need that typedef ? Please use plain struct irq_desc *
+
+> +DECLARE_PER_CPU(vector_desc_t, vector_desc);
+> +extern void setup_vector_desc(int cpu);
+...
+>  void destroy_irq(unsigned int irq)
+>  {
+>  	unsigned long flags;
+> +	struct irq_desc *desc;
+> +	struct irq_cfg *cfg;
+>  
+>  	dynamic_irq_cleanup_keep_chip_data(irq);
+>  
+>  	free_irte(irq);
+>  	raw_spin_lock_irqsave(&vector_lock, flags);
+> -	__clear_irq_vector(irq, get_irq_chip_data(irq));
+> +	desc = irq_to_desc(irq);
+> +	cfg = desc->chip_data;
+> +	__clear_irq_vector(desc, cfg);
+
+	__clear_irq_vector(desc, desc->chip_data);
+
+ should be sufficient, right ?
+
+>  	raw_spin_unlock_irqrestore(&vector_lock, flags);
+>  }
+>  
+> @@ -3377,6 +3376,7 @@ void destroy_irq(unsigned int irq)
+>  static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  			   struct msi_msg *msg, u8 hpet_id)
+>  {
+> +	struct irq_desc *desc;
+>  	struct irq_cfg *cfg;
+>  	int err;
+>  	unsigned dest;
+> @@ -3384,8 +3384,9 @@ static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
+>  	if (disable_apic)
+>  		return -ENXIO;
+>  
+> -	cfg = irq_cfg(irq);
+> -	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> +	desc = irq_to_desc(irq);
+> +	cfg = desc->chip_data;
+> +	err = assign_irq_vector(desc, cfg, apic->target_cpus());
+
+  Ditto
+
+>  	if (err)
+>  		return err;
+>  
+> @@ -3876,14 +3877,16 @@ static struct irq_chip ht_irq_chip = {
+>  
+>  int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+>  {
+> +	struct irq_desc *desc;
+>  	struct irq_cfg *cfg;
+>  	int err;
+>  
+>  	if (disable_apic)
+>  		return -ENXIO;
+>  
+> -	cfg = irq_cfg(irq);
+> -	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+> +	desc = irq_to_desc(irq);
+> +	cfg = desc->chip_data;
+> +	err = assign_irq_vector(desc, cfg, apic->target_cpus());
+
+  Ditto
+
+>  	if (!err) {
+>  		struct ht_irq_msg msg;
+>  		unsigned dest;
+> diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
+> index 91fd0c7..f71625c 100644
+> --- a/arch/x86/kernel/irq.c
+> +++ b/arch/x86/kernel/irq.c
+> @@ -229,19 +229,19 @@ unsigned int __irq_entry do_IRQ(struct pt_regs *regs)
+>  
+>  	/* high bit used in ret_from_ code  */
+>  	unsigned vector = ~regs->orig_ax;
+> -	unsigned irq;
+> +	struct irq_desc *desc;
+>  
+>  	exit_idle();
+>  	irq_enter();
+>  
+> -	irq = __get_cpu_var(vector_irq)[vector];
+> +	desc = __get_cpu_var(vector_desc)[vector];
+>  
+> -	if (!handle_irq(irq, regs)) {
+> +	if (!handle_irq(desc, regs)) {
+>  		ack_APIC_irq();
+>  
+>  		if (printk_ratelimit())
+> -			pr_emerg("%s: %d.%d No irq handler for vector (irq %d)\n",
+> -				__func__, smp_processor_id(), vector, irq);
+> +			pr_emerg("%s: %d.%d No irq handler for vector\n",
+
+  That printk is confusing. It's not lacking an irq handler. The
+  vector is simply not assigned.
+
+Thanks,
+
+	tglx
