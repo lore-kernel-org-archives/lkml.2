@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab0CVTbf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:31:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755655Ab0CVTbd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:31:33 -0400
-Date: Mon, 22 Mar 2010 19:31:00 +0000
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
-Message-ID: <20100322193100.GB28709@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <4BA7C1D7.5070208@codemonkey.ws>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7C1D7.5070208@codemonkey.ws>
-User-Agent: Mutt/1.4.1i
+	id S1755742Ab0CVTcm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:32:42 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:47539 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752521Ab0CVTck (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:32:40 -0400
+Date: Mon, 22 Mar 2010 14:32:26 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <20100322185310.GA20695@one.firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1003221428320.21378@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home>
+ <877hp4i76d.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003221300180.17230@router.home> <20100322185310.GA20695@one.firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:15:35PM -0500, Anthony Liguori wrote:
-> On 03/22/2010 12:55 PM, Avi Kivity wrote:
-> >>Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
-> >>Anthony.
-> >>There's numerous ways that this can break:
+On Mon, 22 Mar 2010, Andi Kleen wrote:
+
+> > Multiple processes would communicate via shm segments. Maybe defer to the
+> > future but its an important operation mode as the systems grow bigger and bigger.
+> > SHM segment would have to contain some sort of ring buffer that the
+> > receivers could tap into. But that mode has not really been thought
+> > through.
+>
+> AF_UNIX is not SHM today.
+>
+> The only point is to avoid one copy? (user1 -> kernel -> user2  to user1 -> user2)
+> Not sure if that is really worth it. Don't you need another copy to the reliability
+> buffer anyways?
+
+Not sure either. Access of multiple processes to one reliability buffer
+would be best. Some sort of multiended pipe I guess.
+
+> But in principle AF_INET over localhost should not be that less efficient
+> than AF_UNIX, so you can probably drop it for now (unless you need special AF_UNIX
+> features like credentials)
+
+Well lets skip it for now and see if there are performance implications in
+the future.
+
+> > > That's unusual to have such a option (except the MTU). What is it good for?
 > >
-> >I don't like it either.  We have libvirt for enumerating guests.
-> 
-> We're stuck in a rut with libvirt and I think a lot of the 
-> dissatisfaction with qemu is rooted in that.  It's not libvirt that's 
-> the probably, but the relationship between qemu and libvirt.
-> 
-> We add a feature to qemu and maybe after six month it gets exposed by 
-> libvirt.  Release time lines of the two projects complicate the 
-> situation further.  People that write GUIs are limited by libvirt 
-> because that's what they're told to use and when they need something 
-> simple, they're presented with first getting that feature implemented in 
-> qemu, then plumbed through libvirt.
+> > No idea why it was implemented. It can be used to use send() for portions
+> > of a message. Triggers the send() only when all bytes have been provided.
+> > Probably necessary if one wants to have very long (megabytes) messages.
+>
+> Those could be a problem in kernel memory consumption. One would need
+> to be very careful to have a good memory management scheme for the socket
+> in place.
 
-That is somewhat unfair as a blanket statement! 
+Lets not support it then unless someone can make a convincing case.
 
-While some features have had a long time delay & others are not supported
-at all, in many cases we have had zero delay. We have been supporting QMP,
-qdev, vhost-net since before the patches for those features were even merged
-in QEMU GIT! It varies depending on how closely QEMU & libvirt people have
-been working together on a feature, and on how strongly end users are demanding
-the features. 
+> > Reliable multicast protocols have a defined time period / "reliabilty
+> > buffer" so that they can resend a message that was missed for a time
+> > period. It is customary to either specify a time period or define the size
+> > of the "reliability buffer".
+>
+> One problem is memory management then. What happens when a process opens 100 of those
+> sockets and fills them all?
 
-> It wouldn't be so bad if libvirt was basically a passthrough interface 
-> to qemu but it tries to model everything in a generic way which is more 
-> or less doomed to fail when you're adding lots of new features (as we are).
-> 
-> The list of things that libvirt doesn't support and won't any time soon 
-> is staggering.
+Pushes out the app? Same as the user space apps now. Some sort of
+upper limit is needed I guess.
 
-As previously discussed, we want to improve both the set of features
-supported, and make it much easier to support new features promptly.
-The QMP & qdev stuff has been a very good step forward in making it
-easier to support QEMU management. There have been a proposals from 
-several people, yourself included, on how to improve libvirt's support
-for the full range of QEMU features. We're committed to looking at this
-and figuring out which proposals are practical to support, so we can
-improve QEMU & libvirt interaction for everyone.
+> I guess you would still need a suitable global limit like TCP has.
 
-Regards,
-Daniel
--- 
-|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
-|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
-|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
-|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
+Yes.
