@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0CVJpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 05:45:47 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:39086 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab0CVJpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 05:45:45 -0400
-X-SENDER-IP: [83.226.248.59]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al1BAL7YpktT4vg7PGdsb2JhbACBO4QsgXeTWAEBAQE3uX+EfQQ
-X-IronPort-AV: E=Sophos;i="4.51,286,1267398000"; 
-   d="scan'208";a="53992163"
-Message-ID: <4BA73C4C.4020708@coyote.org>
-Date: Mon, 22 Mar 2010 10:45:48 +0100
-From: Lars Lindley <lindley@coyote.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100322 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: gregkh@suse.de, greg@kroah.com, pavel@ucw.cz, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: wb35reg_f.h Coding style fixes.
-References: <1269210658-9518-1-git-send-email-lindley@coyote.org> <4BA71949.9040809@cs.helsinki.fi>
-In-Reply-To: <4BA71949.9040809@cs.helsinki.fi>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754489Ab0CVJt7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 05:49:59 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:34888 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754461Ab0CVJt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 05:49:57 -0400
+References: <20100322112655.0f23c1fb.sfr@canb.auug.org.au>
+Message-Id: <351E30A8-F8E2-4DD8-8AB1-52D1D397785D@fys.uio.no>
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <20100322112655.0f23c1fb.sfr@canb.auug.org.au>
+Content-Type: text/plain;
+	charset=us-ascii;
+	format=flowed;
+	delsp=yes
 Content-Transfer-Encoding: 7bit
+X-Mailer: iPhone Mail (7E18)
+Mime-Version: 1.0 (iPhone Mail 7E18)
+Subject: Re: linux-next: build failure after merge of the nfs tree
+Date: Mon, 22 Mar 2010 05:49:40 -0400
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 4 sum msgs/h 1 total rcpts 2588 max rcpts/h 27 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 458E419769A0919C58EEDCE516F266686A388650
+X-UiO-SPAM-Test: remote_host: 166.137.136.38 spam_score: -49 maxlevel 80 minaction 2 bait 0 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-03-22 08:16, Pekka Enberg wrote:
-> Lars Lindley kirjoitti:
->> I fixed the checkpatch things except a couple of long lines.
->> I also removed hungarian notation from the argument names
->> and some "commented away" code.
->>
->> Signed-off-by: Lars Lindley <lindley@coyote.org>
-> 
-> Did you check that all these function declarations are actually used?
-> I've spotted plenty of dead code in the past.
-> 
-Nope, didn't check that. Just looking at the style now..
+On Mar 21, 2010, at 20:26, Stephen Rothwell <sfr@canb.auug.org.au>  
+wrote:
 
->> +/*
->> + * ====================================
->> + * Interface function declare
->> + * ====================================
->> + */
->> +unsigned char Wb35Reg_initial(struct hw_data *HwData);
-> 
-> Lets avoid CamelCase for the arguments so "hw_data" here, for example. I
-> see the same thing elsewhere in this patch as well.
-> 
-I thought struct hw_data *hw_data looked a bit confusing..Thats why I left
-CamelCase alone for now. I can make it like that if you want..
+> Hi Trond,
+>
+> After merging the nfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> net/sunrpc/xprt.c: In function 'xprt_release':
+> net/sunrpc/xprt.c:1045: error: implicit declaration of function  
+> 'xprt_free_bc_request'
+>
+> Caused by commit 0d28e05a53109bb52f254d5eac25dac6e3768b04 ("SUNRPC:  
+> Fix a
+> use after free bug with the NFSv4.1 backchannel").   
+> xprt_free_bc_request()
+> is only declared for CONFIG_NFS_V4_1 ...
+>
+> I have used the nfs tree from next-20100319 for today.
 
-/Lars
+Hi Stephen
+
+Sorry about that. I've got a fix for the above (just need to define  
+empty inline function for the !CONFIG_NFS_V4_1 case).
+
+I'll try to upload it later today. (I am unfortunately travelling so  
+wifi access is a bit spotty).
+
+Cheers
+     Trond
