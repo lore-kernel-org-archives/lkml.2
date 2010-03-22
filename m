@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678Ab0CVMF5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:05:57 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:13183 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752315Ab0CVMFz (ORCPT
+	id S1754691Ab0CVMGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:06:09 -0400
+Received: from mamba.nagafix.co.uk ([194.145.196.68]:59154 "EHLO
+	mail.nagafix.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753359Ab0CVMGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:05:55 -0400
-Message-ID: <4BA75D20.2060905@panasas.com>
-Date: Mon, 22 Mar 2010 14:05:52 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
+	Mon, 22 Mar 2010 08:06:04 -0400
+Message-ID: <4BA75D1A.8010001@nagafix.co.uk>
+Date: Mon, 22 Mar 2010 19:05:46 +0700
+From: Antoine Martin <antoine@nagafix.co.uk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
-References: <20100322053937.GA17637@laptop> <4BA7359B.2060603@panasas.com> <20100322105442.GH17637@laptop>
-In-Reply-To: <20100322105442.GH17637@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Avi Kivity <avi@redhat.com>
+CC: Olivier Galibert <galibert@pobox.com>, Ingo Molnar <mingo@elte.hu>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <4BA256FE.5080501@codemonkey.ws> <84144f021003180951s5207de16p1cdf4b9b04040222@mail.gmail.com> <20100318170223.GB9756@elte.hu> <4BA25E66.2050800@redhat.com> <20100318172805.GB26067@elte.hu> <4BA32E1A.2060703@redhat.com> <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <4BA67F12.6030501@nagafix.co.uk> <4BA68063.2050800@redhat.com> <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com>
+In-Reply-To: <4BA68997.60406@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Mar 2010 12:05:54.0420 (UTC) FILETIME=[05EF1340:01CAC9B8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 12:54 PM, Nick Piggin wrote:
-> On Mon, Mar 22, 2010 at 11:17:15AM +0200, Boaz Harrosh wrote:
->> ---
->> git diff --stat -p -M fs/exofs/inode.c
->>  fs/exofs/inode.c |    8 ++++++++
->>  1 files changed, 8 insertions(+), 0 deletions(-)
->>
->> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
->> index a17e4b7..85dd847 100644
->> --- a/fs/exofs/inode.c
->> +++ b/fs/exofs/inode.c
->> @@ -754,6 +754,11 @@ static int exofs_write_end(struct file *file, struct address_space *mapping,
->>  	return ret;
->>  }
->>  
->> +static int exofs_releasepage(struct page *page, gfp_t gfp)
->> +{
->> +	return try_to_free_buffers(page);
->> +}
->> +
->>  const struct address_space_operations exofs_aops = {
->>  	.readpage	= exofs_readpage,
->>  	.readpages	= exofs_readpages,
->> @@ -761,6 +766,9 @@ const struct address_space_operations exofs_aops = {
->>  	.writepages	= exofs_writepages,
->>  	.write_begin	= exofs_write_begin_export,
->>  	.write_end	= exofs_write_end,
->> +	.releasepage	= exofs_releasepage,
->> +	.set_page_dirty	= __set_page_dirty_buffers,
->> +	.invalidatepage = block_invalidatepage,
->>  };
-> 
-> AFAIKS, you aren't using buffer heads at all (except nobh_truncate,
-> which will not attach buffers to pages)?
-> 
-> If so, you should only need __set_page_dirty_nobuffers.
-> 
+[snip]
+>>>   I believe that -kernel use will be rare, though.  It's a lot 
+>>> easier to keep everything in one filesystem.
+>> Well, for what it's worth, I rarely ever use anything else. My 
+>> virtual disks are raw so I can loop mount them easily, and I can also 
+>> switch my guest kernels from outside... without ever needing to mount 
+>> those disks.
+>
+> Curious, what do you use them for?
+Various things, here is one use case which I think is under-used: 
+read-only virtual disks with just one network application on them (no 
+runlevels, sshd, user accounts, etc), a hell of a lot easier to maintain 
+and secure than a full blown distro. Want a new kernel? boot a new VM 
+and swap it for the old one with zero downtime (if your network app 
+supports this sort of hot-swap - which a lot of cluster apps do)
 
-Ho, thanks, that one is much better, yes.
+Another reason for wanting to keep the kernel outside is to limit the 
+potential points of failure: remove the partition table, remove the 
+bootloader, remove even the ramdisk. Also makes it easier to switch to 
+another solution (say UML) or another disk driver (as someone mentioned 
+previously).
+In virtualized environments I often prefer to remove the ability to load 
+kernel modules too, for obvious reasons.
 
-BTW:
-The use of nobh_truncate, I hope will go away after your:
-	fs: truncate introduce new sequence
-with these two helpers you added I can actually get rid of
-that as well. (I think. I keep postponing this work ;-))
+Hope this helps.
 
-> Thanks,
-> Nick
-> 
-
-Thanks
-Boaz
+Antoine
