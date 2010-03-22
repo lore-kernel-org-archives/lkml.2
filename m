@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab0CVTFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:05:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37837 "EHLO mx1.redhat.com"
+	id S1754812Ab0CVTM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:12:27 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38356 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab0CVTE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:04:59 -0400
-Message-ID: <4BA7BF3B.8050901@redhat.com>
-Date: Mon, 22 Mar 2010 21:04:27 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Anthony Liguori <anthony@codemonkey.ws>,
+	id S1750861Ab0CVTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:12:24 -0400
+Date: Mon, 22 Mar 2010 20:10:28 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>, sandmann@daimi.au.dk
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-References: <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321203121.GA30194@elte.hu> <4BA6900B.1040408@redhat.com> <20100321215207.GA13219@elte.hu> <4BA712F0.5030806@redhat.com> <20100322112340.GD3483@elte.hu> <4BA76746.1000505@redhat.com> <84144f021003220601q1b4b9050x5eb87dfaf10c3c85@mail.gmail.com> <20100322145437.GG14201@elte.hu>
-In-Reply-To: <20100322145437.GG14201@elte.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <20100322191028.GB21919@elte.hu>
+References: <20100319085346.GG12576@elte.hu>
+ <4BA3747F.60401@codemonkey.ws>
+ <20100321191742.GD25922@elte.hu>
+ <4BA67B2F.4030101@redhat.com>
+ <20100321203121.GA30194@elte.hu>
+ <20100322111040.GL13108@8bytes.org>
+ <20100322122228.GH3483@elte.hu>
+ <20100322134633.GD1940@8bytes.org>
+ <20100322163215.GC18796@elte.hu>
+ <4BA7AC6B.3050103@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7AC6B.3050103@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 04:54 PM, Ingo Molnar wrote:
-> * Pekka Enberg<penberg@cs.helsinki.fi>  wrote:
->
->    
->> Hi Avi,
->>
->> On Mon, Mar 22, 2010 at 2:49 PM, Avi Kivity<avi@redhat.com>  wrote:
->>      
->>> Seems like perf is also split, with sysprof being developed outside the
->>> kernel. ?Will you bring sysprof into the kernel? ?Will every feature be
->>> duplicated in prof and sysprof?
->>>        
->> I am glad you brought it up! Sysprof was historically outside of the kernel
->> (with it's own kernel module, actually). While the GUI was nice, it was much
->> harder to set up compared to oprofile so it wasn't all that popular. Things
->> improved slightly when Ingo merged the custom kernel module but the
->> _userspace_ part of sysprof was lagging behind a bit. I don't know what's
->> the situation now that they've switched over to perf syscalls but you
->> probably get my point.
->>
->> It would be nice if the two projects merged but I honestly don't see any
->> fundamental problem with two (or more) co-existing projects. Friendly
->> competition will ultimately benefit the users (think KDE and Gnome here).
->>      
-> See my previous mail - what i see as the most healthy project model is to have
-> a full solution reference implementation, connected to a flexible halo of
-> plugins or sub-apps.
->
-> Firefox does that, KDE does that, and Gnome as well to a certain degree.
->
-> The 'halo' provides a constant feedback of new features, and it also provides
-> competition and pressure on the 'main' code to be top-notch.
->
-> The problem i see with KVM is that there's no reference implementation! There
-> is _only_ the KVM kernel part which is not functional in itself. Surrounded by
-> a 'halo' - where none of the entities is really 'the' reference implementation
-> we call 'KVM'.
->    
 
-The reference implementation is qemu-kvm.git, in the future qemu.git.  
-Like the reference implementation of device-mapper is 
-lvm2/device-mapper, not tools/device-mapper.
+* Avi Kivity <avi@redhat.com> wrote:
 
-> This causes constant quality problems as the developers of the main project
-> dont have constant pressure towards good quality (it is not their
-> responsibility to care about user-space bits after all),
+> On 03/22/2010 06:32 PM, Ingo Molnar wrote:
+> >
+> > So, what do you think creates code communities and keeps them alive? 
+> > Developers and code. And the wellbeing of developers are primarily 
+> > influenced by the repository structure and by the development/maintenance 
+> > process - i.e. by the 'fun' aspect. (i'm simplifying things there but 
+> > that's the crux of it.)
+> 
+> There is nothing fun about having one repository or two.  Who cares about 
+> this anyway?
+> 
+> tools/kvm/ probably will draw developers, simply because of the glory 
+> associated with kernel work.  That's a bug, not a feature.  It means that 
+> effort is not distributed according to how it's needed, but because of 
+> irrelevant considerations.
 
-The developers of the main project are very much aware that users don't 
-call the ioctls directly but instead use qemu.
+And yet your solution to that is to ... do all your work in the kernel space 
+and declare the tooling as something that does not interest you? ;-)
 
->   plus it causes a lack
-> of focus as well: integration between (friendly) competing user-space
-> components is a lot harder than integration within a single framework such as
-> Firefox.
->    
+> Something I've wanted for a long time is to port kvm_stat to use tracepoints 
+> instead of the home-grown instrumentation.  But that is unrelated to this 
+> new tracepoint.  Other than that we're satisfied with ftrace.
 
-We are very focused, just not on what you think we should be focused.
+Despite it being another in-kernel subsystem that by your earlier arguments 
+should be done via a user-space package? ;-)
 
-> I hope this explains my points about modularization a bit better! I suggested
-> KVM to grow a user-space tool component in the kernel repo in tools/kvm/,
-> which would become the reference implementation for tooling. User-space
-> projects can still provide alternative tooling or can plug into this tooling,
-> just like they are doing it now. So the main effect isnt even on those
-> projects but on the kernel developers. The ABI remains and all the user-space
-> packages and projects remain.
->    
+> > You should realize that naturally developers will gravitate towards the 
+> > most 'fun' aspects of a project. It is the task of the maintainer to keep 
+> > the balance between fun and utility, bugs and features, quality and 
+> > code-rot.
+> 
+> There are plenty of un-fun tasks (like fixing bugs and providing RAS 
+> features) that we're doing.  We don't do this for fun but to satisfy our 
+> users.
 
-Seems like wanton duplication of effort.  Can we throw so many 
-developer-years away on duplicate projects?  Assuming not all are true 
-volunteers (85% for 2.6.33) who will fund this duplicate effort?
+So which one is it, KVM developers are volunteers that do fun stuff and cannot 
+be told about project priorities, or KVM developers are pros who do unfun 
+stuff because they can be told about priorities?
 
-> Yes, i thought Qemu would be a prime candidate to be the baseline for
-> tools/kvm/, but i guess that has become socially impossible now after this
-> flamewar. It's not a big problem in the big scheme of things: tools/kvm/ is
-> best grown up from a small towards larger size anyway ...
->    
+I posit that it's both: and that priorities can be communicated - if only you 
+try as a maintainer. All i'm suggesting is to add 'usable, unified user-space' 
+to the list of unfun priorities, because it's possible and because it matters.
 
-Qemu is open source, you can cp it into tools/kvm.  Rewriting it from 
-scratch is a mammoth effort, there's a reason kvm, Xen, and virtualbox 
-all use qemu.  Qemu itself copied code from bochs.  Writing this stuff 
-is hard, especially if there is something already working.
-
-You'll probably get much better threading (the qemu device model is 
-still single threaded), but it will take years to reach where qemu is 
-already at.
-
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+	Ingo
