@@ -1,132 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756492Ab0CVVrB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:47:01 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:54058 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab0CVVrA (ORCPT
+	id S1756535Ab0CVVsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:48:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33474 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756259Ab0CVVsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:47:00 -0400
-Message-ID: <4BA7E4E7.8010005@oracle.com>
-Date: Mon, 22 Mar 2010 14:45:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: pavan_savoy@ti.com
-CC: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com> <1269292756-7469-2-git-send-email-pavan_savoy@ti.com> <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
-In-Reply-To: <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Mar 2010 17:48:13 -0400
+Date: Mon, 22 Mar 2010 14:48:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/12] add CPU notifier error injection module
+Message-Id: <20100322144809.4d54bc7e.akpm@linux-foundation.org>
+In-Reply-To: <1268903124-10237-12-git-send-email-akinobu.mita@gmail.com>
+References: <1268903124-10237-1-git-send-email-akinobu.mita@gmail.com>
+	<1268903124-10237-12-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0202.4BA7E544.023B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/10 14:19, pavan_savoy@ti.com wrote:
-> From: Pavan Savoy <pavan_savoy@ti.com>
+On Thu, 18 Mar 2010 18:05:24 +0900
+Akinobu Mita <akinobu.mita@gmail.com> wrote:
+
+> I used this module to test the series of modification to the
+> cpu notifiers code.
 > 
-> This change adds the Kconfig and Make file for TI's
-> ST line discipline driver and the BlueZ driver for BT
-> core of the TI BT/FM/GPS combo chip.
+> Example1: inject CPU offline error (-1 == -EPERM)
 > 
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->  drivers/misc/Kconfig        |    1 +
->  drivers/misc/Makefile       |    1 +
->  drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
->  drivers/misc/ti-st/Makefile |    7 +++++++
->  4 files changed, 33 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/ti-st/Kconfig
->  create mode 100644 drivers/misc/ti-st/Makefile
+> 	# modprobe cpu-notifier-error-inject cpu_down_prepare_error=-1
+> 	# echo 0 > /sys/devices/system/cpu/cpu1/online0
+> 	bash: echo: write error: Operation not permitted
 > 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 625e3a6..c059bca 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
->  source "drivers/misc/eeprom/Kconfig"
->  source "drivers/misc/cb710/Kconfig"
->  source "drivers/misc/iwmc3200top/Kconfig"
-> +source "drivers/misc/ti-st/Kconfig"
+> Example2: inject CPU online error (-2 == -ENOENT)
+> 
+> 	# modprobe cpu-notifier-error-inject cpu_up_prepare_error=-2
+> 	# echo 1 > /sys/devices/system/cpu/cpu1/online0
+> 	bash: echo: write error: No such file or directory
+> 
+> ...
+>
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -885,6 +885,18 @@ config LKDTM
+>  	Documentation on how to use the module can be found in
+>  	Documentation/fault-injection/provoke-crashes.txt
 >  
->  endif # MISC_DEVICES
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index c221917..021f282 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->  obj-$(CONFIG_HWLAT_DETECTOR)	+= hwlat_detector.o
->  obj-y				+= eeprom/
->  obj-y				+= cb710/
-> +obj-y				+= ti-st/
-> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-> new file mode 100644
-> index 0000000..18eea1c
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Kconfig
-> @@ -0,0 +1,24 @@
-> +#
-> +# TI's shared transport line discipline and the protocol
-> +# drivers (BT, FM and GPS)
-> +#
-> +menu "Texas Instruments shared transport line discipline"
-> +    config TI_ST
-> +    tristate "shared transport core driver"
-> +    select FW_LOADER
-> +    help
-> +        This enables the shared transport core driver for TI
-> +	    BT / FM and GPS combo chips.This enables protocol drivers
-> +	    to register themselves with core and send data, the responses
-> +	    are returned to relevant protocol drivers based on their
-> +	    packet types.
-
-Please indent kconfig help text with one tab + 2 spaces.
-
+> +config CPU_NOTIFIER_ERROR_INJECT
+> +	tristate "CPU notifier error injection module"
+> +	depends on HOTPLUG_CPU && DEBUG_KERNEL
+> +	help
+> +	  This option provides a kernel module that can be used to test
+> +	  the error handling of the cpu notifiers
 > +
-> +    config ST_BT
-> +    tristate "BlueZ bluetooth driver for ST"
+> +	  To compile this code as a module, choose M here: the module will
+> +	  be called cpu-notify-inject.
 
-I'd be careful.  There are some places in the kernel tree where ST
-means STMicroelectronics.
+Should be "cpu-notifier-error-inject", yes?
 
-> +    select BT
+> +	  If unsure, say N.
+> +
+>  config FAULT_INJECTION
+>  	bool "Fault-injection framework"
+>  	depends on DEBUG_KERNEL
 
-That select looks unsafe.  You don't know that CONFIG_NET  is even enabled here,
-do you?  Most drivers use "depends on BT" instead of "select BT" from my grepping.
-
-
-
-> +    select TI_ST
-> +    help
-> +       This enables the Bluetooth driver for TI BT/FM/GPS combo devices
-
-End sentence with period.
-
-> +       This makes use of shared transport line discipline core driver to
-> +       communicate with the BT core of the combo chip.
-> +endmenu
-> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
-> new file mode 100644
-> index 0000000..cff3770
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Makefile
-> @@ -0,0 +1,7 @@
-> +#
-> +# Makefile for TI's shared transport line discipline
-> +# and it's protocol drivers (BT, FM, GPS)
-
-         its
-
-> +#
-> +obj-$(CONFIG_TI_ST) += st_drv.o
-> +st_drv-objs			:= st_core.o st_kim.o st_ll.o
-> +obj-$(CONFIG_ST_BT) += bt_drv.o
-
-
--- 
-~Randy
