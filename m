@@ -1,135 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab0CVRAG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:00:06 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:32982 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755339Ab0CVRAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:00:04 -0400
-Date: Mon, 22 Mar 2010 17:59:06 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Anthony Liguori <anthony@codemonkey.ws>
-Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100322165906.GA12546@elte.hu>
-References: <20100321215455.GB13219@elte.hu>
- <4BA7187E.3050405@redhat.com>
- <20100322111411.GC3483@elte.hu>
- <4BA7629B.7020604@redhat.com>
- <20100322124428.GA12475@elte.hu>
- <4BA76810.4040609@redhat.com>
- <20100322143212.GE14201@elte.hu>
- <4BA7821C.7090900@codemonkey.ws>
- <20100322155505.GA18796@elte.hu>
- <4BA7960A.4020504@codemonkey.ws>
+	id S1752906Ab0CVRHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:07:31 -0400
+Received: from stinky.trash.net ([213.144.137.162]:39410 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab0CVRH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 13:07:29 -0400
+Message-ID: <4BA7A3CF.8070503@trash.net>
+Date: Mon, 22 Mar 2010 18:07:27 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7960A.4020504@codemonkey.ws>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+To: wzt.wzt@gmail.com
+CC: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
+References: <20100320143240.GB2942@localhost.localdomain>
+In-Reply-To: <20100320143240.GB2942@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+wzt.wzt@gmail.com wrote:
+> The get.size field in the get_entries() interface is not bounded
+> correctly. The size is used to determine the total entry size.
+> The size is bounded, but can overflow and so the size checks may
+> not be sufficient to catch invalid size. Fix it by catching size
+> values that would cause overflows before calculating the size.
+>
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+>
+> ---
+>  net/ipv4/netfilter/ip_tables.c  |    4 ++++
+>  net/ipv6/netfilter/ip6_tables.c |    4 ++++
+>  2 files changed, 8 insertions(+), 0 deletions(-)
+>
+> diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
+> index 4e7c719..6abd3d2 100644
+> --- a/net/ipv4/netfilter/ip_tables.c
+> +++ b/net/ipv4/netfilter/ip_tables.c
+> @@ -1164,6 +1164,10 @@ get_entries(struct net *net, struct ipt_get_entries __user *uptr, int *len)
+>  	}
+>  	if (copy_from_user(&get, uptr, sizeof(get)) != 0)
+>  		return -EFAULT;
+> +
+> +	if (get.size >= INT_MAX / sizeof(struct ipt_get_entries))
+> +		return -EINVAL;
 
-* Anthony Liguori <anthony@codemonkey.ws> wrote:
+I can see that the size might cause an overflow in the addition with
+sizeof(struct ipt_get_entries), but that would most likely cause a mismatch
+with the actual table size and get aborted (should be fixed anyways I
+guess). But I fail to find the overflow you're trying to prevent, which
+I guess would be the result of a multiplication.
 
-> On 03/22/2010 10:55 AM, Ingo Molnar wrote:
-> >* Anthony Liguori<anthony@codemonkey.ws>  wrote:
-> >
-> >>[...]
-> >>
-> >>I've been trying very hard to turn this into a productive thread attempting
-> >>to capture your feedback and give clear suggestions about how you can solve
-> >>achieve your desired functionality.
-> >I'm glad that we are at this more productive stage. I'm still trying to
-> >achieve the very same technological capabilities that i expressed in the first
-> >few mails when i reviewed the 'perf kvm' patch that was submitted by Yanmin.
-> >
-> >The crux of the problem is very simple. To quote my earlier mail:
-> >
-> >  |
-> >  | - The inconvenience of having to type:
-> >  |      perf kvm --host --guest --guestkallsyms=/home/ymzhang/guest/kallsyms \
-> >  |               --guestmodules=/home/ymzhang/guest/modules top
-> >  |
-> >  |
-> >  |   is very obvious even with a single guest. Now multiply that by more guests ...
-> >  |
-> >
-> > For example we want 'perf kvm top' to do something useful by default: it 
-> > should find the first guest running and it should report its profile.
-> >
-> > The tool shouldnt have to guess about where the guests are, what their 
-> > namespaces is and how to talk to them. We also want easy symbolic access 
-> > to guest, for example:
-> >
-> >   perf kvm -g OpenSuse-2 record sleep 1
-> 
-> Two things are needed.  The first thing needed is to be able to enumerate 
-> running guests and identify a symbolic name.  I have a patch for this and 
-> it'll be posted this week or so.  perf will need to have a QMP client and it 
-> will need to look in ${HOME}/.qemu/qmp/ to sockets to connect to.
-> 
-> This is too much to expect from a client and we've got a GSoC idea posted to 
-> make a nice library for tools to use to simplify this.
-
-Ok, that sounds interesting! I'd rather see some raw mechanism that 'perf kvm' 
-could use instead of having to require yet another library (which generally 
-dampens adoption of a tool). So i think we can work from there.
-
-Btw., have you considered using Qemu's command name (task->comm[]) as the 
-symbolic name? That way we could see the guest name in 'top' on the host - a 
-nice touch.
-
-> The sockets are named based on UUID and you'll have to connect to a guest 
-> and ask it for it's name.  Some guests don't have names so we'll have to 
-> come up with a clever way to describe a nameless VM.
-
-I think just exposing the UUID in that lazy case would be adequate? It creates 
-pressure for VM launchers to use better symbolic names.
-
-> > I.e.:
-> >
-> >  - Easy default reference to guest instances, and a way for tools to
-> >    reference them symbolically as well in the multi-guest case. Preferably 
-> >    something trustable and kernel-provided - not some indirect information 
-> >    like a PID file created by libvirt-manager or so.
-> 
-> A guest is not a KVM concept.  It's a qemu concept so it needs to be 
-> something provided by qemu.  The other caveat is that you won't see guests 
-> created by libvirt because we're implementing this in terms of a default QMP 
-> device and libvirt will disable defaults.  This is desired behaviour.  
-> libvirt wants to be in complete control and doesn't want a tool like perf 
-> interacting with a guest directly.
-
-Hm, this sucks for multiple reasons. Firstly, perf isnt a tool that 
-'interacts', it's an observation tool: just like 'top' is an observation tool.
-
-We want to enable developers to see all activities on the system - regardless 
-of who started the VM or who started the process. Imagine if we had a way to 
-hide tasks to hide from 'top'. It would be rather awful.
-
-Secondly, it tells us that the concept is fragile if it doesnt automatically 
-enumerate all guests, regardless of how they were created.
-
-Full system enumeration is generally best left to the kernel, as it can offer 
-coherent access.
-
-	Ingo
+Please point me to the specific line in question. Thanks :)
