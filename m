@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab0CVVP1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:15:27 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:62239 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754736Ab0CVVP0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:15:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:content-disposition:message-id;
-        b=aarUmRGO8SxSFP4u2PvqFdR2gUn4D81nkx88JbUfPmcGlc85zjEcFe5yJzMOlYIYi8
-         wolD29IkIJ4Qq9VsxRb5OMcPLoY9Pun/r/Zj2zSM40NO0Xn9CzwkLohMymBlHfojsdR0
-         G+5rkgbD8hjK02hkbrhtKBPdLdVLh5tNI2rFQ=
-From: Chris Clayton <chris2553@googlemail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Build error with v2.6.34-rc2-51-g7b1f513
-Date: Mon, 22 Mar 2010 21:15:21 +0000
-User-Agent: KMail/1.9.10
-Cc: anton@samba.org
+	id S1756311Ab0CVVRw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:17:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36407 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754738Ab0CVVRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 17:17:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 2.6.34-rc2: Reported regressions from 2.6.33
+Date: Mon, 22 Mar 2010 22:20:41 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+References: <M9dVcHY7TxH.A.2GC.ZBopLB@chimera> <alpine.LFD.2.00.1003221012270.18017@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1003221012270.18017@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003222115.21861.chris2553@googlemail.com>
+Message-Id: <201003222220.41347.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Monday 22 March 2010, Linus Torvalds wrote:
+> 
+> On Sun, 21 Mar 2010, Rafael J. Wysocki wrote:
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15495
+> > Subject		: Flood of SELinux denials on polkitd
+> > Submitter	: Alex Villacis Lasso <avillaci@ceibo.fiec.espol.edu.ec>
+> > Date		: 2010-03-09 16:47 (13 days old)
+> 
+> Fixed by commit 3836a03d978e68b0ae00d3589089343c998cd4ff ("anon_inodes: 
+> mark the anon inode private"), I'm pretty sure.
 
-Commit 45575f5a426c01ec68cd33d998267ba2f6278fac seems to be causing the build 
-error shown below on i386:
+Thanks, closed.
 
-  CC      ipc/syscall.o
-  ipc/syscall.c:17: error: conflicting types for 'sys_ipc'
-  include/linux/syscalls.h:691: note: previous declaration of 'sys_ipc' was 
-here
-  make[1]: *** [ipc/syscall.o] Error 1
-  make: *** [ipc] Error 2
-  make: *** Waiting for unfinished jobs....
-
-I can see that changing the type of the third arg to sys_ipc in 
-include/linux/syscalls.h would probably avoid the error, but I am not 
-knowledgeable enough to know whether that would be the right thing to do.
-
-Happy to test a patch, but please cc me as I'm not subscribed.
-
-Chris
--- 
-Beauty is in the eye of the beerholder
+Rafael
