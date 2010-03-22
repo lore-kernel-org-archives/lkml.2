@@ -1,247 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756661Ab0CVWuV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 18:50:21 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:52877 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab0CVWuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 18:50:18 -0400
-Message-ID: <4BA7F3E8.6000306@oracle.com>
-Date: Mon, 22 Mar 2010 15:49:12 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1756670Ab0CVWyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 18:54:22 -0400
+Received: from www.tglx.de ([62.245.132.106]:58075 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab0CVWyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 18:54:21 -0400
+Date: Mon, 22 Mar 2010 23:53:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.cy
+In-Reply-To: <4BA7EE72.7000507@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain>
+References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
+ <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org> <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain> <4BA7EE72.7000507@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com> <1269292756-7469-2-git-send-email-pavan_savoy@ti.com> <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>,<4BA7E4E7.8010005@oracle.com> <19F8576C6E063C45BE387C64729E7394044DB828A4@dbde02.ent.ti.com>
-In-Reply-To: <19F8576C6E063C45BE387C64729E7394044DB828A4@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BA7F418.006F:SCFMA4539814,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/10 15:37, Savoy, Pavan wrote:
-> patch below....
-> _______________________________________
-> From: Randy Dunlap [randy.dunlap@oracle.com]
-> Sent: Tuesday, March 23, 2010 3:15 AM
-> To: Savoy, Pavan
-> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-> 
-> On 03/22/10 14:19, pavan_savoy@ti.com wrote:
->> From: Pavan Savoy <pavan_savoy@ti.com>
->>
->> This change adds the Kconfig and Make file for TI's
->> ST line discipline driver and the BlueZ driver for BT
->> core of the TI BT/FM/GPS combo chip.
->>
->> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
->> ---
->>  drivers/misc/Kconfig        |    1 +
->>  drivers/misc/Makefile       |    1 +
->>  drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
->>  drivers/misc/ti-st/Makefile |    7 +++++++
->>  4 files changed, 33 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/misc/ti-st/Kconfig
->>  create mode 100644 drivers/misc/ti-st/Makefile
->>
->> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->> index 625e3a6..c059bca 100644
->> --- a/drivers/misc/Kconfig
->> +++ b/drivers/misc/Kconfig
->> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
->>  source "drivers/misc/eeprom/Kconfig"
->>  source "drivers/misc/cb710/Kconfig"
->>  source "drivers/misc/iwmc3200top/Kconfig"
->> +source "drivers/misc/ti-st/Kconfig"
->>
->>  endif # MISC_DEVICES
->> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
->> index c221917..021f282 100644
->> --- a/drivers/misc/Makefile
->> +++ b/drivers/misc/Makefile
->> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->>  obj-$(CONFIG_HWLAT_DETECTOR) += hwlat_detector.o
->>  obj-y                                += eeprom/
->>  obj-y                                += cb710/
->> +obj-y                                += ti-st/
->> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
->> new file mode 100644
->> index 0000000..18eea1c
->> --- /dev/null
->> +++ b/drivers/misc/ti-st/Kconfig
->> @@ -0,0 +1,24 @@
->> +#
->> +# TI's shared transport line discipline and the protocol
->> +# drivers (BT, FM and GPS)
->> +#
->> +menu "Texas Instruments shared transport line discipline"
->> +    config TI_ST
->> +    tristate "shared transport core driver"
->> +    select FW_LOADER
->> +    help
->> +        This enables the shared transport core driver for TI
->> +         BT / FM and GPS combo chips.This enables protocol drivers
->> +         to register themselves with core and send data, the responses
->> +         are returned to relevant protocol drivers based on their
->> +         packet types.
-> 
-> Please indent kconfig help text with one tab + 2 spaces.
-> 
->> +
->> +    config ST_BT
->> +    tristate "BlueZ bluetooth driver for ST"
-> 
-> I'd be careful.  There are some places in the kernel tree where ST
-> means STMicroelectronics.
-> 
->> +    select BT
-> 
-> That select looks unsafe.  You don't know that CONFIG_NET  is even enabled here,
-> do you?  Most drivers use "depends on BT" instead of "select BT" from my grepping.
-> 
-> 
-> 
->> +    select TI_ST
->> +    help
->> +       This enables the Bluetooth driver for TI BT/FM/GPS combo devices
-> 
-> End sentence with period.
-> 
->> +       This makes use of shared transport line discipline core driver to
->> +       communicate with the BT core of the combo chip.
->> +endmenu
->> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
->> new file mode 100644
->> index 0000000..cff3770
->> --- /dev/null
->> +++ b/drivers/misc/ti-st/Makefile
->> @@ -0,0 +1,7 @@
->> +#
->> +# Makefile for TI's shared transport line discipline
->> +# and it's protocol drivers (BT, FM, GPS)
-> 
->          its
-> 
->> +#
->> +obj-$(CONFIG_TI_ST) += st_drv.o
->> +st_drv-objs                  := st_core.o st_kim.o st_ll.o
->> +obj-$(CONFIG_ST_BT) += bt_drv.o
-> 
-> 
-> --
-> ~Randy
-> 
-> 
-> 
-> From 91b326a876066f0724f08957ee446f6b6bbed40e Mon Sep 17 00:00:00 2001
-> From: Pavan Savoy <pavan_savoy@ti.com>
-> Date: Mon, 22 Mar 2010 16:40:19 -0400
-> Subject: [PATCH 2/7] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-> This change adds the Kconfig and Make file for TI's
-> ST line discipline driver and the BlueZ driver for BT
-> core of the TI BT/FM/GPS combo chip.
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->  drivers/misc/Kconfig        |    1 +
->  drivers/misc/Makefile       |    1 +
->  drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
->  drivers/misc/ti-st/Makefile |    7 +++++++
->  4 files changed, 33 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/ti-st/Kconfig
->  create mode 100644 drivers/misc/ti-st/Makefile
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 625e3a6..c059bca 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
->  source "drivers/misc/eeprom/Kconfig"
->  source "drivers/misc/cb710/Kconfig"
->  source "drivers/misc/iwmc3200top/Kconfig"
-> +source "drivers/misc/ti-st/Kconfig"
->  
->  endif # MISC_DEVICES
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index c221917..021f282 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->  obj-$(CONFIG_HWLAT_DETECTOR) += hwlat_detector.o
->  obj-y    += eeprom/
->  obj-y    += cb710/
-> +obj-y    += ti-st/
-> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-> new file mode 100644
-> index 0000000..fe5b0e8
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Kconfig
-> @@ -0,0 +1,24 @@
-> +#
-> +# TI's shared transport line discipline and the protocol
-> +# drivers (BT, FM and GPS)
-> +#
-> +menu "Texas Instruments shared transport line discipline"
-> +    config TI_ST
-> +    tristate "shared transport core driver"
-> +    select FW_LOADER
-> +    help
-> +   This enables the shared transport core driver for TI
-> +   BT / FM and GPS combo chips.This enables protocol drivers
-> +   to register themselves with core and send data, the responses
-> +   are returned to relevant protocol drivers based on their
-> +   packet types.
-> +
-> +    config ST_BT
-> +    tristate "BlueZ bluetooth driver for ST"
-> +    depends on BT
+On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> On 03/22/2010 03:09 PM, Thomas Gleixner wrote:
+> > On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> >> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
+>
+> >> 1. need to keep e820
+> > 
+> >   That's neither an argument for using lmb nor an argument not to use
+> >   lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
+> >   just to feed information into a (hopefully) generic early resource
+> >   management facility.
+> > 
+> >   e820 _CANNOT_ be generalized. Period.
 
-OK.
+  I still want to know, what "need to keep e820" means for you.
+ 
+> >> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
+> > 
+> >   What's finizing_e820 ???
+>  finish_e820_parsing();
 
-> +    select TI_ST
-> +    help
-> +   This enables the Bluetooth driver for TI BT/FM/GPS combo devices
-> +   This makes use of shared transport line discipline core driver to
-> +   communicate with the BT core of the combo chip.
+ Yinghai, come on. Are you really expecting that everyone involved in
+ this discussion goes to look up what the heck finish_e820_parsing()
+ is doing ?
 
-There are no tabs above.  They appear to have been eaten (assuming that
-they were there at some point).
+ You want to explain why your solution is better or why lmb is not
+ sufficient, so you better go and explain what finish_e820_parsing()
+ is, why finish_e820_parsing() is important and why lmb cannot cope
+ with it.
 
+> >> 3. use lmb.reserved to replace early_res.
+> > 
+> >   What's the implication of doing that ?
+>
+> early_res array is only corresponding to lmb.reserved, aka reserved
+> region from kernel.
+ 
+ Is it only corresponding (somehow) or is it a full equivivalent ?
 
-> +endmenu
-> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
-> new file mode 100644
-> index 0000000..cff3770
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Makefile
-> @@ -0,0 +1,7 @@
-> +#
-> +# Makefile for TI's shared transport line discipline
-> +# and it's protocol drivers (BT, FM, GPS)
+> >> current lmb is merging the region, we can not use name tag any more.
+> > 
+> >   What's wrong with merging of regions ? Are you arguing about a
+> >   specific region ("the region") ?
 
-         ^^^^
-should be "its"
+ Care to answer my question ?
+ 
+> > 
+> >   Which name tag ? And why is that name tag important ?
+> 
+> struct early_res {
+>         u64 start, end;
+>         char name[15];
+>         char overlap_ok;
+> };
 
-> +#
-> +obj-$(CONFIG_TI_ST) += st_drv.o
-> +st_drv-objs   := st_core.o st_kim.o st_ll.o
-> +obj-$(CONFIG_ST_BT) += bt_drv.o
+ I'm starting to get annoyed, really. What is that name field for and
+ why is that "name" field important ?
 
+> >  
+> >> may need to dump early_memtest, and use early_res for bootmem at
+> >> first.
+> > 
+> >   Why exactly might early_memtest not longer be possible ?
+>
+> early_memtest need to call find_e820_area_size
+> current lmb doesn't have that kind of find util.
+> the one memory subtract reserved memory by kernel.
 
-> PS:
-> If you still see problems with identation - blame my email editor (outlook express)
+ What subtracts what ? And why is it that hard to fix that ?
 
-I guess that you'll need to do something about that.
+> > 
+> >   What means "early_res for bootmem" ?
+> 
+> use early_res to replace bootmem, the CONFIG_NO_BOOTMEM.
+> that need early_res can be double or increase the slots automatically.
 
+ -ENOPARSE
 
--- 
-~Randy
+Yinghai, I asked you to take your time and explain things in detail
+instead of shooting unparseable answers within a minute.
+
+Everyone else in this discussion tries to be as explanatory as
+possible, just you expect that everyone else is going to dig out the
+crystal ball to understand the deeper meanings of your patches.
+
+Again, please take your time to explain what needs to be done or what
+is impossible to solve in your opinion, so we can get that resolved in
+a way which is satisfactory and useful for all parties involved.
+
+Thanks,
+
+	tglx
