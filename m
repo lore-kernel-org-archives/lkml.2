@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab0CVRHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:07:31 -0400
-Received: from stinky.trash.net ([213.144.137.162]:39410 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab0CVRH3 (ORCPT
+	id S1753837Ab0CVRIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:08:14 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:34635 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752770Ab0CVRIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:07:29 -0400
-Message-ID: <4BA7A3CF.8070503@trash.net>
-Date: Mon, 22 Mar 2010 18:07:27 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	Mon, 22 Mar 2010 13:08:12 -0400
+Date: Mon, 22 Mar 2010 20:08:10 +0300
+From: Anton Vorontsov <avorontsov@ru.mvista.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Ryan Mallon <ryan@bluewatersys.com>,
+       Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: Re: [PATCH 02/24] power/ds2782: really clear i2c_clientdata on exit
+Message-ID: <20100322170810.GA30325@oksana.dev.rtsoft.ru>
+Reply-To: avorontsov@ru.mvista.com
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
+ <1269094385-16114-3-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-To: wzt.wzt@gmail.com
-CC: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
-References: <20100320143240.GB2942@localhost.localdomain>
-In-Reply-To: <20100320143240.GB2942@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1269094385-16114-3-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wzt.wzt@gmail.com wrote:
-> The get.size field in the get_entries() interface is not bounded
-> correctly. The size is used to determine the total entry size.
-> The size is bounded, but can overflow and so the size checks may
-> not be sufficient to catch invalid size. Fix it by catching size
-> values that would cause overflows before calculating the size.
->
-> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
->
+On Sat, Mar 20, 2010 at 03:12:43PM +0100, Wolfram Sang wrote:
+> Probably due to a copy & paste bug, clientdata was set again to the data
+> structure (which is freed immediately afterwards) when it should be NULLed.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Ryan Mallon <ryan@bluewatersys.com>
+> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
 > ---
->  net/ipv4/netfilter/ip_tables.c  |    4 ++++
->  net/ipv6/netfilter/ip6_tables.c |    4 ++++
->  2 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
-> index 4e7c719..6abd3d2 100644
-> --- a/net/ipv4/netfilter/ip_tables.c
-> +++ b/net/ipv4/netfilter/ip_tables.c
-> @@ -1164,6 +1164,10 @@ get_entries(struct net *net, struct ipt_get_entries __user *uptr, int *len)
->  	}
->  	if (copy_from_user(&get, uptr, sizeof(get)) != 0)
->  		return -EFAULT;
-> +
-> +	if (get.size >= INT_MAX / sizeof(struct ipt_get_entries))
-> +		return -EINVAL;
+>  drivers/power/ds2782_battery.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+> index da14f37..6971b85 100644
+> --- a/drivers/power/ds2782_battery.c
+> +++ b/drivers/power/ds2782_battery.c
+> @@ -236,7 +236,7 @@ static int ds2782_battery_remove(struct i2c_client *client)
+>  	idr_remove(&battery_id, info->id);
+>  	mutex_unlock(&battery_lock);
+>  
+> -	i2c_set_clientdata(client, info);
+> +	i2c_set_clientdata(client, NULL);
+[...]
+> -	i2c_set_clientdata(client, info);
+> +	i2c_set_clientdata(client, NULL);
 
-I can see that the size might cause an overflow in the addition with
-sizeof(struct ipt_get_entries), but that would most likely cause a mismatch
-with the actual table size and get aborted (should be fixed anyways I
-guess). But I fail to find the overflow you're trying to prevent, which
-I guess would be the result of a multiplication.
+Why is this needed? I'd vote for just removing set_clientdata in
+fail/remove paths.
 
-Please point me to the specific line in question. Thanks :)
+Thanks,
+
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
