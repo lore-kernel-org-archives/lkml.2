@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab0CVI7L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:59:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43784 "EHLO mx1.suse.de"
+	id S1754352Ab0CVJAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 05:00:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21722 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753890Ab0CVI7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:59:09 -0400
-Date: Mon, 22 Mar 2010 09:59:07 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH v2 3/6] hid: add backlight support to PicoLCD device
-In-Reply-To: <20100320170619.4ae99546@neptune.home>
-Message-ID: <alpine.LNX.2.00.1003220957390.18642@pobox.suse.cz>
-References: <20100320170014.440959a8@neptune.home> <20100320170619.4ae99546@neptune.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751578Ab0CVJAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 05:00:05 -0400
+Date: Mon, 22 Mar 2010 04:59:58 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, elendil@planet.nl,
+       Amerigo Wang <amwang@redhat.com>, David Miller <davem@davemloft.net>
+Message-Id: <20100322090341.5289.10770.sendpatchset@localhost.localdomain>
+Subject: [Patch v2] netpoll: warn when there are spaces in parameters
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Mar 2010, Bruno Prémont wrote:
+v2: update according to Frans' comments.
 
-> Add backlight support to PicoLCD device.
-> 
-> Backlight support depends on backlight class and is only being
-> compiled if backlight class has been selected.
-> 
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> ---
->  drivers/hid/Kconfig       |    2 +-
->  drivers/hid/hid-picolcd.c |  134 ++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 134 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-> index a474bcd..5ec3cb7 100644
-> --- a/drivers/hid/Kconfig
-> +++ b/drivers/hid/Kconfig
-> @@ -243,8 +243,8 @@ config HID_PICOLCD
->  	  - Keypad
->  	  - Switching between Firmware and Flash mode
->  	  - Framebuffer for monochrome 256x64 display
-> +	  - Backlight control    (needs CONFIG_BACKLIGHT_CLASS_DEVICE)
+Currently, if we leave spaces before dst port,
+netconsole will silently accept it as 0. Warn about this.
 
-Wouldn't it be better to have Kconfig rules actually resolve the 
-dependency?
+Also, when spaces appear in other places, make them
+visible in error messages.
 
-I don't see any issue with HID_PICOLCD directly selecting 
-BACKLIGHT_CLASS_DEVICE. Or you can do a separate sub-option for that, if 
-you really want to avoid the direct dependency of the whole driver.
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: David Miller <davem@davemloft.net>
 
-Thanks,
+---
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 7aa6972..6df1863 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -614,7 +614,7 @@ void netpoll_print_options(struct netpoll *np)
+ 			 np->name, np->local_port);
+ 	printk(KERN_INFO "%s: local IP %pI4\n",
+ 			 np->name, &np->local_ip);
+-	printk(KERN_INFO "%s: interface %s\n",
++	printk(KERN_INFO "%s: interface '%s'\n",
+ 			 np->name, np->dev_name);
+ 	printk(KERN_INFO "%s: remote port %d\n",
+ 			 np->name, np->remote_port);
+@@ -661,6 +661,9 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 		if ((delim = strchr(cur, '@')) == NULL)
+ 			goto parse_failed;
+ 		*delim = 0;
++		if (*cur == ' ' || *cur == '\t')
++			printk(KERN_INFO "%s: warning: whitespace"
++					"is not allowed\n", np->name);
+ 		np->remote_port = simple_strtol(cur, NULL, 10);
+ 		cur = delim;
+ 	}
+@@ -708,7 +711,7 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+ 	return 0;
+ 
+  parse_failed:
+-	printk(KERN_INFO "%s: couldn't parse config at %s!\n",
++	printk(KERN_INFO "%s: couldn't parse config at '%s'!\n",
+ 	       np->name, cur);
+ 	return -1;
+ }
