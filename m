@@ -1,189 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab0CVRLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:11:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58962 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752386Ab0CVRL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:11:29 -0400
-Date: Mon, 22 Mar 2010 10:09:54 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       ozgur.yuksel@oracle.com
-Subject: Re: [Bugme-new] [Bug 15610] New: fsck leads to swapper - BUG:
- unable to handle kernel NULL pointer dereference & panic
-Message-Id: <20100322100954.5ecaec4b.akpm@linux-foundation.org>
-In-Reply-To: <bug-15610-10286@https.bugzilla.kernel.org/>
-References: <bug-15610-10286@https.bugzilla.kernel.org/>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754763Ab0CVRMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:12:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58934 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752386Ab0CVRMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 13:12:01 -0400
+Date: Mon, 22 Mar 2010 18:11:50 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322171150.GA15795@elte.hu>
+References: <20100321215455.GB13219@elte.hu>
+ <4BA7187E.3050405@redhat.com>
+ <20100322111411.GC3483@elte.hu>
+ <4BA7629B.7020604@redhat.com>
+ <20100322124428.GA12475@elte.hu>
+ <4BA76810.4040609@redhat.com>
+ <20100322143212.GE14201@elte.hu>
+ <4BA7821C.7090900@codemonkey.ws>
+ <20100322155505.GA18796@elte.hu>
+ <4BA7960A.4020504@codemonkey.ws>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7960A.4020504@codemonkey.ws>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-(switched to email.  Please respond via emailed reply-to-all, not via the
-bugzilla web interface).
+* Anthony Liguori <anthony@codemonkey.ws> wrote:
 
-This is a post-2.6.33 regression.
-
-On Mon, 22 Mar 2010 15:59:44 GMT bugzilla-daemon@bugzilla.kernel.org wrote:
-
-> https://bugzilla.kernel.org/show_bug.cgi?id=15610
+> >  - Easy default reference to guest instances, and a way for tools to
+> >    reference them symbolically as well in the multi-guest case. Preferably
+> >    something trustable and kernel-provided - not some indirect information
+> >    like a PID file created by libvirt-manager or so.
 > 
->            Summary: fsck leads to swapper - BUG: unable to handle kernel
->                     NULL pointer dereference & panic
->            Product: Memory Management
->            Version: 2.5
->     Kernel Version: 2.6.34-rc2-220bf991b0366cc50a94feede3d7341fa5710ee4
->           Platform: All
->         OS/Version: Linux
->               Tree: Mainline
->             Status: NEW
->           Severity: normal
->           Priority: P1
->          Component: Other
->         AssignedTo: akpm@linux-foundation.org
->         ReportedBy: ozgur.yuksel@oracle.com
->         Regression: No
-> 
-> 
-> During fsck.ext3 being performed (even with regular / clean forced runs), we
-> get a swapper crash:
-> [  159.557737] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [  159.561687] IP: [<c01304aa>] __wake_up_common+0x1a/0x70
+> A guest is not a KVM concept. [...]
 
-err, what the heck?  zone->wait_table didn't get initialised?  I can't
-think of anything we did which might have caused that.  Sorry to have
-to ask this, but...  would it be possible for you to do a bisection of
-this?  http://landley.net/writing/git-quick.html has some tips.
+Well, in a sense a guest is a KVM concept too: it's in essence represented via 
+the 'vcpu state attached to a struct mm' abstraction that is attached to the 
+/dev/kvm file descriptor attached to a Linux process.
 
+Multiple vcpus can be started by the same process to represent SMP, but the 
+whole guest notion is present: a Linux MM that carries KVM state.
 
-Thanks.
+In that sense when we type 'perf kvm list' we'd like to get a list of all 
+currently present guests that the developer has permission to profile: i.e. 
+we'd like a list of all [debuggable] Linux tasks that have a KVM instance 
+attached to them.
 
-> [  159.561687] *pdpt = 0000000000853001 *pde = 0000000000000000
-> [  159.561687] Oops: 0000 [#1] SMP
-> [  159.561687] last sysfs file: /sys/kernel/uevent_seqnum
-> [  159.561687] Modules linked in: snd_hda_codec_idt snd_hda_intel snd_hda_codec
-> snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcmt
-> [  159.561687]
-> [  159.561687] Pid: 0, comm: swapper Not tainted 2.6.34-rc2 #10 0KU184/Latitude
-> D630
-> [  159.561687] EIP: 0060:[<c01304aa>] EFLAGS: 00010086 CPU: 1
-> [  159.561687] EIP is at __wake_up_common+0x1a/0x70
-> [  159.561687] EAX: c4f32f00 EBX: fffffff4 ECX: 00000001 EDX: 00000000
-> [  159.561687] ESI: 00000003 EDI: 00000096 EBP: f747bc84 ESP: f747bc68
-> [  159.561687]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> [  159.561687] Process swapper (pid: 0, ti=f747a000 task=f743e600
-> task.ti=f747a000)
-> [  159.561687] Stack:
-> [  159.561687]  f747bc70 00000001 00000003 c058d79a c4f32efc 00000003 00000096
-> f747bca4
-> [  159.561687] <0> c0136cd7 00000000 f747bcb0 00000001 c0e00000 c07b2700
-> c0e00000 f747bcb8
-> [  159.561687] <0> c0161689 f747bcb0 c0e00000 00000002 f747bcc8 c01616ea
-> c0e00000 c539be20
-> [  159.561687] Call Trace:
-> [  159.561687]  [<c058d79a>] ? _raw_spin_lock_irqsave+0x2a/0x40
-> [  159.561687]  [<c0136cd7>] ? __wake_up+0x37/0x50
-> [  159.561687]  [<c0161689>] ? __wake_up_bit+0x29/0x30
-> [  159.561687]  [<c01616ea>] ? wake_up_bit+0x5a/0x60
-> [  159.561687]  [<c02199b1>] ? unlock_buffer+0x11/0x20
-> [  159.561687]  [<c0219b72>] ? end_buffer_async_read+0x62/0x120
-> [  159.561687]  [<c02191de>] ? end_bio_bh_io_sync+0x1e/0x40
-> [  159.561687]  [<c021cd35>] ? bio_endio+0x15/0x30
-> [  159.561687]  [<c030fb22>] ? req_bio_endio+0xa2/0x100
-> [  159.561687]  [<c0310889>] ? blk_update_request+0xe9/0x3e0
-> [  159.561687]  [<c011df46>] ? lapic_next_event+0x16/0x20
-> [  159.561687]  [<c016f6c7>] ? clockevents_program_event+0x87/0x140
-> [  159.561687]  [<c0310b96>] ? blk_update_bidi_request+0x16/0x60
-> [  159.561687]  [<c0311ad3>] ? blk_end_bidi_request+0x23/0x70
-> [  159.561687]  [<c0311b72>] ? blk_end_request+0x12/0x20
-> [  159.561687]  [<c03d1afe>] ? scsi_io_completion+0x8e/0x550
-> [  159.561687]  [<c03f9068>] ? ata_sff_hsm_move+0x188/0x770
-> [  159.561687]  [<c03d1953>] ? scsi_device_unbusy+0x93/0xa0
-> [  159.561687]  [<c03ca5a8>] ? scsi_finish_command+0x98/0x100
-> [  159.561687]  [<c03ce0ad>] ? scsi_decide_disposition+0x16d/0x1a0
-> [  159.561687]  [<c03d20db>] ? scsi_softirq_done+0x10b/0x130
-> [  159.561687]  [<c0317122>] ? blk_done_softirq+0x62/0x70
-> [  159.561687]  [<c014c4f0>] ? __do_softirq+0x90/0x1a0
-> [  159.561687]  [<c0120e4a>] ? ack_apic_level+0x6a/0x200
-> [  159.561687]  [<c014c63d>] ? do_softirq+0x3d/0x40
-> [  159.561687]  [<c014c79d>] ? irq_exit+0x5d/0x70
-> [  159.561687]  [<c01044e0>] ? do_IRQ+0x50/0xc0
-> [  159.561687]  [<c0167694>] ? sched_clock_local+0xa4/0x180
-> [  159.561687]  [<c01035b0>] ? common_interrupt+0x30/0x40
-> [  159.561687]  [<c016007b>] ? parse_args+0x23b/0x2d0
-> [  159.561687]  [<c037d4ae>] ? acpi_idle_enter_bm+0x25e/0x28f
-> [  159.561687]  [<c0486b6e>] ? cpuidle_idle_call+0x6e/0xf0
-> [  159.561687]  [<c0101d0c>] ? cpu_idle+0x8c/0xd0
-> [  159.561687]  [<c05888eb>] ? start_secondary+0x1f5/0x1fb
-> [  159.561687] Code: 90 55 89 e5 e8 68 ff ff ff 5d c3 8d b6 00 00 00 00 55 89
-> e5 57 56 53 83 ec 10 89 55 ec 89 4d e8 8b 50
-> [  159.561687] EIP: [<c01304aa>] __wake_up_common+0x1a/0x70 SS:ESP
-> 0068:f747bc68
-> [  159.561687] CR2: 0000000000000000
-> [  159.561687] ---[ end trace 0fd75502f6ca2e6e ]---
-> 
-> and panic:
-> [  159.561687] Kernel panic - not syncing: Fatal exception in interrupt
-> [  159.561687] Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc2 #10
-> [  159.561687] Call Trace:
-> [  159.561687]  [<c058b0a7>] ? printk+0x18/0x21
-> [  159.561687]  [<c058b01e>] panic+0x42/0xb3
-> [  159.561687]  [<c058ef87>] oops_end+0x97/0xa0
-> [  159.561687]  [<c0128e8e>] no_context+0xbe/0x190
-> [  159.561687]  [<c0128f97>] __bad_area_nosemaphore+0x37/0x160
-> [  159.561687]  [<c013fd41>] ? enqueue_task_fair+0x41/0x90
-> [  159.561687]  [<c012f649>] ? enqueue_task+0x79/0x90
-> [  159.561687]  [<c01290d2>] bad_area_nosemaphore+0x12/0x20
-> [  159.561687]  [<c0591106>] do_page_fault+0x2f6/0x380
-> [  159.561687]  [<c013ae5c>] ? try_to_wake_up+0x2bc/0x430
-> [  159.561687]  [<c0590e10>] ? do_page_fault+0x0/0x380
-> [  159.561687]  [<c058e463>] error_code+0x73/0x80
-> [  159.561687]  [<c013007b>] ? __sched_fork+0xcb/0x2b0
-> [  159.561687]  [<c01304aa>] ? __wake_up_common+0x1a/0x70
-> [  159.561687]  [<c058d79a>] ? _raw_spin_lock_irqsave+0x2a/0x40
-> [  159.561687]  [<c0136cd7>] __wake_up+0x37/0x50
-> [  159.561687]  [<c0161689>] __wake_up_bit+0x29/0x30
-> [  159.561687]  [<c01616ea>] wake_up_bit+0x5a/0x60
-> [  159.561687]  [<c02199b1>] unlock_buffer+0x11/0x20
-> [  159.561687]  [<c0219b72>] end_buffer_async_read+0x62/0x120
-> [  159.561687]  [<c02191de>] end_bio_bh_io_sync+0x1e/0x40
-> [  159.561687]  [<c021cd35>] bio_endio+0x15/0x30
-> [  159.561687]  [<c030fb22>] req_bio_endio+0xa2/0x100
-> [  159.561687]  [<c0310889>] blk_update_request+0xe9/0x3e0
-> [  159.561687]  [<c011df46>] ? lapic_next_event+0x16/0x20
-> [  159.561687]  [<c016f6c7>] ? clockevents_program_event+0x87/0x140
-> [  159.561687]  [<c0310b96>] blk_update_bidi_request+0x16/0x60
-> [  159.561687]  [<c0311ad3>] blk_end_bidi_request+0x23/0x70
-> [  159.561687]  [<c0311b72>] blk_end_request+0x12/0x20
-> [  159.561687]  [<c03d1afe>] scsi_io_completion+0x8e/0x550
-> [  159.561687]  [<c03f9068>] ? ata_sff_hsm_move+0x188/0x770
-> [  159.561687]  [<c03d1953>] ? scsi_device_unbusy+0x93/0xa0
-> [  159.561687]  [<c03ca5a8>] scsi_finish_command+0x98/0x100
-> [  159.561687]  [<c03ce0ad>] ? scsi_decide_disposition+0x16d/0x1a0
-> [  159.561687]  [<c03d20db>] scsi_softirq_done+0x10b/0x130
-> [  159.561687]  [<c0317122>] blk_done_softirq+0x62/0x70
-> [  159.561687]  [<c014c4f0>] __do_softirq+0x90/0x1a0
-> [  159.561687]  [<c0120e4a>] ? ack_apic_level+0x6a/0x200
-> [  159.561687]  [<c014c63d>] do_softirq+0x3d/0x40
-> [  159.561687]  [<c014c79d>] irq_exit+0x5d/0x70
-> [  159.561687]  [<c01044e0>] do_IRQ+0x50/0xc0
-> [  159.561687]  [<c0167694>] ? sched_clock_local+0xa4/0x180
-> [  159.561687]  [<c01035b0>] common_interrupt+0x30/0x40
-> [  159.561687]  [<c016007b>] ? parse_args+0x23b/0x2d0
-> [  159.561687]  [<c037d4ae>] ? acpi_idle_enter_bm+0x25e/0x28f
-> [  159.561687]  [<c0486b6e>] cpuidle_idle_call+0x6e/0xf0
-> [  159.561687]  [<c0101d0c>] cpu_idle+0x8c/0xd0
-> [  159.561687]  [<c05888eb>] start_secondary+0x1f5/0x1fb
-> [  159.561687] [drm:drm_fb_helper_panic] *ERROR* panic occurred, switching back
-> to text console
-> ...
-> full serial console dump to be attached.
-> 
+A convenient way to do that would be to use the Qemu process's ->comm[] name, 
+and to have a KVM ioctl that gets us a list of all vcpus that the querying 
+task has ptrace permission to. [the standard permission check we do for 
+instrumentation]
 
+No need for communication with Qemu for that - just an ioctl, and an 
+always-guaranteed result that works fine on a whole-system and on a per user 
+basis as well.
+
+Thanks,
+
+	Ingo
