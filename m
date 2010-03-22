@@ -1,61 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab0CVMFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:05:21 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54540 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752014Ab0CVMFT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:05:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=Ny2LJfeUuHQh8tzqpsK9M26xFs/3AsIBmzKDJzQYsExn717KFOCwBbtXQvFDr21yOe
-         i2pFr+4r7hGDaSnVemds6VK8ei+AB/NnPoXL5iRnq30QFBHTy/0pPx6eLxtElbPPAwB+
-         a9YoOaLiXbNmYjNEnLccDrNw/b4nigZP6ruhw=
-Date: Mon, 22 Mar 2010 15:05:09 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       WANG Cong <xiyou.wangcong@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-       Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] kcore: fix test for end of list
-Message-ID: <20100322120509.GC21571@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	WANG Cong <xiyou.wangcong@gmail.com>,
-	Jiri Slaby <jirislaby@gmail.com>,
-	Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754642Ab0CVMFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:05:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15225 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab0CVMFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 08:05:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100320111938.GT5331@bicker>
+References: <20100320111938.GT5331@bicker>
+To: Dan Carpenter <error27@gmail.com>
+Cc: dhowells@redhat.com, kernel-janitors@vger.kernel.org,
+       linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] afs: potential null dereference
+Date: Mon, 22 Mar 2010 12:05:20 +0000
+Message-ID: <28809.1269259520@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"m" is never NULL here.  We need a different test for the end of list
-condition.
+Dan Carpenter <error27@gmail.com> wrote:
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-Found with a static checker and compile tested only.  Please review
-carefully.
+> It seems clear from the surrounding code that xpermits is allowed to be 
+> NULL here.
 
-diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-index a44a789..b442dac 100644
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -490,7 +490,7 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
- 		}
- 		read_unlock(&kclist_lock);
- 
--		if (m == NULL) {
-+		if (&m->list == &kclist_head) {
- 			if (clear_user(buffer, tsz))
- 				return -EFAULT;
- 		} else if (is_vmalloc_or_module_addr((void *)start)) {
+Interesting.  The memcpy() won't oops due to this because if it is given a
+NULL pointer, it will also be given a zero count.  I wonder if this means the
+if-statement your patch adds is actually unnecessary...
+
+David
