@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab0CVM70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:59:26 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55232 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab0CVM7Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:59:24 -0400
-Date: Mon, 22 Mar 2010 08:59:19 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       David Miller <davem@davemloft.net>
-Subject: Re: [Patch] netconsole: do not depend on experimental
-Message-ID: <20100322125919.GB4288@hmsreliant.think-freely.org>
-References: <20100322100305.5518.29500.sendpatchset@localhost.localdomain>
-MIME-Version: 1.0
+	id S1754825Ab0CVNBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:01:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754504Ab0CVNB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:01:29 -0400
+Date: Mon, 22 Mar 2010 12:54:52 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Olivier Galibert <galibert@pobox.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Message-ID: <20100322125452.GI21874@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <20100321203704.GB30194@elte.hu> <4BA71012.7070004@redhat.com> <20100322113931.GE3483@elte.hu> <4BA76649.5080307@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322100305.5518.29500.sendpatchset@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -4.2 (----)
+In-Reply-To: <4BA76649.5080307@redhat.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 05:59:23AM -0400, Amerigo Wang wrote:
+On Mon, Mar 22, 2010 at 02:44:57PM +0200, Avi Kivity wrote:
+> On 03/22/2010 01:39 PM, Ingo Molnar wrote:
+> >Reality is, the server space never was and never will be self-sustaining in
+> >the long run (as Novell has found it out with Netware), it is the desktop 
+> >that
+> >dictates future markets. This is why i find your views about this naive and
+> >shortsighted.
+> >   
 > 
-> Nowadays, most distributions enable netconsole by default,
-> including RHEL, Fedora, Debian, Arch, Opensuse. And
-> we don't have any bug reports about it. So I think there
-> is no need to mark it as experimental any more.
+> Yet Linux is gaining ground in the server and embedded space while 
+> struggling on the desktop.  Apple is gaining ground on the desktop but 
+> is invisible on the server side (despite having a nice product - Xserve).
 > 
-> Cc: David S. Miller <davem@davemloft.net>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
+> It's true Windows achieved server dominance through it's desktop power, 
+> but I don't think that's what keeping them there now.
 > 
-> ---
-> diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-> index 0ba5b8e..e3d6c52 100644
-> --- a/drivers/net/Kconfig
-> +++ b/drivers/net/Kconfig
-> @@ -3252,15 +3252,14 @@ config NET_FC
->  	  "SCSI generic support".
->  
->  config NETCONSOLE
-> -	tristate "Network console logging support (EXPERIMENTAL)"
-> -	depends on EXPERIMENTAL
-> +	tristate "Network console logging support"
->  	---help---
->  	If you want to log kernel messages over the network, enable this.
->  	See <file:Documentation/networking/netconsole.txt> for details.
->  
->  config NETCONSOLE_DYNAMIC
-> -	bool "Dynamic reconfiguration of logging targets (EXPERIMENTAL)"
-> -	depends on NETCONSOLE && SYSFS && EXPERIMENTAL
-> +	bool "Dynamic reconfiguration of logging targets"
-> +	depends on NETCONSOLE && SYSFS
->  	select CONFIGFS_FS
->  	help
->  	  This option enables the ability to dynamically reconfigure target
-> --
+> In any case, I'm not going to write a kvm GUI.  It doesn't match my 
+> skills, interest, or my employer's interest.  If you wish to see a kvm 
+> GUI you have to write one yourself or convince someone to write it 
+> (perhaps convince Red Hat to fund such an effort beyond virt-manager).
 
-Seems reasonable.  Netconsole seems pretty mature.
+It is planned to add support for SPICE remote desktop to virt-manager
+once that matures & is accepted into upstream KVM/QEMU. That will improve
+the guest/desktop interaction in many ways compared to VNC or SDL, with
+improved display resolution changing, copy+paste between host & guest,
+much better graphics performance, etc. 
 
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Development efforts aren't totally ignoring the desktop, more that they
+are focusing on remoting guest desktops, rather than interaction host 
+desktop since that's where alot of demand is. This benefits single host
+desktops scenarios too, since there's alot of overlap in the problems
+faced there.
 
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Regards,
+Daniel
+-- 
+|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
+|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
+|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
+|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
