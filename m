@@ -1,115 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0CVDdj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 23:33:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61929 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753711Ab0CVDdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 23:33:38 -0400
-Message-ID: <4BA6E515.4040001@cn.fujitsu.com>
-Date: Mon, 22 Mar 2010 11:33:41 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S1754092Ab0CVDeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 23:34:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37401 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab0CVDeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 23:34:19 -0400
+Message-ID: <4BA6E4D1.6080704@kernel.org>
+Date: Sun, 21 Mar 2010 20:32:33 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
-       dipankar@in.ibm.com, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, adobriyan@gmail.com
-Subject: Re: [RFC patch 2/3] tree/tiny rcu: Add debug RCU head objects (v3)
-References: <20100319204739.574593298@efficios.com> <20100319205233.474028085@efficios.com>
-In-Reply-To: <20100319205233.474028085@efficios.com>
+To: michael@ellerman.id.au
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, lguest@ozlabs.org,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Ian Campbell <ian.campbell@citrix.com>,
+       Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+       x86@kernel.org, linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 01/10] irq: move some interrupt arch_* functions into
+ struct irq_chip.
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>	 <1269221770-9667-2-git-send-email-yinghai@kernel.org> <1269222962.3534.12.camel@concordia>
+In-Reply-To: <1269222962.3534.12.camel@concordia>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very nice you do not touch struct rcu_head.
+On 03/21/2010 06:56 PM, Michael Ellerman wrote:
+> On Sun, 2010-03-21 at 18:36 -0700, Yinghai Lu wrote:
+>> From: Ian Campbell <ian.campbell@citrix.com>
+> ...
+>> To replace the x86 arch_init_chip_data functionality
+>> irq_to_desc_alloc_node now takes a pointer to a function to allocate
+>> the chip data. This is necessary to ensure the allocation happens
+>> under the correct locking at the core level. On PowerPC and SH
+>> architectures (the other users of irq_to_desc_alloc_node) pass in NULL
+>> which retains existing chip_data behaviour.
+> ...
+>>
+>> -v4: yinghai add irq_to_desc_alloc_node_x...
+>>      so could leave default path not changed...
+> 
+> Apologies for not noticing this sooner, but ..
+> 
+>> --- a/arch/powerpc/kernel/irq.c
+>> +++ b/arch/powerpc/kernel/irq.c
+>> @@ -1088,7 +1088,7 @@ int arch_early_irq_init(void)
+>>  	return 0;
+>>  }
+>>  
+>> -int arch_init_chip_data(struct irq_desc *desc, int node)
+>> +int arch_init_irq_desc(struct irq_desc *desc, int node, init_chip_data_fn fn)
+>>  {
+>>  	desc->status |= IRQ_NOREQUEST;
+>>  	return 0;
+> 
+> This is a bit feral, that is the init_chip_data_fn.
+> 
+> It seems like it only exists to support the following on x86:
+> 
+>> +int arch_init_irq_desc(struct irq_desc *desc, int node,
+>> +			 init_chip_data_fn init_chip_data)
+>> +{
+>> +	if (!init_chip_data)
+>> +		return x86_init_chip_data(desc, node);
+>> +
+>> +	return init_chip_data(desc, node);
+>> +}
+> 
+> Which is really just a hack to avoid an if (xen) check isn't it?
 
-Mathieu Desnoyers wrote:
+ arch/powerpc/kernel/irq.c      |    2 +-
 
-> +
-> +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
-> +# define STATE_RCU_HEAD_READY	0
-> +# define STATE_RCU_HEAD_QUEUED	1
-> +
-> +extern struct debug_obj_descr rcuhead_debug_descr;
-> +
-> +static inline void debug_rcu_head_queue(struct rcu_head *head)
-> +{
-> +	debug_object_activate(head, &rcuhead_debug_descr);
-> +	debug_object_active_state(head, &rcuhead_debug_descr,
-> +				  STATE_RCU_HEAD_READY,
-> +				  STATE_RCU_HEAD_QUEUED);
-> +}
-> +
-> +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
-> +{
-> +	debug_object_active_state(head, &rcuhead_debug_descr,
-> +				  STATE_RCU_HEAD_QUEUED,
-> +				  STATE_RCU_HEAD_READY);
-> +	debug_object_deactivate(head, &rcuhead_debug_descr);
-> +}
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 64f6f20..cafd378 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -1088,7 +1088,7 @@ int arch_early_irq_init(void)
+ 	return 0;
+ }
+ 
+-int arch_init_chip_data(struct irq_desc *desc, int node)
++int arch_init_irq_desc(struct irq_desc *desc, int node, init_chip_data_fn fn)
+ {
+ 	desc->status |= IRQ_NOREQUEST;
+ 	return 0;
 
-I'm a little foolish. I don't know why we need
-STATE_RCU_HEAD_READY/QUEUED.
+so this patch only change one line with powerpc code. 
+> 
+> It looks to me like this should just be done via a current machine
+> vector or platform routine, in the same way as powerpc and (I think)
+> ia64, ie:
+> 
+>> +int arch_init_irq_desc(struct irq_desc *desc, int node)
+>> +{
+>> +	return current_machine->init_chip_data(desc, node);
+>> +}
+> 
+looks like xen in same run time, some irqs need x86_init_chip_data,
+and some may need xen_init_chip_data later.
 
-1) obj->astate does not be set to STATE_RCU_HEAD_READY in
-debug_object_activate/init().
+Thanks
 
-Maybe you need to add a function:
-debug_object_activate_with_astate(head, descr, init_astate);
-(the same as debug_object_activate(), but init obj->astate also)
-
-Or you need:
-@debugobjects.h
-# define DEBUG_OBJECT_ASTATE_INIT 0
-@rcupdate.c
-# define STATE_RCU_HEAD_READY	DEBUG_OBJECT_ASTATE_INIT
-# define STATE_RCU_HEAD_QUEUED	(STATE_RCU_HEAD_READY + 1)
-
-2) In debug_rcu_head_queue(), debug_object_active_state()
-   is always success when debug_object_activate() is success.
-
-   In debug_rcu_head_unqueue(), debug_object_active_state()
-   is always success if RCU subsystem is running correctly.
-
-(Correct me if I'm wrong) So we don't need debug_object_active_state()
-here if we just find racy users of call_rcu().
-
-> + */
-> +static int rcuhead_fixup_init(void *addr, enum debug_obj_state state)
-> +{
-> +	struct rcu_head *head = addr;
-> +
-> +	switch (state) {
-> +	case ODEBUG_STATE_ACTIVE:
-> +		/*
-> +		 * Ensure that queued callbacks are all executed.
-> +		 * If we detect that we are nested in a RCU read-side critical
-> +		 * section, we should simply fail, otherwise we would deadlock.
-> +		 */
-> +		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
-> +		    irqs_disabled()) {
-> +			WARN_ON(1);
-> +			return 0;
-> +		}
-
-preempt_count() != 0 ??? What happen when !CONFIG_PREEMPT?
-
-> +		rcu_barrier();
-
-We may need call rcu_barrier(), rcu_barrier_sched(), rcu_barrier_bh() together?
-rcu_barrier() does not ensure to flush callbacks of RCU_BH, RCU_SCHED.
-
-> +		debug_object_init(head, &rcuhead_debug_descr);
-> +		return 1;
-> +	default:
-> +		return 0;
-> +	}
-> +}
-> +
-
+Yinghai
