@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429Ab0CVVTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:19:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45951 "EHLO comal.ext.ti.com"
+	id S1756449Ab0CVVTm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:19:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47870 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756361Ab0CVVTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:19:31 -0400
+	id S1756415Ab0CVVTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 17:19:34 -0400
 From: pavan_savoy@ti.com
 To: gregkh@suse.de
 Cc: alan@lxorguk.ukuu.org.uk, pavan_savoy@ti.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] drivers:misc: sources for ST header file
-Date: Mon, 22 Mar 2010 16:19:16 -0500
-Message-Id: <1269292756-7469-7-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 5/6] drivers:misc: sources for HCI LL PM protocol
+Date: Mon, 22 Mar 2010 16:19:15 -0500
+Message-Id: <1269292756-7469-6-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1269292756-7469-6-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1269292756-7469-5-git-send-email-pavan_savoy@ti.com>
 References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com>
  <1269292756-7469-2-git-send-email-pavan_savoy@ti.com>
  <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
  <1269292756-7469-4-git-send-email-pavan_savoy@ti.com>
  <1269292756-7469-5-git-send-email-pavan_savoy@ti.com>
- <1269292756-7469-6-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,47 +27,200 @@ From: Pavan Savoy <pavan_savoy@ti.com>
 
 Texas Instruments BT, FM and GPS combo chips/drivers
 make use of a single TTY to communicate with the chip.
-This is the common header file for both the ST driver and the
-protocol drivers which intend to use ST as their mode of
-transport.
+This module constitutes the proprietary power management
+protocol from TI for the BT/FM/GPS combo chips
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/misc/ti-st/fm.h |   13 +++++++
- drivers/misc/ti-st/st.h |   85 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 98 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/ti-st/fm.h
- create mode 100644 drivers/misc/ti-st/st.h
+ drivers/misc/ti-st/st_ll.c |  169 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/ti-st/st_ll.h |   67 +++++++++++++++++
+ 2 files changed, 236 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/ti-st/st_ll.c
+ create mode 100644 drivers/misc/ti-st/st_ll.h
 
-diff --git a/drivers/misc/ti-st/fm.h b/drivers/misc/ti-st/fm.h
+diff --git a/drivers/misc/ti-st/st_ll.c b/drivers/misc/ti-st/st_ll.c
 new file mode 100644
-index 0000000..be41453
+index 0000000..5e42cbe
 --- /dev/null
-+++ b/drivers/misc/ti-st/fm.h
-@@ -0,0 +1,13 @@
-+struct fm_event_hdr {
-+	unsigned char plen;
-+} __attribute__ ((packed));
-+
-+#define FM_MAX_FRAME_SIZE 0xFF	/* TODO: */
-+#define FM_EVENT_HDR_SIZE 1	/* size of fm_event_hdr */
-+#define ST_FM_CH8_PKT 0x8
-+
-+/* gps stuff */
-+struct gps_event_hdr {
-+unsigned char opcode;
-+unsigned short plen;
-+} __attribute__ ((packed));
-diff --git a/drivers/misc/ti-st/st.h b/drivers/misc/ti-st/st.h
-new file mode 100644
-index 0000000..ec821d2
---- /dev/null
-+++ b/drivers/misc/ti-st/st.h
-@@ -0,0 +1,85 @@
++++ b/drivers/misc/ti-st/st_ll.c
+@@ -0,0 +1,169 @@
 +/*
-+ *  Shared Transport Header file
-+ *	To be included by the protocol stack drivers for
-+ *	Texas Instruments BT,FM and GPS combo chip drivers
++ *  Shared Transport driver
++ *	HCI-LL module responsible for TI proprietary HCI_LL protocol
++ *  Copyright (C) 2009 Texas Instruments
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ */
++
++#include "st_ll.h"
++
++/* all debug macros go in here */
++#define ST_LL_ERR(fmt, arg...)  printk(KERN_ERR "(stll):"fmt"\n" , ## arg)
++#if defined(DEBUG)		/* limited debug messages */
++#define ST_LL_DBG(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
++#define ST_LL_VER(fmt, arg...)
++#elif defined(VERBOSE)		/* very verbose */
++#define ST_LL_DBG(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
++#define ST_LL_VER(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
++#else /* error msgs only */
++#define ST_LL_DBG(fmt, arg...)
++#define ST_LL_VER(fmt, arg...)
++#endif
++
++static struct ll_struct_s *ll;
++
++/**********************************************************************/
++/* internal functions */
++static void send_ll_cmd(unsigned char cmd)
++{
++
++	ST_LL_DBG("%s: writing %x", __func__, cmd);
++	st_int_write(&cmd, 1);
++	return;
++}
++
++static void ll_device_want_to_sleep(void)
++{
++	ST_LL_DBG("%s", __func__);
++	/* sanity check */
++	if (ll->ll_state != ST_LL_AWAKE)
++		ST_LL_ERR("ERR hcill: ST_LL_GO_TO_SLEEP_IND"
++			  "in state %ld", ll->ll_state);
++
++	send_ll_cmd(LL_SLEEP_ACK);
++	/* update state */
++	ll->ll_state = ST_LL_ASLEEP;
++}
++
++static void ll_device_want_to_wakeup(void)
++{
++	/* diff actions in diff states */
++	switch (ll->ll_state) {
++	case ST_LL_ASLEEP:
++		send_ll_cmd(LL_WAKE_UP_ACK);	/* send wake_ack */
++		break;
++	case ST_LL_ASLEEP_TO_AWAKE:
++		/* duplicate wake_ind */
++		ST_LL_ERR("duplicate wake_ind while waiting for Wake ack");
++		break;
++	case ST_LL_AWAKE:
++		/* duplicate wake_ind */
++		ST_LL_ERR("duplicate wake_ind already AWAKE");
++		break;
++	case ST_LL_AWAKE_TO_ASLEEP:
++		/* duplicate wake_ind */
++		ST_LL_ERR("duplicate wake_ind");
++		break;
++	}
++	/* update state */
++	ll->ll_state = ST_LL_AWAKE;
++}
++
++/**********************************************************************/
++/* functions invoked by ST Core */
++
++/* called when ST Core wants to
++ * enable ST LL */
++void st_ll_enable(void)
++{
++	ll->ll_state = ST_LL_AWAKE;
++}
++
++/* called when ST Core /local module wants to
++ * disable ST LL */
++void st_ll_disable(void)
++{
++	ll->ll_state = ST_LL_INVALID;
++}
++
++/* called when ST Core wants to update the state */
++void st_ll_wakeup(void)
++{
++	if (likely(ll->ll_state != ST_LL_AWAKE)) {
++		send_ll_cmd(LL_WAKE_UP_IND);	/* WAKE_IND */
++		ll->ll_state = ST_LL_ASLEEP_TO_AWAKE;
++	} else {
++		/* don't send the duplicate wake_indication */
++		ST_LL_ERR(" Chip already AWAKE ");
++	}
++}
++
++/* called when ST Core wants the state */
++unsigned long st_ll_getstate(void)
++{
++	ST_LL_DBG(" returning state %ld", ll->ll_state);
++	return ll->ll_state;
++}
++
++/* called from ST Core, when a PM related packet arrives */
++unsigned long st_ll_sleep_state(unsigned char cmd)
++{
++	switch (cmd) {
++	case LL_SLEEP_IND:	/* sleep ind */
++		ST_LL_DBG("sleep indication recvd");
++		ll_device_want_to_sleep();
++		break;
++	case LL_SLEEP_ACK:	/* sleep ack */
++		ST_LL_ERR("sleep ack rcvd: host shouldn't");
++		break;
++	case LL_WAKE_UP_IND:	/* wake ind */
++		ST_LL_DBG("wake indication recvd");
++		ll_device_want_to_wakeup();
++		break;
++	case LL_WAKE_UP_ACK:	/* wake ack */
++		ST_LL_DBG("wake ack rcvd");
++		ll->ll_state = ST_LL_AWAKE;
++		break;
++	default:
++		ST_LL_ERR(" unknown input/state ");
++		return ST_ERR_FAILURE;
++	}
++	return ST_SUCCESS;
++}
++
++/* Called from ST CORE to initialize ST LL */
++long st_ll_init(void)
++{
++	long err = ST_SUCCESS;
++
++	/* Allocate memory for ST LL private structure */
++	ll = kzalloc(sizeof(*ll), GFP_ATOMIC);
++	if (!ll) {
++		ST_LL_ERR("kzalloc failed to alloc memory for ST LL");
++		err = -ENOMEM;
++		return err;
++	}
++	/* set state to invalid */
++	ll->ll_state = ST_LL_INVALID;
++	return err;
++}
++
++/* Called from ST CORE to de-initialize ST LL */
++long st_ll_deinit(void)
++{
++	kfree(ll);
++	return 0;
++}
+diff --git a/drivers/misc/ti-st/st_ll.h b/drivers/misc/ti-st/st_ll.h
+new file mode 100644
+index 0000000..fff88cb
+--- /dev/null
++++ b/drivers/misc/ti-st/st_ll.h
+@@ -0,0 +1,67 @@
++/*
++ *  Shared Transport Low Level (ST LL)
 + *
 + *  Copyright (C) 2009 Texas Instruments
 + *
@@ -87,69 +239,53 @@ index 0000000..ec821d2
 + *
 + */
 +
-+#ifndef ST_H
-+#define ST_H
++#ifndef ST_LL_H
++#define ST_LL_H
 +
 +#include <linux/skbuff.h>
-+/*
-+ * st.h
-+ */
++#include "st.h"
++#include "st_core.h"
 +
-+/* some gpios have active high, others like fm have
-+ * active low
-+ */
-+enum kim_gpio_state {
-+	KIM_GPIO_INACTIVE,
-+	KIM_GPIO_ACTIVE,
-+};
-+/*
-+ * the list of protocols on chip
-+ */
-+enum proto_type {
-+	ST_BT,
-+	ST_FM,
-+	ST_GPS,
-+	ST_MAX,
-+};
++/* ST LL receiver states */
++#define ST_W4_PACKET_TYPE       0
++#define ST_BT_W4_EVENT_HDR      1
++#define ST_BT_W4_ACL_HDR        2
++#define ST_BT_W4_SCO_HDR        3
++#define ST_BT_W4_DATA           4
++#define ST_FM_W4_EVENT_HDR      5
++#define ST_GPS_W4_EVENT_HDR	6
 +
-+enum {
-+	ST_ERR_FAILURE = -1,	/* check struct */
-+	ST_SUCCESS,
-+	ST_ERR_PENDING = -5,	/* to call reg_complete_cb */
-+	ST_ERR_ALREADY,		/* already registered */
-+	ST_ERR_INPROGRESS,
-+	ST_ERR_NOPROTO,		/* protocol not supported */
-+};
++/* ST LL state machines */
++#define ST_LL_ASLEEP               0
++#define ST_LL_ASLEEP_TO_AWAKE      1
++#define ST_LL_AWAKE                2
++#define ST_LL_AWAKE_TO_ASLEEP      3
++#define ST_LL_INVALID		   4
 +
-+/* per protocol structure
-+ * for BT/FM and GPS
-+ */
-+struct st_proto_s {
-+	enum proto_type type;
-+/*
-+ * to be called by ST when data arrives
-+ */
-+	long (*recv) (struct sk_buff *);
-+/*
-+ * for future use, logic now to be in ST
-+ */
-+	unsigned char (*match_packet) (const unsigned char *data);
-+/*
-+ * subsequent registration return PENDING,
-+ * signalled complete by this callback function
-+ */
-+	void (*reg_complete_cb) (char data);
-+/*
-+ * write function, sent in as NULL and to be returned to
-+ * protocol drivers
-+ */
-+	long (*write) (struct sk_buff *skb);
++#define LL_SLEEP_IND	0x30
++#define LL_SLEEP_ACK	0x31
++#define LL_WAKE_UP_IND	0x32
++#define LL_WAKE_UP_ACK	0x33
++
++/* ST LL private information */
++struct ll_struct_s {
++	unsigned long ll_state;	/* ST LL power state */
 +};
 +
-+extern long st_register(struct st_proto_s *new_proto);
-+extern long st_unregister(enum proto_type type);
++/* initialize and de-init ST LL */
++long st_ll_init(void);
++long st_ll_deinit(void);
 +
-+#endif /* ST_H */
++/* enable/disable ST LL along with KIM start/stop
++ * called by ST Core
++ */
++void st_ll_enable(void);
++void st_ll_disable(void);
++
++unsigned long st_ll_getstate(void);
++unsigned long st_ll_sleep_state(unsigned char);
++void st_ll_wakeup(void);
++#endif /* ST_LL_H */
 -- 
 1.5.4.3
 
