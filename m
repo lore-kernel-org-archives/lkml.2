@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab0CVUgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:36:50 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:60205 "EHLO bamako.nerim.net"
+	id S1755863Ab0CVUli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:41:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58892 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755613Ab0CVUgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:36:48 -0400
-Date: Mon, 22 Mar 2010 21:36:45 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, kernel-janitors@vger.kernel.org,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
-Message-ID: <20100322213645.34257722@hyperion.delvare>
-In-Reply-To: <20100321144655.4747fd2a@hyperion.delvare>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
-	<1269094385-16114-13-git-send-email-w.sang@pengutronix.de>
-	<201003202302.49526.hverkuil@xs4all.nl>
-	<20100321144655.4747fd2a@hyperion.delvare>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754306Ab0CVUlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:41:36 -0400
+Date: Mon, 22 Mar 2010 16:40:48 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com
+Subject: Re: [PATCH 3/5] jump label: x86 support
+Message-ID: <20100322204048.GD2278@redhat.com>
+References: <cover.1269272444.git.jbaron@redhat.com> <5492858ead53ab5c67d11acc620001abe8d36bcb.1269272444.git.jbaron@redhat.com> <1269276025.2957.5.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269276025.2957.5.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replying to myself...
+On Mon, Mar 22, 2010 at 12:40:25PM -0400, Steven Rostedt wrote:
+> > add x86 support for jump label. I'm keeping this patch separate so its clear to
+> > arch maintainers what was required for x86 support this new feature. hopefully,
+> > it wouldn't be too painful for other arches.
+> > 
+> > Signed-off-by: Jason Baron <jbaron@redhat.com>
+> 
+> 
+> > +#ifdef __HAVE_ARCH_JUMP_LABEL
+> > +
+> > +# ifdef CONFIG_X86_64
+> > +#  define JUMP_LABEL_NOP P6_NOP5
+> > +# else
+> > +#  define JUMP_LABEL_NOP ".byte 0xe9 \n\t .long 0\n\t"
+> > +# endif
+> 
+> Are you sure P6_NOP5 can't happen on non 64bit? Just because it is not
+> configured does not mean that the CPU can not handle it. Look at the
+> code I did in arch/x86/kernel/ftrace.c to determine what nop to use.
+> Maybe we can make that generic and have at boot up, the kernel determine
+> a proper 5byte nop.
+> 
 
-On Sun, 21 Mar 2010 14:46:55 +0100, Jean Delvare wrote:
-> I get the feeling that this would be a job for managed resources as
-> some drivers already do for I/O ports and IRQs. Managed resources don't
-> care about symmetry of allocation and freeing, by design (so it can
-> violate point 1 above.) Aha! Isn't it exactly what devm_kzalloc() is
-> all about?
+indeed, i've looked at the ftrace nop code...I think was concerned that
+I would need a baseline nop that would work for all boxes. But I guess a
+jmp + 5 would be it?
 
-Thinking about it again, this really only addresses the calls to
-kfree(), not the calls to i2c_set_clientdata(), so apparently I'm quite
-off-topic for this discussion. I still think that moving drivers to
-managed resources is the way to go, but that's a different issue.
-
--- 
-Jean Delvare
+-Jason
