@@ -1,284 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab0CVJYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 05:24:35 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:39892 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab0CVJYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 05:24:33 -0400
-X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 05:24:32 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=h8V/267qeaCaa/Lv6MHpkVuH/5KFNT2M5Hluam5bq1s9+yDfdy37OEgIEq2KzV6H/t
-         lXj9fMfJscJzVFD6IYPfMqeqVDXCzwCjajvUfNWGz2B3wqqpOYpGWId7vYvteYyZV+LY
-         mBl79q/k/VRCiv6wvKa4pEtSeTRdgLhrx89ek=
-Message-ID: <4BA7359B.2060603@panasas.com>
-Date: Mon, 22 Mar 2010 11:17:15 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754426Ab0CVJ2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 05:28:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42918 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754314Ab0CVJ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 05:28:29 -0400
+Date: Mon, 22 Mar 2010 10:28:09 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: yinghai@kernel.org, benh@kernel.crashing.org, tglx@linutronix.de,
+       hpa@zytor.com, akpm@linux-foundation.org, jbarnes@virtuousgeek.org,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.c
+Message-ID: <20100322092809.GA20607@elte.hu>
+References: <4BA6EA62.1030603@kernel.org>
+ <20100321.210023.209981130.davem@davemloft.net>
+ <4BA6F1F6.3070102@kernel.org>
+ <20100321.213350.176660494.davem@davemloft.net>
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
-References: <20100322053937.GA17637@laptop>
-In-Reply-To: <20100322053937.GA17637@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100321.213350.176660494.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 07:39 AM, Nick Piggin wrote:
-> It's ugly and lazy that we do these default aops in case it has not
-> been filled in by the filesystem.
+
+( Cc:-ed Andrew and Linus as this is a general design/policy matter wrt. 
+  memory management. )
+
+* David Miller <davem@davemloft.net> wrote:
+
+> From: Yinghai Lu <yinghai@kernel.org>
+> Date: Sun, 21 Mar 2010 21:28:38 -0700
 > 
-> A NULL operation should always mean either: we don't support the
-> operation; we don't require any action; or a bug in the filesystem,
-> depending on the context.
+> >> 
+> >> That action means you absolutely don't value our feedback at all.
+> > 
+> > [PATCH 01/20] x86: add find_e820_area_node
+> > is addressing your concern that early_res didn't handle memory cross the nodes problem.
 > 
-> In practice, if we get rid of these fallbacks, it will be clearer
-> what operations are used by a given address_space_operations struct,
-> reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
-> rid of all the buffer_head knowledge from core mm and fs code.
-> 
-> We could add a patch like this which spits out a recipe for how to fix
-> up filesystems and get them all converted quite easily.
-> 
+> Now I know that you _REALLY_ aren't listening to us.
 
-Guilty as charged. It could be nice if the first thing this patch will
-do is: Add a comment at struct address_space_operations that states
-that all operations should be defined and perhaps what are the minimum
-defaults for some of these, as below. I do try to be good, I was under
-the impression that defaults are OK.
+[ He has done a bit more than just to simply listen: he seems to have written 
+  a patch which he thinks is addressing the concerns you pointed out. It might
+  not be the response you wished for (and it might be inadequate) for but it
+  sure gives me the impression of him listening to you - unless by 'listening' 
+  you mean 'follow my exact opinion without argument'. ]
 
-Below are changes to exofs as proposed by this mail. Please comment?
-I will push such a patch to exofs later.
+> We said to use LMB because 1) it already exists 2) many platforms have been 
+> using it for years and 3) it doesn't lack the features you're now having to 
+> add to e820.
 
-> Index: linux-2.6/mm/filemap.c
-> ===================================================================
-> --- linux-2.6.orig/mm/filemap.c
-> +++ linux-2.6/mm/filemap.c
-> @@ -2472,7 +2472,14 @@ int try_to_release_page(struct page *pag
->  
->  	if (mapping && mapping->a_ops->releasepage)
->  		return mapping->a_ops->releasepage(page, gfp_mask);
-> -	return try_to_free_buffers(page);
-> +	else {
-> +		static bool warned = false;
-> +		if (!warned) {
-> +			warned = true;
-> +			print_symbol("address_space_operations %s missing releasepage method. Use try_to_free_buffers.\n", (unsigned long)page->mapping->a_ops);
-> +		}
-> +		return try_to_free_buffers(page);
+The thing is, lib/lmb.c was librarized two years ago by you (much after 
+early_res has been written for x86), but was not properly integrated into the 
+core kernel nor into x86. It was first suggested by you in the early_res 
+context about ten days ago, when Yinghai started posting Sparc64 patches.
 
-This is not nice! we should have an export that looks like:
+Which is about half a year after the whole very difficult early_res/bootmem 
+work was started by Yinghai :-(
 
-int default_releasepage(struct page *page, gfp_t gfp)
-{
-	return try_to_free_buffers(page);
-}
+I dont mind LMB per se, logically it seems quite similar to the early_res bits 
+Yinghai has generalized (to a certain degree), and is quite a bit cleaner as 
+you are writing very clean code.
 
-otherwise 3ton FSes would have to define the same thing all over again
+Note the other side of the coin: LMB appears to be deployed on only 4 non-x86 
+architectures that muster ~1% of the Linux boxes while early_res is deployed 
+on more than 95%.
 
-> +	}
->  }
->  
->  EXPORT_SYMBOL(try_to_release_page);
-> Index: linux-2.6/mm/page-writeback.c
-> ===================================================================
-> --- linux-2.6.orig/mm/page-writeback.c
-> +++ linux-2.6/mm/page-writeback.c
-> @@ -1159,8 +1159,14 @@ int set_page_dirty(struct page *page)
->  	if (likely(mapping)) {
->  		int (*spd)(struct page *) = mapping->a_ops->set_page_dirty;
->  #ifdef CONFIG_BLOCK
-> -		if (!spd)
-> +		if (!spd) {
-> +			static bool warned = false;
-> +			if (!warned) {
-> +				warned = true;
-> +				print_symbol("address_space_operations %s missing set_page_dirty method. Use __set_page_dirty_buffers.\n", (unsigned long)page->mapping->a_ops);
-> +			}
->  			spd = __set_page_dirty_buffers;
-> +		}
+So there's a very real hardship of testing and conversion here that we cannot 
+ignore and an even better path may be to gradually transform the more tested 
+and more deployed early_res code to meet the interface details of LMB.
 
-We could do better then __set_page_dirty_buffers for something lots of FSes use
+Please also realize the difficulties Yinghai has gone through already: 
+converting and generalizing _all_ of the x86 early allocation code to a more 
+generic core kernel approach, with essentially zero interest from _any_ 
+non-x86 person ...
 
->  #endif
->  		return (*spd)(page);
->  	}
-> Index: linux-2.6/mm/truncate.c
-> ===================================================================
-> --- linux-2.6.orig/mm/truncate.c
-> +++ linux-2.6/mm/truncate.c
-> @@ -16,8 +16,8 @@
->  #include <linux/highmem.h>
->  #include <linux/pagevec.h>
->  #include <linux/task_io_accounting_ops.h>
-> -#include <linux/buffer_head.h>	/* grr. try_to_release_page,
-> -				   do_invalidatepage */
-> +#include <linux/buffer_head.h>	/* block_invalidatepage */
-> +#include <linux/kallsyms.h>
->  #include "internal.h"
->  
->  
-> @@ -40,8 +40,14 @@ void do_invalidatepage(struct page *page
->  	void (*invalidatepage)(struct page *, unsigned long);
->  	invalidatepage = page->mapping->a_ops->invalidatepage;
->  #ifdef CONFIG_BLOCK
-> -	if (!invalidatepage)
-> +	if (!invalidatepage) {
-> +		static bool warned = false;
-> +		if (!warned) {
-> +			warned = true;
-> +			print_symbol("address_space_operations %s missing invalidatepage method. Use block_invalidatepage.\n", (unsigned long)page->mapping->a_ops);
-> +		}
->  		invalidatepage = block_invalidatepage;
-> +	}
->  #endif
->  	if (invalidatepage)
->  		(*invalidatepage)(page, offset);
-> Index: linux-2.6/fs/inode.c
-> ===================================================================
-> --- linux-2.6.orig/fs/inode.c
-> +++ linux-2.6/fs/inode.c
-> @@ -25,6 +25,7 @@
->  #include <linux/mount.h>
->  #include <linux/async.h>
->  #include <linux/posix_acl.h>
-> +#include <linux/kallsyms.h>
->  
->  /*
->   * This is needed for the following functions:
-> @@ -311,8 +312,14 @@ void clear_inode(struct inode *inode)
->  
->  	might_sleep();
->  	/* XXX: filesystems should invalidate this before calling */
-> -	if (!mapping->a_ops->release)
-> +	if (!mapping->a_ops->release) {
+Those early_res patches were posted all over on lkml, it was literally 
+hundreds of difficult patches, and now, months down the line, after we've 
+tested and upstreamed it (with many nasty regressions fixed on x86 during the 
+development of it) you come with a rigid "do it some other way, convert all of 
+x86 over again or else" position.
 
-Where is this code from? As of 2.6.34-rc2 I don't have a release in a_ops->
+I really wish non-x86 architectures apprecitated (and helped) the core kernel 
+work x86 is doing, because it is subsidizing non-x86 architectures all the 
+time.
 
-> +		static bool warned = false;
-> +		if (!warned) {
-> +			warned = true;
-> +			print_symbol("address_space_operations %s missing release method. Use invalidate_inode_buffers.\n", (unsigned long)mapping->a_ops);
-> +		}
->  		invalidate_inode_buffers(inode);
-> +	}
->  
->  	BUG_ON(mapping_has_private(mapping));
->  	BUG_ON(mapping->nrpages);
-> @@ -393,9 +400,14 @@ static int invalidate_list(struct list_h
->  		if (inode->i_state & I_NEW)
->  			continue;
->  		mapping = &inode->i_data;
-> -		if (!mapping->a_ops->release)
-> +		if (!mapping->a_ops->release) {
+For example when LMB was plopped into lib/lmb.c in 2008 why was it not ported 
+to x86, our most popular architecture? Did you consider posting LMB patches 
+for x86 instead of expecting Yinghai to post Sparc64, PowerPC, SH and 
+Microblaze patches?
 
-And here
+Anyway, i'm sure we can work out an approach, and yes, LMB looks pretty good 
+and could be picked up if it can be done gradually - given some mutual 
+willingness to work on this as equals.
 
-> +			static bool warned = false;
-> +			if (!warned) {
-> +				warned = true;
-> +				print_symbol("address_space_operations %s missing release method. Using invalidate_inode_buffers.\n", (unsigned long)mapping->a_ops);
-> +			}
->  			invalidate_inode_buffers(inode);
-> -		else
-> +		} else
->  			mapping->a_ops->release(mapping, AOP_RELEASE_FORCE);
->  		BUG_ON(mapping_has_private(mapping));
->  		if (!atomic_read(&inode->i_count)) {
-> @@ -497,8 +509,14 @@ static void prune_icache(int nr_to_scan)
->  			spin_unlock(&inode_lock);
->  			if (mapping->a_ops->release)
->  				ret = mapping->a_ops->release(mapping, 0);
-> -			else
-> +			else {
-> +				static bool warned = false;
-> +				if (!warned) {
-> +					warned = true;
-> +					print_symbol("address_space_operations %s missing release method. Using remove_inode_buffers.\n", (unsigned long)mapping->a_ops);
-> +				}
->  				ret = !remove_inode_buffers(inode);
-> +			}
->  			if (ret)
->  				reap += invalidate_mapping_pages(&inode->i_data,
->  								0, -1);
-> Index: linux-2.6/fs/libfs.c
-> ===================================================================
-> --- linux-2.6.orig/fs/libfs.c
-> +++ linux-2.6/fs/libfs.c
-> @@ -11,6 +11,7 @@
->  #include <linux/exportfs.h>
->  #include <linux/writeback.h>
->  #include <linux/buffer_head.h>
-> +#include <linux/kallsyms.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -827,9 +828,14 @@ int simple_fsync(struct file *file, stru
->  	int err;
->  	int ret;
->  
-> -	if (!mapping->a_ops->sync)
-> +	if (!mapping->a_ops->sync) {
+Thanks,
 
-And this one is new as well, right?
-
-New added vectors should be added to all in-tree FSes by the submitter.
-and a deprecate warning for out of tree FSes (If we care)
-
-> +		static bool warned = false;
-> +		if (!warned) {
-> +			warned = true;
-> +			print_symbol("address_space_operations %s missing sync method. Using sync_mapping_buffers.\n", (unsigned long)mapping->a_ops);
-> +		}
->  		ret = sync_mapping_buffers(mapping);
-> -	else
-> +	} else
->  		ret = mapping->a_ops->sync(mapping, AOP_SYNC_WRITE|AOP_SYNC_WAIT);
->  
->  	if (!(inode->i_state & I_DIRTY))
-> --
----
-exofs: Add default address_space_operations
-
-All vectors of address_space_operations should be initialized by the filesystem.
-Add the missing parts.
-
----
-git diff --stat -p -M fs/exofs/inode.c
- fs/exofs/inode.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-index a17e4b7..85dd847 100644
---- a/fs/exofs/inode.c
-+++ b/fs/exofs/inode.c
-@@ -754,6 +754,11 @@ static int exofs_write_end(struct file *file, struct address_space *mapping,
- 	return ret;
- }
- 
-+static int exofs_releasepage(struct page *page, gfp_t gfp)
-+{
-+	return try_to_free_buffers(page);
-+}
-+
- const struct address_space_operations exofs_aops = {
- 	.readpage	= exofs_readpage,
- 	.readpages	= exofs_readpages,
-@@ -761,6 +766,9 @@ const struct address_space_operations exofs_aops = {
- 	.writepages	= exofs_writepages,
- 	.write_begin	= exofs_write_begin_export,
- 	.write_end	= exofs_write_end,
-+	.releasepage	= exofs_releasepage,
-+	.set_page_dirty	= __set_page_dirty_buffers,
-+	.invalidatepage = block_invalidatepage,
- };
- 
- /******************************************************************************
+	Ingo
