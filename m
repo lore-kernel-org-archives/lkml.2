@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab0CVJ2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 05:28:31 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42918 "EHLO mx2.mail.elte.hu"
+	id S1754465Ab0CVJaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 05:30:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754314Ab0CVJ23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 05:28:29 -0400
-Date: Mon, 22 Mar 2010 10:28:09 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: yinghai@kernel.org, benh@kernel.crashing.org, tglx@linutronix.de,
-       hpa@zytor.com, akpm@linux-foundation.org, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.c
-Message-ID: <20100322092809.GA20607@elte.hu>
-References: <4BA6EA62.1030603@kernel.org>
- <20100321.210023.209981130.davem@davemloft.net>
- <4BA6F1F6.3070102@kernel.org>
- <20100321.213350.176660494.davem@davemloft.net>
+	id S1754408Ab0CVJaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 05:30:05 -0400
+Message-ID: <4BA738CE.8000901@redhat.com>
+Date: Mon, 22 Mar 2010 10:30:54 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100321.213350.176660494.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+To: Giel van Schijndel <me@mortis.eu>
+CC: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Hwmon: f71882fg: fixed braces coding style issues
+References: <1269185834-10266-1-git-send-email-me@mortis.eu>
+In-Reply-To: <1269185834-10266-1-git-send-email-me@mortis.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ack.
 
-( Cc:-ed Andrew and Linus as this is a general design/policy matter wrt. 
-  memory management. )
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 
-* David Miller <davem@davemloft.net> wrote:
-
-> From: Yinghai Lu <yinghai@kernel.org>
-> Date: Sun, 21 Mar 2010 21:28:38 -0700
-> 
-> >> 
-> >> That action means you absolutely don't value our feedback at all.
-> > 
-> > [PATCH 01/20] x86: add find_e820_area_node
-> > is addressing your concern that early_res didn't handle memory cross the nodes problem.
-> 
-> Now I know that you _REALLY_ aren't listening to us.
-
-[ He has done a bit more than just to simply listen: he seems to have written 
-  a patch which he thinks is addressing the concerns you pointed out. It might
-  not be the response you wished for (and it might be inadequate) for but it
-  sure gives me the impression of him listening to you - unless by 'listening' 
-  you mean 'follow my exact opinion without argument'. ]
-
-> We said to use LMB because 1) it already exists 2) many platforms have been 
-> using it for years and 3) it doesn't lack the features you're now having to 
-> add to e820.
-
-The thing is, lib/lmb.c was librarized two years ago by you (much after 
-early_res has been written for x86), but was not properly integrated into the 
-core kernel nor into x86. It was first suggested by you in the early_res 
-context about ten days ago, when Yinghai started posting Sparc64 patches.
-
-Which is about half a year after the whole very difficult early_res/bootmem 
-work was started by Yinghai :-(
-
-I dont mind LMB per se, logically it seems quite similar to the early_res bits 
-Yinghai has generalized (to a certain degree), and is quite a bit cleaner as 
-you are writing very clean code.
-
-Note the other side of the coin: LMB appears to be deployed on only 4 non-x86 
-architectures that muster ~1% of the Linux boxes while early_res is deployed 
-on more than 95%.
-
-So there's a very real hardship of testing and conversion here that we cannot 
-ignore and an even better path may be to gradually transform the more tested 
-and more deployed early_res code to meet the interface details of LMB.
-
-Please also realize the difficulties Yinghai has gone through already: 
-converting and generalizing _all_ of the x86 early allocation code to a more 
-generic core kernel approach, with essentially zero interest from _any_ 
-non-x86 person ...
-
-Those early_res patches were posted all over on lkml, it was literally 
-hundreds of difficult patches, and now, months down the line, after we've 
-tested and upstreamed it (with many nasty regressions fixed on x86 during the 
-development of it) you come with a rigid "do it some other way, convert all of 
-x86 over again or else" position.
-
-I really wish non-x86 architectures apprecitated (and helped) the core kernel 
-work x86 is doing, because it is subsidizing non-x86 architectures all the 
-time.
-
-For example when LMB was plopped into lib/lmb.c in 2008 why was it not ported 
-to x86, our most popular architecture? Did you consider posting LMB patches 
-for x86 instead of expecting Yinghai to post Sparc64, PowerPC, SH and 
-Microblaze patches?
-
-Anyway, i'm sure we can work out an approach, and yes, LMB looks pretty good 
-and could be picked up if it can be done gradually - given some mutual 
-willingness to work on this as equals.
-
-Thanks,
-
-	Ingo
+On 03/21/2010 04:37 PM, Giel van Schijndel wrote:
+> Fixed several coding style issues.
+>
+> Signed-off-by: Giel van Schijndel<me@mortis.eu>
+> ---
+>   drivers/hwmon/f71882fg.c |   11 +++++------
+>   1 files changed, 5 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+> index a95fa42..21bc661 100644
+> --- a/drivers/hwmon/f71882fg.c
+> +++ b/drivers/hwmon/f71882fg.c
+> @@ -866,11 +866,11 @@ static int superio_inw(int base, int reg)
+>   static inline void superio_enter(int base)
+>   {
+>   	/* according to the datasheet the key must be send twice! */
+> -	outb( SIO_UNLOCK_KEY, base);
+> -	outb( SIO_UNLOCK_KEY, base);
+> +	outb(SIO_UNLOCK_KEY, base);
+> +	outb(SIO_UNLOCK_KEY, base);
+>   }
+>
+> -static inline void superio_select( int base, int ld)
+> +static inline void superio_select(int base, int ld)
+>   {
+>   	outb(SIO_REG_LDSEL, base);
+>   	outb(ld, base + 1);
+> @@ -945,7 +945,7 @@ static struct f71882fg_data *f71882fg_update_device(struct device *dev)
+>   	mutex_lock(&data->update_lock);
+>
+>   	/* Update once every 60 seconds */
+> -	if ( time_after(jiffies, data->last_limits + 60 * HZ ) ||
+> +	if (time_after(jiffies, data->last_limits + 60 * HZ) ||
+>   			!data->valid) {
+>   		if (data->type == f71882fg || data->type == f71889fg) {
+>   			data->in1_max =
+> @@ -2151,8 +2151,7 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+>   	}
+>
+>   	*address = superio_inw(sioaddr, SIO_REG_ADDR);
+> -	if (*address == 0)
+> -	{
+> +	if (*address == 0) {
+>   		printk(KERN_WARNING DRVNAME ": Base address not set\n");
+>   		goto exit;
+>   	}
