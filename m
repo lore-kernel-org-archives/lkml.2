@@ -1,103 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab0CVUmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:42:12 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:51751 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab0CVUmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:42:09 -0400
-X-Spam-ASN: 
-Date: Mon, 22 Mar 2010 23:42:01 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-       "Nikita V. Youshchenko" <yoush@cs.msu.su>, stas@lvk.cs.msu.su,
-       Rodolfo Giometti <giometti@enneenne.com>
-Subject: Re: [PATCHv2 0/6] pps: time synchronization over LPT
-Message-ID: <20100322234201.73ffc06a@tornado.gnet>
-In-Reply-To: <1f1b08da1003081925p61a810e4v96be56640287d61@mail.gmail.com>
-References: <cover.1267008049.git.lasaine@lvk.cs.msu.su>
-	<1f1b08da1003081925p61a810e4v96be56640287d61@mail.gmail.com>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/llDhB6UBtjTXP=iTraVM25M"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	id S1756214Ab0CVUmX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:42:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754944Ab0CVUmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:42:21 -0400
+Message-ID: <4BA7D5CD.7050008@redhat.com>
+Date: Mon, 22 Mar 2010 22:40:45 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com> <20100322192033.GC21919@elte.hu> <4BA7C885.5010901@redhat.com> <20100322200617.GD3306@elte.hu> <4BA7CFF4.8080102@redhat.com> <20100322202937.GA18126@elte.hu>
+In-Reply-To: <20100322202937.GA18126@elte.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/llDhB6UBtjTXP=iTraVM25M
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 03/22/2010 10:29 PM, Ingo Molnar wrote:
+> * Avi Kivity<avi@redhat.com>  wrote:
+>
+>    
+>>> I think you didnt understand my point. I am talking about 'perf kvm top'
+>>> hanging if Qemu hangs.
+>>>        
+>> Use non-blocking I/O, report that guest as dead.  No point in profiling it,
+>> it isn't making any progress.
+>>      
+> Erm, at what point do i decide that a guest is 'dead' versus 'just lagged due
+> to lots of IO' ?
+>    
 
-Hi John,
+qemu shouldn't block due to I/O (it does now, but there is work to fix 
+it).  Of course it could be swapping or other things.
 
-Sorry for the delay...
+Pick a timeout, everything we do has timeouts these days.  It's the 
+price we pay for protection: if you put something where a failure can't 
+hurt you, you have to be prepared for failure, and you might have false 
+alarms.
 
-=D0=92 Mon, 8 Mar 2010 19:25:07 -0800
-john stultz <johnstul@us.ibm.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+Is it so horrible for 'perf kvm top'?  No user data loss will happen, 
+surely?
 
-> On Wed, Feb 24, 2010 at 4:28 AM, Alexander Gordeev
-> <lasaine@lvk.cs.msu.su> wrote:
-> > This patchset is tested against the vanilla 2.6.32.9 kernel. But we
-> > are actually using it on 2.6.31.12-rt20 rt-preempt kernel most of
-> > the time. Also there is a version which should be applied on top of
-> > LinuxPPS out of tree patches (i.e. all clients and low-level irq
-> > timestamps stuff). Those who are interested in other versions of
-> > the patchset can find them in my git repository:
-> > http://lvk.cs.msu.su/~lasaine/timesync/linux-2.6-timesync.git
-> >
-> > There is one problem however: hardpps() works bad when used on top
-> > of 2.6.33-rc* with CONFIG_NO_HZ enabled. The reason for this is
-> > commit a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601. Without it
-> > hardpps() is able to sync to 1us precision in about 10 seconds.
-> > With it
->=20
-> Uh. Not sure I see right off why the logarithmic time accumulation
-> would give you troubles. Its actually there to try to fix a couple of
-> NTP issues that cropped up when the accumulation interval was pushed
-> out to 2HZ with CONFIG_NO_HZ.
+On the other hand, if it's in the kernel and it fails, you will lose 
+service or perhaps data.
 
-Yes, I know. I guess (based on the commit log and other sources) that
-this change was added to make chrony work better on tickless kernel.
-So chrony corrects the time using only frequency corrections?
-My approach is different: use time_offset t remove the phase error and
-adjust time_freq to remove frequency error.
+> Also, do you realize that you increase complexity (the use of non-blocking
+> IO), just to protect against something that wouldnt happen if the right
+> solution was used in the first place?
+>    
 
-> Do you have any extra insight here as to whats going on with your
-> code?   The only thing I could guess would be second_overflow() is
-> happening closer to the actual overflow, but maybe less regularly? But
-> again, I'm not sure how this would be drastically different then
-> before with the 2HZ accumulation period.
+It's a tradeoff.  Increasing the kernel code size vs. increasing 
+userspace size.
 
-I still can't find this out (partially because I'm too busy with other
-tasks). The new code seems ok to mee. time_offset is added at
-second_overflow as usual. Maybe the problem is with the frequency
-correction. I'm going to run some tests that should show where the
-problem is: in the phase or freq correction.
+>>> With a proper in-kernel enumeration the kernel would always guarantee the
+>>> functionality, even if the vcpu does not make progress (i.e. it's "hung").
+>>>
+>>> With this implemented in Qemu we lose that kind of robustness guarantee.
+>>>        
+>> If qemu has a bug in the resource enumeration code, you can't profile one
+>> guest.  If the kernel has a bug in the resource enumeration code, the system
+>> either panics or needs to be rebooted later.
+>>      
+> This is really simple code, not rocket science. If there's a bug in it we'll
+> fix it. On the other hand a 500KLOC+ piece of Qemu code has lots of places to
+> hang, so that is a large cross section.
+>
+>    
 
-I hope I'll have time for this next week.
+The kernel has tons of very simple code (and some very complex code as 
+well), and tons of -stable updates as well.
 
---=20
-  Alexander
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
---Sig_/llDhB6UBtjTXP=iTraVM25M
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBCAAGBQJLp9YZAAoJEElrwznyooJbTrAIAIqUfdCrComz+0TRZcE41ZIz
-bTvMsEfiVOlwGjYU2y/CMnAmslImwexyC8eRqwh1zPIBCNz7zb1sXLQvHtVdNyOR
-gI+Cg+TaeCqky7KW93owZjxnrN/pt4PeYBky2aUkOy7cMsikTFnuGxncyvk3ObpQ
-UTXkkMpy1fpqMpvzyEZt8sPlrTkswiHRQhE71SIGymxgOJNpqcreiORgSsuruB3C
-5QPBTm2gK9nEHw4OitZ5D5Sk5eWbaKPLkoVmiGlLRSEezKByEydxKoe5jc26f7CP
-5im80yD9SR+AMoDtQ1gm+WEWZhSC9MPKvgksoRY5xZztM3kaIwcofozgZC/d2vo=
-=oBU2
------END PGP SIGNATURE-----
-
---Sig_/llDhB6UBtjTXP=iTraVM25M--
