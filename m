@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab0CVF2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 01:28:43 -0400
-Received: from mail.gmx.net ([213.165.64.20]:52111 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752959Ab0CVF2l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 01:28:41 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+HN39I0lCHSycsImjjwgFPaMRYQY8JWNEao/Jhig
-	283SNYilYeeU5f
-Subject: Re: [Bug #15192] netperf ~50% regression with 2.6.33-rc1, bisect
- to 1b9508f
-From: Mike Galbraith <efault@gmx.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-In-Reply-To: <hTwaxgnIZ2O.A.81F.hQopLB@chimera>
-References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
-	 <hTwaxgnIZ2O.A.81F.hQopLB@chimera>
-Content-Type: text/plain
-Date: Mon, 22 Mar 2010 06:28:37 +0100
-Message-Id: <1269235717.19079.4.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.52000000000000002
+	id S1753690Ab0CVFe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 01:34:28 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35502 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab0CVFe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 01:34:27 -0400
+Date: Mon, 22 Mar 2010 11:04:18 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 9/10] Uprobes Documentation patch
+Message-ID: <20100322053418.GB30463@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
+ <20100320142638.11427.49335.sendpatchset@localhost6.localdomain6>
+ <4BA6DD35.40600@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4BA6DD35.40600@xenotime.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-21 at 21:30 +0100, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.32 and 2.6.33.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.32 and 2.6.33.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15192
-> Subject		: netperf ~50% regression with 2.6.33-rc1, bisect to 1b9508f
-> Submitter	: Lin Ming <ming.m.lin@intel.com>
-> Date		: 2010-01-25 10:03 (56 days old)
-> First-Bad-Commit: http://git.kernel.org/git/linus/1b9508f6831e10d53256825de8904caa22d1ca2c
-> References	: http://marc.info/?l=linux-kernel&m=126441481427331&w=4
-> Handled-By	: Mike Galbraith <efault@gmx.de>
-> 		  Peter Zijlstra <peterz@infradead.org>
-> 		  Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-> Patch		: http://patchwork.kernel.org/patch/78544/
+Thanks for the review, 
+The next version of the patchset will address your comments.
 
-That patch swam upstream as d306ebc28649b89877a22158fe0076f06cc46f60.
+> > +
+> > +This user-bkpt based version of Uprobes is implemented on the following
+> 
+> s/bkpt/breakpoint/
+> 
 
-	-Mike
+Your comment however made me realize that I had used user-bkpt here
+rather than user_bkpt.
 
+user_bkpt is a layer that provides breakpoint insertion and removal. 
+I wanted to mention that uprobes depends on user_bkpt layer.
+I think "This user_bkpt based version" is probably better than
+"This user-breakpoint based version"
+
+--
+Thanks and Regards
+Srikar
