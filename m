@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab0CVCBO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 22:01:14 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:40980 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab0CVCBM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 22:01:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=x4K
-	YpEl3ddY+znSkgKWnxsm8KMWsNbi6fR9RaCBs0XrtjTQFs7opw6h80ZmjdxbnJYt
-	smg+gESK+58l/dWRX+xuNlEKz5I2oiQKSNTE0PoBeuZqP5Hk03jquDjEFg/1RkPG
-	46py7iYyfa4fdh6qTrDcTUhmm74U4Kmv27KYWt4o=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.0.3
-From: Junio C Hamano <gitster@pobox.com>
-Date: Sun, 21 Mar 2010 19:00:59 -0700
-Message-ID: <7vr5nd2jz8.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1753827Ab0CVCMa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 22:12:30 -0400
+Received: from thunk.org ([69.25.196.29]:51228 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753716Ab0CVCMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 22:12:20 -0400
+Date: Sun, 21 Mar 2010 20:20:50 -0400
+From: tytso@mit.edu
+To: Steven Liu <lingjiujianke@gmail.com>
+Cc: linux-ext4@vger.kernel.org, adilger@sun.com,
+       Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext4: Fix coding style in fs/ext4/move_extent.c
+Message-ID: <20100322002050.GA11560@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Steven Liu <lingjiujianke@gmail.com>,
+	linux-ext4@vger.kernel.org, adilger@sun.com,
+	Stefan Richter <stefanr@s5r6.in-berlin.de>,
+	linux-kernel@vger.kernel.org
+References: <bd0d95d71003170312s10fd8680xcbea67cc8d681296@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: C69634D4-3556-11DF-AFAF-D033EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <bd0d95d71003170312s10fd8680xcbea67cc8d681296@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.0.3 is available at the
-usual places:
+On Wed, Mar 17, 2010 at 06:12:14PM +0800, Steven Liu wrote:
+> fix a code style in fs/ext4/move_extent.c
+> 
+> Signed-off-by: LiuQi <lingjiujianke@gmail.com>
 
-  http://www.kernel.org/pub/software/scm/git/
+I've added this to the ext4 patch queue with the following changelog
+description:
 
-  git-1.7.0.3.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.0.3.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.0.3.tar.{gz,bz2}		(preformatted docs)
+ext4: Fix coding style in fs/ext4/move_extent.c
 
-The RPM binary packages for a few architectures are found in:
+From: Steven Liu <lingjiujianke@gmail.com>
 
-  RPMS/$arch/git-*-1.7.0.3-1.fc11.$arch.rpm	(RPM)
+Making sure ee_block is initialized to zero to prevent gcc from
+kvetching.  It's harmless (although it's not obvious that it's
+harmless) from code inspection:
 
-Git v1.7.0.3 Release Notes
-==========================
+fs/ext4/move_extent.c:478: warning: 'start_ext.ee_block' may be used
+uninitialized in this function
 
-Fixes since v1.7.0.2
---------------------
+Thanks to Stefan Richter for first bringing this to the attention of
+linux-ext4@vger.kernel.org.
 
- * Object files are created in a more ACL friendly way in repositories
-   where group permission is ACL controlled.
+Signed-off-by: LiuQi <lingjiujianke@gmail.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
- * "git add -i" didn't handle a deleted path very well.
+						- Ted
 
- * "git blame" padded line numbers with one extra SP when the total number
-   of lines was one less than multiple of ten due to an off-by-one error.
-
- * "git fetch --all/--multi" used to discard information for remotes that
-   are fetched earlier.
-
- * "git log --author=me --grep=it" tried to find commits that have "it"
-   or are written by "me", instead of the ones that have "it" _and_ are
-   written by "me".
-
- * "git log -g branch" misbehaved when there was no entries in the reflog
-   for the named branch.
-
- * "git mailinfo" (hence "git am") incorrectly removed initial indent from
-   paragraphs.
-
- * "git prune" and "git reflog" (hence "git gc" as well) didn't honor
-   an instruction never to expire by setting gc.reflogexpire to never.
-
- * "git push" misbehaved when branch.<name>.merge was configured without
-   matching branch.<name>.remote.
-
-And other minor fixes and documentation updates.
