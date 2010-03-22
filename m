@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab0CVOag (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:30:36 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50174 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab0CVOaf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:30:35 -0400
-Date: Mon, 22 Mar 2010 15:07:13 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, "Eric W. Biederman" <ebiederm@xmission.com>,
-       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] Fix key f70f4b50 not in .data in thermal_sys
-Message-ID: <20100322140713.GB1076@pengutronix.de>
-References: <20100309102754.GA3316@swordfish.minsk.epam.com> <20100309141826.GC28606@suse.de> <20100322135235.GA3388@swordfish.minsk.epam.com>
+	id S1754955Ab0CVOca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:32:30 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55239 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754861Ab0CVOc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:32:28 -0400
+Date: Mon, 22 Mar 2010 15:32:12 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322143212.GE14201@elte.hu>
+References: <20100321190656.GC25922@elte.hu>
+ <4BA68009.5010906@redhat.com>
+ <20100321205531.GC30194@elte.hu>
+ <4BA692C3.7010408@redhat.com>
+ <20100321215455.GB13219@elte.hu>
+ <4BA7187E.3050405@redhat.com>
+ <20100322111411.GC3483@elte.hu>
+ <4BA7629B.7020604@redhat.com>
+ <20100322124428.GA12475@elte.hu>
+ <4BA76810.4040609@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322135235.GA3388@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4BA76810.4040609@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---s2ZSL+KKDSLx8OML
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Avi Kivity <avi@redhat.com> wrote:
 
-On Mon, Mar 22, 2010 at 03:52:35PM +0200, Sergey Senozhatsky wrote:
-> Nope. Sorry, I didn't test carefully. Oh, Monday...
-> Proposed patch doesn't fix the problem. The given below
-> patch does.
->=20
-> Note that thermal_zone_bind_cooling_device part was proposed by=20
-> Wolfram Sang here:
-> https://patchwork.kernel.org/patch/87359/
->=20
-> So, Wolfram, we need to cooperate to solve the problem.
+> On 03/22/2010 02:44 PM, Ingo Molnar wrote:
+> >This is why i consider that line of argument rather dishonest ...
+> 
+> I am not going to reply to any more email from you on this thread.
 
-Looks good to me. Add my SoB, this should do:
+Because i pointed out that i consider a line of argument intellectually 
+dishonest?
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+I did not say _you_ as a person are dishonest - doing that would be an ad 
+honimen attack against your person. (In fact i dont think you are, to the 
+contrary)
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+An argument can certainly be labeled dishonest in a fair discussion and it is 
+not a personal attack against you to express my opinion about that.
 
---s2ZSL+KKDSLx8OML
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkuneZEACgkQD27XaX1/VRsDHQCgupLJxbTbMb93eZiyXs0I57vc
-PpAAn0fkLpBwQoKfVbL0wdXfyrKnCse4
-=YtkC
------END PGP SIGNATURE-----
-
---s2ZSL+KKDSLx8OML--
+	Ingo
