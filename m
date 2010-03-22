@@ -1,146 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755761Ab0CVXZp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 19:25:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36775 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755397Ab0CVXZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 19:25:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Subject: Re: [C/R v20][PATCH 15/96] cgroup freezer: Fix buggy resume test for tasks frozen with cgroup freezer
-Date: Tue, 23 Mar 2010 00:28:40 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-api@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       containers@lists.linux-foundation.org,
-       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <legoater@free.fr>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu> <1268842164-5590-15-git-send-email-orenl@cs.columbia.edu> <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
-In-Reply-To: <1268842164-5590-16-git-send-email-orenl@cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1755673Ab0CVXaH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 19:30:07 -0400
+Received: from mini002.webpack.hosteurope.de ([80.237.130.131]:52514 "EHLO
+	mini002.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755113Ab0CVXaE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 19:30:04 -0400
+X-Greylist: delayed 1328 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 19:30:04 EDT
+Date: Tue, 23 Mar 2010 00:07:46 +0100
+From: Andreas Hartmann <andi@ahash.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] kaweth: New USB ID 07c9:b010 Allied Telesyn AT-USB10
+Message-ID: <20100323000746.65aaa3db@zed>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.18.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003230028.40915.rjw@sisk.pl>
+X-bounce-key: webpack.hosteurope.de;andi@ahash.de;1269300604;044b3b93;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 March 2010, Oren Laadan wrote:
-> From: Matt Helsley <matthltc@us.ibm.com>
-> 
-> When the cgroup freezer is used to freeze tasks we do not want to thaw
-> those tasks during resume. Currently we test the cgroup freezer
-> state of the resuming tasks to see if the cgroup is FROZEN.  If so
-> then we don't thaw the task. However, the FREEZING state also indicates
-> that the task should remain frozen.
-> 
-> This also avoids a problem pointed out by Oren Ladaan: the freezer state
-> transition from FREEZING to FROZEN is updated lazily when userspace reads
-> or writes the freezer.state file in the cgroup filesystem. This means that
-> resume will thaw tasks in cgroups which should be in the FROZEN state if
-> there is no read/write of the freezer.state file to trigger this
-> transition before suspend.
-> 
-> NOTE: Another "simple" solution would be to always update the cgroup
-> freezer state during resume. However it's a bad choice for several reasons:
-> Updating the cgroup freezer state is somewhat expensive because it requires
-> walking all the tasks in the cgroup and checking if they are each frozen.
-> Worse, this could easily make resume run in N^2 time where N is the number
-> of tasks in the cgroup. Finally, updating the freezer state from this code
-> path requires trickier locking because of the way locks must be ordered.
-> 
-> Instead of updating the freezer state we rely on the fact that lazy
-> updates only manage the transition from FREEZING to FROZEN. We know that
-> a cgroup with the FREEZING state may actually be FROZEN so test for that
-> state too. This makes sense in the resume path even for partially-frozen
-> cgroups -- those that really are FREEZING but not FROZEN.
-> 
-> Reported-by: Oren Ladaan <orenl@cs.columbia.edu>
-> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> Cc: Cedric Le Goater <legoater@free.fr>
-> Cc: Paul Menage <menage@google.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: linux-pm@lists.linux-foundation.org
-
-Looks reasonable.
-
-Is anyone handling that already or do you want me to take it to my tree?
-
-Rafael
-
-
-> Seems like a candidate for -stable.
-> ---
->  include/linux/freezer.h |    7 +++++--
->  kernel/cgroup_freezer.c |    9 ++++++---
->  kernel/power/process.c  |    2 +-
->  3 files changed, 12 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index 5a361f8..da7e52b 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -64,9 +64,12 @@ extern bool freeze_task(struct task_struct *p, bool sig_only);
->  extern void cancel_freezing(struct task_struct *p);
->  
->  #ifdef CONFIG_CGROUP_FREEZER
-> -extern int cgroup_frozen(struct task_struct *task);
-> +extern int cgroup_freezing_or_frozen(struct task_struct *task);
->  #else /* !CONFIG_CGROUP_FREEZER */
-> -static inline int cgroup_frozen(struct task_struct *task) { return 0; }
-> +static inline int cgroup_freezing_or_frozen(struct task_struct *task)
-> +{
-> +	return 0;
-> +}
->  #endif /* !CONFIG_CGROUP_FREEZER */
->  
->  /*
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index 59e9ef6..eb3f34d 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -47,17 +47,20 @@ static inline struct freezer *task_freezer(struct task_struct *task)
->  			    struct freezer, css);
->  }
->  
-> -int cgroup_frozen(struct task_struct *task)
-> +int cgroup_freezing_or_frozen(struct task_struct *task)
->  {
->  	struct freezer *freezer;
->  	enum freezer_state state;
->  
->  	task_lock(task);
->  	freezer = task_freezer(task);
-> -	state = freezer->state;
-> +	if (!freezer->css.cgroup->parent)
-> +		state = CGROUP_THAWED; /* root cgroup can't be frozen */
-> +	else
-> +		state = freezer->state;
->  	task_unlock(task);
->  
-> -	return state == CGROUP_FROZEN;
-> +	return (state == CGROUP_FREEZING) || (state == CGROUP_FROZEN);
->  }
->  
->  /*
-> diff --git a/kernel/power/process.c b/kernel/power/process.c
-> index 5ade1bd..de53015 100644
-> --- a/kernel/power/process.c
-> +++ b/kernel/power/process.c
-> @@ -145,7 +145,7 @@ static void thaw_tasks(bool nosig_only)
->  		if (nosig_only && should_send_signal(p))
->  			continue;
->  
-> -		if (cgroup_frozen(p))
-> +		if (cgroup_freezing_or_frozen(p))
->  			continue;
->  
->  		thaw_process(p);
-> 
-
+New USB ID 07c9:b010 Allied Telesyn AT-USB10
+Signed-off-by: Andreas Hartmann <andi@ahash.de>
+---
+This USB Ethernet adapter has the KL5KUSB101B chip and is so far unknown to the
+kaweth driver. The device was found working with the patch applied.
+--- linux-2.6.34-rc2/drivers/net/usb/kaweth.c.orig      2010-03-20 02:17:57.000000000 +0100
++++ linux-2.6.34-rc2/drivers/net/usb/kaweth.c   2010-03-22 23:30:31.000000000 +0100
+@@ -145,6 +145,7 @@ static struct usb_device_id usb_klsi_tab
+        { USB_DEVICE(0x0707, 0x0100) }, /* SMC 2202USB */
+        { USB_DEVICE(0x07aa, 0x0001) }, /* Correga K.K. */
+        { USB_DEVICE(0x07b8, 0x4000) }, /* D-Link DU-E10 */
++       { USB_DEVICE(0x07c9, 0xb010) }, /* Allied Telesyn AT-USB10 */
+        { USB_DEVICE(0x0846, 0x1001) }, /* NetGear EA-101 */
+        { USB_DEVICE(0x0846, 0x1002) }, /* NetGear EA-101 */
+        { USB_DEVICE(0x085a, 0x0008) }, /* PortGear Ethernet Adapter */
