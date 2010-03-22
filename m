@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab0CVNVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 09:21:43 -0400
-Received: from a.mx.secunet.com ([213.68.205.161]:60577 "EHLO a.mx.secunet.com"
+	id S1753961Ab0CVNYg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:24:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39699 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab0CVNVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 09:21:41 -0400
-Date: Mon, 22 Mar 2010 14:23:42 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Carpenter <error27@gmail.com>,
-       Herbert Xu <herbert@gondor.apana.org.au>,
-       "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] pcrypt: handle crypto_get_attr_type() errors
-Message-ID: <20100322132342.GJ20508@secunet.com>
-References: <20100321092847.GJ5331@bicker>
+	id S1752561Ab0CVNYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:24:35 -0400
+Date: Mon, 22 Mar 2010 13:23:26 +0000
+From: "Richard W.M. Jones" <rjones@redhat.com>
+To: "Daniel P. Berrange" <berrange@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Avi Kivity <avi@redhat.com>, Antoine Martin <antoine@nagafix.co.uk>,
+       Olivier Galibert <galibert@pobox.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+	project
+Message-ID: <20100322132326.GA15923@amd.home.annexia.org>
+References: <4BA68063.2050800@redhat.com> <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu> <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu> <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com> <20100322123726.GH21874@redhat.com> <20100322125440.GB12475@elte.hu> <20100322130513.GJ21874@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100321092847.GJ5331@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 22 Mar 2010 13:21:39.0038 (UTC) FILETIME=[9ABCBFE0:01CAC9C2]
+In-Reply-To: <20100322130513.GJ21874@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 21, 2010 at 12:28:47PM +0300, Dan Carpenter wrote:
-> crypto_get_attr_type() can returns ERR_PTRs if there is a problem. 
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> diff --git a/crypto/pcrypt.c b/crypto/pcrypt.c
-> index 8020124..41bd80f 100644
-> --- a/crypto/pcrypt.c
-> +++ b/crypto/pcrypt.c
-> @@ -322,6 +322,8 @@ static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb)
->  	struct crypto_attr_type *algt;
->  
->  	algt = crypto_get_attr_type(tb);
-> +	if (IS_ERR(algt))
-> +		return ERR_CAST(algt);
->  
->  	alg = crypto_get_attr_alg(tb, algt->type,
->  				  (algt->mask & CRYPTO_ALG_TYPE_MASK));
+On Mon, Mar 22, 2010 at 01:05:13PM +0000, Daniel P. Berrange wrote:
+> This is close to the way libguestfs already works. It boots QEMU/KVM pointing
+> to a minimal stripped down appliance linux OS image, containing a small agent
+> it talks to over some form of vmchannel/serial/virtio-serial device. Thus the
+> kernel in the appliance it runs is the only thing that needs to know about the
+> filesystem/lvm/dm on-disk formats - libguestfs definitely does not want to be
+> duplicating this detailed knowledge of on disk format itself. It is doing
+> full read-write access to the guest filesystem in offline mode - one of the
+> major use cases is disaster recovery from a unbootable guest OS image.
 
-I've just noticed that we are calling crypto_get_attr_type already in
-pcrypt_alloc, so perhaps we could just pass the type and mask to
-pcrypt_alloc_aead. Then we can remove this second call to
-crypto_get_attr_type completely.
+As Dan said, the 'daemon' part is separate and could be run as a
+standard part of a guest install, talking over vmchannel to the host.
+The only real issue I can see is adding access control to the daemon
+(currently it doesn't need it and doesn't do any).  Doing it this way
+you'd be leveraging the ~250,000 lines of existing libguestfs code,
+bindings in multiple languages, tools etc.
 
-Steffen
+Rich.
+
+-- 
+Richard Jones, Virtualization Group, Red Hat http://people.redhat.com/~rjones
+New in Fedora 11: Fedora Windows cross-compiler. Compile Windows
+programs, test, and build Windows installers. Over 70 libraries supprt'd
+http://fedoraproject.org/wiki/MinGW http://www.annexia.org/fedora_mingw
