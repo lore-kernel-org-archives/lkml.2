@@ -1,170 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0CVTSz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:18:55 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:49799 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967Ab0CVTSv (ORCPT
+	id S1755951Ab0CVTSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:18:33 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36517 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab0CVTS0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:18:51 -0400
-X-Auth-Info: RRJhccfFDV0DR8z1cSqEGINd7MJNjXYbUbydV3hCYoc=
-Message-ID: <4BA7C236.9060609@grandegger.com>
-Date: Mon, 22 Mar 2010 20:17:10 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100228)
-MIME-Version: 1.0
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-CC: socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Subject: Re: [PATCH 2/3] can: add support for Janz VMOD-ICAN3 Intelligent
- CAN	module
-References: <> <1268930324-29841-3-git-send-email-iws@ovro.caltech.edu>	<4BA33D5A.8070000@grandegger.com>	<20100319151914.GB13672@ovro.caltech.edu>	<4BA39C05.8050800@grandegger.com>	<20100319200325.GE13672@ovro.caltech.edu>	<4BA3DAF1.4090206@grandegger.com>	<20100319215227.GF13672@ovro.caltech.edu>	<4BA47F64.8030108@grandegger.com> <20100322155318.GA19251@ovro.caltech.edu>
-In-Reply-To: <20100322155318.GA19251@ovro.caltech.edu>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Mar 2010 15:18:26 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 7/8] debug_core: Turn off tracing while in the debugger
+Date: Mon, 22 Mar 2010 14:17:28 -0500
+Message-Id: <1269285449-1424-8-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1269285449-1424-7-git-send-email-jason.wessel@windriver.com>
+References: <1269285449-1424-1-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-2-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-3-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-4-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-5-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-6-git-send-email-jason.wessel@windriver.com>
+ <1269285449-1424-7-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 22 Mar 2010 19:17:41.0502 (UTC) FILETIME=[57C211E0:01CAC9F4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ira W. Snyder wrote:
-> On Sat, Mar 20, 2010 at 08:55:16AM +0100, Wolfgang Grandegger wrote:
->> Ira W. Snyder wrote:
-[snip]
->>> Does this seem right? It seems pretty good to me.
->> Yes, I'm just missing an error-passive message. What state does "ip -d
->> link show can0" report.
->>
-> 
-> Ok, here is what I did:
-> 
-> $ ip link set can0 up type can bitrate 1000000
-> $ ip link set can1 up type can bitrate 1000000 berr-reporting on
-> $ ip -d -s link
-> 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->     link/can       
->     can state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
->     bitrate 1000000 sample-point 0.750
->     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->     clock 8000000  
->     re-started bus-errors arbit-lost error-warn error-pass bus-off
->     0          0          0          0          0          0
->     RX: bytes  packets  errors  dropped overrun mcast
->     0          0        0       0       0       0
->     TX: bytes  packets  errors  dropped carrier collsns
->     0          0        0       0       0       0
-> 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->     link/can       
->     can <BERR-REPORTING> state ERROR-ACTIVE (berr-counter tx 0 rx 0) restart-ms 0
->     bitrate 1000000 sample-point 0.750
->     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->     clock 8000000  
->     re-started bus-errors arbit-lost error-warn error-pass bus-off
->     0          0          0          0          0          0
->     RX: bytes  packets  errors  dropped overrun mcast
->     0          0        0       0       0       0
->     TX: bytes  packets  errors  dropped carrier collsns
->     0          0        0       0       0       0
-> 
-> Now, in seperate windows, I ran cansequence and candump. I stopped
-> cansequence when it could not send any more packets (due to the cable
-> being unplugged).
-> 
-> $ cansequence -v -e -p can0
-> $ cansequence -v -e -p can1
-> $ candump any,0~0,#FFFFFFFF
->   can0  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000004  [8] 00 08 00 00 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
->   can1  20000088  [8] 00 00 80 19 00 00 00 00   ERRORFRAME
-> 
-> This last message is repeated lots more times. That's the flooding we're
-> avoiding with berr-reporting off.
-> 
-> I see two types of messages here:
-> 1) bus error (only on can1)
-> 2) controller problems -- tx warning limit reached (both)
-> 
-> Am I missing some message? My error frame generation was mostly copied
-> from the sja1000 driver.
+The kernel debugger should turn off kernel tracing any time the
+debugger is active and restore it on resume.
 
-It seem that you are not getting the error passive interrupt even...
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/debug/debug_core.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-> $ ip -d -s link
-> 5: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->     link/can 
->     can state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
+diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+index f471268..ab2a43f 100644
+--- a/kernel/debug/debug_core.c
++++ b/kernel/debug/debug_core.c
+@@ -449,6 +449,7 @@ static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs)
+ 	int sstep_tries = 100;
+ 	int error = 0;
+ 	int i, cpu;
++	int trace_on = 0;
+ acquirelock:
+ 	/*
+ 	 * Interrupts will be restored by the 'trap return' code, except when
+@@ -483,6 +484,8 @@ return_normal:
+ 			 */
+ 			if (arch_kgdb_ops.correct_hw_break)
+ 				arch_kgdb_ops.correct_hw_break();
++			if (trace_on)
++				tracing_on();
+ 			atomic_dec(&cpu_in_kgdb[cpu]);
+ 			touch_softlockup_watchdog_sync();
+ 			clocksource_touch_watchdog();
+@@ -558,6 +561,9 @@ return_normal:
+ 	kgdb_single_step = 0;
+ 	kgdb_contthread = current;
+ 	exception_level = 0;
++	trace_on = tracing_is_on();
++	if (trace_on)
++		tracing_off();
+ 
+ 	/* Talk to debugger with gdbserial protocol */
+ 	error = gdb_serial_stub(ks);
+@@ -589,6 +595,8 @@ kgdb_restore:
+ 		else
+ 			kgdb_sstep_pid = 0;
+ 	}
++	if (trace_on)
++		tracing_on();
+ 	/* Free kgdb_active */
+ 	atomic_set(&kgdb_active, -1);
+ 	touch_softlockup_watchdog_sync();
+-- 
+1.6.4.rc1
 
-if the hardware already reports >= 128 errors --^.
-
->     bitrate 1000000 sample-point 0.750 
->     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->     clock 8000000
->     re-started bus-errors arbit-lost error-warn error-pass bus-off
->     0          0          0          1          0          0         
->     RX: bytes  packets  errors  dropped overrun mcast   
->     16         0        2       0       0       0      
->     TX: bytes  packets  errors  dropped carrier collsns 
->     513        513      0       0       0       0      
-> 6: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
->     link/can 
->     can <BERR-REPORTING> state ERROR-WARNING (berr-counter tx 128 rx 0) restart-ms 0 
->     bitrate 1000000 sample-point 0.750 
->     tq 125 prop-seg 2 phase-seg1 3 phase-seg2 2 sjw 1
->     janz-ican3: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
->     clock 8000000
->     re-started bus-errors arbit-lost error-warn error-pass bus-off
->     0          126        0          1          0          0         
-
-But that's mabe because you stopped the test too early (just 126 bus errors).
-
->     RX: bytes  packets  errors  dropped overrun mcast   
->     1024       0        254     0       0       0      
->     TX: bytes  packets  errors  dropped carrier collsns 
->     513        513      0       0       0       0      
-
-When I send out messages without cable connected I get:
-
--bash-3.2# ./ip -d -s link show can0
-2: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
-    link/can 
-    can <BERR-REPORTING> state ERROR-PASSIVE (berr-counter tx 128 rx 0) restart-ms 0 
-    bitrate 500000 sample-point 0.875 
-    tq 125 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1
-    sja1000: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..64 brp-inc 1
-    clock 8000000
-    re-started bus-errors arbit-lost error-warn error-pass bus-off
-    0          54101      0          1          1          0         
-    RX: bytes  packets  errors  dropped overrun mcast   
-    432808     54101    54101   0       0       0      
-    TX: bytes  packets  errors  dropped carrier collsns 
-    0          0        0       0       0       0      
-
-The following output is without BERR-REPORTING:
-
--bash-3.2# ./candump -t d any,0:0,#FFFFFFFF
- (0.000000)  can0  20000004  [8] 00 08 00 00 00 00 60 00   ERRORFRAME
- (0.000474)  can0  20000004  [8] 00 20 00 00 00 00 80 00   ERRORFRAME
-                                                    ^  ^
-                                                   TX RX error counter
-
-The patch I mentioned also copies the rx and tx error counter values to
-the data field 6 and 7.
-
-Wolfgang.
