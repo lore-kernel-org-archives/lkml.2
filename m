@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234Ab0CVUoe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:44:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38513 "EHLO mx1.redhat.com"
+	id S1756246Ab0CVUpA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:45:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42639 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab0CVUoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:44:32 -0400
-Message-ID: <4BA7D68A.8090104@redhat.com>
-Date: Mon, 22 Mar 2010 22:43:54 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754306Ab0CVUo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:44:58 -0400
+Date: Mon, 22 Mar 2010 16:44:20 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com
+Subject: Re: [PATCH 4/5] jump label: tracepoint support
+Message-ID: <20100322204420.GE2278@redhat.com>
+References: <cover.1269272444.git.jbaron@redhat.com> <6ede473837c2c7c55dde179690c2ae73223417c6.1269272444.git.jbaron@redhat.com> <1269276214.2957.7.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7B87A.8060104@codemonkey.ws> <20100322192259.GD21919@elte.hu> <4BA7C4FF.3080407@codemonkey.ws> <20100322203215.GB18126@elte.hu>
-In-Reply-To: <20100322203215.GB18126@elte.hu>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269276214.2957.7.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 10:32 PM, Ingo Molnar wrote:
-> * Anthony Liguori<anthony@codemonkey.ws>  wrote:
->
->    
->> On 03/22/2010 02:22 PM, Ingo Molnar wrote:
->>      
->>>> Transitive had a product that was using a KVM context to run their
->>>> binary translator which allowed them full access to the host
->>>> processes virtual address space range.  In this case, there is no
->>>> kernel and there are no devices.
->>>>          
->>> And your point is that such vcpus should be excluded from profiling just
->>> because they fall outside the Qemu/libvirt umbrella?
->>>        
->> You don't instrument it the way you'd instrument an operating system so no,
->> you don't want it to show up in perf kvm top.
->>      
-> Erm, why not? It's executing a virtualized CPU, so sure it makes sense to
-> allow the profiling of it!
->    
+On Mon, Mar 22, 2010 at 12:43:34PM -0400, Steven Rostedt wrote:
+> On Mon, 2010-03-22 at 12:07 -0400, Jason Baron wrote:
+> > Make use of the jump label infrastructure for tracepoints.
+> > 
+> > Signed-off-by: Jason Baron <jbaron@redhat.com>
+> > ---
+> >  include/linux/tracepoint.h |   34 +++++++++++++++++++---------------
+> >  kernel/tracepoint.c        |    8 ++++++++
+> >  2 files changed, 27 insertions(+), 15 deletions(-)
+> > 
+> > diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> > index f59604e..c18b9c0 100644
+> > --- a/include/linux/tracepoint.h
+> > +++ b/include/linux/tracepoint.h
+> > @@ -16,6 +16,7 @@
+> >  
+> >  #include <linux/types.h>
+> >  #include <linux/rcupdate.h>
+> > +#include <linux/jump_label.h>
+> >  
+> >  struct module;
+> >  struct tracepoint;
+> > @@ -63,20 +64,22 @@ struct tracepoint {
+> >   * not add unwanted padding between the beginning of the section and the
+> >   * structure. Force alignment to the same alignment as the section start.
+> >   */
+> > -#define DECLARE_TRACE(name, proto, args)				\
+> > -	extern struct tracepoint __tracepoint_##name;			\
+> > -	static inline void trace_##name(proto)				\
+> > -	{								\
+> > -		if (unlikely(__tracepoint_##name.state))		\
+> > -			__DO_TRACE(&__tracepoint_##name,		\
+> > -				TP_PROTO(proto), TP_ARGS(args));	\
+> > -	}								\
+> > -	static inline int register_trace_##name(void (*probe)(proto))	\
+> > -	{								\
+> > -		return tracepoint_probe_register(#name, (void *)probe);	\
+> > -	}								\
+> > -	static inline int unregister_trace_##name(void (*probe)(proto))	\
+> > -	{								\
+> > +#define DECLARE_TRACE(name, proto, args)				 \
+> > +	extern struct tracepoint __tracepoint_##name;			 \
+> > +	static inline void trace_##name(proto)				 \
+> > +	{								 \
+> > +		JUMP_LABEL(name, do_trace, __tracepoint_##name.state);   \
+> > +		return;							 \
+> > +do_trace:								 \
+> > +		__DO_TRACE(&__tracepoint_##name,			 \
+> > +			   TP_PROTO(proto), TP_ARGS(args));		 \
+> 
+> Does this still work on all archs, and when jump labels are not
+> supported?
 
-It may not make sense to have symbol tables for it, for example it isn't 
-generated from source code but from binary code for another architecture.
+yes. See the base patch. If the arch doesn't have jump label support we
+do:
 
-Of course, just showing addresses is fine, but you don't need qemu for that.
+#define JUMP_LABEL(tag, label, cond)            \
+        if (unlikely(cond))                     \
+                goto label;
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+-Jason
