@@ -1,147 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755411Ab0CVRa5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:30:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755212Ab0CVRaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:30:55 -0400
-Message-ID: <4BA7A917.5030101@redhat.com>
-Date: Mon, 22 Mar 2010 19:29:59 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1755420Ab0CVRbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:31:52 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:28888 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0CVRbv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 13:31:51 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Olivier Galibert <galibert@pobox.com>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100319085346.GG12576@elte.hu> <4BA3747F.60401@codemonkey.ws> <20100321191742.GD25922@elte.hu> <4BA67B2F.4030101@redhat.com> <20100321200849.GA51323@dspnet.fr.eu.org> <4BA67D75.8060809@redhat.com> <20100321203704.GB30194@elte.hu> <4BA71012.7070004@redhat.com> <20100322113931.GE3483@elte.hu> <4BA76649.5080307@redhat.com> <20100322142657.GD14201@elte.hu>
-In-Reply-To: <20100322142657.GD14201@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Message-ID: <ee036db9-1694-4f2c-99f5-a02be3001b66@default>
+Date: Mon, 22 Mar 2010 10:30:29 -0700 (PDT)
+From: =?UTF-8?B?IsOWemfDvHIgWcO8a3NlbCI=?= <ozgur.yuksel@oracle.com>
+To: <akpm@linux-foundation.org>
+Cc: <bugme-daemon@bugzilla.kernel.org>, <linux-mm@kvack.org>,
+       <linux-kernel@vger.kernel.org>, <bugzilla-daemon@bugzilla.kernel.org>
+Subject: Re: [Bugme-new] [Bug 15610] New: fsck leads to swapper - BUG: unable
+ to handle kernel NULL pointer dereference & panic
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BA7A940.0029:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 04:26 PM, Ingo Molnar wrote:
-> * Avi Kivity<avi@redhat.com>  wrote:
->
->    
->> On 03/22/2010 01:39 PM, Ingo Molnar wrote:
->>      
->>> Reality is, the server space never was and never will be self-sustaining
->>> in the long run (as Novell has found it out with Netware), it is the
->>> desktop that dictates future markets. This is why i find your views about
->>> this naive and shortsighted.
->>>        
->> Yet Linux is gaining ground in the server and embedded space while
->> struggling on the desktop. [...]
->>      
-> Frankly, Linux is mainly growing in the server space due to:
->
->   1) the server space is technically much simpler than the desktop space. It
->      is far easier to code up a server performance feature than to make
->      struggle through stupid (server-motivated) package boundaries and get
->      something done on the desktop. It is far easier to code up a server app
->      as that space is well standardized and servers tend to be compartmented.
->      Integration between server apps is much less common than integration
->      between desktop apps, hence the harm that our modularization idiocies
->      cause less harm.
->
->   2) Linux's growth is still feeding on the remains of the destruction of Unix.
->    
 
-Agreed (minus the 'package boundaries' stuff).  Also, Linux is cheaper 
-than Windows.
+----- Original Message -----
+From: akpm@linux-foundation.org
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org, ozgur.yuksel@oracle.com
+Sent: Monday, March 22, 2010 7:11:32 PM GMT +02:00 Athens, Beirut, Bucharest, Istanbul
+Subject: Re: [Bugme-new] [Bug 15610] New: fsck leads to swapper - BUG: unable to handle kernel NULL pointer dereference & panic
 
-> Linux is struggling on the desktop due to the desktop's inherent complexity,
-> due to the lack of the Unix inertia and due to incompetence, insensitivity,
-> intellectual arrogance and shortsightedness of server-centric thinking, like
-> your arguments/position displayed in this very thread.
->    
 
-It's struggling because it isn't competitive technically with other 
-desktops, because there is no application base, because of a 
-chicken-and-egg problem with some drivers, because lack of a stable ABI 
-means you can't get a driver CD with your device so you need a 
-yet-unreleased kernel, because the zillion binary incompatible 
-distributions mean that application developers don't know what to code 
-and test for, because of lack of documentation, to name a few.  At least 
-it's improving all the time.
+(switched to email.  Please respond via emailed reply-to-all, not via the
+bugzilla web interface).
 
-The incompetence, insensitivity, intellectual arrogance and 
-shortsightedness of server-centric thinking of my arguments/position are 
-a result of this, not the cause.
+This is a post-2.6.33 regression.
 
->> [...] Apple is gaining ground on the desktop but is invisible on the server
->> side (despite having a nice product - Xserve).
->>      
-> But the thing is, Apple doesnt really care about the server space, yet. It is
-> lucrative but it is a side-show: it will fall automatically to the 'winner' of
-> the desktop (or gadget) of tomorrow.
->    
+On Mon, 22 Mar 2010 15:59:44 GMT bugzilla-daemon@bugzilla.kernel.org wrote:
 
-It won't automatically fall to Apple, there's tons of middleware and 
-server apps that need porting (the "ecosystem"), plus they need to work 
-hard on improving their kernel which is desktop oriented.  Looks like 
-they're interesting in other things.
+> https://bugzilla.kernel.org/show_bug.cgi?id=15610
+> 
+>            Summary: fsck leads to swapper - BUG: unable to handle kernel
+>                     NULL pointer dereference & panic
+>            Product: Memory Management
+>            Version: 2.5
+>     Kernel Version: 2.6.34-rc2-220bf991b0366cc50a94feede3d7341fa5710ee4
+>           Platform: All
+>         OS/Version: Linux
+>               Tree: Mainline
+>             Status: NEW
+>           Severity: normal
+>           Priority: P1
+>          Component: Other
+>         AssignedTo: akpm@linux-foundation.org
+>         ReportedBy: ozgur.yuksel@oracle.com
+>         Regression: No
+> 
+> 
+> During fsck.ext3 being performed (even with regular / clean forced runs), we
+> get a swapper crash:
+> [  159.557737] BUG: unable to handle kernel NULL pointer dereference at (null)
+> [  159.561687] IP: [<c01304aa>] __wake_up_common+0x1a/0x70
 
-> Has the quick fall of Banyan Vines or Netware (both excellent all-around
-> server products) taught you nothing?
->    
+err, what the heck?  zone->wait_table didn't get initialised?  I can't
+think of anything we did which might have caused that.  Sorry to have
+to ask this, but...  would it be possible for you to do a bisection of
+this?  http://landley.net/writing/git-quick.html has some tips.
 
-Not familiar with Banyan, but wasn't Netware a cooperative multitasking 
-command line only thing?  It couldn't compete with preemptive modern 
-system with a nice GUI.  Windows didn't need the desktop to win that fight.
+Thanks.
 
-> We need a lot more desktop focus in the kernel community. The best method to
-> achieve this, that i know of currently, is to simply have kernel developers
-> think outside the kernel box and to have them do bits of user-space coding as
-> well - and in particular desktop coding. To eat our own dogfood in essence.
-> Suffer through crap we cause to user-space. To face the _real_ difficulties of
-> users. We seem to have forgotten our roots.
->    
+Sure. I'll give it a shot.
+Cheers,
+Ozgur
 
-Try it yourself and report the experience.  Note: perf is not desktop 
-development, it's kernel tooling development.
-
->> [...]
->>
->> It's true Windows achieved server dominance through it's desktop power, but
->> I don't think that's what keeping them there now.
->>      
-> What is keeping them there is precisely that.
->    
-
-Not at all.  They have excellent development tools and lots of 
-middleware and other third party products that make it easy to pick 
-Windows.  For example, Exchange is more or less standard for groupware, 
-and they made C# and the technology around it easy to develop for, 
-learning from Java's mistakes.
-
->> In any case, I'm not going to write a kvm GUI.  It doesn't match my skills,
->> interest, or my employer's interest.  If you wish to see a kvm GUI you have
->> to write one yourself or convince someone to write it (perhaps convince Red
->> Hat to fund such an effort beyond virt-manager).
->>      
-> As a maintainer you certainly dont have to write a single line of code, if you
-> dont want to. You 'just' need to care about the big picture and encourage/help
-> the flow and balance of the whole project.
->    
-
-I haven't written that line of code, and no one else has either.  Don't 
-tell me they're all scared of me.
-
--- 
-error compiling committee.c: too many arguments to function
+> [  159.561687] *pdpt = 0000000000853001 *pde = 0000000000000000
+> [  159.561687] Oops: 0000 [#1] SMP
+> [  159.561687] last sysfs file: /sys/kernel/uevent_seqnum
+> [  159.561687] Modules linked in: snd_hda_codec_idt snd_hda_intel snd_hda_codec
+> snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcmt
+> [  159.561687]
+> [  159.561687] Pid: 0, comm: swapper Not tainted 2.6.34-rc2 #10 0KU184/Latitude
+> D630
+> [  159.561687] EIP: 0060:[<c01304aa>] EFLAGS: 00010086 CPU: 1
+> [  159.561687] EIP is at __wake_up_common+0x1a/0x70
+> [  159.561687] EAX: c4f32f00 EBX: fffffff4 ECX: 00000001 EDX: 00000000
+> [  159.561687] ESI: 00000003 EDI: 00000096 EBP: f747bc84 ESP: f747bc68
+> [  159.561687]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [  159.561687] Process swapper (pid: 0, ti=f747a000 task=f743e600
+> task.ti=f747a000)
+> [  159.561687] Stack:
+> [  159.561687]  f747bc70 00000001 00000003 c058d79a c4f32efc 00000003 00000096
+> f747bca4
+> [  159.561687] <0> c0136cd7 00000000 f747bcb0 00000001 c0e00000 c07b2700
+> c0e00000 f747bcb8
+> [  159.561687] <0> c0161689 f747bcb0 c0e00000 00000002 f747bcc8 c01616ea
+> c0e00000 c539be20
+> [  159.561687] Call Trace:
+> [  159.561687]  [<c058d79a>] ? _raw_spin_lock_irqsave+0x2a/0x40
+> [  159.561687]  [<c0136cd7>] ? __wake_up+0x37/0x50
+> [  159.561687]  [<c0161689>] ? __wake_up_bit+0x29/0x30
+> [  159.561687]  [<c01616ea>] ? wake_up_bit+0x5a/0x60
+> [  159.561687]  [<c02199b1>] ? unlock_buffer+0x11/0x20
+> [  159.561687]  [<c0219b72>] ? end_buffer_async_read+0x62/0x120
+> [  159.561687]  [<c02191de>] ? end_bio_bh_io_sync+0x1e/0x40
+> [  159.561687]  [<c021cd35>] ? bio_endio+0x15/0x30
+> [  159.561687]  [<c030fb22>] ? req_bio_endio+0xa2/0x100
+> [  159.561687]  [<c0310889>] ? blk_update_request+0xe9/0x3e0
+> [  159.561687]  [<c011df46>] ? lapic_next_event+0x16/0x20
+> [  159.561687]  [<c016f6c7>] ? clockevents_program_event+0x87/0x140
+> [  159.561687]  [<c0310b96>] ? blk_update_bidi_request+0x16/0x60
+> [  159.561687]  [<c0311ad3>] ? blk_end_bidi_request+0x23/0x70
+> [  159.561687]  [<c0311b72>] ? blk_end_request+0x12/0x20
+> [  159.561687]  [<c03d1afe>] ? scsi_io_completion+0x8e/0x550
+> [  159.561687]  [<c03f9068>] ? ata_sff_hsm_move+0x188/0x770
+> [  159.561687]  [<c03d1953>] ? scsi_device_unbusy+0x93/0xa0
+> [  159.561687]  [<c03ca5a8>] ? scsi_finish_command+0x98/0x100
+> [  159.561687]  [<c03ce0ad>] ? scsi_decide_disposition+0x16d/0x1a0
+> [  159.561687]  [<c03d20db>] ? scsi_softirq_done+0x10b/0x130
+> [  159.561687]  [<c0317122>] ? blk_done_softirq+0x62/0x70
+> [  159.561687]  [<c014c4f0>] ? __do_softirq+0x90/0x1a0
+> [  159.561687]  [<c0120e4a>] ? ack_apic_level+0x6a/0x200
+> [  159.561687]  [<c014c63d>] ? do_softirq+0x3d/0x40
+> [  159.561687]  [<c014c79d>] ? irq_exit+0x5d/0x70
+> [  159.561687]  [<c01044e0>] ? do_IRQ+0x50/0xc0
+> [  159.561687]  [<c0167694>] ? sched_clock_local+0xa4/0x180
+> [  159.561687]  [<c01035b0>] ? common_interrupt+0x30/0x40
+> [  159.561687]  [<c016007b>] ? parse_args+0x23b/0x2d0
+> [  159.561687]  [<c037d4ae>] ? acpi_idle_enter_bm+0x25e/0x28f
+> [  159.561687]  [<c0486b6e>] ? cpuidle_idle_call+0x6e/0xf0
+> [  159.561687]  [<c0101d0c>] ? cpu_idle+0x8c/0xd0
+> [  159.561687]  [<c05888eb>] ? start_secondary+0x1f5/0x1fb
+> [  159.561687] Code: 90 55 89 e5 e8 68 ff ff ff 5d c3 8d b6 00 00 00 00 55 89
+> e5 57 56 53 83 ec 10 89 55 ec 89 4d e8 8b 50
+> [  159.561687] EIP: [<c01304aa>] __wake_up_common+0x1a/0x70 SS:ESP
+> 0068:f747bc68
+> [  159.561687] CR2: 0000000000000000
+> [  159.561687] ---[ end trace 0fd75502f6ca2e6e ]---
+> 
+> and panic:
+> [  159.561687] Kernel panic - not syncing: Fatal exception in interrupt
+> [  159.561687] Pid: 0, comm: swapper Tainted: G      D    2.6.34-rc2 #10
+> [  159.561687] Call Trace:
+> [  159.561687]  [<c058b0a7>] ? printk+0x18/0x21
+> [  159.561687]  [<c058b01e>] panic+0x42/0xb3
+> [  159.561687]  [<c058ef87>] oops_end+0x97/0xa0
+> [  159.561687]  [<c0128e8e>] no_context+0xbe/0x190
+> [  159.561687]  [<c0128f97>] __bad_area_nosemaphore+0x37/0x160
+> [  159.561687]  [<c013fd41>] ? enqueue_task_fair+0x41/0x90
+> [  159.561687]  [<c012f649>] ? enqueue_task+0x79/0x90
+> [  159.561687]  [<c01290d2>] bad_area_nosemaphore+0x12/0x20
+> [  159.561687]  [<c0591106>] do_page_fault+0x2f6/0x380
+> [  159.561687]  [<c013ae5c>] ? try_to_wake_up+0x2bc/0x430
+> [  159.561687]  [<c0590e10>] ? do_page_fault+0x0/0x380
+> [  159.561687]  [<c058e463>] error_code+0x73/0x80
+> [  159.561687]  [<c013007b>] ? __sched_fork+0xcb/0x2b0
+> [  159.561687]  [<c01304aa>] ? __wake_up_common+0x1a/0x70
+> [  159.561687]  [<c058d79a>] ? _raw_spin_lock_irqsave+0x2a/0x40
+> [  159.561687]  [<c0136cd7>] __wake_up+0x37/0x50
+> [  159.561687]  [<c0161689>] __wake_up_bit+0x29/0x30
+> [  159.561687]  [<c01616ea>] wake_up_bit+0x5a/0x60
+> [  159.561687]  [<c02199b1>] unlock_buffer+0x11/0x20
+> [  159.561687]  [<c0219b72>] end_buffer_async_read+0x62/0x120
+> [  159.561687]  [<c02191de>] end_bio_bh_io_sync+0x1e/0x40
+> [  159.561687]  [<c021cd35>] bio_endio+0x15/0x30
+> [  159.561687]  [<c030fb22>] req_bio_endio+0xa2/0x100
+> [  159.561687]  [<c0310889>] blk_update_request+0xe9/0x3e0
+> [  159.561687]  [<c011df46>] ? lapic_next_event+0x16/0x20
+> [  159.561687]  [<c016f6c7>] ? clockevents_program_event+0x87/0x140
+> [  159.561687]  [<c0310b96>] blk_update_bidi_request+0x16/0x60
+> [  159.561687]  [<c0311ad3>] blk_end_bidi_request+0x23/0x70
+> [  159.561687]  [<c0311b72>] blk_end_request+0x12/0x20
+> [  159.561687]  [<c03d1afe>] scsi_io_completion+0x8e/0x550
+> [  159.561687]  [<c03f9068>] ? ata_sff_hsm_move+0x188/0x770
+> [  159.561687]  [<c03d1953>] ? scsi_device_unbusy+0x93/0xa0
+> [  159.561687]  [<c03ca5a8>] scsi_finish_command+0x98/0x100
+> [  159.561687]  [<c03ce0ad>] ? scsi_decide_disposition+0x16d/0x1a0
+> [  159.561687]  [<c03d20db>] scsi_softirq_done+0x10b/0x130
+> [  159.561687]  [<c0317122>] blk_done_softirq+0x62/0x70
+> [  159.561687]  [<c014c4f0>] __do_softirq+0x90/0x1a0
+> [  159.561687]  [<c0120e4a>] ? ack_apic_level+0x6a/0x200
+> [  159.561687]  [<c014c63d>] do_softirq+0x3d/0x40
+> [  159.561687]  [<c014c79d>] irq_exit+0x5d/0x70
+> [  159.561687]  [<c01044e0>] do_IRQ+0x50/0xc0
+> [  159.561687]  [<c0167694>] ? sched_clock_local+0xa4/0x180
+> [  159.561687]  [<c01035b0>] common_interrupt+0x30/0x40
+> [  159.561687]  [<c016007b>] ? parse_args+0x23b/0x2d0
+> [  159.561687]  [<c037d4ae>] ? acpi_idle_enter_bm+0x25e/0x28f
+> [  159.561687]  [<c0486b6e>] cpuidle_idle_call+0x6e/0xf0
+> [  159.561687]  [<c0101d0c>] cpu_idle+0x8c/0xd0
+> [  159.561687]  [<c05888eb>] start_secondary+0x1f5/0x1fb
+> [  159.561687] [drm:drm_fb_helper_panic] *ERROR* panic occurred, switching back
+> to text console
+> ...
+> full serial console dump to be attached.
+> 
 
