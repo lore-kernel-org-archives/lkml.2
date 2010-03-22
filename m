@@ -1,91 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab0CVXh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 19:37:26 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57518 "EHLO e9.ny.us.ibm.com"
+	id S1756107Ab0CVXmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 19:42:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45658 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab0CVXhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 19:37:25 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Matt Mackall <mpm@selenic.com>
-cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, David Miller <davem@davemloft.net>
-Subject: Re: [RFC Patch 3/3] bonding: make bonding support netpoll
-In-reply-to: <1269297485.3552.26.camel@calx>
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain> <20100322082123.4967.77433.sendpatchset@localhost.localdomain> <1269297485.3552.26.camel@calx>
-Comments: In-reply-to Matt Mackall <mpm@selenic.com>
-   message dated "Mon, 22 Mar 2010 17:38:05 -0500."
-X-Mailer: MH-E 8.2; nmh 1.3-RC3; GNU Emacs 23.1.90
-Date: Mon, 22 Mar 2010 16:36:55 -0700
-Message-ID: <12061.1269301015@death.nxdomain.ibm.com>
+	id S1755653Ab0CVXms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 19:42:48 -0400
+Message-ID: <4BA80019.5000900@kernel.org>
+Date: Mon, 22 Mar 2010 16:41:13 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.cy
+References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain> <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org> <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain> <4BA7EE72.7000507@kernel.org> <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Mackall <mpm@selenic.com> wrote:
+On 03/22/2010 03:53 PM, Thomas Gleixner wrote:
+> On Mon, 22 Mar 2010, Yinghai Lu wrote:
+>> On 03/22/2010 03:09 PM, Thomas Gleixner wrote:
+>>> On Mon, 22 Mar 2010, Yinghai Lu wrote:
+>>>> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
+>>
+>>>> 1. need to keep e820
+>>>
+>>>   That's neither an argument for using lmb nor an argument not to use
+>>>   lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
+>>>   just to feed information into a (hopefully) generic early resource
+>>>   management facility.
+>>>
+>>>   e820 _CANNOT_ be generalized. Period.
+> 
+>   I still want to know, what "need to keep e820" means for you.
 
->On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
->> Based on Andy's work, but I modify a lot.
->> 
->> Similar to the patch for bridge, this patch does:
->> 
->> 1) implement the 4 methods to support netpoll for bonding;
->> 
->> 2) modify netpoll during forwarding packets in bonding;
->> 
->> 3) disable netpoll support of bridge when a netpoll-unabled device
->>    is added to bonding;
->> 
->> 4) enable netpoll support when all underlying devices support netpoll.
->
->Again, not sure if this is the right policy. Seems to me that on a
->bonding device we should simply pick an interface to send netpoll
->messages on, without reference to balancing, etc. Thus, if any of the
->bonded devices supports polling, it should work.
+keep the most arch/x86/kernel/e820.c, and later when finish_e820_parsing() is called,
+fill lmb.memory according to e820 entries with E820_RAM type.
 
-	For some of the modes, the above is pretty straighforward.
-Others, 802.3ad and balance-alb, are a bit more complicated.
 
-	The risk is that the network peers and switches may see the same
-MAC address on multiple ports, or different MAC addresses for the same
-IP address.
 
-	To implement the above suggestion, I think a "current netpoll
-slave" would have to be tracked, and kept up to date (as slaves become
-active or inactive, etc).  Reusing the existing "current active slave"
-won't work for the case that the active slave is not netpoll-capable,
-but a different slave is; also, not all modes use the current active
-slave.
+>  
+>>>> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
+>>>
+>>>   What's finizing_e820 ???
+>>  finish_e820_parsing();
+> 
+>  Yinghai, come on. Are you really expecting that everyone involved in
+>  this discussion goes to look up what the heck finish_e820_parsing()
+>  is doing ?
+> 
+>  You want to explain why your solution is better or why lmb is not
+>  sufficient, so you better go and explain what finish_e820_parsing()
+>  is, why finish_e820_parsing() is important and why lmb cannot cope
+>  with it.
 
-	In 802.3ad, the "current netpoll slave" selector will have to
-poke into the aggregator status to choose the netpoll slave.  It's not a
-simple matter of picking one and then sticking with it forever; if the
-aggregator containing the netpoll slave is deactivated, then peers may
-not receive the traffic, etc.
+current x86:
+a. setup e820 array.
+b. early_parm mem= and memmap= related code will adjust the e820.
 
-	In the active-backup mode, only the active slave can send or
-receive, so if it's not netpoll capable, but a backup slave is, you're
-still out of luck (unless netpoll awareness is added to the "best slave"
-selection logic, and even then it'd have to be a secondary criteria).
-Or, the inactive slave can be transmitted on, but if the same MAC comes
-out of the active and a backup slave, it can confuse switches.
+we don't need to call lmb_enforce_memory_limit().
 
-	In one mode (balance-alb), slaves keep their own MAC addresses,
-and are matched with peers.  Bypassing the balance algorithm could again
-confuse peers or switches, who could see two MAC addresses for the same
-IP address, if netpoll traffic goes out a different slave than the
-balance algorithm picks for the same destination.
+> 
+>>>> 3. use lmb.reserved to replace early_res.
+>>>
+>>>   What's the implication of doing that ?
+>>
+>> early_res array is only corresponding to lmb.reserved, aka reserved
+>> region from kernel.
+>  
+>  Is it only corresponding (somehow) or is it a full equivivalent ?
 
-	I think, then, the question becomes: is this extra complexity
-worth it to cover the cases of netpoll over bonding wherein one or more
-slaves don't support netpoll?  
+early_res is not sorted and merged.
 
-	How many network drivers don't support netpoll nowadays?
+> 
+>>>> current lmb is merging the region, we can not use name tag any more.
+>>>
+>>>   What's wrong with merging of regions ? Are you arguing about a
+>>>   specific region ("the region") ?
+> 
+>  Care to answer my question ?
+if range get merged, you can not use name with them.
+>  
+>>>
+>>>   Which name tag ? And why is that name tag important ?
+>>
+>> struct early_res {
+>>         u64 start, end;
+>>         char name[15];
+>>         char overlap_ok;
+>> };
+> 
+>  I'm starting to get annoyed, really. What is that name field for and
+>  why is that "name" field important ?
 
-	-J
+at least later when some code free a wrong range, we can figure who cause the problem.
 
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+> 
+>>>  
+>>>> may need to dump early_memtest, and use early_res for bootmem at
+>>>> first.
+>>>
+>>>   Why exactly might early_memtest not longer be possible ?
+>>
+>> early_memtest need to call find_e820_area_size
+>> current lmb doesn't have that kind of find util.
+>> the one memory subtract reserved memory by kernel.
+> 
+>  What subtracts what ? And why is it that hard to fix that ?
+
+lmb.memory - lmb.reserved
+
+or e820 E820_RAM entries - early_res
+
+move some code from early_res to lmb.c? 
+
+> 
+>>>
+>>>   What means "early_res for bootmem" ?
+>>
+>> use early_res to replace bootmem, the CONFIG_NO_BOOTMEM.
+>> that need early_res can be double or increase the slots automatically.
+> 
+>  -ENOPARSE
+> 
+> Yinghai, I asked you to take your time and explain things in detail
+> instead of shooting unparseable answers within a minute.
+> 
+> Everyone else in this discussion tries to be as explanatory as
+> possible, just you expect that everyone else is going to dig out the
+> crystal ball to understand the deeper meanings of your patches.
+> 
+> Again, please take your time to explain what needs to be done or what
+> is impossible to solve in your opinion, so we can get that resolved in
+> a way which is satisfactory and useful for all parties involved.
+
+to make x86 to use lmb, we need to extend lmb to have find_early_area.
+
+static int __init find_overlapped_early(u64 start, u64 end)
+{
+        int i;
+        struct lmb_properties *r;
+
+        for (i = 0; i < lmb.reserved_cnt && lmb.reserved.region[i].size; i++) {
+                r = &lmb.reserved.region[i];
+                if (end > r->base && start < (r->base + r->size))
+                        break;
+        }
+
+        return i;
+}
+
+
+/* Check for already reserved areas */
+static inline int __init bad_addr(u64 *addrp, u64 size, u64 align)
+{
+        int i;
+        u64 addr = *addrp;
+        int changed = 0;
+        struct lmb_properties *r;
+again:
+        i = find_overlapped_early(addr, addr + size);
+        r = &lmb.reserved.region[i];
+        if (i < lmb.reserved.cnt && r->size) {
+                *addrp = addr = round_up(r->base + r->size, align);
+                changed = 1;
+                goto again;
+        }
+        return changed;
+}
+
+u64 __init find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+                         u64 size, u64 align)
+{
+        u64 addr, last;
+
+        addr = round_up(ei_start, align);
+        if (addr < start)
+                addr = round_up(start, align);
+        if (addr >= ei_last)
+                goto out;
+        while (bad_addr(&addr, size, align) && addr+size <= ei_last)
+                ;
+        last = addr + size;
+        if (last > ei_last)
+                goto out;
+        if (last > end)
+                goto out;
+
+        return addr;
+
+out:
+        return -1ULL;
+}
+
+find_early_area_size()...
+
+and use them we can have find_lmb_free_area
+
+/*
+ * Find a free area with specified alignment in a specific range.
+ */
+u64 __init find_lmb_area(u64 start, u64 end, u64 size, u64 align)
+{
+        int i;
+
+        for (i = 0; i < lmb.memory.cnt; i++) {
+                u64 ei_start = lmb.memory.region[i].base;
+                u64 ei_end = ei_start + lmb.memory.region[i].size;
+
+                addr = find_early_area(ei_start, ei_last, start, end,
+                                         size, align);
+
+                if (addr != -1ULL)
+                        return addr;
+        }
+        return -1ULL;
+}
+
+
+also later we can use with active_range for bootmem replacement.
+
+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+                                        u64 goal, u64 limit)
+{
+        int i;
+
+        /* need to go over early_node_map to find out good range for node */
+        for_each_active_range_index_in_nid(i, nid) {
+                u64 addr;
+                u64 ei_start, ei_last;
+
+                ei_last = early_node_map[i].end_pfn;
+                ei_last <<= PAGE_SHIFT;
+                ei_start = early_node_map[i].start_pfn;
+                ei_start <<= PAGE_SHIFT;
+                addr = find_early_area(ei_start, ei_last,
+                                         goal, limit, size, align);
+
+                if (addr == -1ULL)
+                        continue;
+
+                return addr;
+        }
+
+        return -1ULL;
+}
+
+
+Yinghai
