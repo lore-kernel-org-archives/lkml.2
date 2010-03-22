@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754288Ab0CVIco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:32:44 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.38]:46295 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab0CVIcm (ORCPT
+	id S1754186Ab0CVIjH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:39:07 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:45300 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752350Ab0CVIjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:32:42 -0400
-Message-ID: <4BA72B25.1050705@ladisch.de>
-Date: Mon, 22 Mar 2010 09:32:37 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 22 Mar 2010 04:39:04 -0400
+Date: Mon, 22 Mar 2010 09:39:02 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Alexey Dobriyan <adobriyan@gmail.com>,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       alan@lxorguk.ukuu.org.uk, mgarski@post.pl, linux-input@vger.kernel.org,
+       Vojtech Pavlik <vojtech@suse.cz>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer (5th
+	version)
+Message-ID: <20100322083902.GB4917@atrey.karlin.mff.cuni.cz>
+References: <20100307200250.GA9340@const.famille.thibault.fr> <20100310133004.GM5127@const.bordeaux.inria.fr> <20100321210938.GB2057@elf.ucw.cz> <20100321211653.GS12469@const.famille.thibault.fr>
 MIME-Version: 1.0
-To: Frank Schaefer <fschaefer.oss@googlemail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] x86: add HPET-quirk for nVidia MCP61 LPC Bridge
- (10de:03e0)
-References: <4BA3963D.5000001@googlemail.com> <4BA3A517.4010307@ladisch.de> <4BA4C52D.6020607@googlemail.com>
-In-Reply-To: <4BA4C52D.6020607@googlemail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Disposition: inline
+In-Reply-To: <20100321211653.GS12469@const.famille.thibault.fr>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frank Schaefer wrote:
-> Clemens Ladisch schrieb:
-> > arch/x86 stuff should go to <x86@kernel.org>.
+
+> > root@amd:/sys/class/leds/input5::numl# echo heartbeat > trigger
+> > 
+> > did not do the trick on my thinkpad. It still acts as numlock led. Is
+> > it driven by hw? input5::capsl works as expected.
 > 
-> The get-maintainer-script told me to send it to this list. Shouldn't it
-> be updated then ?
+> If it is a laptop, it is likely, depending on the BIOS & such.
+> On my laptop, doing this works fine.
 
-There seems to be a bug when handling patches; try "get_maintainer.pl
--f arch/x86/kernel/quirks.c".
+Thinkpad x60. And yes, since it also changes behaviour of "jkl" keys,
+it seems to be something strange with the hardware.
+									Pavel
 
-> Also: this list seems to be mentioned nowhere,
-
-It's mentioned in the MAINTAINERS file.
-
-
-Regards,
-Clemens
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
