@@ -1,147 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab0CVBGV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 21:06:21 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:59090 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753619Ab0CVBFu (ORCPT
+	id S1753832Ab0CVBiL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 21:38:11 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:29070 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778Ab0CVBiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 21:05:50 -0400
-From: Christoffer Dall <christofferdall@christofferdall.dk>
-To: containers <containers@lists.linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Christoffer Dall <christofferdall@christofferdall.dk>,
-       rmk@arm.linux.org.uk, libc-ports <libc-ports@sourceware.org>,
-       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: [C/R ARM][PATCH 2/3] ARM: Add the eclone system call
-Date: Sun, 21 Mar 2010 21:06:04 -0400
-Message-Id: <1269219965-23923-3-git-send-email-christofferdall@christofferdall.dk>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
+	Sun, 21 Mar 2010 21:38:08 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 03/10] x86: set nr_irqs_gsi only in probe_nr_irqs_gsi
+Date: Sun, 21 Mar 2010 18:36:03 -0700
+Message-Id: <1269221770-9667-4-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BA6C9E8.005A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to doing everything that clone() system call does, the
-eclone() system call:
+don't clear that in arch_early_irq_init
 
-	- allows additional clone flags (31 of 32 bits in the flags
-	  parameter to clone() are in use)
+probe_nr_irqs_gsi is always called when ioapic is selected in config.
 
-	- allows user to specify a pid for the child process in its
-	  active and ancestor pid namespaces.
+so even for mrst, print out from probe_nr_irqs_gsi is report correct
+nr_irqs_gsi
 
-Eclone is needed for restarting a process from a checkpoint. See more
-in Documentation/eclone and refer to the original LKML posting:
-http://lkml.org/lkml/2009/11/11/361
+-v2: remove io_apic_irqs assignement, setup_IO_APIC will do that.
 
-The new system call for ARM has number 366.
-
-Cc: rmk@arm.linux.org.uk
-Cc: libc-ports <libc-ports@sourceware.org>
-Cc: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Signed-off-by: Christoffer Dall <christofferdall@christofferdall.dk>
-Acked-by: Oren Laadan <orenl@cs.columbia.edu>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/arm/include/asm/unistd.h  |    1 +
- arch/arm/kernel/calls.S        |    1 +
- arch/arm/kernel/entry-common.S |    6 ++++++
- arch/arm/kernel/sys_arm.c      |   39 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 47 insertions(+), 0 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index cf9cdaa..f295a6c 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -392,6 +392,7 @@
- #define __NR_rt_tgsigqueueinfo		(__NR_SYSCALL_BASE+363)
- #define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
- #define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
-+#define __NR_eclone			(__NR_SYSCALL_BASE+366)
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 61b59ef..ba469f8 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -153,11 +153,6 @@ int __init arch_early_irq_init(void)
+ 	int node;
+ 	int i;
  
- /*
-  * The following SWIs are ARM private.
-diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
-index 9314a2d..5ef0b03 100644
---- a/arch/arm/kernel/calls.S
-+++ b/arch/arm/kernel/calls.S
-@@ -375,6 +375,7 @@
- 		CALL(sys_rt_tgsigqueueinfo)
- 		CALL(sys_perf_event_open)
- /* 365 */	CALL(sys_recvmmsg)
-+		CALL(sys_eclone_wrapper)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
- #define syscalls_counted
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index f694f4d..9ead15d 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -386,6 +386,12 @@ sys_clone_wrapper:
- 		b	sys_clone
- ENDPROC(sys_clone_wrapper)
- 
-+sys_eclone_wrapper:
-+		add	ip, sp, #S_OFF
-+		str	ip, [sp, #0]
-+		b	sys_eclone
-+ENDPROC(sys_eclone_wrapper)
-+
- sys_sigreturn_wrapper:
- 		add	r0, sp, #S_OFF
- 		b	sys_sigreturn
-diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
-index ae4027b..fd8199d 100644
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -183,6 +183,45 @@ asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
- 	return do_fork(clone_flags, newsp, regs, 0, parent_tidptr, child_tidptr);
- }
- 
-+asmlinkage int sys_eclone(unsigned flags_low, struct clone_args __user *uca,
-+			  int args_size, pid_t __user *pids,
-+			  struct pt_regs *regs)
-+{
-+	int rc;
-+	struct clone_args kca;
-+	unsigned long flags;
-+	int __user *parent_tidp;
-+	int __user *child_tidp;
-+	unsigned long __user stack;
-+	unsigned long stack_size;
-+
-+	rc = fetch_clone_args_from_user(uca, args_size, &kca);
-+	if (rc)
-+		return rc;
-+
-+	/*
-+	 * TODO: Convert 'clone-flags' to 64-bits on all architectures.
-+	 * TODO: When ->clone_flags_high is non-zero, copy it in to the
-+	 * 	 higher word(s) of 'flags':
-+	 *
-+	 * 		flags = (kca.clone_flags_high << 32) | flags_low;
-+	 */
-+	flags = flags_low;
-+	parent_tidp = (int *)(unsigned long)kca.parent_tid_ptr;
-+	child_tidp = (int *)(unsigned long)kca.child_tid_ptr;
-+
-+	stack_size = (unsigned long)kca.child_stack_size;
-+	if (stack_size)
-+		return -EINVAL;
-+
-+	stack = (unsigned long)kca.child_stack;
-+	if (!stack)
-+		stack = regs->ARM_sp;
-+
-+	return do_fork_with_pids(flags, stack, regs, stack_size, parent_tidp,
-+				child_tidp, kca.nr_pids, pids);
-+}
-+
- asmlinkage int sys_vfork(struct pt_regs *regs)
+-	if (!legacy_pic->nr_legacy_irqs) {
+-		nr_irqs_gsi = 0;
+-		io_apic_irqs = ~0UL;
+-	}
+-
+ 	cfg = irq_cfgx;
+ 	count = ARRAY_SIZE(irq_cfgx);
+ 	node= cpu_to_node(boot_cpu_id);
+@@ -3938,6 +3933,8 @@ void __init probe_nr_irqs_gsi(void)
  {
- 	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->ARM_sp, regs, 0, NULL, NULL);
+ 	int nr = 0;
+ 
++	nr_irqs_gsi = legacy_pic->nr_legacy_irqs;
++
+ 	nr = acpi_probe_gsi();
+ 	if (nr > nr_irqs_gsi) {
+ 		nr_irqs_gsi = nr;
 -- 
-1.5.6.5
+1.6.4.2
 
