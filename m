@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab0CVTM1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 15:12:27 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38356 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750861Ab0CVTMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 15:12:24 -0400
-Date: Mon, 22 Mar 2010 20:10:28 +0100
-From: Ingo Molnar <mingo@elte.hu>
+	id S1755350Ab0CVTPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 15:15:49 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:40081 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab0CVTPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 15:15:48 -0400
+Message-ID: <4BA7C1D7.5070208@codemonkey.ws>
+Date: Mon, 22 Mar 2010 14:15:35 -0500
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-4.fc12 Lightning/1.0pre Thunderbird/3.0
+MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
+CC: Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
 Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
  project
-Message-ID: <20100322191028.GB21919@elte.hu>
-References: <20100319085346.GG12576@elte.hu>
- <4BA3747F.60401@codemonkey.ws>
- <20100321191742.GD25922@elte.hu>
- <4BA67B2F.4030101@redhat.com>
- <20100321203121.GA30194@elte.hu>
- <20100322111040.GL13108@8bytes.org>
- <20100322122228.GH3483@elte.hu>
- <20100322134633.GD1940@8bytes.org>
- <20100322163215.GC18796@elte.hu>
- <4BA7AC6B.3050103@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7AC6B.3050103@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+References: <20100322111411.GC3483@elte.hu> <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu> <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7AF2D.7060306@redhat.com>
+In-Reply-To: <4BA7AF2D.7060306@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2010 12:55 PM, Avi Kivity wrote:
+>> Lets look at the ${HOME}/.qemu/qmp/ enumeration method suggested by 
+>> Anthony.
+>> There's numerous ways that this can break:
+>
+> I don't like it either.  We have libvirt for enumerating guests.
 
-* Avi Kivity <avi@redhat.com> wrote:
+We're stuck in a rut with libvirt and I think a lot of the 
+dissatisfaction with qemu is rooted in that.  It's not libvirt that's 
+the probably, but the relationship between qemu and libvirt.
 
-> On 03/22/2010 06:32 PM, Ingo Molnar wrote:
-> >
-> > So, what do you think creates code communities and keeps them alive? 
-> > Developers and code. And the wellbeing of developers are primarily 
-> > influenced by the repository structure and by the development/maintenance 
-> > process - i.e. by the 'fun' aspect. (i'm simplifying things there but 
-> > that's the crux of it.)
-> 
-> There is nothing fun about having one repository or two.  Who cares about 
-> this anyway?
-> 
-> tools/kvm/ probably will draw developers, simply because of the glory 
-> associated with kernel work.  That's a bug, not a feature.  It means that 
-> effort is not distributed according to how it's needed, but because of 
-> irrelevant considerations.
+We add a feature to qemu and maybe after six month it gets exposed by 
+libvirt.  Release time lines of the two projects complicate the 
+situation further.  People that write GUIs are limited by libvirt 
+because that's what they're told to use and when they need something 
+simple, they're presented with first getting that feature implemented in 
+qemu, then plumbed through libvirt.
 
-And yet your solution to that is to ... do all your work in the kernel space 
-and declare the tooling as something that does not interest you? ;-)
+It wouldn't be so bad if libvirt was basically a passthrough interface 
+to qemu but it tries to model everything in a generic way which is more 
+or less doomed to fail when you're adding lots of new features (as we are).
 
-> Something I've wanted for a long time is to port kvm_stat to use tracepoints 
-> instead of the home-grown instrumentation.  But that is unrelated to this 
-> new tracepoint.  Other than that we're satisfied with ftrace.
+The list of things that libvirt doesn't support and won't any time soon 
+is staggering.
 
-Despite it being another in-kernel subsystem that by your earlier arguments 
-should be done via a user-space package? ;-)
+libvirt serves an important purpose, but we need to do a better job in 
+qemu with respect to usability.  We can't just punt to libvirt.
 
-> > You should realize that naturally developers will gravitate towards the 
-> > most 'fun' aspects of a project. It is the task of the maintainer to keep 
-> > the balance between fun and utility, bugs and features, quality and 
-> > code-rot.
-> 
-> There are plenty of un-fun tasks (like fixing bugs and providing RAS 
-> features) that we're doing.  We don't do this for fun but to satisfy our 
-> users.
+Regards,
 
-So which one is it, KVM developers are volunteers that do fun stuff and cannot 
-be told about project priorities, or KVM developers are pros who do unfun 
-stuff because they can be told about priorities?
+Anthony Liguori
 
-I posit that it's both: and that priorities can be communicated - if only you 
-try as a maintainer. All i'm suggesting is to add 'usable, unified user-space' 
-to the list of unfun priorities, because it's possible and because it matters.
-
-	Ingo
