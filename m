@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab0CVOWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:22:30 -0400
-Received: from www.tglx.de ([62.245.132.106]:37821 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754757Ab0CVOW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:22:28 -0400
-Date: Mon, 22 Mar 2010 15:22:12 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-       john stultz <johnstul@us.ibm.com>, Richard Henderson <rth@twiddle.net>,
-       lkml <linux-kernel@vger.kernel.org>, Matt Turner <mattst88@gmail.com>
-Subject: Re: [RFC][PATCH] Convert alpha to use clocksource
-In-Reply-To: <20100322111744.GB10420@cmpxchg.org>
-Message-ID: <alpine.LFD.2.00.1003221521440.3147@localhost.localdomain>
-References: <1268877702-2236-1-git-send-email-johnstul@us.ibm.com> <4BA23974.5030503@twiddle.net> <1268934923.1855.8.camel@work-vm> <20100318214030.GA8934@jurassic.park.msu.ru> <20100322111744.GB10420@cmpxchg.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754831Ab0CVOYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:24:19 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:42214 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab0CVOYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:24:18 -0400
+Date: Mon, 22 Mar 2010 09:24:14 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: David Miller <davem@davemloft.net>, andi@firstfloor.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <4BA3FA1D.8050204@zytor.com>
+Message-ID: <alpine.DEB.2.00.1003220921110.15360@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <20100319.145336.226782717.davem@davemloft.net> <4BA3FA1D.8050204@zytor.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010, Johannes Weiner wrote:
-> > Though, even after a glance over the clocksource code, I've not
-> > gotten yet to how one could estimate the "shift" value...
-> > Any hints?
-> 
-> I had the same problem with xtensa and added a comment about what I
-> did in there, maybe it helps:
-> 
-> 	arch/xtensa/kernel/time.c
-> 
-> I took the upper bound of the multiplicator (nsecs per counter unit)
-> and subtracted its logarithm from my available 32 bits.  The result
-> is the highest possible shift value that works for the clocksource.
+On Fri, 19 Mar 2010, H. Peter Anvin wrote:
 
-clocks_calc_mult_shift() is what you are looking for.
+> On 03/19/2010 02:53 PM, David Miller wrote:
+> > But I also don't consider what openpbm has to do right now to
+> > be all that much of a restriction.  You need privileges to
+> > add the protocol to the kernel, you need privileges to run
+> > the userspace variant, there is no real difference.
+>
+> The real difference is if multiplex is needed between multiple
+> unprivileged users.
 
-Thanks,
+It is needed. PGM ports exist and work similarly to UDP and TCP ports.
 
-	tglx
+PGM as provided by openpgm and other solutions avoids native PGM and
+instead uses PGM over UDP. But the routers do not support PGM over UDP in
+the same way as native PGM. So the NAK suppression and other advanced
+features available in Juniper and Cisco switches cannot be used.
+
+openpbm can work with the native PGM protocol via a raw socket but then
+one cannot run multiple processes communicating via different ports
+effectively.
+
+The fragmentation of packets and the assembly etc in user space is a pain.
+
