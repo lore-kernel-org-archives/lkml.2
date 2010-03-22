@@ -1,53 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab0CVC2e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 22:28:34 -0400
-Received: from mail-iw0-f182.google.com ([209.85.223.182]:65087 "EHLO
-	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab0CVC2d (ORCPT
+	id S1753757Ab0CVCeA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 22:34:00 -0400
+Received: from mail-px0-f184.google.com ([209.85.216.184]:34609 "EHLO
+	mail-px0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab0CVCd6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 22:28:33 -0400
+	Sun, 21 Mar 2010 22:33:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=tq7QIzaORCV26fOaF/8mUyvI5VrmVs0rVC+ACTeiE0G98llwGte9MJGLTD5S/gnK+S
-         gjImDbr8elbNjRorRQh0STbbq91S2oJOJiFF3v1Wv7GglsyCQmVM/Aa2XmQKhtsOjaSp
-         Caq4ozle7CsW2UQ9AcWhAGLugsnDx+jWuSh0E=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tmLiTwDqWI3ZTDNWPxW4T/g3yn1WtY01RhP4D9cbPrH75jIqgcNH2xonR/PeMCSVj3
+         2XLH3oZLcThOAVFDxW8j6u20dArV49ot2DGlelxKsRIipVv9ORnGRmNjun45tKEqnqjY
+         jyunhJT1rSw/ASgr+R9t8puOnGuie60mn/hHQ=
 MIME-Version: 1.0
-Date: Sun, 21 Mar 2010 19:28:32 -0700
-Message-ID: <9a158e2e1003211928y37d3bbfnac068f200128ddb6@mail.gmail.com>
-Subject: SysV IPC message queues
-From: Kyle Hubert <khubert@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4BA449E2.3080707@kernel.org>
+References: <1268989324-7575-1-git-send-email-graff.yang@gmail.com>
+	 <4BA449E2.3080707@kernel.org>
+Date: Mon, 22 Mar 2010 10:33:58 +0800
+Message-ID: <7d86d44a1003211933h6628ae04vc9d1c393e1733ce5@mail.gmail.com>
+Subject: Re: [PATCH] mm/nommu.c:Dynamic alloc/free percpu area for nommu
+From: graff yang <graff.yang@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+       akpm@linux-foundation.org, uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I recently found myself using SysV IPC message queues in a Linux
-specific application. However, I have one concern, I'm using
-IPC_PRIVATE for the key to instantiate the message queue (then doing
-pthread_creates with the open file descriptor accessed from children
-threads).
+On Sat, Mar 20, 2010 at 12:06 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
+>
+> On 03/19/2010 06:02 PM, graff.yang@gmail.com wrote:
+>>
+>> From: Graff Yang<graff.yang@gmail.com>
+>>
+>> This patch supports dynamic alloc/free percpu area for nommu arch like
+>> blackfin.
+>> It allocates contiguous pages in funtion pcpu_get_vm_areas() instead of
+>> getting none contiguous pages then vmap it in mmu arch.
+>> As we can not get the real page structure through vmalloc_to_page(), so
+>> it also modified the nommu version vmalloc_to_page()/vmalloc_to_pfn().
+>>
+>> Signed-off-by: Graff Yang<graff.yang@gmail.com>
+>
+> Heh heh... I've never imagined there would be a SMP architecture w/o
+> mmu.  That's pretty interesting.  I mean, there is real estate for
+> multiple cores but not for mmu?
 
-Anyways, upon reception of signals, the message queue lingers around
-taking up memory. I wouldn't mind this if I was using a key_t which I
-could use to reopen the message queue at a later instantiation.
-However, IPC_PRIVATE just grabs an available queue, and I don't have
-access to the key, so I can't exactly open and remove it later. It's
-my opinion that IPC_PRIVATE should cause the message queue to get
-destroyed when all the open file descriptors are closed, not solely
-when msgctl is used to remove it. Also, I don't want to capture
-signals, since that's a slippery slope and SIGKILL will still leak
-message queues. I also don't think ipcs/ipcrm are long term solutions,
-since I'm handing the library off as an abstraction.
+Yes, we ported the SMP to the blackfin dual core processor BF561.
 
-Would it be worth it to generate a patch to the Linux kernel to add
-this functionality? Or, is there an undocumented ioctl I can call to
-set that feature on?
+>
+>> diff --git a/mm/nommu.c b/mm/nommu.c
+>> index 605ace8..98bbdf4 100644
+>> --- a/mm/nommu.c
+>> +++ b/mm/nommu.c
+>> @@ -255,13 +255,15 @@ EXPORT_SYMBOL(vmalloc_user);
+>>
+>>  struct page *vmalloc_to_page(const void *addr)
+>>  {
+>> -       return virt_to_page(addr);
+>> +       return (struct page *)
+>> +                       (virt_to_page(addr)->index) ? :
+>> virt_to_page(addr);
+>
+> Nothing major but isn't it more usual to write ?: without the
+> intervening space?
+>
+>> +#ifdef CONFIG_SMP
+>> +int map_kernel_range_noflush(unsigned long addr, unsigned long size,
+>> +                                       pgprot_t prot, struct page
+>> **pages)
+>> +{
+>
+> More nitpicks.
+>
+>> +       int i, nr_page = size>>  PAGE_SHIFT;
+>
+>               nr_pages = size >> PAGE_SHIFT;
+>
+>> +       for (i = 0; i<  nr_page; i++, addr += PAGE_SIZE)
+>
+>                    i < nr_pages
+>
+>> +               virt_to_page(addr)->index = (pgoff_t)pages[i];
+>> +       return size>>  PAGE_SHIFT;
+>
+>        return size >> PAGE_SHIFT;
+>
+> I think checkpatch would whine about these too.
 
-IE: IPC_PRIVATE message queues should be freed when ref count drops to zero.
+OK.
 
-Thank you very much for your time,
+>
+>> +void unmap_kernel_range_noflush(unsigned long addr, unsigned long size)
+>> +{
+>> +       int i, nr_page = size>>  PAGE_SHIFT;
+>> +       for (i = 0; i<  nr_page; i++, addr += PAGE_SIZE)
+>> +               virt_to_page(addr)->index = 0;
+>> +}
+>> +
+>> +struct vm_struct **pcpu_get_vm_areas(const unsigned long *offsets,
+>> +                                       const size_t *sizes, int nr_vms,
+>> +                                               size_t align, gfp_t
+>> gfp_mask)
+>
+> Hmmm... in general, one of the reasons the percpu allocation is
+> complex is to avoid contiguous allocations while avoiding additional
+> TLB / NUMA overhead on machines with rather complex memory
+> configuration (which is pretty common these days).  If the memory has
+> to be allocated contiguous anyway, it probably would be much simpler
+> to hook at higher level and simply allocate each chunk contiguously.
+> I'll look into it.
+I understand the complexity of percpu allocation code. As a nommu arch,
+we have to allocate a bulk of memory in one time to insure its contiguous.
+And in my implementation, many pages are wasted.
+It would be better, if the percpu allocation code provide some hooks for us.
+Thanks for your feedback.
 
--Kyle Hubert
+-- 
+-Graff
