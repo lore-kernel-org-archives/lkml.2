@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab0CVU3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 16:29:08 -0400
-Received: from mail-ew0-f220.google.com ([209.85.219.220]:52589 "EHLO
-	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab0CVU3G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 16:29:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=roaSB7bIDzmeh6ZrTEOQK62l9hMUazOql6adWyXzT2Xe5tNfOG/nMbwH65DLI8H5Qw
-         fnLFQeMVTb0qh+ativY7j5BjVIQM2Vf8p+RbolegS/WKSpCoj6q3N0LrtRXYT68KqeeT
-         kOS0OLRh3WVbhrw02NSsYyDUjweW0amGuUiJE=
-Message-ID: <4BA7D22A.6080300@gmail.com>
-Date: Mon, 22 Mar 2010 21:25:14 +0100
-From: Roel Kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1756150Ab0CVU3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 16:29:55 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:33443 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754979Ab0CVU3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 16:29:53 -0400
+Date: Mon, 22 Mar 2010 21:29:37 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Anthony Liguori <anthony@codemonkey.ws>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322202937.GA18126@elte.hu>
+References: <20100322155505.GA18796@elte.hu>
+ <4BA796DF.7090005@redhat.com>
+ <20100322165107.GD18796@elte.hu>
+ <4BA7A406.9050203@redhat.com>
+ <20100322173400.GB15795@elte.hu>
+ <4BA7AF2D.7060306@redhat.com>
+ <20100322192033.GC21919@elte.hu>
+ <4BA7C885.5010901@redhat.com>
+ <20100322200617.GD3306@elte.hu>
+ <4BA7CFF4.8080102@redhat.com>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-       davem@davemloft.net
-Subject: [PATCH] via-velocity: FLOW_CNTL_RX does not disable Asymmetric pause
- in set_mii_flow_control()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7CFF4.8080102@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Asymmetric pause was not disabled in the RX case.
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
-I spotted this because In the FLOW_CNTL_RX and FLOW_CNTL_TX_RX
-cases the same code is executed, is the amendment below required?
+* Avi Kivity <avi@redhat.com> wrote:
 
-diff --git a/drivers/net/via-velocity.c b/drivers/net/via-velocity.c
-index 3a486f3..2d478cf 100644
---- a/drivers/net/via-velocity.c
-+++ b/drivers/net/via-velocity.c
-@@ -807,7 +807,7 @@ static void set_mii_flow_control(struct velocity_info *vptr)
- 
- 	case FLOW_CNTL_RX:
- 		MII_REG_BITS_ON(ANAR_PAUSE, MII_REG_ANAR, vptr->mac_regs);
--		MII_REG_BITS_ON(ANAR_ASMDIR, MII_REG_ANAR, vptr->mac_regs);
-+		MII_REG_BITS_OFF(ANAR_ASMDIR, MII_REG_ANAR, vptr->mac_regs);
- 		break;
- 
- 	case FLOW_CNTL_TX_RX:
+> > I think you didnt understand my point. I am talking about 'perf kvm top' 
+> > hanging if Qemu hangs.
+> 
+> Use non-blocking I/O, report that guest as dead.  No point in profiling it, 
+> it isn't making any progress.
+
+Erm, at what point do i decide that a guest is 'dead' versus 'just lagged due 
+to lots of IO' ?
+
+Also, do you realize that you increase complexity (the use of non-blocking 
+IO), just to protect against something that wouldnt happen if the right 
+solution was used in the first place?
+
+> > With a proper in-kernel enumeration the kernel would always guarantee the 
+> > functionality, even if the vcpu does not make progress (i.e. it's "hung").
+> >
+> > With this implemented in Qemu we lose that kind of robustness guarantee.
+> 
+> If qemu has a bug in the resource enumeration code, you can't profile one 
+> guest.  If the kernel has a bug in the resource enumeration code, the system 
+> either panics or needs to be rebooted later.
+
+This is really simple code, not rocket science. If there's a bug in it we'll 
+fix it. On the other hand a 500KLOC+ piece of Qemu code has lots of places to 
+hang, so that is a large cross section.
+
+	Ingo
