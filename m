@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab0CVKUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 06:20:22 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:56925 "EHLO poutre.nerim.net"
+	id S1754158Ab0CVKUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 06:20:37 -0400
+Received: from www.tglx.de ([62.245.132.106]:49823 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753012Ab0CVKUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 06:20:20 -0400
-Date: Mon, 22 Mar 2010 11:20:13 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Giel van Schijndel <me@mortis.eu>, Jonathan Cameron <jic23@cam.ac.uk>,
-       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Hwmon: f71882fg: fixed braces coding style issues
-Message-ID: <20100322112013.62f962e3@hyperion.delvare>
-In-Reply-To: <4BA738CE.8000901@redhat.com>
-References: <1269185834-10266-1-git-send-email-me@mortis.eu>
-	<4BA738CE.8000901@redhat.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753922Ab0CVKUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 06:20:35 -0400
+Date: Mon, 22 Mar 2010 11:19:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Ian Campbell <ian.campbell@citrix.com>, Ingo Molnar <mingo@redhat.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, x86@kernel.org,
+       linuxppc-dev@ozlabs.org, Rusty Russell <rusty@rustcorp.com.au>,
+       lguest@ozlabs.org, Paul Mundt <lethal@linux-sh.org>,
+       linux-sh@vger.kernel.org
+Subject: Re: [PATCH 01/10] irq: move some interrupt arch_* functions into
+ struct irq_chip.
+In-Reply-To: <1269221770-9667-2-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003220950570.3147@localhost.localdomain>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org> <1269221770-9667-2-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010 10:30:54 +0100, Hans de Goede wrote:
-> Ack.
+On Sun, 21 Mar 2010, Yinghai Lu wrote:
+
+> From: Ian Campbell <ian.campbell@citrix.com>
 > 
-> Acked-by: Hans de Goede <hdegoede@redhat.com>
+> Move arch_init_copy_chip_data and arch_free_chip_data into function
+> pointers in struct irq_chip since they operate on irq_desc->chip_data.
 
-Applied, thanks.
+Not sure about that. These functions are solely used by x86 and there
+is really no need to generalize them. The problem you try to solve is
+x86/xen specific and can be solved by x86_platform_ops as well w/o
+adding extra function pointers to irq_chip.
 
-> On 03/21/2010 04:37 PM, Giel van Schijndel wrote:
-> > Fixed several coding style issues.
-> >
-> > Signed-off-by: Giel van Schijndel<me@mortis.eu>
-> > ---
-> >   drivers/hwmon/f71882fg.c |   11 +++++------
-> >   1 files changed, 5 insertions(+), 6 deletions(-)
-> >
-> > diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-> > index a95fa42..21bc661 100644
-> > --- a/drivers/hwmon/f71882fg.c
-> > +++ b/drivers/hwmon/f71882fg.c
-> > @@ -866,11 +866,11 @@ static int superio_inw(int base, int reg)
-> >   static inline void superio_enter(int base)
-> >   {
-> >   	/* according to the datasheet the key must be send twice! */
-> > -	outb( SIO_UNLOCK_KEY, base);
-> > -	outb( SIO_UNLOCK_KEY, base);
-> > +	outb(SIO_UNLOCK_KEY, base);
-> > +	outb(SIO_UNLOCK_KEY, base);
-> >   }
-> >
-> > -static inline void superio_select( int base, int ld)
-> > +static inline void superio_select(int base, int ld)
-> >   {
-> >   	outb(SIO_REG_LDSEL, base);
-> >   	outb(ld, base + 1);
-> > @@ -945,7 +945,7 @@ static struct f71882fg_data *f71882fg_update_device(struct device *dev)
-> >   	mutex_lock(&data->update_lock);
-> >
-> >   	/* Update once every 60 seconds */
-> > -	if ( time_after(jiffies, data->last_limits + 60 * HZ ) ||
-> > +	if (time_after(jiffies, data->last_limits + 60 * HZ) ||
-> >   			!data->valid) {
-> >   		if (data->type == f71882fg || data->type == f71889fg) {
-> >   			data->in1_max =
-> > @@ -2151,8 +2151,7 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
-> >   	}
-> >
-> >   	*address = superio_inw(sioaddr, SIO_REG_ADDR);
-> > -	if (*address == 0)
-> > -	{
-> > +	if (*address == 0) {
-> >   		printk(KERN_WARNING DRVNAME ": Base address not set\n");
-> >   		goto exit;
-> >   	}
+> arch_init_chip_data cannot be moved into struct irq_chip because
+> irq_desc->chip is not known at the time the irq_desc is setup. Instead
+> rename arch_init_chip_data to arch_init_irq_desc for PowerPC, the
+> only other user, whose usage better matches the new name.
+> 
+> To replace the x86 arch_init_chip_data functionality
+> irq_to_desc_alloc_node now takes a pointer to a function to allocate
+> the chip data. This is necessary to ensure the allocation happens
+> under the correct locking at the core level. On PowerPC and SH
 
+Err, that argument is totally bogus. The calling convention of
+irq_to_desc_alloc_node and arch_init_chip_data/arch_init_irq_desc is
+still the same. It does not explain why the heck we need that function
+pointer at all.
 
--- 
-Jean Delvare
+AFAICT the function pointer to irq_to_desc_alloc_node is completely
+pointless. It just solves a Xen/x86 specific problem which can be
+solved by using x86_platform_ops and keeps the churn x86 internal.
+
+> architectures (the other users of irq_to_desc_alloc_node) pass in NULL
+> which retains existing chip_data behaviour.
+ 
+> I've retained the chip_data behaviour for uv_irq although it isn't
+> clear to me if these interrupt types support migration or how closely
+> related to the APIC modes they really are. If it weren't for this the
+> x86_{init,copy,free}_chip_data functions could be static to
+> io_apic.c.
+> 
+> I've tested by booting on an 64 bit x86 system with sparse IRQ enabled
+> and 32 bit without, but it's not clear to me what actions I need to
+> take to actually exercise some of these code paths.
+> 
+> -v4: yinghai add irq_to_desc_alloc_node_x...
+
+Aside of the general objection against this, please use descriptive
+function names and do not distinguish functions by adding random
+characters which tell us absolutely nothing about the purpose.
+
+Thanks,
+
+	tglx
