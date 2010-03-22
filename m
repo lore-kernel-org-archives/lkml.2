@@ -1,40 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377Ab0CVISP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:18:15 -0400
-Received: from www.tglx.de ([62.245.132.106]:33349 "EHLO www.tglx.de"
+	id S1754320Ab0CVISL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:18:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab0CVISJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:18:09 -0400
-Date: Mon, 22 Mar 2010 09:17:07 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <maz@misterjones.org>
-cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       joachim.eastwood@jotron.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 3/3] genirq: introduce IRQF_ALLOW_NESTED flag for
- request_irq()
-In-Reply-To: <20100322060343.3487e32c@taxman.wild-wind.fr.eu.org>
-Message-ID: <alpine.LFD.2.00.1003220916120.3147@localhost.localdomain>
-References: <201003112209.o2BM91oQ013581@imap1.linux-foundation.org> <alpine.LFD.2.00.1003132039110.22855@localhost.localdomain> <927ea285bd0c68934ddae1a47e44a9ba@localhost> <20100322060343.3487e32c@taxman.wild-wind.fr.eu.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754280Ab0CVISF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 04:18:05 -0400
+Date: Mon, 22 Mar 2010 04:17:40 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Amerigo Wang <amwang@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Message-Id: <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
+References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
+Subject: [RFC Patch 3/3] bonding: make bonding support netpoll
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010, Marc Zyngier wrote:
-> > Please note that this patch has only been compile-tested, as I'm traveling
-> > for the rest of the week and don't have access to my boards.
-> > 
-> > Thanks,
-> > 
-> >         M.
-> 
-> Any comment on this?
 
-Yes, I was traveling last week and this is in my mail backlog :)
+Based on Andy's work, but I modify a lot.
 
-Thanks,
+Similar to the patch for bridge, this patch does:
 
-	tglx
+1) implement the 4 methods to support netpoll for bonding;
+
+2) modify netpoll during forwarding packets in bonding;
+
+3) disable netpoll support of bridge when a netpoll-unabled device
+   is added to bonding;
+
+4) enable netpoll support when all underlying devices support netpoll.
+
+Cc: Andy Gospodarek <gospo@redhat.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: David Miller <davem@davemloft.net>
+Signed-off-by: WANG Cong <amwang@redhat.com>
+
+
+---
+Index: linux-2.6/drivers/net/bonding/bond_main.c
+===================================================================
+--- linux-2.6.orig/drivers/net/bonding/bond_main.c
++++ linux-2.6/drivers/net/bonding/bond_main.c
+@@ -59,6 +59,7 @@
+ #include <linux/uaccess.h>
+ #include <linux/errno.h>
+ #include <linux/netdevice.h>
++#include <linux/netpoll.h>
+ #include <linux/inetdevice.h>
+ #include <linux/igmp.h>
+ #include <linux/etherdevice.h>
+@@ -430,7 +431,17 @@ int bond_dev_queue_xmit(struct bonding *
+ 	}
+ 
+ 	skb->priority = 1;
+-	dev_queue_xmit(skb);
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
++		bond->dev->npinfo->netpoll->dev = skb->dev;
++		if (!slave_dev->npinfo)
++			slave_dev->npinfo = bond->dev->npinfo;
++		slave_dev->priv_flags |= IFF_IN_NETPOLL;
++		netpoll_send_skb(bond->dev->npinfo->netpoll, skb);
++		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
++	} else
++#endif
++		dev_queue_xmit(skb);
+ 
+ 	return 0;
+ }
+@@ -1324,6 +1335,87 @@ static void bond_detach_slave(struct bon
+ 	bond->slave_cnt--;
+ }
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++static bool slaves_support_netpoll(struct net_device *bond_dev)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
++	int i = 0;
++	bool ret = true;
++
++	read_lock_bh(&bond->lock);
++	bond_for_each_slave(bond, slave, i) {
++		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
++				|| !slave->dev->netdev_ops->ndo_poll_controller)
++			ret = false;
++	}
++	read_unlock_bh(&bond->lock);
++	return i != 0 && ret;
++}
++
++static void bond_poll_controller(struct net_device *bond_dev)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
++	int i;
++
++	read_lock(&bond->lock);
++	bond_for_each_slave(bond, slave, i) {
++		if (slave->dev->netdev_ops->ndo_poll_controller)
++			netpoll_poll_dev(slave->dev);
++	}
++	read_unlock(&bond->lock);
++}
++
++static void bond_netpoll_setup(struct net_device *bond_dev,
++			      struct netpoll_info *npinfo)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
++	int i;
++
++	write_lock_bh(&bond->lock);
++	bond_for_each_slave(bond, slave, i) {
++		if (slave->dev)
++			slave->dev->npinfo = npinfo;
++	}
++	write_unlock_bh(&bond->lock);
++}
++
++static void bond_netpoll_cleanup(struct net_device *bond_dev)
++{
++	struct bonding *bond = netdev_priv(bond_dev);
++	struct slave *slave;
++	const struct net_device_ops *ops;
++	int i;
++
++	write_lock_bh(&bond->lock);
++	bond_dev->npinfo = NULL;
++	bond_for_each_slave(bond, slave, i) {
++		if (slave->dev) {
++			ops = slave->dev->netdev_ops;
++			if (ops->ndo_netpoll_cleanup)
++				ops->ndo_netpoll_cleanup(slave->dev);
++			else
++				slave->dev->npinfo = NULL;
++		}
++	}
++	write_unlock_bh(&bond->lock);
++}
++
++static int bond_netpoll_xmit(struct netpoll *np, struct sk_buff *skb,
++			     struct net_device *dev)
++{
++	int ret;
++
++	dev->priv_flags |= IFF_IN_NETPOLL;
++	ret = dev->netdev_ops->ndo_start_xmit(skb, dev);
++	np->dev = dev;
++	dev->priv_flags &= ~IFF_IN_NETPOLL;
++	return ret;
++}
++#endif
++
+ /*---------------------------------- IOCTL ----------------------------------*/
+ 
+ static int bond_sethwaddr(struct net_device *bond_dev,
+@@ -1741,6 +1833,18 @@ int bond_enslave(struct net_device *bond
+ 		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
+ 		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	if (slaves_support_netpoll(bond_dev)) {
++		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
++		if (bond_dev->npinfo)
++			slave_dev->npinfo = bond_dev->npinfo;
++	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
++		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
++		pr_info("New slave device %s does not support netpoll\n",
++			slave_dev->name);
++		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
++	}
++#endif
+ 	/* enslave is successful */
+ 	return 0;
+ 
+@@ -1924,6 +2028,15 @@ int bond_release(struct net_device *bond
+ 
+ 	netdev_set_master(slave_dev, NULL);
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	if (slaves_support_netpoll(bond_dev))
++		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
++	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
++		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
++	else
++		slave_dev->npinfo = NULL;
++#endif
++
+ 	/* close slave before restoring its mac address */
+ 	dev_close(slave_dev);
+ 
+@@ -2032,6 +2145,9 @@ static int bond_release_all(struct net_d
+ 
+ 		netdev_set_master(slave_dev, NULL);
+ 
++#ifdef CONFIG_NET_POLL_CONTROLLER
++		slave_dev->npinfo = NULL;
++#endif
+ 		/* close slave before restoring its mac address */
+ 		dev_close(slave_dev);
+ 
+@@ -4424,6 +4540,12 @@ static const struct net_device_ops bond_
+ 	.ndo_vlan_rx_register	= bond_vlan_rx_register,
+ 	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
+ 	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
++#ifdef CONFIG_NET_POLL_CONTROLLER
++	.ndo_netpoll_setup	= bond_netpoll_setup,
++	.ndo_netpoll_xmit	= bond_netpoll_xmit,
++	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
++	.ndo_poll_controller	= bond_poll_controller,
++#endif
+ };
+ 
+ static void bond_setup(struct net_device *bond_dev)
