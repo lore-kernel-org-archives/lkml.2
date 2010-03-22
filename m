@@ -1,37 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab0CVMJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:09:29 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54321 "EHLO
+	id S1754263Ab0CVMKN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:10:13 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:54062 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab0CVMJ1 (ORCPT
+	with ESMTP id S1753909Ab0CVMKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:09:27 -0400
+	Mon, 22 Mar 2010 08:10:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=DFJavA6maQXtYC2jIdiWQtFPlc6/pmnF979fDxgoEgqs8remYGwA+qVxhmMxnOln+3
-         s/B1s4WPzJb+TtxROxTcByBlaqkljn1IfpsUPH0Wj4JmgVNqUKwhND/REVwpU0vJUvd4
-         O+yhREKibxRb4lgXQqiw740c8OLAuH5hq055U=
-Date: Mon, 22 Mar 2010 15:09:18 +0300
+        b=vxh3gCfOdyOdPaALxDu2KWQTlC/J1qU+q+xUumi86i692VNW8fqg1tU6fuzItUEQjr
+         5zyCbz/XjOxYuhrkpbWXJ/MKDgzZrd94pSNDIQue91ZRidedNl0OnIZTgZ1+kVpoU1UG
+         /S+D8i2pikInmjN9pCF6+ODAMv2AxiZ6/bixY=
+Date: Mon, 22 Mar 2010 15:09:59 +0300
 From: Dan Carpenter <error27@gmail.com>
-To: Thomas Winischhofer <thomas@winischhofer.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Krzysztof Helt <krzysztof.h1@wp.pl>, Roel Kluin <roel.kluin@gmail.com>,
-       Michal Januszewski <spock@gentoo.org>,
-       Wu Zhangjin <wuzhangjin@gmail.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] sis: strcpy() => strlcpy()
-Message-ID: <20100322120918.GG21571@bicker>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [patch] hdpuftrs: use resource_size()
+Message-ID: <20100322120959.GH21571@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Thomas Winischhofer <thomas@winischhofer.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Krzysztof Helt <krzysztof.h1@wp.pl>,
-	Roel Kluin <roel.kluin@gmail.com>,
-	Michal Januszewski <spock@gentoo.org>,
-	Wu Zhangjin <wuzhangjin@gmail.com>, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -40,21 +30,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are different size buffers (40 chars vs 16), we may as well be
-cautious.
+The size caculation is wrong.  It should be end - start + 1.
+Use resource_size() to calculate it correctly.
 
 Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-index a531a0f..559bf17 100644
---- a/drivers/video/sis/sis_main.c
-+++ b/drivers/video/sis/sis_main.c
-@@ -1845,7 +1845,7 @@ sisfb_get_fix(struct fb_fix_screeninfo *fix, int con, struct fb_info *info)
- 
- 	memset(fix, 0, sizeof(struct fb_fix_screeninfo));
- 
--	strcpy(fix->id, ivideo->myid);
-+	strlcpy(fix->id, ivideo->myid, sizeof(fix->id));
- 
- 	mutex_lock(&info->mm_lock);
- 	fix->smem_start  = ivideo->video_base + ivideo->video_offset;
+diff --git a/drivers/misc/hdpuftrs/hdpu_nexus.c b/drivers/misc/hdpuftrs/hdpu_nexus.c
+index ce39fa5..bce5029 100644
+--- a/drivers/misc/hdpuftrs/hdpu_nexus.c
++++ b/drivers/misc/hdpuftrs/hdpu_nexus.c
+@@ -92,8 +92,7 @@ static int hdpu_nexus_probe(struct platform_device *pdev)
+ 		       "Invalid memory resource.\n");
+ 		return -EINVAL;
+ 	}
+-	nexus_id_addr = ioremap(res->start,
+-				(unsigned long)(res->end - res->start));
++	nexus_id_addr = ioremap(res->start, resource_size(res));
+ 	if (nexus_id_addr) {
+ 		slot_id = (*nexus_id_addr >> 8) & 0x1f;
+ 		chassis_id = *nexus_id_addr & 0xff;
