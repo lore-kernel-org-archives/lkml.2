@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751098Ab0CVOem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:34:42 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:50347 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab0CVOek (ORCPT
+	id S1751578Ab0CVOiL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:38:11 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:52024 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab0CVOiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:34:40 -0400
-Date: Mon, 22 Mar 2010 10:32:32 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@localhost
-To: Jon Masters <jonathan@jonmasters.org>
-cc: Tilman Schmidt <t.schmidt@phoenixsoftware.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: should new kfifo implementation really be exporting that much?
-In-Reply-To: <20100321093207.GX4426@perihelion.bos.jonmasters.org>
-Message-ID: <alpine.LFD.2.00.1003221030360.25001@localhost>
-References: <alpine.LFD.2.00.1003140929350.4644@localhost> <alpine.LFD.2.00.1003141053380.5987@localhost> <4B9D10D1.1060602@phoenixsoftware.de> <alpine.LFD.2.00.1003141244280.7806@localhost> <20100321093207.GX4426@perihelion.bos.jonmasters.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 22 Mar 2010 10:38:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=OkpTVBDSoCzHaNyjkfWgP9lAnE4Gt7uIWY7+xO5oBh8BLtH0D4iDOK4Xz5W0ikDic0
+         wucOQRLAIeIUa4qN4LsaOHsC/aTHIeWUzWoNhKy+MZrY7ZCOpIVucikKFluZRT6+O05W
+         lIFgSbYMhGAj24OGON5jF2sjB7+w9TQmciaTw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Date: Mon, 22 Mar 2010 20:08:08 +0530
+Message-ID: <facecd891003220738o7764b556x93efebb08b94663d@mail.gmail.com>
+Subject: About source IP address of IGMP Join sent on loopback interface
+From: preetham B <preetham.b79@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Mar 2010, Jon Masters wrote:
+Hi,
 
-> On Sun, Mar 14, 2010 at 12:49:08PM -0400, Robert P. J. Day wrote:
-> > On Sun, 14 Mar 2010, Tilman Schmidt wrote:
-> >
-> > > Am 14.03.2010 15:57 schrieb Robert P. J. Day:
-> > > >   as a short followup, kfifo.h strongly implies that a lot of the
-> > > > above shouldn't be exported:
-> > > >
-> > > > ...
-> > > > /*
-> > > >  * __kfifo_in_... internal functions for put date into the fifo
-> > > >  * do not call it directly, use kfifo_in_rec() instead
-> > > >  */
-> > > > ...
-> > > >
-> > > >   anyway, you get the idea.  it would seem that a lot of those EXPORTs
-> > > > should be removed, no?
-> > >
-> > > If you look at kfifo_in_rec(), it's a static inline void
-> > > function defined in kfifo.h and which calls __kfifo_in_generic()
-> > > or __kfifo_in_rec(). I don't think you'll be able to make that
-> > > work without exporting those functions.
-> >
-> >   huh.  i believe you're correct.  i'll take a closer look but i
-> > still get this feeling that there's something ... messy about that
-> > API. case in point:  kfifo_in_rec() is *not* being exported, but a
-> > routine that it invokes -- __kfifo_in_generic() -- *is* being
-> > exported. doesn't that just seem a bit backwards?
->
-> I believe it would be a good idea to have an export type explicitly
-> covering symbols that are exported solely for the use of inlines,
-> just for tidying up these situations. EXPORT_SYMBOL_INTERNAL?
+I am running igmp daemon(igmp router side) and igmp host on same PC.
+When the host joins on loopback interface, igmp daemon is expected to
+receive the join report on loopback interface.
+Here the join on loopback interface is not going outside the
+PC(Outside Network).
 
-  i wasn't suggesting anything as drastic as inventing a new export
-level :-), i just wanted to verify that the current situation as to
-what's currently exported related to kfifo just seemed a bit odd and
-inconsistent.  but a new export level might support the removal of a
-considerable amount from the fully-exported namespace.
+Is it possible to receive join report (@ igmp daemon) with source IP
+address as loopback interface address
+in above explained setup?
 
-rday
---
+When I run the host,  output of netstat command is as below:
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
+#netstat -ng
 
-            Linux Consulting, Training and Kernel Pedantry.
+IPv6/IPv4 Group Memberships
+Interface       RefCnt Group
+--------------- ------ ---------------------
+lo              1      239.5.1.7   ==========> This is the group
+joined on loopback
+lo              1      224.0.0.1
+eth0            1      224.0.0.1
+eth0            1      239.5.5.6
+eth0            1      239.5.5.7
 
-Web page:                                          http://crashcourse.ca
-Twitter:                                       http://twitter.com/rpjday
-========================================================================
+
+Please cc me in the response
+
+Regards,
+Anupam
