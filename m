@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab0CVOv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:51:58 -0400
-Received: from a.mx.secunet.com ([213.68.205.161]:48200 "EHLO a.mx.secunet.com"
+	id S1753925Ab0CVOxR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:53:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51609 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751346Ab0CVOvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:51:55 -0400
-Date: Mon, 22 Mar 2010 15:53:57 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Carpenter <error27@gmail.com>,
-       Herbert Xu <herbert@gondor.apana.org.au>,
-       "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch v2] pcrypt: handle crypto_get_attr_type() errors
-Message-ID: <20100322145357.GK20508@secunet.com>
-References: <20100321092847.GJ5331@bicker>
- <20100322132342.GJ20508@secunet.com>
- <20100322135319.GQ21571@bicker>
+	id S1751346Ab0CVOxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 10:53:16 -0400
+Date: Mon, 22 Mar 2010 15:53:13 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Stephane Chatty <chatty@enac.fr>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
+       Michael Poole <mdpoole@troilus.org>, simon.windows@gmail.com,
+       Sean Hildebrand <silverwraithii@gmail.com>,
+       Sid Boyce <sboyce@blueyonder.co.uk>, linux-kernel@vger.kernel.org,
+       linux-doc@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 2/2] Updated hid_blacklist, reformatted code and removed
+ unused variable
+In-Reply-To: <1269269304.2236.1.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1003221552360.18642@pobox.suse.cz>
+References: <1268926981.11269.3.camel@localhost>  <alpine.LNX.2.00.1003220936270.18642@pobox.suse.cz> <1269269304.2236.1.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322135319.GQ21571@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 22 Mar 2010 14:51:54.0103 (UTC) FILETIME=[365E1870:01CAC9CF]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 04:53:19PM +0300, Dan Carpenter wrote:
->  
-> -static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb)
-> +static struct crypto_instance *pcrypt_alloc_aead(struct rtattr **tb,
-> +						 struct crypto_attr_type *algt)
->  {
->  	struct crypto_instance *inst;
->  	struct crypto_alg *alg;
-> -	struct crypto_attr_type *algt;
-> -
-> -	algt = crypto_get_attr_type(tb);
->  
->  	alg = crypto_get_attr_alg(tb, algt->type,
->  				  (algt->mask & CRYPTO_ALG_TYPE_MASK));
-> @@ -365,7 +363,7 @@ static struct crypto_instance *pcrypt_alloc(struct rtattr **tb)
->  
->  	switch (algt->type & algt->mask & CRYPTO_ALG_TYPE_MASK) {
->  	case CRYPTO_ALG_TYPE_AEAD:
-> -		return pcrypt_alloc_aead(tb);
-> +		return pcrypt_alloc_aead(tb, algt);
->  	}
->  
+On Mon, 22 Mar 2010, Stefan Achatz wrote:
 
-I thought about passing the type and mask values separately to
-pcrypt_alloc_aead, like type and mask values are passed to
-crypto_get_attr_alg. This is the usual way to do this in the
-crypto layer.
+> Updated hid_blacklist[] so that generic driver keeps his hands off.
+> Reformatted code so that definition of kone_driver and kone_devices[]
+> have one initialization per line and closing brace is on extra line.
+> Removed an unused variable declaration.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-core.c        |    1 +
+>  drivers/hid/hid-roccat-kone.c |   15 ++++++++++-----
+>  2 files changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> index 368fbb0..dbd6fb8 100644
+> --- a/drivers/hid/hid-core.c
+> +++ b/drivers/hid/hid-core.c
+> @@ -1346,6 +1346,7 @@ static const struct hid_device_id hid_blacklist[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX, USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_ROCCAT, USB_DEVICE_ID_ROCCAT_KONE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
+
+Thanks for the fix. I only wonder how well has the driver been tested, as 
+without this change it couldn't get to operate the device at all ... ?
 
 Thanks,
 
-Steffen
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
