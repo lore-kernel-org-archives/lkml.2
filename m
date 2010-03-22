@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab0CVO3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 10:29:44 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:51135 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569Ab0CVO3m (ORCPT
+	id S1754943Ab0CVOag (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 10:30:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50174 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab0CVOaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 10:29:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=td3qWm4eBUo1TAIkmTfhZS8Bk5qxJV0Y+2wIIhrbhrA7EBvRJxoxf9M1c+NXOVnMmv
-         S+KyIKEaJw04318QFNrptYGMUwX1XMAo0mI/uSjmfkLAJWZcT9lXOlhFP+d5XgbtEqFJ
-         qsW2YZFRhLYwuvaTJ/hDyl+VeMkOGRKIBHjQ4=
-Date: Mon, 22 Mar 2010 17:29:24 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Lars Lindley <lindley@coyote.org>
-Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: phy_calibration.c Coding style fixes
-	1/2.
-Message-ID: <20100322142924.GA23411@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
-	penberg@cs.helsinki.fi, pavel@ucw.cz, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1269267447-6245-1-git-send-email-lindley@coyote.org>
+	Mon, 22 Mar 2010 10:30:35 -0400
+Date: Mon, 22 Mar 2010 15:07:13 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Lin Ming <ming.m.lin@intel.com>, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] Fix key f70f4b50 not in .data in thermal_sys
+Message-ID: <20100322140713.GB1076@pengutronix.de>
+References: <20100309102754.GA3316@swordfish.minsk.epam.com> <20100309141826.GC28606@suse.de> <20100322135235.GA3388@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="s2ZSL+KKDSLx8OML"
 Content-Disposition: inline
-In-Reply-To: <1269267447-6245-1-git-send-email-lindley@coyote.org>
+In-Reply-To: <20100322135235.GA3388@swordfish.minsk.epam.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 03:17:26PM +0100, Lars Lindley wrote:
-> Whitespace and indentation fixes. Removed "commented away"
-> code and revision comments.
-> Checked with Dan Carpenters strip_whitespace.pl and diff.
-> Compiles fine and .o file is identical before and after.
-> 
 
-	[ snip ]
+--s2ZSL+KKDSLx8OML
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> -#ifdef _DEBUG
-> +	/* e. The result are shown in "adc_dc_cal_i[8:0] and adc_dc_cal_q[8:0]" */
-> +	#ifdef _DEBUG
->  	hw_get_dxx_reg(phw_data, REG_OFFSET_READ, &val);
->  	PHY_DEBUG(("[CAL]    REG_OFFSET_READ = 0x%08X\n", val));
->  
->  	PHY_DEBUG(("[CAL]    ** adc_dc_cal_i = %d (0x%04X)\n",
-> -			   _s9_to_s32(val&0x000001FF), val&0x000001FF));
-> +			_s9_to_s32(val & 0x000001FF), val & 0x000001FF));
->  	PHY_DEBUG(("[CAL]    ** adc_dc_cal_q = %d (0x%04X)\n",
-> -			   _s9_to_s32((val&0x0003FE00)>>9), (val&0x0003FE00)>>9));
-> -#endif
-> +			_s9_to_s32((val & 0x0003FE00) >> 9), (val & 0x0003FE00) >> 9));
-> +	#endif
->  
+On Mon, Mar 22, 2010 at 03:52:35PM +0200, Sergey Senozhatsky wrote:
+> Nope. Sorry, I didn't test carefully. Oh, Monday...
+> Proposed patch doesn't fix the problem. The given below
+> patch does.
+>=20
+> Note that thermal_zone_bind_cooling_device part was proposed by=20
+> Wolfram Sang here:
+> https://patchwork.kernel.org/patch/87359/
+>=20
+> So, Wolfram, we need to cooperate to solve the problem.
 
-#ifdef and #endif shouldn't be indented.
+Looks good to me. Add my SoB, this should do:
 
-I'm really happy that you're using my script.  It feels more relaxing to 
-review these when I know that no bugs were introduced.
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 
-regard,
-dan carpenter
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--s2ZSL+KKDSLx8OML
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkuneZEACgkQD27XaX1/VRsDHQCgupLJxbTbMb93eZiyXs0I57vc
+PpAAn0fkLpBwQoKfVbL0wdXfyrKnCse4
+=YtkC
+-----END PGP SIGNATURE-----
+
+--s2ZSL+KKDSLx8OML--
