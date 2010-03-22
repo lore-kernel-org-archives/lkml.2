@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab0CVSy0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:54:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58529 "EHLO mx1.redhat.com"
+	id S1755804Ab0CVS4J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:56:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56243 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0CVSyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:54:25 -0400
-Date: Mon, 22 Mar 2010 18:54:09 +0000
-From: Alasdair G Kergon <agk@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Dave Wysochanski <dwysocha@redhat.com>,
-       Peter Rajnoha <prajnoha@redhat.com>
-Subject: Re: [patch 114/123] dm ioctl: only issue uevent on resume if state
-	changed
-Message-ID: <20100322185409.GL919@agk-dp.fab.redhat.com>
-Mail-Followup-To: Greg KH <gregkh@suse.de>,
-	Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
-	stable@kernel.org, stable-review@kernel.org,
-	torvalds@linux-foundation.org, akpm@linux-foundation.org,
-	alan@lxorguk.ukuu.org.uk, Dave Wysochanski <dwysocha@redhat.com>,
-	Peter Rajnoha <prajnoha@redhat.com>
-References: <20100313001618.GA9811@kroah.com> <20100313001515.103664129@kvm.kroah.org> <20100322184314.GA7534@redhat.com>
+	id S1753224Ab0CVS4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:56:07 -0400
+Date: Mon, 22 Mar 2010 18:55:36 GMT
+From: tip-bot for Masami Hiramatsu <mhiramat@redhat.com>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, tglx@linutronix.de, mhiramat@redhat.com,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+       mhiramat@redhat.com, mingo@elte.hu
+In-Reply-To: <1269274229-20442-3-git-send-email-acme@infradead.org>
+References: <1269274229-20442-3-git-send-email-acme@infradead.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf probe: Add NO_DWARF make option
+Message-ID: <tip-ca721e45b39209415d2288dbac3667b26d9d1def@git.kernel.org>
+Git-Commit-ID: ca721e45b39209415d2288dbac3667b26d9d1def
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100322184314.GA7534@redhat.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 22 Mar 2010 18:55:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:43:17PM -0400, Mike Snitzer wrote:
-> The following upstream dm-ioctl patch also needs to go to stable now
+Commit-ID:  ca721e45b39209415d2288dbac3667b26d9d1def
+Gitweb:     http://git.kernel.org/tip/ca721e45b39209415d2288dbac3667b26d9d1def
+Author:     Masami Hiramatsu <mhiramat@redhat.com>
+AuthorDate: Mon, 22 Mar 2010 13:10:27 -0300
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 22 Mar 2010 18:47:35 +0100
+
+perf probe: Add NO_DWARF make option
+
+Add NO_DWARF make option for testing build without libdw.
+
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1269274229-20442-3-git-send-email-acme@infradead.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ tools/perf/Makefile |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index c991818..6903645 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -150,6 +150,8 @@ all::
+ # Define LDFLAGS=-static to build a static binary.
+ #
+ # Define EXTRA_CFLAGS=-m64 or EXTRA_CFLAGS=-m32 as appropriate for cross-builds.
++#
++# Define NO_DWARF if you do not want debug-info analysis feature at all.
  
-Ack.
-
-This is for the benefit of systems that have switched over to using udev
-rules to manage dm devices (instead of dm/lvm2 code).  The userspace
-code that issued the ioctl needs to be told whether or not a uevent was
-issued so that it knows whether or not there is udev processing to wait
-for.
-
-Alasdair
-
+ PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN
+@@ -507,10 +509,12 @@ endif
+ ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; echo 'int main(void) { Dwarf *dbg; dbg = dwarf_begin(0, DWARF_C_READ); return (long)dbg; }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -I/usr/include/elfutils -ldw -lelf -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+ 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
+ else
++ifndef NO_DWARF
+ 	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
+ 	EXTLIBS += -lelf -ldw
+ 	LIB_OBJS += util/probe-finder.o
+ endif
++endif
+ 
+ ifneq ($(shell sh -c "(echo '\#include <newt.h>'; echo 'int main(void) { newtInit(); newtCls(); return newtFinished(); }') | $(CC) -x c - $(ALL_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -lnewt -o $(BITBUCKET) $(ALL_LDFLAGS) $(EXTLIBS) "$(QUIET_STDERR)" && echo y"), y)
+ 	msg := $(warning newt not found, disables TUI support. Please install newt-devel or libnewt-dev);
