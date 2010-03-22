@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0CVCMa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Mar 2010 22:12:30 -0400
-Received: from thunk.org ([69.25.196.29]:51228 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753716Ab0CVCMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Mar 2010 22:12:20 -0400
-Date: Sun, 21 Mar 2010 20:20:50 -0400
-From: tytso@mit.edu
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: linux-ext4@vger.kernel.org, adilger@sun.com,
-       Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext4: Fix coding style in fs/ext4/move_extent.c
-Message-ID: <20100322002050.GA11560@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Steven Liu <lingjiujianke@gmail.com>,
-	linux-ext4@vger.kernel.org, adilger@sun.com,
-	Stefan Richter <stefanr@s5r6.in-berlin.de>,
-	linux-kernel@vger.kernel.org
-References: <bd0d95d71003170312s10fd8680xcbea67cc8d681296@mail.gmail.com>
+	id S1753663Ab0CVC2e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Mar 2010 22:28:34 -0400
+Received: from mail-iw0-f182.google.com ([209.85.223.182]:65087 "EHLO
+	mail-iw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab0CVC2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Mar 2010 22:28:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=tq7QIzaORCV26fOaF/8mUyvI5VrmVs0rVC+ACTeiE0G98llwGte9MJGLTD5S/gnK+S
+         gjImDbr8elbNjRorRQh0STbbq91S2oJOJiFF3v1Wv7GglsyCQmVM/Aa2XmQKhtsOjaSp
+         Caq4ozle7CsW2UQ9AcWhAGLugsnDx+jWuSh0E=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bd0d95d71003170312s10fd8680xcbea67cc8d681296@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+Date: Sun, 21 Mar 2010 19:28:32 -0700
+Message-ID: <9a158e2e1003211928y37d3bbfnac068f200128ddb6@mail.gmail.com>
+Subject: SysV IPC message queues
+From: Kyle Hubert <khubert@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 17, 2010 at 06:12:14PM +0800, Steven Liu wrote:
-> fix a code style in fs/ext4/move_extent.c
-> 
-> Signed-off-by: LiuQi <lingjiujianke@gmail.com>
+Hi, I recently found myself using SysV IPC message queues in a Linux
+specific application. However, I have one concern, I'm using
+IPC_PRIVATE for the key to instantiate the message queue (then doing
+pthread_creates with the open file descriptor accessed from children
+threads).
 
-I've added this to the ext4 patch queue with the following changelog
-description:
+Anyways, upon reception of signals, the message queue lingers around
+taking up memory. I wouldn't mind this if I was using a key_t which I
+could use to reopen the message queue at a later instantiation.
+However, IPC_PRIVATE just grabs an available queue, and I don't have
+access to the key, so I can't exactly open and remove it later. It's
+my opinion that IPC_PRIVATE should cause the message queue to get
+destroyed when all the open file descriptors are closed, not solely
+when msgctl is used to remove it. Also, I don't want to capture
+signals, since that's a slippery slope and SIGKILL will still leak
+message queues. I also don't think ipcs/ipcrm are long term solutions,
+since I'm handing the library off as an abstraction.
 
-ext4: Fix coding style in fs/ext4/move_extent.c
+Would it be worth it to generate a patch to the Linux kernel to add
+this functionality? Or, is there an undocumented ioctl I can call to
+set that feature on?
 
-From: Steven Liu <lingjiujianke@gmail.com>
+IE: IPC_PRIVATE message queues should be freed when ref count drops to zero.
 
-Making sure ee_block is initialized to zero to prevent gcc from
-kvetching.  It's harmless (although it's not obvious that it's
-harmless) from code inspection:
+Thank you very much for your time,
 
-fs/ext4/move_extent.c:478: warning: 'start_ext.ee_block' may be used
-uninitialized in this function
-
-Thanks to Stefan Richter for first bringing this to the attention of
-linux-ext4@vger.kernel.org.
-
-Signed-off-by: LiuQi <lingjiujianke@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>
-
-						- Ted
-
+-Kyle Hubert
