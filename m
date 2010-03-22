@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab0CVNFv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 09:05:51 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:48431 "EHLO mx2.mail.elte.hu"
+	id S1754659Ab0CVNGY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:06:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753909Ab0CVNFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 09:05:48 -0400
-Date: Mon, 22 Mar 2010 14:05:30 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Paul Mackerras <paulus@samba.org>
-Cc: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       benh@kernel.crashing.org, tglx@linutronix.de, hpa@zytor.com,
-       jbarnes@virtuousgeek.org, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.c
-Message-ID: <20100322130530.GC12475@elte.hu>
-References: <4BA6EA62.1030603@kernel.org>
- <20100321.210023.209981130.davem@davemloft.net>
- <4BA6F1F6.3070102@kernel.org>
- <20100321.213350.176660494.davem@davemloft.net>
- <20100322092809.GA20607@elte.hu>
- <20100322113026.GA11526@brick.ozlabs.ibm.com>
-MIME-Version: 1.0
+	id S1753581Ab0CVNGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:06:22 -0400
+Date: Mon, 22 Mar 2010 13:05:13 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Avi Kivity <avi@redhat.com>,
+       Antoine Martin <antoine@nagafix.co.uk>,
+       Olivier Galibert <galibert@pobox.com>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Message-ID: <20100322130513.GJ21874@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <4BA67F12.6030501@nagafix.co.uk> <4BA68063.2050800@redhat.com> <4BA68234.1060804@nagafix.co.uk> <4BA68997.60406@redhat.com> <20100321212009.GE30194@elte.hu> <4BA70F9A.8030304@redhat.com> <20100322114824.GF3483@elte.hu> <84144f021003220531p391975f2p5a2e0cfd3a2af6d@mail.gmail.com> <20100322123726.GH21874@redhat.com> <20100322125440.GB12475@elte.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322113026.GA11526@brick.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100322125440.GB12475@elte.hu>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 22, 2010 at 01:54:40PM +0100, Ingo Molnar wrote:
+> 
+> * Daniel P. Berrange <berrange@redhat.com> wrote:
+> > 
+> > FYI, for offline guests, you can use libguestfs[1] to access & change files 
+> > inside the guest, and read-only access to running guests files. It provides 
+> > access via a interactive shell, APIs in all major languages, and also has a 
+> > FUSE mdule to expose it directly in the host VFS.  It could probably be made 
+> > to work read-write for running guests too if its agent were installed inside 
+> > the guest & leverage the new Virtio-Serial channel for comms (avoiding any 
+> > network setup requirements).
+> > 
+> > Regards,
+> > Daniel
+> > 
+> > [1] http://libguestfs.org/
+> 
+> Yes, this is the kind of functionality i'm suggesting.
+> 
+> I'd suggest a different implementation for live guests: to drive this from 
+> within the live guest side of KVM, i.e. basically a paravirt driver for 
+> guestfs. You'd pass file API guests to the guest directly, via the KVM ioctl 
+> or so - and get responses from the guest.
+> 
+> That will give true read-write access and completely coherent (and still 
+> transparent) VFS integration, with no host-side knowledge needed for the 
+> guest's low level (raw) filesystem structure. That's a big advantage.
+> 
+> Yes, it needs an 'aware' guest kernel - but that is a one-off transition 
+> overhead whose cost is zero in the long run. (i.e. all KVM kernels beyond a 
+> given version would have this ability - otherwise it's guest side distribution 
+> transparent)
+> 
+> Even 'offline' read-only access could be implemented by booting a minimal 
+> kernel via qemu -kernel and using a 'ro' boot option. That way you could 
+> eliminate all lowlevel filesystem knowledge from libguestfs. You could run 
+> ext4 or btrfs guest filesystems and FAT ones as well - with no restriction.
+> 
+> This would allow 'offline' access to Windows images as well: a FAT or ntfs 
+> enabled mini-kernel could be booted in read-only mode.
 
-* Paul Mackerras <paulus@samba.org> wrote:
+This is close to the way libguestfs already works. It boots QEMU/KVM pointing
+to a minimal stripped down appliance linux OS image, containing a small agent
+it talks to over some form of vmchannel/serial/virtio-serial device. Thus the
+kernel in the appliance it runs is the only thing that needs to know about the
+filesystem/lvm/dm on-disk formats - libguestfs definitely does not want to be
+duplicating this detailed knowledge of on disk format itself. It is doing
+full read-write access to the guest filesystem in offline mode - one of the
+major use cases is disaster recovery from a unbootable guest OS image.
 
-> And I don't see the point of moving the x86 e820 stuff into the kernel 
-> directory. [...]
-
-I dont see the point of that either - that is a mistake. e820 is an x86 bios 
-call and we shouldnt name a generic mechanism after that. e820 is absolutely 
-messy and has no place anywhere beyond x86.
-
-The main technical argument i see is 'early_res versus LMB'. Even there i'd 
-prefer LMB from a technical quality POV.
-
-> Well I personally don't mind if x86 uses early_res or whatever other code in 
-> arch/x86 to handle the problems that arise from deficient firmware.  I just 
-> don't see any value in converting powerpc or sparc64 over to using ~2000 
-> lines of early_res/fw_memmap code where the existing ~500 lines of lmb code 
-> is working just fine.
-
-Lets put it this way then: do you see any point in PowerPC making use of a 10+ 
-million lines of code kernel that is being mainly (80%+) financed, developed, 
-tested and deployed by people who care about x86 mostly?
-
-If yes then it seems like a pretty damn good deal to me for PowerPC to go 
-beyond its narrow short-term self-interest and work towards generalizations 
-more actively, and even consider touching its 500 lines of lmb code ...
-
-I dont know how many times we've accomodated for non-x86 architectures in 
-various pieces of kernel code.
-
-Obviously if there's bloat affecting PowerPC then that can be addressed via 
-technical measures. But we really shouldnt leave the slightly incompatible 
-early allocators in place. (we shouldnt have let them get created in the first 
-place, but that is water down the bridge.)
-
-Thanks,
-
-	Ingo
+Regards,
+Daniel
+-- 
+|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
+|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
+|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
+|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
