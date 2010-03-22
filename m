@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0CVVBt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:01:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:53938 "EHLO gate.crashing.org"
+	id S1755580Ab0CVVB7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:01:59 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36347 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab0CVVBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:01:47 -0400
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from
- e820.c to fw_memmap.c
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       tglx@linutronix.de, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <20100322092809.GA20607@elte.hu>
-References: <4BA6EA62.1030603@kernel.org>
-	 <20100321.210023.209981130.davem@davemloft.net>
-	 <4BA6F1F6.3070102@kernel.org>
-	 <20100321.213350.176660494.davem@davemloft.net>
-	 <20100322092809.GA20607@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 08:01:23 +1100
-Message-ID: <1269291683.8599.79.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1755189Ab0CVVB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 17:01:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Bugme-new] [Bug 15551] New: wifi doesn't work after resume from s2ram on ThinkPad T61
+Date: Mon, 22 Mar 2010 22:04:47 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+       alex.vizor@gmail.com
+References: <bug-15551-10286@http.bugzilla.kernel.org/> <20100322125656.24ce2c11.akpm@linux-foundation.org>
+In-Reply-To: <20100322125656.24ce2c11.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003222204.47169.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-22 at 10:28 +0100, Ingo Molnar wrote:
-> Those early_res patches were posted all over on lkml, it was literally 
-> hundreds of difficult patches, and now, months down the line, after we've 
-> tested and upstreamed it (with many nasty regressions fixed on x86 during the 
-> development of it) you come with a rigid "do it some other way, convert all of 
-> x86 over again or else" position.
+On Monday 22 March 2010, Andrew Morton wrote:
+> On Tue, 16 Mar 2010 22:03:53 GMT
+> bugzilla-daemon@bugzilla.kernel.org wrote:
+> 
+> > http://bugzilla.kernel.org/show_bug.cgi?id=15551
+> 
+> This'll be a post-2.6.33 regression.
+> 
+> >            Summary: wifi doesn't work after resume from s2ram on ThinkPad
+> >                     T61
+> >            Product: Networking
+> >            Version: 2.5
+> >     Kernel Version: 2.6.34-rc1
+> >           Platform: All
+> >         OS/Version: Linux
+> >               Tree: Mainline
+> >             Status: NEW
+> >           Severity: normal
+> >           Priority: P1
+> >          Component: Wireless
+> >         AssignedTo: networking_wireless@kernel-bugs.osdl.org
+> >         ReportedBy: alex.vizor@gmail.com
+> >         Regression: Yes
+> > 
+> > 
+> > Created an attachment (id=25561)
+> >  --> (http://bugzilla.kernel.org/attachment.cgi?id=25561)
+> > dmesg
+> > 
+> > Hi. I caught this after several resumes from s2ram, from s2disk it works ok.
+> > 
+> > I attached my dmesg. Please inform me if I can do the report more useful.
+> > 
+> 
+> This:
+> 
+> : [22456.252166] s2ram: page allocation failure. order:4, mode:0x4010
+> : [22456.252172] Pid: 23558, comm: s2ram Not tainted 2.6.34-rc1 #1
+> : [22456.252175] Call Trace:
+> : [22456.252187]  [<ffffffff810b8dc9>] __alloc_pages_nodemask+0x565/0x60c
+> : [22456.252195]  [<ffffffff810de879>] alloc_pages_current+0x90/0x99
+> : [22456.252201]  [<ffffffff810b7a9e>] __get_free_pages+0x9/0x46
+> : [22456.252221]  [<ffffffffa03b4bdd>] iwl_tx_queue_init+0xf2/0x2a1 [iwlcore]
+> : [22456.252227]  [<ffffffffa03b4f12>] iwl_txq_ctx_reset+0x186/0x20c [iwlcore]
+> : [22456.252233]  [<ffffffffa03ae41c>] iwl_hw_nic_init+0x124/0x139 [iwlcore]
+> 
+> Rafael, this is fallout from 452aa6999e6703ffbddd7f6ea124d3968915f3e3
+> ("mm/pm: force GFP_NOIO during suspend/hibernation and resume"). 
+> Wireless was previously doing this stupidly-large allocation with
+> GFP_KERNEL.  But I think the above change is what flipped it to
+> __GFP_WAIT, which caused the page allocator to go into lame-and-sucky
+> mode, so the allocation failed.
 
-There's an easy solution here. Leave that gunk in arch/x86 where it
-belongs and if you want to unify things a bit, then do it at the -API-
-level only, and leave the implementation where it is.
+Well, technically the problem is in the driver.  It shouldn't do anything like
+this during suspend/resume.  I'll try to figure out how to fix this at minimal cost.
 
-> I really wish non-x86 architectures apprecitated (and helped) the core kernel 
-> work x86 is doing, because it is subsidizing non-x86 architectures all the 
-> time. 
+> (btw, that was a bug - 452aa6999e6703ffbddd7f6ea124d3968915f3e3 should
+> have cleared the __GFP_WAIT bit too).
 
-I'm not even going to bother replying to that one
+Hmm, should it?  That would make all allocations GFP_ATOMIC and is this what
+we really want?
 
-Ben.
-
-
-
+Rafael
