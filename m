@@ -1,86 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0CVRjP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 13:39:15 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1997 "EHLO MMS3.broadcom.com"
+	id S1755487Ab0CVRji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 13:39:38 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48319 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab0CVRjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 13:39:14 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-From: "Hugh Daschbach" <hdasch@broadcom.com>
-To: "Alan Stern" <stern@rowland.harvard.edu>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org
-cc: "Bhanu Gollapudi" <bprakash@broadcom.com>,
-       "Hugh Daschbach" <hdasch@broadcom.com>
-Subject: [PATCH] Protect device shutdown from hot unplug events.
-Date: Mon, 22 Mar 2010 10:36:37 -0700
-Message-ID: <1269279397-9884-1-git-send-email-hdasch@broadcom.com>
-X-Mailer: git-send-email 1.6.6
+	id S1754984Ab0CVRjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 13:39:36 -0400
+Date: Mon, 22 Mar 2010 18:39:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Frank Ch. Eigler" <fche@redhat.com>, Joerg Roedel <joro@8bytes.org>,
+       Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+Message-ID: <20100322173923.GA25498@elte.hu>
+References: <20100321191742.GD25922@elte.hu>
+ <4BA67B2F.4030101@redhat.com>
+ <20100321203121.GA30194@elte.hu>
+ <20100322111040.GL13108@8bytes.org>
+ <20100322122228.GH3483@elte.hu>
+ <20100322134633.GD1940@8bytes.org>
+ <20100322163215.GC18796@elte.hu>
+ <y0mmxy0wa1r.fsf@fche.csb>
+ <84144f021003221027t1a3e7d6ft64612654c5e50da@mail.gmail.com>
+ <4BA7A9AF.3010806@redhat.com>
 MIME-Version: 1.0
-X-WSS-ID: 67B974A531G67495942-01-01
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA7A9AF.3010806@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While device_shutdown() walks through devices_kset to shutdown all
-devices, device unplug events may race to shutdown individual devices.
-Specifically, sd_shutdown(), on behalf of fc_starget_delete(), has
-been observed deleting devices during device_shutdown()'s list
-traversal.  So we factor out list_for_each_entry_safe_reverse(...) in
-favor of while (!list_empty(...)).
 
-Signed-off-by: Hugh Daschbach <hdasch@broadcom.com>
----
- drivers/base/core.c |   25 ++++++++++++++++++++++---
- 1 files changed, 22 insertions(+), 3 deletions(-)
+* Avi Kivity <avi@redhat.com> wrote:
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index ef55df3..ac4c09a 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1729,10 +1729,25 @@ EXPORT_SYMBOL_GPL(device_move);
-  */
- void device_shutdown(void)
- {
--	struct device *dev, *devn;
-+	struct device *dev;
-+
-+	spin_lock(&devices_kset->list_lock);
-+	/* 
-+	 * Walk the devices list backward, shutting down each in turn.
-+	 * Beware that device unplug events may also start pulling
-+	 * devices offline, even as the system is shutting down.
-+	 */
-+	while (!list_empty(&devices_kset->list)) {
-+		dev = list_entry(devices_kset->list.prev, struct device,
-+				kobj.entry);
-+		get_device(dev);
-+		/*
-+		 * Make sure the device is off the kset list, in the
-+		 * event that dev->*->shutdown() doesn't remove it.
-+		 */
-+		list_del_init(&dev->kobj.entry);
-+		spin_unlock(&devices_kset->list_lock);
- 
--	list_for_each_entry_safe_reverse(dev, devn, &devices_kset->list,
--				kobj.entry) {
- 		if (dev->bus && dev->bus->shutdown) {
- 			dev_dbg(dev, "shutdown\n");
- 			dev->bus->shutdown(dev);
-@@ -1740,6 +1755,10 @@ void device_shutdown(void)
- 			dev_dbg(dev, "shutdown\n");
- 			dev->driver->shutdown(dev);
- 		}
-+		put_device(dev);
-+
-+		spin_lock(&devices_kset->list_lock);
- 	}
-+	spin_unlock(&devices_kset->list_lock);
- 	async_synchronize_full();
- }
--- 
-1.7.0.rc0.48.gdace5
+> On 03/22/2010 07:27 PM, Pekka Enberg wrote:
+> >
+> > It's kinda funny to see people argue that having an external repository is 
+> > not a problem and that it's not a big deal if building something from the 
+> > repository is slightly painful as long as it doesn't require a PhD when we 
+> > have _real world_ experience that it _does_ limit developer base in some 
+> > cases. Whether or not that applies to kvm remains to be seen but I've yet 
+> > to see a convincing argument why it doesn't.
+> 
+> qemu has non-Linux developers.  Not all of their contributions are relevant 
+> to kvm but some are.  If we pull qemu into tools/kvm, we lose them.
 
+Qemu had very few developers before KVM made use of it - i know it because i 
+followed the project prior KVM.
 
+So whatever development activitity Qemu has today, it's 99% [WAG] attributable 
+to KVM. It might have non-Linux contributors, but they wouldnt be there if it 
+wasnt for all the Linux contributors ...
+
+Furthermore, those contributors wouldnt have to leave - they could simply use 
+a different Git URI ...
+
+	Ingo
