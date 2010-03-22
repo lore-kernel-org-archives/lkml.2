@@ -1,62 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0CVSG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:06:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56344 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754859Ab0CVSG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:06:57 -0400
-Message-ID: <4BA7B1AE.6050500@redhat.com>
-Date: Mon, 22 Mar 2010 20:06:38 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1755623Ab0CVSHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:07:46 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:54656 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab0CVSHp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:07:45 -0400
+Date: Mon, 22 Mar 2010 13:07:37 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <877hp4i76d.fsf@basil.nowhere.org>
+Message-ID: <alpine.DEB.2.00.1003221300180.17230@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home>
+ <877hp4i76d.fsf@basil.nowhere.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: Ingo Molnar <mingo@elte.hu>, Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- 	project
-References: <20100321205531.GC30194@elte.hu> <20100322111411.GC3483@elte.hu>	 <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu>	 <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu>	 <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu>	 <4BA796DF.7090005@redhat.com> <4BA797C9.2030703@redhat.com> <84144f021003220940x25e40624pb0b86f62b79fd707@mail.gmail.com>
-In-Reply-To: <84144f021003220940x25e40624pb0b86f62b79fd707@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 06:40 PM, Pekka Enberg wrote:
-> On Mon, Mar 22, 2010 at 6:16 PM, Avi Kivity<avi@redhat.com>  wrote:
->    
->>> You simply kept ignoring me when I said that if something can be kept out
->>> of the kernel without impacting performance, it should be.  I don't want
->>> emergency patches closing some security hole or oops in a kernel symbol
->>> server.
->>>        
->> Or rather, explained how I am a wicked microkernelist.  The herring were out
->> in force today.
->>      
-> Well, if it's not being a "wicked microkernelist" then what is it?
->    
+On Mon, 22 Mar 2010, Andi Kleen wrote:
 
-I know I'm bad.
+> > What I have right now is:
+> >
+> > 1. Opening a socket
+>
+> >
+> >         A. Native PGM
+> >
+> >                 fd = socket(AF_INET, SOCK_RDM, IPPROTO_PGM)
+>
+> RDM = Reliable ? Multicast ?
 
-> Performance is hardly the only motivation to put things into the
-> kernel. Think kernel mode-setting and devtmpfs (with the ironic twist
-> of original devfs being removed from the kernel) here, for example.
->    
+RDM is Reliable Datagram Multicast I believe. I'd rather have SOCK_PGM if
+I could choose.
 
-Motivations include privileged device access, needing to access physical 
-memory, security, and keeping the userspace interface sane.  There are 
-others.  I don't think any of them hold here.
+>
+> >         B. PGM over UDP
+> >
+> >                 fd = socket(AF_INET, SOCK_RDM, IPPROTO_UDP)
+> >
+> >         C. PGM over SHM (?)
+> >
+> >                 fd = socket(AF_UNIX, SOCK_RDM, 0)
+>
+> Not sure how that should work.
 
--- 
-error compiling committee.c: too many arguments to function
+Multiple processes would communicate via shm segments. Maybe defer to the
+future but its an important operation mode as the systems grow bigger and bigger.
+SHM segment would have to contain some sort of ring buffer that the
+receivers could tap into. But that mode has not really been thought
+through.
 
+> > 3. Sending and receiving
+> >
+> >         Use the usual socket read and write operations and the various flavors of waiting
+> >         for a packet via select, poll, epoll etc.
+> >
+> >         Packet sizes are determined by the number of  packets in a single sendmsg() unless
+>
+> Number of bytes surely?
+
+Sorry yes you are right.
+
+> >         overridden by the RM_SET_MESSAGE_BOUNDARY socket option.
+>
+> That's unusual to have such a option (except the MTU). What is it good for?
+
+No idea why it was implemented. It can be used to use send() for portions
+of a message. Triggers the send() only when all bytes have been provided.
+Probably necessary if one wants to have very long (megabytes) messages.
+Esoteric and likely not going to be in a first release.
+
+> > 4.      Transmitter Socket Options
+> >
+> >
+> >         A. Setting the window size / rate.
+> >
+> >                 struct pgm_send_window x;
+> >                 x.RateKbitsPerSec = 56;
+> >                 x.WindowSizeInMsecs = 60000;
+> >                 x.WindowSizeinBytes = 10000000;
+> >
+> >                 setsockopt(fd, SOCK_RDM, RM_RATE_WINDOW_SIZE, &x, sizeof(x));
+> >
+> >                 Default is sending at 56Kbps with a buffer of 10 Megabytes and buffering for a minute.
+>
+> That's a very large buffer for a socket. It would be better to use the usual
+> auto shrinking/increasing mechanisms.
+
+Reliable multicast protocols have a defined time period / "reliabilty
+buffer" so that they can resend a message that was missed for a time
+period. It is customary to either specify a time period or define the size
+of the "reliability buffer".
+
+> >         B. FEC mode
+> >
+> >                 struct pgm_fec_info x;
+> >
+> >                 x.FECBlocksize = 255;
+> >                 x.FECProActivePackets = 0;
+> >                 x.FECGroupSize = 0;
+> >                 x.fFECOnDemandParityEnabled = 1;
+> >
+> >                 setsockopt(fd, SOCK_RDM, RM_FEC_MODE, &x, sizeof(x));
+>
+> Is that mode really needed?
+
+Never used it. I'd rather skip for now. Maybe later.
+
+>
+> > /* Socket API structures (established by M$DN) */
+> > struct pgm_receiver_stats {
+> >         u64     NumODataPacketsReceived;        /* Number of ODATA (original) sequences */
+>
+> It's difficult to maintain 64 bit counters on 32bit hosts on all targets.
+> But I guess it would be ok to only fill in 32bit in this case.
+
+32 bit counters have the awful habit of overflowing.
