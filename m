@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0CVIA6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:00:58 -0400
-Received: from mail-fx0-f215.google.com ([209.85.220.215]:61447 "EHLO
-	mail-fx0-f215.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753614Ab0CVIA4 convert rfc822-to-8bit (ORCPT
+	id S1754150Ab0CVILK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:11:10 -0400
+Received: from mail-px0-f184.google.com ([209.85.216.184]:33740 "EHLO
+	mail-px0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab0CVILI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:00:56 -0400
+	Mon, 22 Mar 2010 04:11:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Cl1hbrxr1WVq8ThEwwIJR89vEx38+UPOFUGQBM+4ub7I4en1BjAoU6KnWRABzSUtaL
-         /UBRmvfjYarel3eFkFurbCfGFv+tpJFwN8KTSiAmxdWEo3/oxpvhYF82kN7/uJEMBDzl
-         2ek77C4yP9eUzy5RdV33I3JTJ2cf6TFjqX1ho=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=a2Q0xWuRGjh5goM2LU28ZYHd7DPCDa3YV3QS3ik5OYKH6kjaKS2hL91nfX8LnHIhDS
+         IaSiC7um4CL+60/EJQFhLV4G3Q6EG7nfwNDZJjIvskaS8baznp5Yd1igHqqh+I1td1ow
+         OTlUZXUPi6jPkQ7JN30N3NVm1u8s9rQzSMGTk=
 MIME-Version: 1.0
-In-Reply-To: <20100322005610.5dfa70b1.akpm@linux-foundation.org>
-References: <20100322053937.GA17637@laptop>
-	 <20100322005610.5dfa70b1.akpm@linux-foundation.org>
-Date: Mon, 22 Mar 2010 10:00:54 +0200
-X-Google-Sender-Auth: e77e1b3ec8fe658e
-Message-ID: <84144f021003220100r29ee1ff2x11a66531e0104167@mail.gmail.com>
-Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nick Piggin <npiggin@suse.de>, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <87wrx5m1h3.fsf@pollan.anholt.net>
+References: <ho2jal$oqs$1@dough.gmane.org> <87wrx5m1h3.fsf@pollan.anholt.net>
+Date: Mon, 22 Mar 2010 09:11:06 +0100
+Message-ID: <bad735c81003220111y44bfb828vfd4c9fbbcabf3419@mail.gmail.com>
+Subject: Re: i915 lockup / extreme delay
+From: Karl Vogel <karl.vogel@gmail.com>
+To: Eric Anholt <eric@anholt.net>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 6:56 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon, 22 Mar 2010 16:39:37 +1100 Nick Piggin <npiggin@suse.de> wrote:
->
->> It's ugly and lazy that we do these default aops in case it has not
->> been filled in by the filesystem.
+On Mon, Mar 22, 2010 at 5:20 AM, Eric Anholt <eric@anholt.net> wrote:
+> On Sat, 20 Mar 2010 14:41:41 +0100, Karl Vogel <karl.vogel@gmail.com> wrote:
+>> The 'effect' is that only the mouse pointer works in the X server. The
+>> cpu usage on the laptop during the sluggishness is minimal. When I
+>> suspend the game with winedbg, the X server slowly becomes responsive again.
 >>
->> A NULL operation should always mean either: we don't support the
->> operation; we don't require any action; or a bug in the filesystem,
->> depending on the context.
->>
->> In practice, if we get rid of these fallbacks, it will be clearer
->> what operations are used by a given address_space_operations struct,
->> reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
->> rid of all the buffer_head knowledge from core mm and fs code.
+>> The output from latencytop seems to point to i915 being the culprit:
 >
-> I guess this is one way of waking people up.
->
-> What happens is that hundreds of bug reports land in my inbox and I get
-> to route them to various maintainers, most of whom don't exist, so
-> warnings keep on landing in my inbox.  Please send a mailing address for
-> my invoices.
->
-> It would be more practical, more successful and quicker to hunt down
-> the miscreants and send them rude emails.  Plus it would save you
-> money.
->
->> We could add a patch like this which spits out a recipe for how to fix
->> up filesystems and get them all converted quite easily.
->>
->> ...
->>
->> @@ -40,8 +40,14 @@ void do_invalidatepage(struct page *page
->>       void (*invalidatepage)(struct page *, unsigned long);
->>       invalidatepage = page->mapping->a_ops->invalidatepage;
->>  #ifdef CONFIG_BLOCK
->> -     if (!invalidatepage)
->> +     if (!invalidatepage) {
->> +             static bool warned = false;
->> +             if (!warned) {
->> +                     warned = true;
->> +                     print_symbol("address_space_operations %s missing invalidatepage method. Use block_invalidatepage.\n", (unsigned long)page->mapping->a_ops);
->> +             }
->>               invalidatepage = block_invalidatepage;
->> +     }
->
-> erk, I realise 80 cols can be a pain, but 165 cols is just out of
-> bounds.  Why not
->
->        /* this fs should use block_invalidatepage() */
->        WARN_ON_ONCE(!invalidatepage);
+> If there's some code doing glFlush()es, it's probably that code at
+> fault.  You don't need to do that unless you're doing frontbuffer
+> rendering, and if you're doing frontbuffer rendering you should really
+> be doing backbuffer rendering.  I don't see a kernel issue here.
 
-/me gets his paint bucket...
+That doesnt explain why the box completely locks up on 2.6.34-rc2
+though, where only a cold reboot works.
 
-How about
-
-    WARN_ONCE(!invalidatepage, "this fs should use block_invalidatepage()")
-
-                           Pekka
+It also seems a bit odd that 1 opengl application is able to entirely
+lockup user interaction of the X server, then again that might be more
+of an X issue than a kernel one.. or is it expected behaviour?
+(the only thing you can do is wiggle the pointer, nothing else.. no
+window selection, no window dragging, not even start new apps that
+open windows)
