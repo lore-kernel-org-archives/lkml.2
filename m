@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0CVNHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 09:07:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab0CVNHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 09:07:34 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] AFS: Potential null dereference
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: kernel-janitors@vger.kernel.org, linux-afs@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>,
-       David Howells <dhowells@redhat.com>
-Date: Mon, 22 Mar 2010 13:07:14 +0000
-Message-ID: <20100322130713.12914.76901.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754673Ab0CVNKT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 09:10:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33845 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319Ab0CVNKS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 09:10:18 -0400
+X-Authority-Analysis: v=1.0 c=1 a=n-FQAFS0Ch4A:10 a=IkcTkHD0fZMA:10 a=YmF0sY5Y9OpMz9oW8GgA:9 a=KkJfneLSRqWszuCLCHcIrfWbwlwA:4 a=QEXdDO2ut3YA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCHv2 0/4] tracing: function graph output for
+ preempt/irqs-off tracers
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100322084825.GC1851@jolsa.sde>
+References: <1268207470-2880-1-git-send-email-jolsa@redhat.com>
+	 <20100322084825.GC1851@jolsa.sde>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Mar 2010 09:10:16 -0400
+Message-ID: <1269263416.5363.212.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
+On Mon, 2010-03-22 at 09:48 +0100, Jiri Olsa wrote:
+> On Wed, Mar 10, 2010 at 08:51:06AM +0100, Jiri Olsa wrote:
 
-It seems clear from the surrounding code that xpermits is allowed to be NULL
-here.
+> 
+> hi,
+> 
+> any feedback for the new version?
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Sorry, I got backed up on other things. This was on my todo list, I'll
+see if I can take a look at it today.
 
- fs/afs/security.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+-- Steve
 
-diff --git a/fs/afs/security.c b/fs/afs/security.c
-index 3ef5043..bb4ed14 100644
---- a/fs/afs/security.c
-+++ b/fs/afs/security.c
-@@ -189,8 +189,9 @@ void afs_cache_permit(struct afs_vnode *vnode, struct key *key, long acl_order)
- 	if (!permits)
- 		goto out_unlock;
- 
--	memcpy(permits->permits, xpermits->permits,
--	       count * sizeof(struct afs_permit));
-+	if (xpermits)
-+		memcpy(permits->permits, xpermits->permits,
-+			count * sizeof(struct afs_permit));
- 
- 	_debug("key %x access %x",
- 	       key_serial(key), vnode->status.caller_access);
+> 
+> thanks,
+> jirka
+
 
