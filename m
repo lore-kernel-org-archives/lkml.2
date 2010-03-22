@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab0CVHqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 03:46:32 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58955 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753512Ab0CVHqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 03:46:30 -0400
-Date: Mon, 22 Mar 2010 07:45:51 GMT
-From: tip-bot for Colin Ian King <colin.king@canonical.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
-       colin.king@canonical.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       eric.dumazet@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
-       colin.king@canonical.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1268994482.1798.6.camel@lenovo>
-References: <1268994482.1798.6.camel@lenovo>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] softlockup: Stop spurious softlockup messages due to overflow
-Message-ID: <tip-8c2eb4805d422bdbf60ba00ff233c794d23c3c00@git.kernel.org>
-Git-Commit-ID: 8c2eb4805d422bdbf60ba00ff233c794d23c3c00
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 22 Mar 2010 07:45:56 +0000 (UTC)
+	id S1753684Ab0CVH5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 03:57:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59506 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750997Ab0CVH5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 03:57:08 -0400
+Date: Mon, 22 Mar 2010 00:56:10 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc][patch] mm, fs: warn on missing address space operations
+Message-Id: <20100322005610.5dfa70b1.akpm@linux-foundation.org>
+In-Reply-To: <20100322053937.GA17637@laptop>
+References: <20100322053937.GA17637@laptop>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c2eb4805d422bdbf60ba00ff233c794d23c3c00
-Gitweb:     http://git.kernel.org/tip/8c2eb4805d422bdbf60ba00ff233c794d23c3c00
-Author:     Colin Ian King <colin.king@canonical.com>
-AuthorDate: Fri, 19 Mar 2010 10:28:02 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 21 Mar 2010 19:30:13 +0100
+On Mon, 22 Mar 2010 16:39:37 +1100 Nick Piggin <npiggin@suse.de> wrote:
 
-softlockup: Stop spurious softlockup messages due to overflow
+> It's ugly and lazy that we do these default aops in case it has not
+> been filled in by the filesystem.
+> 
+> A NULL operation should always mean either: we don't support the
+> operation; we don't require any action; or a bug in the filesystem,
+> depending on the context.
+> 
+> In practice, if we get rid of these fallbacks, it will be clearer
+> what operations are used by a given address_space_operations struct,
+> reduce branches, reduce #if BLOCK ifdefs, and should allow us to get
+> rid of all the buffer_head knowledge from core mm and fs code.
 
-Ensure additions on touch_ts do not overflow.  This can occur
-when the top 32 bits of the TSC reach 0xffffffff causing
-additions to touch_ts to overflow and this in turn generates
-spurious softlockup warnings.
+I guess this is one way of waking people up.
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: <stable@kernel.org>
-LKML-Reference: <1268994482.1798.6.camel@lenovo>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/softlockup.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+What happens is that hundreds of bug reports land in my inbox and I get
+to route them to various maintainers, most of whom don't exist, so
+warnings keep on landing in my inbox.  Please send a mailing address for
+my invoices.
 
-diff --git a/kernel/softlockup.c b/kernel/softlockup.c
-index 0d4c789..4b493f6 100644
---- a/kernel/softlockup.c
-+++ b/kernel/softlockup.c
-@@ -155,11 +155,11 @@ void softlockup_tick(void)
- 	 * Wake up the high-prio watchdog task twice per
- 	 * threshold timespan.
- 	 */
--	if (now > touch_ts + softlockup_thresh/2)
-+	if (time_after(now - softlockup_thresh/2, touch_ts))
- 		wake_up_process(per_cpu(softlockup_watchdog, this_cpu));
- 
- 	/* Warn about unreasonable delays: */
--	if (now <= (touch_ts + softlockup_thresh))
-+	if (time_before_eq(now - softlockup_thresh, touch_ts))
- 		return;
- 
- 	per_cpu(softlockup_print_ts, this_cpu) = touch_ts;
+It would be more practical, more successful and quicker to hunt down
+the miscreants and send them rude emails.  Plus it would save you
+money.
+
+> We could add a patch like this which spits out a recipe for how to fix
+> up filesystems and get them all converted quite easily.
+> 
+> ...
+>
+> @@ -40,8 +40,14 @@ void do_invalidatepage(struct page *page
+>  	void (*invalidatepage)(struct page *, unsigned long);
+>  	invalidatepage = page->mapping->a_ops->invalidatepage;
+>  #ifdef CONFIG_BLOCK
+> -	if (!invalidatepage)
+> +	if (!invalidatepage) {
+> +		static bool warned = false;
+> +		if (!warned) {
+> +			warned = true;
+> +			print_symbol("address_space_operations %s missing invalidatepage method. Use block_invalidatepage.\n", (unsigned long)page->mapping->a_ops);
+> +		}
+>  		invalidatepage = block_invalidatepage;
+> +	}
+
+erk, I realise 80 cols can be a pain, but 165 cols is just out of
+bounds.  Why not
+
+	/* this fs should use block_invalidatepage() */
+	WARN_ON_ONCE(!invalidatepage);
+
+
