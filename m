@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0CVWPf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 18:15:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56705 "EHLO hera.kernel.org"
+	id S1756580Ab0CVWRt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 18:17:49 -0400
+Received: from waste.org ([173.11.57.241]:36564 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755517Ab0CVWPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 18:15:33 -0400
-Message-ID: <4BA7EBBA.5000103@kernel.org>
-Date: Mon, 22 Mar 2010 15:14:18 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, tglx@linutronix.de,
-       hpa@zytor.com, jbarnes@virtuousgeek.org, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.c
-References: <4BA6EA62.1030603@kernel.org>	 <20100321.210023.209981130.davem@davemloft.net>	 <4BA6F1F6.3070102@kernel.org>	 <20100321.213350.176660494.davem@davemloft.net>	 <20100322092809.GA20607@elte.hu>	 <20100322113026.GA11526@brick.ozlabs.ibm.com>	 <20100322130530.GC12475@elte.hu> <1269291846.8599.81.camel@pasglop>	 <20100322212013.GB25254@elte.hu> <1269294769.8599.88.camel@pasglop>
-In-Reply-To: <1269294769.8599.88.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+	id S1755575Ab0CVWRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 18:17:48 -0400
+Subject: Re: [Patch] netconsole: do not depend on experimental
+From: Matt Mackall <mpm@selenic.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, David Miller <davem@davemloft.net>
+In-Reply-To: <20100322125919.GB4288@hmsreliant.think-freely.org>
+References: <20100322100305.5518.29500.sendpatchset@localhost.localdomain>
+	 <20100322125919.GB4288@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Mar 2010 17:17:43 -0500
+Message-ID: <1269296263.3552.5.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 02:52 PM, Benjamin Herrenschmidt wrote:
-> On Mon, 2010-03-22 at 22:20 +0100, Ingo Molnar wrote:
->>
->> So no arguments from me at all about the code quality aspects - i just wanted 
->> to highlight the huge amount of non-trivial work Yinghai has invested into 
->> this already, with little external help, and that if possible it would be nice 
->> to minimize the upsetting of related x86 code if possible. Please help him out 
->> with more specific suggestions about how the two memory allocation spaces 
->> could be unified best, to serve the needs of all these architectures - if you 
->> have some spare time. 
+On Mon, 2010-03-22 at 08:59 -0400, Neil Horman wrote:
+> On Mon, Mar 22, 2010 at 05:59:23AM -0400, Amerigo Wang wrote:
+> > 
+> > Nowadays, most distributions enable netconsole by default,
+> > including RHEL, Fedora, Debian, Arch, Opensuse. And
+> > we don't have any bug reports about it. So I think there
+> > is no need to mark it as experimental any more.
+> > 
+> > Cc: David S. Miller <davem@davemloft.net>
+> > Signed-off-by: WANG Cong <amwang@redhat.com>
+> > 
+> > ---
+> > diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+> > index 0ba5b8e..e3d6c52 100644
+> > --- a/drivers/net/Kconfig
+> > +++ b/drivers/net/Kconfig
+> > @@ -3252,15 +3252,14 @@ config NET_FC
+> >  	  "SCSI generic support".
+> >  
+> >  config NETCONSOLE
+> > -	tristate "Network console logging support (EXPERIMENTAL)"
+> > -	depends on EXPERIMENTAL
+> > +	tristate "Network console logging support"
+> >  	---help---
+> >  	If you want to log kernel messages over the network, enable this.
+> >  	See <file:Documentation/networking/netconsole.txt> for details.
+> >  
+> >  config NETCONSOLE_DYNAMIC
+> > -	bool "Dynamic reconfiguration of logging targets (EXPERIMENTAL)"
+> > -	depends on NETCONSOLE && SYSFS && EXPERIMENTAL
+> > +	bool "Dynamic reconfiguration of logging targets"
+> > +	depends on NETCONSOLE && SYSFS
+> >  	select CONFIGFS_FS
+> >  	help
+> >  	  This option enables the ability to dynamically reconfigure target
+> > --
 > 
-> Why not start by unifying the APIs to it, while keeping the
-> implementation in the arch for now ? That would be a good first step and
-> would give us a good idea of what kind of requirements all the archs
-> have since to some extent those requirements need to be represented in
-> this API.
+> Seems reasonable.  Netconsole seems pretty mature.
+> 
+> Acked-by: Neil Horman <nhorman@tuxdriver.com>
+
+Yeah, I'd forgotten that flag was even there.
+
+Acked-by: Matt Mackall <mpm@selenic.com>
+
+-- 
+http://selenic.com : development and support for Mercurial and Linux
 
 
-current early_res has
-
-reserve/free/find
-
-and don't have alloc, because it is equal to find + reserve.
-all the find related will subtract reserved area already.
-   and it use start/end (goal/limit) and it will honor goal.
-
-extern void reserve_early(u64 start, u64 end, char *name);
-extern void reserve_early_overlap_ok(u64 start, u64 end, char *name);
-extern void free_early(u64 start, u64 end);
-void free_early_partial(u64 start, u64 end);
-extern void early_res_to_bootmem(u64 start, u64 end);
-
-void reserve_early_without_check(u64 start, u64 end, char *name);
-u64 find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
-                         u64 size, u64 align);
-u64 find_early_area_size(u64 ei_start, u64 ei_last, u64 start,
-                         u64 *sizep, u64 align);
-u64 find_fw_memmap_area(u64 start, u64 end, u64 size, u64 align);
-u64 get_max_mapped(void);
-int get_free_all_memory_range(struct range **rangep, int nodeid);
- 
-lmd has:
-reserve/free/alloc
-and it does have lmb_find, but that doesn't subtract reserved area.
-
-also lmb_alloc doesn't take goal. and only have limit there.
-
-
-YH
