@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab0CVGEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 02:04:07 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:56573 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752060Ab0CVGEF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 02:04:05 -0400
-Date: Mon, 22 Mar 2010 06:03:43 +0000
-From: Marc Zyngier <maz@misterjones.org>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, <akpm@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, <joachim.eastwood@jotron.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 3/3] genirq: introduce IRQF_ALLOW_NESTED flag for
- request_irq()
-Message-ID: <20100322060343.3487e32c@taxman.wild-wind.fr.eu.org>
-In-Reply-To: <927ea285bd0c68934ddae1a47e44a9ba@localhost>
-References: <201003112209.o2BM91oQ013581@imap1.linux-foundation.org>
-	<alpine.LFD.2.00.1003132039110.22855@localhost.localdomain>
-	<927ea285bd0c68934ddae1a47e44a9ba@localhost>
-Organization: Metropolis -- Nowhere
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753905Ab0CVGLk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 02:11:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:54649 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751538Ab0CVGLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 02:11:38 -0400
+Message-ID: <4BA709AC.6070902@kernel.org>
+Date: Sun, 21 Mar 2010 23:09:48 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.c
+References: <1269155601-18247-1-git-send-email-yinghai@kernel.org>	 <1269155601-18247-7-git-send-email-yinghai@kernel.org>	 <1269225435.8599.70.camel@pasglop>  <4BA6EA62.1030603@kernel.org> <1269234723.8599.76.camel@pasglop>
+In-Reply-To: <1269234723.8599.76.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: maz@misterjones.org, tglx@linutronix.de, akpm@linux-foundation.org, mingo@elte.hu, joachim.eastwood@jotron.com, linux-kernel@vger.kernel.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010 09:36:59 +0100
-Marc Zyngier <maz@misterjones.org> wrote:
+On 03/21/2010 10:12 PM, Benjamin Herrenschmidt wrote:
+> It -may- well be that adapting x86 to lmb isn't a practical approach,
+> but if that was the case, then please justify why with precise technical
+> reasons, which we can discuss then in details and make a decision based
+> on that.
 
-> On Sat, 13 Mar 2010 20:56:19 +0100 (CET), Thomas Gleixner
-> <tglx@linutronix.de> wrote:
-> 
-> Hi Thomas,
-> 
-> > In general I have no objections, but one thing bothers me. We have no
-> > way to let a driver know whether it runs in a nested threaded context
-> > or in hard irq context. There might be (future) drivers which would be
-> > happy to know that to apply context dependent optimizations etc.
-> > 
-> > What about a new function which solves your problem and returns that
-> > information ? Something along the line:
-> > 
-> > int request_any_context_irq(....)
-> > {
-> > 	...
-> > 	if (desc->status & IRQ_NESTED_THREAD) {
-> > 	   	ret = request_threaded_irq();
-> > 		if (!ret)
-> > 			ret = IRQ_IS_NESTED;
-> > 
-> > 	} else {
-> > 		.....
-> > 			ret = IRQ_IS_NONTHREADED;
-> > 		else
-> > 			ret = IRQ_IS_THREADED;
-> > 
-> > 	}
-> > 	...
-> > 	return ret;
-> > }
-> > 
-> > You get the idea, right ?
-> > 
-> > It's a bit more code, but less magic and more flexible for further use
-> > cases.
-> 
-> What about the attached (sorry, webmail crap) patch? I deliberately left
-> IS_THREADED out of the picture, as I have the feeling that the caller has
-> to know if it really wants a threaded handler, and I couldn't see a way to
-> guess its intent.
-> 
-> Please note that this patch has only been compile-tested, as I'm traveling
-> for the rest of the week and don't have access to my boards.
-> 
-> Thanks,
-> 
->         M.
+1. lmb is merging region when you add one new reserved region. 
+early_res doesn't do that merge. so later it could figure wrong freeing.
+<recently add free_early_partial, for per cpu setup only>
+2. mem type in e820 map has more than RAM, it include RAM, reserved, ACPI, acpi nvs, and type 9?, and KERN_RESERVED...
+3. early res, every range has one name tag.
+4. early_res is array based, and it could auto double the array size and copy the old one to new one. and first entry in new array is for array itself.
 
-Any comment on this?
+if want x86 to use lmb, the e820 map and the lmb.memory are duplicated.
+also need to have lmb.memory to support more type, otherwise still need to go back to check e820 about e820 reserved etc.
 
-Thanks,
 
-	M.
--- 
-I'm the slime oozin' out from your TV set...
+Thanks
+
+Yinghai
