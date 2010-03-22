@@ -1,505 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0CVSGR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:06:17 -0400
-Received: from LION.seas.upenn.edu ([158.130.12.194]:33559 "EHLO
-	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab0CVSGP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:06:15 -0400
-Date: Mon, 22 Mar 2010 14:06:05 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-To: micki@n-trig.com
-Cc: jkosina@suse.cz, chatty@enac.fr, peterhuewe@gmx.de,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] HID:HID-NTRIG update  ntrig_event function
-Message-ID: <20100322180605.GA22158@seas.upenn.edu>
-References: <1269260173-2543-1-git-send-email-micki@n-trig.com> <1269260173-2543-2-git-send-email-micki@n-trig.com>
+	id S1755437Ab0CVSG3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:06:29 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:38863 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab0CVSG1 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 22 Mar 2010 14:06:27 -0400
+Date: Mon, 22 Mar 2010 13:30:38 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+       Ian Campbell <ian.campbell@citrix.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [LKML] [PATCH -v6] x86: do not free zero sized per cpu areas
+Message-ID: <20100322173038.GA16353@phenom.dumpdata.com>
+References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org> <4BA3F8ED.2090600@zytor.com> <4BA407B8.7070503@kernel.org> <4BA408EE.5000001@zytor.com> <4BA40C83.1030202@kernel.org> <alpine.LFD.2.00.1003191758460.18017@i5.linux-foundation.org> <4BA42C05.3060800@kernel.org> <alpine.LFD.2.00.1003191940060.18017@i5.linux-foundation.org> <4BA46D66.3050306@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269260173-2543-2-git-send-email-micki@n-trig.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4BA46D66.3050306@kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BA7B0B2.00F1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 02:16:13PM +0200, micki@n-trig.com wrote:
-> From: micki <micki@n-trig.com>
+On Fri, Mar 19, 2010 at 11:38:30PM -0700, Yinghai Lu wrote:
+> From: Ian Campbell <ian.campbell@citrix.com>
+> 
+> This avoids an infinite loop in free_early_partial().
+> 
+> Add a warning to free_early_partial to catch future problems.
+> 
+> -v5: put back start > end back into WARN_ONCE()
+> -v6: use one line for if according to linus
+> 
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
 
-Again this commit message looks documentation, discussion, and a hit of 
-advertising (though thankfully not like the previous patches).  There are 
-other places for all those.
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-> This patch is a part of 2 patches sumbitted by N-trig to hid-ntrig driver.
-> The driver send events to a user space application which will translate
-> the events (ignore ghost events, calcuate real X,Y coorindate, add palm).
-> Fake Finger events used by the user space applicaition to anaylze the information
-> recevied by N-trig sensor.
-
-Might want to explain the behavior of the driver as comments in the code, 
-or for a longer discussion, put something in the Documentation tree.
-
-Um, you still haven't really explained fake fingers, every event emitted 
-offers information for the user space applications to analyze.  Moving 
-past the meaning of fake fingers, you still haven't explained why you 
-bother with an extra field and extra instructions to compute information 
-already expressed with real_fingers.  It appears wasteful and convoluted.
-
-> User space application (for any linux distro) will be available at N-trig website.
-> The driver seprarate pen finger events because the user space application each device seperatly.
-> N-trig will maintian the driver in the kernel(Bug fix, New feautres)
-
-You keep talking about things that _will_ be available on the website.  Do 
-you have any reason to hold back on utilities which do not require your 
-changes to the kernel, such as possibly the firmware loader?
-
-
-Also its not actually all that clear without careful analysis of how you 
-separate pen and touch, particularly in light of removing the multi-input 
-quirk which causes the hid framework to do that automatically.
-
-As for your choice of key/button mappings, perhaps Jiri can suggest 
-which events are most apropriate for the tip, barrel, and eraser switches.  
-I've been letting hid-input.c assign those mappings, and its choice of 
-TOUCH, STYLUS, and RUBBER oddly enough seem to work well with the user 
-space drivers.
-
-
-We can discuss protocol further once you address the question about the 
-multi input quirk.
-
-Rafi
-
-> Signed-off-by: Micki Balanga <micki@n-trig.com>
 > ---
->  drivers/hid/hid-ntrig.c |  326 ++++++++++++++++++++++++-----------------------
->  1 files changed, 167 insertions(+), 159 deletions(-)
+>  kernel/early_res.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
 > 
-> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
-> index b4a573b..9f1b916 100644
-> --- a/drivers/hid/hid-ntrig.c
-> +++ b/drivers/hid/hid-ntrig.c
-> @@ -89,22 +89,25 @@ static int debug;
->  			MODULE_NAME , ## arg); \
->  	} while (0)
+> Index: linux-2.6/kernel/early_res.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/early_res.c
+> +++ linux-2.6/kernel/early_res.c
+> @@ -333,6 +333,12 @@ void __init free_early_partial(u64 start
+>  	struct early_res *r;
+>  	int i;
 >  
-> -#define NTRIG_DUPLICATE_USAGES	0x001
-> -
-> -#define nt_map_key_clear(c)	hid_map_usage_clear(hi, usage, bit, max, \
-> -					EV_KEY, (c))
-> -
-> +/*
-> + * N-trig HID Report Structure
-> + * The driver will support MTM firwmare Pen, Fingers
-> + */
->  struct ntrig_data {
-> -	/* Incoming raw values for a single contact */
-> -	__u16 x, y, w, h;
-> -	__u16 id;
-> -	__u8 confidence;
-> -
-> -	bool reading_mt;
-> -	__u8 first_contact_confidence;
-> -
-> -	__u8 mt_footer[4];
-> -	__u8 mt_foot_count;
-> +	__u8  pressure;
-> +	__u8  events;
-> +	__s32 btn_pressed;
-> +	__u16 x;
-> +	__u16 y;
-> +	__u16 frame_index;
-> +	__u8  finger_id;
-> +	__u16 dx;
-> +	__u16 dy;
-> +	__u8  generic_byte;
-> +	__u8  isPalm;
-> +	__u8  msc_cnt;
-> +	__u8  real_fingers;
-> +	__u8  fake_fingers;
->  };
->  
->  /*
-> @@ -117,10 +120,6 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  		struct hid_field *field, struct hid_usage *usage,
->  		unsigned long **bit, int *max)
->  {
-> -	/* No special mappings needed for the pen and single touch */
-> -	if (field->physical)
-> -		return 0;
-> -
->  	switch (usage->hid & HID_USAGE_PAGE) {
->  	case HID_UP_GENDESK:
->  		switch (usage->hid) {
-> @@ -144,6 +143,9 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	case HID_UP_DIGITIZER:
->  		switch (usage->hid) {
->  		/* we do not want to map these for now */
-> +		case HID_DG_INVERT: /* Not support by pen */
-> +		case HID_DG_ERASER: /* Not support by pen */
+> +	if (start == end)
+> +		return;
 > +
->  		case HID_DG_CONTACTID: /* Not trustworthy, squelch for now */
->  		case HID_DG_INPUTMODE:
->  		case HID_DG_DEVICEINDEX:
-> @@ -158,8 +160,8 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  		case HID_DG_HEIGHT:
->  			hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_TOUCH_MINOR);
-> -			input_set_abs_params(hi->input, ABS_MT_ORIENTATION,
-> -					0, 1, 0, 0);
-> +			hid_map_usage(hi, usage, bit, max,
-> +					EV_ABS, ABS_MT_TRACKING_ID);
->  			return 1;
->  		}
->  		return 0;
-> @@ -176,13 +178,21 @@ static int ntrig_input_mapped(struct hid_device *hdev, struct hid_input *hi,
->  		struct hid_field *field, struct hid_usage *usage,
->  		unsigned long **bit, int *max)
->  {
-> -	/* No special mappings needed for the pen and single touch */
-> -	if (field->physical)
-> -		return 0;
-> -
-> -	if (usage->type == EV_KEY || usage->type == EV_REL
-> -			|| usage->type == EV_ABS)
-> -		clear_bit(usage->code, *bit);
-> +       /*
-> +	* Map Keys For Pen And Touch events
-> +	* MSC events used to transfer information about finger status
-> +	* In curent Frame
-> +	*/
-> +	struct input_dev *input = hi->input;
-> +	set_bit(BTN_LEFT, input->keybit);
-> +	set_bit(BTN_RIGHT, input->keybit);
-> +	set_bit(EV_MSC, input->evbit);
-> +	set_bit(MSC_GESTURE, input->mscbit);
-> +	set_bit(MSC_SERIAL, input->mscbit);
-> +	set_bit(MSC_RAW, input->mscbit);
+> +	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
+> +		return;
 > +
-> +	input_set_abs_params(hi->input, ABS_PRESSURE,
-> +			0/*Min*/, 255 /*Max*/, 0, 0);
->  
->  	return 0;
->  }
-> @@ -199,146 +209,154 @@ static int ntrig_event(struct hid_device *hid, struct hid_field *field,
->  	struct input_dev *input = field->hidinput->input;
->  	struct ntrig_data *nd = hid_get_drvdata(hid);
->  
-> -	/* No special handling needed for the pen */
-> -	if (field->application == HID_DG_PEN)
-> -		return 0;
-> -
->  	if (hid->claimed & HID_CLAIMED_INPUT) {
-> +		/*
-> +		 * Update Common Fields For Pen and MultiTouch
-> +		 */
->  		switch (usage->hid) {
-> -		case 0xff000001:
-> -			/* Tag indicating the start of a multitouch group */
-> -			nd->reading_mt = 1;
-> -			nd->first_contact_confidence = 0;
-> -			break;
-> -		case HID_DG_TIPSWITCH:
-> -			/* Prevent emission of touch until validated */
-> -			return 1;
-> -		case HID_DG_CONFIDENCE:
-> -			nd->confidence = value;
-> -			break;
->  		case HID_GD_X:
->  			nd->x = value;
-> -			/* Clear the contact footer */
-> -			nd->mt_foot_count = 0;
->  			break;
->  		case HID_GD_Y:
->  			nd->y = value;
->  			break;
-> -		case HID_DG_CONTACTID:
-> -			nd->id = value;
-> -			break;
-> -		case HID_DG_WIDTH:
-> -			nd->w = value;
-> -			break;
-> -		case HID_DG_HEIGHT:
-> -			nd->h = value;
-> -			/*
-> -			 * when in single touch mode, this is the last
-> -			 * report received in a finger event. We want
-> -			 * to emit a normal (X, Y) position
-> -			 */
-> -			if (!nd->reading_mt) {
-> -				input_report_key(input, BTN_TOOL_DOUBLETAP,
-> -						 (nd->confidence != 0));
-> -				input_event(input, EV_ABS, ABS_X, nd->x);
-> -				input_event(input, EV_ABS, ABS_Y, nd->y);
-> -			}
-> -			break;
-> -		case 0xff000002:
-> +		}
-> +		if (field->application == HID_DG_PEN) {
->  			/*
-> -			 * we receive this when the device is in multitouch
-> -			 * mode. The first of the three values tagged with
-> -			 * this usage tells if the contact point is real
-> -			 * or a placeholder
-> +			 * Pen Button state
->  			 */
-> -
-> -			/* Shouldn't get more than 4 footer packets, so skip */
-> -			if (nd->mt_foot_count >= 4)
-> +			switch (usage->hid) {
-> +			case HID_DG_INRANGE:
-> +				nd->events = value;
->  				break;
-> -
-> -			nd->mt_footer[nd->mt_foot_count++] = value;
-> -
-> -			/* if the footer isn't complete break */
-> -			if (nd->mt_foot_count != 4)
-> +			case HID_DG_TIPSWITCH:
-> +				nd->events |= (value << 1);
->  				break;
-> -
-> -			/* Pen activity signal, trigger end of touch. */
-> -			if (nd->mt_footer[2]) {
-> -				nd->confidence = 0;
-> +			case HID_DG_BARRELSWITCH:
-> +				nd->events |= (value << 2);
->  				break;
-> -			}
-> -
-> -			/* If the contact was invalid */
-> -			if (!(nd->confidence && nd->mt_footer[0])
-> -					|| nd->w <= 250
-> -					|| nd->h <= 190) {
-> -				nd->confidence = 0;
-> +			case HID_DG_INVERT:
-> +				nd->events |= (value << 3);
->  				break;
-> +			case HID_DG_ERASER:
-> +				nd->events |= (value << 4);
-> +				break;
-> +			case HID_DG_TIPPRESSURE:
-> +				/*
-> +				 * Last Report Received For Pen Event
-> +				 */
-> +				nd->pressure = value;
-> +				input_report_abs(input, ABS_MT_TOOL_TYPE,
-> +					MT_TOOL_PEN);
-> +				input_report_abs(input, ABS_MT_POSITION_X,
-> +					nd->x);
-> +				input_report_abs(input, ABS_MT_POSITION_Y,
-> +					nd->y);
-> +				/*
-> +				 * Handle Button Code
-> +				 */
-> +				switch (nd->events) {
-> +				case EVENT_PEN_IN_RANGE:
-> +					if (0 != nd->btn_pressed) {
-> +						input_event(input, EV_KEY,
-> +						  nd->btn_pressed, 0x00);
-> +						nd->btn_pressed = 0;
-> +					}
-> +					break;
-> +				case EVENT_PEN_TIP:
-> +					if (BTN_LEFT != nd->btn_pressed) {
-> +						nd->btn_pressed = BTN_LEFT;
-> +						input_event(input, EV_KEY,
-> +						  nd->btn_pressed, 0x01);
-> +					}
-> +					break;
-> +				case EVENT_TOUCH_PEN:  /* FALLTHRU */
-> +				case EVENT_PEN_RIGHT:
-> +					if (BTN_RIGHT != nd->btn_pressed) {
-> +						nd->btn_pressed = BTN_RIGHT;
-> +						input_event(input, EV_KEY,
-> +						    nd->btn_pressed, 0x01);
-> +					}
-> +					break;
-> +				}
-> +				input_report_abs(input, ABS_PRESSURE,
-> +				  nd->pressure);
-> +				input_sync(input);
-> +				ntrig_dbg("X=%d Y=%d Button=%d Pressure=%d\n",
-> +				    nd->x, nd->y,
-> +				    nd->btn_pressed, nd->pressure);
->  			}
-> -
-> -			/* emit a normal (X, Y) for the first point only */
-> -			if (nd->id == 0) {
-> -				nd->first_contact_confidence = nd->confidence;
-> -				input_event(input, EV_ABS, ABS_X, nd->x);
-> -				input_event(input, EV_ABS, ABS_Y, nd->y);
-> -			}
-> -			input_event(input, EV_ABS, ABS_MT_POSITION_X, nd->x);
-> -			input_event(input, EV_ABS, ABS_MT_POSITION_Y, nd->y);
-> -			if (nd->w > nd->h) {
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_ORIENTATION, 1);
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_TOUCH_MAJOR, nd->w);
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_TOUCH_MINOR, nd->h);
-> -			} else {
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_ORIENTATION, 0);
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_TOUCH_MAJOR, nd->h);
-> -				input_event(input, EV_ABS,
-> -						ABS_MT_TOUCH_MINOR, nd->w);
-> -			}
-> -			input_mt_sync(field->hidinput->input);
-> -			break;
-> -
-> -		case HID_DG_CONTACTCOUNT: /* End of a multitouch group */
-> -			if (!nd->reading_mt)
-> +		} else { /* MultiTouch Report */
-> +			switch (usage->hid) {
-> +			case HID_DG_CONTACTCOUNT:
-> +				nd->real_fingers = value;
-> +				nd->fake_fingers = MAX_FINGERS_SUPPORT - value;
->  				break;
-> -
-> -			nd->reading_mt = 0;
-> -
-> -			if (nd->first_contact_confidence) {
-> -				switch (value) {
-> -				case 0:	/* for single touch devices */
-> -				case 1:
-> -					input_report_key(input,
-> -							BTN_TOOL_DOUBLETAP, 1);
-> +			case MTM_FRAME_INDEX: /* Index 1 */
-> +				nd->frame_index = value;
-> +				break;
-> +			case HID_DG_TIPSWITCH:	/* FALLTHRU */
-> +			case HID_DG_INRANGE:	/* FALLTHRU */
-> +			case HID_DG_CONFIDENCE: /* Not Relevant-Index 2 - 4 */
-> +				break;
-> +			case HID_DG_CONTACTID: /* Index 5 */
-> +				nd->finger_id = value;
-> +				break;
-> +			case HID_DG_WIDTH:/* Index 6 - 7*/
-> +				nd->dx = value;
-> +				break;
-> +			case HID_DG_HEIGHT:/* Index 8 - 9 */
-> +				nd->dy = value;
-> +				/* Start The Sequence of MSC bytes */
-> +				nd->msc_cnt = 0;
-> +				break;
-> +			case MTM_PROPROETARY:/* Index 10 - 14 */
-> +				nd->msc_cnt++;
-> +				switch (nd->msc_cnt) {
-> +				case REPORT_GENERIC1:
-> +					nd->generic_byte = value;
-> +					break;
-> +				case REPORT_MT:
->  					break;
-> -				case 2:
-> -					input_report_key(input,
-> -							BTN_TOOL_TRIPLETAP, 1);
-> +				case REPORT_PALM:
-> +					nd->isPalm = value;
-> +					break;
-> +				case REPORT_GENERIC2:
-> +					if ((DUMMY_X_CORD_VAL == nd->x) && (DUMMY_Y_CORD_VAL == nd->y) &&
-> +					    (DUMMY_DX_CORD_VAL == nd->dx) && (DUMMY_DY_CORD_VAL == nd->dy) &&
-> +					    (DUMMY_GENERIC_BYTE_VAL == value)) {
-> +						if (MAX_FINGERS_SUPPORT == nd->fake_fingers--) {
-> +							input_report_abs(input, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
-> +							input_report_abs(input, ABS_MT_TRACKING_ID, END_OF_REPORT);
-> +							input_event(input, EV_MSC, MSC_RAW, nd->frame_index);
-> +							input_sync(input);
-> +							ntrig_dbg("Session Sync Frame %x\n", nd->frame_index);
-> +						} else
-> +							ntrig_dbg("Fake Finger %x\n", nd->frame_index);
-> +					} else {
-> +						input_report_abs(input, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
-> +						input_report_abs(input, ABS_MT_TRACKING_ID, nd->finger_id);
-> +						input_report_abs(input, ABS_MT_POSITION_X, nd->x);
-> +						input_report_abs(input, ABS_MT_POSITION_Y, nd->y);
-> +						input_report_abs(input, ABS_MT_TOUCH_MAJOR, nd->dx);
-> +						input_report_abs(input, ABS_MT_TOUCH_MINOR, nd->dy);
-> +						input_event(input, EV_MSC, MSC_GESTURE, nd->generic_byte);
-> +						input_event(input, EV_MSC, MSC_SERIAL, nd->isPalm);
-> +						input_mt_sync(input);
-> +						ntrig_dbg("Real Finger Index %x Count %d X=%d Y=%d DX=%d DY=%d FirstOccur=%d Palm=%d\n",
-> +							nd->frame_index, nd->real_fingers, nd->x,
-> +							nd->y, nd->dx, nd->dy,
-> +							nd->generic_byte, nd->isPalm);
-> +						if (0 == --nd->real_fingers) {
-> +							input_event(input, EV_MSC, MSC_RAW, nd->frame_index);
-> +							input_sync(input);
-> +							ntrig_dbg("Real Finger Sync Frame %x\n", nd->frame_index);
-> +						}
-> +					}
->  					break;
-> -				case 3:
-> -				default:
-> -					input_report_key(input,
-> -							BTN_TOOL_QUADTAP, 1);
->  				}
-> -				input_report_key(input, BTN_TOUCH, 1);
-> -			} else {
-> -				input_report_key(input,
-> -						BTN_TOOL_DOUBLETAP, 0);
-> -				input_report_key(input,
-> -						BTN_TOOL_TRIPLETAP, 0);
-> -				input_report_key(input,
-> -						BTN_TOOL_QUADTAP, 0);
-> -				input_report_key(input, BTN_TOUCH, 0);
-> +				break;
->  			}
-> -			break;
-> -
-> -		default:
-> -			/* fallback to the generic hidinput handling */
-> -			return 0;
->  		}
->  	}
->  
-> @@ -402,16 +420,12 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
->  	int ret;
->  	struct ntrig_data *nd;
->  
-> -	if (id->driver_data)
-> -		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
-> -
->  	nd = kmalloc(sizeof(struct ntrig_data), GFP_KERNEL);
->  	if (!nd) {
->  		dev_err(&hdev->dev, "cannot allocate N-Trig data\n");
->  		return -ENOMEM;
->  	}
->  
-> -	nd->reading_mt = 0;
->  	hid_set_drvdata(hdev, nd);
->  
->  	ret = hid_parse(hdev);
-> @@ -446,16 +460,11 @@ static void ntrig_remove(struct hid_device *hdev)
->  
->  static const struct hid_device_id ntrig_devices[] = {
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN),
-> -		.driver_data = NTRIG_DUPLICATE_USAGES },
-> +		.driver_data = NTRIG_USB_DEVICE_ID },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(hid, ntrig_devices);
->  
-> -static const struct hid_usage_id ntrig_grabbed_usages[] = {
-> -	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
-> -	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1 }
-> -};
-> -
->  static struct hid_driver ntrig_driver = {
->  	.name = "ntrig",
->  	.id_table = ntrig_devices,
-> @@ -463,7 +472,6 @@ static struct hid_driver ntrig_driver = {
->  	.remove = ntrig_remove,
->  	.input_mapping = ntrig_input_mapping,
->  	.input_mapped = ntrig_input_mapped,
-> -	.usage_table = ntrig_grabbed_usages,
->  	.event = ntrig_event,
->  };
->  
-> -- 
-> 1.6.3.3
-> 
+>  try_next:
+>  	i = find_overlapped_early(start, end);
+>  	if (i >= max_early_res)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
