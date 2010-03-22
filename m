@@ -1,69 +1,505 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab0CVSE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:04:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22188 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753215Ab0CVSE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 14:04:27 -0400
-Message-ID: <4BA7B119.1070800@redhat.com>
-Date: Mon, 22 Mar 2010 20:04:09 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1755314Ab0CVSGR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:06:17 -0400
+Received: from LION.seas.upenn.edu ([158.130.12.194]:33559 "EHLO
+	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0CVSGP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:06:15 -0400
+Date: Mon, 22 Mar 2010 14:06:05 -0400
+From: Rafi Rubin <rafi@seas.upenn.edu>
+To: micki@n-trig.com
+Cc: jkosina@suse.cz, chatty@enac.fr, peterhuewe@gmx.de,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] HID:HID-NTRIG update  ntrig_event function
+Message-ID: <20100322180605.GA22158@seas.upenn.edu>
+References: <1269260173-2543-1-git-send-email-micki@n-trig.com> <1269260173-2543-2-git-send-email-micki@n-trig.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: "Frank Ch. Eigler" <fche@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- 	project
-References: <20100318172805.GB26067@elte.hu> <4BA67B2F.4030101@redhat.com>	 <20100321203121.GA30194@elte.hu> <20100322111040.GL13108@8bytes.org>	 <20100322122228.GH3483@elte.hu> <20100322134633.GD1940@8bytes.org>	 <20100322163215.GC18796@elte.hu> <y0mmxy0wa1r.fsf@fche.csb>	 <84144f021003221027t1a3e7d6ft64612654c5e50da@mail.gmail.com>	 <4BA7A9AF.3010806@redhat.com> <84144f021003221052lb693f15ped0b432c34cdd8dc@mail.gmail.com>
-In-Reply-To: <84144f021003221052lb693f15ped0b432c34cdd8dc@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269260173-2543-2-git-send-email-micki@n-trig.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 07:52 PM, Pekka Enberg wrote:
-> Hi Avi,
->
-> On Mon, Mar 22, 2010 at 7:32 PM, Avi Kivity<avi@redhat.com>  wrote:
->    
->>> It's kinda funny to see people argue that having an external
->>> repository is not a problem and that it's not a big deal if building
->>> something from the repository is slightly painful as long as it
->>> doesn't require a PhD when we have _real world_ experience that it
->>> _does_ limit developer base in some cases. Whether or not that applies
->>> to kvm remains to be seen but I've yet to see a convincing argument
->>> why it doesn't.
->>>        
->> qemu has non-Linux developers.  Not all of their contributions are relevant
->> to kvm but some are.  If we pull qemu into tools/kvm, we lose them.
->>      
-> Yeah, you probably would but the hypothesis is that you'd end up with
-> a bigger net developer base for the _Linux_ version. Now you might not
-> think that's important but I certainly do and I think Ingo does as
-> well. ;-)
->    
+On Mon, Mar 22, 2010 at 02:16:13PM +0200, micki@n-trig.com wrote:
+> From: micki <micki@n-trig.com>
 
-You're probably correct, but the point is that non-Linux developers also 
-contribute things which kvm benefits from.  Not a whole lot, but some.
+Again this commit message looks documentation, discussion, and a hit of 
+advertising (though thankfully not like the previous patches).  There are 
+other places for all those.
 
-> That said, pulling 400 KLOC of code into the kernel sounds really
-> excessive. Would we need all that if we just do native virtualization
-> and no actual emulation?
->    
+> This patch is a part of 2 patches sumbitted by N-trig to hid-ntrig driver.
+> The driver send events to a user space application which will translate
+> the events (ignore ghost events, calcuate real X,Y coorindate, add palm).
+> Fake Finger events used by the user space applicaition to anaylze the information
+> recevied by N-trig sensor.
 
-What is native virtualization and no actual emulation?
+Might want to explain the behavior of the driver as comments in the code, 
+or for a longer discussion, put something in the Documentation tree.
 
--- 
-error compiling committee.c: too many arguments to function
+Um, you still haven't really explained fake fingers, every event emitted 
+offers information for the user space applications to analyze.  Moving 
+past the meaning of fake fingers, you still haven't explained why you 
+bother with an extra field and extra instructions to compute information 
+already expressed with real_fingers.  It appears wasteful and convoluted.
 
+> User space application (for any linux distro) will be available at N-trig website.
+> The driver seprarate pen finger events because the user space application each device seperatly.
+> N-trig will maintian the driver in the kernel(Bug fix, New feautres)
+
+You keep talking about things that _will_ be available on the website.  Do 
+you have any reason to hold back on utilities which do not require your 
+changes to the kernel, such as possibly the firmware loader?
+
+
+Also its not actually all that clear without careful analysis of how you 
+separate pen and touch, particularly in light of removing the multi-input 
+quirk which causes the hid framework to do that automatically.
+
+As for your choice of key/button mappings, perhaps Jiri can suggest 
+which events are most apropriate for the tip, barrel, and eraser switches.  
+I've been letting hid-input.c assign those mappings, and its choice of 
+TOUCH, STYLUS, and RUBBER oddly enough seem to work well with the user 
+space drivers.
+
+
+We can discuss protocol further once you address the question about the 
+multi input quirk.
+
+Rafi
+
+> Signed-off-by: Micki Balanga <micki@n-trig.com>
+> ---
+>  drivers/hid/hid-ntrig.c |  326 ++++++++++++++++++++++++-----------------------
+>  1 files changed, 167 insertions(+), 159 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-ntrig.c b/drivers/hid/hid-ntrig.c
+> index b4a573b..9f1b916 100644
+> --- a/drivers/hid/hid-ntrig.c
+> +++ b/drivers/hid/hid-ntrig.c
+> @@ -89,22 +89,25 @@ static int debug;
+>  			MODULE_NAME , ## arg); \
+>  	} while (0)
+>  
+> -#define NTRIG_DUPLICATE_USAGES	0x001
+> -
+> -#define nt_map_key_clear(c)	hid_map_usage_clear(hi, usage, bit, max, \
+> -					EV_KEY, (c))
+> -
+> +/*
+> + * N-trig HID Report Structure
+> + * The driver will support MTM firwmare Pen, Fingers
+> + */
+>  struct ntrig_data {
+> -	/* Incoming raw values for a single contact */
+> -	__u16 x, y, w, h;
+> -	__u16 id;
+> -	__u8 confidence;
+> -
+> -	bool reading_mt;
+> -	__u8 first_contact_confidence;
+> -
+> -	__u8 mt_footer[4];
+> -	__u8 mt_foot_count;
+> +	__u8  pressure;
+> +	__u8  events;
+> +	__s32 btn_pressed;
+> +	__u16 x;
+> +	__u16 y;
+> +	__u16 frame_index;
+> +	__u8  finger_id;
+> +	__u16 dx;
+> +	__u16 dy;
+> +	__u8  generic_byte;
+> +	__u8  isPalm;
+> +	__u8  msc_cnt;
+> +	__u8  real_fingers;
+> +	__u8  fake_fingers;
+>  };
+>  
+>  /*
+> @@ -117,10 +120,6 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  		struct hid_field *field, struct hid_usage *usage,
+>  		unsigned long **bit, int *max)
+>  {
+> -	/* No special mappings needed for the pen and single touch */
+> -	if (field->physical)
+> -		return 0;
+> -
+>  	switch (usage->hid & HID_USAGE_PAGE) {
+>  	case HID_UP_GENDESK:
+>  		switch (usage->hid) {
+> @@ -144,6 +143,9 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  	case HID_UP_DIGITIZER:
+>  		switch (usage->hid) {
+>  		/* we do not want to map these for now */
+> +		case HID_DG_INVERT: /* Not support by pen */
+> +		case HID_DG_ERASER: /* Not support by pen */
+> +
+>  		case HID_DG_CONTACTID: /* Not trustworthy, squelch for now */
+>  		case HID_DG_INPUTMODE:
+>  		case HID_DG_DEVICEINDEX:
+> @@ -158,8 +160,8 @@ static int ntrig_input_mapping(struct hid_device *hdev, struct hid_input *hi,
+>  		case HID_DG_HEIGHT:
+>  			hid_map_usage(hi, usage, bit, max,
+>  					EV_ABS, ABS_MT_TOUCH_MINOR);
+> -			input_set_abs_params(hi->input, ABS_MT_ORIENTATION,
+> -					0, 1, 0, 0);
+> +			hid_map_usage(hi, usage, bit, max,
+> +					EV_ABS, ABS_MT_TRACKING_ID);
+>  			return 1;
+>  		}
+>  		return 0;
+> @@ -176,13 +178,21 @@ static int ntrig_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>  		struct hid_field *field, struct hid_usage *usage,
+>  		unsigned long **bit, int *max)
+>  {
+> -	/* No special mappings needed for the pen and single touch */
+> -	if (field->physical)
+> -		return 0;
+> -
+> -	if (usage->type == EV_KEY || usage->type == EV_REL
+> -			|| usage->type == EV_ABS)
+> -		clear_bit(usage->code, *bit);
+> +       /*
+> +	* Map Keys For Pen And Touch events
+> +	* MSC events used to transfer information about finger status
+> +	* In curent Frame
+> +	*/
+> +	struct input_dev *input = hi->input;
+> +	set_bit(BTN_LEFT, input->keybit);
+> +	set_bit(BTN_RIGHT, input->keybit);
+> +	set_bit(EV_MSC, input->evbit);
+> +	set_bit(MSC_GESTURE, input->mscbit);
+> +	set_bit(MSC_SERIAL, input->mscbit);
+> +	set_bit(MSC_RAW, input->mscbit);
+> +
+> +	input_set_abs_params(hi->input, ABS_PRESSURE,
+> +			0/*Min*/, 255 /*Max*/, 0, 0);
+>  
+>  	return 0;
+>  }
+> @@ -199,146 +209,154 @@ static int ntrig_event(struct hid_device *hid, struct hid_field *field,
+>  	struct input_dev *input = field->hidinput->input;
+>  	struct ntrig_data *nd = hid_get_drvdata(hid);
+>  
+> -	/* No special handling needed for the pen */
+> -	if (field->application == HID_DG_PEN)
+> -		return 0;
+> -
+>  	if (hid->claimed & HID_CLAIMED_INPUT) {
+> +		/*
+> +		 * Update Common Fields For Pen and MultiTouch
+> +		 */
+>  		switch (usage->hid) {
+> -		case 0xff000001:
+> -			/* Tag indicating the start of a multitouch group */
+> -			nd->reading_mt = 1;
+> -			nd->first_contact_confidence = 0;
+> -			break;
+> -		case HID_DG_TIPSWITCH:
+> -			/* Prevent emission of touch until validated */
+> -			return 1;
+> -		case HID_DG_CONFIDENCE:
+> -			nd->confidence = value;
+> -			break;
+>  		case HID_GD_X:
+>  			nd->x = value;
+> -			/* Clear the contact footer */
+> -			nd->mt_foot_count = 0;
+>  			break;
+>  		case HID_GD_Y:
+>  			nd->y = value;
+>  			break;
+> -		case HID_DG_CONTACTID:
+> -			nd->id = value;
+> -			break;
+> -		case HID_DG_WIDTH:
+> -			nd->w = value;
+> -			break;
+> -		case HID_DG_HEIGHT:
+> -			nd->h = value;
+> -			/*
+> -			 * when in single touch mode, this is the last
+> -			 * report received in a finger event. We want
+> -			 * to emit a normal (X, Y) position
+> -			 */
+> -			if (!nd->reading_mt) {
+> -				input_report_key(input, BTN_TOOL_DOUBLETAP,
+> -						 (nd->confidence != 0));
+> -				input_event(input, EV_ABS, ABS_X, nd->x);
+> -				input_event(input, EV_ABS, ABS_Y, nd->y);
+> -			}
+> -			break;
+> -		case 0xff000002:
+> +		}
+> +		if (field->application == HID_DG_PEN) {
+>  			/*
+> -			 * we receive this when the device is in multitouch
+> -			 * mode. The first of the three values tagged with
+> -			 * this usage tells if the contact point is real
+> -			 * or a placeholder
+> +			 * Pen Button state
+>  			 */
+> -
+> -			/* Shouldn't get more than 4 footer packets, so skip */
+> -			if (nd->mt_foot_count >= 4)
+> +			switch (usage->hid) {
+> +			case HID_DG_INRANGE:
+> +				nd->events = value;
+>  				break;
+> -
+> -			nd->mt_footer[nd->mt_foot_count++] = value;
+> -
+> -			/* if the footer isn't complete break */
+> -			if (nd->mt_foot_count != 4)
+> +			case HID_DG_TIPSWITCH:
+> +				nd->events |= (value << 1);
+>  				break;
+> -
+> -			/* Pen activity signal, trigger end of touch. */
+> -			if (nd->mt_footer[2]) {
+> -				nd->confidence = 0;
+> +			case HID_DG_BARRELSWITCH:
+> +				nd->events |= (value << 2);
+>  				break;
+> -			}
+> -
+> -			/* If the contact was invalid */
+> -			if (!(nd->confidence && nd->mt_footer[0])
+> -					|| nd->w <= 250
+> -					|| nd->h <= 190) {
+> -				nd->confidence = 0;
+> +			case HID_DG_INVERT:
+> +				nd->events |= (value << 3);
+>  				break;
+> +			case HID_DG_ERASER:
+> +				nd->events |= (value << 4);
+> +				break;
+> +			case HID_DG_TIPPRESSURE:
+> +				/*
+> +				 * Last Report Received For Pen Event
+> +				 */
+> +				nd->pressure = value;
+> +				input_report_abs(input, ABS_MT_TOOL_TYPE,
+> +					MT_TOOL_PEN);
+> +				input_report_abs(input, ABS_MT_POSITION_X,
+> +					nd->x);
+> +				input_report_abs(input, ABS_MT_POSITION_Y,
+> +					nd->y);
+> +				/*
+> +				 * Handle Button Code
+> +				 */
+> +				switch (nd->events) {
+> +				case EVENT_PEN_IN_RANGE:
+> +					if (0 != nd->btn_pressed) {
+> +						input_event(input, EV_KEY,
+> +						  nd->btn_pressed, 0x00);
+> +						nd->btn_pressed = 0;
+> +					}
+> +					break;
+> +				case EVENT_PEN_TIP:
+> +					if (BTN_LEFT != nd->btn_pressed) {
+> +						nd->btn_pressed = BTN_LEFT;
+> +						input_event(input, EV_KEY,
+> +						  nd->btn_pressed, 0x01);
+> +					}
+> +					break;
+> +				case EVENT_TOUCH_PEN:  /* FALLTHRU */
+> +				case EVENT_PEN_RIGHT:
+> +					if (BTN_RIGHT != nd->btn_pressed) {
+> +						nd->btn_pressed = BTN_RIGHT;
+> +						input_event(input, EV_KEY,
+> +						    nd->btn_pressed, 0x01);
+> +					}
+> +					break;
+> +				}
+> +				input_report_abs(input, ABS_PRESSURE,
+> +				  nd->pressure);
+> +				input_sync(input);
+> +				ntrig_dbg("X=%d Y=%d Button=%d Pressure=%d\n",
+> +				    nd->x, nd->y,
+> +				    nd->btn_pressed, nd->pressure);
+>  			}
+> -
+> -			/* emit a normal (X, Y) for the first point only */
+> -			if (nd->id == 0) {
+> -				nd->first_contact_confidence = nd->confidence;
+> -				input_event(input, EV_ABS, ABS_X, nd->x);
+> -				input_event(input, EV_ABS, ABS_Y, nd->y);
+> -			}
+> -			input_event(input, EV_ABS, ABS_MT_POSITION_X, nd->x);
+> -			input_event(input, EV_ABS, ABS_MT_POSITION_Y, nd->y);
+> -			if (nd->w > nd->h) {
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_ORIENTATION, 1);
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_TOUCH_MAJOR, nd->w);
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_TOUCH_MINOR, nd->h);
+> -			} else {
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_ORIENTATION, 0);
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_TOUCH_MAJOR, nd->h);
+> -				input_event(input, EV_ABS,
+> -						ABS_MT_TOUCH_MINOR, nd->w);
+> -			}
+> -			input_mt_sync(field->hidinput->input);
+> -			break;
+> -
+> -		case HID_DG_CONTACTCOUNT: /* End of a multitouch group */
+> -			if (!nd->reading_mt)
+> +		} else { /* MultiTouch Report */
+> +			switch (usage->hid) {
+> +			case HID_DG_CONTACTCOUNT:
+> +				nd->real_fingers = value;
+> +				nd->fake_fingers = MAX_FINGERS_SUPPORT - value;
+>  				break;
+> -
+> -			nd->reading_mt = 0;
+> -
+> -			if (nd->first_contact_confidence) {
+> -				switch (value) {
+> -				case 0:	/* for single touch devices */
+> -				case 1:
+> -					input_report_key(input,
+> -							BTN_TOOL_DOUBLETAP, 1);
+> +			case MTM_FRAME_INDEX: /* Index 1 */
+> +				nd->frame_index = value;
+> +				break;
+> +			case HID_DG_TIPSWITCH:	/* FALLTHRU */
+> +			case HID_DG_INRANGE:	/* FALLTHRU */
+> +			case HID_DG_CONFIDENCE: /* Not Relevant-Index 2 - 4 */
+> +				break;
+> +			case HID_DG_CONTACTID: /* Index 5 */
+> +				nd->finger_id = value;
+> +				break;
+> +			case HID_DG_WIDTH:/* Index 6 - 7*/
+> +				nd->dx = value;
+> +				break;
+> +			case HID_DG_HEIGHT:/* Index 8 - 9 */
+> +				nd->dy = value;
+> +				/* Start The Sequence of MSC bytes */
+> +				nd->msc_cnt = 0;
+> +				break;
+> +			case MTM_PROPROETARY:/* Index 10 - 14 */
+> +				nd->msc_cnt++;
+> +				switch (nd->msc_cnt) {
+> +				case REPORT_GENERIC1:
+> +					nd->generic_byte = value;
+> +					break;
+> +				case REPORT_MT:
+>  					break;
+> -				case 2:
+> -					input_report_key(input,
+> -							BTN_TOOL_TRIPLETAP, 1);
+> +				case REPORT_PALM:
+> +					nd->isPalm = value;
+> +					break;
+> +				case REPORT_GENERIC2:
+> +					if ((DUMMY_X_CORD_VAL == nd->x) && (DUMMY_Y_CORD_VAL == nd->y) &&
+> +					    (DUMMY_DX_CORD_VAL == nd->dx) && (DUMMY_DY_CORD_VAL == nd->dy) &&
+> +					    (DUMMY_GENERIC_BYTE_VAL == value)) {
+> +						if (MAX_FINGERS_SUPPORT == nd->fake_fingers--) {
+> +							input_report_abs(input, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
+> +							input_report_abs(input, ABS_MT_TRACKING_ID, END_OF_REPORT);
+> +							input_event(input, EV_MSC, MSC_RAW, nd->frame_index);
+> +							input_sync(input);
+> +							ntrig_dbg("Session Sync Frame %x\n", nd->frame_index);
+> +						} else
+> +							ntrig_dbg("Fake Finger %x\n", nd->frame_index);
+> +					} else {
+> +						input_report_abs(input, ABS_MT_TOOL_TYPE, MT_TOOL_FINGER);
+> +						input_report_abs(input, ABS_MT_TRACKING_ID, nd->finger_id);
+> +						input_report_abs(input, ABS_MT_POSITION_X, nd->x);
+> +						input_report_abs(input, ABS_MT_POSITION_Y, nd->y);
+> +						input_report_abs(input, ABS_MT_TOUCH_MAJOR, nd->dx);
+> +						input_report_abs(input, ABS_MT_TOUCH_MINOR, nd->dy);
+> +						input_event(input, EV_MSC, MSC_GESTURE, nd->generic_byte);
+> +						input_event(input, EV_MSC, MSC_SERIAL, nd->isPalm);
+> +						input_mt_sync(input);
+> +						ntrig_dbg("Real Finger Index %x Count %d X=%d Y=%d DX=%d DY=%d FirstOccur=%d Palm=%d\n",
+> +							nd->frame_index, nd->real_fingers, nd->x,
+> +							nd->y, nd->dx, nd->dy,
+> +							nd->generic_byte, nd->isPalm);
+> +						if (0 == --nd->real_fingers) {
+> +							input_event(input, EV_MSC, MSC_RAW, nd->frame_index);
+> +							input_sync(input);
+> +							ntrig_dbg("Real Finger Sync Frame %x\n", nd->frame_index);
+> +						}
+> +					}
+>  					break;
+> -				case 3:
+> -				default:
+> -					input_report_key(input,
+> -							BTN_TOOL_QUADTAP, 1);
+>  				}
+> -				input_report_key(input, BTN_TOUCH, 1);
+> -			} else {
+> -				input_report_key(input,
+> -						BTN_TOOL_DOUBLETAP, 0);
+> -				input_report_key(input,
+> -						BTN_TOOL_TRIPLETAP, 0);
+> -				input_report_key(input,
+> -						BTN_TOOL_QUADTAP, 0);
+> -				input_report_key(input, BTN_TOUCH, 0);
+> +				break;
+>  			}
+> -			break;
+> -
+> -		default:
+> -			/* fallback to the generic hidinput handling */
+> -			return 0;
+>  		}
+>  	}
+>  
+> @@ -402,16 +420,12 @@ static int ntrig_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>  	int ret;
+>  	struct ntrig_data *nd;
+>  
+> -	if (id->driver_data)
+> -		hdev->quirks |= HID_QUIRK_MULTI_INPUT;
+> -
+>  	nd = kmalloc(sizeof(struct ntrig_data), GFP_KERNEL);
+>  	if (!nd) {
+>  		dev_err(&hdev->dev, "cannot allocate N-Trig data\n");
+>  		return -ENOMEM;
+>  	}
+>  
+> -	nd->reading_mt = 0;
+>  	hid_set_drvdata(hdev, nd);
+>  
+>  	ret = hid_parse(hdev);
+> @@ -446,16 +460,11 @@ static void ntrig_remove(struct hid_device *hdev)
+>  
+>  static const struct hid_device_id ntrig_devices[] = {
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_NTRIG, USB_DEVICE_ID_NTRIG_TOUCH_SCREEN),
+> -		.driver_data = NTRIG_DUPLICATE_USAGES },
+> +		.driver_data = NTRIG_USB_DEVICE_ID },
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(hid, ntrig_devices);
+>  
+> -static const struct hid_usage_id ntrig_grabbed_usages[] = {
+> -	{ HID_ANY_ID, HID_ANY_ID, HID_ANY_ID },
+> -	{ HID_ANY_ID - 1, HID_ANY_ID - 1, HID_ANY_ID - 1 }
+> -};
+> -
+>  static struct hid_driver ntrig_driver = {
+>  	.name = "ntrig",
+>  	.id_table = ntrig_devices,
+> @@ -463,7 +472,6 @@ static struct hid_driver ntrig_driver = {
+>  	.remove = ntrig_remove,
+>  	.input_mapping = ntrig_input_mapping,
+>  	.input_mapped = ntrig_input_mapped,
+> -	.usage_table = ntrig_grabbed_usages,
+>  	.event = ntrig_event,
+>  };
+>  
+> -- 
+> 1.6.3.3
+> 
