@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755437Ab0CVSG3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 14:06:29 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:38863 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab0CVSG1 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 22 Mar 2010 14:06:27 -0400
-Date: Mon, 22 Mar 2010 13:30:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [LKML] [PATCH -v6] x86: do not free zero sized per cpu areas
-Message-ID: <20100322173038.GA16353@phenom.dumpdata.com>
-References: <4B914A61.20409@kernel.org> <4BA3F82D.5090807@kernel.org> <4BA3F8ED.2090600@zytor.com> <4BA407B8.7070503@kernel.org> <4BA408EE.5000001@zytor.com> <4BA40C83.1030202@kernel.org> <alpine.LFD.2.00.1003191758460.18017@i5.linux-foundation.org> <4BA42C05.3060800@kernel.org> <alpine.LFD.2.00.1003191940060.18017@i5.linux-foundation.org> <4BA46D66.3050306@kernel.org>
+	id S1755590Ab0CVSG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 14:06:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754859Ab0CVSG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 14:06:57 -0400
+Message-ID: <4BA7B1AE.6050500@redhat.com>
+Date: Mon, 22 Mar 2010 20:06:38 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA46D66.3050306@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BA7B0B2.00F1:SCFMA4539814,ss=1,fgs=0
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Ingo Molnar <mingo@elte.hu>, Anthony Liguori <anthony@codemonkey.ws>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ 	project
+References: <20100321205531.GC30194@elte.hu> <20100322111411.GC3483@elte.hu>	 <4BA7629B.7020604@redhat.com> <20100322124428.GA12475@elte.hu>	 <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu>	 <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu>	 <4BA796DF.7090005@redhat.com> <4BA797C9.2030703@redhat.com> <84144f021003220940x25e40624pb0b86f62b79fd707@mail.gmail.com>
+In-Reply-To: <84144f021003220940x25e40624pb0b86f62b79fd707@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 19, 2010 at 11:38:30PM -0700, Yinghai Lu wrote:
-> From: Ian Campbell <ian.campbell@citrix.com>
-> 
-> This avoids an infinite loop in free_early_partial().
-> 
-> Add a warning to free_early_partial to catch future problems.
-> 
-> -v5: put back start > end back into WARN_ONCE()
-> -v6: use one line for if according to linus
-> 
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
+On 03/22/2010 06:40 PM, Pekka Enberg wrote:
+> On Mon, Mar 22, 2010 at 6:16 PM, Avi Kivity<avi@redhat.com>  wrote:
+>    
+>>> You simply kept ignoring me when I said that if something can be kept out
+>>> of the kernel without impacting performance, it should be.  I don't want
+>>> emergency patches closing some security hole or oops in a kernel symbol
+>>> server.
+>>>        
+>> Or rather, explained how I am a wicked microkernelist.  The herring were out
+>> in force today.
+>>      
+> Well, if it's not being a "wicked microkernelist" then what is it?
+>    
 
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+I know I'm bad.
 
-> ---
->  kernel/early_res.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> Index: linux-2.6/kernel/early_res.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/early_res.c
-> +++ linux-2.6/kernel/early_res.c
-> @@ -333,6 +333,12 @@ void __init free_early_partial(u64 start
->  	struct early_res *r;
->  	int i;
->  
-> +	if (start == end)
-> +		return;
-> +
-> +	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
-> +		return;
-> +
->  try_next:
->  	i = find_overlapped_early(start, end);
->  	if (i >= max_early_res)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Performance is hardly the only motivation to put things into the
+> kernel. Think kernel mode-setting and devtmpfs (with the ironic twist
+> of original devfs being removed from the kernel) here, for example.
+>    
+
+Motivations include privileged device access, needing to access physical 
+memory, security, and keeping the userspace interface sane.  There are 
+others.  I don't think any of them hold here.
+
+-- 
+error compiling committee.c: too many arguments to function
+
