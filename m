@@ -1,149 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab0CVHkg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 03:40:36 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:43579 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751507Ab0CVHke convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 03:40:34 -0400
-Date: Mon, 22 Mar 2010 07:39:46 +0000
-From: Marc Zyngier <maz@misterjones.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Jebediah Huang <jebediah.huang@gmail.com>
-Subject: Re: [PATCH] gpio: add interrupt handling capability to max732x
-Message-ID: <20100322073946.5277f6ed@taxman.wild-wind.fr.eu.org>
-In-Reply-To: <20100319164156.87b6fc43.akpm@linux-foundation.org>
-References: <4ed0c90d27185c38ccb15d6d4442cfd4@localhost>
-	<20100319164156.87b6fc43.akpm@linux-foundation.org>
-Organization: Metropolis -- Nowhere
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: akpm@linux-foundation.org, eric.y.miao@gmail.com, linux-kernel@vger.kernel.org, jebediah.huang@gmail.com
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	id S1754073Ab0CVHpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 03:45:01 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:62607 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab0CVHo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 03:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=DY6VZnZ2xOo1rnoabBNn9AObCox40/jVhVOTBDOA2lL57W1/w0LIV9MXwNmh34Beue
+         OE9xXsZihIG5gVCLG//BQ9ejp0dneEktZp0kMV2pFLthqS8lZZFLHsSLK5cYBO1Njh3O
+         DBHr2mFChYltEcqs9Tc9779Bxl2t7SB9LvYEA=
+MIME-Version: 1.0
+In-Reply-To: <20100322063747.GF31621@core.coreip.homeip.net>
+References: <20100301080342.GH765@core.coreip.homeip.net> <8bd0f97a1003090644p19fb7dacqe1f2fb3adee3fa7a@mail.gmail.com> 
+	<20100309175107.GB23378@core.coreip.homeip.net> <8bd0f97a1003090958i741f4ffm3528450e89089e9@mail.gmail.com> 
+	<20100309181037.GB19814@core.coreip.homeip.net> <8bd0f97a1003091013q565f8b1bse66b48d9c9a25600@mail.gmail.com> 
+	<20100322063747.GF31621@core.coreip.homeip.net>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 22 Mar 2010 03:44:38 -0400
+Message-ID: <8bd0f97a1003220044n65e2d543ubc831810c0d3da97@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 2.6.34-rc0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       "Song, Barry" <Barry.Song@analog.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Robin Getz <rgetz@blackfin.uclinux.org>
+Content-Type: multipart/mixed; boundary=000e0cd23d48ae94ee04825edf65
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Mar 2010 16:41:56 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+--000e0cd23d48ae94ee04825edf65
+Content-Type: text/plain; charset=UTF-8
 
-> On Tue, 16 Mar 2010 11:34:52 +0100
-> Marc Zyngier <maz@misterjones.org> wrote:
-> 
-> > +static irqreturn_t max732x_irq_handler(int irq, void *devid)
-> > +{
-> > +	struct max732x_chip *chip = devid;
-> > +	uint8_t pending;
-> > +	uint8_t level;
-> > +
-> > +	pending = max732x_irq_pending(chip);
-> > +
-> > +	if (!pending)
-> > +		return IRQ_HANDLED;
-> 
-> Should be IRQ_NONE?
-> 
-> If this device was on a shared interrupt line and the interrupt was
-> caused by some other device, and this handler is called first then the
-> incorrect IRQ_HANDLED return could cause the irq core to do wrong things.
+On Mon, Mar 22, 2010 at 02:37, Dmitry Torokhov wrote:
+> On Tue, Mar 09, 2010 at 01:13:34PM -0500, Mike Frysinger wrote:
+>> On Tue, Mar 9, 2010 at 13:10, Dmitry Torokhov wrote:
+>> > On Tue, Mar 09, 2010 at 12:58:24PM -0500, Mike Frysinger wrote:
+>> >> the AD714x is not an accelerometer, it's a capacitance touch sensor
+>> >
+>> > OK, will dig it up.
+>>
+>> thanks
+>
+> Mike, could you please take a look at mny 'next' branch and give the
+> version there a try - I made a couple of small changes before
+> applying...
 
-Hi Andrew,
+changes look ok to me, and it seems to build fine.  maybe Barry can
+give it a quick test to make sure it still probes/works, but i dont
+see anything to suggest it wouldnt ...
 
-Would the following patch (against the original version) address your
-concerns?
+if you're doing cosmetic fixes, i'd suggest squashing the attached into it too.
+-mike
 
-Thanks,
+--000e0cd23d48ae94ee04825edf65
+Content-Type: application/octet-stream; name="ad714x-comments.patch"
+Content-Disposition: attachment; filename="ad714x-comments.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g72z14n60
 
-	M.
-
->From a8d40580ad5fe23e0737bac5f8b04dfd8cb93fe5 Mon Sep 17 00:00:00 2001
-From: Marc Zyngier <maz@misterjones.org>
-Date: Mon, 22 Mar 2010 07:28:30 +0000
-Subject: [PATCH] gpio: max732x: allow IRQF_SHARED when hardware mask is available
-
-Signed-off-by: Marc Zyngier <maz@misterjones.org>
----
- drivers/gpio/max732x.c |   25 ++++++++++++++++++++++---
- 1 files changed, 22 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpio/max732x.c b/drivers/gpio/max732x.c
-index 647ae6f..07a9405 100644
---- a/drivers/gpio/max732x.c
-+++ b/drivers/gpio/max732x.c
-@@ -293,6 +293,14 @@ static int max732x_readw(struct max732x_chip *chip, uint16_t *val)
- 	return 0;
- }
- 
-+static inline int max732x_has_irqmask(struct max732x_chip *chip)
-+{
-+	if (chip->irq_features == INT_NO_MASK)
-+		return 0;
-+
-+	return 1;
-+}
-+
- static void max732x_irq_update_mask(struct max732x_chip *chip)
- {
- 	uint16_t msg;
-@@ -302,7 +310,7 @@ static void max732x_irq_update_mask(struct max732x_chip *chip)
- 
- 	chip->irq_mask = chip->irq_mask_cur;
- 
--	if (chip->irq_features == INT_NO_MASK)
-+	if (!max732x_has_irqmask(chip))
- 		return;
- 
- 	mutex_lock(&chip->lock);
-@@ -439,8 +447,14 @@ static irqreturn_t max732x_irq_handler(int irq, void *devid)
- 
- 	pending = max732x_irq_pending(chip);
- 
--	if (!pending)
-+	if (!pending) {
-+		/* if we have a hardware mask, then the interrupt must
-+		 * come from another device */
-+		if (max732x_has_irqmask(chip))
-+			return IRQ_NONE;
-+
- 		return IRQ_HANDLED;
-+	}
- 
- 	do {
- 		level = __ffs(pending);
-@@ -462,6 +476,7 @@ static int max732x_irq_setup(struct max732x_chip *chip,
- 
- 	if (pdata->irq_base && has_irq != INT_NONE) {
- 		int lvl;
-+		int irq_flags;
- 
- 		chip->irq_base = pdata->irq_base;
- 		chip->irq_features = has_irq;
-@@ -484,10 +499,14 @@ static int max732x_irq_setup(struct max732x_chip *chip,
- #endif
- 		}
- 
-+		irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
-+		if (max732x_has_irqmask(chip))
-+			irq_flags |= IRQF_SHARED;
-+
- 		ret = request_threaded_irq(client->irq,
- 					   NULL,
- 					   max732x_irq_handler,
--					   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-+					   irq_flags,
- 					   dev_name(&client->dev), chip);
- 		if (ret) {
- 			dev_err(&client->dev, "failed to request irq %d\n",
--- 
-1.7.0.2
-
-
-
--- 
-I'm the slime oozin' out from your TV set...
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvaW5wdXQvbWlzYy9hZDcxNHguYyBiL2RyaXZlcnMvaW5wdXQv
+bWlzYy9hZDcxNHguYwppbmRleCBlZDYzODFhLi5mOGM0ZTQ1IDEwMDY0NAotLS0gYS9kcml2ZXJz
+L2lucHV0L21pc2MvYWQ3MTR4LmMKKysrIGIvZHJpdmVycy9pbnB1dC9taXNjL2FkNzE0eC5jCkBA
+IC0yMzQsNyArMjM0LDYgQEAgc3RhdGljIGludCBhZDcxNHhfY2FsX2Fic19wb3Moc3RydWN0IGFk
+NzE0eF9jaGlwICphZDcxNHgsCiAJcmV0dXJuIChtYXhfY29vcmQgLyAoZW5kX3N0YWdlIC0gc3Rh
+cnRfc3RhZ2UpKSAqIGFfcGFyYW0gLyBiX3BhcmFtOwogfQogCi0KIC8qCiAgKiBPbmUgYnV0dG9u
+IGNhbiBjb25uZWN0IHRvIG11bHRpIHBvc2l0aXZlIGFuZCBuZWdhdGl2ZSBvZiBDRENzCiAgKiBN
+dWx0aS1idXR0b25zIGNhbiBjb25uZWN0IHRvIHNhbWUgcG9zaXRpdmUvbmVnYXRpdmUgb2Ygb25l
+IENEQwpAQCAtNDI2LDcgKzQyNSw4IEBAIHN0YXRpYyB2b2lkIGFkNzE0eF9zbGlkZXJfc3RhdGVf
+bWFjaGluZShzdHJ1Y3QgYWQ3MTR4X2NoaXAgKmFkNzE0eCwgaW50IGlkeCkKIAl9CiB9CiAKLS8q
+IFdoZW4gdGhlIHNjcm9sbCB3aGVlbCBpcyBhY3RpdmF0ZWQsIHdlIGNvbXB1dGUgdGhlIGFic29s
+dXRlIHBvc2l0aW9uIGJhc2VkCisvKgorICogV2hlbiB0aGUgc2Nyb2xsIHdoZWVsIGlzIGFjdGl2
+YXRlZCwgd2UgY29tcHV0ZSB0aGUgYWJzb2x1dGUgcG9zaXRpb24gYmFzZWQKICAqIG9uIHRoZSBz
+ZW5zb3IgdmFsdWVzLiBUbyBjYWxjdWxhdGUgdGhlIHBvc2l0aW9uLCB3ZSBmaXJzdCBkZXRlcm1p
+bmUgdGhlCiAgKiBzZW5zb3IgdGhhdCBoYXMgdGhlIGdyZWF0ZXN0IHJlc3BvbnNlIGFtb25nIHRo
+ZSA4IHNlbnNvcnMgdGhhdCBjb25zdGl0dXRlcwogICogdGhlIHNjcm9sbHdoZWVsLiBUaGVuIHdl
+IGRldGVybWluZWQgdGhlIDIgc2Vuc29ycyBvbiBlaXRoZXIgc2lkZXMgb2YgdGhlCkBAIC0xMDA1
+LDcgKzEwMDUsNyBAQCBzdGF0aWMgdm9pZCBhZDcxNHhfaHdfaW5pdChzdHJ1Y3QgYWQ3MTR4X2No
+aXAgKmFkNzE0eCkKIAl1bnNpZ25lZCBzaG9ydCByZWdfYmFzZTsKIAl1bnNpZ25lZCBzaG9ydCBk
+YXRhOwogCi0JLyogY29uZmlndXJhdGlvbiBDREMgYW5kIGludGVycnVwdHMqLworCS8qIGNvbmZp
+Z3VyYXRpb24gQ0RDIGFuZCBpbnRlcnJ1cHRzICovCiAKIAlmb3IgKGkgPSAwOyBpIDwgU1RBR0Vf
+TlVNOyBpKyspIHsKIAkJcmVnX2Jhc2UgPSBBRDcxNFhfU1RBR0VDRkdfUkVHICsgaSAqIFNUQUdF
+X0NGR1JFR19OVU07Cg==
+--000e0cd23d48ae94ee04825edf65--
