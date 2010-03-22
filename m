@@ -1,33 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab0CVMMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 08:12:54 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:39156 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab0CVMMw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 08:12:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=hy7+riqbTNZ3Bg3VEEQqpZ65RVWsxm02F+1c9o2z7cTFXhxcv5y1ZV2Rqa1q3HjQiu
-         gSt/8nZ3c/bi0FiRR4GQiQtbbIoUUKtYfOxsRF7NCw8qXjhrS/+peiBAjonUz3gG4JBb
-         oWiqoe0X/nZGn9eVBYpZphj2dZI3ONN+mBmXo=
-Date: Mon, 22 Mar 2010 15:12:42 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Richard =?iso-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] mfd: off by one calculating size
-Message-ID: <20100322121242.GL21571@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Samuel Ortiz <sameo@linux.intel.com>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	Richard =?iso-8859-1?Q?R=F6jfors?= <richard.rojfors@pelagicore.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S1754558Ab0CVMOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 08:14:17 -0400
+Received: from fep02.xtra.co.nz ([210.54.141.244]:16700 "EHLO fep02.xtra.co.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752561Ab0CVMOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 08:14:16 -0400
+X-Greylist: delayed 1273 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Mar 2010 08:14:15 EDT
+Date: Tue, 23 Mar 2010 00:52:44 +1300
+From: Daniel Ngu <daniel.dy.ngu@gmail.com>
+To: Stefano Brivio <stefano.brivio@polimi.it>
+Cc: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/wireless/b43/main.c:4351: Fixed coding style
+Message-ID: <20100322115244.GA10368@zooey>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -36,23 +21,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm pretty sure that it should be + 1 here.  It's an off by one, because
-we start counting at zero.
+WARNING: braces {} are not necessary for any arm of this statement
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Daniel Ngu <daniel.dy.ngu@gmail.com>
 ---
-Found by a static checker and untested.  Please review carefully.
+ drivers/net/wireless/b43/main.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/timberdale.h b/drivers/mfd/timberdale.h
-index 8d27ffa..902c451 100644
---- a/drivers/mfd/timberdale.h
-+++ b/drivers/mfd/timberdale.h
-@@ -66,7 +66,7 @@
+diff --git a/drivers/net/wireless/b43/main.c b/drivers/net/wireless/b43/main.c
+index 1521b1e..14cf3bd 100644
+--- a/drivers/net/wireless/b43/main.c
++++ b/drivers/net/wireless/b43/main.c
+@@ -4348,11 +4348,10 @@ static int b43_wireless_core_init(struct b43_wldev *dev)
+ 	b43_set_phytxctl_defaults(dev);
  
- #define CHIPCTLOFFSET	0x800
- #define CHIPCTLEND	0x8ff
--#define CHIPCTLSIZE	(CHIPCTLEND - CHIPCTLOFFSET)
-+#define CHIPCTLSIZE	(CHIPCTLEND - CHIPCTLOFFSET + 1)
+ 	/* Minimum Contention Window */
+-	if (phy->type == B43_PHYTYPE_B) {
++	if (phy->type == B43_PHYTYPE_B)
+ 		b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_MINCONT, 0x1F);
+-	} else {
++	else
+ 		b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_MINCONT, 0xF);
+-	}
+ 	/* Maximum Contention Window */
+ 	b43_shm_write16(dev, B43_SHM_SCRATCH, B43_SHM_SC_MAXCONT, 0x3FF);
  
- #define INTCOFFSET	0xc00
- #define INTCEND		0xfff
+-- 
+1.5.6.5
+
