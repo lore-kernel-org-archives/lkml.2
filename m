@@ -1,129 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0CVLOY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 07:14:24 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48306 "EHLO mx3.mail.elte.hu"
+	id S1754244Ab0CVLOj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 07:14:39 -0400
+Received: from www.tglx.de ([62.245.132.106]:46401 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab0CVLOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 07:14:22 -0400
-Date: Mon, 22 Mar 2010 12:14:11 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Anthony Liguori <anthony@codemonkey.ws>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-Message-ID: <20100322111411.GC3483@elte.hu>
-References: <20100318172805.GB26067@elte.hu>
- <4BA32E1A.2060703@redhat.com>
- <20100319085346.GG12576@elte.hu>
- <4BA47AD0.2010509@redhat.com>
- <20100321190656.GC25922@elte.hu>
- <4BA68009.5010906@redhat.com>
- <20100321205531.GC30194@elte.hu>
- <4BA692C3.7010408@redhat.com>
- <20100321215455.GB13219@elte.hu>
- <4BA7187E.3050405@redhat.com>
+	id S1754263Ab0CVLOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 07:14:37 -0400
+Date: Mon, 22 Mar 2010 12:14:15 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Thomas Renninger <trenn@suse.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com
+Subject: Re: [PATCH 02/10] x86: fix out of order of gsi - full
+In-Reply-To: <1269221770-9667-3-git-send-email-yinghai@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003221131470.3147@localhost.localdomain>
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org> <1269221770-9667-3-git-send-email-yinghai@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7187E.3050405@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 21 Mar 2010, Yinghai Lu wrote:
+> +extern int gsi_delta;
 
-* Avi Kivity <avi@redhat.com> wrote:
+  Is this really necessary ? See below.
 
-> On 03/21/2010 11:54 PM, Ingo Molnar wrote:
-> >* Avi Kivity<avi@redhat.com>  wrote:
-> >
-> >>On 03/21/2010 10:55 PM, Ingo Molnar wrote:
-> >>>Of course you could say the following:
-> >>>
-> >>>   ' Thanks, I'll mark this for v2.6.36 integration. Note that we are not
-> >>>     able to add this to the v2.6.35 kernel queue anymore as the ongoing
-> >>>     usability work already takes up all of the project's maintainer and
-> >>>     testing bandwidth. If you want the feature to be merged sooner than that
-> >>>     then please help us cut down on the TODO and BUGS list that can be found
-> >>>     at XYZ. There's quite a few low hanging fruits there. '
-> >>That would be shooting at my own foot as well as the contributor's since I
-> >>badly want that RCU stuff, and while a GUI would be nice, that itch isn't on
-> >>my back.
-> >I think this sums up the root cause of all the problems i see with KVM pretty
-> >well.
-> 
-> I think we agree at last.  Neither I nor my employer are interested in 
-> running qemu as a desktop-on-desktop tool, therefore I don't invest any 
-> effort in that direction, or require it from volunteers.
+> +int gsi_to_irq(unsigned int gsi);
 
-Obviously your employer at least in part defers to you when it comes to KVM 
-priorities.
+  unsigned int please
 
-So, just to make this really clear, _you_ are not interested in running qemu 
-as a desktop-on-desktop tool, subsequently this kind of 
-disinterest-for-desktop-usability trickled through the whole KVM stack and 
-poisoned your attitude and your contributor's attitude.
+> +unsigned int irq_to_gsi(int irq);
 
-Too sad really and it's doubly sad that you dont feel anything wrong about 
-that.
+  Ditto
 
-> If you think a good GUI is so badly needed, either write one yourself, or 
-> convince someone else to do it.
+> @@ -446,11 +448,11 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+>  
+>  int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
+>  {
+> -	*irq = gsi;
+> +	*irq = gsi_to_irq(gsi);
+>  
+>  #ifdef CONFIG_X86_IO_APIC
+>  	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC)
+> -		setup_IO_APIC_irq_extra(gsi);
+> +		setup_IO_APIC_irq_extra(gsi, irq);
 
-To a certain degree we are trying to do a small bit of that (see this very 
-thread) - and you are NAK-ing and objecting the heck out of it via your 
-unreasonable microkernelish and server-centric views.
+  Please do not propagate that pointer.
 
-With constant maintainer disinterest there's no wonder a non-desktop-oriented 
-KVM becomes a self-fulfilling prophecy: you think the desktop does not matter, 
-hence it becomes a reality in KVM space which you can constantly refer back to 
-as a 'fact'.
+    	 *irq = setup_IO_APIC_irq_extra(gsi);
 
-Which i find dishonest and disingenious at best.
+  Also these changes have a total lack of comments. Why do we modify
+  *irq here depending on the setup_IO_APIC_irq_extra() results ?
 
-> (btw, why are you interested in desktop-on-desktop? one use case is 
-> developers, which don't really need fancy GUIs; a second is people who test 
-> out distributions, but that doesn't seem to be a huge population; and a 
-> third is people running Windows for some application that doesn't run on 
-> Linux - hopefully a small catergory as well.  Seems to be quite a small 
-> target audience, compared to, say, video editing)
+>  #endif
+>  
+>  	return 0;
+> @@ -914,6 +916,40 @@ static void save_mp_irq(struct mpc_intsrc *m)
+>  		panic("Max # of irq sources exceeded!!\n");
+>  }
+>  
+> +/* By default isa irqs are identity mapped to gsis */
+> +static unsigned int isa_irq_to_gsi[NR_IRQS_LEGACY] = {
+> +	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+> +};
+> +
+> +int gsi_delta;
 
-I'm interested in desktop-on-desktop because i walk this world with open eyes 
-and i care about Linux, and these days qemu-kvm is the first thing a new Linux 
-user sees about Linux virtualization. I've observed several people i know in 
-person to turn away from Linux and go back to Windows or go over to Apple 
-because they had a much more mature solution.
+  Please make this static and provide a function to modify it from
+  probe_ioapic_i8259().
 
-I'd probably turn away from Linux myself if i were a newbie and if i were 
-forced to use KVM on the desktop today.
+  Also the variable name is horrible. What's the delta here ? It's an
+  offset, right ?
 
-Again, you dont seem to realize that you as a maintainer are at a central 
-point where you have the ability to turn the self-fulfilling prophecy that 
-'nobody cares about the Linux desktop' into a reality - or where you have the 
-ability to prevent it from happening. It is hugely harmful process, especially 
-as you seem to delude yourself that you have nothing to do with it.
+> +int gsi_to_irq(unsigned int gsi)
 
-Anyway, it's good you expressed your views about this as this will help the 
-chances of a fresh restart. (which chances are still not too good though)
+unsigned int
+
+> +{
+> +	unsigned int irq = gsi;
+> +	unsigned int i;
+> +
+> +	irq += gsi_delta;
+
+  Please make that:
+
+  	 unsigned int i, irq = gsi + gsi_delta;
+
+> +	for (i = 0; i < NR_IRQS_LEGACY; i++) {
+> +		if (isa_irq_to_gsi[i] == gsi) {
+> +			irq = i;
+> +			break;
+> +		}
+> +	}
+> +
+> +	return irq;
+> +}
+> +
+> +unsigned int irq_to_gsi(int irq)
+
+  unsigned int please
+
+> +{
+> +	unsigned int gsi;
+> +
+> +	if (irq < NR_IRQS_LEGACY)
+> +		gsi = isa_irq_to_gsi[irq];
+> +	else
+> +		gsi = irq - gsi_delta;
+> +
+> +	return gsi;
+> +}
+> +
+>  void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+>  {
+>  	int ioapic;
+> @@ -945,6 +981,8 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
+>  	mp_irq.dstirq = pin;	/* INTIN# */
+>  
+>  	save_mp_irq(&mp_irq);
+> +
+> +	isa_irq_to_gsi[bus_irq] = gsi;
+
+>  }
+>  
+>  void __init mp_config_acpi_legacy_irqs(void)
+> @@ -974,7 +1012,7 @@ void __init mp_config_acpi_legacy_irqs(void)
+>  	/*
+>  	 * Locate the IOAPIC that manages the ISA IRQs (0-15).
+>  	 */
+> -	ioapic = mp_find_ioapic(0);
+> +	ioapic = mp_find_ioapic(irq_to_gsi(0));
+>  	if (ioapic < 0)
+>  		return;
+>  	dstapic = mp_ioapics[ioapic].apicid;
+> @@ -1057,6 +1095,7 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+
+  Why is mp_register_gsi global ? It's only used in
+  arch/x86/kernel/acpi/boot.c
+
+>  {
+>  	int ioapic;
+>  	int ioapic_pin;
+> +	int irq;
+
+  irq is unsigned int.
+
+>  	struct io_apic_irq_attr irq_attr;
+>  
+>  	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+> @@ -1079,11 +1118,12 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+>  		gsi = ioapic_renumber_irq(ioapic, gsi);
+>  #endif
+>  
+> +	irq = gsi_to_irq(gsi);
+>  	if (ioapic_pin > MP_MAX_IOAPIC_PIN) {
+>  		printk(KERN_ERR "Invalid reference to IOAPIC pin "
+>  		       "%d-%d\n", mp_ioapics[ioapic].apicid,
+>  		       ioapic_pin);
+> -		return gsi;
+> +		return irq;
+>  	}
+>  
+>  	if (enable_update_mptable)
+> @@ -1092,9 +1132,9 @@ int mp_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+>  	set_io_apic_irq_attr(&irq_attr, ioapic, ioapic_pin,
+>  			     trigger == ACPI_EDGE_SENSITIVE ? 0 : 1,
+>  			     polarity == ACPI_ACTIVE_HIGH ? 0 : 1);
+> -	io_apic_set_pci_routing(dev, gsi, &irq_attr);
+> +	io_apic_set_pci_routing(dev, irq, &irq_attr);
+>  
+> -	return gsi;
+> +	return irq;
+>  }
+>  
+>  /*
+> @@ -1151,8 +1191,10 @@ static int __init acpi_parse_madt_ioapic_entries(void)
+>  	 * If BIOS did not supply an INT_SRC_OVR for the SCI
+>  	 * pretend we got one so we can set the SCI flags.
+>  	 */
+> -	if (!acpi_sci_override_gsi)
+> -		acpi_sci_ioapic_setup(acpi_gbl_FADT.sci_interrupt, 0, 0);
+> +	if (!acpi_sci_override_gsi) {
+> +		int irq = gsi_to_irq(acpi_gbl_FADT.sci_interrupt);
+
+  unsigned int. New line between variable declaration and code.
+
+> +		acpi_sci_ioapic_setup(irq, acpi_gbl_FADT.sci_interrupt, 0, 0);
+> +	}
+>  
+>  	/* Fill in identity legacy mappings where no override */
+>  	mp_config_acpi_legacy_irqs();
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index a917fdf..61b59ef 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -97,6 +97,8 @@ int mp_irq_entries;
+>  /* GSI interrupts */
+>  static int nr_irqs_gsi = NR_IRQS_LEGACY;
+>  
+> +static int boot_ioapic_idx;
+> +
+>  #if defined (CONFIG_MCA) || defined (CONFIG_EISA)
+>  int mp_bus_id_to_type[MAX_MP_BUSSES];
+>  #endif
+> @@ -1032,7 +1034,7 @@ static inline int irq_trigger(int idx)
+>  int (*ioapic_renumber_irq)(int ioapic, int irq);
+>  static int pin_2_irq(int idx, int apic, int pin)
+>  {
+> -	int irq, i;
+> +	int irq;
+
+  Can we please do a cleanup of irq variables to use unsigned
+  int. That should be done as a separate patch.
+
+>  	int bus = mp_irqs[idx].srcbus;
+>  
+>  	/*
+> @@ -1044,18 +1046,28 @@ static int pin_2_irq(int idx, int apic, int pin)
+>  	if (test_bit(bus, mp_bus_not_pci)) {
+>  		irq = mp_irqs[idx].srcbusirq;
+
+  Can we simply return mp_irqs[idx].srcbusirq here and get rid of the
+  else path ident level ?
+
+>  	} else {
+> -		/*
+> -		 * PCI IRQs are mapped in order
+> -		 */
+> -		i = irq = 0;
+> -		while (i < apic)
+> -			irq += nr_ioapic_registers[i++];
+> -		irq += pin;
+> +		unsigned int gsi;
+
+  New line please
+
+> +		if (!acpi_ioapic) {
+> +			int i;
+
+  
+
+> +			/*
+> +			 * PCI IRQs are mapped in order
+> +			 */
+> +			i = gsi = 0;
+> +			while (i < apic)
+> +				gsi += nr_ioapic_registers[i++];
+> +			gsi += pin;
+> +		} else
+> +			gsi = pin + mp_gsi_routing[apic].gsi_base;
+> +
+> +#ifdef CONFIG_X86_32
+>  		/*
+>                   * For MPS mode, so far only needed by ES7000 platform
+>                   */
+>  		if (ioapic_renumber_irq)
+> -			irq = ioapic_renumber_irq(apic, irq);
+> +			gsi = ioapic_renumber_irq(apic, gsi);
+> +#endif
+> +
+> +		irq = gsi_to_irq(gsi);
+>  	}
+>  
+>  #ifdef CONFIG_X86_32
+> @@ -1505,9 +1517,10 @@ static void __init setup_IO_APIC_irqs(void)
+>  	struct irq_cfg *cfg;
+>  	int node = cpu_to_node(boot_cpu_id);
+>  
+> +	apic_id = boot_ioapic_idx;
+> +
+>  	apic_printk(APIC_VERBOSE, KERN_DEBUG "init IO_APIC IRQs\n");
+>  
+> -	for (apic_id = 0; apic_id < nr_ioapics; apic_id++)
+>  	for (pin = 0; pin < nr_ioapic_registers[apic_id]; pin++) {
+>  		idx = find_irq_entry(apic_id, pin, mp_INT);
+>  		if (idx == -1) {
+> @@ -1529,9 +1542,6 @@ static void __init setup_IO_APIC_irqs(void)
+>  
+>  		irq = pin_2_irq(idx, apic_id, pin);
+>  
+> -		if ((apic_id > 0) && (irq > 16))
+> -			continue;
+> -
+>  		/*
+>  		 * Skip the timer IRQ if there's a quirk handler
+>  		 * installed and if it returns 1:
+> @@ -1565,7 +1575,7 @@ static void __init setup_IO_APIC_irqs(void)
+>   * but could not use acpi_register_gsi()
+>   * like some special sci in IBM x3330
+>   */
+> -void setup_IO_APIC_irq_extra(u32 gsi)
+> +void setup_IO_APIC_irq_extra(u32 gsi, unsigned int *pirq)
+>  {
+>  	int apic_id = 0, pin, idx, irq;
+>  	int node = cpu_to_node(boot_cpu_id);
+> @@ -1585,6 +1595,7 @@ void setup_IO_APIC_irq_extra(u32 gsi)
+>  		return;
+>  
+>  	irq = pin_2_irq(idx, apic_id, pin);
+> +	*pirq = irq;
+>  #ifdef CONFIG_SPARSE_IRQ
+>  	desc = irq_to_desc(irq);
+>  	if (desc)
+> @@ -2028,6 +2039,30 @@ void __init enable_IO_APIC(void)
+>  	clear_IO_APIC();
+>  }
+>  
+> +static void __init probe_ioapic_i8259(void)
+> +{
+> +	/* probe boot ioapic idx */
+> +	boot_ioapic_idx = ioapic_i8259.apic;
+
+  boot_ioapic_idx is an apic id. Why is the variable name suggesting
+  it's an index ?
+
+> +	if (boot_ioapic_idx < 0)
+> +		boot_ioapic_idx = find_isa_irq_apic(0, mp_INT);
+> +#ifdef CONFIG_ACPI
+> +	if (!acpi_disabled && acpi_ioapic && boot_ioapic_idx < 0)
+> +		boot_ioapic_idx = mp_find_ioapic(irq_to_gsi(0));
+> +#endif
+> +	if (boot_ioapic_idx < 0)
+> +		boot_ioapic_idx = 0;
+> +
+> +#ifdef CONFIG_ACPI
+> +	if (mp_gsi_routing[boot_ioapic_idx].gsi_base) {
+> +		gsi_delta = NR_IRQS_LEGACY;
+> +		nr_irqs_gsi += NR_IRQS_LEGACY;
+> +		printk(KERN_DEBUG "new nr_irqs_gsi: %d\n", nr_irqs_gsi);
+> +	}
+> +#endif
+> +
+> +	printk(KERN_INFO "boot_ioapic_idx: %d\n", boot_ioapic_idx);
+> +}
+> +
+>  /*
+>   * Not an __init, needed by the reboot code
+>   */
+> @@ -3045,7 +3080,7 @@ static inline void __init check_timer(void)
+>  				legacy_pic->chip->unmask(0);
+>  			}
+>  			if (disable_timer_pin_1 > 0)
+> -				clear_IO_APIC_pin(0, pin1);
+> +				clear_IO_APIC_pin(apic1, pin1);
+
+  How is this change related to this patch ? It looks more like an
+  independent fix.
 
 Thanks,
-	
-	Ingo
+
+	tglx
