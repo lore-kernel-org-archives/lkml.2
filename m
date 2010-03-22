@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab0CVIwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 04:52:24 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:55245 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751507Ab0CVIwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 04:52:22 -0400
-X-Sasl-enc: He39VkulevC6/nOrTZRU2px9hFmtnWhZOF+bAiBJyy/5 1269247941
-Message-ID: <4BA72FC0.6060002@ladisch.de>
-Date: Mon, 22 Mar 2010 09:52:16 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754137Ab0CVIyV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 04:54:21 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43699 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753656Ab0CVIyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 04:54:19 -0400
+Date: Mon, 22 Mar 2010 09:54:12 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH v2 1/6] hid: new driver for PicoLCD device
+In-Reply-To: <20100321173737.5fcf3580@neptune.home>
+Message-ID: <alpine.LNX.2.00.1003220951440.18642@pobox.suse.cz>
+References: <20100320170014.440959a8@neptune.home> <20100320170241.55258b0d@neptune.home> <20100321034600.GE29360@core.coreip.homeip.net> <20100321173737.5fcf3580@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Alex Deucher <alexdeucher@gmail.com>
-CC: linux-pci@vger.kernel.org, dri-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI quirks: RS780/RS880: work around missing MSI initialization
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AMD says in section 2.5.4 (GFX MSI Enable) of #43291 (AMD 780G Family
-Register Programming Requirements):
+On Sun, 21 Mar 2010, Bruno Prémont wrote:
 
-  The SBIOS must enable internal graphics MSI capability in GCCFG by
-  setting the following: NBCFG.NB_CNTL.STRAP_MSI_ENABLE='1'
+> > > +	}
+> > > +	data->status |= PICOLCD_BUSY;
+> > > +	data->pending = work;
+> > > +	for (i = k = 0; i < report->maxfield; i++)
+> > > +		for (j = 0; j < report->field[i]->report_count; j++) {
+> > > +			hid_set_field(report->field[i], j, k < size ? raw_data[k] : 0);
+> > > +			k++;
+> > > +		}
+> > > +	usbhid_submit_report(data->hdev, report, USB_DIR_OUT);
+> > > +	complete_all(&data->ready);
+> > > +	INIT_COMPLETION(data->ready);
+> > 
+> > Umm, what does this do, exactly?
+> >
+> It wakes up anyone waiting on the completion and then resets the completion
+> as otherwise any future attempt to wait on it would succeed immediately.
+> 
+> The complete_all() instead of just complete() comes from the reset() function.
+> I can probably reduce it here.
+> 
+> Will check this combined with your mutex suggestion above.
 
-Quite a few BIOS writers misinterpret this sentence and think that
-enabling MSI is an optional feature.  However, clearing that bit just
-prevents delivery of MSI messages but does not remove the MSI PCI
-capabilities registers, and so leaves these devices unusable for any
-driver that attempts to use MSI.
+I am afraid this code is racy as is. You can't be sure that whoever has 
+been waiting on the completion has been notified already between 
+complete_all() and INIT_COMPLETION(), can you?
 
-Setting that bit is not possible after the BIOS has locked down the
-configuration registers, so we have to manually disable MSI for the
-affected devices.
+Thanks for the driver!
 
-This fixes the codec communication errors in the HDA driver when
-accessing the HDMI audio device, and allows us to get rid of the
-overcautious quirk in radeon_irq_kms.c.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Cc: <stable@kernel.org>
----
- drivers/pci/quirks.c                    |   31 +++++++++++++++++++++++++++++++
- drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 +-------
- 2 files changed, 32 insertions(+), 7 deletions(-)
-
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2479,6 +2479,39 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
- 			quirk_msi_intx_disable_bug);
- 
-+/*
-+ * MSI does not work with the AMD RS780/RS880 internal graphics and HDMI audio
-+ * devices unless the BIOS has initialized the nb_cntl.strap_msi_enable bit.
-+ */
-+static void __init rs780_int_gfx_disable_msi(struct pci_dev *int_gfx_bridge)
-+{
-+	u32 nb_cntl;
-+
-+	if (!int_gfx_bridge->subordinate)
-+		return;
-+
-+	pci_bus_write_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
-+				   0x60, 0);
-+	pci_bus_read_config_dword(int_gfx_bridge->bus, PCI_DEVFN(0, 0),
-+				  0x64, &nb_cntl);
-+
-+	if (!(nb_cntl & BIT(10))) {
-+		dev_warn(&int_gfx_bridge->dev,
-+			 FW_WARN "RS780: MSI for internal graphics disabled\n");
-+		int_gfx_bridge->subordinate->bus_flags |= PCI_BUS_FLAGS_NO_MSI;
-+	}
-+}
-+
-+#define PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX	0x9602
-+
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD,
-+			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
-+			rs780_int_gfx_disable_msi);
-+/* wrong vendor ID on M4A785TD motherboard: */
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK,
-+			PCI_DEVICE_ID_AMD_RS780_P2P_INT_GFX,
-+			rs780_int_gfx_disable_msi);
-+
- #endif /* CONFIG_PCI_MSI */
- 
- #ifdef CONFIG_PCI_IOV
---- a/drivers/gpu/drm/radeon/radeon_irq_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_irq_kms.c
-@@ -116,13 +116,7 @@ int radeon_irq_kms_init(struct radeon_de
- 	}
- 	/* enable msi */
- 	rdev->msi_enabled = 0;
--	/* MSIs don't seem to work on my rs780;
--	 * not sure about rs880 or other rs780s.
--	 * Needs more investigation.
--	 */
--	if ((rdev->family >= CHIP_RV380) &&
--	    (rdev->family != CHIP_RS780) &&
--	    (rdev->family != CHIP_RS880)) {
-+	if (rdev->family >= CHIP_RV380) {
- 		int ret = pci_enable_msi(rdev->pdev);
- 		if (!ret) {
- 			rdev->msi_enabled = 1;
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
