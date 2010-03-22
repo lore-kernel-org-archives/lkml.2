@@ -1,146 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab0CVVh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 17:37:56 -0400
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:52716 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756482Ab0CVVhy (ORCPT
+	id S1756492Ab0CVVrB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 17:47:01 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:54058 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259Ab0CVVrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 17:37:54 -0400
-X-Spam-ASN: 
-Date: Tue, 23 Mar 2010 00:37:47 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-       "Nikita V. Youshchenko" <yoush@cs.msu.su>, stas@lvk.cs.msu.su,
-       Rodolfo Giometti <giometti@enneenne.com>
-Subject: Re: [PATCHv2 0/6] pps: time synchronization over LPT
-Message-ID: <20100323003747.35ea417a@tornado.gnet>
-In-Reply-To: <1269291710.3283.11.camel@localhost.localdomain>
-References: <cover.1267008049.git.lasaine@lvk.cs.msu.su>
-	<1f1b08da1003081925p61a810e4v96be56640287d61@mail.gmail.com>
-	<20100322234201.73ffc06a@tornado.gnet>
-	<1269291710.3283.11.camel@localhost.localdomain>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/RAQ+6UlVCFwCC8B0k/Ci0zw"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	Mon, 22 Mar 2010 17:47:00 -0400
+Message-ID: <4BA7E4E7.8010005@oracle.com>
+Date: Mon, 22 Mar 2010 14:45:11 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: pavan_savoy@ti.com
+CC: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
+References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com> <1269292756-7469-2-git-send-email-pavan_savoy@ti.com> <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0202.4BA7E544.023B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/RAQ+6UlVCFwCC8B0k/Ci0zw
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 03/22/10 14:19, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> This change adds the Kconfig and Make file for TI's
+> ST line discipline driver and the BlueZ driver for BT
+> core of the TI BT/FM/GPS combo chip.
+> 
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>  drivers/misc/Kconfig        |    1 +
+>  drivers/misc/Makefile       |    1 +
+>  drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
+>  drivers/misc/ti-st/Makefile |    7 +++++++
+>  4 files changed, 33 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/ti-st/Kconfig
+>  create mode 100644 drivers/misc/ti-st/Makefile
+> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 625e3a6..c059bca 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
+>  source "drivers/misc/eeprom/Kconfig"
+>  source "drivers/misc/cb710/Kconfig"
+>  source "drivers/misc/iwmc3200top/Kconfig"
+> +source "drivers/misc/ti-st/Kconfig"
+>  
+>  endif # MISC_DEVICES
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index c221917..021f282 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+>  obj-$(CONFIG_HWLAT_DETECTOR)	+= hwlat_detector.o
+>  obj-y				+= eeprom/
+>  obj-y				+= cb710/
+> +obj-y				+= ti-st/
+> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
+> new file mode 100644
+> index 0000000..18eea1c
+> --- /dev/null
+> +++ b/drivers/misc/ti-st/Kconfig
+> @@ -0,0 +1,24 @@
+> +#
+> +# TI's shared transport line discipline and the protocol
+> +# drivers (BT, FM and GPS)
+> +#
+> +menu "Texas Instruments shared transport line discipline"
+> +    config TI_ST
+> +    tristate "shared transport core driver"
+> +    select FW_LOADER
+> +    help
+> +        This enables the shared transport core driver for TI
+> +	    BT / FM and GPS combo chips.This enables protocol drivers
+> +	    to register themselves with core and send data, the responses
+> +	    are returned to relevant protocol drivers based on their
+> +	    packet types.
 
-=D0=92 Mon, 22 Mar 2010 14:01:50 -0700
-john stultz <johnstul@us.ibm.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+Please indent kconfig help text with one tab + 2 spaces.
 
-> On Mon, 2010-03-22 at 23:42 +0300, Alexander Gordeev wrote:
-> > Hi John,
-> >=20
-> > Sorry for the delay...
-> >=20
-> > =D0=92 Mon, 8 Mar 2010 19:25:07 -0800
-> > john stultz <johnstul@us.ibm.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
-> >=20
-> > > On Wed, Feb 24, 2010 at 4:28 AM, Alexander Gordeev
-> > > <lasaine@lvk.cs.msu.su> wrote:
-> > > > This patchset is tested against the vanilla 2.6.32.9 kernel.
-> > > > But we are actually using it on 2.6.31.12-rt20 rt-preempt
-> > > > kernel most of the time. Also there is a version which should
-> > > > be applied on top of LinuxPPS out of tree patches (i.e. all
-> > > > clients and low-level irq timestamps stuff). Those who are
-> > > > interested in other versions of the patchset can find them in
-> > > > my git repository:
-> > > > http://lvk.cs.msu.su/~lasaine/timesync/linux-2.6-timesync.git
-> > > >
-> > > > There is one problem however: hardpps() works bad when used on
-> > > > top of 2.6.33-rc* with CONFIG_NO_HZ enabled. The reason for
-> > > > this is commit a092ff0f90cae22b2ac8028ecd2c6f6c1a9e4601.
-> > > > Without it hardpps() is able to sync to 1us precision in about
-> > > > 10 seconds. With it
-> > >=20
-> > > Uh. Not sure I see right off why the logarithmic time accumulation
-> > > would give you troubles. Its actually there to try to fix a
-> > > couple of NTP issues that cropped up when the accumulation
-> > > interval was pushed out to 2HZ with CONFIG_NO_HZ.
-> >=20
-> > Yes, I know. I guess (based on the commit log and other sources)
-> > that this change was added to make chrony work better on tickless
-> > kernel. So chrony corrects the time using only frequency
-> > corrections?
->=20
-> I'm not super familiar with chrony, but from talking with folks who
-> work on it, it doesn't use the doesn't use the kernel pll, and
-> instead uses old oneshot mode.=20
->=20
-> So yea, the logarithmic accumulation did help chrony as well as other
-> users of adjtimex that expected to be able to make HZ granular
-> adjustments.=20
->=20
->=20
-> > My approach is different: use time_offset t remove the phase error
-> > and adjust time_freq to remove frequency error.
->=20
-> This sounds much closer to how NTP does it.
-> So are you using the kernel PLL? or just singleshot for the offset?
+> +
+> +    config ST_BT
+> +    tristate "BlueZ bluetooth driver for ST"
 
-It's very close a singleshot adjustment, but it uses time_offset instead
-of time_adjust. This code does the trick:
+I'd be careful.  There are some places in the kernel tree where ST
+means STMicroelectronics.
 
-static inline s64 ntp_offset_chunk(s64 offset)
-{
-	if (time_status & STA_PPSTIME && time_status & STA_PPSSIGNAL)
-		return offset;
-	else
-		return shift_right(offset, SHIFT_PLL + time_constant);
-}
+> +    select BT
 
-So when kernel consumer is active, the whole time_offset is applied
-immediately.
+That select looks unsafe.  You don't know that CONFIG_NET  is even enabled here,
+do you?  Most drivers use "depends on BT" instead of "select BT" from my grepping.
 
-> > > Do you have any extra insight here as to whats going on with your
-> > > code?   The only thing I could guess would be second_overflow() is
-> > > happening closer to the actual overflow, but maybe less
-> > > regularly? But again, I'm not sure how this would be drastically
-> > > different then before with the 2HZ accumulation period.
-> >=20
-> > I still can't find this out (partially because I'm too busy with
-> > other tasks). The new code seems ok to mee. time_offset is added at
-> > second_overflow as usual. Maybe the problem is with the frequency
-> > correction. I'm going to run some tests that should show where the
-> > problem is: in the phase or freq correction.
->=20
-> Yea, you can play with things on the kernel side by setting
-> NTP_INTERVAL_FREQ to 2 in include/linux/timex.h to move back to the
-> coarser granularity (while preserving the logarithmic accumulation).
 
-Great, thanks for the point! Didn't think of it.
 
-> Do let me know if you find anything here.
+> +    select TI_ST
+> +    help
+> +       This enables the Bluetooth driver for TI BT/FM/GPS combo devices
 
-Sure!
+End sentence with period.
 
---=20
-  Alexander
+> +       This makes use of shared transport line discipline core driver to
+> +       communicate with the BT core of the combo chip.
+> +endmenu
+> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
+> new file mode 100644
+> index 0000000..cff3770
+> --- /dev/null
+> +++ b/drivers/misc/ti-st/Makefile
+> @@ -0,0 +1,7 @@
+> +#
+> +# Makefile for TI's shared transport line discipline
+> +# and it's protocol drivers (BT, FM, GPS)
 
---Sig_/RAQ+6UlVCFwCC8B0k/Ci0zw
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+         its
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> +#
+> +obj-$(CONFIG_TI_ST) += st_drv.o
+> +st_drv-objs			:= st_core.o st_kim.o st_ll.o
+> +obj-$(CONFIG_ST_BT) += bt_drv.o
 
-iQEcBAEBCAAGBQJLp+MrAAoJEElrwznyooJbE8AH/RYLPpLUHMwu1eU8kHibgLKU
-IUSW0uOLDHqmAB0Id1Pzf6atcHHkOo3vm5uoKKM0bQ41xH3FpJsSGPULBrwqGDjk
-g5jDMdhyM1VTu1BWg5LsTJzOVLX74K8nVjya+8WWYL4f4q2NwxWGKLQ5CwtO8VRD
-1ER3kuR0/hl0yat+89/06S/AU9SsOsWltUdqDeHregJiVrF0d9w5KX8TQWRi5dzo
-i9lzDwP4z/atuN1eJkx0hS0nIjJyPy+HaPdsN33R0aJK5yluqQtaltofTjpaTp9A
-jrBj4ayH3kbtstZMNdJSM98WUAVFZdgPk4ohWx8BN7dbOdKIKSY1L9n80t6dKb4=
-=CSNZ
------END PGP SIGNATURE-----
 
---Sig_/RAQ+6UlVCFwCC8B0k/Ci0zw--
+-- 
+~Randy
