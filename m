@@ -1,116 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab0CVWHa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 18:07:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49931 "EHLO arroyo.ext.ti.com"
+	id S1755668Ab0CVWKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 18:10:20 -0400
+Received: from www.tglx.de ([62.245.132.106]:59508 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0CVWH3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 18:07:29 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Greg KH <gregkh@suse.de>
-CC: "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Mar 2010 03:33:50 +0530
-Subject: RE: [PATCH 4/6] drivers:misc: sources for Init manager module
-Thread-Topic: [PATCH 4/6] drivers:misc: sources for Init manager module
-Thread-Index: AcrKB99xRpqeFIklQ0GpqYJtUErQMwAA66iQ
-Message-ID: <19F8576C6E063C45BE387C64729E7394044DB828A2@dbde02.ent.ti.com>
-References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com>
- <1269292756-7469-2-git-send-email-pavan_savoy@ti.com>
- <1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
- <1269292756-7469-4-git-send-email-pavan_savoy@ti.com>
- <1269292756-7469-5-git-send-email-pavan_savoy@ti.com>,<20100322213629.GD420@suse.de>
-In-Reply-To: <20100322213629.GD420@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755013Ab0CVWKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 18:10:18 -0400
+Date: Mon, 22 Mar 2010 23:09:26 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.cy
+In-Reply-To: <4BA7CE1B.9070109@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain>
+References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
+ <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yinghai,
 
-----------------------
-Thanks & Regards,
-Pavan Savoy | x0099669
-________________________________________
-From: Greg KH [gregkh@suse.de]
-Sent: Tuesday, March 23, 2010 3:06 AM
-To: Savoy, Pavan
-Cc: alan@lxorguk.ukuu.org.uk; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
+> > * Thomas Gleixner <tglx@linutronix.de> wrote:
+>
+> >> The main point is that there is still no answer why lmb cannot be used and 
+> >> the reposted patch still is a full move of the x86 e820 functions into 
+> >> kernel/fw_memmap.c.
+> >>
+> >> That's not a generalization, that's simply a relocation of x86 code to 
+> >> kernel/. And I agree with Dave and Ben that this is an useless exercise.
+> > 
+> > ok - i think you are right. Yinghai, mind having a look at using
+> > lib/lmb.c for all this?
+> 
+> 1. need to keep e820
 
-On Mon, Mar 22, 2010 at 04:19:14PM -0500, pavan_savoy@ti.com wrote:
-> +/* structures specific for sysfs entries */
-> +static struct kobj_attribute pid_attr =
-> +__ATTR(pid, 0644, (void *)show_pid, (void *)store_pid);
-> +
-> +static struct kobj_attribute list_protocols =
-> +__ATTR(protocols, 0444, (void *)show_list, NULL);
+  That's neither an argument for using lmb nor an argument not to use
+  lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
+  just to feed information into a (hopefully) generic early resource
+  management facility.
 
->As you are creating sysfs attributes, you have to have
->Documentation/ABI/ updates as well.  Please include them so we can see
->what you are trying to do here.
->And why "raw" attributes and not device ones?
->thanks,
->greg k-h
+  e820 _CANNOT_ be generalized. Period.
 
-[pavan] >>>>>>>>
-I am creating a sysfs entry for the daemon/service to write in it's PID to the sysfs entry, so
-as to whenever a new protocol driver - BT/FM or GPS wants to use the N_TI_SHARED ldisc, 
-the driver would then send signal to daemon on this PID.
+> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
 
-The source for this problem, was that I could not install line discipline from kernel space.
-i.e make N_TI_SHARED line discipline the current ldisc from kernel space itself.
->>>>>>
+  What's finizing_e820 ???
 
->From 92d89d132b5036d8ab58ce4f36b24bb1859610e0 Mon Sep 17 00:00:00 2001
-From: Pavan Savoy <pavan_savoy@ti.com>
-Date: Mon, 22 Mar 2010 18:11:32 -0400
-Subject: [PATCH 1/1] Documentation/ABI: for N_TI_SHARED ldisc
-N_TI_SHARED creates a sysfs entry to communicate
-with the application/daemon which would want to install/
-un-install the line discipline, it's documentation
-now exists in testing/ subdirectory.
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- Documentation/ABI/testing/sysfs-uim |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-uim
-diff --git a/Documentation/ABI/testing/sysfs-uim b/Documentation/ABI/testing/sysfs-uim
-new file mode 100644
-index 0000000..899aa4d
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-uim
-@@ -0,0 +1,24 @@
-+What:           /sys/uim
-+Date:           March 22
-+Contact:        Pavan Savoy <pavan_savoy@ti.com>
-+Description:
-+                Create a new kobject to pass information about the
-+  N_TI_SHARED line discipline created to application/daemon
-+  which would install/un-install line discipline.
-+
-+What:           /sys/uim/pid
-+Date:           March 22
-+Contact:        Pavan Savoy <pavan_savoy@ti.com>
-+Description:
-+  The daemon/application wanting to use the line discipline
-+  N_TI_SHARED will write in it's process Id, for the LDISC
-+  driver to send SIGUSR2 signal to the process whenever a
-+  upper layer protocol driver wants to make use of the LDISC
-+  driver.
-+
-+What:           /sys/uim/protocols
-+Date:           March 22
-+Contact:        Pavan Savoy <pavan_savoy@ti.com>
-+Description:
-+  List the protocols currently making use of the LDISC to ensure
-+  LDISC is not un-installed when BT/FM or GPS is making use of it.
--- 
-1.5.4.3
+> 3. use lmb.reserved to replace early_res.
+
+  What's the implication of doing that ?
+ 
+> current lmb is merging the region, we can not use name tag any more.
+
+  What's wrong with merging of regions ? Are you arguing about a
+  specific region ("the region") ?
+
+  Which name tag ? And why is that name tag important ?
+ 
+> may need to dump early_memtest, and use early_res for bootmem at
+> first.
+
+  Why exactly might early_memtest not longer be possible ?
+
+  What means "early_res for bootmem" ?
+
+Please take some time to explain in detail. Throwing one liners and
+buzzwords w/o context into such a discussion is more than counter
+productive.
+
+Thanks,
+
+	tglx
