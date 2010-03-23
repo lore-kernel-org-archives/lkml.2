@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab0CWTOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 15:14:55 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:65150 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937Ab0CWTOx convert rfc822-to-8bit (ORCPT
+	id S1753266Ab0CWTSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 15:18:23 -0400
+Received: from us-mx4.synaptics.com ([12.178.49.178]:13962 "EHLO
+	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0CWTSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 15:14:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=KlzqxTkCVLTcDrDPZu9lM4Mi3qna3NlN6JqzrnN7G16fV0noStlSuhm3rGFITzvtjM
-         dA0rd6oHYQwkQ5dmeXik8haLX6BqJ9gIFPoOYEL8Cs/X0XEUJksST3hCUpFyrumAKVJZ
-         wlF+6Zxi+N08OG88Bxb+89FmUkWHyoOCgmIM0=
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Starikov <ant.starikov@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
-Date: Tue, 23 Mar 2010 20:14:48 +0100
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9D040E9A-80F2-468F-A6CD-A4912615CD3F@gmail.com>
-References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1077)
+	Tue, 23 Mar 2010 15:18:22 -0400
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Tue, 23 Mar 2010 10:12:58 -0800
+Message-ID: <4BA913FB.1000508@synaptics.com>
+Date: Tue, 23 Mar 2010 12:18:19 -0700
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Jean Delvare <khali@linux-fr.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linux Input <linux-input@vger.kernel.org>,
+       Allie Xiong <axiong@synaptics.com>,
+       William Manson <WManson@synaptics.com>
+Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
+References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com> <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>
+In-Reply-To: <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2010 08:04 PM, Arve Hjønnevåg wrote:
+> On Mon, Mar 22, 2010 at 7:07 PM, Christopher Heiny<cheiny@synaptics.com>  wrote:
+> ...
+>> There are two existing drivers for similar Synaptics devices in the
+>> current kernel tree (excluding the PS/2 touchpad driver).  These are:
+>>
+>> ./linux-2.6/drivers/input/mouse/synaptics_i2c.c
+>>       A driver for the Exeda 15mm touchpad, written by Mike Rapoport
+>>       <mike@compulab.co.il>  and Igor Grinberg<grinberg@compulab.co.il>
+>>
+>> ./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
+>>       A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
+>>       <arve@android.com>
+>>
+>> We have not extended these drivers for a couple of reasons.  First, the
+>> two drivers are specific to particular Synaptics products, and it is our
+>> desire to produce a general solution that takes advantage of the 'self
+>> describing' features of products that use the RMI protocol.
+>>
+>
+> Do you plan to add platform data to align the reported touchscreen
+> data with the screen behind it, or do the new hardware allow the the
+> firmware handle this? In the past we even needed separate parameters
+> for different firmware versions (seen in
+> drivers/staging/dream/synaptics_i2c_rmi.h).
 
-On Mar 23, 2010, at 6:45 PM, Linus Torvalds wrote:
+Hi Arve,
 
-> 
-> 
-> On Tue, 23 Mar 2010, Ingo Molnar wrote:
->> 
->> It shows a very brutal amount of page fault invoked mmap_sem spinning 
->> overhead.
-> 
-> Isn't this already fixed? It's the same old "x86-64 rwsemaphores are using 
-> the shit-for-brains generic version" thing, and it's fixed by
-> 
-> 	1838ef1 x86-64, rwsem: 64-bit xadd rwsem implementation
-> 	5d0b723 x86: clean up rwsem type system
-> 	59c33fa x86-32: clean up rwsem inline asm statements
-> 
-> NOTE! None of those are in 2.6.33 - they were merged afterwards. But they 
-> are in 2.6.34-rc1 (and obviously current -git). So Anton would have to 
-> compile his own kernel to test his load.
+RMI4 touchscreens allow adjustment of the reported coordinate range (see 
+the F11_2D_Ctrl6..9 registers, page 48 of the current version of the 
+spec at http://www.synaptics.com/developers/manuals).  Using this 
+feature, the device can be configured to report the same number of 
+positions on each axis as there are pixels on the display.
 
+We plan to make these settings accessible via sysfs, so that it can be 
+dynamically tweaked if the user changes the display resolution (not 
+likely on a phone, probable on a tablet/slate/ereader type device). 
+Assuming there are no significant issues with our current patch, we plan 
+to include that in the next one.  We're holding off that implementation 
+because we're still finding our feet on the submission process, and 
+wanted to keep the initial submits small so changes would be more 
+manageable.
 
-Applied mentioned patches. Things didn't improve too much.
+Coordinate rotation/reflection settings will be handled at the driver 
+level, again via sysfs.
 
-before:
-prog: Total exploration time 9.880 real 60.620 user 76.970 sys
+These features should be independent of the touchscreen firmware level. 
+  Initial settings for these features should probably be done at the 
+platform level.
 
-after:
-prog: Total exploration time 9.020 real 59.430 user 66.190 sys
-
-perf report:
-
-    38.58%             prog  [kernel]                                           [k] _spin_lock_irqsave
-    37.42%             prog  ./prog                                             [.] DBSLLlookup_ret
-     6.22%             prog  ./prog                                             [.] SuperFastHash
-     3.65%             prog  /lib64/libc-2.11.1.so                              [.] __GI_memcpy
-     2.09%             prog  ./anderson.6.dve2C                                 [.] get_successors
-     1.75%             prog  [kernel]                                           [k] clear_page_c
-     1.73%             prog  ./prog                                             [.] index_next_dfs
-     0.71%             prog  [kernel]                                           [k] handle_mm_fault
-     0.38%             prog  ./prog                                             [.] cb_hook
-     0.33%             prog  ./prog                                             [.] get_local
-     0.32%             prog  [kernel]                                           [k] page_fault
-
-Anton.
-
+					Chris
