@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab0CWSPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:15:00 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:44103 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754407Ab0CWSO5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:14:57 -0400
-Date: Wed, 24 Mar 2010 03:13:46 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region struct
-Message-ID: <20100323181345.GA1891@linux-sh.org>
-References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org> <20100323104241.GA1189@elte.hu> <20100323131839.GA31552@linux-sh.org> <4BA8F7BD.20401@kernel.org>
+	id S1754328Ab0CWSQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 14:16:00 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38341 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331Ab0CWSP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 14:15:59 -0400
+Date: Tue, 23 Mar 2010 18:15:40 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+Message-ID: <20100323181540.GD5870@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-8-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231253180.10178@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4BA8F7BD.20401@kernel.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <alpine.DEB.2.00.1003231253180.10178@router.home>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 10:17:49AM -0700, Yinghai Lu wrote:
-> On 03/23/2010 06:18 AM, Paul Mundt wrote:
-> > On Tue, Mar 23, 2010 at 11:42:41AM +0100, Ingo Molnar wrote:
-> >> also, i'd suggest to shorten region_array_size to region_size (we know it's an 
-> >> array), so it would become:
-> >>
-> >> 	lmb.memory.region	 = lmb_memory_region;
-> >> 	lmb.memory.region_size	 = ARRAY_SIZE(lmb_memory_region);
-> >>
-> > I don't mean to be pedantic, but the LMB code already has a lot of
-> > region.size references so region_size looks a bit awkward. All of the
-> > accessors in linux/lmb.h use region_nr as the array index, so perhaps
-> > nr_regions would be less ambiguous.
+On Tue, Mar 23, 2010 at 12:56:30PM -0500, Christoph Lameter wrote:
+> On Tue, 23 Mar 2010, Mel Gorman wrote:
 > 
-> @@ -26,7 +26,8 @@ struct lmb_property {
->  struct lmb_region {
->  	unsigned long cnt;
->  	u64 size;
-> -	struct lmb_property region[MAX_LMB_REGIONS+1];
-> +	struct lmb_property *region;
-> +	unsigned long region_array_size;
->  };
+> > diff --git a/include/linux/swap.h b/include/linux/swap.h
+> > index 1f59d93..cf8bba7 100644
+> > --- a/include/linux/swap.h
+> > +++ b/include/linux/swap.h
+> > @@ -238,6 +239,11 @@ static inline void lru_cache_add_active_file(struct page *page)
+> >  	__lru_cache_add(page, LRU_ACTIVE_FILE);
+> >  }
+> >
+> > +/* LRU Isolation modes. */
+> > +#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> > +#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> > +#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> > +
+> >  /* linux/mm/vmscan.c */
+> >  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+> >  					gfp_t gfp_mask, nodemask_t *mask);
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 79c8098..ef89600 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -839,11 +839,6 @@ keep:
+> >  	return nr_reclaimed;
+> >  }
+> >
+> > -/* LRU Isolation modes. */
+> > -#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> > -#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> > -#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> > -
+> >  /*
+> >   * Attempt to remove the specified page from its LRU.  Only take this page
+> >   * if it is of the appropriate PageActive status.  Pages which are being
 > 
-> cnt is number of slots used.
-> size is memory size
+> Put the above in a separate patch?
 > 
-I'm fully aware of what each of these things are, and I have no idea what
-any of that has to do with the point I raised above.
 
-> can we use rgn_sz for region array size?
-> 
-No.
+I can if you prefer but it's so small, I didn't think it obscured the
+clarity of the patch anyway. I would have somewhat expected the two
+patches to be merged together before going upstream.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
