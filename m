@@ -1,62 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab0CWMIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 08:08:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56524 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752006Ab0CWMIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 08:08:52 -0400
-Message-ID: <4BA8AF52.80202@suse.cz>
-Date: Tue, 23 Mar 2010 13:08:50 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.2 Thunderbird/3.0
+	id S1752873Ab0CWMMR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 08:12:17 -0400
+Received: from mail-qy0-f179.google.com ([209.85.221.179]:47623 "EHLO
+	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab0CWMMP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 08:12:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Eb9vFZVDBus0rbZvTgyO+WGRgk6UECQXshgX7rFrMXxqpVtsFr4fwVGDUdRq2wk7P4
+         HL5DFjYEpbzLHrelJIh8vauTz+2g08pPUtwh8f7a0a+/J7ijnkMsDvqihtggAS79uRhA
+         mEhRy51A7TdtJu7jLMzCQMD19FSPJytMm5gMI=
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Cc: linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] kbuild: Include gen_initramfs_list.sh and the file list
- in	the .d file
-References: <20100322224932.GA26068@obsidianresearch.com>
-In-Reply-To: <20100322224932.GA26068@obsidianresearch.com>
+In-Reply-To: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
+References: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
+Date: Tue, 23 Mar 2010 21:11:51 +0900
+Message-ID: <afc622a1003230511o108556f4s5d1282bd3122b3d9@mail.gmail.com>
+Subject: Re: data consistency of high page
+From: NamJae Jeon <linkinjeon@gmail.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, lkml <linux-kernel@vger.kernel.org>,
+       linux-mips <linux-mips@linux-mips.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.3.2010 23:49, Jason Gunthorpe wrote:
-> Expand the dependency set used for the initrd to include the
-> CONFIG_INITRAMFS_SOURCE file and the generator script itself.
-> 
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> ---
->  scripts/gen_initramfs_list.sh |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> Otherwise changing the initramfs file list does not rebuild the CPIO..
+Hi. Ralf.
 
-Thanks, applied.
+I'm Namjae.jeon. nice to meet you.
 
-Michal
-> 
-> diff --git a/scripts/gen_initramfs_list.sh b/scripts/gen_initramfs_list.sh
-> index 76af5f9..f3b5c05 100644
-> --- a/scripts/gen_initramfs_list.sh
-> +++ b/scripts/gen_initramfs_list.sh
-> @@ -202,6 +202,7 @@ input_file() {
->  			print_mtime "$1" >> ${output}
->  			cat "$1"         >> ${output}
->  		else
-> +		        echo "$1 \\"
->  			cat "$1" | while read type dir file perm ; do
->  				if [ "$type" == "file" ]; then
->  					echo "$file \\";
-> @@ -231,7 +232,7 @@ arg="$1"
->  case "$arg" in
->  	"-l")	# files included in initramfs - used by kbuild
->  		dep_list="list_"
-> -		echo "deps_initramfs := \\"
-> +		echo "deps_initramfs := $0 \\"
->  		shift
->  		;;
->  	"-o")	# generate compressed cpio image named $1
+I face cache aliasing problem on mips 34ke.
 
+Our target cache is 34kB 4way i/d-cache , 32bytes linesize.
+
+As you know, there is possibility of cache aliasing on 8kB per way.
+
+But mips arch of kernel mainline can not properly  handile this case.
+
+For example, highmem handling in __fluash_dcache_page function is just return.
+
+So, if argument page is page in highmem, it can not flush in dcache line.
+
+I want to listen your opinion.
+
+Thanks.
+
+
+2010/3/23 Minchan Kim <minchan.kim@gmail.com>:
+> Hi, Ralf.
+>
+> Below is thread long time ago.
+> At that time, we can't end up the problem by some reason.
+> Sorry for that.
+>
+> The problem would occur, again.
+>
+> On Fri, Oct 16, 2009 at 6:24 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
+>> On Fri, Oct 16, 2009 at 02:17:19PM +0900, Minchan Kim wrote:
+>>
+>>> Many code of kernel fs usually allocate high page and flush.
+>>> But flush_dcache_page of mips checks PageHighMem to avoid flush
+>>> so that data consistency is broken, I think.
+>>
+>> What processor and cache configuration?
+>>
+>>> I found it's by you and Atsushi-san on 585fa724.
+>>> Why do we need the check?
+>>> Could you elaborte please?
+>>
+>> The if statement exists because __flush_dcache_page would crash if a page
+>> is not mapped.  This of course isn't correct but that wasn't a problem
+>> since highmem still is only supported on machines that don't have aliases.
+>>
+>>  Ralf
+>>
+>
+> Our system is following as.
+>
+> mips 34ke
+> primary i-cache 32kB VIPT 4way 32 byte line size.
+> primary d-cache 32kB 4way  32 bytes linesize
+>
+> If you have further questions, Namjae, Could you follow question of Ralf?
+>
+> --
+> Kind regards,
+> Minchan Kim
+>
