@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0CWTaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 15:30:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41689 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0CWTaC (ORCPT
+	id S1753653Ab0CWTa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 15:30:28 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:44393 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab0CWTaZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 15:30:02 -0400
-Date: Tue, 23 Mar 2010 16:29:52 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 1/1] perf archive: Explain how to use the generated
- tarball
-Message-ID: <20100323192952.GA23584@ghostprotocols.net>
-References: <1269365638-10223-1-git-send-email-acme@infradead.org>
- <20100323184929.GA18815@elte.hu>
-MIME-Version: 1.0
+	Tue, 23 Mar 2010 15:30:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=U3/S4kKBI60WfhbWC+EXnAgJ9fEWex5dZ+AeYTm+ITHxzRobuwnOfJPVJGdL3eHCgr
+         wsmozxcsQwnghyzabvGiwcroeQK50BtlKBFZJCofYSEslIe6q7RyR7D2MHz59mvMT3mR
+         oCJm/MGLwvW2bbYVJLbTmkv0U4RIa8lf9GYXc=
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
+Mime-Version: 1.0 (Apple Message framework v1077)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100323184929.GA18815@elte.hu>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+From: Anton Starikov <ant.starikov@gmail.com>
+In-Reply-To: <20100323192213.GA6169@sgi.com>
+Date: Tue, 23 Mar 2010 20:30:19 +0100
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
+       bugme-daemon@bugzilla.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9A1C753-6105-460E-8E5C-828CC21F8113@gmail.com>
+References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org> <20100323180002.GA2965@elte.hu> <15090451-C292-44D6-B2BA-DCBCBEEF429D@gmail.com> <20100323112141.7f248f2b.akpm@linux-foundation.org> <41DAB29F-59B7-4D38-A389-75FAC47225BF@gmail.com> <20100323192213.GA6169@sgi.com>
+To: Robin Holt <holt@sgi.com>
+X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 23, 2010 at 07:49:29PM +0100, Ingo Molnar escreveu:
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
-> 
-> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
-> > 
-> > [root@doppio ~]# perf archive
-> > Now please run:
-> > 
-> > $ tar xvf perf.data.tar.bz2 -C ~/.debug
-> > 
-> > wherever you need to run 'perf report' on.
-> > [root@doppio ~]#
-> 
-> hm, i think it would be nicer to have a way to both pack and unpack an archive 
-> that is in the current directory. Something like:
-> 
->   perf archive pack
->   perf archive unpack
-> 
-> or so?
 
-Yes, its just that this was easy enough to improve the current
-situation, this is still a shell script that I wrote as a way to show
-how to do some porcelain out of 'perf buildid-list'.
+On Mar 23, 2010, at 8:22 PM, Robin Holt wrote:
 
-But it probably will be better to have it as a full fledged tool, as I
-can imagine people asking for .tar.xz support, and I also want to be
-able to tell it to strip debugging information, putting there just the
-symtabs, etc.
+> On Tue, Mar 23, 2010 at 07:25:43PM +0100, Anton Starikov wrote:
+>> On Mar 23, 2010, at 7:21 PM, Andrew Morton wrote:
+>>>> I will apply this commits to 2.6.32, I afraid current OFED (which I need also) will not work on 2.6.33+.
+>>>> 
+>>> 
+>>> You should be able to simply set CONFIG_RWSEM_GENERIC_SPINLOCK=n,
+>>> CONFIG_RWSEM_XCHGADD_ALGORITHM=y by hand, as I mentioned earlier?
+>> 
+>> Hm. I tried, but when I do "make oldconfig", then it gets rewritten, so I assume that it conflicts with some other setting from default fedora kernel config. trying to figure out which one exactly.
+> 
+> Have you tracked this down yet?  I just got the patches applied against
+> an older kernel and am running into the same issue.
 
-So if you can get this one in, the current situation would be improved
-and I'll eventually get to implement your suggestion.
+I decided to not track down this issue and just applied patches. I understood that with this patches there is no need to change this config options. Am I wrong?
 
-- Arnaldo
+Anton
