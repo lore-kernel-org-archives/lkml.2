@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431Ab0CWIm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 04:42:57 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:47622 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192Ab0CWImx (ORCPT
+	id S1754760Ab0CWInI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 04:43:08 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:52670 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab0CWInE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 04:42:53 -0400
+	Tue, 23 Mar 2010 04:43:04 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,229 +16,177 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/4] x86: add sanitize_e820_map
-Date: Tue, 23 Mar 2010 01:39:46 -0700
-Message-Id: <1269333587-1866-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/4] x86: add find_e820_area_node
+Date: Tue, 23 Mar 2010 01:39:45 -0700
+Message-Id: <1269333587-1866-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269333587-1866-1-git-send-email-yinghai@kernel.org>
 References: <1269333587-1866-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BA87EF2.0058,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4BA87EF1.01C1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so we could not take e820.map directly.
+David Miller pointed out that early_res have problem to find node data on correct node
+when we have
+node0: [0, 2g), [4g, 6g), [10g, 14g)
+node1: [6g, 10g), [14g, 18g)
+the cross node case
 
-and could change e820_saved to initdata
+the problem is there for x86 bits even before we are using early_res for bootmem replacement.
+after early_res for bootmem replacement, alloc_bootmem_node still can get range on correct node
+
+this patch is fixing problem before bootmem or early_res replacement for bootmem.
+
+now only user is for x86 64bit numa to find node data.
+
+the point is use early_node_map with find_e820_area_node()
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    5 ++---
- arch/x86/kernel/e820.c      |   26 ++++++++++++++++++--------
- arch/x86/kernel/efi.c       |    2 +-
- arch/x86/kernel/setup.c     |   10 +++++-----
- arch/x86/xen/setup.c        |    4 +---
- 5 files changed, 27 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/e820.h |    1 +
+ arch/x86/kernel/e820.c      |   15 +++++++++++++++
+ arch/x86/mm/numa_64.c       |    4 ++--
+ include/linux/mm.h          |    2 ++
+ mm/page_alloc.c             |   37 +++++++++++++++++++++++--------------
+ 5 files changed, 43 insertions(+), 16 deletions(-)
 
 diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 41553af..01bc987 100644
+index ec8a52d..41553af 100644
 --- a/arch/x86/include/asm/e820.h
 +++ b/arch/x86/include/asm/e820.h
-@@ -75,15 +75,14 @@ struct e820map {
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
--extern struct e820map e820_saved;
+@@ -116,6 +116,7 @@ extern unsigned long end_user_pfn;
  
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
- extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
--extern int
--sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
-+int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
+ extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
+ extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
++u64 find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ #include <linux/early_res.h>
+ 
 diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 05ee724..0c7143b 100644
+index 740b440..05ee724 100644
 --- a/arch/x86/kernel/e820.c
 +++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * next kernel with full memory.
-  */
- struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -224,7 +224,7 @@ void __init e820_print_map(char *who)
-  *	   ______________________4_
-  */
- 
--int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
-+static int __init __sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 			     u32 *pnr_map)
- {
- 	struct change_member {
-@@ -383,6 +383,11 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 	return 0;
+@@ -787,6 +787,21 @@ u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
+ 	return -1ULL;
  }
  
-+int __init sanitize_e820_map(void)
++u64 __init find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align)
 +{
-+	return __sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
++	u64 addr;
++	/*
++	 * need to call this function after e820_register_active_regions
++	 * so early_node_map[] is set
++	 */
++	addr = find_memory_core_early(nid, size, align, start, end);
++	if (addr != -1ULL)
++		return addr;
++
++	/* fallback, should already have start end in the node range */
++	return find_e820_area(start, end, size, align);
 +}
 +
- static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
- {
- 	while (nr_map) {
-@@ -555,7 +560,7 @@ void __init update_e820(void)
- 	u32 nr_map;
- 
- 	nr_map = e820.nr_map;
--	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
-+	if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
- 		return;
- 	e820.nr_map = nr_map;
- 	printk(KERN_INFO "modified physical RAM map:\n");
-@@ -566,7 +571,7 @@ static void __init update_e820_saved(void)
- 	u32 nr_map;
- 
- 	nr_map = e820_saved.nr_map;
--	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
-+	if (__sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
- 		return;
- 	e820_saved.nr_map = nr_map;
- }
-@@ -661,7 +666,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
- 		sdata = early_ioremap(pa_data, map_len);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 	if (map_len > PAGE_SIZE)
- 		early_iounmap(sdata, map_len);
- 	printk(KERN_INFO "extended physical RAM map:\n");
-@@ -1043,7 +1048,7 @@ void __init finish_e820_parsing(void)
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
-+		if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
- 			early_panic("Invalid user supplied memory map");
- 		e820.nr_map = nr;
- 
-@@ -1173,7 +1178,7 @@ char *__init default_machine_specific_memory_setup(void)
- 	 * the next section from 1mb->appropriate_mem_k
- 	 */
- 	new_nr = boot_params.e820_entries;
--	sanitize_e820_map(boot_params.e820_map,
-+	__sanitize_e820_map(boot_params.e820_map,
- 			ARRAY_SIZE(boot_params.e820_map),
- 			&new_nr);
- 	boot_params.e820_entries = new_nr;
-@@ -1200,12 +1205,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
- }
- 
-+void __init save_e820_map(void)
-+{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+}
-+
- void __init setup_memory_map(void)
- {
- 	char *who;
- 
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
-index c2fa9b8..299f03f 100644
---- a/arch/x86/kernel/efi.c
-+++ b/arch/x86/kernel/efi.c
-@@ -272,7 +272,7 @@ static void __init do_add_efi_memmap(void)
- 		}
- 		e820_add_region(start, size, e820_type);
- 	}
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- void __init efi_reserve_early(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 5d7ba1a..3787a82 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -461,8 +461,8 @@ static void __init e820_reserve_setup_data(void)
- 	if (!found)
- 		return;
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	sanitize_e820_map();
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
- }
-@@ -614,7 +614,7 @@ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
- 		d->ident);
- 
- 	e820_update_range(0, 0x10000, E820_RAM, E820_RESERVED);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return 0;
- }
-@@ -683,7 +683,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
  /*
-@@ -854,7 +854,7 @@ void __init setup_arch(char **cmdline_p)
- 	if (ppro_with_ram_bug()) {
- 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
- 				  E820_RESERVED);
--		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+		sanitize_e820_map();
- 		printk(KERN_INFO "fixed physical RAM map:\n");
- 		e820_print_map("bad_ppro");
- 	}
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index ad0047f..3f2c411 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -43,8 +43,6 @@ char * __init xen_memory_setup(void)
+  * pre allocated 4k and reserved it in e820
+  */
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 8948f47..ffc5ad5 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -174,7 +174,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
+ 	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+ 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+-	mem = find_e820_area(start, end, size, align);
++	mem = find_e820_area_node(nodeid, start, end, size, align);
+ 	if (mem != -1L)
+ 		return __va(mem);
  
- 	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
+@@ -184,7 +184,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+ 	else
+ 		start = MAX_DMA_PFN<<PAGE_SHIFT;
+-	mem = find_e820_area(start, end, size, align);
++	mem = find_e820_area_node(nodeid, start, end, size, align);
+ 	if (mem != -1L)
+ 		return __va(mem);
  
--	e820.nr_map = 0;
--
- 	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
- 
- 	/*
-@@ -65,7 +63,7 @@ char * __init xen_memory_setup(void)
- 		      __pa(xen_start_info->pt_base),
- 			"XEN START INFO");
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return "Xen";
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e70f21b..5c2d17e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1160,6 +1160,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d03c946..eef3757 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3408,12 +3408,11 @@ int __init add_from_early_node_map(struct range *range, int az,
+ 	return nr_range;
  }
+ 
+-#ifdef CONFIG_NO_BOOTMEM
+-void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
++#ifdef CONFIG_HAVE_EARLY_RES
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+ 					u64 goal, u64 limit)
+ {
+ 	int i;
+-	void *ptr;
+ 
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+@@ -3430,20 +3429,30 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+ 		if (addr == -1ULL)
+ 			continue;
+ 
+-#if 0
+-		printk(KERN_DEBUG "alloc (nid=%d %llx - %llx) (%llx - %llx) %llx %llx => %llx\n",
+-				nid,
+-				ei_start, ei_last, goal, limit, size,
+-				align, addr);
++		return addr;
++	}
++
++	return -1ULL;
++}
+ #endif
+ 
+-		ptr = phys_to_virt(addr);
+-		memset(ptr, 0, size);
+-		reserve_early_without_check(addr, addr + size, "BOOTMEM");
+-		return ptr;
+-	}
++#ifdef CONFIG_NO_BOOTMEM
++void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
++{
++	void *ptr;
+ 
+-	return NULL;
++	u64 addr;
++
++	addr = find_memory_core_early(nid, size, align, goal, limit);
++
++	if (addr == -1ULL)
++		return NULL;
++
++	ptr = phys_to_virt(addr);
++	memset(ptr, 0, size);
++	reserve_early_without_check(addr, addr + size, "BOOTMEM");
++	return ptr;
+ }
+ #endif
+ 
 -- 
 1.6.4.2
 
