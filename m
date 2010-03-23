@@ -1,79 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab0CWRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 13:19:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55612 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab0CWRT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 13:19:26 -0400
-Message-ID: <4BA8F7BD.20401@kernel.org>
-Date: Tue, 23 Mar 2010 10:17:49 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
- struct
-References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org> <20100323104241.GA1189@elte.hu> <20100323131839.GA31552@linux-sh.org>
-In-Reply-To: <20100323131839.GA31552@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753189Ab0CWRYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 13:24:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60451 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753085Ab0CWRYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 13:24:16 -0400
+Date: Tue, 23 Mar 2010 10:22:08 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       ant.starikov@gmail.com, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge
+ regression in performance
+Message-Id: <20100323102208.512c16cc.akpm@linux-foundation.org>
+In-Reply-To: <bug-15618-10286@https.bugzilla.kernel.org/>
+References: <bug-15618-10286@https.bugzilla.kernel.org/>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 06:18 AM, Paul Mundt wrote:
-> On Tue, Mar 23, 2010 at 11:42:41AM +0100, Ingo Molnar wrote:
->>
->> * Yinghai Lu <yinghai@kernel.org> wrote:
->>
->>>  void __init lmb_init(void)
->>>  {
->>> +	lmb.memory.region   = lmb_memory_region;
->>> +	lmb.memory.region_array_size   = ARRAY_SIZE(lmb_memory_region);
->>> +	lmb.reserved.region = lmb_reserved_region;
->>> +	lmb.reserved.region_array_size = ARRAY_SIZE(lmb_reserved_region);
->>> +
->>
->> That's rather unreadable and has random whitespace noise.
->>
->> Should be something like:
->>
->> 	lmb.memory.region		= lmb_memory_region;
->> 	lmb.memory.region_array_size	= ARRAY_SIZE(lmb_memory_region);
->> 	lmb.reserved.region		= lmb_reserved_region;
->> 	lmb.reserved.region_array_size	= ARRAY_SIZE(lmb_reserved_region);
->>
->> also, i'd suggest to shorten region_array_size to region_size (we know it's an 
->> array), so it would become:
->>
->> 	lmb.memory.region	 = lmb_memory_region;
->> 	lmb.memory.region_size	 = ARRAY_SIZE(lmb_memory_region);
->>
-> I don't mean to be pedantic, but the LMB code already has a lot of
-> region.size references so region_size looks a bit awkward. All of the
-> accessors in linux/lmb.h use region_nr as the array index, so perhaps
-> nr_regions would be less ambiguous.
 
-@@ -26,7 +26,8 @@ struct lmb_property {
- struct lmb_region {
- 	unsigned long cnt;
- 	u64 size;
--	struct lmb_property region[MAX_LMB_REGIONS+1];
-+	struct lmb_property *region;
-+	unsigned long region_array_size;
- };
+(switched to email.  Please respond via emailed reply-to-all, not via the
+bugzilla web interface).
 
-cnt is number of slots used.
-size is memory size
+On Tue, 23 Mar 2010 16:13:25 GMT bugzilla-daemon@bugzilla.kernel.org wrote:
 
-can we use rgn_sz for region array size?
+> https://bugzilla.kernel.org/show_bug.cgi?id=15618
+> 
+>            Summary: 2.6.18->2.6.32->2.6.33 huge regression in performance
+>            Product: Process Management
+>            Version: 2.5
+>     Kernel Version: 2.6.32
+>           Platform: All
+>         OS/Version: Linux
+>               Tree: Mainline
+>             Status: NEW
+>           Severity: high
+>           Priority: P1
+>          Component: Other
+>         AssignedTo: process_other@kernel-bugs.osdl.org
+>         ReportedBy: ant.starikov@gmail.com
+>         Regression: No
+> 
+> 
+> We have benchmarked some multithreaded code here on 16-core/4-way opteron 8356
+> host on number of kernels (see below) and found strange results.
+> Up to 8 threads we didn't see any noticeable differences in performance, but
+> starting from 9 threads performance diverges substantially. I provide here
+> results for 14 threads
 
-YH
+lolz.  Catastrophic meltdown.  Thanks for doing all that work - at a
+guess I'd say it's mmap_sem.  Perhaps with some assist from the CPU
+scheduler.
+
+If you change the config to set CONFIG_RWSEM_GENERIC_SPINLOCK=n,
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y does it help?
+
+Anyway, there's a testcase in bugzilla and it looks like we got us some
+work to do.
+
+
+> 2.6.18-164.11.1.el5 (centos)
+> 
+> user time: ~60 sec
+> sys time: ~12 sec
+> 
+> 2.6.32.9-70.fc12.x86_64 (fedora-12)
+> 
+> user time: ~60 sec
+> sys time: ~75 sec
+> 
+> 2.6.33-0.46.rc8.git1.fc13.x86_64 (fedora-12 + rawhide kernel)
+> 
+> user time: ~60 sec
+> sys time: ~300 sec
+> 
+> In all three cases real time regress corresponding to giving numbers.
+> 
+> Binary used for all three cases is exactly the same (compiled on centos).
+> Setups for all three cases so identical as possible (last two - the same
+> fedora-12 setup booted with different kernels).
+> 
+> What can be reason of this regress in performance? Is it possible to tune
+> something to recover performance on 2.6.18 kernel? 
+> 
+> I perf'ed on 2.6.32.9-70.fc12.x86_64 kernel
+> 
+> report (top part only):
+> 
+> 43.64% dve22lts-mc [kernel] [k] _spin_lock_irqsave 
+> 32.93% dve22lts-mc ./dve22lts-mc [.] DBSLLlookup_ret 
+> 5.37% dve22lts-mc ./dve22lts-mc [.] SuperFastHash 
+> 3.76% dve22lts-mc /lib64/libc-2.11.1.so [.] __GI_memcpy 
+> 2.60% dve22lts-mc [kernel] [k] clear_page_c 
+> 1.60% dve22lts-mc ./dve22lts-mc [.] index_next_dfs
+> 
+> stat: 
+> 129875.554435 task-clock-msecs # 10.210 CPUs 
+> 1883 context-switches # 0.000 M/sec 
+> 17 CPU-migrations # 0.000 M/sec 
+> 2695310 page-faults # 0.021 M/sec 
+> 298370338040 cycles # 2297.356 M/sec 
+> 130581778178 instructions # 0.438 IPC 
+> 42517143751 cache-references # 327.368 M/sec 
+> 101906904 cache-misses # 0.785 M/sec 
+> 
+> callgraph(top part only):
+> 
+> 53.09%      dve22lts-mc  [kernel]                                         [k]
+> _spin_lock_irqsave
+>                |          
+>                |--49.90%-- __down_read_trylock
+>                |          down_read_trylock
+>                |          do_page_fault
+>                |          page_fault
+>                |          |          
+>                |          |--99.99%-- __GI_memcpy
+>                |          |          |          
+>                |          |          |--84.28%-- (nil)
+>                |          |          |          
+>                |          |          |--9.78%-- 0x100000000
+>                |          |          |          
+>                |          |           --5.94%-- 0x1
+>                |           --0.01%-- 
+> [...]
+> 
+>                |          
+>                |--49.39%-- __up_read
+>                |          up_read
+>                |          |          
+>                |          |--100.00%-- do_page_fault
+>                |          |          page_fault
+>                |          |          |          
+>                |          |          |--99.99%-- __GI_memcpy
+>                |          |          |          |          
+>                |          |          |          |--84.18%-- (nil)
+>                |          |          |          |          
+>                |          |          |          |--10.13%-- 0x100000000
+>                |          |          |          |          
+>                |          |          |           --5.69%-- 0x1
+>                |          |           --0.01%-- 
+> [...]
+> 
+>                |           --0.00%-- 
+> [...]
+> 
+>                 --0.72%-- 
+> [...]
+> 
+> 
+> 
+> On 2.6.33 I see similar picture with spin-lock plus addition of a lot of time
+> spent in cgroup related kernel calls.
+> 
+> If it is necessary, I can attach binary for tests.
+> 
+> -- 
+> Configure bugmail: https://bugzilla.kernel.org/userprefs.cgi?tab=email
+> ------- You are receiving this mail because: -------
+> You are on the CC list for the bug.
