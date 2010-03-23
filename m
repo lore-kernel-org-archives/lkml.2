@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab0CWXyv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:54:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39145 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607Ab0CWXyu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:54:50 -0400
-X-Authority-Analysis: v=1.0 c=1 a=tHR7N9cJam8A:10 a=IkcTkHD0fZMA:10 a=VwQbUJbxAAAA:8 a=U-ItJb1p66ph-eKNiBcA:9 a=NsvVlzCl1dI39zkUr_yXwEi_zFUA:4 a=QEXdDO2ut3YA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 04/18] mac80211: Generate trace points only if api
- tracer enabled
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-       linux-wireless@vger.kernel.org
-In-Reply-To: <1269306693.7645.7.camel@jlt3.sipsolutions.net>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-	 <1269304340-25372-5-git-send-email-jack@suse.cz>
-	 <1269306693.7645.7.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 19:54:46 -0400
-Message-ID: <1269388486.5363.379.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+	id S1752784Ab0CWXy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:54:58 -0400
+Received: from crca.org.au ([74.207.252.120]:38018 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752539Ab0CWXy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 19:54:56 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BA95501.4000806@crca.org.au>
+Date: Wed, 24 Mar 2010 10:55:45 +1100
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, chris.mason@oracle.com, hch@lst.de
+Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
+ ioctl
+References: <20100323142200.GA2381@localhost.localdomain> <20100323142843.GG30031@ZenIV.linux.org.uk> <20100323143456.GC2381@localhost.localdomain> <20100323144828.GH30031@ZenIV.linux.org.uk> <20100323150301.GD2381@localhost.localdomain> <20100323150923.GI30031@ZenIV.linux.org.uk> <4BA94157.6090907@crca.org.au> <20100323231802.GL30031@ZenIV.linux.org.uk> <4BA95454.1080400@crca.org.au>
+In-Reply-To: <4BA95454.1080400@crca.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-22 at 18:11 -0700, Johannes Berg wrote:
-> On Tue, 2010-03-23 at 01:32 +0100, Jan Kara wrote:
-> > CC: linux-wireless@vger.kernel.org
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> You kinda missed something there, this patch doesn't explain to me why
-> and it's all I ever got to see :)
+Hi again.
 
-This patch set is about fine grained tuning of what tracepoints get
-enabled and which don't. I honestly think that this should only be
-permitted if CONFIG_EMBEDDED is set (if it should be permitted at all). 
+On 24/03/10 10:52, Nigel Cunningham wrote:
+>> I've stayed away from TuxOnIce flamefests and I've no idea how
+>> representative
+>> that snippet is, but if it *does* match the general code quality in
+>> there...
+>> Ouch.
+>
+> Locking isn't necessary because of the freezing.
 
-I would much rather find a way to lower the tracepoint footprint than to
-pick and choose what tracepoints get enabled.
+Err, freezer, I mean.
 
--- Steve
+Regards,
 
-
+Nigel
