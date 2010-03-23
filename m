@@ -1,124 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0CWFkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 01:40:10 -0400
-Received: from brinza.cc.columbia.edu ([128.59.29.8]:51271 "EHLO
-	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab0CWFkH (ORCPT
+	id S1754060Ab0CWFr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 01:47:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53718 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752022Ab0CWFr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 01:40:07 -0400
-Message-ID: <4BA8541A.3090306@cs.columbia.edu>
-Date: Tue, 23 Mar 2010 01:39:38 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-CC: Linux Containers <containers@lists.osdl.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-cr] nested pid namespaces (v2)
-References: <20100319213955.GA17912@us.ibm.com> <4BA7FA89.208@cs.columbia.edu> <20100323042653.GB9014@us.ibm.com>
-In-Reply-To: <20100323042653.GB9014@us.ibm.com>
-Content-Type: text/plain; charset=us-ascii
+	Tue, 23 Mar 2010 01:47:27 -0400
+Date: Mon, 22 Mar 2010 22:46:16 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] pci/dmar: Combine the BIOS DMAR table warning
+ messages
+Message-Id: <20100322224616.5fe25097.akpm@linux-foundation.org>
+In-Reply-To: <1269126097.18314.111.camel@localhost>
+References: <1269126097.18314.111.camel@localhost>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+The patches seem reasonable.  I reordered them thusly:
 
-Serge E. Hallyn wrote:
-> Quoting Oren Laadan (orenl@cs.columbia.edu):
->>
->> Serge E. Hallyn wrote:
->>> Support checkpoint and restart of tasks in nested pid namespaces.  At
->>> Oren's request here is an alternative to my previous implementation.  In
->>> this one, we keep the original single pids_array to minimize memory
->>> allocations.  The pids array entries are augmented with a pidns depth
->> Thanks for adapting the patch.
->>
->> FWIW, not only minimize memory allocations, but also permit a more
->> regular structure of the image data (array of fixed size elements
->> followed by an array of vpids), which simplifies the code that needs
->> to read/write/access this data.
->>
->>> (relative to the container init's pidns, and an "rpid" which is the pid
->>> in the checkpointer's pidns (or 0 if no valid pid exists).  The rpid
->>> will be used by userspace to gather more information (like
->>> /proc/$$/mountinfo) after the kernel sys_checkpoint.  If any tasks are
->>> in nested pid namespace, another single array holds all of the vpids.
->>> At restart those are used by userspace to determine how to call
->>> eclone().  Kernel ignores them.
->>>
->>> All cr_tests including the new pid_ns testcase pass.
->>>
->>> Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
->>> ---
->> [...]
-> 
-> Thanks, Oren - all other input is taken into what I'm about to post,
-> except:
-> 
->>> @@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
->>> 		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
->>> 		ret = -EPERM;
->>> 	}
->>> -	/* no support for >1 private pidns */
->>> -	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
->>> -		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
->>> -		ret = -EPERM;
->>> +	/* pidns must be descendent of root_nsproxy */
->>> +	pidns = nsproxy->pid_ns;
->>> +	while (pidns != ctx->root_nsproxy->pid_ns) {
->>> +		if (pidns == &init_pid_ns) {
->>> +			ret = -EPERM;
->>> +			_ckpt_err(ctx, ret, "%(T)stranger pid_ns\n");
->>> +			break;
->>> +		}
->>> +		pidns = pidns->parent;
->> Currently we do this while() loop twice - once here and once when
->> we collect the vpids. While I doubt if this has any performance
->> impact, is there an advantage to doing it also here ?  (a violation
->> will be observed there too).
-> 
-> With the new logic (ripped verbatim from Louis' email) such a move
-> would make the checkpoint_vpids() code a bit uglier.  I'm about to
-> resend, please let me know if you still want the code moved.
-> 
+panic-allow-taint-flag-for-warnings-to-be-changed-from-taint_warn.patch
+panic-add-taint-flag-taint_firmware_workaround-i.patch
+pci-dmar-combine-the-bios-dmar-table-warning-messages.patch
+pci-dmar-tone-down-warnings-about-invalid-bios-dmar-tables.patch
 
-If you think it's simpler this way, then so be it.
-
-> ...
-> 
->>> diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
->>> index 0da0d83..6d86240 100644
->>> --- a/kernel/nsproxy.c
->>> +++ b/kernel/nsproxy.c
->>> @@ -364,8 +364,13 @@ static struct nsproxy *do_restore_ns(struct ckpt_ctx *ctx)
->>> 		get_net(net_ns);
->>> 		nsproxy->net_ns = net_ns;
->>> -		get_pid_ns(current->nsproxy->pid_ns);
->>> -		nsproxy->pid_ns = current->nsproxy->pid_ns;
->>> +		/*
->>> +		 * The pid_ns will get assigned the first time that we
->>> +		 * assign the nsproxy to a task.  The task had unshared
->>> +		 * its pid_ns in userspace before calling restart, and
->>> +		 * we want to keep using that pid_ns.
->>> +		 */
->>> +		nsproxy->pid_ns = NULL;
->> This doesn't look healthy.
->>
->> If it is (or will be) possible for another process to look at the
->> restarting process, not having a pid-ns may confuse other code in
->> the kernel ?
-> 
-> No task will have this nproxy attached before we assign a valid
-> pid_ns.  The NULL pid_ns is only while it is in the objhash but
-> not attached to a task.
-
-Ahh .. I see, ok then.
-
-Oren.
-
+so I can merge the first two and then I can feed the PCI patches into
+the PCI cabal.  Alternatively they can ack them and I'll merge them
+all.  Or they can snarf all four and I'll go away.
 
