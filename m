@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab0CWCSp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 22:18:45 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:55843 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab0CWCSo (ORCPT
+	id S1753615Ab0CWCYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 22:24:45 -0400
+Received: from mail-qy0-f182.google.com ([209.85.221.182]:40309 "EHLO
+	mail-qy0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab0CWCYo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 22:18:44 -0400
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 0/3] proc: task->signal can't be NULL
-References: <20100322184127.GA3952@redhat.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 22 Mar 2010 19:18:38 -0700
-In-Reply-To: <20100322184127.GA3952@redhat.com> (Oleg Nesterov's message of "Mon\, 22 Mar 2010 19\:41\:27 +0100")
-Message-ID: <m1ocifvkzl.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Mon, 22 Mar 2010 22:24:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IBne5fEtqhzYyyIcbsE6oA96LVf0TbJE94qgnDxFjg0uv1PvyWpys/feiFr/wJR+rS
+         OF/HxHCW2BaxqsYjJO1uBgJjK8obIFh3r7brN5gBUEl2LhtKWn0PEJTf9R2FaxQpBjyG
+         TBy5zYikFvGb6S4z4C23IYakjgJ8VQqHDHVhw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: oleg@redhat.com, linux-kernel@vger.kernel.org, roland@redhat.com, adobriyan@gmail.com, akpm@linux-foundation.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <201003222115.21861.chris2553@googlemail.com>
+References: <201003222115.21861.chris2553@googlemail.com>
+Date: Tue, 23 Mar 2010 10:24:42 +0800
+Message-ID: <2375c9f91003221924k1a3af00ewfee32167c96fac27@mail.gmail.com>
+Subject: Re: Build error with v2.6.34-rc2-51-g7b1f513
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Chris Clayton <chris2553@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, anton@samba.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+On Tue, Mar 23, 2010 at 5:15 AM, Chris Clayton <chris2553@googlemail.com> wrote:
+> Hi,
+>
+> Commit 45575f5a426c01ec68cd33d998267ba2f6278fac seems to be causing the build
+> error shown below on i386:
+>
+>  CC      ipc/syscall.o
+>  ipc/syscall.c:17: error: conflicting types for 'sys_ipc'
+>  include/linux/syscalls.h:691: note: previous declaration of 'sys_ipc' was
+> here
+>  make[1]: *** [ipc/syscall.o] Error 1
+>  make: *** [ipc] Error 2
+>  make: *** Waiting for unfinished jobs....
+>
+> I can see that changing the type of the third arg to sys_ipc in
+> include/linux/syscalls.h would probably avoid the error, but I am not
+> knowledgeable enough to know whether that would be the right thing to do.
+>
+> Happy to test a patch, but please cc me as I'm not subscribed.
 
-> With the recent changes in -mm it is always safe to dereference
-> task->signal. It can't be NULL and it is pinned to task_struct.
->
-> fs/proc becomes the only valid user of signal->count which should
-> either die or become "int nr_threads".
->
->
-> Alexey, Eric.
->
-> Can't we kill this counter? Afaics, get_nr_threads() doesn't need to
-> be "precise", we probably can estimate the number of threads using
-> signal->live (yes sure, we can't use ->live as nr_threads).
->
-> Except: first_tid() uses get_nr_threads() for optimization. Is this
-> optimization really important? Afaics, it only helps in the unlikely
-> case, probably in that case the extra lockless while_each_thread()
-> doesn't hurt.
->
-> IOW, how about
->
-> 	--- a/fs/proc/base.c
-> 	+++ b/fs/proc/base.c
-> 	@@ -3071,11 +3071,6 @@ static struct task_struct *first_tid(str
-> 				goto found;
-> 		}
-> 	 
-> 	-	/* If nr exceeds the number of threads there is nothing todo */
-> 	-	pos = NULL;
-> 	-	if (nr && nr >= get_nr_threads(leader))
-> 	-		goto out;
-> 	-
-> 		/* If we haven't found our starting place yet start
-> 		 * with the leader and walk nr threads forward.
-> 		 */
->
-> ?
->
-> Not that I think it is terribly important to kill this counter, and
-> probably signal->nr_threads can make sense anyway, so far I am just
-> curious.
+Linus already fixed this in his tree. Please check out.
 
-I think that was just a sanity check since it was easy.  I want to say
-it prevents a DOS attack with user space passing unreasonably large
-file position but that DOS attack is handled by ensuring we don't walk
-through the list if threads more than once.
-
-However:
-proc_task_getattr uses get_nr_threads to get it's nlink count correct.
-
-Not walking the thread list to get the number of threads seems like an
-important cpu time saving measure.
-
-Eric
-
+Thanks.
