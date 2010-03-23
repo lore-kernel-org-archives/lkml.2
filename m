@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab0CWKc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 06:32:28 -0400
-Received: from a.mx.secunet.com ([213.68.205.161]:52458 "EHLO a.mx.secunet.com"
+	id S1751776Ab0CWKiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 06:38:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35816 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab0CWKc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 06:32:26 -0400
-Date: Tue, 23 Mar 2010 11:34:31 +0100
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Dan Carpenter <error27@gmail.com>,
-       Herbert Xu <herbert@gondor.apana.org.au>,
-       "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch v3] pcrypt: handle crypto_get_attr_type() errors
-Message-ID: <20100323103431.GA27822@secunet.com>
-References: <20100321092847.GJ5331@bicker>
- <20100322132342.GJ20508@secunet.com>
- <20100322135319.GQ21571@bicker>
- <20100322145357.GK20508@secunet.com>
- <20100322152845.GT21571@bicker>
+	id S1751008Ab0CWKiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 06:38:17 -0400
+Message-ID: <4BA899C2.8020208@kernel.org>
+Date: Tue, 23 Mar 2010 03:36:50 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100322152845.GT21571@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 23 Mar 2010 10:32:24.0387 (UTC) FILETIME=[2081B930:01CACA74]
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region struct
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1269333587-1866-5-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 06:28:45PM +0300, Dan Carpenter wrote:
-> I was concerned about the error handling for crypto_get_attr_type() in
-> pcrypt_alloc_aead().  Steffen Klassert pointed out that we could simply
-> avoid calling crypto_get_attr_type() if we passed the type and mask as a
-> parameters.
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Acked-by: Steffen Klassert <steffen.klassert@secunet.com>
+lmb_init() connect them back.
 
-Thanks a lot!
+also add region_array_size in lmb_region to tack the region array size.
 
-> ---
-> All three versions have basically been the same except for style issues.
-> I will confess that this (hopefully final :P) version looks much nicer 
-> than the earlier ones.
-> 
+-v3: seperate lmb core change to seperated patch
 
-It's not only style issues. We also got some additional benefit from
-this version. We got rid of a superfluous call to crypto_get_attr_type
-and we are able to change type and mask before we pass it to
-pcrypt_alloc_aead if this becomes necessary.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-Steffen
+---
+ include/linux/lmb.h |    5 ++++-
+ lib/lmb.c           |   11 ++++++++++-
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/include/linux/lmb.h
+===================================================================
+--- linux-2.6.orig/include/linux/lmb.h
++++ linux-2.6/include/linux/lmb.h
+@@ -26,7 +26,8 @@ struct lmb_property {
+ struct lmb_region {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct lmb_property region[MAX_LMB_REGIONS+1];
++	struct lmb_property *region;
++	unsigned long region_array_size;
+ };
+ 
+ struct lmb {
+@@ -37,6 +38,8 @@ struct lmb {
+ };
+ 
+ extern struct lmb lmb;
++extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ extern void __init lmb_init(void);
+ extern void __init lmb_analyze(void);
+Index: linux-2.6/lib/lmb.c
+===================================================================
+--- linux-2.6.orig/lib/lmb.c
++++ linux-2.6/lib/lmb.c
+@@ -18,6 +18,8 @@
+ #define LMB_ALLOC_ANYWHERE	0
+ 
+ struct lmb lmb;
++struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ static int lmb_debug;
+ 
+@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct
+ 
+ void __init lmb_init(void)
+ {
++	lmb.memory.region   = lmb_memory_region;
++	lmb.memory.region_array_size   = ARRAY_SIZE(lmb_memory_region);
++	lmb.reserved.region = lmb_reserved_region;
++	lmb.reserved.region_array_size = ARRAY_SIZE(lmb_reserved_region);
++
+ 	/* Create a dummy zero size LMB which will get coalesced away later.
+ 	 * This simplifies the lmb_add() code below...
+ 	 */
+@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_re
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_LMB_REGIONS)
++	if (rgn->cnt >= (rgn->region_array_size - 1))
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
