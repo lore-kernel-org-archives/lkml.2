@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab0CWRkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 13:40:37 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43152 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714Ab0CWRkf convert rfc822-to-8bit (ORCPT
+	id S1753710Ab0CWRlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 13:41:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52252 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474Ab0CWRlk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 13:40:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nbj7NHgTVNjiFX7Qs8Vb6o+GLekl6sNTA7rbkrCV6z3qKLRCYebQY/f59puvRkWcS6
-         Ap2PgazD5ZUuBKmRYG9ai/hQBGeoD2rr44tjuErQXiMDd0N8DGFjgIlw7Me6ud/BAoKB
-         F6KluVxT2HNBmC+Q8uYCuTUo0eTG5pKygI2ps=
-MIME-Version: 1.0
-In-Reply-To: <1269316670.8599.101.camel@pasglop>
-References: <201003221759.o2MHxEaj015546@hera.kernel.org>
-	 <1269316670.8599.101.camel@pasglop>
-Date: Tue, 23 Mar 2010 10:40:34 -0700
-Message-ID: <7991c5481003231040u3479778dpcb27d9578383afc0@mail.gmail.com>
-Subject: Re: ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after unmapping 
-	the address
-From: Malli <mchilakala@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Mar 2010 13:41:40 -0400
+Subject: Re: [PATCH] perf_events: fix remapped count support
+From: Peter Zijlstra <peterz@infradead.org>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+In-Reply-To: <4ba8f988.9804cc0a.4b1f.5d77@mx.google.com>
+References: <4ba8f988.9804cc0a.4b1f.5d77@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 23 Mar 2010 18:41:27 +0100
+Message-ID: <1269366087.5109.143.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 8:57 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Mon, 2010-03-22 at 17:59 +0000, Linux Kernel Mailing List wrote:
->> Gitweb:     http://git.kernel.org/linus/fd3686a842717b890fbe3024b83a616c54d5dba0
->> Commit:     fd3686a842717b890fbe3024b83a616c54d5dba0
->> Parent:     936332b8e00103fc20eb7e915c9a3bcb2835a11a
->> Author:     Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>
->> AuthorDate: Fri Mar 19 04:41:33 2010 +0000
->> Committer:  David S. Miller <davem@davemloft.net>
->> CommitDate: Fri Mar 19 21:00:44 2010 -0700
->>
->>     ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after unmapping the address
->>
->>     As per Simon Horman's feedback set IXGBE_RSC_CB(skb)->dma to zero
->>     after unmapping HWRSC DMA address to avoid double freeing.
->>
->
-> Note that this whole code is bogus :-) You cannot just assume that 0 is
-> a invalid DMA address. It is not. In fact, while you can check if a
-> dma_addr_t is invalid using dma_mapping_error(), the generic APIs
-> don't provide you with a magic "bad" value you can use for what you are
-> trying to do.
->
-> Granted, I think we should make our iommu code reserve the first page
-> for the sake of everybody's sanity and to avoid such pitfalls, but
-> this code is wrong with today iommu implementations.
->
-> Cheers,
-> Ben.
+On Tue, 2010-03-23 at 18:25 +0200, Stephane Eranian wrote:
+>         This patch fixes the remapped counter support such that it now works
+>         on X86 processors.
 
-Yes. I just realized that i can't assign a zero magic "bad" value. It is only
-valid in x86/arm/m68k/alpha architecures and not in spark & PowerPC arch,
-(it should be ~0). In some other architecutres it throws a BUG() on with
-dma_mapping_error() checks. So the patch is not a total bogus in some
-architectures :(.
+(could you please not add all this whitespace in front? and make sure
+ it's no wider than 70 chars)
 
-May be it is best to create an internal FLAG in IXGBE_RSC_CB(skb)
-which can be used to avoid this double freeing.
+Also, I wouldn't say it fixes it, it's currently not broken, its plain
+not implemented. So this patch adds support for rdpmc.
+
+>         For other architectures, e.g., PPC, SPARC, assuming they do offer the ability
+>         to read counts directly from user space, all that is needed is a couple of new
+>         arch specific functions:
+
+Power already supports this, so if you just broke this Paul is going to
+be unhappy.
