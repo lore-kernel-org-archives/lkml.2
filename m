@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0CWWkz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 18:40:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12707 "EHLO
+	id S1753676Ab0CWWlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 18:41:47 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:6346 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753342Ab0CWWky convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752782Ab0CWWlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 18:40:54 -0400
+	Tue, 23 Mar 2010 18:41:46 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=or8wfyOo7abiyLACXVTXg6p/LjYzjKnf7UeTIWoHva/KA/rJitj7iiIfvQgt7rTBe
-	ZpDcqWaYIUKLL7/82Lvvw==
+	cc:content-type:x-system-of-record;
+	b=HPML6ahuiLOsK1h+i9HMq/6NxlYIpHNnefnQ/xnJEqRhAi6gOHSedTg4Q9srmJkhd
+	mewKZQHUgRQkha9IfyMYQ==
 MIME-Version: 1.0
-In-Reply-To: <201003232318.11332.rjw@sisk.pl>
-References: <20100323090206.33932wop73sdefm6@unsolicited.net>
-	 <bd4cb8901003230631q22cdac6dg8011489b94c6d5e0@mail.gmail.com>
-	 <4BA8C7A4.8050502@ladisch.de> <201003232318.11332.rjw@sisk.pl>
-Date: Tue, 23 Mar 2010 23:40:47 +0100
-Message-ID: <bd4cb8901003231540m8930e64va042fc1caf287a3f@mail.gmail.com>
-Subject: Re: 2.6.34-rc2 - crash on shutdown
+In-Reply-To: <1269357506.5109.84.camel@twins>
+References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
+	 <1268869631.9440.282.camel@laptop>
+	 <bd4cb8901003171733k95fcf50mf6de78bf503d9a7b@mail.gmail.com>
+	 <1269353485.5109.48.camel@twins>
+	 <bd4cb8901003230755k41414173n302d7d626a6126b1@mail.gmail.com>
+	 <1269356868.5109.66.camel@twins>
+	 <bd4cb8901003230812s777fcd77x6ffff63123039070@mail.gmail.com>
+	 <1269357506.5109.84.camel@twins>
+Date: Tue, 23 Mar 2010 23:41:41 +0100
+Message-ID: <bd4cb8901003231541g1c465bf3i38c3ca2a654baff6@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
 From: Stephane Eranian <eranian@google.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Clemens Ladisch <clemens@ladisch.de>, David R <david@unsolicited.net>,
-       linux-kernel@vger.kernel.org
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo <mingo@elte.hu>, paulus@samba.org,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com,
+       "hpa@zytor.com" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Manfred Spraul <manfred@colorfullife.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 11:18 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday 23 March 2010, Clemens Ladisch wrote:
->> Stephane Eranian wrote:
->> > On Tue, Mar 23, 2010 at 1:02 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
->> > > The only pointer access in this function is cpuhw->amd_nb, but
->> > > I don't see any obvious bugs.
+On Tue, Mar 23, 2010 at 4:18 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-03-23 at 16:12 +0100, Stephane Eranian wrote:
+>> On Tue, Mar 23, 2010 at 4:07 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2010-03-23 at 15:55 +0100, Stephane Eranian wrote:
+>> >> What's the point of CPU_ONLINE vs. CPU_STARTING if you're saying the
+>> >> former is never right? Why not move CPU_ONLINE to the right place and
+>> >> drop CPU_STARTING?
 >> >
->> > I reported a problem with the AMD initialization just last week.
->> > There is an issue with amd_pmu_cpu_online() which gets called
->> > too early, and thus fails. That leaves some bogus state and causes
->> > a crash in amd_pmu_cpu_offline().
+>> > Its right for a lot of things, just not for perf, we need to be ready
+>> > and done by the time the cpu starts scheduling.
 >> >
->> > I proposed a fix which was rejected. The alternative involves moving
->> > some the of CPU initialization code (on AMD) to an earlier position,i.e.,
->> > which would be executed before the CPU_STARTED notifier. Nobody
->> > has proposed anything else so far.
->>
->> I don't know about the early bootmem stuff, but regardless of this issue,
->> if amd_pmu_cpu_online() can fail, then amd_pmu_cpu_offline() must be able
->> to handle this without blowing up.  Something like this (untested):
+>> You mean they need to wait until after the cpu starts scheduling?
+>> As opposed to being called just before it starts scheduling.
 >
-> I guess we handle that already:
+> As in it doesn't really matter for them, and the CPU_ONLINE call is
+> convenient in that it allows the callback to schedule too.
 >
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a90110c61073eab95d1986322693c2b9a8a6a5f6
->
-Ok, the fix avoids the crash but perf_events support for AMD is still broken.
-
-The root of the problem is elsewhere as I pointed out last week. Peter proposed
-a patch today and I think this would be enough to avoid the crash and have
-perf_events working again on AMD.
+Fine, I will try your proposed patch tomorrow. A priori, it looks fine.
