@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab0CWO3h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:29:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34423 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753850Ab0CWO3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:29:36 -0400
-Message-ID: <4BA8D048.3030407@suse.de>
-Date: Tue, 23 Mar 2010 19:59:28 +0530
-From: Suresh Jayaraman <sjayaraman@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1753932Ab0CWO3n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:29:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33438 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753899Ab0CWO3k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:29:40 -0400
+Date: Tue, 23 Mar 2010 11:29:27 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Soeren Sandmann <sandmann@daimi.au.dk>, Joerg Roedel <joro@8bytes.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+	host side
+Message-ID: <20100323142927.GF4066@ghostprotocols.net>
+References: <20100319082122.GE12576@elte.hu> <20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu> <20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu> <20100322114744.GC1940@8bytes.org> <ye88w9j2n2y.fsf@camel23.daimi.au.dk> <878w9jdu7m.fsf@basil.nowhere.org> <ye84ok72kxi.fsf@camel23.daimi.au.dk> <87vdcnce78.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@samba.org>
-Cc: Gene Heskett <gene.heskett@verizon.net>,
-       "linux-cifs-client@lists.samba.org" 
-	<linux-cifs-client@lists.samba.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-cifs-client] shutdown bugs, since about 2.6.31 or so
-References: <201003222050.55716.gene.heskett@verizon.net>	<4BA843C5.9080307@suse.de> <20100323064351.2135192b@corrin.poochiereds.net>
-In-Reply-To: <20100323064351.2135192b@corrin.poochiereds.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vdcnce78.fsf@basil.nowhere.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 04:13 PM, Jeff Layton wrote:
-> On Tue, 23 Mar 2010 09:59:57 +0530
->>
->> On 03/23/2010 06:20 AM, Gene Heskett wrote:
->>> Greetings;
->>>
->>> I do not know if I am miss-configured or what, and I hadn't worried about it 
->>> extensively because the machine runs fine ANAICT.
->>>
->>> But any reboot method short of just pressing the hdwe reset button generates 
->>> quite a lengthy process of repeatedly pressing ctl-alt-del, minimum of 6 
->>> times I believe, in order to actually do a shutdown, and this isn't at all 
->>> graceful.  Not all of it makes it to the log, but here is what does.
->>>
->>> Mar 22 16:47:53 coyote kernel: [ 3000.619173] BUG: Dentry d76beaa0{i=2,n=/} 
->>> still in use (1) [unmount of cifs cifs]
->>> Mar 22 16:47:53 coyote kernel: [ 3000.619191] ------------[ cut here 
->>> ]------------
->>> Mar 22 16:47:53 coyote kernel: [ 3000.619303] kernel BUG at fs/dcache.c:676!
->>> Mar 22 16:47:53 coyote kernel: [ 3000.619420] invalid opcode: 0000 [#1] 
->>> PREEMPT SMP
-
-Is your server an OS/2 server by any chance?
-
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] Pid: 5747, comm: umount.cifs 
->>> Not tainted 2.6.34-rc2 #1 M2N-SLI DELUXE/System Product Name
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: 0060:[<c10946ae>] EFLAGS: 
->>> 00010246 CPU: 1
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP is at 
->>> shrink_dcache_for_umount_subtree+0x14b/0x1fe
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] EAX: 0000005b EBX: 00000001 
->>> ECX: 00000046 EDX: 00000000
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] ESI: d76beaa0 EDI: d76beafc 
->>> EBP: d55e6f24 ESP: d55e6ef4
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  DS: 007b ES: 007b FS: 00d8 GS: 
->>> 00e0 SS: 0068
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] Process umount.cifs (pid: 5747, 
->>> ti=d55e6000 task=d55d8780 task.ti=d55e6000)
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] Stack:
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  c12d20ac d76beaa0 00000002 
->>> d76beafc 00000001 fa14da01 dc956b64 fa14da01
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> 0000001b dc956a00 fa14a7b4 
->>> dc956a00 d55e6f30 c109478e dc956a00 d55e6f40
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> c1087d38 00000013 fa158a5c 
->>> d55e6f4c c1087e32 dc956a00 d55e6f5c c10883c6
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] Call Trace:
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c109478e>] ? 
->>> shrink_dcache_for_umount+0x2d/0x37
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087d38>] ? 
->>> generic_shutdown_super+0x15/0xd2
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087e32>] ? 
->>> kill_anon_super+0xc/0x43
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10883c6>] ? 
->>> deactivate_super+0x39/0x4b
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1098dfd>] ? 
->>> mntput_no_expire+0x8c/0xbb
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10992df>] ? 
->>> sys_umount+0x299/0x2be
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1002813>] ? 
->>> sysenter_do_call+0x12/0x22
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] Code: 00 89 45 ec 8b 46 10 8b 
->>> 1e 8b 7e 28 85 c0 74 03 8b 50 20 8d 81 64 01 00 00 50 ff 75 ec 53 57 52 56 6
->>> 8 ac 20 2d c1 e8 b5 fc 1b 00 <0f> 0b 83 c4 1c eb fe 8b 7e 1c 39 fe 75 04 31 
->>> ff eb 03 f0 ff 0f
->>> Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: [<c10946ae>] 
->>> shrink_dcache_for_umount_subtree+0x14b/0x1fe SS:ESP 0068:d55e6ef4
->>> Mar 22 16:47:53 coyote kernel: [ 3000.627952] ---[ end trace fbecccbb5fac2d05 
->>> ]
-
+Em Tue, Mar 23, 2010 at 03:20:11PM +0100, Andi Kleen escreveu:
+> Soeren Sandmann <sandmann@daimi.au.dk> writes:
+> > I don't think the oprofile JIT interface solves any of these
+> > problems. (In fact, I don't see why the JIT problem is even hard. The
+> > JIT compiler can just generate a little ELF file with symbols in it,
+> > and the profiler can pick it up through the mmap events that you get
+> > through the perf interface).
 > 
-> Looks like the same bug as reported here:
-> 
-> http://lists.samba.org/archive/linux-cifs-client/2010-February/005560.html
-> 
-> ...the patch I asked them to test is now here:
-> 
-> http://git.samba.org/?p=jlayton/linux.git;a=commit;h=fd0ab22278f38b0e2b7d303a1101b15d3255aee9
-> 
-> ...but I still think the problem is likely in how we autodisable server
-> inode numbers.
+> That would require keeping those temporary ELF files for
+> potentially unlimited time around (profilers today look at the ELF
+> files at the final analysis phase, which might be weeks away)
 
-Yes, I also suspect a problem with autodisabling server inode numbers
-esp against OS/2 servers, but I never got around a box or reproduce to
-investigate it myself.
+'perf record' will traverse the perf.data file just collected and, if the
+binaries have build-ids, will stash them in ~/.debug/, keyed by build-id
+just like the -debuginfo packages do.
 
-Thanks,
+So only the binaries with hits. Also one can use 'perf archive' to
+create a tar.bz2 file with the files with hits for the specified
+perf.data file, that can then be transfered to another machine, whatever
+arch, untarred at ~/.debug and then the report can be done there.
 
--- 
-Suresh Jayaraman
+As it is done by build-id, multiple 'perf record' sessions share files
+in the cache.
+
+Right now the whole ELF file (or /proc/kallsyms copy) is stored if
+collected from the DSO directly, or the bits that are stored in
+-debuginfo files if we find it installed (so smaller). We could strip
+that down further by storing just the ELF sections needed to make sense
+of the symtab.
+
+- Arnaldo
