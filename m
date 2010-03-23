@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0CWSjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:39:55 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:38018 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752064Ab0CWSjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:39:54 -0400
-Date: Tue, 23 Mar 2010 18:39:36 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
-	compaction failure
-Message-ID: <20100323183936.GF5870@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-12-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231327580.10178@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003231327580.10178@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753604Ab0CWStN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 14:49:13 -0400
+Received: from mail.gmx.net ([213.165.64.20]:42621 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753198Ab0CWStL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 14:49:11 -0400
+X-Authenticated: #5115406
+X-Provags-ID: V01U2FsdGVkX1/SStxCFXbSsmN4Nn/bWzs76w3DIcSHqb/QiN7iQl
+	dHdpRT7zC9oDTa
+From: swirl@gmx.li
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, Thomas Weber <swirl@gmx.li>,
+       Thomas Weber <weber@corscience.de>
+Subject: [PATCHv2] linux: i2c: twl.h: Fix typo and tab
+Date: Tue, 23 Mar 2010 19:50:16 +0100
+Message-Id: <1269370216-30111-1-git-send-email-swirl@gmx.li>
+X-Mailer: git-send-email 1.7.0.2
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.48999999999999999
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 01:31:43PM -0500, Christoph Lameter wrote:
-> On Tue, 23 Mar 2010, Mel Gorman wrote:
-> 
-> > The fragmentation index may indicate that a failure it due to external
-> 
-> s/it/is/
-> 
+From: Thomas Weber <swirl@gmx.li>
 
-Correct.
+Fix typo in comments:
+	- contollable => controllable
+	- uniqe => unique
 
-> > fragmentation, a compaction run complete and an allocation failure still
-> 
-> ???
-> 
+Replace tab with whitespace in defines.
 
-I was having some sort of fit when I wrote that obviously. Try this on
-for size
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
+ include/linux/i2c/twl.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-The fragmentation index may indicate that a failure is due to external
-fragmentation but after a compaction run completes, it is still possible  
-for an allocation to fail.
-
-> > fail. There are two obvious reasons as to why
-> >
-> >   o Page migration cannot move all pages so fragmentation remains
-> >   o A suitable page may exist but watermarks are not met
-> >
-> > In the event of compaction and allocation failure, this patch prevents
-> > compaction happening for a short interval. It's only recorded on the
-> 
-> compaction is "recorded"? deferred?
-> 
-
-deferred makes more sense.
-
-What I was thinking at the time was that compact_resume was stored in struct
-zone - i.e. that is where it is recorded.
-
-> > preferred zone but that should be enough coverage. This could have been
-> > implemented similar to the zonelist_cache but the increased size of the
-> > zonelist did not appear to be justified.
-> 
-> > @@ -1787,6 +1787,9 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
-> >  			 */
-> >  			count_vm_event(COMPACTFAIL);
-> >
-> > +			/* On failure, avoid compaction for a short time. */
-> > +			defer_compaction(preferred_zone, jiffies + HZ/50);
-> > +
-> 
-> 20ms? How was that interval determined?
-> 
-
-Matches the time the page allocator would defer to an event like
-congestion. The choice is somewhat arbitrary. Ideally, there would be
-some sort of event that would re-enable compaction but there wasn't an
-obvious candidate so I used time.
-
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index fb6784e..a63b77d 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -496,7 +496,7 @@ struct twl4030_madc_platform_data {
+ 	int		irq_line;
+ };
+ 
+-/* Boards have uniqe mappings of {row, col} --> keycode.
++/* Boards have unique mappings of {row, col} --> keycode.
+  * Column and row are 8 bits each, but range only from 0..7.
+  * a PERSISTENT_KEY is "always on" and never reported.
+  */
+@@ -664,15 +664,15 @@ static inline int twl4030charger_usb_en(int enable) { return 0; }
+ #define TWL4030_REG_VUSB3V1	19
+ 
+ /* TWL6030 SMPS/LDO's */
+-/* EXTERNAL dc-to-dc buck convertor contollable via SR */
++/* EXTERNAL dc-to-dc buck convertor controllable via SR */
+ #define TWL6030_REG_VDD1	30
+ #define TWL6030_REG_VDD2	31
+ #define TWL6030_REG_VDD3	32
+ 
+ /* Non SR compliant dc-to-dc buck convertors */
+-#define	TWL6030_REG_VMEM	33
++#define TWL6030_REG_VMEM	33
+ #define TWL6030_REG_V2V1	34
+-#define	TWL6030_REG_V1V29	35
++#define TWL6030_REG_V1V29	35
+ #define TWL6030_REG_V1V8	36
+ 
+ /* EXTERNAL LDOs */
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.0.2
+
