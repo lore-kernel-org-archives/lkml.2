@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab0CWKZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 06:25:32 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60848 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab0CWKZI (ORCPT
+	id S1751175Ab0CWK2f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 06:28:35 -0400
+Received: from mamba.nagafix.co.uk ([194.145.196.68]:59117 "EHLO
+	mail.nagafix.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750719Ab0CWK2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 06:25:08 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 3/3] gpiolib: document that names can contain printk format specifiers
-Date: Tue, 23 Mar 2010 11:24:55 +0100
-Message-Id: <1269339895-12600-3-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <20100322204706.GA10157@pengutronix.de>
-References: <20100322204706.GA10157@pengutronix.de>
+	Tue, 23 Mar 2010 06:28:34 -0400
+Message-ID: <4BA897BF.7050405@nagafix.co.uk>
+Date: Tue, 23 Mar 2010 17:28:15 +0700
+From: Antoine Martin <antoine@nagafix.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Kevin Wolf <kwolf@redhat.com>
+CC: Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100322124428.GA12475@elte.hu> <4BA76810.4040609@redhat.com> <20100322143212.GE14201@elte.hu> <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws> <4BA89430.7060404@redhat.com>
+In-Reply-To: <4BA89430.7060404@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- include/asm-generic/gpio.h |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+On 03/23/2010 05:13 PM, Kevin Wolf wrote:
+> Am 22.03.2010 23:06, schrieb Anthony Liguori:
+>    
+>> On 03/22/2010 02:47 PM, Avi Kivity wrote:
+>>      
+>>> Having qemu enumerate guests one way or another is not a good idea IMO
+>>> since it is focused on one guest and doesn't have a system-wide entity.
+>>>        
+>> There always needs to be a system wide entity.  There are two ways to
+>> enumerate instances from that system wide entity.  You can centralize
+>> the creation of instances and there by maintain an list of current
+>> instances.  You can also allow instances to be created in a
+>> decentralized manner and provide a standard mechanism for instances to
+>> register themselves with the system wide entity.
+>>
+>> IOW, it's the difference between asking libvirtd to exec(qemu) vs
+>> allowing a user to exec(qemu) and having qemu connect to a well known
+>> unix domain socket for libvirt to tell libvirtd that it exists.
+>>      
+> I think the latter is exactly what I would want for myself. I do see the
+> advantages of having a central instance, but I really don't want to
+> bother with libvirt configuration files or even GUIs just to get an
+> ad-hoc VM up when I can simply run "qemu -hda hd.img -m 1024". Let alone
+> that I usually want to have full control over qemu, including monitor
+> access and small details available as command line options.
+>
+> I know that I'm not the average user with these requirements, but still
+> I am one user and do have these requirements. If I could just install
+> libvirt, continue using qemu as I always did and libvirt picked my VMs
+> up for things like global enumeration, that would be more or less the
+> optimal thing for me.
+>    
++1
+And it would also make it more likely that users like us would convert 
+to libvirt in the long run, by providing an easy and integrated 
+transition path.
+I've had another look at libvirt, and one of the things that is holding 
+me back is the cost of moving existing scripts to libvirt. If it could 
+just pick up what I have (at least in part), then I don't have to.
 
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index bc0c14d..fb1ecf8 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -60,7 +60,9 @@ struct module;
-  * @names: if set, must be an array of strings to use as alternative
-  *      names for the GPIOs in this chip. Any entry in the array
-  *      may be NULL if there is no alias for the GPIO, however the
-- *      array must be @ngpio entries long.
-+ *      array must be @ngpio entries long.  A name can include a single printk
-+ *      format specifier for an unsigned int.  It is substituted by the actual
-+ *      number of the gpio.
-  *
-  * A gpio_chip can help platforms abstract various sources of GPIOs so
-  * they can all be accessed through a common programing interface.
--- 
-1.7.0
+Antoine
+
+> Kevin
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>    
 
