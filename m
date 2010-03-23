@@ -1,187 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab0CWV2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 17:28:46 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:37535 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab0CWV2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 17:28:45 -0400
-Date: Tue, 23 Mar 2010 14:28:34 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Grzegorz Nosek <root@localdomain.pl>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100323212834.GH20796@count0.beaverton.ibm.com>
-References: <20100321195044.GA23757@megiteam.pl>
+	id S1753925Ab0CWVbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 17:31:33 -0400
+Received: from ozlabs.org ([203.10.76.45]:37550 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752879Ab0CWVbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 17:31:31 -0400
+Date: Wed, 24 Mar 2010 08:31:26 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Nick Piggin <nickpiggin@yahoo.com.au>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       paulmck@linux.vnet.ibm.com, Milton Miller <miltonm@bga.com>,
+       Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smp_call_function_many SMP race
+Message-ID: <20100323213126.GA5594@kryten>
+References: <20100323111556.GK24064@kryten>
+ <1269347203.5279.1650.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100321195044.GA23757@megiteam.pl>
+In-Reply-To: <1269347203.5279.1650.camel@twins>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 21, 2010 at 08:50:44PM +0100, Grzegorz Nosek wrote:
-
-<snip>
-
-> 2. Weird strace behaviour across pidns boundary
-> 
-> When strace'ing (with -ff) lxc-start, I get a proper strace for the
-> directly spawned process and the container init. However, any processes
-> spawned by the container's init are not straced properly (I get two
-> empty files, named <foo>.<pid-in-root-ns> and <foo>.2 -- presumably pid
-> inside the container). The container also seems to malfunction under
-> strace (looks like exec() failing as lxc-ps shows two "init" processes).
-> 
-> This is quite painful as it prevents strace'ing processes in containers
-> even after startup. Here's a snippet of strace'ing a bash (pid 179
-> inside, pid 2959 outside) trying to run 'ls'. The shell hangs until I
-> kill the strace process.
-> 
-> pipe([3, 4])                            = 0
-> clone(Process 197 attached
-> child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb7859708) = 197
-> Process 2999 attached (waiting for parent)
-> [pid  2959] setpgid(197, 197)           = 0
-> [pid  2959] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
-> [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
-> [pid  2959] close(3)                    = 0
-> [pid  2959] close(4)                    = 0
-> [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD TSTP TTIN TTOU], [CHLD], 8) = 0
-> [pid  2959] ioctl(255, TIOCSPGRP, [197]) = 0
-> [pid  2959] rt_sigprocmask(SIG_SETMASK, [CHLD], NULL, 8) = 0
-> [pid  2959] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
-> [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
-> [pid  2959] waitpid(-1, Process 2959 suspended
-> ^C <unfinished ...>
-> Process 2959 detached
-> Process 197 detached
-> Process 2999 detached
-> 
-> 'strace ls' ran completely inside the container works as expected.
-
-I'm suprised strace of ls works across pid namespaces. I've been looking
-at strace and it seemed to me that one kernel change and a bunch of strace
-changes are needed to make strace'ing in child pid namespaces work. Eric
-Biederman's setns() patches also might help.
-
-Can you get a little farther with the kernel fix below?
-
-    Fix incorrect pid namespace used by ptrace during fork/vfork/clone
-    
-    pid namespaces are not used properly by ptrace in do_fork(). When tracing
-    parent != real_parent because parent is the tracing task. Yet the pid in
-    the real_parent's namespace is being used in do_fork():
-    
-    	nr = task_pid_vnr(p); /* uses real_parent's pid namespace */
-    	if (clone_flags & CLONE_PARENT_SETTID)
-    		put_user(nr, parent_tidptr); /* "real_parent_tidptr" */
-    	...
-    	tracehook_report_clone_complete(trace, regs,
-    					clone_flags, nr, p); /* ptrace broken */
-    
-    	if (clone_flags & CLONE_VFORK) {
-    		freezer_do_not_count();
-    		wait_for_completion(&vfork);
-    		freezer_count();
-    		tracehook_report_vfork_done(p, nr); /* ptrace broken */
-    
-    In this case re-using the value in nr is wrong.
-    
-    This bug can be seen by attaching to an already-running task
-    in a descendent namespace with strace -f. When the traced task forks
-    strace won't attach to the new task properly because it sees the
-    incorrect pid. For example, if root is running on two VTs and
-    root@VTN# indicates switching to VT N:
-    
-    root@VT1# ns_exec -cp /bin/bash
-    root@VT1# echo $$
-    1
-    root@VT2# strace -f -e fork,vfork,clone -p <pid of bash>
-    Process 14518 attached - interrupt to quit
-    root@VT1# /bin/bash
-    <stops -- new bash shell does not respond to input>
-    root@VT2#
-    clone(Process 15 attached ... ) = 15
-    Process 15044 attached (waiting for parent)
-    Process 14518 suspended
-    <no more output>
-    <hit ctrl-c>
-    root@VT1# echo $$
-    15
-    
-    strace sees the pid of the new process to attach to as 15 when it should
-    really be attaching to pid 15044. Interestingly enough, it does also
-    attach to 15044 later but since the initial attach failed it does not
-    properly resume the traced task.
-    (I assume wait() helped here -- it reported 15044 and hence strace is aware
-    that 15044 exists -- I haven't read the strace code to confirm this.)
-    
-    Miscellaneous Notes re: ptrace and pid namespaces (Documentation/* fodder?):
-    
-    Note that if the tracer detaches and a tracer from a different ancestor
-    pid namespace attaches we'll have the wrong pid number again. The only
-    way to fix that is to have ptrace hold a reference to a struct pid
-    so long as it may be needed for PTRACE_GETEVENTMSG.
-    
-    The only way it's possible to ptrace a task outside the tracer's pid
-    namespace is if the already-tracing task enters a new descendent pid
-    namespace:
-    
-      tracer	     tracer does		 .
-         \		=> clone(CLONE_NEWPID) =>	/ \
-         tracee				  tracer   tracee
-    
-    In this case the pids returned by PTRACE_GETEVENTMSG will be 0.
-    Since attaching to tasks that aren't in descendent namespaces is
-    not possible, this is a very unlikely problem to encounter.
-    
-    Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-    Cc: Roland McGrath <roland@redhat.com> (MAINTAINERS: ptrace)
-    Cc: Oleg Nesterov <oleg@redhat.com> (MAINTAINERS: ptrace)
-    Cc: <utrace folks>
-    Cc: Sukadev Bhattiprolu <sukadev@us.ibm.com> (pid ns)
-    Cc: containers@lists.linux-foundation.org (pid ns)
-    Cc: linux-kernel@vger.kernel.org
-
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3a65513..7946ea6 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1404,6 +1404,7 @@ long do_fork(unsigned long clone_flags,
- 	 */
- 	if (!IS_ERR(p)) {
- 		struct completion vfork;
-+		int ptrace_pid_vnr;
  
- 		trace_sched_process_fork(current, p);
- 
-@@ -1439,14 +1440,21 @@ long do_fork(unsigned long clone_flags,
- 			wake_up_new_task(p, clone_flags);
- 		}
- 
-+		ptrace_pid_vnr = nr;
-+		if (unlikely(p->parent != p->real_parent)) {
-+			rcu_read_lock();
-+			ptrace_pid_vnr = task_pid_nr_ns(p, p->parent->nsproxy->pid_ns);
-+			rcu_read_unlock();
-+		}
- 		tracehook_report_clone_complete(trace, regs,
--						clone_flags, nr, p);
-+						clone_flags,
-+						ptrace_pid_vnr, p);
- 
- 		if (clone_flags & CLONE_VFORK) {
- 			freezer_do_not_count();
- 			wait_for_completion(&vfork);
- 			freezer_count();
--			tracehook_report_vfork_done(p, nr);
-+			tracehook_report_vfork_done(p, ptrace_pid_vnr);
- 		}
- 	} else {
- 		nr = PTR_ERR(p);
+Hi Peter,
+
+> A rather simple question since my brain isn't quite ready processing the
+> content here..
+
+After working my way through that bug my brain wasn't in good shape
+either because:
+
+> Isn't reverting that one patch a simpler solution than adding all that
+> extra logic? If not, then the above statement seems false and we had a
+> bug even with that preempt_enable/disable() pair.
+
+I screwed up the explanation :( The commit message that causes it is
+54fdade1c3332391948ec43530c02c4794a38172 (generic-ipi: make struct
+call_function_data lockless), and backing it out fixes the issue.
+
+Anton
