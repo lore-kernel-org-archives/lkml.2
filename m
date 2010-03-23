@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab0CWChJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 22:37:09 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:59571 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752494Ab0CWChH convert rfc822-to-8bit (ORCPT
+	id S1753417Ab0CWCrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 22:47:35 -0400
+Received: from qw-out-2122.google.com ([74.125.92.25]:21435 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab0CWCre convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 22:37:07 -0400
+	Mon, 22 Mar 2010 22:47:34 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=DbchEk3DCOZSp70C4GCVJ12xxSQffZnLC7qIwQp9Drd9xBlBBBLj9E054SQSlRRy9y
-         e6p6h1I7rr3GVPY+tTdeWt11SVPi8SY/e0pl9qDriHidhTJPxG4Y+IpHX743cNyQrQQz
-         t6eNhLSCO/Z2tphN3sUeHRGZ3iG1wLMEiXPe4=
+        b=HCUJXVD2IrjvNnquwa06h//a3SMuzK+SaZQlp+Hl3FVtYguzygGP6yiMvPk8WvskGh
+         PQbcgBa7Rpdw/KQwXqlc7rB0gSS9QnrTUZWzFW1PEGdtoqbnII6BwAPlRt251BiG7JBs
+         vo7B15TIDWp6AsKXxkT19JVuGTtDfNk9hElhk=
 MIME-Version: 1.0
-In-Reply-To: <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
-References: <20100320143240.GB2942@localhost.localdomain>
-	 <4BA7A3CF.8070503@trash.net>
-	 <628d1651003221834g543e3e6cl4ea39c0886cb4ba1@mail.gmail.com>
-	 <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
-Date: Tue, 23 Mar 2010 10:37:06 +0800
-Message-ID: <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
-Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org
+In-Reply-To: <20100323091841.dd500a38.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100322120509.GC21571@bicker>
+	 <20100323091841.dd500a38.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 23 Mar 2010 10:47:33 +0800
+Message-ID: <2375c9f91003221947n4d4f417w3a5ea32565e9c582@mail.gmail.com>
+Subject: Re: [patch] kcore: fix test for end of list
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dan Carpenter <error27@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Slaby <jirislaby@gmail.com>,
+       Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Patrick's point is that you're using "if (get.size >= INT_MAX /
-> sizeof(struct ipt_get_entries))"
-> So, did you find any chance that get.size * sizeof(struct
-> ipt_get_entries) >= INT_MAX ?
+On Tue, Mar 23, 2010 at 8:18 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Mon, 22 Mar 2010 15:05:09 +0300
+> Dan Carpenter <error27@gmail.com> wrote:
 >
-would you carefully read my explain???
-get.size is copy from the user space,  it can be set as 0x7fffffff,
-addition with sizeof(struct ipt_get_entries) can be overflow.
+>> "m" is never NULL here.  We need a different test for the end of list
+>> condition.
+>>
+>> Signed-off-by: Dan Carpenter <error27@gmail.com>
+>
+> yes, thank you.
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> And, for the addition overflow, can it be caught by
->
-> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
->
-sizeof(struct ipt_get_entries) + get.size can be overflow as *len,
-get.size is control by user space with copy_from_user().
+Yeah, this is a good catch for me too!
 
-On Tue, Mar 23, 2010 at 10:29 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
-> On Tue, Mar 23, 2010 at 9:34 AM, wzt wzt <wzt.wzt@gmail.com> wrote:
->>> I can see that the size might cause an overflow in the addition with
->>> sizeof(struct ipt_get_entries)
->> That's the integer overflow i pointed.
->> get.size is copy from the user space,  it can be set as 0x7fffffff,
->> addition with sizeof(struct ipt_get_entries) can be overflow.
->
-> Patrick's point is that you're using "if (get.size >= INT_MAX /
-> sizeof(struct ipt_get_entries))"
-> So, did you find any chance that get.size * sizeof(struct
-> ipt_get_entries) >= INT_MAX ?
->
-> And, for the addition overflow, can it be caught by
->
-> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
->
->>
->>        if (*len != sizeof(struct ipt_get_entries) + get.size) {
->>                duprintf("get_entries: %u != %zu\n",
->>                         *len, sizeof(get) + get.size);
->>                return -EINVAL;
->>        }
->>
->> so, check get.size max value before addition with sizeof(struct
->> ipt_get_entries) to prevent the integer overflow.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
