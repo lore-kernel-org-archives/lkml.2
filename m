@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0CWNwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 09:52:42 -0400
-Received: from out2.smtp.messagingengine.com ([66.111.4.26]:34658 "EHLO
-	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753302Ab0CWNwl (ORCPT
+	id S1753497Ab0CWNx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 09:53:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42317 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753302Ab0CWNxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 09:52:41 -0400
-X-Sasl-enc: qqq3Hl5XlauaR3PtMGIgdKjKlo0BT9WU6qQ+5sOwoP3u 1269352360
-Message-ID: <4BA8C7A4.8050502@ladisch.de>
-Date: Tue, 23 Mar 2010 14:52:36 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Tue, 23 Mar 2010 09:53:54 -0400
+X-Authority-Analysis: v=1.0 c=1 a=dfNPtqvK-AsA:10 a=kj9zAlcOel0A:10 a=Dl0CFYAjAAAA:8 a=5Pwo27rYcfm_W28bVK4A:9 a=4vXiPOF3qCv9ZaqaICcA:7 a=KbFpPstBzlzXWF0GtC14lxmqjfoA:4 a=CjuIK1q_8ugA:10 a=HfSKAa7qCvcA:10 a=P76tJB029keue6Pm:21 a=CzMwtLUrjNNH-hAc:21
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.124.57.33
+Date: Tue, 23 Mar 2010 08:52:44 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Louis Rilling <Louis.Rilling@kerlabs.com>
+Cc: "Serge E. Hallyn" <serue@us.ibm.com>,
+       Linux Containers <containers@lists.osdl.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] linux-cr: nested pid namespaces (v3)
+Message-ID: <20100323135244.GA20910@hallyn.com>
+References: <20100323051839.GA16123@us.ibm.com>
+ <20100323071431.GC4242@localdomain>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: David R <david@unsolicited.net>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc2 - crash on shutdown
-References: <20100323090206.33932wop73sdefm6@unsolicited.net>	 <4BA8ADB8.1030802@ladisch.de> <bd4cb8901003230631q22cdac6dg8011489b94c6d5e0@mail.gmail.com>
-In-Reply-To: <bd4cb8901003230631q22cdac6dg8011489b94c6d5e0@mail.gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100323071431.GC4242@localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane Eranian wrote:
-> On Tue, Mar 23, 2010 at 1:02 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
-> > The only pointer access in this function is cpuhw->amd_nb, but
-> > I don't see any obvious bugs.
+Quoting Louis Rilling (Louis.Rilling@kerlabs.com):
+
+Hi Louis, thanks again for reviewing.
+
+> To me the real reason is to anticipate pid namespace unsharing. And this
+> together with setns() will need to re-consider much of the namespace C/R
+> logic imho. For instance, checkpoint could be done from a foreign task
+> having entered the container, leak detection should take such foreign
+> tasks into account (see example below), etc.
+
+...
+
+> >  
+> > @@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
+> >  		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
+> >  		ret = -EPERM;
+> >  	}
+> > -	/* no support for >1 private pidns */
+> > -	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
+> > -		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
+> > -		ret = -EPERM;
+> > +	/* pidns must be descendent of root_nsproxy */
+> > +	pidns = nsproxy->pid_ns;
 > 
-> I reported a problem with the AMD initialization just last week.
-> There is an issue with amd_pmu_cpu_online() which gets called
-> too early, and thus fails. That leaves some bogus state and causes
-> a crash in amd_pmu_cpu_offline().
-> 
-> I proposed a fix which was rejected. The alternative involves moving
-> some the of CPU initialization code (on AMD) to an earlier position,i.e.,
-> which would be executed before the CPU_STARTED notifier. Nobody
-> has proposed anything else so far.
+> In case of unshared pid namespace, task_active_pid_ns(t) should be checked
+> instead of t->nsproxy->pid_ns: we can't checkpoint a foreign task.
 
-I don't know about the early bootmem stuff, but regardless of this issue,
-if amd_pmu_cpu_online() can fail, then amd_pmu_cpu_offline() must be able
-to handle this without blowing up.  Something like this (untested):
+Unsharing can only be done to a child ns, so it wouldn't be foreign.
+Though of course that depends on which one ends up being the original
+pid_ns (see below).
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Now, regarding supporting unshared pid_ns, I think that (1) it will
+be a simple matter of separately doing
+	pid_pidns = checkpoint_obj(task_active_pid_ns(task));
+	nsp_pidns = checkpoint_obj(task->nsproxy->pid_ns);
+since we will need to record both.  In addition, (2) the most
+recent emails I see on the topics are still unsure about whether
+we want to have the unshared pid_ns be reflected in 
+ns_of_pid(task_pid(task)) or task->nsproxy->pid_ns, so I think
+we'll just have to handle them when they are implemented.
 
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -324,17 +324,17 @@ static void amd_pmu_cpu_online(int cpu)
- 	if (boot_cpu_data.x86_max_cores < 2)
- 		return;
- 
-+	cpu1 = &per_cpu(cpu_hw_events, cpu);
-+	cpu1->amd_nb = NULL;
-+
- 	/*
- 	 * function may be called too early in the
- 	 * boot process, in which case nb_id is bogus
- 	 */
- 	nb_id = amd_get_nb_id(cpu);
- 	if (nb_id == BAD_APICID)
- 		return;
- 
--	cpu1 = &per_cpu(cpu_hw_events, cpu);
--	cpu1->amd_nb = NULL;
--
- 	raw_spin_lock(&amd_nb_lock);
- 
- 	for_each_online_cpu(i) {
-@@ -370,7 +370,7 @@ static void amd_pmu_cpu_offline(int cpu)
- 
- 	raw_spin_lock(&amd_nb_lock);
- 
--	if (--cpuhw->amd_nb->refcnt == 0)
-+	if (cpuhw->amd_nb && --cpuhw->amd_nb->refcnt == 0)
- 		kfree(cpuhw->amd_nb);
- 
- 	cpuhw->amd_nb = NULL;
+-serge
