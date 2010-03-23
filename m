@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab0CWOFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:05:05 -0400
-Received: from nfitmail.nfit.au.dk ([130.225.31.129]:7723 "EHLO
-	smtp.nfit.au.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752258Ab0CWOFB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:05:01 -0400
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+	id S1753678Ab0CWOGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:06:11 -0400
+Received: from 8bytes.org ([88.198.83.132]:48443 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753550Ab0CWOGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:06:09 -0400
+Date: Tue, 23 Mar 2010 15:06:08 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Anthony Liguori <anthony@codemonkey.ws>
+Cc: Avi Kivity <avi@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
        Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-References: <1268717232.2813.36.camel@localhost>
-	<1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
-	<20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu>
-	<20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
-	<20100322114744.GC1940@8bytes.org>
-	<ye88w9j2n2y.fsf@camel23.daimi.au.dk>
-	<878w9jdu7m.fsf@basil.nowhere.org>
-From: Soeren Sandmann <sandmann@daimi.au.dk>
-Date: 23 Mar 2010 15:04:57 +0100
-In-Reply-To: <878w9jdu7m.fsf@basil.nowhere.org>
-Message-ID: <ye84ok72kxi.fsf@camel23.daimi.au.dk>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+	project
+Message-ID: <20100323140608.GJ1940@8bytes.org>
+References: <4BA7821C.7090900@codemonkey.ws> <20100322155505.GA18796@elte.hu> <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu> <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu> <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-NFIT-RelayAddr: 130.225.16.142
-X-Sim: 5bf2ef2800a0ab240943c089c6942709652bb8f349723604233f2a8ff631e4ef
-X-NFIT-Solido-Score: 0.
+Content-Disposition: inline
+In-Reply-To: <4BA7E9D9.5060800@codemonkey.ws>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen <andi@firstfloor.org> writes:
+On Mon, Mar 22, 2010 at 05:06:17PM -0500, Anthony Liguori wrote:
+> There always needs to be a system wide entity.  There are two ways to  
+> enumerate instances from that system wide entity.  You can centralize  
+> the creation of instances and there by maintain an list of current  
+> instances.  You can also allow instances to be created in a  
+> decentralized manner and provide a standard mechanism for instances to  
+> register themselves with the system wide entity.
 
-> Soeren Sandmann <sandmann@daimi.au.dk> writes:
-> >
-> > To fix that problem, it seems like we need some way to have python
-> > export what is going on. Maybe the same mechanism could be used to
-> > both access what is going on in qemu and python.
-> 
-> oprofile already has an interface to let JITs export
-> information about the JITed code. C Python is not a JIT,
-> but presumably one of the python JITs could do it.
-> 
-> http://oprofile.sourceforge.net/doc/devel/index.html
+And this system wide entity is the kvm module. It creates instances of
+'struct kvm' and destroys them. I see no problem if we just attach a
+name to every instance with a good default value like kvm0, kvm1 ... or
+guest0, guest1 ... User-space can override the name if it wants. The kvm
+module takes care about the names being unique.
+This is very much the same as network card numbering is implemented in
+the kernel.
+Forcing perf to talk to qemu or even libvirt produces to much overhead
+imho. Instrumentation only produces useful results with low overhead.
 
-It's not that I personally want to profile a particular python
-program. I'm interested in the more general problem of extracting more
-information from profiled user space programs than just stack traces.
+	Joerg
 
-Examples:
-
-        - What is going on inside QEMU? 
-
-        - Which client is the X server servicing?
-
-        - What parts of a python/shell/scheme/javascript program is
-          taking the most CPU time?
-
-I don't think the oprofile JIT interface solves any of these
-problems. (In fact, I don't see why the JIT problem is even hard. The
-JIT compiler can just generate a little ELF file with symbols in it,
-and the profiler can pick it up through the mmap events that you get
-through the perf interface).
-
-> I know it's not envogue anymore and you won't be a approved 
-> cool kid if you do, but you could just use oprofile? 
-
-I am bringing this up because I want to extend sysprof to be more
-useful. 
-
-
-Soren
