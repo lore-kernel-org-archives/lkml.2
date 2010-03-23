@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782Ab0CWDCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 23:02:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45198 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0CWDCD (ORCPT
+	id S1753891Ab0CWDEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 23:04:12 -0400
+Received: from mail-iw0-f176.google.com ([209.85.223.176]:50041 "EHLO
+	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858Ab0CWDEL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 23:02:03 -0400
-X-Authority-Analysis: v=1.0 c=1 a=q7Hbh6cPxJoA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=5ag6DWIdFaIrk0IvKGQA:9 a=bgzrCrVhw_ENPQP7A6qSFyLqkzcA:4 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 12/18] timer: Provide config option for enabling timer
- tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1003230300480.3147@localhost.localdomain>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-	 <1269304340-25372-13-git-send-email-jack@suse.cz>
-	 <alpine.LFD.2.00.1003230300480.3147@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 22 Mar 2010 23:01:59 -0400
-Message-ID: <1269313319.2957.447.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Mar 2010 23:04:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>
+References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>
+Date: Mon, 22 Mar 2010 20:04:09 -0700
+Message-ID: <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Jean Delvare <khali@linux-fr.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Linux Input <linux-input@vger.kernel.org>,
+       Allie Xiong <axiong@synaptics.com>,
+       William Manson <wmanson@synaptics.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 03:01 +0100, Thomas Gleixner wrote:
-> On Tue, 23 Mar 2010, Jan Kara wrote:
-> 
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> 
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Steven, can you pick that up please ?
+On Mon, Mar 22, 2010 at 7:07 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
+...
+> There are two existing drivers for similar Synaptics devices in the
+> current kernel tree (excluding the PS/2 touchpad driver).  These are:
+>
+> ./linux-2.6/drivers/input/mouse/synaptics_i2c.c
+>      A driver for the Exeda 15mm touchpad, written by Mike Rapoport
+>      <mike@compulab.co.il> and Igor Grinberg <grinberg@compulab.co.il>
+>
+> ./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
+>      A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
+>      <arve@android.com>
+>
+> We have not extended these drivers for a couple of reasons.  First, the
+> two drivers are specific to particular Synaptics products, and it is our
+> desire to produce a general solution that takes advantage of the 'self
+> describing' features of products that use the RMI protocol.
+>
 
-I assume this is dependent on the first patch. I made some comments to
-that one, and was hoping to get some better comments in the code before
-doing anything with it.
+Do you plan to add platform data to align the reported touchscreen
+data with the screen behind it, or do the new hardware allow the the
+firmware handle this? In the past we even needed separate parameters
+for different firmware versions (seen in
+drivers/staging/dream/synaptics_i2c_rmi.h).
 
--- Steve
-
-
-
+-- 
+Arve Hjønnevåg
