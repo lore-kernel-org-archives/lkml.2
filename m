@@ -1,88 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab0CWOUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:20:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59349 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425Ab0CWOUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:20:13 -0400
-To: Soeren Sandmann <sandmann@daimi.au.dk>
-Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-From: Andi Kleen <andi@firstfloor.org>
-References: <1268717232.2813.36.camel@localhost>
-	<1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
-	<20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu>
-	<20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
-	<20100322114744.GC1940@8bytes.org>
-	<ye88w9j2n2y.fsf@camel23.daimi.au.dk>
-	<878w9jdu7m.fsf@basil.nowhere.org>
-	<ye84ok72kxi.fsf@camel23.daimi.au.dk>
-Date: Tue, 23 Mar 2010 15:20:11 +0100
-In-Reply-To: <ye84ok72kxi.fsf@camel23.daimi.au.dk> (Soeren Sandmann's message of "23 Mar 2010 15:04:57 +0100")
-Message-ID: <87vdcnce78.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1753817Ab0CWOWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:22:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753436Ab0CWOWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:22:17 -0400
+Date: Tue, 23 Mar 2010 10:22:00 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, chris.mason@oracle.com,
+       viro@ZenIV.linux.org.uk, hch@lst.de
+Subject: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
+	ioctl
+Message-ID: <20100323142200.GA2381@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soeren Sandmann <sandmann@daimi.au.dk> writes:
->
-> Examples:
->
->         - What is going on inside QEMU? 
+Currently the way we do freezing is by passing sb>s_bdev to freeze_bdev and then
+letting it do all the work.  But freezing is more of an fs thing, and doesn't
+really have much to do with the bdev at all, all the work gets done with the
+super.  In btrfs we do not populate s_bdev, since we can have multiple bdev's
+for one fs and setting s_bdev makes removing devices from a pool kind of tricky.
+This means that freezing a btrfs filesystem fails, which causes us to corrupt
+with things like tux-on-ice which use the fsfreeze mechanism.  So instead of
+populating sb->s_bdev with a random bdev in our pool, I've broken the actual fs
+freezing stuff into freeze_super and thaw_super.  These just take the
+super_block that we're freezing and does the appropriate work.  It's basically
+just copy and pasted from freeze_bdev.  I've then converted freeze_bdev over to
+use the new super helpers.  I've tested this with ext4 and btrfs and verified
+everything continues to work the same as before.
 
-That's something the JIT interface could answer.
+The only new gotcha is multiple calls to the fsfreeze ioctl will return EBUSY if
+the fs is already frozen.  I thought this was a better solution than adding a
+freeze counter to the super_block, but if everybody hates this idea I'm open to
+suggestions.  Thanks,
 
->         - Which client is the X server servicing?
->
->         - What parts of a python/shell/scheme/javascript program is
->           taking the most CPU time?
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+ fs/block_dev.c     |   66 ++++++++------------------------------
+ fs/ioctl.c         |   18 +++--------
+ fs/super.c         |   88 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |    2 +
+ 4 files changed, 109 insertions(+), 65 deletions(-)
 
-I suspect for those you rather need event based tracers of some sort,
-similar to kernel trace points. Otherwise you would need own
-separate stacks and other complications.
-
-systemtap has some effort to use the dtrace instrumentation
-that crops up in more and more user programs for this.  It wouldn't
-surprise me if that was already in python and other programs
-you're interested in.
-
-I presume right now it only works if you apply the utrace monstrosity
-though, but perhaps the new uprobes patches floating around 
-will come to rescue.
-
-There also was some effort to have a pure user space
-daemon based approach for LTT, but I believe that currently
-needs own trace points.
-
-Again I fully expect someone to reinvent the wheel here
-and afterwards complain about "community inefficiences" :-)
-
-> I don't think the oprofile JIT interface solves any of these
-> problems. (In fact, I don't see why the JIT problem is even hard. The
-> JIT compiler can just generate a little ELF file with symbols in it,
-> and the profiler can pick it up through the mmap events that you get
-> through the perf interface).
-
-That would require keeping those temporary ELF files for
-potentially unlimited time around (profilers today look at the ELF
-files at the final analysis phase, which might be weeks away)
-
-Also that would be a lot of overhead for the JIT and most likely
-be a larger scale rewrite for a given JIT code base.
-
--Andi
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 8bed055..71b6165 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -245,35 +245,13 @@ struct super_block *freeze_bdev(struct block_device *bdev)
+ 	sb = get_active_super(bdev);
+ 	if (!sb)
+ 		goto out;
+-	if (sb->s_flags & MS_RDONLY) {
+-		deactivate_locked_super(sb);
+-		mutex_unlock(&bdev->bd_fsfreeze_mutex);
+-		return sb;
+-	}
+-
+-	sb->s_frozen = SB_FREEZE_WRITE;
+-	smp_wmb();
+-
+-	sync_filesystem(sb);
+ 
+-	sb->s_frozen = SB_FREEZE_TRANS;
+-	smp_wmb();
+-
+-	sync_blockdev(sb->s_bdev);
+-
+-	if (sb->s_op->freeze_fs) {
+-		error = sb->s_op->freeze_fs(sb);
+-		if (error) {
+-			printk(KERN_ERR
+-				"VFS:Filesystem freeze failed\n");
+-			sb->s_frozen = SB_UNFROZEN;
+-			deactivate_locked_super(sb);
+-			bdev->bd_fsfreeze_count--;
+-			mutex_unlock(&bdev->bd_fsfreeze_mutex);
+-			return ERR_PTR(error);
+-		}
++	error = freeze_super(sb, 1);
++	if (error) {
++		bdev->bd_fsfreeze_count--;
++		mutex_unlock(&bdev->bd_fsfreeze_mutex);
++		return ERR_PTR(error);
+ 	}
+-	up_write(&sb->s_umount);
+ 
+  out:
+ 	sync_blockdev(bdev);
+@@ -295,40 +273,24 @@ int thaw_bdev(struct block_device *bdev, struct super_block *sb)
+ 
+ 	mutex_lock(&bdev->bd_fsfreeze_mutex);
+ 	if (!bdev->bd_fsfreeze_count)
+-		goto out_unlock;
++		goto out;
+ 
+ 	error = 0;
+ 	if (--bdev->bd_fsfreeze_count > 0)
+-		goto out_unlock;
++		goto out;
+ 
+ 	if (!sb)
+-		goto out_unlock;
++		goto out;
+ 
+ 	BUG_ON(sb->s_bdev != bdev);
+-	down_write(&sb->s_umount);
+-	if (sb->s_flags & MS_RDONLY)
+-		goto out_deactivate;
+-
+-	if (sb->s_op->unfreeze_fs) {
+-		error = sb->s_op->unfreeze_fs(sb);
+-		if (error) {
+-			printk(KERN_ERR
+-				"VFS:Filesystem thaw failed\n");
+-			sb->s_frozen = SB_FREEZE_TRANS;
+-			bdev->bd_fsfreeze_count++;
+-			mutex_unlock(&bdev->bd_fsfreeze_mutex);
+-			return error;
+-		}
++	error = thaw_super(sb);
++	if (error) {
++		bdev->bd_fsfreeze_count++;
++		mutex_unlock(&bdev->bd_fsfreeze_mutex);
++		return error;
+ 	}
+ 
+-	sb->s_frozen = SB_UNFROZEN;
+-	smp_wmb();
+-	wake_up(&sb->s_wait_unfrozen);
+-
+-out_deactivate:
+-	if (sb)
+-		deactivate_locked_super(sb);
+-out_unlock:
++out:
+ 	mutex_unlock(&bdev->bd_fsfreeze_mutex);
+ 	return 0;
+ }
+diff --git a/fs/ioctl.c b/fs/ioctl.c
+index 6c75110..a065eff 100644
+--- a/fs/ioctl.c
++++ b/fs/ioctl.c
+@@ -503,6 +503,7 @@ static int ioctl_fioasync(unsigned int fd, struct file *filp,
+ static int ioctl_fsfreeze(struct file *filp)
+ {
+ 	struct super_block *sb = filp->f_path.dentry->d_inode->i_sb;
++	int ret;
+ 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+@@ -511,15 +512,10 @@ static int ioctl_fsfreeze(struct file *filp)
+ 	if (sb->s_op->freeze_fs == NULL)
+ 		return -EOPNOTSUPP;
+ 
+-	/* If a blockdevice-backed filesystem isn't specified, return. */
+-	if (sb->s_bdev == NULL)
+-		return -EINVAL;
+-
+ 	/* Freeze */
+-	sb = freeze_bdev(sb->s_bdev);
+-	if (IS_ERR(sb))
+-		return PTR_ERR(sb);
+-	return 0;
++	ret = freeze_super(sb, 0);
++
++	return ret;
+ }
+ 
+ static int ioctl_fsthaw(struct file *filp)
+@@ -529,12 +525,8 @@ static int ioctl_fsthaw(struct file *filp)
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+ 
+-	/* If a blockdevice-backed filesystem isn't specified, return EINVAL. */
+-	if (sb->s_bdev == NULL)
+-		return -EINVAL;
+-
+ 	/* Thaw */
+-	return thaw_bdev(sb->s_bdev, sb);
++	return thaw_super(sb);
+ }
+ 
+ /*
+diff --git a/fs/super.c b/fs/super.c
+index 19eb70b..305d475 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -971,6 +971,94 @@ out:
+ 
+ EXPORT_SYMBOL_GPL(vfs_kern_mount);
+ 
++/**
++ * freeze_super -- lock the filesystem and force it into a consistent state
++ * @super: the super to lock
++ *
++ * Syncs the super to make sure the filesystem is consistent and calls the fs's
++ * freeze_fs.  We hold the s_umount semaphore in order to make sure the fs is
++ * not unmounted until after we thaw the fs.  This cannot be called multiple
++ * times like freeze_bdev, if we're already frozen we'll return -EBUSY.
++ */
++int freeze_super(struct super_block *sb, int locked)
++{
++	int ret;
++
++	if (!locked) {
++		spin_lock(&sb_lock);
++		ret = grab_super(sb);
++		if (!ret)
++			return 0;
++	}
++
++	if (sb->s_flags & MS_RDONLY) {
++		deactivate_locked_super(sb);
++		return 0;
++	}
++
++	if (sb->s_frozen) {
++		deactivate_locked_super(sb);
++		return -EBUSY;
++	}
++
++	sb->s_frozen = SB_FREEZE_WRITE;
++	smp_wmb();
++
++	sync_filesystem(sb);
++
++	sb->s_frozen = SB_FREEZE_TRANS;
++	smp_wmb();
++
++	sync_blockdev(sb->s_bdev);
++	if (sb->s_op->freeze_fs) {
++		ret = sb->s_op->freeze_fs(sb);
++		if (ret) {
++			printk(KERN_ERR
++				"VFS:Filesystem freeze failed\n");
++			sb->s_frozen = SB_UNFROZEN;
++			deactivate_locked_super(sb);
++			return ret;
++		}
++	}
++	up_write(&sb->s_umount);
++	return 0;
++}
++EXPORT_SYMBOL(freeze_super);
++
++/**
++ * thaw_super -- unlock filesystem
++ * @sb: the super to thaw
++ *
++ * Unlocks the filesystem and marks it writeable again after freeze_super().
++ */
++int thaw_super(struct super_block *sb)
++{
++	int error;
++
++	down_write(&sb->s_umount);
++	if (sb->s_flags & MS_RDONLY)
++		goto out;
++
++	if (sb->s_op->unfreeze_fs) {
++		error = sb->s_op->unfreeze_fs(sb);
++		if (error) {
++			printk(KERN_ERR
++				"VFS:Filesystem thaw failed\n");
++			sb->s_frozen = SB_FREEZE_TRANS;
++			return error;
++		}
++	}
++
++	sb->s_frozen = SB_UNFROZEN;
++	smp_wmb();
++	wake_up(&sb->s_wait_unfrozen);
++
++out:
++	deactivate_locked_super(sb);
++	return 0;
++}
++EXPORT_SYMBOL(thaw_super);
++
+ static struct vfsmount *fs_set_subtype(struct vfsmount *mnt, const char *fstype)
+ {
+ 	int err;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 2620a8c..a5778ae 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1802,6 +1802,8 @@ extern int may_umount(struct vfsmount *);
+ extern long do_mount(char *, char *, char *, unsigned long, void *);
+ extern struct vfsmount *collect_mounts(struct path *);
+ extern void drop_collected_mounts(struct vfsmount *);
++extern int freeze_super(struct super_block *super, int locked);
++extern int thaw_super(struct super_block *super);
+ 
+ extern int vfs_statfs(struct dentry *, struct kstatfs *);
+ 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.6.6.1
+
