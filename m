@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab0CWIKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 04:10:45 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:37212 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822Ab0CWIKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 04:10:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=x-user-agent:content-type:mime-version:subject:from:date:to:cc
-         :message-id;
-        b=cOi84UOdlyAEm8k5nm/lShYhk/xkNeVDOchYeC7fG+ltDPR00HCzumsGfkskHsEoO1
-         f8kjwhcfBTHTrPA9eSM/03wP696WflK7foPfUmY6O5v628L3PpM07eT2x8VGaXR1eZX+
-         vCcqQ5yXB/VpplVmQWUJJGXnAmdR/tb0PyI1g=
-X-User-Agent: K-9 Mail for Android
-Content-Type: multipart/mixed; boundary="----VRY9KVIOYUY8CMBUIKJP5L52NYUB0L"
-MIME-Version: 1.0
-Subject: Re: [PATCH] S3C RTC driver: add support for S3C64xx
-From: Maurus Cuelenaere <mcuelenaere@gmail.com>
-Date: Tue, 23 Mar 2010 09:10:26 +0100
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, Frans Pop <elendil@planet.nl>
-Message-ID: <1277c835-b1f0-49b5-8009-f61afd7804f6@email.android.com>
+	id S1754732Ab0CWIQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 04:16:09 -0400
+Received: from tenax.loup.net ([209.169.16.66]:54485 "EHLO tenax.loup.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753822Ab0CWIQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 04:16:05 -0400
+Date: Tue, 23 Mar 2010 02:01:30 -0600
+Message-Id: <201003230801.o2N81UKg009750@alien.loup.net>
+From: Mike Hayward <hayward@loup.net>
+To: linux-kernel@vger.kernel.org
+Subject: Regression: my systems can no longer boot from an ide hard drive
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------VRY9KVIOYUY8CMBUIKJP5L52NYUB0L
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: base64
+Three identical known good opteron systems can no longer boot freshly
+installed distros from an ide hard drive.  The systems have one ide
+drive and eight sata drives.  If distro is installed to ide drive,
+Ubuntu 9.10 server moves cursor down the screen twice, then hangs
+while Fedora 12 grub loads but then claims it can't find root to mount
+and it and hangs 'forever'.  Numerous distros have all booted fine
+before 2.6.25... I don't know where it went wrong between 25 and 31.
 
-CgoiQW5kcmV3IE1vcnRvbiIgPGFrcG1AbGludXgtZm91bmRhdGlvbi5vcmc+IHdyb3RlOgoKPk9u
-IE1vbiwgMjIgTWFyIDIwMTAgMTI6MjY6NDggKzAxMDAgTWF1cnVzIEN1ZWxlbmFlcmUgPG1jdWVs
-ZW5hZXJlQGdtYWlsLmNvbT4gd3JvdGU6Cj4KPj4gQWRkIHN1cHBvcnQgZm9yIHRoZSBTM0M2NHh4
-IFNvQyB0byB0aGUgZ2VuZXJpYyBTM0MgUlRDIGRyaXZlci4KPj4gCj4+IFNpZ25lZC1vZmYtYnk6
-IE1hdXJ1cyBDdWVsZW5hZXJlIDxtY3VlbGVuYWVyZUBnbWFpbC5jb20+Cj4+IEFja2VkLUJ5OiBC
-ZW4gRG9va3MgPGJlbi1saW51eEBmbHVmZi5vcmc+Cj4+IC0tLQo+PiAKPj4gVGhpcyB3YXMgc2Vu
-dCB0byBydGMtbGludXggYmVmb3JlICgxMi8wMS8yMDEwKSwgYnV0IG5vIHJlc3BvbnNlIHdhcwo+
-PiByZWNlaXZlZCB5ZXQuCj4+IFNlZSBodHRwOi8vZ3JvdXBzLmdvb2dsZS5jb20vZ3JvdXAvcnRj
-LWxpbnV4L2Jyb3dzZV90aHJlYWQvdGhyZWFkLzJhMmRmYzIzYTgwNDJmM2QvMjgxMmRjYmFmZDlh
-MGE4NQo+PiBmb3IgdGhlIGZ1bGwgdGhyZWFkLgo+PiAKPj4gQXQgMDgvMDMvMjAxMCBJIHBvc3Rl
-ZCB0aGlzIHRvIExLTUwsIHdpdGggbm8gcmVzdWx0Lgo+PiBPbiByZWNvbW1lbmRhdGlvbiBvZiBG
-cmFucyBQb3AsIEkgcmVzZW5kIHRoaXMgdG8gTEtNTCB3aXRoIEFuZHJldyBNb3J0b24gaW4gQ0Mu
-Cj4+IAo+PiBUaGUgcGxhdGZvcm0gcGFydCBvZiB0aGlzIHBhdGNoIGhhcyBiZWVuIGluY2x1ZGVk
-IGluIDIuNi4zNC1yYzIuCj4+IAo+PiAgYXJjaC9hcm0vcGxhdC1zM2MvaW5jbHVkZS9wbGF0L3Jl
-Z3MtcnRjLmggfCAgICA0ICsKPgo+VGhhdCB3YXMgc25lYWt5LiAgSSBhc3N1bWUgdGhhdAo+YXJj
-aC9hcm0vcGxhdC1zM2MvaW5jbHVkZS9wbGF0L3JlZ3MtcnRjLmggaXMgYSBzeW1saW5rIHRvCj5h
-cmNoL2FybS9wbGF0LXNhbXN1bmcvaW5jbHVkZS9wbGF0L3JlZ3MtcnRjLmggb24geW91ciBtYWNo
-aW5lIC0gaXQKPmRvZXNuJ3QgZXhpc3Qgb24gbWluZS4gIEkgZml4ZWQgdGhlIHBhdGNoIHNvIGl0
-IHBhdGNoZXMgdGhlIGNvcnJlY3QKPnBhdGguCgpUaGF0J3MgY29ycmVjdCwgSSBwcm9iYWJseSBm
-b3Jnb3QgdG8gdXBkYXRlIGl0IHdpdGggdGhlIHBsYXQtczNjIC0+IHBsYXQtc2Ftc3VuZyBtb3Zl
-LCBzb3JyeSBhYm91dCB0aGF0LgoKPj4gIGRyaXZlcnMvcnRjL0tjb25maWcgICAgICAgICAgICAg
-ICAgICAgICAgIHwgICAgMiArLQo+PiAgZHJpdmVycy9ydGMvcnRjLXMzYy5jICAgICAgICAgICAg
-ICAgICAgICAgfCAgMTA3ICsrKysrKysrKysrKysrKysrKysrKysrLS0tLS0tCj4+ICAzIGZpbGVz
-IGNoYW5nZWQsIDkyIGluc2VydGlvbnMoKyksIDIxIGRlbGV0aW9ucygtKQo+Cj5UaGUgcGF0Y2gg
-aGFkIGEgYml0IG9mIHdvcmR3cmFwcGluZy4gIFBsZWFzZSB3YXRjaCBvdXQgZm9yIHRoZXNlIHRo
-aW5ncwo+bmV4dCB0aW1lLgoKT2RkLCBJIHNwZWNpZmljYWxseSBkaWRuJ3QgdXNlIFRodW5kZXJi
-aXJkIHRvIGVsaW1pbmF0ZSBhbnkgd29yZHdyYXBwaW5nLi4KCgpUaGFua3MgZm9yIGFjY2VwdGlu
-ZyEKCi0tCk1hdXJ1cyBDdWVsZW5hZXJl
+This is despite partitioning with and without lvm, despite making sure
+kernel/boot loader are in partition in first 2 gigs of ide drive.
 
-------VRY9KVIOYUY8CMBUIKJP5L52NYUB0L--
+Both distros boot just fine on each system when os is installed on a
+sata drive so this isn't a hardware defect.
 
+Distro that boots fine from ide:
+Linux opt1 2.6.25-14.fc9.x86_64 #1 SMP Thu May 1 06:06:21 EDT 2008 x86_64 x86_64 x86_64 GNU/Linux
+
+Distros that no longer boot via ide drive:
+Linux opt2 2.6.31-14-server #48-Ubuntu SMP Fri Oct 16 15:07:34 UTC 2009 x86_64 GNU/Linux
+Linux opt3 2.6.31.5-127.fc12.x86_64 #1 SMP Sat Nov 7 21:11:14 EST 2009 x86_64 x86_64 x86_64 GNU/Linux
+
+Maybe this can be worked around with some options to grub or
+kernel... if so, shouldn't distros detect that ide drives are being
+set up and configure the boot loader properly?  It would be very hard
+for newbie to figure this one out.
+
+Has anyone else seen this, or am I the only one who boots from ide
+when a sata drive is present? :-)
+
+- Mike
