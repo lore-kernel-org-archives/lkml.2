@@ -1,155 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab0CWFtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 01:49:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49340 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab0CWFtk convert rfc822-to-8bit (ORCPT
+	id S1754343Ab0CWGDj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 02:03:39 -0400
+Received: from mga10.intel.com ([192.55.52.92]:21326 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751772Ab0CWGDi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 01:49:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WfS8zc3mb3dAny0CjEA3RwcWFyYR1w9CtrdqRyB/ZDv83EmmYXz5qp4Mzf+vcziqks
-         E/bPoD/eV1pITJVgOZYemveov4YYY97HYZf2E1L8cm1MTglZEGrbx0lKUWd259TII0HE
-         SItUJebPJR78r7eEWeQX4yFLQWFLm+DqEBaYw=
+	Tue, 23 Mar 2010 02:03:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,292,1267430400"; 
+   d="scan'208,223";a="783073378"
+Message-ID: <4BA859B7.4070906@linux.intel.com>
+Date: Tue, 23 Mar 2010 14:03:35 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-In-Reply-To: <7b6bb4a51003222149v5346c3eje94ed1182b207206@mail.gmail.com>
-References: <20100320143240.GB2942@localhost.localdomain>
-	 <4BA7A3CF.8070503@trash.net>
-	 <628d1651003221834g543e3e6cl4ea39c0886cb4ba1@mail.gmail.com>
-	 <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
-	 <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
-	 <alpine.LSU.2.01.1003230346010.12017@obet.zrqbmnf.qr>
-	 <628d1651003222048k1eaf6929r81fd06e401190e0@mail.gmail.com>
-	 <7b6bb4a51003222149v5346c3eje94ed1182b207206@mail.gmail.com>
-Date: Tue, 23 Mar 2010 13:49:38 +0800
-Message-ID: <628d1651003222249w45be1559u6a29406cb1e749a6@mail.gmail.com>
-Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>,
-       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: John Villalovos <sodarock@gmail.com>
+CC: ak@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       "Li, Haicheng" <haicheng.li@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [BUGFIX] [PATCH] x86: update all PGDs for direct mapping changes
+ 	on 64bit.
+References: <4BA7344C.6030108@linux.intel.com> <5e61b72f1003220741s741c56bbn886243d02f6f66ac@mail.gmail.com>
+In-Reply-To: <5e61b72f1003220741s741c56bbn886243d02f6f66ac@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------080708080103010705040405"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You didn't get his point... The key point is that sizeof() result type
-> is size_t, slightly modify you code, try the result.
->> int main(void)
->> {
->>        unsigned int arg = 0xffffffff;
->>        unsigned int foo;
->>        printf("%lu\n", arg + sizeof(foo));
->>        if (sizeof(foo) - 1 != arg + sizeof(foo)) {
->>                printf("not over flow.\n");
->>                return -1;
->>        }
->>        printf("arg over flow.\n");
->>
->>        return 0;
->> }
+This is a multi-part message in MIME format.
+--------------080708080103010705040405
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-sizeof() is size_t(unsigned int), get.size is also unsigned int,  arg
-+ sizeof(foo) can overflow as sizeof(foo) - 1
-[root@localhost test]# ./test
-3
-arg over flow.
+John,
 
-my fault is *len is check with:
-        if (*len < sizeof(get)) {
-                duprintf("get_entries: %u < %zu\n", *len, sizeof(get));
-                return -EINVAL;
-        }
+The patch is attached. On my side, last email is OK without corruption.
 
-so, *len must >= sizeof(get), then:
+John Villalovos wrote:
+> On Mon, Mar 22, 2010 at 5:11 AM, Haicheng Li
+> <haicheng.li@linux.intel.com> wrote:
+>> Hello,
+>>
+>> In our recent CPU/MEM hotplug testing, a kernel BUG() was found:
+> 
+> Haicheng,
+> 
+> Maybe it is just my mail reader but the patch seems corrupted with
+> extraneous space characters.
+> 
+> Any chance it can be reposted?
+> 
+> Thanks,
+> John
 
-        if (*len != sizeof(struct ipt_get_entries) + get.size) {
-                duprintf("get_entries: %u != %zu\n",
-                         *len, sizeof(get) + get.size);
-                return -EINVAL;
-        }
-if sizeof(struct ipt_get_entries) + get.size oveflow, it must <
-sizeof(struct ipt_get_entries),  It not make any problem, just return.
-get.size overflow can't make any problem,  thx Feng and Jan for helping me.
+--------------080708080103010705040405
+Content-Type: text/x-patch;
+ name="0001-x86-update-all-PGDs-for-direct-mapping-changes-on-6.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename*0="0001-x86-update-all-PGDs-for-direct-mapping-changes-on-6.pat";
+ filename*1="ch"
+
+>From 3cf6b38b984b49f03dd5b72258b301eb17b55d62 Mon Sep 17 00:00:00 2001
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Mon, 22 Mar 2010 13:20:00 +0800
+Subject: [PATCH] x86: update all PGDs for direct mapping changes on 64bit.
+
+When memory hotadd/removal happens for a large enough area
+that a new PGD entry is needed for the direct mapping, the PGDs
+of other processes would not get updated. This leads to some CPUs
+oopsing when they have to access the unmapped areas.
+
+This patch makes sure to always replicate new direct mapping PGD entries
+to the PGDs of all processes.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+---
+ arch/x86/mm/init_64.c |   82 ++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 67 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index e9b040e..384ca43 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -96,6 +96,37 @@ static int __init nonx32_setup(char *str)
+ }
+ __setup("noexec32=", nonx32_setup);
+ 
++
++/*
++ * When memory was added/removed make sure all the processes MM have
++ * suitable PGD entries in the local PGD level page.
++ * Caller must flush global TLBs if needed (old mapping changed)
++ */
++static void sync_global_pgds(unsigned long start, unsigned long end)
++{
++	unsigned long flags;
++	struct page *page;
++	unsigned long addr;
++
++	spin_lock_irqsave(&pgd_lock, flags);
++	for (addr = start; addr < end; addr += PGDIR_SIZE) {
++		pgd_t *ref_pgd = pgd_offset_k(addr);
++		list_for_each_entry(page, &pgd_list, lru) {
++			pgd_t *pgd_base = page_address(page);
++			pgd_t *pgd = pgd_base + pgd_index(addr);
++
++			/*
++			 * When the state is the same in one other,
++			 * assume it's the same everywhere.
++			 */
++			if (pgd_base != init_mm.pgd &&
++			    !!pgd_none(*pgd) != !!pgd_none(*ref_pgd))
++				set_pgd(pgd, *ref_pgd);
++		}
++	}
++	spin_unlock_irqrestore(&pgd_lock, flags);
++}
++
+ /*
+  * NOTE: This function is marked __ref because it calls __init function
+  * (alloc_bootmem_pages). It's safe to do it ONLY when after_bootmem == 0.
+@@ -217,6 +248,8 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
++	int pgd_changed = 0;
++	unsigned long addr = phys;
+ 
+ 	BUG_ON((phys & ~PMD_MASK) || (size & ~PMD_MASK));
+ 	for (; size; phys += PMD_SIZE, size -= PMD_SIZE) {
+@@ -225,6 +258,7 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
+ 			pud = (pud_t *) spp_getpage();
+ 			set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE |
+ 						_PAGE_USER));
++			pgd_changed = 1;
+ 		}
+ 		pud = pud_offset(pgd, (unsigned long)__va(phys));
+ 		if (pud_none(*pud)) {
+@@ -236,6 +270,11 @@ static void __init __init_extra_mapping(unsigned long phys, unsigned long size,
+ 		BUG_ON(!pmd_none(*pmd));
+ 		set_pmd(pmd, __pmd(phys | pgprot_val(prot)));
+ 	}
++	if (pgd_changed) {
++		sync_global_pgds(addr, addr + size);
++		/* Might not be needed if the previous mapping was always zero*/
++		__flush_tlb_all();
++	}
+ }
+ 
+ void __init init_extra_mapping_wb(unsigned long phys, unsigned long size)
+@@ -533,36 +572,41 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask)
+ {
+-
++	int pgd_changed = 0;
+ 	unsigned long next, last_map_addr = end;
++	unsigned long addr;
+ 
+ 	start = (unsigned long)__va(start);
+ 	end = (unsigned long)__va(end);
+ 
+-	for (; start < end; start = next) {
+-		pgd_t *pgd = pgd_offset_k(start);
++	for (addr = start; addr < end; addr = next) {
++		pgd_t *pgd = pgd_offset_k(addr);
+ 		unsigned long pud_phys;
+ 		pud_t *pud;
+ 
+-		next = (start + PGDIR_SIZE) & PGDIR_MASK;
++		next = (addr + PGDIR_SIZE) & PGDIR_MASK;
+ 		if (next > end)
+ 			next = end;
+ 
+ 		if (pgd_val(*pgd)) {
+-			last_map_addr = phys_pud_update(pgd, __pa(start),
++			last_map_addr = phys_pud_update(pgd, __pa(addr),
+ 						 __pa(end), page_size_mask);
+ 			continue;
+ 		}
+ 
+ 		pud = alloc_low_page(&pud_phys);
+-		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
++		last_map_addr = phys_pud_init(pud, __pa(addr), __pa(next),
+ 						 page_size_mask);
+ 		unmap_low_page(pud);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pgd_populate(&init_mm, pgd, __va(pud_phys));
+ 		spin_unlock(&init_mm.page_table_lock);
++		pgd_changed = 1;
+ 	}
++
++	if (pgd_changed)
++		sync_global_pgds(start, end);
+ 	__flush_tlb_all();
+ 
+ 	return last_map_addr;
+@@ -938,35 +982,37 @@ static int __meminitdata node_start;
+ int __meminit
+ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ {
+-	unsigned long addr = (unsigned long)start_page;
++	unsigned long start = (unsigned long)start_page;
+ 	unsigned long end = (unsigned long)(start_page + size);
+-	unsigned long next;
++	unsigned long addr, next;
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
++	int err = -ENOMEM;
+ 
+-	for (; addr < end; addr = next) {
++	for (addr = start; addr < end; addr = next) {
+ 		void *p = NULL;
+ 
++		err = -ENOMEM;
+ 		pgd = vmemmap_pgd_populate(addr, node);
+ 		if (!pgd)
+-			return -ENOMEM;
++			break;
+ 
+ 		pud = vmemmap_pud_populate(pgd, addr, node);
+ 		if (!pud)
+-			return -ENOMEM;
++			break;
+ 
+ 		if (!cpu_has_pse) {
+ 			next = (addr + PAGE_SIZE) & PAGE_MASK;
+ 			pmd = vmemmap_pmd_populate(pud, addr, node);
+ 
+ 			if (!pmd)
+-				return -ENOMEM;
++				break;
+ 
+ 			p = vmemmap_pte_populate(pmd, addr, node);
+ 
+ 			if (!p)
+-				return -ENOMEM;
++				break;
+ 
+ 			addr_end = addr + PAGE_SIZE;
+ 			p_end = p + PAGE_SIZE;
+@@ -979,7 +1025,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ 
+ 				p = vmemmap_alloc_block_buf(PMD_SIZE, node);
+ 				if (!p)
+-					return -ENOMEM;
++					break;
+ 
+ 				entry = pfn_pte(__pa(p) >> PAGE_SHIFT,
+ 						PAGE_KERNEL_LARGE);
+@@ -1000,9 +1046,15 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ 			} else
+ 				vmemmap_verify((pte_t *)pmd, node, addr, next);
+ 		}
++		err = 0;
++	}
+ 
++	if (!err) {
++		sync_global_pgds(start, end);
++		__flush_tlb_all();
+ 	}
+-	return 0;
++
++	return err;
+ }
+ 
+ void __meminit vmemmap_populate_print_last(void)
+-- 
+1.5.6.1
 
 
-On Tue, Mar 23, 2010 at 12:49 PM, Xiaotian Feng <xtfeng@gmail.com> wrote:
-> On Tue, Mar 23, 2010 at 11:48 AM, wzt wzt <wzt.wzt@gmail.com> wrote:
->> 1、 suppose *len = 35,  sizeof(struct ipt_get_entries) = 36
->> 2、 set get.size = 0xffffffff from user space
->> 3、 sizeof(struct ipt_get_entries) + get.size = 36  + 0xffffffff = 35;
->> 4、 if (*len != sizeof(struct ipt_get_entries) + get.size) was bypassed.
->>
->> you can test with c code:
->>
->> #include <stdio.h>
->>
->> int main(void)
->> {
->>        unsigned int arg = 0xffffffff;
->>
->>        printf("%u\n", arg + 36);
->>        if (35 != arg + 36) {
->>                printf("not over flow.\n");
->>                return -1;
->>        }
->>        printf("arg over flow.\n");
->>
->>        return 0;
->> }
->>
->
-> You didn't get his point... The key point is that sizeof() result type
-> is size_t, slightly modify you code, try the result.
->> int main(void)
->> {
->>        unsigned int arg = 0xffffffff;
->>        unsigned int foo;
->>        printf("%lu\n", arg + sizeof(foo));
->>        if (sizeof(foo) - 1 != arg + sizeof(foo)) {
->>                printf("not over flow.\n");
->>                return -1;
->>        }
->>        printf("arg over flow.\n");
->>
->>        return 0;
->> }
->
->> On Tue, Mar 23, 2010 at 11:04 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
->>>
->>> On Tuesday 2010-03-23 03:37, wzt wzt wrote:
->>>>> And, for the addition overflow, can it be caught by
->>>>>
->>>>> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
->>>>
->>>>sizeof(struct ipt_get_entries) + get.size can be overflow as *len,
->>>>get.size is control by user space with copy_from_user().
->>>
->>> The != should catch it.
->>>
->>> For 64-bit environments:
->>> * + invoked with size_t, unsigned int
->>>  => right side promoted to size_t, result type is size_t
->>> * != invoked with int and size_t
->>>  => left-side promoted to ssize_t (probably; but something as large as size_t)
->>> * get.size is 32-bit bounded, as is *len,
->>>  so no overflow to worry about at all unless you make
->>>  sizeof(X) hilariously big close to 2^64 which is rather unlikely.
->>>
->>> For 32-bit environments:
->>> * Let *len be a number of choice (e.g. 36)
->>> * Find a sizeof(X)+get.size that equals 36 mod 2^32.
->>> * Since sizeof(X) is const, get.size must be 0 mod 2^32.
->>> * So get.size must be a multiple of 2^32 to fool the system.
->>> * Since get.size itself is only a 32-bit quantity, you cannot
->>>  represent any value larger than 4294967295.
->>>
->>>
->>> What Was What Was Wanted.
->>>
->>
->
+--------------080708080103010705040405--
