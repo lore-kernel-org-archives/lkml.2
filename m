@@ -1,210 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756133Ab0CWArA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:47:00 -0400
-Received: from www.tglx.de ([62.245.132.106]:47413 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab0CWAq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:46:56 -0400
-Date: Tue, 23 Mar 2010 01:45:54 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-In-Reply-To: <4BA80019.5000900@kernel.org>
-Message-ID: <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>
-References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
- <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org> <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain> <4BA7EE72.7000507@kernel.org> <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain> <4BA80019.5000900@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755996Ab0CWAvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:51:21 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:34389 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab0CWAvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 20:51:19 -0400
+From: Gene Heskett <gene.heskett@verizon.net>
+Organization: Organization? Not detectable
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: shutdown bugs, since about 2.6.31 or so
+Date: Mon, 22 Mar 2010 20:50:55 -0400
+User-Agent: KMail/1.12.3 (Linux/2.6.34-rc2; KDE/4.3.3; i686; ; )
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+Message-id: <201003222050.55716.gene.heskett@verizon.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2005;0cYinghai,
+Greetings;
 
-On Mon, 22 Mar 2010, Yinghai Lu wrote:
-> On 03/22/2010 03:53 PM, Thomas Gleixner wrote:
-> > On Mon, 22 Mar 2010, Yinghai Lu wrote:
-> >> On 03/22/2010 03:09 PM, Thomas Gleixner wrote:
-> >>> On Mon, 22 Mar 2010, Yinghai Lu wrote:
-> >>>> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
-> >>
-> >>>> 1. need to keep e820
-> >>>
-> >>>   That's neither an argument for using lmb nor an argument not to use
-> >>>   lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
-> >>>   just to feed information into a (hopefully) generic early resource
-> >>>   management facility.
-> >>>
-> >>>   e820 _CANNOT_ be generalized. Period.
-> > 
-> >   I still want to know, what "need to keep e820" means for you.
->
-> keep the most arch/x86/kernel/e820.c, and later when
-> finish_e820_parsing() is called, fill lmb.memory according to e820
-> entries with E820_RAM type.
- 
-Right, and we never get rid of e820.c at all. Simply because e820 is a
-x86 specific clusterfuck. No way to find anything which is remotely
-insane like that in any other architecture.
+I do not know if I am miss-configured or what, and I hadn't worried about it 
+extensively because the machine runs fine ANAICT.
 
-I really do not understand why you ever thought that moving that code
-to a generic place is something useful and acceptable.
+But any reboot method short of just pressing the hdwe reset button generates 
+quite a lengthy process of repeatedly pressing ctl-alt-del, minimum of 6 
+times I believe, in order to actually do a shutdown, and this isn't at all 
+graceful.  Not all of it makes it to the log, but here is what does.
 
-The point is, that some of the algorithms which e820 needs to sanitize
-the maps might be of general use, but definitely not the whole e820
-crappola. And if you look close, lmb has most of them already.
+Mar 22 16:47:53 coyote kernel: [ 3000.619173] BUG: Dentry d76beaa0{i=2,n=/} 
+still in use (1) [unmount of cifs cifs]
+Mar 22 16:47:53 coyote kernel: [ 3000.619191] ------------[ cut here 
+]------------
+Mar 22 16:47:53 coyote kernel: [ 3000.619303] kernel BUG at fs/dcache.c:676!
+Mar 22 16:47:53 coyote kernel: [ 3000.619420] invalid opcode: 0000 [#1] 
+PREEMPT SMP
+Mar 22 16:47:53 coyote kernel: [ 3000.619597] last sysfs file: 
+/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/ATK0110:00/hwmon/hwmon0/in3_input
+Mar 22 16:47:53 coyote kernel: [ 3000.619803] Modules linked in: nls_utf8 
+cifs radeon ttm drm_kms_helper drm agpgart nfsd lockd nfs_acl auth_rpcgss 
+expo
+rtfs rfcomm sco bnep l2cap autofs4 sunrpc ipv6 or51132 snd_usb_audio 
+snd_usb_lib cx88_dvb cx88_vp3054_i2c videobuf_dvb snd_emu10k1_synth 
+snd_emux_synth
+snd_seq_virmidi snd_seq_midi_emul dvb_core tuner_simple tuner_types tda9887 
+tda8290 tuner snd_emu10k1 cx8800 cx8802 cx88xx snd_rawmidi snd_ac97_codec ac
+97_bus snd_seq_dummy i2c_algo_bit snd_seq_oss snd_seq_midi_event snd_seq 
+ftdi_sio btusb snd_pcm_oss snd_mixer_oss snd_pcm tveeprom bluetooth 
+snd_seq_dev
+ice snd_timer v4l2_common snd_page_alloc videodev snd_util_mem snd_hwdep 
+v4l1_compat usbserial btcx_risc snd i2c_nforce2 sg k10temp firewire_ohci 
+firewi
+re_core rtc_cmos videobuf_dma_sg sr_mod cdrom pcspkr soundcore videobuf_core 
+rtc_core crc_itu_t rfkill hwmon usblp joydev rtc_lib button evdev sd_mod ex
+t3 jbd uhci_hcd ohci_hcd ehci_hcd [last unloaded: asus_atk0110]
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] Pid: 5747, comm: umount.cifs 
+Not tainted 2.6.34-rc2 #1 M2N-SLI DELUXE/System Product Name
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: 0060:[<c10946ae>] EFLAGS: 
+00010246 CPU: 1
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP is at 
+shrink_dcache_for_umount_subtree+0x14b/0x1fe
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] EAX: 0000005b EBX: 00000001 
+ECX: 00000046 EDX: 00000000
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] ESI: d76beaa0 EDI: d76beafc 
+EBP: d55e6f24 ESP: d55e6ef4
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  DS: 007b ES: 007b FS: 00d8 GS: 
+00e0 SS: 0068
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] Process umount.cifs (pid: 5747, 
+ti=d55e6000 task=d55d8780 task.ti=d55e6000)
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] Stack:
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  c12d20ac d76beaa0 00000002 
+d76beafc 00000001 fa14da01 dc956b64 fa14da01
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> 0000001b dc956a00 fa14a7b4 
+dc956a00 d55e6f30 c109478e dc956a00 d55e6f40
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> c1087d38 00000013 fa158a5c 
+d55e6f4c c1087e32 dc956a00 d55e6f5c c10883c6
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] Call Trace:
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c109478e>] ? 
+shrink_dcache_for_umount+0x2d/0x37
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087d38>] ? 
+generic_shutdown_super+0x15/0xd2
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087e32>] ? 
+kill_anon_super+0xc/0x43
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10883c6>] ? 
+deactivate_super+0x39/0x4b
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1098dfd>] ? 
+mntput_no_expire+0x8c/0xbb
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10992df>] ? 
+sys_umount+0x299/0x2be
+Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1002813>] ? 
+sysenter_do_call+0x12/0x22
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] Code: 00 89 45 ec 8b 46 10 8b 
+1e 8b 7e 28 85 c0 74 03 8b 50 20 8d 81 64 01 00 00 50 ff 75 ec 53 57 52 56 6
+8 ac 20 2d c1 e8 b5 fc 1b 00 <0f> 0b 83 c4 1c eb fe 8b 7e 1c 39 fe 75 04 31 
+ff eb 03 f0 ff 0f
+Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: [<c10946ae>] 
+shrink_dcache_for_umount_subtree+0x14b/0x1fe SS:ESP 0068:d55e6ef4
+Mar 22 16:47:53 coyote kernel: [ 3000.627952] ---[ end trace fbecccbb5fac2d05 
+]---
 
-> >  
-> >>>> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
-> >>>
-> >>>   What's finizing_e820 ???
-> >>  finish_e820_parsing();
-> > 
-> >  Yinghai, come on. Are you really expecting that everyone involved in
-> >  this discussion goes to look up what the heck finish_e820_parsing()
-> >  is doing ?
-> > 
-> >  You want to explain why your solution is better or why lmb is not
-> >  sufficient, so you better go and explain what finish_e820_parsing()
-> >  is, why finish_e820_parsing() is important and why lmb cannot cope
-> >  with it.
-> 
-> current x86:
-> a. setup e820 array.
-> b. early_parm mem= and memmap= related code will adjust the e820.
+Now, after this point, I have to press ctl-alt-del at least 2 times to get it 
+to continue the shutdown, it will timeout 3 times trying to umount /usr, and 
+then finally squawk about a cifs mount that is done in my rc.local file.  
+That requires 2 more presses of the ctl-alt-del keys, then it finally says 
+its shutting down, and 20 to 30 seconds later I have to press them again 
+before it actually reverts to the bios to begin the next boot anew.
 
-Dammit. I asked for an explanation not for some headword
-listing. These bullet points do _NOT_ explain at all why e820 is
-superior.
- 
-> we don't need to call lmb_enforce_memory_limit().
+I have seen this fs/dcache.c line 676 mentioned many times here, and I would 
+have thought by now this nuisance would have been spanked.
 
-Of course you do not need to call lmb_enforce_memory_limit() simply
-because it is not relevant to the existing e820 code at all. 
+Thanks.
 
-What's the point ?
- 
-> > 
-> >>>> 3. use lmb.reserved to replace early_res.
-> >>>
-> >>>   What's the implication of doing that ?
-> >>
-> >> early_res array is only corresponding to lmb.reserved, aka reserved
-> >> region from kernel.
-> >  
-> >  Is it only corresponding (somehow) or is it a full equivivalent ?
-> 
-> early_res is not sorted and merged.
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
 
-So what's the implication for x86 vs. the early_res stuff ? Any down
-sides, up sides other than not sorted and merged?
- 
-> >>>> current lmb is merging the region, we can not use name tag any more.
-> >>>
-> >>>   What's wrong with merging of regions ? Are you arguing about a
-> >>>   specific region ("the region") ?
-> > 
-> >  Care to answer my question ?
-> if range get merged, you can not use name with them.
-
-Why does that matter ?
-  
-> >>>
-> >>>   Which name tag ? And why is that name tag important ?
-> >>
-> >> struct early_res {
-> >>         u64 start, end;
-> >>         char name[15];
-> >>         char overlap_ok;
-> >> };
-> > 
-> >  I'm starting to get annoyed, really. What is that name field for and
-> >  why is that "name" field important ?
-> 
-> at least later when some code free a wrong range, we can figure who cause the problem.
-
-That does not explain the value of the name field at all. If some code
-frees a wrong range a backtrace is always more helpful than some
-arbitrary name field. Am I missing something ?
- 
-> >>>> may need to dump early_memtest, and use early_res for bootmem at
-> >>>> first.
-> >>>
-> >>>   Why exactly might early_memtest not longer be possible ?
-> >>
-> >> early_memtest need to call find_e820_area_size
-> >> current lmb doesn't have that kind of find util.
-> >> the one memory subtract reserved memory by kernel.
-> > 
-> >  What subtracts what ? And why is it that hard to fix that ?
-> 
-> lmb.memory - lmb.reserved
-> 
-> or e820 E820_RAM entries - early_res
-> 
-> move some code from early_res to lmb.c? 
-
-Care to explain in clear wording what you need to solve ? "move some
-code from early_res to lmb.c?" is definitely not an useful
-explanation.
-
-> >>>
-> >>>   What means "early_res for bootmem" ?
-> >>
-> >> use early_res to replace bootmem, the CONFIG_NO_BOOTMEM.
-> >> that need early_res can be double or increase the slots automatically.
-> > 
-> >  -ENOPARSE
-> > 
-> > Yinghai, I asked you to take your time and explain things in detail
-> > instead of shooting unparseable answers within a minute.
-> > 
-> > Everyone else in this discussion tries to be as explanatory as
-> > possible, just you expect that everyone else is going to dig out the
-> > crystal ball to understand the deeper meanings of your patches.
-> > 
-> > Again, please take your time to explain what needs to be done or what
-> > is impossible to solve in your opinion, so we can get that resolved in
-> > a way which is satisfactory and useful for all parties involved.
-> 
-> to make x86 to use lmb, we need to extend lmb to have find_early_area.
-
-Why ?
- 
-> static int __init find_overlapped_early(u64 start, u64 end)
-> {
-
-No, posting arbitrary code snippets which you think are necessary to
-solve it is not the way to go.
-
-There is _ZERO_ explanation _WHY_ you think that this is a
-prerequisite.
-
-Those largely uncommented commented code snippets (uncommented as the
-corresponding code in x86) are _NOT_ an explanation at all.
-
-You just state that you need that whole bunch just w/o telling _WHY_.
-
-The more I look into this I doubt that there is an actual reason for
-this complexity. It just looks like it has grown that way by fixing
-corner cases all over the place and not out of a real design
-requirement.
-
-Either that or it's just the lack of understanding how to map lmb
-functionality to the problem at hand as certainly LMB does not map 1:1
-to the current x86 way of solving that problem.
-
-Please give a proper explanation for this, really !
-
-Thanks,
-
-	tglx
+Captain's Log, star date 21:34.5...
