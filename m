@@ -1,36 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab0CWWIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 18:08:54 -0400
-Received: from crca.org.au ([74.207.252.120]:48604 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751952Ab0CWWIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 18:08:53 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BA93C26.90607@crca.org.au>
-Date: Wed, 24 Mar 2010 09:09:42 +1100
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
+	id S1753235Ab0CWWMj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 18:12:39 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:63245 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab0CWWMi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 18:12:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=XJxIsJnPfSI+PLPVop6ESF5BmgPCThQnbw771ejaKLdubZ5IJ4a1q+5r8K3Vb9G/6Z
+         vKiurDnejfg9ky6dKzdEoerqMLFgZrIzmEZmm5JRr4Mmt72yn+AWd1yQ7plFKWvQLzKC
+         eM5QoIk5g296cpq28V/KqCMpLnggDrjWdZhs8=
+Message-ID: <4BA93CD1.5060501@gmail.com>
+Date: Tue, 23 Mar 2010 23:12:33 +0100
+From: =?ISO-8859-15?Q?Steffen_R=F6cker?= <sroecker@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100322 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: jirislaby@gmail.com, linux-kernel@vger.kernel.org,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] [RFC 01/15] FS: libfs, implement simple_write_to_buffer
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+CC: Richard Purdie <rpurdie@linux.intel.com>
+Subject: [PATCH] backlight: mbp_nvidia_bl - Fix DMI_SYS_VENDOR for MacBook1,1
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri and others.
+Fix DMI_SYS_VENDOR for MacBook1,1.
 
-Just a general comment, having quickly read through the patches while 
-not fully understanding the uswsusp side of things, they look good to 
-me. Like Rafael has just said, I'll seek to take a more thorough look later.
+When the MacBook1,1 came out Apple was still named Apple Computer, I am 
+not sure if this applies to older MacBook2,1 versions aswell.
 
-Thanks!
+Signed-off-by: Steffen Röcker <sroecker@gmail.com>
+---
+  drivers/video/backlight/mbp_nvidia_bl.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Nigel
+diff --git a/drivers/video/backlight/mbp_nvidia_bl.c 
+b/drivers/video/backlight/mbp_nvidia_bl.c
+index 1b5d3fe..08ffada 100644
+--- a/drivers/video/backlight/mbp_nvidia_bl.c
++++ b/drivers/video/backlight/mbp_nvidia_bl.c
+@@ -141,7 +141,7 @@ static const struct dmi_system_id __initdata 
+mbp_device_table[] = {
+                 .callback       = mbp_dmi_match,
+                 .ident          = "MacBook 1,1",
+                 .matches        = {
+-                       DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++                       DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
+                         DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
+                 },
+                 .driver_data    = (void *)&intel_chipset_data,
+-- 
+1.7.0
+
