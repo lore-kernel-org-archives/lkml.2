@@ -1,127 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab0CWLRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 07:17:21 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59531 "EHLO mx1.suse.de"
+	id S1751743Ab0CWLUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 07:20:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:56949 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751433Ab0CWLRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 07:17:19 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH 2/5] powernow-k8: Add core performance boost support
-Date: Tue, 23 Mar 2010 12:17:16 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: akpm@linux-foundation.org, davej@redhat.com, cpufreq@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org
-References: <1269283121-11894-1-git-send-email-bp@amd64.org> <1269283121-11894-3-git-send-email-bp@amd64.org>
-In-Reply-To: <1269283121-11894-3-git-send-email-bp@amd64.org>
+	id S1751397Ab0CWLU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 07:20:29 -0400
+Date: Tue, 23 Mar 2010 22:15:56 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Nick Piggin <nickpiggin@yahoo.com.au>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       paulmck@linux.vnet.ibm.com, Milton Miller <miltonm@bga.com>,
+       Nick Piggin <npiggin@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] smp_call_function_many SMP race
+Message-ID: <20100323111556.GK24064@kryten>
 MIME-Version: 1.0
-X-Length: 8737
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003231217.16451.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 22 March 2010 19:38:38 Borislav Petkov wrote:
-> From: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> Starting with F10h, revE, AMD processors add support for a dynamic
-> core boosting feature called Core Performance Boost. When a specific
-> condition is present, a subset of the cores on a system are boosted
-> beyond their P0 operating frequency to speed up the performance of
-> single-threaded applications.
-> 
-> In the normal case, the system comes out of reset with core boosting
-> enabled. This patch adds a sysfs knob with which core boosting can be
-> switched on or off for benchmarking purposes.
-> 
-> While at it, cleanup the driver init codepath and update copyrights.
-> 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |  115 ++++++++++++++++++++++++++---
->  arch/x86/kernel/cpu/cpufreq/powernow-k8.h |    3 +-
->  2 files changed, 106 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> index d360b56..90fda2c 100644
-> --- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> +++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> @@ -1,6 +1,5 @@
-> -
->  /*
-> - *   (c) 2003-2006 Advanced Micro Devices, Inc.
-> + *   (c) 2003-2010 Advanced Micro Devices, Inc.
->   *  Your use of this code is subject to the terms and conditions of the
->   *  GNU general public license version 2. See "COPYING" or
->   *  http://www.gnu.org/licenses/gpl.html
-> @@ -54,6 +53,10 @@ static DEFINE_PER_CPU(struct powernow_k8_data *, powernow_data);
->  
->  static int cpu_family = CPU_OPTERON;
->  
-> +/* core performance boost */
-> +static bool cpb_capable, cpb_disabled;
-Whatabout using a cpufeature (arch/x86/include/asm/cpufeature.h)
-instead of cpb_capable. Then people could see this feature in 
-/proc/cpuinfo and other code parts could check for it easily if
-needed later.
-It could already be set in arch/x86/kernel/cpu/amd.c and
-powernow-k8 could use cpu_has(cpu, X86_FEATURE_CPB);
 
-Instead of cpb_disabled, I'd use cpb_enabled. Checking for
-!cpb_disabled whether it's enabled, is ugly to read.
+I noticed a failure where we hit the following WARN_ON in
+generic_smp_call_function_interrupt:
 
-> +static struct msr __percpu *msrs;
-> +
->  #ifndef CONFIG_SMP
->  static inline const struct cpumask *cpu_core_mask(int cpu)
->  {
-> @@ -1393,8 +1396,69 @@ out:
->  	return khz;
->  }
->  
-> +static void _cpb_toggle_msrs(bool t)
-> +{
-> +	int cpu;
-> +
-> +	rdmsr_on_cpus(cpu_online_mask, MSR_K7_HWCR, msrs);
-> +
-> +	for_each_cpu(cpu, cpu_online_mask) {
-> +		struct msr *reg = per_cpu_ptr(msrs, cpu);
-> +		if (t)
-> +			reg->l &= ~BIT(25);
-> +		else
-> +			reg->l |= BIT(25);
-> +	}
-> +	wrmsr_on_cpus(cpu_online_mask, MSR_K7_HWCR, msrs);
-> +}
-> +
-> +/*
-> + * Switch on/off core performance boosting.
-> + *
-> + * 0=disable
-> + * 1=enable.
-> + */
-> +static void cpb_toggle(bool t)
-> +{
-> +	if (!cpb_capable)
-> +		return;
-> +
-> +	if (t && cpb_disabled) {
-> +		cpb_disabled = false;
-cpb_enabled = true
-is better.
-> +		_cpb_toggle_msrs(t);
-> +		printk(KERN_INFO PFX "Core Boosting enabled.\n");
-Always printk on every toggle?
-That should not happen often and a user might want to get noticed if
-an app does this behind his back -> should be fine w/ or w/o, just not 
-sure whether it's intended.
+                if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
+                        continue;
 
-...
+                data->csd.func(data->csd.info);
 
-     Thomas
+                refs = atomic_dec_return(&data->refs);
+                WARN_ON(refs < 0);      <-------------------------
+
+We atomically tested and cleared our bit in the cpumask, and yet the number
+of cpus left (ie refs) was 0. How can this be?
+
+It turns out commit c0f68c2fab4898bcc4671a8fb941f428856b4ad5 (generic-ipi:
+cleanup for generic_smp_call_function_interrupt()) is at fault. It removes
+locking from smp_call_function_many and in doing so creates a rather
+complicated race.
+
+The problem comes about because:
+
+- The smp_call_function_many interrupt handler walks call_function.queue
+  without any locking.
+- We reuse a percpu data structure in smp_call_function_many.
+- We do not wait for any RCU grace period before starting the next
+  smp_call_function_many.
+
+Imagine a scenario where CPU A does two smp_call_functions back to back, and
+CPU B does an smp_call_function in between. We concentrate on how CPU C handles
+the calls:
+
+
+CPU A                  CPU B                  CPU C
+
+smp_call_function
+                                              smp_call_function_interrupt
+                                                walks call_function.queue
+                                                sees CPU A on list
+
+                         smp_call_function
+
+                                              smp_call_function_interrupt
+                                                walks call_function.queue
+                                                sees (stale) CPU A on list
+smp_call_function
+  reuses percpu *data
+  set data->cpumask
+                                                sees and clears bit in cpumask!
+                                                sees data->refs is 0!
+
+  set data->refs (too late!)
+
+
+The important thing to note is since the interrupt handler walks a potentially
+stale call_function.queue without any locking, then another cpu can view the
+percpu *data structure at any time, even when the owner is in the process
+of initialising it.
+
+The following test case hits the WARN_ON 100% of the time on my PowerPC box
+(having 128 threads does help :)
+
+
+#include <linux/module.h>
+#include <linux/init.h>
+
+#define ITERATIONS 100
+
+static void do_nothing_ipi(void *dummy)
+{
+}
+
+static void do_ipis(struct work_struct *dummy)
+{
+	int i;
+
+	for (i = 0; i < ITERATIONS; i++)
+		smp_call_function(do_nothing_ipi, NULL, 1);
+
+	printk(KERN_DEBUG "cpu %d finished\n", smp_processor_id());
+}
+
+static struct work_struct work[NR_CPUS];
+
+static int __init testcase_init(void)
+{
+	int cpu;
+
+	for_each_online_cpu(cpu) {
+		INIT_WORK(&work[cpu], do_ipis);
+		schedule_work_on(cpu, &work[cpu]);
+	}
+
+	return 0;
+}
+
+static void __exit testcase_exit(void)
+{
+}
+
+module_init(testcase_init)
+module_exit(testcase_exit)
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Anton Blanchard");
+
+
+I tried to fix it by ordering the read and the write of ->cpumask and ->refs.
+In doing so I missed a critical case but Paul McKenney was able to spot
+my bug thankfully :) To ensure we arent viewing previous iterations the
+interrupt handler needs to read ->refs then ->cpumask then ->refs _again_.
+
+Thanks to Milton Miller and Paul McKenney for helping to debug this issue.
+
+---
+
+My head hurts. This needs some serious analysis before we can be sure it
+fixes all the races. With all these memory barriers, maybe the previous
+spinlocks weren't so bad after all :)
+
+
+Index: linux-2.6/kernel/smp.c
+===================================================================
+--- linux-2.6.orig/kernel/smp.c	2010-03-23 05:09:08.000000000 -0500
++++ linux-2.6/kernel/smp.c	2010-03-23 06:12:40.000000000 -0500
+@@ -193,6 +193,31 @@ void generic_smp_call_function_interrupt
+ 	list_for_each_entry_rcu(data, &call_function.queue, csd.list) {
+ 		int refs;
+ 
++		/*
++		 * Since we walk the list without any locks, we might
++		 * see an entry that was completed, removed from the
++		 * list and is in the process of being reused.
++		 *
++		 * Just checking data->refs then data->cpumask is not good
++		 * enough because we could see a non zero data->refs from a
++		 * previous iteration. We need to check data->refs, then
++		 * data->cpumask then data->refs again. Talk about
++		 * complicated!
++		 */
++
++		if (atomic_read(&data->refs) == 0)
++			continue;
++
++		smp_rmb();
++
++		if (!cpumask_test_cpu(cpu, data->cpumask))
++			continue;
++
++		smp_rmb();
++
++		if (atomic_read(&data->refs) == 0)
++			continue;
++
+ 		if (!cpumask_test_and_clear_cpu(cpu, data->cpumask))
+ 			continue;
+ 
+@@ -446,6 +471,14 @@ void smp_call_function_many(const struct
+ 	data->csd.info = info;
+ 	cpumask_and(data->cpumask, mask, cpu_online_mask);
+ 	cpumask_clear_cpu(this_cpu, data->cpumask);
++
++	/*
++	 * To ensure the interrupt handler gets an up to date view
++	 * we order the cpumask and refs writes and order the
++	 * read of them in the interrupt handler.
++	 */
++	smp_wmb();
++
+ 	atomic_set(&data->refs, cpumask_weight(data->cpumask));
+ 
+ 	raw_spin_lock_irqsave(&call_function.lock, flags);
