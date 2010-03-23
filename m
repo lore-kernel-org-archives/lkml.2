@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab0CWWMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 18:12:39 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:63245 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864Ab0CWWMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 18:12:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=XJxIsJnPfSI+PLPVop6ESF5BmgPCThQnbw771ejaKLdubZ5IJ4a1q+5r8K3Vb9G/6Z
-         vKiurDnejfg9ky6dKzdEoerqMLFgZrIzmEZmm5JRr4Mmt72yn+AWd1yQ7plFKWvQLzKC
-         eM5QoIk5g296cpq28V/KqCMpLnggDrjWdZhs8=
-Message-ID: <4BA93CD1.5060501@gmail.com>
-Date: Tue, 23 Mar 2010 23:12:33 +0100
-From: =?ISO-8859-15?Q?Steffen_R=F6cker?= <sroecker@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100322 Thunderbird/3.0.3
+	id S1753525Ab0CWWPV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 18:15:21 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40904 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753056Ab0CWWPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 18:15:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Clemens Ladisch <clemens@ladisch.de>
+Subject: Re: 2.6.34-rc2 - crash on shutdown
+Date: Tue, 23 Mar 2010 23:18:11 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Stephane Eranian <eranian@google.com>, David R <david@unsolicited.net>,
+       linux-kernel@vger.kernel.org
+References: <20100323090206.33932wop73sdefm6@unsolicited.net> <bd4cb8901003230631q22cdac6dg8011489b94c6d5e0@mail.gmail.com> <4BA8C7A4.8050502@ladisch.de>
+In-Reply-To: <4BA8C7A4.8050502@ladisch.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Richard Purdie <rpurdie@linux.intel.com>
-Subject: [PATCH] backlight: mbp_nvidia_bl - Fix DMI_SYS_VENDOR for MacBook1,1
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003232318.11332.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix DMI_SYS_VENDOR for MacBook1,1.
+On Tuesday 23 March 2010, Clemens Ladisch wrote:
+> Stephane Eranian wrote:
+> > On Tue, Mar 23, 2010 at 1:02 PM, Clemens Ladisch <clemens@ladisch.de> wrote:
+> > > The only pointer access in this function is cpuhw->amd_nb, but
+> > > I don't see any obvious bugs.
+> > 
+> > I reported a problem with the AMD initialization just last week.
+> > There is an issue with amd_pmu_cpu_online() which gets called
+> > too early, and thus fails. That leaves some bogus state and causes
+> > a crash in amd_pmu_cpu_offline().
+> > 
+> > I proposed a fix which was rejected. The alternative involves moving
+> > some the of CPU initialization code (on AMD) to an earlier position,i.e.,
+> > which would be executed before the CPU_STARTED notifier. Nobody
+> > has proposed anything else so far.
+> 
+> I don't know about the early bootmem stuff, but regardless of this issue,
+> if amd_pmu_cpu_online() can fail, then amd_pmu_cpu_offline() must be able
+> to handle this without blowing up.  Something like this (untested):
 
-When the MacBook1,1 came out Apple was still named Apple Computer, I am 
-not sure if this applies to older MacBook2,1 versions aswell.
+I guess we handle that already:
 
-Signed-off-by: Steffen Röcker <sroecker@gmail.com>
----
-  drivers/video/backlight/mbp_nvidia_bl.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=a90110c61073eab95d1986322693c2b9a8a6a5f6
 
-diff --git a/drivers/video/backlight/mbp_nvidia_bl.c 
-b/drivers/video/backlight/mbp_nvidia_bl.c
-index 1b5d3fe..08ffada 100644
---- a/drivers/video/backlight/mbp_nvidia_bl.c
-+++ b/drivers/video/backlight/mbp_nvidia_bl.c
-@@ -141,7 +141,7 @@ static const struct dmi_system_id __initdata 
-mbp_device_table[] = {
-                 .callback       = mbp_dmi_match,
-                 .ident          = "MacBook 1,1",
-                 .matches        = {
--                       DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
-+                       DMI_MATCH(DMI_SYS_VENDOR, "Apple Computer, Inc."),
-                         DMI_MATCH(DMI_PRODUCT_NAME, "MacBook1,1"),
-                 },
-                 .driver_data    = (void *)&intel_chipset_data,
--- 
-1.7.0
-
+Rafael
