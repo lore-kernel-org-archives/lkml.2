@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab0CWCLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 22:11:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab0CWCL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 22:11:29 -0400
-Message-ID: <4BA823D7.4010106@redhat.com>
-Date: Tue, 23 Mar 2010 10:13:43 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
+	id S1753855Ab0CWCSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 22:18:45 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:55843 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab0CWCSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 22:18:44 -0400
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 0/3] proc: task->signal can't be NULL
+References: <20100322184127.GA3952@redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 22 Mar 2010 19:18:38 -0700
+In-Reply-To: <20100322184127.GA3952@redhat.com> (Oleg Nesterov's message of "Mon\, 22 Mar 2010 19\:41\:27 +0100")
+Message-ID: <m1ocifvkzl.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>, Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [RFC Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain> <1269297081.3552.19.camel@calx>
-In-Reply-To: <1269297081.3552.19.camel@calx>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: oleg@redhat.com, linux-kernel@vger.kernel.org, roland@redhat.com, adobriyan@gmail.com, akpm@linux-foundation.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Mackall wrote:
-> On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
->> This whole patchset is for adding netpoll support to bridge and bonding
->> devices. I already tested it for bridge, bonding, bridge over bonding,
->> and bonding over bridge. It looks fine now.
-> 
-> Ages ago, Jeff Moyer took a run at this, added him to the cc: on the off
-> chance he still cares.
-> 
->> Please comment.
->>
->>
->> To make bridge and bonding support netpoll, we need to adjust
->> some netpoll generic code. This patch does the following things:
->>
->> 1) introduce two new priv_flags for struct net_device:
->>    IFF_IN_NETPOLL which identifies we are processing a netpoll;
->>    IFF_DISABLE_NETPOLL is used to disable netpoll support for a device
->>    at run-time;
-> 
-> This one is a little worrisome. I've tried to keep the netpoll code
-> restricted to as tight an area as possible. Adding new flags like these
-> that random drivers might try to fiddle with seems like a good way for a
-> driver writer to get in trouble. Also flag space is filling up.
+Oleg Nesterov <oleg@redhat.com> writes:
 
+> With the recent changes in -mm it is always safe to dereference
+> task->signal. It can't be NULL and it is pinned to task_struct.
+>
+> fs/proc becomes the only valid user of signal->count which should
+> either die or become "int nr_threads".
+>
+>
+> Alexey, Eric.
+>
+> Can't we kill this counter? Afaics, get_nr_threads() doesn't need to
+> be "precise", we probably can estimate the number of threads using
+> signal->live (yes sure, we can't use ->live as nr_threads).
+>
+> Except: first_tid() uses get_nr_threads() for optimization. Is this
+> optimization really important? Afaics, it only helps in the unlikely
+> case, probably in that case the extra lockless while_each_thread()
+> doesn't hurt.
+>
+> IOW, how about
+>
+> 	--- a/fs/proc/base.c
+> 	+++ b/fs/proc/base.c
+> 	@@ -3071,11 +3071,6 @@ static struct task_struct *first_tid(str
+> 				goto found;
+> 		}
+> 	 
+> 	-	/* If nr exceeds the number of threads there is nothing todo */
+> 	-	pos = NULL;
+> 	-	if (nr && nr >= get_nr_threads(leader))
+> 	-		goto out;
+> 	-
+> 		/* If we haven't found our starting place yet start
+> 		 * with the leader and walk nr threads forward.
+> 		 */
+>
+> ?
+>
+> Not that I think it is terribly important to kill this counter, and
+> probably signal->nr_threads can make sense anyway, so far I am just
+> curious.
 
-Somewhat, but currently I don't have other way to replace this.
-Any suggestions?
+I think that was just a sanity check since it was easy.  I want to say
+it prevents a DOS attack with user space passing unreasonably large
+file position but that DOS attack is handled by ensuring we don't walk
+through the list if threads more than once.
 
-> 
->> 2) introduce three new methods for netdev_ops:
->>    ->ndo_netpoll_setup() is used to setup netpoll for a device;
->>    ->ndo_netpoll_xmit() is used to transmit netpoll requests;
->>    ->ndo_netpoll_cleanup() is used to clean up netpoll when a device is
->>      removed.
-> 
-> Seems like a lot of interface for something to be used by only a couple
-> core drivers. Hopefully Dave has an opinion here.
-> 
+However:
+proc_task_getattr uses get_nr_threads to get it's nlink count correct.
 
-Yeah, I worry about this too, maybe we can group those methods
-for netpoll together into another struct, and just put a pointer
-here?
+Not walking the thread list to get the number of threads seems like an
+important cpu time saving measure.
 
-Thanks!
+Eric
+
