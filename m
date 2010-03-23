@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab0CWEh1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:37:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41511 "EHLO mx1.redhat.com"
+	id S1752782Ab0CWEjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:39:53 -0400
+Received: from tenax.loup.net ([209.169.16.66]:46838 "EHLO tenax.loup.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab0CWEh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:37:26 -0400
-Message-ID: <4BA84607.7030304@redhat.com>
-Date: Tue, 23 Mar 2010 12:39:35 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
-MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [RFC Patch 2/3] bridge: make bridge support netpoll
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>	 <20100322082112.4967.5504.sendpatchset@localhost.localdomain>	 <1269297307.3552.23.camel@calx>  <4BA82186.3010204@redhat.com> <1269318470.3552.54.camel@calx>
-In-Reply-To: <1269318470.3552.54.camel@calx>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750816Ab0CWEjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:39:52 -0400
+Date: Mon, 22 Mar 2010 22:25:25 -0600
+Message-Id: <201003230425.o2N4PP5q009109@alien.loup.net>
+From: Mike Hayward <hayward@loup.net>
+To: linux-kernel@vger.kernel.org
+Subject: Regression: my systems can no longer boot from an ide hard drive
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Mackall wrote:
-> On Tue, 2010-03-23 at 10:03 +0800, Cong Wang wrote:
->> Matt Mackall wrote:
->>> On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
->>>> Based on the previous patch, make bridge support netpoll by:
->>>>
->>>> 1) implement the 4 methods to support netpoll for bridge;
->>>>
->>>> 2) modify netpoll during forwarding packets in bridge;
->>>>
->>>> 3) disable netpoll support of bridge when a netpoll-unabled device
->>>>    is added to bridge;
->>> Not sure if this is the right thing to do. Shouldn't we simply enable
->>> polling on all devices that support it and warn about the others (aka
->>> best effort)?
->>>
->> I don't think it's a good idea, because we check if a device
->> supports netpoll by checking if it has ndo_poll_controller method.
-> 
-> Uh, what? If we have 5 devices on a bridge and 4 support netpoll, then
-> shouldn't we just send netconsole messages to those 4 devices? Isn't
-> this much better than simply refusing to work?
-> 
+Three identical known good opteron systems can no longer boot freshly
+installed distros from an ide hard drive.  The systems have one ide
+drive and eight sata drives.  If distro is installed to ide drive,
+Ubuntu 9.10 server moves cursor down the screen twice, then hangs
+while Fedora 12 grub loads but then claims it can't find root to mount
+and it and hangs 'forever'.  Numerous distros have all booted fine
+before 2.6.25... I don't know where it went wrong between 25 and 31.
 
-How could you let the bridge know netpoll is not sent to
-the one that doesn't support netpoll during setup? This will
-be complex, I am afraid.
+This is despite partitioning with and without lvm, despite making sure
+kernel/boot loader are in partition in first 2 gigs of ide drive.
 
-Thanks.
+Both distros boot just fine on each system when os is installed on a
+sata drive so this isn't a hardware defect.
+
+Distro that boots fine from ide:
+Linux opt1 2.6.25-14.fc9.x86_64 #1 SMP Thu May 1 06:06:21 EDT 2008 x86_64 x86_64 x86_64 GNU/Linux
+
+Distros that no longer boot via ide drive:
+Linux opt2 2.6.31-14-server #48-Ubuntu SMP Fri Oct 16 15:07:34 UTC 2009 x86_64 GNU/Linux
+Linux opt3 2.6.31.5-127.fc12.x86_64 #1 SMP Sat Nov 7 21:11:14 EST 2009 x86_64 x86_64 x86_64 GNU/Linux
+
+Maybe this can be worked around with some options to grub or
+kernel... if so, shouldn't distros detect that ide drives are being
+set up and configure the boot loader properly?  It would be very hard
+for newbie to figure this one out.
+
+Has anyone else seen this, or am I the only one who boots from ide
+when a sata drive is present? :-)
+
+- Mike
