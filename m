@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0CWVDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 17:03:05 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:51195 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab0CWVDD (ORCPT
+	id S1752902Ab0CWVT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 17:19:28 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34695 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab0CWVT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 17:03:03 -0400
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Badari Pulavarty <pbadari@us.ibm.com>, Christoph Hellwig <hch@lst.de>,
-       Janak Desai <janak@us.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Stanislaw Gruszka <sgruszka@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm] sys_unshare: simplify the not-really-implemented CLONE_THREAD/SIGHAND/VM code
-References: <20100323170816.GA20809@redhat.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 23 Mar 2010 14:02:55 -0700
-In-Reply-To: <20100323170816.GA20809@redhat.com> (Oleg Nesterov's message of "Tue\, 23 Mar 2010 18\:08\:16 +0100")
-Message-ID: <m1hbo6u4xs.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
+	Tue, 23 Mar 2010 17:19:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=A9yT2bdWVWXbblCf4+MnHjs2TY7Gil5Ts2e8ghZaP3vUXCe48Aeetm7WJ6oYpbbnON
+         PSpRRBFi/tYVxWpDjqfpG5RDhKaq2ynxdMMvOEhDzI70FSBv5ddQaNu/MnXYjnOi20LI
+         eGLIBZrypQn+9+flTubGc4A03R4v9vd+7VuD0=
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
+Mime-Version: 1.0 (Apple Message framework v1077)
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 76.21.114.89
-X-SA-Exim-Rcpt-To: oleg@redhat.com, linux-kernel@vger.kernel.org, sukadev@us.ibm.com, sgruszka@redhat.com, roland@redhat.com, janak@us.ibm.com, hch@lst.de, pbadari@us.ibm.com, akpm@linux-foundation.org
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+From: Anton Starikov <ant.starikov@gmail.com>
+In-Reply-To: <20100323111351.756c8752.akpm@linux-foundation.org>
+Date: Tue, 23 Mar 2010 22:19:21 +0100
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
+       bugme-daemon@bugzilla.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Transfer-Encoding: 7bit
+Message-Id: <7FF95EC7-EF76-4321-A7A0-E9018F1B1A90@gmail.com>
+References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <20100323111351.756c8752.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+Although case is solved, I will post description for testcase program.
+Just in case someone wonder or would like to keep it for some later tests.
 
-> (on top of check_unshare_flags-kill-the-bogus-clone_sighand-sig-count-check.patch)
->
-> Cleanup.
->
-> sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
-> very much it will ever work. At least, nobody even tried since the original
-> "unshare system call -v5: system call handler function" commit
-> 99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
->
-> And the code is not consistent. unshare_thread() always fails unconditionally,
-> while unshare_sighand() and unshare_vm() pretend to work if there is nothing
-> to unshare.
+------------------------------------------------------------------------
+It is a parallel model checker. The command line you used does reachability
+on the state space of mode anderson.6, meaning that it searches through all
+possible states (int vectors). Each thread gets a vector from the queue,
+calculates its successor states and puts them in a lock-less static hash
+table (pseudo BFS exploration because the threads each have there own
+queue).
 
-This is setting off alarm bells in my head.
+How did ingo run the binary? Because the static table size should be chosen
+to fit into memory. "-s 27" allocates 2^27 * (|vector| + 1 ) * sizeof(int)
+bytes. |vector| is equal to 19 for anderson.6, ergo the table size is 10GB.
+This could explain the huge number of page faults ingo gets.
 
-I haven't traced this all through but I like your logic a lot less, and
-I think it is buggy.  Why don't we need to look at sigh->count ?
+But anyway, you can imagine that the code is quiet jumpy and has a big
+memory footprint, so the page faults may also be normal.
+------------------------------------------------------------------------
 
-The current logic is very fine grained but it does a lot of simple logical
-checks and it ties those checks together if a very maintainable way.
+On Mar 23, 2010, at 7:13 PM, Andrew Morton wrote:
 
-You require that we know upfront all of the dependencies, which is things
-change subtlety can be a maintenance challenge.
+> Anton, we have an executable binary in the bugzilla report but it would
+> be nice to also have at least a description of what that code is
+> actually doing.  A quick strace shows quite a lot of mprotect activity.
+> A pseudo-code walkthrough, perhaps?
+> 
+> Thanks.
 
-
-
-> Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
-> variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
-> check_unshare_flags().
->
-> Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
-> to sys_unshare(). This looks more consistent and matches the similar
-> do_sysvsem check in sys_unshare().
->
-> Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
-> a false positive due to get_task_mm().
-
-I think the number of times get_task_mm is called on not current this isn't
-an interesting race.
-
-Eric
