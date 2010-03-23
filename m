@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab0CWAcr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:32:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40686 "EHLO mx2.suse.de"
+	id S1756435Ab0CWAcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:32:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40685 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755957Ab0CWAcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755918Ab0CWAcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Mar 2010 20:32:14 -0400
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jan Kara <jack@suse.cz>, dri-devel@lists.sourceforge.net
-Subject: [PATCH 11/18] i915: Provide config option for enabling tracepoints
-Date: Tue, 23 Mar 2010 01:32:13 +0100
-Message-Id: <1269304340-25372-12-git-send-email-jack@suse.cz>
+Cc: Jan Kara <jack@suse.cz>, cluster-devel@redhat.com
+Subject: [PATCH 10/18] gfs2: Provide config option for enabling trace points
+Date: Tue, 23 Mar 2010 01:32:12 +0100
+Message-Id: <1269304340-25372-11-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269304340-25372-1-git-send-email-jack@suse.cz>
 References: <1269304340-25372-1-git-send-email-jack@suse.cz>
@@ -19,46 +19,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: dri-devel@lists.sourceforge.net
+CC: cluster-devel@redhat.com
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- drivers/gpu/drm/Kconfig           |    9 +++++++++
- drivers/gpu/drm/i915/i915_trace.h |    2 ++
- 2 files changed, 11 insertions(+), 0 deletions(-)
+ fs/gfs2/Kconfig      |    8 ++++++++
+ fs/gfs2/trace_gfs2.h |    2 ++
+ 2 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 305c590..bce8013 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -124,6 +124,15 @@ config DRM_I915_KMS
- 	  the driver to bind to PCI devices, which precludes loading things
- 	  like intelfb.
- 
-+config DRM_I915_TRACER
-+	bool "Enable tracing of i915 driver"
-+	depends on DRM_I915 && EVENT_TRACING
+diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+index 4dcddf8..872ced2 100644
+--- a/fs/gfs2/Kconfig
++++ b/fs/gfs2/Kconfig
+@@ -38,3 +38,11 @@ config GFS2_FS_LOCKING_DLM
+ 	  Most users of GFS2 will require this. It provides the locking
+ 	  interface between GFS2 and the DLM, which is required to use GFS2
+ 	  in a cluster environment.
++
++config GFS2_TRACER
++	bool "GFS2 tracing"
++	depends on GFS2_FS && EVENT_TRACING
 +	help
-+	  Say Y here to make i915 driver provide trace points in functions
-+	  handling irqs, dmas, and gem.
++	  Provide trace points in block allocation functions, locking, and
++	  journaling code.
 +
-+	  If unsure, say N.
-+
- endchoice
- 
- config DRM_MGA
-diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
-index 01840d9..fdb59c2 100644
---- a/drivers/gpu/drm/i915/i915_trace.h
-+++ b/drivers/gpu/drm/i915/i915_trace.h
-@@ -3,6 +3,8 @@
- 
- #include <linux/stringify.h>
- #include <linux/types.h>
+diff --git a/fs/gfs2/trace_gfs2.h b/fs/gfs2/trace_gfs2.h
+index 148d55c..5f4faf3 100644
+--- a/fs/gfs2/trace_gfs2.h
++++ b/fs/gfs2/trace_gfs2.h
+@@ -1,5 +1,7 @@
+ #undef TRACE_SYSTEM
 +#undef TRACE_CONFIG
-+#define TRACE_CONFIG CONFIG_DRM_I915_TRACER
- #include <linux/tracepoint.h>
+ #define TRACE_SYSTEM gfs2
++#define TRACE_CONFIG CONFIG_GFS2_TRACER
  
- #include <drm/drmP.h>
+ #if !defined(_TRACE_GFS2_H) || defined(TRACE_HEADER_MULTI_READ)
+ #define _TRACE_GFS2_H
 -- 
 1.6.4.2
 
