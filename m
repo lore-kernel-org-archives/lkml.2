@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab0CWD6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 23:58:03 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33288 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754529Ab0CWD6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 23:58:00 -0400
-Subject: Re: ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after
- unmapping the address
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-In-Reply-To: <201003221759.o2MHxEaj015546@hera.kernel.org>
-References: <201003221759.o2MHxEaj015546@hera.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 14:57:50 +1100
-Message-ID: <1269316670.8599.101.camel@pasglop>
+	id S1754581Ab0CWD6j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 23:58:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47361 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751717Ab0CWD6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 23:58:37 -0400
+Date: Mon, 22 Mar 2010 20:57:04 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+Cc: Zhenyu Wang <zhenyuw@linux.intel.com>, linux-kernel@vger.kernel.org,
+       David.Woodhouse@intel.com, dwmw2@infradead.org, eric@anholt.net,
+       ben@decadent.org.uk, gregkh@suse.de
+Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT 
+ entries in i915
+Message-Id: <20100322205704.ac4cd9ae.akpm@linux-foundation.org>
+In-Reply-To: <ca2dc2821003210830h2025df79r477cca7d81ddd28d@mail.gmail.com>
+References: <1268258994.2183.14.camel@carter>
+	<ca2dc2821003102331x3d1a7a0fgadb63612e49f77db@mail.gmail.com>
+	<20100311083404.GG6896@zhen-devel.sh.intel.com>
+	<ca2dc2821003110754r65ab170at39a61fb11fa285e0@mail.gmail.com>
+	<20100319132723.118cc16a.akpm@linux-foundation.org>
+	<ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
+	<20100321135836.GA11661@zhen-devel.sh.intel.com>
+	<ca2dc2821003210830h2025df79r477cca7d81ddd28d@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-22 at 17:59 +0000, Linux Kernel Mailing List wrote:
-> Gitweb:     http://git.kernel.org/linus/fd3686a842717b890fbe3024b83a616c54d5dba0
-> Commit:     fd3686a842717b890fbe3024b83a616c54d5dba0
-> Parent:     936332b8e00103fc20eb7e915c9a3bcb2835a11a
-> Author:     Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>
-> AuthorDate: Fri Mar 19 04:41:33 2010 +0000
-> Committer:  David S. Miller <davem@davemloft.net>
-> CommitDate: Fri Mar 19 21:00:44 2010 -0700
+On Sun, 21 Mar 2010 16:30:20 +0100 Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+
+> On Sun, Mar 21, 2010 at 2:58 PM, Zhenyu Wang <zhenyuw@linux.intel.com> wrote:
+> > On 2010.03.20 14:04:56 +0100, Miguel Ojeda wrote:
+> >> On Fri, Mar 19, 2010 at 9:27 PM, Andrew Morton
+> >> <akpm@linux-foundation.org> wrote:
+> >> > On Thu, 11 Mar 2010 16:54:26 +0100
+> >> > Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+> >> >
+> >> >> Attached dmesg, lspci -vv, config and xorg.
+> >> >>
+> >> >> When the X server crashes, the kernel does not report anything
+> >> >
+> >> > This seems to have gone all quiet?
+> >>
+> >> It seems so, I was about to ping Zhenyu.
+> >
+> > Could you try recent X.org intel driver release? Your failure X log
+> > showed some pretty old UMS driver's render flush time out message,
+> > I think whose version never has been well tested with new kms/gem stuff.
+> >
 > 
->     ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after unmapping the address
->     
->     As per Simon Horman's feedback set IXGBE_RSC_CB(skb)->dma to zero
->     after unmapping HWRSC DMA address to avoid double freeing.
->    
-
-Note that this whole code is bogus :-) You cannot just assume that 0 is
-a invalid DMA address. It is not. In fact, while you can check if a
-dma_addr_t is invalid using dma_mapping_error(), the generic APIs
-don't provide you with a magic "bad" value you can use for what you are
-trying to do.
-
-Granted, I think we should make our iommu code reserve the first page
-for the sake of everybody's sanity and to avoid such pitfalls, but
-this code is wrong with today iommu implementations.
-
-Cheers,
-Ben.
-
->     Signed-off-by:  Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>
->     Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
->     Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> ---
->  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
+> Sure. Debian Stable got version 2.3.
 > 
-> diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
-> index 18b5b21..d75c46f 100644
-> --- a/drivers/net/ixgbe/ixgbe_main.c
-> +++ b/drivers/net/ixgbe/ixgbe_main.c
-> @@ -935,10 +935,12 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
->  			if (skb->prev)
->  				skb = ixgbe_transform_rsc_queue(skb, &(rx_ring->rsc_count));
->  			if (adapter->flags2 & IXGBE_FLAG2_RSC_ENABLED) {
-> -				if (IXGBE_RSC_CB(skb)->dma)
-> +				if (IXGBE_RSC_CB(skb)->dma) {
->  					pci_unmap_single(pdev, IXGBE_RSC_CB(skb)->dma,
->  					                 rx_ring->rx_buf_len,
->  					                 PCI_DMA_FROMDEVICE);
-> +					IXGBE_RSC_CB(skb)->dma = 0;
-> +				}
->  				if (rx_ring->flags & IXGBE_RING_RX_PS_ENABLED)
->  					rx_ring->rsc_count += skb_shinfo(skb)->nr_frags;
->  				else
-> @@ -3126,10 +3128,12 @@ static void ixgbe_clean_rx_ring(struct ixgbe_adapter *adapter,
->  			rx_buffer_info->skb = NULL;
->  			do {
->  				struct sk_buff *this = skb;
-> -				if (IXGBE_RSC_CB(this)->dma)
-> +				if (IXGBE_RSC_CB(this)->dma) {
->  					pci_unmap_single(pdev, IXGBE_RSC_CB(this)->dma,
->  					                 rx_ring->rx_buf_len,
->  					                 PCI_DMA_FROMDEVICE);
-> +					IXGBE_RSC_CB(this)->dma = 0;
-> +				}
->  				skb = skb->prev;
->  				dev_kfree_skb(this);
->  			} while (skb);
-> --
-> To unsubscribe from this list: send the line "unsubscribe git-commits-head" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> >> >
+> >> > As this was a 2.6.32->2.6.32.4 regression, I assume that it's also a
+> >> > 2.6.32->2.6.33 regression?
+> >>
+> >> Yep. All kernels I tested since 2.6.32.4 crash, including 2.6.32.10,
+> >> 2.6.33 and 2.6.34-rc1. See my original message for more details about
+> >> the crash.
+> >>
+> >
+> > Could you bisect? I doubt it's caused by David's patch, as if it is, you
+> > will have trouble at early agp init time, instead of current problem looks
+> > like something causing rendering hang..and I can't think of how mapping GTT
+> > to a scratch page could cause problem in case GTT bar is truely 256K.
+> 
+> I bisected in order to find the commit 5877960869333e42ebeb733e8d9d5630ff96d350.
 
+I have no 5877960869333e42ebeb733e8d9d5630ff96d350 here.  This is why
+we ask that people always identify patches by both the hash and the
+full title..
+
+
+> I don't know if such commit is really the true problem (does not seem
+> so if you are right); however, it is the commit that breaks the X
+> server as I stated in the original message.
 
