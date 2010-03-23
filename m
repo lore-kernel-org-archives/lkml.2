@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab0CWX5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:57:11 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42416 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab0CWX5C (ORCPT
+	id S1752888Ab0CWX7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:59:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51207 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab0CWX7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:57:02 -0400
-Date: Tue, 23 Mar 2010 20:53:42 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoffer Dall <christofferdall@christofferdall.dk>
-Cc: containers <containers@lists.linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
-Message-ID: <20100323205342.GA19572@n2100.arm.linux.org.uk>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk> <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 23 Mar 2010 19:59:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 24 Mar 2010 08:55:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 03/11] mm: Share the anon_vma ref counts between KSM and
+ page migration
+Message-Id: <20100324085545.333cb7c6.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1269347146-7461-4-git-send-email-mel@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-4-git-send-email-mel@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
-> This small commit introduces a global state of system calls for ARM
-> making it possible for a debugger or checkpointing to gain information
-> about another process' state with respect to system calls.
+On Tue, 23 Mar 2010 12:25:38 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-I don't particularly like the idea that we always store the syscall
-number to memory for every system call, whether the stored version is
-used or not.
+> For clarity of review, KSM and page migration have separate refcounts on
+> the anon_vma. While clear, this is a waste of memory. This patch gets
+> KSM and page migration to share their toys in a spirit of harmony.
+> 
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Since ARM caches are generally not write allocate, this means mostly
-write-only variables can have a higher than expected expense.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Is there not some thread flag which can be checked to see if we need to
-store the syscall number?
