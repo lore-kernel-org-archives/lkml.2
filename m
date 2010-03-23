@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab0CWE05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:26:57 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:45541 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab0CWE04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:26:56 -0400
-Date: Mon, 22 Mar 2010 23:26:53 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Linux Containers <containers@lists.osdl.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH linux-cr] nested pid namespaces (v2)
-Message-ID: <20100323042653.GB9014@us.ibm.com>
-References: <20100319213955.GA17912@us.ibm.com>
- <4BA7FA89.208@cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BA7FA89.208@cs.columbia.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752231Ab0CWE1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:27:54 -0400
+Received: from waste.org ([173.11.57.241]:54811 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0CWE1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:27:53 -0400
+Subject: Re: [RFC Patch 2/3] bridge: make bridge support netpoll
+From: Matt Mackall <mpm@selenic.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
+       Neil Horman <nhorman@tuxdriver.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+In-Reply-To: <4BA82186.3010204@redhat.com>
+References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
+	 <20100322082112.4967.5504.sendpatchset@localhost.localdomain>
+	 <1269297307.3552.23.camel@calx>  <4BA82186.3010204@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Mar 2010 23:27:50 -0500
+Message-ID: <1269318470.3552.54.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oren Laadan (orenl@cs.columbia.edu):
+On Tue, 2010-03-23 at 10:03 +0800, Cong Wang wrote:
+> Matt Mackall wrote:
+> > On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
+> >> Based on the previous patch, make bridge support netpoll by:
+> >>
+> >> 1) implement the 4 methods to support netpoll for bridge;
+> >>
+> >> 2) modify netpoll during forwarding packets in bridge;
+> >>
+> >> 3) disable netpoll support of bridge when a netpoll-unabled device
+> >>    is added to bridge;
+> > 
+> > Not sure if this is the right thing to do. Shouldn't we simply enable
+> > polling on all devices that support it and warn about the others (aka
+> > best effort)?
+> > 
 > 
-> 
-> Serge E. Hallyn wrote:
-> >Support checkpoint and restart of tasks in nested pid namespaces.  At
-> >Oren's request here is an alternative to my previous implementation.  In
-> >this one, we keep the original single pids_array to minimize memory
-> >allocations.  The pids array entries are augmented with a pidns depth
-> 
-> Thanks for adapting the patch.
-> 
-> FWIW, not only minimize memory allocations, but also permit a more
-> regular structure of the image data (array of fixed size elements
-> followed by an array of vpids), which simplifies the code that needs
-> to read/write/access this data.
-> 
-> >(relative to the container init's pidns, and an "rpid" which is the pid
-> >in the checkpointer's pidns (or 0 if no valid pid exists).  The rpid
-> >will be used by userspace to gather more information (like
-> >/proc/$$/mountinfo) after the kernel sys_checkpoint.  If any tasks are
-> >in nested pid namespace, another single array holds all of the vpids.
-> >At restart those are used by userspace to determine how to call
-> >eclone().  Kernel ignores them.
-> >
-> >All cr_tests including the new pid_ns testcase pass.
-> >
-> >Signed-off-by: Serge E. Hallyn <serue@us.ibm.com>
-> >---
-> 
-> [...]
+> I don't think it's a good idea, because we check if a device
+> supports netpoll by checking if it has ndo_poll_controller method.
 
-Thanks, Oren - all other input is taken into what I'm about to post,
-except:
+Uh, what? If we have 5 devices on a bridge and 4 support netpoll, then
+shouldn't we just send netconsole messages to those 4 devices? Isn't
+this much better than simply refusing to work?
 
-> >@@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx *ctx, struct task_struct *t)
-> > 		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
-> > 		ret = -EPERM;
-> > 	}
-> >-	/* no support for >1 private pidns */
-> >-	if (nsproxy->pid_ns != ctx->root_nsproxy->pid_ns) {
-> >-		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
-> >-		ret = -EPERM;
-> >+	/* pidns must be descendent of root_nsproxy */
-> >+	pidns = nsproxy->pid_ns;
-> >+	while (pidns != ctx->root_nsproxy->pid_ns) {
-> >+		if (pidns == &init_pid_ns) {
-> >+			ret = -EPERM;
-> >+			_ckpt_err(ctx, ret, "%(T)stranger pid_ns\n");
-> >+			break;
-> >+		}
-> >+		pidns = pidns->parent;
-> 
-> Currently we do this while() loop twice - once here and once when
-> we collect the vpids. While I doubt if this has any performance
-> impact, is there an advantage to doing it also here ?  (a violation
-> will be observed there too).
+-- 
+http://selenic.com : development and support for Mercurial and Linux
 
-With the new logic (ripped verbatim from Louis' email) such a move
-would make the checkpoint_vpids() code a bit uglier.  I'm about to
-resend, please let me know if you still want the code moved.
 
-...
-
-> >diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-> >index 0da0d83..6d86240 100644
-> >--- a/kernel/nsproxy.c
-> >+++ b/kernel/nsproxy.c
-> >@@ -364,8 +364,13 @@ static struct nsproxy *do_restore_ns(struct ckpt_ctx *ctx)
-> > 		get_net(net_ns);
-> > 		nsproxy->net_ns = net_ns;
-> >-		get_pid_ns(current->nsproxy->pid_ns);
-> >-		nsproxy->pid_ns = current->nsproxy->pid_ns;
-> >+		/*
-> >+		 * The pid_ns will get assigned the first time that we
-> >+		 * assign the nsproxy to a task.  The task had unshared
-> >+		 * its pid_ns in userspace before calling restart, and
-> >+		 * we want to keep using that pid_ns.
-> >+		 */
-> >+		nsproxy->pid_ns = NULL;
-> 
-> This doesn't look healthy.
-> 
-> If it is (or will be) possible for another process to look at the
-> restarting process, not having a pid-ns may confuse other code in
-> the kernel ?
-
-No task will have this nproxy attached before we assign a valid
-pid_ns.  The NULL pid_ns is only while it is in the objhash but
-not attached to a task.
-
-thanks,
--serge
