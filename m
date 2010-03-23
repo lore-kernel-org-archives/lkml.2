@@ -1,275 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab0CWOLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:11:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58152 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab0CWOLp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:11:45 -0400
-Subject: Re: [PATCH] perf_events: fix bug in AMD per-cpu initialization
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo <mingo@elte.hu>, paulus@samba.org,
-       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com,
-       "hpa@zytor.com" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Manfred Spraul <manfred@colorfullife.com>
-In-Reply-To: <bd4cb8901003171733k95fcf50mf6de78bf503d9a7b@mail.gmail.com>
-References: <4ba0a646.25e2660a.1b25.531c@mx.google.com>
-	 <1268869631.9440.282.camel@laptop>
-	 <bd4cb8901003171733k95fcf50mf6de78bf503d9a7b@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 15:11:25 +0100
-Message-ID: <1269353485.5109.48.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753794Ab0CWOMl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:12:41 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:40360 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753552Ab0CWOMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:12:40 -0400
+From: Giel van Schijndel <me@mortis.eu>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Giel van Schijndel <me@mortis.eu>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] hwmon: f71882fg: properly acquire I/O regions while probing
+Date: Tue, 23 Mar 2010 15:12:15 +0100
+Message-Id: <1269353535-23134-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-18 at 01:33 +0100, Stephane Eranian wrote: 
-> On Thu, Mar 18, 2010 at 12:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2010-03-17 at 10:40 +0200, Stephane Eranian wrote:
-> >>       On AMD processors, we need to allocate a data structure per Northbridge
-> >>       to handle certain events.
-> >>
-> >>       On CPU initialization, we need to query the Northbridge id and check
-> >>       whether the structure is already allocated or not. We use the
-> >>       amd_get_nb_id() function to request the Northbridge identification.
-> >>
-> >>       The recent cleanup of the CPU online/offline initialization introduced
-> >>       a bug. AMD cpu initialization is invoked on CPU_UP_PREPARE callback.
-> >>       This is before the CPU Northbridge id is calculated. Therefore no
-> >>       processor had a Northbridge structure allocated except the boot
-> >>       processor. That was causing bogus NB event scheduling.
-> >>
-> >>       This patch uses the CPU_ONLINE callback to initialize the AMD
-> >>       Northbridge structure. This way amd_get_nb_id() returns valid
-> >>       information.
-> >>
-> >>       The x86_cpu_up() callback was added. Could not call it cpu_online
-> >>       because of existing macro.
-> >>
-> >>       Signed-off-by: Stephane Eranian <eranian@google.com>
-> >
-> >
-> > No, ONLINE is not exposed for a good reason, its always wrong.
-> >
-> > Use prepare to allocate data, and starting to initialize stuff on the
-> > cpu proper once its up. Online is after the cpu is up and running and we
-> > are already scheduling stuff on it so its too late to initialize things.
-> >
-> >
-> I can't because amd_get_nb_id() returns garbage for the CPU
-> when you call from CPU_STARTING. So looks like initialization
-> of cpu_llc_id needs to be moved way earlier. I don't want to have
-> to duplicate that code.
+Acquire the I/O region for the Super I/O chip while we're working on it.
 
-Crap, you're right, either notify_cpu_starting() is done too early or
-smp_store_cpu_info() is done too late.
+Further alter the way multiple Super I/O addresses are probed for chips
+such that errors in the probing process are passed on from the module
+initialisation function.
 
-Since smp_store_cpu_info() relies on the result of calibrate_delay() we
-can't easily change that order, but since there really isn't any other
-CPU_STARTING user in tree (I appear to have created the first?!) we can
-easily move that notifier thing later.
-
-(What's up with that IRQ-enable over calibrate_delay(), can't we simply
-enable the NMI watchdog later?)
-
-So I guess something like the below should work:
-
+Some code cleanup: properly using, previously defined, functions rather
+than duplicating their code.
 ---
-arch/x86/kernel/smpboot.c |    4 ++--
-1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/hwmon/f71882fg.c |   38 +++++++++++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 06d98ae..6808b93 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -242,8 +242,6 @@ static void __cpuinit smp_callin(void)
-end_local_APIC_setup();
-map_cpu_to_logical_apicid();
-
-- notify_cpu_starting(cpuid);
--
-/*
-* Need to setup vector mappings before we enable interrupts.
-*/
-@@ -264,6 +262,8 @@ static void __cpuinit smp_callin(void)
-*/
-smp_store_cpu_info(cpuid);
-
-+ notify_cpu_starting(cpuid);
-+
-/*
-* Allow the master to continue.
-*/
-
-
-Which then allows us to write something like:
-
----
-
- arch/x86/kernel/cpu/perf_event.c     |    8 ++-
- arch/x86/kernel/cpu/perf_event_amd.c |   69 ++++++++++++++++++---------------
- 2 files changed, 43 insertions(+), 34 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f571f51..4db6eaf 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -209,7 +209,7 @@ struct x86_pmu {
- 	struct event_constraint *event_constraints;
- 	void		(*quirks)(void);
- 
--	void		(*cpu_prepare)(int cpu);
-+	int		(*cpu_prepare)(int cpu);
- 	void		(*cpu_starting)(int cpu);
- 	void		(*cpu_dying)(int cpu);
- 	void		(*cpu_dead)(int cpu);
-@@ -1330,11 +1330,12 @@ static int __cpuinit
- x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
+diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+index 4230729..25e1cad 100644
+--- a/drivers/hwmon/f71882fg.c
++++ b/drivers/hwmon/f71882fg.c
+@@ -856,10 +856,8 @@ static inline int superio_inb(int base, int reg)
+ static int superio_inw(int base, int reg)
  {
- 	unsigned int cpu = (long)hcpu;
-+	int ret = NOTIFY_OK;
- 
- 	switch (action & ~CPU_TASKS_FROZEN) {
- 	case CPU_UP_PREPARE:
- 		if (x86_pmu.cpu_prepare)
--			x86_pmu.cpu_prepare(cpu);
-+			ret = x86_pmu.cpu_prepare(cpu);
- 		break;
- 
- 	case CPU_STARTING:
-@@ -1347,6 +1348,7 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- 			x86_pmu.cpu_dying(cpu);
- 		break;
- 
-+	case CPU_UP_CANCELED:
- 	case CPU_DEAD:
- 		if (x86_pmu.cpu_dead)
- 			x86_pmu.cpu_dead(cpu);
-@@ -1356,7 +1358,7 @@ x86_pmu_notifier(struct notifier_block *self, unsigned long action, void *hcpu)
- 		break;
- 	}
- 
--	return NOTIFY_OK;
-+	return ret;
+ 	int val;
+-	outb(reg++, base);
+-	val = inb(base + 1) << 8;
+-	outb(reg, base);
+-	val |= inb(base + 1);
++	val  = superio_inb(base, reg) << 8;
++	val |= superio_inb(base, reg + 1);
+ 	return val;
  }
  
- static void __init pmu_check_apic(void)
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index bdd8f8e..b78c6c5 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -293,51 +293,55 @@ static struct amd_nb *amd_alloc_nb(int cpu, int nb_id)
- 	return nb;
+@@ -905,10 +903,8 @@ static u16 f71882fg_read16(struct f71882fg_data *data, u8 reg)
+ {
+ 	u16 val;
+ 
+-	outb(reg++, data->addr + ADDR_REG_OFFSET);
+-	val = inb(data->addr + DATA_REG_OFFSET) << 8;
+-	outb(reg, data->addr + ADDR_REG_OFFSET);
+-	val |= inb(data->addr + DATA_REG_OFFSET);
++	val  = f71882fg_read8(data, reg) << 8;
++	val |= f71882fg_read8(data, reg + 1);
+ 
+ 	return val;
+ }
+@@ -921,10 +917,8 @@ static void f71882fg_write8(struct f71882fg_data *data, u8 reg, u8 val)
+ 
+ static void f71882fg_write16(struct f71882fg_data *data, u8 reg, u16 val)
+ {
+-	outb(reg++, data->addr + ADDR_REG_OFFSET);
+-	outb(val >> 8, data->addr + DATA_REG_OFFSET);
+-	outb(reg, data->addr + ADDR_REG_OFFSET);
+-	outb(val & 255, data->addr + DATA_REG_OFFSET);
++	f71882fg_write8(data, reg,     val >> 8);
++	f71882fg_write8(data, reg + 1, val & 0xff);
  }
  
--static void amd_pmu_cpu_online(int cpu)
-+static int amd_pmu_cpu_prepare(int cpu)
+ static u16 f71882fg_read_temp(struct f71882fg_data *data, int nr)
+@@ -2184,6 +2178,13 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+ 	int err = -ENODEV;
+ 	u16 devid;
+ 
++	/* Don't step on other driver's I/O space by accident */
++	if (!request_region(sioaddr, 2, DRVNAME)) {
++		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
++				(int)sioaddr);
++		return -EIO;
++	}
++
+ 	superio_enter(sioaddr);
+ 
+ 	devid = superio_inw(sioaddr, SIO_REG_MANID);
+@@ -2238,6 +2239,7 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+ 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
+ exit:
+ 	superio_exit(sioaddr);
++	release_region(sioaddr, 2);
+ 	return err;
+ }
+ 
+@@ -2289,14 +2291,20 @@ exit_device_put:
+ 
+ static int __init f71882fg_init(void)
  {
--	struct cpu_hw_events *cpu1, *cpu2;
--	struct amd_nb *nb = NULL;
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-+
-+	WARN_ON_ONCE(cpuc->amd_nb);
-+
-+	if (boot_cpu_data.x86_max_cores < 2)
-+		return NOTIFY_OK;
-+
-+	cpuc->amd_nb = amd_alloc_nb(cpu, -1);
-+	if (!cpuc->amd_nb)
-+		return NOTIFY_BAD;
-+
-+	return NOTIFY_OK;
-+}
-+
-+static void amd_pmu_cpu_starting(int cpu)
-+{
-+	struct cpu_hw_events *cpuc = &per_cpu(cpu_hw_events, cpu);
-+	struct amd_nb *nb;
- 	int i, nb_id;
++	static const unsigned short addrs[] = { 0x2e, 0x4e };
+ 	int err = -ENODEV;
+-	unsigned short address;
++	unsigned short address = /* shut up compiler */ 0;
+ 	struct f71882fg_sio_data sio_data;
++	int i;
  
- 	if (boot_cpu_data.x86_max_cores < 2)
- 		return;
+ 	memset(&sio_data, 0, sizeof(sio_data));
  
--	/*
--	 * function may be called too early in the
--	 * boot process, in which case nb_id is bogus
--	 */
- 	nb_id = amd_get_nb_id(cpu);
--	if (nb_id == BAD_APICID)
--		return;
--
--	cpu1 = &per_cpu(cpu_hw_events, cpu);
--	cpu1->amd_nb = NULL;
-+	WARN_ON_ONCE(nb_id == BAD_APICID);
- 
- 	raw_spin_lock(&amd_nb_lock);
- 
- 	for_each_online_cpu(i) {
--		cpu2 = &per_cpu(cpu_hw_events, i);
--		nb = cpu2->amd_nb;
--		if (!nb)
-+		nb = per_cpu(cpu_hw_events, i).amd_nb;
-+		if (WARN_ON_ONCE(!nb))
- 			continue;
--		if (nb->nb_id == nb_id)
--			goto found;
--	}
- 
--	nb = amd_alloc_nb(cpu, nb_id);
--	if (!nb) {
--		pr_err("perf_events: failed NB allocation for CPU%d\n", cpu);
--		raw_spin_unlock(&amd_nb_lock);
--		return;
-+		if (nb->nb_id == nb_id) {
-+			kfree(cpuc->amd_nb);
-+			cpuc->amd_nb = nb;
+-	if (f71882fg_find(0x2e, &address, &sio_data) &&
+-	    f71882fg_find(0x4e, &address, &sio_data))
++	for (i = 0; i < ARRAY_SIZE(addrs); i++) {
++		err = f71882fg_find(addrs[i], &address, &sio_data);
++		if (err == 0)
 +			break;
-+		}
- 	}
--found:
--	nb->refcnt++;
--	cpu1->amd_nb = nb;
-+
-+	cpuc->amd_nb->nb_id = nb_id;
-+	cpuc->amd_nb->refcnt++;
++	}
++	if (i == ARRAY_SIZE(addrs))
+ 		goto exit;
  
- 	raw_spin_unlock(&amd_nb_lock);
- }
- 
--static void amd_pmu_cpu_offline(int cpu)
-+static void amd_pmu_cpu_dead(int cpu)
- {
- 	struct cpu_hw_events *cpuhw;
- 
-@@ -349,8 +353,10 @@ static void amd_pmu_cpu_offline(int cpu)
- 	raw_spin_lock(&amd_nb_lock);
- 
- 	if (cpuhw->amd_nb) {
--		if (--cpuhw->amd_nb->refcnt == 0)
--			kfree(cpuhw->amd_nb);
-+		struct amd_nb *nb = cpuhw->amd_nb;
-+
-+		if (nb->nb_id == -1 || --nb->refcnt == 0)
-+			kfree(nb);
- 
- 		cpuhw->amd_nb = NULL;
- 	}
-@@ -381,8 +387,9 @@ static __initconst struct x86_pmu amd_pmu = {
- 	.get_event_constraints	= amd_get_event_constraints,
- 	.put_event_constraints	= amd_put_event_constraints,
- 
--	.cpu_prepare		= amd_pmu_cpu_online,
--	.cpu_dead		= amd_pmu_cpu_offline,
-+	.cpu_prepare		= amd_pmu_cpu_prepare,
-+	.cpu_starting		= amd_pmu_cpu_starting,
-+	.cpu_dead		= amd_pmu_cpu_dead,
- };
- 
- static __init int amd_pmu_init(void)
+ 	err = platform_driver_register(&f71882fg_driver);
+-- 
+1.6.4.4
 
