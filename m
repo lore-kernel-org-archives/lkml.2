@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab0CWUYe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:24:34 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39450 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751722Ab0CWUYc (ORCPT
+	id S1752988Ab0CWU0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 16:26:43 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61288 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab0CWU0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 16:24:32 -0400
-Date: Tue, 23 Mar 2010 20:28:21 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Pavan Savoy <pavan_savoy@ti.com>, gregkh@suse.de,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] drivers:misc: sources for ST core
-Message-ID: <20100323202821.22f7c7f0@lxorguk.ukuu.org.uk>
-In-Reply-To: <420891.23395.qm@web94909.mail.in2.yahoo.com>
-References: <4BA8E158.6040102@ti.com>
-	<420891.23395.qm@web94909.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 23 Mar 2010 16:26:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eEJAazXQ8Pgw3aVU8kZzPwmehSkO95LChiK2b7NOgLC9rOc6W/sCZqjORF+gLXtvM2
+         xbA2MyucDotApUiwfTkz27+/Mb5UAEX07pY0QIqD2QSA+R4yhQr29Xd3O1kd471pgoqc
+         k4rEa/jULu4NcI+NuGKuABeC8901D88jErecs=
+MIME-Version: 1.0
+In-Reply-To: <20100203143803.528679118@gmail.com>
+References: <20100203143736.564974126@gmail.com>
+	 <20100203143803.528679118@gmail.com>
+Date: Tue, 23 Mar 2010 22:26:39 +0200
+Message-ID: <cd73a99e1003231326r7623bbc0icba163f9b2e0e96e@mail.gmail.com>
+Subject: Re: [patch v3 2/3] at91_udc HW glitch
+From: Andrew Victor <avictor.za@gmail.com>
+To: Harro Haan <hrhaan@gmail.com>
+Cc: Ryan Mallon <ryan@bluewatersys.com>, Remy Bohmer <linux@bohmer.net>,
+       Andrew Victor <linux@maxim.org.za>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       H Hartley Sweeten <hartleys@visionengravers.com>,
+       Anti Sullin <anti.sullin@artecdesign.ee>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > [alan]
-> > >What if you have multiple devices at once one in each
-> > state ?
-> > >Why is this global ?
-> > 
-> > [pavan]
-> > st_gdata required in non-tty calls as well.
-> > 
-> > [pavan]
-> > Can't happen, The chip on doing a UART write will either
-> > write whole of BT data or whole of FM, so it can't be in
-> > multiple states.
+hi,
 
-What if you have two chips ?
+> Add some delay to avoid reading CSR TXCOUNT too early after updating it.
+>
+> Signed-off-by: Anti Sullin <anti.sullin@artecdesign.ee>
+> Signed-off-by: Harro Haan <hrhaan@gmail.com>
+> Acked-by: Remy Bohmer <linux@bohmer.net>
+> ---
+>  drivers/usb/gadget/at91_udc.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> Index: linux-2.6.31/drivers/usb/gadget/at91_udc.c
+> ===================================================================
+> --- linux-2.6.31.orig/drivers/usb/gadget/at91_udc.c
+> +++ linux-2.6.31/drivers/usb/gadget/at91_udc.c
+> @@ -366,6 +366,13 @@ rescan:
+>        if (is_done)
+>                done(ep, req, 0);
+>        else if (ep->is_pingpong) {
+> +               /*
+> +                * One dummy read to delay the code because of a HW glitch:
+> +                * CSR returns bad RXCOUNT when read too soon after updating
+> +                * RX_DATA_BK flags.
+> +                */
+> +               csr = __raw_readl(creg);
+> +
+>                bufferspace -= count;
+>                buf += count;
+>                goto rescan;
 
-> > st_gdata not in tty priv data or ldisc_data because there
-> > are entry points like st_register/unregister which are
-> > EXPORTed requires it.
+I see in the data-sheet (SAM9261 / SAM9263), the following for the
+UDP_ CSRx registers:
 
-We need to fix that I think so there is some kind of context that is per
-device.
+"WARNING: Due to synchronization between MCK and UDPCK, the software
+application must wait for the end of the write
+operation before executing another write by polling the bits which
+must be set/cleared."
 
-> > If the rest seems fine, please consider it for staging,
-> > Will keep reworking on it.
+//! Clear flags of UDP UDP_CSR register and waits for synchronization
+#define Udp_ep_clr_flag(pInterface, endpoint, flags) { \
+    while (pInterface->UDP_CSR[endpoint] & (flags)) \
+        pInterface->UDP_CSR[endpoint] &= ~(flags); \
+     }
+//! Set flags of UDP UDP_CSR register and waits for synchronization
+#define Udp_ep_set_flag(pInterface, endpoint, flags) { \
+    while ( (pInterface->UDP_CSR[endpoint] & (flags)) != (flags) ) \
+       pInterface->UDP_CSR[endpoint] |= (flags); \
+    }
 
-I'm happy with it going that way and that means I can then send patches
-and suggestions to clean it up bit by bit.
+The at91_udc driver does not seem to do that for its CSR register writes.
+So I was wondering if we implement what the datasheet says, would we
+still need the "fix" above.
+
+
+Regards,
+  Andrew Victor
