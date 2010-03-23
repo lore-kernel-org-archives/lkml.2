@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab0CWX4K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:56:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:41827 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab0CWX4I (ORCPT
+	id S1752696Ab0CWX44 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:56:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42413 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772Ab0CWX4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:56:08 -0400
-X-Authority-Analysis: v=1.0 c=1 a=iGnHfCumZfoA:10 a=IkcTkHD0fZMA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=IsN2uUwMIloV0a3CCIgA:9 a=fI_a8BJSEWiCs0VJdsMA:7 a=hqa4x0i7Bgwbl1yusknQb2Z-0m8A:4 a=QEXdDO2ut3YA:10 a=x8gzFH9gYPwA:10 a=jEp0ucaQiEUA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [Cluster-devel] [PATCH 10/18] gfs2: Provide config option for
- enabling trace points
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-       cluster-devel@redhat.com
-In-Reply-To: <1269345667.2438.12.camel@localhost>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-	 <1269304340-25372-11-git-send-email-jack@suse.cz>
-	 <1269345667.2438.12.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 19:56:05 -0400
-Message-ID: <1269388565.5363.380.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 19:56:55 -0400
+Date: Tue, 23 Mar 2010 21:18:43 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Christoffer Dall <christofferdall@christofferdall.dk>
+Cc: containers <containers@lists.linux-foundation.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [C/R ARM][PATCH 3/3] c/r: ARM implementation of
+	checkpoint/restart
+Message-ID: <20100323211843.GC19572@n2100.arm.linux.org.uk>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk> <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 12:01 +0000, Steven Whitehouse wrote:
-> Hi,
-> 
-> Now in the GFS2 -nmw git tree. Thanks,
-> 
+On Sun, Mar 21, 2010 at 09:06:05PM -0400, Christoffer Dall wrote:
+> The ISA version (given by __LINUX_ARM_ARCH__) is checkpointed and verified
+> against the machine architecture on restart.
 
-Note, this depends on patch 1 which we have not yet determined if it
-should be applied or not.
+I think you misunderstand what __LINUX_ARM_ARCH__ signifies.  It is the
+build architecture for the kernel, and it indicates the lowest
+architecture version that the kernel will run on.
 
--- Steve
+That doesn't indicate what ISA version the system is running on, or even
+if the ABI is compatible (we have two ABIs - OABI and EABI).
 
-> Steve.
-> 
-> On Tue, 2010-03-23 at 01:32 +0100, Jan Kara wrote:
-> > CC: cluster-devel@redhat.com
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> >  fs/gfs2/Kconfig      |    8 ++++++++
-> >  fs/gfs2/trace_gfs2.h |    2 ++
-> >  2 files changed, 10 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
-> > index 4dcddf8..872ced2 100644
-> > --- a/fs/gfs2/Kconfig
-> > +++ b/fs/gfs2/Kconfig
-> > @@ -38,3 +38,11 @@ config GFS2_FS_LOCKING_DLM
-> >  	  Most users of GFS2 will require this. It provides the locking
-> >  	  interface between GFS2 and the DLM, which is required to use GFS2
-> >  	  in a cluster environment.
-> > +
-> > +config GFS2_TRACER
-> > +	bool "GFS2 tracing"
-> > +	depends on GFS2_FS && EVENT_TRACING
-> > +	help
-> > +	  Provide trace points in block allocation functions, locking, and
-> > +	  journaling code.
-> > +
-> > diff --git a/fs/gfs2/trace_gfs2.h b/fs/gfs2/trace_gfs2.h
-> > index 148d55c..5f4faf3 100644
-> > --- a/fs/gfs2/trace_gfs2.h
-> > +++ b/fs/gfs2/trace_gfs2.h
-> > @@ -1,5 +1,7 @@
-> >  #undef TRACE_SYSTEM
-> > +#undef TRACE_CONFIG
-> >  #define TRACE_SYSTEM gfs2
-> > +#define TRACE_CONFIG CONFIG_GFS2_TRACER
-> >  
-> >  #if !defined(_TRACE_GFS2_H) || defined(TRACE_HEADER_MULTI_READ)
-> >  #define _TRACE_GFS2_H
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+There's also the matter of FP implementation - whether it is VFP or FPA,
+and whether iwMMXt is available or not.  (iwMMXt precludes the use of
+FPA.)
 
+> Regarding ThumbEE, the thumbee_state field on the thread_info is stored
+> in checkpoints when CONFIG_ARM_THUMBEE and 0 is stored otherwise. If
+> a value different than 0 is checkpointed and CONFIG_ARM_THUMBEE is not
+> set on the restore system, the restore is aborted. Feedback on this
+> implementation is very welcome.
 
+I don't recognise this configuration symbol; it doesn't exist in mainline.
+
+> We checkpoint whether the system is running with CONFIG_MMU or not and
+> require the same configuration for the system on which we restore the
+> process. It might be possible to allow something more fine-grained,
+> if it's worth the energy. Input on this item is also very welcome,
+> specifically from someone who knows the exact meaning of the end_brk
+> field.
+
+Processes which run on MMU and non-MMU CPUs are unlikely to be
+interchangable - the run time environments are quite different.  I
+think this is a sane check.
+
+> +/* dump the thread_struct of a given task */
+> +int checkpoint_thread(struct ckpt_ctx *ctx, struct task_struct *t)
+> +{
+> +	int ret;
+> +	struct ckpt_hdr_thread *h;
+> +	struct thread_info *ti = task_thread_info(t);
+> +
+> +	h = ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_THREAD);
+> +	if (!h)
+> +		return -ENOMEM;
+> +
+> +	/*
+> +	 * Store the syscall information about the checkpointed process
+> +	 * as we need to know if the process was doing a syscall (and which)
+> +	 * during restart.
+> +	 */
+> +	h->syscall = ti->syscall;
+> +
+> +	/*
+> +	 * Store remaining thread-specific info.
+> +	 */
+> +	h->tp_value = ti->tp_value;
+
+How do you safely obtain consistent information from a thread?  Do you
+temporarily stop it?
