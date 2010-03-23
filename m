@@ -1,47 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab0CWM07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 08:26:59 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32921 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab0CWM04 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 08:26:56 -0400
-Subject: Re: [PATCH] smp_call_function_many SMP race
-From: Peter Zijlstra <peterz@infradead.org>
-To: Anton Blanchard <anton@samba.org>
-Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Nick Piggin <nickpiggin@yahoo.com.au>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       paulmck@linux.vnet.ibm.com, Milton Miller <miltonm@bga.com>,
-       Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100323111556.GK24064@kryten>
-References: <20100323111556.GK24064@kryten>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 13:26:43 +0100
-Message-ID: <1269347203.5279.1650.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1752710Ab0CWM1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 08:27:16 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53476 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752623Ab0CWMZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 08:25:52 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 06/11] Export fragmentation index via /proc/extfrag_index
+Date: Tue, 23 Mar 2010 12:25:41 +0000
+Message-Id: <1269347146-7461-7-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 22:15 +1100, Anton Blanchard wrote:
-> 
-> It turns out commit c0f68c2fab4898bcc4671a8fb941f428856b4ad5 (generic-ipi:
-> cleanup for generic_smp_call_function_interrupt()) is at fault. It removes
-> locking from smp_call_function_many and in doing so creates a rather
-> complicated race. 
+Fragmentation index is a value that makes sense when an allocation of a
+given size would fail. The index indicates whether an allocation failure is
+due to a lack of memory (values towards 0) or due to external fragmentation
+(value towards 1).  For the most part, the huge page size will be the size
+of interest but not necessarily so it is exported on a per-order and per-zone
+basis via /proc/extfrag_index
 
-A rather simple question since my brain isn't quite ready processing the
-content here..
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ Documentation/filesystems/proc.txt |   14 ++++++-
+ mm/vmstat.c                        |   81 +++++++++++++++++++++++++++++++++
+ 2 files changed, 94 insertions(+), 1 deletions(-)
 
-Isn't reverting that one patch a simpler solution than adding all that
-extra logic? If not, then the above statement seems false and we had a
-bug even with that preempt_enable/disable() pair.
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index 5c4b0fb..582ff3d 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -421,6 +421,7 @@ Table 1-5: Kernel info in /proc
+  filesystems Supported filesystems                             
+  driver	     Various drivers grouped here, currently rtc (2.4)
+  execdomains Execdomains, related to security			(2.4)
++ extfrag_index Additional page allocator information (see text) (2.5)
+  fb	     Frame Buffer devices				(2.4)
+  fs	     File system parameters, currently nfs/exports	(2.4)
+  ide         Directory containing info about the IDE subsystem 
+@@ -610,7 +611,7 @@ ZONE_DMA, 4 chunks of 2^1*PAGE_SIZE in ZONE_DMA, 101 chunks of 2^4*PAGE_SIZE
+ available in ZONE_NORMAL, etc... 
+ 
+ More information relevant to external fragmentation can be found in
+-pagetypeinfo and unusable_index
++pagetypeinfo, unusable_index and extfrag_index.
+ 
+ > cat /proc/pagetypeinfo
+ Page block order: 9
+@@ -661,6 +662,17 @@ value between 0 and 1. The higher the value, the more of free memory is
+ unusable and by implication, the worse the external fragmentation is. This
+ can be expressed as a percentage by multiplying by 100.
+ 
++> cat /proc/extfrag_index
++Node 0, zone      DMA -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.00
++Node 0, zone   Normal -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 -1.000 0.954
++
++The external fragmentation index, is only meaningful if an allocation
++would fail and indicates what the failure is due to. A value of -1 such as
++in many of the examples above states that the allocation would succeed.
++If it would fail, the value is between 0 and 1. A value tending towards
++0 implies the allocation failed due to a lack of memory. A value tending
++towards 1 implies it failed due to external fragmentation.
++
+ ..............................................................................
+ 
+ meminfo:
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index ca42e10..7377da6 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -553,6 +553,67 @@ static int unusable_show(struct seq_file *m, void *arg)
+ 	return 0;
+ }
+ 
++/*
++ * A fragmentation index only makes sense if an allocation of a requested
++ * size would fail. If that is true, the fragmentation index indicates
++ * whether external fragmentation or a lack of memory was the problem.
++ * The value can be used to determine if page reclaim or compaction
++ * should be used
++ */
++int fragmentation_index(unsigned int order, struct contig_page_info *info)
++{
++	unsigned long requested = 1UL << order;
++
++	if (!info->free_blocks_total)
++		return 0;
++
++	/* Fragmentation index only makes sense when a request would fail */
++	if (info->free_blocks_suitable)
++		return -1000;
++
++	/*
++	 * Index is between 0 and 1 so return within 3 decimal places
++	 *
++	 * 0 => allocation would fail due to lack of memory
++	 * 1 => allocation would fail due to fragmentation
++	 */
++	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
++}
++
++
++static void extfrag_show_print(struct seq_file *m,
++					pg_data_t *pgdat, struct zone *zone)
++{
++	unsigned int order;
++	int index;
++
++	/* Alloc on stack as interrupts are disabled for zone walk */
++	struct contig_page_info info;
++
++	seq_printf(m, "Node %d, zone %8s ",
++				pgdat->node_id,
++				zone->name);
++	for (order = 0; order < MAX_ORDER; ++order) {
++		fill_contig_page_info(zone, order, &info);
++		index = fragmentation_index(order, &info);
++		seq_printf(m, "%d.%03d ", index / 1000, index % 1000);
++	}
++
++	seq_putc(m, '\n');
++}
++
++/*
++ * Display fragmentation index for orders that allocations would fail for
++ */
++static int extfrag_show(struct seq_file *m, void *arg)
++{
++	pg_data_t *pgdat = (pg_data_t *)arg;
++
++	walk_zones_in_node(m, pgdat, extfrag_show_print);
++
++	return 0;
++}
++
+ static void pagetypeinfo_showfree_print(struct seq_file *m,
+ 					pg_data_t *pgdat, struct zone *zone)
+ {
+@@ -722,6 +783,25 @@ static const struct file_operations unusable_file_ops = {
+ 	.release	= seq_release,
+ };
+ 
++static const struct seq_operations extfrag_op = {
++	.start	= frag_start,
++	.next	= frag_next,
++	.stop	= frag_stop,
++	.show	= extfrag_show,
++};
++
++static int extfrag_open(struct inode *inode, struct file *file)
++{
++	return seq_open(file, &extfrag_op);
++}
++
++static const struct file_operations extfrag_file_ops = {
++	.open		= extfrag_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
+ #ifdef CONFIG_ZONE_DMA
+ #define TEXT_FOR_DMA(xx) xx "_dma",
+ #else
+@@ -1067,6 +1147,7 @@ static int __init setup_vmstat(void)
+ 	proc_create("buddyinfo", S_IRUGO, NULL, &fragmentation_file_operations);
+ 	proc_create("pagetypeinfo", S_IRUGO, NULL, &pagetypeinfo_file_ops);
+ 	proc_create("unusable_index", S_IRUGO, NULL, &unusable_file_ops);
++	proc_create("extfrag_index", S_IRUGO, NULL, &extfrag_file_ops);
+ 	proc_create("vmstat", S_IRUGO, NULL, &proc_vmstat_file_operations);
+ 	proc_create("zoneinfo", S_IRUGO, NULL, &proc_zoneinfo_file_operations);
+ #endif
+-- 
+1.6.5
 
-Just wondering.. :-)
