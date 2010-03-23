@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab0CWRkT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 13:40:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51652 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753429Ab0CWRkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 13:40:16 -0400
-Message-ID: <4BA8FC9E.1050806@kernel.org>
-Date: Tue, 23 Mar 2010 10:38:38 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1753826Ab0CWRkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 13:40:37 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43152 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753714Ab0CWRkf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 13:40:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nbj7NHgTVNjiFX7Qs8Vb6o+GLekl6sNTA7rbkrCV6z3qKLRCYebQY/f59puvRkWcS6
+         Ap2PgazD5ZUuBKmRYG9ai/hQBGeoD2rr44tjuErQXiMDd0N8DGFjgIlw7Me6ud/BAoKB
+         F6KluVxT2HNBmC+Q8uYCuTUo0eTG5pKygI2ps=
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
- struct
-References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org> <alpine.LFD.2.00.1003231528100.3147@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1003231528100.3147@localhost.localdomain>
+In-Reply-To: <1269316670.8599.101.camel@pasglop>
+References: <201003221759.o2MHxEaj015546@hera.kernel.org>
+	 <1269316670.8599.101.camel@pasglop>
+Date: Tue, 23 Mar 2010 10:40:34 -0700
+Message-ID: <7991c5481003231040u3479778dpcb27d9578383afc0@mail.gmail.com>
+Subject: Re: ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after unmapping 
+	the address
+From: Malli <mchilakala@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       David Miller <davem@davemloft.net>, netdev@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 08:07 AM, Thomas Gleixner wrote:
-> On Tue, 23 Mar 2010, Yinghai Lu wrote:
-> 
+On Mon, Mar 22, 2010 at 8:57 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Mon, 2010-03-22 at 17:59 +0000, Linux Kernel Mailing List wrote:
+>> Gitweb:     http://git.kernel.org/linus/fd3686a842717b890fbe3024b83a616c54d5dba0
+>> Commit:     fd3686a842717b890fbe3024b83a616c54d5dba0
+>> Parent:     936332b8e00103fc20eb7e915c9a3bcb2835a11a
+>> Author:     Mallikarjuna R Chilakala <mallikarjuna.chilakala@intel.com>
+>> AuthorDate: Fri Mar 19 04:41:33 2010 +0000
+>> Committer:  David S. Miller <davem@davemloft.net>
+>> CommitDate: Fri Mar 19 21:00:44 2010 -0700
 >>
->> lmb_init() connect them back.
+>>     ixgbe: Set IXGBE_RSC_CB(skb)->DMA field to zero after unmapping the address
 >>
->> also add region_array_size in lmb_region to tack the region array size.
+>>     As per Simon Horman's feedback set IXGBE_RSC_CB(skb)->dma to zero
+>>     after unmapping HWRSC DMA address to avoid double freeing.
 >>
->> -v3: seperate lmb core change to seperated patch
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
->> ---
->>  include/linux/lmb.h |    5 ++++-
->>  lib/lmb.c           |   11 ++++++++++-
->>  2 files changed, 14 insertions(+), 2 deletions(-)
->>
->> Index: linux-2.6/include/linux/lmb.h
->> ===================================================================
->> --- linux-2.6.orig/include/linux/lmb.h
->> +++ linux-2.6/include/linux/lmb.h
->> @@ -26,7 +26,8 @@ struct lmb_property {
->>  struct lmb_region {
->>  	unsigned long cnt;
->>  	u64 size;
->> -	struct lmb_property region[MAX_LMB_REGIONS+1];
->> +	struct lmb_property *region;
->> +	unsigned long region_array_size;
->>  };
->>  
->>  struct lmb {
->> @@ -37,6 +38,8 @@ struct lmb {
->>  };
->>  
->>  extern struct lmb lmb;
->> +extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
->> +extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
-> 
-> Is there a reason why this needs to be exported ?
-> 
-lmb_reserved_region is used in kernel/early_res.c::__check_and_double_early_res/subtract_early_res/early_res_to_bootmem
+>
+> Note that this whole code is bogus :-) You cannot just assume that 0 is
+> a invalid DMA address. It is not. In fact, while you can check if a
+> dma_addr_t is invalid using dma_mapping_error(), the generic APIs
+> don't provide you with a magic "bad" value you can use for what you are
+> trying to do.
+>
+> Granted, I think we should make our iommu code reserve the first page
+> for the sake of everybody's sanity and to avoid such pitfalls, but
+> this code is wrong with today iommu implementations.
+>
+> Cheers,
+> Ben.
 
-later if those functions are moved lmb.c, we can make lmb_reserved_region to be static
+Yes. I just realized that i can't assign a zero magic "bad" value. It is only
+valid in x86/arm/m68k/alpha architecures and not in spark & PowerPC arch,
+(it should be ~0). In some other architecutres it throws a BUG() on with
+dma_mapping_error() checks. So the patch is not a total bogus in some
+architectures :(.
 
-same thing to lmb_memory_region, that will be used by add_lmb_memory() later.
-
-YH
-
-
-
+May be it is best to create an internal FLAG in IXGBE_RSC_CB(skb)
+which can be used to avoid this double freeing.
