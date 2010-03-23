@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0CWXIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:08:36 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41800 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754331Ab0CWXIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:08:35 -0400
-Date: Wed, 24 Mar 2010 10:08:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: linux-next: manual merge of the kgdb tree with the input tree
-Message-Id: <20100324100829.5ff19581.sfr@canb.auug.org.au>
-In-Reply-To: <4BA8C105.9020308@windriver.com>
-References: <20100323140946.b56c1d8b.sfr@canb.auug.org.au>
-	<4BA8C105.9020308@windriver.com>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__24_Mar_2010_10_08_29_+1100_KTFd2KtNPtnYzRxC"
+	id S1754468Ab0CWXKH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:10:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49891 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753390Ab0CWXKF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 19:10:05 -0400
+Date: Tue, 23 Mar 2010 16:04:35 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Anton Starikov <ant.starikov@gmail.com>, Greg KH <greg@kroah.com>,
+       stable@kernel.org
+cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression
+ in performance
+In-Reply-To: <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com>
+Message-ID: <alpine.LFD.2.00.1003231602130.18017@i5.linux-foundation.org>
+References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org> <9D040E9A-80F2-468F-A6CD-A4912615CD3F@gmail.com>
+ <alpine.LFD.2.00.1003231253570.18017@i5.linux-foundation.org> <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__24_Mar_2010_10_08_29_+1100_KTFd2KtNPtnYzRxC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jason,
 
-On Tue, 23 Mar 2010 08:24:21 -0500 Jason Wessel <jason.wessel@windriver.com=
-> wrote:
+On Tue, 23 Mar 2010, Anton Starikov wrote:
 >
-> I will drop mine for now.  Dmitry and I have differing implementations
-> to solve the same sort of problem with trapping the sysrq.  I had wanted
-> to test Dmitry's patch at some point soon.
->=20
-> I had updated kgdb-next to include the RFC patches for the keyboard and
-> kms code, but it is all removed again until we sort out which
-> implementation we will roll with.
+> I think we got a winner!
+> 
+> Problem seems to be fixed.
+> 
+> Just for record, I used next patches:
+> 
+> 59c33fa7791e9948ba467c2b83e307a0d087ab49
+> 5d0b7235d83eefdafda300656e97d368afcafc9a
+> 1838ef1d782f7527e6defe87e180598622d2d071
+> 4126faf0ab7417fbc6eb99fb0fd407e01e9e9dfe
+> bafaecd11df15ad5b1e598adc7736afcd38ee13d
+> 0d1622d7f526311d87d7da2ee7dd14b73e45d3fc
 
-OK, thanks.
+Ok. If you have performance numbers for before/after these patches for 
+your actual workload, I'd suggest posting them to stable@kernel.org, and 
+maybe those rwsem fixes will get back-ported.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The patches are pretty small, and should be fairly safe. So they are 
+certainly stable material.
 
---Signature=_Wed__24_Mar_2010_10_08_29_+1100_KTFd2KtNPtnYzRxC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkupSe0ACgkQjjKRsyhoI8xHewCgiO8o7+87ngzCqQiKnQIpbja5
-SSYAoKGw5jiikSM825yNIf2JoTQjm2tx
-=rnYL
------END PGP SIGNATURE-----
-
---Signature=_Wed__24_Mar_2010_10_08_29_+1100_KTFd2KtNPtnYzRxC--
+		Linus
