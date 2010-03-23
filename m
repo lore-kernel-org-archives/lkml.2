@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0CWS1T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:27:19 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44421 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694Ab0CWS1R convert rfc822-to-8bit (ORCPT
+	id S1752915Ab0CWS10 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 14:27:26 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:45912 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab0CWS1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:27:17 -0400
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-From: Peter Zijlstra <peterz@infradead.org>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-In-Reply-To: <20100323182153.GA14800@8bytes.org>
-References: <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu>
-	 <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu>
-	 <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu>
-	 <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws>
-	 <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com>
-	 <20100323182153.GA14800@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 19:27:04 +0100
-Message-ID: <1269368824.5109.159.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Tue, 23 Mar 2010 14:27:24 -0400
+Date: Tue, 23 Mar 2010 13:25:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 08/11] Add /proc trigger for memory compaction
+In-Reply-To: <1269347146-7461-9-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1003231323410.10178@router.home>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-9-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 19:21 +0100, Joerg Roedel wrote:
+On Tue, 23 Mar 2010, Mel Gorman wrote:
 
-> Sidenote: I really think we should come to a conclusion about the
->           concept. KVM integration into perf is very useful feature to
-> 	  analyze virtualization workloads.
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 0d2e8aa..faa9b53 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -346,3 +347,63 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  	return ret;
+>  }
+>
+> +/* Compact all zones within a node */
+> +static int compact_node(int nid)
+> +{
+> +	int zoneid;
+> +	pg_data_t *pgdat;
+> +	struct zone *zone;
+> +
+> +	if (nid < 0 || nid > nr_node_ids || !node_online(nid))
 
-I always start my things with bare kvm, It would be very unwelcome to
-mandate libvirt, or for that matter running a particular userspace in
-the guest.
+Must be nid >= nr_node_ids.
+
+Otherwise
+
+Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
+
