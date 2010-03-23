@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0CWNS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 09:18:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57997 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751848Ab0CWNSz (ORCPT
+	id S1753271Ab0CWNTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 09:19:53 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:39561 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab0CWNTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 09:18:55 -0400
-X-Authority-Analysis: v=1.0 c=1 a=oxWlMIsUhZYA:10 a=IkcTkHD0fZMA:10 a=BDIIb_0b5fgvPHABnRMA:9 a=lKcKy2lcsXcgqC4qjy-Rh6G7MQkA:4 a=QEXdDO2ut3YA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
- independently
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Theodore Tso <tytso@MIT.EDU>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
-       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Douglas Santos <douglas.santos@polymtl.ca>
-In-Reply-To: <20100323122747.GA14954@Krystal>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-	 <20100323010419.GA8292@nowhere>
-	 <DA3F0457-83D6-4A95-AC86-188BC1C9B2F0@mit.edu>
-	 <20100323080526.GB4848@elte.hu>  <20100323122747.GA14954@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 09:18:51 -0400
-Message-ID: <1269350331.5363.233.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 09:19:51 -0400
+Date: Tue, 23 Mar 2010 22:18:39 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region struct
+Message-ID: <20100323131839.GA31552@linux-sh.org>
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org> <20100323104241.GA1189@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100323104241.GA1189@elte.hu>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 08:27 -0400, Mathieu Desnoyers wrote:
-> * Ingo Molnar (mingo@elte.hu) wrote:
-> > 
-
+On Tue, Mar 23, 2010 at 11:42:41AM +0100, Ingo Molnar wrote:
 > 
-> We're in complete agreement here. When I considered if it was worth it to create
-> such a per-tracepoint group compile-time disabling in the first place, I decided
-> not to do it precisely due to the added-value that comes with the availability
-> of system-wide tracepoints. And I think with the static jump patching, we are
-> now at a point where the overhead is stunningly low.
+> * Yinghai Lu <yinghai@kernel.org> wrote:
 > 
-> Now, space-wise, the one thing I would consider appropriate as a compromise for
-> small embedded systems would be to allow the TRACE_EVENT probes to be compiled
-> as modules.
-
-Yeah, I agree here. Hmm, I wonder if we could automate this. That is, we
-could now, create a module per trace system if it is so configured. It
-would move the functions that create, record and output the trace points
-in TRACE_EVENT() into a separate module. Then you just need to load the
-modules you want to trace (grouped by system).
-
-We can make add kobjects to /sys so that udev loads them automatically
-for distros.
-
--- Steve
-
-
-
+> >  void __init lmb_init(void)
+> >  {
+> > +	lmb.memory.region   = lmb_memory_region;
+> > +	lmb.memory.region_array_size   = ARRAY_SIZE(lmb_memory_region);
+> > +	lmb.reserved.region = lmb_reserved_region;
+> > +	lmb.reserved.region_array_size = ARRAY_SIZE(lmb_reserved_region);
+> > +
+> 
+> That's rather unreadable and has random whitespace noise.
+> 
+> Should be something like:
+> 
+> 	lmb.memory.region		= lmb_memory_region;
+> 	lmb.memory.region_array_size	= ARRAY_SIZE(lmb_memory_region);
+> 	lmb.reserved.region		= lmb_reserved_region;
+> 	lmb.reserved.region_array_size	= ARRAY_SIZE(lmb_reserved_region);
+> 
+> also, i'd suggest to shorten region_array_size to region_size (we know it's an 
+> array), so it would become:
+> 
+> 	lmb.memory.region	 = lmb_memory_region;
+> 	lmb.memory.region_size	 = ARRAY_SIZE(lmb_memory_region);
+> 
+I don't mean to be pedantic, but the LMB code already has a lot of
+region.size references so region_size looks a bit awkward. All of the
+accessors in linux/lmb.h use region_nr as the array index, so perhaps
+nr_regions would be less ambiguous.
