@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab0CWBE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 21:04:27 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:52752 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755165Ab0CWBE0 (ORCPT
+	id S1756460Ab0CWBE5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 21:04:57 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53037
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756228Ab0CWBEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 21:04:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tki7QWjguqI26GTd0/7sujiXolm3TfTP5pYCDp9c2/p1/QvV6yV3BHs00LaUQo2RKg
-         +MSTS1msAOxt/0K5sn9CIZT/j4zRLUgFSUoh3S1l+UaO9MMn3VWVd+m5giq8YQDYtk6p
-         cbyObI2PhvZtYfmMJRQCQUX0TZP11dqkVcA7A=
-Date: Tue, 23 Mar 2010 02:04:21 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Li Zefan <lizf@cn.fujitsu.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
-	independently
-Message-ID: <20100323010419.GA8292@nowhere>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269304340-25372-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 22 Mar 2010 21:04:55 -0400
+Date: Mon, 22 Mar 2010 18:05:18 -0700 (PDT)
+Message-Id: <20100322.180518.24600284.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       therbert@google.com
+Subject: Re: linux-next: Tree for March 22 (net-sysfs.c)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1269290922.3043.9.camel@edumazet-laptop>
+References: <4BA78D3D.9090007@oracle.com>
+	<20100322.102206.148561893.davem@davemloft.net>
+	<1269290922.3043.9.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 01:32:02AM +0100, Jan Kara wrote:
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 22 Mar 2010 21:48:42 +0100
+
+> [PATCH net-next-2.6] net: RPS depends on CONFIG_SYSFS
 > 
->   Hi,
+> Randy Dunlap found net/core/net-sysfs.c could not compile if
+> CONFIG_SYSFS=n
 > 
->   currently, when one tracer is selected, most of tracepoints for other
-> tracers also gets pulled into the kernel. So for example it's not possible
-> to enable BLK_DEV_IO_TRACE without polluting slab allocation paths with
-> tracepoint checks (see changelog of patch 01). This patch set adds a
-> possibility for each set of trace points to be compile-enabled separately.
->   The first patch contains the necessary magic in linux/tracepoint.h. Other
-> patches just tell tracing framework about correspoding config options
-> and possibly introduce them if they did not exist before.
->   The patches in this patch set are actually completely independent so 
-> they can be merged via respective subsystem trees. But changes are rather
-> tiny so I don't expect much conflicts...
+> Defines CONFIG_RPS in net/Kconfig to let user disable RPS if wanted.
 > 
-> 								Honza
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
+This is interesting but I'd like to be able to use some
+of the RPS infrastructure unconditionally so I'm not ready
+to apply something like this yet.
 
-(Adding more people in Cc)
-
-I don't know. Yeah this first looks like a good idea but once
-CONFIG_EVENT_TRACING is enabled, each tracepoint is a lightweight
-thing and induce a tiny overhead, probably hard to notice, and
-this is going to be even more the case after the jmp label
-optimization patches.
-
-I liked the fact we had a general tracing kernel once the above
-config is selected. And we don't bother telling people that to
-use tool X you need CONFIG_EVENT_Y, and you need to rebuild your
-kernel, etc...
-
-I wonder if this is going to be a win.
-
+So I'll add Tom's fix for now, thanks Eric!
