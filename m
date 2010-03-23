@@ -1,70 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab0CWEpZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:45:25 -0400
-Received: from waste.org ([173.11.57.241]:46926 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab0CWEpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:45:24 -0400
-Subject: Re: [Patch v2] netpoll: warn when there are spaces in parameters
-From: Matt Mackall <mpm@selenic.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, elendil@planet.nl,
-       David Miller <davem@davemloft.net>
-In-Reply-To: <4BA844E6.6060602@redhat.com>
-References: <20100322090341.5289.10770.sendpatchset@localhost.localdomain>
-	 <1269296535.3552.10.camel@calx>  <4BA81D18.40509@redhat.com>
-	 <1269318256.3552.49.camel@calx>  <4BA844E6.6060602@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Mar 2010 23:45:20 -0500
-Message-ID: <1269319520.3552.76.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753504Ab0CWEtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:49:52 -0400
+Received: from mail-qy0-f182.google.com ([209.85.221.182]:55143 "EHLO
+	mail-qy0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752829Ab0CWEtv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:49:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=p+bJEjqWjJkXYW2hEYHxH2YKsvt1Rd+pwhfV6KNMQadGizcvDX1VHFVtKF92vzxkOm
+         Qo7rfOrYYDnRW4JQQr+mY9CyS2GD1aI1nb8WoOlSo/XEwbUCRF6ZROkgdKUW2V0UvaMA
+         Q0OlO0vRmAUUZH3lwnUZWkJ3Gjqoz/2hdv+Jo=
+MIME-Version: 1.0
+In-Reply-To: <628d1651003222048k1eaf6929r81fd06e401190e0@mail.gmail.com>
+References: <20100320143240.GB2942@localhost.localdomain>
+	 <4BA7A3CF.8070503@trash.net>
+	 <628d1651003221834g543e3e6cl4ea39c0886cb4ba1@mail.gmail.com>
+	 <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
+	 <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
+	 <alpine.LSU.2.01.1003230346010.12017@obet.zrqbmnf.qr>
+	 <628d1651003222048k1eaf6929r81fd06e401190e0@mail.gmail.com>
+Date: Tue, 23 Mar 2010 12:49:48 +0800
+Message-ID: <7b6bb4a51003222149v5346c3eje94ed1182b207206@mail.gmail.com>
+Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: wzt wzt <wzt.wzt@gmail.com>
+Cc: Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 12:34 +0800, Cong Wang wrote:
-> Matt Mackall wrote:
-> > On Tue, 2010-03-23 at 09:44 +0800, Cong Wang wrote:
-> >> Matt Mackall wrote:
-> >>> On Mon, 2010-03-22 at 04:59 -0400, Amerigo Wang wrote:
-> >>>> +			printk(KERN_INFO "%s: warning: whitespace"
-> >>>> +					"is not allowed\n", np->name);
-> >>> Is it a warning or is it info? If it's a warning, then we probably need
-> >>> to add "netpoll" or whatever to the message so that people who've got a
-> >>> warning-level threshold will know what it's about.
-> >>>
-> >> If you mean KERN_INFO, yeah, I want to keep it in the same level
-> >> as other messages around.
-> > 
-> > I should probably be more direct: I think that's the wrong thing to do.
-> > It IS a warning (it even says so!) telling users that something probably
-> > won't work and why and they might miss it if the severity is INFO and
-> > then come and ask us why things aren't working. So use KERN_WARN,
-> > please.
-> 
-> 
-> They _are_ working, 0 will be assigned by default.
+On Tue, Mar 23, 2010 at 11:48 AM, wzt wzt <wzt.wzt@gmail.com> wrote:
+> 1、 suppose *len = 35,  sizeof(struct ipt_get_entries) = 36
+> 2、 set get.size = 0xffffffff from user space
+> 3、 sizeof(struct ipt_get_entries) + get.size = 36  + 0xffffffff = 35;
+> 4、 if (*len != sizeof(struct ipt_get_entries) + get.size) was bypassed.
+>
+> you can test with c code:
+>
+> #include <stdio.h>
+>
+> int main(void)
+> {
+>        unsigned int arg = 0xffffffff;
+>
+>        printf("%u\n", arg + 36);
+>        if (35 != arg + 36) {
+>                printf("not over flow.\n");
+>                return -1;
+>        }
+>        printf("arg over flow.\n");
+>
+>        return 0;
+> }
+>
 
-If this patch has any point at all other than filling the logs, it
-should be WARN.
+You didn't get his point... The key point is that sizeof() result type
+is size_t, slightly modify you code, try the result.
+> int main(void)
+> {
+>        unsigned int arg = 0xffffffff;
+>        unsigned int foo;
+>        printf("%lu\n", arg + sizeof(foo));
+>        if (sizeof(foo) - 1 != arg + sizeof(foo)) {
+>                printf("not over flow.\n");
+>                return -1;
+>        }
+>        printf("arg over flow.\n");
+>
+>        return 0;
+> }
 
-> > 
-> > The other messages are INFO because when things are working, they're not
-> > interesting.
-> > 
-> 
-> They are not all working, take this as an example:
-> 
->          printk(KERN_INFO "%s: couldn't parse config at %s!\n",
->                 np->name, cur);
-
-Yeah, that's obviously wrong too. Let's not add more wrongness just for
-consistency's sake.
-
--- 
-http://selenic.com : development and support for Mercurial and Linux
-
-
+> On Tue, Mar 23, 2010 at 11:04 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
+>>
+>> On Tuesday 2010-03-23 03:37, wzt wzt wrote:
+>>>> And, for the addition overflow, can it be caught by
+>>>>
+>>>> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
+>>>
+>>>sizeof(struct ipt_get_entries) + get.size can be overflow as *len,
+>>>get.size is control by user space with copy_from_user().
+>>
+>> The != should catch it.
+>>
+>> For 64-bit environments:
+>> * + invoked with size_t, unsigned int
+>>  => right side promoted to size_t, result type is size_t
+>> * != invoked with int and size_t
+>>  => left-side promoted to ssize_t (probably; but something as large as size_t)
+>> * get.size is 32-bit bounded, as is *len,
+>>  so no overflow to worry about at all unless you make
+>>  sizeof(X) hilariously big close to 2^64 which is rather unlikely.
+>>
+>> For 32-bit environments:
+>> * Let *len be a number of choice (e.g. 36)
+>> * Find a sizeof(X)+get.size that equals 36 mod 2^32.
+>> * Since sizeof(X) is const, get.size must be 0 mod 2^32.
+>> * So get.size must be a multiple of 2^32 to fool the system.
+>> * Since get.size itself is only a 32-bit quantity, you cannot
+>>  represent any value larger than 4294967295.
+>>
+>>
+>> What Was What Was Wanted.
+>>
+>
