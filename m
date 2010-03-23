@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab0CWK3i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 06:29:38 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:42005 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab0CWK3h (ORCPT
+	id S1751608Ab0CWKau (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 06:30:50 -0400
+Received: from qw-out-2122.google.com ([74.125.92.26]:37444 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab0CWKas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 06:29:37 -0400
+	Tue, 23 Mar 2010 06:30:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=kRRre1mx03E+bernc9Vq53KQTHDkuxhCLDRs2jvRRbCqIpAT+MPxcQoatuF7MjqW2M
-         S4/vyyQOEFEG/BE4JZsNL74WLz4EdPcDmgjahU9x+3uYfpg96Ux85gO4FgsIoOapFdHH
-         xupLUVSyuvgzVkSTmQT151MbgO2R71AVFD3xc=
-MIME-Version: 1.0
-Date: Tue, 23 Mar 2010 11:29:35 +0100
-Message-ID: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com>
-Subject: [PATCH v1 0/3] max3100: improvements
-From: christian pellegrin <chripell@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=b4UvzsnPhnFzTb72HlRaLMCv0pFMpOH9+tiEahZEGa5VlcgB83N2ueRZHZlqP74vHx
+         E/McZ5P/G8PzK9rjuaWzDKf8Javs3PZ6KUuwC5SuO5ZXVlwi3LiBisaFm+cN0mIG37fS
+         zaJWTVYQPZCqN2iKj1LTgw+SdiBpXfUXIWPE4=
+From: Christian Pellegrin <chripell@fsfe.org>
+To: feng.tang@intel.com, akpm@linux-foundation.org, greg@kroah.com,
+       david-b@pacbell.net, grant.likely@secretlab.ca,
+       alan@lxorguk.ukuu.org.uk, spi-devel-general@lists.sourceforge.net,
+       linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Christian Pellegrin <chripell@fsfe.org>
+Subject: [PATCH v1 1/4] max3100: added raise_threaded_irq
+Date: Tue, 23 Mar 2010 11:28:25 +0100
+Message-Id: <1269340105-6503-1-git-send-email-chripell@fsfe.org>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com>
+References: <cabda6421003230329w3fe596dbn8e4b37cc36118f9f@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+raise_threaded_irq schedules the execution of an interrupt thread
 
-I think all the comments sent to me were dealt with so I'm resending
-the patches. I haven't received any feedback about the addition to the
-threaded interrupt code, but that part hasn't changed.
+Signed-off-by: Christian Pellegrin <chripell@fsfe.org>
+---
+ include/linux/interrupt.h |    3 +++
+ kernel/irq/manage.c       |   27 +++++++++++++++++++++++++++
+ 2 files changed, 30 insertions(+), 0 deletions(-)
 
-This bunch of patches should solve the problems noted by Feng to the
-max3100 driver. It was tested on an S3C2440 system which has a rather
-bad SPI master controller. The efficiency is very good on zmodem
-receive (near 100% at 115200) and not so bad on zmodem send (around
-95% at 115200). I guess the reason is the TX buffer of the MAX3100
-being just one byte deep. All the tests were done with two MAX3100
-running on the same SPI bus: the first one as a console and under
-test, the second one happily receiving a 4800 bit/s NMEA stream from a
-GPS (with a process checking we don't get wrong sentences). I also did
-the simple "cut&paste a screenful of charters" test and it worked! The
-console was stressed as much I could (things like putting the S3C to
-suspend during a zmodem transfer and checking it restarts after
-resume).
-
-
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 75f3f00..14c0c13 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -144,6 +144,9 @@ request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ static inline void exit_irq_thread(void) { }
+ #endif
+ 
++extern int raise_threaded_irq(unsigned int irq);
++
++
+ extern void free_irq(unsigned int, void *);
+ 
+ struct device;
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index eb6078c..a7d21e0 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1088,3 +1088,30 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ 	return retval;
+ }
+ EXPORT_SYMBOL(request_threaded_irq);
++
++/**
++ *	raise_threaded_irq - triggers a threded interrupt
++ *	@irq: Interrupt line to trigger
++ */
++int raise_threaded_irq(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct irqaction *action;
++
++	if (!desc)
++		return -ENOENT;
++	action = desc->action;
++	if (!action)
++		return -ENOENT;
++	if (unlikely(!action->thread_fn))
++		return -EINVAL;
++	if (likely(!test_bit(IRQTF_DIED,
++			     &action->thread_flags))) {
++		set_bit(IRQTF_RUNTHREAD, &action->thread_flags);
++		wake_up_process(action->thread);
++	} else {
++		return -ECHILD;
++	}
++	return 0;
++}
++EXPORT_SYMBOL(raise_threaded_irq);
 -- 
-Christian Pellegrin, see http://www.evolware.org/chri/
-"Real Programmers don't play tennis, or any other sport which requires
-you to change clothes. Mountain climbing is OK, and Real Programmers
-wear their climbing boots to work in case a mountain should suddenly
-spring up in the middle of the computer room."
+1.5.6.5
+
