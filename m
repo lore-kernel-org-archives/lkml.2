@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264Ab0CWLHI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 07:07:08 -0400
-Received: from mail-fx0-f213.google.com ([209.85.220.213]:53146 "EHLO
-	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab0CWLHG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 07:07:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=vRcqFv4xnLL5JnE4sN9+2p3I3UKPkJx7GGb90ub/GVkfSNFTJXP7voDo9ni3l41QhZ
-         UUekrQ81yfqngUVRwdfXbEjUH8uGwjKNuZ5ZOHOxM1FaKLDDJ4blPYopqUvgrMy4Wln/
-         5QQUE/zIEkzNPdxrTydBeCBGSvQkoeiEyNTLw=
-Date: Tue, 23 Mar 2010 14:06:55 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>, gregkh@suse.de,
-       mchehab@redhat.com, palash.bandyopadhyay@conexant.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 5/5] Staging: cx25821: fix coding style issues in
-	cx25821-medusa-video.c
-Message-ID: <20100323110655.GW21571@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Olimpiu Pascariu <olimpiu.pascariu@gmail.com>, gregkh@suse.de,
-	mchehab@redhat.com, palash.bandyopadhyay@conexant.com,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	linux-media@vger.kernel.org
-References: <1269197503.6971.11.camel@tuxtm-linux> <20100322133513.GO21571@bicker> <1269288630.6365.1.camel@tuxtm-linux> <20100323110259.GV21571@bicker>
+	id S1752372Ab0CWLHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 07:07:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51720 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752304Ab0CWLHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 07:07:18 -0400
+Message-ID: <4BA8A100.3000301@redhat.com>
+Date: Tue, 23 Mar 2010 12:07:44 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100323110259.GV21571@bicker>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jean Delvare <khali@linux-fr.org>
+CC: Giel van Schijndel <me@mortis.eu>, Jonathan Cameron <jic23@cam.ac.uk>,
+       lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Hwmon: f71882fg: use strict_stro(l|ul) instead of
+  simple_strto$1
+References: <1269185834-10266-1-git-send-email-me@mortis.eu>	<1269185834-10266-2-git-send-email-me@mortis.eu>	<20100322112308.13d58db4@hyperion.delvare>	<20100322114157.GA14077@salidar.me.mortis.eu> <20100323115921.7d094e64@hyperion.delvare>
+In-Reply-To: <20100323115921.7d094e64@hyperion.delvare>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 02:03:00PM +0300, Dan Carpenter wrote:
-> On Mon, Mar 22, 2010 at 10:10:30PM +0200, Olimpiu Pascariu wrote:
-> > >From 32591165a537a03f472c68289798044d6eeea2e0 Mon Sep 17 00:00:00 2001
-> > From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-> > Date: Mon, 22 Mar 2010 22:07:20 +0200
-> > Subject: [PATCH 5/5] Staging: cx25821: fix coding style issues in cx25821-medusa-video.c
-> >  This is a patch to cx25821-medusa-video.c file that fixes up warnings and errors found by the checkpatch.pl tool
-> >  Signed-off-by: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-> 
-> 	[snip]
-> 
-> > +		/*
-> > +		 * clear VPRES_VERT_EN bit, fixes the chroma run away problem
-> > +		 * when the input switching rate < 16 fields
-> > +		*/
->                ^^^
-> 	Missing a space here.
-> 
-> Otherwise looks good.
-> 
-> Acked-by: Dan Carpenter <error27@gmail.com>
-> 
-> regard,
-> dan carpenter
+Hi,
 
-Oh sorry.  I thought this was a new patch.  This is fine to go in as is
-by me...  Maybe hold off for a couple days and see if anyone else has
-any comments.
+On 03/23/2010 11:59 AM, Jean Delvare wrote:
+> Hi Giel,
+>
+> On Mon, 22 Mar 2010 12:41:57 +0100, Giel van Schijndel wrote:
+>> On Mon, Mar 22, 2010 at 11:23:08AM +0100, Jean Delvare wrote:
+>>> On Sun, 21 Mar 2010 16:37:14 +0100, Giel van Schijndel wrote:
+>>>> Use the strict_strol and strict_stroul functions instead of simple_strol
+>>>> and simple_stroul respectively in sysfs functions.
+>>>>
+>>>> Signed-off-by: Giel van Schijndel<me@mortis.eu>
+>>>> ---
+>>>>   drivers/hwmon/f71882fg.c |   89 ++++++++++++++++++++++++++++++++++++++--------
+>>>>   1 files changed, 74 insertions(+), 15 deletions(-)
+>>>>
+>>>> diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+>>>> index 21bc661..5c725a3 100644
+>>>> --- a/drivers/hwmon/f71882fg.c
+>>>> +++ b/drivers/hwmon/f71882fg.c
+>>>> @@ -1128,7 +1128,10 @@ static ssize_t store_fan_full_speed(struct device *dev,
+>>>>   {
+>>>>   	struct f71882fg_data *data = dev_get_drvdata(dev);
+>>>>   	int nr = to_sensor_dev_attr_2(devattr)->index;
+>>>> -	long val = simple_strtol(buf, NULL, 10);
+>>>> +	long val;
+>>>> +
+>>>> +	if (strict_strtol(buf, 10,&val) == -EINVAL)
+>>>> +		return -EINVAL;
+>>>
+>>> That's not correct. You want to return an error if strict_strtol()
+>>> returns _any_ error, not just -EINVAL. Maybe the current
+>>> implementation can't return any other error code, but you should not
+>>> assume this will always be the case in the future.
+>>
+>> Agreed. New patch follows this line:
+>> ------------------------------------------------------------------------
+>> Hwmon: f71882fg: use strict_stro(l|ul) instead of simple_strto$1
+>>
+>> Use the strict_strol and strict_stroul functions instead of simple_strol
+>> and simple_stroul respectively in sysfs functions.
+>>
+>> Signed-off-by: Giel van Schijndel<me@mortis.eu>
+>> ---
+>>   drivers/hwmon/f71882fg.c |  133 ++++++++++++++++++++++++++++++++++++----------
+>>   1 files changed, 104 insertions(+), 29 deletions(-)
+>>
+>> diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+>> index 21bc661..4230729 100644
+>> --- a/drivers/hwmon/f71882fg.c
+>> +++ b/drivers/hwmon/f71882fg.c
+>> @@ -1127,8 +1127,12 @@ static ssize_t store_fan_full_speed(struct device *dev,
+>>   				    const char *buf, size_t count)
+>>   {
+>>   	struct f71882fg_data *data = dev_get_drvdata(dev);
+>> -	int nr = to_sensor_dev_attr_2(devattr)->index;
+>> -	long val = simple_strtol(buf, NULL, 10);
+>> +	int err, nr = to_sensor_dev_attr_2(devattr)->index;
+>> +	long val;
+>> +
+>> +	err = strict_strtol(buf, 10,&val);
+>> +	if (err)
+>> +		return err;
+>>
+>>   	val = SENSORS_LIMIT(val, 23, 1500000);
+>>   	val = fan_to_reg(val);
+>> (...)
+>
+> Looks good to me this time. I'll apply this patch unless Hans objects.
+>
 
-regards,
-dan carpenter  
+No objections from me, IOW I'm still ack.
+
+Regards,
+
+Hans
