@@ -1,131 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab0CWQJt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 12:09:49 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46970 "EHLO e9.ny.us.ibm.com"
+	id S1754891Ab0CWQN3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 12:13:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab0CWQJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 12:09:48 -0400
-Date: Tue, 23 Mar 2010 11:09:33 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Christoffer Dall <christofferdall@christofferdall.dk>
-Cc: containers <containers@lists.linux-foundation.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>, rmk@arm.linux.org.uk
-Subject: Re: [C/R ARM][PATCH 3/3] c/r: ARM implementation of
- checkpoint/restart
-Message-ID: <20100323160933.GA4465@us.ibm.com>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
- <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk>
+	id S1754107Ab0CWQN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 12:13:28 -0400
+Date: Tue, 23 Mar 2010 12:32:01 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3] KVM MMU:  check reserved bits only  if CR4.PSE=1 or
+ CR4.PAE=1
+Message-ID: <20100323153201.GA16878@amt.cnet>
+References: <4BA34ADD.9040903@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BA34ADD.9040903@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Christoffer Dall (christofferdall@christofferdall.dk):
-> Implements architecture specific requirements for checkpoint/restart on
-> ARM. The changes touch almost only c/r related code. Most of the work is
-> done in arch/arm/checkpoint.c, which implements checkpointing of the CPU
-> and necessary fields on the thread_info struct.
+On Fri, Mar 19, 2010 at 05:58:53PM +0800, Xiao Guangrong wrote:
+> - Check reserved bits only if CR4.PAE=1 or CR4.PSE=1 when guest #PF occurs
+> - Fix a typo in reset_rsvds_bits_mask()
 > 
-> The ISA version (given by __LINUX_ARM_ARCH__) is checkpointed and verified
-> against the machine architecture on restart. If they differ, an error is
-> raised and restart aborted. It should be possible to restart on newer
-> architectures, but further investigation is warranted.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
+
+> ---
+>  arch/x86/kvm/mmu.c |   12 +++++++++---
+>  1 files changed, 9 insertions(+), 3 deletions(-)
 > 
-> Regarding ThumbEE, the thumbee_state field on the thread_info is stored
-> in checkpoints when CONFIG_ARM_THUMBEE and 0 is stored otherwise. If
-> a value different than 0 is checkpointed and CONFIG_ARM_THUMBEE is not
-> set on the restore system, the restore is aborted. Feedback on this
-> implementation is very welcome.
-> 
-> We checkpoint whether the system is running with CONFIG_MMU or not and
-> require the same configuration for the system on which we restore the
-> process. It might be possible to allow something more fine-grained,
-> if it's worth the energy. Input on this item is also very welcome,
-> specifically from someone who knows the exact meaning of the end_brk
-> field.
-> 
-> Added support for syscall sys_checkpoint and sys_restart for ARM:
-> __NR_checkpoint         367
-> __NR_restart            368
-> 
-> 
-> Cc: rmk@arm.linux.org.uk
-> Signed-off-by: Christoffer Dall <christofferdall@christofferdall.dk>
-> Acked-by: Oren Laadan <orenl@cs.columbia.edu>
-
-In terms of the cr api I don't see any problems.  Two nits below,
-but in any case
-
-Acked-by: Serge Hallyn <serue@us.ibm.com>
-
-thanks, this is really cool, especially how minimal it is :)
--serge
-
-...
-
-> +static int load_cpu_regs(struct ckpt_hdr_cpu *h, struct task_struct *t)
-> +{
-> +	int i;
-> +	struct pt_regs *regs = task_pt_regs(t);
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index b137515..d6c1f03 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2293,13 +2293,19 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+>  		/* no rsvd bits for 2 level 4K page table entries */
+>  		context->rsvd_bits_mask[0][1] = 0;
+>  		context->rsvd_bits_mask[0][0] = 0;
+> +		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
 > +
-> +	memcpy(regs, &h->uregs, sizeof(struct pt_regs));
+> +		if (!is_pse(vcpu)) {
+> +			context->rsvd_bits_mask[1][1] = 0;
+> +			break;
+> +		}
 > +
-> +	for (i = 0; i < 16; i++)
-> +		regs->uregs[i] = h->uregs[i];
-> +
-> +	/*
-> +	 * Restore only user-writable bits on the CPSR
-> +	 */
-> +	regs->ARM_cpsr = regs->ARM_cpsr |
-> +			 (h->ARM_cpsr & (PSR_N_BIT | PSR_Z_BIT |
-> +					 PSR_C_BIT | PSR_V_BIT |
-> +					 PSR_V_BIT | PSR_Q_BIT |
-> +					 PSR_E_BIT | PSR_GE_BITS));
-> +	regs->ARM_ORIG_r0 = h->ARM_ORIG_r0;
-> +
-> +	return 0;
-> +}
-> +
-> +/* read the cpu state and registers for the current task */
-> +int restore_cpu(struct ckpt_ctx *ctx)
-> +{
-> +	struct ckpt_hdr_cpu *h;
-> +	struct task_struct *t = current;
-> +	int ret;
-> +
-> +	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_CPU);
-> +	if (IS_ERR(h))
-> +		return PTR_ERR(h);
-> +
-> +	ret = load_cpu_regs(h, t);
-
-will load_cpu_regs() ever be changed to return anything but 0?  If
-not both fns can be simplified.
-
-...
-
-> +int restore_mm_context(struct ckpt_ctx *ctx, struct mm_struct *mm)
-> +{
-> +	struct ckpt_hdr_mm_context *h;
-> +	int ret = 0;
-> +
-> +	h = ckpt_read_obj_type(ctx, sizeof(*h), CKPT_HDR_MM_CONTEXT);
-> +	if (IS_ERR(h))
-> +		return PTR_ERR(h);
-> +
-> +#if !CONFIG_MMU
-> +	mm->context.end_brk = h->end_brk;
-> +#endif
-> +
-> +	ckpt_hdr_put(ctx, h);
-> +	return ret;
-
-Again ret doesn't seem needed here.
-
--serge
+>  		if (is_cpuid_PSE36())
+>  			/* 36bits PSE 4MB page */
+>  			context->rsvd_bits_mask[1][1] = rsvd_bits(17, 21);
+>  		else
+>  			/* 32 bits PSE 4MB page */
+>  			context->rsvd_bits_mask[1][1] = rsvd_bits(13, 21);
+> -		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
+>  		break;
+>  	case PT32E_ROOT_LEVEL:
+>  		context->rsvd_bits_mask[0][2] =
+> @@ -2312,7 +2318,7 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+>  		context->rsvd_bits_mask[1][1] = exb_bit_rsvd |
+>  			rsvd_bits(maxphyaddr, 62) |
+>  			rsvd_bits(13, 20);		/* large page */
+> -		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
+> +		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
+>  		break;
+>  	case PT64_ROOT_LEVEL:
+>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+> @@ -2330,7 +2336,7 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu, int level)
+>  		context->rsvd_bits_mask[1][1] = exb_bit_rsvd |
+>  			rsvd_bits(maxphyaddr, 51) |
+>  			rsvd_bits(13, 20);		/* large page */
+> -		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[1][0];
+> +		context->rsvd_bits_mask[1][0] = context->rsvd_bits_mask[0][0];
+>  		break;
+>  	}
+>  }
+> -- 
+> 1.6.6.1
