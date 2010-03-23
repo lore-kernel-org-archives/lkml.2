@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab0CWMCL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 08:02:11 -0400
-Received: from smtprelay04.ispgateway.de ([80.67.31.32]:58082 "EHLO
-	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab0CWMCJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 08:02:09 -0400
-Message-ID: <4BA8ADB8.1030802@ladisch.de>
-Date: Tue, 23 Mar 2010 13:02:00 +0100
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752864Ab0CWMDv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 08:03:51 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:52904 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752363Ab0CWMDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 08:03:49 -0400
+Date: Tue, 23 Mar 2010 12:03:30 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 06/11] Export fragmentation index via
+	/proc/extfrag_index
+Message-ID: <20100323120329.GE9590@csn.ul.ie>
+References: <20100317114321.4C9A.A69D9226@jp.fujitsu.com> <20100317113326.GD12388@csn.ul.ie> <20100323050910.A473.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: David R <david@unsolicited.net>
-CC: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34-rc2 - crash on shutdown
-References: <20100323090206.33932wop73sdefm6@unsolicited.net>
-In-Reply-To: <20100323090206.33932wop73sdefm6@unsolicited.net>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100323050910.A473.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David R wrote:
-> I recently upgraded my kernel to the .34 rc, and I'm getting the  
-> following crash on shutdown (see attached console image)
+On Tue, Mar 23, 2010 at 09:22:04AM +0900, KOSAKI Motohiro wrote:
+> > > > +	/*
+> > > > +	 * Index is between 0 and 1 so return within 3 decimal places
+> > > > +	 *
+> > > > +	 * 0 => allocation would fail due to lack of memory
+> > > > +	 * 1 => allocation would fail due to fragmentation
+> > > > +	 */
+> > > > +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
+> > > > +}
+> > > 
+> > > Dumb question.
+> > > your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
+> > > fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
+> > > but your code have extra '1000+'. Why?
+> > 
+> > To get an approximation to three decimal places.
+> 
+> Do you mean this is poor man's round up logic?
 
-Mee too, also in amd_pmu_cpu_offline().
+Not exactly.
 
-The only pointer access in this function is cpuhw->amd_nb, but
-I don't see any obvious bugs.
+The intention is to have a value of 968 instead of 0.968231. i.e.
+instead of a value between 0 and 1, it'll be a value between 0 and 1000
+that matches the first three digits after the decimal place.
 
+> Why don't you use DIV_ROUND_UP? likes following,
+> 
+> return 1000 - (DIV_ROUND_UP(info->free_pages * 1000 / requested) /  info->free_blocks_total);
+> 
 
-Regards,
-Clemens
+Because it's not doing the same thing unless I missed something.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
