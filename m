@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902Ab0CWVT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 17:19:28 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:34695 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab0CWVT0 (ORCPT
+	id S1753102Ab0CWVYj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 17:24:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37762 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751952Ab0CWVYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 17:19:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=A9yT2bdWVWXbblCf4+MnHjs2TY7Gil5Ts2e8ghZaP3vUXCe48Aeetm7WJ6oYpbbnON
-         PSpRRBFi/tYVxWpDjqfpG5RDhKaq2ynxdMMvOEhDzI70FSBv5ddQaNu/MnXYjnOi20LI
-         eGLIBZrypQn+9+flTubGc4A03R4v9vd+7VuD0=
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Starikov <ant.starikov@gmail.com>
-In-Reply-To: <20100323111351.756c8752.akpm@linux-foundation.org>
-Date: Tue, 23 Mar 2010 22:19:21 +0100
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
-       bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
+	Tue, 23 Mar 2010 17:24:37 -0400
+Date: Tue, 23 Mar 2010 14:23:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org
+Subject: Re: [BUGFIX] Fix AES-NI CTR optimization compiling failure with gas
+ 2.16.1
+Message-Id: <20100323142324.a53b20de.akpm@linux-foundation.org>
+In-Reply-To: <1268377307.1640.491.camel@yhuang-dev.sh.intel.com>
+References: <1268377307.1640.491.camel@yhuang-dev.sh.intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <7FF95EC7-EF76-4321-A7A0-E9018F1B1A90@gmail.com>
-References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <20100323111351.756c8752.akpm@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Although case is solved, I will post description for testcase program.
-Just in case someone wonder or would like to keep it for some later tests.
+On Fri, 12 Mar 2010 15:01:47 +0800
+Huang Ying <ying.huang@intel.com> wrote:
 
-------------------------------------------------------------------------
-It is a parallel model checker. The command line you used does reachability
-on the state space of mode anderson.6, meaning that it searches through all
-possible states (int vectors). Each thread gets a vector from the queue,
-calculates its successor states and puts them in a lock-less static hash
-table (pseudo BFS exploration because the threads each have there own
-queue).
-
-How did ingo run the binary? Because the static table size should be chosen
-to fit into memory. "-s 27" allocates 2^27 * (|vector| + 1 ) * sizeof(int)
-bytes. |vector| is equal to 19 for anderson.6, ergo the table size is 10GB.
-This could explain the huge number of page faults ingo gets.
-
-But anyway, you can imagine that the code is quiet jumpy and has a big
-memory footprint, so the page faults may also be normal.
-------------------------------------------------------------------------
-
-On Mar 23, 2010, at 7:13 PM, Andrew Morton wrote:
-
-> Anton, we have an executable binary in the bugzilla report but it would
-> be nice to also have at least a description of what that code is
-> actually doing.  A quick strace shows quite a lot of mprotect activity.
-> A pseudo-code walkthrough, perhaps?
+> Andrew Morton reported that AES-NI CTR optimization failed to compile
+> with gas 2.16.1, the error message is as follow:
 > 
-> Thanks.
+> arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
+> arch/x86/crypto/aesni-intel_asm.S:752: Error: suffix or operands invalid for `movq'
+> arch/x86/crypto/aesni-intel_asm.S:753: Error: suffix or operands invalid for `movq'
+> 
+> To fix this, a gas macro is defined to assemble movq with 64bit
+> general purpose registers and XMM registers. The macro will generate
+> the raw .byte sequence for needed instructions.
+> 
+
+Still no go.
+
+arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
+arch/x86/crypto/aesni-intel_asm.S:752: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:752: Error: junk at end of line, first unrecognized character is `1'
+arch/x86/crypto/aesni-intel_asm.S:753: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:753: Error: junk at end of line, first unrecognized character is `1'
+
+it doesn't like this:
+
+        REG_TYPE movq_r64_xmm_opd1_type \opd1
 
