@@ -1,68 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab0CWO3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:29:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33438 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab0CWO3k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:29:40 -0400
-Date: Tue, 23 Mar 2010 11:29:27 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Soeren Sandmann <sandmann@daimi.au.dk>, Joerg Roedel <joro@8bytes.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
-	host side
-Message-ID: <20100323142927.GF4066@ghostprotocols.net>
-References: <20100319082122.GE12576@elte.hu> <20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu> <20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu> <20100322114744.GC1940@8bytes.org> <ye88w9j2n2y.fsf@camel23.daimi.au.dk> <878w9jdu7m.fsf@basil.nowhere.org> <ye84ok72kxi.fsf@camel23.daimi.au.dk> <87vdcnce78.fsf@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87vdcnce78.fsf@basil.nowhere.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753962Ab0CWOfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:35:42 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:36586 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752563Ab0CWOfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:35:40 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: [patch 2/5] mincore: break do_mincore() into logical pieces
+Date: Tue, 23 Mar 2010 15:34:59 +0100
+Message-Id: <1269354902-18975-3-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.6.4
+In-Reply-To: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Mar 23, 2010 at 03:20:11PM +0100, Andi Kleen escreveu:
-> Soeren Sandmann <sandmann@daimi.au.dk> writes:
-> > I don't think the oprofile JIT interface solves any of these
-> > problems. (In fact, I don't see why the JIT problem is even hard. The
-> > JIT compiler can just generate a little ELF file with symbols in it,
-> > and the profiler can pick it up through the mmap events that you get
-> > through the perf interface).
-> 
-> That would require keeping those temporary ELF files for
-> potentially unlimited time around (profilers today look at the ELF
-> files at the final analysis phase, which might be weeks away)
+Split out functions to handle hugetlb ranges, pte ranges and unmapped
+ranges, to improve readability but also to prepare the file structure
+for nested page table walks.
 
-'perf record' will traverse the perf.data file just collected and, if the
-binaries have build-ids, will stash them in ~/.debug/, keyed by build-id
-just like the -debuginfo packages do.
+No semantic changes intended.
 
-So only the binaries with hits. Also one can use 'perf archive' to
-create a tar.bz2 file with the files with hits for the specified
-perf.data file, that can then be transfered to another machine, whatever
-arch, untarred at ~/.debug and then the report can be done there.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/mincore.c |  171 +++++++++++++++++++++++++++++++++-------------------------
+ 1 files changed, 97 insertions(+), 74 deletions(-)
 
-As it is done by build-id, multiple 'perf record' sessions share files
-in the cache.
+diff --git a/mm/mincore.c b/mm/mincore.c
+index c35f8f0..ba80bb8 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -19,6 +19,42 @@
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+ 
++static void mincore_hugetlb_page_range(struct vm_area_struct *vma,
++				unsigned long addr, unsigned long nr,
++				unsigned char *vec)
++{
++#ifdef CONFIG_HUGETLB_PAGE
++	struct hstate *h;
++	int i;
++
++	i = 0;
++	h = hstate_vma(vma);
++	while (1) {
++		unsigned char present;
++		pte_t *ptep;
++		/*
++		 * Huge pages are always in RAM for now, but
++		 * theoretically it needs to be checked.
++		 */
++		ptep = huge_pte_offset(current->mm,
++				       addr & huge_page_mask(h));
++		present = ptep && !huge_pte_none(huge_ptep_get(ptep));
++		while (1) {
++			vec[i++] = present;
++			addr += PAGE_SIZE;
++			/* reach buffer limit */
++			if (i == nr)
++				return;
++			/* check hugepage border */
++			if (!(addr & ~huge_page_mask(h)))
++				break;
++		}
++	}
++#else
++	BUG();
++#endif
++}
++
+ /*
+  * Later we can get more picky about what "in core" means precisely.
+  * For now, simply check to see if the page is in the page cache,
+@@ -49,6 +85,64 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
+ 	return present;
+ }
+ 
++static void mincore_unmapped_range(struct vm_area_struct *vma,
++				unsigned long addr, unsigned long nr,
++				unsigned char *vec)
++{
++	int i;
++
++	if (vma->vm_file) {
++		pgoff_t pgoff;
++
++		pgoff = linear_page_index(vma, addr);
++		for (i = 0; i < nr; i++, pgoff++)
++			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
++	} else {
++		for (i = 0; i < nr; i++)
++			vec[i] = 0;
++	}
++}
++
++static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
++			unsigned long addr, unsigned long nr,
++			unsigned char *vec)
++{
++	spinlock_t *ptl;
++	pte_t *ptep;
++	int i;
++
++	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
++	for (i = 0; i < nr; i++, ptep++, addr += PAGE_SIZE) {
++		pte_t pte = *ptep;
++		pgoff_t pgoff;
++
++		if (pte_none(pte))
++			mincore_unmapped_range(vma, addr, 1, vec);
++		else if (pte_present(pte))
++			vec[i] = 1;
++		else if (pte_file(pte)) {
++			pgoff = pte_to_pgoff(pte);
++			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
++		} else { /* pte is a swap entry */
++			swp_entry_t entry = pte_to_swp_entry(pte);
++
++			if (is_migration_entry(entry)) {
++				/* migration entries are always uptodate */
++				vec[i] = 1;
++			} else {
++#ifdef CONFIG_SWAP
++				pgoff = entry.val;
++				vec[i] = mincore_page(&swapper_space, pgoff);
++#else
++				WARN_ON(1);
++				vec[i] = 1;
++#endif
++			}
++		}
++	}
++	pte_unmap_unlock(ptep - 1, ptl);
++}
++
+ /*
+  * Do a chunk of "sys_mincore()". We've already checked
+  * all the arguments, we hold the mmap semaphore: we should
+@@ -59,11 +153,7 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ 	pgd_t *pgd;
+ 	pud_t *pud;
+ 	pmd_t *pmd;
+-	pte_t *ptep;
+-	spinlock_t *ptl;
+ 	unsigned long nr;
+-	int i;
+-	pgoff_t pgoff;
+ 	struct vm_area_struct *vma;
+ 
+ 	vma = find_vma(current->mm, addr);
+@@ -72,35 +162,10 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ 
+ 	nr = min(pages, (vma->vm_end - addr) >> PAGE_SHIFT);
+ 
+-#ifdef CONFIG_HUGETLB_PAGE
+ 	if (is_vm_hugetlb_page(vma)) {
+-		struct hstate *h;
+-
+-		i = 0;
+-		h = hstate_vma(vma);
+-		while (1) {
+-			unsigned char present;
+-			/*
+-			 * Huge pages are always in RAM for now, but
+-			 * theoretically it needs to be checked.
+-			 */
+-			ptep = huge_pte_offset(current->mm,
+-					       addr & huge_page_mask(h));
+-			present = ptep && !huge_pte_none(huge_ptep_get(ptep));
+-			while (1) {
+-				vec[i++] = present;
+-				addr += PAGE_SIZE;
+-				/* reach buffer limit */
+-				if (i == nr)
+-					return nr;
+-				/* check hugepage border */
+-				if (!(addr & ~huge_page_mask(h)))
+-					break;
+-			}
+-		}
++		mincore_hugetlb_page_range(vma, addr, nr, vec);
+ 		return nr;
+ 	}
+-#endif
+ 
+ 	/*
+ 	 * Calculate how many pages there are left in the last level of the
+@@ -119,53 +184,11 @@ static long do_mincore(unsigned long addr, unsigned long pages, unsigned char *v
+ 	if (pmd_none_or_clear_bad(pmd))
+ 		goto none_mapped;
+ 
+-	ptep = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	for (i = 0; i < nr; i++, ptep++, addr += PAGE_SIZE) {
+-		pte_t pte = *ptep;
+-
+-		if (pte_none(pte)) {
+-			if (vma->vm_file) {
+-				pgoff = linear_page_index(vma, addr);
+-				vec[i] = mincore_page(vma->vm_file->f_mapping,
+-						pgoff);
+-			} else
+-				vec[i] = 0;
+-		} else if (pte_present(pte))
+-			vec[i] = 1;
+-		else if (pte_file(pte)) {
+-			pgoff = pte_to_pgoff(pte);
+-			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
+-		} else { /* pte is a swap entry */
+-			swp_entry_t entry = pte_to_swp_entry(pte);
+-
+-			if (is_migration_entry(entry)) {
+-				/* migration entries are always uptodate */
+-				vec[i] = 1;
+-			} else {
+-#ifdef CONFIG_SWAP
+-				pgoff = entry.val;
+-				vec[i] = mincore_page(&swapper_space, pgoff);
+-#else
+-				WARN_ON(1);
+-				vec[i] = 1;
+-#endif
+-			}
+-		}
+-	}
+-	pte_unmap_unlock(ptep - 1, ptl);
+-
++	mincore_pte_range(vma, pmd, addr, nr, vec);
+ 	return nr;
+ 
+ none_mapped:
+-	if (vma->vm_file) {
+-		pgoff = linear_page_index(vma, addr);
+-		for (i = 0; i < nr; i++, pgoff++)
+-			vec[i] = mincore_page(vma->vm_file->f_mapping, pgoff);
+-	} else {
+-		for (i = 0; i < nr; i++)
+-			vec[i] = 0;
+-	}
+-
++	mincore_unmapped_range(vma, addr, nr, vec);
+ 	return nr;
+ }
+ 
+-- 
+1.7.0.2
 
-Right now the whole ELF file (or /proc/kallsyms copy) is stored if
-collected from the DSO directly, or the bits that are stored in
--debuginfo files if we find it installed (so smaller). We could strip
-that down further by storing just the ELF sections needed to make sense
-of the symtab.
-
-- Arnaldo
