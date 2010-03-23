@@ -1,56 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0CWXKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:10:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49891 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753390Ab0CWXKF (ORCPT
+	id S1754644Ab0CWXKo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:10:44 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:64710 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390Ab0CWXKn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:10:05 -0400
-Date: Tue, 23 Mar 2010 16:04:35 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Anton Starikov <ant.starikov@gmail.com>, Greg KH <greg@kroah.com>,
-       stable@kernel.org
-cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression
- in performance
-In-Reply-To: <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com>
-Message-ID: <alpine.LFD.2.00.1003231602130.18017@i5.linux-foundation.org>
-References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org> <9D040E9A-80F2-468F-A6CD-A4912615CD3F@gmail.com>
- <alpine.LFD.2.00.1003231253570.18017@i5.linux-foundation.org> <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 23 Mar 2010 19:10:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Dr7IjISxYoGHKLU6IP7LkW/waLS09ily3jTiBvUWAJduOt9SX4z6A9lukwyoSkqYDv
+         x9mIzdG6a0lLS0qIpD2l/iOw8U2JG3lu2msx7n2WTiAup2lWyEnFji7e44w9abWk4PMi
+         2hR3Q7JBcQNuGPur3f5kNEZFmtwkSZdeG5Sv0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	 <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
+Date: Wed, 24 Mar 2010 08:10:40 +0900
+Message-ID: <28c262361003231610p3753a136v51720df8568cfa0a@mail.gmail.com>
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Mel.
 
-
-On Tue, 23 Mar 2010, Anton Starikov wrote:
+On Tue, Mar 23, 2010 at 9:25 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+> Ordinarily when a high-order allocation fails, direct reclaim is entered to
+> free pages to satisfy the allocation.  With this patch, it is determined if
+> an allocation failed due to external fragmentation instead of low memory
+> and if so, the calling process will compact until a suitable page is
+> freed. Compaction by moving pages in memory is considerably cheaper than
+> paging out to disk and works where there are locked pages or no swap. If
+> compaction fails to free a page of a suitable size, then reclaim will
+> still occur.
 >
-> I think we got a winner!
-> 
-> Problem seems to be fixed.
-> 
-> Just for record, I used next patches:
-> 
-> 59c33fa7791e9948ba467c2b83e307a0d087ab49
-> 5d0b7235d83eefdafda300656e97d368afcafc9a
-> 1838ef1d782f7527e6defe87e180598622d2d071
-> 4126faf0ab7417fbc6eb99fb0fd407e01e9e9dfe
-> bafaecd11df15ad5b1e598adc7736afcd38ee13d
-> 0d1622d7f526311d87d7da2ee7dd14b73e45d3fc
+> Direct compaction returns as soon as possible. As each block is compacted,
+> it is checked if a suitable page has been freed and if so, it returns.
+>
+> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
+>  include/linux/compaction.h |   16 +++++-
+>  include/linux/vmstat.h     |    1 +
+>  mm/compaction.c            |  118 ++++++++++++++++++++++++++++++++++++++++++++
+>  mm/page_alloc.c            |   26 ++++++++++
+>  mm/vmstat.c                |   15 +++++-
+>  5 files changed, 172 insertions(+), 4 deletions(-)
+>
+> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> index c94890b..b851428 100644
+> --- a/include/linux/compaction.h
+> +++ b/include/linux/compaction.h
+> @@ -1,14 +1,26 @@
+>  #ifndef _LINUX_COMPACTION_H
+>  #define _LINUX_COMPACTION_H
+>
+> -/* Return values for compact_zone() */
+> +/* Return values for compact_zone() and try_to_compact_pages() */
+>  #define COMPACT_INCOMPLETE     0
+> -#define COMPACT_COMPLETE       1
+> +#define COMPACT_PARTIAL                1
+> +#define COMPACT_COMPLETE       2
+>
+>  #ifdef CONFIG_COMPACTION
+>  extern int sysctl_compact_memory;
+>  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
+>                        void __user *buffer, size_t *length, loff_t *ppos);
+> +
+> +extern int fragmentation_index(struct zone *zone, unsigned int order);
+> +extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> +                       int order, gfp_t gfp_mask, nodemask_t *mask);
+> +#else
+> +static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> +                       int order, gfp_t gfp_mask, nodemask_t *nodemask)
+> +{
+> +       return COMPACT_INCOMPLETE;
+> +}
+> +
+>  #endif /* CONFIG_COMPACTION */
+>
+>  #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
+> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+> index 56e4b44..b4b4d34 100644
+> --- a/include/linux/vmstat.h
+> +++ b/include/linux/vmstat.h
+> @@ -44,6 +44,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+>                KSWAPD_SKIP_CONGESTION_WAIT,
+>                PAGEOUTRUN, ALLOCSTALL, PGROTATED,
+>                COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
+> +               COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+>  #ifdef CONFIG_HUGETLB_PAGE
+>                HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
+>  #endif
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 8df6e3d..6688700 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -34,6 +34,8 @@ struct compact_control {
+>        unsigned long nr_anon;
+>        unsigned long nr_file;
+>
+> +       unsigned int order;             /* order a direct compactor needs */
+> +       int migratetype;                /* MOVABLE, RECLAIMABLE etc */
+>        struct zone *zone;
+>  };
+>
+> @@ -301,10 +303,31 @@ static void update_nr_listpages(struct compact_control *cc)
+>  static inline int compact_finished(struct zone *zone,
+>                                                struct compact_control *cc)
+>  {
+> +       unsigned int order;
+> +       unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
+> +
+>        /* Compaction run completes if the migrate and free scanner meet */
+>        if (cc->free_pfn <= cc->migrate_pfn)
+>                return COMPACT_COMPLETE;
+>
+> +       /* Compaction run is not finished if the watermark is not met */
+> +       if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
+> +               return COMPACT_INCOMPLETE;
+> +
+> +       if (cc->order == -1)
+> +               return COMPACT_INCOMPLETE;
+> +
+> +       /* Direct compactor: Is a suitable page free? */
+> +       for (order = cc->order; order < MAX_ORDER; order++) {
+> +               /* Job done if page is free of the right migratetype */
+> +               if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
+> +                       return COMPACT_PARTIAL;
+> +
+> +               /* Job done if allocation would set block type */
+> +               if (order >= pageblock_order && zone->free_area[order].nr_free)
+> +                       return COMPACT_PARTIAL;
+> +       }
+> +
+>        return COMPACT_INCOMPLETE;
+>  }
+>
+> @@ -348,6 +371,101 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>        return ret;
+>  }
+>
+> +static inline unsigned long compact_zone_order(struct zone *zone,
+> +                                               int order, gfp_t gfp_mask)
+> +{
+> +       struct compact_control cc = {
+> +               .nr_freepages = 0,
+> +               .nr_migratepages = 0,
+> +               .order = order,
+> +               .migratetype = allocflags_to_migratetype(gfp_mask),
+> +               .zone = zone,
+> +       };
+> +       INIT_LIST_HEAD(&cc.freepages);
+> +       INIT_LIST_HEAD(&cc.migratepages);
+> +
+> +       return compact_zone(zone, &cc);
+> +}
+> +
+> +/**
+> + * try_to_compact_pages - Direct compact to satisfy a high-order allocation
+> + * @zonelist: The zonelist used for the current allocation
+> + * @order: The order of the current allocation
+> + * @gfp_mask: The GFP mask of the current allocation
+> + * @nodemask: The allowed nodes to allocate from
+> + *
+> + * This is the main entry point for direct page compaction.
+> + */
+> +unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> +                       int order, gfp_t gfp_mask, nodemask_t *nodemask)
+> +{
+> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> +       int may_enter_fs = gfp_mask & __GFP_FS;
+> +       int may_perform_io = gfp_mask & __GFP_IO;
+> +       unsigned long watermark;
+> +       struct zoneref *z;
+> +       struct zone *zone;
+> +       int rc = COMPACT_INCOMPLETE;
+> +
+> +       /* Check whether it is worth even starting compaction */
+> +       if (order == 0 || !may_enter_fs || !may_perform_io)
+> +               return rc;
+> +
+> +       /*
+> +        * We will not stall if the necessary conditions are not met for
+> +        * migration but direct reclaim seems to account stalls similarly
+> +        */
 
-Ok. If you have performance numbers for before/after these patches for 
-your actual workload, I'd suggest posting them to stable@kernel.org, and 
-maybe those rwsem fixes will get back-ported.
+I can't understand this comment.
+In case of direct reclaim, shrink_zones's long time is just stall
+by view point of allocation customer.
+So "Allocation is stalled" makes sense to me.
 
-The patches are pretty small, and should be fairly safe. So they are 
-certainly stable material.
+But "Compaction is stalled" doesn't make sense to me.
+How about "COMPACTION_DIRECT" like "PGSCAN_DIRECT"?
+I think It's straightforward.
+Naming is important since it makes ABI.
 
-		Linus
+> +       count_vm_event(COMPACTSTALL);
+> +
+
+
+
+
+
+-- 
+Kind regards,
+Minchan Kim
