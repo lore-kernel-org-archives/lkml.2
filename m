@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751505Ab0CWEHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:07:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45151 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0CWEHB (ORCPT
+	id S1751676Ab0CWEKD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:10:03 -0400
+Received: from rex.securecomputing.com ([203.24.151.4]:52060 "EHLO
+	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750719Ab0CWEKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:07:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OqhknVb2IS519DUPKTKUfUzkswDtlnMqPq6jdvJxWBBbYV7QgKA0kzgajSOAPZIBoK
-         rAhB88RZmdGI4nyX6bM+z2Fw0n02/lyjHgTIlZ+Wq/Bblq4pmVkvB//7/atWBDmm7dMw
-         ztmt0jJ22AeiXQbkcV8TIOxjUeNZhwjG9jJ0o=
-Message-ID: <4BA83E70.4060906@gmail.com>
-Date: Mon, 22 Mar 2010 21:07:12 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: forcedeth: cat /sys/class/net/eth0/carrier = Invalid argument
-References: <4BA7AA92.5040400@gmail.com> <20100322.205144.256859987.davem@davemloft.net>
-In-Reply-To: <20100322.205144.256859987.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 00:10:00 -0400
+Date: Tue, 23 Mar 2010 14:14:39 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+Message-Id: <201003230414.o2N4EdjP003316@goober.internal.moreton.com.au>
+CC: <gerg@uclinux.org>, <linux-kernel@vger.kernel.org>,
+       <linux-m68k@vger.kernel.org>
+Subject: [git pull] m68knommu arch fixes
+To: <torvalds@linux-foundation.org>
+X-Mailer: mail (GNU Mailutils 2.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 08:51 PM, David Miller wrote:
-> From: "Justin P. mattock"<justinmattock@gmail.com>
-> Date: Mon, 22 Mar 2010 10:36:18 -0700
->
->> I've pushed my kernel from the latest HEAD to 2.6.31
->> and am still seeing:
->> cat /sys/class/net/eth0/carrier
->> cat: carrier: Invalid argument
->>
->> with my other machine using sky2
->> the same results is:
->> cat /sys/class/net/eth0/carrier
->> 0
->>
->> is there anything on this? before I start
->> a bisect.(looking through bugzilla, I couldn't
->> see anything related).
->
-> A device is not able to indicate carrier accurately when
-> the device is not currently running.
->
-> So you will get an -EINVAL until the device is brought up.
+Hi Linus,
 
-ah.. the machine was up and running but nothing was running
-(no dhclient, streaming music, etc..)
-now
-just ran the machine with ethernet,(up and running) and carrier reported 1
+Please pull to get some m68knommu fixes. Nothing too major in here,
+adding QSPI platform support and some minor fixes.
 
->
-> The reason is that most drivers don't even probe the link
-> or negotiate link speed and flow control until the device
-> is brought up.  Many don't even power up the PHY when the
-> device is down, in order to save power.
->
-> So the behavior you observe is completely expected.
->
+Thanks
+Greg
 
 
-cool, this had me confused.
 
-Thanks for the info on this..
-(no bisect for this).
+The following changes since commit 6ebdc661b608671e9ca572af8bb42d58108cc008:
+  Linus Torvalds (1):
+        Merge branch 'next-devicetree' of git://git.secretlab.ca/git/linux-2.6
 
+are available in the git repository at:
 
-Justin P. Mattock
+  git://git.kernel.org/pub/scm/linux/kernel/git/gerg/m68knommu.git for-linus
+
+Greg Ungerer (1):
+      m68knommu: remove a duplicate vector setting line for 68360
+
+Jun Sun (1):
+      uclinux: error message when FLAT reloc symbol is invalid, v2
+
+Maxim Kuvyrkov (1):
+      Fix m68k-uclinux's rt_sigreturn trampoline
+
+Philip Nye (1):
+      m68knommu: correct the CC flags for Coldfire M5272 targets
+
+Steven King (1):
+      m68knommu: Coldfire QSPI platform support
+
+ arch/m68k/include/asm/m520xsim.h      |    1 +
+ arch/m68k/include/asm/m523xsim.h      |    5 +
+ arch/m68k/include/asm/m5249sim.h      |    2 +
+ arch/m68k/include/asm/m527xsim.h      |    7 ++
+ arch/m68k/include/asm/m528xsim.h      |   67 +------------
+ arch/m68k/include/asm/m532xsim.h      |    1 +
+ arch/m68k/include/asm/mcfqspi.h       |   64 ++++++++++++
+ arch/m68knommu/Makefile               |    2 +-
+ arch/m68knommu/kernel/entry.S         |    2 +-
+ arch/m68knommu/platform/520x/config.c |  149 +++++++++++++++++++++++++++
+ arch/m68knommu/platform/523x/config.c |  170 ++++++++++++++++++++++++++++++
+ arch/m68knommu/platform/5249/config.c |  167 ++++++++++++++++++++++++++++++
+ arch/m68knommu/platform/527x/config.c |  182 +++++++++++++++++++++++++++++++++
+ arch/m68knommu/platform/528x/config.c |  137 +++++++++++++++++++++++++
+ arch/m68knommu/platform/532x/config.c |  124 ++++++++++++++++++++++
+ arch/m68knommu/platform/68360/ints.c  |    1 -
+ fs/binfmt_flat.c                      |    2 +-
+ 17 files changed, 1013 insertions(+), 70 deletions(-)
+ create mode 100644 arch/m68k/include/asm/mcfqspi.h
