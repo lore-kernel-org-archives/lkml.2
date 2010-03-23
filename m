@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab0CWNSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 09:18:34 -0400
-Received: from nfitmail.nfit.au.dk ([130.225.31.129]:28554 "EHLO
-	smtp.nfit.au.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751072Ab0CWNSc (ORCPT
+	id S1753225Ab0CWNS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 09:18:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:57997 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab0CWNSz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 09:18:32 -0400
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
-References: <1268717232.2813.36.camel@localhost>
-	<1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
-	<20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu>
-	<20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
-	<20100322114744.GC1940@8bytes.org>
-From: Soeren Sandmann <sandmann@daimi.au.dk>
-Date: 23 Mar 2010 14:18:29 +0100
-In-Reply-To: <20100322114744.GC1940@8bytes.org>
-Message-ID: <ye88w9j2n2y.fsf@camel23.daimi.au.dk>
-User-Agent: Gnus/5.09 (Gnus v5.9.0) Emacs/21.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-NFIT-RelayAddr: 130.225.16.142
-X-Sim: 53b345280674ca1ced024ac9fb907101448359f363725e242bb1abd56692e0ee
-X-NFIT-Solido-Score: 0.
+	Tue, 23 Mar 2010 09:18:55 -0400
+X-Authority-Analysis: v=1.0 c=1 a=oxWlMIsUhZYA:10 a=IkcTkHD0fZMA:10 a=BDIIb_0b5fgvPHABnRMA:9 a=lKcKy2lcsXcgqC4qjy-Rh6G7MQkA:4 a=QEXdDO2ut3YA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
+ independently
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Theodore Tso <tytso@MIT.EDU>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Jan Kara <jack@suse.cz>,
+       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Douglas Santos <douglas.santos@polymtl.ca>
+In-Reply-To: <20100323122747.GA14954@Krystal>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
+	 <20100323010419.GA8292@nowhere>
+	 <DA3F0457-83D6-4A95-AC86-188BC1C9B2F0@mit.edu>
+	 <20100323080526.GB4848@elte.hu>  <20100323122747.GA14954@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Mar 2010 09:18:51 -0400
+Message-ID: <1269350331.5363.233.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel <joro@8bytes.org> writes:
-
-> On Mon, Mar 22, 2010 at 11:59:27AM +0100, Ingo Molnar wrote:
-> > Best would be if you demonstrated any problems of the perf symbol lookup code 
-> > you are aware of on the host side, as it has that exact design you are 
-> > criticising here. We are eager to fix any bugs in it.
+On Tue, 2010-03-23 at 08:27 -0400, Mathieu Desnoyers wrote:
+> * Ingo Molnar (mingo@elte.hu) wrote:
 > > 
-> > If you claim that it's buggy then that should very much be demonstratable - no 
-> > need to go into theoretical arguments about it.
+
 > 
-> I am not claiming anything. I just try to imagine how your proposal
-> will look like in practice and forgot that symbol resolution is done at
-> a later point.
-> But even with defered symbol resolution we need more information from
-> the guest than just the rip falling out of KVM. The guest needs to tell
-> us about the process where the event happened (information that the host
-> has about itself without any hassle) and which executable-files it was
-> loaded from.
+> We're in complete agreement here. When I considered if it was worth it to create
+> such a per-tracepoint group compile-time disabling in the first place, I decided
+> not to do it precisely due to the added-value that comes with the availability
+> of system-wide tracepoints. And I think with the static jump patching, we are
+> now at a point where the overhead is stunningly low.
+> 
+> Now, space-wise, the one thing I would consider appropriate as a compromise for
+> small embedded systems would be to allow the TRACE_EVENT probes to be compiled
+> as modules.
 
-Slightly tangential, but there is another case that has some of the
-same problems: profiling other language runtimes than C and C++, say
-Python. At the moment profilers will generally tell you what is going
-on inside the python runtime, but not what the python program itself
-is doing.
+Yeah, I agree here. Hmm, I wonder if we could automate this. That is, we
+could now, create a module per trace system if it is so configured. It
+would move the functions that create, record and output the trace points
+in TRACE_EVENT() into a separate module. Then you just need to load the
+modules you want to trace (grouped by system).
 
-To fix that problem, it seems like we need some way to have python
-export what is going on. Maybe the same mechanism could be used to
-both access what is going on in qemu and python.
+We can make add kobjects to /sys so that udev loads them automatically
+for distros.
+
+-- Steve
 
 
-Soren
+
