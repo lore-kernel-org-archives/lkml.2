@@ -1,145 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0CWPaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:30:24 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:37439 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735Ab0CWPaX (ORCPT
+	id S1754799Ab0CWPdT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:33:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39050 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab0CWPdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:30:23 -0400
-Date: Tue, 23 Mar 2010 08:23:27 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Pavan Savoy <pavan_savoy@ti.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-Message-Id: <20100323082327.780d7aec.randy.dunlap@oracle.com>
-In-Reply-To: <4BA8D9EB.5010103@ti.com>
-References: <4BA8D9EB.5010103@ti.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 23 Mar 2010 11:33:17 -0400
+Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
+ lock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <4BA4860C.3050001@dcl.info.waseda.ac.jp>
+References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+	 <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere>
+	 <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp>
+	 <20100318211633.GG5103@nowhere> <4BA4638C.40307@dcl.info.waseda.ac.jp>
+	 <4BA4860C.3050001@dcl.info.waseda.ac.jp>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 23 Mar 2010 16:32:40 +0100
+Message-ID: <1269358360.5109.88.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4BA8DD46.0185:SCFMA4539814,ss=1,fgs=0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 10:10:35 -0500 Pavan Savoy wrote:
-
-> On Mon, 22 Mar 2010 18:45:42 -0500 Pavan Savoy wrote:
+On Sat, 2010-03-20 at 17:23 +0900, Hitoshi Mitake wrote:
+> In lockdep, held_locks of task_struct are accessed this arithmetical way
+>                 prev = curr->held_locks + i;
+> Of course this is valid way, but I feel it is more simple and natural way
+>                 prev = curr->held_locks[i];
 > 
-> 
-> [pavan]>>>>>>>
-> How about this ?
-> 
->  From 7304d21df4c11244651754976f662d301bef5361 Mon Sep 17 00:00:00 2001
-> From: Pavan Savoy <pavan_savoy@ti.com>
-> Date: Mon, 22 Mar 2010 16:40:19 -0400
-> Subject: [PATCH 2/7] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-> 
-> This change adds the Kconfig and Make file for TI's
-> ST line discipline driver and the BlueZ driver for BT
-> core of the TI BT/FM/GPS combo chip.
-> 
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->   drivers/misc/Kconfig        |    1 +
->   drivers/misc/Makefile       |    1 +
->   drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
->   drivers/misc/ti-st/Makefile |    7 +++++++
->   4 files changed, 33 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/misc/ti-st/Kconfig
->   create mode 100644 drivers/misc/ti-st/Makefile
-> 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 625e3a6..c059bca 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
->   source "drivers/misc/eeprom/Kconfig"
->   source "drivers/misc/cb710/Kconfig"
->   source "drivers/misc/iwmc3200top/Kconfig"
-> +source "drivers/misc/ti-st/Kconfig"
 
-Too many spaces "  " before "source" in the 3 preceding lines,
-so it does not apply cleanly.  Same for the Makefile below.
-
-> patch -p1 --dry-run < ~/misc-tist-kconfig.patch 
-patching file drivers/misc/Kconfig
-Hunk #1 FAILED at 344.
-1 out of 1 hunk FAILED -- saving rejects to file drivers/misc/Kconfig.rej
-patching file drivers/misc/Makefile
-Hunk #1 FAILED at 30.
-1 out of 1 hunk FAILED -- saving rejects to file drivers/misc/Makefile.rej
-patching file drivers/misc/ti-st/Kconfig
-patching file drivers/misc/ti-st/Makefile
-
-
-> 
->   endif # MISC_DEVICES
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index c221917..021f282 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->   obj-$(CONFIG_HWLAT_DETECTOR)	+= hwlat_detector.o
->   obj-y				+= eeprom/
->   obj-y				+= cb710/
-> +obj-y				+= ti-st/
-> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-> new file mode 100644
-> index 0000000..55fc054
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Kconfig
-> @@ -0,0 +1,24 @@
-> +#
-> +# TI's shared transport line discipline and the protocol
-> +# drivers (BT, FM and GPS)
-> +#
-> +menu "Texas Instruments shared transport line discipline"
-> +config TI_ST
-> +	tristate "shared transport core driver"
-> +	select FW_LOADER
-> +	help
-> +	  This enables the shared transport core driver for TI
-> +	  BT / FM and GPS combo chips.This enables protocol drivers
-
-Sigh.  Put a space after "chips."
-
-> +	  to register themselves with core and send data, the responses
-> +	  are returned to relevant protocol drivers based on their
-> +	  packet types.
-> +
-> +config ST_BT
-> +	tristate "BlueZ bluetooth driver for ST"
-> +	depends on BT
-> +	select TI_ST
-> +	help
-> +	  This enables the Bluetooth driver for TI BT/FM/GPS combo devices.
-> +	  This makes use of shared transport line discipline core driver to
-> +	  communicate with the BT core of the combo chip.
-> +endmenu
-
-Aside from the typo above, this drivers/misc/ti-st/Kconfig file looks OK now.
-
-> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
-> new file mode 100644
-> index 0000000..0167d1d
-> --- /dev/null
-> +++ b/drivers/misc/ti-st/Makefile
-> @@ -0,0 +1,7 @@
-> +#
-> +# Makefile for TI's shared transport line discipline
-> +# and its protocol drivers (BT, FM, GPS)
-> +#
-> +obj-$(CONFIG_TI_ST) 		+= st_drv.o
-> +st_drv-objs			:= st_core.o st_kim.o st_ll.o
-> +obj-$(CONFIG_ST_BT) 		+= bt_drv.o
-> -- 
-
-
----
-~Randy
+The latter is a type mis-match, an equivalent expression would be:
+   &curr->held_locks[i];
