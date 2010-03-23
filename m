@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753891Ab0CWDEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 23:04:12 -0400
-Received: from mail-iw0-f176.google.com ([209.85.223.176]:50041 "EHLO
-	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab0CWDEL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 23:04:11 -0400
+	id S1753536Ab0CWDFD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 23:05:03 -0400
+Received: from borg.medozas.de ([188.40.89.202]:58508 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750726Ab0CWDFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 23:05:00 -0400
+Date: Tue, 23 Mar 2010 04:04:59 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: wzt wzt <wzt.wzt@gmail.com>
+cc: Xiaotian Feng <xtfeng@gmail.com>, Patrick McHardy <kaber@trash.net>,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] Netfilter: Fix integer overflow in
+ net/ipv6/netfilter/ip6_tables.c
+In-Reply-To: <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
+Message-ID: <alpine.LSU.2.01.1003230346010.12017@obet.zrqbmnf.qr>
+References: <20100320143240.GB2942@localhost.localdomain>  <4BA7A3CF.8070503@trash.net>  <628d1651003221834g543e3e6cl4ea39c0886cb4ba1@mail.gmail.com>  <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
+ <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>
-References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>
-Date: Mon, 22 Mar 2010 20:04:09 -0700
-Message-ID: <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <wmanson@synaptics.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 7:07 PM, Christopher Heiny <cheiny@synaptics.com> wrote:
-...
-> There are two existing drivers for similar Synaptics devices in the
-> current kernel tree (excluding the PS/2 touchpad driver).  These are:
->
-> ./linux-2.6/drivers/input/mouse/synaptics_i2c.c
->      A driver for the Exeda 15mm touchpad, written by Mike Rapoport
->      <mike@compulab.co.il> and Igor Grinberg <grinberg@compulab.co.il>
->
-> ./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
->      A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
->      <arve@android.com>
->
-> We have not extended these drivers for a couple of reasons.  First, the
-> two drivers are specific to particular Synaptics products, and it is our
-> desire to produce a general solution that takes advantage of the 'self
-> describing' features of products that use the RMI protocol.
->
 
-Do you plan to add platform data to align the reported touchscreen
-data with the screen behind it, or do the new hardware allow the the
-firmware handle this? In the past we even needed separate parameters
-for different firmware versions (seen in
-drivers/staging/dream/synaptics_i2c_rmi.h).
+On Tuesday 2010-03-23 03:37, wzt wzt wrote:
+>> And, for the addition overflow, can it be caught by
+>>
+>> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
+>
+>sizeof(struct ipt_get_entries) + get.size can be overflow as *len,
+>get.size is control by user space with copy_from_user().
 
--- 
-Arve Hjønnevåg
+The != should catch it.
+
+For 64-bit environments:
+* + invoked with size_t, unsigned int
+  => right side promoted to size_t, result type is size_t
+* != invoked with int and size_t
+  => left-side promoted to ssize_t (probably; but something as large as size_t)
+* get.size is 32-bit bounded, as is *len,
+  so no overflow to worry about at all unless you make
+  sizeof(X) hilariously big close to 2^64 which is rather unlikely.
+
+For 32-bit environments:
+* Let *len be a number of choice (e.g. 36)
+* Find a sizeof(X)+get.size that equals 36 mod 2^32.
+* Since sizeof(X) is const, get.size must be 0 mod 2^32.
+* So get.size must be a multiple of 2^32 to fool the system.
+* Since get.size itself is only a 32-bit quantity, you cannot
+  represent any value larger than 4294967295.
+
+
+What Was What Was Wanted.
