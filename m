@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084Ab0CWE6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51582 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478Ab0CWE6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:58:54 -0400
-Message-ID: <4BA84B0B.3090908@redhat.com>
-Date: Tue, 23 Mar 2010 13:00:59 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20091001)
-MIME-Version: 1.0
-To: Matt Mackall <mpm@selenic.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
+	id S1754207Ab0CWE7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:59:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44085
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753328Ab0CWE7N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:59:13 -0400
+Date: Mon, 22 Mar 2010 21:59:36 -0700 (PDT)
+Message-Id: <20100322.215936.113720990.davem@davemloft.net>
+To: mpm@selenic.com
+Cc: amwang@redhat.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, gospo@redhat.com,
+       nhorman@tuxdriver.com, shemminger@linux-foundation.org,
+       bonding-devel@lists.sourceforge.net, fubar@us.ibm.com
 Subject: Re: [RFC Patch 2/3] bridge: make bridge support netpoll
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>	 <20100322082112.4967.5504.sendpatchset@localhost.localdomain>	 <1269297307.3552.23.camel@calx>  <4BA82186.3010204@redhat.com>	 <1269318470.3552.54.camel@calx>  <4BA84607.7030304@redhat.com> <1269319861.3552.87.camel@calx>
+From: David Miller <davem@davemloft.net>
 In-Reply-To: <1269319861.3552.87.camel@calx>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <1269318470.3552.54.camel@calx>
+	<4BA84607.7030304@redhat.com>
+	<1269319861.3552.87.camel@calx>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Mackall wrote:
+From: Matt Mackall <mpm@selenic.com>
+Date: Mon, 22 Mar 2010 23:51:01 -0500
+
 > On Tue, 2010-03-23 at 12:39 +0800, Cong Wang wrote:
 >> Matt Mackall wrote:
->>> On Tue, 2010-03-23 at 10:03 +0800, Cong Wang wrote:
->>>> Matt Mackall wrote:
->>>>> On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
->>>>>> Based on the previous patch, make bridge support netpoll by:
->>>>>>
->>>>>> 1) implement the 4 methods to support netpoll for bridge;
->>>>>>
->>>>>> 2) modify netpoll during forwarding packets in bridge;
->>>>>>
->>>>>> 3) disable netpoll support of bridge when a netpoll-unabled device
->>>>>>    is added to bridge;
->>>>> Not sure if this is the right thing to do. Shouldn't we simply enable
->>>>> polling on all devices that support it and warn about the others (aka
->>>>> best effort)?
->>>>>
->>>> I don't think it's a good idea, because we check if a device
->>>> supports netpoll by checking if it has ndo_poll_controller method.
->>> Uh, what? If we have 5 devices on a bridge and 4 support netpoll, then
->>> shouldn't we just send netconsole messages to those 4 devices? Isn't
->>> this much better than simply refusing to work?
->>>
 >> How could you let the bridge know netpoll is not sent to
 >> the one that doesn't support netpoll during setup? This will
 >> be complex, I am afraid.
@@ -59,15 +41,7 @@ Matt Mackall wrote:
 > patch. So it should be a simple matter of skipping unsupported devices
 > in that loop.
 
-Nope, we need to check if the target address is owned by
-a device that doesn't support netpoll or not, simple skipping
-will not work.
+It's because of all that "assign ->npinfo to slaves" crap he has to do
+the way his patches are currently implemented.
 
-
-> 
-> But Dave thinks there a bigger problems here, so I recommend first
-> figuring out the architecture issues, then we can get back to the policy
-> issues.
-> 
-
-Ok. Thanks!
+It's basically another sign that the design is wrong.
