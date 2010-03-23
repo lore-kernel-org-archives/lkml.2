@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab0CWScs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:32:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43928 "EHLO gir.skynet.ie"
+	id S1753362Ab0CWSdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 14:33:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16923 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab0CWScr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:32:47 -0400
-Date: Tue, 23 Mar 2010 18:32:28 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
+	id S1752657Ab0CWSdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 14:33:18 -0400
+Date: Tue, 23 Mar 2010 19:31:16 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 08/11] Add /proc trigger for memory compaction
-Message-ID: <20100323183228.GE5870@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-9-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231323410.10178@router.home>
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 0/3] proc: task->signal can't be NULL
+Message-ID: <20100323183116.GA22516@redhat.com>
+References: <20100322184127.GA3952@redhat.com> <m1ocifvkzl.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003231323410.10178@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <m1ocifvkzl.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 01:25:47PM -0500, Christoph Lameter wrote:
-> On Tue, 23 Mar 2010, Mel Gorman wrote:
-> 
-> > diff --git a/mm/compaction.c b/mm/compaction.c
-> > index 0d2e8aa..faa9b53 100644
-> > --- a/mm/compaction.c
-> > +++ b/mm/compaction.c
-> > @@ -346,3 +347,63 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
-> >  	return ret;
-> >  }
+On 03/22, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > Can't we kill this counter? Afaics, get_nr_threads() doesn't need to
+> > be "precise", we probably can estimate the number of threads using
+> > signal->live (yes sure, we can't use ->live as nr_threads).
 > >
-> > +/* Compact all zones within a node */
-> > +static int compact_node(int nid)
-> > +{
-> > +	int zoneid;
-> > +	pg_data_t *pgdat;
-> > +	struct zone *zone;
-> > +
-> > +	if (nid < 0 || nid > nr_node_ids || !node_online(nid))
-> 
-> Must be nid >= nr_node_ids.
-> 
+> > Except: first_tid() uses get_nr_threads() for optimization. Is this
+> > optimization really important? Afaics, it only helps in the unlikely
+> > case, probably in that case the extra lockless while_each_thread()
+> > doesn't hurt.
+> >
+> > IOW, how about
+> >
+> > 	--- a/fs/proc/base.c
+> > 	+++ b/fs/proc/base.c
+> > 	@@ -3071,11 +3071,6 @@ static struct task_struct *first_tid(str
+> > 				goto found;
+> > 		}
+> >
+> > 	-	/* If nr exceeds the number of threads there is nothing todo */
+> > 	-	pos = NULL;
+> > 	-	if (nr && nr >= get_nr_threads(leader))
+> > 	-		goto out;
+> > 	-
+> > 		/* If we haven't found our starting place yet start
+> > 		 * with the leader and walk nr threads forward.
+> > 		 */
+> >
+> > ?
+> >
+> > Not that I think it is terribly important to kill this counter, and
+> > probably signal->nr_threads can make sense anyway, so far I am just
+> > curious.
+>
+> I think that was just a sanity check since it was easy.  I want to say
+> it prevents a DOS attack with user space passing unreasonably large
+> file position but that DOS attack is handled by ensuring we don't walk
+> through the list if threads more than once.
 
-Oops, correct. It should be "impossible" to supply an incorrect nid here
-but still.
+If a bad user passes the large f_pos > nr_threads then this check
+eliminates the unneeded while_each_thread() loop, yes. But it can use
+f_pos == nr_threads and provoke the same loop?
 
-> Otherwise
-> 
-> Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
-> 
+Or. just do rewinddir() + readdir(big_count). Now we walk through the
+list and call proc_task_fill_cache() for each entry.
 
-Thanks
+IOW, I don't understand how this check can help from the DOS pov.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> However:
+> proc_task_getattr uses get_nr_threads to get it's nlink count correct.
+
+Yes. But we don't need the exactly precise number here if we are
+racing with fork/exit ?
+
+> Not walking the thread list to get the number of threads seems like an
+> important cpu time saving measure.
+
+Not sure I understand... Also, first_tid() could use sig->sigcnt (the
+reference counter) instead of sig->count. This is not the same, but I
+think in practice this is fine.
+
+
+OK. Let's keep this counter as "int nr_thread".
+
+Besides, when I tried to re-implement get_nr_threads() using signal->live
+I got the really ugly result ;)
+
+Thanks.
+
+Oleg.
+
