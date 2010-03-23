@@ -1,110 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782Ab0CWP2X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:28:23 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:62797 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640Ab0CWP2W (ORCPT
+	id S1754775Ab0CWPaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:30:24 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:37439 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab0CWPaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:28:22 -0400
-Date: Tue, 23 Mar 2010 08:26:43 -0700
+	Tue, 23 Mar 2010 11:30:23 -0400
+Date: Tue, 23 Mar 2010 08:23:27 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: 2.6.33 GP fault only when built with tracing
-Message-Id: <20100323082643.dbf77c46.randy.dunlap@oracle.com>
-In-Reply-To: <20100319184610.GA29161@Krystal>
-References: <4BA2B69D.3000309@oracle.com>
-	<1268956555.758.18.camel@gandalf.stny.rr.com>
-	<20100319005901.GB23020@Krystal>
-	<4BA3C0CF.6070005@oracle.com>
-	<20100319184610.GA29161@Krystal>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
+Message-Id: <20100323082327.780d7aec.randy.dunlap@oracle.com>
+In-Reply-To: <4BA8D9EB.5010103@ti.com>
+References: <4BA8D9EB.5010103@ti.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BA8DE08.0055:SCFMA4539814,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4BA8DD46.0185:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Mar 2010 14:46:10 -0400 Mathieu Desnoyers wrote:
+On Tue, 23 Mar 2010 10:10:35 -0500 Pavan Savoy wrote:
 
-> * Randy Dunlap (randy.dunlap@oracle.com) wrote:
-> > On 03/18/10 17:59, Mathieu Desnoyers wrote:
-> > > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > >> On Thu, 2010-03-18 at 16:26 -0700, Randy Dunlap wrote:
-> > >>> I can build/boot 2.6.33 with CONFIG_TRACE/TRACING disabled successfully,
-> > >>> but when I enable lots of tracing config options and then boot with
-> > >>> ftrace=nop on the kernel command line, I see a GP fault when the parport &
-> > >>> parport_pc modules are loading/initializing.
-> > >>
-> > >> Do you see it without adding the "ftrace=nop"? The only thing that
-> > >> should do is expand the ring buffer on boot up.
-> > >>
-> > >>>
-> > >>> It happens in drivers/parport/share.c::parport_register_device(), when that
-> > >>> function calls try_module_get().
-> > >>>
-> > >>> If I comment out the trace_module_get() calls in include/linux/module.h,
-> > >>> the kernel boots with no problems.
-> > >>
-> > >>
-> > >> Interesting. Well, trace_module_get() is a TRACE_EVENT tracepoint. But
-> > >> should be disabled here. It may be something to do with DEFINE_TRACE. 
-> > >>
-> > >> (added Mathieu to Cc since he wrote that code)
-> > > 
-> > > can you try replacing the "local_read(__module_ref_addr(module, cpu))" argument
-> > > with "0" ?
-> > 
-> > Yes, that boots with no problems.
+> On Mon, 22 Mar 2010 18:45:42 -0500 Pavan Savoy wrote:
 > 
-> clickety-clicketa... git blame include/linux/module.h :
 > 
-> commit 7ead8b8313d92b3a69a1a61b0dcbc4cd66c960dc
-> Author: Li Zefan <lizf@cn.fujitsu.com>
-> Date:   Mon Aug 17 16:56:28 2009 +0800
+> [pavan]>>>>>>>
+> How about this ?
 > 
->     tracing/events: Add module tracepoints
+>  From 7304d21df4c11244651754976f662d301bef5361 Mon Sep 17 00:00:00 2001
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> Date: Mon, 22 Mar 2010 16:40:19 -0400
+> Subject: [PATCH 2/7] drivers:misc: Kconfig, Makefile for TI's ST ldisc
 > 
-> (Adding Li Zefan in CC)
+> This change adds the Kconfig and Make file for TI's
+> ST line discipline driver and the BlueZ driver for BT
+> core of the TI BT/FM/GPS combo chip.
 > 
-> Two things:
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>   drivers/misc/Kconfig        |    1 +
+>   drivers/misc/Makefile       |    1 +
+>   drivers/misc/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
+>   drivers/misc/ti-st/Makefile |    7 +++++++
+>   4 files changed, 33 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/misc/ti-st/Kconfig
+>   create mode 100644 drivers/misc/ti-st/Makefile
 > 
-> 1) In this commit, most of the tracepoints contain argument with side-effects.
->    These do not belong there; they should be moved into TRACE_EVENT macros.
-> 
-> 2) There seem to be a null-pointer bug with
->    local_read(__module_ref_addr(module, cpu)) in try_module_get(). This should
->    be investigated even if we move the argument to TRACE_EVENT.
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 625e3a6..c059bca 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -344,5 +344,6 @@ source "drivers/misc/c2port/Kconfig"
+>   source "drivers/misc/eeprom/Kconfig"
+>   source "drivers/misc/cb710/Kconfig"
+>   source "drivers/misc/iwmc3200top/Kconfig"
+> +source "drivers/misc/ti-st/Kconfig"
 
-Hi Li,
+Too many spaces "  " before "source" in the 3 preceding lines,
+so it does not apply cleanly.  Same for the Makefile below.
 
-Fix this, please?
+> patch -p1 --dry-run < ~/misc-tist-kconfig.patch 
+patching file drivers/misc/Kconfig
+Hunk #1 FAILED at 344.
+1 out of 1 hunk FAILED -- saving rejects to file drivers/misc/Kconfig.rej
+patching file drivers/misc/Makefile
+Hunk #1 FAILED at 30.
+1 out of 1 hunk FAILED -- saving rejects to file drivers/misc/Makefile.rej
+patching file drivers/misc/ti-st/Kconfig
+patching file drivers/misc/ti-st/Makefile
 
 
-> Thanks,
 > 
-> Mathieu
-> 
-> > 
-> > > Arguments with side-effects are not skipped by the jump over disabled
-> > > instrumentation. This is why we should do that part within the probe declaration
-> > > in the TRACE_EVENT macros.
-> > > 
-> > > But if we find out that the problem really is this argument, then it should be
-> > > fixed, because something would be wrong with it (just moving it to TRACE_EVENT
-> > > is not a proper solution).
-> > > 
-> > > Thanks,
-> > > 
-> > > Mathieu
+>   endif # MISC_DEVICES
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index c221917..021f282 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+>   obj-$(CONFIG_HWLAT_DETECTOR)	+= hwlat_detector.o
+>   obj-y				+= eeprom/
+>   obj-y				+= cb710/
+> +obj-y				+= ti-st/
+> diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
+> new file mode 100644
+> index 0000000..55fc054
+> --- /dev/null
+> +++ b/drivers/misc/ti-st/Kconfig
+> @@ -0,0 +1,24 @@
+> +#
+> +# TI's shared transport line discipline and the protocol
+> +# drivers (BT, FM and GPS)
+> +#
+> +menu "Texas Instruments shared transport line discipline"
+> +config TI_ST
+> +	tristate "shared transport core driver"
+> +	select FW_LOADER
+> +	help
+> +	  This enables the shared transport core driver for TI
+> +	  BT / FM and GPS combo chips.This enables protocol drivers
+
+Sigh.  Put a space after "chips."
+
+> +	  to register themselves with core and send data, the responses
+> +	  are returned to relevant protocol drivers based on their
+> +	  packet types.
+> +
+> +config ST_BT
+> +	tristate "BlueZ bluetooth driver for ST"
+> +	depends on BT
+> +	select TI_ST
+> +	help
+> +	  This enables the Bluetooth driver for TI BT/FM/GPS combo devices.
+> +	  This makes use of shared transport line discipline core driver to
+> +	  communicate with the BT core of the combo chip.
+> +endmenu
+
+Aside from the typo above, this drivers/misc/ti-st/Kconfig file looks OK now.
+
+> diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
+> new file mode 100644
+> index 0000000..0167d1d
+> --- /dev/null
+> +++ b/drivers/misc/ti-st/Makefile
+> @@ -0,0 +1,7 @@
+> +#
+> +# Makefile for TI's shared transport line discipline
+> +# and its protocol drivers (BT, FM, GPS)
+> +#
+> +obj-$(CONFIG_TI_ST) 		+= st_drv.o
+> +st_drv-objs			:= st_core.o st_kim.o st_ll.o
+> +obj-$(CONFIG_ST_BT) 		+= bt_drv.o
+> -- 
 
 
 ---
