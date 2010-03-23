@@ -1,160 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab0CWU3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:29:42 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:33345 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752045Ab0CWU3l (ORCPT
+	id S1753467Ab0CWUaT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 16:30:19 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44171 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab0CWUaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 16:29:41 -0400
-Message-ID: <4BA924CD.1010201@bluewatersys.com>
-Date: Wed, 24 Mar 2010 09:30:05 +1300
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] arm: add a /proc/cpuinfo platform extension
-References: <BD79186B4FD85F4B8E60E381CAEE19090200F377@mi8nycmail19.Mi8.com>
-In-Reply-To: <BD79186B4FD85F4B8E60E381CAEE19090200F377@mi8nycmail19.Mi8.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Mar 2010 16:30:17 -0400
+Subject: Re: [PATCH 0/3] sched: use EDF to throttle RT task groups v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Fabio Checconi <fchecconi@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Paul Turner <pjt@google.com>,
+       Dario Faggioli <faggioli@gandalf.sssup.it>,
+       Michael Trimarchi <michael@evidence.eu.com>,
+       Dhaval Giani <dhaval@retis.sssup.it>,
+       Tommaso Cucinotta <t.cucinotta@sssup.it>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100303170110.GS2490@gandalf.sssup.it>
+References: <cover.1266931410.git.fabio@helm.retis>
+	 <1267273991.22519.744.camel@laptop>
+	 <20100303170110.GS2490@gandalf.sssup.it>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Mar 2010 21:30:07 +0100
+Message-ID: <1269376207.5283.5.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H Hartley Sweeten wrote:
-> Add an optional platform specific extension to /proc/cpuinfo.
+On Wed, 2010-03-03 at 18:01 +0100, Fabio Checconi wrote: 
+> > From: Peter Zijlstra <peterz@infradead.org>
+> > Date: Sat, Feb 27, 2010 01:33:11PM +0100
+> >
+> > On Tue, 2010-02-23 at 19:56 +0100, Fabio Checconi wrote:
+> > >   - Since it is not easy to mix tasks and groups on the same scheduler
+> > >     queue (tasks have no deadlines), the bandwidth reserved to the tasks
+> > >     in a group is controlled with two additional cgroup attributes:
+> > >     rt_task_runtime_us and rt_task_period_us.  These attributes control,
+> > >     within a cgroup, how much bandwidth is reserved to the tasks it
+> > >     contains.  The old attributes, rt_runtime_us and rt_period_us, are
+> > >     still there, and control the bandwidth assigned to the cgroup.  They
+> > >     are used only for admission control. 
+> > 
+> > We could do this implicitly by simply setting the task_bandwidth to the
+> > cgroup bandwidth - \Sum_children bandwidth.
+> > 
+> > Having it explicit gives the administrator slightly more control at the
+> > cost of a more complex interface.
+> > 
+> > Just wondering if you thought about this trade-off?
 > 
-> Many platforms have custom cpu information that could be exposed
-> to user space using /proc/cpuinfo.
-> 
-> Patch 1/2 adds the necessary core support to allow a platform
-> specific callback to dump this information.
-> 
-> Patch 2/2 adds a callback to mach-ep93xx and hooks up all the
-> edb93xx platforms.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> I started with it, because I didn't like changing the interface and
+> because four files to manage the bandwidth *are* a nightmare from the
+> user perspective...  The problem with using only two files and assign
+> the residual bandwidth to the tasks in the group is that it makes really
+> hard to find out how much bw is allocated to the tasks, esp. when
+> the child groups have different periods.  In practice we would be
+> guaranteeing something but the user would have a hard time finding
+> out what...
 
-I think this is unlikely to get merged in its current state. Russell has
-mentioned issues with breaking userspace by changing /proc/cpuinfo. The
-other problem I see is that you have a single callback for registering
-the arch specific information. In you ep93xx example, each of the ep93xx
-boards must add:
+Right, we could do both, by allowing the task files to have -1 values,
+effectively disabling their reservation and thus ending up with whatever
+remains or so.
 
-  .arch_cpuinfo = ep93xx_cpuinfo,
+> The biggest problem with the four files used in the current implementation
+> is that bandwidth assignments should be atomic (because setting all the
+> parameters independently can force the system to go through non-feasible
+> assignments, and the order to use when assigning runtime and period
+> changes depending on the direction of the change).  I know this is a
+> dangerous question, but I'll try it anyway: are we ready for multi-valued
+> cgroup parameters?
 
-If one of the boards has some additional information to make available,
-it would need to reimplement the entire callback, which gets messy.
+Right, I don't know about multi-valued files, that sounds like its going
+to confuse people too.
 
-I think a better approach would be to have a separate file (say
-/proc/archinfo) and use a list approach for displaying data. I'm
-guessing that the data displayed in the archinfo file would be
-immutable, so something like this (very rough, this would be
-kernel/archinfo.c, or arch/arm/kernel/archinfo.c, or whatever):
+Another option might be some transactional interface, but not sure how
+that would work out either.. maybe by toggling the system wide bandwidth
+control off and on, not sure who's in charge of cgroupfs anyway. 
 
-struct archinfo_entry {
-	const char 		*name;
-	const char 		*value;
-	struct list_head 	list;
-};
-
-static LIST_HEAD(archinfo_entries);
-
-int archinfo_add_entry(const char *name, const char *value)
-{
-	struct archinfo_entry *entry;
-
-	entry = kzalloc(sizeof(struct archinfo_entry), GFP_KERNEL);
-	if (!entry)
-		return -ENOMEM;
-
-	entry->name = kzalloc(strlen(name) + 1), GFP_KERNEL);
-	if (!entry->name) {
-		kfree(entry);
-		return -ENOMEM;
-	}
-	strcpy(entry->name, name);
-		
-	entry->value = kzalloc(strlen(value) + 1, GFP_KERNEL);
-	if (!entry->value) {
-		kfree(entry->name);
-		kfree(entry);
-		return -ENOMEM;
-	}
-
-	list_add(&entry->list, &archinfo_entries);
-	return 0;	
-}
-
-static int archinfo_show(struct seq_file *s, void *v)
-{
-	struct archinfo_entry *entry;
-
-	list_for_each_entry(entry, &archinfo_entries, list)
-		seq_printf(s, "%-20s: %s\n", entry->name, entry->value);
-
-	return 0;
-}
-
-static int archinfo_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, archinfo_show, NULL);
-}
-
-static const struct file_operations archinfo_ops = {
-	.open		= archinfo_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
-
-static int __init init_archinfo(void)
-{
-	struct proc_dir_entry *proc;
-
-	if (list_empty(&archinfo_entries))
-		return 0;
-
-	proc = proc_create("archinfo", 0444, NULL, &archinfo_ops);
-	if (!proc)
-		return -ENOMEM;
-	return 0;
-}
-
-lateinit_call(init_archinfo);
-
-A given board/arch can then have something like the following in its
-init function:
-
-static void __init myboard_init_archinfo(void)
-{
-	char buffer[64];
-
-	snprintf(buffer, sizeof(buffer), "some stuff %d, %d\n",
-		 val1, val2);
-	archinfo_add_entry("stuff", buffer);
-}
-
-That way, the arch core (eg arch/arm/mach-ep93xx/core.c) can create a
-base set of entries, and the individual platforms/board files can append
-additional information to it.
-
-~Ryan
-
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
-
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
