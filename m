@@ -1,102 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0CWDLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 23:11:25 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61360 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137Ab0CWDLX convert rfc822-to-8bit (ORCPT
+	id S1754016Ab0CWDOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 23:14:07 -0400
+Received: from mga10.intel.com ([192.55.52.92]:20272 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752137Ab0CWDOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 23:11:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EDm+h+W7ctg7a/e1PxCLeC26ntmWREuiUuKVVGF7hzvrFDQn06PgWOEHwq4j/dlFOw
-         d95Ra801v32rI+7Kxuv8XbJiC1G7A9dJyntZVuZlwFz9skuAqVH5kSitu/6DVlt+VT6y
-         7X3sLWEnQOd0Gr62tpKmiaZgSQUaJt4LjC6lk=
-MIME-Version: 1.0
-In-Reply-To: <7b6bb4a51003222005v5fd71c8ao7fd1d05fb1ef2d8b@mail.gmail.com>
-References: <20100320143240.GB2942@localhost.localdomain>
-	 <4BA7A3CF.8070503@trash.net>
-	 <628d1651003221834g543e3e6cl4ea39c0886cb4ba1@mail.gmail.com>
-	 <7b6bb4a51003221929i16673523nd5f558ccbaace397@mail.gmail.com>
-	 <628d1651003221937q58ff39fel467636ab55531128@mail.gmail.com>
-	 <7b6bb4a51003222005v5fd71c8ao7fd1d05fb1ef2d8b@mail.gmail.com>
-Date: Tue, 23 Mar 2010 11:11:22 +0800
-Message-ID: <628d1651003222011v2389fc68u7ba009ae4b781884@mail.gmail.com>
-Subject: Re: [PATCH] Netfilter: Fix integer overflow in net/ipv6/netfilter/ip6_tables.c
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-       netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Mar 2010 23:14:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,292,1267430400"; 
+   d="scan'208";a="551269205"
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
+ host side
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20100322164437.GB4066@ghostprotocols.net>
+References: <1268717232.2813.36.camel@localhost>
+	 <1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
+	 <1269242687.2078.25.camel@ymzhang.sh.intel.com>
+	 <20100322164437.GB4066@ghostprotocols.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 23 Mar 2010 11:14:41 +0800
+Message-Id: <1269314081.2078.63.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> get.size is unsigned int, UINT_MAX is 0x FFFFFFFF, not 0x7FFFFFFF
-> And you're metioning "addition", then why you're checking as "multiplication"?
+On Mon, 2010-03-22 at 13:44 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Mar 22, 2010 at 03:24:47PM +0800, Zhang, Yanmin escreveu:
+> > On Fri, 2010-03-19 at 09:21 +0100, Ingo Molnar wrote:
+> > > So some sort of --guestmount option would be the natural solution, which 
+> > > points to the guest system's root: and a Qemu enumeration of guest mounts 
+> > > (which would be off by default and configurable) from which perf can pick up 
+> > > the target guest all automatically. (obviously only under allowed permissions 
+> > > so that such access is secure)
+> > If sshfs could access /proc/ and /sys correctly, here is a design:
+> > --guestmount points to a directory which consists of a list of sub-directories.
+> > Every sub-directory's name is just the qemu process id of guest os. Admin/developer
+> > mounts every guest os instance's root directory to corresponding sub-directory.
+> > 
+> > Then, perf could access all files. It's possible because guest os instance
+> > happens to be multi-threading in a process. One of the defects is the accessing to
+> > guest os becomes slow or impossible when guest os is very busy.
+> 
+> If the MMAP events on the guest included a cookie that could later be
+> used to query for the symtab of that DSO, we wouldn't need to access the
+> guest FS at all, right?
+It depends on specific sub commands. As for 'perf kvm top', developers want to see
+the profiling immediately. Even with 'perf kvm record', developers also want to
+see results quickly. At least I'm eager for the results when investigating
+a performance issue.
 
-oh, my falut:(  the patch is multiplication check, not addition check.
-thanks for helping me:)
+> 
+> With build-ids and debuginfo-install like tools the symbol resolution
+> could be performed by using the cookies (build-ids) as keys to get to
+> the *-debuginfo packages with matching symtabs (and DWARF for source
+> annotation, etc).
+We can't make sure guest os uses the same os images, or don't know where we
+could find the original DVD images being used to install guest os.
 
-On Tue, Mar 23, 2010 at 11:05 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
-> On Tue, Mar 23, 2010 at 10:37 AM, wzt wzt <wzt.wzt@gmail.com> wrote:
->>> Patrick's point is that you're using "if (get.size >= INT_MAX /
->>> sizeof(struct ipt_get_entries))"
->>> So, did you find any chance that get.size * sizeof(struct
->>> ipt_get_entries) >= INT_MAX ?
->>>
->> would you carefully read my explain???
->> get.size is copy from the user space,  it can be set as 0x7fffffff,
->> addition with sizeof(struct ipt_get_entries) can be overflow.
->>
->
-> get.size is unsigned int, UINT_MAX is 0x FFFFFFFF, not 0x7FFFFFFF
-> And you're metioning "addition", then why you're checking as "multiplication"?
->
->>> And, for the addition overflow, can it be caught by
->>>
->>> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
->>>
->> sizeof(struct ipt_get_entries) + get.size can be overflow as *len,
->> get.size is control by user space with copy_from_user().
->
->
->>
->> On Tue, Mar 23, 2010 at 10:29 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
->>> On Tue, Mar 23, 2010 at 9:34 AM, wzt wzt <wzt.wzt@gmail.com> wrote:
->>>>> I can see that the size might cause an overflow in the addition with
->>>>> sizeof(struct ipt_get_entries)
->>>> That's the integer overflow i pointed.
->>>> get.size is copy from the user space,  it can be set as 0x7fffffff,
->>>> addition with sizeof(struct ipt_get_entries) can be overflow.
->>>
->>> Patrick's point is that you're using "if (get.size >= INT_MAX /
->>> sizeof(struct ipt_get_entries))"
->>> So, did you find any chance that get.size * sizeof(struct
->>> ipt_get_entries) >= INT_MAX ?
->>>
->>> And, for the addition overflow, can it be caught by
->>>
->>> "if (*len != sizeof(struct ipt_get_entries) + get.size)"  ???
->>>
->>>>
->>>>        if (*len != sizeof(struct ipt_get_entries) + get.size) {
->>>>                duprintf("get_entries: %u != %zu\n",
->>>>                         *len, sizeof(get) + get.size);
->>>>                return -EINVAL;
->>>>        }
->>>>
->>>> so, check get.size max value before addition with sizeof(struct
->>>> ipt_get_entries) to prevent the integer overflow.
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>>>
->>>
->>
->
+Current perf does save build id, including both kernls's and other application
+lib/executables.
+
+> 
+> We have that for the kernel as:
+> 
+> [acme@doppio linux-2.6-tip]$ l /sys/kernel/notes 
+> -r--r--r-- 1 root root 36 2010-03-22 13:14 /sys/kernel/notes
+> [acme@doppio linux-2.6-tip]$ l /sys/module/ipv6/sections/.note.gnu.build-id 
+> -r--r--r-- 1 root root 4096 2010-03-22 13:38 /sys/module/ipv6/sections/.note.gnu.build-id
+> [acme@doppio linux-2.6-tip]$
+> 
+> That way we would cover DSOs being reinstalled in long running 'perf
+> record' sessions too.
+That's one of objectives of perf to support long running.
+
+> 
+> This was discussed some time ago but would require help from the bits
+> that load DSOs.
+> 
+> build-ids then would be first class citizens.
+> 
+> - Arnaldo
+
+
