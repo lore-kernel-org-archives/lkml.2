@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0CWS6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:58:19 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:52191 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753741Ab0CWS6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:58:18 -0400
-Date: Tue, 23 Mar 2010 18:58:00 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100323185800.GG5870@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-8-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231253180.10178@router.home> <20100323181540.GD5870@csn.ul.ie> <alpine.DEB.2.00.1003231332190.10178@router.home>
+	id S1754059Ab0CWTFm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 15:05:42 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:48481 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0CWTFl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 15:05:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003231332190.10178@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100323182153.GA14800@8bytes.org>
+References: <4BA796DF.7090005@redhat.com> <4BA7A406.9050203@redhat.com>
+	 <20100322173400.GB15795@elte.hu> <4BA7B9E0.5080009@codemonkey.ws>
+	 <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com>
+	 <4BA7E9D9.5060800@codemonkey.ws> <20100323140608.GJ1940@8bytes.org>
+	 <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org>
+Date: Tue, 23 Mar 2010 15:05:38 -0400
+Message-ID: <90eb1dc71003231205o623a67b5taf12f8305fc89eb9@mail.gmail.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single 
+	project
+From: Javier Guerra Giraldez <javier@guerrag.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       "Fr?d?ric Weisbecker" <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 01:33:19PM -0500, Christoph Lameter wrote:
-> On Tue, 23 Mar 2010, Mel Gorman wrote:
-> 
-> > I can if you prefer but it's so small, I didn't think it obscured the
-> > clarity of the patch anyway. I would have somewhat expected the two
-> > patches to be merged together before going upstream.
-> 
-> It exposes the definitions needed to run __isolate_lru_page(). The
-> definitions could be useful for other uses of page migrations.
-> 
+On Tue, Mar 23, 2010 at 2:21 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Tue, Mar 23, 2010 at 06:39:58PM +0200, Avi Kivity wrote:
+>> So, two users can't have a guest named MyGuest each?  What about
+>> namespace support?  There's a lot of work in virtualizing all kernel
+>> namespaces, you're adding to that.
+>
+> This enumeration is a very small and non-intrusive feature. Making it
+> aware of namespaces is easy too.
 
-Sure. Patch split out now and looks like
+an outsider's comment: this path leads to a filesystem... which could
+be a very nice idea.  it could have a directory for each VM, with
+pseudo-files with all the guest's status, and even the memory it's
+using.  perf could simply watch those files.   in fact, such a
+filesystem could be the main userleve/kernel interface.
 
-=== CUT HERE ===
-Subject: [PATCH 07/12] Move definition for LRU isolation modes to a header
+but i'm sure such a layour was considered (and rejected) very early in
+the KVM design.  i don't think there's anything new to make it more
+desirable than it was back then.
 
-Currently, vmscan.c defines the isolation modes for
-__isolate_lru_page(). Memory compaction needs access to these modes for
-isolating pages for migration.  This patch exports them.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- include/linux/swap.h |    5 +++++
- mm/vmscan.c          |    5 -----
- 2 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 1f59d93..986b12d 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -238,6 +238,11 @@ static inline void lru_cache_add_active_file(struct page *page)
- 	__lru_cache_add(page, LRU_ACTIVE_FILE);
- }
- 
-+/* LRU Isolation modes. */
-+#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
-+#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
-+#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
-+
- /* linux/mm/vmscan.c */
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 79c8098..ef89600 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -839,11 +839,6 @@ keep:
- 	return nr_reclaimed;
- }
- 
--/* LRU Isolation modes. */
--#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
--#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
--#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
--
- /*
-  * Attempt to remove the specified page from its LRU.  Only take this page
-  * if it is of the appropriate PageActive status.  Pages which are being
 -- 
-1.6.5
-
+Javier
