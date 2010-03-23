@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab0CWSI0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 14:08:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47741 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753967Ab0CWSIZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:08:25 -0400
-Subject: Re: [PATCH] sched: prevent compiler from optimising
- sched_avg_update loop
-From: Peter Zijlstra <peterz@infradead.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1269365805-17280-1-git-send-email-will.deacon@arm.com>
-References: <1269365805-17280-1-git-send-email-will.deacon@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 19:08:02 +0100
-Message-ID: <1269367682.5109.155.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754299Ab0CWSIj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 14:08:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43809 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754220Ab0CWSIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 14:08:37 -0400
+Date: Tue, 23 Mar 2010 19:08:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
+ struct
+Message-ID: <20100323180823.GA6088@elte.hu>
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org>
+ <1269333587-1866-5-git-send-email-yinghai@kernel.org>
+ <4BA899C2.8020208@kernel.org>
+ <alpine.LFD.2.00.1003231528100.3147@localhost.localdomain>
+ <4BA8FC9E.1050806@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BA8FC9E.1050806@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 17:36 +0000, Will Deacon wrote:
-> GCC 4.4.1 on ARM has been observed to replace the while loop
-> in sched_avg_update with a call to uldivmod, resulting in the
-> following build failure at link-time:
+
+* Yinghai Lu <yinghai@kernel.org> wrote:
+
+> On 03/23/2010 08:07 AM, Thomas Gleixner wrote:
+> > On Tue, 23 Mar 2010, Yinghai Lu wrote:
+> > 
+> >>
+> >> lmb_init() connect them back.
+> >>
+> >> also add region_array_size in lmb_region to tack the region array size.
+> >>
+> >> -v3: seperate lmb core change to seperated patch
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >>
+> >> ---
+> >>  include/linux/lmb.h |    5 ++++-
+> >>  lib/lmb.c           |   11 ++++++++++-
+> >>  2 files changed, 14 insertions(+), 2 deletions(-)
+> >>
+> >> Index: linux-2.6/include/linux/lmb.h
+> >> ===================================================================
+> >> --- linux-2.6.orig/include/linux/lmb.h
+> >> +++ linux-2.6/include/linux/lmb.h
+> >> @@ -26,7 +26,8 @@ struct lmb_property {
+> >>  struct lmb_region {
+> >>  	unsigned long cnt;
+> >>  	u64 size;
+> >> -	struct lmb_property region[MAX_LMB_REGIONS+1];
+> >> +	struct lmb_property *region;
+> >> +	unsigned long region_array_size;
+> >>  };
+> >>  
+> >>  struct lmb {
+> >> @@ -37,6 +38,8 @@ struct lmb {
+> >>  };
+> >>  
+> >>  extern struct lmb lmb;
+> >> +extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
+> >> +extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+> > 
+> > Is there a reason why this needs to be exported ?
+> > 
+
+> lmb_reserved_region is used in 
+> kernel/early_res.c::__check_and_double_early_res/subtract_early_res/early_res_to_bootmem
 > 
-> kernel/built-in.o: In function `sched_avg_update':
-> /linux-2.6/kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
-> /linux-2.6/kernel/sched.c:1261: undefined reference to `__aeabi_uldivmod'
-> make: *** [.tmp_vmlinux1] Error 1
+> later if those functions are moved lmb.c, we can make lmb_reserved_region to 
+> be static
 > 
-> This patch [taken against 2.6.34-rc2] replaces the loop with a call to
-> div_s64 which allows the Kernel to link.
-> 
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  kernel/sched.c |    7 +++----
->  1 files changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 9ab3cd7..6b74f21 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -1238,11 +1238,10 @@ static u64 sched_avg_period(void)
->  static void sched_avg_update(struct rq *rq)
->  {
->  	s64 period = sched_avg_period();
-> +	s64 elapsed_periods = div_s64(rq->clock - rq->age_stamp - 1, period);
->  
-> -	while ((s64)(rq->clock - rq->age_stamp) > period) {
-> -		rq->age_stamp += period;
-> -		rq->rt_avg /= 2;
-> -	}
-> +	rq->age_stamp += (u64)(elapsed_periods * period);
-> +	rq->rt_avg >>= elapsed_periods;
->  }
+> same thing to lmb_memory_region, that will be used by add_lmb_memory() 
+> later.
 
-Hmm, and that does an unconditional division, thing is, I don't expect
-(under normal circumstances) for that loop to go round more than once so
-that division will hurt for no reason.
+I would strongly suggest for you to send the next (-v4) version to lkml only 
+if it's 100% clean and complete in every known regard (with a good splitup and 
+explanations in every commit), so that people dont repeat review or review an 
+unclean aspect aspect that will go away in a next iteration.
 
-Should we maybe write it like so:
+Thanks,
 
-  if ((s64)(rq->clock - rq->age_stamp) > period) {
-    rq->age_stamp += period;
-    rq->rt_avg >>= 1;
-  }
-  if (unlikely((s64)(rq->clock - rq->age_stamp) > period)) {
-    s64 overflows = div_s64(rq->clocks - rq->age_stamp, period);
-    int width = sizeof(rq->rt_avg) * 8;
-
-    rq->age_stamp += overflows * period;
-    if (unlikely(overflows >= width))
-      rq->rt_avg = 0;
-    else
-      rq->rt_avg >>= overflows;
-  }
-
-?
-    
+	Ingo
