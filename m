@@ -1,94 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab0CWMMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 08:12:17 -0400
-Received: from mail-qy0-f179.google.com ([209.85.221.179]:47623 "EHLO
-	mail-qy0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab0CWMMP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 08:12:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Eb9vFZVDBus0rbZvTgyO+WGRgk6UECQXshgX7rFrMXxqpVtsFr4fwVGDUdRq2wk7P4
-         HL5DFjYEpbzLHrelJIh8vauTz+2g08pPUtwh8f7a0a+/J7ijnkMsDvqihtggAS79uRhA
-         mEhRy51A7TdtJu7jLMzCQMD19FSPJytMm5gMI=
+	id S1752915Ab0CWMMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 08:12:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64443 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752024Ab0CWMMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 08:12:46 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Amerigo Wang <amwang@redhat.com>, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [RFC Patch 1/3] netpoll: add generic support for bridge and bonding devices
+References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
+	<1269297081.3552.19.camel@calx>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 23 Mar 2010 08:11:13 -0400
+In-Reply-To: <1269297081.3552.19.camel@calx> (Matt Mackall's message of "Mon,
+	22 Mar 2010 17:31:21 -0500")
+Message-ID: <x49zl1zxmou.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
-References: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
-Date: Tue, 23 Mar 2010 21:11:51 +0900
-Message-ID: <afc622a1003230511o108556f4s5d1282bd3122b3d9@mail.gmail.com>
-Subject: Re: data consistency of high page
-From: NamJae Jeon <linkinjeon@gmail.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, lkml <linux-kernel@vger.kernel.org>,
-       linux-mips <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi. Ralf.
+Matt Mackall <mpm@selenic.com> writes:
 
-I'm Namjae.jeon. nice to meet you.
-
-I face cache aliasing problem on mips 34ke.
-
-Our target cache is 34kB 4way i/d-cache , 32bytes linesize.
-
-As you know, there is possibility of cache aliasing on 8kB per way.
-
-But mips arch of kernel mainline can not properly  handile this case.
-
-For example, highmem handling in __fluash_dcache_page function is just return.
-
-So, if argument page is page in highmem, it can not flush in dcache line.
-
-I want to listen your opinion.
-
-Thanks.
-
-
-2010/3/23 Minchan Kim <minchan.kim@gmail.com>:
-> Hi, Ralf.
+> On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
+>> This whole patchset is for adding netpoll support to bridge and bonding
+>> devices. I already tested it for bridge, bonding, bridge over bonding,
+>> and bonding over bridge. It looks fine now.
 >
-> Below is thread long time ago.
-> At that time, we can't end up the problem by some reason.
-> Sorry for that.
->
-> The problem would occur, again.
->
-> On Fri, Oct 16, 2009 at 6:24 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
->> On Fri, Oct 16, 2009 at 02:17:19PM +0900, Minchan Kim wrote:
->>
->>> Many code of kernel fs usually allocate high page and flush.
->>> But flush_dcache_page of mips checks PageHighMem to avoid flush
->>> so that data consistency is broken, I think.
->>
->> What processor and cache configuration?
->>
->>> I found it's by you and Atsushi-san on 585fa724.
->>> Why do we need the check?
->>> Could you elaborte please?
->>
->> The if statement exists because __flush_dcache_page would crash if a page
->> is not mapped.  This of course isn't correct but that wasn't a problem
->> since highmem still is only supported on machines that don't have aliases.
->>
->>  Ralf
->>
->
-> Our system is following as.
->
-> mips 34ke
-> primary i-cache 32kB VIPT 4way 32 byte line size.
-> primary d-cache 32kB 4way  32 bytes linesize
->
-> If you have further questions, Namjae, Could you follow question of Ralf?
->
-> --
-> Kind regards,
-> Minchan Kim
->
+> Ages ago, Jeff Moyer took a run at this, added him to the cc: on the off
+> chance he still cares.
+
+I'll take a look at it in a bit.  For now, here is the link to my
+original post on this for Amerigo's reading pleasure:
+
+  http://lkml.indiana.edu/hypermail/linux/kernel/0507.0/0206.html
+
+Cheers,
+Jeff
