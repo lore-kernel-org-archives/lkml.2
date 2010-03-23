@@ -1,41 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755053Ab0CXHxz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 03:53:55 -0400
-Received: from mail.atheros.com ([12.36.123.2]:45664 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224Ab0CXHxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 03:53:54 -0400
-From: Sujith <Sujith.Manoharan@atheros.com>
+	id S1755118Ab0CXHyO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 03:54:14 -0400
+Received: from 123cctv.com.252.106.64.in-addr.arpa ([64.106.252.20]:39421 "HELO
+	central-alarms.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with SMTP id S1755054Ab0CXHyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 03:54:12 -0400
+Message-ID: <62433.196.45.196.43.1269348321.squirrel@www.123cctv.com>
+Date: Tue, 23 Mar 2010 12:45:21 -0000 (GMT)
+Subject: reply now
+From: "Margaret Gisborn" <gisborne.margaret@gmail.com>
+X-Priority: 3
+Importance: Normal
+Reply-To: kwalter77@hotmail.com
+X-Mailer: SquirrelMail (version 1.2.8)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <19369.51647.544760.353002@gargle.gargle.HOWL>
-Date: Wed, 24 Mar 2010 13:43:51 +0530
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
-       Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>
-Subject: linux-next: build failure after merge of the final tree (wireless
- tree related)
-In-Reply-To: <20100324155930.1fa3367b.sfr@canb.auug.org.au>
-References: <20100324155930.1fa3367b.sfr@canb.auug.org.au>
-X-Mailer: VM 8.0.12 under 23.1.1 (x86_64-unknown-linux-gnu)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi John,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
+Why have you nor replied to my email? Did you feel it was a mistake?
+Anyway, I am going for my last operation and my doctor said I may not
+survive it. I have instructed my lawyer, Kelvin Walter to give you the 10
+million pounds.
+Contact him +447024053809 or reply now.
+Magie
 
-Thanks for reporting this.
-A patch has been sent to fix this issue: https://patchwork.kernel.org/patch/87829/
 
-Sujith
