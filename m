@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0CWUlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:41:32 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40032 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab0CWUl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754003Ab0CWUld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 16:41:33 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52757 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753583Ab0CWUl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Mar 2010 16:41:29 -0400
 From: pavan_savoy@ti.com
 To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
 Cc: pavan_savoy@ti.com, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
-Subject: [PATCH 2/7] drivers:staging: Kconfig, Makefile for TI's ST ldisc
-Date: Tue, 23 Mar 2010 15:41:10 -0500
-Message-Id: <1269376875-25940-3-git-send-email-pavan_savoy@ti.com>
+Subject: [PATCH 7/7] Documentation/ABI: for N_TI_SHARED ldisc
+Date: Tue, 23 Mar 2010 15:41:15 -0500
+Message-Id: <1269376875-25940-8-git-send-email-pavan_savoy@ti.com>
 X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <1269376875-25940-7-git-send-email-pavan_savoy@ti.com>
 References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com>
  <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-3-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-4-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-5-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-6-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-7-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pavan Savoy <pavan_savoy@ti.com>
 
-This change adds the Kconfig and Make file for TI's
-ST line discipline driver and the BlueZ driver for BT
-core of the TI BT/FM/GPS combo chip.
+N_TI_SHARED creates a sysfs entry to communicate
+with the application/daemon which would want to install/
+un-install the line discipline, it's documentation
+now exists in testing/ subdirectory.
 
 Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
 ---
- drivers/staging/Kconfig        |    2 ++
- drivers/staging/Makefile       |    1 +
- drivers/staging/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
- drivers/staging/ti-st/Makefile |    7 +++++++
- 4 files changed, 34 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/ti-st/Kconfig
- create mode 100644 drivers/staging/ti-st/Makefile
+ Documentation/ABI/testing/sysfs-uim |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-uim
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 5589616..209fe00 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -141,5 +141,7 @@ source "drivers/staging/dt3155/Kconfig"
- 
- source "drivers/staging/crystalhd/Kconfig"
- 
-+source "drivers/staging/ti-st/Kconfig"
-+
- endif # !STAGING_EXCLUDE_BUILD
- endif # STAGING
-diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
-index ec45d4b..b41aa1a 100644
---- a/drivers/staging/Makefile
-+++ b/drivers/staging/Makefile
-@@ -52,3 +52,4 @@ obj-$(CONFIG_PCMCIA_NETWAVE)	+= netwave/
- obj-$(CONFIG_FB_SM7XX)		+= sm7xx/
- obj-$(CONFIG_DT3155)		+= dt3155/
- obj-$(CONFIG_CRYSTALHD)		+= crystalhd/
-+obj-$(CONFIG_TI_ST)		+= ti-st/
-diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
+diff --git a/Documentation/ABI/testing/sysfs-uim b/Documentation/ABI/testing/sysfs-uim
 new file mode 100644
-index 0000000..120e8db
+index 0000000..899aa4d
 --- /dev/null
-+++ b/drivers/staging/ti-st/Kconfig
++++ b/Documentation/ABI/testing/sysfs-uim
 @@ -0,0 +1,24 @@
-+#
-+# TI's shared transport line discipline and the protocol
-+# drivers (BT, FM and GPS)
-+#
-+menu "Texas Instruments shared transport line discipline"
-+config TI_ST
-+	tristate "shared transport core driver"
-+	select FW_LOADER
-+	help
-+	  This enables the shared transport core driver for TI
-+	  BT / FM and GPS combo chips. This enables protocol drivers
-+	  to register themselves with core and send data, the responses
-+	  are returned to relevant protocol drivers based on their
-+	  packet types.
++What:           /sys/uim
++Date:           March 22
++Contact:        Pavan Savoy <pavan_savoy@ti.com>
++Description:
++                Create a new kobject to pass information about the
++		N_TI_SHARED line discipline created to application/daemon
++		which would install/un-install line discipline.
 +
-+config ST_BT
-+	tristate "BlueZ bluetooth driver for ST"
-+	depends on BT
-+	select TI_ST
-+	help
-+	  This enables the Bluetooth driver for TI BT/FM/GPS combo devices.
-+	  This makes use of shared transport line discipline core driver to
-+	  communicate with the BT core of the combo chip.
-+endmenu
-diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
-new file mode 100644
-index 0000000..0167d1d
---- /dev/null
-+++ b/drivers/staging/ti-st/Makefile
-@@ -0,0 +1,7 @@
-+#
-+# Makefile for TI's shared transport line discipline
-+# and its protocol drivers (BT, FM, GPS)
-+#
-+obj-$(CONFIG_TI_ST) 		+= st_drv.o
-+st_drv-objs			:= st_core.o st_kim.o st_ll.o
-+obj-$(CONFIG_ST_BT) 		+= bt_drv.o
++What:           /sys/uim/pid
++Date:           March 22
++Contact:        Pavan Savoy <pavan_savoy@ti.com>
++Description:
++		The daemon/application wanting to use the line discipline
++		N_TI_SHARED will write in it's process Id, for the LDISC
++		driver to send SIGUSR2 signal to the process whenever a
++		upper layer protocol driver wants to make use of the LDISC
++		driver.
++
++What:           /sys/uim/protocols
++Date:           March 22
++Contact:        Pavan Savoy <pavan_savoy@ti.com>
++Description:
++		List the protocols currently making use of the LDISC to ensure
++		LDISC is not un-installed when BT/FM or GPS is making use of it.
 -- 
 1.5.4.3
 
