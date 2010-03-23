@@ -1,45 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab0CWRPC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 13:15:02 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:53734 "EHLO tac.ki.iif.hu"
+	id S1753020Ab0CWRT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 13:19:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55612 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751343Ab0CWRPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 13:15:01 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH] qla2xxx: Fix documentation of ql2xfdmienable module parameter
-Date: Tue, 23 Mar 2010 18:14:59 +0100
-Message-ID: <87634n0xkc.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1751343Ab0CWRT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 13:19:26 -0400
+Message-ID: <4BA8F7BD.20401@kernel.org>
+Date: Tue, 23 Mar 2010 10:17:49 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
+ struct
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org> <20100323104241.GA1189@elte.hu> <20100323131839.GA31552@linux-sh.org>
+In-Reply-To: <20100323131839.GA31552@linux-sh.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default is enabled since 7e47e5ca184548341a82eeb2238ee3622c43cae1.
+On 03/23/2010 06:18 AM, Paul Mundt wrote:
+> On Tue, Mar 23, 2010 at 11:42:41AM +0100, Ingo Molnar wrote:
+>>
+>> * Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>>  void __init lmb_init(void)
+>>>  {
+>>> +	lmb.memory.region   = lmb_memory_region;
+>>> +	lmb.memory.region_array_size   = ARRAY_SIZE(lmb_memory_region);
+>>> +	lmb.reserved.region = lmb_reserved_region;
+>>> +	lmb.reserved.region_array_size = ARRAY_SIZE(lmb_reserved_region);
+>>> +
+>>
+>> That's rather unreadable and has random whitespace noise.
+>>
+>> Should be something like:
+>>
+>> 	lmb.memory.region		= lmb_memory_region;
+>> 	lmb.memory.region_array_size	= ARRAY_SIZE(lmb_memory_region);
+>> 	lmb.reserved.region		= lmb_reserved_region;
+>> 	lmb.reserved.region_array_size	= ARRAY_SIZE(lmb_reserved_region);
+>>
+>> also, i'd suggest to shorten region_array_size to region_size (we know it's an 
+>> array), so it would become:
+>>
+>> 	lmb.memory.region	 = lmb_memory_region;
+>> 	lmb.memory.region_size	 = ARRAY_SIZE(lmb_memory_region);
+>>
+> I don't mean to be pedantic, but the LMB code already has a lot of
+> region.size references so region_size looks a bit awkward. All of the
+> accessors in linux/lmb.h use region_nr as the array index, so perhaps
+> nr_regions would be less ambiguous.
 
-Signed-off-by: Ferenc Wagner <wferi@niif.hu>
----
- drivers/scsi/qla2xxx/qla_os.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+@@ -26,7 +26,8 @@ struct lmb_property {
+ struct lmb_region {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct lmb_property region[MAX_LMB_REGIONS+1];
++	struct lmb_property *region;
++	unsigned long region_array_size;
+ };
 
-diff --git a/drivers/scsi/qla2xxx/qla_os.c b/drivers/scsi/qla2xxx/qla_os.c
-index 46720b2..ac08397 100644
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -69,8 +69,8 @@ static void qla2x00_free_device(scsi_qla_host_t *);
- int ql2xfdmienable=1;
- module_param(ql2xfdmienable, int, S_IRUGO|S_IRUSR);
- MODULE_PARM_DESC(ql2xfdmienable,
--		"Enables FDMI registratons "
--		"Default is 0 - no FDMI. 1 - perfom FDMI.");
-+		"Enables FDMI registrations. "
-+		"0 - no FDMI. Default is 1 - perform FDMI.");
- 
- #define MAX_Q_DEPTH    32
- static int ql2xmaxqdepth = MAX_Q_DEPTH;
--- 
-1.5.6.5
+cnt is number of slots used.
+size is memory size
 
+can we use rgn_sz for region array size?
+
+YH
