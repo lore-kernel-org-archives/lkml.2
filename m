@@ -1,116 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab0CWNXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 09:23:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42295 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751351Ab0CWNXM (ORCPT
+	id S1753334Ab0CWNYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 09:24:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:58637 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0CWNYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 09:23:12 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-s390@vger.kernel.org,
-       linux-sh@vger.kernel.org
-In-Reply-To: <20100323074546.GK13417@linux-sh.org>
-References: <1269126097.18314.111.camel@localhost>
-	 <1269126340.18314.115.camel@localhost>
-	 <20100323074546.GK13417@linux-sh.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-JxBzKjEiI/A3c1PVSdDJ"
-Date: Tue, 23 Mar 2010 13:23:00 +0000
-Message-ID: <1269350580.18314.260.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 2/4] panic: Allow taint flag for warnings to be changed
- from TAINT_WARN
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Tue, 23 Mar 2010 09:24:32 -0400
+Message-ID: <4BA8C105.9020308@windriver.com>
+Date: Tue, 23 Mar 2010 08:24:21 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: linux-next: manual merge of the kgdb tree with the input tree
+References: <20100323140946.b56c1d8b.sfr@canb.auug.org.au>
+In-Reply-To: <20100323140946.b56c1d8b.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Mar 2010 13:24:21.0591 (UTC) FILETIME=[260A1E70:01CACA8C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/22/2010 10:09 PM, Stephen Rothwell wrote:
+> Hi Jason,
+>
+> Today's linux-next merge of the kgdb tree got a conflict in
+> drivers/char/keyboard.c between commit
+> edc6e384f9d96e54a6d03068d3b03fa5b56b6449 ("Input: implement SysRq as a
+> separate input handler") from the input tree and commit
+> 4e4b600bf7160c11893bc3f4f8da8a70777b23ba ("When issuing an alt-sysrq-KEY
+> sequence with the keyboard driver in the")
+> from the kgdb tree.
+>
+> The latter changes code moved to another file by the former.  I don't
+> know how to fix this up, so I have just effectively reverted the kgdb
+> commit for now - suggestions welcome.
+>
+> BTW, the author of that kgdb commit is "Jason Wessel Subject: [PATCH]
+> <jason.wessel@windriver.com>".
+>
+>   
+I will drop mine for now.  Dmitry and I have differing implementations
+to solve the same sort of problem with trapping the sysrq.  I had wanted
+to test Dmitry's patch at some point soon.
 
---=-JxBzKjEiI/A3c1PVSdDJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I had updated kgdb-next to include the RFC patches for the keyboard and
+kms code, but it is all removed again until we sort out which
+implementation we will roll with.
 
-On Tue, 2010-03-23 at 16:45 +0900, Paul Mundt wrote:
-> On Sat, Mar 20, 2010 at 11:05:40PM +0000, Ben Hutchings wrote:
-> > WARN() is used in some places to report firmware or hardware bugs that
-> > are then worked-around.  These bugs do not affect the stability of the
-> > kernel and should not set the usual TAINT_WARN flag.  To allow for
-> > this, add WARN_TAINT() and WARN_TAINT_ONCE() macros that take a taint
-> > flag as argument.
-> >=20
-> > Architectures that implement warnings using trap instructions instead
-> > of calls to warn_slowpath_*() must now implement __WARN_TAINT(taint)
-> > instead of __WARN().
-> >=20
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > ---
-> > The architecture-specific changes here are untested and need to be
-> > reviewed by architecture maintainers.
-> >=20
-> I'm a bit confused about how this is supposed to work, the TAINT_xxx
-> values are bit positions presently from 0 to 10, while BUGFLAG_xxx are
-> ranged from 0 up. You've set up BUGFLAG_TAINT() to that the TAINT_xxx
-> value is shifted up 8 bits but neglected the fact that the trap type is
-> 16-bits on most (all?) of the platforms using trap-based BUG handling.
->=20
-> If the 'taint' in question is just the TAINT_xxx value by itself and will
-> never be a bitmap then that's fine, but there's certainly not enough room
-> to pass the bitmap in on top of the bugflag otherwise (I don't know if
-> this is your intention or not though).
-
-Yes, the taint value must be a bit number not a flag.  Sloppy wording on
-my part.
-
-> Also note that some platforms (like SH) implement additional bugflags, so
-> we at least want to keep the lower byte available for architecture
-> private use.
-
-I noticed, that's why I started at 8 not 1.
-
-> Having said that, the current patch does work for me, although I'm a bit
-> nervous about someone thinking it's ok to pass in a taint bitmap here.
-
-We can maybe use BUILD_BUG_ON() here as the taint bit is already
-required to be a compile-time constant.
-
-Ben.
-
-> Tested-by: Paul Mundt <lethal@linux-sh.org>
->=20
-
---=20
-Ben Hutchings
-Any smoothly functioning technology is indistinguishable from a rigged demo=
-.
-
---=-JxBzKjEiI/A3c1PVSdDJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS6jAsue/yOyVhhEJAQKuLRAAo8lRcJIYqpklZT6Ct5UkFmnwQBWniN/J
-O8B6FmzAV8e44xkctJegxtmxMBQETjVOmcR6YC0KtzZXQ1VRSzF7kNaQ1i4V5uXn
-aBSXf82IxdIs7h9wDWqOH2uXtrheLeEhKTvTyGKEzGsc0t28l2cMUocxsjlFU8VW
-oAenqoHUbJAkPvpC1fP8bT42C9rxm5AcO/py0pyqtC+gPaOs/J+606IClqlE4bXi
-ZHltMfpoFzBWQLJ7ZB7Aeu1vwFozybSfeoz9/p54BjMhcRcmQTaTSBUfKeyC5EsS
-Q8GbKYFtIwKhdnLJ9QNfuiO+0u3/G3dkPHRWVJdivNpplncsrYYTDlKJV+ivRtV1
-6xuJVjIONPh5VwEHkqEbYfEdqf9WFHvUbDWOxeMjQ82vuzObFDgR97oIFcwu5X+e
-Qbl8XVnRQtk3BhblMnfrDBuwYuudgqMaiuTwYSmQWAoJpL5ftwQRXXYszFrHWVkA
-wMVUL9V+Cke4xkvxt0szxBo7y20Je+6OnOj/u3G04cK2f2gdAG7yWXm1x6K5jxjc
-OIVB/hzMuLLT3oW9h/gy3OT617X8wz5W83oqH8jcxsBG34QmpWuCYvhXFWF1DkAg
-vbxLwPzg4JYcxLjpsJ5ZGuREyf+DQVGu323BV9IdR/JHUahaI73bZ1/L9jo7VKSw
-IPYASs3GZ2M=
-=xrOe
------END PGP SIGNATURE-----
-
---=-JxBzKjEiI/A3c1PVSdDJ--
+Thanks,
+Jason.
