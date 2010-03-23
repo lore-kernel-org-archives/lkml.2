@@ -1,224 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754644Ab0CWXKo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:10:44 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:64710 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab0CWXKn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:10:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Dr7IjISxYoGHKLU6IP7LkW/waLS09ily3jTiBvUWAJduOt9SX4z6A9lukwyoSkqYDv
-         x9mIzdG6a0lLS0qIpD2l/iOw8U2JG3lu2msx7n2WTiAup2lWyEnFji7e44w9abWk4PMi
-         2hR3Q7JBcQNuGPur3f5kNEZFmtwkSZdeG5Sv0=
-MIME-Version: 1.0
-In-Reply-To: <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	 <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
-Date: Wed, 24 Mar 2010 08:10:40 +0900
-Message-ID: <28c262361003231610p3753a136v51720df8568cfa0a@mail.gmail.com>
-Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1754654Ab0CWXMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 19:12:52 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:43859 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754329Ab0CWXMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 19:12:51 -0400
+From: Giel van Schijndel <me@mortis.eu>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Giel van Schijndel <me@mortis.eu>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] [RFC] hwmon: f71882fg: Add support for the Fintek F71808E
+Date: Wed, 24 Mar 2010 00:12:13 +0100
+Message-Id: <1269385936-3440-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <20100323141718.GA23172@salidar.me.mortis.eu>
+References: <20100323141718.GA23172@salidar.me.mortis.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mel.
+Allow device probing to recognise the Fintek F71808E.
 
-On Tue, Mar 23, 2010 at 9:25 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> Ordinarily when a high-order allocation fails, direct reclaim is entered to
-> free pages to satisfy the allocation.  With this patch, it is determined if
-> an allocation failed due to external fragmentation instead of low memory
-> and if so, the calling process will compact until a suitable page is
-> freed. Compaction by moving pages in memory is considerably cheaper than
-> paging out to disk and works where there are locked pages or no swap. If
-> compaction fails to free a page of a suitable size, then reclaim will
-> still occur.
->
-> Direct compaction returns as soon as possible. As each block is compacted,
-> it is checked if a suitable page has been freed and if so, it returns.
->
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/linux/compaction.h |   16 +++++-
->  include/linux/vmstat.h     |    1 +
->  mm/compaction.c            |  118 ++++++++++++++++++++++++++++++++++++++++++++
->  mm/page_alloc.c            |   26 ++++++++++
->  mm/vmstat.c                |   15 +++++-
->  5 files changed, 172 insertions(+), 4 deletions(-)
->
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index c94890b..b851428 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -1,14 +1,26 @@
->  #ifndef _LINUX_COMPACTION_H
->  #define _LINUX_COMPACTION_H
->
-> -/* Return values for compact_zone() */
-> +/* Return values for compact_zone() and try_to_compact_pages() */
->  #define COMPACT_INCOMPLETE     0
-> -#define COMPACT_COMPLETE       1
-> +#define COMPACT_PARTIAL                1
-> +#define COMPACT_COMPLETE       2
->
->  #ifdef CONFIG_COMPACTION
->  extern int sysctl_compact_memory;
->  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
->                        void __user *buffer, size_t *length, loff_t *ppos);
-> +
-> +extern int fragmentation_index(struct zone *zone, unsigned int order);
-> +extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
-> +                       int order, gfp_t gfp_mask, nodemask_t *mask);
-> +#else
-> +static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
-> +                       int order, gfp_t gfp_mask, nodemask_t *nodemask)
-> +{
-> +       return COMPACT_INCOMPLETE;
-> +}
-> +
->  #endif /* CONFIG_COMPACTION */
->
->  #if defined(CONFIG_COMPACTION) && defined(CONFIG_SYSFS) && defined(CONFIG_NUMA)
-> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-> index 56e4b44..b4b4d34 100644
-> --- a/include/linux/vmstat.h
-> +++ b/include/linux/vmstat.h
-> @@ -44,6 +44,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
->                KSWAPD_SKIP_CONGESTION_WAIT,
->                PAGEOUTRUN, ALLOCSTALL, PGROTATED,
->                COMPACTBLOCKS, COMPACTPAGES, COMPACTPAGEFAILED,
-> +               COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
->  #ifdef CONFIG_HUGETLB_PAGE
->                HTLB_BUDDY_PGALLOC, HTLB_BUDDY_PGALLOC_FAIL,
->  #endif
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 8df6e3d..6688700 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -34,6 +34,8 @@ struct compact_control {
->        unsigned long nr_anon;
->        unsigned long nr_file;
->
-> +       unsigned int order;             /* order a direct compactor needs */
-> +       int migratetype;                /* MOVABLE, RECLAIMABLE etc */
->        struct zone *zone;
->  };
->
-> @@ -301,10 +303,31 @@ static void update_nr_listpages(struct compact_control *cc)
->  static inline int compact_finished(struct zone *zone,
->                                                struct compact_control *cc)
->  {
-> +       unsigned int order;
-> +       unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
-> +
->        /* Compaction run completes if the migrate and free scanner meet */
->        if (cc->free_pfn <= cc->migrate_pfn)
->                return COMPACT_COMPLETE;
->
-> +       /* Compaction run is not finished if the watermark is not met */
-> +       if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
-> +               return COMPACT_INCOMPLETE;
-> +
-> +       if (cc->order == -1)
-> +               return COMPACT_INCOMPLETE;
-> +
-> +       /* Direct compactor: Is a suitable page free? */
-> +       for (order = cc->order; order < MAX_ORDER; order++) {
-> +               /* Job done if page is free of the right migratetype */
-> +               if (!list_empty(&zone->free_area[order].free_list[cc->migratetype]))
-> +                       return COMPACT_PARTIAL;
-> +
-> +               /* Job done if allocation would set block type */
-> +               if (order >= pageblock_order && zone->free_area[order].nr_free)
-> +                       return COMPACT_PARTIAL;
-> +       }
-> +
->        return COMPACT_INCOMPLETE;
->  }
->
-> @@ -348,6 +371,101 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
->        return ret;
->  }
->
-> +static inline unsigned long compact_zone_order(struct zone *zone,
-> +                                               int order, gfp_t gfp_mask)
-> +{
-> +       struct compact_control cc = {
-> +               .nr_freepages = 0,
-> +               .nr_migratepages = 0,
-> +               .order = order,
-> +               .migratetype = allocflags_to_migratetype(gfp_mask),
-> +               .zone = zone,
-> +       };
-> +       INIT_LIST_HEAD(&cc.freepages);
-> +       INIT_LIST_HEAD(&cc.migratepages);
-> +
-> +       return compact_zone(zone, &cc);
-> +}
-> +
-> +/**
-> + * try_to_compact_pages - Direct compact to satisfy a high-order allocation
-> + * @zonelist: The zonelist used for the current allocation
-> + * @order: The order of the current allocation
-> + * @gfp_mask: The GFP mask of the current allocation
-> + * @nodemask: The allowed nodes to allocate from
-> + *
-> + * This is the main entry point for direct page compaction.
-> + */
-> +unsigned long try_to_compact_pages(struct zonelist *zonelist,
-> +                       int order, gfp_t gfp_mask, nodemask_t *nodemask)
-> +{
-> +       enum zone_type high_zoneidx = gfp_zone(gfp_mask);
-> +       int may_enter_fs = gfp_mask & __GFP_FS;
-> +       int may_perform_io = gfp_mask & __GFP_IO;
-> +       unsigned long watermark;
-> +       struct zoneref *z;
-> +       struct zone *zone;
-> +       int rc = COMPACT_INCOMPLETE;
-> +
-> +       /* Check whether it is worth even starting compaction */
-> +       if (order == 0 || !may_enter_fs || !may_perform_io)
-> +               return rc;
-> +
-> +       /*
-> +        * We will not stall if the necessary conditions are not met for
-> +        * migration but direct reclaim seems to account stalls similarly
-> +        */
+Sysfs interface:
+ * Fan/pwm control is the same as for F71889FG
+ * Temperature and voltage sensor handling is largely the same as for
+   the F71889FG
+  - Has one temperature sensor less (doesn't have temp3)
+  - Misses one voltage sensor (doesn't have V6, thus in6_input refers to
+    what in7_input refers for F71889FG)
 
-I can't understand this comment.
-In case of direct reclaim, shrink_zones's long time is just stall
-by view point of allocation customer.
-So "Allocation is stalled" makes sense to me.
+For the purpose of the sysfs interface fxxxx_in_temp_attr[] is split up
+such that it can largely be reused.
+---
+ Documentation/hwmon/f71882fg |    4 ++
+ drivers/hwmon/Kconfig        |    6 ++--
+ drivers/hwmon/f71882fg.c     |   80 +++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 79 insertions(+), 11 deletions(-)
 
-But "Compaction is stalled" doesn't make sense to me.
-How about "COMPACTION_DIRECT" like "PGSCAN_DIRECT"?
-I think It's straightforward.
-Naming is important since it makes ABI.
-
-> +       count_vm_event(COMPACTSTALL);
-> +
-
-
-
-
-
+diff --git a/Documentation/hwmon/f71882fg b/Documentation/hwmon/f71882fg
+index a7952c2..1a07fd6 100644
+--- a/Documentation/hwmon/f71882fg
++++ b/Documentation/hwmon/f71882fg
+@@ -2,6 +2,10 @@ Kernel driver f71882fg
+ ======================
+ 
+ Supported chips:
++  * Fintek F71808E
++    Prefix: 'f71808fg'
++    Addresses scanned: none, address read from Super I/O config space
++    Datasheet: Not public
+   * Fintek F71858FG
+     Prefix: 'f71858fg'
+     Addresses scanned: none, address read from Super I/O config space
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index e4595e6..7053608 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -332,11 +332,11 @@ config SENSORS_F71805F
+ 	  will be called f71805f.
+ 
+ config SENSORS_F71882FG
+-	tristate "Fintek F71858FG, F71862FG, F71882FG, F71889FG and F8000"
++	tristate "Fintek F71808E, F71858FG, F71862FG, F71882FG, F71889FG and F8000"
+ 	depends on EXPERIMENTAL
+ 	help
+-	  If you say yes here you get support for hardware monitoring
+-	  features of the Fintek F71858FG, F71862FG/71863FG, F71882FG/F71883FG,
++	  If you say yes here you get support for hardware monitoring features
++	  of the Fintek F71808E, F71858FG, F71862FG/71863FG, F71882FG/F71883FG,
+ 	  F71889FG and F8000 Super-I/O chips.
+ 
+ 	  This driver can also be built as a module.  If so, the module
+diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+index 25e1cad..b290b87 100644
+--- a/drivers/hwmon/f71882fg.c
++++ b/drivers/hwmon/f71882fg.c
+@@ -45,6 +45,7 @@
+ #define SIO_REG_ADDR		0x60	/* Logical device address (2 bytes) */
+ 
+ #define SIO_FINTEK_ID		0x1934	/* Manufacturers ID */
++#define SIO_F71808_ID		0x0901  /* Chipset ID */
+ #define SIO_F71858_ID		0x0507  /* Chipset ID */
+ #define SIO_F71862_ID		0x0601	/* Chipset ID */
+ #define SIO_F71882_ID		0x0541	/* Chipset ID */
+@@ -96,9 +97,10 @@ static unsigned short force_id;
+ module_param(force_id, ushort, 0);
+ MODULE_PARM_DESC(force_id, "Override the detected device ID");
+ 
+-enum chips { f71858fg, f71862fg, f71882fg, f71889fg, f8000 };
++enum chips { f71808fg, f71858fg, f71862fg, f71882fg, f71889fg, f8000 };
+ 
+ static const char *f71882fg_names[] = {
++	"f71808fg",
+ 	"f71858fg",
+ 	"f71862fg",
+ 	"f71882fg",
+@@ -306,8 +308,8 @@ static struct sensor_device_attribute_2 f71858fg_in_temp_attr[] = {
+ 	SENSOR_ATTR_2(temp3_fault, S_IRUGO, show_temp_fault, NULL, 0, 2),
+ };
+ 
+-/* Temp and in attr common to the f71862fg, f71882fg and f71889fg */
+-static struct sensor_device_attribute_2 fxxxx_in_temp_attr[] = {
++/* In attr common to the f71862fg, f71882fg and f71889fg */
++static struct sensor_device_attribute_2 fxxxx_in_attr[] = {
+ 	SENSOR_ATTR_2(in0_input, S_IRUGO, show_in, NULL, 0, 0),
+ 	SENSOR_ATTR_2(in1_input, S_IRUGO, show_in, NULL, 0, 1),
+ 	SENSOR_ATTR_2(in2_input, S_IRUGO, show_in, NULL, 0, 2),
+@@ -317,6 +319,22 @@ static struct sensor_device_attribute_2 fxxxx_in_temp_attr[] = {
+ 	SENSOR_ATTR_2(in6_input, S_IRUGO, show_in, NULL, 0, 6),
+ 	SENSOR_ATTR_2(in7_input, S_IRUGO, show_in, NULL, 0, 7),
+ 	SENSOR_ATTR_2(in8_input, S_IRUGO, show_in, NULL, 0, 8),
++};
++
++/* In attr for the f71808fg */
++static struct sensor_device_attribute_2 f71808_in_attr[] = {
++	SENSOR_ATTR_2(in0_input, S_IRUGO, show_in, NULL, 0, 0),
++	SENSOR_ATTR_2(in1_input, S_IRUGO, show_in, NULL, 0, 1),
++	SENSOR_ATTR_2(in2_input, S_IRUGO, show_in, NULL, 0, 2),
++	SENSOR_ATTR_2(in3_input, S_IRUGO, show_in, NULL, 0, 3),
++	SENSOR_ATTR_2(in4_input, S_IRUGO, show_in, NULL, 0, 4),
++	SENSOR_ATTR_2(in5_input, S_IRUGO, show_in, NULL, 0, 5),
++	SENSOR_ATTR_2(in6_input, S_IRUGO, show_in, NULL, 0, 7),
++	SENSOR_ATTR_2(in7_input, S_IRUGO, show_in, NULL, 0, 8),
++};
++
++/* Temp attr common to the f71808fg, f71862fg, f71882fg and f71889fg */
++static struct sensor_device_attribute_2 fxxxx_temp_attr[] = {
+ 	SENSOR_ATTR_2(temp1_input, S_IRUGO, show_temp, NULL, 0, 1),
+ 	SENSOR_ATTR_2(temp1_max, S_IRUGO|S_IWUSR, show_temp_max,
+ 		store_temp_max, 0, 1),
+@@ -355,6 +373,10 @@ static struct sensor_device_attribute_2 fxxxx_in_temp_attr[] = {
+ 		store_temp_beep, 0, 6),
+ 	SENSOR_ATTR_2(temp2_type, S_IRUGO, show_temp_type, NULL, 0, 2),
+ 	SENSOR_ATTR_2(temp2_fault, S_IRUGO, show_temp_fault, NULL, 0, 2),
++};
++
++/* Temp and in attr common to the f71862fg, f71882fg and f71889fg */
++static struct sensor_device_attribute_2 f71862_temp_attr[] = {
+ 	SENSOR_ATTR_2(temp3_input, S_IRUGO, show_temp, NULL, 0, 3),
+ 	SENSOR_ATTR_2(temp3_max, S_IRUGO|S_IWUSR, show_temp_max,
+ 		store_temp_max, 0, 3),
+@@ -989,6 +1011,11 @@ static struct f71882fg_data *f71882fg_update_device(struct device *dev)
+ 				data->temp_type[1] = 6;
+ 				break;
+ 			}
++		} else if (data->type == f71808fg) {
++			reg  = f71882fg_read8(data, F71882FG_REG_TEMP_TYPE);
++			data->temp_type[1] = (reg & 0x02) ? 2 : 4;
++			data->temp_type[2] = (reg & 0x04) ? 2 : 4;
++
+ 		} else {
+ 			reg2 = f71882fg_read8(data, F71882FG_REG_PECI);
+ 			if ((reg2 & 0x03) == 0x01)
+@@ -1871,7 +1898,8 @@ static ssize_t store_pwm_auto_point_temp(struct device *dev,
+ 
+ 	val /= 1000;
+ 
+-	if (data->type == f71889fg)
++	if (data->type == f71889fg
++	 || data->type == f71808fg)
+ 		val = SENSORS_LIMIT(val, -128, 127);
+ 	else
+ 		val = SENSORS_LIMIT(val, 0, 127);
+@@ -1974,8 +2002,27 @@ static int __devinit f71882fg_probe(struct platform_device *pdev)
+ 			/* fall through! */
+ 		case f71862fg:
+ 			err = f71882fg_create_sysfs_files(pdev,
+-					fxxxx_in_temp_attr,
+-					ARRAY_SIZE(fxxxx_in_temp_attr));
++					f71862_temp_attr,
++					ARRAY_SIZE(f71862_temp_attr));
++			if (err)
++				goto exit_unregister_sysfs;
++			err = f71882fg_create_sysfs_files(pdev,
++					fxxxx_in_attr,
++					ARRAY_SIZE(fxxxx_in_attr));
++			if (err)
++				goto exit_unregister_sysfs;
++			/* fall through! */
++		case f71808fg:
++			if (data->type == f71808fg) {
++				err = f71882fg_create_sysfs_files(pdev,
++						f71808_in_attr,
++						ARRAY_SIZE(f71808_in_attr));
++				if (err)
++					goto exit_unregister_sysfs;
++			}
++			err = f71882fg_create_sysfs_files(pdev,
++					fxxxx_temp_attr,
++					ARRAY_SIZE(fxxxx_temp_attr));
+ 			break;
+ 		case f8000:
+ 			err = f71882fg_create_sysfs_files(pdev,
+@@ -2002,6 +2049,7 @@ static int __devinit f71882fg_probe(struct platform_device *pdev)
+ 		case f71862fg:
+ 			err = (data->pwm_enable & 0x15) != 0x15;
+ 			break;
++		case f71808fg:
+ 		case f71882fg:
+ 		case f71889fg:
+ 			err = 0;
+@@ -2047,6 +2095,7 @@ static int __devinit f71882fg_probe(struct platform_device *pdev)
+ 					f8000_auto_pwm_attr,
+ 					ARRAY_SIZE(f8000_auto_pwm_attr));
+ 			break;
++		case f71808fg:
+ 		case f71889fg:
+ 			for (i = 0; i < nr_fans; i++) {
+ 				data->pwm_auto_point_mapping[i] =
+@@ -2126,8 +2175,20 @@ static int f71882fg_remove(struct platform_device *pdev)
+ 			/* fall through! */
+ 		case f71862fg:
+ 			f71882fg_remove_sysfs_files(pdev,
+-					fxxxx_in_temp_attr,
+-					ARRAY_SIZE(fxxxx_in_temp_attr));
++					f71862_temp_attr,
++					ARRAY_SIZE(f71862_temp_attr));
++			f71882fg_remove_sysfs_files(pdev,
++					fxxxx_in_attr,
++					ARRAY_SIZE(fxxxx_in_attr));
++			/* fall through! */
++		case f71808fg:
++			if (data->type == f71808fg)
++				f71882fg_remove_sysfs_files(pdev,
++						f71808_in_attr,
++						ARRAY_SIZE(f71808_in_attr));
++			f71882fg_remove_sysfs_files(pdev,
++					fxxxx_temp_attr,
++					ARRAY_SIZE(fxxxx_temp_attr));
+ 			break;
+ 		case f8000:
+ 			f71882fg_remove_sysfs_files(pdev,
+@@ -2195,6 +2256,9 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+ 
+ 	devid = force_id ? force_id : superio_inw(sioaddr, SIO_REG_DEVID);
+ 	switch (devid) {
++	case SIO_F71808_ID:
++		sio_data->type = f71808fg;
++		break;
+ 	case SIO_F71858_ID:
+ 		sio_data->type = f71858fg;
+ 		break;
 -- 
-Kind regards,
-Minchan Kim
+1.6.4.4
+
