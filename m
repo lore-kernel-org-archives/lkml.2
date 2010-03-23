@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab0CWEvJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:51:09 -0400
-Received: from waste.org ([173.11.57.241]:58623 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab0CWEvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:51:05 -0400
-Subject: Re: [RFC Patch 2/3] bridge: make bridge support netpoll
-From: Matt Mackall <mpm@selenic.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-In-Reply-To: <4BA84607.7030304@redhat.com>
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain>
-	 <20100322082112.4967.5504.sendpatchset@localhost.localdomain>
-	 <1269297307.3552.23.camel@calx>  <4BA82186.3010204@redhat.com>
-	 <1269318470.3552.54.camel@calx>  <4BA84607.7030304@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Mar 2010 23:51:01 -0500
-Message-ID: <1269319861.3552.87.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753840Ab0CWEvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:51:37 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:53421 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415Ab0CWEvg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:51:36 -0400
+Message-ID: <4BA84804.3080105@oracle.com>
+Date: Mon, 22 Mar 2010 21:48:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v1 4/10] User Space Breakpoint Assistance Layer
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>	<20100320142541.11427.98291.sendpatchset@localhost6.localdomain6> <20100322214009.bb90d6e2.akpm@linux-foundation.org>
+In-Reply-To: <20100322214009.bb90d6e2.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BA8485F.00E1:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 12:39 +0800, Cong Wang wrote:
-> Matt Mackall wrote:
-> > On Tue, 2010-03-23 at 10:03 +0800, Cong Wang wrote:
-> >> Matt Mackall wrote:
-> >>> On Mon, 2010-03-22 at 04:17 -0400, Amerigo Wang wrote:
-> >>>> Based on the previous patch, make bridge support netpoll by:
-> >>>>
-> >>>> 1) implement the 4 methods to support netpoll for bridge;
-> >>>>
-> >>>> 2) modify netpoll during forwarding packets in bridge;
-> >>>>
-> >>>> 3) disable netpoll support of bridge when a netpoll-unabled device
-> >>>>    is added to bridge;
-> >>> Not sure if this is the right thing to do. Shouldn't we simply enable
-> >>> polling on all devices that support it and warn about the others (aka
-> >>> best effort)?
-> >>>
-> >> I don't think it's a good idea, because we check if a device
-> >> supports netpoll by checking if it has ndo_poll_controller method.
-> > 
-> > Uh, what? If we have 5 devices on a bridge and 4 support netpoll, then
-> > shouldn't we just send netconsole messages to those 4 devices? Isn't
-> > this much better than simply refusing to work?
-> > 
+On 03/22/10 18:40, Andrew Morton wrote:
+> On Sat, 20 Mar 2010 19:55:41 +0530 Srikar Dronamraju <srikar@linux.vnet.ibm.com> wrote:
 > 
-> How could you let the bridge know netpoll is not sent to
-> the one that doesn't support netpoll during setup? This will
-> be complex, I am afraid.
+>>
+>> ...
+>>
+>> +/**
+>> + * user_bkpt_validate_insn_addr - Validate if the instruction is an
+>> + * executable vma.
+> 
+> It used to be the case that the above linebreak is "wrong".  (Nobody
+> ever tests their kerneldoc output!) I have a vague feeling that this
+> might have been fixed lately.  Randy?
 
-I thought I saw a simple loop over bridge devices at poll time in your
-patch. So it should be a simple matter of skipping unsupported devices
-in that loop.
-
-But Dave thinks there a bigger problems here, so I recommend first
-figuring out the architecture issues, then we can get back to the policy
-issues.
+Yes, that's OK now.  Not a problem.
 
 -- 
-http://selenic.com : development and support for Mercurial and Linux
-
-
+~Randy
