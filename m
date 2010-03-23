@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab0CWOsb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:48:31 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41844 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438Ab0CWOs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:48:29 -0400
-Date: Tue, 23 Mar 2010 14:48:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       chris.mason@oracle.com, hch@lst.de
-Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
- ioctl
-Message-ID: <20100323144828.GH30031@ZenIV.linux.org.uk>
-References: <20100323142200.GA2381@localhost.localdomain>
- <20100323142843.GG30031@ZenIV.linux.org.uk>
- <20100323143456.GC2381@localhost.localdomain>
+	id S1754228Ab0CWOuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:50:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6713 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab0CWOuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:50:39 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] fscache: add missing unlock
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: viro@zeniv.linux.org.uk, Trond.Myklebust@netapp.com,
+       linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org, Dan Carpenter <error27@gmail.com>,
+       David Howells <dhowells@redhat.com>
+Date: Tue, 23 Mar 2010 14:48:37 +0000
+Message-ID: <20100323144837.24147.90288.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100323143456.GC2381@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 10:34:56AM -0400, Josef Bacik wrote:
-> +++ b/fs/block_dev.c
-> @@ -245,35 +245,13 @@ struct super_block *freeze_bdev(struct block_device *bdev)
->  	sb = get_active_super(bdev);
+From: Dan Carpenter <error27@gmail.com>
 
-sb is an active locked reference
+Sparse complained about this missing spin_unlock()
 
-> +	error = freeze_super(sb, 1);
-> +	if (error) {
-> +		bdev->bd_fsfreeze_count--;
-> +		mutex_unlock(&bdev->bd_fsfreeze_mutex);
-> +		return ERR_PTR(error);
->  	}
-> -	up_write(&sb->s_umount);
->  
->   out:
->  	sync_blockdev(bdev);
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
->  static int ioctl_fsfreeze(struct file *filp)
->  {
->  	struct super_block *sb = filp->f_path.dentry->d_inode->i_sb;
+ fs/fscache/page.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-sb is an active reference
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index c598ea4..6980902 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -881,6 +881,7 @@ submit_failed:
+ 	goto nobufs;
+ 
+ nobufs_unlock_obj:
++	spin_unlock(&cookie->stores_lock);
+ 	spin_unlock(&object->lock);
+ nobufs:
+ 	spin_unlock(&cookie->lock);
 
-> +	ret = freeze_super(sb, 0);
-> +
-> +	return ret;
->  }
-
-> +int freeze_super(struct super_block *sb, int locked)
-> +{
-> +	int ret;
-> +
-> +	if (!locked) {
-> +		spin_lock(&sb_lock);
-> +		ret = grab_super(sb);
-
-What in hell for?  We already hold an active reference here.  That's leaving
-aside the obvious comments about argument-dependent locking state...
