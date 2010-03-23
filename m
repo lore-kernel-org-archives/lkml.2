@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab0CWLnr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 07:43:47 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:56233 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab0CWLnq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 07:43:46 -0400
-Date: Tue, 23 Mar 2010 12:44:09 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Renninger <trenn@suse.de>
+	id S1752660Ab0CWLv2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 07:51:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60626 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008Ab0CWLvX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 07:51:23 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Borislav Petkov <bp@amd64.org>
+Subject: Re: [PATCH 5/5] cpufreq: Add support for actual freq
+Date: Tue, 23 Mar 2010 12:51:18 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
 Cc: akpm@linux-foundation.org, davej@redhat.com, cpufreq@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] cpufreq: Unify sysfs attribute definition macros
-Message-ID: <20100323114408.GB16493@aftab>
-References: <1269283121-11894-1-git-send-email-bp@amd64.org>
- <1269283121-11894-2-git-send-email-bp@amd64.org>
- <201003231207.29230.trenn@suse.de>
+       x86@kernel.org, linux-kernel@vger.kernel.org, lenb@kernel.org
+References: <1269283121-11894-1-git-send-email-bp@amd64.org> <1269283121-11894-6-git-send-email-bp@amd64.org>
+In-Reply-To: <1269283121-11894-6-git-send-email-bp@amd64.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003231207.29230.trenn@suse.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-6"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003231251.18181.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Renninger <trenn@suse.de>
-Date: Tue, Mar 23, 2010 at 12:07:29PM +0100
-
-> > +#define define_one_global_ro(_name)		\
-> > +static struct global_attr _name =		\
-> > +__ATTR(_name, 0444, show_##_name, NULL)
-> > +
-> > +#define define_one_global_rw(_name)		\
-> > +static struct global_attr _name =		\
-> > +__ATTR(_name, 0644, show_##_name, store_##_name)
+On Monday 22 March 2010 19:38:41 Borislav Petkov wrote:
+> From: Borislav Petkov <borislav.petkov@amd.com>
 > 
-> These sound like too general names in global space.
-> And are unrelated to cpufreq(.h).
+> Modify the scaling_cur_freq interface to show the actual core frequency
+> when boosting is supported and enabled on the core.
+This looks wrong.
 
-maybe call them cpufreq_define_(global|freq)_* then?
+scaling_cur freq should show the frequency the kernel/cpufreq
+subsystem thinks it's in.
+You show the average freq and the time of the measured average
+frequency depends on when the cpufreq subsystem called getavg()
+the last time.
+Also the time frame of the average freq the cpufreq subsystem
+gets when calling getavg() now depends on whether and how often
+userspace calls scaling_cur_freq which influences switching policy.
 
-> Eventually you get them into sysfs.h with another name
-> or just duplicate them?
+Latest cpufrequtils (ver 006) supports cpufreq-aperf to check whether
+cores enter boost mode. Len Brown afaik also has a userspace tool, but
+if it has any advantages, it should IMO get integrated into cpufrequtils
+which people know to use when looking at cpufreq.
 
-Well, struct freq_attr for example is cpufreq-specific attribute,
-AFAICT. So, keeping them in cpufreq.h should be fine, no?
+I once thought about adding scaling_avg_freq which gets an own
+aperf_mperf counter, but you don't know whether another app read out the
+average freq in between and your expected measured time frame is wrong then.
+You could remember aperf/mperf per pid and free the saved aperf/mperf value
+if the process dies..., but what for if this can be read out in userspace.
 
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+    Thomas
