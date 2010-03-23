@@ -1,117 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab0CWWf3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 18:35:29 -0400
-Received: from mail-iw0-f176.google.com ([209.85.223.176]:53351 "EHLO
-	mail-iw0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab0CWWf1 convert rfc822-to-8bit (ORCPT
+	id S1753827Ab0CWWgn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 18:36:43 -0400
+Received: from p01c11o147.mxlogic.net ([208.65.144.70]:51130 "EHLO
+	p01c11o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753324Ab0CWWgm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 18:35:27 -0400
+	Tue, 23 Mar 2010 18:36:42 -0400
+X-MXL-Hash: 4ba9427a7b316f54-d448b508f715b7c2250f54b21937b3d180df9976
+X-MXL-Hash: 4ba942710491a35d-dd4d23028c09e454a6be7ff527737b92a6e5798a
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Ryan Mallon <ryan@bluewatersys.com>
+CC: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Mar 2010 17:35:25 -0500
+Subject: RE: [PATCH 0/2] arm: add a /proc/cpuinfo platform extension
+Thread-Topic: [PATCH 0/2] arm: add a /proc/cpuinfo platform extension
+Thread-Index: AcrK1GK9H4hSU7atSai2XYiVqrt1hwAAkhTQ
+Message-ID: <0D753D10438DA54287A00B02708426976368E58719@AUSP01VMBX24.collaborationhost.net>
+References: <BD79186B4FD85F4B8E60E381CAEE19090200F377@mi8nycmail19.Mi8.com>
+ <4BA924CD.1010201@bluewatersys.com>
+ <0D753D10438DA54287A00B02708426976368E58561@AUSP01VMBX24.collaborationhost.net>
+ <4BA93A43.2010807@bluewatersys.com>
+In-Reply-To: <4BA93A43.2010807@bluewatersys.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <4BA913FB.1000508@synaptics.com>
-References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>
-	 <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>
-	 <4BA913FB.1000508@synaptics.com>
-Date: Tue, 23 Mar 2010 15:35:27 -0700
-Message-ID: <d6200be21003231535w3cf9ff30w316f3447f3631689@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <WManson@synaptics.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010031801)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.99]
+X-AnalysisOut: [v=1.0 c=1 a=ivgDoJX_mgAA:10 a=VphdPIyG4kEA:10 a=8nJEP1OIZ-]
+X-AnalysisOut: [IA:10 a=MfCJKx98tC58LqYwCYfhJw==:17 a=i00gxMtYAAAA:8 a=Jfr]
+X-AnalysisOut: [nYn6hAAAA:8 a=3IbmYkmgVggBgOpUV0sA:9 a=kYPORX13eSVnrSqhhig]
+X-AnalysisOut: [A:7 a=Ba88S1HeCbmzvsKETNhOCXnMeHEA:4 a=wPNLvfGTeEIA:10 a=x]
+X-AnalysisOut: [1WnkoZAwusA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/23 Christopher Heiny <cheiny@synaptics.com>:
-> On 03/22/2010 08:04 PM, Arve Hjønnevåg wrote:
->>
->> On Mon, Mar 22, 2010 at 7:07 PM, Christopher Heiny<cheiny@synaptics.com>
->>  wrote:
->> ...
+On Tuesday, March 23, 2010 3:02 PM, Ryan Mallon wrote:
+> H Hartley Sweeten wrote:
+>> On Tuesday, March 23, 2010 1:30 PM, Ryan Mallon wrote:
+>>> H Hartley Sweeten wrote:
+>>>> Add an optional platform specific extension to /proc/cpuinfo.
+>>>>
+>>>> Many platforms have custom cpu information that could be exposed
+>>>> to user space using /proc/cpuinfo.
+>>>>
+>>>> Patch 1/2 adds the necessary core support to allow a platform
+>>>> specific callback to dump this information.
+>>>>
+>>>> Patch 2/2 adds a callback to mach-ep93xx and hooks up all the
+>>>> edb93xx platforms.
+>>>>
+>>>> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+>>>>
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>> I think this is unlikely to get merged in its current state. Russell has
+>>> mentioned issues with breaking userspace by changing /proc/cpuinfo. 
+>> 
+>> I don't agree with this point.
+>> 
+>
+> [snip]
+>
+>> 
+>> Even something as trivial as the BogoMIPS is in a different place in
+>> the two outputs and is spelled differently (due to caps).
+>> 
+>> The outputs are completely different.  Other architectures in
+>> mainline also have very different outputs.
+>> 
+>> I can't see any reason why adding additional fields will break
+>> user space, as long as an existing heading in the output is not
+>> duplicated.  Even that "really" shouldn't break anything since
+>> any application parsing this file has to do it sequentially and
+>> the new headings are located at the end of the file.
+>
+> I'm really not sure. There may be some crappy userspace tools out there
+> which will break. I don't really mind either way if the info goes in
+> /proc/cpuinfo, or some new /proc/archinfo, just as long as it doesn't
+> break userspace in some way.
+
+I did a grep of glibc's source (cvs-2.9, the only one currently on my
+system) to see what it tries to parse out of /proc/cpuinfo.  These are
+the only ones I could find:
+
+./sysdeps/unix/sysv/linux/arm/ioperm.c
+	"Hardware\t: %256[^\n]\n"
+./sysdeps/unix/sysv/linux/m68k/getsysstats.c
+	"CPU:"
+./sysdeps/unix/sysv/linux/mips/getsysstats.c
+	"cpu model"
+./nptl/perf.c
+	"cpu MHz"
+./nptl/sockperf.c
+	"cpu MHz"
+./sysdeps/unix/sysv/linux/getsysstats.c
+	"processor"
+./sysdeps/unix/sysv/linux/alpha/getsysstats.c
+	"cpus active : %d"
+	"CPUs probed %*d active %d"
+	"cpus detected : %d"
+	"CPUs probed %d"
+./sysdeps/unix/sysv/linux/alpha/ioperm.c
+	"system type : %256[^\n]\n"
+	"system variation : %256[^\n]\n"
+	"cpu model :%256[^\n]\n"
+./sysdeps/unix/sysv/linux/i386/get_clockfreq.c
+	"cpu MHz"
+./sysdeps/unix/sysv/linux/ia64/get_clockfreq.c
+	"itc MHz"
+./sysdeps/unix/sysv/linux/powerpc/get_clockfreq.c
+	"timebase"
+./sysdeps/unix/sysv/linux/sparc/getsysstats.c
+	"ncpus active : %d"
+	"ncpus probed : %d"
+./sysdeps/unix/sysv/linux/sparc/sparc64/get_clockfreq.c
+	"Cpu0ClkTck"
+
+There may be other userspace tools out there that look at this file
+but I would assume they still would parse it using fopen/sscanf/fclose.
+Nothing should break as long as the new data is at the end of the file.
+
+>>> The other problem I see is that you have a single callback for registering
+>>> the arch specific information. In you ep93xx example, each of the ep93xx
+>>> boards must add:
 >>>
->>> There are two existing drivers for similar Synaptics devices in the
->>> current kernel tree (excluding the PS/2 touchpad driver).  These are:
+>>>  .arch_cpuinfo = ep93xx_cpuinfo,
 >>>
->>> ./linux-2.6/drivers/input/mouse/synaptics_i2c.c
->>>      A driver for the Exeda 15mm touchpad, written by Mike Rapoport
->>>      <mike@compulab.co.il>  and Igor Grinberg<grinberg@compulab.co.il>
->>>
->>> ./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
->>>      A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
->>>      <arve@android.com>
->>>
->>> We have not extended these drivers for a couple of reasons.  First, the
->>> two drivers are specific to particular Synaptics products, and it is our
->>> desire to produce a general solution that takes advantage of the 'self
->>> describing' features of products that use the RMI protocol.
->>>
->>
->> Do you plan to add platform data to align the reported touchscreen
->> data with the screen behind it, or do the new hardware allow the the
->> firmware handle this? In the past we even needed separate parameters
->> for different firmware versions (seen in
->> drivers/staging/dream/synaptics_i2c_rmi.h).
+>>> If one of the boards has some additional information to make available,
+>>> it would need to reimplement the entire callback, which gets messy.
+>> 
+>> Not necessarily.
+>> 
+>> If a board, such as the ts72xx, wanted to add additional information
+>> it just has to register it's private callback then call the ep93xx core
+>> supplied callback at the desired point in it's private one.
+>> 
+>> The ts72xx currently does this exact thing with the .map_io callback.
+>> It supplies it's own private one to map the external FPGA.  It first calls
+>> the ep93xx core to map the ahb/apb space then it does an iotable_init to
+>> map the FPGA.
 >
-> Hi Arve,
->
-> RMI4 touchscreens allow adjustment of the reported coordinate range (see the
-> F11_2D_Ctrl6..9 registers, page 48 of the current version of the spec at
-> http://www.synaptics.com/developers/manuals).  Using this feature, the
-> device can be configured to report the same number of positions on each axis
-> as there are pixels on the display.
->
+> Okay, fair point. I still don't like having the seq_file callback being
+> in machine_desc. It means that all of the board files have to be edited
+> to add the callback. It should be something which happens automagically
+> in the platform core. Perhaps using a weak function for the callback, or
+> a #define check.
 
-This does not help aligning the touchscreen values with the screen
-behind it. It just moves the linear scaling from userspace (which can
-use fixed or floating point values to preserve subpixel precision) to
-the firmware.
+The callback is copied from the machine_desc in arch/arm/kernel/setup.c
+just like the other architecture-specific pointers.  If an architecture
+does not have any additional data to dump they don't have to provide the
+callback.  If it's not provided, the main seq_file callback (c_show in
+arch/arm/kernel/setup.c) will not call it.  See Patch 1/3 of the series.
 
-> We plan to make these settings accessible via sysfs, so that it can be
-> dynamically tweaked if the user changes the display resolution (not likely
-> on a phone, probable on a tablet/slate/ereader type device). Assuming there
-> are no significant issues with our current patch, we plan to include that in
-> the next one.  We're holding off that implementation because we're still
-> finding our feet on the submission process, and wanted to keep the initial
-> submits small so changes would be more manageable.
-
-You could also post a patch series instead of one patch.
-
->
-> Coordinate rotation/reflection settings will be handled at the driver level,
-> again via sysfs.
->
-Do you also have a plan to let the userspace know that touchscreen
-coordinate x1,y1 correspond to screen coordinate 0,0 and x2,y2
-correspond to screen coordinate xmax,ymax? The android driver sets
-absmin/max to the values reported when touching the display edges (not
-the actual min and max that the touchscreen can report), but other
-solutions are also possible.
-
-> These features should be independent of the touchscreen firmware level.
-
-In the past they have depended on the firmware version for two
-reasons. On one product, firmware changes to improve the edges of the
-screen completely changed the relationship between values reported and
-the physical touch location. On another product, the physical size of
-the sensor changed, and the firmware version was used to detect this.
-If all RMI4 based product allow field updates of the firmware the
-first case it less important, but we still need to cover the second
-case.
-
->  Initial settings for these features should probably be done at the platform
-> level.
->
->                                        Chris
->
-
-
-
--- 
-Arve Hjønnevåg
+Regards,
+Hartley
