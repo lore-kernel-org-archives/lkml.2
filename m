@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751008Ab0CWEEt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:04:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60129 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750811Ab0CWEEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:04:48 -0400
-Date: Tue, 23 Mar 2010 15:04:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: build failure after merge of the kgdb tree
-Message-Id: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751343Ab0CWEG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:06:26 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:43367 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab0CWEGZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:06:25 -0400
+Date: Tue, 23 Mar 2010 13:05:13 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       microblaze-uclinux@itee.uq.edu.au, linux-sh@vger.kernel.org,
+       hskinnemoen@atmel.com
+Subject: Re: [PATCH] uImage: Allow to specify MKIMAGE
+Message-ID: <20100323040513.GB13417@linux-sh.org>
+References: <20100320184907.8036.82488.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100320184907.8036.82488.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-After merging the kgdb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-kernel/debug/kdb/kdb_main.c: In function 'kdb_sr':
-kernel/debug/kdb/kdb_main.c:1822: error: '__sysrq_enabled' undeclared (first use in this function)
-
-Caused by commit ab28988df9667f8dd70c7434c8ca463beb00b300 ("kdb: core for
-kgdb back end (1 of 2)") from the kgdb tree interacting with commit
-edc6e384f9d96e54a6d03068d3b03fa5b56b6449 ("") fromInput: implement SysRq
-as a separate input handler the input tree.
-
-I added the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 23 Mar 2010 14:45:22 +1100
-Subject: [PATCH] kgdb: update for sysrq handling change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- kernel/debug/kdb/kdb_main.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index f1f9309..bad8e63 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1819,10 +1819,8 @@ static int kdb_sr(int argc, const char **argv)
- {
- 	if (argc != 1)
- 		return KDB_ARGCOUNT;
--	if (!__sysrq_enabled) {
--		kdb_printf("Auto activating sysrq\n");
--		__sysrq_enabled = 1;
--	}
-+
-+	sysrq_toggle_support(1);
- 
- 	kdb_trap_printk++;
- 	handle_sysrq(*argv[1], NULL);
--- 
-1.7.0.2
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On Sat, Mar 20, 2010 at 08:49:07PM +0200, Paulius Zaleckas wrote:
+> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+> ---
+> 
+>  arch/arm/boot/Makefile          |    4 ++--
+>  arch/avr32/boot/images/Makefile |    4 ++--
+>  arch/blackfin/boot/Makefile     |    4 ++--
+>  arch/microblaze/boot/Makefile   |    4 ++--
+>  arch/sh/boot/Makefile           |    4 ++--
+>  scripts/mkuboot.sh              |    1 +
+>  6 files changed, 11 insertions(+), 10 deletions(-)
+> 
+Acked-by: Paul Mundt <lethal@linux-sh.org>
