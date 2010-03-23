@@ -1,236 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756205Ab0CWA50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:57:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755094Ab0CWA5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:57:24 -0400
-Date: Mon, 22 Mar 2010 20:56:39 -0400
-From: Andy Gospodarek <andy@greyhouse.net>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [RFC Patch 3/3] bonding: make bonding support netpoll
-Message-ID: <20100323005639.GH2108@gospo.rdu.redhat.com>
-References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain> <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
+	id S1756268Ab0CWBE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 21:04:27 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:52752 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755165Ab0CWBE0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 21:04:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tki7QWjguqI26GTd0/7sujiXolm3TfTP5pYCDp9c2/p1/QvV6yV3BHs00LaUQo2RKg
+         +MSTS1msAOxt/0K5sn9CIZT/j4zRLUgFSUoh3S1l+UaO9MMn3VWVd+m5giq8YQDYtk6p
+         cbyObI2PhvZtYfmMJRQCQUX0TZP11dqkVcA7A=
+Date: Tue, 23 Mar 2010 02:04:21 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Li Zefan <lizf@cn.fujitsu.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
+	independently
+Message-ID: <20100323010419.GA8292@nowhere>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
+In-Reply-To: <1269304340-25372-1-git-send-email-jack@suse.cz>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 04:17:40AM -0400, Amerigo Wang wrote:
+On Tue, Mar 23, 2010 at 01:32:02AM +0100, Jan Kara wrote:
 > 
-> Based on Andy's work, but I modify a lot.
+>   Hi,
 > 
-> Similar to the patch for bridge, this patch does:
+>   currently, when one tracer is selected, most of tracepoints for other
+> tracers also gets pulled into the kernel. So for example it's not possible
+> to enable BLK_DEV_IO_TRACE without polluting slab allocation paths with
+> tracepoint checks (see changelog of patch 01). This patch set adds a
+> possibility for each set of trace points to be compile-enabled separately.
+>   The first patch contains the necessary magic in linux/tracepoint.h. Other
+> patches just tell tracing framework about correspoding config options
+> and possibly introduce them if they did not exist before.
+>   The patches in this patch set are actually completely independent so 
+> they can be merged via respective subsystem trees. But changes are rather
+> tiny so I don't expect much conflicts...
 > 
-> 1) implement the 4 methods to support netpoll for bonding;
-> 
-> 2) modify netpoll during forwarding packets in bonding;
-> 
-> 3) disable netpoll support of bridge when a netpoll-unabled device
->    is added to bonding;
-> 
-> 4) enable netpoll support when all underlying devices support netpoll.
-> 
-> Cc: Andy Gospodarek <gospo@redhat.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Jay Vosburgh <fubar@us.ibm.com>
-> Cc: David Miller <davem@davemloft.net>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
+> 								Honza
 
-How much testing was done on this?
 
-One of the potential problems with this code is how gracefully the
-system can handle tear-down of interfaces or removal of the bonding
-module when netconsole is active.  Was that tested heavily?
+(Adding more people in Cc)
 
-> 
-> ---
-> Index: linux-2.6/drivers/net/bonding/bond_main.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/net/bonding/bond_main.c
-> +++ linux-2.6/drivers/net/bonding/bond_main.c
-> @@ -59,6 +59,7 @@
->  #include <linux/uaccess.h>
->  #include <linux/errno.h>
->  #include <linux/netdevice.h>
-> +#include <linux/netpoll.h>
->  #include <linux/inetdevice.h>
->  #include <linux/igmp.h>
->  #include <linux/etherdevice.h>
-> @@ -430,7 +431,17 @@ int bond_dev_queue_xmit(struct bonding *
->  	}
->  
->  	skb->priority = 1;
-> -	dev_queue_xmit(skb);
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
-> +		bond->dev->npinfo->netpoll->dev = skb->dev;
-> +		if (!slave_dev->npinfo)
-> +			slave_dev->npinfo = bond->dev->npinfo;
-> +		slave_dev->priv_flags |= IFF_IN_NETPOLL;
-> +		netpoll_send_skb(bond->dev->npinfo->netpoll, skb);
-> +		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
-> +	} else
-> +#endif
-> +		dev_queue_xmit(skb);
->  
->  	return 0;
->  }
-> @@ -1324,6 +1335,87 @@ static void bond_detach_slave(struct bon
->  	bond->slave_cnt--;
->  }
->  
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +static bool slaves_support_netpoll(struct net_device *bond_dev)
-> +{
-> +	struct bonding *bond = netdev_priv(bond_dev);
-> +	struct slave *slave;
-> +	int i = 0;
-> +	bool ret = true;
-> +
-> +	read_lock_bh(&bond->lock);
-> +	bond_for_each_slave(bond, slave, i) {
-> +		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
-> +				|| !slave->dev->netdev_ops->ndo_poll_controller)
-> +			ret = false;
-> +	}
-> +	read_unlock_bh(&bond->lock);
-> +	return i != 0 && ret;
-> +}
-> +
-> +static void bond_poll_controller(struct net_device *bond_dev)
-> +{
-> +	struct bonding *bond = netdev_priv(bond_dev);
-> +	struct slave *slave;
-> +	int i;
-> +
-> +	read_lock(&bond->lock);
-> +	bond_for_each_slave(bond, slave, i) {
-> +		if (slave->dev->netdev_ops->ndo_poll_controller)
-> +			netpoll_poll_dev(slave->dev);
-> +	}
-> +	read_unlock(&bond->lock);
-> +}
-> +
-> +static void bond_netpoll_setup(struct net_device *bond_dev,
-> +			      struct netpoll_info *npinfo)
-> +{
-> +	struct bonding *bond = netdev_priv(bond_dev);
-> +	struct slave *slave;
-> +	int i;
-> +
-> +	write_lock_bh(&bond->lock);
-> +	bond_for_each_slave(bond, slave, i) {
-> +		if (slave->dev)
-> +			slave->dev->npinfo = npinfo;
-> +	}
-> +	write_unlock_bh(&bond->lock);
-> +}
-> +
-> +static void bond_netpoll_cleanup(struct net_device *bond_dev)
-> +{
-> +	struct bonding *bond = netdev_priv(bond_dev);
-> +	struct slave *slave;
-> +	const struct net_device_ops *ops;
-> +	int i;
-> +
-> +	write_lock_bh(&bond->lock);
-> +	bond_dev->npinfo = NULL;
-> +	bond_for_each_slave(bond, slave, i) {
-> +		if (slave->dev) {
-> +			ops = slave->dev->netdev_ops;
-> +			if (ops->ndo_netpoll_cleanup)
-> +				ops->ndo_netpoll_cleanup(slave->dev);
-> +			else
-> +				slave->dev->npinfo = NULL;
-> +		}
-> +	}
-> +	write_unlock_bh(&bond->lock);
-> +}
-> +
-> +static int bond_netpoll_xmit(struct netpoll *np, struct sk_buff *skb,
-> +			     struct net_device *dev)
-> +{
-> +	int ret;
-> +
-> +	dev->priv_flags |= IFF_IN_NETPOLL;
-> +	ret = dev->netdev_ops->ndo_start_xmit(skb, dev);
-> +	np->dev = dev;
-> +	dev->priv_flags &= ~IFF_IN_NETPOLL;
-> +	return ret;
-> +}
-> +#endif
-> +
->  /*---------------------------------- IOCTL ----------------------------------*/
->  
->  static int bond_sethwaddr(struct net_device *bond_dev,
-> @@ -1741,6 +1833,18 @@ int bond_enslave(struct net_device *bond
->  		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
->  		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
->  
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +	if (slaves_support_netpoll(bond_dev)) {
-> +		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-> +		if (bond_dev->npinfo)
-> +			slave_dev->npinfo = bond_dev->npinfo;
-> +	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
-> +		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
-> +		pr_info("New slave device %s does not support netpoll\n",
-> +			slave_dev->name);
-> +		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
-> +	}
-> +#endif
->  	/* enslave is successful */
->  	return 0;
->  
-> @@ -1924,6 +2028,15 @@ int bond_release(struct net_device *bond
->  
->  	netdev_set_master(slave_dev, NULL);
->  
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +	if (slaves_support_netpoll(bond_dev))
-> +		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
-> +	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
-> +		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
-> +	else
-> +		slave_dev->npinfo = NULL;
-> +#endif
-> +
->  	/* close slave before restoring its mac address */
->  	dev_close(slave_dev);
->  
-> @@ -2032,6 +2145,9 @@ static int bond_release_all(struct net_d
->  
->  		netdev_set_master(slave_dev, NULL);
->  
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +		slave_dev->npinfo = NULL;
-> +#endif
->  		/* close slave before restoring its mac address */
->  		dev_close(slave_dev);
->  
-> @@ -4424,6 +4540,12 @@ static const struct net_device_ops bond_
->  	.ndo_vlan_rx_register	= bond_vlan_rx_register,
->  	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
->  	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
-> +#ifdef CONFIG_NET_POLL_CONTROLLER
-> +	.ndo_netpoll_setup	= bond_netpoll_setup,
-> +	.ndo_netpoll_xmit	= bond_netpoll_xmit,
-> +	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
-> +	.ndo_poll_controller	= bond_poll_controller,
-> +#endif
->  };
->  
->  static void bond_setup(struct net_device *bond_dev)
+I don't know. Yeah this first looks like a good idea but once
+CONFIG_EVENT_TRACING is enabled, each tracepoint is a lightweight
+thing and induce a tiny overhead, probably hard to notice, and
+this is going to be even more the case after the jmp label
+optimization patches.
+
+I liked the fact we had a general tracing kernel once the above
+config is selected. And we don't bother telling people that to
+use tool X you need CONFIG_EVENT_Y, and you need to rebuild your
+kernel, etc...
+
+I wonder if this is going to be a win.
+
