@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab0CWLze (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 07:55:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55951 "EHLO mx2.suse.de"
+	id S1752713Ab0CWL50 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 07:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53899 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752713Ab0CWLzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 07:55:32 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH 1/5] cpufreq: Unify sysfs attribute definition macros
-Date: Tue, 23 Mar 2010 12:55:30 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: akpm@linux-foundation.org, davej@redhat.com, cpufreq@vger.kernel.org,
-       x86@kernel.org, linux-kernel@vger.kernel.org
-References: <1269283121-11894-1-git-send-email-bp@amd64.org> <201003231207.29230.trenn@suse.de> <20100323114408.GB16493@aftab>
-In-Reply-To: <20100323114408.GB16493@aftab>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752077Ab0CWL5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 07:57:25 -0400
+Subject: Re: [Cluster-devel] [PATCH 10/18] gfs2: Provide config option for
+ enabling trace points
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, cluster-devel@redhat.com
+In-Reply-To: <1269304340-25372-11-git-send-email-jack@suse.cz>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
+	 <1269304340-25372-11-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 23 Mar 2010 12:01:07 +0000
+Message-ID: <1269345667.2438.12.camel@localhost>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003231255.30461.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 March 2010 12:44:09 Borislav Petkov wrote:
-> From: Thomas Renninger <trenn@suse.de>
-> Date: Tue, Mar 23, 2010 at 12:07:29PM +0100
-> 
-> > > +#define define_one_global_ro(_name)		\
-> > > +static struct global_attr _name =		\
-> > > +__ATTR(_name, 0444, show_##_name, NULL)
-> > > +
-> > > +#define define_one_global_rw(_name)		\
-> > > +static struct global_attr _name =		\
-> > > +__ATTR(_name, 0644, show_##_name, store_##_name)
-> > 
-> > These sound like too general names in global space.
-> > And are unrelated to cpufreq(.h).
-> 
-> maybe call them cpufreq_define_(global|freq)_* then?
-> 
-> > Eventually you get them into sysfs.h with another name
-> > or just duplicate them?
-> 
-> Well, struct freq_attr for example is cpufreq-specific attribute,
-> AFAICT. So, keeping them in cpufreq.h should be fine, no?
-You don't need much of these (one or two?).
-I'd leave this cleanup out for your patch series.
-You care about the boost and aperf/mperf stuff and not about this
-cleanup?
+Hi,
 
-    Thomas
+Now in the GFS2 -nmw git tree. Thanks,
+
+Steve.
+
+On Tue, 2010-03-23 at 01:32 +0100, Jan Kara wrote:
+> CC: cluster-devel@redhat.com
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/gfs2/Kconfig      |    8 ++++++++
+>  fs/gfs2/trace_gfs2.h |    2 ++
+>  2 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+> index 4dcddf8..872ced2 100644
+> --- a/fs/gfs2/Kconfig
+> +++ b/fs/gfs2/Kconfig
+> @@ -38,3 +38,11 @@ config GFS2_FS_LOCKING_DLM
+>  	  Most users of GFS2 will require this. It provides the locking
+>  	  interface between GFS2 and the DLM, which is required to use GFS2
+>  	  in a cluster environment.
+> +
+> +config GFS2_TRACER
+> +	bool "GFS2 tracing"
+> +	depends on GFS2_FS && EVENT_TRACING
+> +	help
+> +	  Provide trace points in block allocation functions, locking, and
+> +	  journaling code.
+> +
+> diff --git a/fs/gfs2/trace_gfs2.h b/fs/gfs2/trace_gfs2.h
+> index 148d55c..5f4faf3 100644
+> --- a/fs/gfs2/trace_gfs2.h
+> +++ b/fs/gfs2/trace_gfs2.h
+> @@ -1,5 +1,7 @@
+>  #undef TRACE_SYSTEM
+> +#undef TRACE_CONFIG
+>  #define TRACE_SYSTEM gfs2
+> +#define TRACE_CONFIG CONFIG_GFS2_TRACER
+>  
+>  #if !defined(_TRACE_GFS2_H) || defined(TRACE_HEADER_MULTI_READ)
+>  #define _TRACE_GFS2_H
+
+
