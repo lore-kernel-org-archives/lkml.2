@@ -1,104 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab0CWAfk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:35:40 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51601 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab0CWAfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:35:36 -0400
-Date: Tue, 23 Mar 2010 01:35:25 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 12/24] media/video: fix dangling pointers
-Message-ID: <20100323003525.GC5762@pengutronix.de>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <20100321144655.4747fd2a@hyperion.delvare> <20100321141417.GA19626@opensource.wolfsonmicro.com> <201003211709.56319.hverkuil@xs4all.nl> <20100322213358.31e50b3c@hyperion.delvare>
+	id S1756133Ab0CWArA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:47:00 -0400
+Received: from www.tglx.de ([62.245.132.106]:47413 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755054Ab0CWAq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 20:46:56 -0400
+Date: Tue, 23 Mar 2010 01:45:54 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
+       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
+ to fw_memmap.cy
+In-Reply-To: <4BA80019.5000900@kernel.org>
+Message-ID: <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>
+References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain>
+ <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org> <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain> <4BA7EE72.7000507@kernel.org> <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain> <4BA80019.5000900@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ALfTUftag+2gvp1h"
-Content-Disposition: inline
-In-Reply-To: <20100322213358.31e50b3c@hyperion.delvare>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+B1;2005;0cYinghai,
 
---ALfTUftag+2gvp1h
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> On 03/22/2010 03:53 PM, Thomas Gleixner wrote:
+> > On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> >> On 03/22/2010 03:09 PM, Thomas Gleixner wrote:
+> >>> On Mon, 22 Mar 2010, Yinghai Lu wrote:
+> >>>> On 03/22/2010 12:37 PM, Ingo Molnar wrote:
+> >>
+> >>>> 1. need to keep e820
+> >>>
+> >>>   That's neither an argument for using lmb nor an argument not to use
+> >>>   lmb. e820 is x86 specific BIOS wreckage and it's whole purpose is
+> >>>   just to feed information into a (hopefully) generic early resource
+> >>>   management facility.
+> >>>
+> >>>   e820 _CANNOT_ be generalized. Period.
+> > 
+> >   I still want to know, what "need to keep e820" means for you.
+>
+> keep the most arch/x86/kernel/e820.c, and later when
+> finish_e820_parsing() is called, fill lmb.memory according to e820
+> entries with E820_RAM type.
+ 
+Right, and we never get rid of e820.c at all. Simply because e820 is a
+x86 specific clusterfuck. No way to find anything which is remotely
+insane like that in any other architecture.
 
+I really do not understand why you ever thought that moving that code
+to a generic place is something useful and acceptable.
 
-> > > Personally I'd much rather just not bother setting the driver data in
-> > > the removal path, it seems unneeded.  I had assumed that the subsystem
-> > > code cared for some reason when I saw the patch series.
-> >=20
-> > Anyway, should this really be necessary, then for the media drivers this
-> > should be done in v4l2_device_unregister_subdev() and not in every driv=
-er.
-> >=20
-> > But this just feels like an i2c core thing to me. After remove() is cal=
-led
-> > the core should just set the client data to NULL. If there are drivers =
-that
-> > rely on the current behavior, then those drivers should be reviewed fir=
-st as
-> > to the reason why they need it.
->=20
-> I tend to agree, now.
->=20
-> Wolfram, how do you feel about this? I feel a little sorry that I more
-> or less encouraged you to submit this patch series, and now I get to
-> agree with the objections which were raised against it.
+The point is, that some of the algorithms which e820 needs to sanitize
+the maps might be of general use, but definitely not the whole e820
+crappola. And if you look close, lmb has most of them already.
 
-Well, this is a valuable outcome in my book. Maybe seeing the actual amount=
- of
-modifications necessary for cleaning up clientdata helped the process. While
-working on it, I also got the impression that it should be handled differen=
-tly
-in the future, of course. Although I was thinking of something different
-('i2c_(allocate|free)_clientdata' as mentioned before), I prefer the above
-proposal as it is most simple.
+> >  
+> >>>> 2. use e820 range with RAM to fill lmb.memory when finizing_e820
+> >>>
+> >>>   What's finizing_e820 ???
+> >>  finish_e820_parsing();
+> > 
+> >  Yinghai, come on. Are you really expecting that everyone involved in
+> >  this discussion goes to look up what the heck finish_e820_parsing()
+> >  is doing ?
+> > 
+> >  You want to explain why your solution is better or why lmb is not
+> >  sufficient, so you better go and explain what finish_e820_parsing()
+> >  is, why finish_e820_parsing() is important and why lmb cannot cope
+> >  with it.
+> 
+> current x86:
+> a. setup e820 array.
+> b. early_parm mem= and memmap= related code will adjust the e820.
 
-> My key motivation was that I wanted i2c_set_clientdata() to be called
-> before kfree(). Now that everybody seems to agree that the latter
-> belongs to the drivers while the former belongs to lower layers
-> (i2c-core or even driver core), this is not going to happen. So I guess
-> we want to remove calls to i2c_set_clientdata(NULL) from all drivers
-> and have only one in i2c-core for now?
+Dammit. I asked for an explanation not for some headword
+listing. These bullet points do _NOT_ explain at all why e820 is
+superior.
+ 
+> we don't need to call lmb_enforce_memory_limit().
 
-Fine with me. Let me know if I can assist you with the series.
+Of course you do not need to call lmb_enforce_memory_limit() simply
+because it is not relevant to the existing e820 code at all. 
 
-Regards,
+What's the point ?
+ 
+> > 
+> >>>> 3. use lmb.reserved to replace early_res.
+> >>>
+> >>>   What's the implication of doing that ?
+> >>
+> >> early_res array is only corresponding to lmb.reserved, aka reserved
+> >> region from kernel.
+> >  
+> >  Is it only corresponding (somehow) or is it a full equivivalent ?
+> 
+> early_res is not sorted and merged.
 
-   Wolfram
+So what's the implication for x86 vs. the early_res stuff ? Any down
+sides, up sides other than not sorted and merged?
+ 
+> >>>> current lmb is merging the region, we can not use name tag any more.
+> >>>
+> >>>   What's wrong with merging of regions ? Are you arguing about a
+> >>>   specific region ("the region") ?
+> > 
+> >  Care to answer my question ?
+> if range get merged, you can not use name with them.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Why does that matter ?
+  
+> >>>
+> >>>   Which name tag ? And why is that name tag important ?
+> >>
+> >> struct early_res {
+> >>         u64 start, end;
+> >>         char name[15];
+> >>         char overlap_ok;
+> >> };
+> > 
+> >  I'm starting to get annoyed, really. What is that name field for and
+> >  why is that "name" field important ?
+> 
+> at least later when some code free a wrong range, we can figure who cause the problem.
 
---ALfTUftag+2gvp1h
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+That does not explain the value of the name field at all. If some code
+frees a wrong range a backtrace is always more helpful than some
+arbitrary name field. Am I missing something ?
+ 
+> >>>> may need to dump early_memtest, and use early_res for bootmem at
+> >>>> first.
+> >>>
+> >>>   Why exactly might early_memtest not longer be possible ?
+> >>
+> >> early_memtest need to call find_e820_area_size
+> >> current lmb doesn't have that kind of find util.
+> >> the one memory subtract reserved memory by kernel.
+> > 
+> >  What subtracts what ? And why is it that hard to fix that ?
+> 
+> lmb.memory - lmb.reserved
+> 
+> or e820 E820_RAM entries - early_res
+> 
+> move some code from early_res to lmb.c? 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+Care to explain in clear wording what you need to solve ? "move some
+code from early_res to lmb.c?" is definitely not an useful
+explanation.
 
-iEYEARECAAYFAkuoDMwACgkQD27XaX1/VRtdTQCgiT69KlXjtgYDdBqWpB7vWdkB
-66gAoKYHRTMFBlDdJhGo9zOll7xKCsDD
-=ngpT
------END PGP SIGNATURE-----
+> >>>
+> >>>   What means "early_res for bootmem" ?
+> >>
+> >> use early_res to replace bootmem, the CONFIG_NO_BOOTMEM.
+> >> that need early_res can be double or increase the slots automatically.
+> > 
+> >  -ENOPARSE
+> > 
+> > Yinghai, I asked you to take your time and explain things in detail
+> > instead of shooting unparseable answers within a minute.
+> > 
+> > Everyone else in this discussion tries to be as explanatory as
+> > possible, just you expect that everyone else is going to dig out the
+> > crystal ball to understand the deeper meanings of your patches.
+> > 
+> > Again, please take your time to explain what needs to be done or what
+> > is impossible to solve in your opinion, so we can get that resolved in
+> > a way which is satisfactory and useful for all parties involved.
+> 
+> to make x86 to use lmb, we need to extend lmb to have find_early_area.
 
---ALfTUftag+2gvp1h--
+Why ?
+ 
+> static int __init find_overlapped_early(u64 start, u64 end)
+> {
+
+No, posting arbitrary code snippets which you think are necessary to
+solve it is not the way to go.
+
+There is _ZERO_ explanation _WHY_ you think that this is a
+prerequisite.
+
+Those largely uncommented commented code snippets (uncommented as the
+corresponding code in x86) are _NOT_ an explanation at all.
+
+You just state that you need that whole bunch just w/o telling _WHY_.
+
+The more I look into this I doubt that there is an actual reason for
+this complexity. It just looks like it has grown that way by fixing
+corner cases all over the place and not out of a real design
+requirement.
+
+Either that or it's just the lack of understanding how to map lmb
+functionality to the problem at hand as certainly LMB does not map 1:1
+to the current x86 way of solving that problem.
+
+Please give a proper explanation for this, really !
+
+Thanks,
+
+	tglx
