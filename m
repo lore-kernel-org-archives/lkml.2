@@ -1,134 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0CWQhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 12:37:52 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:62613 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab0CWQhu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 12:37:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=NsWKENq43RDaYttuti5HKZbiDyd/X2RuYwW7bIiZBmh4IGKLuL81SJetPPFSbjNjLT
-         +ttRY4JSB2m2ZfaVQ2g+mUV1EeXrZAZsS/HOhUSXfwGwexsqGbedf8tqoHu3+EzYTOsU
-         yiORUywXDFLhifk5EOpldxBFdsYVcZQTPET8s=
-Subject: Re: possible huge regress
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Starikov <ant.starikov@gmail.com>
-In-Reply-To: <2A0D883F-2301-401B-BC35-D954AB7050D8@gmail.com>
-Date: Tue, 23 Mar 2010 17:37:44 +0100
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E363A887-933C-41FE-A55A-13740B273904@gmail.com>
-References: <2A0D883F-2301-401B-BC35-D954AB7050D8@gmail.com>
-To: Anton Starikov <ant.starikov@gmail.com>
-X-Mailer: Apple Mail (2.1077)
+	id S1755297Ab0CWQiX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 12:38:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60849 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755118Ab0CWQiW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 12:38:22 -0400
+Message-ID: <4BA8EE75.7090303@ti.com>
+Date: Tue, 23 Mar 2010 11:38:13 -0500
+From: Pavan Savoy <pavan_savoy@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] serial: TTY: new ldisc for TI BT/FM/GPS chips
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Created bug report with binary test-case.
+patch below,
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15618
+ > On Mon, Mar 22, 2010 at 04:19:12PM -0500, pavan_savoy@ti.com wrote:
+ > > From: Pavan Savoy <pavan_savoy@ti.com>
+ > >
+ > > This change adds the Kconfig and Make file for TI's
+ > > ST line discipline driver and the BlueZ driver for BT
+ > > core of the TI BT/FM/GPS combo chip.
+ > >
+ > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+ > > ---
+ > >  drivers/misc/Kconfig        |    1 +
+ >
+ > Why 'misc'?  Why not 'char' like all the other ldiscs?
+ >
+ > Or 'drivers/ldisc' to be more specific?
+
+ >We've discussed having /tty or drivers/tty for a while. The ldiscs are
+ >currently everywhere - drivers/net, isdn, char ....
+
+ >I am not sure an ldisc directory helps though - slip and ppp are in
+ >drivers/net for example and clearly belong there.
+ >  #define N_V253               19      /* Codec control over voice 
+modem */
+ > +#define N_TI_SHARED  20      /* for TI's WL7 connectivity chips */
+ >Be more specific or some future TI shared bus protocol might cause
+ >confusion N_TI_WL7 sounds fine.
+ >Alan
+
+Yes, I just felt that drivers which belong no-where are put up in 
+drivers/misc.
+Oh and name now changed to N_TI_WL, not WL7 because it kinda works with 
+WL6 chips with BT and FM only too, WL7 has the extra GPS core.
 
 
-On Mar 23, 2010, at 4:43 PM, Anton Starikov wrote:
+ From 4770551c9ae22ee35b3a9ef5cc9395f218962021 Mon Sep 17 00:00:00 2001
+From: Pavan Savoy <pavan_savoy@ti.com>
+Date: Mon, 22 Mar 2010 14:37:04 -0400
+Subject: [PATCH 1/7] serial: TTY: new ldisc for TI BT/FM/GPS chips
 
-> Hi,
-> 
-> We have benchmarked some multithreaded code here on 16-core/4-way opteron 8356 host on number of kernels (see below) and found strange results.
-> Up to 8 threads we didn't see any noticeable differences in performance, but starting from 9 threads performance diverges substantially. I provide here results for 14 threads
-> 
-> 2.6.18-164.11.1.el5 (centos)
-> 
-> user time: ~60 sec
-> sys time: ~12 sec
-> 
-> 2.6.32.9-70.fc12.x86_64 (fedora-12)
-> 
-> user time: ~60 sec
-> sys time: ~75 sec
-> 
-> 2.6.33-0.46.rc8.git1.fc13.x86_64 (fedora-12 + rawhide kernel)
-> 
-> user time: ~60 sec
-> sys time: ~300 sec
-> 
-> In all three cases real time corresponds to given numbers.
-> 
-> Binary used for all three cases is exactly the same (compiled on centos).
-> Setups for all three cases so identical as possible (last two - the sanme fedore-12 booted with different kernels).
-> I submit to LKLM because I feel that this is some general kernel issue rather than RH-flavored kernel issue.
-> 
-> What can be reason of this regress in performance? Is it possible to tune something to recover performance on 2.6.18 kernel? 
-> 
-> I perf'ed on 2.6.32.9-70.fc12.x86_64 kernel
-> 
-> report (top part only):
-> 
-> 43.64% dve22lts-mc [kernel] [k] _spin_lock_irqsave 
-> 32.93% dve22lts-mc ./dve22lts-mc [.] DBSLLlookup_ret 
-> 5.37% dve22lts-mc ./dve22lts-mc [.] SuperFastHash 
-> 3.76% dve22lts-mc /lib64/libc-2.11.1.so [.] __GI_memcpy 
-> 2.60% dve22lts-mc [kernel] [k] clear_page_c 
-> 1.60% dve22lts-mc ./dve22lts-mc [.] index_next_dfs
-> 
-> stat: 
-> 129875.554435 task-clock-msecs # 10.210 CPUs 
-> 1883 context-switches # 0.000 M/sec 
-> 17 CPU-migrations # 0.000 M/sec 
-> 2695310 page-faults # 0.021 M/sec 
-> 298370338040 cycles # 2297.356 M/sec 
-> 130581778178 instructions # 0.438 IPC 
-> 42517143751 cache-references # 327.368 M/sec 
-> 101906904 cache-misses # 0.785 M/sec 
-> 
-> callgraph:
-> 
-> 53.09%      dve22lts-mc  [kernel]                                         [k]
-> _spin_lock_irqsave
->                |          
->                |--49.90%-- __down_read_trylock
->                |          down_read_trylock
->                |          do_page_fault
->                |          page_fault
->                |          |          
->                |          |--99.99%-- __GI_memcpy
->                |          |          |          
->                |          |          |--84.28%-- (nil)
->                |          |          |          
->                |          |          |--9.78%-- 0x100000000
->                |          |          |          
->                |          |           --5.94%-- 0x1
->                |           --0.01%-- 
-> [...]
-> 
->                |          
->                |--49.39%-- __up_read
->                |          up_read
->                |          |          
->                |          |--100.00%-- do_page_fault
->                |          |          page_fault
->                |          |          |          
->                |          |          |--99.99%-- __GI_memcpy
->                |          |          |          |          
->                |          |          |          |--84.18%-- (nil)
->                |          |          |          |          
->                |          |          |          |--10.13%-- 0x100000000
->                |          |          |          |          
->                |          |          |           --5.69%-- 0x1
->                |          |           --0.01%-- 
-> [...]
-> 
->                |           --0.00%-- 
-> [...]
-> 
->                 --0.72%-- 
-> [...]
-> 
-> 
-> Anton.
+A new N_TI_WL line discipline added for TI BT/FM/GPS
+combo chips which make use of same TTY to communicate
+with chip. This is to be made use of individual protocol
+BT/FM/GPS drivers.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+  include/linux/tty.h |    3 ++-
+  1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 4409967..8288ee1 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -23,7 +23,7 @@
+   */
+  #define NR_UNIX98_PTY_DEFAULT	4096      /* Default maximum for Unix98 
+ptys */
+  #define NR_UNIX98_PTY_MAX	(1 << MINORBITS) /* Absolute limit */
+-#define NR_LDISCS		20
++#define NR_LDISCS		21
+
+  /* line disciplines */
+  #define N_TTY		0
+@@ -48,6 +48,7 @@
+  #define N_PPS		18	/* Pulse per Second */
+
+  #define N_V253		19	/* Codec control over voice modem */
++#define N_TI_WL		20	/* for TI's WL connectivity chips */
+
+  /*
+   * This character is the same as _POSIX_VDISABLE: it cannot be used as
+-- 
+1.5.4.3
 
