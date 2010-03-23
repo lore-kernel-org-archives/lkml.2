@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab0CWTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 15:22:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:56230 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752061Ab0CWTWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 15:22:20 -0400
-Date: Tue, 23 Mar 2010 14:22:13 -0500
-From: Robin Holt <holt@sgi.com>
-To: Anton Starikov <ant.starikov@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
-       bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge
- regression in performance
-Message-ID: <20100323192213.GA6169@sgi.com>
-References: <bug-15618-10286@https.bugzilla.kernel.org/>
- <20100323102208.512c16cc.akpm@linux-foundation.org>
- <20100323173409.GA24845@elte.hu>
- <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
- <20100323180002.GA2965@elte.hu>
- <15090451-C292-44D6-B2BA-DCBCBEEF429D@gmail.com>
- <20100323112141.7f248f2b.akpm@linux-foundation.org>
- <41DAB29F-59B7-4D38-A389-75FAC47225BF@gmail.com>
+	id S1752394Ab0CWT1M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 15:27:12 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41502 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab0CWT1K convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 15:27:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=BPBu3xfuwcYwqPOxpjDMeBpFDIoWLNuhxOPotx8rly6fjq1l5qVJTs92BOKVY1xcuN
+         LlXRmbgzFiv37fywKUYsIL7Mad5W65jlwXO6+Vo3sJY6NZsY12trVpqblco2yd6/E1fJ
+         W4OL2XxoaNykTwkHK7pToATYINbtKP/HFxnX4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <41DAB29F-59B7-4D38-A389-75FAC47225BF@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100319000438.GV5454@kroah.com>
+References: <20100313001618.GA9811@kroah.com> <20100313001511.285517122@kvm.kroah.org> 
+	<43e72e891003151804s617659f8o6dcbf0b5ab63cb5d@mail.gmail.com> 
+	<20100319000438.GV5454@kroah.com>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Tue, 23 Mar 2010 12:26:49 -0700
+X-Google-Sender-Auth: 33ea0f0f80f654c5
+Message-ID: <43e72e891003231226q3be972dfl5bb8a022bdb5aaff@mail.gmail.com>
+Subject: Re: [Stable-review] [stable] [patch 070/123] ath9k: re-enable ps by 
+	default for new single chip families
+To: Greg KH <greg@kroah.com>,
+       Senthil Balasubramanian <senthilkumar@atheros.com>
+Cc: torvalds@linux-foundation.org, Greg KH <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>, stable@kernel.org,
+       Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+       "Justin P. Mattock" <justinmattock@gmail.com>,
+       akpm@linux-foundation.org, Peter Stuge <peter@stuge.se>,
+       stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 07:25:43PM +0100, Anton Starikov wrote:
-> On Mar 23, 2010, at 7:21 PM, Andrew Morton wrote:
-> >> I will apply this commits to 2.6.32, I afraid current OFED (which I need also) will not work on 2.6.33+.
-> >> 
-> > 
-> > You should be able to simply set CONFIG_RWSEM_GENERIC_SPINLOCK=n,
-> > CONFIG_RWSEM_XCHGADD_ALGORITHM=y by hand, as I mentioned earlier?
-> 
-> Hm. I tried, but when I do "make oldconfig", then it gets rewritten, so I assume that it conflicts with some other setting from default fedora kernel config. trying to figure out which one exactly.
+On Thu, Mar 18, 2010 at 5:04 PM, Greg KH <greg@kroah.com> wrote:
+> On Mon, Mar 15, 2010 at 06:04:15PM -0700, Luis R. Rodriguez wrote:
+>> On Fri, Mar 12, 2010 at 5:12 PM, Greg KH <gregkh@suse.de> wrote:
+>> > 2.6.33-stable review patch.  If anyone has any objections, please let me know.
+>>
+>> This was intended for 2.6.32 as well. Thanks
+>
+> Great, but it didn't apply there, so I didn't try to force it :)
+>
+> Care to provide a backport?
 
-Have you tracked this down yet?  I just got the patches applied against
-an older kernel and am running into the same issue.
+Senthil, if you get a chance, can you send this backport? Sorry I
+haven't had a chance yet.
 
-Thanks,
-Robin
+  Luis
