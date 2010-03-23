@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab0CWIQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 04:16:09 -0400
-Received: from tenax.loup.net ([209.169.16.66]:54485 "EHLO tenax.loup.net"
+	id S1754757Ab0CWIac (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 04:30:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3091 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753822Ab0CWIQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 04:16:05 -0400
-Date: Tue, 23 Mar 2010 02:01:30 -0600
-Message-Id: <201003230801.o2N81UKg009750@alien.loup.net>
-From: Mike Hayward <hayward@loup.net>
-To: linux-kernel@vger.kernel.org
-Subject: Regression: my systems can no longer boot from an ide hard drive
+	id S1754696Ab0CWIaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 04:30:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100322184136.GA3967@redhat.com>
+References: <20100322184136.GA3967@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 3/3] proc: make task_sig() lockless
+Date: Tue, 23 Mar 2010 08:30:16 +0000
+Message-ID: <15714.1269333016@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Three identical known good opteron systems can no longer boot freshly
-installed distros from an ide hard drive.  The systems have one ide
-drive and eight sata drives.  If distro is installed to ide drive,
-Ubuntu 9.10 server moves cursor down the screen twice, then hangs
-while Fedora 12 grub loads but then claims it can't find root to mount
-and it and hangs 'forever'.  Numerous distros have all booted fine
-before 2.6.25... I don't know where it went wrong between 25 and 31.
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-This is despite partitioning with and without lvm, despite making sure
-kernel/boot loader are in partition in first 2 gigs of ide drive.
+> Also, remove the "is this correct?" comment. I think it is safe
+> to dereference __task_cred(p)->user under rcu lock.
 
-Both distros boot just fine on each system when os is installed on a
-sata drive so this isn't a hardware defect.
+It is.
 
-Distro that boots fine from ide:
-Linux opt1 2.6.25-14.fc9.x86_64 #1 SMP Thu May 1 06:06:21 EDT 2008 x86_64 x86_64 x86_64 GNU/Linux
-
-Distros that no longer boot via ide drive:
-Linux opt2 2.6.31-14-server #48-Ubuntu SMP Fri Oct 16 15:07:34 UTC 2009 x86_64 GNU/Linux
-Linux opt3 2.6.31.5-127.fc12.x86_64 #1 SMP Sat Nov 7 21:11:14 EST 2009 x86_64 x86_64 x86_64 GNU/Linux
-
-Maybe this can be worked around with some options to grub or
-kernel... if so, shouldn't distros detect that ide drives are being
-set up and configure the boot loader properly?  It would be very hard
-for newbie to figure this one out.
-
-Has anyone else seen this, or am I the only one who boots from ide
-when a sata drive is present? :-)
-
-- Mike
+David
