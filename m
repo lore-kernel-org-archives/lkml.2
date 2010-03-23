@@ -1,55 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab0CWLcp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 07:32:45 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:42312 "EHLO isrv.corpit.ru"
+	id S1752564Ab0CWLeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 07:34:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60066 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab0CWLcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 07:32:43 -0400
-Message-ID: <4BA8A6DA.1000408@msgid.tls.msk.ru>
-Date: Tue, 23 Mar 2010 14:32:42 +0300
-From: Michael Tokarev <mjt@tls.msk.ru>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	id S1751702Ab0CWLem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 07:34:42 -0400
+Message-ID: <4BA8A74E.6030704@suse.cz>
+Date: Tue, 23 Mar 2010 12:34:38 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091130 SUSE/3.0.0-1.2 Thunderbird/3.0
 MIME-Version: 1.0
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kvm-devel <kvm@vger.kernel.org>
-Subject: KSM & hugepages
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=KOI8-R
+To: Philipp Kohlbecher <xt28@gmx.de>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] .gitignore: ignore *.lzo files
+References: <4BA124DC.2070701@gmx.de>
+In-Reply-To: <4BA124DC.2070701@gmx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 17.3.2010 19:52, Philipp Kohlbecher wrote:
+> Ignore files compressed with lzop.
+> 
+> Signed-off-by: Philipp Kohlbecher <xt28@gmx.de>
 
-I noticed an interesting thing here, with qemu-kvm, KSM and
-hugepages.
+Applied, thanks.
 
-When I initially enabled KSM, for my two windows guests I've
-seen ~100 000 pages in /sys/kernel/mm/ksm/pages_shared .
-That's quite good, and overall memory usage improved.
-
-Now, I also enabled hugepages in kvm, which speed things
-up quite significantly (the speedup is noticeable).
-
-But now, when both KSM and hugepages are activated, I don't
-see KSM in action anymore.  /sys/../mm/pages_shared shows
-56 pages, which is nothing.
-
-So I wonder what's up:
- o that's 56 _huge_ pages (which means the actual saving
-   is 56*2M = 112Mb, which isn't really bad).  If that's
-   the case, /sys/../mm/ interface lacks proper units
-   reporting;
- o due to large pages there's much less chance to find
-   two pages with identical contents, so very little can
-   be shared;
- o KSM does not scan hugepages at all
- o something else.
-
-What is the issue here?
-
-Thanks!
-
-/mjt
+Michal
