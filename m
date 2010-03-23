@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab0CWDQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 23:16:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43539 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753560Ab0CWDQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 23:16:55 -0400
-Date: Tue, 23 Mar 2010 14:16:46 +1100
-From: Neil Brown <neilb@suse.de>
-To: jin zhencheng <zhenchengjin@gmail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: BUG:write data to degrade raid5
-Message-ID: <20100323141646.2cfa68a3@notabene.brown>
-In-Reply-To: <de04351e1003190329l2f33447bhe37b963bd4b48c70@mail.gmail.com>
-References: <de04351e1003190329l2f33447bhe37b963bd4b48c70@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754148Ab0CWDWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 23:22:30 -0400
+Received: from mail-qy0-f182.google.com ([209.85.221.182]:65032 "EHLO
+	mail-qy0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839Ab0CWDW2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 23:22:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cXXiCG40Jz9sLEgoW2jpudO40Ql3aHmoCv+8xQrgdNrOdbyuRCuyV1fsN2+HQCnSpi
+         8g/ldAzE3fHiawKj0MbSv4gsvAcsGfGMl6o70fiweA1wcoAQpl32XikjnIYJlf3bjcsk
+         hznom4K1xRO4SFAq1tytHQb2bKMT9FEU8sjGI=
+MIME-Version: 1.0
+In-Reply-To: <201003222228.28268.rjw@sisk.pl>
+References: <QQGfxbJf48H.A.NFD.uNopLB@chimera>
+	 <hTwaxgnIZ2O.A.rhF.SQopLB@chimera>
+	 <alpine.LSU.2.00.1003220319360.1726@sister.anvils>
+	 <201003222228.28268.rjw@sisk.pl>
+Date: Tue, 23 Mar 2010 11:22:26 +0800
+Message-ID: <2375c9f91003222022q17cfc75fx3f8ebcb7d785dc42@mail.gmail.com>
+Subject: Re: [Bug #15202] lockdep warning during elevator_switch
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>, Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Mar 2010 18:29:28 +0800
-jin zhencheng <zhenchengjin@gmail.com> wrote:
+On Tue, Mar 23, 2010 at 5:28 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday 22 March 2010, Hugh Dickins wrote:
+>> On Sun, 21 Mar 2010, Rafael J. Wysocki wrote:
+>> > The following bug entry is on the current list of known regressions
+>> > introduced between 2.6.32 and 2.6.33.  Please verify if it still should
+>> > be listed and let the tracking team know (either way).
+>> >
+>> > Bug-Entry   : http://bugzilla.kernel.org/show_bug.cgi?id=15202
+>> > Subject             : lockdep warning during elevator_switch
+>> > Submitter   : Hugh Dickins <hugh.dickins@tiscali.co.uk>
+>> > Date                : 2010-01-31 23:55 (50 days old)
+>> > References  : http://marc.info/?l=linux-kernel&m=126498212613051&w=4
+>>
+>> Yes, it is still a regression 2.6.33.1 (though fixed in 2.6.34-rc1:
+>> my guess is that it will be left as a regression in 2.6.33-stable,
+>> since it only happens when you have chosen CONFIG_PROVE_LOCKING=y).
+>
+> The policy is that we close the regression bugs after they've been fixed in the
+> Linus' tree, so I'm going to close it now.
 
-> hi;
-> 
-> i use kernel is 2.6.26.2
-> 
-> what i do as follow:
-> 
-> 1, I create a raid5:
-> mdadm -C /dev/md5 -l 5 -n 4 /dev/sda /dev/sdb /dev/sdc  /dev/sdd
-> --metadata=1.0 --assume-clean
-> 
-> 2, dd if=/dev/zero of=/dev/md5 bs=1M &
-> 
-> write data to this raid5
-> 
-> 3, mdadm --manage /dev/md5 -f /dev/sda
-> 
-> 4 mdadm --manage  /dev/md5 -f /dev/sdb
-> 
-> if i faild 2 disks ,then the OS kernel display OOP error and kernel down
-> 
-> 
-> do somebody know why ?
-> 
-> Is MD/RAID5 bug ?
+Agreed.
 
-Certainly this is a bug.
-2.6.26 is quite old now - it is possible that the bug has already been fixed.
-If you are able to post the oops message - possibly use a digital camera to
-get a photograph - then I can probably explain what is happening and whether
-it has been fixed.
+>
+> If you want it to go into -stable, please let Greg know directly.
+>
 
-Thanks,
-NeilBrown
+Right, but the fix for this issue is too large to go -stable, perhaps.
+Lots of related fixes are needed too because of it.
 
+Thanks.
