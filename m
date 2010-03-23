@@ -1,124 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab0CWAvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:51:21 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:34389 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab0CWAvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:51:19 -0400
-From: Gene Heskett <gene.heskett@verizon.net>
-Organization: Organization? Not detectable
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: shutdown bugs, since about 2.6.31 or so
-Date: Mon, 22 Mar 2010 20:50:55 -0400
-User-Agent: KMail/1.12.3 (Linux/2.6.34-rc2; KDE/4.3.3; i686; ; )
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-Message-id: <201003222050.55716.gene.heskett@verizon.net>
+	id S1756205Ab0CWA50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:57:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1198 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755094Ab0CWA5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 20:57:24 -0400
+Date: Mon, 22 Mar 2010 20:56:39 -0400
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Amerigo Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
+       Neil Horman <nhorman@tuxdriver.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [RFC Patch 3/3] bonding: make bonding support netpoll
+Message-ID: <20100323005639.GH2108@gospo.rdu.redhat.com>
+References: <20100322082059.4967.63492.sendpatchset@localhost.localdomain> <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100322082123.4967.77433.sendpatchset@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings;
+On Mon, Mar 22, 2010 at 04:17:40AM -0400, Amerigo Wang wrote:
+> 
+> Based on Andy's work, but I modify a lot.
+> 
+> Similar to the patch for bridge, this patch does:
+> 
+> 1) implement the 4 methods to support netpoll for bonding;
+> 
+> 2) modify netpoll during forwarding packets in bonding;
+> 
+> 3) disable netpoll support of bridge when a netpoll-unabled device
+>    is added to bonding;
+> 
+> 4) enable netpoll support when all underlying devices support netpoll.
+> 
+> Cc: Andy Gospodarek <gospo@redhat.com>
+> Cc: Neil Horman <nhorman@tuxdriver.com>
+> Cc: Jay Vosburgh <fubar@us.ibm.com>
+> Cc: David Miller <davem@davemloft.net>
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
 
-I do not know if I am miss-configured or what, and I hadn't worried about it 
-extensively because the machine runs fine ANAICT.
+How much testing was done on this?
 
-But any reboot method short of just pressing the hdwe reset button generates 
-quite a lengthy process of repeatedly pressing ctl-alt-del, minimum of 6 
-times I believe, in order to actually do a shutdown, and this isn't at all 
-graceful.  Not all of it makes it to the log, but here is what does.
+One of the potential problems with this code is how gracefully the
+system can handle tear-down of interfaces or removal of the bonding
+module when netconsole is active.  Was that tested heavily?
 
-Mar 22 16:47:53 coyote kernel: [ 3000.619173] BUG: Dentry d76beaa0{i=2,n=/} 
-still in use (1) [unmount of cifs cifs]
-Mar 22 16:47:53 coyote kernel: [ 3000.619191] ------------[ cut here 
-]------------
-Mar 22 16:47:53 coyote kernel: [ 3000.619303] kernel BUG at fs/dcache.c:676!
-Mar 22 16:47:53 coyote kernel: [ 3000.619420] invalid opcode: 0000 [#1] 
-PREEMPT SMP
-Mar 22 16:47:53 coyote kernel: [ 3000.619597] last sysfs file: 
-/sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/ATK0110:00/hwmon/hwmon0/in3_input
-Mar 22 16:47:53 coyote kernel: [ 3000.619803] Modules linked in: nls_utf8 
-cifs radeon ttm drm_kms_helper drm agpgart nfsd lockd nfs_acl auth_rpcgss 
-expo
-rtfs rfcomm sco bnep l2cap autofs4 sunrpc ipv6 or51132 snd_usb_audio 
-snd_usb_lib cx88_dvb cx88_vp3054_i2c videobuf_dvb snd_emu10k1_synth 
-snd_emux_synth
-snd_seq_virmidi snd_seq_midi_emul dvb_core tuner_simple tuner_types tda9887 
-tda8290 tuner snd_emu10k1 cx8800 cx8802 cx88xx snd_rawmidi snd_ac97_codec ac
-97_bus snd_seq_dummy i2c_algo_bit snd_seq_oss snd_seq_midi_event snd_seq 
-ftdi_sio btusb snd_pcm_oss snd_mixer_oss snd_pcm tveeprom bluetooth 
-snd_seq_dev
-ice snd_timer v4l2_common snd_page_alloc videodev snd_util_mem snd_hwdep 
-v4l1_compat usbserial btcx_risc snd i2c_nforce2 sg k10temp firewire_ohci 
-firewi
-re_core rtc_cmos videobuf_dma_sg sr_mod cdrom pcspkr soundcore videobuf_core 
-rtc_core crc_itu_t rfkill hwmon usblp joydev rtc_lib button evdev sd_mod ex
-t3 jbd uhci_hcd ohci_hcd ehci_hcd [last unloaded: asus_atk0110]
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] Pid: 5747, comm: umount.cifs 
-Not tainted 2.6.34-rc2 #1 M2N-SLI DELUXE/System Product Name
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: 0060:[<c10946ae>] EFLAGS: 
-00010246 CPU: 1
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP is at 
-shrink_dcache_for_umount_subtree+0x14b/0x1fe
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] EAX: 0000005b EBX: 00000001 
-ECX: 00000046 EDX: 00000000
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] ESI: d76beaa0 EDI: d76beafc 
-EBP: d55e6f24 ESP: d55e6ef4
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  DS: 007b ES: 007b FS: 00d8 GS: 
-00e0 SS: 0068
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] Process umount.cifs (pid: 5747, 
-ti=d55e6000 task=d55d8780 task.ti=d55e6000)
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] Stack:
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  c12d20ac d76beaa0 00000002 
-d76beafc 00000001 fa14da01 dc956b64 fa14da01
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> 0000001b dc956a00 fa14a7b4 
-dc956a00 d55e6f30 c109478e dc956a00 d55e6f40
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> c1087d38 00000013 fa158a5c 
-d55e6f4c c1087e32 dc956a00 d55e6f5c c10883c6
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] Call Trace:
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c109478e>] ? 
-shrink_dcache_for_umount+0x2d/0x37
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087d38>] ? 
-generic_shutdown_super+0x15/0xd2
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087e32>] ? 
-kill_anon_super+0xc/0x43
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10883c6>] ? 
-deactivate_super+0x39/0x4b
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1098dfd>] ? 
-mntput_no_expire+0x8c/0xbb
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10992df>] ? 
-sys_umount+0x299/0x2be
-Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1002813>] ? 
-sysenter_do_call+0x12/0x22
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] Code: 00 89 45 ec 8b 46 10 8b 
-1e 8b 7e 28 85 c0 74 03 8b 50 20 8d 81 64 01 00 00 50 ff 75 ec 53 57 52 56 6
-8 ac 20 2d c1 e8 b5 fc 1b 00 <0f> 0b 83 c4 1c eb fe 8b 7e 1c 39 fe 75 04 31 
-ff eb 03 f0 ff 0f
-Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: [<c10946ae>] 
-shrink_dcache_for_umount_subtree+0x14b/0x1fe SS:ESP 0068:d55e6ef4
-Mar 22 16:47:53 coyote kernel: [ 3000.627952] ---[ end trace fbecccbb5fac2d05 
-]---
-
-Now, after this point, I have to press ctl-alt-del at least 2 times to get it 
-to continue the shutdown, it will timeout 3 times trying to umount /usr, and 
-then finally squawk about a cifs mount that is done in my rc.local file.  
-That requires 2 more presses of the ctl-alt-del keys, then it finally says 
-its shutting down, and 20 to 30 seconds later I have to press them again 
-before it actually reverts to the bios to begin the next boot anew.
-
-I have seen this fs/dcache.c line 676 mentioned many times here, and I would 
-have thought by now this nuisance would have been spanked.
-
-Thanks.
-
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-
-Captain's Log, star date 21:34.5...
+> 
+> ---
+> Index: linux-2.6/drivers/net/bonding/bond_main.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/net/bonding/bond_main.c
+> +++ linux-2.6/drivers/net/bonding/bond_main.c
+> @@ -59,6 +59,7 @@
+>  #include <linux/uaccess.h>
+>  #include <linux/errno.h>
+>  #include <linux/netdevice.h>
+> +#include <linux/netpoll.h>
+>  #include <linux/inetdevice.h>
+>  #include <linux/igmp.h>
+>  #include <linux/etherdevice.h>
+> @@ -430,7 +431,17 @@ int bond_dev_queue_xmit(struct bonding *
+>  	}
+>  
+>  	skb->priority = 1;
+> -	dev_queue_xmit(skb);
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +	if (bond->dev->priv_flags & IFF_IN_NETPOLL) {
+> +		bond->dev->npinfo->netpoll->dev = skb->dev;
+> +		if (!slave_dev->npinfo)
+> +			slave_dev->npinfo = bond->dev->npinfo;
+> +		slave_dev->priv_flags |= IFF_IN_NETPOLL;
+> +		netpoll_send_skb(bond->dev->npinfo->netpoll, skb);
+> +		slave_dev->priv_flags &= ~IFF_IN_NETPOLL;
+> +	} else
+> +#endif
+> +		dev_queue_xmit(skb);
+>  
+>  	return 0;
+>  }
+> @@ -1324,6 +1335,87 @@ static void bond_detach_slave(struct bon
+>  	bond->slave_cnt--;
+>  }
+>  
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +static bool slaves_support_netpoll(struct net_device *bond_dev)
+> +{
+> +	struct bonding *bond = netdev_priv(bond_dev);
+> +	struct slave *slave;
+> +	int i = 0;
+> +	bool ret = true;
+> +
+> +	read_lock_bh(&bond->lock);
+> +	bond_for_each_slave(bond, slave, i) {
+> +		if ((slave->dev->priv_flags & IFF_DISABLE_NETPOLL)
+> +				|| !slave->dev->netdev_ops->ndo_poll_controller)
+> +			ret = false;
+> +	}
+> +	read_unlock_bh(&bond->lock);
+> +	return i != 0 && ret;
+> +}
+> +
+> +static void bond_poll_controller(struct net_device *bond_dev)
+> +{
+> +	struct bonding *bond = netdev_priv(bond_dev);
+> +	struct slave *slave;
+> +	int i;
+> +
+> +	read_lock(&bond->lock);
+> +	bond_for_each_slave(bond, slave, i) {
+> +		if (slave->dev->netdev_ops->ndo_poll_controller)
+> +			netpoll_poll_dev(slave->dev);
+> +	}
+> +	read_unlock(&bond->lock);
+> +}
+> +
+> +static void bond_netpoll_setup(struct net_device *bond_dev,
+> +			      struct netpoll_info *npinfo)
+> +{
+> +	struct bonding *bond = netdev_priv(bond_dev);
+> +	struct slave *slave;
+> +	int i;
+> +
+> +	write_lock_bh(&bond->lock);
+> +	bond_for_each_slave(bond, slave, i) {
+> +		if (slave->dev)
+> +			slave->dev->npinfo = npinfo;
+> +	}
+> +	write_unlock_bh(&bond->lock);
+> +}
+> +
+> +static void bond_netpoll_cleanup(struct net_device *bond_dev)
+> +{
+> +	struct bonding *bond = netdev_priv(bond_dev);
+> +	struct slave *slave;
+> +	const struct net_device_ops *ops;
+> +	int i;
+> +
+> +	write_lock_bh(&bond->lock);
+> +	bond_dev->npinfo = NULL;
+> +	bond_for_each_slave(bond, slave, i) {
+> +		if (slave->dev) {
+> +			ops = slave->dev->netdev_ops;
+> +			if (ops->ndo_netpoll_cleanup)
+> +				ops->ndo_netpoll_cleanup(slave->dev);
+> +			else
+> +				slave->dev->npinfo = NULL;
+> +		}
+> +	}
+> +	write_unlock_bh(&bond->lock);
+> +}
+> +
+> +static int bond_netpoll_xmit(struct netpoll *np, struct sk_buff *skb,
+> +			     struct net_device *dev)
+> +{
+> +	int ret;
+> +
+> +	dev->priv_flags |= IFF_IN_NETPOLL;
+> +	ret = dev->netdev_ops->ndo_start_xmit(skb, dev);
+> +	np->dev = dev;
+> +	dev->priv_flags &= ~IFF_IN_NETPOLL;
+> +	return ret;
+> +}
+> +#endif
+> +
+>  /*---------------------------------- IOCTL ----------------------------------*/
+>  
+>  static int bond_sethwaddr(struct net_device *bond_dev,
+> @@ -1741,6 +1833,18 @@ int bond_enslave(struct net_device *bond
+>  		new_slave->state == BOND_STATE_ACTIVE ? "n active" : " backup",
+>  		new_slave->link != BOND_LINK_DOWN ? "n up" : " down");
+>  
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +	if (slaves_support_netpoll(bond_dev)) {
+> +		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
+> +		if (bond_dev->npinfo)
+> +			slave_dev->npinfo = bond_dev->npinfo;
+> +	} else if (!(bond_dev->priv_flags & IFF_DISABLE_NETPOLL)) {
+> +		bond_dev->priv_flags |= IFF_DISABLE_NETPOLL;
+> +		pr_info("New slave device %s does not support netpoll\n",
+> +			slave_dev->name);
+> +		pr_info("Disabling netpoll support for %s\n", bond_dev->name);
+> +	}
+> +#endif
+>  	/* enslave is successful */
+>  	return 0;
+>  
+> @@ -1924,6 +2028,15 @@ int bond_release(struct net_device *bond
+>  
+>  	netdev_set_master(slave_dev, NULL);
+>  
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +	if (slaves_support_netpoll(bond_dev))
+> +		bond_dev->priv_flags &= ~IFF_DISABLE_NETPOLL;
+> +	if (slave_dev->netdev_ops->ndo_netpoll_cleanup)
+> +		slave_dev->netdev_ops->ndo_netpoll_cleanup(slave_dev);
+> +	else
+> +		slave_dev->npinfo = NULL;
+> +#endif
+> +
+>  	/* close slave before restoring its mac address */
+>  	dev_close(slave_dev);
+>  
+> @@ -2032,6 +2145,9 @@ static int bond_release_all(struct net_d
+>  
+>  		netdev_set_master(slave_dev, NULL);
+>  
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +		slave_dev->npinfo = NULL;
+> +#endif
+>  		/* close slave before restoring its mac address */
+>  		dev_close(slave_dev);
+>  
+> @@ -4424,6 +4540,12 @@ static const struct net_device_ops bond_
+>  	.ndo_vlan_rx_register	= bond_vlan_rx_register,
+>  	.ndo_vlan_rx_add_vid 	= bond_vlan_rx_add_vid,
+>  	.ndo_vlan_rx_kill_vid	= bond_vlan_rx_kill_vid,
+> +#ifdef CONFIG_NET_POLL_CONTROLLER
+> +	.ndo_netpoll_setup	= bond_netpoll_setup,
+> +	.ndo_netpoll_xmit	= bond_netpoll_xmit,
+> +	.ndo_netpoll_cleanup	= bond_netpoll_cleanup,
+> +	.ndo_poll_controller	= bond_poll_controller,
+> +#endif
+>  };
+>  
+>  static void bond_setup(struct net_device *bond_dev)
