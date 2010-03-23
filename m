@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab0CWU4j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:56:39 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60622 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754350Ab0CWU4h (ORCPT
+	id S1754595Ab0CWVDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 17:03:05 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51195 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab0CWVDD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 16:56:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OpTBAdDVvKewec3gAjCNTyKrK3t6ZGepgZph+x5OOJEHhHyK0z4KK/vDXUwmd3A6HN
-         vp99PTlfdxhiU5OxcALdZJwoc3PBwhcUAnafgwpmfCzW6EyxGNlun4yCUVRe9MnEcEkM
-         gJWSOY8BaUqgRdVmQ1tYqH9yhftxThEuNW3YU=
-Date: Tue, 23 Mar 2010 21:56:23 +0100
-From: Dhaval Giani <dhaval@retis.sssup.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Fabio Checconi <fchecconi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-       Dario Faggioli <faggioli@gandalf.sssup.it>,
-       Michael Trimarchi <michael@evidence.eu.com>,
-       Tommaso Cucinotta <t.cucinotta@sssup.it>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] sched: use EDF to throttle RT task groups v2
-Message-ID: <20100323205623.GA9138@gondor.retis>
-References: <cover.1266931410.git.fabio@helm.retis>
- <1267273991.22519.744.camel@laptop>
- <20100303170110.GS2490@gandalf.sssup.it>
- <1269376207.5283.5.camel@laptop>
+	Tue, 23 Mar 2010 17:03:03 -0400
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Badari Pulavarty <pbadari@us.ibm.com>, Christoph Hellwig <hch@lst.de>,
+       Janak Desai <janak@us.ibm.com>, Roland McGrath <roland@redhat.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm] sys_unshare: simplify the not-really-implemented CLONE_THREAD/SIGHAND/VM code
+References: <20100323170816.GA20809@redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 23 Mar 2010 14:02:55 -0700
+In-Reply-To: <20100323170816.GA20809@redhat.com> (Oleg Nesterov's message of "Tue\, 23 Mar 2010 18\:08\:16 +0100")
+Message-ID: <m1hbo6u4xs.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269376207.5283.5.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: oleg@redhat.com, linux-kernel@vger.kernel.org, sukadev@us.ibm.com, sgruszka@redhat.com, roland@redhat.com, janak@us.ibm.com, hch@lst.de, pbadari@us.ibm.com, akpm@linux-foundation.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> > The biggest problem with the four files used in the current implementation
-> > is that bandwidth assignments should be atomic (because setting all the
-> > parameters independently can force the system to go through non-feasible
-> > assignments, and the order to use when assigning runtime and period
-> > changes depending on the direction of the change).  I know this is a
-> > dangerous question, but I'll try it anyway: are we ready for multi-valued
-> > cgroup parameters?
-> 
-> Right, I don't know about multi-valued files, that sounds like its going
-> to confuse people too.
-> 
+Oleg Nesterov <oleg@redhat.com> writes:
 
-True, but after having used the current interface I feel multi-valued
-files will be better. For an idea, this is how I currently change
-bandwidth allocated to a group.
+> (on top of check_unshare_flags-kill-the-bogus-clone_sighand-sig-count-check.patch)
+>
+> Cleanup.
+>
+> sys_unshare(CLONE_THREAD/SIGHAND/VM) is not really implemented, and I doubt
+> very much it will ever work. At least, nobody even tried since the original
+> "unshare system call -v5: system call handler function" commit
+> 99d1419d96d7df9cfa56bc977810be831bd5ef64 was applied more than 4 years ago.
+>
+> And the code is not consistent. unshare_thread() always fails unconditionally,
+> while unshare_sighand() and unshare_vm() pretend to work if there is nothing
+> to unshare.
 
-(I am ignoring cpu.rt_ prefixes and _us suffixes for the filenames)
+This is setting off alarm bells in my head.
 
-Starting state: task_runtime: 100000, task_period: 1000000.
-runtime=200000, period=1000000
+I haven't traced this all through but I like your logic a lot less, and
+I think it is buggy.  Why don't we need to look at sigh->count ?
 
-Suppose I want to bring down the periods to 100000, then first I need
-to change task_runtime to 10000, then the task period, then the runtime
-and finally the period.
+The current logic is very fine grained but it does a lot of simple logical
+checks and it ties those checks together if a very maintainable way.
 
-If I want to go the opposite way, then first I need to increase the
-periods and then the runtimes.
+You require that we know upfront all of the dependencies, which is things
+change subtlety can be a maintenance challenge.
 
-But I can also see why one would not want a multi-valued interface, esp
-when the idea is just to change the runtimes. (though there is a
-complicated interaction between task_runtime and runtime which I am not
-sure how to avoid).
 
-IOW, this interface sucks :-). We really need something better and
-easier to use. (Sorry for no constructive input)
 
-Thanks,
-Dhaval
+> Remove unshare_thread(), unshare_sighand(), unshare_vm() helpers and related
+> variables and add a simple CLONE_THREAD | CLONE_SIGHAND| CLONE_VM check into
+> check_unshare_flags().
+>
+> Also, move the "CLONE_NEWNS needs CLONE_FS" check from check_unshare_flags()
+> to sys_unshare(). This looks more consistent and matches the similar
+> do_sysvsem check in sys_unshare().
+>
+> Note: with or without this patch "atomic_read(mm->mm_users) > 1" can give
+> a false positive due to get_task_mm().
+
+I think the number of times get_task_mm is called on not current this isn't
+an interesting race.
+
+Eric
