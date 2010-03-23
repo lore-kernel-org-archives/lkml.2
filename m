@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab0CWPdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:33:19 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39050 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735Ab0CWPdR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:33:17 -0400
-Subject: Re: [PATCH RFC 00/11] lock monitor: Separate features related to
- lock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>
-In-Reply-To: <4BA4860C.3050001@dcl.info.waseda.ac.jp>
-References: <1268563128-6486-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-	 <1268590435.9440.8.camel@laptop> <20100317013236.GB5258@nowhere>
-	 <20100317095230.GD17146@elte.hu> <4BA1C141.8050409@dcl.info.waseda.ac.jp>
-	 <20100318211633.GG5103@nowhere> <4BA4638C.40307@dcl.info.waseda.ac.jp>
-	 <4BA4860C.3050001@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 16:32:40 +0100
-Message-ID: <1269358360.5109.88.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754812Ab0CWPeJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:34:09 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:55210 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754735Ab0CWPeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 11:34:05 -0400
+Date: Tue, 23 Mar 2010 08:33:59 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Anton Blanchard <anton@samba.org>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Jens Axboe <jens.axboe@oracle.com>,
+       Nick Piggin <nickpiggin@yahoo.com.au>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Milton Miller <miltonm@bga.com>, Nick Piggin <npiggin@suse.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smp_call_function_many SMP race
+Message-ID: <20100323153359.GM2517@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100323111556.GK24064@kryten>
+ <1269347203.5279.1650.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269347203.5279.1650.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-03-20 at 17:23 +0900, Hitoshi Mitake wrote:
-> In lockdep, held_locks of task_struct are accessed this arithmetical way
->                 prev = curr->held_locks + i;
-> Of course this is valid way, but I feel it is more simple and natural way
->                 prev = curr->held_locks[i];
+On Tue, Mar 23, 2010 at 01:26:43PM +0100, Peter Zijlstra wrote:
+> On Tue, 2010-03-23 at 22:15 +1100, Anton Blanchard wrote:
+> > 
+> > It turns out commit c0f68c2fab4898bcc4671a8fb941f428856b4ad5 (generic-ipi:
+> > cleanup for generic_smp_call_function_interrupt()) is at fault. It removes
+> > locking from smp_call_function_many and in doing so creates a rather
+> > complicated race. 
 > 
+> A rather simple question since my brain isn't quite ready processing the
+> content here..
+> 
+> Isn't reverting that one patch a simpler solution than adding all that
+> extra logic? If not, then the above statement seems false and we had a
+> bug even with that preempt_enable/disable() pair.
+> 
+> Just wondering.. :-)
 
-The latter is a type mis-match, an equivalent expression would be:
-   &curr->held_locks[i];
+If I understand correctly, if you want to fix it by reverting patches,
+you have to revert back to simple locking (up to and including
+54fdade1c3332391948ec43530c02c4794a38172).  And I believe that the poor
+performance of simple locking was whole reason for the series of patches.
+
+							Thanx, Paul
