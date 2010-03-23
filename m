@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab0CWPPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:15:08 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37195 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754432Ab0CWPPG (ORCPT
+	id S1754657Ab0CWPPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:15:19 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:44833 "EHLO
+	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432Ab0CWPPO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:15:06 -0400
-Date: Tue, 23 Mar 2010 15:18:52 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: pavan_savoy@ti.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] drivers:misc: Kconfig, Makefile for TI's ST ldisc
-Message-ID: <20100323151852.7c4c30b7@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100322213530.GC420@suse.de>
-References: <1269292756-7469-1-git-send-email-pavan_savoy@ti.com>
-	<1269292756-7469-2-git-send-email-pavan_savoy@ti.com>
-	<1269292756-7469-3-git-send-email-pavan_savoy@ti.com>
-	<20100322213530.GC420@suse.de>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 11:15:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dN04kWDXuOOm5mTR8yAo1pNUfGBgVYSVKWz5d9OKNcHl5hbBk1g447jDn2Xr+uDeyG
+         lhjH4M+mD4Y+UkpEeamcDW8KI8XIx4w51TP2kWNIdBoTfG1AHf3zEkB950xIiu2g1Hrr
+         eiNCQND4xx69Ht0XIkrwfZ2fSIVxUub1ON6Lk=
+MIME-Version: 1.0
+In-Reply-To: <201003231609.57505.linux@rainbow-software.org>
+References: <201003221601.36559.linux@rainbow-software.org>
+	 <201003231027.34095.linux@rainbow-software.org>
+	 <a32f33a41003230236q348c8aeata724042a9c3d9537@mail.gmail.com>
+	 <201003231609.57505.linux@rainbow-software.org>
+Date: Tue, 23 Mar 2010 16:15:12 +0100
+Message-ID: <a32f33a41003230815v1870a371oef9392806b5b2248@mail.gmail.com>
+Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW 
+	encryption by default
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: rt2x00 Users List <users@rt2x00.serialmonkey.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Mar 2010 14:35:30 -0700
-Greg KH <gregkh@suse.de> wrote:
+On Tue, Mar 23, 2010 at 4:09 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> On Tuesday 23 March 2010, Ivo Van Doorn wrote:
+>> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
+>>
+>> <linux@rainbow-software.org> wrote:
+>> > On Monday 22 March 2010, Ivo Van Doorn wrote:
+>> >> >> But I though it was mentioned that disabling HW crypto didn't solve
+>> >> >> the issue due to a second bug in a later kernel?
+>> >> >
+>> >> > That was a false positive. Probably because the device was not
+>> >> > unplugged between the tests (and looks like the driver does not
+>> >> > initialize the chip completely). It's not reliable, it sometimes stops
+>> >> > working after reboot.
+>> >>
+>> >> Ah well that at least simplifies the problem. I'll have to retest
+>> >> rt2500usb soon to see why the HW crypto failed. I am sure I had it
+>> >> working for WEP, WPA and WPA2
+>> >> before I submitted the patch.
+>> >
+>> > So let's try to fix it instead of disabling.
+>> >
+>> > First, the unrealiability (keeping HW encryption disabled). With the
+>> > driver loaded but not doing anything more, the register dumps are same
+>> > for both working and non-working case (dump-init.txt).
+>> >
+>> > dump-good-connected.txt is a dump after successful association and DHCP
+>> > dump-bad-attempt.txt is a dump after successful association during
+>> > non-working DHCP attempt
+>> > dump-bad-after.txt is a dump after DHCP timed out
+>>
+>> With association working, but DHCP failing it most likely means that
+>> somehow the frame was malformatted.
+>> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
+>> And that is commonly the source of
+>> problems, because what has to be done depends heavily on the encryption
+>> type.
+>>
+>> So could you verify which of the encryption types (WEP,WPA,WPA2) is
+>> failing or working? That would give a starting
+>> position on which bytes might be corrupted.
+>
+> I was testing only with WPA2 before. I did some more testing today. The results:
+>
+> No encryption - works always
+> WEP - sometimes works, sometimes not - same with and without HW encryption
+> WPA - sometimes works, sometimes not - same with and without HW encryption
+> WPA2 - never works with HW encryption
+>     - sometimes works, sometimes not without HW encryptionn
+>
+> So it seems that there are two problems:
+>  1. random problems with any encryption
+>  2. WPA2 is broken with HW encryption
+>
+> When the "random" problem appears, this appears in dmesg:
+> wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
+> wlan1: authenticated
+> wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
+> wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0 aid=2)
+> wlan1: associated
+> phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 (-16).
+> phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 (-16).
+> No probe response from AP 00:13:d4:0f:f3:17 after 500ms, disconnecting.
+>
+> Disabling call to rt2500usb_set_state() in rt2500usb_set_device_state() seems
+> to fix problem 1. After this change, WEP and WPA work always regardless of
+> HW encryption (and WPA2 works always without it).
 
-> On Mon, Mar 22, 2010 at 04:19:12PM -0500, pavan_savoy@ti.com wrote:
-> > From: Pavan Savoy <pavan_savoy@ti.com>
-> > 
-> > This change adds the Kconfig and Make file for TI's
-> > ST line discipline driver and the BlueZ driver for BT
-> > core of the TI BT/FM/GPS combo chip.
-> > 
-> > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> > ---
-> >  drivers/misc/Kconfig        |    1 +
-> 
-> Why 'misc'?  Why not 'char' like all the other ldiscs?
-> 
-> Or 'drivers/ldisc' to be more specific?
+Ok, lets focus on the HW crypto for now.
 
-We've discussed having /tty or drivers/tty for a while. The ldiscs are
-currently everywhere - drivers/net, isdn, char ....
+If WPA2 fails, then the WPA2 specific code for IV/EIV/ICV isn't
+working. Most likely
+the device either doesn't send all data back to the driver (while the
+driver does expect it)
+or it adds additional data which the driver doesn't expect. (See
+rt2x00crypto.c for the frame
+manipulation during HW crypto).
 
-I am not sure an ldisc directory helps though - slip and ppp are in
-drivers/net for example and clearly belong there.
+Could you check the full packet data of a DHCP request with and
+without HW crypto?
+That might give a clue about what the hardware is sending for extra data.
+
+Ivo
