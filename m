@@ -1,131 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab0CWUeK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:34:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38301 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab0CWUeI (ORCPT
+	id S1753850Ab0CWUlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 16:41:32 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40032 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323Ab0CWUl3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 16:34:08 -0400
-Subject: Re: [PATCH 2/3] sched: enforce per-cpu utilization limits on
- runtime balancing
-From: Peter Zijlstra <peterz@infradead.org>
-To: Fabio Checconi <fchecconi@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Paul Turner <pjt@google.com>,
-       Dario Faggioli <faggioli@gandalf.sssup.it>,
-       Michael Trimarchi <michael@evidence.eu.com>,
-       Dhaval Giani <dhaval@retis.sssup.it>,
-       Tommaso Cucinotta <t.cucinotta@sssup.it>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100303170000.GO2490@gandalf.sssup.it>
-References: <cover.1266931410.git.fabio@helm.retis>
-	 <91b76b9b7555024d9afd7264eeae1b2db6a5e74c.1266931410.git.fabio@helm.retis>
-	 <1267129705.22519.561.camel@laptop>
-	 <20100303170000.GO2490@gandalf.sssup.it>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 21:33:58 +0100
-Message-ID: <1269376438.5283.8.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 16:41:29 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, alan@lxorguk.ukuu.org.uk
+Cc: pavan_savoy@ti.com, linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
+Subject: [PATCH 2/7] drivers:staging: Kconfig, Makefile for TI's ST ldisc
+Date: Tue, 23 Mar 2010 15:41:10 -0500
+Message-Id: <1269376875-25940-3-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.5.6.3
+In-Reply-To: <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com>
+ <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-03 at 18:00 +0100, Fabio Checconi wrote:
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Thu, Feb 25, 2010 09:28:25PM +0100
-> >
-> > On Tue, 2010-02-23 at 19:56 +0100, Fabio Checconi wrote:
-> > > +static u64 from_ratio(unsigned long ratio, u64 period)
-> > > +{
-> > > +       return (ratio * period) >> 20;
-> > > +}
-> > > +
-> > > +/*
-> > > + * Try to move *diff units of runtime from src to dst, checking
-> > > + * that the utilization does not exceed the global limits on the
-> > > + * destination cpu.  Returns true if the migration succeeded, leaving
-> > > + * in *diff the actual amount of runtime moved, false on failure, which
-> > > + * means that no more bandwidth can be migrated to rt_rq.
-> > > + */
-> > > +static int rt_move_bw(struct rt_rq *src, struct rt_rq *dst,
-> > > +                      s64 *diff, u64 rt_period)
-> > > +{
-> > > +       struct rq *rq = rq_of_rt_rq(dst), *src_rq = rq_of_rt_rq(src);
-> > > +       struct rt_edf_tree *dtree = &rq->rt.rt_edf_tree;
-> > > +       struct rt_edf_tree *stree = &src_rq->rt.rt_edf_tree;
-> > > +       unsigned long bw_to_move;
-> > > +       int ret = 0;
-> > > +
-> > > +       double_spin_lock(&dtree->rt_bw_lock, &stree->rt_bw_lock);
-> > > +
-> > > +       if (dtree->rt_free_bw) {
-> > > +               bw_to_move = to_ratio(rt_period, *diff);
-> > > +               if (bw_to_move > dtree->rt_free_bw) {
-> > > +                       bw_to_move = dtree->rt_free_bw;
-> > > +                       *diff = from_ratio(bw_to_move, rt_period);
-> > > +               }
-> > > +
-> > > +               stree->rt_free_bw -= bw_to_move;
-> > > +               dtree->rt_free_bw += bw_to_move;
-> > > +               ret = 1;
-> > > +       }
-> > > +
-> > > +       double_spin_unlock(&dtree->rt_bw_lock, &stree->rt_bw_lock);
-> > > +
-> > > +       return ret;
-> > > +} 
-> > 
-> > The from_ratio() stuff smells like numerical instability for
-> > ->rt_free_bw, I can't see anything that would, given sufficient balance
-> > cycles keep the sum of rt_free_bw over the cpus equal to what it started
-> > out with.
-> 
-> You're right...  What would you think about the following solution?
-> It just keep tracks of the bw accounted for every rt_rq when it is
-> updated, and that should be enough to avoid accumulating the errors.
-> 
-> static inline void rt_update_bw(struct rt_rq *rt_rq, struct rt_edf_tree *tree,
->                                 s64 diff, u64 rt_period)
-> {       
-> 	unsigned long bw;
-> 
-> 	rt_rq->rt_runtime += diff;
-> 	bw = to_ratio(rt_period, rt_rq->rt_runtime);
-> 	tree->rt_free_bw += bw - rt_rq->rt_bw;
-> 	rt_rq->rt_bw = bw;
-> }
->  
-> static bool rt_move_bw(struct rt_rq *src, struct rt_rq *dst,
-> 		       s64 *diff, u64 rt_period)
-> {
-> 	struct rq *rq = rq_of_rt_rq(dst), *src_rq = rq_of_rt_rq(src);
-> 	struct rt_edf_tree *dtree = &rq->rt.rt_edf_tree;
-> 	struct rt_edf_tree *stree = &src_rq->rt.rt_edf_tree;
-> 	unsigned long bw_to_move;
-> 	bool ret = false;
-> 
-> 	double_spin_lock(&dtree->rt_bw_lock, &stree->rt_bw_lock);
-> 
-> 	if (dtree->rt_free_bw) {
-> 		bw_to_move = to_ratio(rt_period, *diff);
-> 		if (bw_to_move > dtree->rt_free_bw)
-> 			*diff = from_ratio(dtree->rt_free_bw, rt_period);
-> 
-> 		if (*diff) {
-> 			rt_update_bw(src, stree, -(*diff), rt_period);
-> 			rt_update_bw(dst, dtree, *diff, rt_period);
-> 
-> 			ret = true;
-> 		}
-> 	}
-> 
-> 	double_spin_unlock(&dtree->rt_bw_lock, &stree->rt_bw_lock);
-> 
-> 	return ret;
-> }
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-OK, I think that should work, add a little comment on why we're doing it
-this way and all should be well ;-)
+This change adds the Kconfig and Make file for TI's
+ST line discipline driver and the BlueZ driver for BT
+core of the TI BT/FM/GPS combo chip.
+
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/staging/Kconfig        |    2 ++
+ drivers/staging/Makefile       |    1 +
+ drivers/staging/ti-st/Kconfig  |   24 ++++++++++++++++++++++++
+ drivers/staging/ti-st/Makefile |    7 +++++++
+ 4 files changed, 34 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/ti-st/Kconfig
+ create mode 100644 drivers/staging/ti-st/Makefile
+
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 5589616..209fe00 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -141,5 +141,7 @@ source "drivers/staging/dt3155/Kconfig"
+ 
+ source "drivers/staging/crystalhd/Kconfig"
+ 
++source "drivers/staging/ti-st/Kconfig"
++
+ endif # !STAGING_EXCLUDE_BUILD
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index ec45d4b..b41aa1a 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -52,3 +52,4 @@ obj-$(CONFIG_PCMCIA_NETWAVE)	+= netwave/
+ obj-$(CONFIG_FB_SM7XX)		+= sm7xx/
+ obj-$(CONFIG_DT3155)		+= dt3155/
+ obj-$(CONFIG_CRYSTALHD)		+= crystalhd/
++obj-$(CONFIG_TI_ST)		+= ti-st/
+diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
+new file mode 100644
+index 0000000..120e8db
+--- /dev/null
++++ b/drivers/staging/ti-st/Kconfig
+@@ -0,0 +1,24 @@
++#
++# TI's shared transport line discipline and the protocol
++# drivers (BT, FM and GPS)
++#
++menu "Texas Instruments shared transport line discipline"
++config TI_ST
++	tristate "shared transport core driver"
++	select FW_LOADER
++	help
++	  This enables the shared transport core driver for TI
++	  BT / FM and GPS combo chips. This enables protocol drivers
++	  to register themselves with core and send data, the responses
++	  are returned to relevant protocol drivers based on their
++	  packet types.
++
++config ST_BT
++	tristate "BlueZ bluetooth driver for ST"
++	depends on BT
++	select TI_ST
++	help
++	  This enables the Bluetooth driver for TI BT/FM/GPS combo devices.
++	  This makes use of shared transport line discipline core driver to
++	  communicate with the BT core of the combo chip.
++endmenu
+diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
+new file mode 100644
+index 0000000..0167d1d
+--- /dev/null
++++ b/drivers/staging/ti-st/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for TI's shared transport line discipline
++# and its protocol drivers (BT, FM, GPS)
++#
++obj-$(CONFIG_TI_ST) 		+= st_drv.o
++st_drv-objs			:= st_core.o st_kim.o st_ll.o
++obj-$(CONFIG_ST_BT) 		+= bt_drv.o
+-- 
+1.5.4.3
 
