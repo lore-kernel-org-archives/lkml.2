@@ -1,41 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab0CWBGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 21:06:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33428 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752727Ab0CWBGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 21:06:16 -0400
-Message-ID: <4BA813A4.1010704@kernel.org>
-Date: Mon, 22 Mar 2010 18:04:36 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@elte.hu>, David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       benh@kernel.crashing.org, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> <4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> <20100322092809.GA20607@elte.hu> <alpine.LFD.2.00.1003221752510.3147@localhost.localdomain> <20100322193720.GA2844@elte.hu> <4BA7CE1B.9070109@kernel.org> <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain> <4BA7EE72.7000507@kernel.org> <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain> <4BA80019.5000900@kernel.org> <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756006Ab0CWBGz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 21:06:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60659 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754410Ab0CWBGx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 21:06:53 -0400
+X-Authority-Analysis: v=1.0 c=1 a=6I6XHJCjzXoA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=ttJ_vC8u501Xdf65LqcA:9 a=sTnPWm3IzRZ-K3jpI04A:7 a=7jfk85Bxv5CSpuvZOkKUqavakHgA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 01/18] trace: Allow <linux/tracepoint.h> to create
+ empty tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1269304340-25372-2-git-send-email-jack@suse.cz>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
+	 <1269304340-25372-2-git-send-email-jack@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 22 Mar 2010 21:06:49 -0400
+Message-ID: <1269306409.2957.330.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2010 05:45 PM, Thomas Gleixner wrote:
-> B1;2005;0cYinghai,
->>
->> to make x86 to use lmb, we need to extend lmb to have find_early_area.
+And I thought I was nasty with the CPP macros ;-)
+
+Added Mathieu to the Cc since he's the one that wrote the original
+tracepoint code.
+
+
+On Tue, 2010-03-23 at 01:32 +0100, Jan Kara wrote:
+> If a particular tracer is disabled, there is no need to generate any tracepoint
+> code for it. Actually, the inline checks whether tracepoints of the tracer are
+> active have non-negligible impact on a code size [1] and thus can in theory
+> lead to slowdown. This is undesirable when e.g. BLK_DEV_IO_TRACE should be
+> enabled in the production kernel but KMEMTRACE is disabled.
 > 
-> Why ?
+> So introduce a macro trickery in <linux/tracepoint.h> so that each tracer can
+> define TRACE_CONFIG to CONFIG_MY_TRACER before including linux/tracepoint.h in
+> it's events file and that will result in tracepoints becoming empty if
+> CONFIG_MY_TRACER is not defined.
+> 
+> [1] As an example: bloat-o-meter mm/slub.o.untraced mm/slub.o.traced
+> add/remove: 61/1 grow/shrink: 24/10 up/down: 6366/-737 (5629)
+> function                                     old     new   delta
+> deactivate_slab                                -     592    +592
+> show_stat                                      -     380    +380
+> trace_kmalloc_node                             -     265    +265
+> trace_kmalloc                                  -     255    +255
+> kmem_cache_alloc_node                        590     825    +235
+> kmem_cache_alloc                             542     768    +226
+> kfree                                        566     763    +197
+> kmem_cache_free                              478     671    +193
+> ...
+> 
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
+> CC: Ingo Molnar <mingo@redhat.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  include/linux/tracepoint.h |   96 +++++++++++++++++++++++++++++++++++--------
+>  1 files changed, 78 insertions(+), 18 deletions(-)
+> 
+> diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+> index f59604e..1ad17cc 100644
+> --- a/include/linux/tracepoint.h
+> +++ b/include/linux/tracepoint.h
+> @@ -37,8 +37,7 @@ struct tracepoint {
+>  
+>  #define TP_PROTO(args...)	args
+>  #define TP_ARGS(args...)	args
+> -
+> -#ifdef CONFIG_TRACEPOINTS
+> +#define PARAMS(args...)		args
+>  
+>  /*
+>   * it_func[0] is never NULL because there is at least one element in the array
+> @@ -63,7 +62,7 @@ struct tracepoint {
+>   * not add unwanted padding between the beginning of the section and the
+>   * structure. Force alignment to the same alignment as the section start.
+>   */
+> -#define DECLARE_TRACE(name, proto, args)				\
+> +#define DECLARE_TRACE_1(name, proto, args)				\
+>  	extern struct tracepoint __tracepoint_##name;			\
+>  	static inline void trace_##name(proto)				\
+>  	{								\
+> @@ -81,26 +80,22 @@ struct tracepoint {
+>  	}
+>  
+> 
+> -#define DEFINE_TRACE_FN(name, reg, unreg)				\
+> +#define DEFINE_TRACE_FN_1(name, reg, unreg)				\
+>  	static const char __tpstrtab_##name[]				\
+>  	__attribute__((section("__tracepoints_strings"))) = #name;	\
+>  	struct tracepoint __tracepoint_##name				\
+>  	__attribute__((section("__tracepoints"), aligned(32))) =	\
+>  		{ __tpstrtab_##name, 0, reg, unreg, NULL }
+>  
+> -#define DEFINE_TRACE(name)						\
+> +#define DEFINE_TRACE_1(name)						\
+>  	DEFINE_TRACE_FN(name, NULL, NULL);
+>  
+> -#define EXPORT_TRACEPOINT_SYMBOL_GPL(name)				\
+> +#define EXPORT_TRACEPOINT_SYMBOL_GPL_1(name)				\
+>  	EXPORT_SYMBOL_GPL(__tracepoint_##name)
+> -#define EXPORT_TRACEPOINT_SYMBOL(name)					\
+> +#define EXPORT_TRACEPOINT_SYMBOL_1(name)				\
+>  	EXPORT_SYMBOL(__tracepoint_##name)
+>  
+> -extern void tracepoint_update_probe_range(struct tracepoint *begin,
+> -	struct tracepoint *end);
+> -
+> -#else /* !CONFIG_TRACEPOINTS */
+> -#define DECLARE_TRACE(name, proto, args)				\
+> +#define DECLARE_TRACE_0(name, proto, args)				\
+>  	static inline void _do_trace_##name(struct tracepoint *tp, proto) \
+>  	{ }								\
+>  	static inline void trace_##name(proto)				\
+> @@ -114,10 +109,51 @@ extern void tracepoint_update_probe_range(struct tracepoint *begin,
+>  		return -ENOSYS;						\
+>  	}
+>  
+> -#define DEFINE_TRACE_FN(name, reg, unreg)
+> -#define DEFINE_TRACE(name)
+> -#define EXPORT_TRACEPOINT_SYMBOL_GPL(name)
+> -#define EXPORT_TRACEPOINT_SYMBOL(name)
+> +#define DEFINE_TRACE_FN_0(name, reg, unreg)
+> +#define DEFINE_TRACE_0(name)
+> +#define EXPORT_TRACEPOINT_SYMBOL_GPL_0(name)
+> +#define EXPORT_TRACEPOINT_SYMBOL_0(name)
+> +
+> +/*
+> + * Below two-level macro magic is really needed to propely expand TRACE_CONFIG
+> + * macro to 0 or 1 in the end
 
-unless you want to dump two users of find_e820_area_size()
+This is a really lame comment. There should be almost as much comments
+as code when doing CPP trickery like this.
 
-YH
-  
+> + */
+> +#define __DECLARE_TRACE(config, name, proto, args) \
+> +		DECLARE_TRACE_##config(name, PARAMS(proto), PARAMS(args))
+> +#define __DEFINE_TRACE_FN(config, name, reg, unreg) \
+> +			DEFINE_TRACE_FN_##config(name, reg, unreg)
+> +#define __DEFINE_TRACE(config, name) DEFINE_TRACE_##config(name)
+> +#define __EXPORT_TRACEPOINT_SYMBOL_GPL(config, name) \
+> +			EXPORT_TRACEPOINT_SYMBOL_GPL_##config(name)
+> +#define __EXPORT_TRACEPOINT_SYMBOL(config, name) \
+> +			EXPORT_TRACEPOINT_SYMBOL_##config(name)
+> +
+> +#define _DECLARE_TRACE(config, name, proto, args) \
+> +		__DECLARE_TRACE(config, name, PARAMS(proto), PARAMS(args))
+> +#define _DEFINE_TRACE_FN(config, name, reg, unreg) \
+> +			__DEFINE_TRACE_FN(config, name, reg, unreg)
+> +#define _DEFINE_TRACE(config, name) __DEFINE_TRACE(config, name)
+> +#define _EXPORT_TRACEPOINT_SYMBOL_GPL(config, name) \
+> +			__EXPORT_TRACEPOINT_SYMBOL_GPL(config, name)
+> +#define _EXPORT_TRACEPOINT_SYMBOL(config, name) \
+> +			__EXPORT_TRACEPOINT_SYMBOL(config, name)
+> +
+> +#define DECLARE_TRACE(name, proto, args) \
+> +		_DECLARE_TRACE(TRACE_CONFIG, name, PARAMS(proto), PARAMS(args))
+> +#define DEFINE_TRACE_FN(name, reg, unreg) \
+> +			_DEFINE_TRACE_FN(TRACE_CONFIG, name, reg, unreg)
+> +#define DEFINE_TRACE(name) _DEFINE_TRACE(TRACE_CONFIG, name)
+> +#define EXPORT_TRACEPOINT_SYMBOL_GPL(name) \
+> +			_EXPORT_TRACEPOINT_SYMBOL_GPL(TRACE_CONFIG, name)
+> +#define EXPORT_TRACEPOINT_SYMBOL(name) \
+> +			_EXPORT_TRACEPOINT_SYMBOL(TRACE_CONFIG, name)
+> +
+> +#ifdef CONFIG_TRACEPOINTS
+> +
+> +extern void tracepoint_update_probe_range(struct tracepoint *begin,
+> +	struct tracepoint *end);
+> +
+> +#else /* ! CONFIG_TRACEPOINTS */
+>  
+>  static inline void tracepoint_update_probe_range(struct tracepoint *begin,
+>  	struct tracepoint *end)
+> @@ -163,11 +199,35 @@ static inline void tracepoint_synchronize_unregister(void)
+>  	synchronize_sched();
+>  }
+>  
+> -#define PARAMS(args...) args
+> -
+>  #endif /* _LINUX_TRACEPOINT_H */
+>  
+>  /*
+> + * The two chunks below are out of include file ifdef protection because
+> + * we want to be able to define TRACE_CONFIG even before second or even
+> + * later include of linux/tracepoint.h.
+> + */
+> +/*
+> + * Make tracepoints which are not converted to a new method of enabling
+> + * always compiled in
+> + */
+> +#ifndef TRACE_CONFIG
+> +#define TRACE_CONFIG 1
+> +#endif
+
+Hmm, We can have tracepoints in a header. Would this still work if a
+header with a tracepoint was not converted but it was included in a file
+that was. Of course I haven't seen the other patches yet so I don't yet
+know what a conversion looks like.
+
+-- Steve
+
+<
+> +
+> +/*
+> + * If TRACE_CONFIG is defined but a config option it is defined to isn't, make
+> + * the result 0. It would require much less magic if the kernel was not
+> + * compiled with -Wundef.
+> + */
+> +#define CONFIG_TEST_1
+> +#define _CONFIG_UNDEF(x) !defined(CONFIG_TEST_##x)
+> +#define CONFIG_UNDEF(x) _CONFIG_UNDEF(x)
+> +#if CONFIG_UNDEF(TRACE_CONFIG)
+> +#undef TRACE_CONFIG
+> +#define TRACE_CONFIG 0
+> +#endif
+> +
+> +/*
+>   * Note: we keep the TRACE_EVENT outside the include file ifdef protection.
+>   *  This is due to the way trace events work. If a file includes two
+>   *  trace event headers under one "CREATE_TRACE_POINTS" the first include
+
+
