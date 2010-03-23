@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab0CWPIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:08:45 -0400
-Received: from www.tglx.de ([62.245.132.106]:43370 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102Ab0CWPIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:08:43 -0400
-Date: Tue, 23 Mar 2010 16:07:41 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
- struct
-In-Reply-To: <4BA899C2.8020208@kernel.org>
-Message-ID: <alpine.LFD.2.00.1003231528100.3147@localhost.localdomain>
-References: <1269333587-1866-1-git-send-email-yinghai@kernel.org> <1269333587-1866-5-git-send-email-yinghai@kernel.org> <4BA899C2.8020208@kernel.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754523Ab0CWPJZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:09:25 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57218 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab0CWPJY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 11:09:24 -0400
+Date: Tue, 23 Mar 2010 15:09:23 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       chris.mason@oracle.com, hch@lst.de
+Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
+ ioctl
+Message-ID: <20100323150923.GI30031@ZenIV.linux.org.uk>
+References: <20100323142200.GA2381@localhost.localdomain>
+ <20100323142843.GG30031@ZenIV.linux.org.uk>
+ <20100323143456.GC2381@localhost.localdomain>
+ <20100323144828.GH30031@ZenIV.linux.org.uk>
+ <20100323150301.GD2381@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100323150301.GD2381@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010, Yinghai Lu wrote:
+On Tue, Mar 23, 2010 at 11:03:01AM -0400, Josef Bacik wrote:
+> > sb is an active reference
+> > 
+> 
+> I don't understand how this is an active reference?  We are talking about
+> s_active right?
 
-> 
-> lmb_init() connect them back.
-> 
-> also add region_array_size in lmb_region to tack the region array size.
-> 
-> -v3: seperate lmb core change to seperated patch
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  include/linux/lmb.h |    5 ++++-
->  lib/lmb.c           |   11 ++++++++++-
->  2 files changed, 14 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/include/linux/lmb.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/lmb.h
-> +++ linux-2.6/include/linux/lmb.h
-> @@ -26,7 +26,8 @@ struct lmb_property {
->  struct lmb_region {
->  	unsigned long cnt;
->  	u64 size;
-> -	struct lmb_property region[MAX_LMB_REGIONS+1];
-> +	struct lmb_property *region;
-> +	unsigned long region_array_size;
->  };
->  
->  struct lmb {
-> @@ -37,6 +38,8 @@ struct lmb {
->  };
->  
->  extern struct lmb lmb;
-> +extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
-> +extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+It's an opened file, for crying out loud!  If there is anything that makes
+sure that superblock will stay alive, that is it...
 
-Is there a reason why this needs to be exported ?
-
-Thanks,
-
-	tglx
+And lose the "locked" argument, please.  The sane solution is to make
+get_active_super() return it unlocked and have your freeze_bdev() simply
+grab s_umount.  Unconditionally.  I'll do the first part in #untested in
+a minute or so (and make it grab s_umount in the current variant of code in
+fs/block_dev.c); then your patch would shift taking s_umount down into
+freeze_super().
