@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0CWUaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 16:30:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44171 "EHLO
+	id S1753349Ab0CWUcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 16:32:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44209 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab0CWUaR (ORCPT
+	with ESMTP id S1752933Ab0CWUcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 16:30:17 -0400
-Subject: Re: [PATCH 0/3] sched: use EDF to throttle RT task groups v2
+	Tue, 23 Mar 2010 16:32:09 -0400
+Subject: Re: [PATCH 2/3] sched: enforce per-cpu utilization limits on
+ runtime balancing
 From: Peter Zijlstra <peterz@infradead.org>
 To: Fabio Checconi <fchecconi@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -16,13 +17,14 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Michael Trimarchi <michael@evidence.eu.com>,
        Dhaval Giani <dhaval@retis.sssup.it>,
        Tommaso Cucinotta <t.cucinotta@sssup.it>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100303170110.GS2490@gandalf.sssup.it>
+In-Reply-To: <20100303170014.GP2490@gandalf.sssup.it>
 References: <cover.1266931410.git.fabio@helm.retis>
-	 <1267273991.22519.744.camel@laptop>
-	 <20100303170110.GS2490@gandalf.sssup.it>
+	 <91b76b9b7555024d9afd7264eeae1b2db6a5e74c.1266931410.git.fabio@helm.retis>
+	 <1267129703.22519.559.camel@laptop>
+	 <20100303170014.GP2490@gandalf.sssup.it>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 23 Mar 2010 21:30:07 +0100
-Message-ID: <1269376207.5283.5.camel@laptop>
+Date: Tue, 23 Mar 2010 21:32:04 +0100
+Message-ID: <1269376324.5283.6.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,53 +32,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-03 at 18:01 +0100, Fabio Checconi wrote: 
+On Wed, 2010-03-03 at 18:00 +0100, Fabio Checconi wrote:
 > > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Sat, Feb 27, 2010 01:33:11PM +0100
+> > Date: Thu, Feb 25, 2010 09:28:23PM +0100
 > >
 > > On Tue, 2010-02-23 at 19:56 +0100, Fabio Checconi wrote:
-> > >   - Since it is not easy to mix tasks and groups on the same scheduler
-> > >     queue (tasks have no deadlines), the bandwidth reserved to the tasks
-> > >     in a group is controlled with two additional cgroup attributes:
-> > >     rt_task_runtime_us and rt_task_period_us.  These attributes control,
-> > >     within a cgroup, how much bandwidth is reserved to the tasks it
-> > >     contains.  The old attributes, rt_runtime_us and rt_period_us, are
-> > >     still there, and control the bandwidth assigned to the cgroup.  They
-> > >     are used only for admission control. 
+> > > +#ifdef CONFIG_SMP
+> > > +static inline unsigned long rt_init_free_bw(void)
+> > > +{
+> > > +       unsigned long used = to_ratio(global_rt_period(), global_rt_runtime());
+> > > +
+> > > +       return to_ratio(RUNTIME_INF, RUNTIME_INF) - used;
+> > > +}
+> > > +#endif
 > > 
-> > We could do this implicitly by simply setting the task_bandwidth to the
-> > cgroup bandwidth - \Sum_children bandwidth.
+> > > +static void __rt_restart_balancing(void)
+> > > +{
+> > > +       unsigned long used, global, free;
+> > > +       struct rq *rq;
+> > > +       int i;
+> > > +
+> > > +       used = rt_used_bandwidth();
+> > > +       global = to_ratio(RUNTIME_INF, RUNTIME_INF);
+> > > +
+> > > +       free = global - used;
 > > 
-> > Having it explicit gives the administrator slightly more control at the
-> > cost of a more complex interface.
 > > 
-> > Just wondering if you thought about this trade-off?
+> > We take the max as RUNTIME_INF instead of global_rt_* so that we can
+> > move runtime around and fully saturate a single cpu (given there is
+> > enough free to compensate on other cpus) ?
 > 
-> I started with it, because I didn't like changing the interface and
-> because four files to manage the bandwidth *are* a nightmare from the
-> user perspective...  The problem with using only two files and assign
-> the residual bandwidth to the tasks in the group is that it makes really
-> hard to find out how much bw is allocated to the tasks, esp. when
-> the child groups have different periods.  In practice we would be
-> guaranteeing something but the user would have a hard time finding
-> out what...
+> The only reason I've used RUNTIME_INF instead of global_rt_* is for the
+> !GROUP_SCHED case, where using the global_rt_* values would make balancing
+> have no effect at all (the initial value for def_rt_bandwidth already
+> uses the maximum bw on each cpu) .  The current throttling implementation
+> in this case still tries to concentrate bw on a single cpu, and I wanted
+> to replicate the same behaviour.
+> 
+> Should I go for the global_rt_* values and add some #ifdef unreadability
+> to avoid the balancing overhead in the !GROUP_SCHED case?
 
-Right, we could do both, by allowing the task files to have -1 values,
-effectively disabling their reservation and thus ending up with whatever
-remains or so.
 
-> The biggest problem with the four files used in the current implementation
-> is that bandwidth assignments should be atomic (because setting all the
-> parameters independently can force the system to go through non-feasible
-> assignments, and the order to use when assigning runtime and period
-> changes depending on the direction of the change).  I know this is a
-> dangerous question, but I'll try it anyway: are we ready for multi-valued
-> cgroup parameters?
-
-Right, I don't know about multi-valued files, that sounds like its going
-to confuse people too.
-
-Another option might be some transactional interface, but not sure how
-that would work out either.. maybe by toggling the system wide bandwidth
-control off and on, not sure who's in charge of cgroupfs anyway. 
+Nah, but adding a comment to clarify this might help.. I only asked
+because it was not immediately obvious.
 
