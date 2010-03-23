@@ -1,149 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab0CWKnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 06:43:49 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:52481 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab0CWKnr (ORCPT
+	id S1752014Ab0CWKtQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 06:49:16 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:55699 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab0CWKtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 06:43:47 -0400
-X-Authority-Analysis: v=1.0 c=1 a=nFiTrucOLncA:10 a=kj9zAlcOel0A:10 a=hGzw-44bAAAA:8 a=ePo_iNWMOHuq_BgTE0MA:9 a=uRrV3w0OMdVqeVEF1XIA:7 a=C5uWKLkGPVLoWpv3Q3CCCrb79bcA:4 a=CjuIK1q_8ugA:10 a=O8637vw8DwYA:10 a=0kPLrQdw3YYA:10 a=dowx1zmaLagA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 71.70.153.3
-Date: Tue, 23 Mar 2010 06:43:51 -0400
-From: Jeff Layton <jlayton@samba.org>
-To: Suresh Jayaraman <sjayaraman@suse.de>
-Cc: Gene Heskett <gene.heskett@verizon.net>,
-       "linux-cifs-client@lists.samba.org" 
-	<linux-cifs-client@lists.samba.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-cifs-client] shutdown bugs, since about 2.6.31 or so
-Message-ID: <20100323064351.2135192b@corrin.poochiereds.net>
-In-Reply-To: <4BA843C5.9080307@suse.de>
-References: <201003222050.55716.gene.heskett@verizon.net>
-	<4BA843C5.9080307@suse.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.19.7; x86_64-redhat-linux-gnu)
+	Tue, 23 Mar 2010 06:49:14 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o2NAmNS1006880
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Alexander Graf <agraf@suse.de>, "Daniel P. Berrange" <berrange@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>, Avi Kivity <avi@redhat.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Yanmin Zhang <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>,
+       LKML Mailing List <linux-kernel@vger.kernel.org>,
+       kvm-devel General <kvm@vger.kernel.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>, oerg Roedel <joro@8bytes.org>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <20100322202144.GF3306@elte.hu>
+References: <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu>
+	 <4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu>
+	 <4BA7AF2D.7060306@redhat.com> <4BA7C1D7.5070208@codemonkey.ws>
+	 <20100322193100.GB28709@redhat.com>
+	 <E548536E-4D62-4B17-BA09-9C12EB1A2717@suse.de>
+	 <20100322195403.GC3306@elte.hu>
+	 <2D740A89-F53F-4F72-B44C-B72942E883E9@suse.de>
+	 <20100322202144.GF3306@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Mar 2010 11:48:23 +0100
+Message-ID: <1269341303.3656.23.camel@thorin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-DCC-HP_X86_64_4CPU-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 09:59:57 +0530
-Suresh Jayaraman <sjayaraman@suse.de> wrote:
+On Mon, 2010-03-22 at 21:21 +0100, Ingo Molnar wrote:
+[...]
+> Have you made thoughts about why that might be so?
 
-> Ccing linux-cifs-client@lists.samba.org where most of the cifs
-> development happens.
+Yes.
+
+Forword: I assume with "GUI" you mean "a user interface for the
+classical desktop user with next to no interest in learning details or
+basics".
+That doesn't mean the classical desktop user is silly, stupid or
+otherwise handicapped - it's just the lack of interest and/or time.
+
+> I think it's because of what i outlined above - that you are trying to apply 
+> the "UNIX secret" to GUIs - and that is a mistake.
+
+No, it's the very same mechanism. But you just have to start at the
+correct point. In the kernel/device driver world, you start at the
+device.
+And in the GUI world, you better start at the GUI (and not some kernel
+API, library API, GUI tool or toolchains or anywhere else).
+
+> A good GUI is almost at the _exact opposite spectrum_ of good command-line 
+> tool: tightly integrated, with 'layering violations' designed into it all over 
+> the place:
+>
+>   look i can paste the text from an editor straight into a firefox form. I
+>   didnt go through any hiearchy of layers, i just took the shortest path 
+>   between the apps!
 > 
-> On 03/23/2010 06:20 AM, Gene Heskett wrote:
-> > Greetings;
-> > 
-> > I do not know if I am miss-configured or what, and I hadn't worried about it 
-> > extensively because the machine runs fine ANAICT.
-> > 
-> > But any reboot method short of just pressing the hdwe reset button generates 
-> > quite a lengthy process of repeatedly pressing ctl-alt-del, minimum of 6 
-> > times I believe, in order to actually do a shutdown, and this isn't at all 
-> > graceful.  Not all of it makes it to the log, but here is what does.
-> > 
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619173] BUG: Dentry d76beaa0{i=2,n=/} 
-> > still in use (1) [unmount of cifs cifs]
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619191] ------------[ cut here 
-> > ]------------
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619303] kernel BUG at fs/dcache.c:676!
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619420] invalid opcode: 0000 [#1] 
-> > PREEMPT SMP
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619597] last sysfs file: 
-> > /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/ATK0110:00/hwmon/hwmon0/in3_input
-> > Mar 22 16:47:53 coyote kernel: [ 3000.619803] Modules linked in: nls_utf8 
-> > cifs radeon ttm drm_kms_helper drm agpgart nfsd lockd nfs_acl auth_rpcgss 
-> > expo
-> > rtfs rfcomm sco bnep l2cap autofs4 sunrpc ipv6 or51132 snd_usb_audio 
-> > snd_usb_lib cx88_dvb cx88_vp3054_i2c videobuf_dvb snd_emu10k1_synth 
-> > snd_emux_synth
-> > snd_seq_virmidi snd_seq_midi_emul dvb_core tuner_simple tuner_types tda9887 
-> > tda8290 tuner snd_emu10k1 cx8800 cx8802 cx88xx snd_rawmidi snd_ac97_codec ac
-> > 97_bus snd_seq_dummy i2c_algo_bit snd_seq_oss snd_seq_midi_event snd_seq 
-> > ftdi_sio btusb snd_pcm_oss snd_mixer_oss snd_pcm tveeprom bluetooth 
-> > snd_seq_dev
-> > ice snd_timer v4l2_common snd_page_alloc videodev snd_util_mem snd_hwdep 
-> > v4l1_compat usbserial btcx_risc snd i2c_nforce2 sg k10temp firewire_ohci 
-> > firewi
-> > re_core rtc_cmos videobuf_dma_sg sr_mod cdrom pcspkr soundcore videobuf_core 
-> > rtc_core crc_itu_t rfkill hwmon usblp joydev rtc_lib button evdev sd_mod ex
-> > t3 jbd uhci_hcd ohci_hcd ehci_hcd [last unloaded: asus_atk0110]
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] Pid: 5747, comm: umount.cifs 
-> > Not tainted 2.6.34-rc2 #1 M2N-SLI DELUXE/System Product Name
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: 0060:[<c10946ae>] EFLAGS: 
-> > 00010246 CPU: 1
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP is at 
-> > shrink_dcache_for_umount_subtree+0x14b/0x1fe
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] EAX: 0000005b EBX: 00000001 
-> > ECX: 00000046 EDX: 00000000
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] ESI: d76beaa0 EDI: d76beafc 
-> > EBP: d55e6f24 ESP: d55e6ef4
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  DS: 007b ES: 007b FS: 00d8 GS: 
-> > 00e0 SS: 0068
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] Process umount.cifs (pid: 5747, 
-> > ti=d55e6000 task=d55d8780 task.ti=d55e6000)
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] Stack:
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  c12d20ac d76beaa0 00000002 
-> > d76beafc 00000001 fa14da01 dc956b64 fa14da01
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> 0000001b dc956a00 fa14a7b4 
-> > dc956a00 d55e6f30 c109478e dc956a00 d55e6f40
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] <0> c1087d38 00000013 fa158a5c 
-> > d55e6f4c c1087e32 dc956a00 d55e6f5c c10883c6
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] Call Trace:
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c109478e>] ? 
-> > shrink_dcache_for_umount+0x2d/0x37
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087d38>] ? 
-> > generic_shutdown_super+0x15/0xd2
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1087e32>] ? 
-> > kill_anon_super+0xc/0x43
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10883c6>] ? 
-> > deactivate_super+0x39/0x4b
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1098dfd>] ? 
-> > mntput_no_expire+0x8c/0xbb
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c10992df>] ? 
-> > sys_umount+0x299/0x2be
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117]  [<c1002813>] ? 
-> > sysenter_do_call+0x12/0x22
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] Code: 00 89 45 ec 8b 46 10 8b 
-> > 1e 8b 7e 28 85 c0 74 03 8b 50 20 8d 81 64 01 00 00 50 ff 75 ec 53 57 52 56 6
-> > 8 ac 20 2d c1 e8 b5 fc 1b 00 <0f> 0b 83 c4 1c eb fe 8b 7e 1c 39 fe 75 04 31 
-> > ff eb 03 f0 ff 0f
-> > Mar 22 16:47:53 coyote kernel: [ 3000.620117] EIP: [<c10946ae>] 
-> > shrink_dcache_for_umount_subtree+0x14b/0x1fe SS:ESP 0068:d55e6ef4
-> > Mar 22 16:47:53 coyote kernel: [ 3000.627952] ---[ end trace fbecccbb5fac2d05 
-> > ]---
-> > 
-> > Now, after this point, I have to press ctl-alt-del at least 2 times to get it 
-> > to continue the shutdown, it will timeout 3 times trying to umount /usr, and 
-> > then finally squawk about a cifs mount that is done in my rc.local file.  
-> > That requires 2 more presses of the ctl-alt-del keys, then it finally says 
-> > its shutting down, and 20 to 30 seconds later I have to press them again 
-> > before it actually reverts to the bios to begin the next boot anew.
-> > 
-> > I have seen this fs/dcache.c line 676 mentioned many times here, and I would 
-> > have thought by now this nuisance would have been spanked.
-> > 
-> > Thanks.
-> > 
-> 
-> 
+> In other words: in a GUI the output controls the design, for command-line 
+ACK, because you to make the GUI understandable to the intended users.
+If that means "hiding 90% of all possibilities and features", you just
+hide them.
+Of course, the user of such an UI is quite limited doesn't use much of
+the functionality - because s/he can't access it through the GUI - (but
+presenting 100% - or even 40% - doesn't help either as s/he won't
+understand it anyways).
 
-Looks like the same bug as reported here:
+> tools the design controls the output.
+ACK, because the user in this case (which is most of the time a
+developer, sys-admin, or similar techie) *wants* an 1:1 picture of the
+underlying model because s/he already *knows* the underlying model (and
+is willing and able to adapt the own workflow to the underlying models).
 
-http://lists.samba.org/archive/linux-cifs-client/2010-February/005560.html
+> It is no wonder Unix always had its problems with creating good GUIs that are 
 
-...the patch I asked them to test is now here:
+ACK. The clichee-Unix-person doesn't come from the "GUI world". So most
+of them are "trained" and used to look what's there and improve on it.
 
-http://git.samba.org/?p=jlayton/linux.git;a=commit;h=fd0ab22278f38b0e2b7d303a1101b15d3255aee9
+> efficient to humans. A good GUI works like the human brain, and the human 
+> brain does not mind 'layering violations' when that gets it a more efficient 
+> result.
 
-...but I still think the problem is likely in how we autodisable server
-inode numbers. A way to reproduce this problem would be very helpful.
+If this is the case, the layering/structure/design of the GUI is (very)
+badly defined/chosen (for whatever reason).
 
+[ Most probably because some seasoned software developer designed the
+GUI-app *without* designing (and testing!) the GUI (or more to the
+point: the look - how does it look like - and feel - how does it behave,
+what are the possible workflows, ... - of it) first. ]
+
+	Bernd
 -- 
-Jeff Layton <jlayton@samba.org>
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
+
