@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0CWOTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:19:13 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:37574 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab0CWOTL (ORCPT
+	id S1753831Ab0CWOUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:20:16 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59349 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753425Ab0CWOUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:19:11 -0400
-Date: Tue, 23 Mar 2010 15:19:34 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Thomas Renninger <trenn@suse.de>, akpm@linux-foundation.org,
-       davej@redhat.com, cpufreq@vger.kernel.org, x86@kernel.org,
-       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 2/5] powernow-k8: Add core performance boost support
-Message-ID: <20100323141934.GF16493@aftab>
-References: <1269283121-11894-1-git-send-email-bp@amd64.org>
- <1269283121-11894-3-git-send-email-bp@amd64.org>
- <201003231217.16451.trenn@suse.de>
- <20100323115858.GC16493@aftab>
- <20100323132737.GA8894@isilmar.linta.de>
+	Tue, 23 Mar 2010 10:20:13 -0400
+To: Soeren Sandmann <sandmann@daimi.au.dk>
+Cc: Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
+       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from host side
+From: Andi Kleen <andi@firstfloor.org>
+References: <1268717232.2813.36.camel@localhost>
+	<1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
+	<20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu>
+	<20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
+	<20100322114744.GC1940@8bytes.org>
+	<ye88w9j2n2y.fsf@camel23.daimi.au.dk>
+	<878w9jdu7m.fsf@basil.nowhere.org>
+	<ye84ok72kxi.fsf@camel23.daimi.au.dk>
+Date: Tue, 23 Mar 2010 15:20:11 +0100
+In-Reply-To: <ye84ok72kxi.fsf@camel23.daimi.au.dk> (Soeren Sandmann's message of "23 Mar 2010 15:04:57 +0100")
+Message-ID: <87vdcnce78.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100323132737.GA8894@isilmar.linta.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-Date: Tue, Mar 23, 2010 at 02:27:37PM +0100
+Soeren Sandmann <sandmann@daimi.au.dk> writes:
+>
+> Examples:
+>
+>         - What is going on inside QEMU? 
 
-Hi Dominik,
+That's something the JIT interface could answer.
 
-> On Tue, Mar 23, 2010 at 12:58:58PM +0100, Borislav Petkov wrote:
-> > > It could already be set in arch/x86/kernel/cpu/amd.c and
-> > > powernow-k8 could use cpu_has(cpu, X86_FEATURE_CPB);
-> > 
-> > I'd still like to cache the cpb_capable value locally instead of getting
-> > x86_cpuinfo percpu var and querying it. Especially if this happens often
-> > and not only at driver init.
-> 
-> If it's a percpu var, isn't it local anyway?
+>         - Which client is the X server servicing?
+>
+>         - What parts of a python/shell/scheme/javascript program is
+>           taking the most CPU time?
 
-I meant driver-local. So that I don't have to deref even the per_cpu var
-and thus save some cycles.
+I suspect for those you rather need event based tracers of some sort,
+similar to kernel trace points. Otherwise you would need own
+separate stacks and other complications.
 
+systemtap has some effort to use the dtrace instrumentation
+that crops up in more and more user programs for this.  It wouldn't
+surprise me if that was already in python and other programs
+you're interested in.
+
+I presume right now it only works if you apply the utrace monstrosity
+though, but perhaps the new uprobes patches floating around 
+will come to rescue.
+
+There also was some effort to have a pure user space
+daemon based approach for LTT, but I believe that currently
+needs own trace points.
+
+Again I fully expect someone to reinvent the wheel here
+and afterwards complain about "community inefficiences" :-)
+
+> I don't think the oprofile JIT interface solves any of these
+> problems. (In fact, I don't see why the JIT problem is even hard. The
+> JIT compiler can just generate a little ELF file with symbols in it,
+> and the profiler can pick it up through the mmap events that you get
+> through the perf interface).
+
+That would require keeping those temporary ELF files for
+potentially unlimited time around (profilers today look at the ELF
+files at the final analysis phase, which might be weeks away)
+
+Also that would be a lot of overhead for the JIT and most likely
+be a larger scale rewrite for a given JIT code base.
+
+-Andi
 -- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+ak@linux.intel.com -- Speaking for myself only.
