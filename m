@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888Ab0CWX7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 19:59:38 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51207 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab0CWX7h (ORCPT
+	id S1752876Ab0CXABW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 20:01:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51025 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751607Ab0CXABV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 19:59:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 24 Mar 2010 08:55:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 03/11] mm: Share the anon_vma ref counts between KSM and
- page migration
-Message-Id: <20100324085545.333cb7c6.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1269347146-7461-4-git-send-email-mel@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	<1269347146-7461-4-git-send-email-mel@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Mar 2010 20:01:21 -0400
+Date: Tue, 23 Mar 2010 16:55:42 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Anton Starikov <ant.starikov@gmail.com>, Greg KH <greg@kroah.com>,
+       stable@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression
+ in performance
+In-Reply-To: <20100323233640.GA16798@elte.hu>
+Message-ID: <alpine.LFD.2.00.1003231653260.18017@i5.linux-foundation.org>
+References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org> <9D040E9A-80F2-468F-A6CD-A4912615CD3F@gmail.com>
+ <alpine.LFD.2.00.1003231253570.18017@i5.linux-foundation.org> <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com> <alpine.LFD.2.00.1003231602130.18017@i5.linux-foundation.org> <20100323233640.GA16798@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 12:25:38 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
 
-> For clarity of review, KSM and page migration have separate refcounts on
-> the anon_vma. While clear, this is a waste of memory. This patch gets
-> KSM and page migration to share their toys in a spirit of harmony.
+
+On Wed, 24 Mar 2010, Ingo Molnar wrote:
 > 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> We havent had any stability problems with them, except one trivial build bug, 
+> so -stable would be nice.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Oh, you're right. There was that UML build bug. But I think that was 
+included in the list of commits Anton had - commit 4126faf0ab ("x86: Fix 
+breakage of UML from the changes in the rwsem system").
 
+		Linus
