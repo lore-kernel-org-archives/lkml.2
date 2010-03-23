@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab0CWQ0R (ORCPT <rfc822;w@1wt.eu>);
+	id S1755254Ab0CWQ0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 12:26:22 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:39960 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab0CWQ0R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Mar 2010 12:26:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38871 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab0CWQ0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 12:26:12 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Dan Carpenter <error27@gmail.com>
-Subject: Re: [patch] power_meter: acpi_device_class "power_meter_resource" too long
-Date: Tue, 23 Mar 2010 17:26:07 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, "Darrick J. Wong" <djwong@us.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       =?iso-8859-1?q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
-       Lin Ming <ming.m.lin@intel.com>, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20100319114920.GP5331@bicker>
-In-Reply-To: <20100319114920.GP5331@bicker>
+Date: Tue, 23 Mar 2010 17:26:40 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Thomas Renninger <trenn@suse.de>, akpm@linux-foundation.org,
+       davej@redhat.com, cpufreq@vger.kernel.org, x86@kernel.org,
+       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/5] powernow-k8: Add core performance boost support
+Message-ID: <20100323162640.GK16493@aftab>
+References: <1269283121-11894-1-git-send-email-bp@amd64.org>
+ <1269283121-11894-3-git-send-email-bp@amd64.org>
+ <201003231217.16451.trenn@suse.de>
+ <20100323115858.GC16493@aftab>
+ <20100323132737.GA8894@isilmar.linta.de>
+ <20100323141934.GF16493@aftab>
+ <20100323144757.GB17587@isilmar.linta.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003231726.07480.trenn@suse.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100323144757.GB17587@isilmar.linta.de>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 March 2010 12:49:20 Dan Carpenter wrote:
-> acpi_device_class can only be 19 characters and a NULL terminator.
-> 
-> The current code has a buffer overflow in acpi_power_meter_add():
->        strcpy(acpi_device_class(device), ACPI_POWER_METER_CLASS);
-Sounds as if it would be worth to add:
-CC: stable@kernel.org
-?
-Same for processor_aggregator.
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+Date: Tue, Mar 23, 2010 at 03:47:57PM +0100
 
-     Thomas
+> > > If it's a percpu var, isn't it local anyway?
+> > 
+> > I meant driver-local. So that I don't have to deref even the per_cpu var
+> > and thus save some cycles.
 > 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
-> Feel free to change the name to anything you like.
-> 
-> diff --git a/drivers/acpi/power_meter.c b/drivers/acpi/power_meter.c
-> index 834c5af..31baa1e 100644
-> --- a/drivers/acpi/power_meter.c
-> +++ b/drivers/acpi/power_meter.c
-> @@ -34,7 +34,7 @@
->  #define ACPI_POWER_METER_NAME		"power_meter"
->  ACPI_MODULE_NAME(ACPI_POWER_METER_NAME);
->  #define ACPI_POWER_METER_DEVICE_NAME	"Power Meter"
-> -#define ACPI_POWER_METER_CLASS		"power_meter_resource"
-> +#define ACPI_POWER_METER_CLASS		"pwr_meter_resource"
->  
->  #define NUM_SENSORS			17
->  
-> --
+> Well, it doesn't seem to be used in any hot path (and if it were, using a
+> per-cpu var was better anyway, because of no contention etc.). If it really
+> saves some cycles, I'm more than fine with keeping it; still, informing the
+> user in /proc/cpuinfo seems like a sensible thing to do.
+
+No, the idea was to do the local caching _in addition_ to advertising it
+over /proc/cpuinfo. Let's see what the x86 maintainers think though...
+
+-- 
+Regards/Gruss,
+Boris.
+
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
