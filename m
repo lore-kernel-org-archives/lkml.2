@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417Ab0CWCrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 22:47:35 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:21435 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab0CWCre convert rfc822-to-8bit (ORCPT
+	id S1753750Ab0CWC6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 22:58:12 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44500
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753359Ab0CWC6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 22:47:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=HCUJXVD2IrjvNnquwa06h//a3SMuzK+SaZQlp+Hl3FVtYguzygGP6yiMvPk8WvskGh
-         PQbcgBa7Rpdw/KQwXqlc7rB0gSS9QnrTUZWzFW1PEGdtoqbnII6BwAPlRt251BiG7JBs
-         vo7B15TIDWp6AsKXxkT19JVuGTtDfNk9hElhk=
-MIME-Version: 1.0
-In-Reply-To: <20100323091841.dd500a38.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100322120509.GC21571@bicker>
-	 <20100323091841.dd500a38.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 23 Mar 2010 10:47:33 +0800
-Message-ID: <2375c9f91003221947n4d4f417w3a5ea32565e9c582@mail.gmail.com>
-Subject: Re: [patch] kcore: fix test for end of list
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Dan Carpenter <error27@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>,
-       Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Mar 2010 22:58:10 -0400
+Date: Mon, 22 Mar 2010 19:58:31 -0700 (PDT)
+Message-Id: <20100322.195831.233398454.davem@davemloft.net>
+To: roel.kluin@gmail.com
+Cc: netdev@vger.kernel.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, davej@redhat.com
+Subject: Re: [PATCH] via-velocity: FLOW_CNTL_RX does not disable Asymmetric
+ pause in set_mii_flow_control()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4BA7D22A.6080300@gmail.com>
+References: <4BA7D22A.6080300@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 8:18 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 22 Mar 2010 15:05:09 +0300
-> Dan Carpenter <error27@gmail.com> wrote:
->
->> "m" is never NULL here.  We need a different test for the end of list
->> condition.
->>
->> Signed-off-by: Dan Carpenter <error27@gmail.com>
->
-> yes, thank you.
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Roel Kluin <roel.kluin@gmail.com>
+Date: Mon, 22 Mar 2010 21:25:14 +0100
 
-Yeah, this is a good catch for me too!
+> Asymmetric pause was not disabled in the RX case.
+> 
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+> I spotted this because In the FLOW_CNTL_RX and FLOW_CNTL_TX_RX
+> cases the same code is executed, is the amendment below required?
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+The bit settings in the MII_ADVERTISE register should be:
+
+1) RX and TX pause both requested
+
+   set only ADVERTISE_PAUSE_CAP
+
+2) Only TX pause requested
+
+   set only ADVERTISE_PAUSE_ASYM
+
+3) Only RX pause requested
+
+   set both ADVERTISE_PAUSE_CAP and ADVERTISE_PAUSE_ASYM
+
+4) Neither TX nor RX pause requested
+
+   set nothing
+
+(drivers/net/tg3.c:tg3_advert_flowctrl_1000t() is a good
+ reference point)
+
+It would be easier to compare the VIA driver with the rest of
+the world if it used the standard mii.h defines instead of
+it's own private ones.  That would be a good change to make at
+some point.
+
+Anyways, the correct fix is therefore something like:
+
+diff --git a/drivers/net/via-velocity.c b/drivers/net/via-velocity.c
+index 3a486f3..bc278d4 100644
+--- a/drivers/net/via-velocity.c
++++ b/drivers/net/via-velocity.c
+@@ -812,7 +812,7 @@ static void set_mii_flow_control(struct velocity_info *vptr)
+ 
+ 	case FLOW_CNTL_TX_RX:
+ 		MII_REG_BITS_ON(ANAR_PAUSE, MII_REG_ANAR, vptr->mac_regs);
+-		MII_REG_BITS_ON(ANAR_ASMDIR, MII_REG_ANAR, vptr->mac_regs);
++		MII_REG_BITS_OFF(ANAR_ASMDIR, MII_REG_ANAR, vptr->mac_regs);
+ 		break;
+ 
+ 	case FLOW_CNTL_DISABLE:
