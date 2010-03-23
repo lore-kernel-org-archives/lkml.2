@@ -1,194 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0CWM1m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 08:27:42 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53468 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab0CWMZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 08:25:50 -0400
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 03/11] mm: Share the anon_vma ref counts between KSM and page migration
-Date: Tue, 23 Mar 2010 12:25:38 +0000
-Message-Id: <1269347146-7461-4-git-send-email-mel@csn.ul.ie>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	id S1753255Ab0CWM1x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 08:27:53 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47224 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752416Ab0CWM1u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 08:27:50 -0400
+Date: Tue, 23 Mar 2010 08:27:47 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Theodore Tso <tytso@MIT.EDU>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Douglas Santos <douglas.santos@polymtl.ca>
+Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
+	independently
+Message-ID: <20100323122747.GA14954@Krystal>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz> <20100323010419.GA8292@nowhere> <DA3F0457-83D6-4A95-AC86-188BC1C9B2F0@mit.edu> <20100323080526.GB4848@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100323080526.GB4848@elte.hu>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:18:57 up 59 days, 14:56,  4 users,  load average: 1.25, 1.09,
+	1.05
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For clarity of review, KSM and page migration have separate refcounts on
-the anon_vma. While clear, this is a waste of memory. This patch gets
-KSM and page migration to share their toys in a spirit of harmony.
+* Ingo Molnar (mingo@elte.hu) wrote:
+> 
+> * Theodore Tso <tytso@MIT.EDU> wrote:
+> 
+> > 
+> > On Mar 22, 2010, at 9:04 PM, Frederic Weisbecker wrote:
+> > > 
+> > > I don't know. Yeah this first looks like a good idea but once 
+> > > CONFIG_EVENT_TRACING is enabled, each tracepoint is a lightweight thing 
+> > > and induce a tiny overhead, probably hard to notice, and this is going to 
+> > > be even more the case after the jmp label optimization patches.
+> > > 
+> > > I liked the fact we had a general tracing kernel once the above config is 
+> > > selected. And we don't bother telling people that to use tool X you need 
+> > > CONFIG_EVENT_Y, and you need to rebuild your kernel, etc...
+> > 
+> > Indeed, a lot of the value of tracepoints goes away if people are compiling 
+> > kernels without them and we need to get a special "tracing kernel" installed 
+> > before we can debug a problem.
+> > 
+> > So I'd hope we can do the necessary optimization work so people don't feel 
+> > it's necessary to enable or disable tracepoints by subsystem....
+> 
+> Yeah, agreed. Ultra-embedded can disable them all, but other than that i think 
+> we should not make it too finegrained as a lot of tooling value is in the 
+> 'critical mass' that tracepoints have achieved. The power events tracepoints 
+> are most useful when combined with scheduling events, etc.
+> 
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- include/linux/rmap.h |   50 ++++++++++++++++++--------------------------------
- mm/ksm.c             |    4 ++--
- mm/migrate.c         |    4 ++--
- mm/rmap.c            |    6 ++----
- 4 files changed, 24 insertions(+), 40 deletions(-)
+We're in complete agreement here. When I considered if it was worth it to create
+such a per-tracepoint group compile-time disabling in the first place, I decided
+not to do it precisely due to the added-value that comes with the availability
+of system-wide tracepoints. And I think with the static jump patching, we are
+now at a point where the overhead is stunningly low.
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 567d43f..7721674 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -26,11 +26,17 @@
-  */
- struct anon_vma {
- 	spinlock_t lock;	/* Serialize access to vma list */
--#ifdef CONFIG_KSM
--	atomic_t ksm_refcount;
--#endif
--#ifdef CONFIG_MIGRATION
--	atomic_t migrate_refcount;
-+#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
-+
-+	/*
-+	 * The external_refcount is taken by either KSM or page migration
-+	 * to take a reference to an anon_vma when there is no
-+	 * guarantee that the vma of page tables will exist for
-+	 * the duration of the operation. A caller that takes
-+	 * the reference is responsible for clearing up the
-+	 * anon_vma if they are the last user on release
-+	 */
-+	atomic_t external_refcount;
- #endif
- 	/*
- 	 * NOTE: the LSB of the head.next is set by
-@@ -64,46 +70,26 @@ struct anon_vma_chain {
- };
- 
- #ifdef CONFIG_MMU
--#ifdef CONFIG_KSM
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
-+#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
-+static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
- {
--	atomic_set(&anon_vma->ksm_refcount, 0);
-+	atomic_set(&anon_vma->external_refcount, 0);
- }
- 
--static inline int ksm_refcount(struct anon_vma *anon_vma)
-+static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
- {
--	return atomic_read(&anon_vma->ksm_refcount);
-+	return atomic_read(&anon_vma->external_refcount);
- }
- #else
--static inline void ksm_refcount_init(struct anon_vma *anon_vma)
-+static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
- {
- }
- 
--static inline int ksm_refcount(struct anon_vma *anon_vma)
-+static inline int anonvma_external_refcount(struct anon_vma *anon_vma)
- {
- 	return 0;
- }
- #endif /* CONFIG_KSM */
--#ifdef CONFIG_MIGRATION
--static inline void migrate_refcount_init(struct anon_vma *anon_vma)
--{
--	atomic_set(&anon_vma->migrate_refcount, 0);
--}
--
--static inline int migrate_refcount(struct anon_vma *anon_vma)
--{
--	return atomic_read(&anon_vma->migrate_refcount);
--}
--#else
--static inline void migrate_refcount_init(struct anon_vma *anon_vma)
--{
--}
--
--static inline int migrate_refcount(struct anon_vma *anon_vma)
--{
--	return 0;
--}
--#endif /* CONFIG_MIGRATE */
- 
- static inline struct anon_vma *page_anon_vma(struct page *page)
- {
-diff --git a/mm/ksm.c b/mm/ksm.c
-index a93f1b7..e45ec98 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -318,14 +318,14 @@ static void hold_anon_vma(struct rmap_item *rmap_item,
- 			  struct anon_vma *anon_vma)
- {
- 	rmap_item->anon_vma = anon_vma;
--	atomic_inc(&anon_vma->ksm_refcount);
-+	atomic_inc(&anon_vma->external_refcount);
- }
- 
- static void drop_anon_vma(struct rmap_item *rmap_item)
- {
- 	struct anon_vma *anon_vma = rmap_item->anon_vma;
- 
--	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
-+	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		spin_unlock(&anon_vma->lock);
- 		if (empty)
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 6eb1efe..e395115 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -618,7 +618,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
- 
- 		rcu_locked = 1;
- 		anon_vma = page_anon_vma(page);
--		atomic_inc(&anon_vma->migrate_refcount);
-+		atomic_inc(&anon_vma->external_refcount);
- 	}
- 
- 	/*
-@@ -660,7 +660,7 @@ skip_unmap:
- rcu_unlock:
- 
- 	/* Drop an anon_vma reference if we took one */
--	if (anon_vma && atomic_dec_and_lock(&anon_vma->migrate_refcount, &anon_vma->lock)) {
-+	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		spin_unlock(&anon_vma->lock);
- 		if (empty)
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 578d0fe..af35b75 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -248,8 +248,7 @@ static void anon_vma_unlink(struct anon_vma_chain *anon_vma_chain)
- 	list_del(&anon_vma_chain->same_anon_vma);
- 
- 	/* We must garbage collect the anon_vma if it's empty */
--	empty = list_empty(&anon_vma->head) && !ksm_refcount(anon_vma) &&
--					!migrate_refcount(anon_vma);
-+	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
- 	spin_unlock(&anon_vma->lock);
- 
- 	if (empty)
-@@ -273,8 +272,7 @@ static void anon_vma_ctor(void *data)
- 	struct anon_vma *anon_vma = data;
- 
- 	spin_lock_init(&anon_vma->lock);
--	ksm_refcount_init(anon_vma);
--	migrate_refcount_init(anon_vma);
-+	anonvma_external_refcount_init(anon_vma);
- 	INIT_LIST_HEAD(&anon_vma->head);
- }
- 
+Now, space-wise, the one thing I would consider appropriate as a compromise for
+small embedded systems would be to allow the TRACE_EVENT probes to be compiled
+as modules.
+
+Thanks,
+
+Mathieu
+
+
 -- 
-1.6.5
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
