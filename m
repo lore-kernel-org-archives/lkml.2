@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab0CWNVE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 09:21:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37014 "EHLO
+	id S1753325Ab0CWNXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 09:23:14 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:42295 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752500Ab0CWNU7 (ORCPT
+	by vger.kernel.org with ESMTP id S1751351Ab0CWNXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 09:20:59 -0400
+	Tue, 23 Mar 2010 09:23:12 -0400
 From: Ben Hutchings <ben@decadent.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Mundt <lethal@linux-sh.org>
 Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
        LKML <linux-kernel@vger.kernel.org>, linux-parisc@vger.kernel.org,
        linuxppc-dev@ozlabs.org, linux-s390@vger.kernel.org,
        linux-sh@vger.kernel.org
-In-Reply-To: <20100322224733.9cf93a0a.akpm@linux-foundation.org>
+In-Reply-To: <20100323074546.GK13417@linux-sh.org>
 References: <1269126097.18314.111.camel@localhost>
 	 <1269126340.18314.115.camel@localhost>
-	 <20100322224733.9cf93a0a.akpm@linux-foundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-d99/iIr57rL8zfJ8/KM1"
-Date: Tue, 23 Mar 2010 13:20:40 +0000
-Message-ID: <1269350440.18314.257.camel@localhost>
+	 <20100323074546.GK13417@linux-sh.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-JxBzKjEiI/A3c1PVSdDJ"
+Date: Tue, 23 Mar 2010 13:23:00 +0000
+Message-ID: <1269350580.18314.260.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 X-SA-Exim-Connect-IP: 192.168.4.185
@@ -34,14 +34,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-d99/iIr57rL8zfJ8/KM1
+--=-JxBzKjEiI/A3c1PVSdDJ
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 2010-03-22 at 22:47 -0400, Andrew Morton wrote:
-> On Sat, 20 Mar 2010 23:05:40 +0000 Ben Hutchings <ben@decadent.org.uk> wr=
-ote:
->=20
+On Tue, 2010-03-23 at 16:45 +0900, Paul Mundt wrote:
+> On Sat, Mar 20, 2010 at 11:05:40PM +0000, Ben Hutchings wrote:
 > > WARN() is used in some places to report firmware or hardware bugs that
 > > are then worked-around.  These bugs do not affect the stability of the
 > > kernel and should not set the usual TAINT_WARN flag.  To allow for
@@ -51,41 +49,68 @@ ote:
 > > Architectures that implement warnings using trap instructions instead
 > > of calls to warn_slowpath_*() must now implement __WARN_TAINT(taint)
 > > instead of __WARN().
+> >=20
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > ---
+> > The architecture-specific changes here are untested and need to be
+> > reviewed by architecture maintainers.
+> >=20
+> I'm a bit confused about how this is supposed to work, the TAINT_xxx
+> values are bit positions presently from 0 to 10, while BUGFLAG_xxx are
+> ranged from 0 up. You've set up BUGFLAG_TAINT() to that the TAINT_xxx
+> value is shifted up 8 bits but neglected the fact that the trap type is
+> 16-bits on most (all?) of the platforms using trap-based BUG handling.
 >=20
-> When you say they "must now implement", I assume that you mean that
-> they _do_ now implement, and that no additional architecture work is
-> needed.
+> If the 'taint' in question is just the TAINT_xxx value by itself and will
+> never be a bitmap then that's fine, but there's certainly not enough room
+> to pass the bitmap in on top of the bugflag otherwise (I don't know if
+> this is your intention or not though).
 
-Right, I believe I fixed-up all the current architectures.  There might
-be more architectures out there, unmerged as yet.
+Yes, the taint value must be a bit number not a flag.  Sloppy wording on
+my part.
+
+> Also note that some platforms (like SH) implement additional bugflags, so
+> we at least want to keep the lower byte available for architecture
+> private use.
+
+I noticed, that's why I started at 8 not 1.
+
+> Having said that, the current patch does work for me, although I'm a bit
+> nervous about someone thinking it's ok to pass in a taint bitmap here.
+
+We can maybe use BUILD_BUG_ON() here as the taint bit is already
+required to be a compile-time constant.
 
 Ben.
+
+> Tested-by: Paul Mundt <lethal@linux-sh.org>
+>=20
 
 --=20
 Ben Hutchings
 Any smoothly functioning technology is indistinguishable from a rigged demo=
 .
 
---=-d99/iIr57rL8zfJ8/KM1
+--=-JxBzKjEiI/A3c1PVSdDJ
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: This is a digitally signed message part
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIVAwUAS6jAJ+e/yOyVhhEJAQJv7Q//WaB+psqYAejEQ4/OHpLiyVFSZmuopC4y
-6vt4ssus/bhYkoH+j1FhWijj7Se1ybN2VgF0tVzdydORTeVaUZBwok3ZXVlCSqR1
-uD2ca6YyVbL6fPYwzoYQALXIE1edYVfCzifCJgH+DQM31fpkBDtgxXp84i1Bp1jE
-HgNlKP3qaHmHCGY2N2JIT9RCihKfgXEypyntGlSXnNrW4IpvxyDpGMHJufAHvQj6
-YAE0S7LH1DDodYUYEl1PckmFjMil+RdhREXRAlME5TvovOlpgPPJ7IyJ6rN1O9S+
-wDL1btV4L1Y+/6H0Vvy062dN0cvOw2TH+JMvzme1tn1LW9e/7Imr+RJ4fT0WJ9i4
-Uo9BoiSRrXg0e/eOtYKXD0vg7nhOkeaXG8daxCz3prlPJqPEGzfUCWBlE84L6zqx
-TxG0HM/5PNBHFArTgy5lMIPc2SMgD/wIUU3d3yCLjHahGiQSTTwgMI6p++57R7ny
-k5trUHgN62vsNMxQ7eKGoG/v6h6qSy5MRa74IGfaxbszwIik40ZW1DOvkJB1VROi
-KeTZ73yKK6yLgQEgDifcMD/cDvLG3p1o7wvCjk69K3hCXi7d68Anc9vp2DAW1rlO
-9mNj72u98MzHRkO2X3WH+rmdj0EMz4gYNBxJzo0BGYnEEpCogr0nirJTGzam5MpN
-xHRqjrePWG0=
-=2Hjx
+iQIVAwUAS6jAsue/yOyVhhEJAQKuLRAAo8lRcJIYqpklZT6Ct5UkFmnwQBWniN/J
+O8B6FmzAV8e44xkctJegxtmxMBQETjVOmcR6YC0KtzZXQ1VRSzF7kNaQ1i4V5uXn
+aBSXf82IxdIs7h9wDWqOH2uXtrheLeEhKTvTyGKEzGsc0t28l2cMUocxsjlFU8VW
+oAenqoHUbJAkPvpC1fP8bT42C9rxm5AcO/py0pyqtC+gPaOs/J+606IClqlE4bXi
+ZHltMfpoFzBWQLJ7ZB7Aeu1vwFozybSfeoz9/p54BjMhcRcmQTaTSBUfKeyC5EsS
+Q8GbKYFtIwKhdnLJ9QNfuiO+0u3/G3dkPHRWVJdivNpplncsrYYTDlKJV+ivRtV1
+6xuJVjIONPh5VwEHkqEbYfEdqf9WFHvUbDWOxeMjQ82vuzObFDgR97oIFcwu5X+e
+Qbl8XVnRQtk3BhblMnfrDBuwYuudgqMaiuTwYSmQWAoJpL5ftwQRXXYszFrHWVkA
+wMVUL9V+Cke4xkvxt0szxBo7y20Je+6OnOj/u3G04cK2f2gdAG7yWXm1x6K5jxjc
+OIVB/hzMuLLT3oW9h/gy3OT617X8wz5W83oqH8jcxsBG34QmpWuCYvhXFWF1DkAg
+vbxLwPzg4JYcxLjpsJ5ZGuREyf+DQVGu323BV9IdR/JHUahaI73bZ1/L9jo7VKSw
+IPYASs3GZ2M=
+=xrOe
 -----END PGP SIGNATURE-----
 
---=-d99/iIr57rL8zfJ8/KM1--
+--=-JxBzKjEiI/A3c1PVSdDJ--
