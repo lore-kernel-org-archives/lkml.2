@@ -1,34 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0CWAcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:32:12 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45243 "EHLO mx1.suse.de"
+	id S1756146Ab0CWAcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:32:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45244 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004Ab0CWAcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:32:10 -0400
+	id S1755054Ab0CWAcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Mar 2010 20:32:13 -0400
 From: Jan Kara <jack@suse.cz>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/18] Allow different tracers to be compiled independently
-Date: Tue, 23 Mar 2010 01:32:02 +0100
-Message-Id: <1269304340-25372-1-git-send-email-jack@suse.cz>
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>
+Subject: [PATCH 02/18] block: Generate blktrace trace points only if blktrace is enabled
+Date: Tue, 23 Mar 2010 01:32:04 +0100
+Message-Id: <1269304340-25372-3-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269304340-25372-1-git-send-email-jack@suse.cz>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ include/trace/events/block.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-  Hi,
+diff --git a/include/trace/events/block.h b/include/trace/events/block.h
+index 5fb7273..6412165 100644
+--- a/include/trace/events/block.h
++++ b/include/trace/events/block.h
+@@ -1,5 +1,7 @@
+ #undef TRACE_SYSTEM
++#undef TRACE_CONFIG
+ #define TRACE_SYSTEM block
++#define TRACE_CONFIG CONFIG_BLK_DEV_IO_TRACE
+ 
+ #if !defined(_TRACE_BLOCK_H) || defined(TRACE_HEADER_MULTI_READ)
+ #define _TRACE_BLOCK_H
+-- 
+1.6.4.2
 
-  currently, when one tracer is selected, most of tracepoints for other
-tracers also gets pulled into the kernel. So for example it's not possible
-to enable BLK_DEV_IO_TRACE without polluting slab allocation paths with
-tracepoint checks (see changelog of patch 01). This patch set adds a
-possibility for each set of trace points to be compile-enabled separately.
-  The first patch contains the necessary magic in linux/tracepoint.h. Other
-patches just tell tracing framework about correspoding config options
-and possibly introduce them if they did not exist before.
-  The patches in this patch set are actually completely independent so 
-they can be merged via respective subsystem trees. But changes are rather
-tiny so I don't expect much conflicts...
-
-								Honza
