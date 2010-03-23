@@ -1,36 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab0CWEX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 00:23:59 -0400
-Received: from vms173007pub.verizon.net ([206.46.173.7]:52282 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab0CWEX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 00:23:57 -0400
-Date: Tue, 23 Mar 2010 00:23:24 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] ACPI / ACPICA: Do not check reference counters in
- acpi_ev_enable_gpe()
-In-reply-to: <201003162321.55881.rjw@sisk.pl>
-Message-id: <alpine.LFD.2.00.1003230023200.21410@localhost.localdomain>
-References: <201003162321.55881.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1751960Ab0CWEYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 00:24:23 -0400
+Received: from waste.org ([173.11.57.241]:38506 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab0CWEYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 00:24:21 -0400
+Subject: Re: [Patch v2] netpoll: warn when there are spaces in parameters
+From: Matt Mackall <mpm@selenic.com>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, elendil@planet.nl,
+       David Miller <davem@davemloft.net>
+In-Reply-To: <4BA81D18.40509@redhat.com>
+References: <20100322090341.5289.10770.sendpatchset@localhost.localdomain>
+	 <1269296535.3552.10.camel@calx>  <4BA81D18.40509@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Mar 2010 23:24:16 -0500
+Message-ID: <1269318256.3552.49.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-applied
+On Tue, 2010-03-23 at 09:44 +0800, Cong Wang wrote:
+> Matt Mackall wrote:
+> > On Mon, 2010-03-22 at 04:59 -0400, Amerigo Wang wrote:
+> >> +			printk(KERN_INFO "%s: warning: whitespace"
+> >> +					"is not allowed\n", np->name);
+> > 
+> > Is it a warning or is it info? If it's a warning, then we probably need
+> > to add "netpoll" or whatever to the message so that people who've got a
+> > warning-level threshold will know what it's about.
+> > 
+> 
+> If you mean KERN_INFO, yeah, I want to keep it in the same level
+> as other messages around.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+I should probably be more direct: I think that's the wrong thing to do.
+It IS a warning (it even says so!) telling users that something probably
+won't work and why and they might miss it if the severity is INFO and
+then come and ask us why things aren't working. So use KERN_WARN,
+please.
+
+The other messages are INFO because when things are working, they're not
+interesting.
+
+> Also, I already put "np->name" which will be "netconsole" when
+> we use netconsole.
+
+Ahh, right, I have a brain cell somewhere that knew that.
+
+-- 
+http://selenic.com : development and support for Mercurial and Linux
+
 
