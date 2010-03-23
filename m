@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0CWPXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:23:23 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57196 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab0CWPXU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:23:20 -0400
-Subject: Re: [PATCH] Enhance perf to collect KVM guest os statistics from
- host side
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Soeren Sandmann <sandmann@daimi.au.dk>,
-       Joerg Roedel <joro@8bytes.org>, Ingo Molnar <mingo@elte.hu>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Avi Kivity <avi@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, zhiteng.huang@intel.com,
-       Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <20100323141008.GE4066@ghostprotocols.net>
-References: <1268717232.2813.36.camel@localhost>
-	 <1268969929.2813.184.camel@localhost> <20100319082122.GE12576@elte.hu>
-	 <20100319172903.GI13108@8bytes.org> <20100321184300.GB25922@elte.hu>
-	 <20100322101451.GK13108@8bytes.org> <20100322105927.GB3483@elte.hu>
-	 <20100322114744.GC1940@8bytes.org> <ye88w9j2n2y.fsf@camel23.daimi.au.dk>
-	 <878w9jdu7m.fsf@basil.nowhere.org>
-	 <20100323141008.GE4066@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 23 Mar 2010 16:23:01 +0100
-Message-ID: <1269357781.5109.86.camel@twins>
+	id S1754760Ab0CWP15 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:27:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22126 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754640Ab0CWP14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 11:27:56 -0400
+Date: Tue, 23 Mar 2010 11:26:08 -0400
+From: "Frank Ch. Eigler" <fche@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: ananth@in.ibm.com, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Oleg Nesterov <oleg@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v1 7/10] Uprobes Implementation
+Message-ID: <20100323152608.GC2975@redhat.com>
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6> <20100320142617.11427.23852.sendpatchset@localhost6.localdomain6> <1269342115.5279.1620.camel@twins> <20100323122335.GB26762@linux.vnet.ibm.com> <1269352012.5109.22.camel@twins> <20100323150544.GA18323@in.ibm.com> <1269357354.5109.83.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269357354.5109.83.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-03-23 at 11:10 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Mar 23, 2010 at 02:49:01PM +0100, Andi Kleen escreveu:
-> > Soeren Sandmann <sandmann@daimi.au.dk> writes:
-> > > To fix that problem, it seems like we need some way to have python
-> > > export what is going on. Maybe the same mechanism could be used to
-> > > both access what is going on in qemu and python.
-> > 
-> > oprofile already has an interface to let JITs export
-> > information about the JITed code. C Python is not a JIT,
-> > but presumably one of the python JITs could do it.
-> > 
-> > http://oprofile.sourceforge.net/doc/devel/index.html
-> > 
-> > I know it's not envogue anymore and you won't be a approved 
-> > cool kid if you do, but you could just use oprofile? 
+Hi -
+
+> > Now the question is, where the complexity needs to be.
 > 
-> perf also has supports for this and Pekka Enberg's jato uses it:
-> 
-> http://penberg.blogspot.com/2009/06/jato-has-profiler.html
+> Both in-tree consumers of uprobes (ftrace and perf) are capable of task
+> filters. [...]
 
-Right, we need to move that into a library though (always meant to do
-that, never got around to doing it).
+If you wish this new uprobes to be useful to tools such as gdb,
+remember the value of preserving the property that processes not being
+debugged are not to be interfered with.  You don't want a DoS due to
+some guy setting ten thousand breakpoints on glibc.  Such
+considerations should overrule perf/ftrace's simplifying assumptions
+that after-the-fact event filtering is surely always sufficient.
 
-That way the app can link against a dso with weak empty stubs and have
-perf record LD_PRELOAD a version that has a suitable implementation.
-
-That all has the advantage of not exposing the actual interface like we
-do now.
+- FChE
