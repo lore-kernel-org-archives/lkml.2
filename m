@@ -1,68 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab0CWIrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 04:47:04 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61853 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab0CWIrA (ORCPT
+	id S1754496Ab0CWItT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 04:49:19 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:39820 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752276Ab0CWItS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 04:47:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=PJOhEaKRE+kMAb++2Yc3QphiaYKLC1UQk37gYC2u/zKSibSAO5RLZ5vZ1Nt3UJo6w9
-         +EhXkWEbWuM0Jisx2l/m79PDa66c+YNiXpNEGnIDL9pw7bGIutAJN4ba0+EL3s2n5HFi
-         TKaQZY2F/uBnSsI+1ZKdRKnkad12LPv5WE7A4=
+	Tue, 23 Mar 2010 04:49:18 -0400
+Date: Tue, 23 Mar 2010 09:49:16 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
+       harvey.harrison@gmail.com, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: winbond: wb35reg.c Coding style fixes.
+Message-ID: <20100323084916.GA27015@atrey.karlin.mff.cuni.cz>
+References: <1269294671-8761-1-git-send-email-lindley@coyote.org>
 MIME-Version: 1.0
-Date: Tue, 23 Mar 2010 17:46:52 +0900
-Message-ID: <28c262361003230146o7bca61e6h3af2062b1172fdb2@mail.gmail.com>
-Subject: data consistency of high page
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-       linux-mips <linux-mips@linux-mips.org>,
-       Namjae Jeon <linkinjeon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269294671-8761-1-git-send-email-lindley@coyote.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ralf.
+Hi!
 
-Below is thread long time ago.
-At that time, we can't end up the problem by some reason.
-Sorry for that.
+> -void
+> -Wb35Reg_Update(struct hw_data * pHwData,  u16 RegisterNo,  u32 RegisterValue)
+> +void Wb35Reg_Update(struct hw_data *pHwData,  u16 RegisterNo,  u32 RegisterValue)
+>  {
+>  	struct wb35_reg *reg = &pHwData->reg;
+>  	switch (RegisterNo) {
+> -	case 0x3b0: reg->U1B0 = RegisterValue; break;
+> -	case 0x3bc: reg->U1BC_LEDConfigure = RegisterValue; break;
+> -	case 0x400: reg->D00_DmaControl = RegisterValue; break;
+> -	case 0x800: reg->M00_MacControl = RegisterValue; break;
+> -	case 0x804: reg->M04_MulticastAddress1 = RegisterValue; break;
+> -	case 0x808: reg->M08_MulticastAddress2 = RegisterValue; break;
+> -	case 0x824: reg->M24_MacControl = RegisterValue; break;
+> -	case 0x828: reg->M28_MacControl = RegisterValue; break;
+> -	case 0x82c: reg->M2C_MacControl = RegisterValue; break;
+> -	case 0x838: reg->M38_MacControl = RegisterValue; break;
+> -	case 0x840: reg->M40_MacControl = RegisterValue; break;
+> -	case 0x844: reg->M44_MacControl = RegisterValue; break;
+> -	case 0x848: reg->M48_MacControl = RegisterValue; break;
+> -	case 0x84c: reg->M4C_MacStatus = RegisterValue; break;
+> -	case 0x860: reg->M60_MacControl = RegisterValue; break;
+> -	case 0x868: reg->M68_MacControl = RegisterValue; break;
+> -	case 0x870: reg->M70_MacControl = RegisterValue; break;
+> -	case 0x874: reg->M74_MacControl = RegisterValue; break;
+> -	case 0x878: reg->M78_ERPInformation = RegisterValue; break;
+> -	case 0x87C: reg->M7C_MacControl = RegisterValue; break;
+> -	case 0x880: reg->M80_MacControl = RegisterValue; break;
+> -	case 0x884: reg->M84_MacControl = RegisterValue; break;
+> -	case 0x888: reg->M88_MacControl = RegisterValue; break;
+> -	case 0x898: reg->M98_MacControl = RegisterValue; break;
+> -	case 0x100c: reg->BB0C = RegisterValue; break;
+> -	case 0x102c: reg->BB2C = RegisterValue; break;
+> -	case 0x1030: reg->BB30 = RegisterValue; break;
+> -	case 0x103c: reg->BB3C = RegisterValue; break;
+> -	case 0x1048: reg->BB48 = RegisterValue; break;
+> -	case 0x104c: reg->BB4C = RegisterValue; break;
+> -	case 0x1050: reg->BB50 = RegisterValue; break;
+> -	case 0x1054: reg->BB54 = RegisterValue; break;
+> -	case 0x1058: reg->BB58 = RegisterValue; break;
+> -	case 0x105c: reg->BB5C = RegisterValue; break;
+> -	case 0x1060: reg->BB60 = RegisterValue; break;
+> +	case 0x3b0:
+> +		reg->U1B0 = RegisterValue;
+> +		break;
+> +	case 0x3bc:
+> +		reg->U1BC_LEDConfigure = RegisterValue;
+> +		break;
+> +	case 0x400:
+> +		reg->D00_DmaControl = RegisterValue;
+> +		break;
+> +	case 0x800:
+> +		reg->M00_MacControl = RegisterValue;
+> +		break;
+> +	case 0x804:
+> +		reg->M04_MulticastAddress1 = RegisterValue;
+> +		break;
+> +	case 0x808:
+> +		reg->M08_MulticastAddress2 = RegisterValue;
+> +		break;
+> +	case 0x824:
+> +		reg->M24_MacControl = RegisterValue;
+> +		break;
+> +	case 0x828:
+> +		reg->M28_MacControl = RegisterValue;
+> +		break;
+> +	case 0x82c:
+> +		reg->M2C_MacControl = RegisterValue;
+> +		break;
+> +	case 0x838:
+> +		reg->M38_MacControl = RegisterValue;
+> +		break;
+> +	case 0x840:
+> +		reg->M40_MacControl = RegisterValue;
+> +		break;
+> +	case 0x844:
+> +		reg->M44_MacControl = RegisterValue;
+> +		break;
+> +	case 0x848:
+> +		reg->M48_MacControl = RegisterValue;
+> +		break;
+> +	case 0x84c:
+> +		reg->M4C_MacStatus = RegisterValue;
+> +		break;
+> +	case 0x860:
+> +		reg->M60_MacControl = RegisterValue;
+> +		break;
+> +	case 0x868:
+> +		reg->M68_MacControl = RegisterValue;
+> +		break;
+> +	case 0x870:
+> +		reg->M70_MacControl = RegisterValue;
+> +		break;
+> +	case 0x874:
+> +		reg->M74_MacControl = RegisterValue;
+> +		break;
+> +	case 0x878:
+> +		reg->M78_ERPInformation = RegisterValue;
+> +		break;
+> +	case 0x87C:
+> +		reg->M7C_MacControl = RegisterValue;
+> +		break;
+> +	case 0x880:
+> +		reg->M80_MacControl = RegisterValue;
+> +		break;
+> +	case 0x884:
+> +		reg->M84_MacControl = RegisterValue;
+> +		break;
+> +	case 0x888:
+> +		reg->M88_MacControl = RegisterValue;
+> +		break;
+> +	case 0x898:
+> +		reg->M98_MacControl = RegisterValue;
+> +		break;
+> +	case 0x100c:
+> +		reg->BB0C = RegisterValue;
+> +		break;
+> +	case 0x102c:
+> +		reg->BB2C = RegisterValue;
+> +		break;
+> +	case 0x1030:
+> +		reg->BB30 = RegisterValue;
+> +		break;
+> +	case 0x103c:
+> +		reg->BB3C = RegisterValue;
+> +		break;
+> +	case 0x1048:
+> +		reg->BB48 = RegisterValue;
+> +		break;
+> +	case 0x104c:
+> +		reg->BB4C = RegisterValue;
+> +		break;
+> +	case 0x1050:
+> +		reg->BB50 = RegisterValue;
+> +		break;
+> +	case 0x1054:
+> +		reg->BB54 = RegisterValue;
+> +		break;
+> +	case 0x1058:
+> +		reg->BB58 = RegisterValue;
+> +		break;
+> +	case 0x105c:
+> +		reg->BB5C = RegisterValue;
+> +		break;
+> +	case 0x1060:
+> +		reg->BB60 = RegisterValue;
+> +		break;
+>  	}
+>  }
 
-The problem would occur, again.
+I actually prefer the old version here. Yes, checkpatch will complain,
+but so what -- it is better to have shorter function for something
+this trivial.
 
-On Fri, Oct 16, 2009 at 6:24 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On Fri, Oct 16, 2009 at 02:17:19PM +0900, Minchan Kim wrote:
->
->> Many code of kernel fs usually allocate high page and flush.
->> But flush_dcache_page of mips checks PageHighMem to avoid flush
->> so that data consistency is broken, I think.
->
-> What processor and cache configuration?
->
->> I found it's by you and Atsushi-san on 585fa724.
->> Why do we need the check?
->> Could you elaborte please?
->
-> The if statement exists because __flush_dcache_page would crash if a page
-> is not mapped.  This of course isn't correct but that wasn't a problem
-> since highmem still is only supported on machines that don't have aliases.
->
->  Ralf
->
-
-Our system is following as.
-
-mips 34ke
-primary i-cache 32kB VIPT 4way 32 byte line size.
-primary d-cache 32kB 4way  32 bytes linesize
-
-If you have further questions, Namjae, Could you follow question of Ralf?
+									Pavel
 
 -- 
-Kind regards,
-Minchan Kim
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
