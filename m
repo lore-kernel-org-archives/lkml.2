@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab0CWPlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:41:18 -0400
-Received: from Cpsmtpm-eml107.kpnxchange.com ([195.121.3.11]:62692 "EHLO
-	CPSMTPM-EML107.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754380Ab0CWPlQ (ORCPT
+	id S1754831Ab0CWPlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:41:51 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:42150 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab0CWPlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:41:16 -0400
-Message-ID: <4BA8E11A.2020300@gmail.com>
-Date: Tue, 23 Mar 2010 16:41:14 +0100
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100305 Lightning/1.0b2pre Shredder/3.0.3
+	Tue, 23 Mar 2010 11:41:50 -0400
+Message-ID: <4BA8E0F8.4050708@oracle.com>
+Date: Tue, 23 Mar 2010 08:40:40 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: rt2x00 Users List <users@rt2x00.serialmonkey.com>
-CC: Ondrej Zary <linux@rainbow-software.org>,
-       Ivo Van Doorn <ivdoorn@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW	encryption
- by default
-References: <201003221601.36559.linux@rainbow-software.org>	<201003231027.34095.linux@rainbow-software.org>	<a32f33a41003230236q348c8aeata724042a9c3d9537@mail.gmail.com> <201003231609.57505.linux@rainbow-software.org>
-In-Reply-To: <201003231609.57505.linux@rainbow-software.org>
+To: William Cohen <wcohen@redhat.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Make kernel-doc ignore __init_or_module
+References: <4BA8DEEA.7090102@redhat.com>
+In-Reply-To: <4BA8DEEA.7090102@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Mar 2010 15:41:15.0635 (UTC) FILETIME=[45FDC430:01CACA9F]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BA8E106.0101:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/10 16:09, Ondrej Zary wrote:
-> On Tuesday 23 March 2010, Ivo Van Doorn wrote:
->> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
->>
->> <linux@rainbow-software.org> wrote:
->>> On Monday 22 March 2010, Ivo Van Doorn wrote:
->>>>>> But I though it was mentioned that disabling HW crypto didn't solve
->>>>>> the issue due to a second bug in a later kernel?
->>>>>
->>>>> That was a false positive. Probably because the device was not
->>>>> unplugged between the tests (and looks like the driver does not
->>>>> initialize the chip completely). It's not reliable, it sometimes stops
->>>>> working after reboot.
->>>>
->>>> Ah well that at least simplifies the problem. I'll have to retest
->>>> rt2500usb soon to see why the HW crypto failed. I am sure I had it
->>>> working for WEP, WPA and WPA2
->>>> before I submitted the patch.
->>>
->>> So let's try to fix it instead of disabling.
->>>
->>> First, the unrealiability (keeping HW encryption disabled). With the
->>> driver loaded but not doing anything more, the register dumps are same
->>> for both working and non-working case (dump-init.txt).
->>>
->>> dump-good-connected.txt is a dump after successful association and DHCP
->>> dump-bad-attempt.txt is a dump after successful association during
->>> non-working DHCP attempt
->>> dump-bad-after.txt is a dump after DHCP timed out
->>
->> With association working, but DHCP failing it most likely means that
->> somehow the frame was malformatted.
->> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
->> And that is commonly the source of
->> problems, because what has to be done depends heavily on the encryption
->> type.
->>
->> So could you verify which of the encryption types (WEP,WPA,WPA2) is
->> failing or working? That would give a starting
->> position on which bytes might be corrupted.
+On 03/23/10 08:31, William Cohen wrote:
 > 
-> I was testing only with WPA2 before. I did some more testing today. The results:
+> Function definitions may include __init_or_module. kernel-doc needs to
+> filter those out to avoid confusing __init_or_module for the function name.
 > 
-> No encryption - works always
-> WEP - sometimes works, sometimes not - same with and without HW encryption
-> WPA - sometimes works, sometimes not - same with and without HW encryption
-> WPA2 - never works with HW encryption
->      - sometimes works, sometimes not without HW encryptionn
+> Signed-off-by: William cohen <wcohen@redhat.com>
+> ---
+>  scripts/kernel-doc |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> So it seems that there are two problems:
->  1. random problems with any encryption
->  2. WPA2 is broken with HW encryption
-> 
-> When the "random" problem appears, this appears in dmesg:
-> wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
-> wlan1: authenticated
-> wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
-> wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0 aid=2)
-> wlan1: associated
-> phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 (-16).
-> phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state 3 (-16).
-> No probe response from AP 00:13:d4:0f:f3:17 after 500ms, disconnecting.
-> 
-> Disabling call to rt2500usb_set_state() in rt2500usb_set_device_state() seems
-> to fix problem 1. After this change, WEP and WPA work always regardless of
-> HW encryption (and WPA2 works always without it).
-> 
+> diff --git a/scripts/kernel-doc b/scripts/kernel-doc
+> index c7865c3..1d8db58 100755
+> --- a/scripts/kernel-doc
+> +++ b/scripts/kernel-doc
+> @@ -1728,6 +1728,7 @@ sub dump_function($$) {
+>      $prototype =~ s/^noinline +//;
+>      $prototype =~ s/__devinit +//;
+>      $prototype =~ s/__init +//;
+> +    $prototype =~ s/__init_or_module +//;
+>      $prototype =~ s/^#\s*define\s+//; #ak added
+>      $prototype =~ s/__attribute__\s*\(\([a-z,]*\)\)//;
+>  
 
-For this last issue, could you check with powersaving disabled. Just execute
-iwconfig wlan1 power off before associating.
+Hi,
 
-The powersaving code looks a bit odd here, and we've had issues with this in the
-other rt2x00 drivers as well.
+Yes, I know.  I've already sent this patch to Linus more than once
+and now Andrew has it for merging...
 
----
-Gertjan.
+-- 
+~Randy
