@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0CWR5k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 13:57:40 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:55397 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab0CWR5j convert rfc822-to-8bit (ORCPT
+	id S1754045Ab0CWR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 13:58:24 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:47359 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753910Ab0CWR6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 13:57:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=ZwEEDCe3qw/Y7tR/Smd+Bt3pXkgx0gaWUi3PU5cA2yKyOttkiK+0NPRJN/p4AGE1GZ
-         fCqDO1z+7qZphJAL6CgfZBvCCywb18WaoVcoGVZ8i/koVi0hejcPeUq3DgadgL7yGYCN
-         /VTR4PbTGBJWMcKBXWnUZVF2s+mFYrwa798/4=
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
-Mime-Version: 1.0 (Apple Message framework v1077)
-Content-Type: text/plain; charset=us-ascii
-From: Anton Starikov <ant.starikov@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
-Date: Tue, 23 Mar 2010 18:57:34 +0100
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <54F3A3FB-E99F-4278-AAAB-5B6A09247C4B@gmail.com>
-References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1077)
+	Tue, 23 Mar 2010 13:58:23 -0400
+Date: Tue, 23 Mar 2010 12:56:30 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+In-Reply-To: <1269347146-7461-8-git-send-email-mel@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1003231253180.10178@router.home>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-8-git-send-email-mel@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 23 Mar 2010, Mel Gorman wrote:
 
-On Mar 23, 2010, at 6:45 PM, Linus Torvalds wrote:
+> diff --git a/include/linux/swap.h b/include/linux/swap.h
+> index 1f59d93..cf8bba7 100644
+> --- a/include/linux/swap.h
+> +++ b/include/linux/swap.h
+> @@ -238,6 +239,11 @@ static inline void lru_cache_add_active_file(struct page *page)
+>  	__lru_cache_add(page, LRU_ACTIVE_FILE);
+>  }
+>
+> +/* LRU Isolation modes. */
+> +#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> +#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> +#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> +
+>  /* linux/mm/vmscan.c */
+>  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
+>  					gfp_t gfp_mask, nodemask_t *mask);
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 79c8098..ef89600 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -839,11 +839,6 @@ keep:
+>  	return nr_reclaimed;
+>  }
+>
+> -/* LRU Isolation modes. */
+> -#define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+> -#define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+> -#define ISOLATE_BOTH 2		/* Isolate both active and inactive pages. */
+> -
+>  /*
+>   * Attempt to remove the specified page from its LRU.  Only take this page
+>   * if it is of the appropriate PageActive status.  Pages which are being
 
-> 
-> 
-> On Tue, 23 Mar 2010, Ingo Molnar wrote:
->> 
->> It shows a very brutal amount of page fault invoked mmap_sem spinning 
->> overhead.
-> 
-> Isn't this already fixed? It's the same old "x86-64 rwsemaphores are using 
-> the shit-for-brains generic version" thing, and it's fixed by
-> 
-> 	1838ef1 x86-64, rwsem: 64-bit xadd rwsem implementation
-> 	5d0b723 x86: clean up rwsem type system
-> 	59c33fa x86-32: clean up rwsem inline asm statements
-> 
-> NOTE! None of those are in 2.6.33 - they were merged afterwards. But they 
-> are in 2.6.34-rc1 (and obviously current -git). So Anton would have to 
-> compile his own kernel to test his load.
+Put the above in a separate patch?
 
-Thanks for info, I will try it now.
-
-> We could mark them as stable material if the load in question is a real 
-> load rather than just a test-case. On one of the random page-fault 
-> benchmarks the rwsem fix was something like a 400% performance 
-> improvement, and it was apparently visible in real life on some crazy SGI 
-> "initialize huge heap concurrently on lots of threads" load.
-
-It is not just a test-case, it is real-life code. With real-life problems on 2.6.32 and later :)
-
-
-Anton.
