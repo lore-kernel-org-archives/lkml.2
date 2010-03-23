@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab0CWAWN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Mar 2010 20:22:13 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34726 "EHLO
+	id S1755785Ab0CWAWY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Mar 2010 20:22:24 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34741 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841Ab0CWAWL (ORCPT
+	with ESMTP id S1755492Ab0CWAWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Mar 2010 20:22:11 -0400
+	Mon, 22 Mar 2010 20:22:22 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 06/11] Export fragmentation index via /proc/extfrag_index
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100317113326.GD12388@csn.ul.ie>
-References: <20100317114321.4C9A.A69D9226@jp.fujitsu.com> <20100317113326.GD12388@csn.ul.ie>
-Message-Id: <20100323050910.A473.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Date: Tue, 23 Mar 2010 09:18:41 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       WANG Cong <xiyou.wangcong@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+       Jaswinder Singh Rajput <jaswinderrajput@gmail.com>,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] kcore: fix test for end of list
+Message-Id: <20100323091841.dd500a38.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100322120509.GC21571@bicker>
+References: <20100322120509.GC21571@bicker>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 23 Mar 2010 09:22:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +	/*
-> > > +	 * Index is between 0 and 1 so return within 3 decimal places
-> > > +	 *
-> > > +	 * 0 => allocation would fail due to lack of memory
-> > > +	 * 1 => allocation would fail due to fragmentation
-> > > +	 */
-> > > +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
-> > > +}
-> > 
-> > Dumb question.
-> > your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
-> > fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
-> > but your code have extra '1000+'. Why?
+On Mon, 22 Mar 2010 15:05:09 +0300
+Dan Carpenter <error27@gmail.com> wrote:
+
+> "m" is never NULL here.  We need a different test for the end of list
+> condition.
 > 
-> To get an approximation to three decimal places.
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Do you mean this is poor man's round up logic?
-Why don't you use DIV_ROUND_UP? likes following,
+yes, thank you.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-return 1000 - (DIV_ROUND_UP(info->free_pages * 1000 / requested) /  info->free_blocks_total);
 
+> ---
+> Found with a static checker and compile tested only.  Please review
+> carefully.
+> 
+> diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
+> index a44a789..b442dac 100644
+> --- a/fs/proc/kcore.c
+> +++ b/fs/proc/kcore.c
+> @@ -490,7 +490,7 @@ read_kcore(struct file *file, char __user *buffer, size_t buflen, loff_t *fpos)
+>  		}
+>  		read_unlock(&kclist_lock);
+>  
+> -		if (m == NULL) {
+> +		if (&m->list == &kclist_head) {
+>  			if (clear_user(buffer, tsz))
+>  				return -EFAULT;
+>  		} else if (is_vmalloc_or_module_addr((void *)start)) {
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
