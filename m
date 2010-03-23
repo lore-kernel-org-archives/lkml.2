@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412Ab0CWPDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 11:03:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54269 "EHLO mx1.redhat.com"
+	id S1754469Ab0CWPGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 11:06:00 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:42138 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754381Ab0CWPD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 11:03:29 -0400
-Date: Tue, 23 Mar 2010 11:03:01 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, chris.mason@oracle.com, hch@lst.de
-Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
-	ioctl
-Message-ID: <20100323150301.GD2381@localhost.localdomain>
-References: <20100323142200.GA2381@localhost.localdomain> <20100323142843.GG30031@ZenIV.linux.org.uk> <20100323143456.GC2381@localhost.localdomain> <20100323144828.GH30031@ZenIV.linux.org.uk>
+	id S1754436Ab0CWPF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 11:05:59 -0400
+Date: Tue, 23 Mar 2010 20:35:44 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Oleg Nesterov <oleg@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v1 7/10] Uprobes Implementation
+Message-ID: <20100323150544.GA18323@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6> <20100320142617.11427.23852.sendpatchset@localhost6.localdomain6> <1269342115.5279.1620.camel@twins> <20100323122335.GB26762@linux.vnet.ibm.com> <1269352012.5109.22.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100323144828.GH30031@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1269352012.5109.22.camel@twins>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 02:48:28PM +0000, Al Viro wrote:
-> On Tue, Mar 23, 2010 at 10:34:56AM -0400, Josef Bacik wrote:
-> > +++ b/fs/block_dev.c
-> > @@ -245,35 +245,13 @@ struct super_block *freeze_bdev(struct block_device *bdev)
-> >  	sb = get_active_super(bdev);
+On Tue, Mar 23, 2010 at 02:46:52PM +0100, Peter Zijlstra wrote:
+> On Tue, 2010-03-23 at 17:53 +0530, Srikar Dronamraju wrote:
+ 
+> > > I would still prefer to see something like:
+> > > 
+> > >  vma:offset, instead of tid:vaddr
+> > >  
+> > > You want to probe a symbol in a DSO, filtering per-task comes after that
+> > > if desired.
+> > > 
 > 
-> sb is an active locked reference
+> > do you mean the user should be specifying 357c200000:74b80 to denote
+> > 000000357c274b80? or /lib64/libc.so.6:74b80
+> > And we trace all the process which have mapped this address?
 > 
-> > +	error = freeze_super(sb, 1);
-> > +	if (error) {
-> > +		bdev->bd_fsfreeze_count--;
-> > +		mutex_unlock(&bdev->bd_fsfreeze_mutex);
-> > +		return ERR_PTR(error);
-> >  	}
-> > -	up_write(&sb->s_umount);
-> >  
-> >   out:
-> >  	sync_blockdev(bdev);
+> Well userspace would simply specify something like: /lib/libc.so:malloc,
+> we'd probably communicate that to the kernel using a filedesc and
+> offset.
 > 
-> >  static int ioctl_fsfreeze(struct file *filp)
-> >  {
-> >  	struct super_block *sb = filp->f_path.dentry->d_inode->i_sb;
-> 
-> sb is an active reference
-> 
+> And yes, all processes that share that DSO, consumers can install
+> filters.
 
-I don't understand how this is an active reference?  We are talking about
-s_active right?
+Well, rewind back to 2006 to the first edition of uprobes; it had the
+'global' tracing feature like what you indicate here, although Andrew
+wouldn't want to be reminded of *how* that was done (hooking
+readpages()) :-)
 
-> > +	ret = freeze_super(sb, 0);
-> > +
-> > +	return ret;
-> >  }
+At the time, global tracing was vehemently vetoed in favour of a per-process
+approach.
+
+Now the question is, where the complexity needs to be.
+ 
+> > > Also, like we discussed in person, I think we can do away with the
+> > > handler_in_interrupt thing by letting the handler have an error return
+> > > value and doing something like:
+> > > 
+> > > do_int3:
+> > > 
+> > >   uprobe = find_probe_point(addr);
+> > > 
+> > >   pagefault_disable();
+> > >   err = uprobe->handler(uprobe, regs);
+> > >   pagefault_enable();
+> > > 
+> > >   if (err == -EFAULT) {
+> > >     /* set TIF flag and call the handler again from
+> > >        task context */
+> > >   }
+> > > 
+> > > This should allow the handler to optimistically access memory from the
+> > > trap handler, but in case it does need to fault pages in we'll call it
+> > > from task context.
+> > 
+> > Okay but what if the handler is coded to sleep.
 > 
-> > +int freeze_super(struct super_block *sb, int locked)
-> > +{
-> > +	int ret;
-> > +
-> > +	if (!locked) {
-> > +		spin_lock(&sb_lock);
-> > +		ret = grab_super(sb);
+> Don't do that ;-)
 > 
-> What in hell for?  We already hold an active reference here.  That's leaving
-> aside the obvious comments about argument-dependent locking state...
+> What reason would you have to sleep from a int3 anyway? You want to log
+> bits and get on with life, right? The only interesting case is faulting
+> when some memory references you want are not currently available, and
+> that can be done as suggested.
 
-We need to have an active (s_active++) reference to the super throughout the
-freeze to make sure somebody doesn't come along and umount the fs until after we
-do the thaw.  Now, most of this code is copy and pasted, so I don't claim to
-understand why it was done this way to begin with, I was just trying to not
-change as much as possible.  But from what I can tell, we _need_ to have the
-active reference on the sb until we thaw.  Freeze_bdev already gets this active
-reference via get_active_super(), but from what I can tell the ioctl_fsfreeze
-doesn't have an active reference, hence the locked argument, so we can do a
-grab_super and get the active reference.  Would you prefer that I have a
-__freeze_super that expects the sb to already have an active reference, and then
-make freeze_super do the grab_super instead?  Thanks,
+With the TIF method, you get to the probed process' task context in 
+do_notify_resume(), and have sufficient flexibility for non-perf users, 
+like gdb, 'cos what uprobes provides now, is close to what Tom Tromey
+asked for gdb's usage.
 
-Josef
+Ananth
