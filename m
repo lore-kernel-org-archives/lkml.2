@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab0CWOfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 10:35:51 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:48137 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab0CWOft (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 10:35:49 -0400
-Message-ID: <4BA8D1B3.8050509@linux.vnet.ibm.com>
-Date: Tue, 23 Mar 2010 15:35:31 +0100
-From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>,
-       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
-References: <20100322235053.GD9590@csn.ul.ie>
-In-Reply-To: <20100322235053.GD9590@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1753946Ab0CWOfl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 10:35:41 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:36587 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753752Ab0CWOfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 10:35:39 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: [rfc 5/5] mincore: transparent huge page support
+Date: Tue, 23 Mar 2010 15:35:02 +0100
+Message-Id: <1269354902-18975-6-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.6.4
+In-Reply-To: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman wrote:
-> On Mon, Mar 15, 2010 at 01:09:35PM -0700, Andrew Morton wrote:
->> On Mon, 15 Mar 2010 13:34:50 +0100
->> Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
->>
-[...]
-> 
-> 120+ kernels and a lot of hurt later;
+Handle transparent huge page pmd entries natively instead of splitting
+them into subpages.
 
-Thanks for all your effort in searching the real cause behind 
-congestion_wait becoming such a time sink for some benchmarks.
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/mincore.c |   37 ++++++++++++++++++++++++++++++++++---
+ 1 files changed, 34 insertions(+), 3 deletions(-)
 
-> 
-> 2.6.32                                          0        0        0          3         2           44437   221753  2760857     132517         0
-> 2.6.32-revertevict                              0        0        0          3         2              35       14     1570        460         0
-> 2.6.32-ttyfix                                   0        0        0          2         0           60770   303206  3659254     166293         0
-> 2.6.32-ttyfix-revertevict                       0        0        0          3         0              55       62     2496        494         0
-> 2.6.32.10                                       0        0        0          2         1           90769   447702  4251448     234868         0
-> 2.6.32.10-revertevict                           0        0        0          3         2             148      597     8642        478         0
-> 2.6.32.10-ttyfix                                0        0        0          3         0           91729   453337  4374070     238593         0
-> 2.6.32.10-ttyfix-revertevict                    0        0        0          3         1              65      146     3408        347         0
-> 
-> Again, fixing tty and reverting evict-once helps bring figures more in line
-> with 2.6.29.
-> 
-> 2.6.33                                          0        0        0          3         0          152248   754226  4940952     267214         0
-> 2.6.33-revertevict                              0        0        0          3         0             883     4306    28918        507         0
-> 2.6.33-ttyfix                                   0        0        0          3         0          157831   782473  5129011     237116         0
-> 2.6.33-ttyfix-revertevict                       0        0        0          2         0            1056     5235    34796        519         0
-> 2.6.33.1                                        0        0        0          3         1          156422   776724  5078145     234938         0
-> 2.6.33.1-revertevict                            0        0        0          2         0            1095     5405    36058        477         0
-> 2.6.33.1-ttyfix                                 0        0        0          3         1          136324   673148  4434461     236597         0
-> 2.6.33.1-ttyfix-revertevict                     0        0        0          1         1            1339     6624    43583        466         0
-> 
-
-[...]
-
-> 
-> Christian, can you test the following amalgamated patch on 2.6.32.10 and
-> 2.6.33 please? Note it's 2.6.32.10 because the patches below will not apply
-> cleanly to 2.6.32 but it will against 2.6.33. It's a combination of ttyfix
-> and revertevict. If your problem goes away, it implies that the stalls I
-> can measure are roughly correlated to the more significant problem you have.
-
-While your tty&evict patch might fix something as seen by your numbers, 
-it unfortunately doesn't affect my big throughput loss.
-
-Again the scenario was 4,8 and 16 threads iozone sequential read with 
-2Gb files and one disk per process, running on a s390x machine with 4 
-cpus and 256m.
-My table shows the throughput deviation to plain 2.6.32 git in percent.
-
-percentage                       4thr     8thr    16thr
-2.6.32                          0.00%    0.00%    0.00%
-2.6.32.10 (stable)              4.44%    7.97%    4.11%
-2.6.32.10-ttyfix-revertevict    3.33%    6.64%    5.07%
-2.6.33                          5.33%   -2.82%  -10.87%
-2.6.33-ttyfix-revertevict       3.33%   -3.32%  -10.51%
-2.6.32-watermarkwait           40.00%   58.47%   42.03%
-
-In terms of throughput for my load your patch doesn't change anything 
-significantly above the noise level of the test case (which is around 
-~1%). The fix probably even has a slight performance decrease in low 
-thread cases.
-
-For better comparison I added a 2.6.32 run with your watermark wait 
-patch which is still the only one fixing the issue.
-
-That said I'd still love to see watermark wait getting accepted :-)
-
+diff --git a/mm/mincore.c b/mm/mincore.c
+index 28cab9d..d4cddc1 100644
+--- a/mm/mincore.c
++++ b/mm/mincore.c
+@@ -15,6 +15,7 @@
+ #include <linux/swap.h>
+ #include <linux/swapops.h>
+ #include <linux/hugetlb.h>
++#include <linux/rmap.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -144,6 +145,35 @@ static void mincore_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 	pte_unmap_unlock(ptep - 1, ptl);
+ }
+ 
++static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
++			unsigned long addr, unsigned long end,
++			unsigned char *vec)
++{
++	int huge = 0;
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	spin_lock(&vma->vm_mm->page_table_lock);
++	if (likely(pmd_trans_huge(*pmd))) {
++		huge = !pmd_trans_splitting(*pmd);
++		spin_unlock(&vma->vm_mm->page_table_lock);
++		/*
++		 * If we have an intact huge pmd entry, all pages in
++		 * the range are present in the mincore() sense of
++		 * things.
++		 *
++		 * But if the entry is currently being split into
++		 * normal page mappings, wait for it to finish and
++		 * signal the fallback to ptes.
++		 */
++		if (huge)
++			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
++		else
++			wait_split_huge_page(vma->anon_vma, pmd);
++	} else
++		spin_unlock(&vma->vm_mm->page_table_lock);
++#endif
++	return huge;
++}
++
+ static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 			unsigned long addr, unsigned long end,
+ 			unsigned char *vec)
+@@ -152,12 +182,13 @@ static void mincore_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 	pmd_t *pmd;
+ 
+ 	pmd = pmd_offset(pud, addr);
+-	split_huge_page_vma(vma, pmd);
+ 	do {
+ 		next = pmd_addr_end(addr, end);
+-		if (pmd_none_or_clear_bad(pmd))
++		/* XXX: pmd_none_or_clear_bad() triggers on _PAGE_PSE */
++		if (pmd_none(*pmd))
+ 			mincore_unmapped_range(vma, addr, next, vec);
+-		else
++		else if (!pmd_trans_huge(*pmd) ||
++			 !mincore_huge_pmd(vma, pmd, addr, next, vec))
+ 			mincore_pte_range(vma, pmd, addr, next, vec);
+ 		vec += (next - addr) >> PAGE_SHIFT;
+ 	} while (pmd++, addr = next, addr != end);
 -- 
+1.7.0.2
 
-Grüsse / regards, Christian Ehrhardt
-IBM Linux Technology Center, System z Linux Performance
