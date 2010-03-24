@@ -1,140 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab0CXSDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:03:35 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:56024 "EHLO mail-out1.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932674Ab0CXSCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:02:52 -0400
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BAA5035.1060906@panasas.com>
-References: <4BAA3493.1030802@panasas.com>
-	 <20100324160037.GP30031@ZenIV.linux.org.uk>	<4BAA3828.2070506@panasas.com>
-	 <20100324160754.GQ30031@ZenIV.linux.org.uk>	<4BAA398C.5050901@panasas.com>
-	 <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>
-	 <4BAA4CAC.6060104@panasas.com>  <4BAA5035.1060906@panasas.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 14:02:36 -0400
-Message-ID: <1269453756.5982.33.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 7 sum msgs/h 1 total rcpts 2605 max rcpts/h 27 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 23F97611CB1009430C3ADEE1D6117A5688766EC8
-X-UiO-SPAM-Test: remote_host: 130.129.30.233 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 5 max/h 2 blacklist 0 greylist 0 ratelimit 0
+	id S932629Ab0CXSD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:03:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54020 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932637Ab0CXSCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 14:02:49 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/6] perf report: Add a popup menu to ask what operation is to be performed
+Date: Wed, 24 Mar 2010 15:02:33 -0300
+Message-Id: <1269453758-27044-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 19:47 +0200, Boaz Harrosh wrote: 
-> On 03/24/2010 07:32 PM, Boaz Harrosh wrote:
-> > On 03/24/2010 07:15 PM, Boaz Harrosh wrote:
-> >> On 03/24/2010 06:39 PM, Al Viro wrote:
-> >>> On Wed, Mar 24, 2010 at 06:10:52PM +0200, Boaz Harrosh wrote:
-> >>>> On 03/24/2010 06:07 PM, Al Viro wrote:
-> >>>>> On Wed, Mar 24, 2010 at 06:04:56PM +0200, Boaz Harrosh wrote:
-> >>>>>>> Bloody impressive...  Does that happen to underlying fs or to what you
-> >>>>>>> are seeing via NFS?
-> >>>>>>
-> >>>>>> Only via NFS. All local access is fine.
-> >>>>>>
-> >>>>>> After the corruption above I can cd to the local mount cp a fresh copy
-> >>>>>> of .git/index file and play around just fine.
-> >>>>>> Once I return to the NFS mounted directory, a git status will do it.
-> >>>>>> It does not matter if caches are cold (Takes a long time) or hot it happens
-> >>>>>> every time.
-> >>>>>>
-> >>>>>> Weird I know, I'm playing some more with it as we speak
-> >>>>>
-> >>>>> What happens if you export to box running older kernel *or* from box
-> >>>>> running older kernel?  IOW, is that nfsd or nfs client getting unhappy?
-> >>>>> I'd suspect the latter, but...
-> >>>>
-> >>>>
-> >>>> Good question, I'm just getting to that because currently it's all
-> >>>> over localhost (same kernel, BTW inside a UML)
-> >>>>
-> >>>> I will try what you said. Please through any other tests on me, if needed.
-> >>>
-> >>
-> >> As you suspected old-server+new-client fails. any-thing+old-client is
-> >> fine. (two separate machines this time)
-> >>
-> >>> Very interesting...  Just to see which path we are hitting: add
-> >>> 	if (IS_ERR(nd->intent.open.file))
-> >>> 		printk("foo: %s", pathname);
-> >>> right after
-> >>>                 error = do_lookup(nd, &nd->last, path);
-> >>>                 if (error)
-> >>>                         goto exit;
-> >>> in fs/namei.c:do_last() and see whether we are hitting it or not on objects
-> >>> that get corrupted.
-> >>
-> >> Sorry was busy shifting setups, didn't see your mail, will do that next ...
-> >>
-> >> Thanks
-> >> Boaz
-> > 
-> > 
-> > Below is what I changed. (I hope its what you meant)
-> > It does not get hit, just that git corruption as before but I don't see the prints.
-> > I'll try running with nfs dbg-prints on see what it does around the time gits complains
-> > 
-> > Boaz
-> > 
-> 
-> Attached is an output of when I:
-> $ echo $((0x7fff)) > /proc/sys/sunrpc/nfs_debug
-> and then run git status. (On a new client)
-> 
-> We can see the complains after things got broken but what broke it
-> that's hard for me to see.
-> 
-> (If the file is too big I'll put it on the web somewhere, see if it arrives)
-> 
-> Boaz
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Something weird is going on in your trace:
+Right now it presents a menu with these options:
 
-NFS: open file(5b/46ff70a61cf4e159a0339df0e02113bf35f805)
-NFS: permission(0:12/323044), mask=0x24, res=0
-NFS: revalidating (0:12/323044)
---> nfs4_setup_sequence clp 00000000791f3000 session (null) sr_slotid
-128
-<-- nfs4_setup_sequence status=0
-encode_compound: tag=
-decode_attr_type: type=00
-decode_attr_change: change attribute=10077553255782547456
-decode_attr_size: file size=921
-decode_attr_fsid: fsid=(0x0/0x0)
-decode_attr_fileid: fileid=0
-decode_attr_fs_locations: fs_locations done, error = 0
-decode_attr_mode: file mode=00
-decode_attr_nlink: nlink=1
-decode_attr_owner: uid=-2
-decode_attr_group: gid=-2
-decode_attr_rdev: rdev=(0x0:0x0)
-decode_attr_space_used: space used=0
-decode_attr_time_access: atime=0
-decode_attr_time_metadata: ctime=1269422731
-decode_attr_time_modify: mtime=1269422731
-decode_attr_mounted_on_fileid: fileid=0
-decode_getfattr: xdr returned 0
+ +------------------------------+
+ | Annotate CURRENT_SYMBOL_NAME |
+ | Exit                         |
+ +------------------------------+
 
-A file type of '0' in the above trace is just wrong, and probably
-indicates that the server didn't even return that attribute.
+If the highlighted (current) symbol is not annotatable only the "Exit"
+option will appear.
 
-I'd say you have a corruption issue either on the server side or on your
-client.
+Also add a confirmation dialog when ESC is pressed on the top level to
+avoid exiting the application by pressing one too many ESC key.
 
-Trond
+To get to the menu just press the -> (Right navigation key), to exit
+just press ESC.
+
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/newt.c |   96 ++++++++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 88 insertions(+), 8 deletions(-)
+
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 12b229b..a3465a0 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -28,6 +28,47 @@ static newtComponent newt_form__new(void)
+ 	return self;
+ }
+ 
++static int popup_menu(int argc, const char *argv[])
++{
++	struct newtExitStruct es;
++	int i, rc = -1, max_len = 5;
++	newtComponent listbox, form = newt_form__new();
++
++	if (form == NULL)
++		return -1;
++
++	listbox = newtListbox(0, 0, argc, NEWT_FLAG_RETURNEXIT);
++	if (listbox == NULL)
++		goto out_destroy_form;
++
++	newtFormAddComponents(form, listbox, NULL);
++
++	for (i = 0; i < argc; ++i) {
++		int len = strlen(argv[i]);
++		if (len > max_len)
++			max_len = len;
++		if (newtListboxAddEntry(listbox, argv[i], (void *)(long)i))
++			goto out_destroy_form;
++	}
++
++	newtCenteredWindow(max_len, argc, NULL);
++	newtFormRun(form, &es);
++	rc = newtListboxGetCurrent(listbox) - NULL;
++	if (es.reason == NEWT_EXIT_HOTKEY)
++		rc = -1;
++	newtPopWindow();
++out_destroy_form:
++	newtFormDestroy(form);
++	return rc;
++}
++
++static bool dialog_yesno(const char *msg)
++{
++	/* newtWinChoice should really be accepting const char pointers... */
++	char yes[] = "Yes", no[] = "No";
++	return newtWinChoice(NULL, no, yes, (char *)msg) == 2;
++}
++
+ /*
+  * When debugging newt problems it was useful to be able to "unroll"
+  * the calls to newtCheckBoxTreeAdd{Array,Item}, so that we can generate
+@@ -309,6 +350,19 @@ out_free_str:
+ 	free(str);
+ }
+ 
++static const void *newt__symbol_tree_get_current(newtComponent self)
++{
++	if (symbol_conf.use_callchain)
++		return newtCheckboxTreeGetCurrent(self);
++	return newtListboxGetCurrent(self);
++}
++
++static void perf_session__selection(newtComponent self, void *data)
++{
++	const struct symbol **symbol_ptr = data;
++	*symbol_ptr = newt__symbol_tree_get_current(self);
++}
++
+ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 				const char *helpline)
+ {
+@@ -322,6 +376,7 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 	char str[1024];
+ 	newtComponent form, tree;
+ 	struct newtExitStruct es;
++	const struct symbol *selection;
+ 
+ 	snprintf(str, sizeof(str), "Samples: %Ld", session_total);
+ 	newtDrawRootText(0, 0, str);
+@@ -336,6 +391,8 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 		tree = newtListbox(0, 0, rows - 5, (NEWT_FLAG_SCROLL |
+ 						       NEWT_FLAG_RETURNEXIT));
+ 
++	newtComponentAddCallback(tree, perf_session__selection, &selection);
++
+ 	list_for_each_entry(se, &hist_entry__sort_list, list) {
+ 		if (se->elide)
+ 			continue;
+@@ -377,20 +434,43 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 	form = newt_form__new();
+ 	newtFormAddHotKey(form, 'A');
+ 	newtFormAddHotKey(form, 'a');
++	newtFormAddHotKey(form, NEWT_KEY_RIGHT);
+ 	newtFormAddComponents(form, tree, NULL);
++	selection = newt__symbol_tree_get_current(tree);
+ 
+ 	while (1) {
+-		const struct symbol *selection;
++		char annotate[512];
++		const char *options[2];
++		int nr_options = 0, choice;
+ 
+ 		newtFormRun(form, &es);
+-		if (es.reason == NEWT_EXIT_HOTKEY &&
+-		    toupper(es.u.key) != 'A')
++		if (es.reason == NEWT_EXIT_HOTKEY) {
++			if (toupper(es.u.key) == 'A') {
++				symbol__annotate_browser(selection);
++				continue;
++			}
++			if (es.u.key == NEWT_KEY_ESCAPE ||
++			    toupper(es.u.key) == 'Q' ||
++			    es.u.key == CTRL('c')) {
++				if (dialog_yesno("Do you really want to exit?"))
++					break;
++				else
++					continue;
++			}
++		}
++
++		if (selection != NULL) {
++			snprintf(annotate, sizeof(annotate),
++				 "Annotate %s", selection->name);
++			options[nr_options++] = annotate;
++		}
++
++		options[nr_options++] = "Exit";
++		choice = popup_menu(nr_options, options);
++		if (choice == nr_options - 1)
+ 			break;
+-		if (!symbol_conf.use_callchain)
+-			selection = newtListboxGetCurrent(tree);
+-		else
+-			selection = newtCheckboxTreeGetCurrent(tree);
+-		symbol__annotate_browser(selection);
++		else if (selection != NULL && choice >= 0)
++			symbol__annotate_browser(selection);
+ 	}
+ 
+ 	newtFormDestroy(form);
+-- 
+1.6.2.5
 
