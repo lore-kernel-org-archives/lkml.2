@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab0CXQNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:13:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17112 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138Ab0CXQNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:13:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,301,1267430400"; 
-   d="scan'208";a="258216815"
-Subject: Re: [patch 2/2] x86,pat Convert memtype_lock into an rw_lock.
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "holt@sgi.com" <holt@sgi.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
-In-Reply-To: <1269430347.5109.164.camel@twins>
-References: <ff8c11be-b22d-4849-9b19-d9107c4fea47@email.android.com>
-	 <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
-	 <1269430347.5109.164.camel@twins>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Wed, 24 Mar 2010 09:12:26 -0700
-Message-Id: <1269447146.2881.0.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S932199Ab0CXQP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:15:59 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:60091 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab0CXQP5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:15:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=aBVsg8ZyZCdbUiaiXtzqtLZkkyJsJ/jWbP7/U2OlMRSs3qbXpem9W6d5IKyRqfbCRJ
+         +gnH6MyEnMPHf3XvxwzDcTpTDx8sooUhglmFOkzg+QYCOVf9U+/2XecaLKXOMpndfIpX
+         W4lmkCEy+SiiVTXLIxCXr3IvTHG/xSVIDeR+M=
+MIME-Version: 1.0
+Date: Wed, 24 Mar 2010 11:15:56 -0500
+Message-ID: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>
+Subject: behavior of recvmmsg() on blocking sockets
+From: Brandon Black <blblack@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 04:32 -0700, Peter Zijlstra wrote:
-> On Wed, 2010-03-17 at 16:19 -0800, Suresh Siddha wrote:
-> > On Wed, 2010-03-17 at 12:51 -0700, H. Peter Anvin wrote:
-> > > Well, as you know :) tglx and I are on the road ... I'll try to get to it on Friday before I take off again.
-> > 
-> > Also I talked to Thomas about this rwlock conversion and he referred to
-> > RT issues with rwlock. And the best is to avoid this using RCU.
-> 
-> Its not just RT, even for mainline rwlock_t is a massive pain and often
-> is no better (actually worse) than a spinlock due to the massive
-> cacheline bouncing it introduces.
+[Not on the list, please CC responses]
 
-Don't we have the same cacheline bouncing issues with the ticket
-spinlocks?
+Currently, my application code uses blocking UDP sockets and is
+basically structured like this:
 
-thanks,
-suresh
+while(1) {
+    recvmsg(fd, ...);
+    // do some work on the packet
+    sendmsg(fd, ...);
+}
 
+It uses a thread-per-socket model, and the "do some work" code is very
+fast, and so this turns out to be more efficient than non-blocking
+techniques for my use case.  Today I started playing with 2.6.33's new
+recvmmsg(), hoping to convert my code like so (still on blocking
+sockets):
+
+while(1) {
+    recvmmsg(fd, ...);
+    // do some work on up to N packets
+    // loop over sendmsg() foreach packet to be sent
+    //   (or sendmmsg() if/when that interface becomes available)
+}
+
+The catch I ran into is that on a blocking socket, recvmmsg() will
+block until *all* vlen packets have been received.  The behavior I'd
+prefer for my use case would be for it to only block until at least
+one packet is available, not until all are available.  Or in code
+terms, the first internal call to recvmsg should use the supplied
+flags, and the rest of the recvmsg calls should use flags &
+MSG_DONTWAIT.  It's not clear to me which is the better default
+behavior, but I feel like at the very least there should be a flag
+that can switch behavior between the two possible interpretations of
+"blocking".
+
+Obviously, I can also work around this at the user level by simply
+switching to a non-blocking socket and using select/poll before
+recvmmsg, but then under any conditions where only 1 packet is
+available (probably fairly common) I'm issuing two syscalls per packet
+when only one should be necessary (and only one is necessary when
+using recvmsg()).  This seems inefficient and antithetical to one of
+the design goals of recvmmsg (cut down the syscalls:packets ratio).
+
+Thoughts on this?
+
+Thanks,
+-- Brandon
