@@ -1,89 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0CXFra (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:47:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58620 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab0CXFr2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:47:28 -0400
+	id S1754447Ab0CXFsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:48:05 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43439 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501Ab0CXFsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:48:02 -0400
+Message-ID: <4BA9A71F.7080801@kernel.org>
+Date: Tue, 23 Mar 2010 22:46:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <20100323111612.GB1189@elte.hu>
-References: <4BA6EA62.1030603@kernel.org> <20100321.210023.209981130.davem@davemloft.net> 
-	<4BA6F1F6.3070102@kernel.org> <20100321.213350.176660494.davem@davemloft.net> 
-	<20100322092809.GA20607@elte.hu> <1269290862.8599.77.camel@pasglop> 
-	<20100322205703.GA25254@elte.hu> <1269294857.8599.90.camel@pasglop> 
-	<20100323111612.GB1189@elte.hu>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Wed, 24 Mar 2010 01:47:07 -0400
-Message-ID: <f73f7ab81003232247t2bf36cfdubbb8dd65db8f5691@mail.gmail.com>
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c 
-	to fw_memmap.c
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, yinghai@kernel.org,
-       tglx@linutronix.de, hpa@zytor.com, jbarnes@virtuousgeek.org,
-       ebiederm@xmission.com, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [RFC PATCH -v3 1/2] lmb: seperate region array from lmb_region
+ struct
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org>	 <1269333587-1866-5-git-send-email-yinghai@kernel.org>	 <4BA899C2.8020208@kernel.org>  <20100323104241.GA1189@elte.hu> <1269405955.8599.156.camel@pasglop>
+In-Reply-To: <1269405955.8599.156.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 07:16, Ingo Molnar <mingo@elte.hu> wrote:
-> * Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
->> I disagree with that being a relevant argument in the technical discussion
->> on the relative merits of two implementations of a given facility. I also
->> disagree with your numbers, if you talk about deployement, I would be very
->> very surprised if ARM wasn't close to on-par with x86.
->
-> As an upstream maintainer i mainly care about upstream kernel contributions.
-> These contributions have three main forms:
->
->  - patches i get against latest upstream
->
->  - on-lkml review/analysis that is done on those patches
->
->  - test/bug/regression reports i get against latest upstream (either directly
->    on lkml or via kerneloops.org or bugzilla.kernel.org)
->
-> So i weigh the architectures based on that input.
->
-> Since you mentioned ARM - here's the Git contribution stats. In the last 5
-> years since we have kernel Git history, there's been 1080 commits to
-> kernel/sched.c. Amongst those 1080 commits i could find only a _single commit_
-> (a minor fix) being related to or contributed by anyone doing ARM development!
+On 03/23/2010 09:45 PM, Benjamin Herrenschmidt wrote:
+> On Tue, 2010-03-23 at 11:42 +0100, Ingo Molnar wrote:
+>> * Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>>  void __init lmb_init(void)
+>>>  {
+>>> +	lmb.memory.region   = lmb_memory_region;
+>>> +	lmb.memory.region_array_size   = ARRAY_SIZE(lmb_memory_region);
+>>> +	lmb.reserved.region = lmb_reserved_region;
+>>> +	lmb.reserved.region_array_size = ARRAY_SIZE(lmb_reserved_region);
+>>> +
+>>
+>> That's rather unreadable and has random whitespace noise.
+>>
+>> Should be something like:
+>>
+>> 	lmb.memory.region		= lmb_memory_region;
+>> 	lmb.memory.region_array_size	= ARRAY_SIZE(lmb_memory_region);
+>> 	lmb.reserved.region		= lmb_reserved_region;
+>> 	lmb.reserved.region_array_size	= ARRAY_SIZE(lmb_reserved_region);
+>>
+>> also, i'd suggest to shorten region_array_size to region_size (we know it's an 
+>> array), so it would become:
+> 
+> I dislike those arrays anyways. See my other message about turning them
+> into lists, which would get rid of capacity constraints completely. What
+> do you think ?
+> 
+2/2 introduce one new function that could double the array size
 
-Ingo,
+please check the v4.
 
-I'd like to assume that you _accidentally_ picked the *worst* possible
-example file in the entire repository (with the exception of anything
-in arch/x86...).  You should keep in mind that basically nobody doing
-ARM development cares one hoot about the scheduler as long as it
-"basically works"... most such systems could get away with just
-SCHED_FIFO and static priorities.  When you're porting the kernel to a
-platform with a 250MHz in-order CPU that's going to have a load
-average of zero for 99.5% of the time and a load average of 1.0 for
-the other 0.5% of the time that's pretty much the *LAST* thing you
-care about.
+the function rely on find_lmb_area().
 
-In fact, I would guess that all the excellent work that has been done
-with regards to optimized SMP and UP scheduling on much busier systems
-with pathological loads has meant that the scheduler is probably one
-of the most reliable pieces of code for the ARM developers.  If you
-want some excellent examples that go the other way, I suggest looking
-at gpiolib for some great examples of code that don't matter for beans
-on 99.95% of X86 boxes yet are essential for any kind of real embedded
-development.
+it will check if there is enough space left, otherwise try to get new big array, and
+copy old array to new array.
 
-So while it's possible that you could make a reasonable point about
-developer time by looking at GIT commit logs... You should refrain
-from making such insulting and sweeping over-generalizations by
-looking at single files, particularly ones which are largely
-irrelevant or immaterial for the specific subset of developers.
+final function like:
 
-Cheers,
-Kyle Moffett
+static void __init __check_and_double_region_array(struct lmb_region *type,
+			 struct lmb_property *static_region,
+			 u64 ex_start, u64 ex_end)
+{
+	u64 start, end, size, mem;
+	struct lmb_property *new, *old;
+	unsigned long rgnsz = type->nr_regions;
+
+	/* do we have enough slots left ? */
+	if ((rgnsz - type->cnt) > max_t(unsigned long, rgnsz/8, 2))
+		return;
+
+	old = type->region;
+	/* double it */
+	mem = -1ULL;
+	size = sizeof(struct lmb_property) * rgnsz * 2;
+	if (old == static_region)
+		start = 0;
+	else
+		start = __pa(old) + sizeof(struct lmb_property) * rgnsz;
+	end = ex_start;
+	if (start + size < end)
+		mem = find_lmb_area(start, end, size,
+					 sizeof(struct lmb_property));
+	if (mem == -1ULL) {
+		start = ex_end;
+		end = get_max_mapped();
+		if (start + size < end)
+			mem = find_lmb_area(start, end, size, sizeof(struct lmb_property));
+	}
+	if (mem == -1ULL)
+		panic("can not find more space for lmb.reserved.region array");
+
+	new = __va(mem);
+	/* copy old to new */
+	memcpy(&new[0], &old[0], sizeof(struct lmb_property) * rgnsz);
+	memset(&new[rgnsz], 0, sizeof(struct lmb_property) * rgnsz);
+
+	memset(&old[0], 0, sizeof(struct lmb_property) * rgnsz);
+	type->region = new;
+	type->nr_regions = rgnsz * 2;
+	printk(KERN_DEBUG "lmb.reserved.region array is doubled to %ld at [%llx - %llx]\n",
+		type->nr_regions, mem, mem + size - 1);
+
+	/* reserve new array and free old one */
+	lmb_reserve(mem, sizeof(struct lmb_property) * rgnsz * 2);
+	if (old != static_region)
+		lmb_free(__pa(old), sizeof(struct lmb_property) * rgnsz);
+}
+
+void __init add_lmb_memory(u64 start, u64 end)
+{
+	__check_and_double_region_array(&lmb.memory, &lmb_memory_region[0], start, end);
+	lmb_add(start, end - start);
+}
+
+void __init reserve_early(u64 start, u64 end, char *name)
+{
+	if (start == end)
+		return;
+
+	if (WARN_ONCE(start > end, "reserve_early: wrong range [%#llx, %#llx]\n", start, end))
+		return;
+
+	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0], start, end);
+	lmb_reserve(start, end - start);
+}
+
+void __init free_early(u64 start, u64 end)
+{
+	if (start == end)
+		return;
+
+	if (WARN_ONCE(start > end, "free_early: wrong range [%#llx, %#llx]\n", start, end))
+		return;
+
+	/* keep punching hole, could run out of slots too */
+	__check_and_double_region_array(&lmb.reserved, &lmb_reserved_region[0], start, end);
+	lmb_free(start, end - start);
+}
+
+with those function, we can replace the bootmem in x86.
+
+
+Thanks
+
+Yinghai
