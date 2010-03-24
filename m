@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab0CXSzM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:55:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49297 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932268Ab0CXSzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:55:09 -0400
-Date: Wed, 24 Mar 2010 18:54:36 GMT
-From: tip-bot for Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       yinghai@kernel.org, hannes@cmpxchg.org, jkosina@suse.cz,
-       akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       yinghai@kernel.org, hannes@cmpxchg.org, jkosina@suse.cz,
-       akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <alpine.LNX.2.00.1003220931360.18642@pobox.suse.cz>
-References: <alpine.LNX.2.00.1003220931360.18642@pobox.suse.cz>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/urgent] x86: Remove excessive early_res debug output
-Message-ID: <tip-c26f91a3df1999ec1b3298372d73f90cbab81106@git.kernel.org>
-Git-Commit-ID: c26f91a3df1999ec1b3298372d73f90cbab81106
-X-Mailer: tip-git-log-daemon
+	id S932809Ab0CXS4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:56:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:44207 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932268Ab0CXS4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 14:56:06 -0400
+Date: Wed, 24 Mar 2010 18:56:04 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Doug Nazar <nazard.lkml@gmail.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100324185604.GT30031@ZenIV.linux.org.uk>
+References: <4BAA3828.2070506@panasas.com>
+ <20100324160754.GQ30031@ZenIV.linux.org.uk>
+ <4BAA398C.5050901@panasas.com>
+ <20100324163948.GR30031@ZenIV.linux.org.uk>
+ <4BAA48A3.1030801@panasas.com>
+ <4BAA4CAC.6060104@panasas.com>
+ <4BAA5035.1060906@panasas.com>
+ <4BAA52A8.2080304@panasas.com>
+ <20100324180622.GS30031@ZenIV.linux.org.uk>
+ <4BAA5955.4000001@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 24 Mar 2010 18:54:38 +0000 (UTC)
+In-Reply-To: <4BAA5955.4000001@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c26f91a3df1999ec1b3298372d73f90cbab81106
-Gitweb:     http://git.kernel.org/tip/c26f91a3df1999ec1b3298372d73f90cbab81106
-Author:     Jiri Kosina <jkosina@suse.cz>
-AuthorDate: Mon, 22 Mar 2010 09:32:26 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 24 Mar 2010 19:51:08 +0100
+On Wed, Mar 24, 2010 at 02:26:29PM -0400, Doug Nazar wrote:
+> I also see it....didn't bisect it yet since I was in a rush and had
+> a simple work around. I was doing a git pull between two
+> repositories on a NFS 4 w/krb5 security. Got the error about
+> .git/objects/pack (error: unable to open object pack directory:
+> .git/objects/pack: Is a directory). If I then run 'ls
+> .git/objects/pack', and then the 'git pull' again it works.
 
-x86: Remove excessive early_res debug output
+Very interesting...  The damn thing *is* a directory, which should have
+made NFS skip all lookup_instantiate_filp() tricks completely.  IOW, it's
+not hitting anything intent-related at that case.
 
-Commit 08677214e318297 ("x86: Make 64 bit use early_res instead
-of bootmem  before slab") introduced early_res replacement for
-bootmem, but left code  in __free_pages_memory() which dumps all
-the ranges that are beeing freed,  without any additional
-information, causing some noise in dmesg during  bootup.
+I really wonder where the hell does EISDIR come from; no matter how screwed
+the cached attributes are, there's not a lot of places where we can return
+that sucker.  It either comes from something in NFS itself, or it's
+may_open() getting MAY_WRITE on that object or it has to see O_CREAT in
+open_flag.  And acc_mode is not modified after it's set in do_filp_open().
+If that calculation (acc_mode by open_flag) would be buggered for O_RDONLY,
+we'd be seeing a lot more breakage, starting with ls(1) ;-)
 
-Just remove printing of the ranges, that doesn't provide
-anything useful  anyway.
+One possibility is that shit hits the fan a bit earlier and git really passes
+something odd to that open() as the result of bogus stat(), etc.
 
-While at it, remove other commented-out KERN_DEBUG messages in
-the NO_BOOTMEM code as well.
+Folks, could you try the following: in do_last() move case LAST_DOT:
+to immediately after follow_dotdot(nd); and see if that changes anything?
+It shouldn't, but if nfs is playing odd tricks with ->d_revalidate() for
+directories acting differently depending on LOOKUP_PARENT in flags...
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Found-OK-by: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <alpine.LNX.2.00.1003220931360.18642@pobox.suse.cz>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- mm/bootmem.c |   13 -------------
- 1 files changed, 0 insertions(+), 13 deletions(-)
-
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index d7c791e..9b13446 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -180,19 +180,12 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
- 	end_aligned = end & ~(BITS_PER_LONG - 1);
- 
- 	if (end_aligned <= start_aligned) {
--#if 1
--		printk(KERN_DEBUG " %lx - %lx\n", start, end);
--#endif
- 		for (i = start; i < end; i++)
- 			__free_pages_bootmem(pfn_to_page(i), 0);
- 
- 		return;
- 	}
- 
--#if 1
--	printk(KERN_DEBUG " %lx %lx - %lx %lx\n",
--		 start, start_aligned, end_aligned, end);
--#endif
- 	for (i = start; i < start_aligned; i++)
- 		__free_pages_bootmem(pfn_to_page(i), 0);
- 
-@@ -428,9 +421,6 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
- {
- #ifdef CONFIG_NO_BOOTMEM
- 	free_early(physaddr, physaddr + size);
--#if 0
--	printk(KERN_DEBUG "free %lx %lx\n", physaddr, size);
--#endif
- #else
- 	unsigned long start, end;
- 
-@@ -456,9 +446,6 @@ void __init free_bootmem(unsigned long addr, unsigned long size)
- {
- #ifdef CONFIG_NO_BOOTMEM
- 	free_early(addr, addr + size);
--#if 0
--	printk(KERN_DEBUG "free %lx %lx\n", addr, size);
--#endif
- #else
- 	unsigned long start, end;
- 
+IOW, replace
+        case LAST_DOTDOT:  
+                follow_dotdot(nd);
+                dir = nd->path.dentry;
+                if (nd->path.mnt->mnt_sb->s_type->fs_flags & FS_REVAL_DOT) {
+                        if (!dir->d_op->d_revalidate(dir, nd)) {
+                                error = -ESTALE;
+                                goto exit;
+                        }
+                }
+                /* fallthrough */
+        case LAST_DOT:
+        case LAST_ROOT:
+with
+        case LAST_DOTDOT:  
+                follow_dotdot(nd);
+                /* fallthrough */
+        case LAST_DOT:
+                dir = nd->path.dentry;
+                if (nd->path.mnt->mnt_sb->s_type->fs_flags & FS_REVAL_DOT) {
+                        if (!dir->d_op->d_revalidate(dir, nd)) {
+                                error = -ESTALE;
+                                goto exit;
+                        }
+                }
+                /* fallthrough */
+        case LAST_ROOT:
+and see what'll change.
