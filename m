@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab0CXUrw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:47:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42071 "EHLO mx1.redhat.com"
+	id S932956Ab0CXUsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:48:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36759 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756808Ab0CXUru (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:47:50 -0400
-Date: Wed, 24 Mar 2010 21:45:45 +0100
+	id S932946Ab0CXUsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 16:48:07 -0400
+Date: Wed, 24 Mar 2010 21:45:50 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
        Americo Wang <xiyou.wangcong@gmail.com>,
@@ -18,9 +18,9 @@ To: Andrew Morton <akpm@linux-foundation.org>,
        Spencer Candland <spencer@bluehost.com>,
        Stanislaw Gruszka <sgruszka@redhat.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [RFC,PATCH 0/2] cputimers/proc: can't we make /proc/pid/stat less
-	accurate?
-Message-ID: <20100324204545.GA31769@redhat.com>
+Subject: [RFC,PATCH 1/2] cputimers/proc: do_task_stat()->task_times() can
+	race with getrusage()
+Message-ID: <20100324204550.GA31777@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,16 +29,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mostly to provoke the discussion and untested, please comment.
+do_task_stat()->task_times() can race with getrusage(), they both can
+try to update task->prev_Xtime at the same time.
 
-In short: I do not actually know if /proc/pid/stat should be "really"
-accurate wrt cpu accounting. I mean, I don't know how much /bin/top
-and friends depend on xtime monotonicity.
+Remove this bit of d180c5bc "sched: Introduce task_times() to replace
+task_{u,s}time()".
 
-However, it is sad that /proc/pid/stat iterates over ->thread_group
-_twice_ under ->siglock.
+See also the next patch.
 
-Any thoughts?
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
 
-Oleg.
+ fs/proc/array.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- 34-rc1/fs/proc/array.c~PROC_4_DTS_TASK_TIMES_IS_RACY	2010-03-24 19:53:23.000000000 +0100
++++ 34-rc1/fs/proc/array.c	2010-03-24 19:57:37.000000000 +0100
+@@ -449,7 +449,8 @@ static int do_task_stat(struct seq_file 
+ 	if (!whole) {
+ 		min_flt = task->min_flt;
+ 		maj_flt = task->maj_flt;
+-		task_times(task, &utime, &stime);
++		utime = task->utime;
++		stime = task->stime;
+ 		gtime = task->gtime;
+ 	}
+ 
 
