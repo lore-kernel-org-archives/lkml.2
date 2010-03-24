@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab0CXQkx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:40:53 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:12146 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab0CXQkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:40:51 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPPdqUurR7Ht/2dsb2JhbACbHHOmf5kEhH4Egx4
-X-IronPort-AV: E=Sophos;i="4.51,301,1267401600"; 
-   d="scan'208";a="171636248"
-From: Roland Dreier <rdreier@cisco.com>
-To: Anton Starikov <ant.starikov@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, bugzilla-daemon@bugzilla.kernel.org,
-       bugme-daemon@bugzilla.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
-References: <bug-15618-10286@https.bugzilla.kernel.org/>
-	<20100323102208.512c16cc.akpm@linux-foundation.org>
-	<20100323173409.GA24845@elte.hu>
-	<alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org>
-	<20100323180002.GA2965@elte.hu>
-	<15090451-C292-44D6-B2BA-DCBCBEEF429D@gmail.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 24 Mar 2010 09:40:47 -0700
-In-Reply-To: <15090451-C292-44D6-B2BA-DCBCBEEF429D@gmail.com> (Anton
-	Starikov's message of "Tue, 23 Mar 2010 19:03:36 +0100")
-Message-ID: <adapr2t1xm8.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1756374Ab0CXQpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:45:05 -0400
+Received: from 8bytes.org ([88.198.83.132]:52045 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607Ab0CXQpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:45:03 -0400
+Date: Wed, 24 Mar 2010 17:45:00 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+	project
+Message-ID: <20100324164500.GN14800@8bytes.org>
+References: <20100324150137.GE14800@8bytes.org> <20100324152653.GA12225@redhat.com> <20100324153746.GF14800@8bytes.org> <4BAA3323.9000405@redhat.com> <20100324155041.GH14800@8bytes.org> <4BAA3556.2040802@redhat.com> <20100324161711.GJ14800@8bytes.org> <4BAA3BD6.8030401@redhat.com> <20100324163119.GL14800@8bytes.org> <4BAA3EB3.2070101@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAA3EB3.2070101@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > I will apply this commits to 2.6.32, I afraid current OFED (which I
- > need also) will not work on 2.6.33+.
+On Wed, Mar 24, 2010 at 06:32:51PM +0200, Avi Kivity wrote:
+> On 03/24/2010 06:31 PM, Joerg Roedel wrote:
 
-What do you need from OFED that is not in 2.6.34-rc1?
--- 
-Roland Dreier  <rolandd@cisco.com>
-For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+> That's just what I want to do.  Leave it in userspace and then they can  
+> deal with it without telling us about it.
+
+They can't do that with a directory in /proc?
+
