@@ -1,87 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0CXQv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:51:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54643 "EHLO mx2.suse.de"
+	id S932253Ab0CXQwv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:52:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20720 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab0CXQv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:51:56 -0400
-Date: Wed, 24 Mar 2010 09:52:22 -0700
-From: Greg KH <gregkh@suse.de>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Marcel Holtmann <marcel@holtmann.org>, PavanSavoy <pavan_savoy@ti.com>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-Message-ID: <20100324165222.GA9922@suse.de>
-References: <20100324162616.GA9257@suse.de> <749404.60454.qm@web94909.mail.in2.yahoo.com>
+	id S1755794Ab0CXQwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:52:50 -0400
+Message-ID: <4BAA4341.3010300@redhat.com>
+Date: Wed, 24 Mar 2010 18:52:17 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <749404.60454.qm@web94909.mail.in2.yahoo.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org> <4BAA3496.2010901@redhat.com> <20100324155927.GI14800@8bytes.org> <4BAA393A.9000105@redhat.com> <20100324164000.GM14800@8bytes.org> <4BAA4211.2000209@redhat.com>
+In-Reply-To: <4BAA4211.2000209@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 10:05:19PM +0530, Pavan Savoy wrote:
-> --- On Wed, 24/3/10, Greg KH <gregkh@suse.de> wrote:
-> 
-> > From: Greg KH <gregkh@suse.de>
-> > Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-> > To: "Marcel Holtmann" <marcel@holtmann.org>
-> > Cc: "Pavan Savoy" <pavan_savoy@yahoo.co.in>, "PavanSavoy" <pavan_savoy@ti.com>, "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-> > Date: Wednesday, 24 March, 2010, 9:56 PM
-> > On Wed, Mar 24, 2010 at 09:11:45AM
-> > -0700, Marcel Holtmann wrote:
-> > > > I wanted to somehow put this in staging because
-> > then it would probably have a thorough architectural review
-> > process.
-> > > > Some details about this driver - 
-> > > > 
-> > > > 1. This driver will be used by
-> > Bluetooth-BlueZ/FM-V4L2 and GPS (probably character device
-> > driver) using the EXPORTED symbols (-register/_unregister).
-> > > > 
-> > > > 2. Much like the hciattach daemon which maintains
-> > N_HCI bluetooth line discipline, this driver will also have
-> > a User-Space? N_TI_WL Init manager (UIM) maintaining
-> > the Line discipline.
-> > > 
-> > > can you explain why you think this is needed and we
-> > can not interface
-> > > this directly. If it is a serial port, what protocol
-> > does it talk?
-> > > 
-> > > > 3. Because of the UIM should know when to
-> > install/uninstall line discipline, the /sys entry is created
-> > a root called UIM (a new kobject) and UIM daemon would write
-> > it's PID to it.
-> > > 
-> > > I don't understand this. This sounds like a broken
-> > concept to me.
-> > 
-> > I also agree, those sysfs files are not acceptable, and
-> > will not work
-> > as-designed due to the pid namespace issues :(
-> 
-> Ok, How do I then from kernel space, ask a user-space daemon to open the TTY port and do a tiocsetd on it ? 
-> [i.e ask for a line discipline to be installed ?]
+On 03/24/2010 06:47 PM, Avi Kivity wrote:
+>
+> It's true.  If the kernel provides something, there are fewer things 
+> that can break.  But if your system is so broken that you can't 
+> resolve uids, fix that before running perf.  Must we design perf for 
+> that case?
+>
+> After all, 'ls -l' will break under the same circumstances.  It's hard 
+> to imagine doing useful work when that doesn't work.
 
-What would cause the kernel to want to tell userspace to do this?  Is it
-an external event that happens somehow that userspace should know to
-look for?
 
-> Can't open the TTY and TIOCSETD upon boot, because BT, FM and GPS
-> might be used or not used anytime.
+Also, perf itself will hang if it needs to access a file using autofs or 
+nfs, and those are broken.
 
-What causes them to want to be used?  The user, right?
+-- 
+error compiling committee.c: too many arguments to function
 
-> And the idea of creating a device node, specifically for this and then
-> doing an fasync/SIGIO was somehow rubbished.
-
-Why?
-
-thanks,
-
-greg k-h
