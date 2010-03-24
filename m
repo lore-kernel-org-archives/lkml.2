@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756469Ab0CXP73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 11:59:29 -0400
-Received: from 8bytes.org ([88.198.83.132]:59579 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab0CXP72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 11:59:28 -0400
-Date: Wed, 24 Mar 2010 16:59:27 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
-	project
-Message-ID: <20100324155927.GI14800@8bytes.org>
-References: <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org> <4BAA3496.2010901@redhat.com>
+	id S932117Ab0CXQAk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:00:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49195 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab0CXQAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:00:39 -0400
+Date: Wed, 24 Mar 2010 16:00:37 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       Benny Halevy <bhalevy@panasas.com>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT case to
+ use of do_last()
+Message-ID: <20100324160037.GP30031@ZenIV.linux.org.uk>
+References: <4BAA3493.1030802@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BAA3496.2010901@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BAA3493.1030802@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 05:49:42PM +0200, Avi Kivity wrote:
-> On 03/24/2010 05:46 PM, Joerg Roedel wrote:
->> On Wed, Mar 24, 2010 at 05:12:55PM +0200, Avi Kivity wrote:
->>    
->>> On 03/24/2010 05:01 PM, Joerg Roedel wrote:
->>>      
->>>> $ cd /sys/kvm/guest0
->>>> $ ls -l
->>>> -r-------- 1 root root 0 2009-08-17 12:05 name
->>>> dr-x------ 1 root root 0 2009-08-17 12:05 fs
->>>> $ cat name
->>>> guest0
->>>> $ # ...
->>>>
->>>> The fs/ directory is used as the mount point for the guest root fs.
->>>>        
->>> The problem is /sys/kvm, not /sys/kvm/fs.
->>>      
->> I am not tied to /sys/kvm. We could also use /proc/<pid>/kvm/ for
->> example. This would keep anything in the process space (except for the
->> global list of VMs which we should have anyway).
->>    
->
-> How about ~/.qemu/guests/$pid?
+On Wed, Mar 24, 2010 at 05:49:39PM +0200, Boaz Harrosh wrote:
+> - I have an exofs filesystem mounted on /mnt/exofs
+> - []$ cd /mnt/exofs/some_linux_git; git status;
+>   All is fine
+> - []$ mount -t nfs4 -o minorversion=0 localhost:/ /mnt/nfs
+>   (Where etc/exports will export /mnt/exofs via nfs4.1)
+> - []$ cd /mnt/nfs/some_linux_git; git status;
+>   This will fail and will corrupt the .git/index file. Sometimes the file would be
+>   too short, and sometimes the file will become a directory (Yes really)
 
-That makes it hard for perf to find it and even harder to get a list of
-all VMs. With /proc/<pid>/kvm/guest we could symlink all guest
-directories to /proc/kvm/ and perf reads the list from there. Also perf
-can easily derive the directory for a guest from its pid.
-Last but not least its kernel-created and thus independent from the
-userspace part being used.
-
-	Joerg
-
+Bloody impressive...  Does that happen to underlying fs or to what you
+are seeing via NFS?
