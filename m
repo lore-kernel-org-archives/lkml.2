@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab0CXUYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:24:30 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:61939 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932313Ab0CXUY3 convert rfc822-to-8bit (ORCPT
+	id S932445Ab0CXU20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:28:26 -0400
+Received: from Cpsmtpm-eml109.kpnxchange.com ([195.121.3.13]:58668 "EHLO
+	CPSMTPM-EML109.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756799Ab0CXU2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:24:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lPfBCSnzBO51oeV9EHfmceWnzU6o7+BAoV+itjlp/bqzMTaNHOR8KlRbeL/T5FOwCZ
-         qmMj66t+wPj8LQyS0a6zKf7sY4BXisMAXE0HEgCYG6j0tsA4jz101OmehGga12Cgw1QG
-         cs63UzFTGaKSy0oHIg09Xeyjec/euOtoHiftw=
-MIME-Version: 1.0
-In-Reply-To: <1269452733.2446.3138.camel@rchatre-DESK>
-References: <20100323221350.GA20509@hexapodia.org> <1269452733.2446.3138.camel@rchatre-DESK>
-From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Date: Wed, 24 Mar 2010 21:24:07 +0100
-Message-ID: <69e28c911003241324l1379abfcj782c8d16920450f3@mail.gmail.com>
-Subject: Re: iwl6050 firmware?
+	Wed, 24 Mar 2010 16:28:20 -0400
+From: Frans Pop <elendil@planet.nl>
 To: reinette chatre <reinette.chatre@intel.com>
-Cc: Andy Isaacson <adi@hexapodia.org>,
+Subject: Re: [PATCH 4/7] wireless/iwlwifi: remove trailing space in messages
+Date: Wed, 24 Mar 2010 21:28:16 +0100
+User-Agent: KMail/1.9.9
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Jay Sternberg <jay.e.sternberg@linux.intel.com>,
-       Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       "Zhu, Yi" <yi.zhu@intel.com>,
+       Intel Linux Wireless <ilw@linux.intel.com>
+References: <201003241927.12434.elendil@planet.nl> <1269456395-15343-4-git-send-email-elendil@planet.nl> <1269461933.2446.3208.camel@rchatre-DESK>
+In-Reply-To: <1269461933.2446.3208.camel@rchatre-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201003242128.18710.elendil@planet.nl>
+X-OriginalArrivalTime: 24 Mar 2010 20:28:18.0834 (UTC) FILETIME=[8A3B1F20:01CACB90]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 6:45 PM, reinette chatre
-<reinette.chatre@intel.com> wrote:
-> Hi Andy,
->
-> On Tue, 2010-03-23 at 15:13 -0700, Andy Isaacson wrote:
->> Any ETA on a release?
->
-> The firmware is in process of being tested.
+On Wednesday 24 March 2010, reinette chatre wrote:
+> Since this patch touches so many things, would it be possible to base
+> your patch on
+> git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-2.6.git
+> instead?
 
-Isn't Release-Early-Release-Often the usual Linux policy? Or is there
-some regulatory requirement at work here?
-
-> We are working on getting it
-> released externally. When the firmware is released you will see an
-> announcement on linux-wireless mailing list. The firmware will be
-> available from http://intellinuxwireless.org/?n=Downloads at that time.
->
-> Reinette
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
-
--- 
-Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
+Sure. Which branch?
