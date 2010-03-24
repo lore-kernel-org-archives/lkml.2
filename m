@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab0CXLtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:49:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:43408 "EHLO gir.skynet.ie"
+	id S1755926Ab0CXLuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:50:22 -0400
+Received: from lucidpixels.com ([75.144.35.66]:59396 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755901Ab0CXLtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:49:49 -0400
-Date: Wed, 24 Mar 2010 11:49:31 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       Corrado Zoccolo <czoccolo@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
-	pressure
-Message-ID: <20100324114930.GG21147@csn.ul.ie>
-References: <20100315130935.f8b0a2d7.akpm@linux-foundation.org> <20100322235053.GD9590@csn.ul.ie> <20100324023837.GH4359@suse.de>
+	id S1755779Ab0CXLuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:50:21 -0400
+Date: Wed, 24 Mar 2010 07:50:19 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-raid@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: 2.6.33.1: RAID multi-core processing experimental option is
+ broken.
+Message-ID: <alpine.DEB.2.00.1003240745350.5602@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100324023837.GH4359@suse.de>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 07:38:37PM -0700, Greg KH wrote:
-> On Mon, Mar 22, 2010 at 11:50:54PM +0000, Mel Gorman wrote:
-> > 2. TTY using high order allocations more frequently
-> > 	fix title: ttyfix
-> > 	fixed in mainline? yes, in 2.6.34-rc2
-> > 	affects: 2.6.31 to 2.6.34-rc1
-> > 
-> > 	2.6.31 made pty's use the same buffering logic as tty.	Unfortunately,
-> > 	it was also allowed to make high-order GFP_ATOMIC allocations. This
-> > 	triggers some high-order reclaim and introduces some stalls. It's
-> > 	fixed in 2.6.34-rc2 but needs back-porting.
-> 
-> It will go to the other stable kernels for their next round of releases
-> now that it is in Linus's tree.
-> 
+Hi,
 
-Great.
+2.6.33.1/x86_64 on an e6700 processor:
 
-> > Next Steps
-> > ==========
-> > 
-> > Jens, any problems with me backporting the async/sync fixes from 2.6.31 to
-> > 2.6.30.x (assuming that is still maintained, Greg?)?
-> 
-> No, .30 is no longer being maintained.
-> 
+If you accidentally check [*] for Multi-core processing, the speed is
+about 5MiB/s and there are some 254 processes.
 
-Right, I won't lose any sleep over 2.6.30.dodo so :)
+When its not enabled, the speed goes back to normal and there are no longer
+200-300 processes running, I have reproduced this on multiple machines now.
 
-Thanks
+Enable this option in the kernel, boot the new kernel, do some raid i/o
+operations/or a check/resync to the array and it will be 1/4 the speed when
+multi-core processing is enabled.
+   | |    [ ]       RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL| |
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+With it disabled, we're good:
+md0 : active raid6 sdg1[5] sde1[3] sdf1[4] sdd1[2] sdc1[1] sdb1[0]
+       1562834944 blocks level 6, 64k chunk, algorithm 2 [6/6] [UUUUUU]
+       [========>............]  resync = 44.5% (173910976/390708736) finish=178.3min speed=20253K/sec
+
+Justin.
+
