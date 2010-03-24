@@ -1,147 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658Ab0CXBRw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 21:17:52 -0400
-Received: from us-mx4.synaptics.com ([12.178.49.178]:31074 "EHLO
-	us-mx4.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab0CXBRu (ORCPT
+	id S1753665Ab0CXBTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 21:19:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:65318 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab0CXBTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 21:17:50 -0400
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Tue, 23 Mar 2010 16:12:20 -0800
-Message-ID: <4BA96839.9020903@synaptics.com>
-Date: Tue, 23 Mar 2010 18:17:45 -0700
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <WManson@synaptics.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-References: <1269310058-10894-1-git-send-email-cheiny@synaptics.com>	 <d6200be21003222004g2e2a1000ja65fc3f80f9fad78@mail.gmail.com>	 <4BA913FB.1000508@synaptics.com> <d6200be21003231535w3cf9ff30w316f3447f3631689@mail.gmail.com>
-In-Reply-To: <d6200be21003231535w3cf9ff30w316f3447f3631689@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 23 Mar 2010 21:19:18 -0400
+X-Authority-Analysis: v=1.0 c=1 a=m7YZiQa2OjEA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=NDV0eE1Daag--fiZiWsA:9 a=GzkZzacdS2uqY0Y8JAAA:7 a=iOt44oadfYY4ka1MgPtKYOZccqcA:4 a=PUjeQqilurYA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCHv2 2/4] tracing: graph output support for irqsoff tracer
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1268207470-2880-3-git-send-email-jolsa@redhat.com>
+References: <1268207470-2880-1-git-send-email-jolsa@redhat.com>
+	 <1268207470-2880-3-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 23 Mar 2010 21:19:16 -0400
+Message-ID: <1269393556.2957.1823.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 03:35 PM, Arve Hjønnevåg wrote:
-> 2010/3/23 Christopher Heiny<cheiny@synaptics.com>:
->> On 03/22/2010 08:04 PM, Arve Hjønnevåg wrote:
->>>
->>> On Mon, Mar 22, 2010 at 7:07 PM, Christopher Heiny<cheiny@synaptics.com>
->>>   wrote:
->>> ...
->>>>
->>>> There are two existing drivers for similar Synaptics devices in the
->>>> current kernel tree (excluding the PS/2 touchpad driver).  These are:
->>>>
->>>> ./linux-2.6/drivers/input/mouse/synaptics_i2c.c
->>>>       A driver for the Exeda 15mm touchpad, written by Mike Rapoport
->>>>       <mike@compulab.co.il>   and Igor Grinberg<grinberg@compulab.co.il>
->>>>
->>>> ./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
->>>>       A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
->>>>       <arve@android.com>
->>>>
->>>> We have not extended these drivers for a couple of reasons.  First, the
->>>> two drivers are specific to particular Synaptics products, and it is our
->>>> desire to produce a general solution that takes advantage of the 'self
->>>> describing' features of products that use the RMI protocol.
->>>>
->>>
->>> Do you plan to add platform data to align the reported touchscreen
->>> data with the screen behind it, or do the new hardware allow the the
->>> firmware handle this? In the past we even needed separate parameters
->>> for different firmware versions (seen in
->>> drivers/staging/dream/synaptics_i2c_rmi.h).
->>
->> Hi Arve,
->>
->> RMI4 touchscreens allow adjustment of the reported coordinate range (see the
->> F11_2D_Ctrl6..9 registers, page 48 of the current version of the spec at
->> http://www.synaptics.com/developers/manuals).  Using this feature, the
->> device can be configured to report the same number of positions on each axis
->> as there are pixels on the display.
->>
->
-> This does not help aligning the touchscreen values with the screen
-> behind it. It just moves the linear scaling from userspace (which can
-> use fixed or floating point values to preserve subpixel precision) to
-> the firmware.
+On Wed, 2010-03-10 at 08:51 +0100, Jiri Olsa wrote:
 
-Hi Arve,
+> @@ -993,14 +991,6 @@ print_graph_comment(struct trace_seq *s,  struct trace_entry *ent,
+>  		if (ret != TRACE_TYPE_HANDLED)
+>  			return ret;
+>  		break;
+> -	default:
+> -		event = ftrace_find_event(ent->type);
+> -		if (!event)
+> -			return TRACE_TYPE_UNHANDLED;
+> -
+> -		ret = event->trace(iter, sym_flags);
+> -		if (ret != TRACE_TYPE_HANDLED)
+> -			return ret;
+>  	}
+>  
 
-It sounds like your concern is for cases when the origin of the 
-touchscreen coordinates does not correspond to a corner of the pixel 
-area.  Is that correct?
+This has the same effect as the problem with the first patch:
 
-In any case, it's a perfectly valid issue - not all manufacturers take 
-care to map the touchscreen to the display screen that way (though most 
-do).  Adding a translation control to the driver would be easy - we'll 
-put it on the todo list.
+was:
 
->
->> We plan to make these settings accessible via sysfs, so that it can be
->> dynamically tweaked if the user changes the display resolution (not likely
->> on a phone, probable on a tablet/slate/ereader type device). Assuming there
->> are no significant issues with our current patch, we plan to include that in
->> the next one.  We're holding off that implementation because we're still
->> finding our feet on the submission process, and wanted to keep the initial
->> submits small so changes would be more manageable.
->
-> You could also post a patch series instead of one patch.
+ 2)               |                                  _raw_spin_unlock_irqrestore() {
+ 2)               |                                  /* lock_release: ffffffff816969a8 random_read_wait.lock */
+ 2)   6.022 us    |                                  }
+ 2) + 27.632 us   |                                }
+ 2)   2.939 us    |                                kill_fasync();
+ 2)               |                                _raw_spin_unlock_irqrestore() {
+ 2)               |                                /* lock_release: ffffffff816967f0 &input_pool.lock */
+ 2)   5.471 us    |                                }
+ 2) + 56.740 us   |                              }
+ 2) + 88.357 us   |                            }
+ 2) + 94.026 us   |                          }
 
-It's more the other direction - we were concerned (validly, it turned 
-out) that some extensive changes might be required as a result of 
-feedback on the initial submissions, and wanted to keep the codebase 
-we'd have to refactor small.
 
-As the codebase grows, we'll switch to using patch series.  Probably 
-with the next submission or (more likely) the one after that.
+is now:
 
->> Coordinate rotation/reflection settings will be handled at the driver level,
->> again via sysfs.
->>
-> Do you also have a plan to let the userspace know that touchscreen
-> coordinate x1,y1 correspond to screen coordinate 0,0 and x2,y2
-> correspond to screen coordinate xmax,ymax? The android driver sets
-> absmin/max to the values reported when touching the display edges (not
-> the actual min and max that the touchscreen can report), but other
-> solutions are also possible.
+ 2)               |                                  _raw_spin_unlock_irqrestore() {
+          <idle>-0     [002]   411.798721: lock_release: ffffffff816969a8 random_read_wait.lock
+ 2)   6.022 us    |                                  }
+ 2) + 27.632 us   |                                }
+ 2)   2.939 us    |                                kill_fasync();
+ 2)               |                                _raw_spin_unlock_irqrestore() {
+          <idle>-0     [002]   411.798741: lock_release: ffffffff816967f0 &input_pool.lock
+ 2)   5.471 us    |                                }
+ 2) + 56.740 us   |                              }
+ 2) + 88.357 us   |                            }
+ 2) + 94.026 us   |                          }
 
-We are not planning on that, since it would require the driver to know 
-the orientation (standard? rot 90? rot -90? rot 180?) and resolution of 
-the display and track whenever that changes.  It is better to handle 
-that information at a higher level, which can then tell the touchscreen 
-driver the desired resolution/rotation/etc settings.
 
->> These features should be independent of the touchscreen firmware level.
->
-> In the past they have depended on the firmware version for two
-> reasons. On one product, firmware changes to improve the edges of the
-> screen completely changed the relationship between values reported and
-> the physical touch location.
+Please, before you apply any patch do the following:
 
-Good point.
+(assuming debugfs is at /debug)
 
-> On another product, the physical size of
-> the sensor changed, and the firmware version was used to detect this.
-> If all RMI4 based product allow field updates of the firmware the
-> first case it less important, but we still need to cover the second
-> case.
+# echo 1 > /debug/tracing/events/enable
+# echo function_graph > /debug/tracing/current_tracer
+# cat /debug/tracing/trace
 
-Hmmmm.  I can see a lot of other cases where it might be desirable to 
-know the size of the touchscreen in a platform independent manner. 
-Certainly the firmware version is not a reliable way to do this going 
-forward.  I will contact the spec maintainer and see if we can have the 
-device report the relative information in a query.
+Examine what you see.
 
-				Thanks,
-					Chris
+Then apply all your patches, and repeat the above. Make sure the
+formatting is the same.
+
+Thanks,
+
+-- Steve
+
+
+>  	/* Strip ending newline */
+> @@ -1066,8 +1056,11 @@ print_graph_function(struct trace_iterator *iter)
+>  		trace_assign_type(field, entry);
+>  		return print_graph_return(&field->ret, s, entry, iter);
+>  	}
+> -	default:
+> +	case TRACE_BPRINT:
+> +	case TRACE_PRINT:
+>  		return print_graph_comment(s, entry, iter);
+> +	default:
+> +		return TRACE_TYPE_UNHANDLED;
+>  	}
+>  
+>  	return TRACE_TYPE_HANDLED;
+> @@ -1101,7 +1094,7 @@ static void print_lat_header(struct seq_file *s)
+>  	seq_printf(s, "#%.*s|||| /                     \n", size, spaces);
+>  }
+>  
+> -static void print_graph_headers(struct seq_file *s)
+> +void print_graph_headers(struct seq_file *s)
+>  {
+>  	int lat = trace_flags & TRACE_ITER_LATENCY_FMT;
+>  
+> @@ -1137,7 +1130,7 @@ static void print_graph_headers(struct seq_file *s)
+>  	seq_printf(s, "               |   |   |   |\n");
+>  }
+>  
+> -static void graph_trace_open(struct trace_iterator *iter)
+> +void graph_trace_open(struct trace_iterator *iter)
+>  {
+>  	/* pid and depth on the last trace processed */
+>  	struct fgraph_data *data;
+> @@ -1172,7 +1165,7 @@ static void graph_trace_open(struct trace_iterator *iter)
+>  	pr_warning("function graph tracer: not enough memory\n");
+>  }
+>  
+> -static void graph_trace_close(struct trace_iterator *iter)
+> +void graph_trace_close(struct trace_iterator *iter)
+>  {
+>  	struct fgraph_data *data = iter->private;
+>  
+> diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> index 2974bc7..d0c6d6c 100644
+> --- a/kernel/trace/trace_irqsoff.c
+> +++ b/kernel/trace/trace_irqsoff.c
+> @@ -34,6 +34,9 @@ static int trace_type __read_mostly;
+>  
+>  static int save_lat_flag;
+>  
+> +static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
+> +static int start_irqsoff_tracer(struct trace_array *tr, int graph);
+> +
+>  #ifdef CONFIG_PREEMPT_TRACER
+>  static inline int
+>  preempt_trace(void)
+> @@ -55,6 +58,23 @@ irq_trace(void)
+>  # define irq_trace() (0)
+>  #endif
+>  
+> +#define TRACE_DISPLAY_GRAPH	1
+> +
+> +static struct tracer_opt trace_opts[] = {
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	/* display latency trace as call graph */
+> +	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
+> +#endif
+> +	{ } /* Empty entry */
+> +};
+> +
+> +static struct tracer_flags tracer_flags = {
+> +	.val = 0,
+> +	.opts = trace_opts,
+> +};
+> +
+> +#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
+> +
+>  /*
+>   * Sequence count - we record it when starting a measurement and
+>   * skip the latency if the sequence has changed - some other section
+> @@ -108,6 +128,109 @@ static struct ftrace_ops trace_ops __read_mostly =
+>  };
+>  #endif /* CONFIG_FUNCTION_TRACER */
+>  
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
+> +{
+> +	int cpu;
+> +
+> +	if (!(bit & TRACE_DISPLAY_GRAPH))
+> +		return -EINVAL;
+> +
+> +	if (!(is_graph() ^ set))
+> +		return 0;
+> +
+> +	stop_irqsoff_tracer(irqsoff_trace, !set);
+> +
+> +	for_each_possible_cpu(cpu)
+> +		per_cpu(tracing_cpu, cpu) = 0;
+> +
+> +	tracing_max_latency = 0;
+> +	tracing_reset_online_cpus(irqsoff_trace);
+> +
+> +	return start_irqsoff_tracer(irqsoff_trace, set);
+> +}
+> +
+> +static int irqsoff_graph_entry(struct ftrace_graph_ent *trace)
+> +{
+> +	struct trace_array *tr = irqsoff_trace;
+> +	struct trace_array_cpu *data;
+> +	unsigned long flags;
+> +	long disabled;
+> +	int ret;
+> +	int cpu;
+> +	int pc;
+> +
+> +	cpu = raw_smp_processor_id();
+> +	if (likely(!per_cpu(tracing_cpu, cpu)))
+> +		return 0;
+> +
+> +	local_save_flags(flags);
+> +	/* slight chance to get a false positive on tracing_cpu */
+> +	if (!irqs_disabled_flags(flags))
+> +		return 0;
+> +
+> +	data = tr->data[cpu];
+> +	disabled = atomic_inc_return(&data->disabled);
+> +
+> +	if (likely(disabled == 1)) {
+> +		pc = preempt_count();
+> +		ret = __trace_graph_entry(tr, trace, flags, pc);
+> +	} else
+> +		ret = 0;
+> +
+> +	atomic_dec(&data->disabled);
+> +	return ret;
+> +}
+> +
+> +static void irqsoff_graph_return(struct ftrace_graph_ret *trace)
+> +{
+> +	struct trace_array *tr = irqsoff_trace;
+> +	struct trace_array_cpu *data;
+> +	unsigned long flags;
+> +	long disabled;
+> +	int cpu;
+> +	int pc;
+> +
+> +	cpu = raw_smp_processor_id();
+> +	if (likely(!per_cpu(tracing_cpu, cpu)))
+> +		return;
+> +
+> +	local_save_flags(flags);
+> +	/* slight chance to get a false positive on tracing_cpu */
+> +	if (!irqs_disabled_flags(flags))
+> +		return;
+> +
+> +	data = tr->data[cpu];
+> +	disabled = atomic_inc_return(&data->disabled);
+> +
+> +	if (likely(disabled == 1)) {
+> +		pc = preempt_count();
+> +		__trace_graph_return(tr, trace, flags, pc);
+> +	}
+> +
+> +	atomic_dec(&data->disabled);
+> +}
+> +
+> +static void irqsoff_trace_open(struct trace_iterator *iter)
+> +{
+> +	if (is_graph())
+> +		graph_trace_open(iter);
+> +
+> +}
+> +
+> +static void irqsoff_trace_close(struct trace_iterator *iter)
+> +{
+> +	if (iter->private)
+> +		graph_trace_close(iter);
+> +}
+> +
+> +#else
+> +static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
+> +{
+> +	return -EINVAL;
+> +}
+> +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+> +
+>  /*
+>   * Should this new latency be reported/recorded?
+>   */
+> @@ -347,19 +470,36 @@ void trace_preempt_off(unsigned long a0, unsigned long a1)
+>  }
+>  #endif /* CONFIG_PREEMPT_TRACER */
+>  
+> -static void start_irqsoff_tracer(struct trace_array *tr)
+> +static int start_irqsoff_tracer(struct trace_array *tr, int graph)
+>  {
+> -	register_ftrace_function(&trace_ops);
+> -	if (tracing_is_enabled())
+> +	int ret = 0;
+> +
+> +	if (!graph)
+> +		ret = register_ftrace_function(&trace_ops);
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	else
+> +		ret = register_ftrace_graph(&irqsoff_graph_return,
+> +					    &irqsoff_graph_entry);
+> +#endif
+> +
+> +	if (!ret && tracing_is_enabled())
+>  		tracer_enabled = 1;
+>  	else
+>  		tracer_enabled = 0;
+> +
+> +	return ret;
+>  }
+>  
+> -static void stop_irqsoff_tracer(struct trace_array *tr)
+> +static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
+>  {
+>  	tracer_enabled = 0;
+> -	unregister_ftrace_function(&trace_ops);
+> +
+> +	if (!graph)
+> +		unregister_ftrace_function(&trace_ops);
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	else
+> +		unregister_ftrace_graph();
+> +#endif
+>  }
+>  
+>  static void __irqsoff_tracer_init(struct trace_array *tr)
+> @@ -372,12 +512,14 @@ static void __irqsoff_tracer_init(struct trace_array *tr)
+>  	/* make sure that the tracer is visible */
+>  	smp_wmb();
+>  	tracing_reset_online_cpus(tr);
+> -	start_irqsoff_tracer(tr);
+> +
+> +	if (start_irqsoff_tracer(tr, is_graph()))
+> +		printk(KERN_ERR "failed to start irqsoff tracer\n");
+>  }
+>  
+>  static void irqsoff_tracer_reset(struct trace_array *tr)
+>  {
+> -	stop_irqsoff_tracer(tr);
+> +	stop_irqsoff_tracer(tr, is_graph());
+>  
+>  	if (!save_lat_flag)
+>  		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
+> @@ -409,9 +551,15 @@ static struct tracer irqsoff_tracer __read_mostly =
+>  	.start		= irqsoff_tracer_start,
+>  	.stop		= irqsoff_tracer_stop,
+>  	.print_max	= 1,
+> +	.flags		= &tracer_flags,
+> +	.set_flag	= irqsoff_set_flag,
+>  #ifdef CONFIG_FTRACE_SELFTEST
+>  	.selftest    = trace_selftest_startup_irqsoff,
+>  #endif
+> +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> +	.open           = irqsoff_trace_open,
+> +	.close          = irqsoff_trace_close,
+> +#endif
+>  };
+>  # define register_irqsoff(trace) register_tracer(&trace)
+>  #else
+
+
