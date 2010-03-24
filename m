@@ -1,199 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932629Ab0CXSD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:03:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54020 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932637Ab0CXSCt (ORCPT
+	id S932671Ab0CXSGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:06:25 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50546 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932404Ab0CXSGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:02:49 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 1/6] perf report: Add a popup menu to ask what operation is to be performed
-Date: Wed, 24 Mar 2010 15:02:33 -0300
-Message-Id: <1269453758-27044-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
+	Wed, 24 Mar 2010 14:06:24 -0400
+Date: Wed, 24 Mar 2010 18:06:22 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100324180622.GS30031@ZenIV.linux.org.uk>
+References: <4BAA3493.1030802@panasas.com>
+ <20100324160037.GP30031@ZenIV.linux.org.uk>
+ <4BAA3828.2070506@panasas.com>
+ <20100324160754.GQ30031@ZenIV.linux.org.uk>
+ <4BAA398C.5050901@panasas.com>
+ <20100324163948.GR30031@ZenIV.linux.org.uk>
+ <4BAA48A3.1030801@panasas.com>
+ <4BAA4CAC.6060104@panasas.com>
+ <4BAA5035.1060906@panasas.com>
+ <4BAA52A8.2080304@panasas.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAA52A8.2080304@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Wed, Mar 24, 2010 at 07:58:00PM +0200, Boaz Harrosh wrote:
+> Al hi
+> 
+> Would you like to attempt a revert of this patch (or group of patches)
+> Just to get rid of the thought that git bisect was just peeking the
+> wrong guy. Maybe it's just something else? Can you understand the
+> relevance of all this?
 
-Right now it presents a menu with these options:
+If you see breakage at that commit and do not see it on its parent, we
+do have the right guy...
 
- +------------------------------+
- | Annotate CURRENT_SYMBOL_NAME |
- | Exit                         |
- +------------------------------+
+As for reverting, try reverting 781b16775ba0bb55fac0e1757bf0bd87c8879632
+first, then this commit.
 
-If the highlighted (current) symbol is not annotatable only the "Exit"
-option will appear.
+How consistent are the effects you are seeing from test to test on the same
+kernel?  This one was very interesting, since it seemed to fail with
+-EISDIR while opening .git/objects/pack.  Which is a directory and which
+should fail with -EISDIR if and only if we pass O_CREAT to open().  And
+passing O_CREAT on that one is probably not an intended behaviour of git...
 
-Also add a confirmation dialog when ESC is pressed on the top level to
-avoid exiting the application by pressing one too many ESC key.
-
-To get to the menu just press the -> (Right navigation key), to exit
-just press ESC.
-
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/newt.c |   96 ++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 88 insertions(+), 8 deletions(-)
-
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 12b229b..a3465a0 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -28,6 +28,47 @@ static newtComponent newt_form__new(void)
- 	return self;
- }
- 
-+static int popup_menu(int argc, const char *argv[])
-+{
-+	struct newtExitStruct es;
-+	int i, rc = -1, max_len = 5;
-+	newtComponent listbox, form = newt_form__new();
-+
-+	if (form == NULL)
-+		return -1;
-+
-+	listbox = newtListbox(0, 0, argc, NEWT_FLAG_RETURNEXIT);
-+	if (listbox == NULL)
-+		goto out_destroy_form;
-+
-+	newtFormAddComponents(form, listbox, NULL);
-+
-+	for (i = 0; i < argc; ++i) {
-+		int len = strlen(argv[i]);
-+		if (len > max_len)
-+			max_len = len;
-+		if (newtListboxAddEntry(listbox, argv[i], (void *)(long)i))
-+			goto out_destroy_form;
-+	}
-+
-+	newtCenteredWindow(max_len, argc, NULL);
-+	newtFormRun(form, &es);
-+	rc = newtListboxGetCurrent(listbox) - NULL;
-+	if (es.reason == NEWT_EXIT_HOTKEY)
-+		rc = -1;
-+	newtPopWindow();
-+out_destroy_form:
-+	newtFormDestroy(form);
-+	return rc;
-+}
-+
-+static bool dialog_yesno(const char *msg)
-+{
-+	/* newtWinChoice should really be accepting const char pointers... */
-+	char yes[] = "Yes", no[] = "No";
-+	return newtWinChoice(NULL, no, yes, (char *)msg) == 2;
-+}
-+
- /*
-  * When debugging newt problems it was useful to be able to "unroll"
-  * the calls to newtCheckBoxTreeAdd{Array,Item}, so that we can generate
-@@ -309,6 +350,19 @@ out_free_str:
- 	free(str);
- }
- 
-+static const void *newt__symbol_tree_get_current(newtComponent self)
-+{
-+	if (symbol_conf.use_callchain)
-+		return newtCheckboxTreeGetCurrent(self);
-+	return newtListboxGetCurrent(self);
-+}
-+
-+static void perf_session__selection(newtComponent self, void *data)
-+{
-+	const struct symbol **symbol_ptr = data;
-+	*symbol_ptr = newt__symbol_tree_get_current(self);
-+}
-+
- void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
- 				const char *helpline)
- {
-@@ -322,6 +376,7 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
- 	char str[1024];
- 	newtComponent form, tree;
- 	struct newtExitStruct es;
-+	const struct symbol *selection;
- 
- 	snprintf(str, sizeof(str), "Samples: %Ld", session_total);
- 	newtDrawRootText(0, 0, str);
-@@ -336,6 +391,8 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
- 		tree = newtListbox(0, 0, rows - 5, (NEWT_FLAG_SCROLL |
- 						       NEWT_FLAG_RETURNEXIT));
- 
-+	newtComponentAddCallback(tree, perf_session__selection, &selection);
-+
- 	list_for_each_entry(se, &hist_entry__sort_list, list) {
- 		if (se->elide)
- 			continue;
-@@ -377,20 +434,43 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
- 	form = newt_form__new();
- 	newtFormAddHotKey(form, 'A');
- 	newtFormAddHotKey(form, 'a');
-+	newtFormAddHotKey(form, NEWT_KEY_RIGHT);
- 	newtFormAddComponents(form, tree, NULL);
-+	selection = newt__symbol_tree_get_current(tree);
- 
- 	while (1) {
--		const struct symbol *selection;
-+		char annotate[512];
-+		const char *options[2];
-+		int nr_options = 0, choice;
- 
- 		newtFormRun(form, &es);
--		if (es.reason == NEWT_EXIT_HOTKEY &&
--		    toupper(es.u.key) != 'A')
-+		if (es.reason == NEWT_EXIT_HOTKEY) {
-+			if (toupper(es.u.key) == 'A') {
-+				symbol__annotate_browser(selection);
-+				continue;
-+			}
-+			if (es.u.key == NEWT_KEY_ESCAPE ||
-+			    toupper(es.u.key) == 'Q' ||
-+			    es.u.key == CTRL('c')) {
-+				if (dialog_yesno("Do you really want to exit?"))
-+					break;
-+				else
-+					continue;
-+			}
-+		}
-+
-+		if (selection != NULL) {
-+			snprintf(annotate, sizeof(annotate),
-+				 "Annotate %s", selection->name);
-+			options[nr_options++] = annotate;
-+		}
-+
-+		options[nr_options++] = "Exit";
-+		choice = popup_menu(nr_options, options);
-+		if (choice == nr_options - 1)
- 			break;
--		if (!symbol_conf.use_callchain)
--			selection = newtListboxGetCurrent(tree);
--		else
--			selection = newtCheckboxTreeGetCurrent(tree);
--		symbol__annotate_browser(selection);
-+		else if (selection != NULL && choice >= 0)
-+			symbol__annotate_browser(selection);
- 	}
- 
- 	newtFormDestroy(form);
--- 
-1.6.2.5
-
+Does anybody else see NFS breakage starting at that commit, BTW?  Other
+testcases would be useful...
