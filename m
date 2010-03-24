@@ -1,73 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab0CXUtH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:49:07 -0400
-Received: from nat.nue.novell.com ([195.135.221.3]:57161 "EHLO
-	emea5-mh.id5.novell.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932998Ab0CXUtB (ORCPT
+	id S933030Ab0CXUt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:49:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48522 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932958Ab0CXUtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:49:01 -0400
-X-Greylist: delayed 1200 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Mar 2010 16:49:00 EDT
-From: "Rafael J. Wysocki" <rjw@novell.com>
-Organization: SUSE Labs
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [patch 0/2] x86,pat: Reduce contention on the memtype_lock -V4
-Date: Wed, 24 Mar 2010 21:32:11 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, Robin Holt <holt@sgi.com>,
-       Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>,
-       Peter Zijlstra <peterz@infradead.org>, Takashi Iwai <tiwai@suse.de>
-References: <20100324003608.811051277@gulag1.americas.sgi.com> <alpine.LFD.2.00.1003241214370.3147@localhost.localdomain> <1269447737.2881.13.camel@sbs-t61.sc.intel.com>
-In-Reply-To: <1269447737.2881.13.camel@sbs-t61.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	Wed, 24 Mar 2010 16:49:23 -0400
+Date: Wed, 24 Mar 2010 13:48:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+Message-Id: <20100324134816.529778bd.akpm@linux-foundation.org>
+In-Reply-To: <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-11-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003242132.11642.rjw@novell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010, Suresh Siddha wrote:
-> On Wed, 2010-03-24 at 04:15 -0700, Thomas Gleixner wrote:
-> > On Wed, 24 Mar 2010, Robin Holt wrote:
-> > > On Wed, Mar 24, 2010 at 03:16:14AM +0100, Andi Kleen wrote:
-> > > > holt@sgi.com writes:
-> > > > 
-> > > > > Tracking memtype on x86 uses a single global spin_lock for either reading
-> > > > > or changing the memory type.  This includes changes made to page flags
-> > > > > which is perfectly parallel.
-> > > > >
-> > > > > Part one of the patchset makes the page-based tracking use cmpxchg
-> > > > > without a need for a lock.
-> > > > >
-> > > > > Part two of the patchset converts the spin_lock into a read/write lock.
-> > > > 
-> > > > I'm curious: in what workloads did you see contention?
-> > > > 
-> > > > For any scalability patches it would be always good to have a description
-> > > > of the workload.
-> > > 
-> > > It was a job using xpmem (an out of tree kernel module) which uses
-> > > vm_insert_pfn to establish ptes.  The scalability issues were shown
-> > > in the first patch.  I do not have any test which shows a performance
-> > > difference  with the spin_lock to rw_lock conversion.
-> > 
-> > And what's exactly the point of converting it to a rw_lock then ?
-> 
-> Thomas, As I mentioned earlier I am ok in not doing this conversion. If
-> we see any performance issues with this spinlock, we can use RCU based
-> logic to address that.
-> 
-> For now, first patch in this series (which avoid the lock for RAM pages)
-> is good to go. Thanks Rafael for spotting the page flags bit
-> manipulation issue.
+On Tue, 23 Mar 2010 12:25:45 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-In fact Takashi did that, to put the record straight. :-)
+> Ordinarily when a high-order allocation fails, direct reclaim is entered to
+> free pages to satisfy the allocation.  With this patch, it is determined if
+> an allocation failed due to external fragmentation instead of low memory
+> and if so, the calling process will compact until a suitable page is
+> freed. Compaction by moving pages in memory is considerably cheaper than
+> paging out to disk and works where there are locked pages or no swap. If
+> compaction fails to free a page of a suitable size, then reclaim will
+> still occur.
+> 
+> Direct compaction returns as soon as possible. As each block is compacted,
+> it is checked if a suitable page has been freed and if so, it returns.
+> 
+>
+> ...
+>
+> +static inline unsigned long compact_zone_order(struct zone *zone,
+> +						int order, gfp_t gfp_mask)
 
-Thanks,
-Rafael
+Suggest that you re-review all the manual inlining in the patchset. 
+It's rarely needed and often incorrect.
+
+> +{
+> +	struct compact_control cc = {
+> +		.nr_freepages = 0,
+> +		.nr_migratepages = 0,
+> +		.order = order,
+> +		.migratetype = allocflags_to_migratetype(gfp_mask),
+> +		.zone = zone,
+> +	};
+> +	INIT_LIST_HEAD(&cc.freepages);
+> +	INIT_LIST_HEAD(&cc.migratepages);
+> +
+> +	return compact_zone(zone, &cc);
+> +}
+> +
+> +/**
+> + * try_to_compact_pages - Direct compact to satisfy a high-order allocation
+> + * @zonelist: The zonelist used for the current allocation
+> + * @order: The order of the current allocation
+> + * @gfp_mask: The GFP mask of the current allocation
+> + * @nodemask: The allowed nodes to allocate from
+> + *
+> + * This is the main entry point for direct page compaction.
+> + */
+> +unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> +			int order, gfp_t gfp_mask, nodemask_t *nodemask)
+> +{
+> +	enum zone_type high_zoneidx = gfp_zone(gfp_mask);
+> +	int may_enter_fs = gfp_mask & __GFP_FS;
+> +	int may_perform_io = gfp_mask & __GFP_IO;
+> +	unsigned long watermark;
+> +	struct zoneref *z;
+> +	struct zone *zone;
+> +	int rc = COMPACT_INCOMPLETE;
+> +
+> +	/* Check whether it is worth even starting compaction */
+> +	if (order == 0 || !may_enter_fs || !may_perform_io)
+> +		return rc;
+
+hm, that was sad.  All those darn wireless drivers doing their
+high-order GFP_ATOMIC allocations cannot be saved?
+
+> +	/*
+> +	 * We will not stall if the necessary conditions are not met for
+> +	 * migration but direct reclaim seems to account stalls similarly
+> +	 */
+> +	count_vm_event(COMPACTSTALL);
+> +
+> +	/* Compact each zone in the list */
+> +	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+> +								nodemask) {
+
+Will all of this code play nicely with memory hotplug?
+
+> +		int fragindex;
+> +		int status;
+> +
+> +		/*
+> +		 * Watermarks for order-0 must be met for compaction. Note
+> +		 * the 2UL. This is because during migration, copies of
+> +		 * pages need to be allocated and for a short time, the
+> +		 * footprint is higher
+> +		 */
+> +		watermark = low_wmark_pages(zone) + (2UL << order);
+> +		if (!zone_watermark_ok(zone, 0, watermark, 0, 0))
+> +			continue;
+> +
+> +		/*
+> +		 * fragmentation index determines if allocation failures are
+> +		 * due to low memory or external fragmentation
+> +		 *
+> +		 * index of -1 implies allocations might succeed depending
+> +		 * 	on watermarks
+> +		 * index < 500 implies alloc failure is due to lack of memory
+> +		 *
+> +		 * XXX: The choice of 500 is arbitrary. Reinvestigate
+> +		 *      appropriately to determine a sensible default.
+> +		 *      and what it means when watermarks are also taken
+> +		 *      into account. Consider making it a sysctl
+> +		 */
+
+Yes, best to make it a sysctl IMO.   It'll make optimisation far easier.
+/proc/sys/vm/fragmentation_index_dont_you_dare_use_this_it_will_disappear_soon
+
+> +		fragindex = fragmentation_index(zone, order);
+> +		if (fragindex >= 0 && fragindex <= 500)
+> +			continue;
+> +
+> +		if (fragindex == -1 && zone_watermark_ok(zone, order, watermark, 0, 0)) {
+> +			rc = COMPACT_PARTIAL;
+> +			break;
+> +		}
+> +
+> +		status = compact_zone_order(zone, order, gfp_mask);
+> +		rc = max(status, rc);
+> +
+> +		if (zone_watermark_ok(zone, order, watermark, 0, 0))
+> +			break;
+> +	}
+> +
+> +	return rc;
+> +}
+>
+> ...
+>
+> @@ -1765,6 +1766,31 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
+>  
+>  	cond_resched();
+>  
+> +	/* Try memory compaction for high-order allocations before reclaim */
+> +	if (order) {
+> +		*did_some_progress = try_to_compact_pages(zonelist,
+> +						order, gfp_mask, nodemask);
+> +		if (*did_some_progress != COMPACT_INCOMPLETE) {
+> +			page = get_page_from_freelist(gfp_mask, nodemask,
+> +					order, zonelist, high_zoneidx,
+> +					alloc_flags, preferred_zone,
+> +					migratetype);
+> +			if (page) {
+> +				__count_vm_event(COMPACTSUCCESS);
+> +				return page;
+> +			}
+> +
+> +			/*
+> +			 * It's bad if compaction run occurs and fails.
+> +			 * The most likely reason is that pages exist,
+> +			 * but not enough to satisfy watermarks.
+> +			 */
+> +			count_vm_event(COMPACTFAIL);
+
+This counter will get incremented if !__GFP_FS or !__GFP_IO.  Seems
+wrong.
+
+> +			cond_resched();
+> +		}
+> +	}
+> +
+
