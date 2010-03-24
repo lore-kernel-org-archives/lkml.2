@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756332Ab0CXOGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:06:35 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:60604 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756223Ab0CXOGd (ORCPT
+	id S1756361Ab0CXOHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:07:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46573 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756339Ab0CXOHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:06:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=l9IY02Gfntg+k353tkFytUv7VU3x32v725farmy71H6NTzU/ukWPsTNvnTNAnhAZY2
-         CO5aiD42JR4v90PrE6Np78cDjXAVzvIX8tB3iJUMXiLP3tubrulniCRTaIEaZWukmHyr
-         pJsZlh30kZ7gz4l0hTYkc9Ez3GvHsHEpKyF/0=
-Date: Wed, 24 Mar 2010 17:06:21 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-       Takashi Iwai <tiwai@suse.de>, Joonyoung Shim <jy0922.shim@samsung.com>,
-       alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [rfc patch] wm8994: range checking issue
-Message-ID: <20100324140621.GI21571@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Liam Girdwood <lrg@slimlogic.co.uk>,
-	Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-	Joonyoung Shim <jy0922.shim@samsung.com>,
-	alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20100324120107.GH21571@bicker> <20100324125946.GA26453@rakim.wolfsonmicro.main>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324125946.GA26453@rakim.wolfsonmicro.main>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 24 Mar 2010 10:07:05 -0400
+Date: Wed, 24 Mar 2010 07:05:27 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: linux-serial@vger.kernel.org, gregkh@suse.de,
+       nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCHv3 2/2] serial: Add driver for the Altera UART
+Message-Id: <20100324070527.86d0b9b6.akpm@linux-foundation.org>
+In-Reply-To: <20100324064747.GP21818@distanz.ch>
+References: <cover.1267807169.git.klto@zhaw.ch>
+	<15dc056891fb785001073bab4f9a0d0f3bf99af1.1267807169.git.klto@zhaw.ch>
+	<a596efa5dc6130a27d045ea24174c792ee2f0bb4.1267807169.git.klto@zhaw.ch>
+	<20100323145459.9894b1e6.akpm@linux-foundation.org>
+	<20100324064747.GP21818@distanz.ch>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 12:59:46PM +0000, Mark Brown wrote:
-> On Wed, Mar 24, 2010 at 03:01:07PM +0300, Dan Carpenter wrote:
-> > Smatch complained about BUG_ON(reg > WM8994_MAX_REGISTER) because the
-> > actual number of elements in the array was WM8994_REG_CACHE_SIZE + 1.
-> 
-> > I changed the BUG_ON() to return -EINVAL.
-> 
-> Please don't introduce orthogonal changes like this in patches, it's bad
-> practice and increases the chances of your patch being nacked.
-> 
-> > I was confused why WM8994_REG_CACHE_SIZE was different from the actual
-> > size of ->reg_cache and I was concerned because some places used 
-> > ARRAY_SIZE() to find the end of the array and other places used 
-> > WM8994_REG_CACHE_SIZE.  In my patch, I made them the same.
-> 
-> This is caused by confusion with the MAX_CACHED_REGISTER definition in
-> the header.  Best to use that one consistently, I guess - I've got a
-> sneaking suspicion something has gone AWOL in the driver publication
-> process.
+On Wed, 24 Mar 2010 07:47:47 +0100 Tobias Klauser <tklauser@distanz.ch> wrote:
 
+> On 2010-03-23 at 22:54:59 +0100, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Fri,  5 Mar 2010 17:52:23 +0100
+> > Tobias Klauser <tklauser@distanz.ch> wrote:
+> > 
+> > > +	sigs |= (altera_uart_getppdcd(port->line) ? TIOCM_CD : 0);
+> > > +	sigs |= (altera_uart_getppdtr(port->line) ? TIOCM_DTR : 0);
+> > 
+> > We seem to be missing a few things here.
+> > 
+> > drivers/serial/altera_uart.c: In function 'altera_uart_get_mctrl':
+> > drivers/serial/altera_uart.c:100: error: implicit declaration of function 'altera_uart_getppdcd'
+> > drivers/serial/altera_uart.c:101: error: implicit declaration of function 'altera_uart_getppdtr'
+> > drivers/serial/altera_uart.c: In function 'altera_uart_set_mctrl':
+> > drivers/serial/altera_uart.c:114: error: implicit declaration of function 'altera_uart_setppdtr'
+> 
+> These should usually be declared in a board specific header. There were
+> compatibility macros in altera_uart.c which defined them to NOPs in case
+> the board header did not properly define them. But I remove them as per
+> request by Alan Cox (Message-ID: 20100301181920.3952c3e7@lxorguk.ukuu.org.uk).
+> 
+> Should we add them again (maybe to altera_uart.h)? Or would it be better
+> to define a config symbol which is set in the board specific Kconfig and
+> altera_uart depends on it?
 
-Hm...  That sounds more involved than I anticipated.  I don't have the
-hardware and don't feel comfortable making complicated changes if I
-can't test them.
+I guess the latter.
 
-Can someone else take care of this.
+There should have been a real implementation of these in the patchset -
+otherwise the code can't be used or tested.  Confused.
 
-regards,
-dan carpenter
