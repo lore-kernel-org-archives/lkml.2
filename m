@@ -1,120 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932296Ab0CXRQF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:16:05 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:33235 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab0CXRQA (ORCPT
+	id S1756579Ab0CXRQu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:16:50 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35036 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753740Ab0CXRQs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:16:00 -0400
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-From: Marcel Holtmann <marcel@holtmann.org>
+	Wed, 24 Mar 2010 13:16:48 -0400
+Date: Wed, 24 Mar 2010 17:20:37 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
 To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Greg KH <gregkh@suse.de>, PavanSavoy <pavan_savoy@ti.com>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+Cc: Greg KH <gregkh@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
+       PavanSavoy <pavan_savoy@ti.com>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <132027.10140.qm@web94905.mail.in2.yahoo.com>
-References: <132027.10140.qm@web94905.mail.in2.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 10:15:50 -0700
-Message-ID: <1269450950.11714.126.camel@localhost.localdomain>
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+Message-ID: <20100324172037.4894f89a@lxorguk.ukuu.org.uk>
+In-Reply-To: <802911.82166.qm@web94909.mail.in2.yahoo.com>
+References: <20100324165222.GA9922@suse.de>
+	<802911.82166.qm@web94909.mail.in2.yahoo.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
+> Alan's talking about opening up the LDISC installation to kernel (say EXPORTING tty_set_ldisc/tiocsetd), That's like ideal scenario in this case.
 
-> > > > > I wanted to somehow put this in staging
-> > because then
-> > > > it would probably have a thorough architectural
-> > review
-> > > > process.
-> > > > > Some details about this driver - 
-> > > > > 
-> > > > > 1. This driver will be used by
-> > Bluetooth-BlueZ/FM-V4L2
-> > > > and GPS (probably character device driver) using
-> > the
-> > > > EXPORTED symbols (-register/_unregister).
-> > > > > 
-> > > > > 2. Much like the hciattach daemon which
-> > maintains
-> > > > N_HCI bluetooth line discipline, this driver will
-> > also have
-> > > > a User-Space  N_TI_WL Init manager (UIM)
-> > maintaining
-> > > > the Line discipline.
-> > > > 
-> > > > can you explain why you think this is needed and
-> > we can not
-> > > > interface
-> > > > this directly. If it is a serial port, what
-> > protocol does
-> > > > it talk?
-> > > 
-> > > Illustration: The BT driver on top of this ST driver,
-> > would create a hci0 interface, when someone does an DEVUP on
-> > that interface, the BT driver would then do a st-register -
-> > which in-turn would ask the hciattach-like daemon to install
-> > the line discipline for it via the sysfs entry.
-> > > The same concept goes for FM-V4L2 and GPS character
-> > driver.
-> > > 
-> > > The core of the problem is we cannot
-> > ask/install/ldisc_put for a line discipline from kernel
-> > space.
-> > 
-> > so let us get the facts straight here. The device in
-> > question is using a
-> > serial port to connect to the host and then multiplexing
-> > BT, FM and GPS
-> > over it. My question again, what protocol does it talk.
-> 
-> Ok, On TTY/4-wire UART, BT talks standard HCI, and HCI-LL for power management as in hci_ll.c/hciattach_ti.c which is already upstream.
-> 
-> And in a very similar way, FM talks over what is known as "channel 8" and GPS over "channel 9", Although these are not standard.
-> 
-> So, basically data going/coming to/out of chip is 
-> 1,2,3,4 - HCI 
-> 30,31,32,33 for HCI-LL
-> 8 - FM
-> 9 - GPS.
-> 
-> So consider this an extension of hci_ll/hci_ldisc but only more features to accomodate the FM and GPS.
+Ok I lied - its four lines of code changing, and just set
 
-So why are we not making the hci_ll into a generic driver that can
-register besides Bluetooth also FM and GPS.
+	.ldisc = N_whatever
 
-Then we can attach that driver to the TTY via line discipline on boot
-and let the LL part handle the power management.
+in your tty_driver
 
-Registration of Bluetooth device, FM and GPS nodes are done via RFKILL
-that the LL driver exports.
+Marcel - that should also clean up some of the other pending goodies
 
-> > Also why not just install the line discipline and then
-> > control the
-> > subdevices via RFKILL?
-> 
-> The chip side PM would be fine, and is being done so, st_kim.c creates the rfkill entries, and controls them locally, also allows applications to control them.
-> But ldisc can't be install upon boot, because UART clks would be used up for no reason at all.
-> (say on a mobile phone, how many times in a day - do we actually use BT/FM or GPS - so UART needs to be most often idle, and ldisc should be installed only upon requirement)
+[Untested Patch]
 
-I think the driver should make sure it doesn't use the UART clocks if in
-deep sleep. This has nothing to do with installing the line discipline
-on boot via a userspace tool.
+--
 
-You do the power management for the hci_ll driver already today. So why
-can't we do the same in this driver?
+tty: Allow the driver to force an ldisc on open
 
-Another way to view this is that the LL driver has to create a virtual
-bus for Bluetooth, FM and GPS devices. However RFKILL might be a bit
-more suitable and simpler.
+From: Alan Cox <alan@linux.intel.com>
 
-Regards
+We need this because some hardware is always in various mux or control
+modes. At the moment we do handstands via userspace to sort this out on
+devices where it makes no sense. Given the size of the patch to fix this
+inanity we might as well do so.
 
-Marcel
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/char/tty_ldisc.c   |    6 +++---
+ include/linux/tty_driver.h |    1 +
+ 2 files changed, 4 insertions(+), 3 deletions(-)
 
 
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index 500e740..b149f9c 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -863,8 +863,8 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	/* Force an oops if we mess this up */
+ 	tty->ldisc = NULL;
+ 
+-	/* Ensure the next open requests the N_TTY ldisc */
+-	tty_set_termios_ldisc(tty, N_TTY);
++	/* Ensure the next open requests the expected (usually N_TTY) ldisc */
++	tty_set_termios_ldisc(tty, tty->driver->ldisc);
+ 	mutex_unlock(&tty->ldisc_mutex);
+ 
+ 	/* This will need doing differently if we need to lock */
+@@ -885,7 +885,7 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 
+ void tty_ldisc_init(struct tty_struct *tty)
+ {
+-	struct tty_ldisc *ld = tty_ldisc_get(N_TTY);
++	struct tty_ldisc *ld = tty_ldisc_get(tty->driver->ldisc);
+ 	if (IS_ERR(ld))
+ 		panic("n_tty: init_tty");
+ 	tty_ldisc_assign(tty, ld);
+diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
+index b086779..fc22a41 100644
+--- a/include/linux/tty_driver.h
++++ b/include/linux/tty_driver.h
+@@ -291,6 +291,7 @@ struct tty_driver {
+ 	short	type;		/* type of tty driver */
+ 	short	subtype;	/* subtype of tty driver */
+ 	struct ktermios init_termios; /* Initial termios */
++	int	ldisc;		/* initial ldisc */
+ 	int	flags;		/* tty driver flags */
+ 	struct proc_dir_entry *proc_entry; /* /proc fs entry */
+ 	struct tty_driver *other; /* only used for the PTY driver */
