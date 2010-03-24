@@ -1,146 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab0CXOut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:50:49 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51204 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0CXOus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:50:48 -0400
-Date: Wed, 24 Mar 2010 14:50:29 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
-	pressure
-Message-ID: <20100324145028.GD2024@csn.ul.ie>
-References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com>
+	id S1756429Ab0CXOwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:52:41 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33707 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756278Ab0CXOwk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:52:40 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Ivo Van Doorn <ivdoorn@gmail.com>
+Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW  encryption by default
+Date: Wed, 24 Mar 2010 15:52:29 +0100
+User-Agent: KMail/1.9.10
+Cc: rt2x00 Users List <users@rt2x00.serialmonkey.com>,
+       linux-kernel@vger.kernel.org
+References: <201003221601.36559.linux@rainbow-software.org> <201003241412.38128.linux@rainbow-software.org> <a32f33a41003240624u204cfd71jbf2effbd09ff220a@mail.gmail.com>
+In-Reply-To: <a32f33a41003240624u204cfd71jbf2effbd09ff220a@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <4BA940E7.2030308@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Message-Id: <201003241552.32184.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 06:29:59PM -0400, Rik van Riel wrote:
-> On 03/22/2010 07:50 PM, Mel Gorman wrote:
+On Wednesday 24 March 2010, Ivo Van Doorn wrote:
+> On Wed, Mar 24, 2010 at 2:12 PM, Ondrej Zary <linux@rainbow-software.org> 
+wrote:
+> > On Tuesday 23 March 2010, Ivo Van Doorn wrote:
+> >> On Tue, Mar 23, 2010 at 4:09 PM, Ondrej Zary
+> >> <linux@rainbow-software.org>
+> >
+> > wrote:
+> >> > On Tuesday 23 March 2010, Ivo Van Doorn wrote:
+> >> >> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
+> >> >>
+> >> >> <linux@rainbow-software.org> wrote:
+> >> >> > On Monday 22 March 2010, Ivo Van Doorn wrote:
+> >> >> >> >> But I though it was mentioned that disabling HW crypto didn't
+> >> >> >> >> solve the issue due to a second bug in a later kernel?
+> >> >> >> >
+> >> >> >> > That was a false positive. Probably because the device was not
+> >> >> >> > unplugged between the tests (and looks like the driver does not
+> >> >> >> > initialize the chip completely). It's not reliable, it sometimes
+> >> >> >> > stops working after reboot.
+> >> >> >>
+> >> >> >> Ah well that at least simplifies the problem. I'll have to retest
+> >> >> >> rt2500usb soon to see why the HW crypto failed. I am sure I had it
+> >> >> >> working for WEP, WPA and WPA2
+> >> >> >> before I submitted the patch.
+> >> >> >
+> >> >> > So let's try to fix it instead of disabling.
+> >> >> >
+> >> >> > First, the unrealiability (keeping HW encryption disabled). With
+> >> >> > the driver loaded but not doing anything more, the register dumps
+> >> >> > are same for both working and non-working case (dump-init.txt).
+> >> >> >
+> >> >> > dump-good-connected.txt is a dump after successful association and
+> >> >> > DHCP dump-bad-attempt.txt is a dump after successful association
+> >> >> > during non-working DHCP attempt
+> >> >> > dump-bad-after.txt is a dump after DHCP timed out
+> >> >>
+> >> >> With association working, but DHCP failing it most likely means that
+> >> >> somehow the frame was malformatted.
+> >> >> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
+> >> >> And that is commonly the source of
+> >> >> problems, because what has to be done depends heavily on the
+> >> >> encryption type.
+> >> >>
+> >> >> So could you verify which of the encryption types (WEP,WPA,WPA2) is
+> >> >> failing or working? That would give a starting
+> >> >> position on which bytes might be corrupted.
+> >> >
+> >> > I was testing only with WPA2 before. I did some more testing today.
+> >> > The results:
+> >> >
+> >> > No encryption - works always
+> >> > WEP - sometimes works, sometimes not - same with and without HW
+> >> > encryption WPA - sometimes works, sometimes not - same with and
+> >> > without HW encryption WPA2 - never works with HW encryption
+> >> >     - sometimes works, sometimes not without HW encryptionn
+> >> >
+> >> > So it seems that there are two problems:
+> >> >  1. random problems with any encryption
+> >> >  2. WPA2 is broken with HW encryption
+> >> >
+> >> > When the "random" problem appears, this appears in dmesg:
+> >> > wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
+> >> > wlan1: authenticated
+> >> > wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
+> >> > wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0
+> >> > aid=2) wlan1: associated
+> >> > phy0 -> rt2500usb_set_device_state: Error - Device failed to enter
+> >> > state 3 (-16). phy0 -> rt2500usb_set_device_state: Error - Device
+> >> > failed to enter state 3 (-16). No probe response from AP
+> >> > 00:13:d4:0f:f3:17 after 500ms, disconnecting.
+> >> >
+> >> > Disabling call to rt2500usb_set_state() in
+> >> > rt2500usb_set_device_state() seems to fix problem 1. After this
+> >> > change, WEP and WPA work always regardless of HW encryption (and WPA2
+> >> > works always without it).
+> >>
+> >> Ok, lets focus on the HW crypto for now.
+> >>
+> >> If WPA2 fails, then the WPA2 specific code for IV/EIV/ICV isn't
+> >> working. Most likely
+> >> the device either doesn't send all data back to the driver (while the
+> >> driver does expect it)
+> >> or it adds additional data which the driver doesn't expect. (See
+> >> rt2x00crypto.c for the frame
+> >> manipulation during HW crypto).
+> >>
+> >> Could you check the full packet data of a DHCP request with and
+> >> without HW crypto?
+> >> That might give a clue about what the hardware is sending for extra
+> >> data.
+> >
+> > How do I access the full packets? I tried using another machine with
+> > "iwconfig wlan0 mode monitor" and tcpdump. It captured many packets and
+> > I'm unable to identify the interesting ones.
 >
->> Test scenario
->> =============
->> X86-64 machine 1 socket 4 cores
->> 4 consumer-grade disks connected as RAID-0 - software raid. RAID controller
->> 	on-board and a piece of crap, and a decent RAID card could blow
->> 	the budget.
->> Booted mem=256 to ensure it is fully IO-bound and match closer to what
->> 	Christian was doing
+> You won't get the useful stuff from monitor mode.
+> You have to enable rt2x00 debugfs support, to find a framedump file in
+> the rt2x00 debugfs folder.
 >
-> With that many disks, you can easily have dozens of megabytes
-> of data in flight to the disk at once.  That is a major
-> fraction of memory.
+> You should use the framedump tool from:
+> http://kernel.org/pub/linux/kernel/people/ivd/tools/
 >
+> To get the frame dumps in nicely formatted lines for analysis.
 
-That is easily possible. Note, I'm not maintaining this workload configuration
-is a good idea.
+Thanks, here are the dump files:
+http://www.rainbow-software.org/linux_files/rt2500usb/dump-wpa2-bad.txt
+http://www.rainbow-software.org/linux_files/rt2500usb/dump-wpa2-good.txt
 
-The background to this problem is Christian running a disk-intensive iozone
-workload over many CPUs and disks with limited memory. It's already known
-that if he added a small amount of extra memory, the problem went away.
-The problem was a massive throughput regression and a bisect pinpointed
-two patches (both mine) but neither make sense. One altered the order pages
-come back from lists but not availability and his hardware does no automatic
-merging. A second does alter the availility of pages via the per-cpu lists
-but reverting the behaviour didn't help.
-
-The first fix to this was to replace congestion_wait with a waitqueue
-that woke up processes if the watermarks were met. This fixed
-Christian's problem but Andrew wants to pin the underlying cause.
-
-I strongly suspect that evict-once behaves sensibly when memory is ample
-but in this particular case, it's not helping.
-
-> In fact, you might have all of the inactive file pages under
-> IO...
->
-
-Possibly. The tests have a write and a read phase but I wasn't
-collecting the data with sufficient granularity to see which of the
-tests are actually stalling.
-
->> 3. Page reclaim evict-once logic from 56e49d21 hurts really badly
->> 	fix title: revertevict
->> 	fixed in mainline? no
->> 	affects: 2.6.31 to now
->>
->> 	For reasons that are not immediately obvious, the evict-once patches
->> 	*really* hurt the time spent on congestion and the number of pages
->> 	reclaimed. Rik, I'm afaid I'm punting this to you for explanation
->> 	because clearly you tested this for AIM7 and might have some
->> 	theories. For the purposes of testing, I just reverted the changes.
->
-> The patch helped IO tests with reasonable amounts of memory
-> available, because the VM can cache frequently used data
-> much more effectively.
->
-> This comes at the cost of caching less recently accessed
-> use-once data, which should not be an issue since the data
-> is only used once...
->
-
-Indeed. With or without evict-once, I'd have an expectation of all the
-pages being recycled anyway because of the amount of data involved.
-
->> Rik, any theory on evict-once?
->
-> No real theories yet, just the observation that your revert
-> appears to be buggy (see below) and the possibility that your
-> test may have all of the inactive file pages under IO...
->
-
-Bah. I had the initial revert right and screwed up reverting from
-2.6.32.10 on. I'm rerunning the tests. Is this right?
-
--       if (is_active_lru(lru)) {
--               if (inactive_list_is_low(zone, sc, file))
--                   shrink_active_list(nr_to_scan, zone, sc, priority, file);
-+       if (is_active_lru(lru)) {
-+               shrink_active_list(nr_to_scan, zone, sc, priority, file);
-                return 0;
-
-
-> Can you reproduce the stall if you lower the dirty limits?
->
-
-I'm rerunning the revertevict patches at the moment. When they complete,
-I'll experiment with dirty limits. Any suggested values or will I just
-increase it by some arbitrary amount and see what falls out? e.g.
-increse dirty_ratio to 80.
-
->>   static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
->>   	struct zone *zone, struct scan_control *sc, int priority)
->>   {
->>   	int file = is_file_lru(lru);
->>
->> -	if (is_active_lru(lru)) {
->> -		if (inactive_list_is_low(zone, sc, file))
->> -		    shrink_active_list(nr_to_scan, zone, sc, priority, file);
->> +	if (lru == LRU_ACTIVE_FILE) {
->> +		shrink_active_list(nr_to_scan, zone, sc, priority, file);
->>   		return 0;
->>   	}
->
-> Your revert is buggy.  With this change, anonymous pages will
-> never get deactivated via shrink_list.
->
-
-/me slaps self
+I don't know how wifi encryption works so I don't know what to look for.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Ondrej Zary
