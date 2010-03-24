@@ -1,138 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab0CXXmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 19:42:55 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:32256 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab0CXXmy (ORCPT
+	id S1751960Ab0CXXpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 19:45:42 -0400
+Received: from qw-out-2122.google.com ([74.125.92.26]:56589 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0CXXpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 19:42:54 -0400
-Message-ID: <4BAAA32B.3050405@oracle.com>
-Date: Wed, 24 Mar 2010 16:41:31 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] tracing: Reduce overhead of module tracepoints
-References: <4BA97FA7.6040406@cn.fujitsu.com>
-In-Reply-To: <4BA97FA7.6040406@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4BAAA370.00CF:SCFMA4539814,ss=1,fgs=0
+	Wed, 24 Mar 2010 19:45:40 -0400
+From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-pcmcia@lists.infradead.org,
+       Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Subject: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
+Date: Wed, 24 Mar 2010 20:45:10 -0300
+Message-Id: <1269474310-13970-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+X-Mailer: git-send-email 1.7.0.3
+In-Reply-To: <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+References: <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/10 19:57, Li Zefan wrote:
-> Remove the @refcnt argument, because it has side-effects, and
-> arguments with side-effects are not skipped by the jump over
-> disabled instrumentation, so it adds overhead even when the
-> tracepoints are disabled.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+This patch fixes checkpatch.pl issues in soc_common.c.
 
-Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+---
+ drivers/pcmcia/soc_common.c |  128 +++++++++++++++++++++++--------------------
+ 1 files changed, 68 insertions(+), 60 deletions(-)
 
-Thanks.
-
-> ---
->  include/linux/module.h        |    6 ++----
->  include/trace/events/module.h |   14 +++++++-------
->  kernel/module.c               |    3 +--
->  3 files changed, 10 insertions(+), 13 deletions(-)
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 5e869ff..393ec39 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -460,8 +460,7 @@ static inline void __module_get(struct module *module)
->  	if (module) {
->  		preempt_disable();
->  		__this_cpu_inc(module->refptr->count);
-> -		trace_module_get(module, _THIS_IP_,
-> -				 __this_cpu_read(module->refptr->count));
-> +		trace_module_get(module, _THIS_IP_);
->  		preempt_enable();
->  	}
->  }
-> @@ -475,8 +474,7 @@ static inline int try_module_get(struct module *module)
->  
->  		if (likely(module_is_live(module))) {
->  			__this_cpu_inc(module->refptr->count);
-> -			trace_module_get(module, _THIS_IP_,
-> -				__this_cpu_read(module->refptr->count));
-> +			trace_module_get(module, _THIS_IP_);
->  		}
->  		else
->  			ret = 0;
-> diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-> index 4b0f48b..a585f81 100644
-> --- a/include/trace/events/module.h
-> +++ b/include/trace/events/module.h
-> @@ -53,9 +53,9 @@ TRACE_EVENT(module_free,
->  
->  DECLARE_EVENT_CLASS(module_refcnt,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt),
-> +	TP_ARGS(mod, ip),
->  
->  	TP_STRUCT__entry(
->  		__field(	unsigned long,	ip		)
-> @@ -65,7 +65,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
->  
->  	TP_fast_assign(
->  		__entry->ip	= ip;
-> -		__entry->refcnt	= refcnt;
-> +		__entry->refcnt	= __this_cpu_read(mod->refptr->count);
->  		__assign_str(name, mod->name);
->  	),
->  
-> @@ -75,16 +75,16 @@ DECLARE_EVENT_CLASS(module_refcnt,
->  
->  DEFINE_EVENT(module_refcnt, module_get,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt)
-> +	TP_ARGS(mod, ip)
->  );
->  
->  DEFINE_EVENT(module_refcnt, module_put,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt)
-> +	TP_ARGS(mod, ip)
->  );
->  
->  TRACE_EVENT(module_request,
-> diff --git a/kernel/module.c b/kernel/module.c
-> index c968d36..21591ad 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -800,8 +800,7 @@ void module_put(struct module *module)
->  		preempt_disable();
->  		__this_cpu_dec(module->refptr->count);
->  
-> -		trace_module_put(module, _RET_IP_,
-> -				 __this_cpu_read(module->refptr->count));
-> +		trace_module_put(module, _RET_IP_);
->  		/* Maybe they're waiting for us to drop reference? */
->  		if (unlikely(!module_is_live(module)))
->  			wake_up_process(module->waiter);
-
-
+diff --git a/drivers/pcmcia/soc_common.c b/drivers/pcmcia/soc_common.c
+index fd4c25a..25c5b50 100644
+--- a/drivers/pcmcia/soc_common.c
++++ b/drivers/pcmcia/soc_common.c
+@@ -31,20 +31,20 @@
+ ======================================================================*/
+ 
+ 
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
++#include <linux/cpufreq.h>
+ #include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/irq.h>
+ #include <linux/kernel.h>
+-#include <linux/timer.h>
+ #include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
+ #include <linux/mutex.h>
+-#include <linux/interrupt.h>
+-#include <linux/irq.h>
+ #include <linux/spinlock.h>
+-#include <linux/cpufreq.h>
++#include <linux/timer.h>
+ 
+ #include <mach/hardware.h>
+-#include <asm/io.h>
+ #include <asm/system.h>
+ 
+ #include "soc_common.h"
+@@ -69,7 +69,8 @@ EXPORT_SYMBOL(soc_pcmcia_debug);
+ 
+ #endif
+ 
+-#define to_soc_pcmcia_socket(x)	container_of(x, struct soc_pcmcia_socket, socket)
++#define to_soc_pcmcia_socket(x)	\
++	container_of(x, struct soc_pcmcia_socket, socket)
+ 
+ static unsigned short
+ calc_speed(unsigned short *spds, int num, unsigned short dflt)
+@@ -86,11 +87,15 @@ calc_speed(unsigned short *spds, int num, unsigned short dflt)
+ 	return speed;
+ }
+ 
+-void soc_common_pcmcia_get_timing(struct soc_pcmcia_socket *skt, struct soc_pcmcia_timing *timing)
++void soc_common_pcmcia_get_timing(struct soc_pcmcia_socket *skt,
++	struct soc_pcmcia_timing *timing)
+ {
+-	timing->io = calc_speed(skt->spd_io, MAX_IO_WIN, SOC_PCMCIA_IO_ACCESS);
+-	timing->mem = calc_speed(skt->spd_mem, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
+-	timing->attr = calc_speed(skt->spd_attr, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
++	timing->io =
++		calc_speed(skt->spd_io, MAX_IO_WIN, SOC_PCMCIA_IO_ACCESS);
++	timing->mem =
++		calc_speed(skt->spd_mem, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
++	timing->attr =
++		calc_speed(skt->spd_attr, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
+ }
+ EXPORT_SYMBOL(soc_common_pcmcia_get_timing);
+ 
+@@ -132,8 +137,8 @@ static unsigned int soc_common_pcmcia_skt_state(struct soc_pcmcia_socket *skt)
+  *
+  * Convert PCMCIA socket state to our socket configure structure.
+  */
+-static int
+-soc_common_pcmcia_config_skt(struct soc_pcmcia_socket *skt, socket_state_t *state)
++static int soc_common_pcmcia_config_skt(
++	struct soc_pcmcia_socket *skt, socket_state_t *state)
+ {
+ 	int ret;
+ 
+@@ -145,7 +150,8 @@ soc_common_pcmcia_config_skt(struct soc_pcmcia_socket *skt, socket_state_t *stat
+ 		 */
+ 		if (skt->irq_state != 1 && state->io_irq) {
+ 			skt->irq_state = 1;
+-			set_irq_type(skt->socket.pci_irq, IRQ_TYPE_EDGE_FALLING);
++			set_irq_type(skt->socket.pci_irq,
++				IRQ_TYPE_EDGE_FALLING);
+ 		} else if (skt->irq_state == 1 && state->io_irq == 0) {
+ 			skt->irq_state = 0;
+ 			set_irq_type(skt->socket.pci_irq, IRQ_TYPE_NONE);
+@@ -299,24 +305,24 @@ soc_common_pcmcia_get_status(struct pcmcia_socket *sock, unsigned int *status)
+  * of power configuration, reset, &c. We also record the value of
+  * `state' in order to regurgitate it to the PCMCIA core later.
+  */
+-static int
+-soc_common_pcmcia_set_socket(struct pcmcia_socket *sock, socket_state_t *state)
++static int soc_common_pcmcia_set_socket(
++	struct pcmcia_socket *sock, socket_state_t *state)
+ {
+ 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
+ 
+-	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
+-			(state->csc_mask==0)?"<NONE> ":"",
+-			(state->csc_mask&SS_DETECT)?"DETECT ":"",
+-			(state->csc_mask&SS_READY)?"READY ":"",
+-			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
+-			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
+-			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
+-			(state->flags==0)?"<NONE> ":"",
+-			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
+-			(state->flags&SS_IOCARD)?"IOCARD ":"",
+-			(state->flags&SS_RESET)?"RESET ":"",
+-			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
+-			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
++	debug(skt, 2, "mask: %s%s%s%s%s%s flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
++			(state->csc_mask == 0)		? "<NONE> " :	"",
++			(state->csc_mask & SS_DETECT)	? "DETECT " :	"",
++			(state->csc_mask & SS_READY)	? "READY " :	"",
++			(state->csc_mask & SS_BATDEAD)	? "BATDEAD " :	"",
++			(state->csc_mask & SS_BATWARN)	? "BATWARN " :	"",
++			(state->csc_mask & SS_STSCHG)	? "STSCHG " :	"",
++			(state->flags == 0)		? "<NONE> " :	"",
++			(state->flags & SS_PWR_AUTO)	? "PWR_AUTO " :	"",
++			(state->flags & SS_IOCARD)	? "IOCARD " :	"",
++			(state->flags & SS_RESET)	? "RESET " :	"",
++			(state->flags & SS_SPKR_ENA)	? "SPKR_ENA " :	"",
++			(state->flags & SS_OUTPUT_ENA)	? "OUTPUT_ENA " : "",
+ 			state->Vcc, state->Vpp, state->io_irq);
+ 
+ 	return soc_common_pcmcia_config_skt(skt, state);
+@@ -331,8 +337,8 @@ soc_common_pcmcia_set_socket(struct pcmcia_socket *sock, socket_state_t *state)
+  *
+  * Returns: 0 on success, -1 on error
+  */
+-static int
+-soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *map)
++static int soc_common_pcmcia_set_io_map(
++	struct pcmcia_socket *sock, struct pccard_io_map *map)
+ {
+ 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
+ 	unsigned short speed = map->speed;
+@@ -341,14 +347,14 @@ soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *m
+ 		map->map, map->speed, (unsigned long long)map->start,
+ 		(unsigned long long)map->stop);
+ 	debug(skt, 2, "flags: %s%s%s%s%s%s%s%s\n",
+-		(map->flags==0)?"<NONE>":"",
+-		(map->flags&MAP_ACTIVE)?"ACTIVE ":"",
+-		(map->flags&MAP_16BIT)?"16BIT ":"",
+-		(map->flags&MAP_AUTOSZ)?"AUTOSZ ":"",
+-		(map->flags&MAP_0WS)?"0WS ":"",
+-		(map->flags&MAP_WRPROT)?"WRPROT ":"",
+-		(map->flags&MAP_USE_WAIT)?"USE_WAIT ":"",
+-		(map->flags&MAP_PREFETCH)?"PREFETCH ":"");
++		(map->flags == 0)		? "<NONE>"	: "",
++		(map->flags & MAP_ACTIVE)	? "ACTIVE "	: "",
++		(map->flags & MAP_16BIT)	? "16BIT "	: "",
++		(map->flags & MAP_AUTOSZ)	? "AUTOSZ "	: "",
++		(map->flags & MAP_0WS)		? "0WS "	: "",
++		(map->flags & MAP_WRPROT)	? "WRPROT "	: "",
++		(map->flags & MAP_USE_WAIT)	? "USE_WAIT "	: "",
++		(map->flags & MAP_PREFETCH)	? "PREFETCH "	: "");
+ 
+ 	if (map->map >= MAX_IO_WIN) {
+ 		printk(KERN_ERR "%s(): map (%d) out of range\n", __func__,
+@@ -385,8 +391,8 @@ soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *m
+  *
+  * Returns: 0 on success, -ERRNO on error
+  */
+-static int
+-soc_common_pcmcia_set_mem_map(struct pcmcia_socket *sock, struct pccard_mem_map *map)
++static int soc_common_pcmcia_set_mem_map(
++	struct pcmcia_socket *sock, struct pccard_mem_map *map)
+ {
+ 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
+ 	struct resource *res;
+@@ -395,14 +401,14 @@ soc_common_pcmcia_set_mem_map(struct pcmcia_socket *sock, struct pccard_mem_map
+ 	debug(skt, 2, "map %u speed %u card_start %08x\n",
+ 		map->map, map->speed, map->card_start);
+ 	debug(skt, 2, "flags: %s%s%s%s%s%s%s%s\n",
+-		(map->flags==0)?"<NONE>":"",
+-		(map->flags&MAP_ACTIVE)?"ACTIVE ":"",
+-		(map->flags&MAP_16BIT)?"16BIT ":"",
+-		(map->flags&MAP_AUTOSZ)?"AUTOSZ ":"",
+-		(map->flags&MAP_0WS)?"0WS ":"",
+-		(map->flags&MAP_WRPROT)?"WRPROT ":"",
+-		(map->flags&MAP_ATTRIB)?"ATTRIB ":"",
+-		(map->flags&MAP_USE_WAIT)?"USE_WAIT ":"");
++		(map->flags == 0)		? "<NONE>"	: "",
++		(map->flags & MAP_ACTIVE)	? "ACTIVE "	: "",
++		(map->flags & MAP_16BIT)	? "16BIT "	: "",
++		(map->flags & MAP_AUTOSZ)	? "AUTOSZ "	: "",
++		(map->flags & MAP_0WS)		? "0WS "	: "",
++		(map->flags & MAP_WRPROT)	? "WRPROT "	: "",
++		(map->flags & MAP_ATTRIB)	? "ATTRIB "	: "",
++		(map->flags & MAP_USE_WAIT)	? "USE_WAIT "	: "");
+ 
+ 	if (map->map >= MAX_WIN)
+ 		return -EINVAL;
+@@ -457,8 +463,8 @@ static struct bittbl conf_bits[] = {
+ 	{ SS_OUTPUT_ENA,	"SS_OUTPUT_ENA"	},
+ };
+ 
+-static void
+-dump_bits(char **p, const char *prefix, unsigned int val, struct bittbl *bits, int sz)
++static void dump_bits(char **p, const char *prefix,
++	unsigned int val, struct bittbl *bits, int sz)
+ {
+ 	char *b = *p;
+ 	int i;
+@@ -476,13 +482,14 @@ dump_bits(char **p, const char *prefix, unsigned int val, struct bittbl *bits, i
+  *
+  * Returns: the number of characters added to the buffer
+  */
+-static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
++static ssize_t show_status(
++	struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct soc_pcmcia_socket *skt =
+ 		container_of(dev, struct soc_pcmcia_socket, socket.dev);
+ 	char *p = buf;
+ 
+-	p+=sprintf(p, "slot     : %d\n", skt->nr);
++	p += sprintf(p, "slot     : %d\n", skt->nr);
+ 
+ 	dump_bits(&p, "status", skt->status,
+ 		  status_bits, ARRAY_SIZE(status_bits));
+@@ -491,12 +498,12 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
+ 	dump_bits(&p, "cs_flags", skt->cs_state.flags,
+ 		  conf_bits, ARRAY_SIZE(conf_bits));
+ 
+-	p+=sprintf(p, "Vcc      : %d\n", skt->cs_state.Vcc);
+-	p+=sprintf(p, "Vpp      : %d\n", skt->cs_state.Vpp);
+-	p+=sprintf(p, "IRQ      : %d (%d)\n", skt->cs_state.io_irq,
++	p += sprintf(p, "Vcc      : %d\n", skt->cs_state.Vcc);
++	p += sprintf(p, "Vpp      : %d\n", skt->cs_state.Vpp);
++	p += sprintf(p, "IRQ      : %d (%d)\n", skt->cs_state.io_irq,
+ 		skt->socket.pci_irq);
+ 	if (skt->ops->show_timing)
+-		p+=skt->ops->show_timing(skt, p);
++		p += skt->ops->show_timing(skt, p);
+ 
+ 	return p-buf;
+ }
+@@ -589,7 +596,7 @@ soc_pcmcia_notifier(struct notifier_block *nb, unsigned long val, void *data)
+ 
+ 	mutex_lock(&soc_pcmcia_sockets_lock);
+ 	list_for_each_entry(skt, &soc_pcmcia_sockets, node)
+-		if ( skt->ops->frequency_change )
++		if (skt->ops->frequency_change)
+ 			ret += skt->ops->frequency_change(skt, val, freqs);
+ 	mutex_unlock(&soc_pcmcia_sockets_lock);
+ 
+@@ -615,7 +622,8 @@ fs_initcall(soc_pcmcia_cpufreq_register);
+ 
+ static void soc_pcmcia_cpufreq_unregister(void)
+ {
+-	cpufreq_unregister_notifier(&soc_pcmcia_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
++	cpufreq_unregister_notifier(&soc_pcmcia_notifier_block,
++		CPUFREQ_TRANSITION_NOTIFIER);
+ }
+ module_exit(soc_pcmcia_cpufreq_unregister);
+ 
 -- 
-~Randy
+1.7.0.3
+
