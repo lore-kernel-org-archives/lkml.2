@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab0CXQJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:09:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61349 "EHLO mx1.redhat.com"
+	id S932151Ab0CXQJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:09:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52152 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464Ab0CXQJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:09:36 -0400
-Date: Wed, 24 Mar 2010 17:07:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] move_task_off_dead_cpu: take rq->lock around
-	select_fallback_rq()
-Message-ID: <20100324160727.GA4121@redhat.com>
-References: <20100315091010.GA9131@redhat.com> <1269445284.5109.360.camel@twins>
+	id S1756428Ab0CXQJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:09:52 -0400
+Message-ID: <4BAA393A.9000105@redhat.com>
+Date: Wed, 24 Mar 2010 18:09:30 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1269445284.5109.360.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org> <4BAA3496.2010901@redhat.com> <20100324155927.GI14800@8bytes.org>
+In-Reply-To: <20100324155927.GI14800@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24, Peter Zijlstra wrote:
+On 03/24/2010 05:59 PM, Joerg Roedel wrote:
 >
-> On Mon, 2010-03-15 at 10:10 +0100, Oleg Nesterov wrote:
-> >  static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
-> >  {
-> > +       struct rq *rq = cpu_rq(dead_cpu);
-> > +       int needs_cpu, dest_cpu;
-> > +       unsigned long flags;
-> >  again:
-> > +       local_irq_save(flags);
-> > +
-> > +       raw_spin_lock(&rq->lock);
-> > +       needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
->
->                                        ^ 
-> kernel/sched.c:5445: warning: ‘dest_cpu’ may be used uninitialized in this function
+>    
+>>> I am not tied to /sys/kvm. We could also use /proc/<pid>/kvm/ for
+>>> example. This would keep anything in the process space (except for the
+>>> global list of VMs which we should have anyway).
+>>>
+>>>        
+>> How about ~/.qemu/guests/$pid?
+>>      
+> That makes it hard for perf to find it and even harder to get a list of
+> all VMs.
 
-Hmm. looks like my gcc is more friendly...
+Looks trivial to find a guest, less so with enumerating (still doable).
 
-OK. certainly I'll send the updated patch, if this series passes
-your review otherwise.
+>   With /proc/<pid>/kvm/guest we could symlink all guest
+> directories to /proc/kvm/ and perf reads the list from there. Also perf
+> can easily derive the directory for a guest from its pid.
+> Last but not least its kernel-created and thus independent from the
+> userspace part being used.
+>    
 
-Oleg.
+Doesn't perf already has a dependency on naming conventions for finding 
+debug information?
+
+-- 
+error compiling committee.c: too many arguments to function
 
