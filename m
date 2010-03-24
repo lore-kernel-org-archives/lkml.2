@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab0CXAY1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 20:24:27 -0400
-Received: from crca.org.au ([74.207.252.120]:40877 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab0CXAY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 20:24:26 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BA95BEB.7040805@crca.org.au>
-Date: Wed, 24 Mar 2010 11:25:15 +1100
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
+	id S1753335Ab0CXAbM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 20:31:12 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:60183 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab0CXAbL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 20:31:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dcYVen1Xv4Ncnzl37MDXDJy4zXchoRyWHjd3byKYUQKyGL4v9rS6W/eGo5whVrjPHa
+         kJPmOxkyscV4l9udJhryz0+psABpu6zhmpdwiwQ3iFQoFQ1APapBP+NxHyAObQClYoLX
+         xT3aFZXj2QBLrQMD10NwUawK5two4oLyeqOd8=
+Date: Wed, 24 Mar 2010 01:31:08 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 06/18] sched: Generate trace points only if scheduler
+	tracing is enabled
+Message-ID: <20100324003106.GA9425@nowhere>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz> <1269304340-25372-7-git-send-email-jack@suse.cz> <20100323010756.GB8292@nowhere> <1269388321.5363.377.camel@localhost>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, chris.mason@oracle.com, hch@lst.de
-Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
- ioctl
-References: <20100323142200.GA2381@localhost.localdomain> <20100323142843.GG30031@ZenIV.linux.org.uk> <20100323143456.GC2381@localhost.localdomain> <20100323144828.GH30031@ZenIV.linux.org.uk> <20100323150301.GD2381@localhost.localdomain> <20100323150923.GI30031@ZenIV.linux.org.uk> <4BA94157.6090907@crca.org.au> <20100323231802.GL30031@ZenIV.linux.org.uk> <4BA95454.1080400@crca.org.au> <4BA95501.4000806@crca.org.au> <20100324002117.GN30031@ZenIV.linux.org.uk>
-In-Reply-To: <20100324002117.GN30031@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269388321.5363.377.camel@localhost>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Tue, Mar 23, 2010 at 07:52:01PM -0400, Steven Rostedt wrote:
+> On Tue, 2010-03-23 at 02:07 +0100, Frederic Weisbecker wrote:
+> > On Tue, Mar 23, 2010 at 01:32:08AM +0100, Jan Kara wrote:
+> > > CC: Ingo Molnar <mingo@elte.hu>
+> > > CC: Peter Zijlstra <peterz@infradead.org>
+> > > Signed-off-by: Jan Kara <jack@suse.cz>
+> > > ---
+> > 
+> > 
+> > Note this one is an exception.
+> > Once tracing is enabled, we need the context switch
+> > tracer anyway to keep track of the pid:cmdline mappings.
+> > 
+> > 
+> 
+> Yes, the scheduling tracepoints are needed by several tracers. This must
+> be enabled by all.
+> 
+> But then again, I'm thinking it would be nicer to find a way to lower
+> the impact than just turning them off.
+> 
+> Perhaps only allow the individual disabling if CONFIG_EMBEDDED is set.
 
-On 24/03/10 11:21, Al Viro wrote:
-> On Wed, Mar 24, 2010 at 10:55:45AM +1100, Nigel Cunningham wrote:
->> Hi again.
->>
->> On 24/03/10 10:52, Nigel Cunningham wrote:
->>>> I've stayed away from TuxOnIce flamefests and I've no idea how
->>>> representative
->>>> that snippet is, but if it *does* match the general code quality in
->>>> there...
->>>> Ouch.
->>>
->>> Locking isn't necessary because of the freezing.
->>
->> Err, freezer, I mean.
->
-> Even leaving aside the accuracy of that (and I seriously doubt it), this
-> is completely wrong since *code* *gets* *copied*.
 
-Ok. That's a fair enough point. I'll add locking.
+Yeah agreed!
 
-Regards,
-
-Nigel
