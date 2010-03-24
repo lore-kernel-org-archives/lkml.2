@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932937Ab0CXUgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:36:44 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:36831 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932739Ab0CXUgl (ORCPT
+	id S932921Ab0CXUjL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:39:11 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48064 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932365Ab0CXUjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:36:41 -0400
-Date: Wed, 24 Mar 2010 21:36:34 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC 07/15] PM / Hibernate: add sws_modules_ops
-Message-ID: <20100324203634.GH5798@elf.ucw.cz>
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
- <1269361063-3341-7-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269361063-3341-7-git-send-email-jslaby@suse.cz>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 24 Mar 2010 16:39:09 -0400
+Date: Wed, 24 Mar 2010 20:43:05 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: turbolad995@yahoo.co.uk
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Major Linux sound bugs
+Message-ID: <20100324204305.4613bde9@lxorguk.ukuu.org.uk>
+In-Reply-To: <4BAA6405.968.842BC@turbolad995.yahoo.co.uk>
+References: <4BAA6405.968.842BC@turbolad995.yahoo.co.uk>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-03-23 17:17:35, Jiri Slaby wrote:
-> For now they will only hold swap operations. In next patches, user
-> support will be converted to ops as well to have a single layer and
-> can push pages instead of pulling them.
+On Wed, 24 Mar 2010 19:12:05 -0000
+turbolad995@yahoo.co.uk wrote:
 
-> +struct sws_module_ops {
-> +	unsigned long (*storage_available)(void);
-> +
-> +	int (*get_reader)(unsigned int *flags_p);
-> +	int (*put_reader)(void);
-> +	int (*get_writer)(void);
-> +	int (*put_writer)(unsigned int flags, int error);
-> +	int (*read_page)(void *addr, struct bio **bio_chain);
-> +	int (*write_page)(void *addr, struct bio **bio_chain);
-> +};
+> Hi. I don't know who to contact about this, but nobody seems to know 
+> how to fix this problem or where/why it's occurring.  Here's the 
+> lowdown: in Linux distributions such as Ubuntu, some programs will 
+> only work with sound when you close ALL other programs first. I've 
+> mentioned this on Launchpad, but nobody seems to know why or how to 
+> fix it. 
 
-sws_ prefix is strange.
+Sound arbitration is pretty much entirely done in user space. You need to
+talk to your distribution about it and how the software it uses is
+configured. Probably some of what is shipped is not configured to share
+nicely or you've added something which doesn't play nice.
 
-Plus, could we get some docs what it does? Stuff like "get_writer" is
-not entirely self-documenting.
-
-									Pavel
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Alan
