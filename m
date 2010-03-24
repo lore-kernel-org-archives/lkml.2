@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0CXKlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:41:21 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:55583 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449Ab0CXKlS (ORCPT
+	id S1755617Ab0CXKl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:41:28 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:31372 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0CXKlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:41:18 -0400
+	Wed, 24 Mar 2010 06:41:24 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,217 +15,176 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 8/8] powerpc : use early_res/nobootmem
-Date: Wed, 24 Mar 2010 03:37:09 -0700
-Message-Id: <1269427029-21000-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 2/8] x86: add find_e820_area_node
+Date: Wed, 24 Mar 2010 03:37:03 -0700
+Message-Id: <1269427029-21000-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
 References: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BA9EBFE.0157,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4BA9EBFF.00DA,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-new early_res is extension for lmb, and it could be used to replace bootmem
+David Miller pointed out that early_res have problem to find node data on correct node
+when we have
+node0: [0, 2g), [4g, 6g), [10g, 14g)
+node1: [6g, 10g), [14g, 18g)
+the cross node case
 
-also even could be used to simplify the bootmem path if needed.
+the problem is there for x86 bits even before we are using early_res for bootmem replacement.
+after early_res for bootmem replacement, alloc_bootmem_node still can get range on correct node
 
---NOT TESTED--
+this patch is fixing problem before bootmem or early_res replacement for bootmem.
+
+now only user is for x86 64bit numa to find node data.
+
+the point is use early_node_map with find_e820_area_node()
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/powerpc/Kconfig   |   14 ++++++++++++++
- arch/powerpc/mm/mem.c  |   23 +++++++++++++++++++++--
- arch/powerpc/mm/numa.c |   11 ++++++++++-
- 3 files changed, 45 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/e820.h |    1 +
+ arch/x86/kernel/e820.c      |   15 +++++++++++++++
+ arch/x86/mm/numa_64.c       |    4 ++--
+ include/linux/mm.h          |    2 ++
+ mm/page_alloc.c             |   37 +++++++++++++++++++++++--------------
+ 5 files changed, 43 insertions(+), 16 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 2e19500..307c3ef 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -52,6 +52,9 @@ config HAVE_SETUP_PER_CPU_AREA
- config NEED_PER_CPU_EMBED_FIRST_CHUNK
- 	def_bool PPC64
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index ec8a52d..41553af 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -116,6 +116,7 @@ extern unsigned long end_user_pfn;
  
-+config HAVE_EARLY_RES
-+	def_bool y
-+
- config IRQ_PER_CPU
- 	bool
- 	default y
-@@ -443,6 +446,17 @@ config ARCH_SPARSEMEM_DEFAULT
- 	def_bool y
- 	depends on (SMP && PPC_PSERIES) || PPC_PS3
+ extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
+ extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
++u64 find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ #include <linux/early_res.h>
  
-+config NO_BOOTMEM
-+	default y
-+	bool "Disable Bootmem code"
-+	---help---
-+	  Use early_res directly instead of bootmem before slab is ready.
-+		- allocator (buddy) [generic]
-+		- early allocator (bootmem) [generic]
-+		- very early allocator (reserve_early*()/lmb)
-+	  So reduce one layer between early allocator to final allocator
-+
-+
- config ARCH_POPULATES_NODE_MAP
- 	def_bool y
- 
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 448f972..7004f9e 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -179,9 +179,11 @@ EXPORT_SYMBOL_GPL(walk_system_ram_range);
- void __init do_init_bootmem(void)
- {
- 	unsigned long i;
--	unsigned long start, bootmap_pages;
- 	unsigned long total_pages;
-+#ifndef CONFIG_NO_BOOTMEM
-+	unsigned long start, bootmap_pages;
- 	int boot_mapsize;
-+#endif
- 
- 	max_low_pfn = max_pfn = lmb_end_of_DRAM() >> PAGE_SHIFT;
- 	total_pages = (lmb_end_of_DRAM() - memstart_addr) >> PAGE_SHIFT;
-@@ -189,7 +191,9 @@ void __init do_init_bootmem(void)
- 	total_pages = total_lowmem >> PAGE_SHIFT;
- 	max_low_pfn = lowmem_end_addr >> PAGE_SHIFT;
- #endif
-+	min_low_pfn = MEMORY_START >> PAGE_SHIFT;
- 
-+#ifndef CONFIG_NO_BOOTMEM
- 	/*
- 	 * Find an area to use for the bootmem bitmap.  Calculate the size of
- 	 * bitmap required as (Total Memory) / PAGE_SIZE / BITS_PER_BYTE.
-@@ -199,8 +203,8 @@ void __init do_init_bootmem(void)
- 
- 	start = lmb_alloc(bootmap_pages << PAGE_SHIFT, PAGE_SIZE);
- 
--	min_low_pfn = MEMORY_START >> PAGE_SHIFT;
- 	boot_mapsize = init_bootmem_node(NODE_DATA(0), start >> PAGE_SHIFT, min_low_pfn, max_low_pfn);
-+#endif
- 
- 	/* Add active regions with valid PFNs */
- 	for (i = 0; i < lmb.memory.cnt; i++) {
-@@ -210,6 +214,7 @@ void __init do_init_bootmem(void)
- 		add_active_range(0, start_pfn, end_pfn);
- 	}
- 
-+#ifndef CONFIG_NO_BOOTMEM
- 	/* Add all physical memory to the bootmem map, mark each area
- 	 * present.
- 	 */
-@@ -241,6 +246,7 @@ void __init do_init_bootmem(void)
- 				BOOTMEM_DEFAULT);
- 
- #endif
-+#endif
- 	/* XXX need to clip this if using highmem? */
- 	sparse_memory_present_with_active_regions(0);
- 
-@@ -311,6 +317,16 @@ void __init paging_init(void)
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 740b440..05ee724 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -787,6 +787,21 @@ u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
+ 	return -1ULL;
  }
- #endif /* ! CONFIG_NEED_MULTIPLE_NODES */
  
-+u64 __init get_max_mapped(void)
++u64 __init find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align)
 +{
-+	u64 end = max_low_pfn;
++	u64 addr;
++	/*
++	 * need to call this function after e820_register_active_regions
++	 * so early_node_map[] is set
++	 */
++	addr = find_memory_core_early(nid, size, align, start, end);
++	if (addr != -1ULL)
++		return addr;
 +
-+	end <<= PAGE_SHIFT;
-+
-+	return end;
++	/* fallback, should already have start end in the node range */
++	return find_e820_area(start, end, size, align);
 +}
 +
-+
- void __init mem_init(void)
- {
- #ifdef CONFIG_NEED_MULTIPLE_NODES
-@@ -337,6 +353,9 @@ void __init mem_init(void)
- 				free_all_bootmem_node(NODE_DATA(nid));
- 		}
- 	}
-+#ifdef CONFIG_NO_BOOTMEM
-+	totalram_pages += free_all_memory_core_early(MAX_NUMNODES);
-+#endif
- #else
- 	max_mapnr = max_pfn;
- 	totalram_pages += free_all_bootmem();
-diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
-index 64c0022..024c3ff 100644
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -90,6 +90,7 @@ static int __cpuinit fake_numa_create_new_node(unsigned long end_pfn,
- 	return 0;
- }
- 
-+#ifndef CONFIG_NO_BOOTMEM
  /*
-  * get_active_region_work_fn - A helper function for get_node_active_region
-  *	Returns datax set to the start_pfn and end_pfn if they contain
-@@ -131,6 +132,7 @@ static void __init get_node_active_region(unsigned long start_pfn,
- 	node_ar->end_pfn = start_pfn;
- 	work_with_active_regions(nid, get_active_region_work_fn, node_ar);
+  * pre allocated 4k and reserved it in e820
+  */
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 8948f47..ffc5ad5 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -174,7 +174,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
+ 	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
+ 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+-	mem = find_e820_area(start, end, size, align);
++	mem = find_e820_area_node(nodeid, start, end, size, align);
+ 	if (mem != -1L)
+ 		return __va(mem);
+ 
+@@ -184,7 +184,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
+ 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
+ 	else
+ 		start = MAX_DMA_PFN<<PAGE_SHIFT;
+-	mem = find_e820_area(start, end, size, align);
++	mem = find_e820_area_node(nodeid, start, end, size, align);
+ 	if (mem != -1L)
+ 		return __va(mem);
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e70f21b..5c2d17e 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1160,6 +1160,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d03c946..eef3757 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3408,12 +3408,11 @@ int __init add_from_early_node_map(struct range *range, int az,
+ 	return nr_range;
  }
-+#endif
  
- static void __cpuinit map_cpu_to_node(int cpu, int node)
+-#ifdef CONFIG_NO_BOOTMEM
+-void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
++#ifdef CONFIG_HAVE_EARLY_RES
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+ 					u64 goal, u64 limit)
  {
-@@ -845,6 +847,7 @@ static struct notifier_block __cpuinitdata ppc64_numa_nb = {
- 	.priority = 1 /* Must run before sched domains notifier. */
- };
+ 	int i;
+-	void *ptr;
  
-+#ifndef CONFIG_NO_BOOTMEM
- static void mark_reserved_regions_for_nid(int nid)
- {
- 	struct pglist_data *node = NODE_DATA(nid);
-@@ -911,7 +914,7 @@ static void mark_reserved_regions_for_nid(int nid)
- 		}
- 	}
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+@@ -3430,20 +3429,30 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+ 		if (addr == -1ULL)
+ 			continue;
+ 
+-#if 0
+-		printk(KERN_DEBUG "alloc (nid=%d %llx - %llx) (%llx - %llx) %llx %llx => %llx\n",
+-				nid,
+-				ei_start, ei_last, goal, limit, size,
+-				align, addr);
++		return addr;
++	}
++
++	return -1ULL;
++}
+ #endif
+ 
+-		ptr = phys_to_virt(addr);
+-		memset(ptr, 0, size);
+-		reserve_early_without_check(addr, addr + size, "BOOTMEM");
+-		return ptr;
+-	}
++#ifdef CONFIG_NO_BOOTMEM
++void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
++{
++	void *ptr;
+ 
+-	return NULL;
++	u64 addr;
++
++	addr = find_memory_core_early(nid, size, align, goal, limit);
++
++	if (addr == -1ULL)
++		return NULL;
++
++	ptr = phys_to_virt(addr);
++	memset(ptr, 0, size);
++	reserve_early_without_check(addr, addr + size, "BOOTMEM");
++	return ptr;
  }
--
-+#endif
- 
- void __init do_init_bootmem(void)
- {
-@@ -932,8 +935,10 @@ void __init do_init_bootmem(void)
- 
- 	for_each_online_node(nid) {
- 		unsigned long start_pfn, end_pfn;
-+#ifndef CONFIG_NO_BOOTMEM
- 		void *bootmem_vaddr;
- 		unsigned long bootmap_pages;
-+#endif
- 
- 		get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
- 
-@@ -951,7 +956,9 @@ void __init do_init_bootmem(void)
-   		dbg("node %d\n", nid);
- 		dbg("NODE_DATA() = %p\n", NODE_DATA(nid));
- 
-+#ifndef CONFIG_NO_BOOTMEM
- 		NODE_DATA(nid)->bdata = &bootmem_node_data[nid];
-+#endif
- 		NODE_DATA(nid)->node_start_pfn = start_pfn;
- 		NODE_DATA(nid)->node_spanned_pages = end_pfn - start_pfn;
- 
-@@ -961,6 +968,7 @@ void __init do_init_bootmem(void)
-   		dbg("start_paddr = %lx\n", start_pfn << PAGE_SHIFT);
-   		dbg("end_paddr = %lx\n", end_pfn << PAGE_SHIFT);
- 
-+#ifndef CONFIG_NO_BOOTMEM
- 		bootmap_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
- 		bootmem_vaddr = careful_zallocation(nid,
- 					bootmap_pages << PAGE_SHIFT,
-@@ -979,6 +987,7 @@ void __init do_init_bootmem(void)
- 		 * done correctly.
- 		 */
- 		mark_reserved_regions_for_nid(nid);
-+#endif
- 		sparse_memory_present_with_active_regions(nid);
- 	}
+ #endif
  
 -- 
 1.6.4.2
