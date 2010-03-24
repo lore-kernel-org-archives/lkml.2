@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab0CXLLF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:11:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:39504 "EHLO mx3.mail.elte.hu"
+	id S1755638Ab0CXLLb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:11:31 -0400
+Received: from ozlabs.org ([203.10.76.45]:58087 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755261Ab0CXLLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:11:02 -0400
-Date: Wed, 24 Mar 2010 12:10:46 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-       Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] x86: remove early_res debug output (was Re: Confusing
- bootmem messages on bootup)
-Message-ID: <20100324111046.GA15701@elte.hu>
-References: <alpine.LNX.2.00.1003191526560.18642@pobox.suse.cz>
- <alpine.LNX.2.00.1003191544010.18642@pobox.suse.cz>
- <20100322082832.GB19077@elte.hu>
- <alpine.LNX.2.00.1003220931360.18642@pobox.suse.cz>
- <alpine.LNX.2.00.1003241155510.4242@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1003241155510.4242@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+	id S1755540Ab0CXLLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:11:19 -0400
+Subject: Re: [PATCH 2/4] panic: Allow taint flag for warnings to be changed
+ from TAINT_WARN
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-s390@vger.kernel.org,
+       linux-parisc@vger.kernel.org, linux-sh@vger.kernel.org,
+       linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       linuxppc-dev@ozlabs.org, David Woodhouse <dwmw2@infradead.org>
+In-Reply-To: <1269126340.18314.115.camel@localhost>
+References: <1269126097.18314.111.camel@localhost>
+	 <1269126340.18314.115.camel@localhost>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-SQzw8iyBB5lB+1zvqHUK"
+Date: Wed, 24 Mar 2010 22:11:15 +1100
+Message-ID: <1269429075.2500.5.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jiri Kosina <jkosina@suse.cz> wrote:
+--=-SQzw8iyBB5lB+1zvqHUK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Ingo,
-> 
-> are you going to pick this one up for -rc3 please?
+On Sat, 2010-03-20 at 23:05 +0000, Ben Hutchings wrote:
+> WARN() is used in some places to report firmware or hardware bugs that
+> are then worked-around.  These bugs do not affect the stability of the
+> kernel and should not set the usual TAINT_WARN flag.  To allow for
+> this, add WARN_TAINT() and WARN_TAINT_ONCE() macros that take a taint
+> flag as argument.
+..
+> The architecture-specific changes here are untested and need to be
+> reviewed by architecture maintainers.
 
-Yeah - was on my list, have done that now. Andrew, any objections against 
-this? (it touches mm/bootmem.c)
+I'm not one of them, but this at least builds on powerpc FWIW.
 
-Thanks,
+cheers
 
-	Ingo
+--=-SQzw8iyBB5lB+1zvqHUK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEABECAAYFAkup80wACgkQdSjSd0sB4dIztACgqdsQgORNZPCSzn7hLuXW0Lxs
+CgMAn3Q8KMC7wAK7ce/Z3AZ9SQ+1QrUy
+=p3xA
+-----END PGP SIGNATURE-----
+
+--=-SQzw8iyBB5lB+1zvqHUK--
+
