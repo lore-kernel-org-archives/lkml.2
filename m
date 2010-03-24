@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab0CXSDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:03:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42397 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932729Ab0CXSC7 (ORCPT
+	id S932662Ab0CXSCv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:02:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54014 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932601Ab0CXSCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:02:59 -0400
+	Wed, 24 Mar 2010 14:02:49 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 4/6] perf annotate: Allow specifying DSOs where to look for symbol
-Date: Wed, 24 Mar 2010 15:02:36 -0300
-Message-Id: <1269453758-27044-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 5/6] perf symbols: Avoid unnecessary symbol loading when dso list is specified
+Date: Wed, 24 Mar 2010 15:02:37 -0300
+Message-Id: <1269453758-27044-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1269453758-27044-1-git-send-email-acme@infradead.org>
 References: <1269453758-27044-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,8 +30,13 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Using the same parameter as in 'perf report', allowing to specify just
-one and disambiguate between DSOs that have the symbol name of interest.
+We were performing the full thread__find_addr_location operation, i.e.
+resolving to a map/dso _and_ loading its symbols when we can optimize it
+by first calling thread__find_addr_map to find just the map/dso, check
+if it is one that we are interested in (passed via --dsos/-d in 'perf
+annotate', 'perf report', etc) and if not avoid loading the symtab.
+
+Nice speedup when we know which DSO we're interested in.
 
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -39,22 +44,61 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ tools/perf/util/event.c |   38 +++++++++++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 15 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 003f7dc..887e8e0 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -591,6 +591,8 @@ static const char * const annotate_usage[] = {
- static const struct option options[] = {
- 	OPT_STRING('i', "input", &input_name, "file",
- 		    "input file name"),
-+	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
-+		   "only consider symbols in these dsos"),
- 	OPT_STRING('s', "symbol", &sym_hist_filter, "symbol",
- 		    "symbol to annotate"),
- 	OPT_BOOLEAN('f', "force", &force, "don't complain, do it"),
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 705ec63..c2808ad 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -513,24 +513,32 @@ int event__preprocess_sample(const event_t *self, struct perf_session *session,
+ 
+ 	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
+ 
+-	thread__find_addr_location(thread, session, cpumode, MAP__FUNCTION,
+-				   self->ip.ip, al, filter);
++	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
++			      self->ip.ip, al);
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+-	/*
+-	 * We have to do this here as we may have a dso with no symbol hit that
+-	 * has a name longer than the ones with symbols sampled.
+-	 */
+-	if (al->map && !sort_dso.elide && !al->map->dso->slen_calculated)
+-		dso__calc_col_width(al->map->dso);
+-
+-	if (symbol_conf.dso_list &&
+-	    (!al->map || !al->map->dso ||
+-	     !(strlist__has_entry(symbol_conf.dso_list, al->map->dso->short_name) ||
+-	       (al->map->dso->short_name != al->map->dso->long_name &&
+-		strlist__has_entry(symbol_conf.dso_list, al->map->dso->long_name)))))
+-		goto out_filtered;
++	al->sym = NULL;
++
++	if (al->map) {
++		if (symbol_conf.dso_list &&
++		    (!al->map || !al->map->dso ||
++		     !(strlist__has_entry(symbol_conf.dso_list,
++					  al->map->dso->short_name) ||
++		       (al->map->dso->short_name != al->map->dso->long_name &&
++			strlist__has_entry(symbol_conf.dso_list,
++					   al->map->dso->long_name)))))
++			goto out_filtered;
++		/*
++		 * We have to do this here as we may have a dso with no symbol
++		 * hit that has a name longer than the ones with symbols
++		 * sampled.
++		 */
++		if (!sort_dso.elide && !al->map->dso->slen_calculated)
++			dso__calc_col_width(al->map->dso);
++
++		al->sym = map__find_symbol(al->map, al->addr, filter);
++	}
+ 
+ 	if (symbol_conf.sym_list && al->sym &&
+ 	    !strlist__has_entry(symbol_conf.sym_list, al->sym->name))
 -- 
 1.6.2.5
 
