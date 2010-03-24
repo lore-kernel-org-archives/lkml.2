@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab0CXIqu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 04:46:50 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:43232 "EHLO vps.mortis.eu"
+	id S1752631Ab0CXIt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 04:49:27 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59664 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab0CXIqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 04:46:48 -0400
-Date: Wed, 24 Mar 2010 09:46:43 +0100
-From: Giel van Schijndel <me@mortis.eu>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hwmon: f71882fg: properly acquire I/O regions while
- probing
-Message-ID: <20100324084643.GB6368@salidar.me.mortis.eu>
-References: <1269353535-23134-1-git-send-email-me@mortis.eu>
- <4BA9C9D6.4020903@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BwCQnh7xodEAoBMC"
-Content-Disposition: inline
-In-Reply-To: <4BA9C9D6.4020903@redhat.com>
-X-Face: 46T+Jilkx"/*x5]:HK*F2!;z\N`8XNfv!<F:e82Epd1k:*!abp@'tamh`KBQo[HA$d,r:c2%Xy&&"<pm7we=N=a#pZ-;h[/mlbeOPx6itqPc-g>4[O?U\!:LQNU@:T+?S*$G`=5sMJjet}Sv,fwQ)LtO{(F0/+..H3c<|GWm*pAS[PdKmQdFTvysgrU%~'m\K0<aI?JU)k6mT8'uJ
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751361Ab0CXIt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 04:49:26 -0400
+From: Tejun Heo <tj@kernel.org>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, Lee.Schermerhorn@hp.com,
+       cl@linux-foundation.org, mingo@elte.hu, adobriyan@gmail.com,
+       tglx@linutronix.de, hpa@zytor.com, yi.zhu@intel.com,
+       reinette.chatre@intel.com, ilw@linux.intel.com
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/4] x86: don't include slab.h from arch/x86/include/asm/pgtable_32.h
+Date: Wed, 24 Mar 2010 17:48:55 +0900
+Message-Id: <1269420538-18039-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269420538-18039-1-git-send-email-tj@kernel.org>
+References: <1269420538-18039-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 24 Mar 2010 08:49:06 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Including slab.h from x86 pgtable_32.h creates a troublesome
+dependency chain w/ ftrace enabled.  The following chain leads to
+inclusion of pgtable_32.h from define_trace.h.
 
---BwCQnh7xodEAoBMC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+ trace/define_trace.h
+ trace/ftrace.h
+ linux/ftrace_event.h
+ linux/ring_buffer.h
+ linux/mm.h
+ asm/pgtable.h
+ asm/pgtable_32.h
 
-On Wed, Mar 24, 2010 at 09:14:14AM +0100, Hans de Goede wrote:
-> I don't have any objections against the proposed changes, but there
-> are 3 unrelated changes in this patch, please break them up in
-> separate patches:
->=20
-> 1) code cleanup: properly using, previously defined, functions rather
->    than duplicating their code.
-> 2) properly acquire I/O regions while probing
-> 3) Make the addresses to probe an array
->=20
-> And IMHO you might just as well drop number 3, it does not really make
-> the code any better readable, and the old way is how all superio hwmon
-> drivers do things.
+And when slab.h itself defines trace hooks via
 
-Okay, broken up patches will follow as replies to this message.
+ linux/sl[aou]b_def.h
+ linux/kmemtrace.h
+ trace/events/kmem.h
 
-Regarding number (3), my goal wasn't to put the probe addresses in an
-array. My goal (as I think should have been made clear by the commit
-message I had added) was to make sure that upon failure f71882fg_find's
-return value gets passed back from the module's init function. This to
-make sure the *proper* error code gets passed back to the user of
-insmod/modprobe (as opposed to it being replaced by -ENODEV).
+If slab.h is not included before define_trace.h is included, this
+leads to duplicate definitions of kmemtrace hooks or other include
+dependency problems.
 
-Further I think non -ENODEV errors should probably immediately result in
-module initialisation failing (rather than retrying a probe), that's a
-design choice though (which my patch doesn't bother addressing right
-now).
+pgtable_32.h doesn't need slab.h to begin with.  Don't include it from
+there.
 
-However, regarding the for-loop/array thing, the same behaviour can be
-aqcuired with a patch like the one following this line. (Please tell me
-if you like this approach or something similar better. Though,
-personally, I think it's "hackisher"/dirtier).
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/include/asm/pgtable_32.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-index 4230729..42d6304 100644
---- a/drivers/hwmon/f71882fg.c
-+++ b/drivers/hwmon/f71882fg.c
-@@ -2295,9 +2295,11 @@ static int __init f71882fg_init(void)
-=20
-        memset(&sio_data, 0, sizeof(sio_data));
-=20
--       if (f71882fg_find(0x2e, &address, &sio_data) &&
--           f71882fg_find(0x4e, &address, &sio_data))
--               goto exit;
-+       if (f71882fg_find(0x2e, &address, &sio_data)) {
-+               err =3D f71882fg_find(0x4e, &address, &sio_data);
-+               if (err)
-+                       goto exit;
-+       }
-=20
-        err =3D platform_driver_register(&f71882fg_driver);
-        if (err)
+diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
+index 47339a1..2984a25 100644
+--- a/arch/x86/include/asm/pgtable_32.h
++++ b/arch/x86/include/asm/pgtable_32.h
+@@ -19,7 +19,6 @@
+ #include <asm/paravirt.h>
+ 
+ #include <linux/bitops.h>
+-#include <linux/slab.h>
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ 
+-- 
+1.6.4.2
 
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
-
---BwCQnh7xodEAoBMC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkup0XMACgkQZBYm/87l50IFwwCgoE+u1wVoFcVIIMduKz6QNHwE
-bPIAn1q5pgStdDimvbUvNkMzXdCOUIKX
-=GDYU
------END PGP SIGNATURE-----
-
---BwCQnh7xodEAoBMC--
