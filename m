@@ -1,160 +1,290 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab0CXFQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:16:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56177 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab0CXFQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:16:47 -0400
-Message-ID: <4BA9A07E.8070508@cn.fujitsu.com>
-Date: Wed, 24 Mar 2010 13:17:50 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] sched: Remove USER_SCHED from documentation
-References: <4BA9A05F.7010407@cn.fujitsu.com>
-In-Reply-To: <4BA9A05F.7010407@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752249Ab0CXFRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:17:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38234 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751664Ab0CXFRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:17:53 -0400
+Date: Wed, 24 Mar 2010 16:17:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for March 24
+Message-Id: <20100324161746.85edc5a3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__24_Mar_2010_16_17_46_+1100_MUWepR5+z3FSksCP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-USER_SCHED has been removed, so update the documentation
-accordingly.
+--Signature=_Wed__24_Mar_2010_16_17_46_+1100_MUWepR5+z3FSksCP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Serge E. Hallyn <serue@us.ibm.com>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- Documentation/scheduler/sched-design-CFS.txt |   54 +------------------------
- Documentation/scheduler/sched-rt-group.txt   |   20 ++--------
- 2 files changed, 7 insertions(+), 67 deletions(-)
+Hi all,
 
-diff --git a/Documentation/scheduler/sched-design-CFS.txt b/Documentation/scheduler/sched-design-CFS.txt
-index 6f33593..8239ebb 100644
---- a/Documentation/scheduler/sched-design-CFS.txt
-+++ b/Documentation/scheduler/sched-design-CFS.txt
-@@ -211,7 +211,7 @@ provide fair CPU time to each such task group.  For example, it may be
- desirable to first provide fair CPU time to each user on the system and then to
- each task belonging to a user.
- 
--CONFIG_GROUP_SCHED strives to achieve exactly that.  It lets tasks to be
-+CONFIG_CGROUP_SCHED strives to achieve exactly that.  It lets tasks to be
- grouped and divides CPU time fairly among such groups.
- 
- CONFIG_RT_GROUP_SCHED permits to group real-time (i.e., SCHED_FIFO and
-@@ -220,38 +220,11 @@ SCHED_RR) tasks.
- CONFIG_FAIR_GROUP_SCHED permits to group CFS (i.e., SCHED_NORMAL and
- SCHED_BATCH) tasks.
- 
--At present, there are two (mutually exclusive) mechanisms to group tasks for
--CPU bandwidth control purposes:
--
-- - Based on user id (CONFIG_USER_SCHED)
--
--   With this option, tasks are grouped according to their user id.
--
-- - Based on "cgroup" pseudo filesystem (CONFIG_CGROUP_SCHED)
--
--   This options needs CONFIG_CGROUPS to be defined, and lets the administrator
-+   These options need CONFIG_CGROUPS to be defined, and let the administrator
-    create arbitrary groups of tasks, using the "cgroup" pseudo filesystem.  See
-    Documentation/cgroups/cgroups.txt for more information about this filesystem.
- 
--Only one of these options to group tasks can be chosen and not both.
--
--When CONFIG_USER_SCHED is defined, a directory is created in sysfs for each new
--user and a "cpu_share" file is added in that directory.
--
--	# cd /sys/kernel/uids
--	# cat 512/cpu_share		# Display user 512's CPU share
--	1024
--	# echo 2048 > 512/cpu_share	# Modify user 512's CPU share
--	# cat 512/cpu_share		# Display user 512's CPU share
--	2048
--	#
--
--CPU bandwidth between two users is divided in the ratio of their CPU shares.
--For example: if you would like user "root" to get twice the bandwidth of user
--"guest," then set the cpu_share for both the users such that "root"'s cpu_share
--is twice "guest"'s cpu_share.
--
--When CONFIG_CGROUP_SCHED is defined, a "cpu.shares" file is created for each
-+When CONFIG_FAIR_GROUP_SCHED is defined, a "cpu.shares" file is created for each
- group created using the pseudo filesystem.  See example steps below to create
- task groups and modify their CPU share using the "cgroups" pseudo filesystem.
- 
-@@ -273,24 +246,3 @@ task groups and modify their CPU share using the "cgroups" pseudo filesystem.
- 
- 	# #Launch gmplayer (or your favourite movie player)
- 	# echo <movie_player_pid> > multimedia/tasks
--
--8. Implementation note: user namespaces
--
--User namespaces are intended to be hierarchical.  But they are currently
--only partially implemented.  Each of those has ramifications for CFS.
--
--First, since user namespaces are hierarchical, the /sys/kernel/uids
--presentation is inadequate.  Eventually we will likely want to use sysfs
--tagging to provide private views of /sys/kernel/uids within each user
--namespace.
--
--Second, the hierarchical nature is intended to support completely
--unprivileged use of user namespaces.  So if using user groups, then
--we want the users in a user namespace to be children of the user
--who created it.
--
--That is currently unimplemented.  So instead, every user in a new
--user namespace will receive 1024 shares just like any user in the
--initial user namespace.  Note that at the moment creation of a new
--user namespace requires each of CAP_SYS_ADMIN, CAP_SETUID, and
--CAP_SETGID.
-diff --git a/Documentation/scheduler/sched-rt-group.txt b/Documentation/scheduler/sched-rt-group.txt
-index 86eabe6..605b0d4 100644
---- a/Documentation/scheduler/sched-rt-group.txt
-+++ b/Documentation/scheduler/sched-rt-group.txt
-@@ -126,23 +126,12 @@ priority!
- 2.3 Basis for grouping tasks
- ----------------------------
- 
--There are two compile-time settings for allocating CPU bandwidth. These are
--configured using the "Basis for grouping tasks" multiple choice menu under
--General setup > Group CPU Scheduler:
--
--a. CONFIG_USER_SCHED (aka "Basis for grouping tasks" =  "user id")
--
--This lets you use the virtual files under
--"/sys/kernel/uids/<uid>/cpu_rt_runtime_us" to control he CPU time reserved for
--each user .
--
--The other option is:
--
--.o CONFIG_CGROUP_SCHED (aka "Basis for grouping tasks" = "Control groups")
-+Enabling CONFIG_RT_GROUP_SCHED lets you explicitly allocate real
-+CPU bandwidth to task groups.
- 
- This uses the /cgroup virtual file system and
- "/cgroup/<cgroup>/cpu.rt_runtime_us" to control the CPU time reserved for each
--control group instead.
-+control group.
- 
- For more information on working with control groups, you should read
- Documentation/cgroups/cgroups.txt as well.
-@@ -161,8 +150,7 @@ For now, this can be simplified to just the following (but see Future plans):
- ===============
- 
- There is work in progress to make the scheduling period for each group
--("/sys/kernel/uids/<uid>/cpu_rt_period_us" or
--"/cgroup/<cgroup>/cpu.rt_period_us" respectively) configurable as well.
-+("/cgroup/<cgroup>/cpu.rt_period_us") configurable as well.
- 
- The constraint on the period is that a subgroup must have a smaller or
- equal period to its parent. But realistically its not very useful _yet_
--- 
-1.6.3
+Changes since 20100323:
 
+Dropped tree: tmio-mmc (long unresolved conflicts and unable to fetch)
+
+My fixes tree contains:
+	a patch for a pktcdvd build error from Arnd Bergmann
+	a revert of the commit that broke virtual consoles on PowerPC
+
+The input tree still has its build failure for which I reverted a commit.
+
+The kgdb tree lost its conflict and build failure.
+
+The wireless tree lost its conflicts, but gained a build failure for
+which I reverted a commit.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 158 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Applying: ar9170: fix for driver-core ABI change
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging reiserfs-bkl/reiserfs/kill-bkl
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+CONFLICT (content): Merge conflict in drivers/ata/ahci.c
+Merging infiniband/for-next
+Merging acpi/test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/nand/sh_flctl.c
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/char/hvc_console.c
+CONFLICT (content): Merge conflict in drivers/char/hvc_console.h
+CONFLICT (content): Merge conflict in drivers/char/virtio_console.c
+Merging mmc/next
+Merging input/next
+[master 013325c] Revert "Input: keyboard - fix formatting issues"
+[master 537ff10] Revert "Input: implement SysRq as a separate input handler"
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (content): Merge conflict in fs/notify/inotify/inotify_user.c
+CONFLICT (content): Merge conflict in include/linux/fsnotify.h
+CONFLICT (content): Merge conflict in kernel/audit_tree.c
+CONFLICT (content): Merge conflict in kernel/sysctl.c
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging hwlat/for-linus
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging quilt/staging
+Merging scsi-post-merge/master
+[master 1b8afd4] Revert "ath9k_htc: Support for AR9271 chipset."
+
+--Signature=_Wed__24_Mar_2010_16_17_46_+1100_MUWepR5+z3FSksCP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkupoHoACgkQjjKRsyhoI8y+JwCgopuhthxuG36shV5SsmVC6NYE
+1GQAn1zp/v0wXW3HdO3dqBzvsbl34USD
+=eAdc
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__24_Mar_2010_16_17_46_+1100_MUWepR5+z3FSksCP--
