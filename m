@@ -1,40 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab0CXQyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:54:13 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53309 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756579Ab0CXQyM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:54:12 -0400
-Date: Wed, 24 Mar 2010 16:58:00 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Greg KH <gregkh@suse.de>,
-       PavanSavoy <pavan_savoy@ti.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-Message-ID: <20100324165800.722086c3@lxorguk.ukuu.org.uk>
-In-Reply-To: <12213.61465.qm@web94909.mail.in2.yahoo.com>
-References: <1269447105.11714.117.camel@localhost.localdomain>
-	<12213.61465.qm@web94909.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+	id S932317Ab0CXQyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:54:36 -0400
+Received: from waste.org ([173.11.57.241]:38189 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932125Ab0CXQyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:54:35 -0400
+Subject: Re: [PATCH -mmotm] [BUGFIX] pagemap: fix pfn calculation for
+ hugepage
+From: Matt Mackall <mpm@selenic.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100324054227.GB9336@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <20100324054227.GB9336@spritzerA.linux.bs1.fc.nec.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 11:54:31 -0500
+Message-ID: <1269449671.3552.173.camel@calx>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The core of the problem is we cannot ask/install/ldisc_put for a line discipline from kernel space.
+On Wed, 2010-03-24 at 14:42 +0900, Naoya Horiguchi wrote:
+> When we look into pagemap using page-types with option -p, the value
+> of pfn for hugepages looks wrong (see below.)
+> This is because pte was evaluated only once for one vma
+> although it should be updated for each hugepage. This patch fixes it.
+> 
+>   $ page-types -p 3277 -Nl -b huge
+>   voffset   offset  len     flags
+>   7f21e8a00 11e400  1       ___U___________H_G________________
+>   7f21e8a01 11e401  1ff     ________________TG________________
+>                ^^^
+>   7f21e8c00 11e400  1       ___U___________H_G________________
+>   7f21e8c01 11e401  1ff     ________________TG________________
+>                ^^^
+> 
+> One hugepage contains 1 head page and 511 tail pages in x86_64 and
+> each two lines represent each hugepage. Voffset and offset mean
+> virtual address and physical address in the page unit, respectively.
+> The different hugepages should not have the same offset value.
+> 
+> With this patch applied:
+> 
+>   $ page-types -p 3386 -Nl -b huge
+>   voffset   offset   len    flags
+>   7fec7a600 112c00   1      ___UD__________H_G________________
+>   7fec7a601 112c01   1ff    ________________TG________________
+>                ^^^
+>   7fec7a800 113200   1      ___UD__________H_G________________
+>   7fec7a801 113201   1ff    ________________TG________________
+>                ^^^
+>                OK
+> 
+> Changelog:
+>  - add hugetlb entry walker in mm/pagewalk.c
+>    (the idea based on Kamezawa-san's patch)
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-The device is always in WL protocol mode and starts this way ?
+Looks good to me.
 
-If so lets simply fix the tty layer to allow a driver to set the initial
-ldisc.
+Acked-by: Matt Mackall <mpm@selenic.com>
 
-> The only reason I wanted this to be in staging was to have sort of continuous review process, and in hope the driver wouldn't be forgotten.
+-- 
+http://selenic.com : development and support for Mercurial and Linux
 
-I would certainly prefer this as it is much easier to refine this way
 
-Alan
