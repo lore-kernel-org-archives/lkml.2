@@ -1,323 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab0CXSCx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:02:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54016 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932635Ab0CXSCt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:02:49 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 2/6] perf tools: Introduce struct map_symbol
-Date: Wed, 24 Mar 2010 15:02:34 -0300
-Message-Id: <1269453758-27044-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1269453758-27044-1-git-send-email-acme@infradead.org>
-References: <1269453758-27044-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S932756Ab0CXSDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:03:35 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:56024 "EHLO mail-out1.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932674Ab0CXSCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 14:02:52 -0400
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BAA5035.1060906@panasas.com>
+References: <4BAA3493.1030802@panasas.com>
+	 <20100324160037.GP30031@ZenIV.linux.org.uk>	<4BAA3828.2070506@panasas.com>
+	 <20100324160754.GQ30031@ZenIV.linux.org.uk>	<4BAA398C.5050901@panasas.com>
+	 <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>
+	 <4BAA4CAC.6060104@panasas.com>  <4BAA5035.1060906@panasas.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 14:02:36 -0400
+Message-ID: <1269453756.5982.33.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 7 sum msgs/h 1 total rcpts 2605 max rcpts/h 27 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 23F97611CB1009430C3ADEE1D6117A5688766EC8
+X-UiO-SPAM-Test: remote_host: 130.129.30.233 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 5 max/h 2 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Wed, 2010-03-24 at 19:47 +0200, Boaz Harrosh wrote: 
+> On 03/24/2010 07:32 PM, Boaz Harrosh wrote:
+> > On 03/24/2010 07:15 PM, Boaz Harrosh wrote:
+> >> On 03/24/2010 06:39 PM, Al Viro wrote:
+> >>> On Wed, Mar 24, 2010 at 06:10:52PM +0200, Boaz Harrosh wrote:
+> >>>> On 03/24/2010 06:07 PM, Al Viro wrote:
+> >>>>> On Wed, Mar 24, 2010 at 06:04:56PM +0200, Boaz Harrosh wrote:
+> >>>>>>> Bloody impressive...  Does that happen to underlying fs or to what you
+> >>>>>>> are seeing via NFS?
+> >>>>>>
+> >>>>>> Only via NFS. All local access is fine.
+> >>>>>>
+> >>>>>> After the corruption above I can cd to the local mount cp a fresh copy
+> >>>>>> of .git/index file and play around just fine.
+> >>>>>> Once I return to the NFS mounted directory, a git status will do it.
+> >>>>>> It does not matter if caches are cold (Takes a long time) or hot it happens
+> >>>>>> every time.
+> >>>>>>
+> >>>>>> Weird I know, I'm playing some more with it as we speak
+> >>>>>
+> >>>>> What happens if you export to box running older kernel *or* from box
+> >>>>> running older kernel?  IOW, is that nfsd or nfs client getting unhappy?
+> >>>>> I'd suspect the latter, but...
+> >>>>
+> >>>>
+> >>>> Good question, I'm just getting to that because currently it's all
+> >>>> over localhost (same kernel, BTW inside a UML)
+> >>>>
+> >>>> I will try what you said. Please through any other tests on me, if needed.
+> >>>
+> >>
+> >> As you suspected old-server+new-client fails. any-thing+old-client is
+> >> fine. (two separate machines this time)
+> >>
+> >>> Very interesting...  Just to see which path we are hitting: add
+> >>> 	if (IS_ERR(nd->intent.open.file))
+> >>> 		printk("foo: %s", pathname);
+> >>> right after
+> >>>                 error = do_lookup(nd, &nd->last, path);
+> >>>                 if (error)
+> >>>                         goto exit;
+> >>> in fs/namei.c:do_last() and see whether we are hitting it or not on objects
+> >>> that get corrupted.
+> >>
+> >> Sorry was busy shifting setups, didn't see your mail, will do that next ...
+> >>
+> >> Thanks
+> >> Boaz
+> > 
+> > 
+> > Below is what I changed. (I hope its what you meant)
+> > It does not get hit, just that git corruption as before but I don't see the prints.
+> > I'll try running with nfs dbg-prints on see what it does around the time gits complains
+> > 
+> > Boaz
+> > 
+> 
+> Attached is an output of when I:
+> $ echo $((0x7fff)) > /proc/sys/sunrpc/nfs_debug
+> and then run git status. (On a new client)
+> 
+> We can see the complains after things got broken but what broke it
+> that's hard for me to see.
+> 
+> (If the file is too big I'll put it on the web somewhere, see if it arrives)
+> 
+> Boaz
 
-That will be in both struct hist_entry and struct callchain_list, so
-that the TUI can store a pointer to the pair (map, symbol) in the trees
-where hist_entries and callchain_lists are present, to allow precise
-annotation instead of looking for the first symbol with the selected
-name.
+Something weird is going on in your trace:
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-annotate.c |   34 +++++++++++++++++-----------------
- tools/perf/util/hist.c        |    8 +++++---
- tools/perf/util/newt.c        |    4 ++--
- tools/perf/util/sort.c        |   22 +++++++++++-----------
- tools/perf/util/sort.h        |    3 +--
- tools/perf/util/symbol.h      |    5 +++++
- 6 files changed, 41 insertions(+), 35 deletions(-)
+NFS: open file(5b/46ff70a61cf4e159a0339df0e02113bf35f805)
+NFS: permission(0:12/323044), mask=0x24, res=0
+NFS: revalidating (0:12/323044)
+--> nfs4_setup_sequence clp 00000000791f3000 session (null) sr_slotid
+128
+<-- nfs4_setup_sequence status=0
+encode_compound: tag=
+decode_attr_type: type=00
+decode_attr_change: change attribute=10077553255782547456
+decode_attr_size: file size=921
+decode_attr_fsid: fsid=(0x0/0x0)
+decode_attr_fileid: fileid=0
+decode_attr_fs_locations: fs_locations done, error = 0
+decode_attr_mode: file mode=00
+decode_attr_nlink: nlink=1
+decode_attr_owner: uid=-2
+decode_attr_group: gid=-2
+decode_attr_rdev: rdev=(0x0:0x0)
+decode_attr_space_used: space used=0
+decode_attr_time_access: atime=0
+decode_attr_time_metadata: ctime=1269422731
+decode_attr_time_modify: mtime=1269422731
+decode_attr_mounted_on_fileid: fileid=0
+decode_getfattr: xdr returned 0
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 45d1466..003f7dc 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -69,13 +69,13 @@ static int sym__alloc_hist(struct symbol *self)
- static int annotate__hist_hit(struct hist_entry *he, u64 ip)
- {
- 	unsigned int sym_size, offset;
--	struct symbol *sym = he->sym;
-+	struct symbol *sym = he->ms.sym;
- 	struct sym_priv *priv;
- 	struct sym_hist *h;
- 
- 	he->count++;
- 
--	if (!sym || !he->map)
-+	if (!sym || !he->ms.map)
- 		return 0;
- 
- 	priv = symbol__priv(sym);
-@@ -85,7 +85,7 @@ static int annotate__hist_hit(struct hist_entry *he, u64 ip)
- 	sym_size = sym->end - sym->start;
- 	offset = ip - sym->start;
- 
--	pr_debug3("%s: ip=%#Lx\n", __func__, he->map->unmap_ip(he->map, ip));
-+	pr_debug3("%s: ip=%#Lx\n", __func__, he->ms.map->unmap_ip(he->ms.map, ip));
- 
- 	if (offset >= sym_size)
- 		return 0;
-@@ -94,8 +94,8 @@ static int annotate__hist_hit(struct hist_entry *he, u64 ip)
- 	h->sum++;
- 	h->ip[offset]++;
- 
--	pr_debug3("%#Lx %s: count++ [ip: %#Lx, %#Lx] => %Ld\n", he->sym->start,
--		  he->sym->name, ip, ip - he->sym->start, h->ip[offset]);
-+	pr_debug3("%#Lx %s: count++ [ip: %#Lx, %#Lx] => %Ld\n", he->ms.sym->start,
-+		  he->ms.sym->name, ip, ip - he->ms.sym->start, h->ip[offset]);
- 	return 0;
- }
- 
-@@ -187,7 +187,7 @@ static struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- static int parse_line(FILE *file, struct hist_entry *he,
- 		      struct list_head *head)
- {
--	struct symbol *sym = he->sym;
-+	struct symbol *sym = he->ms.sym;
- 	struct objdump_line *objdump_line;
- 	char *line = NULL, *tmp, *tmp2;
- 	size_t line_len;
-@@ -226,7 +226,7 @@ static int parse_line(FILE *file, struct hist_entry *he,
- 	}
- 
- 	if (line_ip != -1) {
--		u64 start = map__rip_2objdump(he->map, sym->start);
-+		u64 start = map__rip_2objdump(he->ms.map, sym->start);
- 		offset = line_ip - start;
- 	}
- 
-@@ -244,7 +244,7 @@ static int objdump_line__print(struct objdump_line *self,
- 			       struct list_head *head,
- 			       struct hist_entry *he, u64 len)
- {
--	struct symbol *sym = he->sym;
-+	struct symbol *sym = he->ms.sym;
- 	static const char *prev_line;
- 	static const char *prev_color;
- 
-@@ -327,7 +327,7 @@ static void insert_source_line(struct sym_ext *sym_ext)
- 
- static void free_source_line(struct hist_entry *he, int len)
- {
--	struct sym_priv *priv = symbol__priv(he->sym);
-+	struct sym_priv *priv = symbol__priv(he->ms.sym);
- 	struct sym_ext *sym_ext = priv->ext;
- 	int i;
- 
-@@ -346,7 +346,7 @@ static void free_source_line(struct hist_entry *he, int len)
- static void
- get_source_line(struct hist_entry *he, int len, const char *filename)
- {
--	struct symbol *sym = he->sym;
-+	struct symbol *sym = he->ms.sym;
- 	u64 start;
- 	int i;
- 	char cmd[PATH_MAX * 2];
-@@ -361,7 +361,7 @@ get_source_line(struct hist_entry *he, int len, const char *filename)
- 	if (!priv->ext)
- 		return;
- 
--	start = he->map->unmap_ip(he->map, sym->start);
-+	start = he->ms.map->unmap_ip(he->ms.map, sym->start);
- 
- 	for (i = 0; i < len; i++) {
- 		char *path = NULL;
-@@ -425,7 +425,7 @@ static void print_summary(const char *filename)
- 
- static void hist_entry__print_hits(struct hist_entry *self)
- {
--	struct symbol *sym = self->sym;
-+	struct symbol *sym = self->ms.sym;
- 	struct sym_priv *priv = symbol__priv(sym);
- 	struct sym_hist *h = priv->hist;
- 	u64 len = sym->end - sym->start, offset;
-@@ -439,9 +439,9 @@ static void hist_entry__print_hits(struct hist_entry *self)
- 
- static void annotate_sym(struct hist_entry *he)
- {
--	struct map *map = he->map;
-+	struct map *map = he->ms.map;
- 	struct dso *dso = map->dso;
--	struct symbol *sym = he->sym;
-+	struct symbol *sym = he->ms.sym;
- 	const char *filename = dso->long_name, *d_filename;
- 	u64 len;
- 	char command[PATH_MAX*2];
-@@ -526,17 +526,17 @@ static void perf_session__find_annotations(struct perf_session *self)
- 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
- 		struct sym_priv *priv;
- 
--		if (he->sym == NULL)
-+		if (he->ms.sym == NULL)
- 			continue;
- 
--		priv = symbol__priv(he->sym);
-+		priv = symbol__priv(he->ms.sym);
- 		if (priv->hist == NULL)
- 			continue;
- 
- 		annotate_sym(he);
- 		/*
- 		 * Since we have a hist_entry per IP for the same symbol, free
--		 * he->sym->hist to signal we already processed this symbol.
-+		 * he->ms.sym->hist to signal we already processed this symbol.
- 		 */
- 		free(priv->hist);
- 		priv->hist = NULL;
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 5843a9c..4eefb52 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -22,8 +22,10 @@ struct hist_entry *__perf_session__add_hist_entry(struct rb_root *hists,
- 	struct hist_entry *he;
- 	struct hist_entry entry = {
- 		.thread	= al->thread,
--		.map	= al->map,
--		.sym	= al->sym,
-+		.ms = {
-+			.map	= al->map,
-+			.sym	= al->sym,
-+		},
- 		.ip	= al->addr,
- 		.level	= al->level,
- 		.count	= count,
-@@ -654,7 +656,7 @@ print_entries:
- 		if (symbol_conf.use_callchain)
- 			ret += hist_entry__fprintf_callchain(h, fp, session_total);
- 
--		if (h->map == NULL && verbose > 1) {
-+		if (h->ms.map == NULL && verbose > 1) {
- 			__map_groups__fprintf_maps(&h->thread->mg,
- 						   MAP__FUNCTION, fp);
- 			fprintf(fp, "%.10s end\n", graph_dotted_line);
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index a3465a0..25cd2e1 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -287,9 +287,9 @@ static size_t hist_entry__append_browser(struct hist_entry *self,
- 
- 		indexes[0] = NEWT_ARG_APPEND;
- 		indexes[1] = NEWT_ARG_LAST;
--		newt_checkbox_tree__add(tree, s, self->sym, indexes);
-+		newt_checkbox_tree__add(tree, s, self->ms.sym, indexes);
- 	} else
--		newtListboxAppendEntry(tree, s, self->sym);
-+		newtListboxAppendEntry(tree, s, self->ms.sym);
- 
- 	return strlen(s);
- }
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index cb0f327..9b80c13 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -131,8 +131,8 @@ sort__comm_print(FILE *fp, struct hist_entry *self, unsigned int width)
- int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	struct dso *dso_l = left->map ? left->map->dso : NULL;
--	struct dso *dso_r = right->map ? right->map->dso : NULL;
-+	struct dso *dso_l = left->ms.map ? left->ms.map->dso : NULL;
-+	struct dso *dso_r = right->ms.map ? right->ms.map->dso : NULL;
- 	const char *dso_name_l, *dso_name_r;
- 
- 	if (!dso_l || !dso_r)
-@@ -152,9 +152,9 @@ sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- size_t
- sort__dso_print(FILE *fp, struct hist_entry *self, unsigned int width)
- {
--	if (self->map && self->map->dso) {
--		const char *dso_name = !verbose ? self->map->dso->short_name :
--						  self->map->dso->long_name;
-+	if (self->ms.map && self->ms.map->dso) {
-+		const char *dso_name = !verbose ? self->ms.map->dso->short_name :
-+						  self->ms.map->dso->long_name;
- 		return repsep_fprintf(fp, "%-*s", width, dso_name);
- 	}
- 
-@@ -168,11 +168,11 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- {
- 	u64 ip_l, ip_r;
- 
--	if (left->sym == right->sym)
-+	if (left->ms.sym == right->ms.sym)
- 		return 0;
- 
--	ip_l = left->sym ? left->sym->start : left->ip;
--	ip_r = right->sym ? right->sym->start : right->ip;
-+	ip_l = left->ms.sym ? left->ms.sym->start : left->ip;
-+	ip_r = right->ms.sym ? right->ms.sym->start : right->ip;
- 
- 	return (int64_t)(ip_r - ip_l);
- }
-@@ -184,13 +184,13 @@ sort__sym_print(FILE *fp, struct hist_entry *self, unsigned int width __used)
- 	size_t ret = 0;
- 
- 	if (verbose) {
--		char o = self->map ? dso__symtab_origin(self->map->dso) : '!';
-+		char o = self->ms.map ? dso__symtab_origin(self->ms.map->dso) : '!';
- 		ret += repsep_fprintf(fp, "%#018llx %c ", (u64)self->ip, o);
- 	}
- 
- 	ret += repsep_fprintf(fp, "[%c] ", self->level);
--	if (self->sym)
--		ret += repsep_fprintf(fp, "%s", self->sym->name);
-+	if (self->ms.sym)
-+		ret += repsep_fprintf(fp, "%s", self->ms.sym->name);
- 	else
- 		ret += repsep_fprintf(fp, "%#016llx", (u64)self->ip);
- 
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 753f9ea..5985686 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -45,8 +45,7 @@ struct hist_entry {
- 	struct rb_node		rb_node;
- 	u64			count;
- 	struct thread		*thread;
--	struct map		*map;
--	struct symbol		*sym;
-+	struct map_symbol	ms;
- 	u64			ip;
- 	char			level;
- 	struct symbol	  *parent;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 0da2455..a4a894b 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -88,6 +88,11 @@ struct ref_reloc_sym {
- 	u64		unrelocated_addr;
- };
- 
-+struct map_symbol {
-+	struct map    *map;
-+	struct symbol *sym;
-+};
-+
- struct addr_location {
- 	struct thread *thread;
- 	struct map    *map;
--- 
-1.6.2.5
+A file type of '0' in the above trace is just wrong, and probably
+indicates that the server didn't even return that attribute.
+
+I'd say you have a corruption issue either on the server side or on your
+client.
+
+Trond
 
