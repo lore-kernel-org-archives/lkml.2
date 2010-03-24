@@ -1,137 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456Ab0CXKiL (ORCPT <rfc822;w@1wt.eu>);
+	id S1755484Ab0CXKiO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:38:14 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:50824 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755454Ab0CXKiL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Mar 2010 06:38:11 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50833 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755432Ab0CXKiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:38:08 -0400
-Date: Wed, 24 Mar 2010 10:37:49 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
-	compaction failure
-Message-ID: <20100324103749.GB21147@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-12-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231327580.10178@router.home> <20100323183936.GF5870@csn.ul.ie> <alpine.DEB.2.00.1003231422290.10178@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1003231422290.10178@router.home>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 4/8] lmb: seperate region array from lmb_region struct
+Date: Wed, 24 Mar 2010 03:34:17 -0700
+Message-Id: <1269426861-20903-5-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1269426861-20903-1-git-send-email-yinghai@kernel.org>
+References: <1269426861-20903-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BA9EB0C.0066,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 02:27:08PM -0500, Christoph Lameter wrote:
-> On Tue, 23 Mar 2010, Mel Gorman wrote:
-> 
-> > I was having some sort of fit when I wrote that obviously. Try this on
-> > for size
-> >
-> > The fragmentation index may indicate that a failure is due to external
-> > fragmentation but after a compaction run completes, it is still possible
-> > for an allocation to fail.
-> 
-> Ok.
-> 
-> > > > fail. There are two obvious reasons as to why
-> > > >
-> > > >   o Page migration cannot move all pages so fragmentation remains
-> > > >   o A suitable page may exist but watermarks are not met
-> > > >
-> > > > In the event of compaction and allocation failure, this patch prevents
-> > > > compaction happening for a short interval. It's only recorded on the
-> > >
-> > > compaction is "recorded"? deferred?
-> > >
-> >
-> > deferred makes more sense.
-> >
-> > What I was thinking at the time was that compact_resume was stored in struct
-> > zone - i.e. that is where it is recorded.
-> 
-> Ok adding a dozen or more words here may be useful.
-> 
+From: Yinghai Lu <yinghai@@kernel.org>
 
-In the event of compaction followed by an allocation failure, this patch
-defers further compaction in the zone for a period of time. The zone that
-is deferred is the first zone in the zonelist - i.e. the preferred zone.
-To defer compaction in the other zones, the information would need to
-be stored in the zonelist or implemented similar to the zonelist_cache.
-This would impact the fast-paths and is not justified at this time.
+lmb_init() connect them back.
 
-?
+also add nr_regions in lmb_region to tack the region array size.
 
-> > > > preferred zone but that should be enough coverage. This could have been
-> > > > implemented similar to the zonelist_cache but the increased size of the
-> > > > zonelist did not appear to be justified.
-> > >
-> > > > @@ -1787,6 +1787,9 @@ __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
-> > > >  			 */
-> > > >  			count_vm_event(COMPACTFAIL);
-> > > >
-> > > > +			/* On failure, avoid compaction for a short time. */
-> > > > +			defer_compaction(preferred_zone, jiffies + HZ/50);
-> > > > +
-> > >
-> > > 20ms? How was that interval determined?
-> > >
-> >
-> > Matches the time the page allocator would defer to an event like
-> > congestion. The choice is somewhat arbitrary. Ideally, there would be
-> > some sort of event that would re-enable compaction but there wasn't an
-> > obvious candidate so I used time.
-> 
-> There are frequent uses of HZ/10 as well especially in vmscna.c. A longer
-> time may be better? HZ/50 looks like an interval for writeout. But this
-> is related to reclaim?
-> 
+-v3: seperate lmb core change to seperated patch
+-v4: according to Ingo, change >= x -1 to > x
+     change region_array_size to nr_regions
 
-HZ/10 is somewhat of an arbitrary choice as well and there isn't data on
-which is better and which is worse. If the zone is full of dirty data, then
-HZ/10 makes sense for IO. If it happened to be mainly clean cache but under
-heavy memory pressure, then reclaim would be a relatively fast event and a
-shorter wait makes sense of HZ/50.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ include/linux/lmb.h |    5 ++++-
+ lib/lmb.c           |    9 ++++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-Thing is, if we start with a short timer and it's too short, COMPACTFAIL
-will be growing steadily. If we choose a long time and it's too long, there
-is no counter to indicate it was a bad choice. Hence, I'd prefer the short
-timer to start with and ideally resume compaction after some event in the
-future rather than depending on time.
-
-Does that make sense?
-
-> 
->  backing-dev.h    <global>                      283 long congestion_wait(int sync, long timeout);
-> 1 backing-dev.c    <global>                      762 EXPORT_SYMBOL(congestion_wait);
-> 2 usercopy_32.c    __copy_to_user_ll             754 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> 3 pktcdvd.c        pkt_make_request             2557 congestion_wait(BLK_RW_ASYNC, HZ);
-> 4 dm-crypt.c       kcryptd_crypt_write_convert   834 congestion_wait(BLK_RW_ASYNC, HZ/100);
-> 5 file.c           fat_file_release              137 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> 6 journal.c        reiserfs_async_progress_wait  990 congestion_wait(BLK_RW_ASYNC, HZ / 10);
-> 7 kmem.c           kmem_alloc                     61 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> 8 kmem.c           kmem_zone_alloc               117 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> 9 xfs_buf.c        _xfs_buf_lookup_pages         343 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> a backing-dev.c    congestion_wait               751 long congestion_wait(int sync, long timeout)
-> b memcontrol.c     mem_cgroup_force_empty       2858 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> c page-writeback.c throttle_vm_writeout          674 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> d page_alloc.c     __alloc_pages_high_priority  1753 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> e page_alloc.c     __alloc_pages_slowpath       1924 congestion_wait(BLK_RW_ASYNC, HZ/50);
-> f vmscan.c         shrink_inactive_list         1136 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> g vmscan.c         shrink_inactive_list         1220 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> h vmscan.c         do_try_to_free_pages         1837 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> i vmscan.c         balance_pgdat                2161 congestion_wait(BLK_RW_ASYNC, HZ/10);
-> 
-
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index f3d1433..37fd29e 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -26,7 +26,8 @@ struct lmb_property {
+ struct lmb_region {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct lmb_property region[MAX_LMB_REGIONS+1];
++	struct lmb_property *region;
++	unsigned long nr_regions;
+ };
+ 
+ struct lmb {
+@@ -37,6 +38,8 @@ struct lmb {
+ };
+ 
+ extern struct lmb lmb;
++extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ extern void __init lmb_init(void);
+ extern void __init lmb_analyze(void);
+diff --git a/lib/lmb.c b/lib/lmb.c
+index b1fc526..ed4e433 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -18,6 +18,8 @@
+ #define LMB_ALLOC_ANYWHERE	0
+ 
+ struct lmb lmb;
++struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ static int lmb_debug;
+ 
+@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct lmb_region *rgn,
+ 
+ void __init lmb_init(void)
+ {
++	lmb.memory.region   = lmb_memory_region;
++	lmb.reserved.region = lmb_reserved_region;
++	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
++	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
++
+ 	/* Create a dummy zero size LMB which will get coalesced away later.
+ 	 * This simplifies the lmb_add() code below...
+ 	 */
+@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_LMB_REGIONS)
++	if (rgn->cnt > rgn->nr_regions)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.4.2
+
