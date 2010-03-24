@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab0CXTzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 15:55:32 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:61943 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917Ab0CXTza convert rfc822-to-8bit (ORCPT
+	id S932123Ab0CXTzz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 15:55:55 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:46802 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab0CXTzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 15:55:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=X+EUihtn1R3gC1uFbMZ+Cb6S68mxL87PJbeXNjv9ROCJw2OWHVCbPkFbb2i7de17hx
-         TrqkC6TPZt4nH2TsaOEZsH8QqSgC2soduXZcrGgh+t7fzsmuMij0CIeYsHKT091RllaE
-         VdEFhDDZDnLKi9yFSgoz4xD6pbTn8ulIl+Nmg=
+	Wed, 24 Mar 2010 15:55:52 -0400
+Date: Wed, 24 Mar 2010 14:54:32 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
+ compaction failure
+In-Reply-To: <20100324103749.GB21147@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1003241453270.14329@router.home>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-12-git-send-email-mel@csn.ul.ie> <alpine.DEB.2.00.1003231327580.10178@router.home> <20100323183936.GF5870@csn.ul.ie> <alpine.DEB.2.00.1003231422290.10178@router.home>
+ <20100324103749.GB21147@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4BAA69BF.3080600@nortel.com>
-References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>
-	 <4BAA4EE4.3090900@nortel.com>
-	 <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>
-	 <4BAA69BF.3080600@nortel.com>
-Date: Wed, 24 Mar 2010 14:55:28 -0500
-Message-ID: <84621a61003241255i74282f53v3bb0111808895401@mail.gmail.com>
-Subject: Re: behavior of recvmmsg() on blocking sockets
-From: Brandon Black <blblack@gmail.com>
-To: Chris Friesen <cfriesen@nortel.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 2:36 PM, Chris Friesen <cfriesen@nortel.com> wrote:
-> Note that I said "large numbers of sockets".  Like tens of thousands.
-> In addition to context switch overhead this can also lead to issues with
-> memory consumption due to stack frames.
+On Wed, 24 Mar 2010, Mel Gorman wrote:
 
-Ok, agreed there.  In my case though, there will only ever be a
-handful of sockets.  Ideally it would be just one socket.  The only
-reason I allocate multiple sockets and spawn threads for them is
-because you can't scale past one CPU core on a single socket, due to
-the NIC and/or the driver and/or the socket locks and/or the basic
-nature of the problem.
+> > > What I was thinking at the time was that compact_resume was stored in struct
+> > > zone - i.e. that is where it is recorded.
+> >
+> > Ok adding a dozen or more words here may be useful.
+> >
+>
+> In the event of compaction followed by an allocation failure, this patch
+> defers further compaction in the zone for a period of time. The zone that
+> is deferred is the first zone in the zonelist - i.e. the preferred zone.
+> To defer compaction in the other zones, the information would need to
+> be stored in the zonelist or implemented similar to the zonelist_cache.
+> This would impact the fast-paths and is not justified at this time.
+>
+> ?
 
-> Consider the case where you want to do some other useful work in
-> addition to running your network server.  Every cpu cycle spent on the
-> network server is robbed from the other work.  In this scenario you want
-> to handle packets as efficiently as possible, so the timeout-based
-> behaviour is better since it is more likely to give you multiple packets
-> per syscall.
+Ok.
 
-That's a good point, I tend to tunnelvision on the dedicated server
-scenario.  I should probably have a user-level option for
-timeout-based operation as well, since the decision here gets to the
-systems admin/engineering level and will be situational.
+> > There are frequent uses of HZ/10 as well especially in vmscna.c. A longer
+> > time may be better? HZ/50 looks like an interval for writeout. But this
+> > is related to reclaim?
+> >
+>
+> HZ/10 is somewhat of an arbitrary choice as well and there isn't data on
+> which is better and which is worse. If the zone is full of dirty data, then
+> HZ/10 makes sense for IO. If it happened to be mainly clean cache but under
+> heavy memory pressure, then reclaim would be a relatively fast event and a
+> shorter wait makes sense of HZ/50.
+>
+> Thing is, if we start with a short timer and it's too short, COMPACTFAIL
+> will be growing steadily. If we choose a long time and it's too long, there
+> is no counter to indicate it was a bad choice. Hence, I'd prefer the short
+> timer to start with and ideally resume compaction after some event in the
+> future rather than depending on time.
+>
+> Does that make sense?
 
-Thanks,
--- Brandon
+Yes.
+
