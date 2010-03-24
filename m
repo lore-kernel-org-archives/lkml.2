@@ -1,63 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0CXOnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:43:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59664 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755686Ab0CXOnc (ORCPT
+	id S1756449Ab0CXOpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:45:00 -0400
+Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:59871 "EHLO
+	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756031Ab0CXOo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:43:32 -0400
-Date: Wed, 24 Mar 2010 07:41:49 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm]
- signals-clear-signal-tty-when-the-last-thread-exits.fix
-Message-Id: <20100324074149.8d4e96e6.akpm@linux-foundation.org>
-In-Reply-To: <20100324142348.GA8117@redhat.com>
-References: <20100319184020.GA519@redhat.com>
-	<20100324142348.GA8117@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Mar 2010 10:44:58 -0400
+Message-ID: <4BAA2566.4040905@blueyonder.co.uk>
+Date: Wed, 24 Mar 2010 14:44:54 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.7 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+MIME-Version: 1.0
+To: LKML Mailing List <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-x86_64@vger.kernel.org
+Subject: Re: Fwd: Re: Boot failure 2.6.33 - 2.6.33-git12 - 2.6.34-rc2 inclusive
+References: <4B9A4337.9030609@blueyonder.co.uk> <4BA233A9.1030407@blueyonder.co.uk>
+In-Reply-To: <4BA233A9.1030407@blueyonder.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010 15:23:48 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
+Problem still exists at 2.6.34-rc2.
+Motherboard/CPU/memory has been changed to Asus Crosshair III/AMD
+Phenom(tm) II X4 965 Processor/8GB DDR3. Rebuilt kernel on the new
+motherboard.
+Regards
+Sid.
 
-> (fixup for signals-clear-signal-tty-when-the-last-thread-exits.patch)
+On 18/03/10 14:07, Sid Boyce wrote:
+> Still no response to this problem and I still have it with
+> 2.6.34-rc1-git6. I also upgraded to the latest 2402 motherboard BIOS.
+> Regards
+> Sid.
 > 
-> I didn't get this warning, but the old gcc complains
 > 
-> 	kernel/exit.c: In function 'release_task':
-> 	kernel/exit.c:85: warning: 'tty' may be used uninitialized in this function
+> On 12/03/10 13:35, Sid Boyce wrote:
+>>
+>>
+>> -------- Original Message --------
+>> Subject: Re: Boot failure 2.6.33 - 2.6.33-git12 inclusive
+>> Date: Fri, 12 Mar 2010 11:01:55 +0800
+>> From: Américo Wang <xiyou.wangcong@gmail.com>
+>> To: sboyce@blueyonder.co.uk
+>> CC: Kernel Testers List <kernel-testers@vger.kernel.org>, "Rafael J.
+>> Wysocki" <rjw@sisk.pl>, 	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar
+>> <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+>>
+>> On Fri, Mar 12, 2010 at 6:49 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
+>>> Same problem up to 2.6.33-git15 and 2.6.34-rc1. No response since posted
+>>> to LKML last week.
+>>> --------------------------------------------------
+>>
+>>
+>> You need to Cc x86 people. Added.
+>>
+>>
+>>>
+>>> Asus Crosshair II motherboard, 4xCPU 8Gig storage fails, the M2N32-SLI
+>>> 2x CPU, 4 Gig and laptop 2x CPU, 2 Gig have no problems running
+>>> 2.6.33-git11 - all AMD CPU's.
+>>> Lockup requiring a hard reset.
+>>>
+>>> TCP cubic registered
+>>> registered taskstats version 1
+>>> Kmemleak: kernel memory leak detector initialized
+>>> Kmemleak: Automatic memory scanning thread started
+>>> No TPM chip found, activating TPM-bypass!
+>>> Freeing unused kernel memory: 688K freed
+>>> Write Protecting kernel memory read-only data: 6144K
+>>> Testing CPA: undo ffffffff81000000 - ffffffff81600000
+>>> Testing CPA: again
+>>> Freeing unused kernel memory: 964K freed
+>>> Freeing unused kernel memory: 212K freed
+>>> init[1] segfault at ffffffff8100eea8 ip ffffffff8100eea8 sp
+>>> 00007fff62e804b8 error 15
+>>> kernel panic - not syncing: Attempted to kill init!
+>>> Pid: 1,comm: init not tainted 2.6.33-git12-smp #2
+>>> Call Trace:
+>>> [<ffffffff81300876>] panic+0x73/0xfa
+>>> [<ffffffff8104b45c>] do_exit+0x6d/0x713
+>>> [<ffffffff8104bd85>] do_group_exit+0x72/0x9b
+>>> [<ffffffff8105917e>] get_signal_to_deliver+0x356/0x375
+>>> [<ffffffff8130310b>] ? _raw_spin_unlock_irqrestore+0x2f/0x34
+>>> [<ffffffff81007fc3>] do_signal+0x6d/0x660
+>>> [<ffffffff81300939>] ? printk+0x3c/0x43
+>>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+>>> [<ffffffff81300939>] ? printk+0x3c/0x43
+>>> [<ffffffff8102b78c>] ? __bad_area_nosemaphore+0x183/0x1ad
+>>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+>>> [<ffffffff810085fc>] do_notify_resume+0x27/0x69
+>>> [<ffffffff8130351c>] retint_signal+0x48/0x8c
+>>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+>>>
+>>> Regards
+>>> Sid.
+>>> --
 > 
-> This clearly wrong, to the point it blames release_task() instead of
-> __exit_signal(). But let's make compiler happy anyway, hopefully this
-> is what it wants.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
-> 
->  kernel/exit.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- 34-rc1/kernel/exit.c~FIX_EXIT_SIGNAL_TTY_WARNING	2010-03-21 18:36:44.000000000 +0100
-> +++ 34-rc1/kernel/exit.c	2010-03-24 14:59:55.000000000 +0100
-> @@ -82,7 +82,7 @@ static void __exit_signal(struct task_st
->  	struct signal_struct *sig = tsk->signal;
->  	bool group_dead = thread_group_leader(tsk);
->  	struct sighand_struct *sighand;
-> -	struct tty_struct *tty;
-> +	struct tty_struct *tty = NULL;	/* supress gcc warning */
 
-uninitialized_var() is a neater way.
 
-(uninitialized_var() will save a teeny bit of .text on old gcc.  One
-suspects that a newer gcc which is capable of working out that this
-variable _isn't_ uninitialized would also be capable of eliding the `= 0').
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
