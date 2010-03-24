@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0CXLuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:50:22 -0400
-Received: from lucidpixels.com ([75.144.35.66]:59396 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755779Ab0CXLuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:50:21 -0400
-Date: Wed, 24 Mar 2010 07:50:19 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-raid@vger.kernel.org
-cc: linux-kernel@vger.kernel.org
-Subject: 2.6.33.1: RAID multi-core processing experimental option is
- broken.
-Message-ID: <alpine.DEB.2.00.1003240745350.5602@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755931Ab0CXL5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:57:20 -0400
+Received: from qw-out-2122.google.com ([74.125.92.25]:17350 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755793Ab0CXL5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:57:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=gGVliDoRgyJpk0zJyPUVS5PmX0/vcbkixH0PoSUpjWKulD1hTov6+2R/Xh9h5GgN0i
+         SLRAsDcF0ythsqAiINlL53lJHbeKYKndYJL68xqV4qCcs20I1d4IiYQK/5UT5wlhlqeB
+         vBbJIVcaOPoCGFhZjZMIbV8IJ0oHFTxa+QF0Q=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <84144f021003240400y43484fe6q8be4e8dc22284e9b@mail.gmail.com>
+References: <1269420538-18039-1-git-send-email-tj@kernel.org>
+	 <1269420538-18039-4-git-send-email-tj@kernel.org>
+	 <84144f021003240400y43484fe6q8be4e8dc22284e9b@mail.gmail.com>
+Date: Wed, 24 Mar 2010 13:57:17 +0200
+Message-ID: <b6fcc0a1003240457x5aff83deo3aeac26f6bcf037@mail.gmail.com>
+Subject: Re: [PATCH 3/4] include cleanup: Update gfp.h and slab.h includes to 
+	prepare for breaking implicit slab.h inclusion from percpu.h
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Tejun Heo <tj@kernel.org>, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       Lee.Schermerhorn@hp.com, cl@linux-foundation.org, mingo@elte.hu,
+       tglx@linutronix.de, hpa@zytor.com, yi.zhu@intel.com,
+       reinette.chatre@intel.com, ilw@linux.intel.com,
+       Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Mar 24, 2010 at 1:00 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> How do we get this merged before we grow more implicit dependencies?
 
-2.6.33.1/x86_64 on an e6700 processor:
-
-If you accidentally check [*] for Multi-core processing, the speed is
-about 5MiB/s and there are some 254 processes.
-
-When its not enabled, the speed goes back to normal and there are no longer
-200-300 processes running, I have reproduced this on multiple machines now.
-
-Enable this option in the kernel, boot the new kernel, do some raid i/o
-operations/or a check/resync to the array and it will be 1/4 the speed when
-multi-core processing is enabled.
-   | |    [ ]       RAID-4/RAID-5/RAID-6 Multicore processing (EXPERIMENTAL| |
-
-With it disabled, we're good:
-md0 : active raid6 sdg1[5] sde1[3] sdf1[4] sdd1[2] sdc1[1] sdb1[0]
-       1562834944 blocks level 6, 64k chunk, algorithm 2 [6/6] [UUUUUU]
-       [========>............]  resync = 44.5% (173910976/390708736) finish=178.3min speed=20253K/sec
-
-Justin.
-
+Send it to Linus and cross fingers. ;-)
