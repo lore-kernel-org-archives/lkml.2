@@ -1,217 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab0CXR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:59:24 -0400
-Received: from cpsmtpm-eml102.kpnxchange.com ([195.121.3.6]:60539 "EHLO
-	CPSMTPM-EML102.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756657Ab0CXR5j (ORCPT
+	id S932701Ab0CXR7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:59:19 -0400
+Received: from cpsmtpm-eml105.kpnxchange.com ([195.121.3.9]:55517 "EHLO
+	CPSMTPM-EML105.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756653Ab0CXR5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Mar 2010 13:57:39 -0400
 From: Frans Pop <elendil@planet.nl>
 To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Frans Pop <elendil@planet.nl>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linuxppc-dev@ozlabs.org
-Subject: [PATCH 4/9] net/ps3_gelic: remove trailing space in messages
-Date: Wed, 24 Mar 2010 18:57:31 +0100
-Message-Id: <1269453456-13599-4-git-send-email-elendil@planet.nl>
+Cc: Frans Pop <elendil@planet.nl>, Samuel Ortiz <samuel@sortiz.org>
+Subject: [PATCH 3/9] net/irda: remove trailing space in messages
+Date: Wed, 24 Mar 2010 18:57:30 +0100
+Message-Id: <1269453456-13599-3-git-send-email-elendil@planet.nl>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <201003241840.18701.elendil@planet.nl>
 References: <201003241840.18701.elendil@planet.nl>
-X-OriginalArrivalTime: 24 Mar 2010 17:57:37.0668 (UTC) FILETIME=[7D46AC40:01CACB7B]
+X-OriginalArrivalTime: 24 Mar 2010 17:57:37.0152 (UTC) FILETIME=[7CF7F000:01CACB7B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ps3_gelic_wireless.c: also remove a stray "p" after a newline.
+Includes a minor consistency improvement between two related
+debug messages.
 
 Signed-off-by: Frans Pop <elendil@planet.nl>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linuxppc-dev@ozlabs.org
+Cc: Samuel Ortiz <samuel@sortiz.org>
 ---
- drivers/net/ps3_gelic_net.c      |    4 ++--
- drivers/net/ps3_gelic_wireless.c |   34 +++++++++++++++++-----------------
- 2 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/net/irda/ali-ircc.c |   32 ++++++++++++++++----------------
+ drivers/net/irda/irda-usb.c |    2 +-
+ drivers/net/irda/vlsi_ir.c  |    4 ++--
+ 3 files changed, 19 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/net/ps3_gelic_net.c b/drivers/net/ps3_gelic_net.c
-index a849f6f..a602da6 100644
---- a/drivers/net/ps3_gelic_net.c
-+++ b/drivers/net/ps3_gelic_net.c
-@@ -326,7 +326,7 @@ static int gelic_descr_prepare_rx(struct gelic_card *card,
- 	unsigned int bufsize;
+diff --git a/drivers/net/irda/ali-ircc.c b/drivers/net/irda/ali-ircc.c
+index 12c7b00..a32c97e 100644
+--- a/drivers/net/irda/ali-ircc.c
++++ b/drivers/net/irda/ali-ircc.c
+@@ -753,18 +753,18 @@ static irqreturn_t ali_ircc_fir_interrupt(struct ali_ircc_cb *self)
+ 			if(OldMessageCount > ((self->LineStatus+1) & 0x07))
+ 			{
+ 				self->rcvFramesOverflow = TRUE;	
+-				IRDA_DEBUG(1, "%s(), ******* self->rcvFramesOverflow = TRUE ******** \n", __func__);
++				IRDA_DEBUG(1, "%s(), ******* self->rcvFramesOverflow = TRUE ********\n", __func__);
+ 			}
+ 						
+ 			if (ali_ircc_dma_receive_complete(self))
+ 			{
+-				IRDA_DEBUG(1, "%s(), ******* receive complete ******** \n", __func__);
++				IRDA_DEBUG(1, "%s(), ******* receive complete ********\n", __func__);
+ 				
+ 				self->ier = IER_EOM;				
+ 			}
+ 			else
+ 			{
+-				IRDA_DEBUG(1, "%s(), ******* Not receive complete ******** \n", __func__);
++				IRDA_DEBUG(1, "%s(), ******* Not receive complete ********\n", __func__);
+ 				
+ 				self->ier = IER_EOM | IER_TIMER;								
+ 			}	
+@@ -777,7 +777,7 @@ static irqreturn_t ali_ircc_fir_interrupt(struct ali_ircc_cb *self)
+ 		if(OldMessageCount > ((self->LineStatus+1) & 0x07))
+ 		{
+ 			self->rcvFramesOverflow = TRUE;	
+-			IRDA_DEBUG(1, "%s(), ******* self->rcvFramesOverflow = TRUE ******* \n", __func__);
++			IRDA_DEBUG(1, "%s(), ******* self->rcvFramesOverflow = TRUE *******\n", __func__);
+ 		}
+ 		/* Disable Timer */
+ 		switch_bank(iobase, BANK1);
+@@ -942,7 +942,7 @@ static void ali_ircc_sir_write_wakeup(struct ali_ircc_cb *self)
+ 			// benjamin 2000/11/10 06:32PM
+ 			if (self->io.speed > 115200)
+ 			{
+-				IRDA_DEBUG(2, "%s(), ali_ircc_change_speed from UART_LSR_TEMT \n", __func__ );
++				IRDA_DEBUG(2, "%s(), ali_ircc_change_speed from UART_LSR_TEMT\n", __func__ );
+ 					
+ 				self->ier = IER_EOM;
+ 				// SetCOMInterrupts(self, TRUE);							
+@@ -970,7 +970,7 @@ static void ali_ircc_change_speed(struct ali_ircc_cb *self, __u32 baud)
+ 	
+ 	IRDA_DEBUG(1, "%s(), ---------------- Start ----------------\n", __func__ );
+ 	
+-	IRDA_DEBUG(2, "%s(), setting speed = %d \n", __func__ , baud);
++	IRDA_DEBUG(2, "%s(), setting speed = %d\n", __func__ , baud);
+ 	
+ 	/* This function *must* be called with irq off and spin-lock.
+ 	 * - Jean II */
+@@ -1500,7 +1500,7 @@ static netdev_tx_t ali_ircc_fir_hard_xmit(struct sk_buff *skb,
+ 			diff = self->now.tv_usec - self->stamp.tv_usec;
+ 			/* self->stamp is set from ali_ircc_dma_receive_complete() */
+ 							
+-			IRDA_DEBUG(1, "%s(), ******* diff = %d ******* \n", __func__ , diff);
++			IRDA_DEBUG(1, "%s(), ******* diff = %d *******\n", __func__ , diff);
+ 			
+ 			if (diff < 0) 
+ 				diff += 1000000;
+@@ -1641,7 +1641,7 @@ static void ali_ircc_dma_xmit(struct ali_ircc_cb *self)
+ 	tmp = inb(iobase+FIR_LCR_B);
+ 	tmp &= ~0x20; // Disable SIP
+ 	outb(((unsigned char)(tmp & 0x3f) | LCR_B_TX_MODE) & ~LCR_B_BW, iobase+FIR_LCR_B);
+-	IRDA_DEBUG(1, "%s(), ******* Change to TX mode: FIR_LCR_B = 0x%x ******* \n", __func__ , inb(iobase+FIR_LCR_B));
++	IRDA_DEBUG(1, "%s(), *** Change to TX mode: FIR_LCR_B = 0x%x ***\n", __func__ , inb(iobase+FIR_LCR_B));
+ 	
+ 	outb(0, iobase+FIR_LSR);
+ 			
+@@ -1768,7 +1768,7 @@ static int ali_ircc_dma_receive(struct ali_ircc_cb *self)
+ 	//switch_bank(iobase, BANK0);
+ 	tmp = inb(iobase+FIR_LCR_B);
+ 	outb((unsigned char)(tmp &0x3f) | LCR_B_RX_MODE | LCR_B_BW , iobase + FIR_LCR_B); // 2000/12/1 05:16PM
+-	IRDA_DEBUG(1, "%s(), *** Change To RX mode: FIR_LCR_B = 0x%x *** \n", __func__ , inb(iobase+FIR_LCR_B));
++	IRDA_DEBUG(1, "%s(), *** Change To RX mode: FIR_LCR_B = 0x%x ***\n", __func__ , inb(iobase+FIR_LCR_B));
+ 			
+ 	/* Set Rx Threshold */
+ 	switch_bank(iobase, BANK1);
+@@ -1840,7 +1840,7 @@ static int  ali_ircc_dma_receive_complete(struct ali_ircc_cb *self)
+ 		/* Check for errors */
+ 		if ((status & 0xd8) || self->rcvFramesOverflow || (len==0)) 		
+ 		{
+-			IRDA_DEBUG(0,"%s(), ************* RX Errors ************ \n", __func__ );
++			IRDA_DEBUG(0,"%s(), ************* RX Errors ************\n", __func__ );
+ 			
+ 			/* Skip frame */
+ 			self->netdev->stats.rx_errors++;
+@@ -1850,29 +1850,29 @@ static int  ali_ircc_dma_receive_complete(struct ali_ircc_cb *self)
+ 			if (status & LSR_FIFO_UR) 
+ 			{
+ 				self->netdev->stats.rx_frame_errors++;
+-				IRDA_DEBUG(0,"%s(), ************* FIFO Errors ************ \n", __func__ );
++				IRDA_DEBUG(0,"%s(), ************* FIFO Errors ************\n", __func__ );
+ 			}	
+ 			if (status & LSR_FRAME_ERROR)
+ 			{
+ 				self->netdev->stats.rx_frame_errors++;
+-				IRDA_DEBUG(0,"%s(), ************* FRAME Errors ************ \n", __func__ );
++				IRDA_DEBUG(0,"%s(), ************* FRAME Errors ************\n", __func__ );
+ 			}
+ 							
+ 			if (status & LSR_CRC_ERROR) 
+ 			{
+ 				self->netdev->stats.rx_crc_errors++;
+-				IRDA_DEBUG(0,"%s(), ************* CRC Errors ************ \n", __func__ );
++				IRDA_DEBUG(0,"%s(), ************* CRC Errors ************\n", __func__ );
+ 			}
+ 			
+ 			if(self->rcvFramesOverflow)
+ 			{
+ 				self->netdev->stats.rx_frame_errors++;
+-				IRDA_DEBUG(0,"%s(), ************* Overran DMA buffer ************ \n", __func__ );
++				IRDA_DEBUG(0,"%s(), ************* Overran DMA buffer ************\n", __func__ );
+ 			}
+ 			if(len == 0)
+ 			{
+ 				self->netdev->stats.rx_frame_errors++;
+-				IRDA_DEBUG(0,"%s(), ********** Receive Frame Size = 0 ********* \n", __func__ );
++				IRDA_DEBUG(0,"%s(), ********** Receive Frame Size = 0 *********\n", __func__ );
+ 			}
+ 		}	 
+ 		else 
+@@ -1884,7 +1884,7 @@ static int  ali_ircc_dma_receive_complete(struct ali_ircc_cb *self)
+ 				val = inb(iobase+FIR_BSR);	
+ 				if ((val& BSR_FIFO_NOT_EMPTY)== 0x80) 
+ 				{
+-					IRDA_DEBUG(0, "%s(), ************* BSR_FIFO_NOT_EMPTY ************ \n", __func__ );
++					IRDA_DEBUG(0, "%s(), ************* BSR_FIFO_NOT_EMPTY ************\n", __func__ );
+ 					
+ 					/* Put this entry back in fifo */
+ 					st_fifo->head--;
+diff --git a/drivers/net/irda/irda-usb.c b/drivers/net/irda/irda-usb.c
+index 2c9b3af..4441fa3 100644
+--- a/drivers/net/irda/irda-usb.c
++++ b/drivers/net/irda/irda-usb.c
+@@ -839,7 +839,7 @@ static void irda_usb_receive(struct urb *urb)
+ 			/* Usually precursor to a hot-unplug on OHCI. */
+ 		default:
+ 			self->netdev->stats.rx_errors++;
+-			IRDA_DEBUG(0, "%s(), RX status %d, transfer_flags 0x%04X \n", __func__, urb->status, urb->transfer_flags);
++			IRDA_DEBUG(0, "%s(), RX status %d, transfer_flags 0x%04X\n", __func__, urb->status, urb->transfer_flags);
+ 			break;
+ 		}
+ 		/* If we received an error, we don't want to resubmit the
+diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
+index 209d4bc..e145052 100644
+--- a/drivers/net/irda/vlsi_ir.c
++++ b/drivers/net/irda/vlsi_ir.c
+@@ -1742,7 +1742,7 @@ static int vlsi_irda_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	vlsi_irda_dev_t *idev;
  
- 	if (gelic_descr_get_status(descr) !=  GELIC_DESCR_DMA_NOT_IN_USE)
--		dev_info(ctodev(card), "%s: ERROR status \n", __func__);
-+		dev_info(ctodev(card), "%s: ERROR status\n", __func__);
- 	/* we need to round up the buffer size to a multiple of 128 */
- 	bufsize = ALIGN(GELIC_NET_MAX_MTU, GELIC_NET_RXBUF_ALIGN);
- 
-@@ -1434,7 +1434,7 @@ static void gelic_net_tx_timeout_task(struct work_struct *work)
- 		container_of(work, struct gelic_card, tx_timeout_task);
- 	struct net_device *netdev = card->netdev[GELIC_PORT_ETHERNET_0];
- 
--	dev_info(ctodev(card), "%s:Timed out. Restarting... \n", __func__);
-+	dev_info(ctodev(card), "%s:Timed out. Restarting...\n", __func__);
- 
- 	if (!(netdev->flags & IFF_UP))
- 		goto out;
-diff --git a/drivers/net/ps3_gelic_wireless.c b/drivers/net/ps3_gelic_wireless.c
-index 2663b2f..505f9a1 100644
---- a/drivers/net/ps3_gelic_wireless.c
-+++ b/drivers/net/ps3_gelic_wireless.c
-@@ -527,7 +527,7 @@ static void gelic_wl_parse_ie(u8 *data, size_t len,
- 	u8 item_len;
- 	u8 item_id;
- 
--	pr_debug("%s: data=%p len=%ld \n", __func__,
-+	pr_debug("%s: data=%p len=%ld\n", __func__,
- 		 data, len);
- 	memset(ie_info, 0, sizeof(struct ie_info));
- 
-@@ -978,7 +978,7 @@ static int gelic_wl_set_essid(struct net_device *netdev,
- 		pr_debug("%s: essid = '%s'\n", __func__, extra);
- 		set_bit(GELIC_WL_STAT_ESSID_SET, &wl->stat);
- 	} else {
--		pr_debug("%s: ESSID any \n", __func__);
-+		pr_debug("%s: ESSID any\n", __func__);
- 		clear_bit(GELIC_WL_STAT_ESSID_SET, &wl->stat);
+ 	if (!ndev) {
+-		IRDA_ERROR("%s - %s: no netdevice \n",
++		IRDA_ERROR("%s - %s: no netdevice\n",
+ 			   __func__, pci_name(pdev));
+ 		return 0;
  	}
- 	set_bit(GELIC_WL_STAT_CONFIGURED, &wl->stat);
-@@ -986,7 +986,7 @@ static int gelic_wl_set_essid(struct net_device *netdev,
+@@ -1781,7 +1781,7 @@ static int vlsi_irda_resume(struct pci_dev *pdev)
+ 	vlsi_irda_dev_t	*idev;
  
- 
- 	gelic_wl_try_associate(netdev); /* FIXME */
--	pr_debug("%s: -> \n", __func__);
-+	pr_debug("%s: ->\n", __func__);
- 	return 0;
- }
- 
-@@ -997,7 +997,7 @@ static int gelic_wl_get_essid(struct net_device *netdev,
- 	struct gelic_wl_info *wl = port_wl(netdev_priv(netdev));
- 	unsigned long irqflag;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	mutex_lock(&wl->assoc_stat_lock);
- 	spin_lock_irqsave(&wl->lock, irqflag);
- 	if (test_bit(GELIC_WL_STAT_ESSID_SET, &wl->stat) ||
-@@ -1010,7 +1010,7 @@ static int gelic_wl_get_essid(struct net_device *netdev,
- 
- 	mutex_unlock(&wl->assoc_stat_lock);
- 	spin_unlock_irqrestore(&wl->lock, irqflag);
--	pr_debug("%s: -> len=%d \n", __func__, data->essid.length);
-+	pr_debug("%s: -> len=%d\n", __func__, data->essid.length);
- 
- 	return 0;
- }
-@@ -1027,7 +1027,7 @@ static int gelic_wl_set_encode(struct net_device *netdev,
- 	int key_index, index_specified;
- 	int ret = 0;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	flags = enc->flags & IW_ENCODE_FLAGS;
- 	key_index = enc->flags & IW_ENCODE_INDEX;
- 
-@@ -1086,7 +1086,7 @@ static int gelic_wl_set_encode(struct net_device *netdev,
- 	set_bit(GELIC_WL_STAT_CONFIGURED, &wl->stat);
- done:
- 	spin_unlock_irqrestore(&wl->lock, irqflag);
--	pr_debug("%s: -> \n", __func__);
-+	pr_debug("%s: ->\n", __func__);
- 	return ret;
- }
- 
-@@ -1100,7 +1100,7 @@ static int gelic_wl_get_encode(struct net_device *netdev,
- 	unsigned int key_index, index_specified;
- 	int ret = 0;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	key_index = enc->flags & IW_ENCODE_INDEX;
- 	pr_debug("%s: flag=%#x point=%p len=%d extra=%p\n", __func__,
- 		 enc->flags, enc->pointer, enc->length, extra);
-@@ -1214,7 +1214,7 @@ static int gelic_wl_set_encodeext(struct net_device *netdev,
- 	int key_index;
- 	int ret = 0;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	flags = enc->flags & IW_ENCODE_FLAGS;
- 	alg = ext->alg;
- 	key_index = enc->flags & IW_ENCODE_INDEX;
-@@ -1287,7 +1287,7 @@ static int gelic_wl_set_encodeext(struct net_device *netdev,
+ 	if (!ndev) {
+-		IRDA_ERROR("%s - %s: no netdevice \n",
++		IRDA_ERROR("%s - %s: no netdevice\n",
+ 			   __func__, pci_name(pdev));
+ 		return 0;
  	}
- done:
- 	spin_unlock_irqrestore(&wl->lock, irqflag);
--	pr_debug("%s: -> \n", __func__);
-+	pr_debug("%s: ->\n", __func__);
- 	return ret;
- }
- 
-@@ -1303,7 +1303,7 @@ static int gelic_wl_get_encodeext(struct net_device *netdev,
- 	int ret = 0;
- 	int max_key_len;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 
- 	max_key_len = enc->length - sizeof(struct iw_encode_ext);
- 	if (max_key_len < 0)
-@@ -1358,7 +1358,7 @@ static int gelic_wl_get_encodeext(struct net_device *netdev,
- 	}
- out:
- 	spin_unlock_irqrestore(&wl->lock, irqflag);
--	pr_debug("%s: -> \n", __func__);
-+	pr_debug("%s: ->\n", __func__);
- 	return ret;
- }
- /* SIOC{S,G}IWMODE */
-@@ -1369,7 +1369,7 @@ static int gelic_wl_set_mode(struct net_device *netdev,
- 	__u32 mode = data->mode;
- 	int ret;
- 
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	if (mode == IW_MODE_INFRA)
- 		ret = 0;
- 	else
-@@ -1383,7 +1383,7 @@ static int gelic_wl_get_mode(struct net_device *netdev,
- 			     union iwreq_data *data, char *extra)
- {
- 	__u32 *mode = &data->mode;
--	pr_debug("%s: <- \n", __func__);
-+	pr_debug("%s: <-\n", __func__);
- 	*mode = IW_MODE_INFRA;
- 	pr_debug("%s: ->\n", __func__);
- 	return 0;
-@@ -2021,7 +2021,7 @@ static int gelic_wl_associate_bss(struct gelic_wl_info *wl,
- 
- 	if (!rc) {
- 		/* timeouted.  Maybe key or cyrpt mode is wrong */
--		pr_info("%s: connect timeout \n", __func__);
-+		pr_info("%s: connect timeout\n", __func__);
- 		cmd = gelic_eurus_sync_cmd(wl, GELIC_EURUS_CMD_DISASSOC,
- 					   NULL, 0);
- 		kfree(cmd);
-@@ -2062,7 +2062,7 @@ static void gelic_wl_connected_event(struct gelic_wl_info *wl,
- 	}
- 
- 	if (desired_event == event) {
--		pr_debug("%s: completed \n", __func__);
-+		pr_debug("%s: completed\n", __func__);
- 		complete(&wl->assoc_done);
- 		netif_carrier_on(port_to_netdev(wl_port(wl)));
- 	} else
-@@ -2317,7 +2317,7 @@ static struct net_device * __devinit gelic_wl_alloc(struct gelic_card *card)
- 	pr_debug("%s:start\n", __func__);
- 	netdev = alloc_etherdev(sizeof(struct gelic_port) +
- 				sizeof(struct gelic_wl_info));
--	pr_debug("%s: netdev =%p card=%p \np", __func__, netdev, card);
-+	pr_debug("%s: netdev =%p card=%p\n", __func__, netdev, card);
- 	if (!netdev)
- 		return NULL;
- 
 -- 
 1.6.6.1
 
