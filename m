@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab0CXVxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:53:13 -0400
-Received: from sj-iport-2.cisco.com ([171.71.176.71]:16944 "EHLO
-	sj-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab0CXVxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:53:11 -0400
-Authentication-Results: sj-iport-2.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEABMnqkurR7H+/2dsb2JhbACbG3OnXpkQhH4Egx4
-X-IronPort-AV: E=Sophos;i="4.51,303,1267401600"; 
-   d="scan'208";a="247984247"
-From: Roland Dreier <rdreier@cisco.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
-       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-References: <201003242240.54907.arnd@arndb.de>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 24 Mar 2010 14:53:07 -0700
-In-Reply-To: <201003242240.54907.arnd@arndb.de> (Arnd Bergmann's message of
-	"Wed, 24 Mar 2010 22:40:54 +0100")
-Message-ID: <adavdclz8sc.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752822Ab0CXVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:54:26 -0400
+Received: from tex.lwn.net ([70.33.254.29]:35004 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab0CXVyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:54:25 -0400
+Date: Wed, 24 Mar 2010 15:54:23 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+Message-ID: <20100324155423.68c3d5b6@bike.lwn.net>
+In-Reply-To: <20100324214742.GL10659@random.random>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-8-git-send-email-mel@csn.ul.ie>
+	<20100324133347.9b4b2789.akpm@linux-foundation.org>
+	<20100324145946.372f3f31@bike.lwn.net>
+	<20100324211924.GH10659@random.random>
+	<20100324152854.48f72171@bike.lwn.net>
+	<20100324214742.GL10659@random.random>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.19.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Wed, 24 Mar 2010 22:47:42 +0100
+Andrea Arcangeli <aarcange@redhat.com> wrote:
 
-Interesting work.  For the drivers/infiniband part, it seems maybe all
-these drivers should be using no_llseek instead of default_llseek?  (or
-is it better style to use nonseekable_open()?)  Certainly as far as I
-can tell, nothing in drivers/infiniband pays any attention to f_pos.
+> I think you mistaken a VM_BUG_ON for a:
+> 
+>   if (could_be_null->something) {
+>      WARN_ON(1);
+>      return -ESOMETHING;
+>   }
+> 
+> adding a VM_BUG_ON(inode->something) would _still_ be as exploitable
+> as the null pointer deference, because it's a DoS. It's not really a
+> big deal of an exploit but it _sure_ need fixing.
 
-Also, is there a reason why you add "#include <linux/smp_lock.h>" to all
-the files where you also do ".llseek  = default_llseek"?
+Ah, but that's the point: these NULL pointer dereferences were not DoS
+vulnerabilities - they were full privilege-escalation affairs.  Since
+then, some problems have been fixed and some distributors have started
+shipping smarter configurations.  But, on quite a few systems a NULL
+dereference still has the potential to be fully exploitable; if there's
+a possibility of it happening I think we should test for it.  A DoS is
+a much better outcome...
 
-In any case I can at least take care of the llseek stuff for 2.6.35.
-
- - R.
--- 
-Roland Dreier  <rolandd@cisco.com>
-For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+jon
