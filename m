@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab0CXRpo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:45:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7950 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932516Ab0CXRpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:45:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,301,1267430400"; 
-   d="scan'208";a="783581659"
-Subject: Re: iwl6050 firmware?
-From: reinette chatre <reinette.chatre@intel.com>
-To: Andy Isaacson <adi@hexapodia.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Jay Sternberg <jay.e.sternberg@linux.intel.com>,
-       Greg KH <greg@kroah.com>
-In-Reply-To: <20100323221350.GA20509@hexapodia.org>
-References: <20100323221350.GA20509@hexapodia.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 10:45:33 -0700
-Message-ID: <1269452733.2446.3138.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S932532Ab0CXRqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:46:01 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58654 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab0CXRp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 13:45:57 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: <akpm@linux-foundation.org>, davej@redhat.com, trenn@suse.de,
+       linux@dominikbrodowski.net
+Cc: <mingo@elte.hu>, <hpa@zytor.com>, <tglx@linutronix.de>,
+       cpufreq@vger.kernel.org, <x86@kernel.org>,
+       <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/5] powernow-k8: Core Performance Boost and effective frequency support
+Date: Wed, 24 Mar 2010 18:46:18 +0100
+Message-Id: <1269452783-966-1-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-On Tue, 2010-03-23 at 15:13 -0700, Andy Isaacson wrote:
-> Any ETA on a release?
+Hi all,
 
-The firmware is in process of being tested. We are working on getting it
-released externally. When the firmware is released you will see an
-announcement on linux-wireless mailing list. The firmware will be
-available from http://intellinuxwireless.org/?n=Downloads at that time.
+here's the reworked version after incorporating most of your comments.
 
-Reinette
+In particular, this version adds a /proc/cpuinfo flag and removes the
+scaling_cur_freq interface overload in favor of cpufreq-aperf userspace
+tool.
+
+Please review,
+thanks.
+
+Changelog:
+
+v0: initial submission
 
 
+-- 
+Regards/Gruss,
+Boris.
