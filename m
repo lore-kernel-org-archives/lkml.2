@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753343Ab0CXFdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:33:00 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:48374 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab0CXFc7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:32:59 -0400
-Date: Wed, 24 Mar 2010 06:32:57 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: tglx@linutronix.de, linux-kernel@vger.kernel.org, torvalds@osdl.org
-Subject: [PATCH] Allow Intel platforms to declare unsynchronized TSC to
-	kernel
-Message-ID: <20100324053257.GA4088@basil.fritz.box>
+	id S1753586Ab0CXFhl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:37:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39753 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626Ab0CXFhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:37:40 -0400
+Message-ID: <4BA9A4CF.40105@kernel.org>
+Date: Tue, 23 Mar 2010 22:36:15 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: [RFC PATCH v4 1/2] lmb: seperate region array from lmb_region struct
+References: <1269333587-1866-1-git-send-email-yinghai@kernel.org>	 <1269333587-1866-5-git-send-email-yinghai@kernel.org>	 <4BA899C2.8020208@kernel.org>  <20100323104241.GA1189@elte.hu> <1269405955.8599.156.camel@pasglop>
+In-Reply-To: <1269405955.8599.156.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow Intel platforms to declare unsynchronized TSC to kernel
 
-[This came out of a private discussion with Linus last week]
+lmb_init() connect them back.
 
-Nehalem class processors support the CONSTANT_TSC bit in the 8000_0007 CPUID
-leaf to declare CONSTANT_TSC. One of the ideas behind this bit was to allow the 
-platform to clear it when it cannot guarantee a constant TSC.
+also add nr_regions in lmb_region to tack the region array size.
 
-Unfortunately this doesn't work right now because the Intel CPU
-initialization also checks the model number and assumes that
-all CPUs newer than Yonah have CONSTANT_TSC too.
+-v3: seperate lmb core change to seperated patch
+-v4: according to Ingo, change >= x -1 to > x
+     change region_array_size to nr_regions
 
-Terminate the model number check before Nehalem and rely on the 8000_0007
-bit only on newer CPUs. This way the platform can actually turn it off.
-
-Atom CPUs might also have newer model numbers and do not necessarily
-have that bit, but they are all single socket and expected to always
-have synchronous TSCs.
-
-Open: the two checks still differ in setting sched_clock_stable. 
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
 ---
- arch/x86/kernel/cpu/intel.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ include/linux/lmb.h |    5 ++++-
+ lib/lmb.c           |    9 ++++++++-
+ 2 files changed, 12 insertions(+), 2 deletions(-)
 
-Index: linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/intel.c
+Index: linux-2.6/include/linux/lmb.h
 ===================================================================
---- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/cpu/intel.c	2010-03-03 02:01:27.000000000 +0100
-+++ linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/intel.c	2010-03-24 06:16:42.000000000 +0100
-@@ -43,8 +43,16 @@
- 		}
- 	}
+--- linux-2.6.orig/include/linux/lmb.h
++++ linux-2.6/include/linux/lmb.h
+@@ -26,7 +26,8 @@ struct lmb_property {
+ struct lmb_region {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct lmb_property region[MAX_LMB_REGIONS+1];
++	struct lmb_property *region;
++	unsigned long nr_regions;
+ };
  
-+	/*
-+	 * On Nehalem+ class we trust the CONSTANT_TSC bit in 8000_0007 edx,
-+	 * so that a platform that doesn't have synchronized TSCs can clear it.
-+ 	 * Older CPUs didn't set that bit, so we keep hard coding the model
-+	 * numbers for those.
-+ 	 * Note this matches Atom class too, but there the TSCs are always
-+	 * synchronized anyways.
-+ 	 */
- 	if ((c->x86 == 0xf && c->x86_model >= 0x03) ||
--		(c->x86 == 0x6 && c->x86_model >= 0x0e))
-+		(c->x86 == 0x6 && c->x86_model >= 0x0e && c->x86_model < 0x1a))
- 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
+ struct lmb {
+@@ -37,6 +38,8 @@ struct lmb {
+ };
  
- #ifdef CONFIG_X86_64
+ extern struct lmb lmb;
++extern struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++extern struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ extern void __init lmb_init(void);
+ extern void __init lmb_analyze(void);
+Index: linux-2.6/lib/lmb.c
+===================================================================
+--- linux-2.6.orig/lib/lmb.c
++++ linux-2.6/lib/lmb.c
+@@ -18,6 +18,8 @@
+ #define LMB_ALLOC_ANYWHERE	0
+ 
+ struct lmb lmb;
++struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
++struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
+ 
+ static int lmb_debug;
+ 
+@@ -106,6 +108,11 @@ static void lmb_coalesce_regions(struct
+ 
+ void __init lmb_init(void)
+ {
++	lmb.memory.region   = lmb_memory_region;
++	lmb.reserved.region = lmb_reserved_region;
++	lmb.memory.nr_regions   = ARRAY_SIZE(lmb_memory_region);
++	lmb.reserved.nr_regions = ARRAY_SIZE(lmb_reserved_region);
++
+ 	/* Create a dummy zero size LMB which will get coalesced away later.
+ 	 * This simplifies the lmb_add() code below...
+ 	 */
+@@ -169,7 +176,7 @@ static long lmb_add_region(struct lmb_re
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_LMB_REGIONS)
++	if (rgn->cnt > rgn->nr_regions)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the LMB, so add it to the sorted table. */
