@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab0CXRce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:32:34 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:34921 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752545Ab0CXRcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:32:33 -0400
-Message-ID: <4BAA4CAC.6060104@panasas.com>
-Date: Wed, 24 Mar 2010 19:32:28 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S932382Ab0CXRc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:32:57 -0400
+Received: from web94901.mail.in2.yahoo.com ([203.104.17.136]:38829 "HELO
+	web94901.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932322Ab0CXRcy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 13:32:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.in;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=h6vFObYwkHZxCGyXpiE5jLnhb9/bhyJ/GWG/OPeLTwiWUzkrQ1pUt16HO5pj7CcbmwSniNnLUT3JzPZrb8wMnTgrcJEbAX9cAgXHOulqovO9Ly8xml1mixDWOrbZ8OM1ks8aSQCtZVU3inzwCV3r2pfG7l6Gj78vEqqfEe/78Jk=;
+Message-ID: <669779.38970.qm@web94901.mail.in2.yahoo.com>
+X-YMail-OSG: 8lTw2aEVM1ng33ot9pKBoC.s5H85D3QT7IkyWE_6ThbKd8a
+ N9.QKnrbCiZ0OYNvwsuVGUN279BEpxFkm5.eie9YQiC4jh1KpPpB2jcVKd0t
+ 1w9W8UKrKf1IzcnJ7cewy6rRT1ft99o7MmPkB8YAgKyj4tnlHn08cIQWPMM_
+ hg26tLGKzpwB38mp3q_O4QHr7PR5OlmqL5FhBppRL7IX12gDfwd1FHJ5FmZ1
+ M5YJGsupVKv7pHfd4HsJpq1bicbvTaGTd8JamucN0jihiitHFvfc529iCQfr
+ uIPR3LsBjmyNJybXtxpXlx3s-
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Wed, 24 Mar 2010 23:02:51 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@yahoo.co.in>
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Marcel Holtmann <marcel@holtmann.org>, Greg KH <gregkh@suse.de>,
+       PavanSavoy <pavan_savoy@ti.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100324172647.572e3cb8@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <4BAA3493.1030802@panasas.com>	<20100324160037.GP30031@ZenIV.linux.org.uk>	<4BAA3828.2070506@panasas.com>	<20100324160754.GQ30031@ZenIV.linux.org.uk>	<4BAA398C.5050901@panasas.com>	<20100324163948.GR30031@ZenIV.linux.org.uk> <4BAA48A3.1030801@panasas.com>
-In-Reply-To: <4BAA48A3.1030801@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Mar 2010 17:32:30.0298 (UTC) FILETIME=[FAD043A0:01CACB77]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 07:15 PM, Boaz Harrosh wrote:
-> On 03/24/2010 06:39 PM, Al Viro wrote:
->> On Wed, Mar 24, 2010 at 06:10:52PM +0200, Boaz Harrosh wrote:
->>> On 03/24/2010 06:07 PM, Al Viro wrote:
->>>> On Wed, Mar 24, 2010 at 06:04:56PM +0200, Boaz Harrosh wrote:
->>>>>> Bloody impressive...  Does that happen to underlying fs or to what you
->>>>>> are seeing via NFS?
->>>>>
->>>>> Only via NFS. All local access is fine.
->>>>>
->>>>> After the corruption above I can cd to the local mount cp a fresh copy
->>>>> of .git/index file and play around just fine.
->>>>> Once I return to the NFS mounted directory, a git status will do it.
->>>>> It does not matter if caches are cold (Takes a long time) or hot it happens
->>>>> every time.
->>>>>
->>>>> Weird I know, I'm playing some more with it as we speak
->>>>
->>>> What happens if you export to box running older kernel *or* from box
->>>> running older kernel?  IOW, is that nfsd or nfs client getting unhappy?
->>>> I'd suspect the latter, but...
->>>
->>>
->>> Good question, I'm just getting to that because currently it's all
->>> over localhost (same kernel, BTW inside a UML)
->>>
->>> I will try what you said. Please through any other tests on me, if needed.
->>
+--- On Wed, 24/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+
+> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+> To: "Pavan Savoy" <pavan_savoy@yahoo.co.in>
+> Cc: "Marcel Holtmann" <marcel@holtmann.org>, "Greg KH" <gregkh@suse.de>, "PavanSavoy" <pavan_savoy@ti.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+> Date: Wednesday, 24 March, 2010, 10:56 PM
+> > Isn't there a mechanism for the
+> tty_set_ldisc to do what _open does ?
+> > I mean there might be plenty of devices on UART which
+> might not need /dev/tty at all ? i.e An App need not open
+> for a ldisc to be installed.
 > 
-> As you suspected old-server+new-client fails. any-thing+old-client is
-> fine. (two separate machines this time)
+> There is no mechanism to have an open tty without having an
+> open file
+> attached to it - and changing that would be very very non
+> trivial. Plus
+> you still need a way to tell the kernel you want the device
+> in question
+> active. That probably should get addressed some day but its
+> not a quick
+> fix up!
+
+Which puts me back to square 1, the requirement is TTY device should be open, only when either BT, FM or GPS would want to use it.
+[with your patch one of the steps of installing ldisc would be reduced upon opening].
+
+Now from kernel-space which is the first to get notification about requirement of BT/FM or GPS, I somehow have to communicate it to user-space, without the much disliked sysfs entry method.
+
+How do I tell the user-space when I want the TTY device to be opened ?
+Actually why do I even need a TTY device in this case - right ?
+ldisc driver can do the tty->ops->write and tty_read and put it up on different interfaces like eth0/hci0 or /dev/radio0 etc..
+
+That would mean, a device can be on UART, a ldisc driver attached to it, and doesn't require a user-space daemon to maintain the device node.
+
 > 
->> Very interesting...  Just to see which path we are hitting: add
->> 	if (IS_ERR(nd->intent.open.file))
->> 		printk("foo: %s", pathname);
->> right after
->>                 error = do_lookup(nd, &nd->last, path);
->>                 if (error)
->>                         goto exit;
->> in fs/namei.c:do_last() and see whether we are hitting it or not on objects
->> that get corrupted.
+> Alan
 > 
-> Sorry was busy shifting setups, didn't see your mail, will do that next ...
-> 
-> Thanks
-> Boaz
 
 
-Below is what I changed. (I hope its what you meant)
-It does not get hit, just that git corruption as before but I don't see the prints.
-I'll try running with nfs dbg-prints on see what it does around the time gits complains
-
-Boaz
-
----
-diff --git a/fs/namei.c b/fs/namei.c
-index 1c0fca6..d1c96f0 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1650,6 +1650,12 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 		error = do_lookup(nd, &nd->last, path);
- 		if (error)
- 			goto exit;
-+
-+		if (IS_ERR(nd->intent.open.file)) {
-+			printk(KERN_ERR "foo: %s", pathname);
-+			WARN_ON(1);
-+		}
-+
- 		error = -ENOENT;
- 		if (!path->dentry->d_inode)
- 			goto exit_dput;
-
-
+      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
