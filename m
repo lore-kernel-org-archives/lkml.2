@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab0CXRQu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:16:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35036 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753740Ab0CXRQs (ORCPT
+	id S932186Ab0CXRVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:21:34 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:58048 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab0CXRVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:16:48 -0400
-Date: Wed, 24 Mar 2010 17:20:37 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Greg KH <gregkh@suse.de>, Marcel Holtmann <marcel@holtmann.org>,
-       PavanSavoy <pavan_savoy@ti.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-Message-ID: <20100324172037.4894f89a@lxorguk.ukuu.org.uk>
-In-Reply-To: <802911.82166.qm@web94909.mail.in2.yahoo.com>
-References: <20100324165222.GA9922@suse.de>
-	<802911.82166.qm@web94909.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Mar 2010 13:21:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=v6XZFGvq52HHVuha5Hts4UJqc43CvctBErvdxwj7Otz9c2pbi0yuwf1bt4QZ5P5dSr
+         4j9fNTSlGruxT7h3jsqRkOjM0Bqaelgn+EXiLRJ+Q2aFygnjyYDhoR6V1cFSzglR+zc3
+         pVTx8P5wLl13z3TCLfjGSO8cjSEE+qV1tN4Us=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, hch@infradead.org, mkp@mkp.net,
+       Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 0/5] blkdev: discard optimizations v2
+Date: Wed, 24 Mar 2010 20:21:16 +0300
+Message-Id: <1269451281-4944-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Alan's talking about opening up the LDISC installation to kernel (say EXPORTING tty_set_ldisc/tiocsetd), That's like ideal scenario in this case.
+This is second version of generic discard optimizations
+first was submitted here: http://lwn.net/Articles/373994
 
-Ok I lied - its four lines of code changing, and just set
+Currently there are many file-systems which has implemented
+discard support, but SSD discs not widely used yet.
+This patch-set introduce compat helpers which simulate
+discard requests with zeroing semantics.
 
-	.ldisc = N_whatever
+__blkdev_issue_zeroout: explicitly zeroout given range via write request.
+blkdev_issue_clear: zeroout given range, use discard request if possible.
 
-in your tty_driver
+Later filesystem admin may select which behavior is suitable for his needs
+discard without zeroing or explicit zeroing even if discard is not supported.
 
-Marcel - that should also clean up some of the other pending goodies
+Advantages:
+- Hope that this helps in real filesystem testing.
+- People who are crazy about data security would be really happy.
+- Virtual machine developers also would like this feature.
 
-[Untested Patch]
+Other optimization:
+- Convert all blkdev_issue_xxx function to common set of flags
+- Optimize generic discard submitting procedure.
 
---
-
-tty: Allow the driver to force an ldisc on open
-
-From: Alan Cox <alan@linux.intel.com>
-
-We need this because some hardware is always in various mux or control
-modes. At the moment we do handstands via userspace to sort this out on
-devices where it makes no sense. Given the size of the patch to fix this
-inanity we might as well do so.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/char/tty_ldisc.c   |    6 +++---
- include/linux/tty_driver.h |    1 +
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
-
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 500e740..b149f9c 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -863,8 +863,8 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	/* Force an oops if we mess this up */
- 	tty->ldisc = NULL;
- 
--	/* Ensure the next open requests the N_TTY ldisc */
--	tty_set_termios_ldisc(tty, N_TTY);
-+	/* Ensure the next open requests the expected (usually N_TTY) ldisc */
-+	tty_set_termios_ldisc(tty, tty->driver->ldisc);
- 	mutex_unlock(&tty->ldisc_mutex);
- 
- 	/* This will need doing differently if we need to lock */
-@@ -885,7 +885,7 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 
- void tty_ldisc_init(struct tty_struct *tty)
- {
--	struct tty_ldisc *ld = tty_ldisc_get(N_TTY);
-+	struct tty_ldisc *ld = tty_ldisc_get(tty->driver->ldisc);
- 	if (IS_ERR(ld))
- 		panic("n_tty: init_tty");
- 	tty_ldisc_assign(tty, ld);
-diff --git a/include/linux/tty_driver.h b/include/linux/tty_driver.h
-index b086779..fc22a41 100644
---- a/include/linux/tty_driver.h
-+++ b/include/linux/tty_driver.h
-@@ -291,6 +291,7 @@ struct tty_driver {
- 	short	type;		/* type of tty driver */
- 	short	subtype;	/* subtype of tty driver */
- 	struct ktermios init_termios; /* Initial termios */
-+	int	ldisc;		/* initial ldisc */
- 	int	flags;		/* tty driver flags */
- 	struct proc_dir_entry *proc_entry; /* /proc fs entry */
- 	struct tty_driver *other; /* only used for the PTY driver */
