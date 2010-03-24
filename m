@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932949Ab0CXUwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:52:33 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44059 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab0CXUwa (ORCPT
+	id S1753758Ab0CXUyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:54:15 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:54924 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab0CXUyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:52:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:subject:to:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=konp9Ea7Nr/K4MCId+I+DfSaPjyhYlqMPePUdEWJUz4z5c4k1wiE89kPq8CeYOzec
-	3qPId7FDBSc7bhCLTzmKg==
-From: Divyesh Shah <dpshah@google.com>
-Subject: [PATCH] cfq-iosched: Do not merge queues of BE and IDLE classes
-To: jens.axboe@oracle.com
-Cc: linux-kernel@vger.kernel.org, nauman@google.com, vgoyal@redhat.com
-Date: Wed, 24 Mar 2010 13:52:03 -0700
-Message-ID: <20100324205127.7477.97997.stgit@austin.mtv.corp.google.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 24 Mar 2010 16:54:13 -0400
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Pavan Savoy <pavan_savoy@yahoo.co.in>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       PavanSavoy <pavan_savoy@ti.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <538832.38767.qm@web94915.mail.in2.yahoo.com>
+References: <538832.38767.qm@web94915.mail.in2.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 13:54:04 -0700
+Message-ID: <1269464044.11714.135.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-even if they are found to be co-operating.
+Hi Pavan,
 
-The prio_trees do not have any IDLE cfqqs on them. cfq_close_cooperator()
-is called from cfq_select_queue() and cfq_completed_request(). The latter
-ensures that the close cooperator code does not get invoked if the current
-cfqq is of class IDLE but the former doesn't seem to have any such checks.
-So an IDLE cfqq may get merged with a BE cfqq from the same group which
-should be avoided.
+> > > Which puts me back to square 1,
+> > the requirement is TTY device should be open, only when
+> > either BT, FM or GPS would want to use it.
+> > > [with your patch one of the steps of installing ldisc
+> > would be reduced upon opening].
+> > 
+> > Perhaps but its up to you how you write your low level
+> > driver and how the
+> > ldisc indicates it wishes to be active (eg speed B0 is used
+> > to indicate
+> > 'no carrier' in many cases)
+> > 
+> > > Actually why do I even need a TTY device in this case
+> > - right ?
+> > > ldisc driver can do the tty->ops->write and
+> > tty_read and put it up on different interfaces like
+> > eth0/hci0 or /dev/radio0 etc..
+> > 
+> > You don't need a tty if you are simply demuxing some kind
+> > of stream of
+> > bytes to/from the hardware and you gain nothing from the
+> > tty layer and
+> > user space interfaces such as control signal and speed
+> > setting.
+> > 
+> 
+> I still want to maintain this as a ldisc driver and the TTY layer is still required to be able to use this with different sort of serial drivers.
+> 
+> example:
+> We do a have a system here where both 8250/omap-serial co-exist creating their own device nodes (ttyS for 8250, ttyO for omap-serial) and I would want to be able to on boot suggest which serial driver to use, so I can open/install ldisc on ttyS or on ttyO.
+> 
+> 
+> > That may be even cleaner in your case as you can then then
+> > provide
+> > suitable links between your demux and the drivers attached
+> > to it
+> > indicating when they should be on or off.
+> 
+> And as Marcel suggested, can't really put in the PM/UART-clk shut off code in ldisc driver because few of these driver provide interfaces and few don't.
+> 
+> So is there no way this can be accepted with the sysfs entry way of communication ?
 
-Signed-off-by: Divyesh Shah<dpshah@google.com>
----
+to be quite honest, I can't see how that can be accepted right now. It
+looks wrong on too many levels.
 
- block/cfq-iosched.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Regards
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index dee9d93..e6910dc 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1721,6 +1721,8 @@ static struct cfq_queue *cfq_close_cooperator(struct cfq_data *cfqd,
- {
- 	struct cfq_queue *cfqq;
- 
-+	if (cfq_class_idle(cur_cfqq))
-+		return NULL;
- 	if (!cfq_cfqq_sync(cur_cfqq))
- 		return NULL;
- 	if (CFQQ_SEEKY(cur_cfqq))
+Marcel
+
 
