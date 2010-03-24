@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752822Ab0CXVy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:54:26 -0400
-Received: from tex.lwn.net ([70.33.254.29]:35004 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751492Ab0CXVyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:54:25 -0400
-Date: Wed, 24 Mar 2010 15:54:23 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100324155423.68c3d5b6@bike.lwn.net>
-In-Reply-To: <20100324214742.GL10659@random.random>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	<1269347146-7461-8-git-send-email-mel@csn.ul.ie>
-	<20100324133347.9b4b2789.akpm@linux-foundation.org>
-	<20100324145946.372f3f31@bike.lwn.net>
-	<20100324211924.GH10659@random.random>
-	<20100324152854.48f72171@bike.lwn.net>
-	<20100324214742.GL10659@random.random>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.19.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753323Ab0CXVyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:54:47 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:43649 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751208Ab0CXVyp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:54:45 -0400
+Date: Thu, 25 Mar 2010 08:54:36 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: wzt.wzt@gmail.com
+Cc: linux-kernel@vger.kernel.org, xfs-masters@oss.sgi.com, aelder@sgi.com
+Subject: Re: [PATCH] xfs: Fix integer overflow in
+ fs/xfs/linux-2.6/xfs_ioctl*.c
+Message-ID: <20100324215436.GC7671@dastard>
+References: <20100317031947.GB2796@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100317031947.GB2796@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010 22:47:42 +0100
-Andrea Arcangeli <aarcange@redhat.com> wrote:
-
-> I think you mistaken a VM_BUG_ON for a:
+On Wed, Mar 17, 2010 at 11:19:47AM +0800, wzt.wzt@gmail.com wrote:
+> The am_hreq.opcount field in the xfs_attrmulti_by_handle() interface
+> is not bounded correctly. The opcount is used to determine the size
+> of the buffer required. The size is bounded, but can overflow and so
+> the size checks may not be sufficient to catch invalid opcounts.
+> Fix it by catching opcount values that would cause overflows before
+> calculating the size.
 > 
->   if (could_be_null->something) {
->      WARN_ON(1);
->      return -ESOMETHING;
->   }
-> 
-> adding a VM_BUG_ON(inode->something) would _still_ be as exploitable
-> as the null pointer deference, because it's a DoS. It's not really a
-> big deal of an exploit but it _sure_ need fixing.
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-Ah, but that's the point: these NULL pointer dereferences were not DoS
-vulnerabilities - they were full privilege-escalation affairs.  Since
-then, some problems have been fixed and some distributors have started
-shipping smarter configurations.  But, on quite a few systems a NULL
-dereference still has the potential to be fully exploitable; if there's
-a possibility of it happening I think we should test for it.  A DoS is
-a much better outcome...
+Looks good now. I'll queue it up with all the other pending changes
+I have.
 
-jon
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
