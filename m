@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0CXQrx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:47:53 -0400
-Received: from mail.tmr.com ([64.65.253.246]:47955 "EHLO partygirl.tmr.com"
+	id S932298Ab0CXQs1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:48:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7174 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151Ab0CXQrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:47:49 -0400
-Message-ID: <4BAA4229.9010506@tmr.com>
-Date: Wed, 24 Mar 2010 12:47:37 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-Organization: TMR Associates Inc, Schenectady NY
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
+	id S932130Ab0CXQsZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:48:25 -0400
+Message-ID: <4BAA424C.5010306@redhat.com>
+Date: Wed, 24 Mar 2010 18:48:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Clemens Ladisch <clemens@ladisch.de>
-CC: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-       alsa-devel@alsa-project.org
-Subject: Re: 2.6.34-rc1: regression: ^Z no longer stops sound
-References: <20100314075831.GA13457@elf.ucw.cz> <hnjjud$k26$1@dough.gmane.org> <20100323135942.GB1703@ucw.cz> <4BA8CB73.80400@ladisch.de>
-In-Reply-To: <4BA8CB73.80400@ladisch.de>
+To: Joerg Roedel <joro@8bytes.org>
+CC: "Daniel P. Berrange" <berrange@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100324150137.GE14800@8bytes.org> <20100324152653.GA12225@redhat.com> <20100324153746.GF14800@8bytes.org> <4BAA3323.9000405@redhat.com> <20100324155041.GH14800@8bytes.org> <4BAA3556.2040802@redhat.com> <20100324161711.GJ14800@8bytes.org> <4BAA3BD6.8030401@redhat.com> <20100324163119.GL14800@8bytes.org> <4BAA3EB3.2070101@redhat.com> <20100324164500.GN14800@8bytes.org>
+In-Reply-To: <20100324164500.GN14800@8bytes.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clemens Ladisch wrote:
-> Pavel Machek wrote:
->   
->> On Sun 2010-03-14 17:20:13, Bill Davidsen wrote:
->>     
->>> Pavel Machek wrote:
->>>       
->>>> In 2.6.33, hitting ^Z stopped mpg123 in a way you'd expect (both on
->>>> thinkpad and geode notebook).
->>>>
->>>> On 2.6.34-rc1, hit ^Z and sound starts looping.
->>>>         
->>> That's not new, I have seen it back as far as 2.6.27.25 doing a suspend 
->>> in a VM (KVM, no libvirt). But it only happens a few times a year, so I 
->>> never chased it. I hate to report an occasional problem in an obsolete 
->>> kernel, and I can't reproduce it.
->>>
->>> Does it happen repeatably with the new kernel?
->>>       
->> It happened reliably so far, yes.
->>     
+On 03/24/2010 06:45 PM, Joerg Roedel wrote:
 >
-> This sounds as if the device has been configured to ignore underruns.
-> What are the contents of /proc/asound/card0/pcm0p/sub0/{sw_params,status}
-> when it's looping, and when it's really suspended?
->   
+>> That's just what I want to do.  Leave it in userspace and then they can
+>> deal with it without telling us about it.
+>>      
+> They can't do that with a directory in /proc?
+>
+>    
 
-If you can give me a hint how to read /proc when the machine is 
-suspended, other than waking it up, I'll certainly check the next time I 
-see it.
-
-But after reading your thought on underruns, I think you right. I see 
-from a note  I wrote myself that I get this while pushing a wav file 
-over the network to run "play" (from sox) on another machine. Every once 
-in a while it finds a musical phrase it really likes. I had assumed it 
-was a bug in sox, but a bug or mis-configure in the device fits all of 
-the observed cases I've seen.
+I don't know.
 
 -- 
-Bill Davidsen <davidsen@tmr.com>
-  "We can't solve today's problems by using the same thinking we
-   used in creating them." - Einstein
+error compiling committee.c: too many arguments to function
 
