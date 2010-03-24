@@ -1,91 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab0CXUyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:54:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51541 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753472Ab0CXUy3 (ORCPT
+	id S1756849Ab0CXUyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:54:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47394 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab0CXUys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:54:29 -0400
-Date: Wed, 24 Mar 2010 13:53:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
- compaction failure
-Message-Id: <20100324135347.7a9eb37b.akpm@linux-foundation.org>
-In-Reply-To: <1269347146-7461-12-git-send-email-mel@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	<1269347146-7461-12-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 24 Mar 2010 16:54:48 -0400
+Subject: Re: [RFC,PATCH 2/2] cputimers/proc:
+ do_task_stat()->thread_group_times() is racy and O(n) under ->siglock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Americo Wang <xiyou.wangcong@gmail.com>,
+       Balbir Singh <balbir@in.ibm.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Roland McGrath <roland@redhat.com>,
+       Spencer Candland <spencer@bluehost.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100324204554.GA31780@redhat.com>
+References: <20100324204554.GA31780@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 21:54:42 +0100
+Message-ID: <1269464082.12097.3.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 12:25:46 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> The fragmentation index may indicate that a failure it due to external
-> fragmentation, a compaction run complete and an allocation failure still
-> fail. There are two obvious reasons as to why
+On Wed, 2010-03-24 at 21:45 +0100, Oleg Nesterov wrote:
+> Nowadays ->siglock is overloaded, it would be really nice to change
+> do_task_stat() to walk through the list of threads lockless. And note
+> that we are doing while_each_thread() twice!
 > 
->   o Page migration cannot move all pages so fragmentation remains
->   o A suitable page may exist but watermarks are not met
+> while_each_thread() is rcu-safe, but thread_group_times() also needs
+> ->siglock to serialize the modifications of signal_struct->prev_Xtime
+> members.
 > 
-> In the event of compaction and allocation failure, this patch prevents
-> compaction happening for a short interval. It's only recorded on the
-> preferred zone but that should be enough coverage. This could have been
-> implemented similar to the zonelist_cache but the increased size of the
-> zonelist did not appear to be justified.
 > 
->
-> ...
->
-> +/* defer_compaction - Do not compact within a zone until a given time */
-> +static inline void defer_compaction(struct zone *zone, unsigned long resume)
-> +{
-> +	/*
-> +	 * This function is called when compaction fails to result in a page
-> +	 * allocation success. This is somewhat unsatisfactory as the failure
-> +	 * to compact has nothing to do with time and everything to do with
-> +	 * the requested order, the number of free pages and watermarks. How
-> +	 * to wait on that is more unclear, but the answer would apply to
-> +	 * other areas where the VM waits based on time.
 
-um.  "Two wrongs don't make a right".  We should fix the other sites,
-not use them as excuses ;)
+Right, so from what I remember the issue is that, yes top et al rely on
+that monotonicity, but more importantly I think
+clock_gettime(CLOCK_PROCESS_CPUTIME_ID) should indeed use ->siglock to
+ensure it serializes against do_exit() so that either we iterate the
+thread or get the accumulated runtime from signal_struct but not both
+(or neither).
 
-What _is_ a good measure of "time" in this code?  "number of pages
-scanned" is a pretty good one in reclaim.  We want something which will
-adapt itself to amount-of-memory, number-of-cpus, speed-of-cpus,
-nature-of-workload, etc, etc.
 
-Is it possible to come up with some simple metric which approximately
-reflects how busy this code is, then pace ourselves via that?
-
-> +	 */
-> +	zone->compact_resume = resume;
-> +}
-> +
-> +static inline int compaction_deferred(struct zone *zone)
-> +{
-> +	/* init once if necessary */
-> +	if (unlikely(!zone->compact_resume)) {
-> +		zone->compact_resume = jiffies;
-> +		return 0;
-> +	}
-> +
-> +	return time_before(jiffies, zone->compact_resume);
-> +}
 
