@@ -1,52 +1,579 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab0CXFk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:40:29 -0400
-Received: from qw-out-2122.google.com ([74.125.92.24]:2951 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab0CXFk2 (ORCPT
+	id S1754152Ab0CXFku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:40:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45771 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab0CXFks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:40:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:from:date:message-id:subject:to:cc
-         :content-type;
-        b=UkqMxuECaLzTDeRp6Vn3tA9zDqSeG/b+SJf4ZvegPOi5nb2fM8Na3UDgGNJf1hXvUw
-         yB3trcZJ0r7vnL6gUOfjTciNWL7CWHituc+JKRjH6x0OGzsqJHmEyt9OuGUbqsaqDzrQ
-         mjA8/ZN7hzgLVdSy1WdwTceRUTsCKkJxQk010=
+	Wed, 24 Mar 2010 01:40:48 -0400
+Date: Wed, 24 Mar 2010 06:40:44 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+       tglx@linutronix.de
+Subject: [PATCH] x86: mce: Xeon75xx specific interface to get corrected
+	memory error information v2
+Message-ID: <20100324054044.GA4307@basil.fritz.box>
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 24 Mar 2010 13:40:07 +0800
-Message-ID: <427d64721003232240g34f5a1abi7f6174480599134c@mail.gmail.com>
-Subject: [PATCH] asus-laptop: Return -ENOMEM in case of failed rfkill_alloc()
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Corentin Chary <corentin.chary@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -ENOMEM instead of -EINVAL in case of failed rfkill_alloc()
+x86: mce: Xeon75xx specific interface to get corrected memory error information v2
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+[This version addresses the previous comments. It does not change
+any interface to the outside and does not attempt to encode DIMMs
+or anything like that, but only passes out the physical address of u
+a corrected error in the standard ADDR register field. 
+So for the outside it looks exactly the same as if the CPU supported this 
+natively, but no otherwise special interfaces.
+
+I hope this addresses previous concerns. I guess the DIMM error reporting
+can be revisited once there's a new reporting interface. There are still
+some traces of DIMM parsing in there, but it's only used for debug
+purposes now.]
+
 ---
- drivers/platform/x86/asus-laptop.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/platform/x86/asus-laptop.c
-b/drivers/platform/x86/asus-laptop.c
-index db5f7db..21dbe38 100644
---- a/drivers/platform/x86/asus-laptop.c
-+++ b/drivers/platform/x86/asus-laptop.c
-@@ -1094,7 +1094,7 @@ static int asus_rfkill_init(struct asus_laptop *asus)
-                                        RFKILL_TYPE_GPS,
-                                        &asus_gps_rfkill_ops, NULL);
-        if (!asus->gps_rfkill)
--               return -EINVAL;
-+               return -ENOMEM;
+Xeon 75xx doesn't log physical addresses on corrected machine check
+events in the standard architectural MSRs. Instead the address has to
+be retrieved in a model specific way. This makes it impossible
+to do predictive failure analysis.
 
-        result = rfkill_register(asus->gps_rfkill);
-        if (result) {
--- 
-1.5.4.3
+Implement cpu model specific code to do this in mce-xeon75xx.c using a new hook 
+that is called from the generic poll code. The code retrieves 
+the physical addressof the last corrected error from the platform 
+and makes the address look like a standard architectural MCA address for 
+further processing.
+
+There's no code to print this information on a panic because this only
+works for corrected errors, and corrected errors do not usually result in 
+panics.
+
+The act of retrieving the PA information can take some time, so this
+code has a rate limit to avoid taking too much CPU time on a error flood.
+
+The whole thing can be loaded as a module and has suitable
+PCI-IDs so that it can be auto-loaded by a distribution.
+The code also checks explicitely for the expected CPU model
+number to make sure this code doesn't run anywhere else.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ arch/x86/Kconfig                          |    8 
+ arch/x86/kernel/cpu/mcheck/Makefile       |    1 
+ arch/x86/kernel/cpu/mcheck/mce-internal.h |    1 
+ arch/x86/kernel/cpu/mcheck/mce-xeon75xx.c |  402 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/mcheck/mce.c          |   12 
+ arch/x86/kernel/e820.c                    |    3 
+ 6 files changed, 426 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce.c
+===================================================================
+--- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/cpu/mcheck/mce.c	2010-03-24 06:38:06.000000000 +0100
++++ linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce.c	2010-03-24 06:38:32.000000000 +0100
+@@ -88,6 +88,9 @@
+ static DEFINE_PER_CPU(struct mce, mces_seen);
+ static int			cpu_missing;
+ 
++void 				(*cpu_specific_poll)(struct mce *);
++EXPORT_SYMBOL_GPL(cpu_specific_poll);
++
+ /*
+  * CPU/chipset specific EDAC code can register a notifier call here to print
+  * MCE errors in a human-readable form.
+@@ -364,6 +367,11 @@
+ 	wrmsrl(msr, v);
+ }
+ 
++static int under_injection(void)
++{
++	return __get_cpu_var(injectm).finished;
++}
++
+ /*
+  * Simple lockless ring to communicate PFNs from the exception handler with the
+  * process context work function. This is vastly simplified because there's
+@@ -567,6 +575,10 @@
+ 
+ 		if (!(flags & MCP_TIMESTAMP))
+ 			m.tsc = 0;
++
++		if (cpu_specific_poll && !under_injection() && !mce_dont_log_ce)
++			cpu_specific_poll(&m);
++
+ 		/*
+ 		 * Don't get the IP here because it's unlikely to
+ 		 * have anything to do with the actual error location.
+Index: linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce-internal.h
+===================================================================
+--- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/cpu/mcheck/mce-internal.h	2010-03-24 06:38:06.000000000 +0100
++++ linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce-internal.h	2010-03-24 06:38:32.000000000 +0100
+@@ -28,3 +28,4 @@
+ 
+ extern struct mce_bank *mce_banks;
+ 
++extern void (*cpu_specific_poll)(struct mce *);
+Index: linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/Makefile
+===================================================================
+--- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/cpu/mcheck/Makefile	2010-03-24 06:38:06.000000000 +0100
++++ linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/Makefile	2010-03-24 06:38:32.000000000 +0100
+@@ -2,6 +2,7 @@
+ 
+ obj-$(CONFIG_X86_ANCIENT_MCE)	+= winchip.o p5.o
+ obj-$(CONFIG_X86_MCE_INTEL)	+= mce_intel.o
++obj-$(CONFIG_X86_MCE_XEON75XX)	+= mce-xeon75xx.o
+ obj-$(CONFIG_X86_MCE_AMD)	+= mce_amd.o
+ obj-$(CONFIG_X86_MCE_THRESHOLD) += threshold.o
+ obj-$(CONFIG_X86_MCE_INJECT)	+= mce-inject.o
+Index: linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce-xeon75xx.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux-2.6.34-rc1-ak/arch/x86/kernel/cpu/mcheck/mce-xeon75xx.c	2010-03-24 06:40:50.000000000 +0100
+@@ -0,0 +1,402 @@
++/*
++ * Xeon 7500 series specific machine check support code.
++ * Copyright 2009, 2010 Intel Corporation
++ * Author: Andi Kleen
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ *
++ * Implement Xeon 7500 series specific code to retrieve the physical address.
++ * The interface also supports DIMM information, but there is currently
++ * no suitable interface to pass that out to the user.
++ */
++
++/* #define DEBUG 1 */ 	/* disable for production */
++#define pr_fmt(x) "MCE: " x
++
++#include <linux/moduleparam.h>
++#include <linux/pci_ids.h>
++#include <linux/hrtimer.h>
++#include <linux/string.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/ktime.h>
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <asm/processor.h>
++#include <asm/e820.h>
++#include <asm/mce.h>
++#include <asm/io.h>
++
++#include "mce-internal.h"
++
++#define PFA_SIG "$PFA"
++#define PFA_SIG_LEN 4
++
++/* DIMM description */
++struct aux_pfa_dimm {
++	u8  fbd_channel_id;
++	u8  ddr_channel_id;
++	u8  ddr_dimm_id;
++	u8  ddr_rank_id;
++	u8  ddr_dimm_bank_id;
++	u8  ddr_dimm_row_id;
++	u8  ddr_dimm_column_id;
++	u8  valid;
++} __attribute__((packed));
++
++struct pfa_dimm {
++	u8  fbd_channel_id;
++	u8  ddr_channel_id;
++	u8  ddr_dimm_id;
++	u8  ddr_rank_id;
++	u8  ddr_dimm_bank_id;
++	u32 ddr_dimm_row_id;
++	u32 ddr_dimm_column_id;
++} __attribute__((packed));
++
++/* Memory translation table in memory. */
++struct pfa_table {
++	u8  sig[PFA_SIG_LEN];	/* Signature: '$PFA' */
++	u16 len;		/* total length */
++	u16 revision;		/* 0x11 */
++	u8  checksum;		/* 8bit sum to zero */
++	u8  db_value;		/* mailbox port command value */
++	u8  db_port;		/* mailbox port */
++	/* end of header; end of checksum */
++	u8  command;		/* input command */
++	u32 valid;		/* valid input/output bits */
++	u16 status;		/* output status */
++	u8  socket_id;		/* input socket id*/
++	u8  bank_id;		/* input MCE bank id */
++	u32 pad1;
++	u64 mbox_address;
++	u64 physical_addr;	/* physical address */
++	struct pfa_dimm dimm[2];
++	/*
++	 * topology information follows: not used for now.
++	 */
++} __attribute__((packed));
++
++#define DIMM_VALID_BITS(val, num) (((val) >> (4 + (num) * 8)) & DIMM_VALID_ALL)
++#define DIMM_SET_VALID(val, num)  ((val) << (4 + (num) * 8))
++
++enum {
++	MCE_BANK_MBOX0		= 8,
++	MCE_BANK_MBOX1		= 9,
++
++	PFA_REVISION		= 0x11,		/* v1.1 */
++
++	/* Status bits for valid field */
++	PFA_VALID_MA            = (1 << 0),
++	PFA_VALID_SOCKETID      = (1 << 1),
++	PFA_VALID_BANKID        = (1 << 2),
++	PFA_VALID_PA            = (1 << 3),
++
++	/* DIMM valid bits in valid */
++	/* use with DIMM_VALID_BITS/DIMM_SET_VALID for pfa->valid */
++	DIMM_VALID_FBD_CHAN      = (1 << 0),
++	DIMM_VALID_DDR_CHAN      = (1 << 1),
++	DIMM_VALID_DDR_DIMM      = (1 << 2),
++	DIMM_VALID_DDR_RANK      = (1 << 3),
++	DIMM_VALID_DIMM_BANK     = (1 << 4),
++	DIMM_VALID_DIMM_ROW      = (1 << 5),
++	DIMM_VALID_DIMM_COLUMN   = (1 << 6),
++	DIMM_VALID_ALL		 = 0x7f,
++
++	PFA_DIMM_VALID_MASK	 = DIMM_SET_VALID(DIMM_VALID_ALL, 0)
++				 | DIMM_SET_VALID(DIMM_VALID_ALL, 1),
++
++	/* Values for status field */
++	PFA_STATUS_SUCCESS      = 0,
++	PFA_STATUS_SOCKET_INVALID  = (1 << 1),
++	PFA_STATUS_MBOX_INVALID = (1 << 2),
++	PFA_STATUS_MA_INVALID   = (1 << 3),
++	PFA_STATUS_PA_INVALID   = (1 << 4),
++
++	/* Values for command field */
++	PFA_CMD_GET_MEM_CORR_ERR_PA = 0,
++	PFA_CMD_PA_TO_DIMM_ADDR     = 1,
++	PFA_CMD_DIMM_TO_PA	    = 2,
++	PFA_CMD_GET_TOPOLOGY	    = 3,
++
++	/* PCI device IDs and the base register */
++	ICH_PFA_CFG             = 0x8c, /* SCRATCH4 */
++	PCI_DEVICE_ID_BXB_ICH_LEGACY0 = 0x3422,
++};
++
++static struct pfa_table *pfa_table __read_mostly;
++static int memerr_max_conv_rate __read_mostly = 100;
++static int memerr_min_interval __read_mostly = 500;
++static int pfa_lost;	/* for diagnosis */
++
++enum {
++	RATE_LIMIT_PERIOD = USEC_PER_SEC, /* in us; period of rate limit */
++};
++
++module_param(memerr_max_conv_rate, int, 0644);
++MODULE_PARM_DESC(memerr_max_conv_rate,
++	"Maximum number of memory error conversions each second; 0 to disable");
++module_param(memerr_min_interval, int, 0644);
++MODULE_PARM_DESC(memerr_min_interval,
++	"Minimum time delta between two memory conversions; in us; default 500");
++
++static int notest;
++static int nocsum;
++module_param(notest, int, 0);
++module_param(nocsum, int, 0);
++
++static void debug_dimm(struct pfa_dimm *d, u8 valid)
++{
++	pr_debug("PFA fbd_ch %u ddr_ch %u dimm %u rank %u bank %u valid %x\n",
++		 d->fbd_channel_id,
++		 d->ddr_channel_id,
++		 d->ddr_dimm_id,
++		 d->ddr_rank_id,
++		 d->ddr_dimm_bank_id,
++		 valid);
++}
++
++static u8 csum(u8 *table, u16 len)
++{
++	u8 sum = 0;
++	int i;
++	for (i = 0; i < len; i++)
++		sum += *table++;
++	return sum;
++}
++
++/*
++ * Execute a command through the mailbox interface.
++ */
++static int
++pfa_command(unsigned bank, unsigned socketid, unsigned command, unsigned valid)
++{
++	pfa_table->bank_id = bank;
++	pfa_table->socket_id = socketid;
++	pfa_table->valid = valid | PFA_VALID_SOCKETID;
++	pfa_table->command = command;
++
++	outb(pfa_table->db_value, pfa_table->db_port);
++
++	mb();	/* Reread fields after they got changed */
++
++	if (pfa_table->status != PFA_STATUS_SUCCESS) {
++		pr_debug("Memory PFA command %d failed: socket:%d bank:%d status:%x\n",
++			command, socketid, bank, pfa_table->status);
++		return -pfa_table->status;
++	}
++	return 0;
++}
++
++/*
++ * Retrieve physical address and DIMMs.
++ */
++static int translate_memory_error(struct mce *m)
++{
++	struct pfa_table *pfa = pfa_table;
++	u64 status;
++	int ret;
++	u32 valid;
++	int cpu = smp_processor_id();
++
++	/* Make sure our structures match the specification */
++	BUILD_BUG_ON(offsetof(struct pfa_table, physical_addr) != 0x20);
++	BUILD_BUG_ON(offsetof(struct pfa_table, status) != 0x10);
++	BUILD_BUG_ON(offsetof(struct pfa_table, physical_addr) != 0x20);
++	BUILD_BUG_ON(offsetof(struct pfa_table, dimm[1].ddr_dimm_column_id) !=
++			0x3e);
++
++	/* Ask for PA/DIMMs of last error */
++	if (pfa_command(m->bank, m->socketid,
++			PFA_CMD_GET_MEM_CORR_ERR_PA, PFA_VALID_BANKID) < 0)
++		return -1;
++
++	/*
++	 * Recheck machine check bank. If the overflow bit was set
++	 * there was a race. Don't use the information in this case.
++	 */
++	rdmsrl(MSR_IA32_MCx_STATUS(m->bank), status);
++	if (status & MCI_STATUS_OVER) {
++		pr_debug("%d: overflow race on bank %d\n", cpu, m->bank);
++		return -1;
++	}
++
++	ret = -1;
++	valid = pfa->valid;
++	if (valid & PFA_VALID_PA) {
++		m->status |= MCI_STATUS_ADDRV;
++		m->addr = pfa_table->physical_addr;
++		pr_debug("%d: got physical address %llx valid %x\n",
++			cpu, m->addr, valid);
++		ret = 0;
++	}
++
++	if (valid & PFA_DIMM_VALID_MASK) {
++		debug_dimm(&pfa->dimm[0], DIMM_VALID_BITS(valid, 0));
++		debug_dimm(&pfa->dimm[1], DIMM_VALID_BITS(valid, 1));
++		ret = 0;
++	}
++
++	return ret;
++}
++
++/*
++ * Xeon 75xx specific mce poll method to retrieve the physical address
++ * and DIMM information.
++ */
++static void xeon75xx_mce_poll(struct mce *m)
++{
++	static DEFINE_SPINLOCK(convert_lock); /* Protect table and static */
++	static unsigned long cperm;
++	static ktime_t last, last_int;
++	unsigned long flags;
++	ktime_t now;
++	s64 delta;
++
++	/* Memory error? */
++	if (m->bank != MCE_BANK_MBOX0 && m->bank != MCE_BANK_MBOX1)
++		return;
++	if (m->status & MCI_STATUS_OVER)
++		return;
++	if (memerr_max_conv_rate == 0)
++		return;
++
++	spin_lock_irqsave(&convert_lock, flags);
++	/*
++	 * Rate limit conversions. The conversion takes some time,
++	 * but it's not good to use all the CPU time during a error
++	 * flood.
++	 * Enforce maximum number per second and minimum interval.
++	 * The ktime call should use TSC on this machine and be fast.
++	 */
++	now = ktime_get();
++	delta = ktime_us_delta(now, last);
++	if (delta >= RATE_LIMIT_PERIOD) {
++		cperm = 0;
++		last = now;
++	}
++	if (ktime_us_delta(now, last_int) >= memerr_min_interval &&
++	   ++cperm <= memerr_max_conv_rate) {
++		if (translate_memory_error(m) < 0) {
++			/* On error stop converting for the next second */
++			cperm = memerr_max_conv_rate;
++			pr_debug("PFA translation failed\n");
++		}
++	} else
++		pfa_lost++;
++	last_int = now;
++	spin_unlock_irqrestore(&convert_lock, flags);
++}
++
++static struct pci_device_id bxb_mce_pciids[] = {
++	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_BXB_ICH_LEGACY0) },
++	{}
++};
++
++static int __init xeon75xx_mce_init(void)
++{
++	u32 addr = 0;
++	struct pci_dev *dev;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL ||
++	    boot_cpu_data.x86 != 6 ||
++	    boot_cpu_data.x86_model != 0x2e)
++		return -ENODEV;
++
++	/*
++	 * Get table address from register in IOH.
++	 * This just looks up the device, because we don't want to "own" it.
++	 */
++	dev = NULL;
++	while ((dev = pci_get_device(PCI_VENDOR_ID_INTEL, PCI_ANY_ID, dev))
++			!= NULL) {
++		if (!pci_match_id(bxb_mce_pciids, dev))
++			continue;
++		pci_read_config_dword(dev, ICH_PFA_CFG, &addr);
++		if (addr)
++			break;
++	}
++	pci_dev_put(dev);
++	if (!addr)
++		return -ENODEV;
++
++	if (!e820_all_mapped(addr, addr + PAGE_SIZE, E820_RESERVED)) {
++		pr_info("PFA table at %x not e820 reserved\n", addr);
++		return -ENODEV;
++	}
++
++	pfa_table = (__force struct pfa_table *)ioremap_cache(addr, PAGE_SIZE);
++	if (!pfa_table) {
++		pr_err("Cannot map PFA table at %x\n", addr);
++		return -EIO;
++	}
++
++	if (memcmp(&pfa_table->sig, PFA_SIG, PFA_SIG_LEN) ||
++	    pfa_table->len < sizeof(struct pfa_table) ||
++	    /* assume newer versions are compatible */
++	    pfa_table->revision < PFA_REVISION) {
++		pr_info("PFA table at %x invalid\n", addr);
++		goto error_unmap;
++	}
++
++	if (!nocsum && csum((u8 *)pfa_table,
++				offsetof(struct pfa_table, command))) {
++		pr_info("PFA table at %x length %u has invalid checksum\n",
++			addr, pfa_table->len);
++		goto error_unmap;
++	}
++
++	if (pfa_table->len > PAGE_SIZE) {
++		unsigned len = roundup(pfa_table->len, PAGE_SIZE);
++		iounmap(pfa_table);
++		pfa_table = (__force void *)ioremap_cache(addr, len);
++		if (!pfa_table) {
++			pr_err("Cannot remap %u bytes PFA table at %x\n",
++				len, addr);
++			return -EIO;
++		}
++	}
++
++	if (!notest) {
++		int status = pfa_command(0, 0, PFA_CMD_GET_TOPOLOGY, 0);
++		if (status < 0) {
++			pr_err("Test of PFA table failed: %x\n", -status);
++			goto error_unmap;
++		}
++	}
++
++	pr_info("Found Xeon75xx PFA memory error translation table at %x\n",
++		addr);
++	mb();
++	cpu_specific_poll = xeon75xx_mce_poll;
++	return 0;
++
++error_unmap:
++	iounmap(pfa_table);
++	return -ENODEV;
++}
++
++MODULE_DEVICE_TABLE(pci, bxb_mce_pciids);
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Andi Kleen");
++MODULE_DESCRIPTION("Intel Xeon 75xx specific DIMM error reporting");
++
++#ifdef CONFIG_MODULE
++static void __exit xeon75xx_mce_exit(void)
++{
++	cpu_specific_poll = NULL;
++	wmb();
++	/* Wait for all machine checks to finish before really unloading */
++	synchronize_rcu();
++	iounmap(pfa_table);
++}
++
++module_init(xeon75xx_mce_init);
++module_exit(xeon75xx_mce_exit);
++#else
++/* When built-in run as soon as the PCI subsystem is up */
++fs_initcall(xeon75xx_mce_init);
++#endif
+Index: linux-2.6.34-rc1-ak/arch/x86/kernel/e820.c
+===================================================================
+--- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/e820.c	2010-03-24 06:38:06.000000000 +0100
++++ linux-2.6.34-rc1-ak/arch/x86/kernel/e820.c	2010-03-24 06:38:32.000000000 +0100
+@@ -71,7 +71,7 @@
+  * Note: this function only works correct if the e820 table is sorted and
+  * not-overlapping, which is the case
+  */
+-int __init e820_all_mapped(u64 start, u64 end, unsigned type)
++int e820_all_mapped(u64 start, u64 end, unsigned type)
+ {
+ 	int i;
+ 
+@@ -98,6 +98,7 @@
+ 	}
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(e820_all_mapped);
+ 
+ /*
+  * Add a memory region to the kernel e820 map.
+Index: linux-2.6.34-rc1-ak/arch/x86/Kconfig
+===================================================================
+--- linux-2.6.34-rc1-ak.orig/arch/x86/Kconfig	2010-03-24 06:38:06.000000000 +0100
++++ linux-2.6.34-rc1-ak/arch/x86/Kconfig	2010-03-24 06:38:32.000000000 +0100
+@@ -864,6 +864,14 @@
+ 	   Additional support for intel specific MCE features such as
+ 	   the thermal monitor.
+ 
++config X86_MCE_XEON75XX
++	tristate "Intel Xeon 7500 series corrected memory error driver"
++	depends on X86_MCE_INTEL
++	---help---
++	   Add support for a Intel Xeon 7500 series specific memory error driver.
++	   This allows to report the DIMM and physical address on a corrected
++	   memory error machine check event.
++
+ config X86_MCE_AMD
+ 	def_bool y
+ 	prompt "AMD MCE features"
