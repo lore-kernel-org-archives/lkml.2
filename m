@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab0CXCjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 22:39:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55410 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab0CXCi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 22:38:58 -0400
-Date: Tue, 23 Mar 2010 19:38:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
-       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       Corrado Zoccolo <czoccolo@gmail.com>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
-	pressure
-Message-ID: <20100324023837.GH4359@suse.de>
-References: <20100315130935.f8b0a2d7.akpm@linux-foundation.org> <20100322235053.GD9590@csn.ul.ie>
+	id S1754522Ab0CXCjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 22:39:48 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:57754 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754419Ab0CXCjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 22:39:46 -0400
+Date: Wed, 24 Mar 2010 11:38:35 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.34-rc3
+Message-ID: <20100324023834.GA10729@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100322235053.GD9590@csn.ul.ie>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 22, 2010 at 11:50:54PM +0000, Mel Gorman wrote:
-> 2. TTY using high order allocations more frequently
-> 	fix title: ttyfix
-> 	fixed in mainline? yes, in 2.6.34-rc2
-> 	affects: 2.6.31 to 2.6.34-rc1
-> 
-> 	2.6.31 made pty's use the same buffering logic as tty.	Unfortunately,
-> 	it was also allowed to make high-order GFP_ATOMIC allocations. This
-> 	triggers some high-order reclaim and introduces some stalls. It's
-> 	fixed in 2.6.34-rc2 but needs back-porting.
+Please pull from:
 
-It will go to the other stable kernels for their next round of releases
-now that it is in Linus's tree.
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh/for-2.6.34
 
-> Next Steps
-> ==========
-> 
-> Jens, any problems with me backporting the async/sync fixes from 2.6.31 to
-> 2.6.30.x (assuming that is still maintained, Greg?)?
+Which contains:
 
-No, .30 is no longer being maintained.
+Andreas Bombe (1):
+      sh64: Remove long unused mid_sched macro
 
-thanks,
+Guennadi Liakhovetski (2):
+      SH: fix SCIFA SCASCR register bit definitions
+      SH: remove superfluous warning from the serial driver
 
-greg k-h
+Kuninori Morimoto (3):
+      sh: mach-ecovec24: Add i2c_put_adapter on sh_eth_init
+      sh: ms7724: Add tiny-document for sound
+      sh: Add watch-dog register address for SH7722/SH7723/SH7724
+
+Magnus Damm (1):
+      serial: sh-sci: fix SH-Mobile SH breakage
+
+Matt Fleming (3):
+      sh: Flush ITLB too in PTEAEX's flush_tlb_page()
+      sh: Replace unsafe manipulation of MMUCR
+      sh: Fix build after dynamic PMB rework
+
+Paul Mundt (2):
+      sh: Tidy up a couple of section mismatches.
+      sh: Silence unintialized variable warnings in dwarf unwinder.
+
+ arch/sh/boards/mach-ecovec24/setup.c      |    2 +
+ arch/sh/boards/mach-se/7724/setup.c       |    8 ++++++
+ arch/sh/include/cpu-sh4/cpu/mmu_context.h |    2 +
+ arch/sh/include/cpu-sh4/cpu/watchdog.h    |    6 +++++
+ arch/sh/kernel/dwarf.c                    |    4 +-
+ arch/sh/kernel/idle.c                     |    2 +-
+ arch/sh/kernel/perf_event.c               |    2 +-
+ arch/sh/kernel/process_64.c               |    7 -----
+ arch/sh/mm/pmb.c                          |    4 ++-
+ arch/sh/mm/tlb-pteaex.c                   |    2 +
+ arch/sh/mm/tlbflush_32.c                  |   21 ++++++++++++-----
+ drivers/serial/sh-sci.c                   |    4 ---
+ drivers/serial/sh-sci.h                   |   35 ++++++++++++++++++++++------
+ 13 files changed, 69 insertions(+), 30 deletions(-)
