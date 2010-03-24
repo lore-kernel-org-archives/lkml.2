@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab0CXSKS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:10:18 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:40191 "EHLO mail-out1.uio.no"
+	id S1756684Ab0CXSLe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:11:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab0CXSKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:10:16 -0400
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1269453756.5982.33.camel@localhost.localdomain>
-References: <4BAA3493.1030802@panasas.com>
-	 <20100324160037.GP30031@ZenIV.linux.org.uk>	<4BAA3828.2070506@panasas.com>
-	 <20100324160754.GQ30031@ZenIV.linux.org.uk>	<4BAA398C.5050901@panasas.com>
-	 <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>
-	 <4BAA4CAC.6060104@panasas.com>  <4BAA5035.1060906@panasas.com>
-	 <1269453756.5982.33.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 14:10:08 -0400
-Message-ID: <1269454208.5982.34.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 12 msgs/h 2 sum rcpts/h 13 sum msgs/h 2 total rcpts 2611 max rcpts/h 27 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 1165A710A154C02F0A6547B91C8571BE0DFEC227
-X-UiO-SPAM-Test: remote_host: 130.129.30.233 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 2 total 6 max/h 2 blacklist 0 greylist 0 ratelimit 0
+	id S1756654Ab0CXSLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 14:11:33 -0400
+Date: Wed, 24 Mar 2010 19:09:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
+       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] sched/cpusets fixes, more changes are needed
+Message-ID: <20100324180912.GA21774@redhat.com>
+References: <20100315090958.GA9116@redhat.com> <1269452296.5109.508.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269452296.5109.508.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 14:02 -0400, Trond Myklebust wrote: 
-> I'd say you have a corruption issue either on the server side or on your
-> client.
+On 03/24, Peter Zijlstra wrote:
+>
+> On Mon, 2010-03-15 at 10:09 +0100, Oleg Nesterov wrote:
+> >
+> > 	- do_fork() clears PF_STARTING and then calls wake_up_new_task()
+> > 	  which finally does s/WAKING/RUNNING.
+> >
+> > 	  But. Nobody can take rq->lock in between. This means a signal
+> > 	  from irq (quite possible with CLONE_THREAD) or another rt
+> > 	  thread which preempts us can lockup.
+>
+> Hmm, the signal case might indeed be a problem, however I cannot see how
+> the RT thread can be a problem because until we do wake_up_new_task()
+> the child will not be runnable and can thus not be preempted.
 
-By the way. Does this issue happen with NFSv4 too, or is it only
-NFSv4.1?
+Indeed, but I meant the _parent_ can be preempted ;)
 
-Trond
+In short. TASK_WAKING acts as a spinlock in fact. And since ttwu() can
+be called from any context, it should be irq-safe: any owner must disable
+inerrupts and preemption.
+
+> The reason we have that TASK_WAKING stuff for fork is because
+> wake_up_new_task() needs p->cpus_allowed to be stable
+
+Sure! But it is very easy to change wake_up_new_task() to set TASK_WAKING
+like ttwu() does. Of course, this needs raw_spin_lock_irq(rq->lock) for
+a moment, but afaics that is all?
+
+> So the below patch makes select_task_rq_fair unlock the rq when needed,
+> and then puts all ->select_task_rq() calls under rq->lock. This should
+> allow us to remove the TASK_WAKING thing from fork which in turn allows
+> us to remove the PF_STARTING check in task_is_waking.
+>
+> How does that look?
+
+I'll try to read this patch tomorrow. But could you please consider
+the suggestion above?
+
+Oleg.
 
