@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab0CXVq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:46:58 -0400
-Received: from web94906.mail.in2.yahoo.com ([203.104.17.156]:41684 "HELO
-	web94906.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751258Ab0CXVq5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:46:57 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=x9UtFTCOdMWwktRIsY5EgGY6vpgM78hGxosHjrarFwZOxWZMcYp3jr87k2jJCiHgFQAimUUwvned1VeCepGIi8RyWu4UFQgstPXoCv+2HkKbIMMLIpmomwB2X1HvMJkvN707bZ11/oiLLFpeRqkiOcDtLbNVjdEWm1TMiP7MfKc=;
-Message-ID: <526700.12048.qm@web94906.mail.in2.yahoo.com>
-X-YMail-OSG: Nh9aXiwVM1midtdsJpr_OEtM1gzSs6_wQC3EvS93X6UUfWr
- fE1qBqh0ehRUj6GJYnHohCS1DKlj7AyzkNt02pubGcAq2LV0cGtDZmFclc7w
- ZXAt454VdHV8lRHOY73s92PdljwB_CuFVxUR6hkXo8dYIJ4V1Su0QpyQLJSd
- qKcWrtzT3RNNEG4tdwXRtSZ1GOG.GKGVD37ehTqRW0qEBBDHms_S8y8aNCy8
- 7qU6Vbl7drRh_voFIf9nwW4A4QHBvTQm8IbJjJs4fCU2o1ZC6FcV8aP9ly.R
- VHRWLDjVKIJ3aEUi3.noCTQc-
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Thu, 25 Mar 2010 03:16:54 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Subject: RE: [PATCH 4/6] drivers:misc: sources for Init manager module
-To: PavanSavoy <pavan_savoy@ti.com>, Marcel Holtmann <marcel@holtmann.org>
-Cc: Greg KH <gregkh@suse.de>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1269466536.11714.144.camel@localhost.localdomain>
+	id S1753296Ab0CXVs4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:48:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18054 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751258Ab0CXVsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:48:55 -0400
+Date: Wed, 24 Mar 2010 22:47:42 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+Message-ID: <20100324214742.GL10659@random.random>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+ <1269347146-7461-8-git-send-email-mel@csn.ul.ie>
+ <20100324133347.9b4b2789.akpm@linux-foundation.org>
+ <20100324145946.372f3f31@bike.lwn.net>
+ <20100324211924.GH10659@random.random>
+ <20100324152854.48f72171@bike.lwn.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100324152854.48f72171@bike.lwn.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Thu, 25/3/10, Marcel Holtmann <marcel@holtmann.org> wrote:
-
-> From: Marcel Holtmann <marcel@holtmann.org>
-> Subject: RE: [PATCH 4/6] drivers:misc: sources for Init manager module
-> To: "Savoy, Pavan" <pavan_savoy@ti.com>
-> Cc: "Pavan Savoy" <pavan_savoy@yahoo.co.in>, "Greg KH" <gregkh@suse.de>, "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>, "Deosthali, Amey" <adeosthali@ti.com>, "Alathur, Pramodh" <pramodh_ag@ti.com>
-> Date: Thursday, 25 March, 2010, 3:05 AM
-> Hi Pavan,
+On Wed, Mar 24, 2010 at 03:28:54PM -0600, Jonathan Corbet wrote:
+> On Wed, 24 Mar 2010 22:19:24 +0100
+> Andrea Arcangeli <aarcange@redhat.com> wrote:
 > 
-> > Find enclosed the design document, where in figure-1
-> pretty much explains the different protocols for FM, GPS, BT
-> and HCI-LL.
+> > > > It's a bit strange to test this when we're about to oops anyway.  The
+> > > > oops will tell us the same thing.  
+> > > 
+> > > ...except that we've seen a fair number of null pointer dereference
+> > > exploits that have told us something altogether different.  Are we
+> > > *sure* we don't want to test for null pointers...?  
+> > 
+> > Examples? Maybe WARN_ON != oops, but VM_BUG_ON still an oops that is
+> > and without serial console it would go lost too. I personally don't
+> > see how it's needed.
 > 
-> just after quickly going through that document, I think you
-> should
-> create an actual ST bus. The ST line discipline should be
-> just one
-> transport driver for that bus. Since you clearly looking
-> into SPI and
-> other transports as well.
-
-Had planned a range of TTY drivers for SPI/SlimBus 'ala usb-serial device driver for that.
-And hence somehow assumed TTY line discipline should be enough.
-
-SPI/SlimBus I tend to agree, their device nodes in user space is not used, and settings like bus freq, CPOL/CPHA are all set via drivers (for spi atleast).
-
-Even after doing that, what about the requirement of opening an tty device upon request from BT or FM when chip is on UART ?
-
+> I don't quite understand the question; are you asking for examples of
+> exploits?
 > 
-> And then the bus can export Bluetooth, FM and GPS devices.
-> And we can
-> have separate drivers for these devices.
+> 	http://lwn.net/Articles/347006/
+> 	http://lwn.net/Articles/360328/
+> 	http://lwn.net/Articles/342330/
+> 	...
 
-Hnm, Any such example drivers to look around ?
+As far as I can tell, VM_BUG_ON would make _zero_ differences there.
 
-> You might wanna pick a different name than ST to not make
-> ST
-> Microelectronics unhappy and next time they call their next
-> thing TI ;)
+I think you mistaken a VM_BUG_ON for a:
 
-I had called it SHUART for some reason earlier, Yep point to be considered.
-Thanks,
+  if (could_be_null->something) {
+     WARN_ON(1);
+     return -ESOMETHING;
+  }
 
-> Regards
-> 
-> Marcel
-> 
-> 
-> 
+adding a VM_BUG_ON(inode->something) would _still_ be as exploitable
+as the null pointer deference, because it's a DoS. It's not really a
+big deal of an exploit but it _sure_ need fixing.
 
+The whole point is that VM_BUG_ON(!something) before something->else
+won't move the needle as far as your null pointer deference exploits
+are concerned.
 
-      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
+> As to whether this particular test makes sense, I don't know.  But the
+> idea that we never need to test about-to-be-dereferenced pointers for
+> NULL does worry me a bit.
+
+Being worried is good idea, as we don't want DoS bugs ;). It's just
+that VM_BUG_ON isn't a solution to the problem (and the really
+important thing, it's not improving its detectability either), fixing
+the actual bug is the solution.
