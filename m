@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab0CXL2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:28:52 -0400
-Received: from tac.ki.iif.hu ([193.6.222.43]:43104 "EHLO tac.ki.iif.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755354Ab0CXL2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:28:51 -0400
-From: Ferenc Wagner <wferi@niif.hu>
-To: Peter Korsgaard <jacmet@sunsite.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org
-Subject: Re: RFC: direct MTD support for SquashFS
-References: <87vdcwv139.fsf@tac.ki.iif.hu>
-	<87ljdsibqe.fsf@macbook.be.48ers.dk> <87r5nhziss.fsf@tac.ki.iif.hu>
-	<bffbecbb1003181440kc78f4dbvd25d4e2ea17b52e5@mail.gmail.com>
-	<8739zqpxxw.fsf@tac.ki.iif.hu> <4BA9A1BB.4000105@lougher.demon.co.uk>
-	<87y6hii5wq.fsf@macbook.be.48ers.dk>
-Date: Wed, 24 Mar 2010 12:28:43 +0100
-In-Reply-To: <87y6hii5wq.fsf@macbook.be.48ers.dk> (Peter Korsgaard's message
-	of "Wed, 24 Mar 2010 07:35:01 +0100")
-Message-ID: <871vfam00k.fsf@tac.ki.iif.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755711Ab0CXLcz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:32:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53591 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754275Ab0CXLcy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:32:54 -0400
+Subject: Re: [patch 2/2] x86,pat Convert memtype_lock into an rw_lock.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "holt@sgi.com" <holt@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
+References: <ff8c11be-b22d-4849-9b19-d9107c4fea47@email.android.com>
+	 <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Mar 2010 12:32:27 +0100
+Message-ID: <1269430347.5109.164.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Korsgaard <jacmet@sunsite.dk> writes:
+On Wed, 2010-03-17 at 16:19 -0800, Suresh Siddha wrote:
+> On Wed, 2010-03-17 at 12:51 -0700, H. Peter Anvin wrote:
+> > Well, as you know :) tglx and I are on the road ... I'll try to get to it on Friday before I take off again.
+> 
+> Also I talked to Thomas about this rwlock conversion and he referred to
+> RT issues with rwlock. And the best is to avoid this using RCU.
 
->>>>>> "Phillip" == Phillip Lougher <phillip@lougher.demon.co.uk> writes:
->
->  Phillip> BTW as a comparison, I have added MTD support to Squashfs
->  Phillip> twice in the past, *with* bad block support.  The latest has a
->  Phillip> diff patch of ~500 lines, with far less complexity and code
->  Phillip> changes necessary.
->
-> Again, what kind of size reduction can we expect from getting rid of
-> the block layer?
+Its not just RT, even for mainline rwlock_t is a massive pain and often
+is no better (actually worse) than a spinlock due to the massive
+cacheline bouncing it introduces.
 
-My size-optimized OpenWRT vmlinux shrank ~170 kB after disabling
-CONFIG_BLOCK.  Similarly for the memory consumption.
--- 
-Regards,
-Feri.
+
