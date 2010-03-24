@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0CXK7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:59:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47011 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755371Ab0CXK7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:59:07 -0400
-Date: Wed, 24 Mar 2010 16:27:10 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <greg@kroah.com>,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
-	hvc_remove
-Message-ID: <20100324105710.GD15789@amit-x200.redhat.com>
-References: <20100319151326.GC8541@kroah.com> <1269011916-8836-4-git-send-email-gregkh@suse.de> <1269119079.8599.65.camel@pasglop> <1269427544.8599.222.camel@pasglop>
+	id S1755660Ab0CXLAW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:00:22 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:56829 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab0CXLAV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:00:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=FkMindRfS90pD4HUXDjDW2rsKd7Q+dEzWAQtfCAJYW7NrYiVNMiymJDRxK2EaWyKlF
+         VfBfgp6Dn3S5TPKAY+Hf/sFm1S9duy9p1pEGKXnaLtONdGcTTLAIy/8JQCz/2CaQhFkd
+         GEQ3KatJpClM+R7SoRulslpKoBpMJf9AON+Yg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269427544.8599.222.camel@pasglop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1269420538-18039-4-git-send-email-tj@kernel.org>
+References: <1269420538-18039-1-git-send-email-tj@kernel.org>
+	 <1269420538-18039-4-git-send-email-tj@kernel.org>
+Date: Wed, 24 Mar 2010 13:00:18 +0200
+X-Google-Sender-Auth: 25906faf2fbe607a
+Message-ID: <84144f021003240400y43484fe6q8be4e8dc22284e9b@mail.gmail.com>
+Subject: Re: [PATCH 3/4] include cleanup: Update gfp.h and slab.h includes to 
+	prepare for breaking implicit slab.h inclusion from percpu.h
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, Lee.Schermerhorn@hp.com,
+       cl@linux-foundation.org, mingo@elte.hu, adobriyan@gmail.com,
+       tglx@linutronix.de, hpa@zytor.com, yi.zhu@intel.com,
+       reinette.chatre@intel.com, ilw@linux.intel.com,
+       Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) Mar 24 2010 [21:45:44], Benjamin Herrenschmidt wrote:
-> On Sun, 2010-03-21 at 08:04 +1100, Benjamin Herrenschmidt wrote:
-> > On Fri, 2010-03-19 at 08:18 -0700, Greg Kroah-Hartman wrote:
-> > > From: Amit Shah <amit.shah@redhat.com>
-> > > 
-> > > Alan pointed out a race in the code where hvc_remove is invoked. The
-> > > recent virtio_console work is the first user of hvc_remove().
-> > 
-> > This causes hangs during boot on pseries machines. Haven't had a chance
-> > to track that down yet, but please revert
-> > e74d098c66543d0731de62eb747ccd5b636a6f4c for now.
-> 
-> Linus, any chance you can revert that one for now until we figure out
-> what's wrong ?
+On Wed, Mar 24, 2010 at 10:48 AM, Tejun Heo <tj@kernel.org> wrote:
+> With the actual patch, this message would end up ~1.7M which seems tad
+> bit too large to send through LKML.  I said that I would post the
+> whole patch on the last round but that was 200k and this one is 272K
+> only with the diffstats and this one doesn't include any interesting
+> stuff, so I'm snipping it again.  The whole patch is available at the
+> following URL.
+>
+>  http://userweb.kernel.org/~tj/patches/0003-include-cleanup-Update-gfp.h-and-slab.h-includes-to-.patch
 
-Ben, can you confirm if the lockup you see is also due to the
-task_is_waking() issue I found in a kvm guest?
-
-That'll help me debug the issue.
-
-Thanks.
-
-		Amit
+I didn't look at the patch but I agree with the principle. How do we
+get this merged before we grow more implicit dependencies?
