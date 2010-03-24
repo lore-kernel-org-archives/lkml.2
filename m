@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab0CXV6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:58:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab0CXV6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:58:05 -0400
-Date: Wed, 24 Mar 2010 22:57:29 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100324215729.GM10659@random.random>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
- <1269347146-7461-8-git-send-email-mel@csn.ul.ie>
- <20100324133347.9b4b2789.akpm@linux-foundation.org>
- <20100324145946.372f3f31@bike.lwn.net>
- <20100324211924.GH10659@random.random>
- <20100324152854.48f72171@bike.lwn.net>
- <20100324214742.GL10659@random.random>
+	id S1753465Ab0CXV64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:58:56 -0400
+Received: from xenotime.net ([72.52.64.118]:36273 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752147Ab0CXV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:58:55 -0400
+Message-ID: <4BAA8B1D.6000705@xenotime.net>
+Date: Wed, 24 Mar 2010 14:58:53 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324214742.GL10659@random.random>
+To: Greg Thelen <gthelen@google.com>
+CC: Paul Menage <menage@google.com>, Jiri Kosina <jkosina@suse.cz>,
+       Nikanth Karthikesan <knikanth@suse.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Geunsik Lim <geunsik.lim@samsung.com>, linux-doc@vger.kernel.org,
+       linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] cpuset: Fix documentation punctuation
+References: <1269467310-27685-1-git-send-email-gthelen@google.com>
+In-Reply-To: <1269467310-27685-1-git-send-email-gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 10:47:42PM +0100, Andrea Arcangeli wrote:
-> As far as I can tell, VM_BUG_ON would make _zero_ differences there.
+On 03/24/10 14:48, Greg Thelen wrote:
+> Fix cpusets.txt documentation punctuation.
 > 
-> I think you mistaken a VM_BUG_ON for a:
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> ---
+>  Documentation/cgroups/cpusets.txt |   38 ++++++++++++++++++------------------
+>  1 files changed, 19 insertions(+), 19 deletions(-)
 > 
->   if (could_be_null->something) {
+> diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
+> index 4160df8..51682ab 100644
+> --- a/Documentation/cgroups/cpusets.txt
+> +++ b/Documentation/cgroups/cpusets.txt
 
-Ooops, I wrote ->something to indicate that "could_be_null" was going
-to later be dereferenced for ->something and here we're checking if it
-could be null when we dereference something, but now I think it could
-be very confusing as I use strict C for all the rest, so maybe I
-should clarify in C it would be !could_be_null.
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
 
->      WARN_ON(1);
->      return -ESOMETHING;
->   }
-> 
-> adding a VM_BUG_ON(inode->something) would _still_ be as exploitable
+Jiri, would you merge this, please?
 
-here the same !inode.
+thanks,
+-- 
+~Randy
