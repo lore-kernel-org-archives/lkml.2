@@ -1,44 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0CXNRF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 09:17:05 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:57337 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756186Ab0CXNRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 09:17:03 -0400
-Date: Wed, 24 Mar 2010 14:16:58 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Jean-Michel Hautbois <jhautbois@gmail.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
+	id S1756232Ab0CXNYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 09:24:07 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:43560 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab0CXNYE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 09:24:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=WHbFDkGrO/0AyTshq4htAxl05b60HqtZs1Cq5Zx7Pi5UUsECuslR+Aazzm4aAK5lv0
+         d1C0N/mGWyjAzzNRKBG47VEjOel5S6lNm0GL01weDAFLB7rC4y8ltiXtlkU64t7FS1Xr
+         nFBzVa4QNOyjwGOUFJCTeX3rqM0b2YzozLwbY=
+MIME-Version: 1.0
+In-Reply-To: <201003241412.38128.linux@rainbow-software.org>
+References: <201003221601.36559.linux@rainbow-software.org>
+	 <201003231609.57505.linux@rainbow-software.org>
+	 <a32f33a41003230815v1870a371oef9392806b5b2248@mail.gmail.com>
+	 <201003241412.38128.linux@rainbow-software.org>
+Date: Wed, 24 Mar 2010 14:24:00 +0100
+Message-ID: <a32f33a41003240624u204cfd71jbf2effbd09ff220a@mail.gmail.com>
+Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW 
+	encryption by default
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: rt2x00 Users List <users@rt2x00.serialmonkey.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]I2C device - release cleanup
-Message-ID: <20100324141658.382209c3@hyperion.delvare>
-In-Reply-To: <0016e6d977228ec35704827c94c6@google.com>
-References: <20100323172143.6b078b2e@hyperion.delvare>
-	<0016e6d977228ec35704827c94c6@google.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Mar 2010 19:11:26 +0000, jhautbois@gmail.com wrote:
-> > Yes, that would be better. If you do that, please make sure to run your
-> 
-> > patch through scripts/checkpatch.pl before sending it.
-> 
-> I will take the time to do it. I can't say when :p.
-> I did run checkpatch.pl, and I can't remove the 3 "trailing whitespace"  
-> errors...
+On Wed, Mar 24, 2010 at 2:12 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
+> On Tuesday 23 March 2010, Ivo Van Doorn wrote:
+>> On Tue, Mar 23, 2010 at 4:09 PM, Ondrej Zary <linux@rainbow-software.org>
+> wrote:
+>> > On Tuesday 23 March 2010, Ivo Van Doorn wrote:
+>> >> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
+>> >>
+>> >> <linux@rainbow-software.org> wrote:
+>> >> > On Monday 22 March 2010, Ivo Van Doorn wrote:
+>> >> >> >> But I though it was mentioned that disabling HW crypto didn't
+>> >> >> >> solve the issue due to a second bug in a later kernel?
+>> >> >> >
+>> >> >> > That was a false positive. Probably because the device was not
+>> >> >> > unplugged between the tests (and looks like the driver does not
+>> >> >> > initialize the chip completely). It's not reliable, it sometimes
+>> >> >> > stops working after reboot.
+>> >> >>
+>> >> >> Ah well that at least simplifies the problem. I'll have to retest
+>> >> >> rt2500usb soon to see why the HW crypto failed. I am sure I had it
+>> >> >> working for WEP, WPA and WPA2
+>> >> >> before I submitted the patch.
+>> >> >
+>> >> > So let's try to fix it instead of disabling.
+>> >> >
+>> >> > First, the unrealiability (keeping HW encryption disabled). With the
+>> >> > driver loaded but not doing anything more, the register dumps are same
+>> >> > for both working and non-working case (dump-init.txt).
+>> >> >
+>> >> > dump-good-connected.txt is a dump after successful association and
+>> >> > DHCP dump-bad-attempt.txt is a dump after successful association
+>> >> > during non-working DHCP attempt
+>> >> > dump-bad-after.txt is a dump after DHCP timed out
+>> >>
+>> >> With association working, but DHCP failing it most likely means that
+>> >> somehow the frame was malformatted.
+>> >> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
+>> >> And that is commonly the source of
+>> >> problems, because what has to be done depends heavily on the encryption
+>> >> type.
+>> >>
+>> >> So could you verify which of the encryption types (WEP,WPA,WPA2) is
+>> >> failing or working? That would give a starting
+>> >> position on which bytes might be corrupted.
+>> >
+>> > I was testing only with WPA2 before. I did some more testing today. The
+>> > results:
+>> >
+>> > No encryption - works always
+>> > WEP - sometimes works, sometimes not - same with and without HW
+>> > encryption WPA - sometimes works, sometimes not - same with and without
+>> > HW encryption WPA2 - never works with HW encryption
+>> >     - sometimes works, sometimes not without HW encryptionn
+>> >
+>> > So it seems that there are two problems:
+>> >  1. random problems with any encryption
+>> >  2. WPA2 is broken with HW encryption
+>> >
+>> > When the "random" problem appears, this appears in dmesg:
+>> > wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
+>> > wlan1: authenticated
+>> > wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
+>> > wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0 aid=2)
+>> > wlan1: associated
+>> > phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state
+>> > 3 (-16). phy0 -> rt2500usb_set_device_state: Error - Device failed to
+>> > enter state 3 (-16). No probe response from AP 00:13:d4:0f:f3:17 after
+>> > 500ms, disconnecting.
+>> >
+>> > Disabling call to rt2500usb_set_state() in rt2500usb_set_device_state()
+>> > seems to fix problem 1. After this change, WEP and WPA work always
+>> > regardless of HW encryption (and WPA2 works always without it).
+>>
+>> Ok, lets focus on the HW crypto for now.
+>>
+>> If WPA2 fails, then the WPA2 specific code for IV/EIV/ICV isn't
+>> working. Most likely
+>> the device either doesn't send all data back to the driver (while the
+>> driver does expect it)
+>> or it adds additional data which the driver doesn't expect. (See
+>> rt2x00crypto.c for the frame
+>> manipulation during HW crypto).
+>>
+>> Could you check the full packet data of a DHCP request with and
+>> without HW crypto?
+>> That might give a clue about what the hardware is sending for extra data.
+>
+> How do I access the full packets? I tried using another machine with "iwconfig
+> wlan0 mode monitor" and tcpdump. It captured many packets and I'm unable to
+> identify the interesting ones.
 
-You'll have to, otherwise I won't apply your patches (nobody will).
+You won't get the useful stuff from monitor mode.
+You have to enable rt2x00 debugfs support, to find a framedump file in
+the rt2x00 debugfs folder.
 
-> Plus the fact that gmail is changing tabs and spaces...
+You should use the framedump tool from:
+http://kernel.org/pub/linux/kernel/people/ivd/tools/
 
-Check the options. At least attaching the patch should work. Or you can
-use a "real" e-mail client for sending patches.
+To get the frame dumps in nicely formatted lines for analysis.
 
--- 
-Jean Delvare
+Ivo
