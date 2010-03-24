@@ -1,199 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab0CXFoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:44:13 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:55266 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab0CXFoL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:44:11 -0400
-Date: Wed, 24 Mar 2010 14:42:27 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
-       Matt Mackall <mpm@selenic.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH -mmotm] [BUGFIX] pagemap: fix pfn calculation for hugepage
-Message-ID: <20100324054227.GB9336@spritzerA.linux.bs1.fc.nec.co.jp>
+	id S1754224Ab0CXFpj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:45:39 -0400
+Received: from ozlabs.org ([203.10.76.45]:55535 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab0CXFpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:45:38 -0400
+Date: Wed, 24 Mar 2010 16:45:31 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Subject: Re: [PATCH] perf_events: fix remapped count support
+Message-ID: <20100324054531.GA30416@drongo>
+References: <4ba8f988.9804cc0a.4b1f.5d77@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4ba8f988.9804cc0a.4b1f.5d77@mx.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we look into pagemap using page-types with option -p, the value
-of pfn for hugepages looks wrong (see below.)
-This is because pte was evaluated only once for one vma
-although it should be updated for each hugepage. This patch fixes it.
+On Tue, Mar 23, 2010 at 06:25:01PM +0200, Stephane Eranian wrote:
 
-  $ page-types -p 3277 -Nl -b huge
-  voffset   offset  len     flags
-  7f21e8a00 11e400  1       ___U___________H_G________________
-  7f21e8a01 11e401  1ff     ________________TG________________
-               ^^^
-  7f21e8c00 11e400  1       ___U___________H_G________________
-  7f21e8c01 11e401  1ff     ________________TG________________
-               ^^^
+> The patch adds a new field to the perf_mmap_page buffer header (delta_base).
+> It is necessary to correctly scale the count. This new value represents the
+> counter value when the event was last scheduled in. It cannot be substracted
+> by the kernel from the total count because of scaling. The correct formula is:
+> 
+> 	 count = offset * time_enabled/time_running + (raw_count - prev_count)
 
-One hugepage contains 1 head page and 511 tail pages in x86_64 and
-each two lines represent each hugepage. Voffset and offset mean
-virtual address and physical address in the page unit, respectively.
-The different hugepages should not have the same offset value.
+Interesting.  On powerpc I took the view that what was needed from a
+user-space direct_counter_read() function was to return the same value
+as a read() on the event counter fd would give, that is, the unscaled
+count.  The stuff that's in the mmapped page is sufficient to compute
+the unscaled count, and I already have userspace code on powerpc that
+does that.
 
-With this patch applied:
+We don't currently have a way to work out up-to-the-nanosecond values
+of time_enabled and time_running in userspace, though it could be
+done.  Userspace would have to read the timebase or TSC (or
+equivalent), subtract a base value, multiply by a scale factor, and
+add that on to the time_enabled/time_running values stored in the
+mmapped page.  Although this is all quite doable on powerpc where the
+timebase counts at constant frequency and is synchronized across cpus,
+it seemed like it could get complicated on x86 where the TSC might
+change speed and might not be synchronized (though I suppose we only
+need to supply the values relevant to the cpu where the monitored
+thread is running).
 
-  $ page-types -p 3386 -Nl -b huge
-  voffset   offset   len    flags
-  7fec7a600 112c00   1      ___UD__________H_G________________
-  7fec7a601 112c01   1ff    ________________TG________________
-               ^^^
-  7fec7a800 113200   1      ___UD__________H_G________________
-  7fec7a801 113201   1ff    ________________TG________________
-               ^^^
-               OK
+Your equation above contains the insight that if one wants to scale
+readings by time_enabled/time_running, the scaling only needs to be
+applied to the count as of the last time the event got scheduled, and
+then we can add on the delta count since then, unscaled.  (That isn't
+mathematically exactly the same if the event rate is changing, but it
+should be close.)
 
-Changelog:
- - add hugetlb entry walker in mm/pagewalk.c
-   (the idea based on Kamezawa-san's patch)
+That's probably a useful thing to do, but I think there are other uses
+of time_enabled and time_running, for example for estimating error
+bounds on the scaled count, or for knowing whether the event has been
+on the PMU at all in a given time interval.  That's the main reason
+that the read() interface gives the unscaled count plus (optionally)
+time_enabled and time_running, rather than giving only the scaled
+count.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/task_mmu.c |   27 +++++++--------------------
- include/linux/mm.h |    4 ++--
- mm/pagewalk.c      |   47 +++++++++++++++++++++++++++++++++++++----------
- 3 files changed, 46 insertions(+), 32 deletions(-)
+> For other architectures, e.g., PPC, SPARC, assuming they do offer the ability
+> to read counts directly from user space, all that is needed is a couple of new
+> arch specific functions:
+> 	- hw_perf_event_counter_width(): actual counter width
+> 	- hw_perf_event_index(): register index to pass to the user instruction
+> 	- hw_perf_update_user_read_perm(): toggle permission to read from userspace
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 2a3ef17..9635f0b 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -662,31 +662,18 @@ static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
- 	return pme;
- }
- 
--static int pagemap_hugetlb_range(pte_t *pte, unsigned long addr,
--				 unsigned long end, struct mm_walk *walk)
-+/* This function walks within one hugetlb entry in the single call */
-+static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-+				 unsigned long addr, unsigned long end,
-+				 struct mm_walk *walk)
- {
--	struct vm_area_struct *vma;
- 	struct pagemapread *pm = walk->private;
--	struct hstate *hs = NULL;
- 	int err = 0;
-+	u64 pfn;
- 
--	vma = find_vma(walk->mm, addr);
--	if (vma)
--		hs = hstate_vma(vma);
- 	for (; addr != end; addr += PAGE_SIZE) {
--		u64 pfn = PM_NOT_PRESENT;
--
--		if (vma && (addr >= vma->vm_end)) {
--			vma = find_vma(walk->mm, addr);
--			if (vma)
--				hs = hstate_vma(vma);
--		}
--
--		if (vma && (vma->vm_start <= addr) && is_vm_hugetlb_page(vma)) {
--			/* calculate pfn of the "raw" page in the hugepage. */
--			int offset = (addr & ~huge_page_mask(hs)) >> PAGE_SHIFT;
--			pfn = huge_pte_to_pagemap_entry(*pte, offset);
--		}
-+		int offset = (addr & ~hmask) >> PAGE_SHIFT;
-+		pfn = huge_pte_to_pagemap_entry(*pte, offset);
- 		err = add_to_pagemap(addr, pfn, pm);
- 		if (err)
- 			return err;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 3899395..24f198e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -783,8 +783,8 @@ struct mm_walk {
- 	int (*pmd_entry)(pmd_t *, unsigned long, unsigned long, struct mm_walk *);
- 	int (*pte_entry)(pte_t *, unsigned long, unsigned long, struct mm_walk *);
- 	int (*pte_hole)(unsigned long, unsigned long, struct mm_walk *);
--	int (*hugetlb_entry)(pte_t *, unsigned long, unsigned long,
--			     struct mm_walk *);
-+	int (*hugetlb_entry)(pte_t *, unsigned long,
-+			     unsigned long, unsigned long, struct mm_walk *);
- 	struct mm_struct *mm;
- 	void *private;
- };
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index 7b47a57..f77a568 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -80,6 +80,37 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
- 	return err;
- }
- 
-+#ifdef CONFIG_HUGETLB_PAGE
-+static unsigned long hugetlb_entry_end(struct hstate *h, unsigned long addr,
-+				       unsigned long end)
-+{
-+	unsigned long boundary = (addr & huge_page_mask(h)) + huge_page_size(h);
-+	return boundary < end ? boundary : end;
-+}
-+
-+static int walk_hugetlb_range(struct vm_area_struct *vma,
-+			      unsigned long addr, unsigned long end,
-+			      struct mm_walk *walk)
-+{
-+	struct hstate *h = hstate_vma(vma);
-+	unsigned long next;
-+	unsigned long hmask = huge_page_mask(h);
-+	pte_t *pte;
-+	int err = 0;
-+
-+	do {
-+		next = hugetlb_entry_end(h, addr, end);
-+		pte = huge_pte_offset(walk->mm, addr & hmask);
-+		if (pte && walk->hugetlb_entry)
-+			err = walk->hugetlb_entry(pte, hmask, addr, next, walk);
-+		if (err)
-+			return err;
-+	} while (addr = next, addr != end);
-+
-+	return err;
-+}
-+#endif
-+
- /**
-  * walk_page_range - walk a memory map's page tables with a callback
-  * @mm: memory map to walk
-@@ -128,20 +159,16 @@ int walk_page_range(unsigned long addr, unsigned long end,
- 		vma = find_vma(walk->mm, addr);
- #ifdef CONFIG_HUGETLB_PAGE
- 		if (vma && is_vm_hugetlb_page(vma)) {
--			pte_t *pte;
--			struct hstate *hs;
--
- 			if (vma->vm_end < next)
- 				next = vma->vm_end;
--			hs = hstate_vma(vma);
--			pte = huge_pte_offset(walk->mm,
--					      addr & huge_page_mask(hs));
--			if (pte && !huge_pte_none(huge_ptep_get(pte))
--			    && walk->hugetlb_entry)
--				err = walk->hugetlb_entry(pte, addr,
--							  next, walk);
-+			/*
-+			 * Hugepage is very tightly coupled with vma, so
-+			 * walk through hugetlb entries within a given vma.
-+			 */
-+			err = walk_hugetlb_range(vma, addr, next, walk);
- 			if (err)
- 				break;
-+			pgd = pgd_offset(walk->mm, next);
- 			continue;
- 		}
- #endif
--- 
-1.7.0
+I'm puzzled why powerpc now needs to supply more stuff when we already
+have userspace reading of (unscaled) counts working just fine.
+
+We don't have any way to stop userspace reading the counters, so the
+sysctl_perf_event_paranoid_user_read is useless on powerpc and quite
+possibly confusing to users.
+
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 2bccb7b..31eeb67 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -250,8 +250,8 @@ struct perf_event_mmap_page {
+>  	 *
+>  	 *     barrier()
+>  	 *     if (pc->index) {
+> -	 *       count = pmc_read(pc->index - 1);
+> -	 *       count += pc->offset;
+> +	 *       count = pmc_read(pc->index - 1)  - pc->delta_base;
+> +	 *       count += pc->offset * pc->time_enabled/pc->time_running;
+>  	 *     } else
+>  	 *       goto regular_read;
+
+This changes what's returned by this code snippet from an unscaled
+count to a scaled count, and thus makes it not what read() returns,
+which I think is a bad idea.  It would be OK to add another
+alternative code snippet in the comment that returns a scaled count,
+and make it clear that one returns the unscaled count and the other
+the scaled count.
+
+> @@ -2249,8 +2280,11 @@ void perf_event_update_userpage(struct perf_event *event)
+>  	barrier();
+>  	userpg->index = perf_event_index(event);
+>  	userpg->offset = atomic64_read(&event->count);
+> -	if (event->state == PERF_EVENT_STATE_ACTIVE)
+> -		userpg->offset -= atomic64_read(&event->hw.prev_count);
+> +	if (event->state == PERF_EVENT_STATE_ACTIVE
+> +	    && !perf_paranoid_user_read()) {
+> +                update_event_times(event);
+> +                userpg->delta_base = perf_adjust_event_prev_count(event);
+> +	}
+
+And this changes the meaning of the offset field and thus breaks the
+ABI, and makes existing userspace code on powerpc give the wrong
+answer.
+
+I don't mind if you add fields to make it possible to compute a scaled
+count more easily, but please don't change the meaning of the existing
+fields.
+
+Regards,
+Paul.
