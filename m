@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab0CXSet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:34:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59382 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755712Ab0CXSes (ORCPT
+	id S1756731Ab0CXShj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:37:39 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:63691 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755960Ab0CXShi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:34:48 -0400
+	Wed, 24 Mar 2010 14:37:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:date:message-id:subject:in-reply-to:mime-version
-         :x-firegpg-version:content-type;
-        b=eBW+uNp6FpDrda/U4hkPWmR2o+5TKMcTLwCWeyT94QrxszFkFt8/lpJj/ehgSt4XrM
-         yXMbNQahyGO8FPJEmEgREVLiXQdXA7SDkqqsAaVLkw14rgcAtrS+pSGIe1M/pcgprkh0
-         DBnnc3w/nmKq5TcOPplxlOVtImI4YWMXbb67o=
-From: drepper@gmail.com
-To: Brandon Black <blblack@gmail.com>
-Cc: Chris Friesen <cfriesen@nortel.com>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Date: Wed, 24 Mar 2010 11:34:42 -0700 (PST)
-Message-ID: <g76h4xrt5j1pw2kk3tUYAxe124vaj_firegpg@mail.gmail.com>
-Subject: Re: behavior of recvmmsg() on blocking sockets
-In-Reply-To: <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=O2Ww9/acV6VvTD4Qrjbzv9MTRlWkZYBfsTogC9ww7lnbvJkQhJ6RBT4d48C1unQL//
+         3UVZ84cFCU76TRNK8aphWaAjiMvCqfcGmcfm8MDxkjSjP7+uh37ul1tb5K+6U0X01TZe
+         9VaBl5w6t4zMqhI14+ky+F7f36ygRnykpKr0s=
 MIME-Version: 1.0
-X-FireGPG-Version: 0.7.10
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="-----firegpg0710eqg76h4xsb8fjm9dhyve"
+In-Reply-To: <20100324112106.c8e7b96d.akpm@linux-foundation.org>
+References: <1268849455-19503-1-git-send-email-Joakim.Tjernlund@transmode.se>
+	 <20100324112106.c8e7b96d.akpm@linux-foundation.org>
+Date: Wed, 24 Mar 2010 19:37:36 +0100
+X-Google-Sender-Auth: 0dfc89ce82027964
+Message-ID: <10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] #define __BYTE_ORDER
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
--------firegpg0710eqg76h4xsb8fjm9dhyve
-Content-Type: text/plain; format=flowed; charset=UTF-8
-Content-Transfer-Encoding: base64
+On Wed, Mar 24, 2010 at 19:21, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed, 17 Mar 2010 19:10:55 +0100
+> Joakim Tjernlund <Joakim.Tjernlund@transmode.se> wrote:
+>
+>> Linux does not define __BYTE_ORDER in its endian header files
+>> which makes some header files bend backwards to get at the
+>> current endian. Lets #define __BYTE_ORDER in big_endian.h/litte_endian.h
+>> to make it easier for header files that are used in user space too.
+>
+> I don't get it.  Why not nuke __BYTE_ORDER altogether and do `#ifdef
+> __LITTLE_ENDIAN' and `#ifdef __BIG_ENDIAN' everywhere?
 
-T24gV2VkLCBNYXIgMjQsIDIwMTAgYXQgMTE6MjgsIEJyYW5kb24gQmxhY2sgPGJsYmxhY2tAZ21h
-aWwuY29tPiB3cm90ZToNCj4gSSBzdGlsbCB0aGluayBoYXZpbmcgYSAiYmxvY2sgdW50aWwgYXQg
-bGVhc3Qgb25lIHBhY2tldCBhcnJpdmVzIiBtb2RlDQo+IGZvciByZWN2bW1zZygpIG1ha2VzIHNl
-bnNlIHRob3VnaC4NCg0KSSBhZ3JlZS4gIFRoaXMgaXMgdGhlIG1vZGUgSSd2ZSBzZWVuIHBlb3Bs
-ZSBhc2tpbmcgZm9yLiAgVGhleSB3YW50IHRoZSBjYWxsIHRvIHJldHVybiBhcyBxdWlja2x5IGFz
-IHBvc3NpYmxlIGlmIHRoZXJlIGlzIGRhdGEgYW5kIHRoZW4gd2l0aCBhcyBtYW55IG1lc3NhZ2Vz
-IGFzIHBvc3NpYmxlLiAgQSBNU0dfV0FJVEZPUk9ORSBmbGFnIHdvdWxkIGRvIHRoZSB0cmljayBu
-aWNlbHku
--------firegpg0710eqg76h4xsb8fjm9dhyve
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Because in userspace the convention is that
+  1. _both_ __LITTLE_ENDIAN and __BIG_ENDIAN are defined,
+  2. you have to test for e.g. __BYTE_ORDER == __BIG_ENDIAN.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Use GnuPG with Firefox : http://getfiregpg.org (Version: 0.7.10)
+Gr{oetje,eeting}s,
 
-iEYEARECAAYFAkuqW0IACgkQ2ijCOnn/RHQjqACeKXqTCNFj9NhTiLnDXNP98PsW
-DAgAn0bKeaKOWrUM/TT15YuGTGSRtfTt
-=5z7g
------END PGP SIGNATURE-----
+						Geert
 
--------firegpg0710eqg76h4xsb8fjm9dhyve--
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
