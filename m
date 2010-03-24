@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898Ab0CXTik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 15:38:40 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:63393 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab0CXTii (ORCPT
+	id S1756785Ab0CXTkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 15:40:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41009 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab0CXTkb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 15:38:38 -0400
-Message-ID: <4BAA69BF.3080600@nortel.com>
-Date: Wed, 24 Mar 2010 13:36:31 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	Wed, 24 Mar 2010 15:40:31 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH v2 2/6] perf symbols: Avoid unnecessary symbol loading when dso list is specified
+Date: Wed, 24 Mar 2010 16:40:15 -0300
+Message-Id: <1269459619-982-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1269459619-982-1-git-send-email-acme@infradead.org>
+References: <1269459619-982-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Brandon Black <blblack@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: behavior of recvmmsg() on blocking sockets
-References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>	 <4BAA4EE4.3090900@nortel.com> <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>
-In-Reply-To: <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Mar 2010 19:38:35.0350 (UTC) FILETIME=[97EF9760:01CACB89]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 12:28 PM, Brandon Black wrote:
-> On Wed, Mar 24, 2010 at 12:41 PM, Chris Friesen <cfriesen@nortel.com> wrote:
->> On 03/24/2010 10:15 AM, Brandon Black wrote:
->>> It uses a thread-per-socket model
->>
->> This doesn't scale well to large numbers of sockets....you get a lot of
->> unnecessary context switching.
-> 
-> It scales great actually, within my measurement error of linear in
-> testing so far.  These are UDP server sockets, and the traffic pattern
-> is one request packet maps to one response packet, with no longer-term
-> per-client state (this is a DNS server, to be specific).  The "do some
-> work" code doesn't have any inter-thread contention (no locks, no
-> writes to the same memory, etc), so the "threads" here may as well be
-> processes if that makes the discussion less confusing.  I haven't yet
-> found a model that scales as well for me.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Note that I said "large numbers of sockets".  Like tens of thousands.
-In addition to context switch overhead this can also lead to issues with
-memory consumption due to stack frames.
+We were performing the full thread__find_addr_location operation, i.e.
+resolving to a map/dso _and_ loading its symbols when we can optimize it
+by first calling thread__find_addr_map to find just the map/dso, check
+if it is one that we are interested in (passed via --dsos/-d in 'perf
+annotate', 'perf report', etc) and if not avoid loading the symtab.
 
-> I'm also just not personally sure whether there are network
-> interfaces/drivers out there that could queue packets to the kernel
-> (to a single socket) faster than recvmsg() could dequeue them to
-> userspace
+Nice speedup when we know which DSO we're interested in.
 
-A 10Gig NIC could do this easily depending on your CPU.
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/event.c |   38 +++++++++++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 15 deletions(-)
 
-> I still think having a "block until at least one packet arrives" mode
-> for recvmmsg() makes sense though.
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 705ec63..c2808ad 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -513,24 +513,32 @@ int event__preprocess_sample(const event_t *self, struct perf_session *session,
+ 
+ 	dump_printf(" ... thread: %s:%d\n", thread->comm, thread->pid);
+ 
+-	thread__find_addr_location(thread, session, cpumode, MAP__FUNCTION,
+-				   self->ip.ip, al, filter);
++	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
++			      self->ip.ip, al);
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+-	/*
+-	 * We have to do this here as we may have a dso with no symbol hit that
+-	 * has a name longer than the ones with symbols sampled.
+-	 */
+-	if (al->map && !sort_dso.elide && !al->map->dso->slen_calculated)
+-		dso__calc_col_width(al->map->dso);
+-
+-	if (symbol_conf.dso_list &&
+-	    (!al->map || !al->map->dso ||
+-	     !(strlist__has_entry(symbol_conf.dso_list, al->map->dso->short_name) ||
+-	       (al->map->dso->short_name != al->map->dso->long_name &&
+-		strlist__has_entry(symbol_conf.dso_list, al->map->dso->long_name)))))
+-		goto out_filtered;
++	al->sym = NULL;
++
++	if (al->map) {
++		if (symbol_conf.dso_list &&
++		    (!al->map || !al->map->dso ||
++		     !(strlist__has_entry(symbol_conf.dso_list,
++					  al->map->dso->short_name) ||
++		       (al->map->dso->short_name != al->map->dso->long_name &&
++			strlist__has_entry(symbol_conf.dso_list,
++					   al->map->dso->long_name)))))
++			goto out_filtered;
++		/*
++		 * We have to do this here as we may have a dso with no symbol
++		 * hit that has a name longer than the ones with symbols
++		 * sampled.
++		 */
++		if (!sort_dso.elide && !al->map->dso->slen_calculated)
++			dso__calc_col_width(al->map->dso);
++
++		al->sym = map__find_symbol(al->map, al->addr, filter);
++	}
+ 
+ 	if (symbol_conf.sym_list && al->sym &&
+ 	    !strlist__has_entry(symbol_conf.sym_list, al->sym->name))
+-- 
+1.6.2.5
 
-Agreed, as long as developers are aware that it won't be the most
-efficient mode of operation.
-
-Consider the case where you want to do some other useful work in
-addition to running your network server.  Every cpu cycle spent on the
-network server is robbed from the other work.  In this scenario you want
-to handle packets as efficiently as possible, so the timeout-based
-behaviour is better since it is more likely to give you multiple packets
-per syscall.
-
-Chris
