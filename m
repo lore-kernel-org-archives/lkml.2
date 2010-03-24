@@ -1,40 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab0CXUm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:42:29 -0400
-Received: from www.tglx.de ([62.245.132.106]:45508 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752016Ab0CXUm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:42:28 -0400
-Date: Wed, 24 Mar 2010 21:42:15 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: x86@kernel.org, linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-In-Reply-To: <20100324190150.GA18803@basil.fritz.box>
-Message-ID: <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain>
-References: <20100324190150.GA18803@basil.fritz.box>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932929Ab0CXUnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:43:10 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:56604 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756822Ab0CXUnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 16:43:06 -0400
+Date: Wed, 24 Mar 2010 21:42:59 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC 09/15] PM / Hibernate: user, implement user_ops writer
+Message-ID: <20100324204259.GA6423@elf.ucw.cz>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
+ <1269361063-3341-9-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269361063-3341-9-git-send-email-jslaby@suse.cz>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2005;0cOn Wed, 24 Mar 2010, Andi Kleen wrote:
+Hi!
 
-> Prevent nested interrupts when the IRQ stack is near overflowing v2
+> Switch /dev/snapshot writer to sws_module_ops approach so that we
+> can transparently rewrite the rest of the snapshot from pages pulling
+> to their pushing through layers.
 > 
-> Interrupts can always nest when they don't run with IRQF_DISABLED.
-> 
-> When a lot of interrupts hit the same vector on the same
-> CPU nested interrupts can overflow the irq stack and cause hangs.
-> 
-> This has been observed with MSI-X & Ethernet on a large system.
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/user.c |  113 +++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 files changed, 105 insertions(+), 8 deletions(-)
+>
 
-In which way are which interrupts nested ?
- 
-Thanks,
+> +	if (test_bit(TODO_CLOSED, to_do_flags))
+> +		return -EIO;
+> +
+> +	to_do_buf = buf;
+> +	wmb();
+> +	set_bit(TODO_WORK, to_do_flags);
+> +	wake_up_interruptible(&to_do_wait);
 
-	tglx
+Uhuh, open-coded barriers... these need to be commented, and I guess
+you just should not play this kind of trickery.
+
+spnlocks? Normal locks?
+
+> +
+> +	wait_event(to_do_done, !test_bit(TODO_WORK, to_do_flags) ||
+> +			(err = test_bit(TODO_CLOSED, to_do_flags)));
+> +
+> +	return err ? -EIO : 0;
+> +}
+> +
+> +static int put_user_writer(unsigned int flags, int error)
+> +{
+> +	int err = 0;
+> +
+> +	if (error)
+> +		set_bit(TODO_ERROR, to_do_flags);
+> +	set_bit(TODO_FINISH, to_do_flags);
+> +	wake_up_interruptible(&to_do_wait);
+> +
+> +	wait_event(to_do_done, !test_bit(TODO_FINISH, to_do_flags) ||
+> +			(err = test_bit(TODO_CLOSED, to_do_flags)));
+> +
+> +	if (!error && err)
+> +		error = -EIO;
+> +
+> +	return error;
+> +}
+> +
+>  struct sws_module_ops user_ops = {
+									Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
