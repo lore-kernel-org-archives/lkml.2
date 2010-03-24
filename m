@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753296Ab0CXVs4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:48:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18054 "EHLO mx1.redhat.com"
+	id S1753539Ab0CXVtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:49:05 -0400
+Received: from gw1.transmode.se ([213.115.205.20]:40219 "EHLO gw1.transmode.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751258Ab0CXVsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:48:55 -0400
-Date: Wed, 24 Mar 2010 22:47:42 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100324214742.GL10659@random.random>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
- <1269347146-7461-8-git-send-email-mel@csn.ul.ie>
- <20100324133347.9b4b2789.akpm@linux-foundation.org>
- <20100324145946.372f3f31@bike.lwn.net>
- <20100324211924.GH10659@random.random>
- <20100324152854.48f72171@bike.lwn.net>
+	id S1751258Ab0CXVtA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:49:00 -0400
+In-Reply-To: <10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com>
+References: <1268849455-19503-1-git-send-email-Joakim.Tjernlund@transmode.se>	 <20100324112106.c8e7b96d.akpm@linux-foundation.org> <10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] #define __BYTE_ORDER
+X-KeepSent: CDA39D22:62EC6456-C12576F0:00770DDD;
+ type=4; name=$KeepSent
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, geert.uytterhoeven@gmail.com,
+       LKML <linux-kernel@vger.kernel.org>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OFCDA39D22.62EC6456-ONC12576F0.00770DDD-C12576F0.00778EFD@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 24 Mar 2010 22:45:53 +0100
+X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1|September 28, 2009) at
+ 2010-03-24 22:48:58
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324152854.48f72171@bike.lwn.net>
+Content-type: text/plain; charset=ISO-8859-15
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 03:28:54PM -0600, Jonathan Corbet wrote:
-> On Wed, 24 Mar 2010 22:19:24 +0100
-> Andrea Arcangeli <aarcange@redhat.com> wrote:
-> 
-> > > > It's a bit strange to test this when we're about to oops anyway.  The
-> > > > oops will tell us the same thing.  
-> > > 
-> > > ...except that we've seen a fair number of null pointer dereference
-> > > exploits that have told us something altogether different.  Are we
-> > > *sure* we don't want to test for null pointers...?  
-> > 
-> > Examples? Maybe WARN_ON != oops, but VM_BUG_ON still an oops that is
-> > and without serial console it would go lost too. I personally don't
-> > see how it's needed.
-> 
-> I don't quite understand the question; are you asking for examples of
-> exploits?
-> 
-> 	http://lwn.net/Articles/347006/
-> 	http://lwn.net/Articles/360328/
-> 	http://lwn.net/Articles/342330/
-> 	...
+geert.uytterhoeven@gmail.com wrote on 2010/03/24 19:37:36:
+>
+> On Wed, Mar 24, 2010 at 19:21, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Wed, 17 Mar 2010 19:10:55 +0100
+> > Joakim Tjernlund <Joakim.Tjernlund@transmode.se> wrote:
+> >
+> >> Linux does not define __BYTE_ORDER in its endian header files
+> >> which makes some header files bend backwards to get at the
+> >> current endian. Lets #define __BYTE_ORDER in big_endian.h/litte_endian.h
+> >> to make it easier for header files that are used in user space too.
+> >
+> > I don't get it.  Why not nuke __BYTE_ORDER altogether and do `#ifdef
+> > __LITTLE_ENDIAN' and `#ifdef __BIG_ENDIAN' everywhere?
+>
+> Because in userspace the convention is that
+>   1. _both_ __LITTLE_ENDIAN and __BIG_ENDIAN are defined,
+>   2. you have to test for e.g. __BYTE_ORDER == __BIG_ENDIAN.
 
-As far as I can tell, VM_BUG_ON would make _zero_ differences there.
+Precisely, I see that i forgot to mention that in the commit msg.
 
-I think you mistaken a VM_BUG_ON for a:
+It is actually worse that that, gcc will only define one of __LITTLE_ENDIAN/__BIG_ENDIAN
+so you might be tricked that using just the __LITTLE_ENDIAN/__BIG_ENDIAN defines works.
+Then you add some include file such as stdlib.h and it all breaks because now
+both __LITTLE_ENDIAN and __BIG_ENDIAN are defined.
 
-  if (could_be_null->something) {
-     WARN_ON(1);
-     return -ESOMETHING;
-  }
+ Jocke
 
-adding a VM_BUG_ON(inode->something) would _still_ be as exploitable
-as the null pointer deference, because it's a DoS. It's not really a
-big deal of an exploit but it _sure_ need fixing.
-
-The whole point is that VM_BUG_ON(!something) before something->else
-won't move the needle as far as your null pointer deference exploits
-are concerned.
-
-> As to whether this particular test makes sense, I don't know.  But the
-> idea that we never need to test about-to-be-dereferenced pointers for
-> NULL does worry me a bit.
-
-Being worried is good idea, as we don't want DoS bugs ;). It's just
-that VM_BUG_ON isn't a solution to the problem (and the really
-important thing, it's not improving its detectability either), fixing
-the actual bug is the solution.
