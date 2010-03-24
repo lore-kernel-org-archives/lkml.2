@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0CXP5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 11:57:37 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:38176 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab0CXP5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 11:57:36 -0400
-Date: Wed, 24 Mar 2010 09:00:18 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: drago01 <drago01@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-       Jay Sternberg <jay.e.sternberg@linux.intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>, Greg KH <greg@kroah.com>
-Subject: Re: iwl6050 firmware?
-Message-ID: <20100324160018.GN15308@hexapodia.org>
-References: <20100323221350.GA20509@hexapodia.org> <f6ca9fed1003240115s238ff0d4pc00e16be9f34a1e@mail.gmail.com>
+	id S1756316Ab0CXP5r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 11:57:47 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57740 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755383Ab0CXP5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 11:57:44 -0400
+Date: Wed, 24 Mar 2010 08:49:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
+Subject: Re: [PATCH 1/7] serial: TTY: new ldisc for TI BT/FM/GPS chips
+Message-ID: <20100324154916.GA8579@suse.de>
+References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com> <1269376875-25940-2-git-send-email-pavan_savoy@ti.com> <20100324022803.GA4359@suse.de> <20100324084307.2a07dbb1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <f6ca9fed1003240115s238ff0d4pc00e16be9f34a1e@mail.gmail.com>
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100324084307.2a07dbb1@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 09:15:53AM +0100, drago01 wrote:
-> > It's been several months since iwl6050 support was merged to mainline,
-> >
-> >    commit e1228374d648efe451973bc5f3d1f9a8e943ec0b
-[snip]
-> > but the firmware isn't yet in linux-firmware.git nor on
+On Wed, Mar 24, 2010 at 08:43:07AM +0000, Alan Cox wrote:
+> On Tue, 23 Mar 2010 19:28:03 -0700
+> Greg KH <gregkh@suse.de> wrote:
 > 
-> http://intellinuxwireless.org/iwlwifi/downloads/iwlwifi-6000-ucode-9.193.4.1.tgz
-> ?
+> > On Tue, Mar 23, 2010 at 03:41:09PM -0500, pavan_savoy@ti.com wrote:
+> > > From: Pavan Savoy <pavan_savoy@ti.com>
+> > > 
+> > > A new N_TI_WL line discipline added for TI BT/FM/GPS
+> > > combo chips which make use of same TTY to communicate
+> > > with chip. This is to be made use of individual protocol
+> > > BT/FM/GPS drivers.
+> > > 
+> > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> > > ---
+> > >  include/linux/tty.h |    3 ++-
+> > 
+> > Staging code needs to be completly self-contained in the drivers/staging
+> > directory.  Is there any way to do this without touching this file?
 > 
-> I don't think the 6050 need a separate firmware.
+> Put the N_TI_WL into a staging header, and bump the number of ldiscs as a
+> separate non staging patch - we should probably simply bump it a bit
+> anyway to leave room for experimental work using a built kernel image.
+> There is no requirement that the number of ldiscs matches up to the last
+> ldisc assigned.
 
-Yes, it does; it's asking for iwlwifi-6050-4.ucode on boot.  (I was
-suprised too.)
+That sounds good to me.
 
--andy
+thanks,
+
+greg k-h
