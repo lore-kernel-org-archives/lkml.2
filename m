@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0CXMZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 08:25:50 -0400
-Received: from qw-out-2122.google.com ([74.125.92.26]:8377 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab0CXMZt convert rfc822-to-8bit (ORCPT
+	id S1755842Ab0CXM3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 08:29:17 -0400
+Received: from out2.smtp.messagingengine.com ([66.111.4.26]:56506 "EHLO
+	out2.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751500Ab0CXM3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 08:25:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xzws3QgjF1hrWBeFFuzXdKjyf6jhKabCHxq/x5FJNV4czZVbGVsZ2BP0sU+mtknhXj
-         GO14L5UoX6dFgOquSwKPp0ML6THUfExUf4iLJy4SMRYOzRrcv400GGjS+WppyoTSamLl
-         dSfUI47ULIbMGMZG/1Dg93KWWoWqhCZ53I6i4=
+	Wed, 24 Mar 2010 08:29:15 -0400
+X-Sasl-enc: mrdzU766l0GQASrTAQnbulAKPoYMMYBHpYDiuGAz9LqH 1269433754
+Message-ID: <4BAA0598.9000906@imap.cc>
+Date: Wed, 24 Mar 2010 13:29:12 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; de; rv:1.9.1.8) Gecko/20100205 SeaMonkey/2.0.3
 MIME-Version: 1.0
-In-Reply-To: <20100324120930.GH21147@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	 <1269347146-7461-11-git-send-email-mel@csn.ul.ie>
-	 <28c262361003231610p3753a136v51720df8568cfa0a@mail.gmail.com>
-	 <20100324111159.GD21147@csn.ul.ie>
-	 <28c262361003240459m7d981203nea98df5196812b6c@mail.gmail.com>
-	 <20100324120930.GH21147@csn.ul.ie>
-Date: Wed, 24 Mar 2010 21:25:48 +0900
-Message-ID: <28c262361003240525v51a78880u63680bf576d1b618@mail.gmail.com>
-Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, apw@canonical.com
+Subject: Re: [PATCH] checkpatch: Add check for too short Kconfig descriptions
+References: <20100320023216.GA917@basil.fritz.box> <4BA4CE32.1020207@imap.cc> <20100320140710.GS20695@one.firstfloor.org> <4BA504DD.2060107@imap.cc> <20100320180336.GT20695@one.firstfloor.org>
+In-Reply-To: <20100320180336.GT20695@one.firstfloor.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 9:09 PM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Wed, Mar 24, 2010 at 08:59:45PM +0900, Minchan Kim wrote:
->> On Wed, Mar 24, 2010 at 8:11 PM, Mel Gorman <mel@csn.ul.ie> wrote:
->> > On Wed, Mar 24, 2010 at 08:10:40AM +0900, Minchan Kim wrote:
->> >> Hi, Mel.
->> >>
->> >> On Tue, Mar 23, 2010 at 9:25 PM, Mel Gorman <mel@csn.ul.ie> wrote:
->> >> > Ordinarily when a high-order allocation fails, direct reclaim is entered to
->> >> > free pages to satisfy the allocation.  With this patch, it is determined if
->> >> > an allocation failed due to external fragmentation instead of low memory
->> >> > and if so, the calling process will compact until a suitable page is
->> >> > freed. Compaction by moving pages in memory is considerably cheaper than
->> >> > paging out to disk and works where there are locked pages or no swap. If
->> >> > compaction fails to free a page of a suitable size, then reclaim will
->> >> > still occur.
->> >> >
->> >> > Direct compaction returns as soon as possible. As each block is compacted,
->> >> > it is checked if a suitable page has been freed and if so, it returns.
->> >> >
->> >> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
->> >> > Acked-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+-----BEGIN PGP SIGNED MESSAGE-----
 
-<snip>
+Hash: SHA1
 
->> You're right. I just wanted to change the name as one which imply
->> direct compaction.
->
-> I think I'd fully agree with your point if there was more than one way to
-> stall a process due to compaction. As it is, direct compaction is the only
-> way to meaningfully stall a process and I can't think of alternative stalls
-> in the future. Technically, a process using the sysfs or proc triggers for
-> compaction also stalls but it's not interesting to count those events.
->
->> That's because I believe we will implement it by backgroud, too.
->
-> This is a possibility but in that case it would be a separate process
-> like kcompactd and I wouldn't count it as a stall as such.
->
->> Then It's more straightforward, I think. :-)
+
+
+Am 2010-03-20 19:03 schrieb Andi Kleen:
+> On Sat, Mar 20, 2010 at 06:24:45PM +0100, Tilman Schmidt wrote:
+>> Am 2010-03-20 15:07 schrieb Andi Kleen:
+>>> The warning merely is intended to get people to think
+>>> about that. Yes it cannot enforce it directly.
 >>
->> > How about COMPACTSTALL like ALLOCSTALL? :/
+>> Then change the wording, at least. With the current wording, people will
+>> think, "But I did!", and complain about a false positive on LKML, where
+>> they will be annoyed to learn that checkpatch.pl's criterion for
+>> "describing fully" is "having at least four lines".
+> 
+> Change to what?  If you have a better suggestion I can change it.
+
+My suggestion:
+
+- -+			WARN("please write a paragraph that describes the config symbol fully\n" . $herecurr) if ($length < 4);
+++			WARN("Less than four lines of help text -- consider adding more detail\n" . $herecurr) if ($length < 4);
+
 >>
->> I wouldn't have a strong objection any more if you insist on it.
->>
->
-> I'm not insisting as such, I just don't think renaming it to
-> PGSCAN_COMPACT_X would be easier to understand.
+>> I'm not thinking of circumvention, but of well-meaning authors writing
+>> long explanations that describe everything the author found worth
+>> mentioning, but still don't answer the essential question: "Should I
+>> select that option?" In fact, most of the unhelpful Kconfig help texts
+>> I've encountered where longer than four lines. :-)
+> 
+> I don't disagree that longer help texts can be unhelpful too,
+> but at least there's some chance that they are. 
+> 
+> For a single sentence it's very unlikely ever that it's helpful.
 
-Totally, I agree with your opinion.
->From now on, I don't have any objection.
+We have to agree to disagree on that then, too.
+
+Regards,
+Tilman
+-----BEGIN PGP SIGNATURE-----
+
+Version: GnuPG v2.0.12 (MingW32)
+
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
 
 
+iEYEARECAAYFAkuqBZgACgkQQ3+did9BuFtgjwCgim0E0xnYJEnbCJsvKflkaSdk
 
--- 
-Kind regards,
-Minchan Kim
+ITQAn2zjFpo4ODhhpDvgJGMIaUWJnLgZ
+
+=SMok
+
+-----END PGP SIGNATURE-----
+
