@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab0CXRAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:00:00 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44048 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932138Ab0CXQ74 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932339Ab0CXQ76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:59:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932271Ab0CXQ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Mar 2010 12:59:56 -0400
-Date: Wed, 24 Mar 2010 17:03:45 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Greg KH <gregkh@suse.de>,
-       PavanSavoy <pavan_savoy@ti.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-Message-ID: <20100324170345.1ba84093@lxorguk.ukuu.org.uk>
-In-Reply-To: <132027.10140.qm@web94905.mail.in2.yahoo.com>
-References: <1269448680.11714.121.camel@localhost.localdomain>
-	<132027.10140.qm@web94905.mail.in2.yahoo.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Patch b26b2d49 added lines with a missing semicolons
+To: torvalds@osdl.org, akpm@linux-foundation.org, linux@dominikbrodowski.net
+Cc: linux-kernel@vger.kernel.org, linux-cris-kernel@axis.com,
+       linux-pci@vger.kernel.org, David Howells <dhowells@redhat.com>
+Date: Wed, 24 Mar 2010 16:59:36 +0000
+Message-ID: <20100324165935.10443.51423.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok I had a brief dig
+The following patch added lines with a missing semicolons:
 
-Making a driver able to say "and open me in this ldisc" is about ten
-lines of code to the core tty layer if that.
+	commit b26b2d494b659f988b4d75eb394dfa0ddac415c9
+	Author: Dominik Brodowski <linux@dominikbrodowski.net>
+	Date:   Fri Jan 1 17:40:49 2010 +0100
 
-There is one caveat - the actual ldisc attach method for an ldisc attach
-isn't allowed to fail the attach. That's something we eventually need to
-fix anyway.
+	resource/PCI: align functions now return start of resource
 
-Otherwise it doesn't look too scary and it would occur when the user
-opened the file not when the device was created.
+Add the missing semicolons to the FRV and CRIS arch code.
 
-Alan
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ arch/cris/arch-v32/drivers/pci/bios.c |    2 +-
+ arch/frv/mb93090-mb00/pci-frv.c       |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+
+diff --git a/arch/cris/arch-v32/drivers/pci/bios.c b/arch/cris/arch-v32/drivers/pci/bios.c
+index d4b9c36..bc0cfda 100644
+--- a/arch/cris/arch-v32/drivers/pci/bios.c
++++ b/arch/cris/arch-v32/drivers/pci/bios.c
+@@ -50,7 +50,7 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 	if ((res->flags & IORESOURCE_IO) && (start & 0x300))
+ 		start = (start + 0x3ff) & ~0x3ff;
+ 
+-	return start
++	return start;
+ }
+ 
+ int pcibios_enable_resources(struct pci_dev *dev, int mask)
+diff --git a/arch/frv/mb93090-mb00/pci-frv.c b/arch/frv/mb93090-mb00/pci-frv.c
+index 1ed15d7..0960e6d 100644
+--- a/arch/frv/mb93090-mb00/pci-frv.c
++++ b/arch/frv/mb93090-mb00/pci-frv.c
+@@ -41,7 +41,7 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 	if ((res->flags & IORESOURCE_IO) && (start & 0x300))
+ 		start = (start + 0x3ff) & ~0x3ff;
+ 
+-	return start
++	return start;
+ }
+ 
+ 
+
