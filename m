@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab0CXJeM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 05:34:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50966 "EHLO gate.crashing.org"
+	id S1755292Ab0CXJel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 05:34:41 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:46764 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750962Ab0CXJeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 05:34:10 -0400
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from
- e820.c to fw_memmap.cy
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-       jbarnes@virtuousgeek.org, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-In-Reply-To: <20100324090031.GA23804@elte.hu>
-References: <4BA80019.5000900@kernel.org>
-	 <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>
-	 <4BA813A4.1010704@kernel.org>
-	 <alpine.LFD.2.00.1003230213260.3147@localhost.localdomain>
-	 <4BA8594F.8090205@kernel.org> <20100323080252.GA4848@elte.hu>
-	 <4BA883C0.2070102@kernel.org> <20100323094834.GB4576@elte.hu>
-	 <1269404982.8599.148.camel@pasglop> <1269405882.8599.155.camel@pasglop>
-	 <20100324090031.GA23804@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 20:32:57 +1100
-Message-ID: <1269423177.8599.214.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753795Ab0CXJek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 05:34:40 -0400
+Date: Wed, 24 Mar 2010 10:34:37 +0100
+From: Giel van Schijndel <me@mortis.eu>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Hans de Goede <hdegoede@redhat.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] hwmon: f71882fg: properly acquire I/O regions while
+ probing
+Message-ID: <20100324093437.GF6368@salidar.me.mortis.eu>
+References: <1269353535-23134-1-git-send-email-me@mortis.eu>
+ <20100324102942.215ee413@hyperion.delvare>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="n+lFg1Zro7sl44OB"
+Content-Disposition: inline
+In-Reply-To: <20100324102942.215ee413@hyperion.delvare>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 10:00 +0100, Ingo Molnar wrote:
-> > I'm a bit too flat out right now to write code, but if there's no objection, 
-> > I might give that a go either later this week or next week, see if I can 
-> > replace bootmem on powerpc.
-> 
-> That would be fantastic! PowerPC and x86 both doing it would give it enough of 
-> a critical mass to make the removal of bootmem realistic.
 
->From the look of it, I wont' have any bandwidth this week tho ... but
-let's keep that as a plan for moving forward and who gets to do it first
-wins a free beer at the next conference :-)
+--n+lFg1Zro7sl44OB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cheers,
-Ben.
+On Wed, Mar 24, 2010 at 10:29:42AM +0100, Jean Delvare wrote:
+> On Tue, 23 Mar 2010 15:12:15 +0100, Giel van Schijndel wrote:
+>>  static u16 f71882fg_read_temp(struct f71882fg_data *data, int nr)
+>> @@ -2184,6 +2178,13 @@ static int __init f71882fg_find(int sioaddr, unsi=
+gned short *address,
+>>  	int err =3D -ENODEV;
+>>  	u16 devid;
+>> =20
+>> +	/* Don't step on other driver's I/O space by accident */
+>> +	if (!request_region(sioaddr, 2, DRVNAME)) {
+>> +		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
+>> +				(int)sioaddr);
+>> +		return -EIO;
+>=20
+> This is the wrong error code. This isn't an I/O error. You want -EBUSY.
 
+Ack. New patch follows this line.
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+hwmon: f71882fg: acquire I/O regions while we're working with them
 
+Acquire the I/O region for the Super I/O chip while we're working on it.
+
+Signed-off-by: Giel van Schijndel <me@mortis.eu>
+---
+ drivers/hwmon/f71882fg.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
+index ca34e5c..537841e 100644
+--- a/drivers/hwmon/f71882fg.c
++++ b/drivers/hwmon/f71882fg.c
+@@ -2178,6 +2178,13 @@ static int __init f71882fg_find(int sioaddr, unsigne=
+d short *address,
+ 	int err =3D -ENODEV;
+ 	u16 devid;
+=20
++	/* Don't step on other drivers' I/O space by accident */
++	if (!request_region(sioaddr, 2, DRVNAME)) {
++		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
++				(int)sioaddr);
++		return -EBUSY;
++	}
++
+ 	superio_enter(sioaddr);
+=20
+ 	devid =3D superio_inw(sioaddr, SIO_REG_MANID);
+@@ -2232,6 +2239,7 @@ static int __init f71882fg_find(int sioaddr, unsigned=
+ short *address,
+ 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
+ exit:
+ 	superio_exit(sioaddr);
++	release_region(sioaddr, 2);
+ 	return err;
+ }
+=20
+--=20
+1.6.4.4
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+
+--n+lFg1Zro7sl44OB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkup3K0ACgkQZBYm/87l50L9RwCfWhU0CylEH9NWCC6Vdug5d/b2
+PisAn0NUM+GV3cB+9Q2cT89dTBp00EwI
+=J642
+-----END PGP SIGNATURE-----
+
+--n+lFg1Zro7sl44OB--
