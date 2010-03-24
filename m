@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab0CXLlE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:41:04 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:62612 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab0CXLlB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:41:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=HYXHT3Mxv7L/U0aCqdtXjsVRRHdRn9qlN9io7RkQckBEz+4af/Elmm7uEqA3f2eJ6u
-         HOzeVxztifJjH2xhqIxSLezB3vOiZG+HKdovFXyaQAXydpVYHHuzDSvfZv7PvfJaomIx
-         xiQfKmheMmKCs1oXNwgT1qF9v5GITHFCyBKQ0=
-Subject: [PATCH] slub: Potential stack overflow
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka J Enberg <penberg@cs.helsinki.fi>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 12:40:56 +0100
-Message-ID: <1269430856.3213.27.camel@edumazet-laptop>
+	id S1755829Ab0CXLlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:41:12 -0400
+Received: from ozlabs.org ([203.10.76.45]:53388 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755801Ab0CXLlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:41:09 -0400
+Subject: Re: [PATCH -v4 00/08] use lmb with x86
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100324104844.GA896@elte.hu>
+References: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
+	 <20100324104844.GA896@elte.hu>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-1awye0z1mlrNhPcGrEB4"
+Date: Wed, 24 Mar 2010 22:41:08 +1100
+Message-ID: <1269430868.2500.14.camel@concordia>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I discovered that we can overflow stack if CONFIG_SLUB_DEBUG=y and use
-slabs with many objects, since list_slab_objects() and process_slab()
-use DECLARE_BITMAP(map, page->objects);
 
-With 65535 bits, we use 8192 bytes of stack ...
+--=-1awye0z1mlrNhPcGrEB4
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-A possible fix is to lower MAX_OBJS_PER_PAGE so that these bitmaps dont
-use more than a third of THREAD_SIZE. I suspect plain memory allocation
-in these functions is not an option.
+On Wed, 2010-03-24 at 11:48 +0100, Ingo Molnar wrote:
+> * Yinghai Lu <yinghai@kernel.org> wrote:
+>=20
+> > new early_res is lmb extension. and it could be used to replace bootmem=
+.
+>=20
+> Why not do what we suggested: extend lmb.c to also offer the=20
+> early_res-equivalent functionality, and remove kernel/early_res.c and mov=
+e=20
+> lib/lmb.c to mm/lmb.c?
+>=20
+> We dont want two facilities (early_res and lmb) really ...
 
-Using non dynamic stack allocation makes the problem more obvious if
-somebody runs checkstack.pl
+Exactly.=20
 
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-diff --git a/mm/slub.c b/mm/slub.c
-index b364844..adf04c1 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -167,7 +167,13 @@
- 
- #define OO_SHIFT	16
- #define OO_MASK		((1 << OO_SHIFT) - 1)
-+
-+#ifdef CONFIG_SLUB_DEBUG
-+/* We use an onstack BITMAP while debugging, make sure this wont be too big */
-+#define MAX_OBJS_PER_PAGE	min_t(int, 65535, 8*(THREAD_SIZE/3))
-+#else
- #define MAX_OBJS_PER_PAGE	65535 /* since page.objects is u16 */
-+#endif
- 
- /* Internal SLUB flags */
- #define __OBJECT_POISON		0x80000000 /* Poison object */
-@@ -2426,7 +2432,7 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
- #ifdef CONFIG_SLUB_DEBUG
- 	void *addr = page_address(page);
- 	void *p;
--	DECLARE_BITMAP(map, page->objects);
-+	DECLARE_BITMAP(map, MAX_OBJS_PER_PAGE);
- 
- 	bitmap_zero(map, page->objects);
- 	slab_err(s, page, "%s", text);
-@@ -3651,7 +3657,7 @@ static void process_slab(struct loc_track *t, struct kmem_cache *s,
- 		struct page *page, enum track_item alloc)
- {
- 	void *addr = page_address(page);
--	DECLARE_BITMAP(map, page->objects);
-+	DECLARE_BITMAP(map, MAX_OBJS_PER_PAGE);
- 	void *p;
- 
- 	bitmap_zero(map, page->objects);
+This series seems to leave us with kernel/early_res.c (which should
+never have moved out of arch/x86 AFAICS) - as well as using some of
+lmb.c.
 
+It doesn't compile on powerpc, because early_res.c is looking for
+find_fw_memmap_area() which is still under arch/x86.
+
+And sprinkling CONFIG_NO_BOOTMEM everywhere is getting a bit gross. I
+notice that's already happened to mm/(bootmem|page_alloc).c but
+propagating it further is not nice.
+
+cheers
+
+--=-1awye0z1mlrNhPcGrEB4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEABECAAYFAkup+lMACgkQdSjSd0sB4dK6AwCfYttVCzUU3RJDuSdh6cwf4tLg
+0FAAniW7ilFsqPMjjogBgNbfvtRjM9Xz
+=bYeo
+-----END PGP SIGNATURE-----
+
+--=-1awye0z1mlrNhPcGrEB4--
 
