@@ -1,71 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0CXOAj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:00:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39920 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755567Ab0CXOAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:00:37 -0400
-Message-ID: <4BAA1ADD.9090502@redhat.com>
-Date: Wed, 24 Mar 2010 15:59:57 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1756235Ab0CXOBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:01:25 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:35507 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752608Ab0CXOBX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:01:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=p4bqABgbpzgYXQ3wSdbGEEWpt/RTvd1VkxzHy83JqGVKUP8cdM2hwxT2GlAXlubji
+	aQvOpkd6Ckkp/VUWiaqYw==
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws> <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <4BAA1946.6060703@suse.de>
-In-Reply-To: <4BAA1946.6060703@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100324054531.GA30416@drongo>
+References: <4ba8f988.9804cc0a.4b1f.5d77@mx.google.com>
+	 <20100324054531.GA30416@drongo>
+Date: Wed, 24 Mar 2010 15:01:14 +0100
+Message-ID: <bd4cb8901003240701y63198cc5hd380bbe754e57915@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix remapped count support
+From: Stephane Eranian <eranian@google.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       davem@davemloft.net, fweisbec@gmail.com, robert.richter@amd.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 03:53 PM, Alexander Graf wrote:
+On Wed, Mar 24, 2010 at 6:45 AM, Paul Mackerras <paulus@samba.org> wrote:
+> On Tue, Mar 23, 2010 at 06:25:01PM +0200, Stephane Eranian wrote:
 >
->> Someone needs to know about the new guest to fetch its symbols.  Or do
->> you want that part in the kernel too?
->>      
+>> The patch adds a new field to the perf_mmap_page buffer header (delta_base).
+>> It is necessary to correctly scale the count. This new value represents the
+>> counter value when the event was last scheduled in. It cannot be substracted
+>> by the kernel from the total count because of scaling. The correct formula is:
+>>
+>>        count = offset * time_enabled/time_running + (raw_count - prev_count)
 >
-> How about we add a virtio "guest file system access" device? The guest
-> would then expose its own file system using that device.
+> Interesting.  On powerpc I took the view that what was needed from a
+> user-space direct_counter_read() function was to return the same value
+> as a read() on the event counter fd would give, that is, the unscaled
+> count.  The stuff that's in the mmapped page is sufficient to compute
+> the unscaled count, and I already have userspace code on powerpc that
+> does that.
 >
-> On the host side this would simply be a -virtioguestfs
-> unix:/tmp/guest.fs and you'd get a unix socket that gives you full
-> access to the guest file system by using commands. I envision something
-> like:
->    
+We agree on that. When you combined mmapped data + direct_counter_read()
+you should get the unscaled count.
 
-The idea is to use a dedicated channel over virtio-serial.  If the 
-channel is present the file server can serve files over it.
+As for the scaling, you are right, my formula is not quite correct. You also
+need to scale the delta you obtain for the direct_read_counter(). But for
+that, you would need the timebase relative to when prev_count was last
+touched. Then, you would need to collect time at the user level (TSC)
+and compute the time delta t. In that case, I think the correct formula
+would become:
 
-> SEND: GET /proc/version
-> RECV: Linux version 2.6.27.37-0.1-default (geeko@buildhost) (gcc version
-> 4.3.2 [gcc-4_3-branch revision 141291] (SUSE Linux) ) #1 SMP 2009-10-15
-> 14:56:58 +0200
+            (offset + (raw_count - prev_count)) * (time_enabled + t)
+count = --------------------------------------------------------------------------------
+             time_running + t
+
+
 >
-> Now all we need is integration in perf to enumerate virtual machines
-> based on libvirt. If you want to run qemu-kvm directly, just go with
-> --guestfs=/tmp/guest.fs and perf could fetch all required information
-> automatically.
+> We don't currently have a way to work out up-to-the-nanosecond values
+> of time_enabled and time_running in userspace, though it could be
+> done.  Userspace would have to read the timebase or TSC (or
+> equivalent), subtract a base value, multiply by a scale factor, and
+> add that on to the time_enabled/time_running values stored in the
+> mmapped page.  Although this is all quite doable on powerpc where the
+> timebase counts at constant frequency and is synchronized across cpus,
+> it seemed like it could get complicated on x86 where the TSC might
+> change speed and might not be synchronized (though I suppose we only
+> need to supply the values relevant to the cpu where the monitored
+> thread is running).
+
+Recent X86 processors do have constant TSC, i.e., not subject to frequency
+scaling.
+
+You don't need to have TSC synchronized as long as you guarantee that
+prev_count and the kernel TSC snapshot is updated each time the event
+is scheduled.
+
 >
-> This should solve all issues while staying 100% in user space, right?
->    
+>> For other architectures, e.g., PPC, SPARC, assuming they do offer the ability
+>> to read counts directly from user space, all that is needed is a couple of new
+>> arch specific functions:
+>>       - hw_perf_event_counter_width(): actual counter width
+>>       - hw_perf_event_index(): register index to pass to the user instruction
+>>       - hw_perf_update_user_read_perm(): toggle permission to read from userspace
+>
+> I'm puzzled why powerpc now needs to supply more stuff when we already
+> have userspace reading of (unscaled) counts working just fine.
+>
+Going back to the formula above, and if I revert the change I made to
+userpage->offset. Then the code would look as follows:
 
-Yeah, needs a fuse filesystem to populate the host namespace (kind of 
-sshfs over virtio-serial).
+                userpg->offset -= atomic64_read(&event->hw.prev_count);
 
--- 
-error compiling committee.c: too many arguments to function
+Prev_count is a 64-bit negative value on X86. Whereas direct_read_counter()
+on X86, returns only the N-bits of the counter, where N is the width
+of the counter.
+For instance, with a 40-bit counter:
 
+direct_read_counter() = 0xffce91a62a
+prev_count                = 0xffffffffce91a600
+
+Thus, offset + (raw_count - prev_count)) would not be correct. That is why
+in my patch, there is this small adjust to mask off bits 63-N. You may
+not have to do this on PPC. The alternative would be expose the width
+to user and fix the direct_read_counter() count.
+
+>
+> I don't mind if you add fields to make it possible to compute a scaled
+> count more easily, but please don't change the meaning of the existing
+> fields.
+
+I can revert the change. I just did not know this was already working on PPC.
+I guess I was not part of that discussion.
