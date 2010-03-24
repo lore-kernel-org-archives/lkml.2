@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab0CXWqE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 18:46:04 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33803 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529Ab0CXWqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 18:46:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:date:message-id:subject:in-reply-to:mime-version
-         :x-firegpg-version:content-type;
-        b=t/lvj6s/4Z3ldW1sJtome2eYmB0qd8AVvb3aCt3VenXBOTZ9KQX9Tk8yUUFiS4EXdg
-         qzXTSEIaMOgW+N2RQtuzrb34HPLxfE/Cl3FYc5ztdYfdjYo7G4HLlvotGvASvLR7y1Uc
-         QjISGPi15/M28ViXBC8TqzKmhRwwUe97ruiAs=
-From: drepper@gmail.com
-To: Olaf van der Spek <olafvdspek@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 24 Mar 2010 15:45:56 -0700 (PST)
-Message-ID: <g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
-Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
-In-Reply-To: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com>
+	id S1751837Ab0CXWta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:49:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49164 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751572Ab0CXWt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 18:49:29 -0400
+Date: Wed, 24 Mar 2010 23:48:58 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc 5/5] mincore: transparent huge page support
+Message-ID: <20100324224858.GP10659@random.random>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
+ <1269354902-18975-6-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-X-FireGPG-Version: 0.7.10
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="-----firegpg0710eqg76q40k6nrhoss976w"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269354902-18975-6-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
--------firegpg0710eqg76q40k6nrhoss976w
-Content-Type: text/plain; format=flowed; charset=UTF-8
-Content-Transfer-Encoding: base64
+On Tue, Mar 23, 2010 at 03:35:02PM +0100, Johannes Weiner wrote:
+> +static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+> +			unsigned long addr, unsigned long end,
+> +			unsigned char *vec)
+> +{
+> +	int huge = 0;
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +	spin_lock(&vma->vm_mm->page_table_lock);
+> +	if (likely(pmd_trans_huge(*pmd))) {
+> +		huge = !pmd_trans_splitting(*pmd);
 
-T24gV2VkLCBNYXIgMjQsIDIwMTAgYXQgMTU6MzcsIE9sYWYgdmFuIGRlciBTcGVrIDxvbGFmdmRz
-cGVrQGdtYWlsLmNvbT4gd3JvdGU6DQo+IFdoeSBub3Q/DQo+IEl0J3MgYW4gaW1wcm92ZW1lbnQg
-SU1PLCBhbHRob3VnaCBpdCBjb3VsZCBiZSBiZXR0ZXIuDQoNCkl0J3MgYmxhdGFudGx5IHdyb25n
-LiAgVGhlcmUgaXMgbm8gZHluYW1pYyBsaW5rZXIuICBFTk9FWEVDIG1lYW5zIHRoZSBmaWxlIGV4
-aXN0cyBidXQgaXMgbm90IG9mIHRoZSByaWdodCBmb3JtYXQu
--------firegpg0710eqg76q40k6nrhoss976w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Under mmap_sem (read or write) a hugepage can't materialize under
+us. So here the pmd_trans_huge can be lockless and run _before_ taking
+the page_table_lock. That's the invariant I used to keep identical
+performance for all fast paths.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Use GnuPG with Firefox : http://getfiregpg.org (Version: 0.7.10)
+And if it wasn't the case it wouldn't be safe to return huge = 0 as
+the page_table_lock is released at that point.
 
-iEYEARECAAYFAkuqliQACgkQ2ijCOnn/RHT0NACggtX7ckRwc44738RU7iruMq3H
-pQoAnjum0Ff00wFAYloth7BLeKdPitwP
-=VgtV
------END PGP SIGNATURE-----
+> +		spin_unlock(&vma->vm_mm->page_table_lock);
+> +		/*
+> +		 * If we have an intact huge pmd entry, all pages in
+> +		 * the range are present in the mincore() sense of
+> +		 * things.
+> +		 *
+> +		 * But if the entry is currently being split into
+> +		 * normal page mappings, wait for it to finish and
+> +		 * signal the fallback to ptes.
+> +		 */
+> +		if (huge)
+> +			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> +		else
+> +			wait_split_huge_page(vma->anon_vma, pmd);
+> +	} else
+> +		spin_unlock(&vma->vm_mm->page_table_lock);
+> +#endif
+> +	return huge;
+> +}
+> +
 
--------firegpg0710eqg76q40k6nrhoss976w--
+It's probably cleaner to move the block into huge_memory.c and create
+a dummy for the #ifndef version like I did for all the rest.
 
+
+I'll incorporate and take care of those changes myself if you don't
+mind, as I'm going to do a new submit for -mm. I greatly appreciated
+you taken the time to port to transhuge it helps a lot! ;)
+
+Thanks,
+Andrea
