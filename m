@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0CXF4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:56:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54859 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab0CXF4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:56:13 -0400
-Message-ID: <4BA9A8F8.5070206@kernel.org>
-Date: Tue, 23 Mar 2010 22:54:00 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1754734Ab0CXF7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:59:09 -0400
+Received: from demumfd001.nsn-inter.net ([93.183.12.32]:11591 "EHLO
+	demumfd001.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0CXF7H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:59:07 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       David Miller <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, hpa@zytor.com,
-       jbarnes@virtuousgeek.org, ebiederm@xmission.com,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 06/20] early_res: seperate common memmap func from e820.c
- to fw_memmap.cy
-References: <alpine.LFD.2.00.1003222233440.3147@localhost.localdomain>	 <4BA7EE72.7000507@kernel.org>	 <alpine.LFD.2.00.1003222329050.3147@localhost.localdomain>	 <4BA80019.5000900@kernel.org>	 <alpine.LFD.2.00.1003230046050.3147@localhost.localdomain>	 <4BA813A4.1010704@kernel.org>	 <alpine.LFD.2.00.1003230213260.3147@localhost.localdomain>	 <4BA8594F.8090205@kernel.org> <20100323080252.GA4848@elte.hu>	 <4BA883C0.2070102@kernel.org>  <20100323094834.GB4576@elte.hu>	 <1269404982.8599.148.camel@pasglop> <1269405882.8599.155.camel@pasglop>
-In-Reply-To: <1269405882.8599.155.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: How to reserved all the CPU time for the private computing
+Date: Wed, 24 Mar 2010 13:58:47 +0800
+Message-ID: <2234BBB33B4B2048B28E3B3ACFC9795C01B834EB@CNBEEXC007.nsn-intra.net>
+In-Reply-To: <20100324054227.GB9336@spritzerA.linux.bs1.fc.nec.co.jp>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: How to reserved all the CPU time for the private computing
+Thread-Index: AcrLFSlcQDd/71I0TEK/qFdUx3SCkAAACeUg
+References: <20100324054227.GB9336@spritzerA.linux.bs1.fc.nec.co.jp>
+From: "Zhu, Yijun (NSN - CN/Beijing)" <yijun.zhu@nsn.com>
+To: "LKML" <linux-kernel@vger.kernel.org>, <linux-arch-owner@vger.kernel.org>
+X-OriginalArrivalTime: 24 Mar 2010 05:59:04.0035 (UTC) FILETIME=[1B8C5B30:01CACB17]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 09:44 PM, Benjamin Herrenschmidt wrote:
-> 
->> I though one possibility would be to have LMB regions become more lists
->> than arrays, so that the static storage only needs to cover as much as
->> is needed during really early boot (and we could probably still move the
->> BSS top point on some archs to dynamically make more ... actually we
->> could be smart arses and use LMB to allocate more LMB list heads if we
->> are reaching the table limit :-)
-> 
-> Actually what about that:
-> 
-> LMB entries are linked-listed. The array is just storage for those entry
-> "heads".
-> 
-> The initial static array only needs to be big enough for very very early
-> platform specific kernel bits and pieces, so it could even be sized by a
-> Kconfig option. Or it could just use a klimit moving trick to pick up a
-> page right after the BSS but that may need to be arch specific.
-> 
-> lmb_init() queues all the entries from the initial array in a freelist
-> 
-> lmb_alloc() and lmb_reserve() just pop entries from that freelist to
-> populate the two main linked lists (memory and reserved).
-> 
-> When something tries to dequeue up the last freelist entry, then under
-> the hood, LMB uses it instead to allocate a new block of LMB entries
-> that gets added to the freelist.
-> 
-> We never free blocks of LMB entries.
-> 
-> That way, we can fine tine the static array to be as small as we can
-> realistically make it be, and we have no boundary limitations on the
-> amount of entries in either the memory list or the reserved list.
-> 
-> I'm a bit too flat out right now to write code, but if there's no
-> objection, I might give that a go either later this week or next week,
-> see if I can replace bootmem on powerpc.
-> 
+Hi All:
 
-if the array can be doubled and have old one copied to new one. 
-then we don't change lmb.c too much.
+Thank you very much firstly.
+I have send the similar questions last time and I also search solutions
+in the internet.
 
-new early_res.c exend lmb. and another half already works with x86 to replace bootmem.
+Scenario:
+multi-core cpu, but only one of cores is running linux for control
+plane, while others are running the private 100% computing
 
-will check if i can produce one patch to make powerpc to reuse early_res/nobootmem
+Solution:
+The following steps are done:
+1. Add the isolcpus opinion in the kernel command
+2. The init thread only can run in the control CPU
+3. disable all the local interrupt in the other CPUs/cores.
 
-Thanks
+Result:
+The system can be up, but NOT stable. Any system call may stuck the
+shell(i.e  ping/chkconfig ). 
 
-Yinghai
+Question:
+Could some give me some help/suggestion for the next steps?
+
+Thanks a lot.
