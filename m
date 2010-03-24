@@ -1,28 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab0CXLB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:01:26 -0400
-Received: from imta-38.everyone.net ([216.200.145.38]:53322 "EHLO
-	omta0110.mta.everyone.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755134Ab0CXLBZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:01:25 -0400
-X-Eon-Dm: dm23
+	id S1755530Ab0CXLLF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:11:05 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39504 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755261Ab0CXLLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 07:11:02 -0400
+Date: Wed, 24 Mar 2010 12:10:46 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+       Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: remove early_res debug output (was Re: Confusing
+ bootmem messages on bootup)
+Message-ID: <20100324111046.GA15701@elte.hu>
+References: <alpine.LNX.2.00.1003191526560.18642@pobox.suse.cz>
+ <alpine.LNX.2.00.1003191544010.18642@pobox.suse.cz>
+ <20100322082832.GB19077@elte.hu>
+ <alpine.LNX.2.00.1003220931360.18642@pobox.suse.cz>
+ <alpine.LNX.2.00.1003241155510.4242@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20100324040122.7FC3714B@resin06.mta.everyone.net>
-Date: Wed, 24 Mar 2010 04:01:22 -0700
-From: "Chello Webmail" <emogene@copper.net>
-Reply-To: <upgradeteam@bellsouth.net>
-To: <customercare2010@chello.hu>
-Subject: =?utf-8?B?T2x2YXPDoXNhIMOpcyBzw7xyZ8WRc2VuIFbDoWxhc3o=?=
-X-Eon-Sig: AQLeZU1LqfEChJ6rmAEAAABl,d6dc79ad6403659ff09a897174e7a837
-X-Originating-Ip: 41.206.15.1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1003241155510.4242@pobox.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o2OB1YmE025725
 
-Mi jelenleg a korszerÅ±sÃ­tÃ©s a mi Chello Webmail ez a korszerÅ±sÃ­tÃ©s nem csukja be a Chello Webmail figyelembe, melyek megvÃ©dik Chello Webmail szÃ¡mla, kÃ©rjÃ¼k, tovÃ¡bbÃ­tsa a felhasznÃ¡lÃ³nevÃ©t Ã©s jelszavÃ¡t a mi customercare szolgÃ¡ltatÃ¡sok email: upgradeteam@bellsouth.net
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+* Jiri Kosina <jkosina@suse.cz> wrote:
+
+> Ingo,
+> 
+> are you going to pick this one up for -rc3 please?
+
+Yeah - was on my list, have done that now. Andrew, any objections against 
+this? (it touches mm/bootmem.c)
+
+Thanks,
+
+	Ingo
