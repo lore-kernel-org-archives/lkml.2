@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab0CXV27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:28:59 -0400
-Received: from tex.lwn.net ([70.33.254.29]:59378 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751939Ab0CXV25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:28:57 -0400
-Date: Wed, 24 Mar 2010 15:28:54 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 07/11] Memory compaction core
-Message-ID: <20100324152854.48f72171@bike.lwn.net>
-In-Reply-To: <20100324211924.GH10659@random.random>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	<1269347146-7461-8-git-send-email-mel@csn.ul.ie>
-	<20100324133347.9b4b2789.akpm@linux-foundation.org>
-	<20100324145946.372f3f31@bike.lwn.net>
-	<20100324211924.GH10659@random.random>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.19.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753442Ab0CXV3W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:29:22 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:60689 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001Ab0CXV3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:29:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=xGP/33rh0vMmFINfb5rF+z0IiVvfwEXmeClb+z5xRxAyVTfYDVUN14dVjMEgSV9So0
+         H98z661CDZ0Po31/tV9lZbFqRTSbZ8RlxgAX5FJQtd94D7JDyqT4O79I+gkjTx1thwcw
+         kToQFuS7bGsUTDBdSO4zoo6n8sNXKaiB9tJRE=
+Message-ID: <4BAA842A.6060906@gmail.com>
+Date: Wed, 24 Mar 2010 22:29:14 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-5.9 Thunderbird/3.1b1
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC 06/15] PM / Hibernate: swap, remove swap_map_handle usages
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-6-git-send-email-jslaby@suse.cz> <20100324203329.GG5798@elf.ucw.cz>
+In-Reply-To: <20100324203329.GG5798@elf.ucw.cz>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010 22:19:24 +0100
-Andrea Arcangeli <aarcange@redhat.com> wrote:
-
-> > > It's a bit strange to test this when we're about to oops anyway.  The
-> > > oops will tell us the same thing.  
-> > 
-> > ...except that we've seen a fair number of null pointer dereference
-> > exploits that have told us something altogether different.  Are we
-> > *sure* we don't want to test for null pointers...?  
+On 03/24/2010 09:33 PM, Pavel Machek wrote:
+> On Tue 2010-03-23 17:17:34, Jiri Slaby wrote:
+>> Some code, which will be moved out of swap.c, needs know nothing about
+>> swap. There will be also other than swap writers later, so that it
+>> won't make sense at all.
+>>
+>> Make it a global static in swap.c as a singleton.
 > 
-> Examples? Maybe WARN_ON != oops, but VM_BUG_ON still an oops that is
-> and without serial console it would go lost too. I personally don't
-> see how it's needed.
+> I guess I just dislike global static. Logically, methods do operate on
+> handles, so...
 
-I don't quite understand the question; are you asking for examples of
-exploits?
+Ok, "upper layers" may get a handle via .get_reader/writer. The downside
+is that they would have to get (void *) and pass (void *) down again. I
+wanted to avoid that (taking into account that it's a singleton).
 
-	http://lwn.net/Articles/347006/
-	http://lwn.net/Articles/360328/
-	http://lwn.net/Articles/342330/
-	...
+> I don't see a point and I do not think the change is an improvement.
 
-As to whether this particular test makes sense, I don't know.  But the
-idea that we never need to test about-to-be-dereferenced pointers for
-NULL does worry me a bit.
+The point was to avoid (void *)'s and save users from transferring
+pointer as a handle. No matter what, the decision is not up to me,
+discussion indeed welcome.
 
-jon
+-- 
+js
