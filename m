@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab0CXFJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 01:09:53 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:41494 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab0CXFJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 01:09:51 -0400
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       Zachary Amsden <zamsden@redhat.com>, ziteng.huang@intel.com,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
-From: Andi Kleen <andi@firstfloor.org>
-References: <4BA796DF.7090005@redhat.com> <20100322165107.GD18796@elte.hu>
-	<4BA7A406.9050203@redhat.com> <20100322173400.GB15795@elte.hu>
-	<4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu>
-	<4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws>
-	<20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com>
-	<20100323182153.GA14800@8bytes.org>
-Date: Wed, 24 Mar 2010 06:09:45 +0100
-In-Reply-To: <20100323182153.GA14800@8bytes.org> (Joerg Roedel's message of "Tue, 23 Mar 2010 19:21:53 +0100")
-Message-ID: <87hbo6fgpy.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	id S1752080Ab0CXFQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 01:16:10 -0400
+Received: from crca.org.au ([74.207.252.120]:38983 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751561Ab0CXFQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 01:16:08 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BA9A048.6050705@crca.org.au>
+Date: Wed, 24 Mar 2010 16:16:56 +1100
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Josef Bacik <josef@redhat.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       chris.mason@oracle.com, viro@ZenIV.linux.org.uk, hch@lst.de
+Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
+ ioctl
+References: <20100323142200.GA2381@localhost.localdomain> <4BA93FE3.9020502@crca.org.au> <20100324011714.GA5658@localhost.localdomain>
+In-Reply-To: <20100324011714.GA5658@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel <joro@8bytes.org> writes:
+Hi.
+
+On 24/03/10 12:17, Josef Bacik wrote:
+> On Wed, Mar 24, 2010 at 09:25:39AM +1100, Nigel Cunningham wrote:
+>> Hi.
+>>
+>> A cc would have been nice :)
+>>
+>> Thankfully the subject caught my eye.
+>>
 >
-> Sidenote: I really think we should come to a conclusion about the
->           concept. KVM integration into perf is very useful feature to
-> 	  analyze virtualization workloads.
+> Well it's not really tux-on-ice's fault, freeze wouldn't work _at all_ via the
+> ioctl or any other method, we just happened to notice it was broken because
+> people using tux-on-ice were getting corrupt filesystems after suspend :).  Btw,
+> it may be good to have freezer_sync set to 1 by default, otherwise if an fs
+> doesnt support freezing it will likely end up corrupted too.  Thanks,
 
-Agreed. I especially would like to see instruction/branch tracing
-working this way.  This would a lot of the benefits of a simulator on
-a real CPU.
+Corrupted because the sys_sync was disabled? (We were recently 
+discussing adding a tuneable to swsusp for disabling sys_sync there too).
 
--Andi
+I've just committed a patch making freezer_sync default to 1.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Regards,
+
+Nigel
