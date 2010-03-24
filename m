@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752160Ab0CXVNW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:13:22 -0400
-Received: from mail03.svc.cra.dublin.eircom.net ([159.134.118.19]:34562 "HELO
-	mail03.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751227Ab0CXVNV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:13:21 -0400
-Date: Wed, 24 Mar 2010 21:13:17 +0000 (GMT)
-From: =?utf-8?Q?Union_beschr=C3=A4nkt_Finanzierung?= 
-	<leighhollywood@eircom.net>
-Reply-To: "info@unionsloans.com" <info@unionsloans.com>
-Message-ID: <13763974.177381269465197221.JavaMail.root@webmailbox302.eircom.net>
-Subject: =?utf-8?Q?Darlehen_bieten_bei_2%_Zins_(?=
- =?utf-8?Q?Union_beschr=C3=A4nkt_Finanzierung)?=
+	id S1752713Ab0CXVO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:14:56 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:38649 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab0CXVOz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:14:55 -0400
+Date: Wed, 24 Mar 2010 16:14:46 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Pekka J Enberg <penberg@cs.helsinki.fi>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] slub: Potential stack overflow
+In-Reply-To: <alpine.DEB.2.00.1003241608270.16858@router.home>
+Message-ID: <alpine.DEB.2.00.1003241613350.16858@router.home>
+References: <1269430856.3213.27.camel@edumazet-laptop>  <alpine.DEB.2.00.1003241414270.14329@router.home>  <1269458528.2849.2.camel@edumazet-laptop>  <alpine.DEB.2.00.1003241443520.14329@router.home> <1269464591.2849.15.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1003241608270.16858@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [208.122.254.222]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here is a patch for the second case. I think its better since it results
+in an error display and it avoids the alloc for each slab. Add this piece
+to your patch?
 
+Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
-Hallo 
-  Ich bin Curtis Smith, Geschäftsführer der Union beschränkt Finanzierung. Wir sind zertifiziert Darlehen Darlehensgeber, die Kredite an Unternehmen Darlehen, persönliche Darlehen, guten und schlechten Krediten online gesicherte Darlehen für weltweite Einwohner mit schlechter und guter Bonität oder Konkurs Menschen auf eine sehr reduzierte Zinssatz von 3%. Diese Darlehen sind Angebot aus dem Bereich von 5000,00 € bis zu 10.000.000,00 €. Wir bieten Kredite an Einzelpersonen nur schweren aufgeschlossen. Auch, wenn Sie sich für den Erhalt eines Darlehens Sie sind uns mit unserem Unternehmen per E-Mail an: (enquiry@unionsloans.com) interessiert 
+---
+ mm/slub.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Für die Bedingungen und Konditionen, wie man das macht. 
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2010-03-24 16:10:32.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-03-24 16:13:06.000000000 -0500
+@@ -3648,10 +3648,10 @@ static int add_location(struct loc_track
+ }
 
-Mit freundlichen Grüßen, 
-Herr Curtis Smith 
-Managing Director 
-Company No 04550760 
-Adresse: 17 Burn Walk Burham Buckinghamshire SL1 7EW 
-Herkunftsland: Vereinigtes Königreich 
-E-Mail: info@unionsloans.com 
+ static void process_slab(struct loc_track *t, struct kmem_cache *s,
+-		struct page *page, enum track_item alloc)
++		struct page *page, enum track_item alloc,
++		unsigned long *map)
+ {
+ 	void *addr = page_address(page);
+-	DECLARE_BITMAP(map, page->objects);
+ 	void *p;
 
-Copyright © 2010 Union Financial Service.
+ 	bitmap_zero(map, page->objects);
+@@ -3670,8 +3670,10 @@ static int list_locations(struct kmem_ca
+ 	unsigned long i;
+ 	struct loc_track t = { 0, 0, NULL };
+ 	int node;
++	unsigned long *map = kmalloc(BITS_TO_LONGS(oo_objects(s->max)) *
++				sizeof(unsigned long), GFP_KERNEL);
+
+-	if (!alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
++	if (!map || !alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
+ 			GFP_TEMPORARY))
+ 		return sprintf(buf, "Out of memory\n");
+
+@@ -3688,9 +3690,9 @@ static int list_locations(struct kmem_ca
+
+ 		spin_lock_irqsave(&n->list_lock, flags);
+ 		list_for_each_entry(page, &n->partial, lru)
+-			process_slab(&t, s, page, alloc);
++			process_slab(&t, s, page, alloc, map);
+ 		list_for_each_entry(page, &n->full, lru)
+-			process_slab(&t, s, page, alloc);
++			process_slab(&t, s, page, alloc, map);
+ 		spin_unlock_irqrestore(&n->list_lock, flags);
+ 	}
 
