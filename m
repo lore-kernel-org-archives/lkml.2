@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab0CXDWv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 23:22:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56036 "EHLO mx2.suse.de"
+	id S1754760Ab0CXDW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 23:22:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33000 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754710Ab0CXDWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 23:22:49 -0400
+	id S1751177Ab0CXDWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 23:22:54 -0400
 From: NeilBrown <neilb@suse.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Date: Wed, 24 Mar 2010 14:20:08 +1100
-Subject: [PATCH 1/3] sysfs: simplify handling for s_active refcount
+Subject: [PATCH 2/3] sysfs: make s_count a kref
 Cc: linux-kernel@vger.kernel.org
-Message-ID: <20100324032008.2136.52640.stgit@notabene.brown>
+Message-ID: <20100324032008.2136.15346.stgit@notabene.brown>
 In-Reply-To: <20100324031829.2136.66489.stgit@notabene.brown>
 References: <20100324031829.2136.66489.stgit@notabene.brown>
 User-Agent: StGit/0.15
@@ -22,152 +22,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-s_active counts the number of active references to a 'sysfs_direct'.
-When we wish to deactivate a sysfs_direct, we subtract a large
-number for the refcount so it will always appear negative.  When
-it is negative, new references will not be taken.
-After that subtraction, we wait for all the active references to
-drain away.
-
-The subtraction of the large number contains exactly the same
-information as the setting of the flag SYSFS_FLAG_REMOVED.
-(We know this as we already assert that SYSFS_FLAG_REMOVED is set
-before adding the large-negative-bias).
-So doing both is pointless.
-
-By starting s_active with a value of 1, not 0 (as is typical of
-reference counts) and using atomic_inc_not_zero, we can significantly
-simplify the code while keeping exactly the same functionality.
+s_count in sysfs behaves exactly like a kref, so change it to
+be one.
+This requires adding a KREF_INIT macro to kref.h
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- fs/sysfs/dir.c   |   60 ++++++++++++++----------------------------------------
- fs/sysfs/sysfs.h |    2 --
- 2 files changed, 16 insertions(+), 46 deletions(-)
+ fs/sysfs/dir.c       |   12 +++++++++---
+ fs/sysfs/mount.c     |    2 +-
+ fs/sysfs/sysfs.h     |   15 +++++++--------
+ include/linux/kref.h |    1 +
+ 4 files changed, 18 insertions(+), 12 deletions(-)
 
 diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 5907178..76a2d10 100644
+index 76a2d10..63790ac 100644
 --- a/fs/sysfs/dir.c
 +++ b/fs/sysfs/dir.c
-@@ -95,26 +95,13 @@ static void sysfs_unlink_sibling(struct sysfs_dirent *sd)
-  */
- struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
- {
--	if (unlikely(!sd))
-+	if (likely(sd)
-+	    && (sd->s_flags & SYSFS_FLAG_REMOVED) == 0
-+	    && atomic_inc_not_zero(&sd->s_active)) {
-+		rwsem_acquire_read(&sd->dep_map, 0, 1, _RET_IP_);
-+		return sd;
-+	} else
- 		return NULL;
--
--	while (1) {
--		int v, t;
--
--		v = atomic_read(&sd->s_active);
--		if (unlikely(v < 0))
--			return NULL;
--
--		t = atomic_cmpxchg(&sd->s_active, v, v + 1);
--		if (likely(t == v)) {
--			rwsem_acquire_read(&sd->dep_map, 0, 1, _RET_IP_);
--			return sd;
--		}
--		if (t < 0)
--			return NULL;
--
--		cpu_relax();
--	}
+@@ -177,8 +177,14 @@ static void sysfs_free_ino(ino_t ino)
+ 	spin_unlock(&sysfs_ino_lock);
  }
  
- /**
-@@ -126,34 +113,26 @@ struct sysfs_dirent *sysfs_get_active(struct sysfs_dirent *sd)
-  */
- void sysfs_put_active(struct sysfs_dirent *sd)
+-void release_sysfs_dirent(struct sysfs_dirent * sd)
++static void no_recurse(struct kref *kref)
  {
--	struct completion *cmpl;
--	int v;
--
- 	if (unlikely(!sd))
- 		return;
++}
++void release_sysfs_dirent(struct kref *count)
++{
++	struct sysfs_dirent *sd = container_of(count,
++					       struct sysfs_dirent,
++					       s_count);
+ 	struct sysfs_dirent *parent_sd;
  
- 	rwsem_release(&sd->dep_map, 1, _RET_IP_);
--	v = atomic_dec_return(&sd->s_active);
--	if (likely(v != SD_DEACTIVATED_BIAS))
--		return;
--
--	/* atomic_dec_return() is a mb(), we'll always see the updated
--	 * sd->s_sibling.
--	 */
--	cmpl = (void *)sd->s_sibling;
--	complete(cmpl);
-+	if (atomic_dec_and_test(&sd->s_active)) {
-+		struct completion *cmpl = (void*)sd->s_sibling;
-+		complete(cmpl);
-+	}
+  repeat:
+@@ -199,7 +205,7 @@ void release_sysfs_dirent(struct sysfs_dirent * sd)
+ 	kmem_cache_free(sysfs_dir_cachep, sd);
+ 
+ 	sd = parent_sd;
+-	if (sd && atomic_dec_and_test(&sd->s_count))
++	if (sd && kref_put(&sd->s_count, no_recurse))
+ 		goto repeat;
  }
  
- /**
-  *	sysfs_deactivate - deactivate sysfs_dirent
-  *	@sd: sysfs_dirent to deactivate
-  *
-- *	Deny new active references and drain existing ones.
-+ *	New active references are already denied.
-+ *      Drop ours and drain other existing ones.
-  */
- static void sysfs_deactivate(struct sysfs_dirent *sd)
- {
- 	DECLARE_COMPLETION_ONSTACK(wait);
--	int v;
- 
- 	BUG_ON(sd->s_sibling || !(sd->s_flags & SYSFS_FLAG_REMOVED));
- 
-@@ -163,20 +142,13 @@ static void sysfs_deactivate(struct sysfs_dirent *sd)
- 	sd->s_sibling = (void *)&wait;
- 
- 	rwsem_acquire(&sd->dep_map, 0, 0, _RET_IP_);
--	/* atomic_add_return() is a mb(), put_active() will always see
--	 * the updated sd->s_sibling.
--	 */
--	v = atomic_add_return(SD_DEACTIVATED_BIAS, &sd->s_active);
--
--	if (v != SD_DEACTIVATED_BIAS) {
--		lock_contended(&sd->dep_map, _RET_IP_);
--		wait_for_completion(&wait);
--	}
-+	sysfs_put_active(sd);
-+	lock_contended(&sd->dep_map, _RET_IP_);
-+	wait_for_completion(&wait);
- 
- 	sd->s_sibling = NULL;
- 
- 	lock_acquired(&sd->dep_map, _RET_IP_);
--	rwsem_release(&sd->dep_map, 1, _RET_IP_);
- }
- 
- static int sysfs_alloc_ino(ino_t *pino)
-@@ -318,7 +290,7 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type)
+@@ -289,7 +295,7 @@ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type)
+ 	if (sysfs_alloc_ino(&sd->s_ino))
  		goto err_out2;
  
- 	atomic_set(&sd->s_count, 1);
--	atomic_set(&sd->s_active, 0);
-+	atomic_set(&sd->s_active, 1);
+-	atomic_set(&sd->s_count, 1);
++	kref_init(&sd->s_count);
+ 	atomic_set(&sd->s_active, 1);
  
  	sd->s_name = name;
- 	sd->s_mode = mode;
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 0cb1088..07bff03 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -33,7 +33,7 @@ static const struct super_operations sysfs_ops = {
+ 
+ struct sysfs_dirent sysfs_root = {
+ 	.s_name		= "",
+-	.s_count	= ATOMIC_INIT(1),
++	.s_count	= KREF_INIT,
+ 	.s_flags	= SYSFS_DIR,
+ 	.s_mode		= S_IFDIR | S_IRWXU | S_IRUGO | S_IXUGO,
+ 	.s_ino		= 1,
 diff --git a/fs/sysfs/sysfs.h b/fs/sysfs/sysfs.h
-index 30f5a44..6a2a60e 100644
+index 6a2a60e..f003a88 100644
 --- a/fs/sysfs/sysfs.h
 +++ b/fs/sysfs/sysfs.h
-@@ -71,8 +71,6 @@ struct sysfs_dirent {
- 	struct sysfs_inode_attrs *s_iattr;
- };
+@@ -49,7 +49,7 @@ struct sysfs_inode_attrs {
+  * requires s_active reference.
+  */
+ struct sysfs_dirent {
+-	atomic_t		s_count;
++	struct kref		s_count;
+ 	atomic_t		s_active;
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+@@ -140,7 +140,7 @@ struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
+ 				      const unsigned char *name);
+ struct sysfs_dirent *sysfs_new_dirent(const char *name, umode_t mode, int type);
  
--#define SD_DEACTIVATED_BIAS		INT_MIN
--
- #define SYSFS_TYPE_MASK			0x00ff
- #define SYSFS_DIR			0x0001
- #define SYSFS_KOBJ_ATTR			0x0002
+-void release_sysfs_dirent(struct sysfs_dirent *sd);
++void release_sysfs_dirent(struct kref *count);
+ 
+ int sysfs_create_subdir(struct kobject *kobj, const char *name,
+ 			struct sysfs_dirent **p_sd);
+@@ -151,18 +151,17 @@ int sysfs_rename(struct sysfs_dirent *sd,
+ 
+ static inline struct sysfs_dirent *__sysfs_get(struct sysfs_dirent *sd)
+ {
+-	if (sd) {
+-		WARN_ON(!atomic_read(&sd->s_count));
+-		atomic_inc(&sd->s_count);
+-	}
++	if (sd)
++		kref_get(&sd->s_count);
++
+ 	return sd;
+ }
+ #define sysfs_get(sd) __sysfs_get(sd)
+ 
+ static inline void __sysfs_put(struct sysfs_dirent *sd)
+ {
+-	if (sd && atomic_dec_and_test(&sd->s_count))
+-		release_sysfs_dirent(sd);
++	if (sd)
++		kref_put(&sd->s_count, release_sysfs_dirent);
+ }
+ #define sysfs_put(sd) __sysfs_put(sd)
+ 
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 13003ee..b006f74 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -25,4 +25,5 @@ void kref_init(struct kref *kref);
+ void kref_get(struct kref *kref);
+ int kref_put(struct kref *kref, void (*release) (struct kref *kref));
+ 
++#define KREF_INIT {ATOMIC_INIT(1)}
+ #endif /* _KREF_H_ */
 
 
