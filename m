@@ -1,17 +1,17 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754101Ab0CWSNR (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 23 Mar 2010 14:13:17 -0400
-Received: from [196.3.96.162] ([196.3.96.162]:55744 "EHLO mail.up.ac.mz"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751578Ab0CWSNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 14:13:16 -0400
-From: "e-world Help Loan bank" <lapo@up.ac.mz>
-Reply-To: worldhelp.loan@iluoqi.com
-Subject: Get Your Loan @3% Offer
-Date: Tue, 23 Mar 2010 18:43:16 +0200
-Message-Id: <20100323164317.M89813@up.ac.mz>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 41.220.68.1 (helpdesk@up.ac.mz)
+	id S932194Ab0CXQNH (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 24 Mar 2010 12:13:07 -0400
+Received: from vilab.hit.edu.cn ([202.118.250.15]:38428 "EHLO vilab.hit.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932070Ab0CXQNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:13:05 -0400
+From: "global loan company" <info@loan.com>
+Reply-To: loandept100@w.cn
+Subject: Loan Offer
+Date: Wed, 24 Mar 2010 23:54:19 +0800
+Message-Id: <20100324155442.M80014@loan.com>
+X-Mailer: OpenWebMail 2.53-B2D 
+X-OriginatingIP: 41.203.64.17 (qhliu)
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset=utf-8
@@ -22,5 +22,5 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-Get Your Loan @3% Offer, Interested Please  Contact Us
+contact us for 2% interest rate loan.
 
