@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab0CXLcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 07:32:55 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53591 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab0CXLcy convert rfc822-to-8bit (ORCPT
+	id S1755736Ab0CXLeM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 07:34:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35471 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754275Ab0CXLeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 07:32:54 -0400
-Subject: Re: [patch 2/2] x86,pat Convert memtype_lock into an rw_lock.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "holt@sgi.com" <holt@sgi.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>
-In-Reply-To: <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
-References: <ff8c11be-b22d-4849-9b19-d9107c4fea47@email.android.com>
-	 <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Mar 2010 12:32:27 +0100
-Message-ID: <1269430347.5109.164.camel@twins>
+	Wed, 24 Mar 2010 07:34:11 -0400
+Date: Wed, 24 Mar 2010 11:37:21 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Amit Shah <amit.shah@redhat.com>,
+       linuxppc-dev@ozlabs.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
+ hvc_remove
+Message-ID: <20100324113721.008d343e@lxorguk.ukuu.org.uk>
+In-Reply-To: <1269119079.8599.65.camel@pasglop>
+References: <20100319151326.GC8541@kroah.com>
+	<1269011916-8836-4-git-send-email-gregkh@suse.de>
+	<1269119079.8599.65.camel@pasglop>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-17 at 16:19 -0800, Suresh Siddha wrote:
-> On Wed, 2010-03-17 at 12:51 -0700, H. Peter Anvin wrote:
-> > Well, as you know :) tglx and I are on the road ... I'll try to get to it on Friday before I take off again.
+On Sun, 21 Mar 2010 08:04:39 +1100
+Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+
+> On Fri, 2010-03-19 at 08:18 -0700, Greg Kroah-Hartman wrote:
+> > From: Amit Shah <amit.shah@redhat.com>
+> > 
+> > Alan pointed out a race in the code where hvc_remove is invoked. The
+> > recent virtio_console work is the first user of hvc_remove().
 > 
-> Also I talked to Thomas about this rwlock conversion and he referred to
-> RT issues with rwlock. And the best is to avoid this using RCU.
+> This causes hangs during boot on pseries machines. Haven't had a chance
+> to track that down yet, but please revert
+> e74d098c66543d0731de62eb747ccd5b636a6f4c for now.
 
-Its not just RT, even for mainline rwlock_t is a massive pain and often
-is no better (actually worse) than a spinlock due to the massive
-cacheline bouncing it introduces.
+Its an exploitable hole so we should revert both the bug fix *and* the
+submission of the virtio console that makes the flaw triggerable, not jus
+tthe security fix.
 
-
+Alan
