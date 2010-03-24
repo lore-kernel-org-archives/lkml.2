@@ -1,129 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0CXJ4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 05:56:11 -0400
-Received: from bohort.kerlabs.com ([62.160.40.57]:47420 "EHLO
-	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab0CXJ4I (ORCPT
+	id S1755348Ab0CXKXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:23:00 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:56799 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257Ab0CXKW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 05:56:08 -0400
-Date: Wed, 24 Mar 2010 10:56:09 +0100
-From: Louis Rilling <Louis.Rilling@kerlabs.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Linux Containers <containers@lists.osdl.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] linux-cr: nested pid namespaces (v3)
-Message-ID: <20100324095609.GU19240@hawkmoon.kerlabs.com>
-Mail-Followup-To: "Serge E. Hallyn" <serge@hallyn.com>,
-	Linux Containers <containers@lists.osdl.org>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20100323051839.GA16123@us.ibm.com> <20100323071431.GC4242@localdomain> <20100323135244.GA20910@hallyn.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="=_bohort-9795-1269424482-0001-2"
+	Wed, 24 Mar 2010 06:22:59 -0400
+Date: Wed, 24 Mar 2010 15:52:52 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Mel Gorman <mel@csn.ul.ie>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Oleg Nesterov <oleg@redhat.com>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v1 7/10] Uprobes Implementation
+Message-ID: <20100324102252.GA10710@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
+ <20100320142617.11427.23852.sendpatchset@localhost6.localdomain6>
+ <1269342115.5279.1620.camel@twins>
+ <20100323122335.GB26762@linux.vnet.ibm.com>
+ <1269352012.5109.22.camel@twins>
+ <4BA8CE39.8050203@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100323135244.GA20910@hallyn.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BA8CE39.8050203@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+> Anyway, the patch order looks a bit odd, because user_bkpt uses XOL
+> but XOL patch is introduced after user_bkpt patch...
+> 
+user_bkpt provides xol strategy.
 
---=_bohort-9795-1269424482-0001-2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+user_bkpt_xol patch only provides slot allocation for Execution out of
+line strategy.  It doesnt implement execution out of line strategy.
+The current implementation assumes that we pass the user_bkpt structure
+as an argument while allocating/freeing a slot.
 
-On 23/03/10  8:52 -0500, Serge E. Hallyn wrote:
-> Quoting Louis Rilling (Louis.Rilling@kerlabs.com):
->=20
-> Hi Louis, thanks again for reviewing.
+user_bkpt knows how to handle execution out of line. Its working is
+independent of how and where the slot is allocated.  The field xol_vaddr
+points to a location which holds the copy of the instruction to be
+single-stepped/executed.
 
-No problem, thanks to you for your patience.
+Hence user_bkpt patch was followed by user_bkpt_xol patch.
 
->=20
-> > To me the real reason is to anticipate pid namespace unsharing. And this
-> > together with setns() will need to re-consider much of the namespace C/R
-> > logic imho. For instance, checkpoint could be done from a foreign task
-> > having entered the container, leak detection should take such foreign
-> > tasks into account (see example below), etc.
->=20
-> ...
->=20
-> > > =20
-> > > @@ -293,10 +295,15 @@ static int may_checkpoint_task(struct ckpt_ctx =
-*ctx, struct task_struct *t)
-> > >  		_ckpt_err(ctx, -EPERM, "%(T)Nested net_ns unsupported\n");
-> > >  		ret =3D -EPERM;
-> > >  	}
-> > > -	/* no support for >1 private pidns */
-> > > -	if (nsproxy->pid_ns !=3D ctx->root_nsproxy->pid_ns) {
-> > > -		_ckpt_err(ctx, -EPERM, "%(T)Nested pid_ns unsupported\n");
-> > > -		ret =3D -EPERM;
-> > > +	/* pidns must be descendent of root_nsproxy */
-> > > +	pidns =3D nsproxy->pid_ns;
-> >=20
-> > In case of unshared pid namespace, task_active_pid_ns(t) should be chec=
-ked
-> > instead of t->nsproxy->pid_ns: we can't checkpoint a foreign task.
->=20
-> Unsharing can only be done to a child ns, so it wouldn't be foreign.
-> Though of course that depends on which one ends up being the original
-> pid_ns (see below).
+--
+Thanks and Regards
+Srikar
 
-If task was created in an ancestor pid namespace of the checkpointed contai=
-ner,
-I call it foreign and I don't think that we want to checkpoint it together =
-with
-the container.
-
->=20
-> Now, regarding supporting unshared pid_ns, I think that (1) it will
-> be a simple matter of separately doing
-> 	pid_pidns =3D checkpoint_obj(task_active_pid_ns(task));
-> 	nsp_pidns =3D checkpoint_obj(task->nsproxy->pid_ns);
-> since we will need to record both.
-
-Agreed. As long as both of those namespaces are descendant of the container=
-'s
-root pid namespace.
-
-> In addition, (2) the most
-> recent emails I see on the topics are still unsure about whether
-> we want to have the unshared pid_ns be reflected in=20
-> ns_of_pid(task_pid(task)) or task->nsproxy->pid_ns, so I think
-> we'll just have to handle them when they are implemented.
-
-I did not notice any (convincing) argument in favor of changing
-ns_of_pid(task_pid(task)) (aka task_active_pid_ns(task)), and I like how Er=
-ic's
-proposal is simple to implement. But I agree with you that pid namespaces
-handling should not be re-worked before a more definitive approach is
-implemented.
-
-Thanks,
-
-Louis
-
---=20
-Dr Louis Rilling			Kerlabs
-Skype: louis.rilling			Batiment Germanium
-Phone: (+33|0) 6 80 89 08 23		80 avenue des Buttes de Coesmes
-http://www.kerlabs.com/			35700 Rennes
-
---=_bohort-9795-1269424482-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkup4bkACgkQVKcRuvQ9Q1SoFgCgiagwsx6zwewtv4CH9ltQeE+S
-MsEAoM5nHnCbbh2CGbsOVaBGbEdO9qe1
-=Tll5
------END PGP SIGNATURE-----
-
---=_bohort-9795-1269424482-0001-2--
+> Thank you,
+> 
+> -- 
+> Masami Hiramatsu
+> e-mail: mhiramat@redhat.com
+> 
