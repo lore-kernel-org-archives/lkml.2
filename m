@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750908Ab0CXEHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 00:07:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51405 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750782Ab0CXEHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 00:07:52 -0400
-Message-ID: <4BA98FA8.1040600@kernel.org>
-Date: Tue, 23 Mar 2010 21:06:00 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Dave Airlie <airlied@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: Can not boot with CONFIG_NO_BOOTMEM=y on i686
-References: <20100319131208.GA3911@dhcp-lab-161.englab.brq.redhat.com> <86802c441003201126j407eaf89j91cf91ae69454f30@mail.gmail.com> <20100323113551.GA3862@dhcp-lab-161.englab.brq.redhat.com>
-In-Reply-To: <20100323113551.GA3862@dhcp-lab-161.englab.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751029Ab0CXEKc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 00:10:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60143 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807Ab0CXEK3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 00:10:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=UWIcpe4QYzO9EAMJLbIA+s59h3K/thbxuGg5yfaNVPDvjFFnV7Z5Dg0NOTFRjg1Kp7
+         QKtD/Z8tG+9/O1fLIKkaWWwMGfzJLzUS9B8n8SDS/4e71w4czfBUkMVJO9liFXIIdLs3
+         SmmtNGCmvpL5GfvTGdf9eq315wPkiRPvYhnMs=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-alpha@vger.kernel.org, linux-xtensa-patches@linux-xtensa.org,
+       linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH] Replace old style lock initializer
+Date: Tue, 23 Mar 2010 21:10:10 -0700
+Message-Id: <1269403810-31037-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.6.5.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2010 04:35 AM, Stanislaw Gruszka wrote:
-> On Sat, Mar 20, 2010 at 11:26:06AM -0700, Yinghai Lu wrote:
->>> After update to 2.6.34-rc1, I was experimented by strange oopses during
->>> boot, what looked like memory corruption. Bisection shows that first bad
->>> commit is 59be5a8e8ce765cf739ec7f07176219972de7481 ("x86: Make 32bit
->>> support NO_BOOTMEM"). When I disable CONFIG_NO_BOOTMEM I'm able to start
->>> system. Not sure what info is need to track down this issue, so please
->>> let me know.
->>
->> can you check patch
->>
->> https://patchwork.kernel.org/patch/87081/
-> 
-> Patch helps somehow. Instead of many random oopses, now I have one and
-> the same oops, here is photo:
-> http://people.redhat.com/sgruszka/20100322_001.jpg
+I seem to be on some deprecated thing. So after searching 
+the kernel I found: 
+SPIN_LOCK_UNLOCKED is deprecated, and that __SPIN_LOCK_UNLOCKED
+should be used. My finding's have found this, so hopefully it's 
+legit.(the kernel compiles, but if anything else breaks
+am unsure due to not having this arch). 
 
-how does e820 look like?
 
-YH
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+---
+ arch/alpha/include/asm/rwsem.h  |    2 +-
+ arch/xtensa/include/asm/rwsem.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/alpha/include/asm/rwsem.h b/arch/alpha/include/asm/rwsem.h
+index 1570c0b..f9dd7fe 100644
+--- a/arch/alpha/include/asm/rwsem.h
++++ b/arch/alpha/include/asm/rwsem.h
+@@ -39,7 +39,7 @@ struct rw_semaphore {
+ };
+ 
+ #define __RWSEM_INITIALIZER(name) \
+-	{ RWSEM_UNLOCKED_VALUE, SPIN_LOCK_UNLOCKED, \
++	{ RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED, \
+ 	LIST_HEAD_INIT((name).wait_list) }
+ 
+ #define DECLARE_RWSEM(name) \
+diff --git a/arch/xtensa/include/asm/rwsem.h b/arch/xtensa/include/asm/rwsem.h
+index e39edf5..1b3865c 100644
+--- a/arch/xtensa/include/asm/rwsem.h
++++ b/arch/xtensa/include/asm/rwsem.h
+@@ -38,7 +38,7 @@ struct rw_semaphore {
+ };
+ 
+ #define __RWSEM_INITIALIZER(name) \
+-	{ RWSEM_UNLOCKED_VALUE, SPIN_LOCK_UNLOCKED, \
++	{ RWSEM_UNLOCKED_VALUE, __SPIN_LOCK_UNLOCKED, \
+ 	  LIST_HEAD_INIT((name).wait_list) }
+ 
+ #define DECLARE_RWSEM(name)		\
+-- 
+1.6.5.GIT
+
