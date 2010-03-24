@@ -1,113 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab0CXOpA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:45:00 -0400
-Received: from smtp-out5.blueyonder.co.uk ([195.188.213.8]:59871 "EHLO
-	smtp-out5.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756031Ab0CXOo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:44:58 -0400
-Message-ID: <4BAA2566.4040905@blueyonder.co.uk>
-Date: Wed, 24 Mar 2010 14:44:54 +0000
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.7 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
+	id S1756401Ab0CXOut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:50:49 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51204 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab0CXOus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:50:48 -0400
+Date: Wed, 24 Mar 2010 14:50:29 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone
+	pressure
+Message-ID: <20100324145028.GD2024@csn.ul.ie>
+References: <20100322235053.GD9590@csn.ul.ie> <4BA940E7.2030308@redhat.com>
 MIME-Version: 1.0
-To: LKML Mailing List <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-x86_64@vger.kernel.org
-Subject: Re: Fwd: Re: Boot failure 2.6.33 - 2.6.33-git12 - 2.6.34-rc2 inclusive
-References: <4B9A4337.9030609@blueyonder.co.uk> <4BA233A9.1030407@blueyonder.co.uk>
-In-Reply-To: <4BA233A9.1030407@blueyonder.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BA940E7.2030308@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem still exists at 2.6.34-rc2.
-Motherboard/CPU/memory has been changed to Asus Crosshair III/AMD
-Phenom(tm) II X4 965 Processor/8GB DDR3. Rebuilt kernel on the new
-motherboard.
-Regards
-Sid.
+On Tue, Mar 23, 2010 at 06:29:59PM -0400, Rik van Riel wrote:
+> On 03/22/2010 07:50 PM, Mel Gorman wrote:
+>
+>> Test scenario
+>> =============
+>> X86-64 machine 1 socket 4 cores
+>> 4 consumer-grade disks connected as RAID-0 - software raid. RAID controller
+>> 	on-board and a piece of crap, and a decent RAID card could blow
+>> 	the budget.
+>> Booted mem=256 to ensure it is fully IO-bound and match closer to what
+>> 	Christian was doing
+>
+> With that many disks, you can easily have dozens of megabytes
+> of data in flight to the disk at once.  That is a major
+> fraction of memory.
+>
 
-On 18/03/10 14:07, Sid Boyce wrote:
-> Still no response to this problem and I still have it with
-> 2.6.34-rc1-git6. I also upgraded to the latest 2402 motherboard BIOS.
-> Regards
-> Sid.
-> 
-> 
-> On 12/03/10 13:35, Sid Boyce wrote:
->>
->>
->> -------- Original Message --------
->> Subject: Re: Boot failure 2.6.33 - 2.6.33-git12 inclusive
->> Date: Fri, 12 Mar 2010 11:01:55 +0800
->> From: Américo Wang <xiyou.wangcong@gmail.com>
->> To: sboyce@blueyonder.co.uk
->> CC: Kernel Testers List <kernel-testers@vger.kernel.org>, "Rafael J.
->> Wysocki" <rjw@sisk.pl>, 	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar
->> <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
->>
->> On Fri, Mar 12, 2010 at 6:49 AM, Sid Boyce <sboyce@blueyonder.co.uk> wrote:
->>> Same problem up to 2.6.33-git15 and 2.6.34-rc1. No response since posted
->>> to LKML last week.
->>> --------------------------------------------------
->>
->>
->> You need to Cc x86 people. Added.
->>
->>
->>>
->>> Asus Crosshair II motherboard, 4xCPU 8Gig storage fails, the M2N32-SLI
->>> 2x CPU, 4 Gig and laptop 2x CPU, 2 Gig have no problems running
->>> 2.6.33-git11 - all AMD CPU's.
->>> Lockup requiring a hard reset.
->>>
->>> TCP cubic registered
->>> registered taskstats version 1
->>> Kmemleak: kernel memory leak detector initialized
->>> Kmemleak: Automatic memory scanning thread started
->>> No TPM chip found, activating TPM-bypass!
->>> Freeing unused kernel memory: 688K freed
->>> Write Protecting kernel memory read-only data: 6144K
->>> Testing CPA: undo ffffffff81000000 - ffffffff81600000
->>> Testing CPA: again
->>> Freeing unused kernel memory: 964K freed
->>> Freeing unused kernel memory: 212K freed
->>> init[1] segfault at ffffffff8100eea8 ip ffffffff8100eea8 sp
->>> 00007fff62e804b8 error 15
->>> kernel panic - not syncing: Attempted to kill init!
->>> Pid: 1,comm: init not tainted 2.6.33-git12-smp #2
->>> Call Trace:
->>> [<ffffffff81300876>] panic+0x73/0xfa
->>> [<ffffffff8104b45c>] do_exit+0x6d/0x713
->>> [<ffffffff8104bd85>] do_group_exit+0x72/0x9b
->>> [<ffffffff8105917e>] get_signal_to_deliver+0x356/0x375
->>> [<ffffffff8130310b>] ? _raw_spin_unlock_irqrestore+0x2f/0x34
->>> [<ffffffff81007fc3>] do_signal+0x6d/0x660
->>> [<ffffffff81300939>] ? printk+0x3c/0x43
->>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->>> [<ffffffff81300939>] ? printk+0x3c/0x43
->>> [<ffffffff8102b78c>] ? __bad_area_nosemaphore+0x183/0x1ad
->>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->>> [<ffffffff810085fc>] do_notify_resume+0x27/0x69
->>> [<ffffffff8130351c>] retint_signal+0x48/0x8c
->>> [<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
->>>
->>> Regards
->>> Sid.
->>> --
-> 
-> 
+That is easily possible. Note, I'm not maintaining this workload configuration
+is a good idea.
 
+The background to this problem is Christian running a disk-intensive iozone
+workload over many CPUs and disks with limited memory. It's already known
+that if he added a small amount of extra memory, the problem went away.
+The problem was a massive throughput regression and a bisect pinpointed
+two patches (both mine) but neither make sense. One altered the order pages
+come back from lists but not availability and his hardware does no automatic
+merging. A second does alter the availility of pages via the per-cpu lists
+but reverting the behaviour didn't help.
+
+The first fix to this was to replace congestion_wait with a waitqueue
+that woke up processes if the watermarks were met. This fixed
+Christian's problem but Andrew wants to pin the underlying cause.
+
+I strongly suspect that evict-once behaves sensibly when memory is ample
+but in this particular case, it's not helping.
+
+> In fact, you might have all of the inactive file pages under
+> IO...
+>
+
+Possibly. The tests have a write and a read phase but I wasn't
+collecting the data with sufficient granularity to see which of the
+tests are actually stalling.
+
+>> 3. Page reclaim evict-once logic from 56e49d21 hurts really badly
+>> 	fix title: revertevict
+>> 	fixed in mainline? no
+>> 	affects: 2.6.31 to now
+>>
+>> 	For reasons that are not immediately obvious, the evict-once patches
+>> 	*really* hurt the time spent on congestion and the number of pages
+>> 	reclaimed. Rik, I'm afaid I'm punting this to you for explanation
+>> 	because clearly you tested this for AIM7 and might have some
+>> 	theories. For the purposes of testing, I just reverted the changes.
+>
+> The patch helped IO tests with reasonable amounts of memory
+> available, because the VM can cache frequently used data
+> much more effectively.
+>
+> This comes at the cost of caching less recently accessed
+> use-once data, which should not be an issue since the data
+> is only used once...
+>
+
+Indeed. With or without evict-once, I'd have an expectation of all the
+pages being recycled anyway because of the amount of data involved.
+
+>> Rik, any theory on evict-once?
+>
+> No real theories yet, just the observation that your revert
+> appears to be buggy (see below) and the possibility that your
+> test may have all of the inactive file pages under IO...
+>
+
+Bah. I had the initial revert right and screwed up reverting from
+2.6.32.10 on. I'm rerunning the tests. Is this right?
+
+-       if (is_active_lru(lru)) {
+-               if (inactive_list_is_low(zone, sc, file))
+-                   shrink_active_list(nr_to_scan, zone, sc, priority, file);
++       if (is_active_lru(lru)) {
++               shrink_active_list(nr_to_scan, zone, sc, priority, file);
+                return 0;
+
+
+> Can you reproduce the stall if you lower the dirty limits?
+>
+
+I'm rerunning the revertevict patches at the moment. When they complete,
+I'll experiment with dirty limits. Any suggested values or will I just
+increase it by some arbitrary amount and see what falls out? e.g.
+increse dirty_ratio to 80.
+
+>>   static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
+>>   	struct zone *zone, struct scan_control *sc, int priority)
+>>   {
+>>   	int file = is_file_lru(lru);
+>>
+>> -	if (is_active_lru(lru)) {
+>> -		if (inactive_list_is_low(zone, sc, file))
+>> -		    shrink_active_list(nr_to_scan, zone, sc, priority, file);
+>> +	if (lru == LRU_ACTIVE_FILE) {
+>> +		shrink_active_list(nr_to_scan, zone, sc, priority, file);
+>>   		return 0;
+>>   	}
+>
+> Your revert is buggy.  With this change, anonymous pages will
+> never get deactivated via shrink_list.
+>
+
+/me slaps self
 
 -- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
