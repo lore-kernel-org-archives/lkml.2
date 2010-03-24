@@ -1,136 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab0CXNYH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 09:24:07 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:43560 "EHLO
+	id S1756230Ab0CXN2W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 09:28:22 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:35211 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab0CXNYE convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756100Ab0CXN2U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 09:24:04 -0400
+	Wed, 24 Mar 2010 09:28:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=WHbFDkGrO/0AyTshq4htAxl05b60HqtZs1Cq5Zx7Pi5UUsECuslR+Aazzm4aAK5lv0
-         d1C0N/mGWyjAzzNRKBG47VEjOel5S6lNm0GL01weDAFLB7rC4y8ltiXtlkU64t7FS1Xr
-         nFBzVa4QNOyjwGOUFJCTeX3rqM0b2YzozLwbY=
+        b=HenEcEduTkVcKocvkXAnAwRhLHfnEJeVqTz7ZpGvGcGpI7yysli925GgWsYp1nQjGS
+         cLazc0h3QcmB0jQZCcG/BTkEgm29pUqiL/Qk5XzDOaS0YDClIpctGRTLMZrpTF+AJIGu
+         brJKZH3pmwN6nynCk7pQb04kQQEoc8oH5foOQ=
 MIME-Version: 1.0
-In-Reply-To: <201003241412.38128.linux@rainbow-software.org>
-References: <201003221601.36559.linux@rainbow-software.org>
-	 <201003231609.57505.linux@rainbow-software.org>
-	 <a32f33a41003230815v1870a371oef9392806b5b2248@mail.gmail.com>
-	 <201003241412.38128.linux@rainbow-software.org>
-Date: Wed, 24 Mar 2010 14:24:00 +0100
-Message-ID: <a32f33a41003240624u204cfd71jbf2effbd09ff220a@mail.gmail.com>
-Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW 
-	encryption by default
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: rt2x00 Users List <users@rt2x00.serialmonkey.com>,
-       linux-kernel@vger.kernel.org
+In-Reply-To: <48A28051AC6D7A48B64F28272458190324FE9F@Exchange-IL.n-trig.com>
+References: <1269260173-2543-1-git-send-email-micki@n-trig.com> 
+	<20100322172920.GA18658@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEE8@Exchange-IL.n-trig.com> 
+	<20100322181722.GA24483@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEEB@Exchange-IL.n-trig.com> 
+	<4BA7D666.5030608@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190326DEEE@Exchange-IL.n-trig.com> 
+	<4BA7E747.4040008@seas.upenn.edu> <48A28051AC6D7A48B64F28272458190324FE9F@Exchange-IL.n-trig.com>
+From: Mohamed Ikbel Boulabiar <boulabiar@gmail.com>
+Date: Wed, 24 Mar 2010 14:27:58 +0100
+Message-ID: <45cc95261003240627i1c1c9a8y6f5dc78eddf67e32@mail.gmail.com>
+Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to driver
+To: Micki Balanga <micki@n-trig.com>
+Cc: Rafi Rubin <rafi@seas.upenn.edu>, jkosina@suse.cz, chatty@enac.fr,
+       peterhuewe@gmx.de, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Henrik Rydberg <rydberg@euromail.se>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 2:12 PM, Ondrej Zary <linux@rainbow-software.org> wrote:
-> On Tuesday 23 March 2010, Ivo Van Doorn wrote:
->> On Tue, Mar 23, 2010 at 4:09 PM, Ondrej Zary <linux@rainbow-software.org>
-> wrote:
->> > On Tuesday 23 March 2010, Ivo Van Doorn wrote:
->> >> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
->> >>
->> >> <linux@rainbow-software.org> wrote:
->> >> > On Monday 22 March 2010, Ivo Van Doorn wrote:
->> >> >> >> But I though it was mentioned that disabling HW crypto didn't
->> >> >> >> solve the issue due to a second bug in a later kernel?
->> >> >> >
->> >> >> > That was a false positive. Probably because the device was not
->> >> >> > unplugged between the tests (and looks like the driver does not
->> >> >> > initialize the chip completely). It's not reliable, it sometimes
->> >> >> > stops working after reboot.
->> >> >>
->> >> >> Ah well that at least simplifies the problem. I'll have to retest
->> >> >> rt2500usb soon to see why the HW crypto failed. I am sure I had it
->> >> >> working for WEP, WPA and WPA2
->> >> >> before I submitted the patch.
->> >> >
->> >> > So let's try to fix it instead of disabling.
->> >> >
->> >> > First, the unrealiability (keeping HW encryption disabled). With the
->> >> > driver loaded but not doing anything more, the register dumps are same
->> >> > for both working and non-working case (dump-init.txt).
->> >> >
->> >> > dump-good-connected.txt is a dump after successful association and
->> >> > DHCP dump-bad-attempt.txt is a dump after successful association
->> >> > during non-working DHCP attempt
->> >> > dump-bad-after.txt is a dump after DHCP timed out
->> >>
->> >> With association working, but DHCP failing it most likely means that
->> >> somehow the frame was malformatted.
->> >> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
->> >> And that is commonly the source of
->> >> problems, because what has to be done depends heavily on the encryption
->> >> type.
->> >>
->> >> So could you verify which of the encryption types (WEP,WPA,WPA2) is
->> >> failing or working? That would give a starting
->> >> position on which bytes might be corrupted.
->> >
->> > I was testing only with WPA2 before. I did some more testing today. The
->> > results:
->> >
->> > No encryption - works always
->> > WEP - sometimes works, sometimes not - same with and without HW
->> > encryption WPA - sometimes works, sometimes not - same with and without
->> > HW encryption WPA2 - never works with HW encryption
->> >     - sometimes works, sometimes not without HW encryptionn
->> >
->> > So it seems that there are two problems:
->> >  1. random problems with any encryption
->> >  2. WPA2 is broken with HW encryption
->> >
->> > When the "random" problem appears, this appears in dmesg:
->> > wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
->> > wlan1: authenticated
->> > wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
->> > wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0 aid=2)
->> > wlan1: associated
->> > phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state
->> > 3 (-16). phy0 -> rt2500usb_set_device_state: Error - Device failed to
->> > enter state 3 (-16). No probe response from AP 00:13:d4:0f:f3:17 after
->> > 500ms, disconnecting.
->> >
->> > Disabling call to rt2500usb_set_state() in rt2500usb_set_device_state()
->> > seems to fix problem 1. After this change, WEP and WPA work always
->> > regardless of HW encryption (and WPA2 works always without it).
->>
->> Ok, lets focus on the HW crypto for now.
->>
->> If WPA2 fails, then the WPA2 specific code for IV/EIV/ICV isn't
->> working. Most likely
->> the device either doesn't send all data back to the driver (while the
->> driver does expect it)
->> or it adds additional data which the driver doesn't expect. (See
->> rt2x00crypto.c for the frame
->> manipulation during HW crypto).
->>
->> Could you check the full packet data of a DHCP request with and
->> without HW crypto?
->> That might give a clue about what the hardware is sending for extra data.
+Hi,
+
+Do you have any intention to add some more low level tracking in the driver ?
+
+I haven't followed all mails, I remember that a small algorithm for
+tracking was suggested by Rafi Rubin, but don't know if N-Trig
+developers can push more things inside the driver and provide a
+contact-id information inside events submission.
+
+Thanks,
+
+
+On Tue, Mar 23, 2010 at 3:43 PM, Micki Balanga <micki@n-trig.com> wrote:
+> N-trig driver can be used directly for Multi-Touch and Pen support.
+> Furthermore, in the coming weeks we'll provide an additional package
+> that will improve and enhance the system performance.
+> This package will support Linux events as well as Message Queue based
+> API for the benefit of the developers.
 >
-> How do I access the full packets? I tried using another machine with "iwconfig
-> wlan0 mode monitor" and tcpdump. It captured many packets and I'm unable to
-> identify the interesting ones.
-
-You won't get the useful stuff from monitor mode.
-You have to enable rt2x00 debugfs support, to find a framedump file in
-the rt2x00 debugfs folder.
-
-You should use the framedump tool from:
-http://kernel.org/pub/linux/kernel/people/ivd/tools/
-
-To get the frame dumps in nicely formatted lines for analysis.
-
-Ivo
+> -----Original Message-----
+> From: Rafi Rubin [mailto:rafi@seas.upenn.edu]
+> Sent: Monday, March 22, 2010 11:55 PM
+> To: Micki Balanga
+> Cc: jkosina@suse.cz; chatty@enac.fr; peterhuewe@gmx.de;
+> linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Henrik
+> Rydberg; Dmitry Torokhov
+> Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to driver
+>
+> On 03/22/2010 05:14 PM, Micki Balanga wrote:
+>> Hi
+>> first of all i am happy my explanation helps you to understand the
+>> necessity of fake finger report.
+>> The algorithm to analyze the information use complex math calculation,
+>> so it can't be transfer to the driver.
+>> (the driver should stay simple as possible, main purpose analyze USB
+>> message and transfer it to Linux events)
+>> As i mentioned before you talked about glitch a noise, which N-trig
+>> solution solve.
+>> The driver implement the necessary events needed by the user, in order
+>> to analyze touch events.
+>
+> I'm not really much of a judge of how to balance kernel vs user land
+> load.  Though I can certainly see why you would want to keep all
+> proprietary analysis to the user land and thus want to pass through
+> necessary events.  I was "encouraged" earlier to take a deeper look at
+> what I was writing, and determine if all that I was trying to send was
+> actually necessary or just me missing something.
+>
+> I will look more closely, and perhaps see if I can suggest modifications
+>
+> which include the events you need without breaking the existing
+> protocol.  Dmitry seems to be an authority on how input events should be
+>
+> used.  I'm still just learning myself.
+>
+> But this still leaves the point of lets try to keep the split input
+> devices.  It is still a cleaner abstraction than splitting in the user
+> space code.
+>
+>> About a question you raised before about set_feature location, it
+> should
+>> be done after the hw_start because
+>> if the HW start fail there is no reason to send the command. this
+>> command doesn't change the report descriptor size.
+>
+> I'm still not entirely sure of the ordering of things.  Users have sent
+> me the rdesc outputs from a device with 2.59 with and without your code
+> to enable MT, and it looked to me like the report descriptor was
+> different.  I can try to experiment with that.
+>
+> Can you specify conditions or versions which cause this failure?  It
+> would be nice to be able to see for myself, especially since removing
+> the naming and the quirk will disrupt quite a number of users.
+>
+> I do agree that the code should be more robust to bad conditions, so
+> please try it with:
+>
+>    list_for_each_entry(hidinput, &hdev->inputs, list) {
+> +      if (hidinput->report == NULL) {
+> +         dev_err(&hdev->dev, "NULL report\n");
+> +         continue;
+> +      }
+>
+> That way we'll have a graceful fallback for your needs without breaking
+> users.  And also, hopefully this will lead to finding any lingering
+> bugs.
+>
+>
+>> -----Original Message-----
+>> From: Rafi Rubin [mailto:rafi@seas.upenn.edu]
+>> Sent: Mon 3/22/2010 10:43 PM
+>> To: Micki Balanga
+>> Cc: jkosina@suse.cz; chatty@enac.fr; peterhuewe@gmx.de;
+>> linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Henrik
+> Rydberg
+>> Subject: Re: [PATCH 1/2] HID: N-trig Add set feature commands to
+> driver
+>>
+>> On 03/22/2010 03:58 PM, Micki Balanga wrote:
+>>  >
+>>  > Hi
+>>  > I would like to add more information about the Fake button.
+>>  > I will explain using this scenario:
+>>  > You touch the sensor with one finger and then remove the finger,
+>>  > Firmware will report six frames with fake fingers,(Indicate end of
+>> session)
+>>  > The driver will report this as fake fingers (Will send 3 events)
+> and
+>>  > input_sync
+>>  > to inform user space application that the user removed finger from
+>> sensor.
+>>  > this information is needed in order to analyze the data received
+> from
+>>  > N-trig firmware.
+>>  > Micki
+>>
+>> Thank you for taking this to a discussion format.
+>>
+>> It seems you have raised an issue that is an active discussion for
+> multi
+>> touch handling in general and an issue that I have considered for
+> n-trig
+>> support in specific.
+>>
+>>
+>> The current published version of the driver does send one more
+> sequence
+>> of events after it decides all fingers are off the screen. That final
+>> sequence is necessary to tell single touch drivers that the tools are
+>> released (BTN_TOUCH is set to zero, etc). This also resets the active
+>> contact count to zero for multi touch handlers, which look to see how
+>> many MT events come from each frame.
+>>
+>> I had observed that sometimes the tablet looses contacts semi
+>> arbitrarily, and we get a zero contact group as a mistake. In the
+>> patches I sent in early in February you will notice a solution that I
+>> was considering at the time. I was also playing with correcting for
+>> events that looked like real contacts but were also just noise. After
+>> rethinking my patches and reading the multi touch doc in the Documents
+>> tree, I chose to leave out these corrections.
+>>
+>> That being said, I do have a specific patch to handle the set of end
+> of
+>> stream events. All that's needed is to count the empty groups and send
+>> the terminal events only when a counter hits the specified value
+>> (attached is a tiny patch I wrote when I needed that feature back
+> really
+>> quickly when my screen started misbehaving during a meeting).
+>>
+>> Note I have submitted that as a patch for 2 reasons. First I couldn't
+>> be completely sure that there was a specific number of empty groups to
+>> signal end of stream which would be expected to be maintained over
+> time.
+>> And secondly the erroneous termination of stream has not been much of
+>> a problem in general.
+>>
+>> You will note, that this is something that is simple enough that it
+>> makes perfect sense to put into the kernel. There's little point in
+>> wasting the cycles to push that decision to user space.
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
