@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849Ab0CXHFz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 03:05:55 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60015 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752304Ab0CXHFy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 03:05:54 -0400
-Date: Wed, 24 Mar 2010 12:35:48 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       arighi@develer.com
-Subject: Re: [BUGFIX][PATCH] fix race in file_mapped accounting in memcg
-Message-ID: <20100324070547.GB3308@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100324154324.6d27336e.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100324154324.6d27336e.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1754879Ab0CXHH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 03:07:26 -0400
+Received: from mailout2.zih.tu-dresden.de ([141.30.67.73]:49388 "EHLO
+	mailout2.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752668Ab0CXHHY convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 03:07:24 -0400
+Subject: Re: [PATCH] trace power_frequency events on the correct cpu  (for
+ Intel x86 CPUs)
+From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Thomas Renninger <trenn@suse.de>, Dave Jones <davej@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       cpufreq <cpufreq@vger.kernel.org>, x86@kernel.org
+In-Reply-To: <4BA8F34C.9040401@linux.intel.com>
+References: <1268399863.3407.15.camel@localhost>
+	 <4BA7773A.5080206@linux.intel.com> <1269361716.3475.1.camel@localhost>
+	 <201003231757.51259.trenn@suse.de>  <4BA8F34C.9040401@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 08:07:17 +0100
+Message-ID: <1269414437.3355.6.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8BIT
+X-TUD-Virus-Scanned: mailout2.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-03-24 15:43:24]:
+Am Dienstag, den 23.03.2010, 09:58 -0700 schrieb Arjan van de Ven:
+> On 3/23/2010 9:57, Thomas Renninger wrote:
+> > On Tuesday 23 March 2010 17:28:36 Robert SchÃ¶ne wrote:
+> >> Am Montag, den 22.03.2010, 06:57 -0700 schrieb Arjan van de Ven:
+> >>> On 3/22/2010 0:04, Robert SchÃ¶ne wrote:
+> >>>> Am Sonntag, den 21.03.2010, 17:42 -0700 schrieb Arjan van de Ven:
+> >>>>> On 3/20/2010 14:37, Thomas Renninger wrote:
+> >>>>>
+> >>>>>> It also seem to be (hopefully) a minor feature for timechart, so this should
+> >>>>>> not hurt that much (yet).
+> >>>>>
+> >>>>> It's actually a major feature for timechart, and one of the key things I and a bunch of others
+> >>>>> inside Intel use timechart for.
+> >>>>>
+> >>>> It's a major feature for us too.
+> >>>> I suppose, the cpufreq_notify_transition calls are correct (meaning
+> >>>> being called for all related cpus) for every driver. So there's still
+> >>>> the option to include it in the POST_CHANGE section of this function.
+> >>>> Could this be okay for the both of you?
+> >>>
+> >>> post change would work... that gets frequency afaik..
+> >> Are you ok with this too, Thomas?
+> > You mean hooking it into cpufreq_stat_notifier_trans() in
+> > drivers/cpufreq/cpufreq_stats.c?
+> 
+> no
+> 
+> 
+> hooking into the post frequency change callback that gets done..
+> which is guaranteed to be on the right cpu afaics.
+> 
+I don't see where this would be guaranteed. So I'd be fine with
+a) adding it to
+cpufreq.c/cpufreq_notify_transition/cpufreq_notify_transition
 
-> A fix for race in file_mapped statistics. I noticed this race while discussing
-> Andrea's dirty accounting patch series. 
-> At the end of discusstion, I said "please don't touch file mapped". So, this bugfix
-> should be posted as an independent patch.
-> Tested on the latest mmotm.
-> 
-> Thanks,
-> -Kame
-> 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> Now, memcg's FILE_MAPPED accounting has following race with
-> move_account (happens at rmdir()).
-> 
->     increment page->mapcount (rmap.c)
->     mem_cgroup_update_file_mapped()           move_account()
-> 					      lock_page_cgroup()
-> 					      check page_mapped() if
-> 					      page_mapped(page)>1 {
-> 						FILE_MAPPED -1 from old memcg
-> 						FILE_MAPPED +1 to old memcg
-> 					      }
-> 					      .....
-> 					      overwrite pc->mem_cgroup
-> 					      unlock_page_cgroup()
->     lock_page_cgroup()
->     FILE_MAPPED + 1 to pc->mem_cgroup
->     unlock_page_cgroup()
-> 
-> Then,
-> 	old memcg (-1 file mapped)
-> 	new memcg (+2 file mapped)
->
+b) adding an item to the cpufreq_transition_notifier_list
 
-Good catch!
+c) adding it to cpufreq_stats.c/cpufreq_stat_notifier_trans
+
+which would imply the usage of smp_call_function_single(...)
 
 
-Reviewed-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
- 
--- 
-	Three Cheers,
-	Balbir
