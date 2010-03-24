@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab0CXQXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:23:32 -0400
-Received: from mga11.intel.com ([192.55.52.93]:33591 "EHLO mga11.intel.com"
+	id S1756548Ab0CXQXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:23:46 -0400
+Received: from 8bytes.org ([88.198.83.132]:40892 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754813Ab0CXQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:23:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,301,1267430400"; 
-   d="scan'208";a="551746662"
-Subject: Re: [patch 0/2] x86,pat: Reduce contention on the memtype_lock -V4
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Robin Holt <holt@sgi.com>, Andi Kleen <andi@firstfloor.org>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "x86@kernel.org" <x86@kernel.org>, Rafael Wysocki <rjw@novell.com>,
-       Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <alpine.LFD.2.00.1003241214370.3147@localhost.localdomain>
-References: <20100324003608.811051277@gulag1.americas.sgi.com>
-	 <87wrx2for5.fsf@basil.nowhere.org> <20100324085511.GJ4920@sgi.com>
-	 <alpine.LFD.2.00.1003241214370.3147@localhost.localdomain>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Wed, 24 Mar 2010 09:22:17 -0700
-Message-Id: <1269447737.2881.13.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1756513Ab0CXQXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:23:44 -0400
+Date: Wed, 24 Mar 2010 17:23:43 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+	project
+Message-ID: <20100324162343.GK14800@8bytes.org>
+References: <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <1269446622.5109.388.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269446622.5109.388.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 04:15 -0700, Thomas Gleixner wrote:
-> On Wed, 24 Mar 2010, Robin Holt wrote:
-> > On Wed, Mar 24, 2010 at 03:16:14AM +0100, Andi Kleen wrote:
-> > > holt@sgi.com writes:
-> > > 
-> > > > Tracking memtype on x86 uses a single global spin_lock for either reading
-> > > > or changing the memory type.  This includes changes made to page flags
-> > > > which is perfectly parallel.
-> > > >
-> > > > Part one of the patchset makes the page-based tracking use cmpxchg
-> > > > without a need for a lock.
-> > > >
-> > > > Part two of the patchset converts the spin_lock into a read/write lock.
-> > > 
-> > > I'm curious: in what workloads did you see contention?
-> > > 
-> > > For any scalability patches it would be always good to have a description
-> > > of the workload.
-> > 
-> > It was a job using xpmem (an out of tree kernel module) which uses
-> > vm_insert_pfn to establish ptes.  The scalability issues were shown
-> > in the first patch.  I do not have any test which shows a performance
-> > difference  with the spin_lock to rw_lock conversion.
+On Wed, Mar 24, 2010 at 05:03:42PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-03-24 at 16:01 +0100, Joerg Roedel wrote:
 > 
-> And what's exactly the point of converting it to a rw_lock then ?
+> > What I meant was: perf-kernel puts the guest-name into every sample and
+> > perf-userspace accesses /sys/kvm/guest_name/fs/ later to resolve the
+> > symbols. I leave the question of how the guest-fs is exposed to the host
+> > out of this discussion. We should discuss this seperatly.
+> 
+> I'd much prefer a pid like suggested later, keeps the samples smaller.
+> 
+> But that said, we need guest kernel events like mmap and context
+> switches too, otherwise we simply can't make sense of guest userspace
+> addresses, we need to know the guest address space layout.
 
-Thomas, As I mentioned earlier I am ok in not doing this conversion. If
-we see any performance issues with this spinlock, we can use RCU based
-logic to address that.
+With the filesystem approach all we need is the pid of the guest
+process. Then we can access proc/<pid>/maps of the guest and read out the
+address space layout, no?
 
-For now, first patch in this series (which avoid the lock for RAM pages)
-is good to go. Thanks Rafael for spotting the page flags bit
-manipulation issue.
-
-thanks,
-suresh
+	Joerg
 
