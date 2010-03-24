@@ -1,166 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab0CXOff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:35:35 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:37658 "EHLO e1.ny.us.ibm.com"
+	id S1756179Ab0CXOnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:43:00 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:41057 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755234Ab0CXOfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:35:34 -0400
-Date: Wed, 24 Mar 2010 09:35:11 -0500
-From: "Serge E. Hallyn" <serue@us.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] sched: Remove USER_SCHED from documentation
-Message-ID: <20100324143511.GA11603@us.ibm.com>
-References: <4BA9A05F.7010407@cn.fujitsu.com>
- <4BA9A07E.8070508@cn.fujitsu.com>
+	id S1755671Ab0CXOm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:42:59 -0400
+Date: Wed, 24 Mar 2010 07:02:52 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Cc: Matt Helsley <matthltc@us.ibm.com>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       containers <containers@lists.linux-foundation.org>,
+       Christoffer Dall <christofferdall@christofferdall.dk>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
+Message-ID: <20100324140252.GC5704@count0.beaverton.ibm.com>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
+ <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
+ <20100323205342.GA19572@n2100.arm.linux.org.uk>
+ <20100324020342.GB5704@count0.beaverton.ibm.com>
+ <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BA9A07E.8070508@cn.fujitsu.com>
+In-Reply-To: <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Li Zefan (lizf@cn.fujitsu.com):
-> USER_SCHED has been removed, so update the documentation
-> accordingly.
+On Wed, Mar 24, 2010 at 12:57:46AM -0400, Oren Laadan wrote:
+> On Tue, 23 Mar 2010, Matt Helsley wrote:
 > 
-> Cc: Serge E. Hallyn <serue@us.ibm.com>
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> > On Tue, Mar 23, 2010 at 08:53:42PM +0000, Russell King - ARM Linux wrote:
+> > > On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
+> > > > This small commit introduces a global state of system calls for ARM
+> > > > making it possible for a debugger or checkpointing to gain information
+> > > > about another process' state with respect to system calls.
+> > > 
+> > > I don't particularly like the idea that we always store the syscall
+> > > number to memory for every system call, whether the stored version is
+> > > used or not.
+> > > 
+> > > Since ARM caches are generally not write allocate, this means mostly
+> > > write-only variables can have a higher than expected expense.
+> > > 
+> > > Is there not some thread flag which can be checked to see if we need to
+> > > store the syscall number?
+> > 
+> > Perhaps before we freeze the task we can save the syscall number on ARM.
+> > The patches suggest that the signal delivery path -- which the freezer
+> > utilizes -- has the syscall number already.
+> > 
+> > Should work since the threads must be frozen first anyway.
+> 
+> I like the idea.
+> 
+> However, would it also work for those cases when the freezing does not 
+> occur from the signal delivery path - e.g. for vfork and ptraced tasks ?
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+We could just as easily set it before the vfork uninterruptible completion.
+ptracing I'd don't know about though.
 
-thanks,
--serge
-
-> ---
->  Documentation/scheduler/sched-design-CFS.txt |   54 +------------------------
->  Documentation/scheduler/sched-rt-group.txt   |   20 ++--------
->  2 files changed, 7 insertions(+), 67 deletions(-)
-> 
-> diff --git a/Documentation/scheduler/sched-design-CFS.txt b/Documentation/scheduler/sched-design-CFS.txt
-> index 6f33593..8239ebb 100644
-> --- a/Documentation/scheduler/sched-design-CFS.txt
-> +++ b/Documentation/scheduler/sched-design-CFS.txt
-> @@ -211,7 +211,7 @@ provide fair CPU time to each such task group.  For example, it may be
->  desirable to first provide fair CPU time to each user on the system and then to
->  each task belonging to a user.
-> 
-> -CONFIG_GROUP_SCHED strives to achieve exactly that.  It lets tasks to be
-> +CONFIG_CGROUP_SCHED strives to achieve exactly that.  It lets tasks to be
->  grouped and divides CPU time fairly among such groups.
-> 
->  CONFIG_RT_GROUP_SCHED permits to group real-time (i.e., SCHED_FIFO and
-> @@ -220,38 +220,11 @@ SCHED_RR) tasks.
->  CONFIG_FAIR_GROUP_SCHED permits to group CFS (i.e., SCHED_NORMAL and
->  SCHED_BATCH) tasks.
-> 
-> -At present, there are two (mutually exclusive) mechanisms to group tasks for
-> -CPU bandwidth control purposes:
-> -
-> - - Based on user id (CONFIG_USER_SCHED)
-> -
-> -   With this option, tasks are grouped according to their user id.
-> -
-> - - Based on "cgroup" pseudo filesystem (CONFIG_CGROUP_SCHED)
-> -
-> -   This options needs CONFIG_CGROUPS to be defined, and lets the administrator
-> +   These options need CONFIG_CGROUPS to be defined, and let the administrator
->     create arbitrary groups of tasks, using the "cgroup" pseudo filesystem.  See
->     Documentation/cgroups/cgroups.txt for more information about this filesystem.
-> 
-> -Only one of these options to group tasks can be chosen and not both.
-> -
-> -When CONFIG_USER_SCHED is defined, a directory is created in sysfs for each new
-> -user and a "cpu_share" file is added in that directory.
-> -
-> -	# cd /sys/kernel/uids
-> -	# cat 512/cpu_share		# Display user 512's CPU share
-> -	1024
-> -	# echo 2048 > 512/cpu_share	# Modify user 512's CPU share
-> -	# cat 512/cpu_share		# Display user 512's CPU share
-> -	2048
-> -	#
-> -
-> -CPU bandwidth between two users is divided in the ratio of their CPU shares.
-> -For example: if you would like user "root" to get twice the bandwidth of user
-> -"guest," then set the cpu_share for both the users such that "root"'s cpu_share
-> -is twice "guest"'s cpu_share.
-> -
-> -When CONFIG_CGROUP_SCHED is defined, a "cpu.shares" file is created for each
-> +When CONFIG_FAIR_GROUP_SCHED is defined, a "cpu.shares" file is created for each
->  group created using the pseudo filesystem.  See example steps below to create
->  task groups and modify their CPU share using the "cgroups" pseudo filesystem.
-> 
-> @@ -273,24 +246,3 @@ task groups and modify their CPU share using the "cgroups" pseudo filesystem.
-> 
->  	# #Launch gmplayer (or your favourite movie player)
->  	# echo <movie_player_pid> > multimedia/tasks
-> -
-> -8. Implementation note: user namespaces
-> -
-> -User namespaces are intended to be hierarchical.  But they are currently
-> -only partially implemented.  Each of those has ramifications for CFS.
-> -
-> -First, since user namespaces are hierarchical, the /sys/kernel/uids
-> -presentation is inadequate.  Eventually we will likely want to use sysfs
-> -tagging to provide private views of /sys/kernel/uids within each user
-> -namespace.
-> -
-> -Second, the hierarchical nature is intended to support completely
-> -unprivileged use of user namespaces.  So if using user groups, then
-> -we want the users in a user namespace to be children of the user
-> -who created it.
-> -
-> -That is currently unimplemented.  So instead, every user in a new
-> -user namespace will receive 1024 shares just like any user in the
-> -initial user namespace.  Note that at the moment creation of a new
-> -user namespace requires each of CAP_SYS_ADMIN, CAP_SETUID, and
-> -CAP_SETGID.
-> diff --git a/Documentation/scheduler/sched-rt-group.txt b/Documentation/scheduler/sched-rt-group.txt
-> index 86eabe6..605b0d4 100644
-> --- a/Documentation/scheduler/sched-rt-group.txt
-> +++ b/Documentation/scheduler/sched-rt-group.txt
-> @@ -126,23 +126,12 @@ priority!
->  2.3 Basis for grouping tasks
->  ----------------------------
-> 
-> -There are two compile-time settings for allocating CPU bandwidth. These are
-> -configured using the "Basis for grouping tasks" multiple choice menu under
-> -General setup > Group CPU Scheduler:
-> -
-> -a. CONFIG_USER_SCHED (aka "Basis for grouping tasks" =  "user id")
-> -
-> -This lets you use the virtual files under
-> -"/sys/kernel/uids/<uid>/cpu_rt_runtime_us" to control he CPU time reserved for
-> -each user .
-> -
-> -The other option is:
-> -
-> -.o CONFIG_CGROUP_SCHED (aka "Basis for grouping tasks" = "Control groups")
-> +Enabling CONFIG_RT_GROUP_SCHED lets you explicitly allocate real
-> +CPU bandwidth to task groups.
-> 
->  This uses the /cgroup virtual file system and
->  "/cgroup/<cgroup>/cpu.rt_runtime_us" to control the CPU time reserved for each
-> -control group instead.
-> +control group.
-> 
->  For more information on working with control groups, you should read
->  Documentation/cgroups/cgroups.txt as well.
-> @@ -161,8 +150,7 @@ For now, this can be simplified to just the following (but see Future plans):
->  ===============
-> 
->  There is work in progress to make the scheduling period for each group
-> -("/sys/kernel/uids/<uid>/cpu_rt_period_us" or
-> -"/cgroup/<cgroup>/cpu.rt_period_us" respectively) configurable as well.
-> +("/cgroup/<cgroup>/cpu.rt_period_us") configurable as well.
-> 
->  The constraint on the period is that a subgroup must have a smaller or
->  equal period to its parent. But realistically its not very useful _yet_
-> -- 
-> 1.6.3
+Cheers,
+	-Matt Helsley
