@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0CXV3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:29:22 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:60689 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab0CXV3T (ORCPT
+	id S1753651Ab0CXVa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:30:29 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:37355 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab0CXVa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:29:19 -0400
+	Wed, 24 Mar 2010 17:30:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=xGP/33rh0vMmFINfb5rF+z0IiVvfwEXmeClb+z5xRxAyVTfYDVUN14dVjMEgSV9So0
-         H98z661CDZ0Po31/tV9lZbFqRTSbZ8RlxgAX5FJQtd94D7JDyqT4O79I+gkjTx1thwcw
-         kToQFuS7bGsUTDBdSO4zoo6n8sNXKaiB9tJRE=
-Message-ID: <4BAA842A.6060906@gmail.com>
-Date: Wed, 24 Mar 2010 22:29:14 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-5.9 Thunderbird/3.1b1
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [RFC 06/15] PM / Hibernate: swap, remove swap_map_handle usages
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-6-git-send-email-jslaby@suse.cz> <20100324203329.GG5798@elf.ucw.cz>
-In-Reply-To: <20100324203329.GG5798@elf.ucw.cz>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FLaMyMBeMgVvGTqxRHnXTARO9WnkLYWX8BgqiMt1SyxxlxsPic1Eh+mNkWgJREKPJV
+         oY1r1Hv2RODHJw1Jgu4N/nTOWT+Y1NZdA2Lw77JctNy4r2OrBAGUDXMA3VmaG8zpRicx
+         kn735DSgJsWWmJUpgw4LzbJnwm4HYE8KsMI68=
+Subject: Re: [PATCH] slub: Potential stack overflow
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Pekka J Enberg <penberg@cs.helsinki.fi>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1003241624580.17362@router.home>
+References: <1269430856.3213.27.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1003241414270.14329@router.home>
+	 <1269458528.2849.2.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1003241443520.14329@router.home>
+	 <1269464591.2849.15.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1003241608270.16858@router.home>
+	 <alpine.DEB.2.00.1003241613350.16858@router.home>
+	 <alpine.DEB.2.00.1003241624580.17362@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 22:30:23 +0100
+Message-ID: <1269466223.2849.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 09:33 PM, Pavel Machek wrote:
-> On Tue 2010-03-23 17:17:34, Jiri Slaby wrote:
->> Some code, which will be moved out of swap.c, needs know nothing about
->> swap. There will be also other than swap writers later, so that it
->> won't make sense at all.
->>
->> Make it a global static in swap.c as a singleton.
+Le mercredi 24 mars 2010 à 16:25 -0500, Christoph Lameter a écrit :
+> Here is a patch for the second case. I think its better since it results
+> in an error display and it avoids the alloc for each slab. Add this piece
+> to your patch?
+
+Yes, I did it
+
 > 
-> I guess I just dislike global static. Logically, methods do operate on
-> handles, so...
+> V1->V2 Fix missing kfree
+> 
+> Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> 
+> ---
+>  mm/slub.c |   13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+> 
+> Index: linux-2.6/mm/slub.c
+> ===================================================================
+> --- linux-2.6.orig/mm/slub.c	2010-03-24 16:23:19.000000000 -0500
+> +++ linux-2.6/mm/slub.c	2010-03-24 16:24:21.000000000 -0500
+> @@ -3648,10 +3648,10 @@ static int add_location(struct loc_track
+>  }
+> 
+>  static void process_slab(struct loc_track *t, struct kmem_cache *s,
+> -		struct page *page, enum track_item alloc)
+> +		struct page *page, enum track_item alloc,
+> +		unsigned long *map)
+>  {
+>  	void *addr = page_address(page);
+> -	DECLARE_BITMAP(map, page->objects);
+>  	void *p;
+> 
+>  	bitmap_zero(map, page->objects);
+> @@ -3670,8 +3670,10 @@ static int list_locations(struct kmem_ca
+>  	unsigned long i;
+>  	struct loc_track t = { 0, 0, NULL };
+>  	int node;
+> +	unsigned long *map = kmalloc(BITS_TO_LONGS(oo_objects(s->max)) *
+> +				sizeof(unsigned long), GFP_KERNEL);
+> 
+> -	if (!alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
+> +	if (!map || !alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
+>  			GFP_TEMPORARY))
 
-Ok, "upper layers" may get a handle via .get_reader/writer. The downside
-is that they would have to get (void *) and pass (void *) down again. I
-wanted to avoid that (taking into account that it's a singleton).
+I also added a kfree(map); here
 
-> I don't see a point and I do not think the change is an improvement.
+>  		return sprintf(buf, "Out of memory\n");
+> 
+> @@ -3688,11 +3690,12 @@ static int list_locations(struct kmem_ca
+> 
+>  		spin_lock_irqsave(&n->list_lock, flags);
+>  		list_for_each_entry(page, &n->partial, lru)
+> -			process_slab(&t, s, page, alloc);
+> +			process_slab(&t, s, page, alloc, map);
+>  		list_for_each_entry(page, &n->full, lru)
+> -			process_slab(&t, s, page, alloc);
+> +			process_slab(&t, s, page, alloc, map);
+>  		spin_unlock_irqrestore(&n->list_lock, flags);
+>  	}
+> +	kfree(map);
+> 
+>  	for (i = 0; i < t.count; i++) {
+>  		struct location *l = &t.loc[i];
+> --
 
-The point was to avoid (void *)'s and save users from transferring
-pointer as a handle. No matter what, the decision is not up to me,
-discussion indeed welcome.
 
--- 
-js
+
