@@ -1,60 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab0CXUbo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:31:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42648 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932409Ab0CXUbm (ORCPT
+	id S932481Ab0CXUdm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:33:42 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:35054 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932366Ab0CXUdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:31:42 -0400
-X-Authority-Analysis: v=1.1 cv=wckZLekju2+u3kt9osT+oU4XGSlOYx61urhSnO42l8s= c=1 sm=0 a=FhWVZtC4hY8A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=lXCcdGLKZGb9ars_fFUA:9 a=PMqE0pdiyQIKgXgR03t1LAJMBfkA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: 2.6.33 GP fault only when built with tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>
-In-Reply-To: <4BAA743E.6080205@oracle.com>
-References: <4BA2B69D.3000309@oracle.com>
-	 <1268956555.758.18.camel@gandalf.stny.rr.com>
-	 <20100319005901.GB23020@Krystal> <4BA3C0CF.6070005@oracle.com>
-	 <20100319184610.GA29161@Krystal>
-	 <20100323082643.dbf77c46.randy.dunlap@oracle.com>
-	 <20100324012053.GA17187@Krystal>  <4BAA743E.6080205@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 24 Mar 2010 16:31:39 -0400
-Message-ID: <1269462699.2957.3029.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Mar 2010 16:33:41 -0400
+Date: Wed, 24 Mar 2010 21:33:30 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC 06/15] PM / Hibernate: swap, remove swap_map_handle usages
+Message-ID: <20100324203329.GG5798@elf.ucw.cz>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
+ <1269361063-3341-6-git-send-email-jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269361063-3341-6-git-send-email-jslaby@suse.cz>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 13:21 -0700, Randy Dunlap wrote:
-> On 03/23/10 18:20, Mathieu Desnoyers wrote:
-> > 
-> > While we wait for the sun to move to other time zones, can you check if the
-> > following patch fixes your problem ?
-> > 
+On Tue 2010-03-23 17:17:34, Jiri Slaby wrote:
+> Some code, which will be moved out of swap.c, needs know nothing about
+> swap. There will be also other than swap writers later, so that it
+> won't make sense at all.
 > 
-> Hi Mathieu,
-> Yes, this works.  Thanks.
+> Make it a global static in swap.c as a singleton.
+
+I guess I just dislike global static. Logically, methods do operate on
+handles, so...
+
+I don't see a point and I do not think the change is an improvement.
+									Pavel
+
+
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/swap.c |   58 +++++++++++++++++++++++++-------------------------
+>  1 files changed, 29 insertions(+), 29 deletions(-)
 > 
-> I'll test Li's patch now...
-> 
+> diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> index 2edf742..ac1a351 100644
+> --- a/kernel/power/swap.c
+> +++ b/kernel/power/swap.c
+> @@ -70,6 +70,7 @@ struct swsusp_header {
+>  	char	sig[10];
+>  } __attribute__((packed));
+>  
+> +static struct swap_map_handle swap_map_handle;
+>  static struct swsusp_header *swsusp_header;
+>  
+>  /**
+> @@ -267,8 +268,9 @@ static void release_swap_writer(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static int get_swap_writer(struct swap_map_handle *handle)
+> +static int get_swap_writer(void)
+>  {
+> +	struct swap_map_handle *handle = &swap_map_handle;
+>  	int ret;
+>  
+>  	ret = swsusp_swap_check();
+> @@ -278,6 +280,7 @@ static int get_swap_writer(struct swap_map_handle *handle)
+>  					"swapon -a.\n");
+>  		return ret;
+>  	}
+> +	memset(handle, 0, sizeof(*handle));
+>  	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
+>  	if (!handle->cur) {
+>  		ret = -ENOMEM;
+> @@ -298,9 +301,9 @@ err_close:
+>  	return ret;
+>  }
+>  
+> -static int swap_write_page(struct swap_map_handle *handle, void *buf,
+> -				struct bio **bio_chain)
+> +static int swap_write_page(void *buf, struct bio **bio_chain)
+>  {
+> +	struct swap_map_handle *handle = &swap_map_handle;
+>  	int error = 0;
+>  	sector_t offset;
+>  
+> @@ -338,9 +341,10 @@ static int flush_swap_writer(struct swap_map_handle *handle)
+>  		return -EINVAL;
+>  }
+>  
+> -static int put_swap_writer(struct swap_map_handle *handle,
+> -		unsigned int flags, int error)
+> +static int put_swap_writer(unsigned int flags, int error)
+>  {
+> +	struct swap_map_handle *handle = &swap_map_handle;
+> +
+>  	if (!error) {
+>  		flush_swap_writer(handle);
+>  		printk(KERN_INFO "PM: S");
+> @@ -360,8 +364,7 @@ static int put_swap_writer(struct swap_map_handle *handle,
+>   *	save_image - save the suspend image data
+>   */
+>  
+> -static int save_image(struct swap_map_handle *handle,
+> -                      struct snapshot_handle *snapshot,
+> +static int save_image(struct snapshot_handle *snapshot,
+>                        unsigned int nr_to_write)
+>  {
+>  	unsigned int m;
+> @@ -384,7 +387,7 @@ static int save_image(struct swap_map_handle *handle,
+>  		ret = snapshot_read_next(snapshot);
+>  		if (ret <= 0)
+>  			break;
+> -		ret = swap_write_page(handle, data_of(*snapshot), &bio);
+> +		ret = swap_write_page(data_of(*snapshot), &bio);
+>  		if (ret)
+>  			break;
+>  		if (!(nr_pages % m))
+> @@ -430,14 +433,13 @@ static int enough_swap(unsigned int nr_pages)
+>  
+>  int swsusp_write(unsigned int flags)
+>  {
+> -	struct swap_map_handle handle;
+>  	struct snapshot_handle snapshot;
+>  	struct swsusp_info *header;
+>  	unsigned long pages;
+>  	int error;
+>  
+>  	pages = snapshot_get_image_size();
+> -	error = get_swap_writer(&handle);
+> +	error = get_swap_writer();
+>  	if (error) {
+>  		printk(KERN_ERR "PM: Cannot get swap writer\n");
+>  		return error;
+> @@ -456,11 +458,11 @@ int swsusp_write(unsigned int flags)
+>  		goto out_finish;
+>  	}
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	error = swap_write_page(&handle, header, NULL);
+> +	error = swap_write_page(header, NULL);
+>  	if (!error)
+> -		error = save_image(&handle, &snapshot, pages - 1);
+> +		error = save_image(&snapshot, pages - 1);
+>  out_finish:
+> -	error = put_swap_writer(&handle, flags, error);
+> +	error = put_swap_writer(flags, error);
+>  	return error;
+>  }
+>  
+> @@ -476,9 +478,9 @@ static void release_swap_reader(struct swap_map_handle *handle)
+>  	handle->cur = NULL;
+>  }
+>  
+> -static int get_swap_reader(struct swap_map_handle *handle,
+> -		unsigned int *flags_p)
+> +static int get_swap_reader(unsigned int *flags_p)
+>  {
+> +	struct swap_map_handle *handle = &swap_map_handle;
+>  	int error;
+>  
+>  	*flags_p = swsusp_header->flags;
+> @@ -486,6 +488,7 @@ static int get_swap_reader(struct swap_map_handle *handle,
+>  	if (!swsusp_header->image) /* how can this happen? */
+>  		return -EINVAL;
+>  
+> +	memset(handle, 0, sizeof(*handle));
+>  	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+>  	if (!handle->cur)
+>  		return -ENOMEM;
+> @@ -499,9 +502,9 @@ static int get_swap_reader(struct swap_map_handle *handle,
+>  	return 0;
+>  }
+>  
+> -static int swap_read_page(struct swap_map_handle *handle, void *buf,
+> -				struct bio **bio_chain)
+> +static int swap_read_page(void *buf, struct bio **bio_chain)
+>  {
+> +	struct swap_map_handle *handle = &swap_map_handle;
+>  	sector_t offset;
+>  	int error;
+>  
+> @@ -525,22 +528,20 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
+>  	return error;
+>  }
+>  
+> -static int put_swap_reader(struct swap_map_handle *handle)
+> +static int put_swap_reader(void)
+>  {
+> -	release_swap_reader(handle);
+> +	release_swap_reader(&swap_map_handle);
+>  
+>  	return 0;
+>  }
+>  
+>  /**
+> - *	load_image - load the image using the swap map handle
+> + *	load_image - load the image
+>   *	@handle and the snapshot handle @snapshot
+>   *	(assume there are @nr_pages pages to load)
+>   */
+>  
+> -static int load_image(struct swap_map_handle *handle,
+> -                      struct snapshot_handle *snapshot,
+> -                      unsigned int nr_to_read)
+> +static int load_image(struct snapshot_handle *snapshot, unsigned int nr_to_read)
+>  {
+>  	unsigned int m;
+>  	int error = 0;
+> @@ -562,7 +563,7 @@ static int load_image(struct swap_map_handle *handle,
+>  		error = snapshot_write_next(snapshot);
+>  		if (error <= 0)
+>  			break;
+> -		error = swap_read_page(handle, data_of(*snapshot), &bio);
+> +		error = swap_read_page(data_of(*snapshot), &bio);
+>  		if (error)
+>  			break;
+>  		if (snapshot->sync_read)
+> @@ -597,7 +598,6 @@ static int load_image(struct swap_map_handle *handle,
+>  int swsusp_read(unsigned int *flags_p)
+>  {
+>  	int error;
+> -	struct swap_map_handle handle;
+>  	struct snapshot_handle snapshot;
+>  	struct swsusp_info *header;
+>  
+> @@ -606,14 +606,14 @@ int swsusp_read(unsigned int *flags_p)
+>  	if (error < PAGE_SIZE)
+>  		return error < 0 ? error : -EFAULT;
+>  	header = (struct swsusp_info *)data_of(snapshot);
+> -	error = get_swap_reader(&handle, flags_p);
+> +	error = get_swap_reader(flags_p);
+>  	if (error)
+>  		goto end;
+>  	if (!error)
+> -		error = swap_read_page(&handle, header, NULL);
+> +		error = swap_read_page(header, NULL);
+>  	if (!error)
+> -		error = load_image(&handle, &snapshot, header->pages - 1);
+> -	put_swap_reader(&handle);
+> +		error = load_image(&snapshot, header->pages - 1);
+> +	put_swap_reader();
+>  end:
+>  	if (!error)
+>  		pr_debug("PM: Image successfully loaded\n");
 
-If it works, can you send me your "Tested-by". I have it queued to go.
-
-Thanks,
-
--- Steve
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
