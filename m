@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab0CXV7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:59:05 -0400
-Received: from gw1.transmode.se ([213.115.205.20]:41073 "EHLO gw1.transmode.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527Ab0CXV7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:59:00 -0400
-In-Reply-To: <4BAA5F99.3050904@caviumnetworks.com>
-References: <1268849455-19503-1-git-send-email-Joakim.Tjernlund@transmode.se>	 <20100324112106.c8e7b96d.akpm@linux-foundation.org> <10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com> <4BAA5F99.3050904@caviumnetworks.com>
-Subject: Re: [PATCH] [RFC] #define __BYTE_ORDER
-X-KeepSent: 8EC0683A:3FFD71B5-C12576F0:0077A6F3;
- type=4; name=$KeepSent
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       LKML <linux-kernel@vger.kernel.org>
-X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
-Message-ID: <OF8EC0683A.3FFD71B5-ONC12576F0.0077A6F3-C12576F0.00786611@transmode.se>
-From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
-Date: Wed, 24 Mar 2010 22:55:04 +0100
-X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1|September 28, 2009) at
- 2010-03-24 22:58:59
+	id S1753844Ab0CXWAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:00:06 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52534 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753208Ab0CXWAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 18:00:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Roland Dreier <rdreier@cisco.com>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Date: Wed, 24 Mar 2010 22:59:57 +0100
+User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>
+References: <201003242240.54907.arnd@arndb.de> <adavdclz8sc.fsf@roland-alpha.cisco.com>
+In-Reply-To: <adavdclz8sc.fsf@roland-alpha.cisco.com>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003242259.58535.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19cuuh6RqfKyIVA1EZHC04+Swdj5wlMZy5iLQn
+ kvdD2zTu0jyQZm9goovJrgcvhi/EzMNEnheeqHvRIV5/nIj/T0
+ sNgivad7X4dAXkKVpZgag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 24 March 2010 22:53:07 Roland Dreier wrote:
+> Interesting work.  For the drivers/infiniband part, it seems maybe all
+> these drivers should be using no_llseek instead of default_llseek?  (or
+> is it better style to use nonseekable_open()?)  Certainly as far as I
+> can tell, nothing in drivers/infiniband pays any attention to f_pos.
 
-David Daney <ddaney@caviumnetworks.com> wrote on 2010/03/24 19:53:13:
->
-> On 03/24/2010 11:37 AM, Geert Uytterhoeven wrote:
-> > On Wed, Mar 24, 2010 at 19:21, Andrew Morton<akpm@linux-foundation.org>  wrote:
-> >> On Wed, 17 Mar 2010 19:10:55 +0100
-> >> Joakim Tjernlund<Joakim.Tjernlund@transmode.se>  wrote:
-> >>
-> >>> Linux does not define __BYTE_ORDER in its endian header files
-> >>> which makes some header files bend backwards to get at the
-> >>> current endian. Lets #define __BYTE_ORDER in big_endian.h/litte_endian.h
-> >>> to make it easier for header files that are used in user space too.
-> >>
-> >> I don't get it.  Why not nuke __BYTE_ORDER altogether and do `#ifdef
-> >> __LITTLE_ENDIAN' and `#ifdef __BIG_ENDIAN' everywhere?
-> >
-> > Because in userspace the convention is that
-> >    1. _both_ __LITTLE_ENDIAN and __BIG_ENDIAN are defined,
-> >    2. you have to test for e.g. __BYTE_ORDER == __BIG_ENDIAN.
-> >
->
-> I have stumbled on this issue as well.
->
-> However, consider this:
->
-> If you make such a change, then you will start to see:
->
-> #if __BYTE_ORDER == __BIG_ENDIAN
->
-> appearing in kernel source code.  Do we want two different endian
-> checking idioms in the kernel?  Or would it be just a single idiom, but
-> one that is different than the status quo?
+no_llseek makes it clear that you don't want the default_llseek semantics,
+while nonseekable_open also prevents pread/pwrite. Ideally, I'd just
+use both.
 
->From my patch you already see that there some ugliness in header files because
-one wants to use them in user space too. I don't think inventing a kernel
-specific idiom will by us anything. To keep the confusion down it is
-better to just use #if __BYTE_ORDER == __BIG_ENDIAN all over.
+There is a small chance that a random user space application actually tries
+to seek on the device (e.g. SEEK_END) and expects a zero return value,
+so when in doubt, I converted everything to default_llseek instead of
+no_llseek, just so I can be sure I don't change the semantics.
 
->
-> The only time I can see that it makes a difference is if you want to
-> share things like driver source code files between in-kernel drivers and
-> userspace.  A discussion of which, would probably provoke much discussion.
+> Also, is there a reason why you add "#include <linux/smp_lock.h>" to all
+> the files where you also do ".llseek  = default_llseek"?
 
-Yes, I stumbled over this when I moved crc32.c to run the test routine
-included in there. Took me quite a while to figure out what was wrong
-because you don't even get a warning, it just silently breaks.
+The last patch in the series moves the default_llseek and default_ioctl
+function into the same loadable module that contains the BKL itself.
+Moving the declarations into the respective header seemed appropriate,
+but it could also stay in a VFS header if people prefer that.
 
+> In any case I can at least take care of the llseek stuff for 2.6.35.
+
+Ok, thanks!
+
+	Arnd
