@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0CXPti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 11:49:38 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43954 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751747Ab0CXPth (ORCPT
+	id S1753349Ab0CXPtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 11:49:46 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:44367 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752784Ab0CXPtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 11:49:37 -0400
-Date: Wed, 24 Mar 2010 15:51:51 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for F71808E
- and F71889
-Message-ID: <20100324155151.2482952f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100324153550.GK6368@salidar.me.mortis.eu>
-References: <20100323141718.GA23172@salidar.me.mortis.eu>
-	<1269385936-3440-1-git-send-email-me@mortis.eu>
-	<1269385936-3440-2-git-send-email-me@mortis.eu>
-	<1269385936-3440-3-git-send-email-me@mortis.eu>
-	<1269385936-3440-4-git-send-email-me@mortis.eu>
-	<4BA9CF57.4030504@redhat.com>
-	<20100324093651.GG6368@salidar.me.mortis.eu>
-	<4BA9EA5C.9060506@redhat.com>
-	<20100324153550.GK6368@salidar.me.mortis.eu>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 24 Mar 2010 11:49:43 -0400
+Message-ID: <4BAA3493.1030802@panasas.com>
+Date: Wed, 24 Mar 2010 17:49:39 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       Benny Halevy <bhalevy@panasas.com>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT case to use
+ of do_last()
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Mar 2010 15:49:42.0024 (UTC) FILETIME=[9E3C5880:01CACB69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> hold on the SIO port range. This would thus interfere with the operation
-> of the f71882fg driver. I.e. it would prevent the device probing stage
-> from working, thus preventing it from loading *after* my in-development
-> watchdog driver.
+1f36f774b22a0ceb7dd33eca626746c81a97b6a5 is the first bad commit
+commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sat Dec 26 10:56:19 2009 -0500
 
-There are two ways to deal with that really
+    Switch !O_CREAT case to use of do_last()
+    
+    ... and now we have all intents crap well localized
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-1. Add a multi-function driver - it finds the chip and claims the port
-regions and then provides methods for locked access to them as well as
-creating other device instances that the drivers map to (probably platform
-devices ?) which in turn trigger the loading/binding of the relevant low
-level devices.
+:040000 040000 53c1effc5b22746bb83cdbc6a419bf898067882d 9606f7275fde188a056fd174aa1d622ac0630893 M      fs
 
-2. Fix the kernel request_resource stuff to support a sleeping non
-exclusive resource so request/free of regions can be used as a resource
-semaphore by co-operative devices.
+I have a file corruption regression  bisected to above. (The one step before def4af30cf945a3735ffca865788ea84b30b25d9
+was fine)
 
-#2 is actually not hard but when I did the patch originally it then
-wasn't needed by the driver I had in mind for other reasons.
+The test:
 
-See http://groups.google.com/group/linux.kernel/msg/1425fc2aad32e6ea
+- I have an exofs filesystem mounted on /mnt/exofs
+- []$ cd /mnt/exofs/some_linux_git; git status;
+  All is fine
+- []$ mount -t nfs4 -o minorversion=0 localhost:/ /mnt/nfs
+  (Where etc/exports will export /mnt/exofs via nfs4.1)
+- []$ cd /mnt/nfs/some_linux_git; git status;
+  This will fail and will corrupt the .git/index file. Sometimes the file would be
+  too short, and sometimes the file will become a directory (Yes really)
 
-Maybe its worth resurrecting ?
+Simple revert of this patch over 2.6.34-rc2 will not work so I've not checked it.
+A single threaded read like: "diff -r /mnt/nfs/some_linux_git /mnt/nfs/some_linux_git.back"
+or even "diff -r /mnt/exofs/some_linux_git /mnt/nfs/some_linux_git" works fine.
+A simple dd write test works fine as well.
 
-Alan
+So it looks like a race that only something like git can exercise, with multi threaded
+reads and writes, through nfs/nfsd.
+
+I know Benny also had failures with files export ontop of 2.6.34-rc2
+(I looked at the patch, it is totally out of my league, please help)
+
+I will try to reproduce this with a more conventional FS, or any thing else
+I should test?
+
+Thanks
+Boaz
