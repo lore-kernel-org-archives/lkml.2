@@ -1,85 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab0CXNqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 09:46:45 -0400
-Received: from 8bytes.org ([88.198.83.132]:48654 "EHLO 8bytes.org"
+	id S1755796Ab0CXNsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 09:48:30 -0400
+Received: from tac.ki.iif.hu ([193.6.222.43]:52422 "EHLO tac.ki.iif.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab0CXNqn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 09:46:43 -0400
-Date: Wed, 24 Mar 2010 14:46:42 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
-	project
-Message-ID: <20100324134642.GD14800@8bytes.org>
-References: <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws> <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com>
+	id S1755616Ab0CXNs2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 09:48:28 -0400
+From: Ferenc Wagner <wferi@niif.hu>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Phillip Lougher <phillip.lougher@gmail.com>, linux-fsdevel@vger.kernel.org,
+       linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-embedded@vger.kernel.org
+Subject: Re: RFC: direct MTD support for SquashFS
+References: <87vdcwv139.fsf@tac.ki.iif.hu>
+	<87ljdsibqe.fsf@macbook.be.48ers.dk> <87r5nhziss.fsf@tac.ki.iif.hu>
+	<bffbecbb1003181440kc78f4dbvd25d4e2ea17b52e5@mail.gmail.com>
+	<8739zqpxxw.fsf@tac.ki.iif.hu> <4BA9A1BB.4000105@lougher.demon.co.uk>
+Date: Wed, 24 Mar 2010 14:48:09 +0100
+In-Reply-To: <4BA9A1BB.4000105@lougher.demon.co.uk> (Phillip Lougher's message
+	of "Wed, 24 Mar 2010 05:23:07 +0000")
+Message-ID: <87mxxxltk6.fsf@tac.ki.iif.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAA0DFE.1080700@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 03:05:02PM +0200, Avi Kivity wrote:
-> On 03/24/2010 02:50 PM, Joerg Roedel wrote:
+Phillip Lougher <phillip@lougher.demon.co.uk> writes:
 
->> I don't want the tool for myself only. A typical perf user expects that
->> it works transparent.
+> Ferenc Wagner wrote:
 >
-> A typical kvm user uses libvirt, so we can integrate it with that.
-
-Someone who uses libvirt and virt-manager by default is probably not
-interested in this feature at the same level a kvm developer is. And
-developers tend not to use libvirt for low-level kvm development.  A
-number of developers have stated in this thread already that they would
-appreciate a solution for guest enumeration that would not involve
-libvirt.
-
-> Someone needs to know about the new guest to fetch its symbols.  Or do  
-> you want that part in the kernel too?
-
-The samples will be tagged with the guest-name (and some additional
-information perf needs). Perf userspace can access the symbols then
-through /sys/kvm/guest0/fs/...
-
->> Depends on how it is designed. A filesystem approach was already
->> mentioned. We could create /sys/kvm/ for example to expose information
->> about virtual machines to userspace. This would not require any new
->> security hooks.
+>> Now with the patch series, sorry.
+>>
+>> Ferenc Wagner <wferi@niif.hu> writes:
+>>
+>>> I've got one more patch, which I forgot to export, to pull out the
+>>> common logic from the backend init functions back into squashfs_read_data().
+>>> With the bdev backend, that entails reading the first block twice in a
+>>> row most of the time.  This again could be worked around by extending
+>>> the backend interface, but I'm not sure if it's worth it.
+>>
+>> Here it is.  I also corrected the name of SQUASHFS_METADATA_SIZE, so it
+>> may as well compile now.
 >
-> Who would set the security context on those files?
+> Thanks for your patches.
+>
+> First things first.  Patch sending etiquette :-) [...]
 
-An approach like: "The files are owned and only readable by the same
-user that started the vm." might be a good start. So a user can measure
-its own guests and root can measure all of them.
+Points taken.  About the splits, they were the result of quite some
+rebasing: I tried to give each patch a unique focus, but apparently
+failed.  Only the last one touches substantial changed code, for the
+explicitly stated reason: it hurts performance.
 
-> Plus, we need cgroup  support so you can't see one container's guests
-> from an unrelated container.
+> Frameworks are supposed to make the code cleaner, more understandable,
+> and generally better.
 
-cgroup support is an issue but we can solve that too. Its in general
-still less complex than going through the whole libvirt-qemu-kvm stack.
+This framework is about added flexibility.  I agree it requires some
+added complexity, but I hope we can manage it.
 
-> Integration with qemu would allow perf to tell us that the guest is
-> hitting the interrupt status register of a virtio-blk device in pci
-> slot 5 (the information is already available through the kvm_mmio
-> trace event, but  only qemu can decode it).
+> Unfortunately, I see no evidence of that in your patch.  Sorry to be
+> blunt, but there it is.
 
-Yeah that would be interesting information. But it is more related to
-tracing than to pmu measurements.
-The information which you mentioned above are probably better
-captured by an extension of trace-events to userspace.
+No problem.
 
-	Joerg
+> +       void	*(*init)(struct squashfs_sb_info *, u64, size_t);
+> +	void	(*free)(struct squashfs_sb_info *);
+> +	ssize_t	(*read)(struct squashfs_sb_info *, void **, size_t);
+> +	int	(*probe)(struct file_system_type *, int, const char *,
+> +				void*, struct vfsmount *);
+> +	void	(*kill)(struct squashfs_sb_info *);
+> +	loff_t  (*size)(const struct super_block *);
+> +	const char *(*devname)(const struct super_block *, char *);
+>
+> We move from a single read() function to requiring seven functions to do
+> the same work, just to add mtd support...
 
+Your single read() function also had separate init, read and free
+phases, with something generic in between.  I can try to invert the
+structure, but see below.
+
+> Reading the superblock changes into a 6 function deep nightmare
+> squashfs_find_backend -> probe -> get_sb_dev -> fill_bdev_super ->
+> squashfs_fill_super -> add_backend
+
+It's convoluted, but only moves original code around.  If you prefer, I
+can simplify that by embedding squashfs_sb_info into backend-specific
+structures and allocating those separately.  This would also get rid of
+some of the above 7 functions.
+
+> Reading a block now takes 3 function calls, init, read, and free.
+
+Actually, read must be called several times.  Are you worried by the
+cost of the indirect function calls?
+
+> Plus in your last commit you make the huge mistake of preferring code
+> elegance over performance, and resort to calling init, read, and free
+> *twice*, the first just to read *two* bytes (yes, 2 bytes).  Why do
+> you think the code was coded that way in the first place?  A fit of
+> absent mindedness perhaps?  No, for performance reasons.
+
+I also pointed this out, and that's mosly why I created a separate last
+patch.  I don't think it's optimal, but replicating the metadata length
+handling in the backends isn't either.  There's RFC in the subject after
+all...
+
+> You've totally broken all the read optimisations in zlib decompression
+> for block devices.  Buffer_heads are deliberately passed directly to
+> the zlib decompressor to allow it to optimise performance (pass the
+> buffer_head directly to zlib etc.).  Buffer_heads are exposed to the
+> decompressors without crappy go-between wrappers deliberately.
+
+At least this is something I noticed and expressed my concers about.
+You probably missed that due to the lots of scrolling required by my
+sub-par patch-posting technique. :)
+
+> Unfortunately there are lots of other instances where you've
+> eliminated carefully optimised code.
+
+Could you please provide some examples?
+
+> In short this doesn't pass my quality threshold or the make the
+> minimum changes necessary threshold.  I wouldn't consider asking Linus
+> to merge this.
+
+Please don't.  It's a proof of concept, nothing more.  Even a proof of a
+wrong concept.
+
+> BTW as a comparison, I have added MTD support to Squashfs twice in the
+> past, *with* bad block support.
+
+Unfortunately you aren't allowed to share those, if I read it right.
+
+> The latest has a diff patch of ~500 lines, with far less complexity
+> and code changes necessary.
+
+Sure, have a look at my very first patch: 3 files changed, 210
+insertions, 21 deletions.  And that didn't remove bdev support.
+
+> BTW2 as evidenced by your FIXME comments against my code in your patch,
+> you really have to get over the notion that if you don't understand it,
+> the code must be wrong.
+
+Sometimes those are FIXMEs to make finding them easier, and are
+questions really.  If you feel like answering them:
+
+/* FIXME: == s->s_blocksize(_bits)? */
+Why do you use devblksize and devblksize_log2 in squashfs_sb_info?
+Aren't they the same as sb->s_blocksize and sb->s_blocksize_bits, as
+their names suggest?
+
+/* FIXME: squashfs_put_super has meta_index instead */
+The failed_mount: part of squashfs_fill_super() is very similar to
+squashfs_put_super(), but frees meta_index instead of id_table.  Why?
+
+These are probably easy questions for people knowing the VFS layer well,
+but I am not one of those.  They just triggered my built-in pattern
+matcher.
+-- 
+Regards,
+Feri.
