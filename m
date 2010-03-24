@@ -1,132 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab0CXU6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:58:19 -0400
-Received: from ns.netcenter.hu ([195.228.254.57]:36569 "EHLO mail.netcenter.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217Ab0CXU6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:58:17 -0400
-X-Greylist: delayed 802 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Mar 2010 16:58:17 EDT
-Message-ID: <03ca01cacb92$195adf50$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: <linux-kernel@vger.kernel.org>
-Subject: Somebody take a look please! (some kind of kernel bug?)
-Date: Wed, 24 Mar 2010 21:39:23 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
+	id S1752677Ab0CXU7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:59:14 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:46339 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab0CXU7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 16:59:12 -0400
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Pavan Savoy <pavan_savoy@yahoo.co.in>
+Cc: Greg KH <gregkh@suse.de>, PavanSavoy <pavan_savoy@ti.com>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <854009.90562.qm@web94910.mail.in2.yahoo.com>
+References: <854009.90562.qm@web94910.mail.in2.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 13:59:03 -0700
+Message-ID: <1269464343.11714.140.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear developers,
+Hi Pavan,
 
-This is one of my productive servers, wich suddenly starts to freeze (crash) 
-some weeks before.
-I have done all what i can, (i think) please somebody give to me some 
-suggestion:
+> > > > > > > I wanted to somehow put this in
+> > staging
+> > > > because then
+> > > > > > it would probably have a thorough
+> > architectural
+> > > > review
+> > > > > > process.
+> > > > > > > Some details about this driver - 
+> > > > > > > 
+> > > > > > > 1. This driver will be used by
+> > > > Bluetooth-BlueZ/FM-V4L2
+> > > > > > and GPS (probably character device
+> > driver) using
+> > > > the
+> > > > > > EXPORTED symbols
+> > (-register/_unregister).
+> > > > > > > 
+> > > > > > > 2. Much like the hciattach daemon
+> > which
+> > > > maintains
+> > > > > > N_HCI bluetooth line discipline, this
+> > driver will
+> > > > also have
+> > > > > > a User-Space  N_TI_WL Init manager
+> > (UIM)
+> > > > maintaining
+> > > > > > the Line discipline.
+> > > > > > 
+> > > > > > can you explain why you think this is
+> > needed and
+> > > > we can not
+> > > > > > interface
+> > > > > > this directly. If it is a serial port,
+> > what
+> > > > protocol does
+> > > > > > it talk?
+> > > > > 
+> > > > > Illustration: The BT driver on top of this
+> > ST driver,
+> > > > would create a hci0 interface, when someone does
+> > an DEVUP on
+> > > > that interface, the BT driver would then do a
+> > st-register -
+> > > > which in-turn would ask the hciattach-like daemon
+> > to install
+> > > > the line discipline for it via the sysfs entry.
+> > > > > The same concept goes for FM-V4L2 and GPS
+> > character
+> > > > driver.
+> > > > > 
+> > > > > The core of the problem is we cannot
+> > > > ask/install/ldisc_put for a line discipline from
+> > kernel
+> > > > space.
+> > > > 
+> > > > so let us get the facts straight here. The device
+> > in
+> > > > question is using a
+> > > > serial port to connect to the host and then
+> > multiplexing
+> > > > BT, FM and GPS
+> > > > over it. My question again, what protocol does it
+> > talk.
+> > > 
+> > > Ok, On TTY/4-wire UART, BT talks standard HCI, and
+> > HCI-LL for power management as in hci_ll.c/hciattach_ti.c
+> > which is already upstream.
+> > > 
+> > > And in a very similar way, FM talks over what is known
+> > as "channel 8" and GPS over "channel 9", Although these are
+> > not standard.
+> > > 
+> > > So, basically data going/coming to/out of chip is 
+> > > 1,2,3,4 - HCI 
+> > > 30,31,32,33 for HCI-LL
+> > > 8 - FM
+> > > 9 - GPS.
+> > > 
+> > > So consider this an extension of hci_ll/hci_ldisc but
+> > only more features to accomodate the FM and GPS.
+> > 
+> > So why are we not making the hci_ll into a generic driver
+> > that can
+> > register besides Bluetooth also FM and GPS.
+> > 
+> > Then we can attach that driver to the TTY via line
+> > discipline on boot
+> > and let the LL part handle the power management.
+> > 
+> 
+> Well hci_ll is tied up with hci_ldisc, we might not even want BT/FM on system, may be just GPS (like we have for 1 version of chip).
+> In that case GPS directly uses the ST line discipline.
 
-Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
-pte:2bf1e025 pmd:1535b5067
-Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 flags:4000000000000404 
-count:1 mapcount:-1 mapping:(null) index:0
-Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875 
-anon_vma:(null) mapping:ffff88022b5d25a8 index:8
-Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap: 
-xfs_file_mmap+0x0/0x33
-Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 2.6.32.10 #2
-Mar 24 19:22:28 alfa kernel: Call Trace:
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ? 
-tty_audit_exit+0x28/0x85
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ? 
-__dequeue_signal+0xf1/0x127
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>] 
-get_signal_to_deliver+0x32c/0x37f
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>] 
-do_notify_resume+0x90/0x740
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ? 
-__bad_area_nosemaphore+0x178/0x1a2
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
-Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel taint
-Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
-Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
-pte:d900000000 pmd:1535b5067
-Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875 
-anon_vma:(null) mapping:ffff88022b5d25a8 index:a
-Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap: 
-xfs_file_mmap+0x0/0x33
-Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B 
-2.6.32.10 #2
-Mar 24 19:22:28 alfa kernel: Call Trace:
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3d47>] unmap_vmas+0x4fa/0x787
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ? 
-tty_audit_exit+0x28/0x85
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ? 
-__dequeue_signal+0xf1/0x127
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>] 
-get_signal_to_deliver+0x32c/0x37f
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>] 
-do_notify_resume+0x90/0x740
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ? 
-__bad_area_nosemaphore+0x178/0x1a2
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
-Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
-Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
-pte:2bfe8025 pmd:1535b5067
-Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 flags:4000000000000404 
-count:1 mapcount:-1 mapping:(null) index:0
-Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875 
-anon_vma:(null) mapping:ffff88022b5d25a8 index:c
-Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap: 
-xfs_file_mmap+0x0/0x33
-Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B 
-2.6.32.10 #2
-Mar 24 19:22:28 alfa kernel: Call Trace:
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-.....
+that is what I am saying. Lets take the hci_ll driver out of it and
+create some sort of LL subsystem. Then the TI Bluetooth driver just uses
+LL and doesn't have to use hci_ldisc framework.
 
-The entire log is here:
-http://download.netcenter.hu/bughunt/20100324/messages
+Don't be afraid of taking hci_ll out of the Bluetooth part and make it a
+"subdriver" of your LL driver/ST line discipline.
 
-The actual kernel is 2.6.32.10, but the crash-series started @ 2.6.28.10.
+> Also few other things like firmware download, a chance for the ldisc driver to be platform device, to take in chip enable GPIOs, is sort of appropriate for a new driver isn't it ?
 
-I have forwarded the tasks to another server, removed this from the room, 
-and the hw survived memtest86 in >7 days continously + i have tested the 
-HDDs one by one with badblocks -vvw, all is good.
-For me looks like this is not a hw problem.
+I don't see a problem with it in general. However having some more
+details would help here to give clearer directions.
 
-Somebody have any idea?
+> > Registration of Bluetooth device, FM and GPS nodes are done
+> > via RFKILL
+> > that the LL driver exports.
+> > 
+> > > > Also why not just install the line discipline and
+> > then
+> > > > control the
+> > > > subdevices via RFKILL?
+> > > 
+> > > The chip side PM would be fine, and is being done so,
+> > st_kim.c creates the rfkill entries, and controls them
+> > locally, also allows applications to control them.
+> > > But ldisc can't be install upon boot, because UART
+> > clks would be used up for no reason at all.
+> > > (say on a mobile phone, how many times in a day - do
+> > we actually use BT/FM or GPS - so UART needs to be most
+> > often idle, and ldisc should be installed only upon
+> > requirement)
+> > 
+> > I think the driver should make sure it doesn't use the UART
+> > clocks if in
+> > deep sleep. This has nothing to do with installing the line
+> > discipline
+> > on boot via a userspace tool.
+> > 
+> > You do the power management for the hci_ll driver already
+> > today. So why
+> > can't we do the same in this driver?
+> > 
+> 
+> Correct, However that piece of Android code, as far as I have seen it depends on bunch of interfaces provided by the UART driver.
+> This ldisc on other hand doesn't can work on 8250 driver or with complicated ones like the omap-serial which provides such interfaces to shut off UART clks as and when required.
 
-Thanks a lot,
-Janos Haar 
+That sounds just like an excuse. We should be able to abstract this
+properly and make it work for Android and generic devices.
+
+> > Another way to view this is that the LL driver has to
+> > create a virtual
+> > bus for Bluetooth, FM and GPS devices. However RFKILL might
+> > be a bit
+> > more suitable and simpler.
+> > 
+> 
+> Currently rfkill provided is just sort of an extension, but really it just depends on what protocol (bt, fm, GPS) is being ST_registered, the relevant chip_enable gpio is picked up from platform_device entry in arch/XX/board-YY.c and enabled.
+
+If possible please share some more details about the protocol in use and
+the platform architecture of the chip. I think you are trying to make
+this more complicated than it has to be.
+
+Regards
+
+Marcel
+
 
