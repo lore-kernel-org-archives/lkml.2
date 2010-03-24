@@ -1,310 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab0CXHJf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 03:09:35 -0400
-Received: from mailout5.samsung.com ([203.254.224.35]:40637 "EHLO
-	mailout5.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753204Ab0CXHJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 03:09:34 -0400
-Date: Wed, 24 Mar 2010 16:09:43 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] Samsung SoCs: CPU detection support (v4)
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-id: <20100324070943.GA6779@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.14 (2007-02-12)
-X-OriginalArrivalTime: 24 Mar 2010 07:09:05.0932 (UTC)
- FILETIME=[E412F4C0:01CACB20]
+	id S1754970Ab0CXHQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 03:16:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61985 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754943Ab0CXHQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 03:16:43 -0400
+Date: Wed, 24 Mar 2010 08:16:38 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 2/4] tracing: graph output support for irqsoff tracer
+Message-ID: <20100324071638.GA1979@jolsa.lab.eng.brq.redhat.com>
+References: <1268207470-2880-1-git-send-email-jolsa@redhat.com>
+ <1268207470-2880-3-git-send-email-jolsa@redhat.com>
+ <1269393556.2957.1823.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269393556.2957.1823.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store the CPU ID to cpu_id variable and use it to detect CPU
+On Tue, Mar 23, 2010 at 09:19:16PM -0400, Steven Rostedt wrote:
+> On Wed, 2010-03-10 at 08:51 +0100, Jiri Olsa wrote:
+> 
+> > @@ -993,14 +991,6 @@ print_graph_comment(struct trace_seq *s,  struct trace_entry *ent,
+> >  		if (ret != TRACE_TYPE_HANDLED)
+> >  			return ret;
+> >  		break;
+> > -	default:
+> > -		event = ftrace_find_event(ent->type);
+> > -		if (!event)
+> > -			return TRACE_TYPE_UNHANDLED;
+> > -
+> > -		ret = event->trace(iter, sym_flags);
+> > -		if (ret != TRACE_TYPE_HANDLED)
+> > -			return ret;
+> >  	}
+> >  
+> 
+> This has the same effect as the problem with the first patch:
+> 
+> was:
+> 
+>  2)               |                                  _raw_spin_unlock_irqrestore() {
+>  2)               |                                  /* lock_release: ffffffff816969a8 random_read_wait.lock */
+>  2)   6.022 us    |                                  }
+>  2) + 27.632 us   |                                }
+>  2)   2.939 us    |                                kill_fasync();
+>  2)               |                                _raw_spin_unlock_irqrestore() {
+>  2)               |                                /* lock_release: ffffffff816967f0 &input_pool.lock */
+>  2)   5.471 us    |                                }
+>  2) + 56.740 us   |                              }
+>  2) + 88.357 us   |                            }
+>  2) + 94.026 us   |                          }
+> 
+> 
+> is now:
+> 
+>  2)               |                                  _raw_spin_unlock_irqrestore() {
+>           <idle>-0     [002]   411.798721: lock_release: ffffffff816969a8 random_read_wait.lock
+>  2)   6.022 us    |                                  }
+>  2) + 27.632 us   |                                }
+>  2)   2.939 us    |                                kill_fasync();
+>  2)               |                                _raw_spin_unlock_irqrestore() {
+>           <idle>-0     [002]   411.798741: lock_release: ffffffff816967f0 &input_pool.lock
+>  2)   5.471 us    |                                }
+>  2) + 56.740 us   |                              }
+>  2) + 88.357 us   |                            }
+>  2) + 94.026 us   |                          }
+> 
+> 
+> Please, before you apply any patch do the following:
+> 
+> (assuming debugfs is at /debug)
+> 
+> # echo 1 > /debug/tracing/events/enable
+> # echo function_graph > /debug/tracing/current_tracer
+> # cat /debug/tracing/trace
+> 
+> Examine what you see.
+> 
+> Then apply all your patches, and repeat the above. Make sure the
+> formatting is the same.
+hi,
 
-On S3C64XX, Some pheripherals such as OneNAND have different configuration
-and handle it differently to do this it needs to detect CPU ID.
+shoot, looks like I forgot about comments... sending new version soon :)
 
-Also S5PC1XX is supported.
+thanks,
+jirka
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
-index d316b4a..5fd5e1b 100644
---- a/arch/arm/plat-samsung/include/plat/cpu.h
-+++ b/arch/arm/plat-samsung/include/plat/cpu.h
-@@ -15,6 +15,8 @@
- #ifndef __SAMSUNG_PLAT_CPU_H
- #define __SAMSUNG_PLAT_CPU_H
- 
-+#include <plat/cpuid.h>
-+
- #define IODESC_ENT(x) { (unsigned long)S3C24XX_VA_##x, __phys_to_pfn(S3C24XX_PA_##x), S3C24XX_SZ_##x, MT_DEVICE }
- 
- #ifndef MHZ
-diff --git a/arch/arm/plat-samsung/include/plat/cpuid.h b/arch/arm/plat-samsung/include/plat/cpuid.h
-new file mode 100644
-index 0000000..bd7162c
---- /dev/null
-+++ b/arch/arm/plat-samsung/include/plat/cpuid.h
-@@ -0,0 +1,199 @@
-+/*
-+ * arch/arm/plat-samsung/include/mach/cpuid.h
-+ *
-+ *  Samsung cpu type detection
-+ *
-+ *  Copyright (C) 2008-2010 Samsung Electronics
-+ *  Kyungmin Park <kyungmin.park@samsung.com>
-+ *
-+ * Derived from OMAP cpu.h
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-+ */
-+
-+#ifndef __ASM_ARCH_SAMSUNG_CPU_H
-+#define __ASM_ARCH_SAMSUNG_CPU_H
-+
-+extern unsigned long samsung_cpu_id(void);
-+
-+/*
-+ * cpu_is_s3c24xx():	True for s3c2400, s3c2410, s3c2440 and so on
-+ * cpu_is_s3c241x():	True fro s3c2410, s3c2412
-+ * cpu_is_s3c244x():	True fro s3c2440, s3c2442, s3c2443
-+ * cpu_is_s3c64xx():	True for s3c6400, s3c6410
-+ * cpu_is_s5pc1xx():	True for s5pc100, s5pc110
-+ * cpu_is_s5p64xx():	True for s5p6442
-+ */
-+#define GET_SAMSUNG_CLASS	((samsung_cpu_id() >> 24) & 0xff)
-+
-+#define IS_SAMSUNG_CLASS(class, id)					\
-+static inline int is_##class (void)					\
-+{									\
-+	return (GET_SAMSUNG_CLASS == (id)) ? 1 : 0;			\
-+}
-+
-+#define GET_SAMSUNG_SUBCLASS	((samsung_cpu_id() >> 20) & 0xfff)
-+
-+#define IS_SAMSUNG_SUBCLASS(subclass, id)				\
-+static inline int is_##subclass (void)					\
-+{									\
-+	return (GET_SAMSUNG_SUBCLASS == (id)) ? 1 : 0;			\
-+}
-+
-+IS_SAMSUNG_CLASS(s3c24xx, 0x24)
-+IS_SAMSUNG_CLASS(s3c64xx, 0x64)
-+IS_SAMSUNG_CLASS(s5pc1xx, 0xc1)
-+
-+IS_SAMSUNG_SUBCLASS(s3c241x, 0x241)
-+IS_SAMSUNG_SUBCLASS(s3c244x, 0x244)
-+IS_SAMSUNG_SUBCLASS(s5p64xx, 0x644)
-+
-+#define cpu_is_s3c24xx()		0
-+#define cpu_is_s3c241x()		0
-+#define cpu_is_s3c244x()		0
-+#define cpu_is_s3c64xx()		0
-+#define cpu_is_s5pc1xx()		0
-+#define cpu_is_s5p64xx()		0
-+
-+#if defined(CONFIG_ARCH_S3C2410)
-+# undef  cpu_is_s3c24xx
-+# undef  cpu_is_s3c241x
-+# undef  cpu_is_s3c244x
-+# define cpu_is_s3c24xx()		is_s3c24xx()
-+# define cpu_is_s3c241x()		is_s3c241x()
-+# define cpu_is_s3c244x()		is_s3c244x()
-+#endif
-+
-+#if defined(CONFIG_ARCH_S3C64XX)
-+# undef  cpu_is_s3c64xx
-+# define cpu_is_s3c64xx()		is_s3c64xx()
-+#endif
-+
-+#if defined(CONFIG_ARCH_S5PC1XX) || defined(CONFIG_ARCH_S5PC11X)
-+# undef  cpu_is_s5pc1xx
-+# define cpu_is_s5pc1xx()		is_s5pc1xx()
-+#endif
-+
-+#if defined(CONFIG_ARCH_S5P64XX)
-+# undef  cpu_is_s5p64xx
-+# define cpu_is_s5p64xx()		is_s5p64xx()
-+#endif
-+
-+/*
-+ * Macros to detect individual cpu types.
-+ * cpu_is_s3c2410():	True for s3c2410
-+ * cpu_is_s3c2440():	True for s3c2440
-+ * cpu_is_s3c6400():	True for s3c6400
-+ * cpu_is_s3c6410():	True for s3c6410
-+ * cpu_is_s5pc100():	True for s5pc100
-+ * cpu_is_s5pc110():	True for s5pc110
-+ * cpu_is_s5p6442():	True for s5p6442
-+ *
-+ * Exception:
-+ * Store Revision A to 1
-+ * s3c2410a -> s3c2411
-+ * s3c2440a -> s3c2441
-+ */
-+
-+#define GET_SAMSUNG_TYPE	((samsung_cpu_id() >> 16) & 0xffff)
-+
-+#define IS_SAMSUNG_TYPE(type, id)					\
-+static inline int is_##type (void)					\
-+{									\
-+	return (GET_SAMSUNG_TYPE == (id)) ? 1 : 0;			\
-+}
-+
-+IS_SAMSUNG_TYPE(s3c2400, 0x2400)
-+IS_SAMSUNG_TYPE(s3c2410, 0x2410)
-+IS_SAMSUNG_TYPE(s3c2410a, 0x2411)
-+IS_SAMSUNG_TYPE(s3c2412, 0x2412)
-+IS_SAMSUNG_TYPE(s3c2440, 0x2440)
-+IS_SAMSUNG_TYPE(s3c2440a, 0x2441)
-+IS_SAMSUNG_TYPE(s3c2442, 0x2442)
-+IS_SAMSUNG_TYPE(s3c2443, 0x2443)
-+IS_SAMSUNG_TYPE(s3c6400, 0x6400)
-+IS_SAMSUNG_TYPE(s3c6410, 0x6410)
-+IS_SAMSUNG_TYPE(s5pc100, 0xc100)
-+IS_SAMSUNG_TYPE(s5pc110, 0xc110)
-+IS_SAMSUNG_TYPE(s5p6442, 0x6442)
-+
-+#define cpu_is_s3c2400()		0
-+#define cpu_is_s3c2410()		0
-+#define cpu_is_s3c2410a()		0
-+#define cpu_is_s3c2412()		0
-+#define cpu_is_s3c2440()		0
-+#define cpu_is_s3c2440a()		0
-+#define cpu_is_s3c2442()		0
-+#define cpu_is_s3c2443()		0
-+#define cpu_is_s3c6400()		0
-+#define cpu_is_s3c6410()		0
-+#define cpu_is_s5pc100()		0
-+#define cpu_is_s5pc110()		0
-+#define cpu_is_s5p6442()		0
-+
-+#if defined(CONFIG_ARCH_S3C2410)
-+# undef  cpu_is_s3c2400
-+# define cpu_is_s3c2400()		is_s3c2400()
-+#endif
-+
-+#if defined(CONFIG_CPU_S3C2410)
-+# undef  cpu_is_s3c2410
-+# undef  cpu_is_s3c2410a
-+# define cpu_is_s3c2410()		is_s3c2410()
-+# define cpu_is_s3c2410a()		is_s3c2410a()
-+#endif
-+
-+#if defined(CONFIG_CPU_S3C2412)
-+# undef  cpu_is_s3c2412
-+# define cpu_is_s3c2412()		is_s3c2412()
-+#endif
-+
-+#if defined(CONFIG_CPU_S3C2440)
-+# undef  cpu_is_s3c2440
-+# undef  cpu_is_s3c2440a
-+# define cpu_is_s3c2440()		is_s3c2440()
-+# define cpu_is_s3c2440a()		is_s3c2440a()
-+#endif
-+
-+#if defined(CONFIG_CPU_S3C2442)
-+# undef  cpu_is_s3c2442
-+# define cpu_is_s3c2442()		is_s3c2442()
-+#endif
-+
-+#if defined(CONFIG_CPU_S3C2443)
-+# undef  cpu_is_s3c2443
-+# define cpu_is_s3c2443()		is_s3c2443()
-+#endif
-+
-+#if defined(CONFIG_ARCH_S3C64XX)
-+# undef  cpu_is_s3c6400
-+# undef  cpu_is_s3c6410
-+# define cpu_is_s3c6400()		is_s3c6400()
-+# define cpu_is_s3c6410()		is_s3c6410()
-+#endif
-+
-+#if defined(CONFIG_ARCH_S5PC1XX) || defined(CONFIG_ARCH_S5PC11X)
-+# undef  cpu_is_s5pc100
-+# undef  cpu_is_s5pc110
-+# define cpu_is_s5pc100()		is_s5pc100()
-+# define cpu_is_s5pc110()		is_s5pc110()
-+#endif
-+
-+#if defined(CONFIG_CPU_S5P6442)
-+# undef  cpu_is_s5p6442
-+# define cpu_is_s5p6442()		is_s5p6442()
-+#endif
-+
-+#endif
-diff --git a/arch/arm/plat-samsung/init.c b/arch/arm/plat-samsung/init.c
-index 6790edf..cb3560d 100644
---- a/arch/arm/plat-samsung/init.c
-+++ b/arch/arm/plat-samsung/init.c
-@@ -30,6 +30,44 @@
- #include <plat/regs-serial.h>
- 
- static struct cpu_table *cpu;
-+static unsigned long cpu_id;
-+
-+unsigned long samsung_cpu_id(void)
-+{
-+	return cpu_id;
-+}
-+EXPORT_SYMBOL(samsung_cpu_id);
-+
-+static void __init set_cpu_id(unsigned long idcode)
-+{
-+	/*
-+	 * cpu_id encoding is as follows
-+	 * cpu_id & 0xff000000 -> S3C Class (24xx/64xx/C1xx)
-+	 * cpu_id & 0xfff00000 -> S3C Sub Class (241x/244x)
-+	 * cpu_id & 0xffff0000 -> S3C Type (2410/2440/6400/6410/C100/C110)
-+	 *
-+	 * Remains[15:0] are reserved
-+	 *
-+	 * 24xx/64xx is started from 0x30000000
-+	 * C1xx is started from 0x40000000
-+	 *
-+	 * Exception:
-+	 *  Store Revision A to 1 such as
-+	 *  s3c2410A to s3c2411
-+	 *  s3c2440A to s3c2441
-+	 */
-+	if ((idcode >> 28) == 0x4)
-+		cpu_id = 0xC0000000 | ((idcode & 0x00fff000) << 4);
-+	else
-+		cpu_id = (idcode & 0x0ffff000) << 4;
-+
-+	if (idcode == 0x32410002 || idcode == 0x32440001)
-+		cpu_id |= (0x1 << 16);
-+	if (idcode == 0x32440aaa)       /* s3c2442 */
-+		cpu_id |= (0x2 << 16);
-+	if (idcode == 0x0)              /* s3c2400 */
-+		cpu_id |= (0x2400 << 16);
-+}
- 
- static struct cpu_table * __init s3c_lookup_cpu(unsigned long idcode,
- 						struct cpu_table *tab,
-@@ -53,6 +91,8 @@ void __init s3c_init_cpu(unsigned long idcode,
- 		panic("Unknown S3C24XX CPU");
- 	}
- 
-+	set_cpu_id(idcode);
-+
- 	printk("CPU %s (id 0x%08lx)\n", cpu->name, idcode);
- 
- 	if (cpu->map_io == NULL || cpu->init == NULL) {
+> 
+> Thanks,
+> 
+> -- Steve
+> 
+> 
+> >  	/* Strip ending newline */
+> > @@ -1066,8 +1056,11 @@ print_graph_function(struct trace_iterator *iter)
+> >  		trace_assign_type(field, entry);
+> >  		return print_graph_return(&field->ret, s, entry, iter);
+> >  	}
+> > -	default:
+> > +	case TRACE_BPRINT:
+> > +	case TRACE_PRINT:
+> >  		return print_graph_comment(s, entry, iter);
+> > +	default:
+> > +		return TRACE_TYPE_UNHANDLED;
+> >  	}
+> >  
+> >  	return TRACE_TYPE_HANDLED;
+> > @@ -1101,7 +1094,7 @@ static void print_lat_header(struct seq_file *s)
+> >  	seq_printf(s, "#%.*s|||| /                     \n", size, spaces);
+> >  }
+> >  
+> > -static void print_graph_headers(struct seq_file *s)
+> > +void print_graph_headers(struct seq_file *s)
+> >  {
+> >  	int lat = trace_flags & TRACE_ITER_LATENCY_FMT;
+> >  
+> > @@ -1137,7 +1130,7 @@ static void print_graph_headers(struct seq_file *s)
+> >  	seq_printf(s, "               |   |   |   |\n");
+> >  }
+> >  
+> > -static void graph_trace_open(struct trace_iterator *iter)
+> > +void graph_trace_open(struct trace_iterator *iter)
+> >  {
+> >  	/* pid and depth on the last trace processed */
+> >  	struct fgraph_data *data;
+> > @@ -1172,7 +1165,7 @@ static void graph_trace_open(struct trace_iterator *iter)
+> >  	pr_warning("function graph tracer: not enough memory\n");
+> >  }
+> >  
+> > -static void graph_trace_close(struct trace_iterator *iter)
+> > +void graph_trace_close(struct trace_iterator *iter)
+> >  {
+> >  	struct fgraph_data *data = iter->private;
+> >  
+> > diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+> > index 2974bc7..d0c6d6c 100644
+> > --- a/kernel/trace/trace_irqsoff.c
+> > +++ b/kernel/trace/trace_irqsoff.c
+> > @@ -34,6 +34,9 @@ static int trace_type __read_mostly;
+> >  
+> >  static int save_lat_flag;
+> >  
+> > +static void stop_irqsoff_tracer(struct trace_array *tr, int graph);
+> > +static int start_irqsoff_tracer(struct trace_array *tr, int graph);
+> > +
+> >  #ifdef CONFIG_PREEMPT_TRACER
+> >  static inline int
+> >  preempt_trace(void)
+> > @@ -55,6 +58,23 @@ irq_trace(void)
+> >  # define irq_trace() (0)
+> >  #endif
+> >  
+> > +#define TRACE_DISPLAY_GRAPH	1
+> > +
+> > +static struct tracer_opt trace_opts[] = {
+> > +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > +	/* display latency trace as call graph */
+> > +	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
+> > +#endif
+> > +	{ } /* Empty entry */
+> > +};
+> > +
+> > +static struct tracer_flags tracer_flags = {
+> > +	.val = 0,
+> > +	.opts = trace_opts,
+> > +};
+> > +
+> > +#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
+> > +
+> >  /*
+> >   * Sequence count - we record it when starting a measurement and
+> >   * skip the latency if the sequence has changed - some other section
+> > @@ -108,6 +128,109 @@ static struct ftrace_ops trace_ops __read_mostly =
+> >  };
+> >  #endif /* CONFIG_FUNCTION_TRACER */
+> >  
+> > +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > +static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
+> > +{
+> > +	int cpu;
+> > +
+> > +	if (!(bit & TRACE_DISPLAY_GRAPH))
+> > +		return -EINVAL;
+> > +
+> > +	if (!(is_graph() ^ set))
+> > +		return 0;
+> > +
+> > +	stop_irqsoff_tracer(irqsoff_trace, !set);
+> > +
+> > +	for_each_possible_cpu(cpu)
+> > +		per_cpu(tracing_cpu, cpu) = 0;
+> > +
+> > +	tracing_max_latency = 0;
+> > +	tracing_reset_online_cpus(irqsoff_trace);
+> > +
+> > +	return start_irqsoff_tracer(irqsoff_trace, set);
+> > +}
+> > +
+> > +static int irqsoff_graph_entry(struct ftrace_graph_ent *trace)
+> > +{
+> > +	struct trace_array *tr = irqsoff_trace;
+> > +	struct trace_array_cpu *data;
+> > +	unsigned long flags;
+> > +	long disabled;
+> > +	int ret;
+> > +	int cpu;
+> > +	int pc;
+> > +
+> > +	cpu = raw_smp_processor_id();
+> > +	if (likely(!per_cpu(tracing_cpu, cpu)))
+> > +		return 0;
+> > +
+> > +	local_save_flags(flags);
+> > +	/* slight chance to get a false positive on tracing_cpu */
+> > +	if (!irqs_disabled_flags(flags))
+> > +		return 0;
+> > +
+> > +	data = tr->data[cpu];
+> > +	disabled = atomic_inc_return(&data->disabled);
+> > +
+> > +	if (likely(disabled == 1)) {
+> > +		pc = preempt_count();
+> > +		ret = __trace_graph_entry(tr, trace, flags, pc);
+> > +	} else
+> > +		ret = 0;
+> > +
+> > +	atomic_dec(&data->disabled);
+> > +	return ret;
+> > +}
+> > +
+> > +static void irqsoff_graph_return(struct ftrace_graph_ret *trace)
+> > +{
+> > +	struct trace_array *tr = irqsoff_trace;
+> > +	struct trace_array_cpu *data;
+> > +	unsigned long flags;
+> > +	long disabled;
+> > +	int cpu;
+> > +	int pc;
+> > +
+> > +	cpu = raw_smp_processor_id();
+> > +	if (likely(!per_cpu(tracing_cpu, cpu)))
+> > +		return;
+> > +
+> > +	local_save_flags(flags);
+> > +	/* slight chance to get a false positive on tracing_cpu */
+> > +	if (!irqs_disabled_flags(flags))
+> > +		return;
+> > +
+> > +	data = tr->data[cpu];
+> > +	disabled = atomic_inc_return(&data->disabled);
+> > +
+> > +	if (likely(disabled == 1)) {
+> > +		pc = preempt_count();
+> > +		__trace_graph_return(tr, trace, flags, pc);
+> > +	}
+> > +
+> > +	atomic_dec(&data->disabled);
+> > +}
+> > +
+> > +static void irqsoff_trace_open(struct trace_iterator *iter)
+> > +{
+> > +	if (is_graph())
+> > +		graph_trace_open(iter);
+> > +
+> > +}
+> > +
+> > +static void irqsoff_trace_close(struct trace_iterator *iter)
+> > +{
+> > +	if (iter->private)
+> > +		graph_trace_close(iter);
+> > +}
+> > +
+> > +#else
+> > +static int irqsoff_set_flag(u32 old_flags, u32 bit, int set)
+> > +{
+> > +	return -EINVAL;
+> > +}
+> > +#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+> > +
+> >  /*
+> >   * Should this new latency be reported/recorded?
+> >   */
+> > @@ -347,19 +470,36 @@ void trace_preempt_off(unsigned long a0, unsigned long a1)
+> >  }
+> >  #endif /* CONFIG_PREEMPT_TRACER */
+> >  
+> > -static void start_irqsoff_tracer(struct trace_array *tr)
+> > +static int start_irqsoff_tracer(struct trace_array *tr, int graph)
+> >  {
+> > -	register_ftrace_function(&trace_ops);
+> > -	if (tracing_is_enabled())
+> > +	int ret = 0;
+> > +
+> > +	if (!graph)
+> > +		ret = register_ftrace_function(&trace_ops);
+> > +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > +	else
+> > +		ret = register_ftrace_graph(&irqsoff_graph_return,
+> > +					    &irqsoff_graph_entry);
+> > +#endif
+> > +
+> > +	if (!ret && tracing_is_enabled())
+> >  		tracer_enabled = 1;
+> >  	else
+> >  		tracer_enabled = 0;
+> > +
+> > +	return ret;
+> >  }
+> >  
+> > -static void stop_irqsoff_tracer(struct trace_array *tr)
+> > +static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
+> >  {
+> >  	tracer_enabled = 0;
+> > -	unregister_ftrace_function(&trace_ops);
+> > +
+> > +	if (!graph)
+> > +		unregister_ftrace_function(&trace_ops);
+> > +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > +	else
+> > +		unregister_ftrace_graph();
+> > +#endif
+> >  }
+> >  
+> >  static void __irqsoff_tracer_init(struct trace_array *tr)
+> > @@ -372,12 +512,14 @@ static void __irqsoff_tracer_init(struct trace_array *tr)
+> >  	/* make sure that the tracer is visible */
+> >  	smp_wmb();
+> >  	tracing_reset_online_cpus(tr);
+> > -	start_irqsoff_tracer(tr);
+> > +
+> > +	if (start_irqsoff_tracer(tr, is_graph()))
+> > +		printk(KERN_ERR "failed to start irqsoff tracer\n");
+> >  }
+> >  
+> >  static void irqsoff_tracer_reset(struct trace_array *tr)
+> >  {
+> > -	stop_irqsoff_tracer(tr);
+> > +	stop_irqsoff_tracer(tr, is_graph());
+> >  
+> >  	if (!save_lat_flag)
+> >  		trace_flags &= ~TRACE_ITER_LATENCY_FMT;
+> > @@ -409,9 +551,15 @@ static struct tracer irqsoff_tracer __read_mostly =
+> >  	.start		= irqsoff_tracer_start,
+> >  	.stop		= irqsoff_tracer_stop,
+> >  	.print_max	= 1,
+> > +	.flags		= &tracer_flags,
+> > +	.set_flag	= irqsoff_set_flag,
+> >  #ifdef CONFIG_FTRACE_SELFTEST
+> >  	.selftest    = trace_selftest_startup_irqsoff,
+> >  #endif
+> > +#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+> > +	.open           = irqsoff_trace_open,
+> > +	.close          = irqsoff_trace_close,
+> > +#endif
+> >  };
+> >  # define register_irqsoff(trace) register_tracer(&trace)
+> >  #else
+> 
+> 
