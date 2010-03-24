@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab0CXQL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:11:56 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:46197 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932070Ab0CXQLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:11:55 -0400
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Greg KH <gregkh@suse.de>, PavanSavoy <pavan_savoy@ti.com>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <359814.2971.qm@web94904.mail.in2.yahoo.com>
-References: <359814.2971.qm@web94904.mail.in2.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 09:11:45 -0700
-Message-ID: <1269447105.11714.117.camel@localhost.localdomain>
+	id S932202Ab0CXQNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:13:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:17112 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932138Ab0CXQNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:13:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,301,1267430400"; 
+   d="scan'208";a="258216815"
+Subject: Re: [patch 2/2] x86,pat Convert memtype_lock into an rw_lock.
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "holt@sgi.com" <holt@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <1269430347.5109.164.camel@twins>
+References: <ff8c11be-b22d-4849-9b19-d9107c4fea47@email.android.com>
+	 <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
+	 <1269430347.5109.164.camel@twins>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 24 Mar 2010 09:12:26 -0700
+Message-Id: <1269447146.2881.0.camel@sbs-t61.sc.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
-
-
-> I wanted to somehow put this in staging because then it would probably have a thorough architectural review process.
-> Some details about this driver - 
+On Wed, 2010-03-24 at 04:32 -0700, Peter Zijlstra wrote:
+> On Wed, 2010-03-17 at 16:19 -0800, Suresh Siddha wrote:
+> > On Wed, 2010-03-17 at 12:51 -0700, H. Peter Anvin wrote:
+> > > Well, as you know :) tglx and I are on the road ... I'll try to get to it on Friday before I take off again.
+> > 
+> > Also I talked to Thomas about this rwlock conversion and he referred to
+> > RT issues with rwlock. And the best is to avoid this using RCU.
 > 
-> 1. This driver will be used by Bluetooth-BlueZ/FM-V4L2 and GPS (probably character device driver) using the EXPORTED symbols (-register/_unregister).
-> 
-> 2. Much like the hciattach daemon which maintains N_HCI bluetooth line discipline, this driver will also have a User-Space  N_TI_WL Init manager (UIM) maintaining the Line discipline.
+> Its not just RT, even for mainline rwlock_t is a massive pain and often
+> is no better (actually worse) than a spinlock due to the massive
+> cacheline bouncing it introduces.
 
-can you explain why you think this is needed and we can not interface
-this directly. If it is a serial port, what protocol does it talk?
+Don't we have the same cacheline bouncing issues with the ticket
+spinlocks?
 
-> 3. Because of the UIM should know when to install/uninstall line discipline, the /sys entry is created a root called UIM (a new kobject) and UIM daemon would write it's PID to it.
-
-I don't understand this. This sounds like a broken concept to me.
-
-> 4. As Alan suggested, If I make it self-contained by pushing number of line disciplines to a slightly larger number, then would it be OK ?
-
-Just from a quick look, I think within a few review cycles this might be
-able to get proper upstream inclusion. No idea why bother with staging
-in the first place. Lets do this correctly.
-
-Regards
-
-Marcel
-
+thanks,
+suresh
 
