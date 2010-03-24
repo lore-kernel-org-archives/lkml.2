@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab0CXSUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:20:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33819 "EHLO hera.kernel.org"
+	id S1756699Ab0CXSUl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:20:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11374 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753119Ab0CXSUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:20:00 -0400
-Message-ID: <4BAA5766.3020100@kernel.org>
-Date: Wed, 24 Mar 2010 11:18:14 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1753119Ab0CXSUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 14:20:40 -0400
+Message-ID: <4BAA57DA.5030707@redhat.com>
+Date: Wed, 24 Mar 2010 20:20:10 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: michael@ellerman.id.au
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -v4 00/08] use lmb with x86
-References: <1269427029-21000-1-git-send-email-yinghai@kernel.org>	 <20100324104844.GA896@elte.hu> <1269430868.2500.14.camel@concordia>
-In-Reply-To: <1269430868.2500.14.camel@concordia>
-Content-Type: text/plain; charset=UTF-8
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org> <4BAA3496.2010901@redhat.com> <20100324155927.GI14800@8bytes.org> <4BAA393A.9000105@redhat.com> <20100324174703.GD3625@ghostprotocols.net>
+In-Reply-To: <20100324174703.GD3625@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 04:41 AM, Michael Ellerman wrote:
-> On Wed, 2010-03-24 at 11:48 +0100, Ingo Molnar wrote:
->> * Yinghai Lu <yinghai@kernel.org> wrote:
->>
->>> new early_res is lmb extension. and it could be used to replace bootmem.
->>
->> Why not do what we suggested: extend lmb.c to also offer the 
->> early_res-equivalent functionality, and remove kernel/early_res.c and move 
->> lib/lmb.c to mm/lmb.c?
->>
->> We dont want two facilities (early_res and lmb) really ...
-> 
-> Exactly. 
-> 
-> This series seems to leave us with kernel/early_res.c (which should
-> never have moved out of arch/x86 AFAICS) - as well as using some of
-> lmb.c.
-the new version...
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-2.6-yinghai.git;a=blob;f=kernel/early_res.c;h=a7933939b44ae1ccb72e30203031f5b742c88a3f;hb=c9115b0731084ec0c0e164456b7434ea61c2a67b
+On 03/24/2010 07:47 PM, Arnaldo Carvalho de Melo wrote:
+> Em Wed, Mar 24, 2010 at 06:09:30PM +0200, Avi Kivity escreveu:
+>    
+>> Doesn't perf already has a dependency on naming conventions for finding
+>> debug information?
+>>      
+> It looks at several places, from most symbol rich (/usr/lib/debug/, aka
+> -debuginfo packages, where we have full symtabs) to poorest (the
+> packaged binary, where we may just have a .dynsym).
+>
+> In an ideal world, it would just get the build-id (a SHA1 cookie that is
+> in an ELF session inserted in every binary (aka DSOs), kernel module,
+> kallsyms or vmlinux file) and use that to look first in a local cache
+> (implemented in perf for a long time already) or in some symbol server.
+>
+> For instance, for a random perf.data file I collected here in my machine
+> I have:
+>
+> [acme@doppio linux-2.6-tip]$ perf buildid-list | grep libpthread
+> 5c68f7afeb33309c78037e374b0deee84dd441f6 /lib64/libpthread-2.10.2.so
+> [acme@doppio linux-2.6-tip]$
+>
+> So I don't have to access /lib64/libpthread-2.10.2.so directly, nor some
+> convention to get a debuginfo in a local file like:
+>
+> /usr/lib/debug/lib64/libpthread-2.10.2.so.debug
+>
+> Instead the tools look at:
+>
+> [acme@doppio linux-2.6-tip]$ l ~/.debug/.build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6
+> lrwxrwxrwx 1 acme acme 73 2010-01-06 18:53 /home/acme/.debug/.build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6 ->  ../../lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6*
+>
+> To find the file for that specific build-id, not the one installed in my
+> machine (or on the different machine, of a different architecture) that
+> may be completely unrelated, a new one, or one for a different arch.
+>    
 
-should be clean.
+Thanks.  I believe qemu could easily act as a symbol server for this use 
+case.
 
-> 
-> It doesn't compile on powerpc, because early_res.c is looking for
-> find_fw_memmap_area() which is still under arch/x86.
+-- 
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
 
-it looks that you are looking at old version somehow.
-
-please check
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-2.6-yinghai.git;a=summary
-
-> 
-> And sprinkling CONFIG_NO_BOOTMEM everywhere is getting a bit gross. I
-> notice that's already happened to mm/(bootmem|page_alloc).c but
-> propagating it further is not nice.
-
-for converting smoothly, before we remove bootmem core, we can keep it. and can compare bootmem and nobootmem side by side.
-
-Thanks
-
-Yinghai
