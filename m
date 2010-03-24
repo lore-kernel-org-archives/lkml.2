@@ -1,76 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab0CXWta (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 18:49:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49164 "EHLO mx1.redhat.com"
+	id S1751750Ab0CXWzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:55:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:49863 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751572Ab0CXWt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 18:49:29 -0400
-Date: Wed, 24 Mar 2010 23:48:58 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [rfc 5/5] mincore: transparent huge page support
-Message-ID: <20100324224858.GP10659@random.random>
-References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
- <1269354902-18975-6-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269354902-18975-6-git-send-email-hannes@cmpxchg.org>
+	id S1750826Ab0CXWzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 18:55:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,303,1267430400"; 
+   d="scan'208";a="258365600"
+From: mark.a.allyn@intel.com
+To: linux-kernel@vger.kernel.org, greg@kroah.com, alan@linux.intel.com
+Cc: Mark Allyn <mark.a.allyn@intel.com>
+Subject: [PATCH 1/1] staging;rar_register: add TODO file
+Date: Wed, 24 Mar 2010 15:54:24 -0700
+Message-Id: <1269471264-11577-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 03:35:02PM +0100, Johannes Weiner wrote:
-> +static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> +			unsigned long addr, unsigned long end,
-> +			unsigned char *vec)
-> +{
-> +	int huge = 0;
-> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> +	spin_lock(&vma->vm_mm->page_table_lock);
-> +	if (likely(pmd_trans_huge(*pmd))) {
-> +		huge = !pmd_trans_splitting(*pmd);
+From: Mark Allyn <allyn@allyn-test.(none)>
 
-Under mmap_sem (read or write) a hugepage can't materialize under
-us. So here the pmd_trans_huge can be lockless and run _before_ taking
-the page_table_lock. That's the invariant I used to keep identical
-performance for all fast paths.
+Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
+---
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/rar_register/TODO
 
-And if it wasn't the case it wouldn't be safe to return huge = 0 as
-the page_table_lock is released at that point.
+diff --git a/drivers/staging/rar_register/TODO b/drivers/staging/rar_register/TODO
+new file mode 100644
+index 0000000..e69de29
+-- 
+1.6.0.4
 
-> +		spin_unlock(&vma->vm_mm->page_table_lock);
-> +		/*
-> +		 * If we have an intact huge pmd entry, all pages in
-> +		 * the range are present in the mincore() sense of
-> +		 * things.
-> +		 *
-> +		 * But if the entry is currently being split into
-> +		 * normal page mappings, wait for it to finish and
-> +		 * signal the fallback to ptes.
-> +		 */
-> +		if (huge)
-> +			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-> +		else
-> +			wait_split_huge_page(vma->anon_vma, pmd);
-> +	} else
-> +		spin_unlock(&vma->vm_mm->page_table_lock);
-> +#endif
-> +	return huge;
-> +}
-> +
-
-It's probably cleaner to move the block into huge_memory.c and create
-a dummy for the #ifndef version like I did for all the rest.
-
-
-I'll incorporate and take care of those changes myself if you don't
-mind, as I'm going to do a new submit for -mm. I greatly appreciated
-you taken the time to port to transhuge it helps a lot! ;)
-
-Thanks,
-Andrea
