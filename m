@@ -1,250 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab0CXTCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 15:02:23 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55996 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755960Ab0CXTCW (ORCPT
+	id S1756756Ab0CXTHg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 15:07:36 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:49408 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756659Ab0CXTHe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 15:02:22 -0400
-Date: Wed, 24 Mar 2010 20:02:04 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
-       jesse.brandeburg@intel.com
-Subject: [PATCH] Prevent nested interrupts when the IRQ stack is near
-	overflowing v2
-Message-ID: <20100324190150.GA18803@basil.fritz.box>
+	Wed, 24 Mar 2010 15:07:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MwE4c1J8YMEw/dHRKiswAMDo+Q9vFrjYiRWdKJzNSVOrJlpC1Xc4hvtj5N5e0j04s0
+         +ZdPHeITOTuLj9vVnroTCFxdA1Rz+nHZjqFNOH06RfJyD9tZpYiqJqfHdW5sm4dl2RzH
+         1ITDteGxSlJIySTXLK70X1dAiN6FSG3vfsTc0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100324111436.fe5d2906.akpm@linux-foundation.org>
+References: <1268258994.2183.14.camel@carter>
+	 <ca2dc2821003110754r65ab170at39a61fb11fa285e0@mail.gmail.com>
+	 <20100319132723.118cc16a.akpm@linux-foundation.org>
+	 <ca2dc2821003200604m7c8cdea4r64ab8c98e7ec8242@mail.gmail.com>
+	 <20100321135836.GA11661@zhen-devel.sh.intel.com>
+	 <ca2dc2821003210830h2025df79r477cca7d81ddd28d@mail.gmail.com>
+	 <20100322205704.ac4cd9ae.akpm@linux-foundation.org>
+	 <alpine.DEB.2.01.1003222111070.5493@bogon.housecafe.de>
+	 <ca2dc2821003230440w3d96612aja0d4e083d3cc8c02@mail.gmail.com>
+	 <20100324111436.fe5d2906.akpm@linux-foundation.org>
+Date: Wed, 24 Mar 2010 20:07:32 +0100
+Message-ID: <ca2dc2821003241207v721119d6m9a14a3cc98ab35a6@mail.gmail.com>
+Subject: Re: [PATCH] intel-agp.c: Fix crash when accessing nonexistent GTT 
+	entries in i915
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christian Kujau <lists@nerdbynature.de>,
+       Zhenyu Wang <zhenyuw@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, David.Woodhouse@intel.com,
+       dwmw2@infradead.org, eric@anholt.net, ben@decadent.org.uk,
+       gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent nested interrupts when the IRQ stack is near overflowing v2
+On Wed, Mar 24, 2010 at 7:14 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 23 Mar 2010 12:40:05 +0100
+> Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>
+>> On Tue, Mar 23, 2010 at 5:14 AM, Christian Kujau <lists@nerdbynature.de> wrote:
+>> > On Mon, 22 Mar 2010 at 20:57, Andrew Morton wrote:
+>> >> On Sun, 21 Mar 2010 16:30:20 +0100 Miguel Ojeda <miguel.ojeda.sandonis@gmail.com> wrote:
+>> >> > I bisected in order to find the commit 5877960869333e42ebeb733e8d9d5630ff96d350.
+>> >
+>> > I believe this[0] is fc61901373987ad61851ed001fe971f3ee8d96a3 upstream:
+>>
+>> Indeed. Also in
+>>
+>> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=commit;h=fc61901373987ad61851ed001fe971f3ee8d96a3
+>
+> Does reverting that patch from the current code fix the crash?
+>
 
-Interrupts can always nest when they don't run with IRQF_DISABLED.
+I will recheck tomorrow but I think that it does, if
+intel_private.gtt_total_size is still 32768 in current code instead of
+65536 (I think I tried the patch I sent in 2.6.34-rc1 too).
 
-When a lot of interrupts hit the same vector on the same
-CPU nested interrupts can overflow the irq stack and cause hangs.
-
-This has been observed with MSI-X & Ethernet on a large system.
-
-This patch automatically forces IRQF_DISABLED when
-the interrupt stack runs low. I implemented it using
-a "callback" (really just a weak call) from the generic IRQ code 
-to the architecture code because passing this state down the 
-normal call chain would have required changing too much code. 
-
-The irq checks are currently implemented for x86-(32,64) only,
-but other architectures could (and probably should) do the same.
-
-Currently the thresholds are 2K each. This is a fairly
-arbitary number. On 4K stack i386 it's about half 
-the irq stack, on the other configurations it's 1/4-1/16.
-
-This also fixes another minor bug on 32bit: don't dump a backtrace when the 
-irq stack runs low.
-
-Based on discussions with Suresh B. Siddha and others.
-Originally reported by Jesse Brandeburg.
-
-v2: Use more common code on 32bit. Don't dump stack
-    on low irq stack.
-
-Tested-by: emil.s.tantilov@intel.com
-Cc: jesse.brandeburg@intel.com
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Suresh B. Siddha <suresh.b.siddha@intel.com>
-
----
- arch/x86/kernel/irq_32.c |   43 ++++++++++++++++++++++++++++++++++---------
- arch/x86/kernel/irq_64.c |   18 ++++++++++++++++--
- include/linux/irq.h      |    2 ++
- kernel/irq/handle.c      |   16 +++++++++++++++-
- 4 files changed, 67 insertions(+), 12 deletions(-)
-
-Index: linux-2.6.34-rc1-ak/include/linux/irq.h
-===================================================================
---- linux-2.6.34-rc1-ak.orig/include/linux/irq.h	2010-03-14 03:58:12.000000000 +0100
-+++ linux-2.6.34-rc1-ak/include/linux/irq.h	2010-03-24 19:11:23.000000000 +0100
-@@ -520,4 +520,6 @@
- }
- #endif	/* CONFIG_SMP */
- 
-+extern int irq_stack_near_overflow(void);
-+
- #endif /* _LINUX_IRQ_H */
-Index: linux-2.6.34-rc1-ak/kernel/irq/handle.c
-===================================================================
---- linux-2.6.34-rc1-ak.orig/kernel/irq/handle.c	2010-03-14 03:58:12.000000000 +0100
-+++ linux-2.6.34-rc1-ak/kernel/irq/handle.c	2010-03-24 19:11:23.000000000 +0100
-@@ -358,6 +358,15 @@
- 	       "but no thread function available.", irq, action->name);
- }
- 
-+/*
-+ * Is the interrupt stack near overflowing?
-+ * Can/should be overriden by architectures
-+ */
-+int __weak irq_stack_near_overflow(void)
-+{
-+	return 0;
-+}
-+
- /**
-  * handle_IRQ_event - irq action chain handler
-  * @irq:	the interrupt number
-@@ -370,7 +379,12 @@
- 	irqreturn_t ret, retval = IRQ_NONE;
- 	unsigned int status = 0;
- 
--	if (!(action->flags & IRQF_DISABLED))
-+	/*
-+	 * When the IRQ stack is near overflowing don't allow nested
-+	 * interrupts.
-+	 */
-+
-+	if (!(action->flags & IRQF_DISABLED) && !irq_stack_near_overflow())
- 		local_irq_enable_in_hardirq();
- 
- 	do {
-Index: linux-2.6.34-rc1-ak/arch/x86/kernel/irq_64.c
-===================================================================
---- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/irq_64.c	2010-03-03 02:01:27.000000000 +0100
-+++ linux-2.6.34-rc1-ak/arch/x86/kernel/irq_64.c	2010-03-24 19:11:23.000000000 +0100
-@@ -16,6 +16,7 @@
- #include <linux/ftrace.h>
- #include <linux/uaccess.h>
- #include <linux/smp.h>
-+#include <linux/irq.h>
- #include <asm/io_apic.h>
- #include <asm/idle.h>
- #include <asm/apic.h>
-@@ -26,6 +27,19 @@
- DEFINE_PER_CPU(struct pt_regs *, irq_regs);
- EXPORT_PER_CPU_SYMBOL(irq_regs);
- 
-+#define IRQ_STACK_THRESH 2048
-+
-+/*
-+ * Stack overflow checking for the interrupt stacks.
-+ * Called by the generic IRQ handler.
-+ */
-+int irq_stack_near_overflow(void)
-+{
-+	char *stack;
-+	asm("mov %%rsp,%0" : "=r" (stack));
-+	return stack <= __get_cpu_var(irq_stack_ptr) - IRQ_STACK_SIZE + IRQ_STACK_THRESH;
-+}
-+
- /*
-  * Probabilistic stack overflow check:
-  *
-@@ -33,7 +47,7 @@
-  * runs on the big interrupt stacks. Checking reliably is too expensive,
-  * so we just check from interrupts.
-  */
--static inline void stack_overflow_check(struct pt_regs *regs)
-+static inline void process_stack_overflow_check(struct pt_regs *regs)
- {
- #ifdef CONFIG_DEBUG_STACKOVERFLOW
- 	u64 curbase = (u64)task_stack_page(current);
-@@ -52,7 +66,7 @@
- {
- 	struct irq_desc *desc;
- 
--	stack_overflow_check(regs);
-+	process_stack_overflow_check(regs);
- 
- 	desc = irq_to_desc(irq);
- 	if (unlikely(!desc))
-Index: linux-2.6.34-rc1-ak/arch/x86/kernel/irq_32.c
-===================================================================
---- linux-2.6.34-rc1-ak.orig/arch/x86/kernel/irq_32.c	2010-03-03 02:01:27.000000000 +0100
-+++ linux-2.6.34-rc1-ak/arch/x86/kernel/irq_32.c	2010-03-24 19:24:19.000000000 +0100
-@@ -17,6 +17,7 @@
- #include <linux/delay.h>
- #include <linux/uaccess.h>
- #include <linux/percpu.h>
-+#include <linux/irq.h>
- 
- #include <asm/apic.h>
- 
-@@ -26,16 +27,29 @@
- DEFINE_PER_CPU(struct pt_regs *, irq_regs);
- EXPORT_PER_CPU_SYMBOL(irq_regs);
- 
--#ifdef CONFIG_DEBUG_STACKOVERFLOW
--/* Debugging check for stack overflow: is there less than 1KB free? */
--static int check_stack_overflow(void)
-+
-+static inline int check_stack(int threshold)
- {
- 	long sp;
- 
- 	__asm__ __volatile__("andl %%esp,%0" :
- 			     "=r" (sp) : "0" (THREAD_SIZE - 1));
- 
--	return sp < (sizeof(struct thread_info) + STACK_WARN);
-+	return sp < (sizeof(struct thread_info) + threshold);
-+}
-+
-+#define IRQ_STACK_THRESH 2048
-+
-+int irq_stack_near_overflow(void)
-+{
-+	return check_stack(IRQ_STACK_THRESH);
-+}
-+
-+#ifdef CONFIG_DEBUG_STACKOVERFLOW
-+/* Debugging check for stack overflow: is there less than 2KB free? */
-+static inline int check_stack_overflow(void)
-+{
-+	return check_stack(IRQ_STACK_THRESH);
- }
- 
- static void print_stack_overflow(void)
-@@ -189,7 +203,12 @@
- 
- #else
- static inline int
--execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq) { return 0; }
-+execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq)
-+{
-+	if (unlikely(overflow))
-+		print_stack_overflow();
-+	return 0;
-+}
- #endif
- 
- bool handle_irq(unsigned irq, struct pt_regs *regs)
-@@ -197,17 +216,23 @@
- 	struct irq_desc *desc;
- 	int overflow;
- 
-+	/*
-+	 * The result of this gets ignored when
-+	 * the interrupt is already nested on a irq stack.
-+	 * That means no backtrace printed -- that is
-+	 * needed because nested interrupts can always happen.
-+	 * However the generic IRQ code will check again
-+	 * and prevent further nesting if the stack is near
-+	 * overflow.
-+	 */
- 	overflow = check_stack_overflow();
- 
- 	desc = irq_to_desc(irq);
- 	if (unlikely(!desc))
- 		return false;
- 
--	if (!execute_on_irq_stack(overflow, desc, irq)) {
--		if (unlikely(overflow))
--			print_stack_overflow();
-+	if (!execute_on_irq_stack(overflow, desc, irq))
- 		desc->handle_irq(irq, desc);
--	}
- 
- 	return true;
- }
+> --- a/drivers/char/agp/intel-agp.c~revert-1
+> +++ a/drivers/char/agp/intel-agp.c
+> @@ -207,7 +207,6 @@ static struct _intel_private {
+>         * popup and for the GTT.
+>         */
+>        int gtt_entries;                        /* i830+ */
+> -       int gtt_total_size;
+>        union {
+>                void __iomem *i9xx_flush_page;
+>                void *i8xx_flush_page;
+> @@ -1239,7 +1238,7 @@ static int intel_i915_configure(void)
+>        readl(intel_private.registers+I810_PGETBL_CTL); /* PCI Posting. */
+>
+>        if (agp_bridge->driver->needs_scratch_page) {
+> -               for (i = intel_private.gtt_entries; i < intel_private.gtt_total_size; i++) {
+> +               for (i = intel_private.gtt_entries; i < current_size->num_entries; i++) {
+>                        writel(agp_bridge->scratch_page, intel_private.gtt+i);
+>                }
+>                readl(intel_private.gtt+i-1);   /* PCI Posting. */
+> @@ -1394,8 +1393,6 @@ static int intel_i915_create_gatt_table(
+>        if (!intel_private.gtt)
+>                return -ENOMEM;
+>
+> -       intel_private.gtt_total_size = gtt_map_size / 4;
+> -
+>        temp &= 0xfff80000;
+>
+>        intel_private.registers = ioremap(temp, 128 * 4096);
+> @@ -1485,8 +1482,6 @@ static int intel_i965_create_gatt_table(
+>        if (!intel_private.gtt)
+>                return -ENOMEM;
+>
+> -       intel_private.gtt_total_size = gtt_size / 4;
+> -
+>        intel_private.registers = ioremap(temp, 128 * 4096);
+>        if (!intel_private.registers) {
+>                iounmap(intel_private.gtt);
+> _
+>
+>
