@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0CXVML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:12:11 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36540
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752199Ab0CXVMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:12:06 -0400
-Date: Wed, 24 Mar 2010 14:12:29 -0700 (PDT)
-Message-Id: <20100324.141229.168026988.davem@davemloft.net>
-To: elendil@planet.nl
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-wireless@vger.kernel.org, lrodriguez@atheros.com,
-       yi.zhu@intel.com, reinette.chatre@intel.com, ilw@linux.intel.com,
-       mcgrof@gmail.com, coreythomas@charter.net,
-       libertas-dev@lists.infradead.org
-Subject: Re: [PATCH 00/07] net: remove trailing spaces in messages
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201003241927.12434.elendil@planet.nl>
-References: <201003241927.12434.elendil@planet.nl>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752160Ab0CXVNW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:13:22 -0400
+Received: from mail03.svc.cra.dublin.eircom.net ([159.134.118.19]:34562 "HELO
+	mail03.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751227Ab0CXVNV convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:13:21 -0400
+Date: Wed, 24 Mar 2010 21:13:17 +0000 (GMT)
+From: =?utf-8?Q?Union_beschr=C3=A4nkt_Finanzierung?= 
+	<leighhollywood@eircom.net>
+Reply-To: "info@unionsloans.com" <info@unionsloans.com>
+Message-ID: <13763974.177381269465197221.JavaMail.root@webmailbox302.eircom.net>
+Subject: =?utf-8?Q?Darlehen_bieten_bei_2%_Zins_(?=
+ =?utf-8?Q?Union_beschr=C3=A4nkt_Finanzierung)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [208.122.254.222]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frans Pop <elendil@planet.nl>
-Date: Wed, 24 Mar 2010 19:27:09 +0100
 
-> This is the third patchset to remove trailing spaces in kernel messages. 
-> Patches in this set cover wireless code.
-> 
-> Note that the last patch for libertas changes a debugfs header and not 
-> actually a message.
-> 
-> Patches have been rebased against current net-next.
 
-John, please suck these in :-)
+Hallo 
+  Ich bin Curtis Smith, Geschäftsführer der Union beschränkt Finanzierung. Wir sind zertifiziert Darlehen Darlehensgeber, die Kredite an Unternehmen Darlehen, persönliche Darlehen, guten und schlechten Krediten online gesicherte Darlehen für weltweite Einwohner mit schlechter und guter Bonität oder Konkurs Menschen auf eine sehr reduzierte Zinssatz von 3%. Diese Darlehen sind Angebot aus dem Bereich von 5000,00 € bis zu 10.000.000,00 €. Wir bieten Kredite an Einzelpersonen nur schweren aufgeschlossen. Auch, wenn Sie sich für den Erhalt eines Darlehens Sie sind uns mit unserem Unternehmen per E-Mail an: (enquiry@unionsloans.com) interessiert 
+
+Für die Bedingungen und Konditionen, wie man das macht. 
+
+Mit freundlichen Grüßen, 
+Herr Curtis Smith 
+Managing Director 
+Company No 04550760 
+Adresse: 17 Burn Walk Burham Buckinghamshire SL1 7EW 
+Herkunftsland: Vereinigtes Königreich 
+E-Mail: info@unionsloans.com 
+
+Copyright © 2010 Union Financial Service.
+
