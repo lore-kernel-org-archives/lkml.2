@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756340Ab0CXQXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:23:00 -0400
-Received: from web94909.mail.in2.yahoo.com ([203.104.17.168]:21943 "HELO
-	web94909.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752014Ab0CXQW7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:22:59 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=saMCi3Pch8HeKg5kwafErez5Bl0s9L4QzhRptf7PwYcjC0Cv9Xr/6fIlfd28htQmb2f+lzErR67ATaCcz+3SAvNcWvsQjTDmX0Uxpl3FkV3bVu9jpYFiGTeT9cRx7EX/r+Ti4arF1psgU45HirVbn3zDI4gkaOibpGvyyz+BV/w=;
-Message-ID: <12213.61465.qm@web94909.mail.in2.yahoo.com>
-X-YMail-OSG: Luo3Dz8VM1mkJIW3TQvPe7Uz01zs0Wp0GG42XJOO1DLy4ss
- ERq78QN3eX4WDRBIlaWV2T2dqJ6H71_AoDQtjVFYuWAVlmc8.8NVpkW1CO6V
- rC9zXcZ8IreQ9JmHigmUsbal85a1LWV.1L6a6eJyXDZQbDoq1hsnKxL1EdsJ
- iMGppAUTXQ3SCkK0ob8KQEp9DQ1bbIYUszUSXO4TwPUYFdEzx3fEJp.Ukiff
- dxTyRBHtSvr2OSNin61zlfPgNge6S3Wlcudx4ImMlqgp8ayhR..BgZtchq2V
- azTl6WehV0sR6OHK8Ri1H0iQ-
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Wed, 24 Mar 2010 21:52:56 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Greg KH <gregkh@suse.de>, PavanSavoy <pavan_savoy@ti.com>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1269447105.11714.117.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932172Ab0CXQXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:23:32 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33591 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754813Ab0CXQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:23:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,301,1267430400"; 
+   d="scan'208";a="551746662"
+Subject: Re: [patch 0/2] x86,pat: Reduce contention on the memtype_lock -V4
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Robin Holt <holt@sgi.com>, Andi Kleen <andi@firstfloor.org>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>, Rafael Wysocki <rjw@novell.com>,
+       Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <alpine.LFD.2.00.1003241214370.3147@localhost.localdomain>
+References: <20100324003608.811051277@gulag1.americas.sgi.com>
+	 <87wrx2for5.fsf@basil.nowhere.org> <20100324085511.GJ4920@sgi.com>
+	 <alpine.LFD.2.00.1003241214370.3147@localhost.localdomain>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 24 Mar 2010 09:22:17 -0700
+Message-Id: <1269447737.2881.13.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Wed, 24/3/10, Marcel Holtmann <marcel@holtmann.org> wrote:
-
-> From: Marcel Holtmann <marcel@holtmann.org>
-> Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-> To: "Pavan Savoy" <pavan_savoy@yahoo.co.in>
-> Cc: "Greg KH" <gregkh@suse.de>, "PavanSavoy" <pavan_savoy@ti.com>, "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-> Date: Wednesday, 24 March, 2010, 9:41 PM
-> Hi Pavan,
-> 
-> 
-> > I wanted to somehow put this in staging because then
-> it would probably have a thorough architectural review
-> process.
-> > Some details about this driver - 
+On Wed, 2010-03-24 at 04:15 -0700, Thomas Gleixner wrote:
+> On Wed, 24 Mar 2010, Robin Holt wrote:
+> > On Wed, Mar 24, 2010 at 03:16:14AM +0100, Andi Kleen wrote:
+> > > holt@sgi.com writes:
+> > > 
+> > > > Tracking memtype on x86 uses a single global spin_lock for either reading
+> > > > or changing the memory type.  This includes changes made to page flags
+> > > > which is perfectly parallel.
+> > > >
+> > > > Part one of the patchset makes the page-based tracking use cmpxchg
+> > > > without a need for a lock.
+> > > >
+> > > > Part two of the patchset converts the spin_lock into a read/write lock.
+> > > 
+> > > I'm curious: in what workloads did you see contention?
+> > > 
+> > > For any scalability patches it would be always good to have a description
+> > > of the workload.
 > > 
-> > 1. This driver will be used by Bluetooth-BlueZ/FM-V4L2
-> and GPS (probably character device driver) using the
-> EXPORTED symbols (-register/_unregister).
-> > 
-> > 2. Much like the hciattach daemon which maintains
-> N_HCI bluetooth line discipline, this driver will also have
-> a User-Space  N_TI_WL Init manager (UIM) maintaining
-> the Line discipline.
+> > It was a job using xpmem (an out of tree kernel module) which uses
+> > vm_insert_pfn to establish ptes.  The scalability issues were shown
+> > in the first patch.  I do not have any test which shows a performance
+> > difference  with the spin_lock to rw_lock conversion.
 > 
-> can you explain why you think this is needed and we can not
-> interface
-> this directly. If it is a serial port, what protocol does
-> it talk?
+> And what's exactly the point of converting it to a rw_lock then ?
 
-Illustration: The BT driver on top of this ST driver, would create a hci0 interface, when someone does an DEVUP on that interface, the BT driver would then do a st-register - which in-turn would ask the hciattach-like daemon to install the line discipline for it via the sysfs entry.
-The same concept goes for FM-V4L2 and GPS character driver.
+Thomas, As I mentioned earlier I am ok in not doing this conversion. If
+we see any performance issues with this spinlock, we can use RCU based
+logic to address that.
 
-The core of the problem is we cannot ask/install/ldisc_put for a line discipline from kernel space.
+For now, first patch in this series (which avoid the lock for RAM pages)
+is good to go. Thanks Rafael for spotting the page flags bit
+manipulation issue.
 
-> 
-> > 3. Because of the UIM should know when to
-> install/uninstall line discipline, the /sys entry is created
-> a root called UIM (a new kobject) and UIM daemon would write
-> it's PID to it.
-> 
-> I don't understand this. This sounds like a broken concept
-> to me.
+thanks,
+suresh
 
-Yes, I don't feel good about it either. But how do I request for a line discipline from kernel space ?
-Currently a daemon has to run in user-space to maintain the ldisc, at all times, and I don't want to open TTY @ boot, and install Ldisc (tiocsetd) on it, without BT/FM or GPS core on chip being used - The Power Management team here would beat me up if I do that, 
-and hence the very dumb idea of passing the PID of the daemon via sysfs entry, and the driver sending SIGUSR2 to that PID, daemon doing a tiocsetd upon that signal.
-
-> 
-> > 4. As Alan suggested, If I make it self-contained by
-> pushing number of line disciplines to a slightly larger
-> number, then would it be OK ?
-> 
-> Just from a quick look, I think within a few review cycles
-> this might be
-> able to get proper upstream inclusion. No idea why bother
-> with staging
-> in the first place. Lets do this correctly.
-> 
-
-The only reason I wanted this to be in staging was to have sort of continuous review process, and in hope the driver wouldn't be forgotten.
-
-> Regards
-> 
-> Marcel
-> 
-> 
-> 
-
-
-      The INTERNET now has a personality. YOURS! See your Yahoo! Homepage. http://in.yahoo.com/
