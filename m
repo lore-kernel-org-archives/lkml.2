@@ -1,120 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab0CXVDR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:03:17 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:40011 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab0CXVDP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:03:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=alA0in7QR2Ql76tJOxbm8Quo4NS6iJ33FCIzJlz6nbq1AU3RmLj/AgvOi11M4u18SS
-         COuBQTisAsOq0cyv6S/HZVRxnikA8kbgbqgRcLhNmihIh8ugfjkfRS5tYE5Pm2zTXyCf
-         q1G9pgF8C+r+38bMQe4jPo7RhNmM5sV+T+a4M=
-Subject: Re: [PATCH] slub: Potential stack overflow
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka J Enberg <penberg@cs.helsinki.fi>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.DEB.2.00.1003241443520.14329@router.home>
-References: <1269430856.3213.27.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1003241414270.14329@router.home>
-	 <1269458528.2849.2.camel@edumazet-laptop>
-	 <alpine.DEB.2.00.1003241443520.14329@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 22:03:11 +0100
-Message-ID: <1269464591.2849.15.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1753255Ab0CXVDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:03:47 -0400
+Received: from web94903.mail.in2.yahoo.com ([203.104.17.144]:36666 "HELO
+	web94903.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752045Ab0CXVDp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 17:03:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.co.in;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=pOf4RYWQJ6qErcBMfFsJya5ltZ62HBL6jh/qqc1xBdO95S3N4apd1NUkdcvt1LFcnp9V6W1tkVxlbaLRM7M9J5Apzrc1xxSTdTV7z7CJQlF99qLsNi5Fti/lCVpZp+vLpGpkFuhJFyNEkLnqRSPrgtN+84ISeVR8lGMDJtVp2xI=;
+Message-ID: <601428.86363.qm@web94903.mail.in2.yahoo.com>
+X-YMail-OSG: len1kCgVM1kBGCwk7lnmWyVTWJ8Bu5vSBagzcoxE28wU_NF
+ FpcI7WHGN9FTbwu7nnmuzJXmytsxdA34XilWj7zydvU2PP1nl6zNhxrISVeO
+ CgMTyMi3XiReStvuCMJdS6s3LqtszqryUtfGTYV9UPzjIoaq5XH7XCLMfYUa
+ arPNuZ3jHnd2YL2M6BmXyEEBFN.4Pv9d6FbzfCwbInIVKGEHSJ17AHqIkmcC
+ EVexwlLd3zaPLscXzwM8RdfCl11XQ1l9nIpGdQb4DmgqwLHLv.y34I5abyuI
+ tsElV9wN_UNr5VGgR1gEpD1A-
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Thu, 25 Mar 2010 02:33:42 +0530 (IST)
+From: Pavan Savoy <pavan_savoy@yahoo.co.in>
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
+       PavanSavoy <pavan_savoy@ti.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1269464044.11714.135.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 24 mars 2010 à 14:49 -0500, Christoph Lameter a écrit :
-> On Wed, 24 Mar 2010, Eric Dumazet wrote:
+Marcel,
+
+--- On Thu, 25/3/10, Marcel Holtmann <marcel@holtmann.org> wrote:
+
+> From: Marcel Holtmann <marcel@holtmann.org>
+> Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+> To: "Pavan Savoy" <pavan_savoy@yahoo.co.in>
+> Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>, "Greg KH" <gregkh@suse.de>, "PavanSavoy" <pavan_savoy@ti.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+> Date: Thursday, 25 March, 2010, 2:24 AM
+> Hi Pavan,
 > 
-> > Are we allowed to nest in these two functions ?
+> > > > Which puts me back to square 1,
+> > > the requirement is TTY device should be open,
+> only when
+> > > either BT, FM or GPS would want to use it.
+> > > > [with your patch one of the steps of
+> installing ldisc
+> > > would be reduced upon opening].
+> > > 
+> > > Perhaps but its up to you how you write your low
+> level
+> > > driver and how the
+> > > ldisc indicates it wishes to be active (eg speed
+> B0 is used
+> > > to indicate
+> > > 'no carrier' in many cases)
+> > > 
+> > > > Actually why do I even need a TTY device in
+> this case
+> > > - right ?
+> > > > ldisc driver can do the
+> tty->ops->write and
+> > > tty_read and put it up on different interfaces
+> like
+> > > eth0/hci0 or /dev/radio0 etc..
+> > > 
+> > > You don't need a tty if you are simply demuxing
+> some kind
+> > > of stream of
+> > > bytes to/from the hardware and you gain nothing
+> from the
+> > > tty layer and
+> > > user space interfaces such as control signal and
+> speed
+> > > setting.
+> > > 
+> > 
+> > I still want to maintain this as a ldisc driver and
+> the TTY layer is still required to be able to use this with
+> different sort of serial drivers.
+> > 
+> > example:
+> > We do a have a system here where both 8250/omap-serial
+> co-exist creating their own device nodes (ttyS for 8250,
+> ttyO for omap-serial) and I would want to be able to on boot
+> suggest which serial driver to use, so I can open/install
+> ldisc on ttyS or on ttyO.
+> > 
+> > 
+> > > That may be even cleaner in your case as you can
+> then then
+> > > provide
+> > > suitable links between your demux and the drivers
+> attached
+> > > to it
+> > > indicating when they should be on or off.
+> > 
+> > And as Marcel suggested, can't really put in the
+> PM/UART-clk shut off code in ldisc driver because few of
+> these driver provide interfaces and few don't.
+> > 
+> > So is there no way this can be accepted with the sysfs
+> entry way of communication ?
 > 
-> This is kmem_cache_close() no danger of nesting.
+> to be quite honest, I can't see how that can be accepted
+> right now. It
+> looks wrong on too many levels.
+
+Sigh -
+So to save power, and open/install tty-ldisc only when required, the sysfs entry was introduced.
+So now I guess I have 2 options :-
+
+1. Fix the UART/LDISC upon boot by the daemon, get away with the sysfs entry + signaling altogether.
+2. find a better way of telling the user-space daemon to open/install the line discipline.
+
+- So any suggestions on option 2 ? like some event mechanism which is simple and clean ?
+
+While we are at it, I will send across the BT driver too which makes use of this LDISC.
+
 > 
-> > These are debugging functions, what happens if kmalloc() returns NULL ?
+> Regards
 > 
-> Then you return ENOMEM and the user gets an error. We already do that in
-> validate_slab_cache().
+> Marcel
 > 
-> Hmmm... In this case we called from list_slab_objects() which gets called
-> from free_partial() (which took a spinlock!) which gets called from
-> kmem_cache_close().
 > 
-> Its just a debugging aid so no problem if it fails. GFP_ATOMIC?
-
-OK, here is second version of the patch, thanks !
+> 
 
 
-[PATCH] slub: Potential stack overflow
-
-I discovered that we can overflow stack if CONFIG_SLUB_DEBUG=y and use
-slabs with many objects, since list_slab_objects() and process_slab()
-use DECLARE_BITMAP(map, page->objects);
-
-With 65535 bits, we use 8192 bytes of stack ...
-
-A possible solution is to allocate memory, using GFP_ATOMIC, and do
-nothing if allocation fails.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
-diff --git a/mm/slub.c b/mm/slub.c
-index b364844..5ee857a 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2426,9 +2426,11 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
- #ifdef CONFIG_SLUB_DEBUG
- 	void *addr = page_address(page);
- 	void *p;
--	DECLARE_BITMAP(map, page->objects);
-+	long *map = kzalloc(BITS_TO_LONGS(page->objects) * sizeof(long),
-+			    GFP_ATOMIC);
- 
--	bitmap_zero(map, page->objects);
-+	if (!map)
-+		return;
- 	slab_err(s, page, "%s", text);
- 	slab_lock(page);
- 	for_each_free_object(p, s, page->freelist)
-@@ -2443,6 +2445,7 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
- 		}
- 	}
- 	slab_unlock(page);
-+	kfree(map);
- #endif
- }
- 
-@@ -3651,16 +3654,19 @@ static void process_slab(struct loc_track *t, struct kmem_cache *s,
- 		struct page *page, enum track_item alloc)
- {
- 	void *addr = page_address(page);
--	DECLARE_BITMAP(map, page->objects);
-+	long *map = kzalloc(BITS_TO_LONGS(page->objects) * sizeof(long),
-+			    GFP_ATOMIC);
- 	void *p;
- 
--	bitmap_zero(map, page->objects);
-+	if (!map)
-+		return;
- 	for_each_free_object(p, s, page->freelist)
- 		set_bit(slab_index(p, s, addr), map);
- 
- 	for_each_object(p, s, addr, page->objects)
- 		if (!test_bit(slab_index(p, s, addr), map))
- 			add_location(t, s, get_track(s, p, alloc));
-+	kfree(map);
- }
- 
- static int list_locations(struct kmem_cache *s, char *buf,
-
-
+      The INTERNET now has a personality. YOURS! See your Yahoo! Homepage. http://in.yahoo.com/
