@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab0CXWcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 18:32:04 -0400
-Received: from Cpsmtpm-eml106.kpnxchange.com ([195.121.3.10]:57550 "EHLO
-	CPSMTPM-EML106.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750772Ab0CXWcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 18:32:01 -0400
-From: Frans Pop <elendil@planet.nl>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH] scripts/cvt_kernel_style.pl: kernel style source code reformatter
-Date: Wed, 24 Mar 2010 23:31:58 +0100
-User-Agent: KMail/1.9.9
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-       devel@driverdev.osuosl.org, apw@shadowen.org,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <1268191518.1545.228.camel@Joe-Laptop.home> <71f98699c39e03727b17b46995a801015fcc342a.1269460465.git.joe@perches.com>
-In-Reply-To: <71f98699c39e03727b17b46995a801015fcc342a.1269460465.git.joe@perches.com>
+	id S1754047Ab0CXWct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:32:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45413 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753649Ab0CXWcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 18:32:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC 02/15] PM / Hibernate: snapshot cleanup
+Date: Wed, 24 Mar 2010 23:35:36 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: jirislaby@gmail.com, pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-2-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1269361063-3341-2-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003242332.00074.elendil@planet.nl>
-X-OriginalArrivalTime: 24 Mar 2010 22:32:00.0394 (UTC) FILETIME=[D1D34EA0:01CACBA1]
+Message-Id: <201003242335.36816.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010, Joe Perches wrote:
-> A script to convert kernel source files to a more conformant style.
-> A supplement to or replacement of Lindent.
-> A wretched little perl script using regexes.
+On Tuesday 23 March 2010, Jiri Slaby wrote:
+> From: Jiri Slaby <jirislaby@gmail.com>
+> 
+> Remove support of reads with offset. This means snapshot_read/write_next
+> now does not accept count parameter.
+> 
+> /dev/snapshot handler is converted to simple_read_from_buffer/simple_write_to_buffer.
 
-I've found the script useful, but it does require some experience and 
-judgement to use correctly.
+Makes sense.
 
-For example, with my 'trailing spaces in messages' patches I've found it
-is essential to review all changes to avoid e.g. changing output to files 
-in /proc. Doing that can be valid, but it probably should not be included 
-in the same patch as removing trailing space from kernel messages.
+One coding style comment, though.
 
-Given that experience and judgement is needed to use many tools correctly,
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/power.h    |   18 +-----
+>  kernel/power/snapshot.c |  145 ++++++++++++++++++-----------------------------
+>  kernel/power/swap.c     |    8 +-
+>  kernel/power/user.c     |   39 ++++++++-----
+>  4 files changed, 88 insertions(+), 122 deletions(-)
+> 
+...  
+> @@ -159,13 +160,17 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+>  		res = -ENODATA;
+>  		goto Unlock;
+>  	}
+> -	res = snapshot_read_next(&data->handle, count);
+> -	if (res > 0) {
+> -		if (copy_to_user(buf, data_of(data->handle), res))
+> -			res = -EFAULT;
+> -		else
+> -			*offp = data->handle.offset;
+> -	}
+> +	if (!pg_offp) { /* on page boundary? */
+> +		res = snapshot_read_next(&data->handle);
+> +		if (res <= 0)
+> +			goto Unlock;
+> +	} else
+> +		res = PAGE_SIZE - pg_offp;
 
-Supported-by: Frans Pop <elendil@planet.nl>
+The official kernel coding style is to put single instructions under if/else
+like this in braces if the other branch of the if/else is multiline (and
+therefore naturally in braces).   So please do:
 
-Cheers,
-FJP
++	if (!pg_offp) { /* on page boundary? */
++		res = snapshot_read_next(&data->handle);
++		if (res <= 0)
++			goto Unlock;
++	} else {
++		res = PAGE_SIZE - pg_offp;
++	}
+
+and analogously wherever applicable.
+
+Thanks,
+Rafael
