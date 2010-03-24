@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932274Ab0CXQqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:46:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56143 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756138Ab0CXQqU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:46:20 -0400
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-From: Peter Zijlstra <peterz@infradead.org>
+	id S1756601Ab0CXQrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:47:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751151Ab0CXQrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:47:45 -0400
+Message-ID: <4BAA4211.2000209@redhat.com>
+Date: Wed, 24 Mar 2010 18:47:13 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
 To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
        Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
        ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
        Gregory Haskins <ghaskins@novell.com>
-In-Reply-To: <20100324162343.GK14800@8bytes.org>
-References: <20100323182153.GA14800@8bytes.org>
-	 <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org>
-	 <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org>
-	 <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org>
-	 <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org>
-	 <1269446622.5109.388.camel@twins>  <20100324162343.GK14800@8bytes.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Mar 2010 17:45:59 +0100
-Message-ID: <1269449159.5109.454.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org> <4BAA3496.2010901@redhat.com> <20100324155927.GI14800@8bytes.org> <4BAA393A.9000105@redhat.com> <20100324164000.GM14800@8bytes.org>
+In-Reply-To: <20100324164000.GM14800@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 17:23 +0100, Joerg Roedel wrote:
-> On Wed, Mar 24, 2010 at 05:03:42PM +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-03-24 at 16:01 +0100, Joerg Roedel wrote:
-> > 
-> > > What I meant was: perf-kernel puts the guest-name into every sample and
-> > > perf-userspace accesses /sys/kvm/guest_name/fs/ later to resolve the
-> > > symbols. I leave the question of how the guest-fs is exposed to the host
-> > > out of this discussion. We should discuss this seperatly.
-> > 
-> > I'd much prefer a pid like suggested later, keeps the samples smaller.
-> > 
-> > But that said, we need guest kernel events like mmap and context
-> > switches too, otherwise we simply can't make sense of guest userspace
-> > addresses, we need to know the guest address space layout.
-> 
-> With the filesystem approach all we need is the pid of the guest
-> process. Then we can access proc/<pid>/maps of the guest and read out the
-> address space layout, no?
+On 03/24/2010 06:40 PM, Joerg Roedel wrote:
+>
+>> Looks trivial to find a guest, less so with enumerating (still doable).
+>>      
+> Not so trival and even more likely to break. Even it perf has the pid of
+> the process and wants to find the directory it has to do:
+>
+> 1. Get the uid of the process
+> 2. Find the username for the uid
+> 3. Use the username to find the home-directory
+>
+> Steps 2. and 3. need nsswitch and/or pam access to get this information
+> from whatever source the admin has configured. And depending on what the
+> source is it may be temporarily unavailable causing nasty timeouts. In
+> short, there are many weak parts in that chain making it more likely to
+> break.
+>    
 
-No, what if it maps new things after you read it? But still getting the
-pid of the guest process seems non trivial without guest kernel support.
+It's true.  If the kernel provides something, there are fewer things 
+that can break.  But if your system is so broken that you can't resolve 
+uids, fix that before running perf.  Must we design perf for that case?
+
+After all, 'ls -l' will break under the same circumstances.  It's hard 
+to imagine doing useful work when that doesn't work.
+
+> A kernel-based approach with /proc/<pid>/kvm does not have those issues
+> (and to repeat myself, it is independent from the userspace being used).
+>    
+
+It has other issues, which are IMO more problematic.
+
+-- 
+error compiling committee.c: too many arguments to function
+
