@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061Ab0CXNxR (ORCPT <rfc822;w@1wt.eu>);
+	id S1756149Ab0CXNxT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 09:53:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38739 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755688Ab0CXNxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Mar 2010 09:53:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47934 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755688Ab0CXNxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 09:53:16 -0400
-Message-ID: <4BAA1946.6060703@suse.de>
-Date: Wed, 24 Mar 2010 14:53:10 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-Cc: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
-       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws> <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com>
-In-Reply-To: <4BAA0DFE.1080700@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Wed, 24 Mar 2010 06:51:12 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>
+Subject: Re: [BUGFIX] Fix AES-NI CTR optimization compiling failure with gas
+ 2.16.1
+Message-Id: <20100324065112.823c8d4f.akpm@linux-foundation.org>
+In-Reply-To: <1269411858.23970.26.camel@yhuang-dev.sh.intel.com>
+References: <1268377307.1640.491.camel@yhuang-dev.sh.intel.com>
+	<20100323142324.a53b20de.akpm@linux-foundation.org>
+	<1269411858.23970.26.camel@yhuang-dev.sh.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 03/24/2010 02:50 PM, Joerg Roedel wrote:
->>
->>> You can always provide the kernel and module paths as command line
->>> parameters.  It just won't be transparently usable, but if you're using
->>> qemu from the command line, presumably you can live with that.
->>>      
->> I don't want the tool for myself only. A typical perf user expects that
->> it works transparent.
->>    
->
-> A typical kvm user uses libvirt, so we can integrate it with that.
->
->>>> Could be easily done using notifier chains already in the kernel.
->>>> Probably implemented with much less than 100 lines of additional code.
->>>>        
->>> And a userspace interface for that.
->>>      
->> Not necessarily. The perf event is configured to measure systemwide kvm
->> by userspace. The kernel side of perf takes care that it stays
->> system-wide even with added vm instances. So in this case the consumer
->> for the notifier would be the perf kernel part. No userspace interface
->> required.
->>    
->
-> Someone needs to know about the new guest to fetch its symbols.  Or do
-> you want that part in the kernel too?
+On Wed, 24 Mar 2010 14:24:18 +0800 Huang Ying <ying.huang@intel.com> wrote:
 
+> Can you tell me how to setup the building environment with binutils
+> 2.16.1? I just build it by hand and make the installed bin directory the
+> first one in $PATH.
 
-How about we add a virtio "guest file system access" device? The guest
-would then expose its own file system using that device.
+gcc searches an internal search patch before $PATH.  They say this can
+be overridden with the -B option or the GCC_EXEC_PREFIX environment
+var.
 
-On the host side this would simply be a -virtioguestfs
-unix:/tmp/guest.fs and you'd get a unix socket that gives you full
-access to the guest file system by using commands. I envision something
-like:
-
-SEND: GET /proc/version
-RECV: Linux version 2.6.27.37-0.1-default (geeko@buildhost) (gcc version
-4.3.2 [gcc-4_3-branch revision 141291] (SUSE Linux) ) #1 SMP 2009-10-15
-14:56:58 +0200
-
-Now all we need is integration in perf to enumerate virtual machines
-based on libvirt. If you want to run qemu-kvm directly, just go with
---guestfs=/tmp/guest.fs and perf could fetch all required information
-automatically.
-
-This should solve all issues while staying 100% in user space, right?
-
-
-Alex
+For once-off stuff I just get dirty and do `make V=1'.  Then copy and
+paste the gcc command line and add `-v'.  Then copy, paste and edit the
+various gcc subcommands.
 
