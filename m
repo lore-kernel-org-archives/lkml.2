@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab0CXRkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:40:22 -0400
-Received: from Cpsmtpm-eml109.kpnxchange.com ([195.121.3.13]:49981 "EHLO
-	CPSMTPM-EML109.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015Ab0CXRkU (ORCPT
+	id S932447Ab0CXRku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:40:50 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:47119 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932327Ab0CXRkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:40:20 -0400
-From: Frans Pop <elendil@planet.nl>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/09] net: remove trailing spaces in messages
-Date: Wed, 24 Mar 2010 18:40:15 +0100
-User-Agent: KMail/1.9.9
-Cc: Per Liden <per.liden@ericsson.com>, Jon Maloy <jon.maloy@ericsson.com>,
-       Allan Stephens <allan.stephens@windriver.com>,
-       Samuel Ortiz <samuel@sortiz.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linuxppc-dev@ozlabs.org, e1000-devel@lists.sourceforge.net
+	Wed, 24 Mar 2010 13:40:46 -0400
+Message-ID: <4BAA4E81.8070405@mvista.com>
+Date: Wed, 24 Mar 2010 20:40:17 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+To: Manuel Lauss <manuel.lauss@googlemail.com>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-mips@linux-mips.org, Manuel Lauss <manuel.lauss@gmail.com>
+Subject: Re: [RFC PATCH 2/2] Alchemy: UART PM through serial framework.
+References: <1269450986-3714-1-git-send-email-manuel.lauss@gmail.com> <1269450986-3714-3-git-send-email-manuel.lauss@gmail.com>
+In-Reply-To: <1269450986-3714-3-git-send-email-manuel.lauss@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003241840.18701.elendil@planet.nl>
-X-OriginalArrivalTime: 24 Mar 2010 17:40:19.0065 (UTC) FILETIME=[12386E90:01CACB79]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the second patchset to remove trailing spaces in kernel messages. 
-Patches in this set cover networking code, excepting wireless which will be 
-submitted in a separate set.
+Hello.
 
-Patches have been rebased against current net-next.
+Manuel Lauss wrote:
 
-Benefits are:
-- general cleanup and consistency
-- minor reduction in kernel size and user's log file size
-- reduced annoyance for people writing logcheck rules
+> Hook up the Alchemy on-chip uarts with the platform 8250 PM callback
+> and enable/disable the uart blocks as needed.
+>
+> Tested on Au1200.
+>
+> Signed-off-by: Manuel Lauss <manuel.lauss@gmail.com>
+> ---
+>  arch/mips/alchemy/common/platform.c |   17 +++++++++++++++++
+>  arch/mips/alchemy/common/power.c    |   32 --------------------------------
+>  2 files changed, 17 insertions(+), 32 deletions(-)
+>
+> diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
+> index 2580e77..70f4abd 100644
+> --- a/arch/mips/alchemy/common/platform.c
+> +++ b/arch/mips/alchemy/common/platform.c
+> @@ -21,6 +21,22 @@
+>  #include <asm/mach-au1x00/au1100_mmc.h>
+>  #include <asm/mach-au1x00/au1xxx_eth.h>
+>  
+> +static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
+> +			    unsigned int old_state)
+> +{
+> +	if (state == 0) {		/* power on */
+> +		__raw_writel(0, port->membase + UART_MOD_CNTRL);
+> +		wmb();
+> +		__raw_writel(1, port->membase + UART_MOD_CNTRL);
+> +		wmb();
+> +		__raw_writel(3, port->membase + UART_MOD_CNTRL);
+> +		wmb();
+> +	} else if (state == 3) {	/* power off */
+> +		__raw_writel(0, port->membase + UART_MOD_CNTRL);
+> +		wmb();
+> +	}
+> +}
 
-I have run the patches through checkpatch and included some fixes, but in 
-most cases the files are so horrible in general that fixing the warnings 
-purely for these changes doesn't make sense.
+   A *switch* statement seems more fitting here...
 
-Shortstat:
- 56 files changed, 236 insertions(+), 236 deletions(-)
+WBR, Sergei
 
-Frans Pop (9):
-      net: remove trailing space in messages
-      net/tipc: remove trailing space in messages
-      net/irda: remove trailing space in messages
-      net/ps3_gelic: remove trailing space in messages
-      net/smc91xx: remove trailing space in messages
-      net/tokenring: remove trailing space in messages
-      net/tulip: remove trailing space in messages
-      net/intel: remove trailing space in messages
-      net/various: remove trailing space in messages
-
-Cheers,
-FJP
