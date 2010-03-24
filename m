@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab0CXQRk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:17:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40644 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189Ab0CXQRi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:17:38 -0400
-Subject: Re: [PATCH 2/6] move_task_off_dead_cpu: take rq->lock around
- select_fallback_rq()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100324160727.GA4121@redhat.com>
-References: <20100315091010.GA9131@redhat.com>
-	 <1269445284.5109.360.camel@twins>  <20100324160727.GA4121@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Mar 2010 17:17:02 +0100
-Message-ID: <1269447422.5109.408.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753780Ab0CXQUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:20:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824Ab0CXQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:20:42 -0400
+Message-ID: <4BAA3BEB.6010902@redhat.com>
+Date: Wed, 24 Mar 2010 17:20:59 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Giel van Schijndel <me@mortis.eu>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for F71808E
+ and F71889
+References: <20100323141718.GA23172@salidar.me.mortis.eu>	<1269385936-3440-1-git-send-email-me@mortis.eu>	<1269385936-3440-2-git-send-email-me@mortis.eu>	<1269385936-3440-3-git-send-email-me@mortis.eu>	<1269385936-3440-4-git-send-email-me@mortis.eu>	<4BA9CF57.4030504@redhat.com>	<20100324093651.GG6368@salidar.me.mortis.eu>	<4BA9EA5C.9060506@redhat.com>	<20100324153550.GK6368@salidar.me.mortis.eu> <20100324155151.2482952f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100324155151.2482952f@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 17:07 +0100, Oleg Nesterov wrote:
-> On 03/24, Peter Zijlstra wrote:
-> >
-> > On Mon, 2010-03-15 at 10:10 +0100, Oleg Nesterov wrote:
-> > >  static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
-> > >  {
-> > > +       struct rq *rq = cpu_rq(dead_cpu);
-> > > +       int needs_cpu, dest_cpu;
-> > > +       unsigned long flags;
-> > >  again:
-> > > +       local_irq_save(flags);
-> > > +
-> > > +       raw_spin_lock(&rq->lock);
-> > > +       needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
-> >
-> >                                        ^ 
-> > kernel/sched.c:5445: warning: ‘dest_cpu’ may be used uninitialized in this function
-> 
-> Hmm. looks like my gcc is more friendly...
+Hi,
 
-Hrm, that and I'm apparently unable to read, it said dest_cpu, not
-dead_cpu.. a well, I'll slam an __maybe_unused in.
+On 03/24/2010 04:51 PM, Alan Cox wrote:
+>> hold on the SIO port range. This would thus interfere with the operation
+>> of the f71882fg driver. I.e. it would prevent the device probing stage
+>> from working, thus preventing it from loading *after* my in-development
+>> watchdog driver.
+>
+> There are two ways to deal with that really
+>
+> 1. Add a multi-function driver - it finds the chip and claims the port
+> regions and then provides methods for locked access to them as well as
+> creating other device instances that the drivers map to (probably platform
+> devices ?) which in turn trigger the loading/binding of the relevant low
+> level devices.
+>
+> 2. Fix the kernel request_resource stuff to support a sleeping non
+> exclusive resource so request/free of regions can be used as a resource
+> semaphore by co-operative devices.
+>
+> #2 is actually not hard but when I did the patch originally it then
+> wasn't needed by the driver I had in mind for other reasons.
+>
+> See http://groups.google.com/group/linux.kernel/msg/1425fc2aad32e6ea
+>
+> Maybe its worth resurrecting ?
+>
 
-> OK. certainly I'll send the updated patch, if this series passes
-> your review otherwise.
+Or, a bit more specific solution would be to resurrect the superio lock
+coordinator patches, which were written (but never merged) 2 years ago
+to solve exactly this problem:
+http://lists.lm-sensors.org/pipermail/lm-sensors/2008-July/023743.html
 
-Yeah, you made a few good points in 0/6, am now staring at the code on
-how to close those holes, hope to post something sensible soon.
+Regards,
+
+Hans
