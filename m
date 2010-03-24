@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab0CXOWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:22:23 -0400
-Received: from fieldses.org ([174.143.236.118]:46270 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756394Ab0CXOWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:22:21 -0400
-Date: Wed, 24 Mar 2010 10:24:14 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: stable@kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: nfsd changes for 2.6.34
-Message-ID: <20100324142414.GE12057@fieldses.org>
-References: <20100306175212.GB22650@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100306175212.GB22650@fieldses.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932080Ab0CXOWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:22:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60967 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425Ab0CXOWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:22:47 -0400
+X-Authority-Analysis: v=1.0 c=1 a=iGnHfCumZfoA:10 a=IkcTkHD0fZMA:10 a=Kb425h1ZfghOXLSsj94A:9 a=i_-EXrefkvZ0k7A7B1i2tgwIUpoA:4 a=QEXdDO2ut3YA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [Cluster-devel] [PATCH 10/18] gfs2: Provide config option for
+ enabling trace points
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Whitehouse <swhiteho@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+       cluster-devel@redhat.com
+In-Reply-To: <1269429657.2350.1.camel@localhost>
+References: <1269304340-25372-1-git-send-email-jack@suse.cz>
+	 <1269304340-25372-11-git-send-email-jack@suse.cz>
+	 <1269345667.2438.12.camel@localhost>  <1269388565.5363.380.camel@localhost>
+	 <1269429657.2350.1.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 08:09:01 -0400
+Message-ID: <1269432541.3095.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 06, 2010 at 12:52:12PM -0500, bfields wrote:
-> Please pull the following nfsd changes from the 'nfsd' branch at:
+On Wed, 2010-03-24 at 11:20 +0000, Steven Whitehouse wrote:
+> Hi,
 > 
->   git://linux-nfs.org/~bfields/linux.git for-2.6.34 nfsd
+> On Tue, 2010-03-23 at 19:56 -0400, Steven Rostedt wrote:
+> > On Tue, 2010-03-23 at 12:01 +0000, Steven Whitehouse wrote:
+> > > Hi,
+> > > 
+> > > Now in the GFS2 -nmw git tree. Thanks,
+> > > 
+> > 
+> > Note, this depends on patch 1 which we have not yet determined if it
+> > should be applied or not.
+> > 
+> > -- Steve
+> > 
+> Sorry, I think I misread the initial message. I can roll it out again if
+> required. I did a compile test in both states though and it seemed to
+> work for me,
 > 
-> This is an unusually quiet cycle for the NFS server--bugfixes, some IPv6
-> progress, and one new export operation to improve sync performance.
-> 
-> One exception to the 'mostly quiet' statement was a regression in the
-> rpc code which hit a lot of people: enormous thanks to Neil for tracking
-> that down.
 
-However, I forgot to Cc stable on all of those.  Stable people, could
-you also take the following three commits?:
+No problem, I'm just saying I believe without the first patch, this is a
+nop. That is, both states have the same result. The trace events stay
+in.
 
-	f5822754ea006563e1bf0a1f43faaad49c0d8bb2 Revert "sunrpc: fix
-	peername failed on closed listener"
-	1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 Revert "sunrpc: move
-	the close processing after do recvfrom method"
-	301e99ce4a2f42a317129230fd42e6cd874c64b0 nfsd: ensure sockets
-	are closed on error
+-- Steve
 
-Let me know if you need more information.
 
---b.
