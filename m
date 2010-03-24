@@ -1,51 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0CXPI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 11:08:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55072 "EHLO mx1.redhat.com"
+	id S1756386Ab0CXPN2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 11:13:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59885 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756480Ab0CXPIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 11:08:24 -0400
-Date: Wed, 24 Mar 2010 20:35:39 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
-	hvc_remove
-Message-ID: <20100324150538.GA18581@amit-x200.redhat.com>
-References: <20100319151326.GC8541@kroah.com> <1269011916-8836-4-git-send-email-gregkh@suse.de> <1269119079.8599.65.camel@pasglop> <20100324113721.008d343e@lxorguk.ukuu.org.uk>
+	id S1756315Ab0CXPN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 11:13:26 -0400
+Message-ID: <4BAA2BF7.4060407@redhat.com>
+Date: Wed, 24 Mar 2010 17:12:55 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324113721.008d343e@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org>
+In-Reply-To: <20100324150137.GE14800@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Wed) Mar 24 2010 [11:37:21], Alan Cox wrote:
-> On Sun, 21 Mar 2010 08:04:39 +1100
-> Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
-> 
-> > On Fri, 2010-03-19 at 08:18 -0700, Greg Kroah-Hartman wrote:
-> > > From: Amit Shah <amit.shah@redhat.com>
-> > > 
-> > > Alan pointed out a race in the code where hvc_remove is invoked. The
-> > > recent virtio_console work is the first user of hvc_remove().
-> > 
-> > This causes hangs during boot on pseries machines. Haven't had a chance
-> > to track that down yet, but please revert
-> > e74d098c66543d0731de62eb747ccd5b636a6f4c for now.
-> 
-> Its an exploitable hole so we should revert both the bug fix *and* the
-> submission of the virtio console that makes the flaw triggerable, not jus
-> tthe security fix.
+On 03/24/2010 05:01 PM, Joerg Roedel wrote:
+>
+>> But when I weigh the benefit of truly transparent  system-wide perf
+>> integration for users who don't use libvirt but do use  perf, versus
+>> the cost of transforming kvm from a single-process API to a
+>> system-wide API with all the complications that I've listed, it comes
+>> out in favour of not adding the API.
+>>      
+> Its not a transformation, its an extension. The current per-process
+> /dev/kvm stays mostly untouched. Its all about having something like
+> this:
+>
+> $ cd /sys/kvm/guest0
+> $ ls -l
+> -r-------- 1 root root 0 2009-08-17 12:05 name
+> dr-x------ 1 root root 0 2009-08-17 12:05 fs
+> $ cat name
+> guest0
+> $ # ...
+>
+> The fs/ directory is used as the mount point for the guest root fs.
+>    
 
-If a fix isn't found in reasonable time, I will send a patch that
-disables hot-unplug of virtio-console ports.
+The problem is /sys/kvm, not /sys/kvm/fs.
 
-		Amit
+>>> The samples will be tagged with the guest-name (and some additional
+>>> information perf needs). Perf userspace can access the symbols then
+>>> through /sys/kvm/guest0/fs/...
+>>>        
+>> I take that as a yes?  So we need a virtio-serial client in the kernel
+>> (which might be exploitable by a malicious guest if buggy) and a
+>> fs-over-virtio-serial client in the kernel (also exploitable).
+>>      
+> What I meant was: perf-kernel puts the guest-name into every sample and
+> perf-userspace accesses /sys/kvm/guest_name/fs/ later to resolve the
+> symbols. I leave the question of how the guest-fs is exposed to the host
+> out of this discussion. We should discuss this seperatly.
+>    
+
+How I see it: perf-kernel puts the guest pid into every sample, and 
+perf-userspace uses that to resolve to a mountpoint served by fuse, or 
+to a unix domain socket that serves the files.
+
+>>> An approach like: "The files are owned and only readable by the same
+>>> user that started the vm." might be a good start. So a user can measure
+>>> its own guests and root can measure all of them.
+>>>        
+>> That's not how sVirt works.  sVirt isolates a user's VMs from each
+>> other, so if a guest breaks into qemu it can't break into other guests
+>> owned by the same user.
+>>      
+> If a vm breaks into qemu it can access the host file system which is the
+> bigger problem. In this case there is no isolation anymore. From that
+> context it can even kill other VMs of the same user independent of a
+> hypothetical /sys/kvm/.
+>    
+
+It cannot.  sVirt labels the disk image and other files qemu needs with 
+the appropriate label, and everything else is off limits.  Even if you 
+run the guest as root, it won't have access to other files.
+
+>>> Yeah that would be interesting information. But it is more related to
+>>> tracing than to pmu measurements.  The information which you
+>>> mentioned above are probably better captured by an extension of
+>>> trace-events to userspace.
+>>>        
+>> It's all related.  You start with perf, see a problem with mmio, call up
+>> a histogram of mmio or interrupts or whatever, then zoom in on the
+>> misbehaving device.
+>>      
+> Yes, but its different from the implementation point-of-view. For the
+> user it surely all plays together.
+>    
+
+We need qemu to cooperate for mmio tracing, and we can cooperate with 
+qemu for symbol resolution.  If it prevents adding another kernel API, 
+that's a win from my POV.
+
+-- 
+error compiling committee.c: too many arguments to function
+
