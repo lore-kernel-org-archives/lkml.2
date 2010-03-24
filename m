@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab0CXWAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 18:00:06 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52534 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab0CXWAE (ORCPT
+	id S1752389Ab0CXWGi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:06:38 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47581 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751208Ab0CXWGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 18:00:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Roland Dreier <rdreier@cisco.com>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Date: Wed, 24 Mar 2010 22:59:57 +0100
-User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
+	Wed, 24 Mar 2010 18:06:37 -0400
+Date: Wed, 24 Mar 2010 22:10:16 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
        Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
        jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
        Ingo Molnar <mingo@elte.hu>
-References: <201003242240.54907.arnd@arndb.de> <adavdclz8sc.fsf@roland-alpha.cisco.com>
-In-Reply-To: <adavdclz8sc.fsf@roland-alpha.cisco.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Message-ID: <20100324221016.0b444a23@lxorguk.ukuu.org.uk>
+In-Reply-To: <201003242240.54907.arnd@arndb.de>
+References: <201003242240.54907.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003242259.58535.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19cuuh6RqfKyIVA1EZHC04+Swdj5wlMZy5iLQn
- kvdD2zTu0jyQZm9goovJrgcvhi/EzMNEnheeqHvRIV5/nIj/T0
- sNgivad7X4dAXkKVpZgag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010 22:53:07 Roland Dreier wrote:
-> Interesting work.  For the drivers/infiniband part, it seems maybe all
-> these drivers should be using no_llseek instead of default_llseek?  (or
-> is it better style to use nonseekable_open()?)  Certainly as far as I
-> can tell, nothing in drivers/infiniband pays any attention to f_pos.
+> - The most invasive change is in the TTY layer, which has a new global
+>   mutex (sorry!). I know that Alan has plans of his own to remove the BKL
+>   from this subsystem, so my patches may not go anywhere, but they seem
+>   to work fine for me.
+>   I've called the new lock the 'Big TTY Mutex' (BTM), a name that probably
+>   makes more sense if you happen to speak German.
 
-no_llseek makes it clear that you don't want the default_llseek semantics,
-while nonseekable_open also prevents pread/pwrite. Ideally, I'd just
-use both.
+Chuckle (I don't but I looked it up)
 
-There is a small chance that a random user space application actually tries
-to seek on the device (e.g. SEEK_END) and expects a zero return value,
-so when in doubt, I converted everything to default_llseek instead of
-no_llseek, just so I can be sure I don't change the semantics.
+>   The basic idea here is to make recursive locking and the release-on-sleep
+>   explicit, so every mutex_lock, wait_event, workqueue_flush and schedule
+>   in the TTY layer now explicitly releases the BTM before blocking.
 
-> Also, is there a reason why you add "#include <linux/smp_lock.h>" to all
-> the files where you also do ".llseek  = default_llseek"?
+I'm not sure if that is actually the path of sanity (yours at least), nor
+the right way to whack the other BKL users whose use is horrible but
+essentially private.
 
-The last patch in the series moves the default_llseek and default_ioctl
-function into the same loadable module that contains the BKL itself.
-Moving the declarations into the respective header seemed appropriate,
-but it could also stay in a VFS header if people prefer that.
+It would be nice to get the other bits in first removing BKL from most of
+the kernel and building kernels which are non BKL except for the tty
+layer. That (after Ingo's box from hell has run it a bit) would
+reasonably test the assertion that the tty layer has no BKL requirements
+that are driven by external to tty layer code.
 
-> In any case I can at least take care of the llseek stuff for 2.6.35.
+That to me would test the biggest question of all and be a reasonably
+good base from which to then either apply the tty BTM patches or attack
+the problem properly with the BKL localised to one subtree.
 
-Ok, thanks!
-
-	Arnd
+Alan
