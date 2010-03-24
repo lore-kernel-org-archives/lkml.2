@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab0CXKlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:41:13 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:26760 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab0CXKlK (ORCPT
+	id S1755576Ab0CXKlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:41:21 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:55583 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab0CXKlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:41:10 -0400
+	Wed, 24 Mar 2010 06:41:18 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,229 +15,218 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 3/8] x86: add sanitize_e820_map
-Date: Wed, 24 Mar 2010 03:37:04 -0700
-Message-Id: <1269427029-21000-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 8/8] powerpc : use early_res/nobootmem
+Date: Wed, 24 Mar 2010 03:37:09 -0700
+Message-Id: <1269427029-21000-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
 References: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4BA9EBE6.00B4,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4BA9EBFE.0157,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so we could not take e820.map directly.
+new early_res is extension for lmb, and it could be used to replace bootmem
 
-and could change e820_saved to initdata
+also even could be used to simplify the bootmem path if needed.
+
+--NOT TESTED--
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    5 ++---
- arch/x86/kernel/e820.c      |   26 ++++++++++++++++++--------
- arch/x86/kernel/efi.c       |    2 +-
- arch/x86/kernel/setup.c     |   10 +++++-----
- arch/x86/xen/setup.c        |    4 +---
- 5 files changed, 27 insertions(+), 20 deletions(-)
+ arch/powerpc/Kconfig   |   14 ++++++++++++++
+ arch/powerpc/mm/mem.c  |   23 +++++++++++++++++++++--
+ arch/powerpc/mm/numa.c |   11 ++++++++++-
+ 3 files changed, 45 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 41553af..01bc987 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -75,15 +75,14 @@ struct e820map {
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
--extern struct e820map e820_saved;
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 2e19500..307c3ef 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -52,6 +52,9 @@ config HAVE_SETUP_PER_CPU_AREA
+ config NEED_PER_CPU_EMBED_FIRST_CHUNK
+ 	def_bool PPC64
  
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
- extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
--extern int
--sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
-+int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 05ee724..0c7143b 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * next kernel with full memory.
-  */
- struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -224,7 +224,7 @@ void __init e820_print_map(char *who)
-  *	   ______________________4_
-  */
- 
--int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
-+static int __init __sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 			     u32 *pnr_map)
- {
- 	struct change_member {
-@@ -383,6 +383,11 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
- 	return 0;
- }
- 
-+int __init sanitize_e820_map(void)
-+{
-+	return __sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+}
++config HAVE_EARLY_RES
++	def_bool y
 +
- static int __init __append_e820_map(struct e820entry *biosmap, int nr_map)
- {
- 	while (nr_map) {
-@@ -555,7 +560,7 @@ void __init update_e820(void)
- 	u32 nr_map;
+ config IRQ_PER_CPU
+ 	bool
+ 	default y
+@@ -443,6 +446,17 @@ config ARCH_SPARSEMEM_DEFAULT
+ 	def_bool y
+ 	depends on (SMP && PPC_PSERIES) || PPC_PS3
  
- 	nr_map = e820.nr_map;
--	if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
-+	if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr_map))
- 		return;
- 	e820.nr_map = nr_map;
- 	printk(KERN_INFO "modified physical RAM map:\n");
-@@ -566,7 +571,7 @@ static void __init update_e820_saved(void)
- 	u32 nr_map;
- 
- 	nr_map = e820_saved.nr_map;
--	if (sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
-+	if (__sanitize_e820_map(e820_saved.map, ARRAY_SIZE(e820_saved.map), &nr_map))
- 		return;
- 	e820_saved.nr_map = nr_map;
- }
-@@ -661,7 +666,7 @@ void __init parse_e820_ext(struct setup_data *sdata, unsigned long pa_data)
- 		sdata = early_ioremap(pa_data, map_len);
- 	extmap = (struct e820entry *)(sdata->data);
- 	__append_e820_map(extmap, entries);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 	if (map_len > PAGE_SIZE)
- 		early_iounmap(sdata, map_len);
- 	printk(KERN_INFO "extended physical RAM map:\n");
-@@ -1043,7 +1048,7 @@ void __init finish_e820_parsing(void)
- 	if (userdef) {
- 		u32 nr = e820.nr_map;
- 
--		if (sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
-+		if (__sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &nr) < 0)
- 			early_panic("Invalid user supplied memory map");
- 		e820.nr_map = nr;
- 
-@@ -1173,7 +1178,7 @@ char *__init default_machine_specific_memory_setup(void)
- 	 * the next section from 1mb->appropriate_mem_k
- 	 */
- 	new_nr = boot_params.e820_entries;
--	sanitize_e820_map(boot_params.e820_map,
-+	__sanitize_e820_map(boot_params.e820_map,
- 			ARRAY_SIZE(boot_params.e820_map),
- 			&new_nr);
- 	boot_params.e820_entries = new_nr;
-@@ -1200,12 +1205,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
- }
- 
-+void __init save_e820_map(void)
-+{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+}
++config NO_BOOTMEM
++	default y
++	bool "Disable Bootmem code"
++	---help---
++	  Use early_res directly instead of bootmem before slab is ready.
++		- allocator (buddy) [generic]
++		- early allocator (bootmem) [generic]
++		- very early allocator (reserve_early*()/lmb)
++	  So reduce one layer between early allocator to final allocator
 +
- void __init setup_memory_map(void)
++
+ config ARCH_POPULATES_NODE_MAP
+ 	def_bool y
+ 
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 448f972..7004f9e 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -179,9 +179,11 @@ EXPORT_SYMBOL_GPL(walk_system_ram_range);
+ void __init do_init_bootmem(void)
  {
- 	char *who;
+ 	unsigned long i;
+-	unsigned long start, bootmap_pages;
+ 	unsigned long total_pages;
++#ifndef CONFIG_NO_BOOTMEM
++	unsigned long start, bootmap_pages;
+ 	int boot_mapsize;
++#endif
  
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
-index c2fa9b8..299f03f 100644
---- a/arch/x86/kernel/efi.c
-+++ b/arch/x86/kernel/efi.c
-@@ -272,7 +272,7 @@ static void __init do_add_efi_memmap(void)
- 		}
- 		e820_add_region(start, size, e820_type);
- 	}
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
+ 	max_low_pfn = max_pfn = lmb_end_of_DRAM() >> PAGE_SHIFT;
+ 	total_pages = (lmb_end_of_DRAM() - memstart_addr) >> PAGE_SHIFT;
+@@ -189,7 +191,9 @@ void __init do_init_bootmem(void)
+ 	total_pages = total_lowmem >> PAGE_SHIFT;
+ 	max_low_pfn = lowmem_end_addr >> PAGE_SHIFT;
+ #endif
++	min_low_pfn = MEMORY_START >> PAGE_SHIFT;
  
- void __init efi_reserve_early(void)
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 5d7ba1a..3787a82 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -461,8 +461,8 @@ static void __init e820_reserve_setup_data(void)
- 	if (!found)
- 		return;
- 
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	sanitize_e820_map();
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
- }
-@@ -614,7 +614,7 @@ static int __init dmi_low_memory_corruption(const struct dmi_system_id *d)
- 		d->ident);
- 
- 	e820_update_range(0, 0x10000, E820_RAM, E820_RESERVED);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- 
- 	return 0;
- }
-@@ -683,7 +683,7 @@ static void __init trim_bios_range(void)
- 	 * take them out.
- 	 */
- 	e820_remove_range(BIOS_BEGIN, BIOS_END - BIOS_BEGIN, E820_RAM, 1);
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
- }
- 
- /*
-@@ -854,7 +854,7 @@ void __init setup_arch(char **cmdline_p)
- 	if (ppro_with_ram_bug()) {
- 		e820_update_range(0x70000000ULL, 0x40000ULL, E820_RAM,
- 				  E820_RESERVED);
--		sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+		sanitize_e820_map();
- 		printk(KERN_INFO "fixed physical RAM map:\n");
- 		e820_print_map("bad_ppro");
- 	}
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index ad0047f..3f2c411 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -43,8 +43,6 @@ char * __init xen_memory_setup(void)
- 
- 	max_pfn = min(MAX_DOMAIN_PAGES, max_pfn);
- 
--	e820.nr_map = 0;
--
- 	e820_add_region(0, PFN_PHYS((u64)max_pfn), E820_RAM);
- 
++#ifndef CONFIG_NO_BOOTMEM
  	/*
-@@ -65,7 +63,7 @@ char * __init xen_memory_setup(void)
- 		      __pa(xen_start_info->pt_base),
- 			"XEN START INFO");
+ 	 * Find an area to use for the bootmem bitmap.  Calculate the size of
+ 	 * bitmap required as (Total Memory) / PAGE_SIZE / BITS_PER_BYTE.
+@@ -199,8 +203,8 @@ void __init do_init_bootmem(void)
  
--	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
-+	sanitize_e820_map();
+ 	start = lmb_alloc(bootmap_pages << PAGE_SHIFT, PAGE_SIZE);
  
- 	return "Xen";
+-	min_low_pfn = MEMORY_START >> PAGE_SHIFT;
+ 	boot_mapsize = init_bootmem_node(NODE_DATA(0), start >> PAGE_SHIFT, min_low_pfn, max_low_pfn);
++#endif
+ 
+ 	/* Add active regions with valid PFNs */
+ 	for (i = 0; i < lmb.memory.cnt; i++) {
+@@ -210,6 +214,7 @@ void __init do_init_bootmem(void)
+ 		add_active_range(0, start_pfn, end_pfn);
+ 	}
+ 
++#ifndef CONFIG_NO_BOOTMEM
+ 	/* Add all physical memory to the bootmem map, mark each area
+ 	 * present.
+ 	 */
+@@ -241,6 +246,7 @@ void __init do_init_bootmem(void)
+ 				BOOTMEM_DEFAULT);
+ 
+ #endif
++#endif
+ 	/* XXX need to clip this if using highmem? */
+ 	sparse_memory_present_with_active_regions(0);
+ 
+@@ -311,6 +317,16 @@ void __init paging_init(void)
  }
+ #endif /* ! CONFIG_NEED_MULTIPLE_NODES */
+ 
++u64 __init get_max_mapped(void)
++{
++	u64 end = max_low_pfn;
++
++	end <<= PAGE_SHIFT;
++
++	return end;
++}
++
++
+ void __init mem_init(void)
+ {
+ #ifdef CONFIG_NEED_MULTIPLE_NODES
+@@ -337,6 +353,9 @@ void __init mem_init(void)
+ 				free_all_bootmem_node(NODE_DATA(nid));
+ 		}
+ 	}
++#ifdef CONFIG_NO_BOOTMEM
++	totalram_pages += free_all_memory_core_early(MAX_NUMNODES);
++#endif
+ #else
+ 	max_mapnr = max_pfn;
+ 	totalram_pages += free_all_bootmem();
+diff --git a/arch/powerpc/mm/numa.c b/arch/powerpc/mm/numa.c
+index 64c0022..024c3ff 100644
+--- a/arch/powerpc/mm/numa.c
++++ b/arch/powerpc/mm/numa.c
+@@ -90,6 +90,7 @@ static int __cpuinit fake_numa_create_new_node(unsigned long end_pfn,
+ 	return 0;
+ }
+ 
++#ifndef CONFIG_NO_BOOTMEM
+ /*
+  * get_active_region_work_fn - A helper function for get_node_active_region
+  *	Returns datax set to the start_pfn and end_pfn if they contain
+@@ -131,6 +132,7 @@ static void __init get_node_active_region(unsigned long start_pfn,
+ 	node_ar->end_pfn = start_pfn;
+ 	work_with_active_regions(nid, get_active_region_work_fn, node_ar);
+ }
++#endif
+ 
+ static void __cpuinit map_cpu_to_node(int cpu, int node)
+ {
+@@ -845,6 +847,7 @@ static struct notifier_block __cpuinitdata ppc64_numa_nb = {
+ 	.priority = 1 /* Must run before sched domains notifier. */
+ };
+ 
++#ifndef CONFIG_NO_BOOTMEM
+ static void mark_reserved_regions_for_nid(int nid)
+ {
+ 	struct pglist_data *node = NODE_DATA(nid);
+@@ -911,7 +914,7 @@ static void mark_reserved_regions_for_nid(int nid)
+ 		}
+ 	}
+ }
+-
++#endif
+ 
+ void __init do_init_bootmem(void)
+ {
+@@ -932,8 +935,10 @@ void __init do_init_bootmem(void)
+ 
+ 	for_each_online_node(nid) {
+ 		unsigned long start_pfn, end_pfn;
++#ifndef CONFIG_NO_BOOTMEM
+ 		void *bootmem_vaddr;
+ 		unsigned long bootmap_pages;
++#endif
+ 
+ 		get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
+ 
+@@ -951,7 +956,9 @@ void __init do_init_bootmem(void)
+   		dbg("node %d\n", nid);
+ 		dbg("NODE_DATA() = %p\n", NODE_DATA(nid));
+ 
++#ifndef CONFIG_NO_BOOTMEM
+ 		NODE_DATA(nid)->bdata = &bootmem_node_data[nid];
++#endif
+ 		NODE_DATA(nid)->node_start_pfn = start_pfn;
+ 		NODE_DATA(nid)->node_spanned_pages = end_pfn - start_pfn;
+ 
+@@ -961,6 +968,7 @@ void __init do_init_bootmem(void)
+   		dbg("start_paddr = %lx\n", start_pfn << PAGE_SHIFT);
+   		dbg("end_paddr = %lx\n", end_pfn << PAGE_SHIFT);
+ 
++#ifndef CONFIG_NO_BOOTMEM
+ 		bootmap_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
+ 		bootmem_vaddr = careful_zallocation(nid,
+ 					bootmap_pages << PAGE_SHIFT,
+@@ -979,6 +987,7 @@ void __init do_init_bootmem(void)
+ 		 * done correctly.
+ 		 */
+ 		mark_reserved_regions_for_nid(nid);
++#endif
+ 		sparse_memory_present_with_active_regions(nid);
+ 	}
+ 
 -- 
 1.6.4.2
 
