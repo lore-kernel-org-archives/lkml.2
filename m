@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab0CXCQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 22:16:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:40038 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab0CXCQQ (ORCPT
+	id S1754158Ab0CXCZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 22:25:01 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:52714 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab0CXCZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 22:16:16 -0400
-To: holt@sgi.com
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       x86@kernel.org, Rafael Wysocki <rjw@novell.com>
-Subject: Re: [patch 0/2] x86,pat: Reduce contention on the memtype_lock -V4
-From: Andi Kleen <andi@firstfloor.org>
-References: <20100324003608.811051277@gulag1.americas.sgi.com>
-Date: Wed, 24 Mar 2010 03:16:14 +0100
-In-Reply-To: <20100324003608.811051277@gulag1.americas.sgi.com> (holt@sgi.com's message of "Tue, 23 Mar 2010 19:36:08 -0500")
-Message-ID: <87wrx2for5.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 23 Mar 2010 22:25:00 -0400
+Subject: Re: [PATCH 1/7] serial: TTY: new ldisc for TI BT/FM/GPS chips
+From: Marcel Holtmann <marcel@holtmann.org>
+To: pavan_savoy@ti.com
+Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
+       pavan_savoy@yahoo.co.in
+In-Reply-To: <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com>
+	 <1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 23 Mar 2010 19:24:50 -0700
+Message-ID: <1269397490.11714.104.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-holt@sgi.com writes:
+Hi guys,
 
-> Tracking memtype on x86 uses a single global spin_lock for either reading
-> or changing the memory type.  This includes changes made to page flags
-> which is perfectly parallel.
->
-> Part one of the patchset makes the page-based tracking use cmpxchg
-> without a need for a lock.
->
-> Part two of the patchset converts the spin_lock into a read/write lock.
+> A new N_TI_WL line discipline added for TI BT/FM/GPS
+> combo chips which make use of same TTY to communicate
+> with chip. This is to be made use of individual protocol
+> BT/FM/GPS drivers.
+> 
+> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> ---
+>  include/linux/tty.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/tty.h b/include/linux/tty.h
+> index 4409967..8288ee1 100644
+> --- a/include/linux/tty.h
+> +++ b/include/linux/tty.h
+> @@ -23,7 +23,7 @@
+>   */
+>  #define NR_UNIX98_PTY_DEFAULT	4096      /* Default maximum for Unix98 ptys */
+>  #define NR_UNIX98_PTY_MAX	(1 << MINORBITS) /* Absolute limit */
+> -#define NR_LDISCS		20
+> +#define NR_LDISCS		21
+>  
+>  /* line disciplines */
+>  #define N_TTY		0
+> @@ -48,6 +48,7 @@
+>  #define N_PPS		18	/* Pulse per Second */
+>  
+>  #define N_V253		19	/* Codec control over voice modem */
+> +#define N_TI_WL	20	/* for TI's WL connectivity chips */
+>  
+>  /*
+>   * This character is the same as _POSIX_VDISABLE: it cannot be used as
 
-I'm curious: in what workloads did you see contention?
+why is this even targeting staging. I prefer if we have proper review
+cycles and get this reviewed this way. This looks like more a shortcut
+to get things into the kernel than actually spending the effort to clean
+things up.
 
-For any scalability patches it would be always good to have a description
-of the workload.
+If this would be just a driver, I wouldn't care, but it tries to assign
+official numbers for a line discipline and clearly collides with other
+peoples work that are going the proper upstream review cycles.
 
--Andi
+Greg, I would like to see the rule that if it touches files outside of
+drivers/staging/ then it is not eligible for staging.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Regards
+
+Marcel
+
+
