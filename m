@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab0CXRc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:32:57 -0400
-Received: from web94901.mail.in2.yahoo.com ([203.104.17.136]:38829 "HELO
-	web94901.mail.in2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932322Ab0CXRcy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:32:54 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.in;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=h6vFObYwkHZxCGyXpiE5jLnhb9/bhyJ/GWG/OPeLTwiWUzkrQ1pUt16HO5pj7CcbmwSniNnLUT3JzPZrb8wMnTgrcJEbAX9cAgXHOulqovO9Ly8xml1mixDWOrbZ8OM1ks8aSQCtZVU3inzwCV3r2pfG7l6Gj78vEqqfEe/78Jk=;
-Message-ID: <669779.38970.qm@web94901.mail.in2.yahoo.com>
-X-YMail-OSG: 8lTw2aEVM1ng33ot9pKBoC.s5H85D3QT7IkyWE_6ThbKd8a
- N9.QKnrbCiZ0OYNvwsuVGUN279BEpxFkm5.eie9YQiC4jh1KpPpB2jcVKd0t
- 1w9W8UKrKf1IzcnJ7cewy6rRT1ft99o7MmPkB8YAgKyj4tnlHn08cIQWPMM_
- hg26tLGKzpwB38mp3q_O4QHr7PR5OlmqL5FhBppRL7IX12gDfwd1FHJ5FmZ1
- M5YJGsupVKv7pHfd4HsJpq1bicbvTaGTd8JamucN0jihiitHFvfc529iCQfr
- uIPR3LsBjmyNJybXtxpXlx3s-
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Wed, 24 Mar 2010 23:02:51 +0530 (IST)
-From: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Marcel Holtmann <marcel@holtmann.org>, Greg KH <gregkh@suse.de>,
-       PavanSavoy <pavan_savoy@ti.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100324172647.572e3cb8@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	id S932407Ab0CXRdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:33:19 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:35097 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932206Ab0CXRdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 13:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=N6p6M4TdDM7WQQUNwWLnpvxAT+cVDn5LXBksguoG4FPu8qs5ZotYvGzr725tELkv/K
+         7GEgSknudqyf6TUuNuWJHNV6Pjh9lhhxb4eX5SdCg6vGRn99cQ0MvmY25xA+Q5nfMONa
+         yAt3sTLtOKGcQoj/JvqT2tunccJmSbgVGb1iw=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, hch@infradead.org, mkp@mkp.net,
+       Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH 0/5] blkdev: discard optimizations v2 RESEND2
+Date: Wed, 24 Mar 2010 20:33:03 +0300
+Message-Id: <1269451988-5270-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Wed, 24/3/10, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+Wow. lkml seem don't like 'XXX' in the subject
+So post it one more time.
 
-> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-> To: "Pavan Savoy" <pavan_savoy@yahoo.co.in>
-> Cc: "Marcel Holtmann" <marcel@holtmann.org>, "Greg KH" <gregkh@suse.de>, "PavanSavoy" <pavan_savoy@ti.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-> Date: Wednesday, 24 March, 2010, 10:56 PM
-> > Isn't there a mechanism for the
-> tty_set_ldisc to do what _open does ?
-> > I mean there might be plenty of devices on UART which
-> might not need /dev/tty at all ? i.e An App need not open
-> for a ldisc to be installed.
-> 
-> There is no mechanism to have an open tty without having an
-> open file
-> attached to it - and changing that would be very very non
-> trivial. Plus
-> you still need a way to tell the kernel you want the device
-> in question
-> active. That probably should get addressed some day but its
-> not a quick
-> fix up!
+This is second version of generic discard optimizations
+first was submitted here: http://lwn.net/Articles/373994
 
-Which puts me back to square 1, the requirement is TTY device should be open, only when either BT, FM or GPS would want to use it.
-[with your patch one of the steps of installing ldisc would be reduced upon opening].
+Currently there are many file-systems which has implemented
+discard support, but SSD discs not widely used yet.
+This patch-set introduce compat helpers which simulate
+discard requests with zeroing semantics.
 
-Now from kernel-space which is the first to get notification about requirement of BT/FM or GPS, I somehow have to communicate it to user-space, without the much disliked sysfs entry method.
+__blkdev_issue_zeroout: explicitly zeroout given range via write request.
+blkdev_issue_clear: zeroout given range, use discard request if possible.
 
-How do I tell the user-space when I want the TTY device to be opened ?
-Actually why do I even need a TTY device in this case - right ?
-ldisc driver can do the tty->ops->write and tty_read and put it up on different interfaces like eth0/hci0 or /dev/radio0 etc..
+Later filesystem admin may select which behavior is suitable for his needs
+discard without zeroing or explicit zeroing even if discard is not supported.
 
-That would mean, a device can be on UART, a ldisc driver attached to it, and doesn't require a user-space daemon to maintain the device node.
+Advantages:
+- Hope that this helps in real filesystem testing.
+- People who are crazy about data security would be really happy.
+- Virtual machine developers also would like this feature.
 
-> 
-> Alan
-> 
+Other optimization:
+- Convert all blkdev_issue_xxx function to common set of flags
+- Optimize generic discard submitting procedure.
 
-
-      Your Mail works best with the New Yahoo Optimized IE8. Get it NOW! http://downloads.yahoo.com/in/internetexplorer/
