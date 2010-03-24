@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab0CXCtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 22:49:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55562 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754064Ab0CXCtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 22:49:52 -0400
-Date: Tue, 23 Mar 2010 19:48:30 -0700
-From: Greg KH <gregkh@suse.de>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: pavan_savoy@ti.com, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
-       pavan_savoy@yahoo.co.in
-Subject: Re: [PATCH 1/7] serial: TTY: new ldisc for TI BT/FM/GPS chips
-Message-ID: <20100324024830.GA4642@suse.de>
-References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com> <1269376875-25940-2-git-send-email-pavan_savoy@ti.com> <1269397490.11714.104.camel@localhost.localdomain>
+	id S1754568Ab0CXC4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 22:56:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62122 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209Ab0CXC4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 22:56:36 -0400
+Message-ID: <4BA97FA1.7030606@cn.fujitsu.com>
+Date: Wed, 24 Mar 2010 10:57:37 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269397490.11714.104.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH][RESEND] tracing: Fix lockdep warning in global_clock()
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 07:24:50PM -0700, Marcel Holtmann wrote:
-> > +#define N_TI_WL	20	/* for TI's WL connectivity chips */
-> >  
-> >  /*
-> >   * This character is the same as _POSIX_VDISABLE: it cannot be used as
-> 
-> why is this even targeting staging. I prefer if we have proper review
-> cycles and get this reviewed this way. This looks like more a shortcut
-> to get things into the kernel than actually spending the effort to clean
-> things up.
-> 
-> If this would be just a driver, I wouldn't care, but it tries to assign
-> official numbers for a line discipline and clearly collides with other
-> peoples work that are going the proper upstream review cycles.
-> 
-> Greg, I would like to see the rule that if it touches files outside of
-> drivers/staging/ then it is not eligible for staging.
+ # echo 1 > events/enable
+ # echo global > trace_clock
 
-That is a rule already :)
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:3162 check_flags+0xb2/0x190()
+...
+---[ end trace 3f86734a89416623 ]---
+possible reason: unannotated irqs-on.
+...
 
-See my complaint about this a few minutes ago.
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/trace/trace_clock.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-thanks,
+diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+index 6fbfb8f..9d589d8 100644
+--- a/kernel/trace/trace_clock.c
++++ b/kernel/trace/trace_clock.c
+@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
+ 	int this_cpu;
+ 	u64 now;
+ 
+-	raw_local_irq_save(flags);
++	local_irq_save(flags);
+ 
+ 	this_cpu = raw_smp_processor_id();
+ 	now = cpu_clock(this_cpu);
+@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
+ 	arch_spin_unlock(&trace_clock_struct.lock);
+ 
+  out:
+-	raw_local_irq_restore(flags);
++	local_irq_restore(flags);
+ 
+ 	return now;
+ }
+-- 
+1.6.3
 
-greg k-h
