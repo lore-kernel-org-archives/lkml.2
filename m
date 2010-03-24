@@ -1,147 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab0CXMUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 08:20:01 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:35128 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab0CXMT7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 08:19:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=tV2dHB6u8lerRf6EkFraaUSoQAK5G3QtpL10rvM7dOGqqW0THfFK6/93WF/O7nD9nB
-         OkvVCoaFe5uO4xpZKsl3WCVALhn/iK/IgEyOgGOIuUBaBklYYaiHiesKauRxpAuIfn20
-         zR5YYyPJvd/aAHZD55rxCe/M9YkDDcP5AEAKg=
+	id S1756068Ab0CXMXI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 08:23:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5346 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755889Ab0CXMXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 08:23:04 -0400
+Date: Wed, 24 Mar 2010 17:49:02 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Anton Blanchard <anton@samba.org>,
+       tglx@linutronix.de, mingo@elte.hu, a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
+	hvc_remove
+Message-ID: <20100324121902.GJ15789@amit-x200.redhat.com>
+References: <20100319151326.GC8541@kroah.com> <1269011916-8836-4-git-send-email-gregkh@suse.de> <1269119079.8599.65.camel@pasglop> <20100321043725.GA21566@amit-x200.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1269432269-3417-1-git-send-email-mauricedawson2699@googlemail.com>
-References: <1269432269-3417-1-git-send-email-mauricedawson2699@googlemail.com>
-From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Date: Wed, 24 Mar 2010 13:19:38 +0100
-Message-ID: <69e28c911003240519r1915f0fcid869f741ecad3c12@mail.gmail.com>
-Subject: Re: [PATCH 23/23] Staging: comedi: fix brace, print(k), indent and 
-	over 80 character coding style issues in adq12b.c
-To: Maurice Dawson <mauricedawson2699@googlemail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, mithlesh@linsyssoft.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100321043725.GA21566@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 1:04 PM, Maurice Dawson
-<mauricedawson2699@googlemail.com> wrote:
-> This is a patch to the adq12b.c file that fixes up brace, print(k), indent and over 80 character warnings found by the checkpatch.pl tool
->
-> Signed-off-by: Maurice Dawson <mauricedawson2699@googlemail.com>
-> ---
->  drivers/staging/comedi/drivers/adq12b.c |   30 +++++++++++++++++-------------
->  1 files changed, 17 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/staging/comedi/drivers/adq12b.c b/drivers/staging/comedi/drivers/adq12b.c
-> index 00b2009..ac3d42d 100644
-> --- a/drivers/staging/comedi/drivers/adq12b.c
-> +++ b/drivers/staging/comedi/drivers/adq12b.c
-> @@ -200,19 +200,21 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->        unipolar = it->options[1];
->        differential = it->options[2];
->
-> -       printk("comedi%d: adq12b called with options base=0x%03lx, %s and %s\n",
-> +       printk(KERN_ERR "comedi%d: adq12b called with options base=0x%03lx, "
-> +                                                               "%s and %s\n",
->               dev->minor, iobase, (unipolar == 1) ? "unipolar" : "bipolar",
->               (differential == 1) ? "differential" : "single-ended");
->
->        /* if no address was specified, try the default 0x300 */
->        if (iobase == 0) {
-> -               printk
-> -                   ("comedi%d: adq12b warning: I/O base address not specified. Trying the default 0x300.\n",
-> -                    dev->minor);
-> +               printk("comedi%d: adq12b warning: "
-> +                       "I/O base address not specified. "
-> +                       "Trying the default 0x300.\n",
-> +                                               dev->minor);
->                iobase = 0x300;
->        }
->
-> -       printk("comedi%d: adq12b: 0x%04lx ", dev->minor, iobase);
-> +       printk(KERN_ERR "comedi%d: adq12b: 0x%04lx ", dev->minor, iobase);
->        if (!request_region(iobase, ADQ12B_SIZE, "adq12b")) {
->                printk("I/O port conflict\n");
->                return -EIO;
-> @@ -259,11 +261,10 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->                s->n_chan = thisboard->ai_se_chans;
->        }
->
-> -       if (unipolar) {
-> +       if (unipolar)
->                s->range_table = &range_adq12b_ai_unipolar;
-> -       } else {
-> +       else
->                s->range_table = &range_adq12b_ai_bipolar;
-> -       }
->
->        s->maxdata = (1 << thisboard->ai_bits) - 1;
->
-> @@ -289,7 +290,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->        s->range_table = &range_digital;
->        s->insn_bits = adq12b_do_insn_bits;
->
-> -       printk("attached\n");
-> +       printk(KERN_ERR "attached\n");
->
->        return 0;
->  }
-> @@ -309,7 +310,7 @@ static int adq12b_detach(struct comedi_device *dev)
->
->        kfree(devpriv);
->
-> -       printk("comedi%d: adq12b: removed\n", dev->minor);
-> +       printk(KERN_ERR "comedi%d: adq12b: removed\n", dev->minor);
->
->        return 0;
->  }
-> @@ -344,17 +345,20 @@ static int adq12b_ai_rinsn(struct comedi_device *dev,
->                /* wait for end of convertion */
->                i = 0;
->                do {
-> -/* udelay(1); */
-> +                       /* udelay(1); */
->                        status = inb(dev->iobase + ADQ12B_STINR);
->                        status = status & ADQ12B_EOC;
->                } while (status == 0 && ++i < TIMEOUT);
-> -/* } while (++i < 10); */
-> +                       /* } while (++i < 10); */
->
->                /* read data */
->                hi = inb(dev->iobase + ADQ12B_ADHIG);
->                lo = inb(dev->iobase + ADQ12B_ADLOW);
->
-> -               /* printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n", channel, range, status,  hi, lo); */
-> +               /*
-> +                *printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n",
-> +                *channel, range, status,  hi, lo);
-> +                */
+On (Sun) Mar 21 2010 [10:07:25], Amit Shah wrote:
+> On (Sun) Mar 21 2010 [08:04:39], Benjamin Herrenschmidt wrote:
+> > On Fri, 2010-03-19 at 08:18 -0700, Greg Kroah-Hartman wrote:
+> > > From: Amit Shah <amit.shah@redhat.com>
+> > > 
+> > > Alan pointed out a race in the code where hvc_remove is invoked. The
+> > > recent virtio_console work is the first user of hvc_remove().
+> > 
+> > This causes hangs during boot on pseries machines. Haven't had a chance
+> > to track that down yet, but please revert
+> > e74d098c66543d0731de62eb747ccd5b636a6f4c for now.
+> 
+> I tested this with the virtio-console driver with multiple consoles on
+> Linux-2.6.34-rc2 inside a KVM VM. I didn't face any lockups / badness,
+> but the following popped up once on -smp 4.
+> 
+> Could this be the same bug that's causing a lockup for you?
+> 
+> Since the virtio-console isn't the primary console on my VM, I didn't
+> see a lockup but maybe powerpc uses this as the primary console and the
+> lockup is a result of this?
+> 
+> I've not investigated this; I might get around to it next week, but
+> CC'ing the sched people on this one.
 
-AFAIK this is not the right way to format commented-out code - not
-sure if we prefer plain /*...*/ or #if 0...#endif in such cases, but
-definitely not boxed comments.
+I just looked at this:
 
->                data[n] = (hi << 8) | lo;
->
->        }
-> --
-> 1.6.3.3
->
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->
+> (My .config is after the oops.)
+> 
+> BUG: unable to handle kernel NULL pointer dereference at (null)
+> IP: [<ffffffff8101f4dc>] task_is_waking+0x1/0x1f
+> PGD 3d261067 PUD 3d013067 PMD 0 
+> Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> last sysfs file: /sys/devices/virtual/block/ram13/removable
+> CPU 0 
+> Modules linked in:
+> 
+> Pid: 573, comm: console_check Not tainted 2.6.34-rc2 #102 /Bochs
+> RIP: 0010:[<ffffffff8101f4dc>]  [<ffffffff8101f4dc>]
+> task_is_waking+0x1/0x1f
+> RSP: 0018:ffff88003bdf5b48  EFLAGS: 00010246
+> RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffffffff81646e30
+> RDX: ffff88003bdf5b78 RSI: ffff88003bdf5ba0 RDI: 0000000000000000
+> RBP: ffff88003bdf5b78 R08: 0000000000000000 R09: ffffffff81646e08
+> R10: 0000000000000046 R11: 0000000000001130 R12: 00000000001d1d00
+> R13: 0000000000000000 R14: ffff88003bdf5ba0 R15: 000000000000000f
+> FS:  00007f330731b6f0(0000) GS:ffff880003800000(0000)
+> knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000000 CR3: 000000003be78000 CR4: 00000000000006b0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process console_check (pid: 573, threadinfo ffff88003bdf4000, task
+> ffff88003bc3a2d0)
+> Stack:
+>  ffff88003bdf5b78 ffffffff8102058e 0000000000000000 0000000000000000
+> <0> 0000000000000000 0000000000000000 ffff88003bdf5bd8 ffffffff81026f03
+> <0> ffff88003ead8cd8 ffff88003eb10490 ffff88003bdf5bd8 ffffffff8118cea9
+> Call Trace:
+>  [<ffffffff8102058e>] ? task_rq_lock+0x24/0x98
+>  [<ffffffff81026f03>] try_to_wake_up+0x4b/0x33b
+>  [<ffffffff8118cea9>] ? resize_console+0x25/0x95
+>  [<ffffffff8102721f>] wake_up_process+0x10/0x12
+>  [<ffffffff8118c18e>] hvc_kick+0x1a/0x1c
+>  [<ffffffff8118cbb4>] hvc_open+0xf6/0x102
 
+And this suggests that hvc_kick() is called before hvc_task is
+initialised, ie, before hvc_init() is called.
 
+Does this help?
 
--- 
-Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
+diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+index ba55bba..50ac983 100644
+--- a/drivers/char/hvc_console.c
++++ b/drivers/char/hvc_console.c
+@@ -285,6 +285,9 @@ EXPORT_SYMBOL_GPL(hvc_instantiate);
+ /* Wake the sleeping khvcd */
+ void hvc_kick(void)
+ {
++       if (!hvc_task)
++               return;
++
+        hvc_kicked = 1;
+        wake_up_process(hvc_task);
+ }
+
+		Amit
