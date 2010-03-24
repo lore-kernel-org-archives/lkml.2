@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932499Ab0CXRoH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:44:07 -0400
-Received: from zcars04e.nortel.com ([47.129.242.56]:55758 "EHLO
-	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932487Ab0CXRoE (ORCPT
+	id S932501Ab0CXRp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:45:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56265 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932375Ab0CXRp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:44:04 -0400
-Message-ID: <4BAA4EE4.3090900@nortel.com>
-Date: Wed, 24 Mar 2010 11:41:56 -0600
-From: "Chris Friesen" <cfriesen@nortel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Brandon Black <blblack@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: behavior of recvmmsg() on blocking sockets
-References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>
-In-Reply-To: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Mar 2010 13:45:27 -0400
+X-Authority-Analysis: v=1.0 c=1 a=Ze_YP5u4wlQA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=-56AzMhhz4QhQPvifQIA:9 a=ecBX-IWpIwbXDNnZ_-oHZD__0fkA:4 a=PUjeQqilurYA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [BUG] lockdep_init_map error in sysfs
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <1269452592.2957.2852.camel@gandalf.stny.rr.com>
+References: <1269452592.2957.2852.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 24 Mar 2010 13:45:25 -0400
+Message-ID: <1269452725.2957.2856.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Mar 2010 17:43:59.0085 (UTC) FILETIME=[955CD1D0:01CACB79]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 10:15 AM, Brandon Black wrote:
-> [Not on the list, please CC responses]
+On Wed, 2010-03-24 at 13:43 -0400, Steven Rostedt wrote:
+> I'm getting this in latest Linus tree:
 
-Adding netdev to the CC list.
+Correction, the tree is not the latest. I'll try out the latest to see
+if it still exists.
 
-> Currently, my application code uses blocking UDP sockets and is
-> basically structured like this:
+Thanks,
+
+-- Steve
+
 > 
-> while(1) {
->     recvmsg(fd, ...);
->     // do some work on the packet
->     sendmsg(fd, ...);
-> }
-> 
-> It uses a thread-per-socket model
-
-This doesn't scale well to large numbers of sockets....you get a lot of
-unnecessary context switching.
+> BUG: key ffff88002ede4870 not in .data!
+> ------------[ cut here ]------------
 
 
-, and the "do some work" code is very
-> fast, and so this turns out to be more efficient than non-blocking
-> techniques for my use case.  Today I started playing with 2.6.33's new
-> recvmmsg(), hoping to convert my code like so (still on blocking
-> sockets):
-> 
-> while(1) {
->     recvmmsg(fd, ...);
->     // do some work on up to N packets
->     // loop over sendmsg() foreach packet to be sent
->     //   (or sendmmsg() if/when that interface becomes available)
-> }
-> 
-> The catch I ran into is that on a blocking socket, recvmmsg() will
-> block until *all* vlen packets have been received.  The behavior I'd
-> prefer for my use case would be for it to only block until at least
-> one packet is available, not until all are available.  Or in code
-> terms, the first internal call to recvmsg should use the supplied
-> flags, and the rest of the recvmsg calls should use flags &
-> MSG_DONTWAIT.  It's not clear to me which is the better default
-> behavior, but I feel like at the very least there should be a flag
-> that can switch behavior between the two possible interpretations of
-> "blocking".
-
-On a sufficiently fast CPU there will always only be 1 packet waiting
-but we'll waste a lot of time doing one syscall per packet.
-
-I suspect the intent is that you set the timeout to indicate the max
-latency you're willing to accomodate.  Once the timeout expires then the
-call will return with the packets received to that point.
-
-Chris
