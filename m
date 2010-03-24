@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab0CXK6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:58:10 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:46056 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab0CXK6G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:58:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=E0Kpd4dMPpMGpXFTw8KrYapvvRHAoq7nGA/4gi6s1u5Clw5IkYBOM6h73H47krkIBG
-         lnKmVfu+OfiIf740MlniDoEy61pJP48AH2yzXVnwqTgv0PdxIM0Dhnkoz7lE6wTjPXHC
-         CtNXYmV9oD+Um5ijs6sR7TgM9UxtG2/2OernE=
+	id S1755673Ab0CXK7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47011 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755371Ab0CXK7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 06:59:07 -0400
+Date: Wed, 24 Mar 2010 16:27:10 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, Greg KH <greg@kroah.com>,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
+	hvc_remove
+Message-ID: <20100324105710.GD15789@amit-x200.redhat.com>
+References: <20100319151326.GC8541@kroah.com> <1269011916-8836-4-git-send-email-gregkh@suse.de> <1269119079.8599.65.camel@pasglop> <1269427544.8599.222.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <1269420538-18039-2-git-send-email-tj@kernel.org>
-References: <1269420538-18039-1-git-send-email-tj@kernel.org>
-	 <1269420538-18039-2-git-send-email-tj@kernel.org>
-Date: Wed, 24 Mar 2010 12:58:05 +0200
-X-Google-Sender-Auth: 8666c0eef26a7454
-Message-ID: <84144f021003240358i2c9e51a5lf9877ec5b0597992@mail.gmail.com>
-Subject: Re: [PATCH 1/4] x86: don't include slab.h from arch/x86/include/asm/pgtable_32.h
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Tejun Heo <tj@kernel.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org, Lee.Schermerhorn@hp.com,
-       cl@linux-foundation.org, mingo@elte.hu, adobriyan@gmail.com,
-       tglx@linutronix.de, hpa@zytor.com, yi.zhu@intel.com,
-       reinette.chatre@intel.com, ilw@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269427544.8599.222.camel@pasglop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 10:48 AM, Tejun Heo <tj@kernel.org> wrote:
-> Including slab.h from x86 pgtable_32.h creates a troublesome
-> dependency chain w/ ftrace enabled.  The following chain leads to
-> inclusion of pgtable_32.h from define_trace.h.
->
->  trace/define_trace.h
->  trace/ftrace.h
->  linux/ftrace_event.h
->  linux/ring_buffer.h
->  linux/mm.h
->  asm/pgtable.h
->  asm/pgtable_32.h
->
-> And when slab.h itself defines trace hooks via
->
->  linux/sl[aou]b_def.h
->  linux/kmemtrace.h
->  trace/events/kmem.h
->
-> If slab.h is not included before define_trace.h is included, this
-> leads to duplicate definitions of kmemtrace hooks or other include
-> dependency problems.
->
-> pgtable_32.h doesn't need slab.h to begin with.  Don't include it from
-> there.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
+On (Wed) Mar 24 2010 [21:45:44], Benjamin Herrenschmidt wrote:
+> On Sun, 2010-03-21 at 08:04 +1100, Benjamin Herrenschmidt wrote:
+> > On Fri, 2010-03-19 at 08:18 -0700, Greg Kroah-Hartman wrote:
+> > > From: Amit Shah <amit.shah@redhat.com>
+> > > 
+> > > Alan pointed out a race in the code where hvc_remove is invoked. The
+> > > recent virtio_console work is the first user of hvc_remove().
+> > 
+> > This causes hangs during boot on pseries machines. Haven't had a chance
+> > to track that down yet, but please revert
+> > e74d098c66543d0731de62eb747ccd5b636a6f4c for now.
+> 
+> Linus, any chance you can revert that one for now until we figure out
+> what's wrong ?
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Ben, can you confirm if the lockup you see is also due to the
+task_is_waking() issue I found in a kvm guest?
 
-> ---
->  arch/x86/include/asm/pgtable_32.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-> index 47339a1..2984a25 100644
-> --- a/arch/x86/include/asm/pgtable_32.h
-> +++ b/arch/x86/include/asm/pgtable_32.h
-> @@ -19,7 +19,6 @@
->  #include <asm/paravirt.h>
->
->  #include <linux/bitops.h>
-> -#include <linux/slab.h>
->  #include <linux/list.h>
->  #include <linux/spinlock.h>
->
-> --
-> 1.6.4.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+That'll help me debug the issue.
+
+Thanks.
+
+		Amit
