@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0CXJJG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 05:09:06 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:53807 "EHLO vps.mortis.eu"
+	id S1754770Ab0CXJJg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 05:09:36 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:53951 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752352Ab0CXJJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 05:09:05 -0400
+	id S1752352Ab0CXJJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 05:09:34 -0400
 From: Giel van Schijndel <me@mortis.eu>
 To: Hans de Goede <hdegoede@redhat.com>
 Cc: Jean Delvare <khali@linux-fr.org>, Giel van Schijndel <me@mortis.eu>,
        Jonathan Cameron <jic23@cam.ac.uk>,
        Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
        linux-kernel@vger.kernel.org
-Subject: [PATCH] hwmon: f71882fg: code cleanup
-Date: Wed, 24 Mar 2010 10:09:01 +0100
-Message-Id: <1269421741-9706-1-git-send-email-me@mortis.eu>
+Subject: [PATCH] hwmon: f71882fg: acquire I/O regions while we're working with them
+Date: Wed, 24 Mar 2010 10:09:31 +0100
+Message-Id: <1269421771-9775-1-git-send-email-me@mortis.eu>
 X-Mailer: git-send-email 1.6.4.4
 In-Reply-To: <20100324084643.GB6368@salidar.me.mortis.eu>
 References: <20100324084643.GB6368@salidar.me.mortis.eu>
@@ -22,57 +22,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some code cleanup: properly using previously defined functions, rather
-than duplicating their code.
+Acquire the I/O region for the Super I/O chip while we're working on it.
 
 Signed-off-by: Giel van Schijndel <me@mortis.eu>
 ---
- drivers/hwmon/f71882fg.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
+ drivers/hwmon/f71882fg.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-index 4230729..ca34e5c 100644
+index ca34e5c..fe7b671 100644
 --- a/drivers/hwmon/f71882fg.c
 +++ b/drivers/hwmon/f71882fg.c
-@@ -856,10 +856,8 @@ static inline int superio_inb(int base, int reg)
- static int superio_inw(int base, int reg)
- {
- 	int val;
--	outb(reg++, base);
--	val = inb(base + 1) << 8;
--	outb(reg, base);
--	val |= inb(base + 1);
-+	val  = superio_inb(base, reg) << 8;
-+	val |= superio_inb(base, reg + 1);
- 	return val;
+@@ -2178,6 +2178,13 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+ 	int err = -ENODEV;
+ 	u16 devid;
+ 
++	/* Don't step on other drivers' I/O space by accident */
++	if (!request_region(sioaddr, 2, DRVNAME)) {
++		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
++				(int)sioaddr);
++		return -EIO;
++	}
++
+ 	superio_enter(sioaddr);
+ 
+ 	devid = superio_inw(sioaddr, SIO_REG_MANID);
+@@ -2232,6 +2239,7 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
+ 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
+ exit:
+ 	superio_exit(sioaddr);
++	release_region(sioaddr, 2);
+ 	return err;
  }
  
-@@ -905,10 +903,8 @@ static u16 f71882fg_read16(struct f71882fg_data *data, u8 reg)
- {
- 	u16 val;
- 
--	outb(reg++, data->addr + ADDR_REG_OFFSET);
--	val = inb(data->addr + DATA_REG_OFFSET) << 8;
--	outb(reg, data->addr + ADDR_REG_OFFSET);
--	val |= inb(data->addr + DATA_REG_OFFSET);
-+	val  = f71882fg_read8(data, reg) << 8;
-+	val |= f71882fg_read8(data, reg + 1);
- 
- 	return val;
- }
-@@ -921,10 +917,8 @@ static void f71882fg_write8(struct f71882fg_data *data, u8 reg, u8 val)
- 
- static void f71882fg_write16(struct f71882fg_data *data, u8 reg, u16 val)
- {
--	outb(reg++, data->addr + ADDR_REG_OFFSET);
--	outb(val >> 8, data->addr + DATA_REG_OFFSET);
--	outb(reg, data->addr + ADDR_REG_OFFSET);
--	outb(val & 255, data->addr + DATA_REG_OFFSET);
-+	f71882fg_write8(data, reg,     val >> 8);
-+	f71882fg_write8(data, reg + 1, val & 0xff);
- }
- 
- static u16 f71882fg_read_temp(struct f71882fg_data *data, int nr)
 -- 
 1.6.4.4
 
