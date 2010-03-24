@@ -1,145 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab0CXKYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:24:49 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:48228 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753041Ab0CXKYr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:24:47 -0400
-Date: Wed, 24 Mar 2010 06:24:45 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] tracing: Reduce overhead of module tracepoints
-Message-ID: <20100324102445.GA23811@Krystal>
-References: <4BA97FA7.6040406@cn.fujitsu.com>
+	id S1755366Ab0CXK0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:26:13 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59695 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753041Ab0CXK0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 06:26:11 -0400
+Date: Wed, 24 Mar 2010 10:25:52 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 05/11] Export unusable free space index via
+	/proc/unusable_index
+Message-ID: <20100324102552.GA21147@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-6-git-send-email-mel@csn.ul.ie> <20100324090312.4e1cc725.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4BA97FA7.6040406@cn.fujitsu.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 06:24:17 up 60 days, 13:01,  4 users,  load average: 1.00, 1.00,
-	1.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100324090312.4e1cc725.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Li Zefan (lizf@cn.fujitsu.com) wrote:
-> Remove the @refcnt argument, because it has side-effects, and
-> arguments with side-effects are not skipped by the jump over
-> disabled instrumentation, so it adds overhead even when the
-> tracepoints are disabled.
-
-
-Thanks Li.
-
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
+On Wed, Mar 24, 2010 at 09:03:12AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 23 Mar 2010 12:25:40 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> ---
->  include/linux/module.h        |    6 ++----
->  include/trace/events/module.h |   14 +++++++-------
->  kernel/module.c               |    3 +--
->  3 files changed, 10 insertions(+), 13 deletions(-)
+> > Unusable free space index is a measure of external fragmentation that
+> > takes the allocation size into account. For the most part, the huge page
+> > size will be the size of interest but not necessarily so it is exported
+> > on a per-order and per-zone basis via /proc/unusable_index.
+> > 
+> > The index is a value between 0 and 1. It can be expressed as a
+> > percentage by multiplying by 100 as documented in
+> > Documentation/filesystems/proc.txt.
+> > 
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> > Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > ---
+> >  Documentation/filesystems/proc.txt |   13 ++++-
+> >  mm/vmstat.c                        |  120 +++++++++++++++++++++++++++++++++
+> >  2 files changed, 132 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+> > index 5e132b5..5c4b0fb 100644
+> > --- a/Documentation/filesystems/proc.txt
+> > +++ b/Documentation/filesystems/proc.txt
+> > @@ -452,6 +452,7 @@ Table 1-5: Kernel info in /proc
+> >   sys         See chapter 2                                     
+> >   sysvipc     Info of SysVIPC Resources (msg, sem, shm)		(2.4)
+> >   tty	     Info of tty drivers
+> > + unusable_index Additional page allocator information (see text)(2.5)
+> >   uptime      System uptime                                     
+> >   version     Kernel version                                    
+> >   video	     bttv info of video resources			(2.4)
+> > @@ -609,7 +610,7 @@ ZONE_DMA, 4 chunks of 2^1*PAGE_SIZE in ZONE_DMA, 101 chunks of 2^4*PAGE_SIZE
+> >  available in ZONE_NORMAL, etc... 
+> >  
+> >  More information relevant to external fragmentation can be found in
+> > -pagetypeinfo.
+> > +pagetypeinfo and unusable_index
+> >  
+> >  > cat /proc/pagetypeinfo
+> >  Page block order: 9
+> > @@ -650,6 +651,16 @@ unless memory has been mlock()'d. Some of the Reclaimable blocks should
+> >  also be allocatable although a lot of filesystem metadata may have to be
+> >  reclaimed to achieve this.
+> >  
+> > +> cat /proc/unusable_index
+> > +Node 0, zone      DMA 0.000 0.000 0.000 0.001 0.005 0.013 0.021 0.037 0.037 0.101 0.230
+> > +Node 0, zone   Normal 0.000 0.000 0.000 0.001 0.002 0.002 0.005 0.015 0.028 0.028 0.054
+> > +
+> > +The unusable free space index measures how much of the available free
+> > +memory cannot be used to satisfy an allocation of a given size and is a
+> > +value between 0 and 1. The higher the value, the more of free memory is
+> > +unusable and by implication, the worse the external fragmentation is. This
+> > +can be expressed as a percentage by multiplying by 100.
+> > +
+> >  ..............................................................................
+> >  
+> >  meminfo:
+> > diff --git a/mm/vmstat.c b/mm/vmstat.c
+> > index 7f760cb..ca42e10 100644
+> > --- a/mm/vmstat.c
+> > +++ b/mm/vmstat.c
+> > @@ -453,6 +453,106 @@ static int frag_show(struct seq_file *m, void *arg)
+> >  	return 0;
+> >  }
+> >  
+> > +
+> > +struct contig_page_info {
+> > +	unsigned long free_pages;
+> > +	unsigned long free_blocks_total;
+> > +	unsigned long free_blocks_suitable;
+> > +};
+> > +
+> > +/*
+> > + * Calculate the number of free pages in a zone, how many contiguous
+> > + * pages are free and how many are large enough to satisfy an allocation of
+> > + * the target size. Note that this function makes to attempt to estimate
+> > + * how many suitable free blocks there *might* be if MOVABLE pages were
+> > + * migrated. Calculating that is possible, but expensive and can be
+> > + * figured out from userspace
+> > + */
+> > +static void fill_contig_page_info(struct zone *zone,
+> > +				unsigned int suitable_order,
+> > +				struct contig_page_info *info)
+> > +{
+> > +	unsigned int order;
+> > +
+> > +	info->free_pages = 0;
+> > +	info->free_blocks_total = 0;
+> > +	info->free_blocks_suitable = 0;
+> > +
+> > +	for (order = 0; order < MAX_ORDER; order++) {
+> > +		unsigned long blocks;
+> > +
+> > +		/* Count number of free blocks */
+> > +		blocks = zone->free_area[order].nr_free;
+> > +		info->free_blocks_total += blocks;
 > 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index 5e869ff..393ec39 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -460,8 +460,7 @@ static inline void __module_get(struct module *module)
->  	if (module) {
->  		preempt_disable();
->  		__this_cpu_inc(module->refptr->count);
-> -		trace_module_get(module, _THIS_IP_,
-> -				 __this_cpu_read(module->refptr->count));
-> +		trace_module_get(module, _THIS_IP_);
->  		preempt_enable();
->  	}
->  }
-> @@ -475,8 +474,7 @@ static inline int try_module_get(struct module *module)
->  
->  		if (likely(module_is_live(module))) {
->  			__this_cpu_inc(module->refptr->count);
-> -			trace_module_get(module, _THIS_IP_,
-> -				__this_cpu_read(module->refptr->count));
-> +			trace_module_get(module, _THIS_IP_);
->  		}
->  		else
->  			ret = 0;
-> diff --git a/include/trace/events/module.h b/include/trace/events/module.h
-> index 4b0f48b..a585f81 100644
-> --- a/include/trace/events/module.h
-> +++ b/include/trace/events/module.h
-> @@ -53,9 +53,9 @@ TRACE_EVENT(module_free,
->  
->  DECLARE_EVENT_CLASS(module_refcnt,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt),
-> +	TP_ARGS(mod, ip),
->  
->  	TP_STRUCT__entry(
->  		__field(	unsigned long,	ip		)
-> @@ -65,7 +65,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
->  
->  	TP_fast_assign(
->  		__entry->ip	= ip;
-> -		__entry->refcnt	= refcnt;
-> +		__entry->refcnt	= __this_cpu_read(mod->refptr->count);
->  		__assign_str(name, mod->name);
->  	),
->  
-> @@ -75,16 +75,16 @@ DECLARE_EVENT_CLASS(module_refcnt,
->  
->  DEFINE_EVENT(module_refcnt, module_get,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt)
-> +	TP_ARGS(mod, ip)
->  );
->  
->  DEFINE_EVENT(module_refcnt, module_put,
->  
-> -	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
-> +	TP_PROTO(struct module *mod, unsigned long ip),
->  
-> -	TP_ARGS(mod, ip, refcnt)
-> +	TP_ARGS(mod, ip)
->  );
->  
->  TRACE_EVENT(module_request,
-> diff --git a/kernel/module.c b/kernel/module.c
-> index c968d36..21591ad 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -800,8 +800,7 @@ void module_put(struct module *module)
->  		preempt_disable();
->  		__this_cpu_dec(module->refptr->count);
->  
-> -		trace_module_put(module, _RET_IP_,
-> -				 __this_cpu_read(module->refptr->count));
-> +		trace_module_put(module, _RET_IP_);
->  		/* Maybe they're waiting for us to drop reference? */
->  		if (unlikely(!module_is_live(module)))
->  			wake_up_process(module->waiter);
-> -- 
-> 1.6.3
+> ....for what this free_blocks_total is ?
 > 
+
+It's used for fragmentation_index in the next patch. By rights, they
+should be in the same patch but I found it easier to re-review
+fill_contig_page_info() if it was introduced as a single piece.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
