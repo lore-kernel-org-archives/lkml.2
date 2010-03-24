@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab0CXACf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 20:02:35 -0400
-Received: from crca.org.au ([74.207.252.120]:44009 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751797Ab0CXACe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 20:02:34 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BA956CC.6030900@crca.org.au>
-Date: Wed, 24 Mar 2010 11:03:24 +1100
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, chris.mason@oracle.com, hch@lst.de
-Subject: Re: [PATCH] Introduce freeze_super and thaw_super for the fsfreeze
- ioctl
-References: <20100323142200.GA2381@localhost.localdomain> <20100323142843.GG30031@ZenIV.linux.org.uk> <20100323143456.GC2381@localhost.localdomain> <20100323144828.GH30031@ZenIV.linux.org.uk> <20100323150301.GD2381@localhost.localdomain> <20100323150923.GI30031@ZenIV.linux.org.uk> <4BA94157.6090907@crca.org.au> <20100323231802.GL30031@ZenIV.linux.org.uk>
-In-Reply-To: <20100323231802.GL30031@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753237Ab0CXADP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 20:03:15 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:50987 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab0CXADO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 20:03:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=XnYVr5NU+C9bsjl0IlboenMi1u/u+iqD8juTP+7S7GqiLi6K+2ibh5mmQz7h6pH+n7
+         XRL4Zb8VJQsWES2x9wTNWbmAHcQHs49yYCTolxMcVgpZRUTNGENaWNzuKclRewMq64N3
+         kwXuhnw11PishWOPOJYbgMg8YBsSPHVjWvKE8=
+Subject: Re: [Bugme-new] [Bug 15618] New: 2.6.18->2.6.32->2.6.33 huge regression in performance
+Mime-Version: 1.0 (Apple Message framework v1077)
+Content-Type: text/plain; charset=us-ascii
+From: Anton Starikov <ant.starikov@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1003231653260.18017@i5.linux-foundation.org>
+Date: Wed, 24 Mar 2010 01:03:09 +0100
+Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <greg@kroah.com>, stable@kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5D95EFF7-F924-4B0D-8B05-0D85697E315D@gmail.com>
+References: <bug-15618-10286@https.bugzilla.kernel.org/> <20100323102208.512c16cc.akpm@linux-foundation.org> <20100323173409.GA24845@elte.hu> <alpine.LFD.2.00.1003231037410.18017@i5.linux-foundation.org> <9D040E9A-80F2-468F-A6CD-A4912615CD3F@gmail.com> <alpine.LFD.2.00.1003231253570.18017@i5.linux-foundation.org> <9FC34DA1-D6DD-41E5-8B76-0712A813C549@gmail.com> <alpine.LFD.2.00.1003231602130.18017@i5.linux-foundation.org> <20100323233640.GA16798@elte.hu> <alpine.LFD.2.00.1003231653260.18017@i5.linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+X-Mailer: Apple Mail (2.1077)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi again.
+Yes, it is included into my list.
+When I will submit it into stable, I will include it also.
 
-On 24/03/10 10:18, Al Viro wrote:
-> I've stayed away from TuxOnIce flamefests and I've no idea how representative
-> that snippet is, but if it *does* match the general code quality in there...
+Anton
 
-PS: I wish you wouldn't. I know I'm not the guru coder some of you guys 
-are, and have no problem with being told there's a better way to do 
-things (as long as you are better to deal with than some others have 
-sometimes been in the past!)
+On Mar 24, 2010, at 12:55 AM, Linus Torvalds wrote:
 
-Nigel
+> 
+> 
+> On Wed, 24 Mar 2010, Ingo Molnar wrote:
+>> 
+>> We havent had any stability problems with them, except one trivial build bug, 
+>> so -stable would be nice.
+> 
+> Oh, you're right. There was that UML build bug. But I think that was 
+> included in the list of commits Anton had - commit 4126faf0ab ("x86: Fix 
+> breakage of UML from the changes in the rwsem system").
+> 
+> 		Linus
+
