@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0CXU20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:28:26 -0400
-Received: from Cpsmtpm-eml109.kpnxchange.com ([195.121.3.13]:58668 "EHLO
-	CPSMTPM-EML109.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756799Ab0CXU2U (ORCPT
+	id S932498Ab0CXU3Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:29:16 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:40735 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751221Ab0CXU3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:28:20 -0400
-From: Frans Pop <elendil@planet.nl>
-To: reinette chatre <reinette.chatre@intel.com>
-Subject: Re: [PATCH 4/7] wireless/iwlwifi: remove trailing space in messages
-Date: Wed, 24 Mar 2010 21:28:16 +0100
-User-Agent: KMail/1.9.9
-Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Zhu, Yi" <yi.zhu@intel.com>,
-       Intel Linux Wireless <ilw@linux.intel.com>
-References: <201003241927.12434.elendil@planet.nl> <1269456395-15343-4-git-send-email-elendil@planet.nl> <1269461933.2446.3208.camel@rchatre-DESK>
-In-Reply-To: <1269461933.2446.3208.camel@rchatre-DESK>
+	Wed, 24 Mar 2010 16:29:15 -0400
+Date: Wed, 24 Mar 2010 21:29:08 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC 02/15] PM / Hibernate: snapshot cleanup
+Message-ID: <20100324202908.GD5798@elf.ucw.cz>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>
+ <1269361063-3341-2-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201003242128.18710.elendil@planet.nl>
-X-OriginalArrivalTime: 24 Mar 2010 20:28:18.0834 (UTC) FILETIME=[8A3B1F20:01CACB90]
+In-Reply-To: <1269361063-3341-2-git-send-email-jslaby@suse.cz>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010, reinette chatre wrote:
-> Since this patch touches so many things, would it be possible to base
-> your patch on
-> git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-2.6.git
-> instead?
+On Tue 2010-03-23 17:17:30, Jiri Slaby wrote:
+> From: Jiri Slaby <jirislaby@gmail.com>
+> 
+> Remove support of reads with offset. This means snapshot_read/write_next
+> now does not accept count parameter.
+> 
+> /dev/snapshot handler is converted to simple_read_from_buffer/simple_write_to_buffer.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-Sure. Which branch?
+Well, if Al likes the vfs changes... why not.
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
