@@ -1,76 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab0CXRPa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:15:30 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:17461 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754293Ab0CXRPW (ORCPT
+	id S932296Ab0CXRQF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:16:05 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:33235 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932132Ab0CXRQA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:15:22 -0400
-Message-ID: <4BAA48A3.1030801@panasas.com>
-Date: Wed, 24 Mar 2010 19:15:15 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       Benny Halevy <bhalevy@panasas.com>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT case
- to use of do_last()
-References: <4BAA3493.1030802@panasas.com> <20100324160037.GP30031@ZenIV.linux.org.uk> <4BAA3828.2070506@panasas.com> <20100324160754.GQ30031@ZenIV.linux.org.uk> <4BAA398C.5050901@panasas.com> <20100324163948.GR30031@ZenIV.linux.org.uk>
-In-Reply-To: <20100324163948.GR30031@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Mar 2010 13:16:00 -0400
+Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Pavan Savoy <pavan_savoy@yahoo.co.in>
+Cc: Greg KH <gregkh@suse.de>, PavanSavoy <pavan_savoy@ti.com>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <132027.10140.qm@web94905.mail.in2.yahoo.com>
+References: <132027.10140.qm@web94905.mail.in2.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 10:15:50 -0700
+Message-ID: <1269450950.11714.126.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Mar 2010 17:15:19.0041 (UTC) FILETIME=[9422EF10:01CACB75]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 06:39 PM, Al Viro wrote:
-> On Wed, Mar 24, 2010 at 06:10:52PM +0200, Boaz Harrosh wrote:
->> On 03/24/2010 06:07 PM, Al Viro wrote:
->>> On Wed, Mar 24, 2010 at 06:04:56PM +0200, Boaz Harrosh wrote:
->>>>> Bloody impressive...  Does that happen to underlying fs or to what you
->>>>> are seeing via NFS?
->>>>
->>>> Only via NFS. All local access is fine.
->>>>
->>>> After the corruption above I can cd to the local mount cp a fresh copy
->>>> of .git/index file and play around just fine.
->>>> Once I return to the NFS mounted directory, a git status will do it.
->>>> It does not matter if caches are cold (Takes a long time) or hot it happens
->>>> every time.
->>>>
->>>> Weird I know, I'm playing some more with it as we speak
->>>
->>> What happens if you export to box running older kernel *or* from box
->>> running older kernel?  IOW, is that nfsd or nfs client getting unhappy?
->>> I'd suspect the latter, but...
->>
->>
->> Good question, I'm just getting to that because currently it's all
->> over localhost (same kernel, BTW inside a UML)
->>
->> I will try what you said. Please through any other tests on me, if needed.
+Hi Pavan,
+
+> > > > > I wanted to somehow put this in staging
+> > because then
+> > > > it would probably have a thorough architectural
+> > review
+> > > > process.
+> > > > > Some details about this driver - 
+> > > > > 
+> > > > > 1. This driver will be used by
+> > Bluetooth-BlueZ/FM-V4L2
+> > > > and GPS (probably character device driver) using
+> > the
+> > > > EXPORTED symbols (-register/_unregister).
+> > > > > 
+> > > > > 2. Much like the hciattach daemon which
+> > maintains
+> > > > N_HCI bluetooth line discipline, this driver will
+> > also have
+> > > > a User-Space  N_TI_WL Init manager (UIM)
+> > maintaining
+> > > > the Line discipline.
+> > > > 
+> > > > can you explain why you think this is needed and
+> > we can not
+> > > > interface
+> > > > this directly. If it is a serial port, what
+> > protocol does
+> > > > it talk?
+> > > 
+> > > Illustration: The BT driver on top of this ST driver,
+> > would create a hci0 interface, when someone does an DEVUP on
+> > that interface, the BT driver would then do a st-register -
+> > which in-turn would ask the hciattach-like daemon to install
+> > the line discipline for it via the sysfs entry.
+> > > The same concept goes for FM-V4L2 and GPS character
+> > driver.
+> > > 
+> > > The core of the problem is we cannot
+> > ask/install/ldisc_put for a line discipline from kernel
+> > space.
+> > 
+> > so let us get the facts straight here. The device in
+> > question is using a
+> > serial port to connect to the host and then multiplexing
+> > BT, FM and GPS
+> > over it. My question again, what protocol does it talk.
 > 
+> Ok, On TTY/4-wire UART, BT talks standard HCI, and HCI-LL for power management as in hci_ll.c/hciattach_ti.c which is already upstream.
+> 
+> And in a very similar way, FM talks over what is known as "channel 8" and GPS over "channel 9", Although these are not standard.
+> 
+> So, basically data going/coming to/out of chip is 
+> 1,2,3,4 - HCI 
+> 30,31,32,33 for HCI-LL
+> 8 - FM
+> 9 - GPS.
+> 
+> So consider this an extension of hci_ll/hci_ldisc but only more features to accomodate the FM and GPS.
 
-As you suspected old-server+new-client fails. any-thing+old-client is
-fine. (two separate machines this time)
+So why are we not making the hci_ll into a generic driver that can
+register besides Bluetooth also FM and GPS.
 
-> Very interesting...  Just to see which path we are hitting: add
-> 	if (IS_ERR(nd->intent.open.file))
-> 		printk("foo: %s", pathname);
-> right after
->                 error = do_lookup(nd, &nd->last, path);
->                 if (error)
->                         goto exit;
-> in fs/namei.c:do_last() and see whether we are hitting it or not on objects
-> that get corrupted.
+Then we can attach that driver to the TTY via line discipline on boot
+and let the LL part handle the power management.
 
-Sorry was busy shifting setups, didn't see your mail, will do that next ...
+Registration of Bluetooth device, FM and GPS nodes are done via RFKILL
+that the LL driver exports.
 
-Thanks
-Boaz
+> > Also why not just install the line discipline and then
+> > control the
+> > subdevices via RFKILL?
+> 
+> The chip side PM would be fine, and is being done so, st_kim.c creates the rfkill entries, and controls them locally, also allows applications to control them.
+> But ldisc can't be install upon boot, because UART clks would be used up for no reason at all.
+> (say on a mobile phone, how many times in a day - do we actually use BT/FM or GPS - so UART needs to be most often idle, and ldisc should be installed only upon requirement)
+
+I think the driver should make sure it doesn't use the UART clocks if in
+deep sleep. This has nothing to do with installing the line discipline
+on boot via a userspace tool.
+
+You do the power management for the hci_ll driver already today. So why
+can't we do the same in this driver?
+
+Another way to view this is that the LL driver has to create a virtual
+bus for Bluetooth, FM and GPS devices. However RFKILL might be a bit
+more suitable and simpler.
+
+Regards
+
+Marcel
+
+
