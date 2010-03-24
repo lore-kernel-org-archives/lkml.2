@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab0CXOxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:53:43 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:38689 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab0CXOxl (ORCPT
+	id S932105Ab0CXOxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:53:50 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60118 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755437Ab0CXOxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:53:41 -0400
-Date: Wed, 24 Mar 2010 07:54:49 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Neil Brown <neilb@suse.de>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-In-Reply-To: <20100324123723.43d24a42@notabene.brown>
-Message-ID: <Pine.LNX.4.64.1003240747040.2126@cobra.newdream.net>
-References: <20100317154145.bd9fca16.sfr@canb.auug.org.au>
- <20100317182136.0f2ab805@notabene.brown> <Pine.LNX.4.64.1003170847110.25675@cobra.newdream.net>
- <20100324123723.43d24a42@notabene.brown>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 24 Mar 2010 10:53:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=rRAZH+tpOE4ruiWTh7hwVdzsCAqsZjYViMhPlyuYQnGf8xd9Fz/Pz/ot0Ir4l5LAd
+	eu+fonb79MR52/LoAee2A==
+Message-ID: <4baa2770.1090cc0a.5d93.076c@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 24 Mar 2010 15:45:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, robert.richter@amd.com, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com, hpa@zytor.com,
+       tglx@linutronix.de, manfred@colorfullife.com
+Subject: [PATCH] perf_events: fix bug in AMD per-cpu initialization
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010, Neil Brown wrote:
-> Sage Weil <sage@newdream.net> wrote:
-> > > It is a pity that this code cannot use mempool_t....
-> > > What if mempool_t were changed to only re-alloc the vector of pointers when
-> > > it grew, or when it shrank to less than 1/2 it's current size.  Would that
-> > > reduce the frequency of allocations enough for you to be comfortable with it? 
-> > > i.e. always make the vector a power-of-2 size (which is what is probably
-> > > allocated anyway) while the pool size might be less.
-> > > ??
-> > 
-> > That would improve the situation, but still mean potentially large 
-> > allocations (the pools can grow pretty big) that aren't strictly 
-> > necessary.  I can imagine a more modular mempool_t with an ops vector for 
-> > adding/removing from the pool to cope with situations like this, but I'm 
-> > not sure it's worth the effort?
+> Crap, you're right, either notify_cpu_starting() is done too early or
+> smp_store_cpu_info() is done too late.
 > 
-> How big?
-> mempools (and equivalents) should just be large enough to get you through a
-> tight spot.  The working assumption is that they will not normally be used.
-> So 2 or 3 should normally be plenty.
+> Since smp_store_cpu_info() relies on the result of calibrate_delay() we
+> can't easily change that order, but since there really isn't any other
+> CPU_STARTING user in tree (I appear to have created the first?!) we can
+> easily move that notifier thing later.
 > 
-> (looks at code)
+> (What's up with that IRQ-enable over calibrate_delay(), can't we simply
+> enable the NMI watchdog later?)
 > 
-> The only time you resize a ceph_mempool is in ceph_monc_do_statfs
-> where you increment it, perform a synchronous statfs call on the 
-> network, then decrement the size of the mempool.
-> How many concurrent statfs calls does it even make sense to make.
-> I'm probably missing something obvious, but wouldn't it make sense to
-> put that all under a mutex so there was only ever one outstanding statfs (per
-> filesystem) - or maybe under a counting semaphore to allow some small number,
-> and make sure to prime the mempool to cover that number.
-> Then you would never resize a mempool at all.
+> So I guess something like the below should work:
 
-You're right.  In fact, after reviewing the code again, it looks like 
-_none_ of the msgpools (current or planned) needs to get large anymore.  
-A protocol change a month or two back made it possible to allocate space 
-for the reply along with the request, which means the only remaining use 
-for the pools is for low memory writeout and the handful of messages we 
-might receive from servers without asking for them.  (There used to be 
-more of the msgpool resizing going on for other types of requests, but 
-it's been mostly fixed up.)
+The patch does work for me. I made two small modifications by
+adding amd_has_nb() such that the correct checking is for on amd_nb.
 
-I'll work on cleaning up the request/reply instances to avoid pools 
-altogether.  The remaining pools should be small enough to use the 
-standard mempool_t.
+	Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Thanks for looking into this!
-sage
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index a61e54b..6204739 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -137,6 +137,13 @@ static inline int amd_is_nb_event(struct hw_perf_event *hwc)
+ 	return (hwc->config & 0xe0) == 0xe0;
+ }
+ 
++static inline int amd_has_nb(struct cpu_hw_events *cpuc)
++{
++	struct amd_nb *nb = cpuc->amd_nb;
++
++	return nb && nb->nb_id != -1;
++}
++
+ static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
+ 				      struct perf_event *event)
+ {
+@@ -147,7 +154,7 @@ static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
+ 	/*
+ 	 * only care about NB events
+ 	 */
+-	if (!(nb && amd_is_nb_event(hwc)))
++	if (!(amd_has_nb(cpuc) && amd_is_nb_event(hwc)))
+ 		return;
+ 
+ 	/*
+@@ -214,7 +221,7 @@ amd_get_event_constraints(struct cpu_hw_events *cpuc, struct perf_event *event)
+ 	/*
+ 	 * if not NB event or no NB, then no constraints
+ 	 */
+-	if (!(nb && amd_is_nb_event(hwc)))
++	if (!(amd_has_nb(cpuc) && amd_is_nb_event(hwc)))
+ 		return &unconstrained;
+ 
+ 	/*
