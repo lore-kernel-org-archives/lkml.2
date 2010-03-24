@@ -1,119 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab0CXNMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 09:12:42 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33682 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756157Ab0CXNMl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 09:12:41 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Ivo Van Doorn <ivdoorn@gmail.com>
-Subject: Re: [rt2x00-users] [PATCH RFC] rt2500usb: disable broken HW  encryption by default
-Date: Wed, 24 Mar 2010 14:12:37 +0100
-User-Agent: KMail/1.9.10
-Cc: rt2x00 Users List <users@rt2x00.serialmonkey.com>,
-       linux-kernel@vger.kernel.org
-References: <201003221601.36559.linux@rainbow-software.org> <201003231609.57505.linux@rainbow-software.org> <a32f33a41003230815v1870a371oef9392806b5b2248@mail.gmail.com>
-In-Reply-To: <a32f33a41003230815v1870a371oef9392806b5b2248@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1756208Ab0CXNOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 09:14:25 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:40159 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756157Ab0CXNOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 09:14:23 -0400
+Date: Wed, 24 Mar 2010 14:13:58 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
+       gregkh@novell.com, Corrado Zoccolo <czoccolo@gmail.com>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/3] Avoid the use of congestion_wait under zone pressure
+Message-ID: <20100324131358.GA20640@cmpxchg.org>
+References: <20100315130935.f8b0a2d7.akpm@linux-foundation.org> <20100322235053.GD9590@csn.ul.ie>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201003241412.38128.linux@rainbow-software.org>
+In-Reply-To: <20100322235053.GD9590@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 March 2010, Ivo Van Doorn wrote:
-> On Tue, Mar 23, 2010 at 4:09 PM, Ondrej Zary <linux@rainbow-software.org> 
-wrote:
-> > On Tuesday 23 March 2010, Ivo Van Doorn wrote:
-> >> On Tue, Mar 23, 2010 at 10:27 AM, Ondrej Zary
-> >>
-> >> <linux@rainbow-software.org> wrote:
-> >> > On Monday 22 March 2010, Ivo Van Doorn wrote:
-> >> >> >> But I though it was mentioned that disabling HW crypto didn't
-> >> >> >> solve the issue due to a second bug in a later kernel?
-> >> >> >
-> >> >> > That was a false positive. Probably because the device was not
-> >> >> > unplugged between the tests (and looks like the driver does not
-> >> >> > initialize the chip completely). It's not reliable, it sometimes
-> >> >> > stops working after reboot.
-> >> >>
-> >> >> Ah well that at least simplifies the problem. I'll have to retest
-> >> >> rt2500usb soon to see why the HW crypto failed. I am sure I had it
-> >> >> working for WEP, WPA and WPA2
-> >> >> before I submitted the patch.
-> >> >
-> >> > So let's try to fix it instead of disabling.
-> >> >
-> >> > First, the unrealiability (keeping HW encryption disabled). With the
-> >> > driver loaded but not doing anything more, the register dumps are same
-> >> > for both working and non-working case (dump-init.txt).
-> >> >
-> >> > dump-good-connected.txt is a dump after successful association and
-> >> > DHCP dump-bad-attempt.txt is a dump after successful association
-> >> > during non-working DHCP attempt
-> >> > dump-bad-after.txt is a dump after DHCP timed out
-> >>
-> >> With association working, but DHCP failing it most likely means that
-> >> somehow the frame was malformatted.
-> >> The code for HW crypto alters the frame (alters IV/EIV/ICV data etc).
-> >> And that is commonly the source of
-> >> problems, because what has to be done depends heavily on the encryption
-> >> type.
-> >>
-> >> So could you verify which of the encryption types (WEP,WPA,WPA2) is
-> >> failing or working? That would give a starting
-> >> position on which bytes might be corrupted.
-> >
-> > I was testing only with WPA2 before. I did some more testing today. The
-> > results:
-> >
-> > No encryption - works always
-> > WEP - sometimes works, sometimes not - same with and without HW
-> > encryption WPA - sometimes works, sometimes not - same with and without
-> > HW encryption WPA2 - never works with HW encryption
-> >     - sometimes works, sometimes not without HW encryptionn
-> >
-> > So it seems that there are two problems:
-> >  1. random problems with any encryption
-> >  2. WPA2 is broken with HW encryption
-> >
-> > When the "random" problem appears, this appears in dmesg:
-> > wlan1: authenticate with 00:13:d4:0f:f3:17 (try 1)
-> > wlan1: authenticated
-> > wlan1: associate with 00:13:d4:0f:f3:17 (try 1)
-> > wlan1: RX AssocResp from 00:13:d4:0f:f3:17 (capab=0x411 status=0 aid=2)
-> > wlan1: associated
-> > phy0 -> rt2500usb_set_device_state: Error - Device failed to enter state
-> > 3 (-16). phy0 -> rt2500usb_set_device_state: Error - Device failed to
-> > enter state 3 (-16). No probe response from AP 00:13:d4:0f:f3:17 after
-> > 500ms, disconnecting.
-> >
-> > Disabling call to rt2500usb_set_state() in rt2500usb_set_device_state()
-> > seems to fix problem 1. After this change, WEP and WPA work always
-> > regardless of HW encryption (and WPA2 works always without it).
->
-> Ok, lets focus on the HW crypto for now.
->
-> If WPA2 fails, then the WPA2 specific code for IV/EIV/ICV isn't
-> working. Most likely
-> the device either doesn't send all data back to the driver (while the
-> driver does expect it)
-> or it adds additional data which the driver doesn't expect. (See
-> rt2x00crypto.c for the frame
-> manipulation during HW crypto).
->
-> Could you check the full packet data of a DHCP request with and
-> without HW crypto?
-> That might give a clue about what the hardware is sending for extra data.
+Hi,
 
-How do I access the full packets? I tried using another machine with "iwconfig 
-wlan0 mode monitor" and tcpdump. It captured many packets and I'm unable to 
-identify the interesting ones.
+On Mon, Mar 22, 2010 at 11:50:54PM +0000, Mel Gorman wrote:
+> On Mon, Mar 15, 2010 at 01:09:35PM -0700, Andrew Morton wrote:
+> > On Mon, 15 Mar 2010 13:34:50 +0100
+> > Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> wrote:
+> > 
+> > > c) If direct reclaim did reasonable progress in try_to_free but did not
+> > > get a page, AND there is no write in flight at all then let it try again
+> > > to free up something.
+> > > This could be extended by some kind of max retry to avoid some weird
+> > > looping cases as well.
+> > > 
+> > > d) Another way might be as easy as letting congestion_wait return
+> > > immediately if there are no outstanding writes - this would keep the 
+> > > behavior for cases with write and avoid the "running always in full 
+> > > timeout" issue without writes.
+> > 
+> > They're pretty much equivalent and would work.  But there are two
+> > things I still don't understand:
+> > 
+> > 1: Why is direct reclaim calling congestion_wait() at all?  If no
+> > writes are going on there's lots of clean pagecache around so reclaim
+> > should trivially succeed.  What's preventing it from doing so?
+> > 
+> > 2: This is, I think, new behaviour.  A regression.  What caused it?
+> > 
+> 
+> 120+ kernels and a lot of hurt later;
+> 
+> Short summary - The number of times kswapd and the page allocator have been
+> 	calling congestion_wait and the length of time it spends in there
+> 	has been increasing since 2.6.29. Oddly, it has little to do
+> 	with the page allocator itself.
+> 
+> Test scenario
+> =============
+> X86-64 machine 1 socket 4 cores
+> 4 consumer-grade disks connected as RAID-0 - software raid. RAID controller
+> 	on-board and a piece of crap, and a decent RAID card could blow
+> 	the budget.
+> Booted mem=256 to ensure it is fully IO-bound and match closer to what
+> 	Christian was doing
+> 
+> At each test, the disks are partitioned, the raid arrays created and an
+> ext2 filesystem created. iozone sequential read/write tests are run with
+> increasing number of processes up to 64. Each test creates 8G of files. i.e.
+> 1 process = 8G. 2 processes = 2x4G etc
+> 
+> 	iozone -s 8388608 -t 1 -r 64 -i 0 -i 1
+> 	iozone -s 4194304 -t 2 -r 64 -i 0 -i 1
+> 	etc.
+> 
+> Metrics
+> =======
+> 
+> Each kernel was instrumented to collected the following stats
+> 
+> 	pg-Stall	Page allocator stalled calling congestion_wait
+> 	pg-Wait		The amount of time spent in congestion_wait
+> 	pg-Rclm		Pages reclaimed by direct reclaim
+> 	ksd-stall	balance_pgdat() (ie kswapd) staled on congestion_wait
+> 	ksd-wait	Time spend by balance_pgdat in congestion_wait
+> 
+> Large differences in this do not necessarily show up in iozone because the
+> disks are so slow that the stalls are a tiny percentage overall. However, in
+> the event that there are many disks, it might be a greater problem. I believe
+> Christian is hitting a corner case where small delays trigger a much larger
+> stall.
+> 
+> Why The Increases
+> =================
+> 
+> The big problem here is that there was no one change. Instead, it has been
+> a steady build-up of a number of problems. The ones I identified are in the
+> block IO, CFQ IO scheduler, tty and page reclaim. Some of these are fixed
+> but need backporting and others I expect are a major surprise. Whether they
+> are worth backporting or not heavily depends on whether Christian's problem
+> is resolved.
+> 
+> Some of the "fixes" below are obviously not fixes at all. Gathering this data
+> took a significant amount of time. It'd be nice if people more familiar with
+> the relevant problem patches could spring a theory or patch.
+> 
+> The Problems
+> ============
 
--- 
-Ondrej Zary
+[...]
+
+> 3. Page reclaim evict-once logic from 56e49d21 hurts really badly
+> 	fix title: revertevict
+> 	fixed in mainline? no
+> 	affects: 2.6.31 to now
+> 
+> 	For reasons that are not immediately obvious, the evict-once patches
+> 	*really* hurt the time spent on congestion and the number of pages
+> 	reclaimed. Rik, I'm afaid I'm punting this to you for explanation
+> 	because clearly you tested this for AIM7 and might have some
+> 	theories. For the purposes of testing, I just reverted the changes.
+> 
+
+[...]
+
+> Results
+> =======
+> 
+> Here are the highlights of kernels tested. I'm omitting the bisection
+> results for obvious reasons. The metrics were gathered at two points;
+> after filesystem creation and after IOZone completed.
+> 
+> The lower the number for each metric, the better.
+> 
+>                                                      After Filesystem Setup                                       After IOZone
+>                                          pg-Stall  pg-Wait  pg-Rclm  ksd-stall  ksd-wait        pg-Stall  pg-Wait  pg-Rclm  ksd-stall  ksd-wait
+
+[...]
+
+> Again, fixing tty and reverting evict-once helps bring figures more in line
+> with 2.6.29.
+> 
+> 2.6.33                                          0        0        0          3         0          152248   754226  4940952     267214         0
+> 2.6.33-revertevict                              0        0        0          3         0             883     4306    28918        507         0
+> 2.6.33-ttyfix                                   0        0        0          3         0          157831   782473  5129011     237116         0
+> 2.6.33-ttyfix-revertevict                       0        0        0          2         0            1056     5235    34796        519         0
+> 2.6.33.1                                        0        0        0          3         1          156422   776724  5078145     234938         0
+> 2.6.33.1-revertevict                            0        0        0          2         0            1095     5405    36058        477         0
+> 2.6.33.1-ttyfix                                 0        0        0          3         1          136324   673148  4434461     236597         0
+> 2.6.33.1-ttyfix-revertevict                     0        0        0          1         1            1339     6624    43583        466         0
+> 
+> At this point, the CFQ commit "cfq-iosched: fairness for sync no-idle
+> queues" has lodged itself deep within CGQ and I couldn't tear it out or
+> see how to fix it. Fixing tty and reverting evict-once helps but the number
+> of stalls is significantly increased and a much larger number of pages get
+> reclaimed overall.
+> 
+> Corrado?
+> 
+> 2.6.34-rc1                                      0        0        0          1         1          150629   746901  4895328     239233         0
+> 2.6.34-rc1-revertevict                          0        0        0          1         0            2595    12901    84988        622         0
+
+I was wondering why kswapd would not make any progress and stall without
+dirty pages, luckily Rik has better eyes than me.
+
+So if he is right and most inactive pages are under IO (thus locked and
+skipped) when kswapd is running, we have two choices:
+
+  1) deactivate pages and reclaim them instead
+  2) sleep and wait for IO to finish
+
+The patch in question changes 1) to 2) because it won't scan small active
+lists and the inactive list does not shrink in size when rotating busy
+pages.
+
+You said pg-Rclm is only direct reclaim.  I assume the sum of reclaimed
+pages from kswapd and direct reclaim stays in the same ballpark, only
+the ratio shifted towards direct reclaim?
+
+Waiting for the disks seems to be better than going after the working set
+but I have a feeling we are waiting for the wrong event to happen there.
+
+I am amazingly ignorant when it comes to the block layer, but glancing over
+the queue congestion code, it seems we are waiting for the queue to shrink
+below a certain threshold.  Is this correct?
+
+When it comes to the reclaim scanner, however, aren't we more interested in
+single completions than in the overall state of the queue?
+
+With such a constant stream of IO as in Mel's test, I could imagine that
+the queue never really gets below that threshold (here goes the ignorance part)
+and we always hit the timeout.  While what we really want is to be woken
+up when, say, SWAP_CLUSTER_MAX pages finished since we went to sleep.
+
+Because at that point there is a chance to reclaim some pages again,
+even if a lot of requests are still pending.
+
+	Hannes
