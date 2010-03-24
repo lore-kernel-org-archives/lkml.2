@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab0CXKiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 06:38:22 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:27108 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491Ab0CXKiS (ORCPT
+	id S1755559Ab0CXKjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 06:39:07 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:64616 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab0CXKjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 06:38:18 -0400
+	Wed, 24 Mar 2010 06:39:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -14,181 +14,121 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        David Miller <davem@davemloft.net>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 2/8] x86: add find_e820_area_node
-Date: Wed, 24 Mar 2010 03:34:15 -0700
-Message-Id: <1269426861-20903-3-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 7/8] early_res: prepare for other platform to use it
+Date: Wed, 24 Mar 2010 03:37:08 -0700
+Message-Id: <1269427029-21000-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269426861-20903-1-git-send-email-yinghai@kernel.org>
-References: <1269426861-20903-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+In-Reply-To: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
+References: <1269427029-21000-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4BA9EB0C.00DF,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4BA9EBAD.013B,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@@kernel.org>
+add weak reserver_bootmem_generic()
 
-David Miller pointed out that early_res have problem to find node data on correct node
-when we have
-node0: [0, 2g), [4g, 6g), [10g, 14g)
-node1: [6g, 10g), [14g, 18g)
-the cross node case
+also clean up x86 64 bit one.
 
-the problem is there for x86 bits even before we are using early_res for bootmem replacement.
-after early_res for bootmem replacement, alloc_bootmem_node still can get range on correct node
-
-this patch is fixing problem before bootmem or early_res replacement for bootmem.
-
-now only user is for x86 64bit numa to find node data.
-
-the point is use early_node_map with find_e820_area_node()
+add include for linux/early_res.h
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    1 +
- arch/x86/kernel/e820.c      |   15 +++++++++++++++
- arch/x86/mm/numa_64.c       |    4 ++--
- include/linux/mm.h          |    2 ++
- mm/page_alloc.c             |   37 +++++++++++++++++++++++--------------
- 5 files changed, 43 insertions(+), 16 deletions(-)
+ arch/x86/mm/init_32.c |    5 -----
+ arch/x86/mm/init_64.c |   18 ------------------
+ mm/bootmem.c          |    7 +++++++
+ mm/page_alloc.c       |    1 +
+ 4 files changed, 8 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index ec8a52d..41553af 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -116,6 +116,7 @@ extern unsigned long end_user_pfn;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index a7625d5..16001e1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -1070,8 +1070,3 @@ void mark_rodata_ro(void)
+ }
+ #endif
  
- extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
- extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
-+u64 find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
- #include <linux/early_res.h>
+-int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+-				   int flags)
+-{
+-	return reserve_bootmem(phys, len, flags);
+-}
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index dd88ef9..cc3627b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -801,10 +801,6 @@ void mark_rodata_ro(void)
+ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 				   int flags)
+ {
+-#ifdef CONFIG_NUMA
+-	int nid, next_nid;
+-	int ret;
+-#endif
+ 	unsigned long pfn = phys >> PAGE_SHIFT;
  
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 740b440..05ee724 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -787,6 +787,21 @@ u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
- 	return -1ULL;
+ 	if (pfn >= max_pfn) {
+@@ -820,21 +816,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 		return -EFAULT;
+ 	}
+ 
+-	/* Should check here against the e820 map to avoid double free */
+-#ifdef CONFIG_NUMA
+-	nid = phys_to_nid(phys);
+-	next_nid = phys_to_nid(phys + len - 1);
+-	if (nid == next_nid)
+-		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
+-	else
+-		ret = reserve_bootmem(phys, len, flags);
+-
+-	if (ret != 0)
+-		return ret;
+-
+-#else
+ 	reserve_bootmem(phys, len, flags);
+-#endif
+ 
+ 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+ 		dma_reserve += len / PAGE_SIZE;
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index d7c791e..760c279 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/kmemleak.h>
+ #include <linux/range.h>
++#include <linux/early_res.h>
+ 
+ #include <asm/bug.h>
+ #include <asm/io.h>
+@@ -525,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
  }
  
-+u64 __init find_e820_area_node(int nid, u64 start, u64 end, u64 size, u64 align)
+ #ifndef CONFIG_NO_BOOTMEM
++int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
++				   int flags)
 +{
-+	u64 addr;
-+	/*
-+	 * need to call this function after e820_register_active_regions
-+	 * so early_node_map[] is set
-+	 */
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != -1ULL)
-+		return addr;
-+
-+	/* fallback, should already have start end in the node range */
-+	return find_e820_area(start, end, size, align);
++	return reserve_bootmem(phys, len, flags);
 +}
 +
- /*
-  * pre allocated 4k and reserved it in e820
-  */
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index 8948f47..ffc5ad5 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -174,7 +174,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 	if (start < (MAX_DMA32_PFN<<PAGE_SHIFT) &&
- 	    end > (MAX_DMA32_PFN<<PAGE_SHIFT))
- 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
--	mem = find_e820_area(start, end, size, align);
-+	mem = find_e820_area_node(nodeid, start, end, size, align);
- 	if (mem != -1L)
- 		return __va(mem);
- 
-@@ -184,7 +184,7 @@ static void * __init early_node_mem(int nodeid, unsigned long start,
- 		start = MAX_DMA32_PFN<<PAGE_SHIFT;
- 	else
- 		start = MAX_DMA_PFN<<PAGE_SHIFT;
--	mem = find_e820_area(start, end, size, align);
-+	mem = find_e820_area_node(nodeid, start, end, size, align);
- 	if (mem != -1L)
- 		return __va(mem);
- 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e70f21b..5c2d17e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1160,6 +1160,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+ static unsigned long __init align_idx(struct bootmem_data *bdata,
+ 				      unsigned long idx, unsigned long step)
+ {
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d03c946..eef3757 100644
+index 04c241a..e7b1d72 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -3408,12 +3408,11 @@ int __init add_from_early_node_map(struct range *range, int az,
- 	return nr_range;
- }
- 
--#ifdef CONFIG_NO_BOOTMEM
--void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-+#ifdef CONFIG_HAVE_EARLY_RES
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
- 					u64 goal, u64 limit)
- {
- 	int i;
--	void *ptr;
- 
- 	/* need to go over early_node_map to find out good range for node */
- 	for_each_active_range_index_in_nid(i, nid) {
-@@ -3430,20 +3429,30 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
- 		if (addr == -1ULL)
- 			continue;
- 
--#if 0
--		printk(KERN_DEBUG "alloc (nid=%d %llx - %llx) (%llx - %llx) %llx %llx => %llx\n",
--				nid,
--				ei_start, ei_last, goal, limit, size,
--				align, addr);
-+		return addr;
-+	}
-+
-+	return -1ULL;
-+}
- #endif
- 
--		ptr = phys_to_virt(addr);
--		memset(ptr, 0, size);
--		reserve_early_without_check(addr, addr + size, "BOOTMEM");
--		return ptr;
--	}
-+#ifdef CONFIG_NO_BOOTMEM
-+void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
-+{
-+	void *ptr;
- 
--	return NULL;
-+	u64 addr;
-+
-+	addr = find_memory_core_early(nid, size, align, goal, limit);
-+
-+	if (addr == -1ULL)
-+		return NULL;
-+
-+	ptr = phys_to_virt(addr);
-+	memset(ptr, 0, size);
-+	reserve_early_without_check(addr, addr + size, "BOOTMEM");
-+	return ptr;
- }
- #endif
- 
+@@ -21,6 +21,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/jiffies.h>
+ #include <linux/bootmem.h>
++#include <linux/early_res.h>
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
 -- 
 1.6.4.2
 
