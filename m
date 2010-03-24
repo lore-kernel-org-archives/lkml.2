@@ -1,81 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab0CXRqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 13:46:39 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:53737 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932508Ab0CXRqg convert rfc822-to-8bit (ORCPT
+	id S932580Ab0CXRql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 13:46:41 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58669 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756626Ab0CXRp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 13:46:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tlkhdTEHisnOwhlUWSHAKKmkhqNVgRCRksHbK/1mOYoWcCd1R36JotIHn+2kTxl1sC
-         HixXHMb0m7Pfd6PzTw14J9JYJtgALv6AkXewCyfHPt4Pw8WXSGtQ3QlsFKHq5o5yBYts
-         xbhj+eJKHTaeta+NVMasZS+mXeh6OB6oGby2U=
-MIME-Version: 1.0
-In-Reply-To: <4BAA4E81.8070405@mvista.com>
-References: <1269450986-3714-1-git-send-email-manuel.lauss@gmail.com>
-	 <1269450986-3714-3-git-send-email-manuel.lauss@gmail.com>
-	 <4BAA4E81.8070405@mvista.com>
-Date: Wed, 24 Mar 2010 18:46:34 +0100
-Message-ID: <f861ec6f1003241046q200bdb4ey2d2439197e63e76e@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] Alchemy: UART PM through serial framework.
-From: Manuel Lauss <manuel.lauss@googlemail.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-mips@linux-mips.org, Manuel Lauss <manuel.lauss@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Mar 2010 13:45:58 -0400
+From: Borislav Petkov <bp@amd64.org>
+To: <akpm@linux-foundation.org>, davej@redhat.com, trenn@suse.de,
+       linux@dominikbrodowski.net
+Cc: <mingo@elte.hu>, <hpa@zytor.com>, <tglx@linutronix.de>,
+       cpufreq@vger.kernel.org, <x86@kernel.org>,
+       <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/5] cpufreq: Add APERF/MPERF support for AMD processors
+Date: Wed, 24 Mar 2010 18:46:21 +0100
+Message-Id: <1269452783-966-4-git-send-email-bp@amd64.org>
+X-Mailer: git-send-email 1.7.0.2
+In-Reply-To: <1269452783-966-1-git-send-email-bp@amd64.org>
+References: <1269452783-966-1-git-send-email-bp@amd64.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 6:40 PM, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
-> Hello.
->
-> Manuel Lauss wrote:
->
->> Hook up the Alchemy on-chip uarts with the platform 8250 PM callback
->> and enable/disable the uart blocks as needed.
->>
->> Tested on Au1200.
->>
->> Signed-off-by: Manuel Lauss <manuel.lauss@gmail.com>
->> ---
->>  arch/mips/alchemy/common/platform.c |   17 +++++++++++++++++
->>  arch/mips/alchemy/common/power.c    |   32
->> --------------------------------
->>  2 files changed, 17 insertions(+), 32 deletions(-)
->>
->> diff --git a/arch/mips/alchemy/common/platform.c
->> b/arch/mips/alchemy/common/platform.c
->> index 2580e77..70f4abd 100644
->> --- a/arch/mips/alchemy/common/platform.c
->> +++ b/arch/mips/alchemy/common/platform.c
->> @@ -21,6 +21,22 @@
->>  #include <asm/mach-au1x00/au1100_mmc.h>
->>  #include <asm/mach-au1x00/au1xxx_eth.h>
->>  +static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
->> +                           unsigned int old_state)
->> +{
->> +       if (state == 0) {               /* power on */
->> +               __raw_writel(0, port->membase + UART_MOD_CNTRL);
->> +               wmb();
->> +               __raw_writel(1, port->membase + UART_MOD_CNTRL);
->> +               wmb();
->> +               __raw_writel(3, port->membase + UART_MOD_CNTRL);
->> +               wmb();
->> +       } else if (state == 3) {        /* power off */
->> +               __raw_writel(0, port->membase + UART_MOD_CNTRL);
->> +               wmb();
->> +       }
->> +}
->
->  A *switch* statement seems more fitting here...
+From: Mark Langsdorf <mark.langsdorf@amd.com>
 
-Well, those are the only 2 values defined anyway, but I'll change it.
+Starting with model 10 of Family 0x10, AMD processors may have
+support for APERF/MPERF.  Add support for identifying it and using
+it within cpufreq.  Move the APERF/MPERF functions out of the
+acpi-cpufreq code and into their own file so they can easily be
+shared.
 
-Thanks!
-       Manuel Lauss
+Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/cpu/amd.c                  |    6 +++
+ arch/x86/kernel/cpu/cpufreq/Makefile       |    4 +-
+ arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |   44 +-----------------------
+ arch/x86/kernel/cpu/cpufreq/mperf.c        |   50 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/cpufreq/mperf.h        |    9 +++++
+ arch/x86/kernel/cpu/cpufreq/powernow-k8.c  |    8 ++++
+ 6 files changed, 77 insertions(+), 44 deletions(-)
+ create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.c
+ create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.h
+
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index e485825..796f662 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -537,6 +537,12 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		set_cpu_cap(c, X86_FEATURE_MFENCE_RDTSC);
+ 	}
+ 
++	if (c->cpuid_level >= 6) {
++		unsigned ecx = cpuid_ecx(6);
++		if (ecx & 0x01)
++			set_cpu_cap(c, X86_FEATURE_APERFMPERF);
++	}
++
+ #ifdef CONFIG_X86_64
+ 	if (c->x86 == 0x10) {
+ 		/* do this for boot cpu */
+diff --git a/arch/x86/kernel/cpu/cpufreq/Makefile b/arch/x86/kernel/cpu/cpufreq/Makefile
+index 1840c0a..bd54bf6 100644
+--- a/arch/x86/kernel/cpu/cpufreq/Makefile
++++ b/arch/x86/kernel/cpu/cpufreq/Makefile
+@@ -2,8 +2,8 @@
+ # K8 systems. ACPI is preferred to all other hardware-specific drivers.
+ # speedstep-* is preferred over p4-clockmod.
+ 
+-obj-$(CONFIG_X86_POWERNOW_K8)		+= powernow-k8.o
+-obj-$(CONFIG_X86_ACPI_CPUFREQ)		+= acpi-cpufreq.o
++obj-$(CONFIG_X86_POWERNOW_K8)		+= powernow-k8.o mperf.o
++obj-$(CONFIG_X86_ACPI_CPUFREQ)		+= acpi-cpufreq.o mperf.o
+ obj-$(CONFIG_X86_PCC_CPUFREQ)		+= pcc-cpufreq.o
+ obj-$(CONFIG_X86_POWERNOW_K6)		+= powernow-k6.o
+ obj-$(CONFIG_X86_POWERNOW_K7)		+= powernow-k7.o
+diff --git a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+index 1b1920f..dc68e5c 100644
+--- a/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c
+@@ -45,6 +45,7 @@
+ #include <asm/msr.h>
+ #include <asm/processor.h>
+ #include <asm/cpufeature.h>
++#include "mperf.h"
+ 
+ #define dprintk(msg...) cpufreq_debug_printk(CPUFREQ_DEBUG_DRIVER, \
+ 		"acpi-cpufreq", msg)
+@@ -70,8 +71,6 @@ struct acpi_cpufreq_data {
+ 
+ static DEFINE_PER_CPU(struct acpi_cpufreq_data *, acfreq_data);
+ 
+-static DEFINE_PER_CPU(struct aperfmperf, acfreq_old_perf);
+-
+ /* acpi_perf_data is a pointer to percpu data. */
+ static struct acpi_processor_performance *acpi_perf_data;
+ 
+@@ -239,45 +238,6 @@ static u32 get_cur_val(const struct cpumask *mask)
+ 	return cmd.val;
+ }
+ 
+-/* Called via smp_call_function_single(), on the target CPU */
+-static void read_measured_perf_ctrs(void *_cur)
+-{
+-	struct aperfmperf *am = _cur;
+-
+-	get_aperfmperf(am);
+-}
+-
+-/*
+- * Return the measured active (C0) frequency on this CPU since last call
+- * to this function.
+- * Input: cpu number
+- * Return: Average CPU frequency in terms of max frequency (zero on error)
+- *
+- * We use IA32_MPERF and IA32_APERF MSRs to get the measured performance
+- * over a period of time, while CPU is in C0 state.
+- * IA32_MPERF counts at the rate of max advertised frequency
+- * IA32_APERF counts at the rate of actual CPU frequency
+- * Only IA32_APERF/IA32_MPERF ratio is architecturally defined and
+- * no meaning should be associated with absolute values of these MSRs.
+- */
+-static unsigned int get_measured_perf(struct cpufreq_policy *policy,
+-				      unsigned int cpu)
+-{
+-	struct aperfmperf perf;
+-	unsigned long ratio;
+-	unsigned int retval;
+-
+-	if (smp_call_function_single(cpu, read_measured_perf_ctrs, &perf, 1))
+-		return 0;
+-
+-	ratio = calc_aperfmperf_ratio(&per_cpu(acfreq_old_perf, cpu), &perf);
+-	per_cpu(acfreq_old_perf, cpu) = perf;
+-
+-	retval = (policy->cpuinfo.max_freq * ratio) >> APERFMPERF_SHIFT;
+-
+-	return retval;
+-}
+-
+ static unsigned int get_cur_freq_on_cpu(unsigned int cpu)
+ {
+ 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, cpu);
+@@ -701,7 +661,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 
+ 	/* Check for APERF/MPERF support in hardware */
+ 	if (cpu_has(c, X86_FEATURE_APERFMPERF))
+-		acpi_cpufreq_driver.getavg = get_measured_perf;
++		acpi_cpufreq_driver.getavg = cpufreq_get_measured_perf;
+ 
+ 	dprintk("CPU%u - ACPI performance management activated.\n", cpu);
+ 	for (i = 0; i < perf->state_count; i++)
+diff --git a/arch/x86/kernel/cpu/cpufreq/mperf.c b/arch/x86/kernel/cpu/cpufreq/mperf.c
+new file mode 100644
+index 0000000..bc5a5df
+--- /dev/null
++++ b/arch/x86/kernel/cpu/cpufreq/mperf.c
+@@ -0,0 +1,50 @@
++#include <linux/kernel.h>
++#include <linux/smp.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/cpufreq.h>
++#include <linux/slab.h>
++
++#include "mperf.h"
++
++static DEFINE_PER_CPU(struct aperfmperf, acfreq_old_perf);
++
++/* Called via smp_call_function_single(), on the target CPU */
++static void read_measured_perf_ctrs(void *_cur)
++{
++	struct aperfmperf *am = _cur;
++
++	get_aperfmperf(am);
++}
++
++/*
++ * Return the measured active (C0) frequency on this CPU since last call
++ * to this function.
++ * Input: cpu number
++ * Return: Average CPU frequency in terms of max frequency (zero on error)
++ *
++ * We use IA32_MPERF and IA32_APERF MSRs to get the measured performance
++ * over a period of time, while CPU is in C0 state.
++ * IA32_MPERF counts at the rate of max advertised frequency
++ * IA32_APERF counts at the rate of actual CPU frequency
++ * Only IA32_APERF/IA32_MPERF ratio is architecturally defined and
++ * no meaning should be associated with absolute values of these MSRs.
++ */
++unsigned int cpufreq_get_measured_perf(struct cpufreq_policy *policy,
++					unsigned int cpu)
++{
++	struct aperfmperf perf;
++	unsigned long ratio;
++	unsigned int retval;
++
++	if (smp_call_function_single(cpu, read_measured_perf_ctrs, &perf, 1))
++		return 0;
++
++	ratio = calc_aperfmperf_ratio(&per_cpu(acfreq_old_perf, cpu), &perf);
++	per_cpu(acfreq_old_perf, cpu) = perf;
++
++	retval = (policy->cpuinfo.max_freq * ratio) >> APERFMPERF_SHIFT;
++
++	return retval;
++}
++EXPORT_SYMBOL_GPL(cpufreq_get_measured_perf);
+diff --git a/arch/x86/kernel/cpu/cpufreq/mperf.h b/arch/x86/kernel/cpu/cpufreq/mperf.h
+new file mode 100644
+index 0000000..5dbf295
+--- /dev/null
++++ b/arch/x86/kernel/cpu/cpufreq/mperf.h
+@@ -0,0 +1,9 @@
++/*
++ *  (c) 2010 Advanced Micro Devices, Inc.
++ *  Your use of this code is subject to the terms and conditions of the
++ *  GNU general public license version 2. See "COPYING" or
++ *  http://www.gnu.org/licenses/gpl.html
++ */
++
++unsigned int cpufreq_get_measured_perf(struct cpufreq_policy *policy,
++					unsigned int cpu);
+diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+index b86daa6..1dd292c 100644
+--- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
++++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
+@@ -45,6 +45,7 @@
+ #define PFX "powernow-k8: "
+ #define VERSION "version 2.20.00"
+ #include "powernow-k8.h"
++#include "mperf.h"
+ 
+ /* serialize freq changes  */
+ static DEFINE_MUTEX(fidvid_mutex);
+@@ -57,6 +58,8 @@ static int cpu_family = CPU_OPTERON;
+ static bool cpb_capable, cpb_enabled;
+ static struct msr __percpu *msrs;
+ 
++static struct cpufreq_driver cpufreq_amd64_driver;
++
+ #ifndef CONFIG_SMP
+ static inline const struct cpumask *cpu_core_mask(int cpu)
+ {
+@@ -1251,6 +1254,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 	struct powernow_k8_data *data;
+ 	struct init_on_cpu init_on_cpu;
+ 	int rc;
++	struct cpuinfo_x86 *c = &cpu_data(pol->cpu);
+ 
+ 	if (!cpu_online(pol->cpu))
+ 		return -ENODEV;
+@@ -1325,6 +1329,10 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 		return -EINVAL;
+ 	}
+ 
++	/* Check for APERF/MPERF support in hardware */
++	if (cpu_has(c, X86_FEATURE_APERFMPERF))
++		cpufreq_amd64_driver.getavg = cpufreq_get_measured_perf;
++
+ 	cpufreq_frequency_table_get_attr(data->powernow_table, pol->cpu);
+ 
+ 	if (cpu_family == CPU_HW_PSTATE)
+-- 
+1.7.0
+
