@@ -1,19 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab0CXPN2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 11:13:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59885 "EHLO mx1.redhat.com"
+	id S1756292Ab0CXP1Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 11:27:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756315Ab0CXPN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 11:13:26 -0400
-Message-ID: <4BAA2BF7.4060407@redhat.com>
-Date: Wed, 24 Mar 2010 17:12:55 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
+	id S1752235Ab0CXP1V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 11:27:21 -0400
+Date: Wed, 24 Mar 2010 15:26:53 +0000
+From: "Daniel P. Berrange" <berrange@redhat.com>
 To: Joerg Roedel <joro@8bytes.org>
-CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
+Cc: Avi Kivity <avi@redhat.com>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
@@ -22,94 +19,43 @@ CC: Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
        ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
        Fr?d?ric Weisbecker <fweisbec@gmail.com>,
        Gregory Haskins <ghaskins@novell.com>
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-References: <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single project
+Message-ID: <20100324152653.GA12225@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 In-Reply-To: <20100324150137.GE14800@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 05:01 PM, Joerg Roedel wrote:
->
->> But when I weigh the benefit of truly transparent  system-wide perf
->> integration for users who don't use libvirt but do use  perf, versus
->> the cost of transforming kvm from a single-process API to a
->> system-wide API with all the complications that I've listed, it comes
->> out in favour of not adding the API.
->>      
-> Its not a transformation, its an extension. The current per-process
-> /dev/kvm stays mostly untouched. Its all about having something like
-> this:
->
-> $ cd /sys/kvm/guest0
-> $ ls -l
-> -r-------- 1 root root 0 2009-08-17 12:05 name
-> dr-x------ 1 root root 0 2009-08-17 12:05 fs
-> $ cat name
-> guest0
-> $ # ...
->
-> The fs/ directory is used as the mount point for the guest root fs.
->    
-
-The problem is /sys/kvm, not /sys/kvm/fs.
-
->>> The samples will be tagged with the guest-name (and some additional
->>> information perf needs). Perf userspace can access the symbols then
->>> through /sys/kvm/guest0/fs/...
->>>        
->> I take that as a yes?  So we need a virtio-serial client in the kernel
->> (which might be exploitable by a malicious guest if buggy) and a
->> fs-over-virtio-serial client in the kernel (also exploitable).
->>      
-> What I meant was: perf-kernel puts the guest-name into every sample and
-> perf-userspace accesses /sys/kvm/guest_name/fs/ later to resolve the
-> symbols. I leave the question of how the guest-fs is exposed to the host
-> out of this discussion. We should discuss this seperatly.
->    
-
-How I see it: perf-kernel puts the guest pid into every sample, and 
-perf-userspace uses that to resolve to a mountpoint served by fuse, or 
-to a unix domain socket that serves the files.
-
->>> An approach like: "The files are owned and only readable by the same
->>> user that started the vm." might be a good start. So a user can measure
->>> its own guests and root can measure all of them.
->>>        
->> That's not how sVirt works.  sVirt isolates a user's VMs from each
->> other, so if a guest breaks into qemu it can't break into other guests
->> owned by the same user.
->>      
+On Wed, Mar 24, 2010 at 04:01:37PM +0100, Joerg Roedel wrote:
+> >> An approach like: "The files are owned and only readable by the same
+> >> user that started the vm." might be a good start. So a user can measure
+> >> its own guests and root can measure all of them.
+> >
+> > That's not how sVirt works.  sVirt isolates a user's VMs from each  
+> > other, so if a guest breaks into qemu it can't break into other guests  
+> > owned by the same user.
+> 
 > If a vm breaks into qemu it can access the host file system which is the
 > bigger problem. In this case there is no isolation anymore. From that
 > context it can even kill other VMs of the same user independent of a
 > hypothetical /sys/kvm/.
->    
 
-It cannot.  sVirt labels the disk image and other files qemu needs with 
-the appropriate label, and everything else is off limits.  Even if you 
-run the guest as root, it won't have access to other files.
+No it can't. With sVirt every single VM has a custom security label and
+the policy only allows it access to disks / files with a matching label,
+and prevents it attacking any other VMs or processes on the host. THis
+confines the scope of any exploit in QEMU to those resources the admin
+has explicitly assigned to the guest.
 
->>> Yeah that would be interesting information. But it is more related to
->>> tracing than to pmu measurements.  The information which you
->>> mentioned above are probably better captured by an extension of
->>> trace-events to userspace.
->>>        
->> It's all related.  You start with perf, see a problem with mmio, call up
->> a histogram of mmio or interrupts or whatever, then zoom in on the
->> misbehaving device.
->>      
-> Yes, but its different from the implementation point-of-view. For the
-> user it surely all plays together.
->    
-
-We need qemu to cooperate for mmio tracing, and we can cooperate with 
-qemu for symbol resolution.  If it prevents adding another kernel API, 
-that's a win from my POV.
-
+Regards,
+Daniel
 -- 
-error compiling committee.c: too many arguments to function
-
+|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
+|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
+|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
+|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
