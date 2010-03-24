@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab0CXVO4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 17:14:56 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:38649 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751541Ab0CXVOz (ORCPT
+	id S1752992Ab0CXVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 17:15:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39007 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751550Ab0CXVP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 17:14:55 -0400
-Date: Wed, 24 Mar 2010 16:14:46 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Pekka J Enberg <penberg@cs.helsinki.fi>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] slub: Potential stack overflow
-In-Reply-To: <alpine.DEB.2.00.1003241608270.16858@router.home>
-Message-ID: <alpine.DEB.2.00.1003241613350.16858@router.home>
-References: <1269430856.3213.27.camel@edumazet-laptop>  <alpine.DEB.2.00.1003241414270.14329@router.home>  <1269458528.2849.2.camel@edumazet-laptop>  <alpine.DEB.2.00.1003241443520.14329@router.home> <1269464591.2849.15.camel@edumazet-laptop>
- <alpine.DEB.2.00.1003241608270.16858@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 24 Mar 2010 17:15:26 -0400
+Date: Wed, 24 Mar 2010 14:14:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jonathan Corbet <corbet@lwn.net>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 07/11] Memory compaction core
+Message-Id: <20100324141400.72479ce6.akpm@linux-foundation.org>
+In-Reply-To: <20100324145946.372f3f31@bike.lwn.net>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-8-git-send-email-mel@csn.ul.ie>
+	<20100324133347.9b4b2789.akpm@linux-foundation.org>
+	<20100324145946.372f3f31@bike.lwn.net>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a patch for the second case. I think its better since it results
-in an error display and it avoids the alloc for each slab. Add this piece
-to your patch?
+On Wed, 24 Mar 2010 14:59:46 -0600
+Jonathan Corbet <corbet@lwn.net> wrote:
 
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> On Wed, 24 Mar 2010 13:33:47 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > > +	VM_BUG_ON(cc == NULL);  
+> > 
+> > It's a bit strange to test this when we're about to oops anyway.  The
+> > oops will tell us the same thing.
+> 
+> ...except that we've seen a fair number of null pointer dereference
+> exploits that have told us something altogether different.  Are we
+> *sure* we don't want to test for null pointers...?
+> 
 
----
- mm/slub.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+It's hard to see what the test gains us really - the kernel has
+zillions of pointer derefs, any of which could be NULL if we have a
+bug.  Are we more likely to have a bug here than elsewhere?
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-03-24 16:10:32.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-03-24 16:13:06.000000000 -0500
-@@ -3648,10 +3648,10 @@ static int add_location(struct loc_track
- }
-
- static void process_slab(struct loc_track *t, struct kmem_cache *s,
--		struct page *page, enum track_item alloc)
-+		struct page *page, enum track_item alloc,
-+		unsigned long *map)
- {
- 	void *addr = page_address(page);
--	DECLARE_BITMAP(map, page->objects);
- 	void *p;
-
- 	bitmap_zero(map, page->objects);
-@@ -3670,8 +3670,10 @@ static int list_locations(struct kmem_ca
- 	unsigned long i;
- 	struct loc_track t = { 0, 0, NULL };
- 	int node;
-+	unsigned long *map = kmalloc(BITS_TO_LONGS(oo_objects(s->max)) *
-+				sizeof(unsigned long), GFP_KERNEL);
-
--	if (!alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
-+	if (!map || !alloc_loc_track(&t, PAGE_SIZE / sizeof(struct location),
- 			GFP_TEMPORARY))
- 		return sprintf(buf, "Out of memory\n");
-
-@@ -3688,9 +3690,9 @@ static int list_locations(struct kmem_ca
-
- 		spin_lock_irqsave(&n->list_lock, flags);
- 		list_for_each_entry(page, &n->partial, lru)
--			process_slab(&t, s, page, alloc);
-+			process_slab(&t, s, page, alloc, map);
- 		list_for_each_entry(page, &n->full, lru)
--			process_slab(&t, s, page, alloc);
-+			process_slab(&t, s, page, alloc, map);
- 		spin_unlock_irqrestore(&n->list_lock, flags);
- 	}
-
+This one will oops on a plain old read, so it's a bit moot in this
+case.
