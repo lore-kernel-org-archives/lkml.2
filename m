@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab0CXUNA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:13:00 -0400
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:34157 "EHLO
-	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932200Ab0CXUM7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:12:59 -0400
-X-Greylist: delayed 2726 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Mar 2010 16:12:59 EDT
-Date: Wed, 24 Mar 2010 15:27:28 -0400 (EDT)
-From: John Kacur <jkacur@redhat.com>
-To: rostedt@goodmis.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Clark Williams <williams@redhat.com>
-Message-ID: <1088471101.823551269458848070.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <1269454428.2957.2890.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 2/2] rt: Remove CONFIG_STACK_TRACER from DEBUG_COUNT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S932309Ab0CXUS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:18:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47696 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab0CXUSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 16:18:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,302,1267430400"; 
+   d="scan'208";a="551816705"
+Subject: Re: [PATCH 4/7] wireless/iwlwifi: remove trailing space in messages
+From: reinette chatre <reinette.chatre@intel.com>
+To: Frans Pop <elendil@planet.nl>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Zhu, Yi" <yi.zhu@intel.com>,
+       Intel Linux Wireless <ilw@linux.intel.com>
+In-Reply-To: <1269456395-15343-4-git-send-email-elendil@planet.nl>
+References: <201003241927.12434.elendil@planet.nl>
+	 <1269456395-15343-4-git-send-email-elendil@planet.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 24 Mar 2010 13:18:53 -0700
+Message-ID: <1269461933.2446.3208.camel@rchatre-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.5.71]
-X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Frans,
 
------ "Steven Rostedt" <rostedt@goodmis.org> wrote:
-
-> On Wed, 2010-03-24 at 18:35 +0100, John Kacur wrote:
-> > Remove CONFIG_STACK_TRACER from DEBUG_COUNT so that reminder
-> messages
-> > are printed correctly, and don't leave an empty reminder block for
-> example.
-> > 
+On Wed, 2010-03-24 at 11:46 -0700, Frans Pop wrote:
+> Includes minor improvements in debugging messages in iwl-4965.c,
+> function iwl4965_is_temp_calib_needed().
 > 
-> I think this should be attached to patch 1. Why have two patches for
-> this?
-
-Because patch 1 is a revert, I thought this makes the git history cleaner.
-
-John
-
+> Signed-off-by: Frans Pop <elendil@planet.nl>
+> Cc: Zhu Yi <yi.zhu@intel.com>
+> Cc: Reinette Chatre <reinette.chatre@intel.com>
+> Cc: Intel Linux Wireless <ilw@linux.intel.com>
 > 
-> -- Steve
-> 
-> > Signed-off-by: John Kacur <jkacur@redhat.com>
-> > ---
-> >  init/main.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/init/main.c b/init/main.c
-> > index aa48b7b..17fd973 100644
-> > --- a/init/main.c
-> > +++ b/init/main.c
-> > @@ -908,7 +908,7 @@ static int __init kernel_init(void * unused)
-> >  	WARN_ON(irqs_disabled());
-> >  #endif
-> >  
-> > -#define DEBUG_COUNT (defined(CONFIG_DEBUG_RT_MUTEXES) +
-> defined(CONFIG_IRQSOFF_TRACER) + defined(CONFIG_PREEMPT_TRACER) +
-> defined(CONFIG_STACK_TRACER) + defined(CONFIG_INTERRUPT_OFF_HIST) +
-> defined(CONFIG_PREEMPT_OFF_HIST) + defined(CONFIG_WAKEUP_LATENCY_HIST)
-> + defined(CONFIG_DEBUG_SLAB) + defined(CONFIG_DEBUG_PAGEALLOC) +
-> defined(CONFIG_LOCKDEP) + (defined(CONFIG_FTRACE) -
-> defined(CONFIG_FTRACE_MCOUNT_RECORD)))
-> > +#define DEBUG_COUNT (defined(CONFIG_DEBUG_RT_MUTEXES) +
-> defined(CONFIG_IRQSOFF_TRACER) + defined(CONFIG_PREEMPT_TRACER) +
-> defined(CONFIG_INTERRUPT_OFF_HIST) + defined(CONFIG_PREEMPT_OFF_HIST)
-> + defined(CONFIG_WAKEUP_LATENCY_HIST) + defined(CONFIG_DEBUG_SLAB) +
-> defined(CONFIG_DEBUG_PAGEALLOC) + defined(CONFIG_LOCKDEP) +
-> (defined(CONFIG_FTRACE) - defined(CONFIG_FTRACE_MCOUNT_RECORD)))
-> >  
-> >  #if DEBUG_COUNT > 0
-> >  	printk(KERN_ERR
-> "*****************************************************************************\n");
+> wireless/intel
+
+Since this patch touches so many things, would it be possible to base
+your patch on
+git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-2.6.git
+instead? We currently have some code reorganization pending there that
+is undergoing validation before we push it upstream. If you do so you
+can send the patch to me indicating so and I will push it upstream as
+part of our process to ensure there are no conflicts ahead.
+
+Thank you
+
+Reinette
+
+
