@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab0CXXGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 19:06:17 -0400
-Received: from solo.fdn.fr ([80.67.169.19]:34634 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab0CXXGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 19:06:16 -0400
-Date: Thu, 25 Mar 2010 00:06:11 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH -mmotm] leds-input: depends on INPUT
-Message-ID: <20100324230611.GB6118@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>, Randy Dunlap <randy.dunlap@oracle.com>,
-	akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Richard Purdie <rpurdie@rpsys.net>
-References: <201003232301.o2NN1bms031050@imap1.linux-foundation.org> <4BAA658E.20400@oracle.com> <20100324210201.GA6800@elf.ucw.cz>
+	id S1752120Ab0CXXHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 19:07:52 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36308 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab0CXXHu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 19:07:50 -0400
+Date: Wed, 24 Mar 2010 23:07:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in
+	soc_common.c
+Message-ID: <20100324230729.GA21359@n2100.arm.linux.org.uk>
+References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100324210201.GA6800@elf.ucw.cz>
-User-Agent: Mutt/1.5.12-2006-07-14
+In-Reply-To: <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek, le Wed 24 Mar 2010 22:02:01 +0100, a écrit :
-> On Wed 2010-03-24 12:18:38, Randy Dunlap wrote:
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > leds-input uses input_*() functions so it should depend on INPUT.
-> > 
-> > leds-input.c:(.text+0x6e0513): undefined reference to `input_unregister_handle'
-> > leds-input.c:(.text+0x6e06eb): undefined reference to `input_inject_event'
-> > leds-input.c:(.text+0x6e0700): undefined reference to `input_inject_event'
-> > leds-input.c:(.text+0x6e0906): undefined reference to `input_register_handle'
-> > leds-input.c:(.text+0x6e0bdc): undefined reference to `input_unregister_handler'
-> > leds-input.c:(.init.text+0x285c8): undefined reference to `input_register_handler'
-> > leds-input.c:(.exit.text+0x7b04): undefined reference to `input_unregister_handler'
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>
-> > Cc: Pavel Machek <pavel@ucw.cz>
-> 
-> ACK.
+On Wed, Mar 24, 2010 at 08:04:58PM -0300, Marcelo Roberto Jimenez wrote:
+> -	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
+> -			(state->csc_mask==0)?"<NONE> ":"",
+> -			(state->csc_mask&SS_DETECT)?"DETECT ":"",
+> -			(state->csc_mask&SS_READY)?"READY ":"",
+> -			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
+> -			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
+> -			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
+> -			(state->flags==0)?"<NONE> ":"",
+> -			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
+> -			(state->flags&SS_IOCARD)?"IOCARD ":"",
+> -			(state->flags&SS_RESET)?"RESET ":"",
+> -			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
+> -			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
+> +	debug(skt, 2,	"mask: %s%s%s%s%s%s "
+> +			"flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
 
-ACK.
-
-Samuel
+NAK.  Breaking kernel messages across multiple lines makes them impossible
+to grep for.  checkpatch.pl is wrong on this one.
