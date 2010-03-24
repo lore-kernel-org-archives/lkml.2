@@ -1,148 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754812Ab0CXGrK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 02:47:10 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42216 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab0CXGrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 02:47:08 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 24 Mar 2010 15:43:24 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-Cc: "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       arighi@develer.com
-Subject: [BUGFIX][PATCH] fix race in file_mapped accounting in memcg
-Message-Id: <20100324154324.6d27336e.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754854Ab0CXGr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 02:47:57 -0400
+Received: from symlink.to.noone.org ([85.10.207.172]:57177 "EHLO sym.noone.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab0CXGrz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 02:47:55 -0400
+Date: Wed, 24 Mar 2010 07:47:47 +0100
+From: Tobias Klauser <tklauser@distanz.ch>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-serial@vger.kernel.org, gregkh@suse.de,
+       nios2-dev@sopc.et.ntust.edu.tw, linux-kernel@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCHv3 2/2] serial: Add driver for the Altera UART
+Message-ID: <20100324064747.GP21818@distanz.ch>
+References: <cover.1267807169.git.klto@zhaw.ch> <15dc056891fb785001073bab4f9a0d0f3bf99af1.1267807169.git.klto@zhaw.ch> <a596efa5dc6130a27d045ea24174c792ee2f0bb4.1267807169.git.klto@zhaw.ch> <20100323145459.9894b1e6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100323145459.9894b1e6.akpm@linux-foundation.org>
+X-Editor: Vi IMproved 7.1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A fix for race in file_mapped statistics. I noticed this race while discussing
-Andrea's dirty accounting patch series. 
-At the end of discusstion, I said "please don't touch file mapped". So, this bugfix
-should be posted as an independent patch.
-Tested on the latest mmotm.
+On 2010-03-23 at 22:54:59 +0100, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Fri,  5 Mar 2010 17:52:23 +0100
+> Tobias Klauser <tklauser@distanz.ch> wrote:
+> 
+> > +	sigs |= (altera_uart_getppdcd(port->line) ? TIOCM_CD : 0);
+> > +	sigs |= (altera_uart_getppdtr(port->line) ? TIOCM_DTR : 0);
+> 
+> We seem to be missing a few things here.
+> 
+> drivers/serial/altera_uart.c: In function 'altera_uart_get_mctrl':
+> drivers/serial/altera_uart.c:100: error: implicit declaration of function 'altera_uart_getppdcd'
+> drivers/serial/altera_uart.c:101: error: implicit declaration of function 'altera_uart_getppdtr'
+> drivers/serial/altera_uart.c: In function 'altera_uart_set_mctrl':
+> drivers/serial/altera_uart.c:114: error: implicit declaration of function 'altera_uart_setppdtr'
 
-Thanks,
--Kame
+These should usually be declared in a board specific header. There were
+compatibility macros in altera_uart.c which defined them to NOPs in case
+the board header did not properly define them. But I remove them as per
+request by Alan Cox (Message-ID: 20100301181920.3952c3e7@lxorguk.ukuu.org.uk).
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Should we add them again (maybe to altera_uart.h)? Or would it be better
+to define a config symbol which is set in the board specific Kconfig and
+altera_uart depends on it?
 
-Now, memcg's FILE_MAPPED accounting has following race with
-move_account (happens at rmdir()).
-
-    increment page->mapcount (rmap.c)
-    mem_cgroup_update_file_mapped()           move_account()
-					      lock_page_cgroup()
-					      check page_mapped() if
-					      page_mapped(page)>1 {
-						FILE_MAPPED -1 from old memcg
-						FILE_MAPPED +1 to old memcg
-					      }
-					      .....
-					      overwrite pc->mem_cgroup
-					      unlock_page_cgroup()
-    lock_page_cgroup()
-    FILE_MAPPED + 1 to pc->mem_cgroup
-    unlock_page_cgroup()
-
-Then,
-	old memcg (-1 file mapped)
-	new memcg (+2 file mapped)
-
-
-This happens because move_account see page_mapped() which is not guarded by
-lock_page_cgroup(). This patch adds FILE_MAPPED flag to page_cgroup and
-move account information based on it. Now, all checks are synchronous with
-lock_page_cgroup().
-
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/page_cgroup.h |    6 ++++++
- mm/memcontrol.c             |   18 +++++++++---------
- 2 files changed, 15 insertions(+), 9 deletions(-)
-
-Index: mmotm-2.6.34-Mar23/include/linux/page_cgroup.h
-===================================================================
---- mmotm-2.6.34-Mar23.orig/include/linux/page_cgroup.h
-+++ mmotm-2.6.34-Mar23/include/linux/page_cgroup.h
-@@ -39,6 +39,7 @@ enum {
- 	PCG_CACHE, /* charged as cache */
- 	PCG_USED, /* this object is in use. */
- 	PCG_ACCT_LRU, /* page has been accounted for */
-+	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
- };
- 
- #define TESTPCGFLAG(uname, lname)			\
-@@ -73,6 +74,11 @@ CLEARPCGFLAG(AcctLRU, ACCT_LRU)
- TESTPCGFLAG(AcctLRU, ACCT_LRU)
- TESTCLEARPCGFLAG(AcctLRU, ACCT_LRU)
- 
-+
-+SETPCGFLAG(FileMapped, FILE_MAPPED)
-+CLEARPCGFLAG(FileMapped, FILE_MAPPED)
-+TESTPCGFLAG(FileMapped, FILE_MAPPED)
-+
- static inline int page_cgroup_nid(struct page_cgroup *pc)
- {
- 	return page_to_nid(pc->page);
-Index: mmotm-2.6.34-Mar23/mm/memcontrol.c
-===================================================================
---- mmotm-2.6.34-Mar23.orig/mm/memcontrol.c
-+++ mmotm-2.6.34-Mar23/mm/memcontrol.c
-@@ -1430,16 +1430,19 @@ void mem_cgroup_update_file_mapped(struc
- 
- 	lock_page_cgroup(pc);
- 	mem = pc->mem_cgroup;
--	if (!mem)
--		goto done;
--
--	if (!PageCgroupUsed(pc))
-+	if (!mem || !PageCgroupUsed(pc))
- 		goto done;
- 
- 	/*
- 	 * Preemption is already disabled. We can use __this_cpu_xxx
- 	 */
--	__this_cpu_add(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED], val);
-+	if (val > 0) {
-+		__this_cpu_inc(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		SetPageCgroupFileMapped(pc);
-+	} else {
-+		__this_cpu_dec(mem->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-+		ClearPageCgroupFileMapped(pc);
-+	}
- 
- done:
- 	unlock_page_cgroup(pc);
-@@ -1872,16 +1875,13 @@ static void __mem_cgroup_commit_charge(s
- static void __mem_cgroup_move_account(struct page_cgroup *pc,
- 	struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
- {
--	struct page *page;
--
- 	VM_BUG_ON(from == to);
- 	VM_BUG_ON(PageLRU(pc->page));
- 	VM_BUG_ON(!PageCgroupLocked(pc));
- 	VM_BUG_ON(!PageCgroupUsed(pc));
- 	VM_BUG_ON(pc->mem_cgroup != from);
- 
--	page = pc->page;
--	if (page_mapped(page) && !PageAnon(page)) {
-+	if (PageCgroupFileMapped(pc)) {
- 		/* Update mapped_file data for mem_cgroup */
- 		preempt_disable();
- 		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-
+Thanks
+Tobias
