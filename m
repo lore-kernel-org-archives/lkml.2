@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab0CXSrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 14:47:39 -0400
-Received: from Cpsmtpm-eml109.kpnxchange.com ([195.121.3.13]:61154 "EHLO
-	CPSMTPM-EML109.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932543Ab0CXSqh (ORCPT
+	id S932763Ab0CXSvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 14:51:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35785 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932276Ab0CXSvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 14:46:37 -0400
-From: Frans Pop <elendil@planet.nl>
-To: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Cc: Frans Pop <elendil@planet.nl>, Corey Thomas <coreythomas@charter.net>
-Subject: [PATCH 6/7] wireless/raylink: remove trailing space in messages
-Date: Wed, 24 Mar 2010 19:46:34 +0100
-Message-Id: <1269456395-15343-6-git-send-email-elendil@planet.nl>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <201003241927.12434.elendil@planet.nl>
-References: <201003241927.12434.elendil@planet.nl>
-X-OriginalArrivalTime: 24 Mar 2010 18:46:36.0225 (UTC) FILETIME=[54CAE310:01CACB82]
+	Wed, 24 Mar 2010 14:51:32 -0400
+Date: Wed, 24 Mar 2010 11:51:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] #define __BYTE_ORDER
+Message-Id: <20100324115112.07ce4807.akpm@linux-foundation.org>
+In-Reply-To: <10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com>
+References: <1268849455-19503-1-git-send-email-Joakim.Tjernlund@transmode.se>
+	<20100324112106.c8e7b96d.akpm@linux-foundation.org>
+	<10f740e81003241137y382d155fnb777344d3af25f03@mail.gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Frans Pop <elendil@planet.nl>
-Cc: Corey Thomas <coreythomas@charter.net>
----
- drivers/net/wireless/ray_cs.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+On Wed, 24 Mar 2010 19:37:36 +0100
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-diff --git a/drivers/net/wireless/ray_cs.c b/drivers/net/wireless/ray_cs.c
-index 84c530a..8d173cc 100644
---- a/drivers/net/wireless/ray_cs.c
-+++ b/drivers/net/wireless/ray_cs.c
-@@ -556,7 +556,7 @@ static int ray_init(struct net_device *dev)
- 	local->fw_ver = local->startup_res.firmware_version[0];
- 	local->fw_bld = local->startup_res.firmware_version[1];
- 	local->fw_var = local->startup_res.firmware_version[2];
--	dev_dbg(&link->dev, "ray_init firmware version %d.%d \n", local->fw_ver,
-+	dev_dbg(&link->dev, "ray_init firmware version %d.%d\n", local->fw_ver,
- 	      local->fw_bld);
- 
- 	local->tib_length = 0x20;
-@@ -2252,7 +2252,7 @@ static void rx_data(struct net_device *dev, struct rcs __iomem *prcs,
- 			    (dev->mtu + RX_MAC_HEADER_LENGTH + ETH_HLEN +
- 			     FCS_LEN)) {
- 				pr_debug(
--				      "ray_cs invalid packet length %d received \n",
-+				      "ray_cs invalid packet length %d received\n",
- 				      rx_len);
- 				return;
- 			}
-@@ -2263,7 +2263,7 @@ static void rx_data(struct net_device *dev, struct rcs __iomem *prcs,
- 			    (dev->mtu + RX_MAC_HEADER_LENGTH + ETH_HLEN +
- 			     FCS_LEN)) {
- 				pr_debug(
--				      "ray_cs invalid packet length %d received \n",
-+				      "ray_cs invalid packet length %d received\n",
- 				      rx_len);
- 				return;
- 			}
-@@ -2771,11 +2771,11 @@ static int ray_cs_proc_show(struct seq_file *m, void *v)
- 			seq_printf(m, "Hop dwell            = %d Kus\n",
- 				   pfh->dwell_time[0] +
- 				   256 * pfh->dwell_time[1]);
--			seq_printf(m, "Hop set              = %d \n",
-+			seq_printf(m, "Hop set              = %d\n",
- 				   pfh->hop_set);
--			seq_printf(m, "Hop pattern          = %d \n",
-+			seq_printf(m, "Hop pattern          = %d\n",
- 				   pfh->hop_pattern);
--			seq_printf(m, "Hop index            = %d \n",
-+			seq_printf(m, "Hop index            = %d\n",
- 				   pfh->hop_index);
- 			p += p[1] + 2;
- 		} else {
--- 
-1.6.6.1
+> On Wed, Mar 24, 2010 at 19:21, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Wed, 17 Mar 2010 19:10:55 +0100
+> > Joakim Tjernlund <Joakim.Tjernlund@transmode.se> wrote:
+> >
+> >> Linux does not define __BYTE_ORDER in its endian header files
+> >> which makes some header files bend backwards to get at the
+> >> current endian. Lets #define __BYTE_ORDER in big_endian.h/litte_endian.h
+> >> to make it easier for header files that are used in user space too.
+> >
+> > I don't get it. __Why not nuke __BYTE_ORDER altogether and do `#ifdef
+> > __LITTLE_ENDIAN' and `#ifdef __BIG_ENDIAN' everywhere?
+> 
+> Because in userspace the convention is that
+>   1. _both_ __LITTLE_ENDIAN and __BIG_ENDIAN are defined,
+>   2. you have to test for e.g. __BYTE_ORDER == __BIG_ENDIAN.
+
+umph.  We don't _have_ to copy userspace, and removing __BYTE_ORDER
+altogether makes the kernel cleaner and simpler.
+
+But if we did that, we shouldn't have used the same symbols as
+userspace.  Sigh.
 
