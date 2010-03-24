@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0CXWct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 18:32:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45413 "EHLO ogre.sisk.pl"
+	id S1754086Ab0CXWdN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 18:33:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39000 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab0CXWcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 18:32:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC 02/15] PM / Hibernate: snapshot cleanup
-Date: Wed, 24 Mar 2010 23:35:36 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: jirislaby@gmail.com, pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-2-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1269361063-3341-2-git-send-email-jslaby@suse.cz>
+	id S1753649Ab0CXWdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 18:33:11 -0400
+Date: Wed, 24 Mar 2010 23:32:32 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: mincore and transparent huge pages
+Message-ID: <20100324223232.GO10659@random.random>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003242335.36816.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 March 2010, Jiri Slaby wrote:
-> From: Jiri Slaby <jirislaby@gmail.com>
+Hi Johannes,
+
+On Tue, Mar 23, 2010 at 03:34:57PM +0100, Johannes Weiner wrote:
 > 
-> Remove support of reads with offset. This means snapshot_read/write_next
-> now does not accept count parameter.
+> Hi,
 > 
-> /dev/snapshot handler is converted to simple_read_from_buffer/simple_write_to_buffer.
-
-Makes sense.
-
-One coding style comment, though.
-
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Nigel Cunningham <ncunningham@crca.org.au>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> ---
->  kernel/power/power.h    |   18 +-----
->  kernel/power/snapshot.c |  145 ++++++++++++++++++-----------------------------
->  kernel/power/swap.c     |    8 +-
->  kernel/power/user.c     |   39 ++++++++-----
->  4 files changed, 88 insertions(+), 122 deletions(-)
+> I wanted to make mincore() handle huge pmds natively over the weekend
+> but I chose do beef up the code a bit first (1-4).
 > 
-...  
-> @@ -159,13 +160,17 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
->  		res = -ENODATA;
->  		goto Unlock;
->  	}
-> -	res = snapshot_read_next(&data->handle, count);
-> -	if (res > 0) {
-> -		if (copy_to_user(buf, data_of(data->handle), res))
-> -			res = -EFAULT;
-> -		else
-> -			*offp = data->handle.offset;
-> -	}
-> +	if (!pg_offp) { /* on page boundary? */
-> +		res = snapshot_read_next(&data->handle);
-> +		if (res <= 0)
-> +			goto Unlock;
-> +	} else
-> +		res = PAGE_SIZE - pg_offp;
+> Andrew, 1-4 may have merit without transparent huge pages, so they
+> could go in independently.  They are based on Andrea's patches but the
+> only thing huge page in them is the split_huge_page_vma() call, so it
+> would be easy to rebase (I can do that).
+> 
+> Below is also an ugly hack I used to test transparent huge pages on my
+> 32bit netbook.  The VM_ flags, oh, the VM_ flags!
 
-The official kernel coding style is to put single instructions under if/else
-like this in braces if the other branch of the if/else is multiline (and
-therefore naturally in braces).   So please do:
+Thanks a lot for this effort.
 
-+	if (!pg_offp) { /* on page boundary? */
-+		res = snapshot_read_next(&data->handle);
-+		if (res <= 0)
-+			goto Unlock;
-+	} else {
-+		res = PAGE_SIZE - pg_offp;
-+	}
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 85fa92a..b6aec57 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -106,10 +106,11 @@ extern unsigned int kobjsize(const void *objp);
+>  #define VM_MIXEDMAP	0x10000000	/* Can contain "struct page" and pure PFN pages */
+>  #define VM_SAO		0x20000000	/* Strong Access Ordering (powerpc) */
+>  #define VM_PFN_AT_MMAP	0x40000000	/* PFNMAP vma that is fully mapped at mmap time */
+> +#ifdef CONFIG_KSM
+> +#error no more VM_ flags
+>  #define VM_MERGEABLE	0x80000000	/* KSM may merge identical pages */
+> -#if BITS_PER_LONG > 32
+> -#define VM_HUGEPAGE	0x100000000UL	/* MADV_HUGEPAGE marked this vma */
+>  #endif
+> +#define VM_HUGEPAGE	0x80000000	/* MADV_HUGEPAGE marked this vma */
+>  
+>  #ifndef VM_STACK_DEFAULT_FLAGS		/* arch can override this */
+>  #define VM_STACK_DEFAULT_FLAGS VM_DATA_DEFAULT_FLAGS
 
-and analogously wherever applicable.
-
-Thanks,
-Rafael
+The moment we say we need 32bit archs, I suggest to takeover VM_SAO, I
+think it's more likely you need ksm on 32bit x86, than transparent
+hugepage on ppc32. I also doubt VM_RESERVED is still actual these
+days, but I guess I won't take the tangent to go after it (if somebody
+does that's welcome, otherwise later after transparent hugepage is in,
+after ksm works on transparent hugepages, after memory compaction is
+in, and after slab gets its front huge-allocator to make sure it allocates
+fine with 4k granularity but if a hugepage is available it eats from
+there first). It's not like a big priority to nuke VM_RESERVED
+compared to all the rest...
