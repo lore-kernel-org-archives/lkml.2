@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab0CXMBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 08:01:19 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:38899 "EHLO
+	id S1755919Ab0CXMEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 08:04:44 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:37724 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab0CXMBS (ORCPT
+	with ESMTP id S1755183Ab0CXMEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 08:01:18 -0400
+	Wed, 24 Mar 2010 08:04:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=WBrRo8KWAl+K+9WyHWGksdBrPf5TkwXE0Qs8d4QtJHqXZpmQt7rOPk17jfaPNnke1n
-         XC6/5Pa2ne4aTc+ZHQ2Dty/JFb/FMqjQmpzanZk/j2ckr9AB2eaDODy6dHG9eHCy0U1E
-         8KvudreIuyxEf7AFF0tdEd9BTf+Rny+1Bvs/Y=
-Date: Wed, 24 Mar 2010 15:01:07 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       Joonyoung Shim <jy0922.shim@samsung.com>, alsa-devel@alsa-project.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [rfc patch] wm8994: range checking issue
-Message-ID: <20100324120107.GH21571@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Liam Girdwood <lrg@slimlogic.co.uk>,
-	Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-	Joonyoung Shim <jy0922.shim@samsung.com>,
-	alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=S4myfVX02uRyIsEFWARyGhqTBgBZhGUOAbhBY7KDZGjLaob5sfKZUuRUx0SBVKL4ld
+         XGdXfaulaPnDcCCxPzIZx8YOjcibxRNJWoN7sz63MgsOtOpQyke+fQ/+6c/kWXPlyqMa
+         GoyXrdJlHIEzdvRr9ncWcDvtGPggy/MMR6St4=
+From: Maurice Dawson <mauricedawson2699@googlemail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu, mithlesh@linsyssoft.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 23/23] Staging: comedi: fix brace, print(k), indent and over 80 character coding style issues in adq12b.c
+Date: Wed, 24 Mar 2010 12:04:29 +0000
+Message-Id: <1269432269-3417-1-git-send-email-mauricedawson2699@googlemail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch complained about BUG_ON(reg > WM8994_MAX_REGISTER) because the
-actual number of elements in the array was WM8994_REG_CACHE_SIZE + 1.
+This is a patch to the adq12b.c file that fixes up brace, print(k), indent and over 80 character warnings found by the checkpatch.pl tool
 
-I changed the BUG_ON() to return -EINVAL.
+Signed-off-by: Maurice Dawson <mauricedawson2699@googlemail.com>
+---
+ drivers/staging/comedi/drivers/adq12b.c |   30 +++++++++++++++++-------------
+ 1 files changed, 17 insertions(+), 13 deletions(-)
 
-I was confused why WM8994_REG_CACHE_SIZE was different from the actual
-size of ->reg_cache and I was concerned because some places used 
-ARRAY_SIZE() to find the end of the array and other places used 
-WM8994_REG_CACHE_SIZE.  In my patch, I made them the same.
+diff --git a/drivers/staging/comedi/drivers/adq12b.c b/drivers/staging/comedi/drivers/adq12b.c
+index 00b2009..ac3d42d 100644
+--- a/drivers/staging/comedi/drivers/adq12b.c
++++ b/drivers/staging/comedi/drivers/adq12b.c
+@@ -200,19 +200,21 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	unipolar = it->options[1];
+ 	differential = it->options[2];
+ 
+-	printk("comedi%d: adq12b called with options base=0x%03lx, %s and %s\n",
++	printk(KERN_ERR "comedi%d: adq12b called with options base=0x%03lx, "
++								"%s and %s\n",
+ 	       dev->minor, iobase, (unipolar == 1) ? "unipolar" : "bipolar",
+ 	       (differential == 1) ? "differential" : "single-ended");
+ 
+ 	/* if no address was specified, try the default 0x300 */
+ 	if (iobase == 0) {
+-		printk
+-		    ("comedi%d: adq12b warning: I/O base address not specified. Trying the default 0x300.\n",
+-		     dev->minor);
++		printk("comedi%d: adq12b warning: "
++			"I/O base address not specified. "
++			"Trying the default 0x300.\n",
++						dev->minor);
+ 		iobase = 0x300;
+ 	}
+ 
+-	printk("comedi%d: adq12b: 0x%04lx ", dev->minor, iobase);
++	printk(KERN_ERR "comedi%d: adq12b: 0x%04lx ", dev->minor, iobase);
+ 	if (!request_region(iobase, ADQ12B_SIZE, "adq12b")) {
+ 		printk("I/O port conflict\n");
+ 		return -EIO;
+@@ -259,11 +261,10 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		s->n_chan = thisboard->ai_se_chans;
+ 	}
+ 
+-	if (unipolar) {
++	if (unipolar)
+ 		s->range_table = &range_adq12b_ai_unipolar;
+-	} else {
++	else
+ 		s->range_table = &range_adq12b_ai_bipolar;
+-	}
+ 
+ 	s->maxdata = (1 << thisboard->ai_bits) - 1;
+ 
+@@ -289,7 +290,7 @@ static int adq12b_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	s->range_table = &range_digital;
+ 	s->insn_bits = adq12b_do_insn_bits;
+ 
+-	printk("attached\n");
++	printk(KERN_ERR "attached\n");
+ 
+ 	return 0;
+ }
+@@ -309,7 +310,7 @@ static int adq12b_detach(struct comedi_device *dev)
+ 
+ 	kfree(devpriv);
+ 
+-	printk("comedi%d: adq12b: removed\n", dev->minor);
++	printk(KERN_ERR "comedi%d: adq12b: removed\n", dev->minor);
+ 
+ 	return 0;
+ }
+@@ -344,17 +345,20 @@ static int adq12b_ai_rinsn(struct comedi_device *dev,
+ 		/* wait for end of convertion */
+ 		i = 0;
+ 		do {
+-/* udelay(1); */
++			/* udelay(1); */
+ 			status = inb(dev->iobase + ADQ12B_STINR);
+ 			status = status & ADQ12B_EOC;
+ 		} while (status == 0 && ++i < TIMEOUT);
+-/* } while (++i < 10); */
++			/* } while (++i < 10); */
+ 
+ 		/* read data */
+ 		hi = inb(dev->iobase + ADQ12B_ADHIG);
+ 		lo = inb(dev->iobase + ADQ12B_ADLOW);
+ 
+-		/* printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n", channel, range, status,  hi, lo); */
++		/*
++		 *printk("debug: chan=%d range=%d status=%d hi=%d lo=%d\n",
++		 *channel, range, status,  hi, lo);
++		 */
+ 		data[n] = (hi << 8) | lo;
+ 
+ 	}
+-- 
+1.6.3.3
 
-I don't have the hardware to test this and some of this patch is just 
-guess work.
-
-For example, I left it in, but why is there a -1 here?
-  3711          /* Fill the cache with physical values we inherited; don't reset */
-  3712          ret = wm8994_bulk_read(codec->control_data, 0,
-  3713                                 ARRAY_SIZE(wm8994->reg_cache) - 1,
-  3714                                 codec->reg_cache);
-
-I didn't sign this off because I figured I'd probably need to send a
-second version after I hear the feed back.
-
-regards,
-dan carpenter
-
-diff --git a/sound/soc/codecs/wm8994.c b/sound/soc/codecs/wm8994.c
-index 29f3771..d9c179a 100644
---- a/sound/soc/codecs/wm8994.c
-+++ b/sound/soc/codecs/wm8994.c
-@@ -59,13 +59,13 @@ static int wm8994_retune_mobile_base[] = {
- 	WM8994_AIF2_EQ_GAINS_1,
- };
- 
--#define WM8994_REG_CACHE_SIZE  0x621
-+#define WM8994_REG_CACHE_SIZE  0x622
- 
- /* codec private data */
- struct wm8994_priv {
- 	struct wm_hubs_data hubs;
- 	struct snd_soc_codec codec;
--	u16 reg_cache[WM8994_REG_CACHE_SIZE + 1];
-+	u16 reg_cache[WM8994_REG_CACHE_SIZE];
- 	int sysclk[2];
- 	int sysclk_rate[2];
- 	int mclk[2];
-@@ -1697,7 +1697,8 @@ static int wm8994_write(struct snd_soc_codec *codec, unsigned int reg,
- {
- 	struct wm8994_priv *wm8994 = codec->private_data;
- 
--	BUG_ON(reg > WM8994_MAX_REGISTER);
-+	if (reg >= WM8994_REG_CACHE_SIZE)
-+		return -EINVAL;
- 
- 	if (!wm8994_volatile(reg))
- 		wm8994->reg_cache[reg] = value;
-@@ -1710,7 +1711,8 @@ static unsigned int wm8994_read(struct snd_soc_codec *codec,
- {
- 	u16 *reg_cache = codec->reg_cache;
- 
--	BUG_ON(reg > WM8994_MAX_REGISTER);
-+	if (reg >= WM8994_REG_CACHE_SIZE)
-+		return -EINVAL;
- 
- 	if (wm8994_volatile(reg))
- 		return wm8994_reg_read(codec->control_data, reg);
-@@ -3700,7 +3702,7 @@ static int wm8994_codec_probe(struct platform_device *pdev)
- 	codec->set_bias_level = wm8994_set_bias_level;
- 	codec->dai = &wm8994_dai[0];
- 	codec->num_dai = 3;
--	codec->reg_cache_size = WM8994_MAX_REGISTER;
-+	codec->reg_cache_size = WM8994_REG_CACHE_SIZE;
- 	codec->reg_cache = &wm8994->reg_cache;
- 	codec->dev = &pdev->dev;
- 
