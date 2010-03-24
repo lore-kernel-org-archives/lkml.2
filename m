@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab0CXOWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:22:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60967 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab0CXOWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:22:47 -0400
-X-Authority-Analysis: v=1.0 c=1 a=iGnHfCumZfoA:10 a=IkcTkHD0fZMA:10 a=Kb425h1ZfghOXLSsj94A:9 a=i_-EXrefkvZ0k7A7B1i2tgwIUpoA:4 a=QEXdDO2ut3YA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [Cluster-devel] [PATCH 10/18] gfs2: Provide config option for
- enabling trace points
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-       cluster-devel@redhat.com
-In-Reply-To: <1269429657.2350.1.camel@localhost>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
-	 <1269304340-25372-11-git-send-email-jack@suse.cz>
-	 <1269345667.2438.12.camel@localhost>  <1269388565.5363.380.camel@localhost>
-	 <1269429657.2350.1.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 24 Mar 2010 08:09:01 -0400
-Message-ID: <1269432541.3095.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S932092Ab0CXOYG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:24:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48981 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756398Ab0CXOYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:24:02 -0400
+Message-ID: <4BAA2080.5020902@suse.de>
+Date: Wed, 24 Mar 2010 15:24:00 +0100
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+Cc: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <4BA7B9E0.5080009@codemonkey.ws> <20100322192739.GE21919@elte.hu> <4BA7C96D.2020702@redhat.com> <4BA7E9D9.5060800@codemonkey.ws> <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com> <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com> <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com> <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com> <4BAA1946.6060703@suse.de> <4BAA1ADD.9090502@redhat.com>
+In-Reply-To: <4BAA1ADD.9090502@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 11:20 +0000, Steven Whitehouse wrote:
-> Hi,
-> 
-> On Tue, 2010-03-23 at 19:56 -0400, Steven Rostedt wrote:
-> > On Tue, 2010-03-23 at 12:01 +0000, Steven Whitehouse wrote:
-> > > Hi,
-> > > 
-> > > Now in the GFS2 -nmw git tree. Thanks,
-> > > 
-> > 
-> > Note, this depends on patch 1 which we have not yet determined if it
-> > should be applied or not.
-> > 
-> > -- Steve
-> > 
-> Sorry, I think I misread the initial message. I can roll it out again if
-> required. I did a compile test in both states though and it seemed to
-> work for me,
-> 
+Avi Kivity wrote:
+> On 03/24/2010 03:53 PM, Alexander Graf wrote:
+>>
+>>> Someone needs to know about the new guest to fetch its symbols.  Or do
+>>> you want that part in the kernel too?
+>>>      
+>>
+>> How about we add a virtio "guest file system access" device? The guest
+>> would then expose its own file system using that device.
+>>
+>> On the host side this would simply be a -virtioguestfs
+>> unix:/tmp/guest.fs and you'd get a unix socket that gives you full
+>> access to the guest file system by using commands. I envision something
+>> like:
+>>    
+>
+> The idea is to use a dedicated channel over virtio-serial.  If the
+> channel is present the file server can serve files over it.
 
-No problem, I'm just saying I believe without the first patch, this is a
-nop. That is, both states have the same result. The trace events stay
-in.
+The file server being a kernel module inside the guest? We want to be
+able to serve things as early and hassle free as possible, so in this
+case I agree with Ingo that a kernel module is superior.
 
--- Steve
+>
+>> SEND: GET /proc/version
+>> RECV: Linux version 2.6.27.37-0.1-default (geeko@buildhost) (gcc version
+>> 4.3.2 [gcc-4_3-branch revision 141291] (SUSE Linux) ) #1 SMP 2009-10-15
+>> 14:56:58 +0200
+>>
+>> Now all we need is integration in perf to enumerate virtual machines
+>> based on libvirt. If you want to run qemu-kvm directly, just go with
+>> --guestfs=/tmp/guest.fs and perf could fetch all required information
+>> automatically.
+>>
+>> This should solve all issues while staying 100% in user space, right?
+>>    
+>
+> Yeah, needs a fuse filesystem to populate the host namespace (kind of
+> sshfs over virtio-serial).
+
+I don't see why we need a fuse filesystem. We can of course create one
+later on. But for now all you need is a user connecting to that socket.
+
+
+Alex
 
 
