@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284Ab0CXIhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 04:37:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4549 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755241Ab0CXIhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 04:37:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100323105707.GA8634@redhat.com>
-References: <20100323105707.GA8634@redhat.com> <20100322184136.GA3967@redhat.com> <15829.1269333449@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: dhowells@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 3/3] proc: make task_sig() lockless
-Date: Wed, 24 Mar 2010 08:37:22 +0000
-Message-ID: <11571.1269419842@redhat.com>
+	id S1755280Ab0CXIjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 04:39:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49631 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755215Ab0CXIjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 04:39:13 -0400
+Date: Wed, 24 Mar 2010 08:43:07 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in
+Subject: Re: [PATCH 1/7] serial: TTY: new ldisc for TI BT/FM/GPS chips
+Message-ID: <20100324084307.2a07dbb1@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100324022803.GA4359@suse.de>
+References: <1269376875-25940-1-git-send-email-pavan_savoy@ti.com>
+	<1269376875-25940-2-git-send-email-pavan_savoy@ti.com>
+	<20100324022803.GA4359@suse.de>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
+On Tue, 23 Mar 2010 19:28:03 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-> > Except that the data returned might then be inconsistent because you don't
-> > hold a lock as you read the various bits of it.
+> On Tue, Mar 23, 2010 at 03:41:09PM -0500, pavan_savoy@ti.com wrote:
+> > From: Pavan Savoy <pavan_savoy@ti.com>
+> > 
+> > A new N_TI_WL line discipline added for TI BT/FM/GPS
+> > combo chips which make use of same TTY to communicate
+> > with chip. This is to be made use of individual protocol
+> > BT/FM/GPS drivers.
+> > 
+> > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> > ---
+> >  include/linux/tty.h |    3 ++-
 > 
-> Yes. From the changelog:
-> 
-> 	Of course, this means we read pending/blocked/etc nonatomically,
-> 	but I hope this is OK for fs/proc.
+> Staging code needs to be completly self-contained in the drivers/staging
+> directory.  Is there any way to do this without touching this file?
 
-Ah, yes.  I read that as you meant how procfs accessed the actual data
-structures, not how the user accessed procfs.  It might be worth clarifying
-that.
+Put the N_TI_WL into a staging header, and bump the number of ldiscs as a
+separate non staging patch - we should probably simply bump it a bit
+anyway to leave room for experimental work using a built kernel image.
+There is no requirement that the number of ldiscs matches up to the last
+ldisc assigned.
 
-> But I don't think the returned data could be "really" inconsistent
-> from the /bin/ps pov. Yes, it is possible that, say, some signal is
-> seen as both pending and ignored without ->siglock. Or we can report
-> user->sigpending != 0 while pending/shpending are empty.
-> 
-> But this looks harmless to me. We never guaranteed /proc/pid/status
-> can't report the "intermediate" state, and I don't think we can
-> confuse the user-space.
-> 
-> Do you agree? Or do you think this can make problems ?
-
-I don't know of anything this will affect adversely.  In fact, I'm not sure
-there was a guarantee that it would be atomic anyway.
-
-So as far as I'm concerned, you can add:
-
-Acked-by: David Howells <dhowells@redhat.com>
-
-> > Probably we can change do_task_stat() to avod ->siglock too, except
-> > we can't get tty_nr lockless.
-
-Btw, avoid has an 'i' in it... :-)
+Alan
