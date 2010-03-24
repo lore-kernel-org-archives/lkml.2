@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab0CXUyW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 16:54:22 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:44554 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753944Ab0CXUyT (ORCPT
+	id S1756842Ab0CXUyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 16:54:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51541 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753472Ab0CXUy3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 16:54:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=QehNP8+JSNk6A+45bYeAddmjB63uvTv7O66Ftt3O9vEAwsvOaNaotaxLymHXlErmt7
-         jarNm4cXlmZhJxh1f28RVUlSaRsRPPLwWv91urLd51GT+dblLKBZw266CStQ7opdXq60
-         3v2SZhi5Tm5lUeN3p4Qz4YxiqnvradcZSdg4Y=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [BUG] percpu misaligned allocation
-Date: Wed, 24 Mar 2010 21:54:12 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.33; KDE/4.3.4; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>
-References: <20100318044930.GC5045@nowhere>
-In-Reply-To: <20100318044930.GC5045@nowhere>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Wed, 24 Mar 2010 16:54:29 -0400
+Date: Wed, 24 Mar 2010 13:53:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
+ compaction failure
+Message-Id: <20100324135347.7a9eb37b.akpm@linux-foundation.org>
+In-Reply-To: <1269347146-7461-12-git-send-email-mel@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-12-git-send-email-mel@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003242154.12214.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 18 marca 2010 o 05:49:33 Frederic Weisbecker wrote:
-> Hi,
-> 
-> While using the lock events through perf in a sparc box, I can see
-> the following message repeated many times:
-> 
+On Tue, 23 Mar 2010 12:25:46 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=15624
-for your bug report, please add your address to the CC list in there, thanks!
+> The fragmentation index may indicate that a failure it due to external
+> fragmentation, a compaction run complete and an allocation failure still
+> fail. There are two obvious reasons as to why
+> 
+>   o Page migration cannot move all pages so fragmentation remains
+>   o A suitable page may exist but watermarks are not met
+> 
+> In the event of compaction and allocation failure, this patch prevents
+> compaction happening for a short interval. It's only recorded on the
+> preferred zone but that should be enough coverage. This could have been
+> implemented similar to the zonelist_cache but the increased size of the
+> zonelist did not appear to be justified.
+> 
+>
+> ...
+>
+> +/* defer_compaction - Do not compact within a zone until a given time */
+> +static inline void defer_compaction(struct zone *zone, unsigned long resume)
+> +{
+> +	/*
+> +	 * This function is called when compaction fails to result in a page
+> +	 * allocation success. This is somewhat unsatisfactory as the failure
+> +	 * to compact has nothing to do with time and everything to do with
+> +	 * the requested order, the number of free pages and watermarks. How
+> +	 * to wait on that is more unclear, but the answer would apply to
+> +	 * other areas where the VM waits based on time.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+um.  "Two wrongs don't make a right".  We should fix the other sites,
+not use them as excuses ;)
+
+What _is_ a good measure of "time" in this code?  "number of pages
+scanned" is a pretty good one in reclaim.  We want something which will
+adapt itself to amount-of-memory, number-of-cpus, speed-of-cpus,
+nature-of-workload, etc, etc.
+
+Is it possible to come up with some simple metric which approximately
+reflects how busy this code is, then pace ourselves via that?
+
+> +	 */
+> +	zone->compact_resume = resume;
+> +}
+> +
+> +static inline int compaction_deferred(struct zone *zone)
+> +{
+> +	/* init once if necessary */
+> +	if (unlikely(!zone->compact_resume)) {
+> +		zone->compact_resume = jiffies;
+> +		return 0;
+> +	}
+> +
+> +	return time_before(jiffies, zone->compact_resume);
+> +}
+
