@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756575Ab0CXQgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:36:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab0CXQgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:36:04 -0400
-Date: Wed, 24 Mar 2010 17:33:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] move_task_off_dead_cpu: take rq->lock around
-	select_fallback_rq()
-Message-ID: <20100324163356.GA6380@redhat.com>
-References: <20100315091010.GA9131@redhat.com> <1269445284.5109.360.camel@twins> <20100324160727.GA4121@redhat.com> <1269447422.5109.408.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269447422.5109.408.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756564Ab0CXQha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:37:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34551 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab0CXQh3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:37:29 -0400
+Subject: Re: [patch 2/2] x86,pat Convert memtype_lock into an rw_lock.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "holt@sgi.com" <holt@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "x86@kernel.org" <x86@kernel.org>
+In-Reply-To: <1269447146.2881.0.camel@sbs-t61.sc.intel.com>
+References: <ff8c11be-b22d-4849-9b19-d9107c4fea47@email.android.com>
+	 <1268871558.2696.60.camel@sbs-t61.fm.intel.com>
+	 <1269430347.5109.164.camel@twins>
+	 <1269447146.2881.0.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 24 Mar 2010 17:36:59 +0100
+Message-ID: <1269448619.5109.443.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24, Peter Zijlstra wrote:
->
-> Yeah, you made a few good points in 0/6, am now staring at the code on
-> how to close those holes, hope to post something sensible soon.
+On Wed, 2010-03-24 at 09:12 -0700, Suresh Siddha wrote:
+> On Wed, 2010-03-24 at 04:32 -0700, Peter Zijlstra wrote:
+> > On Wed, 2010-03-17 at 16:19 -0800, Suresh Siddha wrote:
+> > > On Wed, 2010-03-17 at 12:51 -0700, H. Peter Anvin wrote:
+> > > > Well, as you know :) tglx and I are on the road ... I'll try to get to it on Friday before I take off again.
+> > > 
+> > > Also I talked to Thomas about this rwlock conversion and he referred to
+> > > RT issues with rwlock. And the best is to avoid this using RCU.
+> > 
+> > Its not just RT, even for mainline rwlock_t is a massive pain and often
+> > is no better (actually worse) than a spinlock due to the massive
+> > cacheline bouncing it introduces.
+> 
+> Don't we have the same cacheline bouncing issues with the ticket
+> spinlocks?
 
-Yes, great.
+Sure, but the rwlock_t is unfair and can degrade into much worse
+performance than the spinlock.
 
-Speaking of 0/6, I forgot to ask a couple more question...
+Thing is, rwlock_t needs to write to the cacheline for each read
+acquire, so unless the hold time is much-much longer than the cacheline
+bounce time, its just not worth it, but since its a rwlock_t it should
+be have short hold time, hence its a useless construct :-)
 
-try_to_wake_up() does task_rq_lock() which checks TASK_WAKING. Perhaps
-it shouldn't ? I mean, perhaps try_to_wake_up() can take rq->lock without
-checking task->state. It can never race with the owner of TASK_WAKING,
-before anything else we check "p->state & state".
-
-And. Without the change above, any owner of TASK_WAKING must disable
-preemption and clear irqs.
-
-What do you think?
-
-
-And a stupid question. While doing these changes I was really, really
-puzzled by task_rq_lock() which does
-
-	local_irq_save(*flags);
-	rq = task_rq(p);
-	raw_spin_lock(&rq->lock);
-
-to the point, I even tried to read the comment which says:
-
-	Note the ordering: we can safely lookup the task_rq without
-	explicitly disabling preemption.
-
-Could you please explain what does this mean? IOW, why can't we do
-
-	rq = task_rq(p);
-	raw_spin_lock_irqsave(&rq->lock, flags);
-
-instead?
-
-Of course, this doesn't really matter, but I'd like to understand
-what I have missed here.
-
-Thanks,
-
-Oleg.
 
