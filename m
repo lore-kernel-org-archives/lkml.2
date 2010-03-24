@@ -1,119 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0CXDgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Mar 2010 23:36:38 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55220 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753023Ab0CXDgh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Mar 2010 23:36:37 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: David Airlie <airlied@linux.ie>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 24 Mar 2010 03:36:31 +0000
-Message-ID: <1269401791.18314.267.camel@localhost>
+	id S1754779Ab0CXDuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Mar 2010 23:50:16 -0400
+Received: from ppa04.Princeton.EDU ([128.112.128.215]:54511 "EHLO
+	ppa04.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754589Ab0CXDuK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Mar 2010 23:50:10 -0400
+X-Greylist: delayed 811 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Mar 2010 23:50:10 EDT
+Date: Tue, 23 Mar 2010 23:36:11 -0400
+From: Yury Polyanskiy <ypolyans@princeton.edu>
+To: Joel Becker <joel.becker@oracle.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       john stultz <johnstul@us.ibm.com>, Jan Glauber <jan.glauber@de.ibm.com>
+Subject: [PATCH] hangcheck-timer is broken on x86
+Message-ID: <20100323233611.6dcbe4f4@penta.localdomain>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH 2/2] amd64-agp: Probe unknown AGP devices the right way
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/3lQ3o0QISS5wDHyes/bsE6Z"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current initialisation code probes 'unsupported' AGP devices
-simply by calling its own probe function.  It does not lock these
-devices or even check whether another driver is already bound to
-them.
+--Sig_/3lQ3o0QISS5wDHyes/bsE6Z
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-We must use the device core to manage this.  So if the specific
-device id table didn't match anything and agp_try_unsupported=1,
-switch the device id table and call driver_attach() again.
+Dear Joel,
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-This is untested as I have no suitable hardware.
+The drivers/char/hangcheck-timer.c is doubly broken. First, the
+following line overflows unsigned long:
+# define TIMER_FREQ (HZ*loops_per_jiffy)
 
-Greg, please confirm that the use of driver_attach() is sane.
+Second, and more importantly, loops_per_jiffy has little to do with the con=
+version from the
+the time scale of get_cycles() (aka rdtsc) to the time scale of jiffies.
 
-Ben.
+The attached patch resolves both of the problems.
 
- drivers/char/agp/amd64-agp.c |   27 +++++++++++++++------------
- 1 files changed, 15 insertions(+), 12 deletions(-)
+Best,
+Yury
 
-diff --git a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
-index fd50ead..93f56d6 100644
---- a/drivers/char/agp/amd64-agp.c
-+++ b/drivers/char/agp/amd64-agp.c
-@@ -499,6 +499,10 @@ static int __devinit agp_amd64_probe(struct pci_dev *pdev,
- 	u8 cap_ptr;
- 	int err;
- 
-+	/* The Highlander principle */
-+	if (agp_bridges_found)
-+		return -ENODEV;
-+
- 	cap_ptr = pci_find_capability(pdev, PCI_CAP_ID_AGP);
- 	if (!cap_ptr)
- 		return -ENODEV;
-@@ -562,6 +566,8 @@ static void __devexit agp_amd64_remove(struct pci_dev *pdev)
- 			   amd64_aperture_sizes[bridge->aperture_size_idx].size);
- 	agp_remove_bridge(bridge);
- 	agp_put_bridge(bridge);
-+
-+	agp_bridges_found--;
+PS. I have CC-ed a few people who touched hangcheck-timer.c in 2006. Please=
+ CC me for follow-ups.
+
+diff --git a/drivers/char/hangcheck-timer.c b/drivers/char/hangcheck-timer.c
+index 712d9f2..c57a508 100644
+--- a/drivers/char/hangcheck-timer.c
++++ b/drivers/char/hangcheck-timer.c
+@@ -49,8 +49,9 @@
+ #include <asm/uaccess.h>
+ #include <linux/sysrq.h>
+ #include <linux/timer.h>
++#include <linux/time.h>
+=20
+-#define VERSION_STR "0.9.0"
++#define VERSION_STR "0.9.1"
+=20
+ #define DEFAULT_IOFENCE_MARGIN 60	/* Default fudge factor, in seconds */
+ #define DEFAULT_IOFENCE_TICK 180	/* Default timer timeout, in seconds */
+@@ -119,10 +120,8 @@ __setup("hcheck_dump_tasks", hangcheck_parse_dump_task=
+s);
+ #if defined(CONFIG_S390)
+ # define HAVE_MONOTONIC
+ # define TIMER_FREQ 1000000000ULL
+-#elif defined(CONFIG_IA64)
+-# define TIMER_FREQ ((unsigned long long)local_cpu_data->itc_freq)
+ #else
+-# define TIMER_FREQ (HZ*loops_per_jiffy)
++# define TIMER_FREQ 1000000000ULL
+ #endif
+=20
+ #ifdef HAVE_MONOTONIC
+@@ -130,7 +129,9 @@ extern unsigned long long monotonic_clock(void);
+ #else
+ static inline unsigned long long monotonic_clock(void)
+ {
+-	return get_cycles();
++	struct timespec ts;
++	getrawmonotonic(&ts);
++	return timespec_to_ns(&ts);
  }
- 
- #ifdef CONFIG_PM
-@@ -709,6 +715,11 @@ static struct pci_device_id agp_amd64_pci_table[] = {
- 
- MODULE_DEVICE_TABLE(pci, agp_amd64_pci_table);
- 
-+static DEFINE_PCI_DEVICE_TABLE(agp_amd64_pci_promisc_table) = {
-+	{ PCI_DEVICE_CLASS(0, 0) },
-+	{ }
-+};
-+
- static struct pci_driver agp_amd64_pci_driver = {
- 	.name		= "agpgart-amd64",
- 	.id_table	= agp_amd64_pci_table,
-@@ -734,7 +745,6 @@ int __init agp_amd64_init(void)
- 		return err;
- 
- 	if (agp_bridges_found == 0) {
--		struct pci_dev *dev;
- 		if (!agp_try_unsupported && !agp_try_unsupported_boot) {
- 			printk(KERN_INFO PFX "No supported AGP bridge found.\n");
- #ifdef MODULE
-@@ -750,17 +760,10 @@ int __init agp_amd64_init(void)
- 			return -ENODEV;
- 
- 		/* Look for any AGP bridge */
--		dev = NULL;
--		err = -ENODEV;
--		for_each_pci_dev(dev) {
--			if (!pci_find_capability(dev, PCI_CAP_ID_AGP))
--				continue;
--			/* Only one bridge supported right now */
--			if (agp_amd64_probe(dev, NULL) == 0) {
--				err = 0;
--				break;
--			}
--		}
-+		agp_amd64_pci_driver.id_table = agp_amd64_pci_promisc_table;
-+		err = driver_attach(&agp_amd64_pci_driver.driver);
-+		if (err == 0 && agp_bridges_found == 0)
-+			err = -ENODEV;
+ #endif  /* HAVE_MONOTONIC */
+=20
+@@ -168,6 +169,13 @@ static void hangcheck_fire(unsigned long data)
+ 			printk(KERN_CRIT "Hangcheck: hangcheck value past margin!\n");
+ 		}
  	}
- 	return err;
++#if 0
++	/*=20
++	 * Enable to investigate delays in detail
++	 */
++	printk("Hangcheck: called %Ld ns since last time (%Ld ns overshoot)\n",=20
++			tsc_diff, tsc_diff - hangcheck_tick*TIMER_FREQ);
++#endif
+ 	mod_timer(&hangcheck_ticktock, jiffies + (hangcheck_tick*HZ));
+ 	hangcheck_tsc =3D monotonic_clock();
  }
--- 
-1.7.0
+@@ -180,7 +188,7 @@ static int __init hangcheck_init(void)
+ #if defined (HAVE_MONOTONIC)
+ 	printk("Hangcheck: Using monotonic_clock().\n");
+ #else
+-	printk("Hangcheck: Using get_cycles().\n");
++	printk("Hangcheck: Using getrawmonotonic().\n");
+ #endif  /* HAVE_MONOTONIC */
+ 	hangcheck_tsc_margin =3D
+ 		(unsigned long long)(hangcheck_margin + hangcheck_tick);
 
+--Sig_/3lQ3o0QISS5wDHyes/bsE6Z
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkupiKsACgkQemuRe3zuqORrYQCgs/VjxAkbIs2NojwJd6KQXbAp
+gO8AmgK1OyJKE4Iv6vIxTTdxNnvSngAx
+=ah+u
+-----END PGP SIGNATURE-----
+
+--Sig_/3lQ3o0QISS5wDHyes/bsE6Z--
