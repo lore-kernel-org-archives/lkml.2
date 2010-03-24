@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab0CXQP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:15:59 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:60091 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab0CXQP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:15:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=aBVsg8ZyZCdbUiaiXtzqtLZkkyJsJ/jWbP7/U2OlMRSs3qbXpem9W6d5IKyRqfbCRJ
-         +gnH6MyEnMPHf3XvxwzDcTpTDx8sooUhglmFOkzg+QYCOVf9U+/2XecaLKXOMpndfIpX
-         W4lmkCEy+SiiVTXLIxCXr3IvTHG/xSVIDeR+M=
+	id S932229Ab0CXQQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:16:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932147Ab0CXQQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:16:48 -0400
+Message-ID: <4BAA3AC5.80408@redhat.com>
+Date: Wed, 24 Mar 2010 18:16:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Date: Wed, 24 Mar 2010 11:15:56 -0500
-Message-ID: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>
-Subject: behavior of recvmmsg() on blocking sockets
-From: Brandon Black <blblack@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Joerg Roedel <joro@8bytes.org>, Anthony Liguori <anthony@codemonkey.ws>,
+       Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+ project
+References: <20100323140608.GJ1940@8bytes.org> <4BA8EEDE.8070309@redhat.com>	 <20100323182153.GA14800@8bytes.org> <4BA99BCB.5080501@redhat.com>	 <20100324115900.GB14800@8bytes.org> <4BAA00B1.20407@redhat.com>	 <20100324125043.GC14800@8bytes.org> <4BAA0DFE.1080700@redhat.com>	 <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com>	 <20100324150137.GE14800@8bytes.org> <1269446622.5109.388.camel@twins>
+In-Reply-To: <1269446622.5109.388.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Not on the list, please CC responses]
+On 03/24/2010 06:03 PM, Peter Zijlstra wrote:
+> On Wed, 2010-03-24 at 16:01 +0100, Joerg Roedel wrote:
+>
+>    
+>> What I meant was: perf-kernel puts the guest-name into every sample and
+>> perf-userspace accesses /sys/kvm/guest_name/fs/ later to resolve the
+>> symbols. I leave the question of how the guest-fs is exposed to the host
+>> out of this discussion. We should discuss this seperatly.
+>>      
+> I'd much prefer a pid like suggested later, keeps the samples smaller.
+>
+> But that said, we need guest kernel events like mmap and context
+> switches too, otherwise we simply can't make sense of guest userspace
+> addresses, we need to know the guest address space layout.
+>    
 
-Currently, my application code uses blocking UDP sockets and is
-basically structured like this:
+The kernel knows some of the address space layout, qemu knows all of it.
 
-while(1) {
-    recvmsg(fd, ...);
-    // do some work on the packet
-    sendmsg(fd, ...);
-}
+> So aside from a filesystem content, we first need mmap and context
+> switch events to find the files we need to access.
+>    
 
-It uses a thread-per-socket model, and the "do some work" code is very
-fast, and so this turns out to be more efficient than non-blocking
-techniques for my use case.  Today I started playing with 2.6.33's new
-recvmmsg(), hoping to convert my code like so (still on blocking
-sockets):
+This only works for the guest kernel, we don't know anything about guest 
+processes [1].
 
-while(1) {
-    recvmmsg(fd, ...);
-    // do some work on up to N packets
-    // loop over sendmsg() foreach packet to be sent
-    //   (or sendmmsg() if/when that interface becomes available)
-}
+> And while I appreciate all the security talk, its basically pointless
+> anyway, the host can access it anyway, everybody agrees on that, but
+> still you're arguing the case..
+>    
 
-The catch I ran into is that on a blocking socket, recvmmsg() will
-block until *all* vlen packets have been received.  The behavior I'd
-prefer for my use case would be for it to only block until at least
-one packet is available, not until all are available.  Or in code
-terms, the first internal call to recvmsg should use the supplied
-flags, and the rest of the recvmsg calls should use flags &
-MSG_DONTWAIT.  It's not clear to me which is the better default
-behavior, but I feel like at the very least there should be a flag
-that can switch behavior between the two possible interpretations of
-"blocking".
+root can access anything, but we're not talking about root.  The idea is 
+to protect against a guest that has exploited its qemu and is now 
+attacking the host and its fellow guests.   uid protection is no good 
+since we want to isolate the guest from host processes belonging to the 
+same uid and from other guests running under the same uid.
 
-Obviously, I can also work around this at the user level by simply
-switching to a non-blocking socket and using select/poll before
-recvmmsg, but then under any conditions where only 1 packet is
-available (probably fairly common) I'm issuing two syscalls per packet
-when only one should be necessary (and only one is necessary when
-using recvmsg()).  This seems inefficient and antithetical to one of
-the design goals of recvmmsg (cut down the syscalls:packets ratio).
+[1] We can find out guest pids if we teach the kernel what to 
+dereference, i.e. gs:offset1->offset2->offset3.  Of course this varies 
+from kernel to kernel, so we need some kind of bytecode that we can run 
+in perf nmi context.  Kind of what we need to run an unwinder for 
+-fomit-frame-pointer.
 
-Thoughts on this?
+-- 
+error compiling committee.c: too many arguments to function
 
-Thanks,
--- Brandon
