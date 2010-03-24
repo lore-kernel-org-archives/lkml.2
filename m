@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab0CXQZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 12:25:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53280 "EHLO mx2.suse.de"
+	id S1756557Ab0CXQbX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 12:31:23 -0400
+Received: from 8bytes.org ([88.198.83.132]:57392 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752389Ab0CXQZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 12:25:50 -0400
-Date: Wed, 24 Mar 2010 09:26:16 -0700
-From: Greg KH <gregkh@suse.de>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: Pavan Savoy <pavan_savoy@yahoo.co.in>, PavanSavoy <pavan_savoy@ti.com>,
-       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] drivers:misc: sources for Init manager module
-Message-ID: <20100324162616.GA9257@suse.de>
-References: <359814.2971.qm@web94904.mail.in2.yahoo.com> <1269447105.11714.117.camel@localhost.localdomain>
+	id S1752389Ab0CXQbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 12:31:21 -0400
+Date: Wed, 24 Mar 2010 17:31:19 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>,
+       Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+       ziteng.huang@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Gregory Haskins <ghaskins@novell.com>
+Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
+	project
+Message-ID: <20100324163119.GL14800@8bytes.org>
+References: <20100324134642.GD14800@8bytes.org> <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org> <20100324152653.GA12225@redhat.com> <20100324153746.GF14800@8bytes.org> <4BAA3323.9000405@redhat.com> <20100324155041.GH14800@8bytes.org> <4BAA3556.2040802@redhat.com> <20100324161711.GJ14800@8bytes.org> <4BAA3BD6.8030401@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269447105.11714.117.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4BAA3BD6.8030401@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 09:11:45AM -0700, Marcel Holtmann wrote:
-> > I wanted to somehow put this in staging because then it would probably have a thorough architectural review process.
-> > Some details about this driver - 
-> > 
-> > 1. This driver will be used by Bluetooth-BlueZ/FM-V4L2 and GPS (probably character device driver) using the EXPORTED symbols (-register/_unregister).
-> > 
-> > 2. Much like the hciattach daemon which maintains N_HCI bluetooth line discipline, this driver will also have a User-Space  N_TI_WL Init manager (UIM) maintaining the Line discipline.
-> 
-> can you explain why you think this is needed and we can not interface
-> this directly. If it is a serial port, what protocol does it talk?
-> 
-> > 3. Because of the UIM should know when to install/uninstall line discipline, the /sys entry is created a root called UIM (a new kobject) and UIM daemon would write it's PID to it.
-> 
-> I don't understand this. This sounds like a broken concept to me.
+On Wed, Mar 24, 2010 at 06:20:38PM +0200, Avi Kivity wrote:
+> On 03/24/2010 06:17 PM, Joerg Roedel wrote:
+>> But is this not only one entity more for
+>> sVirt to handle? I would leave that decision to the sVirt developers.
+>> Does attaching the same label as for the VM resources mean that root
+>> could not access it anymore?
+>>    
+>
+> IIUC processes run under a context, and there's a policy somewhere that  
+> tells you which context can access which label (and with what  
+> permissions).  There was a server on the Internet once that gave you  
+> root access and invited you to attack it.  No idea if anyone succeeded  
+> or not (I got bored after about a minute).
+>
+> So it depends on the policy.  If you attach the same label, that means  
+> all files with the same label have the same access permissions.  I think.
 
-I also agree, those sysfs files are not acceptable, and will not work
-as-designed due to the pid namespace issues :(
+So if this is true we can introduce a 'trace' label and add all contexts
+that should be allowed to trace to it.
+But we probably should leave the details to the security experts ;-)
 
-thanks,
+	Joerg
 
-greg k-h
