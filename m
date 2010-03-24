@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab0CXOnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 10:43:00 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41057 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755671Ab0CXOm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 10:42:59 -0400
-Date: Wed, 24 Mar 2010 07:02:52 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Cc: Matt Helsley <matthltc@us.ibm.com>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       containers <containers@lists.linux-foundation.org>,
-       Christoffer Dall <christofferdall@christofferdall.dk>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
-Message-ID: <20100324140252.GC5704@count0.beaverton.ibm.com>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
- <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
- <20100323205342.GA19572@n2100.arm.linux.org.uk>
- <20100324020342.GB5704@count0.beaverton.ibm.com>
- <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756351Ab0CXOnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 10:43:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59664 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755686Ab0CXOnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 10:43:32 -0400
+Date: Wed, 24 Mar 2010 07:41:49 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm]
+ signals-clear-signal-tty-when-the-last-thread-exits.fix
+Message-Id: <20100324074149.8d4e96e6.akpm@linux-foundation.org>
+In-Reply-To: <20100324142348.GA8117@redhat.com>
+References: <20100319184020.GA519@redhat.com>
+	<20100324142348.GA8117@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 12:57:46AM -0400, Oren Laadan wrote:
-> On Tue, 23 Mar 2010, Matt Helsley wrote:
-> 
-> > On Tue, Mar 23, 2010 at 08:53:42PM +0000, Russell King - ARM Linux wrote:
-> > > On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
-> > > > This small commit introduces a global state of system calls for ARM
-> > > > making it possible for a debugger or checkpointing to gain information
-> > > > about another process' state with respect to system calls.
-> > > 
-> > > I don't particularly like the idea that we always store the syscall
-> > > number to memory for every system call, whether the stored version is
-> > > used or not.
-> > > 
-> > > Since ARM caches are generally not write allocate, this means mostly
-> > > write-only variables can have a higher than expected expense.
-> > > 
-> > > Is there not some thread flag which can be checked to see if we need to
-> > > store the syscall number?
-> > 
-> > Perhaps before we freeze the task we can save the syscall number on ARM.
-> > The patches suggest that the signal delivery path -- which the freezer
-> > utilizes -- has the syscall number already.
-> > 
-> > Should work since the threads must be frozen first anyway.
-> 
-> I like the idea.
-> 
-> However, would it also work for those cases when the freezing does not 
-> occur from the signal delivery path - e.g. for vfork and ptraced tasks ?
+On Wed, 24 Mar 2010 15:23:48 +0100 Oleg Nesterov <oleg@redhat.com> wrote:
 
-We could just as easily set it before the vfork uninterruptible completion.
-ptracing I'd don't know about though.
+> (fixup for signals-clear-signal-tty-when-the-last-thread-exits.patch)
+> 
+> I didn't get this warning, but the old gcc complains
+> 
+> 	kernel/exit.c: In function 'release_task':
+> 	kernel/exit.c:85: warning: 'tty' may be used uninitialized in this function
+> 
+> This clearly wrong, to the point it blames release_task() instead of
+> __exit_signal(). But let's make compiler happy anyway, hopefully this
+> is what it wants.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+> 
+>  kernel/exit.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- 34-rc1/kernel/exit.c~FIX_EXIT_SIGNAL_TTY_WARNING	2010-03-21 18:36:44.000000000 +0100
+> +++ 34-rc1/kernel/exit.c	2010-03-24 14:59:55.000000000 +0100
+> @@ -82,7 +82,7 @@ static void __exit_signal(struct task_st
+>  	struct signal_struct *sig = tsk->signal;
+>  	bool group_dead = thread_group_leader(tsk);
+>  	struct sighand_struct *sighand;
+> -	struct tty_struct *tty;
+> +	struct tty_struct *tty = NULL;	/* supress gcc warning */
 
-Cheers,
-	-Matt Helsley
+uninitialized_var() is a neater way.
+
+(uninitialized_var() will save a teeny bit of .text on old gcc.  One
+suspects that a newer gcc which is capable of working out that this
+variable _isn't_ uninitialized would also be capable of eliding the `= 0').
+
