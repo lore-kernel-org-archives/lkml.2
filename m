@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0CYUam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:30:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51370 "EHLO ogre.sisk.pl"
+	id S1751839Ab0CYUeG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:34:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51380 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab0CYUal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:30:41 -0400
+	id S1750834Ab0CYUeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 16:34:02 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [linux-pm] [RFC 03/15] PM / Hibernate: separate block_io
-Date: Thu, 25 Mar 2010 21:33:50 +0100
+To: maciej.rutecki@gmail.com
+Subject: Re: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+Date: Thu, 25 Mar 2010 21:37:12 +0100
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Jiri Slaby <jirislaby@gmail.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252112.25204.rjw@sisk.pl> <4BABC3D1.1050104@crca.org.au>
-In-Reply-To: <4BABC3D1.1050104@crca.org.au>
+Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
+       bjorn.helgaas@hp.com, airlied@linux.ie, Eric Anholt <eric@anholt.net>
+References: <201003252104.24965.maciej.rutecki@gmail.com>
+In-Reply-To: <201003252104.24965.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003252133.50206.rjw@sisk.pl>
+Message-Id: <201003252137.12278.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 March 2010, Nigel Cunningham wrote:
-> Hi.
-> 
-> On 26/03/10 07:12, Rafael J. Wysocki wrote:
-> > On Thursday 25 March 2010, Nigel Cunningham wrote:
-> >> Hi again.
-> >>
-> >> On 25/03/10 09:58, Nigel Cunningham wrote:
-> >>> Hi.
-> >>>
-> >>> On 25/03/10 08:22, Jiri Slaby wrote:
-> >>>> On 03/24/2010 09:30 PM, Pavel Machek wrote:
-> >>>>> On Tue 2010-03-23 17:17:31, Jiri Slaby wrote:
-> >>>>>> +int sws_bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
-> >>>>>> +{
-> >>>>>> +	return submit(READ, sws_resume_bdev, page_off * (PAGE_SIZE>>    9),
-> >>>>>> +			virt_to_page(addr), bio_chain);
-> >>>>>> +}
-> >>>>>
-> >>>>> sws_ is kind of strange prefix. We were trying to get away from
-> >>>>> "swsuspend" name for quite some time...
-> >>>>
-> >>>> No problem to change the prefix to anything else. Do you (anybody)
-> >>>> suggest anything?
-> >>>>
-> >>>
-> >>> How about some abbreviation of hibernate? "hib"?
-> >>
-> >> On further reflection, how about "std" (suspend to disk)? I think that's
-> >> less ugly than the 'hib' suggestion :)
-> >
-> > But it also decodes as "standard" if someone is not in the right context. :-)
-> 
-> Ah...
-> 
-> > If the "bio" part of the name is not essential (ie. there's no conflicting name
-> > already), we could call it simply hibernate_read_page().
-> 
-> Yeah. So we're going with hibernate or hib_ if it needs abbreviating?
+[More CCs]
 
-I'd just use "hibernate" without abbreviating if reasonably possible.
-We can also use "image_" in some cases I guess.
+On Thursday 25 March 2010, Maciej Rutecki wrote:
+> Last known good: 2.6.33
+> Failing kernels: 2.6.34-rc1 and 2.6.34-rc2
+> Driver: Video(DRI - Intel)
+> 
+> 
+> When XWindow starts I got:
+> Mar 25 19:58:10 gumis kernel: [  133.624028] [drm:i915_hangcheck_elapsed] 
+> *ERROR* Hangcheck timer elapsed... GPU hung
+> Mar 25 19:58:10 gumis kernel: [  133.624221] render error detected, EIR: 
+> 0x00000000
+> Mar 25 19:58:10 gumis kernel: [  133.624291] [drm:i915_do_wait_request] 
+> *ERROR* i915_do_wait_request returns -5 ( awaiting 691 at 682)
+> Mar 25 19:58:11 gumis kdm[2592]: X server for display :0 terminated 
+> unexpectedly
+> 
+> after this only SysRq keys work.
+> 
+> Similar problem (older kernels):
+> https://bugzilla.kernel.org/show_bug.cgi?id=15004
+> 
+> Workaround: setting i915.modeset=1 pci=nocrs OR i915.modeset=0
+> 
+> Dmesg with i915.modeset=1 pci=nocrs:
+> http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/dmesg2.6.34-rc2.txt
+> 
+> Config:
+> http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/config-2.6.34-rc2
+> 
+> Syslog (i915.modeset=1 -- when hangs)):
+> http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/syslog-2.6.34-rc2
+> 
+> lspci:
+> http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/lspci.txt
+> 
+> Regards
+> 
 
-Rafael
