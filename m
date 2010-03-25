@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab0CYKRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:17:13 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:58364 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442Ab0CYKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:17:12 -0400
-Date: Thu, 25 Mar 2010 10:16:54 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
-Message-ID: <20100325101653.GN2024@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-11-git-send-email-mel@csn.ul.ie> <20100324101927.0d54f4ad.kamezawa.hiroyu@jp.fujitsu.com> <20100324114056.GE21147@csn.ul.ie> <20100325093006.cd0361e6.kamezawa.hiroyu@jp.fujitsu.com> <20100325094826.GM2024@csn.ul.ie> <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753768Ab0CYKUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:20:05 -0400
+Received: from ey-out-2122.google.com ([74.125.78.26]:24266 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab0CYKUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:20:03 -0400
+Message-ID: <4BAB38B1.8080404@ru.mvista.com>
+Date: Thu, 25 Mar 2010 13:19:29 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
+References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>	<1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20100324230729.GA21359@n2100.arm.linux.org.uk>
+In-Reply-To: <20100324230729.GA21359@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 06:50:21PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 25 Mar 2010 09:48:26 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > > In that case, compact_finished() can't
-> > > find there is a free chunk and do more work.  How about using a function like
-> > > 	 free_pcppages_bulk(zone, pcp->batch, pcp);
-> > > to bypass pcp list and freeing pages at once ?
-> > > 
-> > 
-> > I think you mean to drain the PCP lists while compaction is happening
-> > but is it justified? It's potentially a lot of IPI calls just to check
-> > if compaction can finish a little earlier. If the pages on the PCP lists
-> > are making that much of a difference to high-order page availability, it
-> > implies that the zone is pretty full and it's likely that compaction was
-> > avoided and we direct reclaimed.
-> > 
-> Ah, sorry for my short word again. I mean draining "local" pcp list because
-> a thread which run direct-compaction freed pages. IPI is not necessary and
-> overkill.
-> 
+Hello.
 
-Ah, I see now. There are two places that pages get freed.  release_freepages()
-at the end of compaction when it's too late for compact_finished() to be
-helped and within migration itself. Migration frees with either
-free_page() or more commonly put_page() with put_page() being the most
-frequently used. As free_page() is called on failure to migrate (rare),
-there is little help in changing it and I'd rather not modify how
-put_page() works.
+Russell King - ARM Linux wrote:
 
-I could add a variant of drain_local_pages() that drains just the local PCP of
-a given zone before compact_finished() is called. The cost would be a doubling
-of the number of times zone->lock is taken to do the drain. Is it
-justified? It seems overkill to me to take the zone->lock just in case
-compaction can finish a little earlier. It feels like it would be adding
-a guaranteed cost for a potential saving.
+>> -	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
+>> -			(state->csc_mask==0)?"<NONE> ":"",
+>> -			(state->csc_mask&SS_DETECT)?"DETECT ":"",
+>> -			(state->csc_mask&SS_READY)?"READY ":"",
+>> -			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
+>> -			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
+>> -			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
+>> -			(state->flags==0)?"<NONE> ":"",
+>> -			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
+>> -			(state->flags&SS_IOCARD)?"IOCARD ":"",
+>> -			(state->flags&SS_RESET)?"RESET ":"",
+>> -			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
+>> -			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
+>> +	debug(skt, 2,	"mask: %s%s%s%s%s%s "
+>> +			"flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
+>>     
+>
+> NAK.  Breaking kernel messages across multiple lines makes them impossible
+> to grep for.  checkpatch.pl is wrong on this one.
+>   
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+   I'd disagree in this case. Anybody will hardly grep for "mask: 
+%s%s%s%s%s%sflags: %s%s%s%s%s%s".
+
+WBR, Sergei
+
