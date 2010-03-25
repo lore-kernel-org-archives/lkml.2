@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0CYAwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 20:52:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab0CYAwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 20:52:39 -0400
-Date: Wed, 24 Mar 2010 20:52:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Ricky Benitez <rickyb@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Expose the statistics in blkio.time and blkio.sectors
-	for the root cgroup
-Message-ID: <20100325005228.GA13225@redhat.com>
-References: <1269473756-30327-1-git-send-email-rickyb@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269473756-30327-1-git-send-email-rickyb@google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754380Ab0CYAzy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 20:55:54 -0400
+Received: from mail.windriver.com ([147.11.1.11]:56554 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753925Ab0CYAzx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 20:55:53 -0400
+From: Liang Li <liang.li@windriver.com>
+To: mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: let 'reservetop' functioning right
+Date: Thu, 25 Mar 2010 08:54:05 +0800
+Message-Id: <1269478445-4335-1-git-send-email-liang.li@windriver.com>
+X-Mailer: git-send-email 1.6.6
+X-OriginalArrivalTime: 25 Mar 2010 00:55:41.0852 (UTC) FILETIME=[E49D65C0:01CACBB5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 04:35:56PM -0700, Ricky Benitez wrote:
-> Currently, the io statistics for the root cgroup are maintained, but
-> they are not shown because the device information is not available at
-> the point that the root blkio cgroup is created. This patch updates
-> the device information when the statistics are updated so that the
-> statistics become visible.
-> 
+When specify 'reservetop=0xabc000' kernel parameter, kernel will hang
+on boot due to a early_ioremap bug that relate to commit 8827247ff.
 
-Ok, root group is created when request queue is being initialized and
-device information like major/minor number is not available. This is
-not the cleanest solution but can't think of something better right now.
+The root cause of boot failure problem is the value of 'slot_virt[i]'
+was initialized in setup_arch->early_ioremap_init. But later in
+setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
+when 'reservetop=0xbadc0de' being specified.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+The simplest fix might be use __fix_to_virt(idx0) to get updated value
+of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
+from slot_virt[slot] directly.
 
-Thanks
-Vivek
+Signed-off-by: Liang Li <liang.li@windriver.com>
+---
+ arch/x86/mm/ioremap.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> Signed-off-by: Ricky Benitez <rickyb@google.com>
-> ---
->  block/cfq-iosched.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index dee9d93..4a3579a 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -947,6 +947,11 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->  	unsigned int major, minor;
->  
->  	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
-> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
-> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
-> +		cfqg->blkg.dev = MKDEV(major, minor);
-> +		goto done;
-> +	}
->  	if (cfqg || !create)
->  		goto done;
->  
-> -- 
-> 1.7.0.1
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 5eb1ba7..ea82ef0 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -537,9 +537,9 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
+ 		--nrpages;
+ 	}
+ 	if (early_ioremap_debug)
+-		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
++		printk(KERN_CONT "%08lx + %08lx\n", offset, __fix_to_virt(idx0));
+ 
+-	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
++	prev_map[slot] = (void __iomem *)(offset + __fix_to_virt(idx0));
+ 	return prev_map[slot];
+ }
+ 
+-- 
+1.6.6
+
