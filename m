@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0CYOgq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:36:46 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:46673 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753844Ab0CYOgp (ORCPT
+	id S1754788Ab0CYOhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:37:03 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:56195 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab0CYOg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:36:45 -0400
-Message-ID: <4BAB74F9.7040106@panasas.com>
-Date: Thu, 25 Mar 2010 16:36:41 +0200
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	Thu, 25 Mar 2010 10:36:59 -0400
+Date: Thu, 25 Mar 2010 09:35:05 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
+       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+In-Reply-To: <20100325092131.GK2024@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1003250933480.2670@router.home>
+References: <20100325083235.GF2024@csn.ul.ie> <20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com> <20100325180726.6C89.A69D9226@jp.fujitsu.com> <20100325092131.GK2024@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: pNFS Mailing List <pnfs@linux-nfs.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk>	<20100325105406.GW30031@ZenIV.linux.org.uk>	<4BAB51F5.609@panasas.com> <4BAB54B0.3080109@panasas.com>	<20100325130610.GZ30031@ZenIV.linux.org.uk>	<4BAB656E.8020204@panasas.com>	<20100325133746.GA30031@ZenIV.linux.org.uk>	<4BAB6A99.5070209@panasas.com>	<20100325140605.GC30031@ZenIV.linux.org.uk> <4BAB6E36.6040106@panasas.com>
-In-Reply-To: <4BAB6E36.6040106@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 14:36:44.0269 (UTC) FILETIME=[974DB1D0:01CACC28]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar. 25, 2010, 16:07 +0200, Benny Halevy <bhalevy@panasas.com> wrote:
-> On Mar. 25, 2010, 16:06 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
->> On Thu, Mar 25, 2010 at 03:52:25PM +0200, Benny Halevy wrote:
->>> On Mar. 25, 2010, 15:37 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
->>>> On Thu, Mar 25, 2010 at 03:30:22PM +0200, Boaz Harrosh wrote:
->>>>>> Let's try this: before do_lookup() call there add
->>>>>> 	if (*want_dir)
->>>>>> 		nd->flags |= LOOKUP_DIRECTORY;
->>>>> Yes this fixes it!!
->>>>> 2.6.34-rc2 plus above, now works, horay. (diff attached)
->>>>>
->>>>>> and see how does it behave.
->>>>>>
->>>>>> However, even if it does help, it doesn't explain everything.  Normal
->>>>>> open() on a directory without O_DIRECTORY if flags shouldn't fail with
->>>>>> -EISDIR.  How did that manage to avoid it all along?
->>>> Does open() of directory _without_ O_DIRECTORY work in e.g. vanilla 2.6.33?
->>>> It certainly does for local filesystems and it does for NFSv3; does it work
->>>> for NFSv4?
->>> No, it doesn't.
->>>
->>> # mount localhost:/usr0/nfs4export /mnt/localhost; strace cat /mnt/localhost/server 2>&1 | grep 'open.*server'; umount /mnt/localhost
->>> open("/mnt/localhost/server", O_RDONLY) = 3
->>>
->>> # mount -t nfs4 localhost:/ /mnt/localhost; strace cat /mnt/localhost/server 2>&1 | grep 'open.*server'; umount /mnt/localhost
->>> open("/mnt/localhost/server", O_RDONLY) = -1 EISDIR (Is a directory)
->> Gets better - if you do ls -l /mnt/localhost/server and then repeat that
->> open(), it'll succeed.
-> 
-> Correct :)
+On Thu, 25 Mar 2010, Mel Gorman wrote:
 
-So, previously (pre 1f36f77), do_last called do_path_lookup with
-lookup_flags(open_flag)|LOOKUP_OPEN and lookup_flags did
--	if (f & O_DIRECTORY)
--		retval |= LOOKUP_DIRECTORY;
+> Christoph is opposed to removing it because of cache-hotness issues more
+> so than use-after-free concerns. The refcount is needed with or without
+> SLAB_DESTROY_BY_RCU.
 
-and this was dropped in 1f36f77, right?
-
-Benny
-
-> _______________________________________________
-> pNFS mailing list
-> pNFS@linux-nfs.org
-> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
+The issue is only performance. If we can preserve the cache hotness in a
+different way (or do things in a completely different manner) then its
+fine.
