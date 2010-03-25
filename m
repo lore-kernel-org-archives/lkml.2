@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab0CYUQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:16:11 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:61698 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656Ab0CYUQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:16:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=eG4phdigQiJz652f5rJOPsqWt9xVP2JyERDfLUyiy61lOYEhBlTE96jttVf7/xIBpX
-         kJ7P7/gYcE/hqvgwTnlENb7uMSfJzjsM669T7Y6UBShXDTt22dnMwC5B4J7uVrgrxwDg
-         v4IaI/AbtvkAVb01z9I1w+f+ryxhonL8jQS80=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-Date: Thu, 25 Mar 2010 21:16:01 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
-       bjorn.helgaas@hp.com, airlied@linux.ie
-References: <201003252104.24965.maciej.rutecki@gmail.com>
-In-Reply-To: <201003252104.24965.maciej.rutecki@gmail.com>
+	id S1754763Ab0CYUUS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:20:18 -0400
+Received: from crca.org.au ([74.207.252.120]:48235 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754656Ab0CYUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 16:20:17 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BABC5B6.2070301@crca.org.au>
+Date: Fri, 26 Mar 2010 07:21:10 +1100
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>,
+       jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement
+ user_ops reader
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <20100325053003.GB12935@elf.ucw.cz> <4BAAF7DA.30506@crca.org.au> <201003252114.36605.rjw@sisk.pl>
+In-Reply-To: <201003252114.36605.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003252116.01552.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 25 marca 2010 o 21:04:24 Maciej Rutecki wrote:
+Hi.
 
-> Workaround: setting i915.modeset=1 pci=nocrs OR i915.modeset=0
+On 26/03/10 07:14, Rafael J. Wysocki wrote:
+> On Thursday 25 March 2010, Nigel Cunningham wrote:
+>> Hi.
+>>
+>> On 25/03/10 16:30, Pavel Machek wrote:
+>> [...]
+>>
+>>> I have some problems with sws_module_ops interface (handcoded locking
+>>> is too ugly to live), but it is better than I expected. But there may
+>>> be better solution available, one that does not need two interfaces to
+>>> maintain (we can't really get rid of userland interface). What about
+>>> this?
+>>
+>> Just picking up on that bracketed part: Can we flag the userland
+>> interface (and uswsusp) as being planned for eventual removal now... or
+>> at least agree to work toward that?
+>
+> No, we can't.
+>
+>> I'm asking because if we're going to make a go of getting the in-kernel
+>> code in much better shape, and we have Rafael, Jiri and I - and you? -
+>> all pulling in the same direction to improve it, there's going to come a
+>> point (hopefully not too far away) where uswsusp is just making life too
+>> difficult, and getting rid of it will be a big help.
+>
+> We're not dropping user space interfaces used by every distro I know of.
 
-Update:
-I was wrong: setting pci=nocrs  doesn't help.
+So what's your long term plan then?
 
-Regrards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Regards,
+
+Nigel
