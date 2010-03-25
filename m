@@ -1,388 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab0CYSFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:05:30 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:43978 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab0CYSFM (ORCPT
+	id S1753904Ab0CYSGK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:06:10 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:3083 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753675Ab0CYSGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:05:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:in-reply-to:references:
-	user-agent:mime-version:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=JZB3D/bJ3ry14xHC5SXSCQESs+0DUfbwbZgX2+ge8EGOhByS2cz5l36whZq2uS19V
-	3MFEuyHlUkQD1rsI0P4og==
-Subject: [PATCH 3/4] io-controller: Add a new interface "weight_device" for
-	IO-Controller
-To: vgoyal@redhat.com, jens.axboe@oracle.com
-From: Chad Talbott <ctalbott@google.com>
-Cc: mrubin@google.com, guijianfeng@cn.fujitsu.com,
-       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-       dpshah@google.com, Nauman Rafique <nauman@google.com>
-Date: Thu, 25 Mar 2010 11:04:33 -0700
-Message-ID: <20100325180433.25299.44167.stgit@meat.mtv.corp.google.com>
-In-Reply-To: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
-References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Thu, 25 Mar 2010 14:06:05 -0400
+Message-ID: <4BABA609.3060408@panasas.com>
+Date: Thu, 25 Mar 2010 20:06:01 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Benny Halevy <bhalevy@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <20100325101231.GU30031@ZenIV.linux.org.uk>	 <20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com>	 <4BAB54B0.3080109@panasas.com> <20100325130610.GZ30031@ZenIV.linux.org.uk>	 <4BAB656E.8020204@panasas.com> <20100325133746.GA30031@ZenIV.linux.org.uk>	 <4BAB6911.5020009@panasas.com> <20100325140457.GB30031@ZenIV.linux.org.uk>	 <4BAB72C1.6090002@panasas.com> <20100325152505.GD30031@ZenIV.linux.org.uk>	 <4BAB9D53.4000909@panasas.com> <1269539981.3648.31.camel@localhost.localdomain>
+In-Reply-To: <1269539981.3648.31.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+X-OriginalArrivalTime: 25 Mar 2010 18:06:04.0566 (UTC) FILETIME=[D5D2EB60:01CACC45]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is Gui Jianfeng's original patch.
----
- block/blk-cgroup.c  |  240 +++++++++++++++++++++++++++++++++++++++++++++++++++
- block/blk-cgroup.h  |   10 ++
- block/cfq-iosched.c |    2 
- 3 files changed, 251 insertions(+), 1 deletions(-)
+On 03/25/2010 07:59 PM, Trond Myklebust wrote:
+> On Thu, 2010-03-25 at 19:28 +0200, Boaz Harrosh wrote: 
+>> On 03/25/2010 05:25 PM, Al Viro wrote:
+> 
+>>> I'm going to send a fix for O_DIRECTORY case (restoring the behaviour
+>>> we had in 2.6.33) today, but NFS side of things also needs to be dealt
+>>> with.
+>>
+>> Thank you Al for fixing this, I hope some capable NFS person will take
+>> that issue to heart.
+> 
+> The NFSv4 fix is a trivial 1 liner. Pushed to bugfixes.
+> 
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 809451f..bf77b99 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -24,6 +24,13 @@ static LIST_HEAD(blkio_list);
- struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
- EXPORT_SYMBOL_GPL(blkio_root_cgroup);
- 
-+static inline void policy_insert_node(struct blkio_cgroup *blkcg,
-+				      struct blkio_policy_node *pn);
-+static inline void policy_delete_node(struct blkio_policy_node *pn);
-+static struct blkio_policy_node *policy_search_node(const struct blkio_cgroup *blkcg,
-+						 dev_t dev);
-+
-+
- static struct cgroup_subsys_state *blkiocg_create(struct cgroup_subsys *,
- 						  struct cgroup *);
- static int blkiocg_can_attach(struct cgroup_subsys *, struct cgroup *,
-@@ -154,6 +161,7 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
- 	struct blkio_group *blkg;
- 	struct hlist_node *n;
- 	struct blkio_policy_type *blkiop;
-+	struct blkio_policy_node *pn;
- 
- 	if (val < BLKIO_WEIGHT_MIN || val > BLKIO_WEIGHT_MAX)
- 		return -EINVAL;
-@@ -162,7 +170,13 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
- 	spin_lock(&blkio_list_lock);
- 	spin_lock_irq(&blkcg->lock);
- 	blkcg->weight = (unsigned int)val;
-+
- 	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
-+		pn = policy_search_node(blkcg, blkg->dev);
-+
-+		if (pn)
-+			continue;
-+
- 		list_for_each_entry(blkiop, &blkio_list, list)
- 			blkiop->ops.blkio_update_group_weight_fn(blkg,
- 					blkcg->weight);
-@@ -213,8 +227,227 @@ void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
- EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_dequeue_stats);
- #endif
- 
-+static int check_dev_num(dev_t dev)
-+{
-+	int part = 0;
-+	struct gendisk *disk;
-+
-+	disk = get_gendisk(dev, &part);
-+	if (!disk || part)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
-+static int policy_parse_and_set(char *buf, struct blkio_policy_node *newpn)
-+{
-+	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
-+	int ret;
-+	unsigned long major, minor, temp;
-+	int i = 0;
-+	dev_t dev;
-+
-+	memset(s, 0, sizeof(s));
-+
-+	while ((p = strsep(&buf, " ")) != NULL) {
-+		if (!*p)
-+			continue;
-+
-+		s[i++] = p;
-+
-+		/* Prevent from inputing too many things */
-+		if (i == 3)
-+			break;
-+	}
-+
-+	if (i != 2)
-+		return -EINVAL;
-+
-+	p = strsep(&s[0], ":");
-+	if (p != NULL)
-+		major_s = p;
-+	else
-+		return -EINVAL;
-+
-+	minor_s = s[0];
-+	if (!minor_s)
-+		return -EINVAL;
-+
-+	ret = strict_strtoul(major_s, 10, &major);
-+	if (ret)
-+		return -EINVAL;
-+
-+	ret = strict_strtoul(minor_s, 10, &minor);
-+	if (ret)
-+		return -EINVAL;
-+
-+	dev = MKDEV(major, minor);
-+
-+	ret = check_dev_num(dev);
-+	if (ret)
-+		return ret;
-+
-+	newpn->dev = dev;
-+
-+	if (s[1] == NULL)
-+		return -EINVAL;
-+
-+	ret = strict_strtoul(s[1], 10, &temp);
-+	if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
-+	    temp > BLKIO_WEIGHT_MAX)
-+		return -EINVAL;
-+
-+	newpn->weight =  temp;
-+
-+	return 0;
-+}
-+
-+unsigned int blkcg_get_weight(struct blkio_cgroup *blkcg,
-+				    dev_t dev)
-+{
-+	struct blkio_policy_node *pn;
-+
-+	pn = policy_search_node(blkcg, dev);
-+	if (pn)
-+		return pn->weight;
-+	else
-+		return blkcg->weight;
-+}
-+EXPORT_SYMBOL_GPL(blkcg_get_weight);
-+
-+static inline void policy_insert_node(struct blkio_cgroup *blkcg,
-+				      struct blkio_policy_node *pn)
-+{
-+	list_add(&pn->node, &blkcg->policy_list);
-+}
-+
-+/* Must be called with blkcg->lock held */
-+static inline void policy_delete_node(struct blkio_policy_node *pn)
-+{
-+	list_del(&pn->node);
-+}
-+
-+/* Must be called with blkcg->lock held */
-+static struct blkio_policy_node *policy_search_node(const struct blkio_cgroup *blkcg,
-+						 dev_t dev)
-+{
-+	struct blkio_policy_node *pn;
-+
-+	list_for_each_entry(pn, &blkcg->policy_list, node) {
-+		if (pn->dev == dev)
-+			return pn;
-+	}
-+
-+	return NULL;
-+}
-+
-+
-+static int blkiocg_weight_device_write(struct cgroup *cgrp, struct cftype *cft,
-+				const char *buffer)
-+{
-+	int ret = 0;
-+	char *buf;
-+	struct blkio_policy_node *newpn, *pn;
-+	struct blkio_cgroup *blkcg;
-+	struct blkio_group *blkg;
-+	int keep_newpn = 0;
-+	struct hlist_node *n;
-+	struct blkio_policy_type *blkiop;
-+
-+	buf = kstrdup(buffer, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	newpn = kzalloc(sizeof(*newpn), GFP_KERNEL);
-+	if (!newpn) {
-+		ret = -ENOMEM;
-+		goto free_buf;
-+	}
-+
-+	ret = policy_parse_and_set(buf, newpn);
-+	if (ret)
-+		goto free_newpn;
-+
-+	blkcg = cgroup_to_blkio_cgroup(cgrp);
-+
-+	spin_lock_irq(&blkcg->lock);
-+
-+	pn = policy_search_node(blkcg, newpn->dev);
-+	if (!pn) {
-+		if (newpn->weight != 0) {
-+			policy_insert_node(blkcg, newpn);
-+			keep_newpn = 1;
-+		}
-+		spin_unlock_irq(&blkcg->lock);
-+		goto update_io_group;
-+	}
-+
-+	if (newpn->weight == 0) {
-+		/* weight == 0 means deleteing a specific weight */
-+		policy_delete_node(pn);
-+		spin_unlock_irq(&blkcg->lock);
-+		goto update_io_group;
-+	}
-+	spin_unlock_irq(&blkcg->lock);
-+
-+	pn->weight = newpn->weight;
-+
-+update_io_group:
-+	/* update weight for each cfqg */
-+	spin_lock(&blkio_list_lock);
-+	spin_lock_irq(&blkcg->lock);
-+
-+	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
-+		if (newpn->dev == blkg->dev) {
-+			list_for_each_entry(blkiop, &blkio_list, list)
-+				blkiop->ops.blkio_update_group_weight_fn(blkg,
-+						newpn->weight ?
-+						newpn->weight :
-+						blkcg->weight);
-+		}
-+	}
-+
-+	spin_unlock_irq(&blkcg->lock);
-+	spin_unlock(&blkio_list_lock);
-+
-+free_newpn:
-+	if (!keep_newpn)
-+		kfree(newpn);
-+free_buf:
-+	kfree(buf);
-+	return ret;
-+}
-+
-+static int blkiocg_weight_device_read(struct cgroup *cgrp, struct cftype *cft,
-+				       struct seq_file *m)
-+{
-+	struct blkio_cgroup *blkcg;
-+	struct blkio_policy_node *pn;
-+
-+	seq_printf(m, "dev\tweight\n");
-+
-+	blkcg = cgroup_to_blkio_cgroup(cgrp);
-+	if (list_empty(&blkcg->policy_list))
-+		goto out;
-+
-+	spin_lock_irq(&blkcg->lock);
-+	list_for_each_entry(pn, &blkcg->policy_list, node) {
-+		seq_printf(m, "%u:%u\t%u\n", MAJOR(pn->dev),
-+			   MINOR(pn->dev), pn->weight);
-+	}
-+	spin_unlock_irq(&blkcg->lock);
-+out:
-+	return 0;
-+}
-+
- struct cftype blkio_files[] = {
- 	{
-+		.name = "weight_device",
-+		.read_seq_string = blkiocg_weight_device_read,
-+		.write_string = blkiocg_weight_device_write,
-+		.max_write_len = 256,
-+	},
-+	{
- 		.name = "weight",
- 		.read_u64 = blkiocg_weight_read,
- 		.write_u64 = blkiocg_weight_write,
-@@ -247,6 +480,7 @@ static void blkiocg_destroy(struct cgroup_subsys *subsys, struct cgroup *cgroup)
- 	unsigned long flags;
- 	struct blkio_group *blkg;
- 	struct blkio_policy_type *blkiop;
-+	struct blkio_policy_node *pn, *pntmp;
- 
- 	rcu_read_lock();
- remove_entry:
-@@ -276,7 +510,12 @@ remove_entry:
- 		blkiop->ops.blkio_unlink_group_fn(blkg);
- 	spin_unlock(&blkio_list_lock);
- 	goto remove_entry;
-+
- done:
-+	list_for_each_entry_safe(pn, pntmp, &blkcg->policy_list, node) {
-+		policy_delete_node(pn);
-+		kfree(pn);
-+	}
- 	free_css_id(&blkio_subsys, &blkcg->css);
- 	rcu_read_unlock();
- 	if (blkcg != &blkio_root_cgroup)
-@@ -307,6 +546,7 @@ done:
- 	spin_lock_init(&blkcg->lock);
- 	INIT_HLIST_HEAD(&blkcg->blkg_list);
- 
-+	INIT_LIST_HEAD(&blkcg->policy_list);
- 	return &blkcg->css;
- }
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 9e70c03..92296b8 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -29,6 +29,7 @@ struct blkio_cgroup {
- 	unsigned int weight;
- 	spinlock_t lock;
- 	struct hlist_head blkg_list;
-+	struct list_head policy_list; /* list of blkio_policy_node */
- };
- 
- struct blkio_group {
-@@ -50,6 +51,15 @@ struct blkio_group {
- 	unsigned long sectors;
- };
- 
-+struct blkio_policy_node {
-+	struct list_head node;
-+	dev_t dev;
-+	unsigned int weight;
-+};
-+
-+extern unsigned int blkcg_get_weight(struct blkio_cgroup *blkcg,
-+				     dev_t dev);
-+
- typedef void (blkio_unlink_group_fn) (struct blkio_group *blkg);
- typedef void (blkio_update_group_weight_fn) (struct blkio_group *blkg,
- 						unsigned int weight);
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 864b39a..d4d57a3 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -954,7 +954,6 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 	if (!cfqg)
- 		goto done;
- 
--	cfqg->weight = blkcg->weight;
- 	for_each_cfqg_st(cfqg, i, j, st)
- 		*st = CFQ_RB_ROOT;
- 	RB_CLEAR_NODE(&cfqg->rb_node);
-@@ -971,6 +970,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
- 	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
- 	blkiocg_add_blkio_group(blkcg, &cfqg->blkg, cfqd->queue,
- 					MKDEV(major, minor));
-+	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
- 
- 	/* Add group on cfqd list */
- 	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
+Thanks
+
+> Now to understand that screwed up xdr decode...
+> 
+
+Tell me if you need that I run any tests. I still have that
+failing setup if you need it.
+
+> Trond
+
+Boaz
+
+> ------------------------------------------------------------------------------------------ 
+> NFSv4: Fall back to ordinary lookup if nfs4_atomic_open() returns EISDIR
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+> 
+>  fs/nfs/dir.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index c6f2750..be46f26 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1025,12 +1025,12 @@ static struct dentry *nfs_atomic_lookup(struct inode *dir, struct dentry *dentry
+>  				res = NULL;
+>  				goto out;
+>  			/* This turned out not to be a regular file */
+> +			case -EISDIR:
+>  			case -ENOTDIR:
+>  				goto no_open;
+>  			case -ELOOP:
+>  				if (!(nd->intent.open.flags & O_NOFOLLOW))
+>  					goto no_open;
+> -			/* case -EISDIR: */
+>  			/* case -EINVAL: */
+>  			default:
+>  				goto out;
+> 
+> 
 
