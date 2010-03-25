@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663Ab0CYXDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:03:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1030 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082Ab0CYXDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:03:06 -0400
-Date: Thu, 25 Mar 2010 19:02:45 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: jens.axboe@oracle.com, mrubin@google.com, guijianfeng@cn.fujitsu.com,
-       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-       dpshah@google.com, Nauman Rafique <nauman@google.com>
-Subject: Re: [PATCH 2/4] Adds an RCU-protected pointer to request_queue
-	that makes it easy to
-Message-ID: <20100325230245.GE3041@redhat.com>
-References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com> <20100325180428.25299.27250.stgit@meat.mtv.corp.google.com>
+	id S1752851Ab0CYXMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 19:12:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47604 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752722Ab0CYXMr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 19:12:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=M2QBu3uihC3jmVmThMTZorrhj7otGBbGzaaDp/JwwaQi4jnLaN8qWzizwImDZHQxmC
+         zrm5IrpA+/SYRQUHI8uJviF97bHmvH1DLRxvVVBuv0XucQhWi5M2z92IDtwVSo01WZTj
+         pjR+vvTSJ4CS9BmcZXIBeTMDUxzy1YMkmFPdo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325180428.25299.27250.stgit@meat.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+References: <4BAAD5BB.7050101@samsung.com>
+	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
+	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
+	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
+	 <4BAB7D9F.4070807@intel.com>
+	 <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+Date: Thu, 25 Mar 2010 16:12:46 -0700
+X-Google-Sender-Auth: a9e6aeca9a801d3f
+Message-ID: <e9c3a7c21003251612l59d77753o8f56e2643a96fe0d@mail.gmail.com>
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+From: Dan Williams <dan.j.williams@intel.com>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+       Joonyoung Shim <jy0922.shim@samsung.com>,
+       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Ben Dooks <ben-linux@fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 11:04:28AM -0700, Chad Talbott wrote:
-> find the gendisk that the queue manages.
-> ---
->  block/blk-cgroup.c     |   10 ++++++----
->  block/blk-sysfs.c      |    4 ++++
->  include/linux/blkdev.h |    6 ++++++
->  3 files changed, 16 insertions(+), 4 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 917957d..809451f 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -179,16 +179,18 @@ static int blkiocg_##__VAR##_read(struct cgroup *cgroup,		\
->  	struct blkio_cgroup *blkcg;					\
->  	struct blkio_group *blkg;					\
->  	struct hlist_node *n;						\
-> +	struct gendisk *disk;						\
->  									\
->  	if (!cgroup_lock_live_group(cgroup))				\
->  		return -ENODEV;						\
->  									\
->  	blkcg = cgroup_to_blkio_cgroup(cgroup);				\
->  	rcu_read_lock();						\
-> -	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) {\
-> -		if (blkg->dev)						\
-> -			seq_printf(m, "%u:%u %lu\n", MAJOR(blkg->dev),	\
-> -				 MINOR(blkg->dev), blkg->__VAR);	\
-> +	hlist_for_each_entry_rcu(blkg, n, &blkcg->blkg_list, blkcg_node) { \
-> +		disk = rcu_dereference(blkg->queue->disk);		\
-> +		if (disk)						\
-> +			seq_printf(m, "%s %lu\n", disk->disk_name,	\
-> +				   blkg->__VAR);			\
->  	}								\
->  	rcu_read_unlock();						\
->  	cgroup_unlock();						\
-> diff --git a/block/blk-sysfs.c b/block/blk-sysfs.c
-> index 2ae2cb3..14cab6a 100644
-> --- a/block/blk-sysfs.c
-> +++ b/block/blk-sysfs.c
-> @@ -484,6 +484,8 @@ int blk_register_queue(struct gendisk *disk)
->  	if (!q->request_fn)
->  		return 0;
->  
-> +	rcu_assign_pointer(q->disk, disk);
-> +
->  	ret = elv_register_queue(q);
->  	if (ret) {
->  		kobject_uevent(&q->kobj, KOBJ_REMOVE);
-> @@ -505,6 +507,8 @@ void blk_unregister_queue(struct gendisk *disk)
->  	if (q->request_fn)
->  		elv_unregister_queue(q);
->  
-> +	rcu_assign_pointer(q->disk, NULL);
-> +
->  	kobject_uevent(&q->kobj, KOBJ_REMOVE);
->  	kobject_del(&q->kobj);
->  	blk_trace_remove_sysfs(disk_to_dev(disk));
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index ebd22db..e531cf2 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -441,6 +441,12 @@ struct request_queue
->  #if defined(CONFIG_BLK_DEV_BSG)
->  	struct bsg_class_device bsg_dev;
->  #endif
-> +
-> +	/*
-> +	 * an RCU-protected pointer that can be NULL when devices are
-> +	 * removed
-> +	 */
-> +	struct gendisk		*disk;
->  };
+On Thu, Mar 25, 2010 at 3:27 PM, jassi brar <jassisinghbrar@gmail.com> wrote:
+> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> jassi brar wrote:
+>>>>
+>>>> Perhaps Joonyoung can simply port over the stuff
+>>>> you need to this driver if you show your code.
+>>>
+>>> Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
+>>> _very_ surprised if any user found this implementation useful.
+>>> Let alone testing, this implementation can't even explain usability
+>>> for fast peripherals
+>>> with shallow FIFOs. I didn't give feedback for this patch because I am
+>>> not sure if this
+>>> is the right way to go at all.
+>>
+>> This is the wrong attitude.  If it were not for a simple oversight
+>> Joonyoung's driver would already be upstream for the past two kernel
+>> releases.  So you need to work together to improve that driver to
+>> incorporate what you need.
+> Nothing wrong in attitude here.
+> Giving feedback on the code only comes after one is convinced with the
+> overall approach taken. The last time I raised the PL330 driver issue,
+> most people were not enthusiastic with this drivers/dma/ approach.
+> I wasn't active mainline discussions when the driver was originally
+> submitted a few months ago.
+> And now my replies are not very 'polite' because theres a lot going on
+> in the background that people in public threads don't know about.
 
-Hi Chad,
+Thanks for clarifying.
 
-Where is the code to make sure gendisk does not go away if blk-cgroup code
-is referencing blkg->queue->disk under rcu lock? 
+>
+>
+>> It sounds like you just need to add an extension for the arch specific dma
+>> api.
+> I actually plan more than that.
+> Apart from inefficient design, JoonYoung's driver has made some fatal
+> assumptions
+> about PL330, which will result in DMA aborts if used with SoCs that implement
+> configuration of PL330 that is very different from Samsung SoCs'
+> Of course, I address all such issues that I can think of, in my implementation.
 
-Thanks
-Vivek
+Ok, I'll rely on acked-by's from the interested parties once your
+driver is out as I do not have a vested interest in this hardware,
+just the dmaengine framework issues.
+
+--
+Dan
