@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab0CYKQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:16:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49297 "EHLO mx1.redhat.com"
+	id S1753732Ab0CYKRN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:17:13 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58364 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753706Ab0CYKQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:16:29 -0400
-Date: Thu, 25 Mar 2010 11:14:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Ben Blum <bblum@google.com>, Jiri Slaby <jirislaby@gmail.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] kill the broken and deadlockable
-	cpuset_lock/cpuset_cpus_allowed_locked code
-Message-ID: <20100325101420.GA30779@redhat.com>
-References: <20100315091003.GA9123@redhat.com> <4BAAD1EB.4020201@cn.fujitsu.com>
+	id S1753442Ab0CYKRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:17:12 -0400
+Date: Thu, 25 Mar 2010 10:16:54 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+Message-ID: <20100325101653.GN2024@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-11-git-send-email-mel@csn.ul.ie> <20100324101927.0d54f4ad.kamezawa.hiroyu@jp.fujitsu.com> <20100324114056.GE21147@csn.ul.ie> <20100325093006.cd0361e6.kamezawa.hiroyu@jp.fujitsu.com> <20100325094826.GM2024@csn.ul.ie> <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4BAAD1EB.4020201@cn.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Miao Xie wrote:
->
-> on 2010-3-15 17:10, Oleg Nesterov wrote:
-> > This patch just states the fact the cpusets/cpuhotplug interaction is
-> > broken and removes the deadlockable code which only pretends to work.
-> >
-> > - cpuset_lock() doesn't really work. It is needed for
-> >   cpuset_cpus_allowed_locked() but we can't take this lock in
-> >   try_to_wake_up()->select_fallback_rq() path.
-> >
-> > - cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
-> >   callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
-> >   stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
-> >   cpuset_lock() and hangs forever because CPU is already dead and thus
-> >   T can't be scheduled.
->
-> The problem what you said don't exist, because the kernel already move T to
-> the active cpu when preparing to turn off a CPU.
+On Thu, Mar 25, 2010 at 06:50:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 25 Mar 2010 09:48:26 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > > In that case, compact_finished() can't
+> > > find there is a free chunk and do more work.  How about using a function like
+> > > 	 free_pcppages_bulk(zone, pcp->batch, pcp);
+> > > to bypass pcp list and freeing pages at once ?
+> > > 
+> > 
+> > I think you mean to drain the PCP lists while compaction is happening
+> > but is it justified? It's potentially a lot of IPI calls just to check
+> > if compaction can finish a little earlier. If the pages on the PCP lists
+> > are making that much of a difference to high-order page availability, it
+> > implies that the zone is pretty full and it's likely that compaction was
+> > avoided and we direct reclaimed.
+> > 
+> Ah, sorry for my short word again. I mean draining "local" pcp list because
+> a thread which run direct-compaction freed pages. IPI is not necessary and
+> overkill.
+> 
 
-we need cpuset_lock() to move T. please look at _cpu_down().
+Ah, I see now. There are two places that pages get freed.  release_freepages()
+at the end of compaction when it's too late for compact_finished() to be
+helped and within migration itself. Migration frees with either
+free_page() or more commonly put_page() with put_page() being the most
+frequently used. As free_page() is called on failure to migrate (rare),
+there is little help in changing it and I'd rather not modify how
+put_page() works.
 
-OK.
+I could add a variant of drain_local_pages() that drains just the local PCP of
+a given zone before compact_finished() is called. The cost would be a doubling
+of the number of times zone->lock is taken to do the drain. Is it
+justified? It seems overkill to me to take the zone->lock just in case
+compaction can finish a little earlier. It feels like it would be adding
+a guaranteed cost for a potential saving.
 
-	A task T holds callback_mutex, and it is bound to CPU 1.
-
-	_cpu_down(cpu => 1) is called by the task X.
-
-	_cpu_down()->stop_machine() spawns rt-threads for each cpu,
-	a thread running on CPU 1 preempts T and calls take_cpu_down()
-	which removes CPU 1 from online/active masks.
-
-	X continues, and does raw_notifier_call_chain(CPU_DEAD), this
-	calls migration_call(CPU_DEAD), and _this_ is what move the
-	tasks from the dead CPU.
-
-	migration_call(CPU_DEAD) calls cpuset_lock() and deadlocks.
-
-See?
-
-Oleg.
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
