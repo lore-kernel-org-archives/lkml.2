@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab0CYVcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 17:32:17 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:58359 "EHLO c60.cesmail.net"
+	id S1754307Ab0CYVc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 17:32:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51543 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751227Ab0CYVcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 17:32:15 -0400
-Subject: [PATCH TRY2] locking: annotate inline spinlocks and rwlocks on SMP
-From: Pavel Roskin <proski@gnu.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@redhat.com>, Josh Triplett <josht@us.ibm.com>
-Content-Type: text/plain
-Date: Thu, 25 Mar 2010 17:32:14 -0400
-Message-Id: <1269552734.2626.33.camel@mj>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1752643Ab0CYVc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 17:32:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [RFC 06/15] PM / Hibernate: swap, remove swap_map_handle usages
+Date: Thu, 25 Mar 2010 22:35:35 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <20100324203329.GG5798@elf.ucw.cz> <4BAA842A.6060906@gmail.com>
+In-Reply-To: <4BAA842A.6060906@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003252235.35500.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Wednesday 24 March 2010, Jiri Slaby wrote:
+> On 03/24/2010 09:33 PM, Pavel Machek wrote:
+> > On Tue 2010-03-23 17:17:34, Jiri Slaby wrote:
+> >> Some code, which will be moved out of swap.c, needs know nothing about
+> >> swap. There will be also other than swap writers later, so that it
+> >> won't make sense at all.
+> >>
+> >> Make it a global static in swap.c as a singleton.
+> > 
+> > I guess I just dislike global static. Logically, methods do operate on
+> > handles, so...
+> 
+> Ok, "upper layers" may get a handle via .get_reader/writer. The downside
+> is that they would have to get (void *) and pass (void *) down again. I
+> wanted to avoid that (taking into account that it's a singleton).
+> 
+> > I don't see a point and I do not think the change is an improvement.
+> 
+> The point was to avoid (void *)'s and save users from transferring
+> pointer as a handle. No matter what, the decision is not up to me,
+> discussion indeed welcome.
 
-My patch at https://patchwork.kernel.org/patch/84441/ didn't get any
-replies.
+The whole thing boils down to whether or not there may be more than one
+swap map in use at a time.
 
-Bogus sparse warnings actually make developers change spin_lock() to
-spin_lock_irqsave() to placate sparse, as it could be seen here:
-http://marc.info/?l=linux-wireless&m=126954991321895&w=2
+Perhaps it's better to use a static pointer, though?
 
-That's a patch I noticed because I read linux-wireless.  I think it's a
-safe bet that it's not the only patch inspired by the bogus sparse
-warnings.
+And I don't really know at this point how exactly this change is going to make
+your life easier down the road.  Care to elaborate?
 
-Locking is hard already, and we don't want sparse to confuse developers
-even more.  Linux code quality suffers because of that.
-
-If there are any people or lists I should forward my patch to, please
-let me know.
-
--- 
-Regards,
-Pavel Roskin
+Rafael
