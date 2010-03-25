@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205Ab0CYJ7d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:59:33 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37536 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab0CYJ7b (ORCPT
+	id S1753313Ab0CYKE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:04:58 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:39482 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab0CYKE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:59:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped anonymous pages
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100325092131.GK2024@csn.ul.ie> <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
-Message-Id: <20100325185200.6C8C.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 25 Mar 2010 18:59:25 +0900 (JST)
+	Thu, 25 Mar 2010 06:04:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=SfCZWEfm3yVMpeyVbe712Qko//gZSUrQMeZ6KUCZ2j2IdiKKBefysHarpGu46xiNpO
+         A47jh6vsUVC/sL5W6Aq12hsj9zrbZp4+e9ZBF6qTv9TRKwlDj0j7Frk5dlTvzfj0+vtz
+         Gtf0g0mtLBZki+VDK2mPe2+mRmHKLB0E6p0mk=
+From: Andrea Gelmini <andrea.gelmini@gelma.net>
+To: linux-doc@vger.kernel.org
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
+       Steven Whitehouse <swhiteho@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>, cluster-devel@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] GFS2 docs update
+Date: Thu, 25 Mar 2010 11:04:49 +0100
+Message-Id: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
+X-Mailer: git-send-email 1.7.0.3.296.g9776a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > Kosaki-san,
-> > > > 
-> > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
-> > > > 
-> > > >  But, this behavior of unmap_and_move() requires access to _freed_
-> > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
-> > > >  it't not good habit in general.
-> > > > 
-> > > >  After direct compaction, page-migration will be one of "core" code of
-> > > >  memory management. Then, I agree to patch [1/11] as our direction for
-> > > >  keeping sanity and showing direction to more updates. Maybe adding
-> > > >  refcnt and removing RCU in futuer is good.
-> > > 
-> > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
-> > > is meaningless now.
-> > 
-> > Christoph is opposed to removing it because of cache-hotness issues more
-> > so than use-after-free concerns. The refcount is needed with or without
-> > SLAB_DESTROY_BY_RCU.
-> > 
-> 
-> I wonder a code which the easiest to be read will be like following.
-> ==
-> 
->         if (PageAnon(page)) {
->                 struct anon_vma anon = page_lock_anon_vma(page);
-> 		/* to take this lock, this page must be mapped. */
-> 		if (!anon_vma)
-> 			goto uncharge;
-> 		increase refcnt
-> 		page_unlock_anon_vma(anon);
->         }
-> 	....
-> ==
+Now http://sources.redhat.com/cluster/ is redirected to
+http://sources.redhat.com/cluster/wiki/
 
-This seems very good and acceptable to me. This refcnt usage
-obviously reduce rcu-lock holding time.
+Also fixed tabs in the end.
 
-I still think no refcount doesn't cause any disaster. but I agree
-this is forward step patch.
+Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+---
+ Documentation/filesystems/gfs2.txt |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-thanks.
-
-
-> and
-> ==
-> void anon_vma_free(struct anon_vma *anon)
-> {
-> 	/*
-> 	 * To increase refcnt of anon-vma, anon_vma->lock should be held by
-> 	 * page_lock_anon_vma(). It means anon_vma has a "mapped" page.
-> 	 * If this anon is freed by unmap or exit, all pages under this anon
-> 	 * must be unmapped. Then, just checking refcnt without lock is ok.
-> 	 */
-> 	if (check refcnt > 0)
-> 		return do nothing
-> 	kmem_cache_free(anon);
-> }
-> ==
-> 
-> Then, rcu_read_lock can be removed in clean way.
-> 
-> Thanks,
-> -Kame
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
+diff --git a/Documentation/filesystems/gfs2.txt b/Documentation/filesystems/gfs2.txt
+index 5e3ab8f..0b59c02 100644
+--- a/Documentation/filesystems/gfs2.txt
++++ b/Documentation/filesystems/gfs2.txt
+@@ -1,7 +1,7 @@
+ Global File System
+ ------------------
+ 
+-http://sources.redhat.com/cluster/
++http://sources.redhat.com/cluster/wiki/
+ 
+ GFS is a cluster file system. It allows a cluster of computers to
+ simultaneously use a block device that is shared between them (with FC,
+@@ -36,11 +36,11 @@ GFS2 is not on-disk compatible with previous versions of GFS, but it
+ is pretty close.
+ 
+ The following man pages can be found at the URL above:
+-  fsck.gfs2	to repair a filesystem
+-  gfs2_grow	to expand a filesystem online
+-  gfs2_jadd	to add journals to a filesystem online
+-  gfs2_tool	to manipulate, examine and tune a filesystem
++  fsck.gfs2		to repair a filesystem
++  gfs2_grow		to expand a filesystem online
++  gfs2_jadd		to add journals to a filesystem online
++  gfs2_tool		to manipulate, examine and tune a filesystem
+   gfs2_quota	to examine and change quota values in a filesystem
+   gfs2_convert	to convert a gfs filesystem to gfs2 in-place
+   mount.gfs2	to help mount(8) mount a filesystem
+-  mkfs.gfs2	to make a filesystem
++  mkfs.gfs2		to make a filesystem
+-- 
+1.7.0.2.326.gd00f
 
