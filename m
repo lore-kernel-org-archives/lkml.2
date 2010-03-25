@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab0CYLQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 07:16:50 -0400
-Received: from www.tglx.de ([62.245.132.106]:52285 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab0CYLQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 07:16:48 -0400
-Date: Thu, 25 Mar 2010 12:16:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-In-Reply-To: <20100325105033.35bceffd@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LFD.2.00.1003251211350.3147@localhost.localdomain>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
- <20100325105033.35bceffd@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754374Ab0CYLTh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 07:19:37 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:22945 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750903Ab0CYLTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 07:19:36 -0400
+Message-ID: <4BAB46C4.1050604@panasas.com>
+Date: Thu, 25 Mar 2010 13:19:32 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Boaz Harrosh <bharrosh@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com> <4BAA4CAC.6060104@panasas.com>	<4BAA5035.1060906@panasas.com> <4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk> <20100325105406.GW30031@ZenIV.linux.org.uk>
+In-Reply-To: <20100325105406.GW30031@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2010 11:19:35.0350 (UTC) FILETIME=[0CB7E560:01CACC0D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010, Alan Cox wrote:
-
-> > Which leads to the general question why we have that IRQF_DISABLED
-> > shite at all. AFAICT the historical reason were IDE drivers, but we
-> > grew other abusers like USB, SCSI and other crap which runs hard irq
-> > handlers for hundreds of micro seconds in the worst case.
+On Mar. 25, 2010, 12:54 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> On Thu, Mar 25, 2010 at 10:12:31AM +0000, Al Viro wrote:
+>> On Thu, Mar 25, 2010 at 11:39:38AM +0200, Boaz Harrosh wrote:
+>>
+>>> It makes no difference, fails just the same. Would an "strace" help?
+>> It might, especially if you ran it for identical repositories on local
+>> fs and on NFS; at least that way it would be possible to see where do
+>> they diverge...
 > 
-> Anyone you've forgotten to offend ?
+> I wonder...  What happens if you add
+> 	if (error == -EISDIR)
+> 		printk("blah: %s", pathname);
 
-Hmm, not sure. Have not measured IRQ handler run times for quite a
-while :)
+I'll add that check too.
 
-> Pretty much the only 'core' driver today which enables IRQs in the irq
-> handlers and needs it is the old IDE layer. There are also a couple of
-> drivers which play games with disable/enable_irq in the IRQ paths for
-> other reasons (lack of irq threads when written and a hardware model thats
-> totally SMP unfriendly). 8390 is the obvious one here and it at least
-> would be far far saner using threaded IRQs and normal locking with IRQs
-> unmasked.
+Benny
 
-Right, but that's not the problem here. We talk about a (hopefully)
-well written interrupt handler which runs for a very short
-time. What's the point of running it with interrupts enabled ?
-Nothing, we just run into stack overflow problems. So what's better:
-an unreliable and ugly hackaround or just avoiding the possible stack
-overflow in the first place ?
-
-Thanks,
-
-	tglx
-
-
+> right after do_lookup() call in do_last()?  That would separate -EISDIR
+> coming from NFS from the same thing coming from fs/namei.c...
+> _______________________________________________
+> pNFS mailing list
+> pNFS@linux-nfs.org
+> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
