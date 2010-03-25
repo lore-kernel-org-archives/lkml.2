@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab0CYKcV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:32:21 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:35230 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957Ab0CYKcU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:32:20 -0400
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-MIME-Version: 1.0
-Date: Thu, 25 Mar 2010 11:32:16 +0100
-From: Marc Zyngier <maz@misterjones.org>
-Cc: <dan.j.williams@intel.com>, <linus.ml.walleij@gmail.com>,
-       <kyungmin.park@samsung.com>, <linux-kernel@vger.kernel.org>,
-       <linux-arm-kernel@lists.infradead.org>
-Organization: Metropolis
-In-Reply-To: <4BAB357B.7040108@samsung.com>
-References: <4BAAD5BB.7050101@samsung.com> <20100325054430.165311fa@taxman.wild-wind.fr.eu.org> <4BAB264C.2090502@samsung.com> <960f4547118a62d5863ee38ba760844c@localhost> <4BAB357B.7040108@samsung.com>
-Message-ID: <3eeda0228e2396b052b17689e2f3318e@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
+	id S1754117Ab0CYKdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:33:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23933 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753957Ab0CYKdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:33:35 -0400
+Subject: Re: [PATCH] GFS2 docs update
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
+References: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
 Content-Type: text/plain; charset="UTF-8"
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: jy0922.shim@samsung.com, dan.j.williams@intel.com, linus.ml.walleij@gmail.com, kyungmin.park@samsung.com, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+Organization: Red Hat UK Ltd
+Date: Thu, 25 Mar 2010 10:37:17 +0000
+Message-ID: <1269513437.2835.14.camel@localhost>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-On Thu, 25 Mar 2010 19:05:47 +0900, Joonyoung Shim
-<jy0922.shim@samsung.com> wrote:
-> On 3/25/2010 6:32 PM, Marc Zyngier wrote:
->> On Thu, 25 Mar 2010 18:01:00 +0900, Joonyoung Shim
->> <jy0922.shim@samsung.com> wrote:
->>> On 3/25/2010 2:44 PM, Marc Zyngier wrote:
->>>> On Thu, 25 Mar 2010 12:17:15 +0900
->>>> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
->>>>
->>>>> +	writew(imm, desc_pool_virt);
->>> Right. The write[bwl] is api for address ioremapped of io device. I
-will
->>> change these.
->>>
->>>> Does anything ensure that this won't generate an unaligned access?
->>>>
->>> PL330 DMA controller fetches variable length instructions that consist
->> of
->>> one to six bytes, so i think unaligned access is no problem.
->> 
->> I'm not too concerned about the device side of things. I'm more worried
->> about the CPU access when writing the 'imm' value to memory.
->> 
->> Consider desc_pool_virt 16bit aligned when entering the function.
-Writing
->> the opcode makes it unaligned and then writing the 'imm' value will
->> result
->> as an unaligned access.
->> 
+Now in the GFS2 -nmw git tree. Thanks,
+
+Steve.
+
+On Thu, 2010-03-25 at 11:04 +0100, Andrea Gelmini wrote:
+> Now http://sources.redhat.com/cluster/ is redirected to
+> http://sources.redhat.com/cluster/wiki/
 > 
-> Why desc_pool_virt should be aligned more than 16bit?
+> Also fixed tabs in the end.
+> 
+> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> ---
+>  Documentation/filesystems/gfs2.txt |   12 ++++++------
+>  1 files changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/gfs2.txt b/Documentation/filesystems/gfs2.txt
+> index 5e3ab8f..0b59c02 100644
+> --- a/Documentation/filesystems/gfs2.txt
+> +++ b/Documentation/filesystems/gfs2.txt
+> @@ -1,7 +1,7 @@
+>  Global File System
+>  ------------------
+>  
+> -http://sources.redhat.com/cluster/
+> +http://sources.redhat.com/cluster/wiki/
+>  
+>  GFS is a cluster file system. It allows a cluster of computers to
+>  simultaneously use a block device that is shared between them (with FC,
+> @@ -36,11 +36,11 @@ GFS2 is not on-disk compatible with previous versions of GFS, but it
+>  is pretty close.
+>  
+>  The following man pages can be found at the URL above:
+> -  fsck.gfs2	to repair a filesystem
+> -  gfs2_grow	to expand a filesystem online
+> -  gfs2_jadd	to add journals to a filesystem online
+> -  gfs2_tool	to manipulate, examine and tune a filesystem
+> +  fsck.gfs2		to repair a filesystem
+> +  gfs2_grow		to expand a filesystem online
+> +  gfs2_jadd		to add journals to a filesystem online
+> +  gfs2_tool		to manipulate, examine and tune a filesystem
+>    gfs2_quota	to examine and change quota values in a filesystem
+>    gfs2_convert	to convert a gfs filesystem to gfs2 in-place
+>    mount.gfs2	to help mount(8) mount a filesystem
+> -  mkfs.gfs2	to make a filesystem
+> +  mkfs.gfs2		to make a filesystem
 
-There is reason for desc_pool_virt to be 16bit aligned. It's just that you
-have 50% chance that it will.
-In such case, you will write 'imm' to a non 16bit-aligned address. In my
-book, that's bad.
 
-Same for pl330_dmamov(), which tries to write a 32bit value without
-checking the proper alignment.
-In such case, please use the put_unaligned macro to handle the possible
-unaligned access.
-
-        M.
--- 
-Who you jivin' with that Cosmik Debris?
