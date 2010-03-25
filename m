@@ -1,82 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab0CYNGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:06:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50156 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab0CYNGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:06:13 -0400
-Date: Thu, 25 Mar 2010 13:06:10 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Benny Halevy <bhalevy@panasas.com>
-Cc: "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-Message-ID: <20100325130610.GZ30031@ZenIV.linux.org.uk>
-References: <4BAA5035.1060906@panasas.com>
- <4BAA52A8.2080304@panasas.com>
- <20100324180622.GS30031@ZenIV.linux.org.uk>
- <4BAA5955.4000001@gmail.com>
- <20100324185604.GT30031@ZenIV.linux.org.uk>
- <4BAB2F5A.30409@panasas.com>
- <20100325101231.GU30031@ZenIV.linux.org.uk>
- <20100325105406.GW30031@ZenIV.linux.org.uk>
- <4BAB51F5.609@panasas.com>
- <4BAB54B0.3080109@panasas.com>
+	id S1752875Ab0CYNGp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:06:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489Ab0CYNGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 09:06:43 -0400
+Message-ID: <4BAB5FF1.7060106@redhat.com>
+Date: Thu, 25 Mar 2010 14:06:57 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAB54B0.3080109@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Giel van Schijndel <me@mortis.eu>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for F71808E
+ and F71889
+References: <1269385936-3440-1-git-send-email-me@mortis.eu>	<1269385936-3440-2-git-send-email-me@mortis.eu>	<1269385936-3440-3-git-send-email-me@mortis.eu>	<1269385936-3440-4-git-send-email-me@mortis.eu>	<4BA9CF57.4030504@redhat.com>	<20100324093651.GG6368@salidar.me.mortis.eu>	<4BA9EA5C.9060506@redhat.com>	<20100324153550.GK6368@salidar.me.mortis.eu>	<20100324155151.2482952f@lxorguk.ukuu.org.uk>	<20100325085450.GA20126@salidar.me.mortis.eu>	<20100325104014.GC20126@salidar.me.mortis.eu> <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 02:18:56PM +0200, Benny Halevy wrote:
+Hi Giel,
 
-> Indeed this error is coming from the server:
-> 
-> nfsd_dispatch: vers 4 proc 1                                                                            
-> nfsv4 compound op #1/7: 22 (OP_PUTFH)                                                                   
-> nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
-> nfsv4 compound op ffff880076734078 opcnt 7 #1: 22: status 0                                             
-> nfsv4 compound op #2/7: 32 (OP_SAVEFH)                                                                  
-> nfsv4 compound op ffff880076734078 opcnt 7 #2: 32: status 0                                             
-> nfsv4 compound op #3/7: 18 (OP_OPEN)                                                                    
-> NFSD: nfsd4_open filename pack op_stateowner (null)                                                     
-> renewing client (clientid 4bab503e/00000002)                                                            
-> nfsd: nfsd_lookup(fh 16: 01010001 00000000 000e6592 345b9f25 00000000 00000000, pack)                   
-> nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
-> nfsd: fh_compose(exp 08:05/106497 objects/pack, ino=943508)                                             
-> nfsd: fh_verify(16: 01010001 00000000 000e6594 345b9f26 00000000 00000000)                              
-> nfsv4 compound op ffff880076734078 opcnt 7 #3: 18: status 21                                            
-> nfsv4 compound returned 21                                                                              
+On 03/25/2010 01:50 PM, Alan Cox wrote:
+> O>  Using Alan's patch and the one following the dashed line I can implement
+>> (and have already done so) a separate watchdog driver for the Fintek
+>> F71808E.
+>>
+>> Should I just ask for this patch to be applied together with Alan's?
+>> Then submit the new driver? (I'm a bit new to the non-technical aspects
+>> of Linux kernel development).
+>
+> I'd expect to see a submission of three patches I think
+>
+> 1. Patch adding the muxed resource support
+> 2. Patch making the hwmon driver use it
+> 3. Patch adding the new driver which needs it
+>
+> and then we have a few other bits of code that probably should adopt it,
+> but that is a separate matter and other maintainers can do that bit.
+>
 
-Ho-hum...  So it hits the "let's try to open it atomically" path and
-gets told to FOAD by server (as it should, of course).
+What Alan said :)
 
-And if we see different behaviour after ls -l, presumably that's a
-difference between ->lookup() and ->d_revalidate() paths on client...
+Although I'm not sure what the proper place is to post this entire set,
+I guess linux-kernel itself, with lm_sensors in the CC.
 
-OK, I think I see what's going on in this case.  However, it doesn't
-explain everything; my current theory is that we used to get LOOKUP_DIRECTORY
-on the last components in O_DIRECTORY opens and we don't do that now.
-That used to derail the is_atomic_open(), now it's hit and there we go.
+Regards,
 
-It's not hard to verify (and it might take care of this testcase), but
-I still have questions about the way this code used to work *without*
-O_DIRECTORY.
-
-Let's try this: before do_lookup() call there add
-	if (*want_dir)
-		nd->flags |= LOOKUP_DIRECTORY;
-and see how does it behave.
-
-However, even if it does help, it doesn't explain everything.  Normal
-open() on a directory without O_DIRECTORY if flags shouldn't fail with
--EISDIR.  How did that manage to avoid it all along?
+Hans
