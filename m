@@ -1,212 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab0CYF7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 01:59:23 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:33439 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab0CYF7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 01:59:20 -0400
-Date: Thu, 25 Mar 2010 14:58:13 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-mm <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>, Wu Fengguang <fengguang.wu@intel.com>,
-       Matt Mackall <mpm@selenic.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH] [BUGFIX] pagemap: fix pfn calculation for hugepage (v3)
-Message-ID: <20100325055813.GA3835@spritzerA.linux.bs1.fc.nec.co.jp>
+	id S1752696Ab0CYGLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 02:11:45 -0400
+Received: from crca.org.au ([74.207.252.120]:46989 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751840Ab0CYGLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 02:11:44 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BAAFED5.6070501@crca.org.au>
+Date: Thu, 25 Mar 2010 17:12:37 +1100
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pavel Machek <pavel@ucw.cz>
+CC: linux-pm@lists.linux-foundation.org, Jiri Slaby <jslaby@suse.cz>,
+       jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] what the patches do Re: [RFC 10/15] PM / Hibernate:
+ user, implement user_ops reader
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>	<1269361063-3341-10-git-send-email-jslaby@suse.cz>	<20100325053003.GB12935@elf.ucw.cz> <4BAAF7DA.30506@crca.org.au>
+In-Reply-To: <4BAAF7DA.30506@crca.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we look into pagemap using page-types with option -p, the value
-of pfn for hugepages looks wrong (see below.)
-This is because pte was evaluated only once for one vma
-although it should be updated for each hugepage. This patch fixes it.
+Hi again.
 
-  $ page-types -p 3277 -Nl -b huge
-  voffset   offset  len     flags
-  7f21e8a00 11e400  1       ___U___________H_G________________
-  7f21e8a01 11e401  1ff     ________________TG________________
-               ^^^
-  7f21e8c00 11e400  1       ___U___________H_G________________
-  7f21e8c01 11e401  1ff     ________________TG________________
-               ^^^
+On 25/03/10 16:42, Nigel Cunningham wrote:
+> On 25/03/10 16:30, Pavel Machek wrote:
+> [...]
+>
+>> I have some problems with sws_module_ops interface (handcoded locking
+>> is too ugly to live), but it is better than I expected. But there may
+>> be better solution available, one that does not need two interfaces to
+>> maintain (we can't really get rid of userland interface). What about
+>> this?
+>
+> Just picking up on that bracketed part: Can we flag the userland
+> interface (and uswsusp) as being planned for eventual removal now... or
+> at least agree to work toward that?
+>
+> I'm asking because if we're going to make a go of getting the in-kernel
+> code in much better shape, and we have Rafael, Jiri and I - and you? -
+> all pulling in the same direction to improve it, there's going to come a
 
-One hugepage contains 1 head page and 511 tail pages in x86_64 and
-each two lines represent each hugepage. Voffset and offset mean
-virtual address and physical address in the page unit, respectively.
-The different hugepages should not have the same offset value.
+I realised after sending this that the " - and you? - " was ambiguous. I 
+wasn't meaning to suggest that you might pull in a different direction, 
+but rather uncertainty as to whether you might help with the effort - 
+it's been a while (AFAIR) since you've done any hibernaton patches.
 
-With this patch applied:
+Humble apologies for the ambiguity!
 
-  $ page-types -p 3386 -Nl -b huge
-  voffset   offset   len    flags
-  7fec7a600 112c00   1      ___UD__________H_G________________
-  7fec7a601 112c01   1ff    ________________TG________________
-               ^^^
-  7fec7a800 113200   1      ___UD__________H_G________________
-  7fec7a801 113201   1ff    ________________TG________________
-               ^^^
-               OK
-
-More info.
- - This patch modifies walk_page_range()'s hugepage walker.
-   But the change only affects pagemap_read(), which is the only
-   caller of hugepage callback.
- - Without this patch, hugetlb_entry() callback is called per vma,
-   that doesn't match the natural expectation from its name.
- - With this patch, hugetlb_entry() is called per hugepte entry
-   and the callback can become much simpler.
-
-Changelog from v2:
- - update description
-
-Changelog from v1:
- - add hugetlb entry walker in mm/pagewalk.c
-   (the idea based on Kamezawa-san's patch)
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: Matt Mackall <mpm@selenic.com>
----
- fs/proc/task_mmu.c |   27 +++++++--------------------
- include/linux/mm.h |    4 ++--
- mm/pagewalk.c      |   47 +++++++++++++++++++++++++++++++++++++----------
- 3 files changed, 46 insertions(+), 32 deletions(-)
-
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 2a3ef17..9635f0b 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -662,31 +662,18 @@ static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
- 	return pme;
- }
- 
--static int pagemap_hugetlb_range(pte_t *pte, unsigned long addr,
--				 unsigned long end, struct mm_walk *walk)
-+/* This function walks within one hugetlb entry in the single call */
-+static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-+				 unsigned long addr, unsigned long end,
-+				 struct mm_walk *walk)
- {
--	struct vm_area_struct *vma;
- 	struct pagemapread *pm = walk->private;
--	struct hstate *hs = NULL;
- 	int err = 0;
-+	u64 pfn;
- 
--	vma = find_vma(walk->mm, addr);
--	if (vma)
--		hs = hstate_vma(vma);
- 	for (; addr != end; addr += PAGE_SIZE) {
--		u64 pfn = PM_NOT_PRESENT;
--
--		if (vma && (addr >= vma->vm_end)) {
--			vma = find_vma(walk->mm, addr);
--			if (vma)
--				hs = hstate_vma(vma);
--		}
--
--		if (vma && (vma->vm_start <= addr) && is_vm_hugetlb_page(vma)) {
--			/* calculate pfn of the "raw" page in the hugepage. */
--			int offset = (addr & ~huge_page_mask(hs)) >> PAGE_SHIFT;
--			pfn = huge_pte_to_pagemap_entry(*pte, offset);
--		}
-+		int offset = (addr & ~hmask) >> PAGE_SHIFT;
-+		pfn = huge_pte_to_pagemap_entry(*pte, offset);
- 		err = add_to_pagemap(addr, pfn, pm);
- 		if (err)
- 			return err;
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f3b473a..86bf8a8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -783,8 +783,8 @@ struct mm_walk {
- 	int (*pmd_entry)(pmd_t *, unsigned long, unsigned long, struct mm_walk *);
- 	int (*pte_entry)(pte_t *, unsigned long, unsigned long, struct mm_walk *);
- 	int (*pte_hole)(unsigned long, unsigned long, struct mm_walk *);
--	int (*hugetlb_entry)(pte_t *, unsigned long, unsigned long,
--			     struct mm_walk *);
-+	int (*hugetlb_entry)(pte_t *, unsigned long,
-+			     unsigned long, unsigned long, struct mm_walk *);
- 	struct mm_struct *mm;
- 	void *private;
- };
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index 7b47a57..8b1a2ce 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -80,6 +80,37 @@ static int walk_pud_range(pgd_t *pgd, unsigned long addr, unsigned long end,
- 	return err;
- }
- 
-+#ifdef CONFIG_HUGETLB_PAGE
-+static unsigned long hugetlb_entry_end(struct hstate *h, unsigned long addr,
-+				       unsigned long end)
-+{
-+	unsigned long boundary = (addr & huge_page_mask(h)) + huge_page_size(h);
-+	return boundary < end ? boundary : end;
-+}
-+
-+static int walk_hugetlb_range(struct vm_area_struct *vma,
-+			      unsigned long addr, unsigned long end,
-+			      struct mm_walk *walk)
-+{
-+	struct hstate *h = hstate_vma(vma);
-+	unsigned long next;
-+	unsigned long hmask = huge_page_mask(h);
-+	pte_t *pte;
-+	int err = 0;
-+
-+	do {
-+		next = hugetlb_entry_end(h, addr, end);
-+		pte = huge_pte_offset(walk->mm, addr & hmask);
-+		if (pte && walk->hugetlb_entry)
-+			err = walk->hugetlb_entry(pte, hmask, addr, next, walk);
-+		if (err)
-+			return err;
-+	} while (addr = next, addr != end);
-+
-+	return 0;
-+}
-+#endif
-+
- /**
-  * walk_page_range - walk a memory map's page tables with a callback
-  * @mm: memory map to walk
-@@ -128,20 +159,16 @@ int walk_page_range(unsigned long addr, unsigned long end,
- 		vma = find_vma(walk->mm, addr);
- #ifdef CONFIG_HUGETLB_PAGE
- 		if (vma && is_vm_hugetlb_page(vma)) {
--			pte_t *pte;
--			struct hstate *hs;
--
- 			if (vma->vm_end < next)
- 				next = vma->vm_end;
--			hs = hstate_vma(vma);
--			pte = huge_pte_offset(walk->mm,
--					      addr & huge_page_mask(hs));
--			if (pte && !huge_pte_none(huge_ptep_get(pte))
--			    && walk->hugetlb_entry)
--				err = walk->hugetlb_entry(pte, addr,
--							  next, walk);
-+			/*
-+			 * Hugepage is very tightly coupled with vma, so
-+			 * walk through hugetlb entries within a given vma.
-+			 */
-+			err = walk_hugetlb_range(vma, addr, next, walk);
- 			if (err)
- 				break;
-+			pgd = pgd_offset(walk->mm, next);
- 			continue;
- 		}
- #endif
--- 
-1.7.0
+Nigel
