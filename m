@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab0CYTl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 15:41:58 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48356
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab0CYTl5 (ORCPT
+	id S1754619Ab0CYTmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 15:42:22 -0400
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:57384 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab0CYTmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 15:41:57 -0400
-Date: Thu, 25 Mar 2010 12:42:20 -0700 (PDT)
-Message-Id: <20100325.124220.258885098.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: mingo@elte.hu, peterz@infradead.org, tglx@linutronix.de,
-       andi@firstfloor.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-       jesse.brandeburg@intel.com
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.00.1003251206550.3721@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
-	<20100325182930.GA7709@elte.hu>
-	<alpine.LFD.2.00.1003251206550.3721@i5.linux-foundation.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 25 Mar 2010 15:42:20 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 15:42:20 EDT
+Date: Thu, 25 Mar 2010 15:36:04 -0400 (EDT)
+From: =?utf-8?Q?J=C3=A9r=C3=B4me_Oufella?= 
+	<jerome.oufella@savoirfairelinux.com>
+To: Michael Buesch <mb@bu3sch.de>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Message-ID: <566941124.2751269545764521.JavaMail.root@mail.savoirfairelinux.com>
+In-Reply-To: <1226966206.2731269545548579.JavaMail.root@mail.savoirfairelinux.com>
+Subject: gpiolib: irq functions not implemented on x86
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.88.110.46]
+X-Mailer: Zimbra 5.0.19_GA_2995.UBUNTU8_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.19_GA_2995.UBUNTU8_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 25 Mar 2010 12:10:22 -0700 (PDT)
+Hi,
 
-> 
-> 
-> On Thu, 25 Mar 2010, Ingo Molnar wrote:
->> 
->> So the patch below should at most trigger bugs in areas that need fixing 
->> anyway, and i'm quite sure that under no circumstance would it cause 
->> unforeseen problems in 'thousands of drivers'.
-> 
-> If we do this, then we should just remove all the IRQF_DISABLED code in 
-> kernel/irq/manage.c too, and basically make IRQF_DISABLED a clear no-op 
-> (still leave it around as a #define, to not break any users). 
+I wrote a gpiolib implementation for Technologic Systems TS-5500 boards (x86)
+custom GPIO lines. Some of their GPIO lines are directly hooked to CPU (ElanSC520)
+GPIRQ lines, so they can trigger IRQs.
 
-FWIW, I'm currently using IRQF_DISABLED for virtual network
-device interrupts on sparc64 as a workaround for some stack
-overflow issues.
+However, looking at arch/x86/include/asm/gpio.h:
+/*
+ * Not implemented, yet.
+ */
+static inline int gpio_to_irq(unsigned int gpio)
+{
+        return -ENOSYS;
+}
 
-This change will just force me to work harder to find out a better way
-to fix the problem, so don't let my issue hold this back, it's just
-an FYI...
+gpio_to_irq()/irq_to_gpio() are not defined on x86 yet.
+
+Q: Is there a reason not to have it call gpiolib's __gpio_to_irq(), as done 
+for other gpiolib functions defined here ? such as
+
+-       return -ENOSYS;
++       return __gpio_to_irq(gpio);
+
+
+Thanks
+Jerome Oufella
