@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab0CYBR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 21:17:58 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36376 "EHLO e6.ny.us.ibm.com"
+	id S1754582Ab0CYBXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:23:32 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:55119 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754400Ab0CYBR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 21:17:56 -0400
-Date: Wed, 24 Mar 2010 18:17:53 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Christoffer Dall <christofferdall@christofferdall.dk>,
-       Oren Laadan <orenl@cs.columbia.edu>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       containers <containers@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
-Message-ID: <20100325011753.GF5704@count0.beaverton.ibm.com>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
- <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
- <20100323205342.GA19572@n2100.arm.linux.org.uk>
- <20100324020342.GB5704@count0.beaverton.ibm.com>
- <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
- <20100324140252.GC5704@count0.beaverton.ibm.com>
- <4BAA3586.1020604@cs.columbia.edu>
- <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com>
- <20100325011132.GE5704@count0.beaverton.ibm.com>
-MIME-Version: 1.0
+	id S1754400Ab0CYBXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 21:23:31 -0400
+Date: Thu, 25 Mar 2010 02:23:16 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc 5/5] mincore: transparent huge page support
+Message-ID: <20100325012316.GB27304@cmpxchg.org>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org> <1269354902-18975-6-git-send-email-hannes@cmpxchg.org> <20100324224858.GP10659@random.random>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100325011132.GE5704@count0.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100324224858.GP10659@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 06:11:32PM -0700, Matt Helsley wrote:
-> On Wed, Mar 24, 2010 at 08:36:39PM +0100, Christoffer Dall wrote:
-<snip>
-> > Re-using the assembly code or factoring it out so that it can be used
-> > from multiple places doesn't seem very pleasing to me, as the assembly
-> > code is in the critical path and written specifically for the context
-> > of a process entering the kernel. Please correct me if I'm wrong.
-> > 
-> > I imagine simply a function in C, more or less re-implementing the
-> > logic that's already in entry-common.S, might do the trick. I wouldn't
-> > worry much about the performance in this case as it will not be used
-> > often. The following _untested_ snippet illustrates my idea:
-> > 
-> > ---
-> >  arch/arm/include/asm/syscall.h |   93 +++++++++++++++++++++++++++++++++++++++-
-> >  1 files changed, 92 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-> > index 3b3248f..a7f2615 100644
-> > --- a/arch/arm/include/asm/syscall.h
-> > +++ b/arch/arm/include/asm/syscall.h
-> > @@ -10,10 +10,101 @@
-> >  #ifndef _ASM_ARM_SYSCALLS_H
-> >  #define _ASM_ARM_SYSCALLS_H
-> > 
-> > +static inline int get_swi_instruction(struct task_struct *task,
-> > +				      struct pt_regs *regs,
-> > +				      unsigned long *instr)
+On Wed, Mar 24, 2010 at 11:48:58PM +0100, Andrea Arcangeli wrote:
+> On Tue, Mar 23, 2010 at 03:35:02PM +0100, Johannes Weiner wrote:
+> > +static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+> > +			unsigned long addr, unsigned long end,
+> > +			unsigned char *vec)
 > > +{
-> > +	struct page *page = NULL;
-> > +	unsigned long instr_addr;
-> > +	unsigned long *ptr;
-> > +	int ret;
-> > +
-> > +	instr_addr = regs->ARM_pc - 4;
-> > +
-> > +	down_read(&task->mm->mmap_sem);
-> > +	ret = get_user_pages(task, task->mm, instr_addr,
-> > +			     1, 0, 0, &page, NULL);
-> > +	up_read(&task->mm->mmap_sem);
-> > +
-> > +	if (ret < 0)
-> > +		return ret;
-> > +
-> > +	ptr = (unsigned long *)kmap_atomic(page, KM_USER1);
-> > +	memcpy(instr,
-> > +	       ptr + (instr_addr >> PAGE_SHIFT),
-> 			^shouldn't this be:
-> 		      instr_addr & PAGE_MASK
+> > +	int huge = 0;
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +	spin_lock(&vma->vm_mm->page_table_lock);
+> > +	if (likely(pmd_trans_huge(*pmd))) {
+> > +		huge = !pmd_trans_splitting(*pmd);
+> 
+> Under mmap_sem (read or write) a hugepage can't materialize under
+> us. So here the pmd_trans_huge can be lockless and run _before_ taking
+> the page_table_lock. That's the invariant I used to keep identical
+> performance for all fast paths.
 
-Oops, made my own mistake. I think the address of the kmap'd instruction
-would be:
+Wait, there _is_ an unlocked fast-path pmd_trans_huge()
+in mincore_pmd_range(), maybe you missed it?
 
-	ptr + (instr_addr & ~PAGE_MASK)
+This function is never called if the pmd is not huge.
 
-Cheers,
-	-Matt Helsley
+So the above is the _second check_ under lock to get a stable
+read on the entry that could be splitting or already have been
+split while we checked locklessly.
