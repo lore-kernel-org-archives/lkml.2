@@ -1,77 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752896Ab0CYJnL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:43:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59555 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751755Ab0CYJnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:43:09 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [PATCH 3/5] cpufreq: Add APERF/MPERF support for AMD processors
-Date: Thu, 25 Mar 2010 10:43:04 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: akpm@linux-foundation.org, davej@redhat.com, linux@dominikbrodowski.net,
-       mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de,
-       cpufreq@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org
-References: <1269452783-966-1-git-send-email-bp@amd64.org> <1269452783-966-4-git-send-email-bp@amd64.org>
-In-Reply-To: <1269452783-966-4-git-send-email-bp@amd64.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-6"
+	id S1752987Ab0CYJpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:45:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36981 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751764Ab0CYJpL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 05:45:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 18:41:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+Message-Id: <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100325092131.GK2024@csn.ul.ie>
+References: <20100325083235.GF2024@csn.ul.ie>
+	<20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100325180726.6C89.A69D9226@jp.fujitsu.com>
+	<20100325092131.GK2024@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003251043.04867.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010 18:46:21 Borislav Petkov wrote:
-> From: Mark Langsdorf <mark.langsdorf@amd.com>
+On Thu, 25 Mar 2010 09:21:32 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
+
+> On Thu, Mar 25, 2010 at 06:09:34PM +0900, KOSAKI Motohiro wrote:
+> > > On Thu, 25 Mar 2010 08:32:35 +0000
+> > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > 
+> > > > On Thu, Mar 25, 2010 at 11:49:23AM +0900, KOSAKI Motohiro wrote:
+> > > > > > On Fri, Mar 19, 2010 at 03:21:41PM +0900, KOSAKI Motohiro wrote: 
+> > > > > Hmmm...
+> > > > > I haven't understand your mention because I guess I was wrong.
+> > > > > 
+> > > > > probably my last question was unclear. I mean,
+> > > > > 
+> > > > > 1) If we still need SLAB_DESTROY_BY_RCU, why do we need to add refcount?
+> > > > >     Which difference is exist between normal page migration and compaction?
+> > > > 
+> > > > The processes typically calling migration today own the page they are moving
+> > > > and is not going to exit unexpectedly during migration.
+> > > > 
+> > > > > 2) If we added refcount, which race will solve?
+> > > > > 
+> > > > 
+> > > > The process exiting and the last anon_vma being dropped while compaction
+> > > > is running. This can be reliably triggered with compaction.
+> > > > 
+> > > > > IOW, Is this patch fix old issue or compaction specific issue?
+> > > > > 
+> > > > 
+> > > > Strictly speaking, it's an old issue but in practice it's impossible to
+> > > > trigger because the process migrating always owns the page. Compaction
+> > > > moves pages belonging to arbitrary processes.
+> > > > 
+> > > Kosaki-san,
+> > > 
+> > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
+> > > 
+> > >  But, this behavior of unmap_and_move() requires access to _freed_
+> > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
+> > >  it't not good habit in general.
+> > > 
+> > >  After direct compaction, page-migration will be one of "core" code of
+> > >  memory management. Then, I agree to patch [1/11] as our direction for
+> > >  keeping sanity and showing direction to more updates. Maybe adding
+> > >  refcnt and removing RCU in futuer is good.
+> > 
+> > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
+> > is meaningless now.
 > 
-> Starting with model 10 of Family 0x10, AMD processors may have
-> support for APERF/MPERF.  Add support for identifying it and using
-> it within cpufreq.  Move the APERF/MPERF functions out of the
-> acpi-cpufreq code and into their own file so they can easily be
-> shared.
+> Christoph is opposed to removing it because of cache-hotness issues more
+> so than use-after-free concerns. The refcount is needed with or without
+> SLAB_DESTROY_BY_RCU.
 > 
-> Signed-off-by: Mark Langsdorf <mark.langsdorf@amd.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/amd.c                  |    6 +++
->  arch/x86/kernel/cpu/cpufreq/Makefile       |    4 +-
->  arch/x86/kernel/cpu/cpufreq/acpi-cpufreq.c |   44 +-----------------------
->  arch/x86/kernel/cpu/cpufreq/mperf.c        |   50 ++++++++++++++++++++++++++++
->  arch/x86/kernel/cpu/cpufreq/mperf.h        |    9 +++++
->  arch/x86/kernel/cpu/cpufreq/powernow-k8.c  |    8 ++++
->  6 files changed, 77 insertions(+), 44 deletions(-)
->  create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.c
->  create mode 100644 arch/x86/kernel/cpu/cpufreq/mperf.h
-> 
-> diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-> index e485825..796f662 100644
-> --- a/arch/x86/kernel/cpu/amd.c
-> +++ b/arch/x86/kernel/cpu/amd.c
-> @@ -537,6 +537,12 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
->  		set_cpu_cap(c, X86_FEATURE_MFENCE_RDTSC);
->  	}
->  
-> +	if (c->cpuid_level >= 6) {
-> +		unsigned ecx = cpuid_ecx(6);
-> +		if (ecx & 0x01)
-> +			set_cpu_cap(c, X86_FEATURE_APERFMPERF);
-> +	}
-> +
-Can you put this into:
-arch/x86/kernel/cpu/common.c (or wherever it fits in general x86 cpu init code)
-and remove this (arch/x86/kernel/cpu/intel.c):
-        if (c->cpuid_level > 6) {
-                unsigned ecx = cpuid_ecx(6);
-                if (ecx & 0x01)
-                        set_cpu_cap(c, X86_FEATURE_APERFMPERF);
+
+I wonder a code which the easiest to be read will be like following.
+==
+
+        if (PageAnon(page)) {
+                struct anon_vma anon = page_lock_anon_vma(page);
+		/* to take this lock, this page must be mapped. */
+		if (!anon_vma)
+			goto uncharge;
+		increase refcnt
+		page_unlock_anon_vma(anon);
         }
+	....
+==
+and
+==
+void anon_vma_free(struct anon_vma *anon)
+{
+	/*
+	 * To increase refcnt of anon-vma, anon_vma->lock should be held by
+	 * page_lock_anon_vma(). It means anon_vma has a "mapped" page.
+	 * If this anon is freed by unmap or exit, all pages under this anon
+	 * must be unmapped. Then, just checking refcnt without lock is ok.
+	 */
+	if (check refcnt > 0)
+		return do nothing
+	kmem_cache_free(anon);
+}
+==
 
-an x86 maintainer might want to double check, but I expect this should work
-for all x86 machines?
+Then, rcu_read_lock can be removed in clean way.
 
-    Thomas
+Thanks,
+-Kame
+
+
