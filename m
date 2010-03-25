@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab0CYW7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:59:17 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57086 "EHLO
+	id S1752938Ab0CYW7T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:59:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57093 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab0CYW7M (ORCPT
+	with ESMTP id S1751702Ab0CYW7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Mar 2010 18:59:12 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 3/6] perf symbols: Move map related routines to map.c
-Date: Thu, 25 Mar 2010 19:58:58 -0300
-Message-Id: <1269557941-15617-3-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/6] perf symbols: Pass the mmap parameters instead of using mmap_event
+Date: Thu, 25 Mar 2010 19:58:57 -0300
+Message-Id: <1269557941-15617-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1269557941-15617-1-git-send-email-acme@infradead.org>
 References: <1269557941-15617-1-git-send-email-acme@infradead.org>
@@ -30,10 +30,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Thru series of refactorings functions were being renamed but not moved
-to map.c to reduce patch noise, now lets have them in the same place so
-that use of the symbol system by tools can be constrained to building
-and linking fewer source files: symbol.c, map.c and rbtree.c.
+To reduce the coupling of the symbol system with the rest of perf.
 
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -41,360 +38,90 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Paul Mackerras <paulus@samba.org>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/map.c     |   84 ++++++++++++++++++++++++++++++++++++++++++++-
- tools/perf/util/map.h     |   47 ++++++++++++++++++++++++-
- tools/perf/util/session.c |   29 ---------------
- tools/perf/util/thread.c  |   53 ----------------------------
- tools/perf/util/thread.h  |   48 +------------------------
- 5 files changed, 131 insertions(+), 130 deletions(-)
+ tools/perf/util/event.c |    3 ++-
+ tools/perf/util/map.c   |   11 ++++-------
+ tools/perf/util/map.h   |    5 ++---
+ 3 files changed, 8 insertions(+), 11 deletions(-)
 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index c2808ad..052eaec 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -393,7 +393,8 @@ int event__process_mmap(event_t *self, struct perf_session *session)
+ 	}
+ 
+ 	thread = perf_session__findnew(session, self->mmap.pid);
+-	map = map__new(&self->mmap, MAP__FUNCTION,
++	map = map__new(self->mmap.start, self->mmap.len, self->mmap.pgoff,
++		       self->mmap.pid, self->mmap.filename, MAP__FUNCTION,
+ 		       session->cwd, session->cwdlen);
+ 
+ 	if (thread == NULL || map == NULL)
 diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index a9b4227..9f2963f 100644
+index e509cd5..a9b4227 100644
 --- a/tools/perf/util/map.c
 +++ b/tools/perf/util/map.c
-@@ -1,8 +1,9 @@
+@@ -1,4 +1,3 @@
+-#include "event.h"
  #include "symbol.h"
-+#include <limits.h>
  #include <stdlib.h>
  #include <string.h>
- #include <stdio.h>
--#include "debug.h"
-+#include "map.h"
- 
- const char *map_type__name[MAP__NR_TYPES] = {
- 	[MAP__FUNCTION] = "Functions",
-@@ -232,3 +233,84 @@ u64 map__objdump_2ip(struct map *map, u64 addr)
- 			map->unmap_ip(map, addr);	/* RIP -> IP */
- 	return ip;
+@@ -38,13 +37,12 @@ void map__init(struct map *self, enum map_type type,
+ 	RB_CLEAR_NODE(&self->rb_node);
  }
-+
-+struct symbol *map_groups__find_symbol(struct map_groups *self,
-+				       enum map_type type, u64 addr,
-+				       symbol_filter_t filter)
-+{
-+	struct map *map = map_groups__find(self, type, addr);
-+
-+	if (map != NULL)
-+		return map__find_symbol(map, map->map_ip(map, addr), filter);
-+
-+	return NULL;
-+}
-+
-+static u64 map__reloc_map_ip(struct map *map, u64 ip)
-+{
-+	return ip + (s64)map->pgoff;
-+}
-+
-+static u64 map__reloc_unmap_ip(struct map *map, u64 ip)
-+{
-+	return ip - (s64)map->pgoff;
-+}
-+
-+void map__reloc_vmlinux(struct map *self)
-+{
-+	struct kmap *kmap = map__kmap(self);
-+	s64 reloc;
-+
-+	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->unrelocated_addr)
-+		return;
-+
-+	reloc = (kmap->ref_reloc_sym->unrelocated_addr -
-+		 kmap->ref_reloc_sym->addr);
-+
-+	if (!reloc)
-+		return;
-+
-+	self->map_ip   = map__reloc_map_ip;
-+	self->unmap_ip = map__reloc_unmap_ip;
-+	self->pgoff    = reloc;
-+}
-+
-+void maps__insert(struct rb_root *maps, struct map *map)
-+{
-+	struct rb_node **p = &maps->rb_node;
-+	struct rb_node *parent = NULL;
-+	const u64 ip = map->start;
-+	struct map *m;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		m = rb_entry(parent, struct map, rb_node);
-+		if (ip < m->start)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	rb_link_node(&map->rb_node, parent, p);
-+	rb_insert_color(&map->rb_node, maps);
-+}
-+
-+struct map *maps__find(struct rb_root *maps, u64 ip)
-+{
-+	struct rb_node **p = &maps->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct map *m;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		m = rb_entry(parent, struct map, rb_node);
-+		if (ip < m->start)
-+			p = &(*p)->rb_left;
-+		else if (ip > m->end)
-+			p = &(*p)->rb_right;
-+		else
-+			return m;
-+	}
-+
-+	return NULL;
-+}
+ 
+-struct map *map__new(struct mmap_event *event, enum map_type type,
+-		     char *cwd, int cwdlen)
++struct map *map__new(u64 start, u64 len, u64 pgoff, u32 pid, char *filename,
++		     enum map_type type, char *cwd, int cwdlen)
+ {
+ 	struct map *self = malloc(sizeof(*self));
+ 
+ 	if (self != NULL) {
+-		const char *filename = event->filename;
+ 		char newfilename[PATH_MAX];
+ 		struct dso *dso;
+ 		int anon;
+@@ -62,7 +60,7 @@ struct map *map__new(struct mmap_event *event, enum map_type type,
+ 		anon = is_anon_memory(filename);
+ 
+ 		if (anon) {
+-			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", event->pid);
++			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
+ 			filename = newfilename;
+ 		}
+ 
+@@ -70,8 +68,7 @@ struct map *map__new(struct mmap_event *event, enum map_type type,
+ 		if (dso == NULL)
+ 			goto out_delete;
+ 
+-		map__init(self, type, event->start, event->start + event->len,
+-			  event->pgoff, dso);
++		map__init(self, type, start, start + len, pgoff, dso);
+ 
+ 		if (anon) {
+ set_identity:
 diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index a4a5bc4..6a703fa 100644
+index b756368..a4a5bc4 100644
 --- a/tools/perf/util/map.h
 +++ b/tools/perf/util/map.h
-@@ -4,7 +4,8 @@
- #include <linux/compiler.h>
- #include <linux/list.h>
- #include <linux/rbtree.h>
--#include <linux/types.h>
-+#include <stdio.h>
-+#include "types.h"
+@@ -68,14 +68,13 @@ u64 map__rip_2objdump(struct map *map, u64 rip);
+ u64 map__objdump_2ip(struct map *map, u64 addr);
  
- enum map_type {
- 	MAP__FUNCTION = 0,
-@@ -90,4 +91,48 @@ void map__fixup_end(struct map *self);
+ struct symbol;
+-struct mmap_event;
  
- void map__reloc_vmlinux(struct map *self);
+ typedef int (*symbol_filter_t)(struct map *map, struct symbol *sym);
  
-+struct map_groups {
-+	struct rb_root		maps[MAP__NR_TYPES];
-+	struct list_head	removed_maps[MAP__NR_TYPES];
-+};
-+
-+size_t __map_groups__fprintf_maps(struct map_groups *self,
-+				  enum map_type type, FILE *fp);
-+void maps__insert(struct rb_root *maps, struct map *map);
-+struct map *maps__find(struct rb_root *maps, u64 addr);
-+void map_groups__init(struct map_groups *self);
-+size_t map_groups__fprintf_maps(struct map_groups *self, FILE *fp);
-+
-+static inline void map_groups__insert(struct map_groups *self, struct map *map)
-+{
-+	 maps__insert(&self->maps[map->type], map);
-+}
-+
-+static inline struct map *map_groups__find(struct map_groups *self,
-+					   enum map_type type, u64 addr)
-+{
-+	return maps__find(&self->maps[type], addr);
-+}
-+
-+struct symbol *map_groups__find_symbol(struct map_groups *self,
-+				       enum map_type type, u64 addr,
-+				       symbol_filter_t filter);
-+
-+static inline struct symbol *map_groups__find_function(struct map_groups *self,
-+						       u64 addr,
-+						       symbol_filter_t filter)
-+{
-+	return map_groups__find_symbol(self, MAP__FUNCTION, addr, filter);
-+}
-+
-+struct map *map_groups__find_by_name(struct map_groups *self,
-+				     enum map_type type, const char *name);
-+int __map_groups__create_kernel_maps(struct map_groups *self,
-+				     struct map *vmlinux_maps[MAP__NR_TYPES],
-+				     struct dso *kernel);
-+int map_groups__create_kernel_maps(struct map_groups *self,
-+				   struct map *vmlinux_maps[MAP__NR_TYPES]);
-+struct map *map_groups__new_module(struct map_groups *self, u64 start,
-+				   const char *filename);
-+
- #endif /* __PERF_MAP_H */
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 2cef373..76b4ac6 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -544,32 +544,3 @@ int perf_session__set_kallsyms_ref_reloc_sym(struct perf_session *self,
- 
- 	return 0;
- }
--
--static u64 map__reloc_map_ip(struct map *map, u64 ip)
--{
--	return ip + (s64)map->pgoff;
--}
--
--static u64 map__reloc_unmap_ip(struct map *map, u64 ip)
--{
--	return ip - (s64)map->pgoff;
--}
--
--void map__reloc_vmlinux(struct map *self)
--{
--	struct kmap *kmap = map__kmap(self);
--	s64 reloc;
--
--	if (!kmap->ref_reloc_sym || !kmap->ref_reloc_sym->unrelocated_addr)
--		return;
--
--	reloc = (kmap->ref_reloc_sym->unrelocated_addr -
--		 kmap->ref_reloc_sym->addr);
--
--	if (!reloc)
--		return;
--
--	self->map_ip   = map__reloc_map_ip;
--	self->unmap_ip = map__reloc_unmap_ip;
--	self->pgoff    = reloc;
--}
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index ea65062..9bbe27d 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -272,46 +272,6 @@ static int map_groups__fixup_overlappings(struct map_groups *self,
- 	return 0;
- }
- 
--void maps__insert(struct rb_root *maps, struct map *map)
--{
--	struct rb_node **p = &maps->rb_node;
--	struct rb_node *parent = NULL;
--	const u64 ip = map->start;
--	struct map *m;
--
--	while (*p != NULL) {
--		parent = *p;
--		m = rb_entry(parent, struct map, rb_node);
--		if (ip < m->start)
--			p = &(*p)->rb_left;
--		else
--			p = &(*p)->rb_right;
--	}
--
--	rb_link_node(&map->rb_node, parent, p);
--	rb_insert_color(&map->rb_node, maps);
--}
--
--struct map *maps__find(struct rb_root *maps, u64 ip)
--{
--	struct rb_node **p = &maps->rb_node;
--	struct rb_node *parent = NULL;
--	struct map *m;
--
--	while (*p != NULL) {
--		parent = *p;
--		m = rb_entry(parent, struct map, rb_node);
--		if (ip < m->start)
--			p = &(*p)->rb_left;
--		else if (ip > m->end)
--			p = &(*p)->rb_right;
--		else
--			return m;
--	}
--
--	return NULL;
--}
--
- void thread__insert_map(struct thread *self, struct map *map)
- {
- 	map_groups__fixup_overlappings(&self->mg, map);
-@@ -367,16 +327,3 @@ size_t perf_session__fprintf(struct perf_session *self, FILE *fp)
- 
- 	return ret;
- }
--
--struct symbol *map_groups__find_symbol(struct map_groups *self,
--				       enum map_type type, u64 addr,
--				       symbol_filter_t filter)
--{
--	struct map *map = map_groups__find(self, type, addr);
--
--	if (map != NULL)
--		return map__find_symbol(map, map->map_ip(map, addr), filter);
--
--	return NULL;
--}
--
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index a81426a..9c488fc 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -5,14 +5,6 @@
- #include <unistd.h>
- #include "symbol.h"
- 
--struct map_groups {
--	struct rb_root		maps[MAP__NR_TYPES];
--	struct list_head	removed_maps[MAP__NR_TYPES];
--};
--
--size_t __map_groups__fprintf_maps(struct map_groups *self,
--				  enum map_type type, FILE *fp);
--
- struct thread {
- 	struct rb_node		rb_node;
- 	struct map_groups	mg;
-@@ -23,30 +15,16 @@ struct thread {
- 	int			comm_len;
- };
- 
-+struct perf_session;
-+
- int find_all_tid(int pid, pid_t ** all_tid);
--void map_groups__init(struct map_groups *self);
- int thread__set_comm(struct thread *self, const char *comm);
- int thread__comm_len(struct thread *self);
- struct thread *perf_session__findnew(struct perf_session *self, pid_t pid);
- void thread__insert_map(struct thread *self, struct map *map);
- int thread__fork(struct thread *self, struct thread *parent);
--size_t map_groups__fprintf_maps(struct map_groups *self, FILE *fp);
- size_t perf_session__fprintf(struct perf_session *self, FILE *fp);
- 
--void maps__insert(struct rb_root *maps, struct map *map);
--struct map *maps__find(struct rb_root *maps, u64 addr);
--
--static inline void map_groups__insert(struct map_groups *self, struct map *map)
--{
--	 maps__insert(&self->maps[map->type], map);
--}
--
--static inline struct map *map_groups__find(struct map_groups *self,
--					   enum map_type type, u64 addr)
--{
--	return maps__find(&self->maps[type], addr);
--}
--
- static inline struct map *thread__find_map(struct thread *self,
- 					   enum map_type type, u64 addr)
- {
-@@ -63,26 +41,4 @@ void thread__find_addr_location(struct thread *self,
- 				enum map_type type, u64 addr,
- 				struct addr_location *al,
- 				symbol_filter_t filter);
--struct symbol *map_groups__find_symbol(struct map_groups *self,
--				       enum map_type type, u64 addr,
--				       symbol_filter_t filter);
--
--static inline struct symbol *map_groups__find_function(struct map_groups *self,
--						       u64 addr,
--						       symbol_filter_t filter)
--{
--	return map_groups__find_symbol(self, MAP__FUNCTION, addr, filter);
--}
--
--struct map *map_groups__find_by_name(struct map_groups *self,
--				     enum map_type type, const char *name);
--
--int __map_groups__create_kernel_maps(struct map_groups *self,
--				     struct map *vmlinux_maps[MAP__NR_TYPES],
--				     struct dso *kernel);
--int map_groups__create_kernel_maps(struct map_groups *self,
--				   struct map *vmlinux_maps[MAP__NR_TYPES]);
--
--struct map *map_groups__new_module(struct map_groups *self, u64 start,
--				   const char *filename);
- #endif	/* __PERF_THREAD_H */
+ void map__init(struct map *self, enum map_type type,
+ 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
+-struct map *map__new(struct mmap_event *event, enum map_type,
+-		     char *cwd, int cwdlen);
++struct map *map__new(u64 start, u64 len, u64 pgoff, u32 pid, char *filename,
++		     enum map_type type, char *cwd, int cwdlen);
+ void map__delete(struct map *self);
+ struct map *map__clone(struct map *self);
+ int map__overlap(struct map *l, struct map *r);
 -- 
 1.6.2.5
 
