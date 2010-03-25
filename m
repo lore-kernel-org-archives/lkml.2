@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0CYPU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:20:59 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:47302 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab0CYPU5 (ORCPT
+	id S1754871Ab0CYPZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:25:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59924 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab0CYPZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:20:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=PCIaY5nmtlok8Gxqf+Z0ulQ8lSAZ8Xoy79NP8adqk3Wc4totQHB62IWgMNynd5/HcA
-         aJXDJFbIku2aaCBcMxKnTSSMdWYqBfJzDHnNjcvKZgJbKdU7XKXN91cQc0RZ84+aENGL
-         URdy39/BGAJFnN3ZMZXrMvcnDI+N80i9puDtU=
+	Thu, 25 Mar 2010 11:25:07 -0400
+Date: Thu, 25 Mar 2010 15:25:05 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100325152505.GD30031@ZenIV.linux.org.uk>
+References: <20100325101231.GU30031@ZenIV.linux.org.uk>
+ <20100325105406.GW30031@ZenIV.linux.org.uk>
+ <4BAB51F5.609@panasas.com>
+ <4BAB54B0.3080109@panasas.com>
+ <20100325130610.GZ30031@ZenIV.linux.org.uk>
+ <4BAB656E.8020204@panasas.com>
+ <20100325133746.GA30031@ZenIV.linux.org.uk>
+ <4BAB6911.5020009@panasas.com>
+ <20100325140457.GB30031@ZenIV.linux.org.uk>
+ <4BAB72C1.6090002@panasas.com>
 MIME-Version: 1.0
-In-Reply-To: <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
-References: <4BAAD5BB.7050101@samsung.com>
-	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
-Date: Thu, 25 Mar 2010 16:20:55 +0100
-Message-ID: <63386a3d1003250820x3cf81000i9d27e95c755b9ca8@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: jassi brar <jassisinghbrar@gmail.com>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>, dan.j.williams@intel.com,
-       kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAB72C1.6090002@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/25 jassi brar <jassisinghbrar@gmail.com>:
+On Thu, Mar 25, 2010 at 04:27:13PM +0200, Boaz Harrosh wrote:
+ 
+> And about the NFS thing, let misbehaving applications byte there own bullets.
+> But a good app like git, does put an O_DIRECTORY on the directory open, and
+> therefore will receive consistent results, right?
 
-> My approach is to write a separate PL330 core driver as the backend which
-> can be reused by any DMA API implementer driver. That will avoid
-> having two copies of the PL330 driver, among other benefits.
+What the hell do you mean, "misbehaving"?  O_DIRECTORY means one thing:
+"refuse to open if it turns out to be a non-directory".  If open() succeed
+with it and fails without, it's a definite bug.  Application has every
+right to call the damn thing without that flag.
 
-Seems like a rather good approach.
+It *can* be used as a hint by fs code, and it's a useful hint, so yes,
+we need to restore LOOKUP_DIRECTORY (until we get rid of the entire
+d_revalidate/lookup+open mess and pass struct file + open flags directly
+to fs method for the last step of pathname resolution; basically, most
+of the do_last() guts would become that method, killing the intents
+crap for good; new method would simply check for O_DIRECTORY presence
+instead of looking at LOOKUP_DIRECTORY).
 
-> And if this patch is accepted, there
-> _will_ exist two copies of the PL330 driver -- one in drivers/dma/pl330_dmac.c
-> and another in arch/arm/plat-samsung/. Only the former will be lying unused
-> until some other SoC vendor decided to use PL330, because S3C has come too
-> long a way to change its drivers to driver/dma/ API and modify DMA
-> drivers for every SoC.
+However, NFS behaviour in cases when O_DIRECTORY is absent is a separate
+(and quite real) bug.  If nfs_atomic_lookup() sees -EISDIR from attempt
+to open on server, it should either issue plain lookup or try to use the
+information it got in response to open attempt (if there's enough of it
+there).  Passing -EISDIR to ->lookup() caller is simply wrong.
 
-What's wrong with merging them later then? Refactoring FTW.
-
-> I have the pl330-core part almost ready, but i need time to implement
-> some _testable_
-> implementation of the scheme. If maintainers want to see structure of
-> my code, I can
-> share it too, but I think I pretty much made it clear.
-
-Why not just post it on the list? I'm curious! Since I'm working on a PrimeCell
-DMA API I would love to look at PrimeCell DMA engine drivers.
-
-Yours,
-Linus Walleij
+I'm going to send a fix for O_DIRECTORY case (restoring the behaviour
+we had in 2.6.33) today, but NFS side of things also needs to be dealt
+with.
