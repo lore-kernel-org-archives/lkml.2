@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0CYAzy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 20:55:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:56554 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab0CYAzx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 20:55:53 -0400
-From: Liang Li <liang.li@windriver.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: let 'reservetop' functioning right
-Date: Thu, 25 Mar 2010 08:54:05 +0800
-Message-Id: <1269478445-4335-1-git-send-email-liang.li@windriver.com>
-X-Mailer: git-send-email 1.6.6
-X-OriginalArrivalTime: 25 Mar 2010 00:55:41.0852 (UTC) FILETIME=[E49D65C0:01CACBB5]
+	id S1754417Ab0CYBA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:00:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33339 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754323Ab0CYBA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 21:00:58 -0400
+Date: Wed, 24 Mar 2010 21:00:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Divyesh Shah <dpshah@google.com>
+Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
+       ctalbott@google.com
+Subject: Re: [PATCH] cfq-iosched: Add additional blktrace log messages in
+	CFQ for easier debugging.
+Message-ID: <20100325010052.GB13225@redhat.com>
+References: <20100325001856.18289.83328.stgit@austin.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325001856.18289.83328.stgit@austin.mtv.corp.google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When specify 'reservetop=0xabc000' kernel parameter, kernel will hang
-on boot due to a early_ioremap bug that relate to commit 8827247ff.
+On Wed, Mar 24, 2010 at 05:19:34PM -0700, Divyesh Shah wrote:
+> These extra logging messages have helped us debug some issues we've noticed in
+> earlier IO controller versions and should be useful now as well. The extra
+> logging covers:
+> - idling behavior. Since there are so many conditions based on which we decide
+> to idle or not, this patch adds a log message for some conditions that we've
+> found useful.
+> - workload slices and current prio and workload type
+> 
+> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> ---
+> 
+>  block/cfq-iosched.c |   17 +++++++++++++++--
+>  1 files changed, 15 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index e6910dc..556124a 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -1646,6 +1646,10 @@ static struct cfq_queue *cfq_set_active_queue(struct cfq_data *cfqd,
+>  	if (!cfqq)
+>  		cfqq = cfq_get_next_queue(cfqd);
+>  
+> +	if (cfqq)
+> +		cfq_log_cfqq(cfqd, cfqq, "New timeslice for wl_prio:%d "
+> +				"wl_type:%d", cfqd->serving_prio,
+> +				cfqd->serving_type);
+>  	__cfq_set_active_queue(cfqd, cfqq);
 
-The root cause of boot failure problem is the value of 'slot_virt[i]'
-was initialized in setup_arch->early_ioremap_init. But later in
-setup_arch, the function 'parse_early_param' will modify 'FIXADDR_TOP'
-when 'reservetop=0xbadc0de' being specified.
+Divyesh, __cfq_set_active_queue(), is already logging message
+"set_active". Why don't you simply extend that to also print prio and
+workload type of the queue service tree.
 
-The simplest fix might be use __fix_to_virt(idx0) to get updated value
-of 'FIXADDR_TOP' in '__early_ioremap' instead of reference old value
-from slot_virt[slot] directly.
+>  	return cfqq;
+>  }
+> @@ -1789,7 +1793,11 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  	 * Otherwise, we do only if they are the last ones
+>  	 * in their service tree.
+>  	 */
+> -	return service_tree->count == 1 && cfq_cfqq_sync(cfqq);
+> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
+> +		return 1;
+> +	cfq_log_cfqq(cfqd, cfqq, "Not idling. queue_count:%d",
+> +			service_tree->count);
+> +	return 0;
 
-Signed-off-by: Liang Li <liang.li@windriver.com>
----
- arch/x86/mm/ioremap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Instead of queue_count, probably st->count=%d will be better.
 
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 5eb1ba7..ea82ef0 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -537,9 +537,9 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
- 		--nrpages;
- 	}
- 	if (early_ioremap_debug)
--		printk(KERN_CONT "%08lx + %08lx\n", offset, slot_virt[slot]);
-+		printk(KERN_CONT "%08lx + %08lx\n", offset, __fix_to_virt(idx0));
- 
--	prev_map[slot] = (void __iomem *)(offset + slot_virt[slot]);
-+	prev_map[slot] = (void __iomem *)(offset + __fix_to_virt(idx0));
- 	return prev_map[slot];
- }
- 
--- 
-1.6.6
+Rest of it looks ok to me.
 
+Vivek
+
+>  }
+>  
+>  static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+> @@ -1834,8 +1842,11 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  	 * time slice.
+>  	 */
+>  	if (sample_valid(cic->ttime_samples) &&
+> -	    (cfqq->slice_end - jiffies < cic->ttime_mean))
+> +	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
+> +		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
+> +				cic->ttime_mean);
+>  		return;
+> +	}
+>  
+>  	cfq_mark_cfqq_wait_request(cfqq);
+>  
+> @@ -2043,6 +2054,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  		slice = max(slice, 2 * cfqd->cfq_slice_idle);
+>  
+>  	slice = max_t(unsigned, slice, CFQ_MIN_TT);
+> +	cfq_log(cfqd, "workload slice:%d", slice);
+>  	cfqd->workload_expires = jiffies + slice;
+>  	cfqd->noidle_tree_requires_idle = false;
+>  }
+> @@ -3309,6 +3321,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  		if (cfq_should_wait_busy(cfqd, cfqq)) {
+>  			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
+>  			cfq_mark_cfqq_wait_busy(cfqq);
+> +			cfq_log_cfqq(cfqd, cfqq, "will busy wait");
+>  		}
+>  
+>  		/*
