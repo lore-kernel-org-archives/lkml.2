@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab0CYXMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:12:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47604 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752722Ab0CYXMr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:12:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=M2QBu3uihC3jmVmThMTZorrhj7otGBbGzaaDp/JwwaQi4jnLaN8qWzizwImDZHQxmC
-         zrm5IrpA+/SYRQUHI8uJviF97bHmvH1DLRxvVVBuv0XucQhWi5M2z92IDtwVSo01WZTj
-         pjR+vvTSJ4CS9BmcZXIBeTMDUxzy1YMkmFPdo=
+	id S1752824Ab0CYXRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 19:17:12 -0400
+Received: from mga03.intel.com ([143.182.124.21]:38261 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab0CYXRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 19:17:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,310,1267430400"; 
+   d="scan'208";a="258807111"
+From: Seth Heasley <seth.heasley@intel.com>
+Organization: Intel Corporation
+To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       jbarnes@virtuousgeek.org, khali@linux-fr.org
+Subject: [PATCH linux-next.git] irq: irq and pci_ids patch for additional Intel Cougar Point DeviceIDs
+Date: Thu, 25 Mar 2010 16:11:37 -0700
+User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-wdt; KDE/4.1.3; x86_64; ; )
+Cc: seth.heasley@intel.com
 MIME-Version: 1.0
-In-Reply-To: <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
-References: <4BAAD5BB.7050101@samsung.com>
-	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
-	 <4BAB7D9F.4070807@intel.com>
-	 <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
-Date: Thu, 25 Mar 2010 16:12:46 -0700
-X-Google-Sender-Auth: a9e6aeca9a801d3f
-Message-ID: <e9c3a7c21003251612l59d77753o8f56e2643a96fe0d@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: Dan Williams <dan.j.williams@intel.com>
-To: jassi brar <jassisinghbrar@gmail.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Joonyoung Shim <jy0922.shim@samsung.com>,
-       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201003251611.37706.seth.heasley@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 3:27 PM, jassi brar <jassisinghbrar@gmail.com> wrote:
-> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
->> jassi brar wrote:
->>>>
->>>> Perhaps Joonyoung can simply port over the stuff
->>>> you need to this driver if you show your code.
->>>
->>> Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
->>> _very_ surprised if any user found this implementation useful.
->>> Let alone testing, this implementation can't even explain usability
->>> for fast peripherals
->>> with shallow FIFOs. I didn't give feedback for this patch because I am
->>> not sure if this
->>> is the right way to go at all.
->>
->> This is the wrong attitude.  If it were not for a simple oversight
->> Joonyoung's driver would already be upstream for the past two kernel
->> releases.  So you need to work together to improve that driver to
->> incorporate what you need.
-> Nothing wrong in attitude here.
-> Giving feedback on the code only comes after one is convinced with the
-> overall approach taken. The last time I raised the PL330 driver issue,
-> most people were not enthusiastic with this drivers/dma/ approach.
-> I wasn't active mainline discussions when the driver was originally
-> submitted a few months ago.
-> And now my replies are not very 'polite' because theres a lot going on
-> in the background that people in public threads don't know about.
+This patch adds additional LPC Controller DeviceIDs for the Intel Cougar Point PCH.
 
-Thanks for clarifying.
+The DeviceIDs are defined and referenced as a range of values, the same way Ibex Peak was implemented.
 
->
->
->> It sounds like you just need to add an extension for the arch specific dma
->> api.
-> I actually plan more than that.
-> Apart from inefficient design, JoonYoung's driver has made some fatal
-> assumptions
-> about PL330, which will result in DMA aborts if used with SoCs that implement
-> configuration of PL330 that is very different from Samsung SoCs'
-> Of course, I address all such issues that I can think of, in my implementation.
+This patch was built against the linux-next.git tree.
 
-Ok, I'll rely on acked-by's from the interested parties once your
-driver is out as I do not have a vested interest in this hardware,
-just the dmaengine framework issues.
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 
---
-Dan
+--- include/linux/pci_ids.h.orig	2010-03-25 15:42:47.000000000 -0700
++++ include/linux/pci_ids.h	2010-03-25 16:00:31.000000000 -0700
+@@ -2419,8 +2419,8 @@
+ #define PCI_DEVICE_ID_INTEL_82845_HB	0x1a30
+ #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
+ #define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
+-#define PCI_DEVICE_ID_INTEL_CPT_LPC1	0x1c42
+-#define PCI_DEVICE_ID_INTEL_CPT_LPC2	0x1c43
++#define PCI_DEVICE_ID_INTEL_CPT_LPC_MIN	0x1c41
++#define PCI_DEVICE_ID_INTEL_CPT_LPC_MAX	0x1c5f
+ #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+ #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+ #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+--- arch/x86/pci/irq.c.orig	2010-03-25 15:42:36.000000000 -0700
++++ arch/x86/pci/irq.c	2010-03-25 16:00:31.000000000 -0700
+@@ -590,8 +590,6 @@
+ 	case PCI_DEVICE_ID_INTEL_ICH10_1:
+ 	case PCI_DEVICE_ID_INTEL_ICH10_2:
+ 	case PCI_DEVICE_ID_INTEL_ICH10_3:
+-	case PCI_DEVICE_ID_INTEL_CPT_LPC1:
+-	case PCI_DEVICE_ID_INTEL_CPT_LPC2:
+ 		r->name = "PIIX/ICH";
+ 		r->get = pirq_piix_get;
+ 		r->set = pirq_piix_set;
+@@ -606,6 +604,13 @@
+ 		return 1;
+ 	}
+ 
++	if ((device >= PCI_DEVICE_ID_INTEL_CPT_LPC_MIN) && 
++		(device <= PCI_DEVICE_ID_INTEL_CPT_LPC_MAX)) {
++		r->name = "PIIX/ICH";
++		r->get = pirq_piix_get;
++		r->set = pirq_piix_set;
++		return 1;
++	}
+ 	return 0;
+ }
