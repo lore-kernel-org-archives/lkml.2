@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab0CYSHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:07:09 -0400
-Received: from ppsw-1.csi.cam.ac.uk ([131.111.8.131]:46062 "EHLO
-	ppsw-1.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab0CYSHG (ORCPT
+	id S1753921Ab0CYSHf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:07:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39751 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753860Ab0CYSHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:07:06 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BABA6DD.7020403@cam.ac.uk>
-Date: Thu, 25 Mar 2010 18:09:33 +0000
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20100109 Thunderbird/3.0
+	Thu, 25 Mar 2010 14:07:33 -0400
+Date: Thu, 25 Mar 2010 11:01:51 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+In-Reply-To: <1269539254.12097.100.camel@laptop>
+Message-ID: <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
+References: <20100324190150.GA18803@basil.fritz.box>  <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain>  <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>  <20100325003652.GG20695@one.firstfloor.org>  <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+  <20100325093744.GH20695@one.firstfloor.org>  <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>  <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org> <1269539254.12097.100.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-CC: linux-doc@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>
-Subject: Re: [PATCH 06/16] Staging: iio: Documentation/lis3l02dqbuffersimple.c:
- duplicated include
-References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net> <1269537767-7553-7-git-send-email-andrea.gelmini@gelma.net>
-In-Reply-To: <1269537767-7553-7-git-send-email-andrea.gelmini@gelma.net>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/10 17:22, Andrea Gelmini wrote:
-> drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c: dirent.h is included more than once.
-> 
-> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
-Fair point.
 
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> ---
->  .../iio/Documentation/lis3l02dqbuffersimple.c      |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c b/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> index 2b5cfc5..6a8fa0c 100644
-> --- a/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> +++ b/drivers/staging/iio/Documentation/lis3l02dqbuffersimple.c
-> @@ -19,7 +19,6 @@
->  #include <sys/dir.h>
->  
->  #include <linux/types.h>
-> -#include <dirent.h>
->  #include "iio_util.h"
->  
->  static const char *ring_access = "/dev/iio/lis3l02dq_ring_access";
 
+On Thu, 25 Mar 2010, Peter Zijlstra wrote:
+> 
+> FWIW lockdep forces IRQF_DISABLED and yells when anybody does
+> local_irq_enable() while in hardirq context, I haven't seen any such
+> splats in a long while, except from the ARM people who did funny things
+> with building their own threaded interrupts or somesuch.
+
+The thing is, that won't show the drivers that just simply _expect_ 
+other interrupts to happen.
+
+The SCSI situation, iirc, used to be that certain error conditions simply 
+caused a delay loop (reset? I forget) that depended on 'jiffies'. So there 
+was no 'local_irq_enable()' involved, nor did it even happen under any 
+normal load - only in error situations.
+
+Now, I think (and sincerely) that the SCSI situation is likely long since 
+fixed, but we have thousands and thousands of drivers, and these kinds of 
+things are very hard to notice automatically. Are there any cases around 
+that still have busy-loop delays based on real-time in their irq handlers? 
+I simply don't know.
+
+			Linus
