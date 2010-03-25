@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab0CYLe1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 07:34:27 -0400
-Received: from mga06.intel.com ([134.134.136.21]:30167 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753642Ab0CYLeY (ORCPT
+	id S1754586Ab0CYLsJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 07:48:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:38827 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754409Ab0CYLsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 07:34:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,306,1267430400"; 
-   d="scan'208";a="503526662"
-Date: Thu, 25 Mar 2010 12:35:13 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, wim@iguana.be
-Subject: Re: [PATCH 0/4 v3] RDC321x southbridge and GPIO support
-Message-ID: <20100325113512.GA9594@sortiz.org>
-References: <201003210106.01673.florian@openwrt.org>
- <20100325112727.GC3720@sortiz.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325112727.GC3720@sortiz.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Mar 2010 07:48:07 -0400
+Date: Thu, 25 Mar 2010 20:48:04 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+In-reply-to: <3eeda0228e2396b052b17689e2f3318e@localhost>
+To: Marc Zyngier <maz@misterjones.org>
+Cc: linus.ml.walleij@gmail.com, dan.j.williams@intel.com,
+       kyungmin.park@samsung.com, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Message-id: <4BAB4D74.7070909@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+References: <4BAAD5BB.7050101@samsung.com>
+ <20100325054430.165311fa@taxman.wild-wind.fr.eu.org>
+ <4BAB264C.2090502@samsung.com> <960f4547118a62d5863ee38ba760844c@localhost>
+ <4BAB357B.7040108@samsung.com> <3eeda0228e2396b052b17689e2f3318e@localhost>
+X-OriginalArrivalTime: 25 Mar 2010 11:48:03.0982 (UTC)
+ FILETIME=[072472E0:01CACC11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 12:27:27PM +0100, Samuel Ortiz wrote:
-> Hi Florian,
+On 3/25/2010 7:32 PM, Marc Zyngier wrote:
+> On Thu, 25 Mar 2010 19:05:47 +0900, Joonyoung Shim
+> <jy0922.shim@samsung.com> wrote:
+>> On 3/25/2010 6:32 PM, Marc Zyngier wrote:
+>>> On Thu, 25 Mar 2010 18:01:00 +0900, Joonyoung Shim
+>>> <jy0922.shim@samsung.com> wrote:
+>>>> On 3/25/2010 2:44 PM, Marc Zyngier wrote:
+>>>>> On Thu, 25 Mar 2010 12:17:15 +0900
+>>>>> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
+>>>>>
+>>>>>> +	writew(imm, desc_pool_virt);
+>>>> Right. The write[bwl] is api for address ioremapped of io device. I
+> will
+>>>> change these.
+>>>>
+>>>>> Does anything ensure that this won't generate an unaligned access?
+>>>>>
+>>>> PL330 DMA controller fetches variable length instructions that consist
+>>> of
+>>>> one to six bytes, so i think unaligned access is no problem.
+>>> I'm not too concerned about the device side of things. I'm more worried
+>>> about the CPU access when writing the 'imm' value to memory.
+>>>
+>>> Consider desc_pool_virt 16bit aligned when entering the function.
+> Writing
+>>> the opcode makes it unaligned and then writing the 'imm' value will
+>>> result
+>>> as an unaligned access.
+>>>
+>> Why desc_pool_virt should be aligned more than 16bit?
 > 
-> On Sun, Mar 21, 2010 at 01:06:01AM +0100, Florian Fainelli wrote:
-> > Hi Samuel, Andrew,
-> > 
-> > This is the third round of the RDC321x southbridge and GPIO support, this 
-> > version should hopefully address all of your comments.
-> All 4 (I took v2 for the watchdog) patches applies, thanks.
-Nevermind, I had to take v3 version for the watchdog, although I couldnt find
-it in my inbox.
+> There is reason for desc_pool_virt to be 16bit aligned. It's just that you
+> have 50% chance that it will.
+> In such case, you will write 'imm' to a non 16bit-aligned address. In my
+> book, that's bad.
+> 
+> Same for pl330_dmamov(), which tries to write a 32bit value without
+> checking the proper alignment.
+> In such case, please use the put_unaligned macro to handle the possible
+> unaligned access.
+> 
 
-Cheers,
-Samuel.
-
-> 
-> Cheers,
-> Samuel.
-> 
-> 
-> > Thanks!
-> > 
-> > Florian Fainelli (4):
-> >   MFD: add support for the RDC321x southbridge
-> >   GPIO: add support for RDC321x GPIO controller
-> >   WATCHDOG: convert rdc321x_wdt to use southbridge pci device
-> >   x86: remove rdc321x_defs.h
-> 
-> -- 
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+OK. i will use put_unaligned.
+Thanks.
