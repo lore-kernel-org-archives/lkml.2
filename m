@@ -1,80 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab0CYD2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 23:28:45 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40902 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab0CYD2n (ORCPT
+	id S1752020Ab0CYD3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 23:29:33 -0400
+Received: from qw-out-2122.google.com ([74.125.92.25]:38957 "EHLO
+	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab0CYD3b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 23:28:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 04/11] Allow CONFIG_MIGRATION to be set without CONFIG_NUMA or memory hot-remove
-Cc: kosaki.motohiro@jp.fujitsu.com,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>, Adam Litke <agl@us.ibm.com>,
-       Avi Kivity <avi@redhat.com>, David Rientjes <rientjes@google.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-In-Reply-To: <20100319101651.GT12388@csn.ul.ie>
-References: <20100319152106.8775.A69D9226@jp.fujitsu.com> <20100319101651.GT12388@csn.ul.ie>
-Message-Id: <20100325095918.9454.A69D9226@jp.fujitsu.com>
+	Wed, 24 Mar 2010 23:29:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xdDz8+jSCswrfD8+59qXsyHq+JNzR7MDQUblePDUy2NyDiCib9XYx638TcNKCT9G0I
+         2NLgyXcxlAORnDLkFC3rOfskAW148HJM59L6uMMoXjQ5TcaCfMkI1mfHBf6ZsBx9p41Z
+         in28yt5GPvJ/2+URE/Uk07HXxp/Sz0Q36NDNM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 25 Mar 2010 12:28:40 +0900 (JST)
+In-Reply-To: <03ca01cacb92$195adf50$0400a8c0@dcccs>
+References: <03ca01cacb92$195adf50$0400a8c0@dcccs>
+Date: Thu, 25 Mar 2010 11:29:25 +0800
+Message-ID: <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com>
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Janos Haar <janos.haar@netcenter.hu>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Mar 19, 2010 at 03:21:20PM +0900, KOSAKI Motohiro wrote:
-> > > On Thu, Mar 18, 2010 at 08:56:23AM +0900, KOSAKI Motohiro wrote:
-> > > > > On Wed, 17 Mar 2010, Mel Gorman wrote:
-> > > > > 
-> > > > > > > If select MIGRATION works, we can remove "depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE"
-> > > > > > > line from config MIGRATION.
-> > > > > > >
-> > > > > >
-> > > > > > I'm not quite getting why this would be an advantage. COMPACTION
-> > > > > > requires MIGRATION but conceivable both NUMA and HOTREMOVE can work
-> > > > > > without it.
-> > > > > 
-> > > > > Avoids having to add additional CONFIG_XXX on the page migration "depends"
-> > > > > line in the future.
-> > > > 
-> > > > Yes, Kconfig mess freqently shot ourself in past days. if we have a chance
-> > > > to remove unnecessary dependency, we should do. that's my intention of the last mail.
-> > > > 
-> > > 
-> > > But if the depends line is removed, it could be set without NUMA, memory
-> > > hot-remove or compaction enabled. That wouldn't be very useful. I'm
-> > > missing something obvious.
-> > 
-> > Perhaps I'm missing something. 
-> > 
-> > my point is, force enabling useless config is not good idea (yes, i agree). but config 
-> > selectability doesn't cause any failure. IOW, usefulness and dependency aren't 
-> > related so much. personally I dislike _unnecessary_ dependency.
-> > 
-> > If my opinion cause any bad thing, I'll withdraw it. of course.
-> > 
-> 
-> I've changed the MIGRATION entry to
-> 
-> config MIGRATION
->         bool "Page migration"
->         def_bool y
->         depends on NUMA || ARCH_ENABLE_MEMORY_HOTREMOVE 
-> 
-> i.e. it no longer depends on COMPACTION because the "select MIGRATION"
-> in that line is enough.
-> 
-> I've left NUMA and HOTREMOVE because migration is an optional feature
-> for those configurations.
+(Cc'ing linux-mm)
 
-ok... I don't oppose it anymore. Let's dive into Kconfig select hell ;)
-
-
+2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
+> Dear developers,
+>
+> This is one of my productive servers, wich suddenly starts to freeze (crash)
+> some weeks before.
+> I have done all what i can, (i think) please somebody give to me some
+> suggestion:
+>
+> Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bf1e025
+> pmd:1535b5067
+> Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 flags:4000000000000404
+> count:1 mapcount:-1 mapping:(null) index:0
+> Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
+> anon_vma:(null) mapping:ffff88022b5d25a8 index:8
+> Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> xfs_file_mmap+0x0/0x33
+> Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 2.6.32.10 #2
+> Mar 24 19:22:28 alfa kernel: Call Trace:
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
+> tty_audit_exit+0x28/0x85
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
+> __dequeue_signal+0xf1/0x127
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
+> get_signal_to_deliver+0x32c/0x37f
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
+> do_notify_resume+0x90/0x740
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
+> __bad_area_nosemaphore+0x178/0x1a2
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
+> Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel taint
+> Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
+> Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
+> pte:d900000000 pmd:1535b5067
+> Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
+> anon_vma:(null) mapping:ffff88022b5d25a8 index:a
+> Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> xfs_file_mmap+0x0/0x33
+> Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
+> 2.6.32.10 #2
+> Mar 24 19:22:28 alfa kernel: Call Trace:
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3d47>] unmap_vmas+0x4fa/0x787
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
+> tty_audit_exit+0x28/0x85
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
+> __dequeue_signal+0xf1/0x127
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
+> get_signal_to_deliver+0x32c/0x37f
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
+> do_notify_resume+0x90/0x740
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
+> __bad_area_nosemaphore+0x178/0x1a2
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
+> Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bfe8025
+> pmd:1535b5067
+> Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 flags:4000000000000404
+> count:1 mapcount:-1 mapping:(null) index:0
+> Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
+> anon_vma:(null) mapping:ffff88022b5d25a8 index:c
+> Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> xfs_file_mmap+0x0/0x33
+> Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
+> 2.6.32.10 #2
+> Mar 24 19:22:28 alfa kernel: Call Trace:
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> .....
+>
+> The entire log is here:
+> http://download.netcenter.hu/bughunt/20100324/messages
+>
+> The actual kernel is 2.6.32.10, but the crash-series started @ 2.6.28.10.
+>
+> I have forwarded the tasks to another server, removed this from the room,
+> and the hw survived memtest86 in >7 days continously + i have tested the
+> HDDs one by one with badblocks -vvw, all is good.
+> For me looks like this is not a hw problem.
+>
+> Somebody have any idea?
+>
+> Thanks a lot,
+> Janos Haar
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
