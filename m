@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0CYVK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 17:10:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51475 "EHLO ogre.sisk.pl"
+	id S1753417Ab0CYVOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 17:14:48 -0400
+Received: from isrv.corpit.ru ([81.13.33.159]:59257 "EHLO isrv.corpit.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab0CYVK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 17:10:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement user_ops reader
-Date: Thu, 25 Mar 2010 22:13:44 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>,
-       jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252129.10224.rjw@sisk.pl> <4BABC926.8060203@crca.org.au>
-In-Reply-To: <4BABC926.8060203@crca.org.au>
+	id S1752220Ab0CYVOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 17:14:47 -0400
+Message-ID: <4BABD245.8050300@msgid.tls.msk.ru>
+Date: Fri, 26 Mar 2010 00:14:45 +0300
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Justin Piszcz <jpiszcz@lucidpixels.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME failed:
+ Inappropriate ioctl for device / PreInit returned NULL
+References: <Pine.LNX.4.44L0.1003251646170.1808-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1003251646170.1808-100000@iolanthe.rowland.org>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=804465C5
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003252213.44763.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 March 2010, Nigel Cunningham wrote:
-> Hi.
-> 
-> On 26/03/10 07:29, Rafael J. Wysocki wrote:
-> > On Thursday 25 March 2010, Nigel Cunningham wrote:
-> >> Hi.
-> >>
-> >> On 26/03/10 07:14, Rafael J. Wysocki wrote:
-> >>> On Thursday 25 March 2010, Nigel Cunningham wrote:
-> >>>> Hi.
-> >>>>
-> >>>> On 25/03/10 16:30, Pavel Machek wrote:
-> >>>> [...]
-> >>>>
-> >>>>> I have some problems with sws_module_ops interface (handcoded locking
-> >>>>> is too ugly to live), but it is better than I expected. But there may
-> >>>>> be better solution available, one that does not need two interfaces to
-> >>>>> maintain (we can't really get rid of userland interface). What about
-> >>>>> this?
-> >>>>
-> >>>> Just picking up on that bracketed part: Can we flag the userland
-> >>>> interface (and uswsusp) as being planned for eventual removal now... or
-> >>>> at least agree to work toward that?
-> >>>
-> >>> No, we can't.
-> >>>
-> >>>> I'm asking because if we're going to make a go of getting the in-kernel
-> >>>> code in much better shape, and we have Rafael, Jiri and I - and you? -
-> >>>> all pulling in the same direction to improve it, there's going to come a
-> >>>> point (hopefully not too far away) where uswsusp is just making life too
-> >>>> difficult, and getting rid of it will be a big help.
-> >>>
-> >>> We're not dropping user space interfaces used by every distro I know of.
-> >>
-> >> So what's your long term plan then?
-> >
-> > First, improve the in-kernel thing, second, switch people to it, _then_ remove
-> > the s2disk interface (after we're reasonably sure it's not used by any major
-> > distro) and _finally_ simplify things after it's been removed.
-> >
-> > Does that sound reasonable?
-> 
-> Well, that's pretty much what I was thinking too - improve then remove. 
-> I was just suggesting that we flag now that this is our plan, so it 
-> doesn't come as a surprise to anyone later and we can proceed more 
-> quickly than might otherwise be the case.
+Alan Stern wrote:
+> On Thu, 25 Mar 2010, Justin Piszcz wrote:
 
-I think it's too early for that at this point.
+Actually this very message - ioctl EVIOCGNAME...NULL - is quite
+common since some time - since either some of X or kernel.
+But usually it does not come together with a freeze, and
+it is not necessary about USB to start with -- for example,
+my synaptics touchpad stopped working, and that's exactly
+what's shown in the Xorg.log file -- EVIOCGNAME..NULL, when
+it tries to init the touchpad...  JFYI.
 
-Rafael
+/mjt
