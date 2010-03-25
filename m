@@ -1,152 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0CYBfo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 21:35:44 -0400
-Received: from brinza.cc.columbia.edu ([128.59.29.8]:60121 "EHLO
-	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab0CYBfn (ORCPT
+	id S1754678Ab0CYBhE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:37:04 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:56261 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab0CYBhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 21:35:43 -0400
-Message-ID: <4BAABDF4.8070904@cs.columbia.edu>
-Date: Wed, 24 Mar 2010 21:35:48 -0400
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Matt Helsley <matthltc@us.ibm.com>
-CC: Christoffer Dall <christofferdall@christofferdall.dk>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       containers <containers@lists.linux-foundation.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk> <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk> <20100323205342.GA19572@n2100.arm.linux.org.uk> <20100324020342.GB5704@count0.beaverton.ibm.com> <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu> <20100324140252.GC5704@count0.beaverton.ibm.com> <4BAA3586.1020604@cs.columbia.edu> <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com> <20100325011132.GE5704@count0.beaverton.ibm.com>
-In-Reply-To: <20100325011132.GE5704@count0.beaverton.ibm.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	Wed, 24 Mar 2010 21:37:00 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: akpm@linux-foundation.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: mmotm 2010-03-23 - IPv6 warnings...
+In-Reply-To: Your message of "Tue, 23 Mar 2010 15:34:59 PDT."
+             <201003232301.o2NN1bms031050@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201003232301.o2NN1bms031050@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1269481001_4394P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+Date: Wed, 24 Mar 2010 21:36:41 -0400
+Message-ID: <12096.1269481001@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.103 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail: UCE(50)
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=50/50, host=zidane.cc.vt.edu
+X-Junkmail-SD-Raw: score=bulk(0),
+	refid=str=0001.0A020208.4BAABE32.00BB,ss=3,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1269481001_4394P
+Content-Type: text/plain; charset=us-ascii
+
+On Tue, 23 Mar 2010 15:34:59 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-03-23-15-34 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+
+Seen in my dmesg.  It may be relevant that I'm at home, and my IPv6
+prefix arrives via a PPP VPN connection. This happened about 20-25 seconds
+after I launched pppd.
+
+[  175.269411] ------------[ cut here ]------------
+[  175.269433] WARNING: at net/ipv6/addrconf.c:544 inet6_ifa_finish_destroy+0x40/0xbb()
+[  175.269441] Hardware name: Latitude E6500                  
+[  175.269447] Modules linked in: ppp_async sunrpc usb_storage [last unloaded: scsi_wait_scan]
+[  175.269473] Pid: 7, comm: ksoftirqd/1 Tainted: G        W   2.6.34-rc2-mmotm0323 #1
+[  175.269480] Call Trace:
+[  175.269488]  <IRQ>  [<ffffffff8103728a>] warn_slowpath_common+0x80/0x98
+[  175.269517]  [<ffffffff810372b7>] warn_slowpath_null+0x15/0x17
+[  175.269530]  [<ffffffff814f2093>] inet6_ifa_finish_destroy+0x40/0xbb
+[  175.269542]  [<ffffffff814f2122>] in6_ifa_put+0x14/0x16
+[  175.269555]  [<ffffffff814f4893>] addrconf_prefix_rcv+0x583/0x786
+[  175.269568]  [<ffffffff814f70b3>] ? rt6_get_dflt_router+0xab/0xbb
+[  175.269581]  [<ffffffff814fd98c>] ndisc_rcv+0x90f/0xdb4
+[  175.269595]  [<ffffffff810852a7>] ? __rcu_read_unlock+0x30c/0x341
+[  175.269609]  [<ffffffff81502f6d>] ? debug_lockdep_rcu_enabled+0x33/0x39
+[  175.269622]  [<ffffffff815040ae>] icmpv6_rcv+0x59b/0x659
+[  175.269634]  [<ffffffff81504c9e>] ? ipv6_chk_mcast_addr+0xaf/0x13d
+[  175.269648]  [<ffffffff81063e21>] ? trace_hardirqs_on_caller+0x16/0x13c
+[  175.269661]  [<ffffffff8103d5b3>] ? _local_bh_enable_ip+0x15c/0x16e
+[  175.269674]  [<ffffffff8103d5ce>] ? local_bh_enable_ip+0x9/0xb
+[  175.269689]  [<ffffffff81598c44>] ? _raw_read_unlock_bh+0x39/0x3e
+[  175.269702]  [<ffffffff81504d13>] ? ipv6_chk_mcast_addr+0x124/0x13d
+[  175.269714]  [<ffffffff814eee7d>] ? ip6_input_finish+0x0/0x343
+[  175.269726]  [<ffffffff814ef066>] ip6_input_finish+0x1e9/0x343
+[  175.269737]  [<ffffffff814eee7d>] ? ip6_input_finish+0x0/0x343
+[  175.269748]  [<ffffffff814ef20c>] NF_HOOK.clone.1+0x4c/0x53
+[  175.269759]  [<ffffffff814ef6d6>] ip6_input+0x1c/0x1e
+[  175.269769]  [<ffffffff814ef7df>] ip6_mc_input+0x107/0x11c
+[  175.269780]  [<ffffffff814eee17>] ? ip6_rcv_finish+0x0/0x26
+[  175.269791]  [<ffffffff814eee39>] ip6_rcv_finish+0x22/0x26
+[  175.269802]  [<ffffffff814ef20c>] NF_HOOK.clone.1+0x4c/0x53
+[  175.269812]  [<ffffffff814ef666>] ipv6_rcv+0x453/0x4a7
+[  175.269827]  [<ffffffff8146527e>] __netif_receive_skb+0x2da/0x307
+[  175.269839]  [<ffffffff81465348>] process_backlog+0x9d/0xd6
+[  175.269851]  [<ffffffff81465631>] net_rx_action+0xf2/0x356
+[  175.269863]  [<ffffffff8103dc41>] __do_softirq+0x14a/0x282
+[  175.269876]  [<ffffffff8100360c>] call_softirq+0x1c/0x34
+[  175.269882]  <EOI>  [<ffffffff81004b58>] ? do_softirq+0x44/0xf0
+[  175.269901]  [<ffffffff8103d7dd>] run_ksoftirqd+0xbc/0x1fb
+[  175.269912]  [<ffffffff8103d721>] ? run_ksoftirqd+0x0/0x1fb
+[  175.269925]  [<ffffffff81052c6b>] kthread+0x7a/0x82
+[  175.269937]  [<ffffffff81003514>] kernel_thread_helper+0x4/0x10
+[  175.269949]  [<ffffffff81599900>] ? restore_args+0x0/0x30
+[  175.269961]  [<ffffffff81052bf1>] ? kthread+0x0/0x82
+[  175.269971]  [<ffffffff81003510>] ? kernel_thread_helper+0x0/0x10
+[  175.269979] ---[ end trace a7919e7f17c0a727 ]---
+[  175.269986] Freeing alive inet6 address ffff880107e1a400
+[  176.472172] ------------[ cut here ]------------
+[  176.472192] WARNING: at net/ipv6/addrconf.c:544 inet6_ifa_finish_destroy+0x40/0xbb()
+[  176.472200] Hardware name: Latitude E6500                  
+[  176.472206] Modules linked in: ppp_async sunrpc usb_storage [last unloaded: scsi_wait_scan]
+[  176.472232] Pid: 4008, comm: fetchmail Tainted: G        W   2.6.34-rc2-mmotm0323 #1
+[  176.472239] Call Trace:
+[  176.472256]  [<ffffffff8103728a>] warn_slowpath_common+0x80/0x98
+[  176.472269]  [<ffffffff810372b7>] warn_slowpath_null+0x15/0x17
+[  176.472280]  [<ffffffff814f2093>] inet6_ifa_finish_destroy+0x40/0xbb
+[  176.472291]  [<ffffffff814f2122>] in6_ifa_put+0x14/0x16
+[  176.472303]  [<ffffffff814f2a7b>] ipv6_dev_get_saddr+0x2b3/0x2c7
+[  176.472316]  [<ffffffff814f8f32>] ? fib6_rule_lookup+0x18/0x1a
+[  176.472328]  [<ffffffff814ebb04>] ip6_dst_lookup_tail+0x90/0xc5
+[  176.472339]  [<ffffffff814ebc37>] ip6_dst_lookup+0x10/0x12
+[  176.472352]  [<ffffffff8150f712>] ip6_datagram_connect+0x334/0x4f6
+[  176.472365]  [<ffffffff8103d5b3>] ? _local_bh_enable_ip+0x15c/0x16e
+[  176.472378]  [<ffffffff81457d82>] ? release_sock+0xff/0x108
+[  176.472390]  [<ffffffff814c0042>] inet_dgram_connect+0x56/0x5d
+[  176.472402]  [<ffffffff81455907>] sys_connect+0x75/0x98
+[  176.472415]  [<ffffffff810e24b4>] ? path_put+0x1d/0x22
+[  176.472429]  [<ffffffff81063e21>] ? trace_hardirqs_on_caller+0x16/0x13c
+[  176.472442]  [<ffffffff8107d442>] ? audit_syscall_entry+0xcb/0x19c
+[  176.472455]  [<ffffffff810026eb>] system_call_fastpath+0x16/0x1b
+[  176.472464] ---[ end trace a7919e7f17c0a728 ]---
+[  176.472472] Freeing alive inet6 address ffff880107e1a400
 
 
-Matt Helsley wrote:
-> On Wed, Mar 24, 2010 at 08:36:39PM +0100, Christoffer Dall wrote:
->> On Wed, Mar 24, 2010 at 4:53 PM, Oren Laadan <orenl@cs.columbia.edu> wrote:
->>>
->>> Matt Helsley wrote:
->>>> On Wed, Mar 24, 2010 at 12:57:46AM -0400, Oren Laadan wrote:
->>>>> On Tue, 23 Mar 2010, Matt Helsley wrote:
->>>>>
->>>>>> On Tue, Mar 23, 2010 at 08:53:42PM +0000, Russell King - ARM Linux
->>>>>> wrote:
->>>>>>> On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
->>>>>>>> This small commit introduces a global state of system calls for ARM
->>>>>>>> making it possible for a debugger or checkpointing to gain information
->>>>>>>> about another process' state with respect to system calls.
->>>>>>> I don't particularly like the idea that we always store the syscall
->>>>>>> number to memory for every system call, whether the stored version is
->>>>>>> used or not.
->>>>>>>
->>>>>>> Since ARM caches are generally not write allocate, this means mostly
->>>>>>> write-only variables can have a higher than expected expense.
->>>>>>>
->>>>>>> Is there not some thread flag which can be checked to see if we need to
->>>>>>> store the syscall number?
->>>>>> Perhaps before we freeze the task we can save the syscall number on ARM.
->>>>>> The patches suggest that the signal delivery path -- which the freezer
->>>>>> utilizes -- has the syscall number already.
->>> Actually, the signal path doesn't have the syscall number, it has
->>> a binary "in syscall" value.
->>>
-> 
-> Argh. I read too much into the name :(.
-> 
->> Well, this could be changed to pass the syscall number through
->> registers along to try_to_freeze without any mentionable performance
->> hit.
-> 
-> Yes, that's possible. I was thinking we could still use your thread info
-> field but only store to it when we know it will be useful for c/r rather
-> than for each syscall. Personally, I'd rather avoid passing the extra
-> parameter into try_to_freeze(). Your idea below seems better to me.
-> 
->> Re-using the assembly code or factoring it out so that it can be used
->> from multiple places doesn't seem very pleasing to me, as the assembly
->> code is in the critical path and written specifically for the context
->> of a process entering the kernel. Please correct me if I'm wrong.
->>
->> I imagine simply a function in C, more or less re-implementing the
->> logic that's already in entry-common.S, might do the trick. I wouldn't
->> worry much about the performance in this case as it will not be used
->> often. The following _untested_ snippet illustrates my idea:
->>
->> ---
->>  arch/arm/include/asm/syscall.h |   93 +++++++++++++++++++++++++++++++++++++++-
->>  1 files changed, 92 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
->> index 3b3248f..a7f2615 100644
->> --- a/arch/arm/include/asm/syscall.h
->> +++ b/arch/arm/include/asm/syscall.h
->> @@ -10,10 +10,101 @@
->>  #ifndef _ASM_ARM_SYSCALLS_H
->>  #define _ASM_ARM_SYSCALLS_H
->>
->> +static inline int get_swi_instruction(struct task_struct *task,
->> +				      struct pt_regs *regs,
->> +				      unsigned long *instr)
->> +{
->> +	struct page *page = NULL;
->> +	unsigned long instr_addr;
->> +	unsigned long *ptr;
->> +	int ret;
->> +
->> +	instr_addr = regs->ARM_pc - 4;
->> +
->> +	down_read(&task->mm->mmap_sem);
->> +	ret = get_user_pages(task, task->mm, instr_addr,
->> +			     1, 0, 0, &page, NULL);
->> +	up_read(&task->mm->mmap_sem);
->> +
->> +	if (ret < 0)
->> +		return ret;
->> +
->> +	ptr = (unsigned long *)kmap_atomic(page, KM_USER1);
->> +	memcpy(instr,
->> +	       ptr + (instr_addr >> PAGE_SHIFT),
-> 			^shouldn't this be:
-> 		      instr_addr & PAGE_MASK
-> 
->> +	       sizeof(unsigned long));
->> +	kunmap_atomic(ptr, KM_USER1);
->> +
->> +	page_cache_release(page);
->> +
->> +	return 0;
->> +}
-> 
-> (again, not familiar with ARM so my understanding is:
-> 
-> I guess swi is "syscall word immediate".
-> 
-> The syscall nr is embedded in the instruction as an immediate
-> value and you're getting a copy of that instruction using the value of
-> the pc register just after the syscall instruction was executed.)
-> 
-> Perhaps I am missing or forgetting something. Why isn't this as simple
-> as calling get_user() or even copy_from_user() using instr_addr?
+--==_Exmh_1269481001_4394P
+Content-Type: application/pgp-signature
 
-In c/r, we only need it at restart when a task calls it on itself.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-However the interface itself of get_syscall_nr() can be called by
-any task on another task.
+iD8DBQFLqr4pcC3lWbTT17ARAi/lAKC8PAVZmdn6z4gz9cN6e03pG50f5QCbBsxc
+TdPqr5J9JRPBR2hhsT1kXqY=
+=6InZ
+-----END PGP SIGNATURE-----
 
-(In fact, I think that for the most part, saving the syscall number
-at checkpoint time may be better than figuring out at restart time).
-
-Oren.
-
+--==_Exmh_1269481001_4394P--
 
