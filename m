@@ -1,292 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab0CXXpm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 19:45:42 -0400
-Received: from qw-out-2122.google.com ([74.125.92.26]:56589 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab0CXXpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 19:45:40 -0400
-From: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-       linux-pcmcia@lists.infradead.org,
-       Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Subject: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
-Date: Wed, 24 Mar 2010 20:45:10 -0300
-Message-Id: <1269474310-13970-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-References: <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+	id S1753897Ab0CYAIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 20:08:18 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:33372 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363Ab0CYAIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 20:08:17 -0400
+Date: Thu, 25 Mar 2010 01:07:49 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [rfc 5/5] mincore: transparent huge page support
+Message-ID: <20100325000749.GA27304@cmpxchg.org>
+References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org> <1269354902-18975-6-git-send-email-hannes@cmpxchg.org> <20100324224858.GP10659@random.random>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100324224858.GP10659@random.random>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes checkpatch.pl issues in soc_common.c.
+On Wed, Mar 24, 2010 at 11:48:58PM +0100, Andrea Arcangeli wrote:
+> On Tue, Mar 23, 2010 at 03:35:02PM +0100, Johannes Weiner wrote:
+> > +static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+> > +			unsigned long addr, unsigned long end,
+> > +			unsigned char *vec)
+> > +{
+> > +	int huge = 0;
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +	spin_lock(&vma->vm_mm->page_table_lock);
+> > +	if (likely(pmd_trans_huge(*pmd))) {
+> > +		huge = !pmd_trans_splitting(*pmd);
+> 
+> Under mmap_sem (read or write) a hugepage can't materialize under
+> us. So here the pmd_trans_huge can be lockless and run _before_ taking
+> the page_table_lock. That's the invariant I used to keep identical
+> performance for all fast paths.
 
-Signed-off-by: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
----
- drivers/pcmcia/soc_common.c |  128 +++++++++++++++++++++++--------------------
- 1 files changed, 68 insertions(+), 60 deletions(-)
+Stupid me.  I knew that, I just hadn't internalized it enough to do it
+right :)
 
-diff --git a/drivers/pcmcia/soc_common.c b/drivers/pcmcia/soc_common.c
-index fd4c25a..25c5b50 100644
---- a/drivers/pcmcia/soc_common.c
-+++ b/drivers/pcmcia/soc_common.c
-@@ -31,20 +31,20 @@
- ======================================================================*/
- 
- 
--#include <linux/module.h>
--#include <linux/moduleparam.h>
-+#include <linux/cpufreq.h>
- #include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
--#include <linux/timer.h>
- #include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
- #include <linux/mutex.h>
--#include <linux/interrupt.h>
--#include <linux/irq.h>
- #include <linux/spinlock.h>
--#include <linux/cpufreq.h>
-+#include <linux/timer.h>
- 
- #include <mach/hardware.h>
--#include <asm/io.h>
- #include <asm/system.h>
- 
- #include "soc_common.h"
-@@ -69,7 +69,8 @@ EXPORT_SYMBOL(soc_pcmcia_debug);
- 
- #endif
- 
--#define to_soc_pcmcia_socket(x)	container_of(x, struct soc_pcmcia_socket, socket)
-+#define to_soc_pcmcia_socket(x)	\
-+	container_of(x, struct soc_pcmcia_socket, socket)
- 
- static unsigned short
- calc_speed(unsigned short *spds, int num, unsigned short dflt)
-@@ -86,11 +87,15 @@ calc_speed(unsigned short *spds, int num, unsigned short dflt)
- 	return speed;
- }
- 
--void soc_common_pcmcia_get_timing(struct soc_pcmcia_socket *skt, struct soc_pcmcia_timing *timing)
-+void soc_common_pcmcia_get_timing(struct soc_pcmcia_socket *skt,
-+	struct soc_pcmcia_timing *timing)
- {
--	timing->io = calc_speed(skt->spd_io, MAX_IO_WIN, SOC_PCMCIA_IO_ACCESS);
--	timing->mem = calc_speed(skt->spd_mem, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
--	timing->attr = calc_speed(skt->spd_attr, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
-+	timing->io =
-+		calc_speed(skt->spd_io, MAX_IO_WIN, SOC_PCMCIA_IO_ACCESS);
-+	timing->mem =
-+		calc_speed(skt->spd_mem, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
-+	timing->attr =
-+		calc_speed(skt->spd_attr, MAX_WIN, SOC_PCMCIA_3V_MEM_ACCESS);
- }
- EXPORT_SYMBOL(soc_common_pcmcia_get_timing);
- 
-@@ -132,8 +137,8 @@ static unsigned int soc_common_pcmcia_skt_state(struct soc_pcmcia_socket *skt)
-  *
-  * Convert PCMCIA socket state to our socket configure structure.
-  */
--static int
--soc_common_pcmcia_config_skt(struct soc_pcmcia_socket *skt, socket_state_t *state)
-+static int soc_common_pcmcia_config_skt(
-+	struct soc_pcmcia_socket *skt, socket_state_t *state)
- {
- 	int ret;
- 
-@@ -145,7 +150,8 @@ soc_common_pcmcia_config_skt(struct soc_pcmcia_socket *skt, socket_state_t *stat
- 		 */
- 		if (skt->irq_state != 1 && state->io_irq) {
- 			skt->irq_state = 1;
--			set_irq_type(skt->socket.pci_irq, IRQ_TYPE_EDGE_FALLING);
-+			set_irq_type(skt->socket.pci_irq,
-+				IRQ_TYPE_EDGE_FALLING);
- 		} else if (skt->irq_state == 1 && state->io_irq == 0) {
- 			skt->irq_state = 0;
- 			set_irq_type(skt->socket.pci_irq, IRQ_TYPE_NONE);
-@@ -299,24 +305,24 @@ soc_common_pcmcia_get_status(struct pcmcia_socket *sock, unsigned int *status)
-  * of power configuration, reset, &c. We also record the value of
-  * `state' in order to regurgitate it to the PCMCIA core later.
-  */
--static int
--soc_common_pcmcia_set_socket(struct pcmcia_socket *sock, socket_state_t *state)
-+static int soc_common_pcmcia_set_socket(
-+	struct pcmcia_socket *sock, socket_state_t *state)
- {
- 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
- 
--	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
--			(state->csc_mask==0)?"<NONE> ":"",
--			(state->csc_mask&SS_DETECT)?"DETECT ":"",
--			(state->csc_mask&SS_READY)?"READY ":"",
--			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
--			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
--			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
--			(state->flags==0)?"<NONE> ":"",
--			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
--			(state->flags&SS_IOCARD)?"IOCARD ":"",
--			(state->flags&SS_RESET)?"RESET ":"",
--			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
--			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
-+	debug(skt, 2, "mask: %s%s%s%s%s%s flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
-+			(state->csc_mask == 0)		? "<NONE> " :	"",
-+			(state->csc_mask & SS_DETECT)	? "DETECT " :	"",
-+			(state->csc_mask & SS_READY)	? "READY " :	"",
-+			(state->csc_mask & SS_BATDEAD)	? "BATDEAD " :	"",
-+			(state->csc_mask & SS_BATWARN)	? "BATWARN " :	"",
-+			(state->csc_mask & SS_STSCHG)	? "STSCHG " :	"",
-+			(state->flags == 0)		? "<NONE> " :	"",
-+			(state->flags & SS_PWR_AUTO)	? "PWR_AUTO " :	"",
-+			(state->flags & SS_IOCARD)	? "IOCARD " :	"",
-+			(state->flags & SS_RESET)	? "RESET " :	"",
-+			(state->flags & SS_SPKR_ENA)	? "SPKR_ENA " :	"",
-+			(state->flags & SS_OUTPUT_ENA)	? "OUTPUT_ENA " : "",
- 			state->Vcc, state->Vpp, state->io_irq);
- 
- 	return soc_common_pcmcia_config_skt(skt, state);
-@@ -331,8 +337,8 @@ soc_common_pcmcia_set_socket(struct pcmcia_socket *sock, socket_state_t *state)
-  *
-  * Returns: 0 on success, -1 on error
-  */
--static int
--soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *map)
-+static int soc_common_pcmcia_set_io_map(
-+	struct pcmcia_socket *sock, struct pccard_io_map *map)
- {
- 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
- 	unsigned short speed = map->speed;
-@@ -341,14 +347,14 @@ soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *m
- 		map->map, map->speed, (unsigned long long)map->start,
- 		(unsigned long long)map->stop);
- 	debug(skt, 2, "flags: %s%s%s%s%s%s%s%s\n",
--		(map->flags==0)?"<NONE>":"",
--		(map->flags&MAP_ACTIVE)?"ACTIVE ":"",
--		(map->flags&MAP_16BIT)?"16BIT ":"",
--		(map->flags&MAP_AUTOSZ)?"AUTOSZ ":"",
--		(map->flags&MAP_0WS)?"0WS ":"",
--		(map->flags&MAP_WRPROT)?"WRPROT ":"",
--		(map->flags&MAP_USE_WAIT)?"USE_WAIT ":"",
--		(map->flags&MAP_PREFETCH)?"PREFETCH ":"");
-+		(map->flags == 0)		? "<NONE>"	: "",
-+		(map->flags & MAP_ACTIVE)	? "ACTIVE "	: "",
-+		(map->flags & MAP_16BIT)	? "16BIT "	: "",
-+		(map->flags & MAP_AUTOSZ)	? "AUTOSZ "	: "",
-+		(map->flags & MAP_0WS)		? "0WS "	: "",
-+		(map->flags & MAP_WRPROT)	? "WRPROT "	: "",
-+		(map->flags & MAP_USE_WAIT)	? "USE_WAIT "	: "",
-+		(map->flags & MAP_PREFETCH)	? "PREFETCH "	: "");
- 
- 	if (map->map >= MAX_IO_WIN) {
- 		printk(KERN_ERR "%s(): map (%d) out of range\n", __func__,
-@@ -385,8 +391,8 @@ soc_common_pcmcia_set_io_map(struct pcmcia_socket *sock, struct pccard_io_map *m
-  *
-  * Returns: 0 on success, -ERRNO on error
-  */
--static int
--soc_common_pcmcia_set_mem_map(struct pcmcia_socket *sock, struct pccard_mem_map *map)
-+static int soc_common_pcmcia_set_mem_map(
-+	struct pcmcia_socket *sock, struct pccard_mem_map *map)
- {
- 	struct soc_pcmcia_socket *skt = to_soc_pcmcia_socket(sock);
- 	struct resource *res;
-@@ -395,14 +401,14 @@ soc_common_pcmcia_set_mem_map(struct pcmcia_socket *sock, struct pccard_mem_map
- 	debug(skt, 2, "map %u speed %u card_start %08x\n",
- 		map->map, map->speed, map->card_start);
- 	debug(skt, 2, "flags: %s%s%s%s%s%s%s%s\n",
--		(map->flags==0)?"<NONE>":"",
--		(map->flags&MAP_ACTIVE)?"ACTIVE ":"",
--		(map->flags&MAP_16BIT)?"16BIT ":"",
--		(map->flags&MAP_AUTOSZ)?"AUTOSZ ":"",
--		(map->flags&MAP_0WS)?"0WS ":"",
--		(map->flags&MAP_WRPROT)?"WRPROT ":"",
--		(map->flags&MAP_ATTRIB)?"ATTRIB ":"",
--		(map->flags&MAP_USE_WAIT)?"USE_WAIT ":"");
-+		(map->flags == 0)		? "<NONE>"	: "",
-+		(map->flags & MAP_ACTIVE)	? "ACTIVE "	: "",
-+		(map->flags & MAP_16BIT)	? "16BIT "	: "",
-+		(map->flags & MAP_AUTOSZ)	? "AUTOSZ "	: "",
-+		(map->flags & MAP_0WS)		? "0WS "	: "",
-+		(map->flags & MAP_WRPROT)	? "WRPROT "	: "",
-+		(map->flags & MAP_ATTRIB)	? "ATTRIB "	: "",
-+		(map->flags & MAP_USE_WAIT)	? "USE_WAIT "	: "");
- 
- 	if (map->map >= MAX_WIN)
- 		return -EINVAL;
-@@ -457,8 +463,8 @@ static struct bittbl conf_bits[] = {
- 	{ SS_OUTPUT_ENA,	"SS_OUTPUT_ENA"	},
- };
- 
--static void
--dump_bits(char **p, const char *prefix, unsigned int val, struct bittbl *bits, int sz)
-+static void dump_bits(char **p, const char *prefix,
-+	unsigned int val, struct bittbl *bits, int sz)
- {
- 	char *b = *p;
- 	int i;
-@@ -476,13 +482,14 @@ dump_bits(char **p, const char *prefix, unsigned int val, struct bittbl *bits, i
-  *
-  * Returns: the number of characters added to the buffer
-  */
--static ssize_t show_status(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t show_status(
-+	struct device *dev, struct device_attribute *attr, char *buf)
- {
- 	struct soc_pcmcia_socket *skt =
- 		container_of(dev, struct soc_pcmcia_socket, socket.dev);
- 	char *p = buf;
- 
--	p+=sprintf(p, "slot     : %d\n", skt->nr);
-+	p += sprintf(p, "slot     : %d\n", skt->nr);
- 
- 	dump_bits(&p, "status", skt->status,
- 		  status_bits, ARRAY_SIZE(status_bits));
-@@ -491,12 +498,12 @@ static ssize_t show_status(struct device *dev, struct device_attribute *attr, ch
- 	dump_bits(&p, "cs_flags", skt->cs_state.flags,
- 		  conf_bits, ARRAY_SIZE(conf_bits));
- 
--	p+=sprintf(p, "Vcc      : %d\n", skt->cs_state.Vcc);
--	p+=sprintf(p, "Vpp      : %d\n", skt->cs_state.Vpp);
--	p+=sprintf(p, "IRQ      : %d (%d)\n", skt->cs_state.io_irq,
-+	p += sprintf(p, "Vcc      : %d\n", skt->cs_state.Vcc);
-+	p += sprintf(p, "Vpp      : %d\n", skt->cs_state.Vpp);
-+	p += sprintf(p, "IRQ      : %d (%d)\n", skt->cs_state.io_irq,
- 		skt->socket.pci_irq);
- 	if (skt->ops->show_timing)
--		p+=skt->ops->show_timing(skt, p);
-+		p += skt->ops->show_timing(skt, p);
- 
- 	return p-buf;
- }
-@@ -589,7 +596,7 @@ soc_pcmcia_notifier(struct notifier_block *nb, unsigned long val, void *data)
- 
- 	mutex_lock(&soc_pcmcia_sockets_lock);
- 	list_for_each_entry(skt, &soc_pcmcia_sockets, node)
--		if ( skt->ops->frequency_change )
-+		if (skt->ops->frequency_change)
- 			ret += skt->ops->frequency_change(skt, val, freqs);
- 	mutex_unlock(&soc_pcmcia_sockets_lock);
- 
-@@ -615,7 +622,8 @@ fs_initcall(soc_pcmcia_cpufreq_register);
- 
- static void soc_pcmcia_cpufreq_unregister(void)
- {
--	cpufreq_unregister_notifier(&soc_pcmcia_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
-+	cpufreq_unregister_notifier(&soc_pcmcia_notifier_block,
-+		CPUFREQ_TRANSITION_NOTIFIER);
- }
- module_exit(soc_pcmcia_cpufreq_unregister);
- 
--- 
-1.7.0.3
+Btw, unless I miss something else, this is the same in follow_page()?
 
+diff --git a/mm/memory.c b/mm/memory.c
+index 22ee158..6c26042 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1301,18 +1301,14 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 	}
+ 	if (pmd_trans_huge(*pmd)) {
+ 		spin_lock(&mm->page_table_lock);
+-		if (likely(pmd_trans_huge(*pmd))) {
+-			if (unlikely(pmd_trans_splitting(*pmd))) {
+-				spin_unlock(&mm->page_table_lock);
+-				wait_split_huge_page(vma->anon_vma, pmd);
+-			} else {
+-				page = follow_trans_huge_pmd(mm, address,
+-							     pmd, flags);
+-				spin_unlock(&mm->page_table_lock);
+-				goto out;
+-			}
+-		} else
++		if (unlikely(pmd_trans_splitting(*pmd))) {
+ 			spin_unlock(&mm->page_table_lock);
++			wait_split_huge_page(vma->anon_vma, pmd);
++		} else {
++			page = follow_trans_huge_pmd(mm, address, pmd, flags);
++			spin_unlock(&mm->page_table_lock);
++			goto out;
++		}
+ 		/* fall through */
+ 	}
+ 	if (unlikely(pmd_bad(*pmd)))
+
+> And if it wasn't the case it wouldn't be safe to return huge = 0 as
+> the page_table_lock is released at that point.
+
+True.
+
+> > +		spin_unlock(&vma->vm_mm->page_table_lock);
+> > +		/*
+> > +		 * If we have an intact huge pmd entry, all pages in
+> > +		 * the range are present in the mincore() sense of
+> > +		 * things.
+> > +		 *
+> > +		 * But if the entry is currently being split into
+> > +		 * normal page mappings, wait for it to finish and
+> > +		 * signal the fallback to ptes.
+> > +		 */
+> > +		if (huge)
+> > +			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
+> > +		else
+> > +			wait_split_huge_page(vma->anon_vma, pmd);
+> > +	} else
+> > +		spin_unlock(&vma->vm_mm->page_table_lock);
+> > +#endif
+> > +	return huge;
+> > +}
+> > +
+> 
+> It's probably cleaner to move the block into huge_memory.c and create
+> a dummy for the #ifndef version like I did for all the rest.
+
+Agreed.
+
+> I'll incorporate and take care of those changes myself if you don't
+> mind, as I'm going to do a new submit for -mm.
+
+Knock yourself out :-)
+
+	Hannes
