@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab0CYI0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 04:26:45 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:44296 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab0CYI0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 04:26:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WlVtbZ6FndNSm0D6HFF3eblm8Ls8N9EuWolnp4X0GWNI11BsqpXsHXimyX0v2nRVbq
-         y4K8BaM418Y3L8L4IPunSE7LOq1haifb+8OQL8skKv4n2w4vDM8THGZrQ15rbE7boCHy
-         lulz7xGW3c/tsY3Ji5VhCpBrxzJXUnzCpImjk=
-MIME-Version: 1.0
-In-Reply-To: <4BAAD5BB.7050101@samsung.com>
-References: <4BAAD5BB.7050101@samsung.com>
-Date: Thu, 25 Mar 2010 09:26:40 +0100
-Message-ID: <63386a3d1003250126j4726a709o6bb0dc1355dc911e@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: dan.j.williams@intel.com, kyungmin.park@samsung.com,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751884Ab0CYI2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 04:28:31 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46638 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751282Ab0CYI2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 04:28:30 -0400
+Subject: Re: [PATCH 1/2] mm/vmalloc: Export purge_vmap_area_lazy()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Nathan Fontenot <nfont@austin.ibm.com>
+In-Reply-To: <20100325052814.GA7493@laptop.nomadix.com>
+References: <1269417391.8599.188.camel@pasglop>
+	 <20100325052814.GA7493@laptop.nomadix.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 19:25:59 +1100
+Message-ID: <1269505559.8599.239.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/25 Joonyoung Shim <jy0922.shim@samsung.com>:
 
-> The PL330 is currently the dma controller using at the S5PC1XX arm SoC.
-> This supports DMA_MEMCPY and DMA_SLAVE.
+> You want vm_unmap_aliases(), which also flushes entries in the
+> per-cpu vmap allocator (and is already exported for other code
+> that has similar problems).
 
-Looks good to me now so:
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Ok, I missed that one. I'll update my patch. Thanks.
 
-Linus Walleij
+Cheers,
+Ben.
+
+
