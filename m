@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab0CYIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 04:46:57 -0400
-Received: from mga10.intel.com ([192.55.52.92]:5318 "EHLO
-	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751651Ab0CYIqz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 04:46:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,306,1267430400"; 
-   d="scan'208";a="551973289"
-Subject: Re: [PATCH 3/3] perf events: Change perf parameter --pid to
- process-wide collection instead of thread-wide
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>,
-       oerg Roedel <joro@8bytes.org>, Jes Sorensen <Jes.Sorensen@redhat.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       kvm@vger.kernel.org, zhiteng.huang@intel.com,
-       Zachary Amsden <zamsden@redhat.com>
-In-Reply-To: <4BAB1881.8020500@cn.fujitsu.com>
-References: <1268904666.2813.172.camel@localhost>
-	 <4BAB1881.8020500@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 25 Mar 2010 16:47:44 +0800
-Message-Id: <1269506864.2078.75.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753329Ab0CYIru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 04:47:50 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51359 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751651Ab0CYIrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 04:47:48 -0400
+Date: Thu, 25 Mar 2010 08:47:30 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 06/11] Export fragmentation index via
+	/proc/extfrag_index
+Message-ID: <20100325084730.GG2024@csn.ul.ie>
+References: <20100323050910.A473.A69D9226@jp.fujitsu.com> <20100323120329.GE9590@csn.ul.ie> <20100325102342.945A.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100325102342.945A.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 16:02 +0800, Li Zefan wrote:
-> Zhang, Yanmin wrote:
-> > From: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
+On Thu, Mar 25, 2010 at 11:47:17AM +0900, KOSAKI Motohiro wrote:
+> > On Tue, Mar 23, 2010 at 09:22:04AM +0900, KOSAKI Motohiro wrote:
+> > > > > > +	/*
+> > > > > > +	 * Index is between 0 and 1 so return within 3 decimal places
+> > > > > > +	 *
+> > > > > > +	 * 0 => allocation would fail due to lack of memory
+> > > > > > +	 * 1 => allocation would fail due to fragmentation
+> > > > > > +	 */
+> > > > > > +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
+> > > > > > +}
+> > > > > 
+> > > > > Dumb question.
+> > > > > your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
+> > > > > fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
+> > > > > but your code have extra '1000+'. Why?
+> > > > 
+> > > > To get an approximation to three decimal places.
+> > > 
+> > > Do you mean this is poor man's round up logic?
 > > 
-> > Parameter --pid (or -p) of perf currently means a thread-wide collection.
-> > For exmaple, if a process whose id is 8888 has 10 threads, 'perf top -p 8888'
-> > just collects the main thread statistics. That's misleading. Users are
-> > used to attach a whole process when debugging a process by gdb. To follow
-> > normal usage style, the patch change --pid to process-wide collection and
-> > add --tid (-t) to mean a thread-wide collection.
+> > Not exactly.
 > > 
-> > Usage example is:
-> > #perf top -p 8888
-> > #perf record -p 8888 -f sleep 10
-> > #perf stat -p 8888 -f sleep 10
-> > Above commands collect the statistics of all threads of process 8888.
-> > 
-> > Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-> > 
+> > The intention is to have a value of 968 instead of 0.968231. i.e.
+> > instead of a value between 0 and 1, it'll be a value between 0 and 1000
+> > that matches the first three digits after the decimal place.
 > 
-> Seems this patch causes seg faults:
+> Let's consider extream case.
 > 
-> # ./perf sched record
-> Segmentation fault
-> # ./perf kmem record
-> Segmentation fault
-> # ./perf timechart record
-> Segmentation fault
+> free_pages: 1
+> requested: 1
+> free_blocks_total: 1
+> 
+> frag_index = 1000  - ((1000 + 1*1000/1))/1 = -1000
+> 
+> This is not your intension, I guess. 
 
-Thanks for reporting it. Arnaldo, could you pick up below patch?
-Zefan, Could you try it?
+Why not?
 
-mmap_array[][][] is not reset to 0 after malloc. Below patch against
-tip/master of March 24th fixes it with a zalloc.
+See this comment
 
-Reported-by:	Li Zefan <lizf@cn.fujitsu.com>
-Signed-off-by:	Zhang Yanmin <yanmin_zhang@linux.intel.com>
+/* Fragmentation index only makes sense when a request would fail */
 
----
+In your example, there is a free page of the requested size so the allocation
+would succeed. In this case, fragmentation index does indeed go negative
+but the value is not useful.
 
-diff -Nraup linux-2.6_tip0324/tools/perf/builtin-record.c linux-2.6_tip0324_perfkvm/tools/perf/builtin-record.c
---- linux-2.6_tip0324/tools/perf/builtin-record.c	2010-03-25 10:58:13.308912201 +0800
-+++ linux-2.6_tip0324_perfkvm/tools/perf/builtin-record.c	2010-03-25 16:14:18.201475298 +0800
-@@ -751,7 +751,7 @@ int cmd_record(int argc, const char **ar
- 	for (i = 0; i < MAX_NR_CPUS; i++) {
- 		for (j = 0; j < MAX_COUNTERS; j++) {
- 			fd[i][j] = malloc(sizeof(int)*thread_num);
--			mmap_array[i][j] = malloc(
-+			mmap_array[i][j] = zalloc(
- 				sizeof(struct mmap_data)*thread_num);
- 			if (!fd[i][j] || !mmap_array[i][j])
- 				return -ENOMEM;
-diff -Nraup linux-2.6_tip0324/tools/perf/builtin-top.c linux-2.6_tip0324_perfkvm/tools/perf/builtin-top.c
---- linux-2.6_tip0324/tools/perf/builtin-top.c	2010-03-25 10:58:13.284848937 +0800
-+++ linux-2.6_tip0324_perfkvm/tools/perf/builtin-top.c	2010-03-25 16:14:56.875266645 +0800
-@@ -1371,7 +1371,7 @@ int cmd_top(int argc, const char **argv,
- 	for (i = 0; i < MAX_NR_CPUS; i++) {
- 		for (j = 0; j < MAX_COUNTERS; j++) {
- 			fd[i][j] = malloc(sizeof(int)*thread_num);
--			mmap_array[i][j] = malloc(
-+			mmap_array[i][j] = zalloc(
- 				sizeof(struct mmap_data)*thread_num);
- 			if (!fd[i][j] || !mmap_array[i][j])
- 				return -ENOMEM;
+> Probably we don't need any round_up/round_down logic. because fragmentation_index
+> is only used "if (fragindex >= 0 && fragindex <= 500)" check in try_to_compact_pages().
+> +1 or -1 inaccurate can be ignored. iow, I think we can remove '1000+' expression.
+> 
 
+This isn't about rounding, it's about having a value that normally is
+between 0 and 1 expressed as a number between 0 and 1000 because we
+can't use double in the kernel.
 
+> 
+> > > Why don't you use DIV_ROUND_UP? likes following,
+> > > 
+> > > return 1000 - (DIV_ROUND_UP(info->free_pages * 1000 / requested) /  info->free_blocks_total);
+> > > 
+> > 
+> > Because it's not doing the same thing unless I missed something.
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
