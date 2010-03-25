@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0CYIaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 04:30:16 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:51774 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab0CYIaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 04:30:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Eabjv5CoyuEsPq9p8rTKGZzJcdQnAfhDqrG7GyvaN6ExdySxuj5bI7tUBaoITlzmrR
-         b3QlhpFwsKmSPIjIWzX97JF1qodI/j/i+VpjiDIV/Z7TqVxCPfoSF6zHgHDxWuUcOB3o
-         RI3LiTLyfB48t4hMMTdQvrPP/vnnP8MmtCxa4=
+	id S1753205Ab0CYIc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 04:32:56 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47238 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751707Ab0CYIcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 04:32:54 -0400
+Date: Thu, 25 Mar 2010 08:32:35 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+	anonymous pages
+Message-ID: <20100325083235.GF2024@csn.ul.ie>
+References: <20100319152103.876F.A69D9226@jp.fujitsu.com> <20100319085949.GQ12388@csn.ul.ie> <20100325095349.944E.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-References: <4BAAD5BB.7050101@samsung.com>
-	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-Date: Thu, 25 Mar 2010 09:30:12 +0100
-Message-ID: <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: jassi brar <jassisinghbrar@gmail.com>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>, dan.j.williams@intel.com,
-       kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100325095349.944E.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/25 jassi brar <jassisinghbrar@gmail.com>:
+On Thu, Mar 25, 2010 at 11:49:23AM +0900, KOSAKI Motohiro wrote:
+> > On Fri, Mar 19, 2010 at 03:21:41PM +0900, KOSAKI Motohiro wrote:
+> > > > > then, this logic depend on SLAB_DESTROY_BY_RCU, not refcount.
+> > > > > So, I think we don't need your [1/11] patch.
+> > > > > 
+> > > > > Am I missing something?
+> > > > > 
+> > > > 
+> > > > The refcount is still needed. The anon_vma might be valid, but the
+> > > > refcount is what ensures that the anon_vma is not freed and reused.
+> > > 
+> > > please please why do we need both mechanism. now cristoph is very busy and I am
+> > > de fact reviewer of page migration and mempolicy code. I really hope to understand
+> > > your patch.
+> > 
+> > As in, why not drop the RCU protection of anon_vma altogeter? Mainly, because I
+> > think it would be reaching too far for this patchset and it should be done as
+> > a follow-up. Putting the ref-count everywhere will change the cache-behaviour
+> > of anon_vma more than I'd like to slip into a patchset like this. Secondly,
+> > Christoph mentions that SLAB_DESTROY_BY_RCU is used to keep anon_vma cache-hot.
+> > For these reasons, removing RCU from these paths and adding the refcount
+> > in others is a patch that should stand on its own.
+> 
+> Hmmm...
+> I haven't understand your mention because I guess I was wrong.
+> 
+> probably my last question was unclear. I mean,
+> 
+> 1) If we still need SLAB_DESTROY_BY_RCU, why do we need to add refcount?
+>     Which difference is exist between normal page migration and compaction?
 
-> I too have been writing a driver for PL330 after taking into account the
-> suggestions of Russell, Ben and other participants of the thread
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-February/009856.html
->
-> If you don't think this driver conflicts with the theme of the thread,
-> may I ask you to please put this driver on hold until you checkout my implementation
-> of solution to the issue... which should be soon.
+The processes typically calling migration today own the page they are moving
+and is not going to exit unexpectedly during migration.
 
-Please post the code as it looks today even if it's not compiling
-instead of asking others
-to hold their patches back. It will be obvious from what you have if
-there is some special
-use you're covering. Perhaps Joonyoung can simply port over the stuff
-you need to
-this driver if you show your code.
+> 2) If we added refcount, which race will solve?
+> 
 
-Yours,
-Linus Walleij
+The process exiting and the last anon_vma being dropped while compaction
+is running. This can be reliably triggered with compaction.
+
+> IOW, Is this patch fix old issue or compaction specific issue?
+> 
+
+Strictly speaking, it's an old issue but in practice it's impossible to
+trigger because the process migrating always owns the page. Compaction
+moves pages belonging to arbitrary processes.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
