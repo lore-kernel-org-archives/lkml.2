@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab0CYWLp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:11:45 -0400
-Received: from bu3sch.de ([62.75.166.246]:56222 "EHLO vs166246.vserver.de"
+	id S1752198Ab0CYWMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:12:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51647 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750944Ab0CYWLo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 18:11:44 -0400
-From: Michael Buesch <mb@bu3sch.de>
-To: =?utf-8?q?J=C3=A9r=C3=B4me_Oufella?= 
-	<jerome.oufella@savoirfairelinux.com>
-Subject: Re: gpiolib: irq functions not implemented on x86
-Date: Thu, 25 Mar 2010 23:11:22 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.33; KDE/4.3.4; ppc; ; )
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-References: <566941124.2751269545764521.JavaMail.root@mail.savoirfairelinux.com>
-In-Reply-To: <566941124.2751269545764521.JavaMail.root@mail.savoirfairelinux.com>
+	id S1751730Ab0CYWLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 18:11:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [RFC 09/15] PM / Hibernate: user, implement user_ops writer
+Date: Thu, 25 Mar 2010 23:14:33 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <20100324204259.GA6423@elf.ucw.cz> <4BAA86E8.5090108@gmail.com>
+In-Reply-To: <4BAA86E8.5090108@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201003252311.22522.mb@bu3sch.de>
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003252314.33256.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Are you sure that I am the intended recipient of this mail?
+On Wednesday 24 March 2010, Jiri Slaby wrote:
+> On 03/24/2010 09:42 PM, Pavel Machek wrote:
+> >> +	if (test_bit(TODO_CLOSED, to_do_flags))
+> >> +		return -EIO;
+> >> +
+> >> +	to_do_buf = buf;
+> >> +	wmb();
+> >> +	set_bit(TODO_WORK, to_do_flags);
+> >> +	wake_up_interruptible(&to_do_wait);
+> > 
+> > Uhuh, open-coded barriers... these need to be commented, and I guess
+> > you just should not play this kind of trickery.
+> 
+> It's just to ensure the to_do_buf store is not reordered with the
+> set_bit. I wanted to avoid locks as too heavy tools here.
 
-I'm not involved in the GPIO subsystem at all.
+No, please use them, at least in a prototype version.
 
+We can always optimize things out later, but doing optimizations upfront
+doesn't really work well from my experience.
 
-On Thursday 25 March 2010 20:36:04 Jérôme Oufella wrote:
-> Hi,
-> 
-> I wrote a gpiolib implementation for Technologic Systems TS-5500 boards (x86)
-> custom GPIO lines. Some of their GPIO lines are directly hooked to CPU (ElanSC520)
-> GPIRQ lines, so they can trigger IRQs.
-> 
-> However, looking at arch/x86/include/asm/gpio.h:
-> /*
->  * Not implemented, yet.
->  */
-> static inline int gpio_to_irq(unsigned int gpio)
-> {
->         return -ENOSYS;
-> }
-> 
-> gpio_to_irq()/irq_to_gpio() are not defined on x86 yet.
-> 
-> Q: Is there a reason not to have it call gpiolib's __gpio_to_irq(), as done 
-> for other gpiolib functions defined here ? such as
-> 
-> -       return -ENOSYS;
-> +       return __gpio_to_irq(gpio);
-> 
-> 
-> Thanks
-> Jerome Oufella
-> 
-> 
+So, if you'd use a lock somewhere, please use it, or maybe use a completion if
+that fits the design better.  In the majority of cases it's not as heavy wieght
+as it seems at first sight.
 
--- 
-Greetings, Michael.
+Rafael
