@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab0CYPZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:25:09 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59924 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab0CYPZH (ORCPT
+	id S1754902Ab0CYPZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:25:16 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:43436 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab0CYPZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:25:07 -0400
-Date: Thu, 25 Mar 2010 15:25:05 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Benny Halevy <bhalevy@panasas.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-Message-ID: <20100325152505.GD30031@ZenIV.linux.org.uk>
-References: <20100325101231.GU30031@ZenIV.linux.org.uk>
- <20100325105406.GW30031@ZenIV.linux.org.uk>
- <4BAB51F5.609@panasas.com>
- <4BAB54B0.3080109@panasas.com>
- <20100325130610.GZ30031@ZenIV.linux.org.uk>
- <4BAB656E.8020204@panasas.com>
- <20100325133746.GA30031@ZenIV.linux.org.uk>
- <4BAB6911.5020009@panasas.com>
- <20100325140457.GB30031@ZenIV.linux.org.uk>
- <4BAB72C1.6090002@panasas.com>
+	Thu, 25 Mar 2010 11:25:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:subject:to:cc:date:message-id:user-agent:mime-version
+         :content-type:content-transfer-encoding;
+        b=TmN6L3ysXU7f7GHjeqKYZrzS6RUoE32m0GanXUj+QzqoWZkkSt5g40x0n8sNsy5DRD
+         sD7iNooXE60cY3t0S16lgIonxnXS2/vUj351i7PGla7CmuF/yBfPDxLmyhPtGwOynPFf
+         KHqKTyBee7J2zE405oOosBwiPvBnFRZu7b9ig=
+From: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Subject: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
+To: dwmw2@infradead.org
+Cc: nico@fluxnic.net, akpm@linux-foundation.org,
+       u.kleine-koenig@pengutronix.de, simon.kagstrom@netinsight.net,
+       linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Date: Thu, 25 Mar 2010 17:25:05 +0200
+Message-ID: <20100325152505.17612.40158.stgit@pauliusz>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAB72C1.6090002@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 04:27:13PM +0200, Boaz Harrosh wrote:
- 
-> And about the NFS thing, let misbehaving applications byte there own bullets.
-> But a good app like git, does put an O_DIRECTORY on the directory open, and
-> therefore will receive consistent results, right?
+We must tell GCC to use even register for variable passed
+to ldrd instruction. Without this patch GCC 4.2.1 puts this
+variable to r2/r3 on EABI and r3/r4 on OABI, so force it to
+r2/r3. This does not change anything when EABI and OABI
+compilation works OK.
 
-What the hell do you mean, "misbehaving"?  O_DIRECTORY means one thing:
-"refuse to open if it turns out to be a non-directory".  If open() succeed
-with it and fails without, it's a definite bug.  Application has every
-right to call the damn thing without that flag.
+Without this patch and with OABI I get:
+  CC      drivers/mtd/nand/orion_nand.o
+/tmp/ccMkwOCs.s: Assembler messages:
+/tmp/ccMkwOCs.s:63: Error: first destination register must be even -- `ldrd r3,[ip]'
+make[5]: *** [drivers/mtd/nand/orion_nand.o] Error 1
 
-It *can* be used as a hint by fs code, and it's a useful hint, so yes,
-we need to restore LOOKUP_DIRECTORY (until we get rid of the entire
-d_revalidate/lookup+open mess and pass struct file + open flags directly
-to fs method for the last step of pathname resolution; basically, most
-of the do_last() guts would become that method, killing the intents
-crap for good; new method would simply check for O_DIRECTORY presence
-instead of looking at LOOKUP_DIRECTORY).
+Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+---
 
-However, NFS behaviour in cases when O_DIRECTORY is absent is a separate
-(and quite real) bug.  If nfs_atomic_lookup() sees -EISDIR from attempt
-to open on server, it should either issue plain lookup or try to use the
-information it got in response to open attempt (if there's enough of it
-there).  Passing -EISDIR to ->lookup() caller is simply wrong.
+ drivers/mtd/nand/orion_nand.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-I'm going to send a fix for O_DIRECTORY case (restoring the behaviour
-we had in 2.6.33) today, but NFS side of things also needs to be dealt
-with.
+diff --git a/drivers/mtd/nand/orion_nand.c b/drivers/mtd/nand/orion_nand.c
+index f59c074..d60fc57 100644
+--- a/drivers/mtd/nand/orion_nand.c
++++ b/drivers/mtd/nand/orion_nand.c
+@@ -60,7 +60,13 @@ static void orion_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+ 	}
+ 	buf64 = (uint64_t *)buf;
+ 	while (i < len/8) {
+-		uint64_t x;
++		/*
++		 * Since GCC has no proper constraint (PR 43518)
++		 * force x variable to r2/r3 registers as ldrd instruction
++		 * requires first register to be even.
++		 */
++		register uint64_t x asm ("r2");
++
+ 		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
+ 		buf64[i++] = x;
+ 	}
+
