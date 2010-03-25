@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab0CYAg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 20:36:58 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58357 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab0CYAg4 (ORCPT
+	id S1754176Ab0CYAlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 20:41:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43397 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab0CYAlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 20:36:56 -0400
-Date: Thu, 25 Mar 2010 01:36:52 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-       linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near overflowing v2
-Message-ID: <20100325003652.GG20695@one.firstfloor.org>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
+	Wed, 24 Mar 2010 20:41:17 -0400
+X-Authority-Analysis: v=1.0 c=1 a=1jx-JgeO208A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=MdFZble76LHdbGEffRcA:9 a=4XXGhTXZbKI54sh2OefPshBcbuYA:4 a=PUjeQqilurYA:10
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 5/5] trace-cmd: Simplify Makefile, and remove confusing
+  messages.
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: John Kacur <jkacur@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Darren Hart <dvhltc@us.ibm.com>
+In-Reply-To: <520f0cf11003241731r129590a1ha0bf28312659e87f@mail.gmail.com>
+References: <1269473050-11413-1-git-send-email-jkacur@redhat.com>
+	 <1269473050-11413-6-git-send-email-jkacur@redhat.com>
+	 <1269476692.2957.3267.camel@gandalf.stny.rr.com>
+	 <520f0cf11003241731r129590a1ha0bf28312659e87f@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 24 Mar 2010 20:41:15 -0400
+Message-ID: <1269477675.2957.3285.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 12:08:23AM +0100, Thomas Gleixner wrote:
-> On Wed, 24 Mar 2010, Thomas Gleixner wrote:
+On Thu, 2010-03-25 at 01:31 +0100, John Kacur wrote:
+
+> If you don't like this, I could just submit the README changes
+> but I would at least recommend that we change the messages
+> so they don't like like Makefile errors.
 > 
-> > On Wed, 24 Mar 2010, Andi Kleen wrote:
-> > 
-> > > Prevent nested interrupts when the IRQ stack is near overflowing v2
-> > > 
-> > > Interrupts can always nest when they don't run with IRQF_DISABLED.
-> > > 
-> > > When a lot of interrupts hit the same vector on the same
-> > > CPU nested interrupts can overflow the irq stack and cause hangs.
-> That's utter nonsense. An interrupt storm on the same vector does not
-> cause irq nesting. The irq code prevents reentering a handler and in
+> For example: REMINDER: You can make the gui by typing make gui
+> instead of the *** that match make file errors.
 
-Sorry it's the same CPU, not the same vector.  Yes the reference
-to same vector was misleading.
+How about:
 
-"
-Multiple vectors on a multi port NIC pointing to the same CPU, 
-all hitting the irq stack until it overflows.
-"
+NOTE: to build the gui, type make gui
 
-> case of MSI-X it just disables the IRQ when it comes again while the
-> first irq on that vector is still in progress. So the maximum nesting
-> is two up to handle_edge_irq() where it disables the IRQ and returns
-> right away.
+-- Steve
 
-Real maximum nesting is all IRQs running with interrupts on pointing
-to the same CPU. Enough from multiple busy IRQ sources and you go boom.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
