@@ -1,78 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab0CYWQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:16:13 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38562 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab0CYWQK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 18:16:10 -0400
-Date: Thu, 25 Mar 2010 23:16:38 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Valdis.Kletnieks@vt.edu, akpm@linux-foundation.org, davej@redhat.com,
-       linux@dominikbrodowski.net, mingo@elte.hu, hpa@zytor.com,
-       tglx@linutronix.de, cpufreq@vger.kernel.org, x86@kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] cpufreq: Add APERF/MPERF support for AMD processors
-Message-ID: <20100325221638.GA19269@aftab>
-References: <1269452783-966-1-git-send-email-bp@amd64.org>
- <201003251043.04867.trenn@suse.de>
- <13218.1269546919@localhost>
- <201003252159.31883.trenn@suse.de>
+	id S1752673Ab0CYWSm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:18:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51674 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751257Ab0CYWSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 18:18:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement user_ops reader
+Date: Thu, 25 Mar 2010 23:21:49 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-10-git-send-email-jslaby@suse.cz> <20100325053003.GB12935@elf.ucw.cz>
+In-Reply-To: <20100325053003.GB12935@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003252159.31883.trenn@suse.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003252321.49135.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Renninger <trenn@suse.de>
-Date: Thu, Mar 25, 2010 at 09:59:31PM +0100
-
-> On Thursday 25 March 2010 08:55:19 pm Valdis.Kletnieks@vt.edu wrote:
-> > On Thu, 25 Mar 2010 10:43:04 BST, Thomas Renninger said:
-> > > > +	if (c->cpuid_level >= 6) {
-> > >
-> > > and remove this (arch/x86/kernel/cpu/intel.c):
-> > >         if (c->cpuid_level > 6) {
-> >
-> > So is > or >= the correct comparator here?
+On Thursday 25 March 2010, Pavel Machek wrote:
+> Hi!
 > 
-> This one: >= is correct (for both).
-> I double checked, there is one Intel CPU type
-> having a cpuid_level of 6, but this would not support aperf/mperf, thus
-> above is still fine.
-
-Agreed. ">" won't work on machines which have base cpuidlevel == 6 (like
-AMD, f.e.)
-
-> The remaining question is what Borislav said:
-> are there other x86 CPU vendors who could use this differently.
-> I very much expect there are not.
+> > Switch /dev/snapshot reader to sws_module_ops approach so that we
+> > can transparently rewrite the rest of the snapshot from pages pulling
+> > to their pushing through layers.
 > 
-> IMO you should resubmit this one or the whole series with this change
+> >  struct sws_module_ops user_ops = {
+> >  	.storage_available = user_storage_available,
+> >  
+> >  	.get_writer = get_user_writer,
+> >  	.put_writer = put_user_writer,
+> >  	.write_page = user_write_page,
+> > +
+> > +	.get_reader = get_user_reader,
+> > +	.put_reader = put_user_reader,
+> > +	.read_page = user_read_page,
+> >  };
+> 
+> Ok, I guess that now I see what you are doing.... adding interface
+> layer between /dev/snapshot and core hibernation code.
+> 
+> To recap, 2.6.33 hibernation looks like:
+> 
+> 			core hibernation
+> 				/\
+> 			       /  \
+> 			swsusp	  /dev/snapshot
+> 			swap            \
+> 			writing      -------- read/write/ioctl interface
+>                                           \
+> 					 s2disk
+> 
+> and after your patches, we'd get
+> 
+> 			core hibernation
+> 				/\
+>                             ---------- sws_module_ops interface
+> 			       /  \
+> 			swsusp	  /dev/snapshot
+> 			swap            \
+> 			writing      -------- read/write/ioctl interface
+>                                           \
+> 					 s2disk
+> 
+> (Right? Did I understand the patches correctly?)
+> 
+> I have some problems with sws_module_ops interface (handcoded locking
+> is too ugly to live), but it is better than I expected. But there may
+> be better solution available, one that does not need two interfaces to
+> maintain (we can't really get rid of userland interface). What about
+> this?
+> 
+> 
+> 
+> 			core hibernation
+> 				 \
+> 			          \
+> 			      	  /dev/snapshot
+> 		                      / \
+> 			           ---------- read/write/ioctl interface
+>                                     /     \
+> 				swsusp	 s2disk
+> 				swap
+> 				writing
+> 
+> ? That way, we have just one interface, and still keep the advantages
+> of modularity / defined interfaces.
+> 
+> (You could literary call sys_read() from inside the kernel -- after
+> set_fs() -- but going to that extreme is probably not neccessary. But
+> having interface very similar to what /dev/snapshot provides -- with
+> the same locking rules -- should result in better code.)
 
-Ok, will do tomorrow.
+The user space interface does things that the in-kernel one doesn't really care
+for, so I don't think that would be a good thing to do.  I admit it's a bit
+like this right now (snapshot_[read|write]_next() do some things to satisfy
+the user space interface's needs), but I don't really think it should go any
+further than that.
 
-> and Dave should just push this in his tree and queue it up, there was enough
-> time to object.
+Moreover, the Jiri's approach allows us to handle other types of storage as
+well as swap using uniform interface.
 
-The problem here is that the patches touch both cpufreq and x86 code.
-Hmmm...
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+Rafael
