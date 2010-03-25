@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab0CYMR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 08:17:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43142 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab0CYMR4 (ORCPT
+	id S1753590Ab0CYMTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 08:19:03 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:15000 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751133Ab0CYMTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 08:17:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=EgstZxuwbP9MfOOZ9h71ZStnbUGreArQaLk+7VgB2CA8tFe49ZK3dkCXZZczzSxO9+
-         OZnqMXaX+59xuD04riSW2gKbbY4JAps0nq5hK1+jCpTYbQXo/1zg4hSzwwxjhDOOrYEH
-         F6DEYI1Mtr4iQpWGhcX9hl0i3S/de/3TmOjes=
+	Thu, 25 Mar 2010 08:19:00 -0400
+Message-ID: <4BAB54B0.3080109@panasas.com>
+Date: Thu, 25 Mar 2010 14:18:56 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-In-Reply-To: <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-References: <4BAAD5BB.7050101@samsung.com>
-	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-Date: Thu, 25 Mar 2010 21:17:54 +0900
-Message-ID: <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: jassi brar <jassisinghbrar@gmail.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Joonyoung Shim <jy0922.shim@samsung.com>, dan.j.williams@intel.com,
-       kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+CC: pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>	<4BAA4CAC.6060104@panasas.com>	<4BAA5035.1060906@panasas.com>	<4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk>	<20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com>
+In-Reply-To: <4BAB51F5.609@panasas.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2010 12:18:59.0248 (UTC) FILETIME=[58F79300:01CACC15]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 5:30 PM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/3/25 jassi brar <jassisinghbrar@gmail.com>:
->
->> I too have been writing a driver for PL330 after taking into account the
->> suggestions of Russell, Ben and other participants of the thread
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-February/009856.html
->>
->> If you don't think this driver conflicts with the theme of the thread,
->> may I ask you to please put this driver on hold until you checkout my implementation
->> of solution to the issue... which should be soon.
->
-> Please post the code as it looks today even if it's not compiling
-> instead of asking others
-> to hold their patches back. It will be obvious from what you have if
-> there is some special
-> use you're covering.
-My approach is to write a separate PL330 core driver as the backend which
-can be reused by any DMA API implementer driver. That will avoid
-having two copies
-of the PL330 driver, among other benefits. And if this patch is accepted, there
-_will_ exist two copies of the PL330 driver -- one in drivers/dma/pl330_dmac.c
-and another in arch/arm/plat-samsung/. Only the former will be lying unused
-until some other SoC vendor decided to use PL330, because S3C has come too
-long a way to change its drivers to driver/dma/ API and modify DMA
-drivers for every SoC.
+On Mar. 25, 2010, 14:07 +0200, Benny Halevy <bhalevy@panasas.com> wrote:
+> On Mar. 25, 2010, 12:54 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>> On Thu, Mar 25, 2010 at 10:12:31AM +0000, Al Viro wrote:
+>>> On Thu, Mar 25, 2010 at 11:39:38AM +0200, Boaz Harrosh wrote:
+>>>
+>>>> It makes no difference, fails just the same. Would an "strace" help?
+>>> It might, especially if you ran it for identical repositories on local
+>>> fs and on NFS; at least that way it would be possible to see where do
+>>> they diverge...
+>> I wonder...  What happens if you add
+>> 	if (error == -EISDIR)
+>> 		printk("blah: %s", pathname);
+>> right after do_lookup() call in do_last()?  That would separate -EISDIR
+>> coming from NFS from the same thing coming from fs/namei.c...
+> 
+> Bingo.
+> It is returned from do_lookup.
 
-I plan something like, arch/arm/common/pl330-core.c implementing the specs in
-http://infocenter.arm.com/help/topic/com.arm.doc.ddi0424a/DDI0424A_dmac_pl330_r0p0_trm.pdf
-and drivers/dma/pl330.c implement DMA API for SoCs that chose to use it...
-and arch/arm/plat-samsung/dma-pl330.c implementing regular S3C DMA API.
+Indeed this error is coming from the server:
 
-I don't claim to have a silver bullet, nobody has atm, but my approach
-is at least
-more aligned with what maintainers want.
+nfsd_dispatch: vers 4 proc 1                                                                            
+nfsv4 compound op #1/7: 22 (OP_PUTFH)                                                                   
+nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
+nfsv4 compound op ffff880076734078 opcnt 7 #1: 22: status 0                                             
+nfsv4 compound op #2/7: 32 (OP_SAVEFH)                                                                  
+nfsv4 compound op ffff880076734078 opcnt 7 #2: 32: status 0                                             
+nfsv4 compound op #3/7: 18 (OP_OPEN)                                                                    
+NFSD: nfsd4_open filename pack op_stateowner (null)                                                     
+renewing client (clientid 4bab503e/00000002)                                                            
+nfsd: nfsd_lookup(fh 16: 01010001 00000000 000e6592 345b9f25 00000000 00000000, pack)                   
+nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
+nfsd: fh_compose(exp 08:05/106497 objects/pack, ino=943508)                                             
+nfsd: fh_verify(16: 01010001 00000000 000e6594 345b9f26 00000000 00000000)                              
+nfsv4 compound op ffff880076734078 opcnt 7 #3: 18: status 21                                            
+nfsv4 compound returned 21                                                                              
 
-I have the pl330-core part almost ready, but i need time to implement
-some _testable_
-implementation of the scheme. If maintainers want to see structure of
-my code, I can
-share it too, but I think I pretty much made it clear.
-
-> Perhaps Joonyoung can simply port over the stuff
-> you need to this driver if you show your code.
-Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
-_very_ surprised if any user found this implementation useful.
-Let alone testing, this implementation can't even explain usability
-for fast peripherals
-with shallow FIFOs. I didn't give feedback for this patch because I am
-not sure if this
-is the right way to go at all.
-
-regards.
+> 
+> @@ -1648,6 +1654,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+>  	/* just plain open? */
+>  	if (!(open_flag & O_CREAT)) {
+>  		error = do_lookup(nd, &nd->last, path);
+> +		if (error == -EISDIR)
+> +			printk("%s: do_lookup returned -EISDIR %s\n", __func__, pathname);
+>  		if (error)
+>  			goto exit;
+>  		error = -ENOENT;
+> 
+> 
+>> _______________________________________________
+>> pNFS mailing list
+>> pNFS@linux-nfs.org
+>> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
+> _______________________________________________
+> pNFS mailing list
+> pNFS@linux-nfs.org
+> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
