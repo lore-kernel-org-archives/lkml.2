@@ -1,99 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752085Ab0CYQE5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 12:04:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab0CYQEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 12:04:55 -0400
-Date: Thu, 25 Mar 2010 17:02:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] sched/cpusets fixes, more changes are needed
-Message-ID: <20100325160243.GA11517@redhat.com>
-References: <20100315090958.GA9116@redhat.com> <1269452296.5109.508.camel@twins> <20100324180912.GA21774@redhat.com> <1269512531.12097.67.camel@laptop> <20100325154616.GA9773@redhat.com>
+	id S1752205Ab0CYQIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:08:23 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:55498 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0CYQIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 12:08:22 -0400
+Message-ID: <4BAB8A48.1080409@oracle.com>
+Date: Thu, 25 Mar 2010 09:07:36 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325154616.GA9773@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Emmanuel Benisty <benisty.e@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-03-24-14-48 uploaded
+References: <201003242215.o2OMFZQ9030208@imap1.linux-foundation.org> <c1f41c621003250850s7552abb6h98ba57d51fe313e1@mail.gmail.com>
+In-Reply-To: <c1f41c621003250850s7552abb6h98ba57d51fe313e1@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BAB8A72.0146:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Oleg Nesterov wrote:
->
-> I like the current idea to call select_task_rq() without rq->lock, but
-> of course this is up to you.
->
-> However, once again, can't we make a simpler patch?
->
-> 	- remove PF_STARTING from task_waking()
-> 	
-> 	- change sched_fork() to set RUNNING instead of WAKING
->
-> 	- change wake_up_new_task() to set WAKING under rq->lock
->
-> This looks simpler to me, and allows to drop rq->lock in ttwu() right
-> after it sets WAKING.
+On 03/25/10 08:50, Emmanuel Benisty wrote:
+> hi Andrew,
+> 
+> On Thu, Mar 25, 2010 at 4:48 AM,  <akpm@linux-foundation.org> wrote:
+>> The mm-of-the-moment snapshot 2010-03-24-14-48 has been uploaded to
+>>
+>>   http://userweb.kernel.org/~akpm/mmotm/
+>>
+>> and will soon be available at
+>>
+>>   git://zen-kernel.org/kernel/mmotm.git
+> 
+> build fails with:
+> 
+> drivers/net/wireless/iwlwifi/iwl-rx.c: In function ‘iwl_good_ack_health’:
+> drivers/net/wireless/iwlwifi/iwl-rx.c:647: error: ‘struct iwl_priv’
+> has no member named ‘_agn’
+> drivers/net/wireless/iwlwifi/iwl-rx.c: In function ‘iwl_rx_reply_rx’:
+> drivers/net/wireless/iwlwifi/iwl-rx.c:1224: warning: ‘noise’ is
+> deprecated (declared at include/net/mac80211.h:557)
+> drivers/net/wireless/iwlwifi/iwl-rx.c:1226: warning: ‘noise’ is
+> deprecated (declared at include/net/mac80211.h:557)
+> make[4]: *** [drivers/net/wireless/iwlwifi/iwl-rx.o] Error 1
+> make[3]: *** [drivers/net/wireless/iwlwifi] Error 2
+> make[2]: *** [drivers/net/wireless] Error 2
+> make[1]: *** [drivers/net] Error 2
+> make: *** [drivers] Error 2
+> make: *** Waiting for unfinished jobs....
 
-IOW, something like the (unchecked, uncompiled) patch below.
+Patch (for error) is here:
+  http://marc.info/?l=linux-wireless&m=126946621910346&w=2
 
-What do you think?
-
-Oleg.
-
---- x/kernel/sched.c
-+++ x/kernel/sched.c
-@@ -912,7 +912,7 @@ static inline void finish_lock_switch(st
-  */
- static inline int task_is_waking(struct task_struct *p)
- {
--	return unlikely((p->state == TASK_WAKING) && !(p->flags & PF_STARTING));
-+	return unlikely(p->state == TASK_WAKING);
- }
- 
- /*
-@@ -2568,11 +2568,10 @@ void sched_fork(struct task_struct *p, i
- 
- 	__sched_fork(p);
- 	/*
--	 * We mark the process as waking here. This guarantees that
--	 * nobody will actually run it, and a signal or other external
--	 * event cannot wake it up and insert it on the runqueue either.
-+	 * We mark the process as running here. This guarantees that
-+	 * nobody will actually wake it up until wake_up_new_task().
- 	 */
--	p->state = TASK_WAKING;
-+	p->state = TASK_RUNNING;
- 
- 	/*
- 	 * Revert to default priority/policy on fork if requested.
-@@ -2638,15 +2637,18 @@ void wake_up_new_task(struct task_struct
- 	struct rq *rq;
- 	int cpu = get_cpu();
- 
-+	p->state = TASK_WAKING;
-+	smp_mb();
-+	raw_spin_unlock_wait(&rq->lock);
-+
- #ifdef CONFIG_SMP
- 	/*
- 	 * Fork balancing, do it here and not earlier because:
- 	 *  - cpus_allowed can change in the fork path
- 	 *  - any previously selected cpu might disappear through hotplug
- 	 *
--	 * We still have TASK_WAKING but PF_STARTING is gone now, meaning
--	 * ->cpus_allowed is stable, we have preemption disabled, meaning
--	 * cpu_online_mask is stable.
-+	 * TASK_WAKING means ->cpus_allowed is stable, we have preemption
-+	 * disabled, meaning cpu_online_mask is stable.
- 	 */
- 	cpu = select_task_rq(p, SD_BALANCE_FORK, 0);
- 	set_task_cpu(p, cpu);
-
+-- 
+~Randy
