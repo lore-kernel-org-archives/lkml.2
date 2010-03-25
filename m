@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab0CYUq3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:46:29 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:60026 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752594Ab0CYUq1 (ORCPT
+	id S1754825Ab0CYUsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:48:18 -0400
+Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:38863 "EHLO
+	ppsw-6.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab0CYUsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:46:27 -0400
-Date: Thu, 25 Mar 2010 20:46:19 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-Cc: dwmw2@infradead.org, nico@fluxnic.net, linux-kernel@vger.kernel.org,
-       linux-mtd@lists.infradead.org, u.kleine-koenig@pengutronix.de,
-       simon.kagstrom@netinsight.net, akpm@linux-foundation.org,
-       linux-arm-kernel@lists.infradead.org, rth@twiddle.net
-Subject: Re: [PATCH v2] MTD: Fix Orion NAND driver compilation with ARM OABI
-Message-ID: <20100325204619.GC19308@shareable.org>
-References: <20100325152505.17612.40158.stgit@pauliusz>
+	Thu, 25 Mar 2010 16:48:16 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Date: Thu, 25 Mar 2010 20:48:12 +0000 (GMT)
+From: Anton Altaparmakov <aia21@cam.ac.uk>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: Chris Dearman <chris@mips.com>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix __vmalloc(), etc on MIPS for non-GPL modules
+Message-ID: <Pine.LNX.4.64.1003252017360.17596@hermes-2.csi.cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325152505.17612.40158.stgit@pauliusz>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paulius Zaleckas wrote:
-> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+Hi,
 
-It's probably worth including the people who weighed in on the
-discussion with 'Cc:' headers.
+The commit 351336929ccf222ae38ff0cb7a8dd5fd5c6236a0 which can be seen 
+here:
 
-> -		uint64_t x;
-> +		/*
-> +		 * Since GCC has no proper constraint (PR 43518)
-> +		 * force x variable to r2/r3 registers as ldrd instruction
-> +		 * requires first register to be even.
-> +		 */
-> +		register uint64_t x asm ("r2");
-> +
->  		asm volatile ("ldrd\t%0, [%1]" : "=&r" (x) : "r" (io_base));
->  		buf64[i++] = x;
+http://kerneltrap.org/mailarchive/git-commits-head/2008/4/28/1639134
 
-The "register...asm" looks fine, but it occurs to me the constraints
-are too weak (and they were before), so GCC could optimise that to the
-wrong behaviour.
+Breaks all non-GPL modules that use __vmalloc() or any of the vmap(), 
+vm_map_ram(), etc functions on MIPS architecture.
 
-The "volatile" prevents GCC deleting the asm if it's output isn't
-used, but it doesn't stop GCC from reordering the asms, for example if
-it decides to unroll the loop.  It probably won't reorder in that
-case, but it could.  The result would be out of order values stored
-into buf[].  It could even move the ldrd earlier than the prior byte
-accesses, or after the later byte accesses.
+All those functions are EXPORT_SYMBOL() so are meant to be allowed to be 
+used by non-GPL kernel modules.  These calls all take page protection as 
+an argument which is normally a constant like PAGE_KERNEL.
 
-Any one of these should fix it:
+This commit causes all protection constants like PAGE_KERNEL to not be 
+constants and instead to contain the GPL-only symbol 
+_page_cachable_default.
 
-   - Make io_base a pointer-to-volatile-u64 or cast it in the asm, and
-     make sure to dereference it and use an "m" constraint (or
-     tighter, such as "Q", if ldrd needs it).  It must be u64, not
-     pointer-to-void, to tell GCC the size.  That tells GCC which memory
-     the asm accesses, and the volatile dereference should tell GCC
-     not to reorder them in principle (but the GCC manual doesn't
-     make a specific promise about this for asms).
+This means that all calls to __vmalloc(), vmap(), etc, cause non-GPL 
+modules to fail to link with the complaint that they are trying to use the 
+GPL-only symbol _page_cachable_default...
 
-     With a proper memory input with the correct size, in principle
-     "asm volatile" can be changed to just "asm", but I'm not entirely
-     convinced GCC will honour the volatile on the pointer, so I'd
-     leave it on the asm too.
+I therefore propose that the EXPORT_SYMBOL_GPL(_page_cachable_default) is 
+changed to EXPORT_SYMBOL(_page_cachable_default) to re-instate the 
+ability for non-GPL modules to call __vmalloc(), vmap(), vm_map_ram(), 
+and such like.
 
-   - Add "memory" to the asm's clobbers.  Although it doesn't write,
-     it does change the visible memory that *io_base sees, and anyway
-     GCC's manual says to use "memory" clobber when the asm does
-     unpredictable memory reads too.  With that added, you still need
-     the volatile keyword after asm, because the memory is not listed
-     in the inputs or outputs (only the address is).  The GCC manual
-     explains that "asm volatile" is needed in that case.
+Here is a patch that does this.  If you approve, please apply it.
 
-     This is slightly less good because it'd prevent reordering writes
-     to buf[i++] if GCC unrolled the loop.
+Thanks a lot in advance for your consideration.
 
-   - Put barrier() before and after the asm, which is equivalent to
-     adding a "memory" clobber (least good).
+Best regards,
 
-You aren't supposed to dereference pointers used with read{b,w,l}
-anyway.  It doesn't matter in this driver because we "know" it's only
-used on an SoC where read{b,w,l} don't do any address translation.
-But will that always be true?  I suppose the cleanest approach is to
-define readq, the 64-bit analogue of readl, and use that here.  x86
-already defines readq, so it's got precedent.
+	Anton
+-- 
+Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
+Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
+Linux NTFS maintainer, http://www.linux-ntfs.org/
 
--- Jamie
+---
+[PATCH] Fix __vmalloc(), vmap(), vm_map_ram(), etc on MIPS for non-GPL modules.
+
+Commit 351336929ccf222ae38ff0cb7a8dd5fd5c6236a0 broke these functions for 
+non-GPL modules by causing the page protection constants not to be 
+constants any more and instead to include a GPL-only symbol and as these 
+functions take a page protection argument this causes them to not be 
+callable from non-GPL modules any more even though the functions are 
+EXPORT_SYMBOL().
+
+Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
+
+diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+index be8627b..12af739 100644
+--- a/arch/mips/mm/cache.c
++++ b/arch/mips/mm/cache.c
+@@ -133,7 +133,7 @@ void __update_cache(struct vm_area_struct *vma, 
+unsigned lon
+ }
+ 
+ unsigned long _page_cachable_default;
+-EXPORT_SYMBOL_GPL(_page_cachable_default);
++EXPORT_SYMBOL(_page_cachable_default);
+ 
+ static inline void setup_protection_map(void)
+ {
+
