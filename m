@@ -1,109 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0CYPf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:35:29 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:55488 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753999Ab0CYPf1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:35:27 -0400
-Date: Thu, 25 Mar 2010 11:35:24 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
-Message-ID: <20100325153524.GB22007@Krystal>
-References: <20100325153436.GA22007@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325153436.GA22007@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:34:47 up 61 days, 18:11,  6 users,  load average: 0.26, 0.75,
-	0.91
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755029Ab0CYPgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:36:47 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:52861 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754930Ab0CYPgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 11:36:45 -0400
+Subject: Re: INFO: suspicious rcu_dereference_check()
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
+References: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 11:36:40 -0400
+Message-ID: <1269531400.3648.1.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 7 sum msgs/h 2 total rcpts 2617 max rcpts/h 27 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 6093171428F2035B21F7339EE267ECAF1190779A
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 260 max/h 7 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(should really have CC'd lkml, here it is)
+On Thu, 2010-03-25 at 11:48 +0100, Zdenek Kabelac wrote: 
+> Hi
+> 
+> I've enabled rcu correctness for my  todays 2.6.34-rc2 kernel.
+> 
+> I'm getting this INFO: from my kvm guest (which uses host's nfs
+> exported directory.)
+> This
+> 
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> fs/nfs/delegation.c:348 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 0
+> 2 locks held by rm/1820:
+>  #0:  (&sb->s_type->i_mutex_key#13/1){+.+.+.}, at:
+> [<ffffffff81138e1b>] do_unlinkat+0x9b/0x1c0
+>  #1:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff81136a76>]
+> vfs_unlink+0x56/0xf0
+> 
+> stack backtrace:
+> Pid: 1820, comm: rm Not tainted 2.6.34-rc2-00186-ge79a302 #60
+> Call Trace:
+>  [<ffffffff810819fb>] lockdep_rcu_dereference+0xbb/0xc0
+>  [<ffffffffa0228351>] nfs_inode_return_delegation+0x101/0x110 [nfs]
+>  [<ffffffffa01fd58d>] nfs_unlink+0xad/0x2a0 [nfs]
+>  [<ffffffff81136aba>] vfs_unlink+0x9a/0xf0
+>  [<ffffffff81148365>] ? mnt_want_write+0x65/0xb0
+>  [<ffffffff81138f03>] do_unlinkat+0x183/0x1c0
+>  [<ffffffff8142b66d>] ? retint_swapgs+0xe/0x13
+>  [<ffffffff81083985>] ? trace_hardirqs_on_caller+0x155/0x1a0
+>  [<ffffffff8142a232>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>  [<ffffffff811390a2>] sys_unlinkat+0x22/0x40
+>  [<ffffffff81031dc8>] sysenter_dispatch+0x7/0x2c
+> 
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> __module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
-> (RELOC_HIDE is needed for per cpu pointers).
-> 
-> This non-standard per-cpu pointer use has been introduced by commit
-> 720eba31f47aeade8ec130ca7f4353223c49170f
-> 
-> It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
-> enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
-> reported the bug).
-> 
-> It did not appear to hurt previously because most of the accesses were done
-> through local_inc, which probably obfuscated the access enough that no compiler
-> optimizations were done. But with local_read() done when CONFIG_TRACING is
-> active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
-> (module.c contains local_set and local_read that use __module_ref_addr()), but I
-> guess nobody noticed because we've been lucky enough that the compiler did not
-> generate the inappropriate optimization pattern there.
-> 
-> This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
-> (tested on 2.6.33.1 x86_64)
-> 
-> The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
-> percpu accesses were re-factored.
-> 
-> It makes me wonder about other non-standard uses of per_cpu_offset: there is one
-> in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
-> probably be fixed by the code authors in separate patches.
-> 
-> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Eric Dumazet <dada1@cosmosbay.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  include/linux/module.h |    2 +-
->  kernel/module.c        |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6-lttng/include/linux/module.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
-> +++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
-> @@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
->  static inline local_t *__module_ref_addr(struct module *mod, int cpu)
->  {
->  #ifdef CONFIG_SMP
-> -	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
-> +	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
->  #else
->  	return &mod->ref;
->  #endif
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+It is a 100% bogus warning. There are tentative patches floating around
+to fix the above warning, but they haven't been merged yet.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+In the meantime, please ignore...
+
+Cheers
+  Trond
+
