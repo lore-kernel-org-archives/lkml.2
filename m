@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab0CYSdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:33:54 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:51350 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754016Ab0CYSdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:33:53 -0400
-Message-ID: <4BABAC8D.1050205@panasas.com>
-Date: Thu, 25 Mar 2010 20:33:49 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Benny Halevy <bhalevy@panasas.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <20100325101231.GU30031@ZenIV.linux.org.uk>	 <20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com>	 <4BAB54B0.3080109@panasas.com> <20100325130610.GZ30031@ZenIV.linux.org.uk>	 <4BAB656E.8020204@panasas.com> <20100325133746.GA30031@ZenIV.linux.org.uk>	 <4BAB6911.5020009@panasas.com> <20100325140457.GB30031@ZenIV.linux.org.uk>	 <4BAB72C1.6090002@panasas.com> <20100325152505.GD30031@ZenIV.linux.org.uk>	 <4BAB9D53.4000909@panasas.com>	 <1269539981.3648.31.camel@localhost.localdomain>	 <4BABA609.3060408@panasas.com> <1269541112.3648.48.camel@localhost.localdomain>
-In-Reply-To: <1269541112.3648.48.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+	id S1754094Ab0CYSio (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:38:44 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:46934 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753674Ab0CYSim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 14:38:42 -0400
+Subject: Re: [PATCH 11/16] XFS xfs_trace.c: duplicated include
+From: Alex Elder <aelder@sgi.com>
+Reply-To: aelder@sgi.com
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: linux-doc@vger.kernel.org, xfs-masters@oss.sgi.com,
+       Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+       xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1269537767-7553-11-git-send-email-andrea.gelmini@gelma.net>
+References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net>
+	 <1269537767-7553-11-git-send-email-andrea.gelmini@gelma.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 13:37:39 -0500
+Message-ID: <1269542259.2523.25.camel@doink>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 18:33:52.0202 (UTC) FILETIME=[B7CFFAA0:01CACC49]
+X-OriginalArrivalTime: 25 Mar 2010 18:37:40.0531 (UTC) FILETIME=[3FE83830:01CACC4A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2010 08:18 PM, Trond Myklebust wrote:
-> On Thu, 2010-03-25 at 20:06 +0200, Boaz Harrosh wrote: 
->> On 03/25/2010 07:59 PM, Trond Myklebust wrote:
->>> Now to understand that screwed up xdr decode...
->>>
->>
->> Tell me if you need that I run any tests. I still have that
->> failing setup if you need it.
+On Thu, 2010-03-25 at 18:22 +0100, Andrea Gelmini wrote:
+> fs/xfs/linux-2.6/xfs_trace.c: xfs_attr_sf.h is included more than once.
 > 
-> Do you have a wireshark (binary) dump that includes that particular
-> getattr call and reply? That would help.
+> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+
+Looks good.	-Alex
+
+Reviewed-by: Alex Elder <aelder@sgi.com>
+
+> ---
+>  fs/xfs/linux-2.6/xfs_trace.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
+> diff --git a/fs/xfs/linux-2.6/xfs_trace.c b/fs/xfs/linux-2.6/xfs_trace.c
+> index 5a10760..cb840e0 100644
+> --- a/fs/xfs/linux-2.6/xfs_trace.c
+> +++ b/fs/xfs/linux-2.6/xfs_trace.c
+> @@ -41,7 +41,6 @@
+>  #include "xfs_alloc.h"
+>  #include "xfs_bmap.h"
+>  #include "xfs_attr.h"
+> -#include "xfs_attr_sf.h"
+>  #include "xfs_attr_leaf.h"
+>  #include "xfs_log_priv.h"
+>  #include "xfs_buf_item.h"
 
-Wahoo sorry, it's already 20:31 out here It'll have to wait til Sunday
-(You know that Hebrew weekend).
 
-Tell me if you still need it sure, NP, I will make one first thing Sunday
-morning.
 
-> Trond
-> 
-
-Boaz
