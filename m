@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab0CYLKH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 07:10:07 -0400
-Received: from www.tglx.de ([62.245.132.106]:42280 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752667Ab0CYLKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 07:10:03 -0400
-Date: Thu, 25 Mar 2010 12:09:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       jesse.brandeburg@intel.com,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-In-Reply-To: <20100325093744.GH20695@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
- <20100325093744.GH20695@one.firstfloor.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754249Ab0CYLMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 07:12:41 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:8611 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753093Ab0CYLMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 07:12:39 -0400
+Message-ID: <4BAB4523.1010601@panasas.com>
+Date: Thu, 25 Mar 2010 13:12:35 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Boaz Harrosh <bharrosh@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <4BAA5035.1060906@panasas.com> <4BAA52A8.2080304@panasas.com> <20100324180622.GS30031@ZenIV.linux.org.uk> <4BAA5955.4000001@gmail.com> <20100324185604.GT30031@ZenIV.linux.org.uk> <4BAB2F5A.30409@panasas.com> <20100325101231.GU30031@ZenIV.linux.org.uk> <4BAB3967.6000702@panasas.com> <20100325104924.GV30031@ZenIV.linux.org.uk> <4BAB4168.2090404@panasas.com> <20100325110031.GX30031@ZenIV.linux.org.uk>
+In-Reply-To: <20100325110031.GX30031@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2010 11:12:38.0847 (UTC) FILETIME=[147694F0:01CACC0C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010, Andi Kleen wrote:
-> On Thu, Mar 25, 2010 at 02:46:42AM +0100, Thomas Gleixner wrote:
-> > 3) Why does the NIC driver code not set IRQF_DISABLED in the first
-> >    place?  AFAICT the network drivers just kick off NAPI, so whats the
-> >    point to run those handlers with IRQs enabled at all ?
+On Mar. 25, 2010, 13:00 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+> On Thu, Mar 25, 2010 at 12:56:40PM +0200, Benny Halevy wrote:
+>> -		if (*want_dir && !path->dentry->d_inode->i_op->lookup)
+>> +		if (*want_dir && !path->dentry->d_inode->i_op->lookup) {
+>> +			WARN_ON(1);
+>>  			goto exit_dput;
+>> +		}
+>>  		path_to_nameidata(path, nd);
+>>  		audit_inode(pathname, nd->path.dentry);
+>>  		goto ok;
+>>
+>> but it is NOT tripping for this scenario.
+>>
+>> (for some reason I saw it tripping when building the kernel over nfs
+>> but it's benign)
 > 
-> I think the idea was to minimize irq latency for other interrupts
+> It's ENOTDIR, not EISDIR, anyway.  Happens if you ask to open foo/ or
+> foo with O_DIRECTORY when foo is not a directory.
 
-So what's the point ? Is the irq handler of that card so long running,
-that it causes trouble ? If yes, then this needs to be fixed. If no,
-then it simply can run with IRQs disabled.
- 
-> But yes defaulting to IRQF_DISABLED would fix it too, at some 
-> cost. In principle that could be done also.
+Hmm, not according to my strace (or am I blind today? :)
 
-What's the cost? Nothing at all. There is no f*cking difference between:
+> > open(".git/objects/pack", O_RDONLY|O_NONBLOCK|O_DIRECTORY|0x80000) = -1 EISDIR (Is a directory)
 
- IRQ1 10us
- IRQ2 10us
- IRQ3 10us
- IRQ4 10us
-
-and
-
- IRQ1 2us
-  IRQ2 2us
-   IRQ3 2us
-    IRQ4 10us
-   IRQ3 8us
-  IRQ2 8us
- IRQ1 8us
-
-The system is neither running a task nor a softirq for 40us in both
-cases.
-
-So what's the point of running a well written (short) interrupt
-handler with interrupts enabled ? Nothing at all. It just makes us
-deal with crap like stacks overflowing for no good reason.
-
-> > 
-> > > > case of MSI-X it just disables the IRQ when it comes again while the
-> > > > first irq on that vector is still in progress. So the maximum nesting
-> > > > is two up to handle_edge_irq() where it disables the IRQ and returns
-> > > > right away.
-> > > 
-> > > Real maximum nesting is all IRQs running with interrupts on pointing
-> > > to the same CPU. Enough from multiple busy IRQ sources and you go boom.
-> > 
-> > Which leads to the general question why we have that IRQF_DISABLED
-> > shite at all. AFAICT the historical reason were IDE drivers, but we
-> 
-> My understanding was that traditionally the irq handlers were
-> allowed to nest and the "fast" non nest case was only added for some 
-> fast handlers like serial with small FIFOs.
-> 
-> > grew other abusers like USB, SCSI and other crap which runs hard irq
-> > handlers for hundreds of micro seconds in the worst case. All those
-> > offenders need to be fixed (e.g. by converting to threaded irq
-> > handlers) so we can run _ALL_ hard irq context handlers with interrupts
-> > disabled. lockdep will sort out the nasty ones which enable irqs in the
-> > middle of that hard irq handler.
-> 
-> Ok glad to give you advertisement time for your pet project...
-
-You just don't get it. Long running interrupt handlers are a
-BUG. Period. If they are short they can run with IRQs disabled w/o any
-harm to the system.
-
-> Anyways if such a thing was done it would be a long term project
-> and that short term fix would be still needed.
-
-Your patch is not a fix, It's a lousy, horrible and unreliable
-workaround. It's not fixing the root cause of the problem at hand.
-
-The real fix is to run the NIC interrupt handlers with IRQs disabled
-and be done with it. If you still think that introduces latencies then
-prove it with numbers.
-
-Thanks,
-
-	tglx
+The odd thing is the app incorrectly gets EISDIR despite
+the fact that it is opening a directory with O_DIRECTORY.
