@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752824Ab0CYXRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:17:12 -0400
-Received: from mga03.intel.com ([143.182.124.21]:38261 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab0CYXRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:17:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,310,1267430400"; 
-   d="scan'208";a="258807111"
-From: Seth Heasley <seth.heasley@intel.com>
-Organization: Intel Corporation
-To: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       jbarnes@virtuousgeek.org, khali@linux-fr.org
-Subject: [PATCH linux-next.git] irq: irq and pci_ids patch for additional Intel Cougar Point DeviceIDs
-Date: Thu, 25 Mar 2010 16:11:37 -0700
-User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-wdt; KDE/4.1.3; x86_64; ; )
-Cc: seth.heasley@intel.com
+	id S1752910Ab0CYXSw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 19:18:52 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:38823 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab0CYXSv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 19:18:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ek2L3jnWNa62sWV7xiA96QD8xT8LTaDeyppJ1YMjj+xfEpF4QirOKF+8VEmTidsfvh
+         WFc5khE6D0ugtHJeyzhkjtpAxplGB1WSmRxqdQsr3mw6EASkgYQYgv986MQ8bWTK3s/Q
+         oPhfouJIAd+z5ZzILNytUGf+DapMeDzvRxFZc=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003251611.37706.seth.heasley@intel.com>
+In-Reply-To: <Pine.LNX.4.64.1003252146070.4413@axis700.grange>
+References: <1269529381-16914-1-git-send-email-linus.walleij@stericsson.com>
+	 <Pine.LNX.4.64.1003252146070.4413@axis700.grange>
+Date: Fri, 26 Mar 2010 00:18:49 +0100
+Message-ID: <63386a3d1003251618q5786df4eoae906d6e3b6b4b3e@mail.gmail.com>
+Subject: Re: [PATCH 2/2] DMAENGINE: generic channel status
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+       Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+       Maciej Sosnowski <maciej.sosnowski@intel.com>,
+       Nicolas Ferre <nicolas.ferre@atmel.com>, Pavel Machek <pavel@ucw.cz>,
+       Li Yang <leoli@freescale.com>, Paul Mundt <lethal@linux-sh.org>,
+       Ralf Baechle <ralf@linux-mips.org>,
+       Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
+       Magnus Damm <damm@opensource.se>, Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Joe Perches <joe@perches.com>, Roland Dreier <rdreier@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds additional LPC Controller DeviceIDs for the Intel Cougar Point PCH.
+2010/3/25 Guennadi Liakhovetski <g.liakhovetski@gmx.de>:
 
-The DeviceIDs are defined and referenced as a range of values, the same way Ibex Peak was implemented.
+> General: you converted all drivers to the new .device_tx_status() API, but
+> since they don't implement "residue," you left it uninitialised
+> everywhere. Wouldn't it be better to set it to 0 or total length,
+> depending on the complete / not complete status?
 
-This patch was built against the linux-next.git tree.
+The total length is a bit hard to know without understanding all drivers
+I'm afraid, but I can sure add txtstatus->residue = 0; everywhere,
+I'll fix.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+>> +struct dma_tx_state {
+>> +     dma_cookie_t last;
+>> +     dma_cookie_t used;
+>> +     u32 residue;
+>
+> In the original proposal by Dan Williams the last member was "unsigned
+> long pos." I don't think, even on 64-bit systems anyone would kick off a >
+> 4GB transfer, but who knows... And - I don't particularly like the name
+> "pos," but I do like the idea of returning bytes transfered better, than
+> bytes left. Can we change this?
 
---- include/linux/pci_ids.h.orig	2010-03-25 15:42:47.000000000 -0700
-+++ include/linux/pci_ids.h	2010-03-25 16:00:31.000000000 -0700
-@@ -2419,8 +2419,8 @@
- #define PCI_DEVICE_ID_INTEL_82845_HB	0x1a30
- #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
- #define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
--#define PCI_DEVICE_ID_INTEL_CPT_LPC1	0x1c42
--#define PCI_DEVICE_ID_INTEL_CPT_LPC2	0x1c43
-+#define PCI_DEVICE_ID_INTEL_CPT_LPC_MIN	0x1c41
-+#define PCI_DEVICE_ID_INTEL_CPT_LPC_MAX	0x1c5f
- #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
- #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
- #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
---- arch/x86/pci/irq.c.orig	2010-03-25 15:42:36.000000000 -0700
-+++ arch/x86/pci/irq.c	2010-03-25 16:00:31.000000000 -0700
-@@ -590,8 +590,6 @@
- 	case PCI_DEVICE_ID_INTEL_ICH10_1:
- 	case PCI_DEVICE_ID_INTEL_ICH10_2:
- 	case PCI_DEVICE_ID_INTEL_ICH10_3:
--	case PCI_DEVICE_ID_INTEL_CPT_LPC1:
--	case PCI_DEVICE_ID_INTEL_CPT_LPC2:
- 		r->name = "PIIX/ICH";
- 		r->get = pirq_piix_get;
- 		r->set = pirq_piix_set;
-@@ -606,6 +604,13 @@
- 		return 1;
- 	}
- 
-+	if ((device >= PCI_DEVICE_ID_INTEL_CPT_LPC_MIN) && 
-+		(device <= PCI_DEVICE_ID_INTEL_CPT_LPC_MAX)) {
-+		r->name = "PIIX/ICH";
-+		r->get = pirq_piix_get;
-+		r->set = pirq_piix_set;
-+		return 1;
-+	}
- 	return 0;
- }
+As Dan says consistency with other systems suggests something
+residue or bytes_left.
+
+>> - * @device_is_tx_complete: poll for transaction completion
+>> + * @device_tx_status: poll for transaction completion, the optional
+>> + *   txstate parameter can be supplied with a pointer to get a
+>> + *   struct with some transfer information, else the call will just
+>
+> Maybe "with auxiliary transfer status information, otherwise..."
+
+OK
+
+>> @@ -572,7 +592,13 @@ static inline void dma_async_issue_pending(struct dma_chan *chan)
+>>  static inline enum dma_status dma_async_is_tx_complete(struct dma_chan *chan,
+>>       dma_cookie_t cookie, dma_cookie_t *last, dma_cookie_t *used)
+>>  {
+>> -     return chan->device->device_is_tx_complete(chan, cookie, last, used);
+>> +     struct dma_tx_state state;
+>> +     enum dma_status status;
+>> +
+>> +     status = chan->device->device_tx_status(chan, cookie, &state);
+>> +     *last = state.last;
+>> +     *used = state.used;
+>
+> Both last and used can be NULL.
+
+Good you spotted this! Thanks.
+
+Linus
