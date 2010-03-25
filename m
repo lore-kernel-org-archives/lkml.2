@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0CYKrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:47:16 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42032 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752570Ab0CYKrP (ORCPT
+	id S1752645Ab0CYKsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:48:53 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:54190 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab0CYKsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:47:15 -0400
-Date: Thu, 25 Mar 2010 10:50:33 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-Message-ID: <20100325105033.35bceffd@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
-References: <20100324190150.GA18803@basil.fritz.box>
-	<alpine.LFD.2.00.1003242125320.3147@localhost.localdomain>
-	<alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
-	<20100325003652.GG20695@one.firstfloor.org>
-	<alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 06:48:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=XbEmH8EFRxbmXBHaZ7bRMm7Z0MtopQ0hGAykzkkJvC0BjKtErGrA5DXmREZ24QvQE/
+         FUvk7FLnTib7jdxTo0dXwkC7Ya9A1KAO/IcwewQz6woMlccsTKvTlabLcVEjzPjn8LHk
+         N/K/RrjMJUiAyI1H/sh58eEGKJJBkd6BwGHOY=
+MIME-Version: 1.0
+Date: Thu, 25 Mar 2010 11:48:49 +0100
+Message-ID: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
+Subject: INFO: suspicious rcu_dereference_check()
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Which leads to the general question why we have that IRQF_DISABLED
-> shite at all. AFAICT the historical reason were IDE drivers, but we
-> grew other abusers like USB, SCSI and other crap which runs hard irq
-> handlers for hundreds of micro seconds in the worst case.
+Hi
 
-Anyone you've forgotten to offend ?
+I've enabled rcu correctness for my  todays 2.6.34-rc2 kernel.
 
-We have IRQF_DISABLED and stuff using that model because for something
-like ten years the Linux kernel had no real sane notion of handing stuff
-off to worker threads or threaded irq support and also because there were
-so many errata around IRQ masking as well as all the evil business
-with interrupt delivery being asynchronous to the PCI or ISA transactions
-on some CPUs (eg you could write the irq mask register on the device,
-read it back to ensure it occurred and *still* get an IRQ delivered after
-that point because it was on the APIC bus)
+I'm getting this INFO: from my kvm guest (which uses host's nfs
+exported directory.)
+This
 
-Dumping everyones code under an insult without any historical context
-isn't helpful.
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+fs/nfs/delegation.c:348 invoked rcu_dereference_check() without protection!
 
-Pretty much the only 'core' driver today which enables IRQs in the irq
-handlers and needs it is the old IDE layer. There are also a couple of
-drivers which play games with disable/enable_irq in the IRQ paths for
-other reasons (lack of irq threads when written and a hardware model thats
-totally SMP unfriendly). 8390 is the obvious one here and it at least
-would be far far saner using threaded IRQs and normal locking with IRQs
-unmasked.
+other info that might help us debug this:
 
-Alan
+
+rcu_scheduler_active = 1, debug_locks = 0
+2 locks held by rm/1820:
+ #0:  (&sb->s_type->i_mutex_key#13/1){+.+.+.}, at:
+[<ffffffff81138e1b>] do_unlinkat+0x9b/0x1c0
+ #1:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff81136a76>]
+vfs_unlink+0x56/0xf0
+
+stack backtrace:
+Pid: 1820, comm: rm Not tainted 2.6.34-rc2-00186-ge79a302 #60
+Call Trace:
+ [<ffffffff810819fb>] lockdep_rcu_dereference+0xbb/0xc0
+ [<ffffffffa0228351>] nfs_inode_return_delegation+0x101/0x110 [nfs]
+ [<ffffffffa01fd58d>] nfs_unlink+0xad/0x2a0 [nfs]
+ [<ffffffff81136aba>] vfs_unlink+0x9a/0xf0
+ [<ffffffff81148365>] ? mnt_want_write+0x65/0xb0
+ [<ffffffff81138f03>] do_unlinkat+0x183/0x1c0
+ [<ffffffff8142b66d>] ? retint_swapgs+0xe/0x13
+ [<ffffffff81083985>] ? trace_hardirqs_on_caller+0x155/0x1a0
+ [<ffffffff8142a232>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff811390a2>] sys_unlinkat+0x22/0x40
+ [<ffffffff81031dc8>] sysenter_dispatch+0x7/0x2c
+
+
+Zdenek
