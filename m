@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754825Ab0CYUsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:48:18 -0400
-Received: from ppsw-6.csi.cam.ac.uk ([131.111.8.136]:38863 "EHLO
-	ppsw-6.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab0CYUsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:48:16 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Date: Thu, 25 Mar 2010 20:48:12 +0000 (GMT)
-From: Anton Altaparmakov <aia21@cam.ac.uk>
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: Chris Dearman <chris@mips.com>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix __vmalloc(), etc on MIPS for non-GPL modules
-Message-ID: <Pine.LNX.4.64.1003252017360.17596@hermes-2.csi.cam.ac.uk>
+	id S1754853Ab0CYUvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:51:50 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52604 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726Ab0CYUvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 16:51:48 -0400
+Date: Thu, 25 Mar 2010 21:51:24 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: David Miller <davem@davemloft.net>
+Cc: torvalds@linux-foundation.org, peterz@infradead.org, tglx@linutronix.de,
+       andi@firstfloor.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+       jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+Message-ID: <20100325205124.GB27801@elte.hu>
+References: <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
+ <20100325182930.GA7709@elte.hu>
+ <alpine.LFD.2.00.1003251206550.3721@i5.linux-foundation.org>
+ <20100325.124220.258885098.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325.124220.258885098.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-The commit 351336929ccf222ae38ff0cb7a8dd5fd5c6236a0 which can be seen 
-here:
+* David Miller <davem@davemloft.net> wrote:
 
-http://kerneltrap.org/mailarchive/git-commits-head/2008/4/28/1639134
+> From: Linus Torvalds <torvalds@linux-foundation.org>
+> Date: Thu, 25 Mar 2010 12:10:22 -0700 (PDT)
+> 
+> > On Thu, 25 Mar 2010, Ingo Molnar wrote:
+> >> 
+> >> So the patch below should at most trigger bugs in areas that need fixing 
+> >> anyway, and i'm quite sure that under no circumstance would it cause 
+> >> unforeseen problems in 'thousands of drivers'.
+> > 
+> > If we do this, then we should just remove all the IRQF_DISABLED code in 
+> > kernel/irq/manage.c too, and basically make IRQF_DISABLED a clear no-op 
+> > (still leave it around as a #define, to not break any users).
+> 
+> FWIW, I'm currently using IRQF_DISABLED for virtual network device 
+> interrupts on sparc64 as a workaround for some stack overflow issues.
 
-Breaks all non-GPL modules that use __vmalloc() or any of the vmap(), 
-vm_map_ram(), etc functions on MIPS architecture.
+I think IRQF_DISABLED is the sanest method to run IRQs: it's the most atomic, 
+thus most cache-efficient, it doesnt nest, and it's also a tiny bit faster to 
+execute, by a few instructions (on x86).
 
-All those functions are EXPORT_SYMBOL() so are meant to be allowed to be 
-used by non-GPL kernel modules.  These calls all take page protection as 
-an argument which is normally a constant like PAGE_KERNEL.
+> This change will just force me to work harder to find out a better way to 
+> fix the problem, so don't let my issue hold this back, it's just an FYI...
 
-This commit causes all protection constants like PAGE_KERNEL to not be 
-constants and instead to contain the GPL-only symbol 
-_page_cachable_default.
+The patch i sent basically hardcodes IRQF_DISABLED - so it should fix your 
+problem automatically. IRQF_DISABLED will become an unconditional thing, and 
+we can then also remove it.
 
-This means that all calls to __vmalloc(), vmap(), etc, cause non-GPL 
-modules to fail to link with the complaint that they are trying to use the 
-GPL-only symbol _page_cachable_default...
-
-I therefore propose that the EXPORT_SYMBOL_GPL(_page_cachable_default) is 
-changed to EXPORT_SYMBOL(_page_cachable_default) to re-instate the 
-ability for non-GPL modules to call __vmalloc(), vmap(), vm_map_ram(), 
-and such like.
-
-Here is a patch that does this.  If you approve, please apply it.
-
-Thanks a lot in advance for your consideration.
-
-Best regards,
-
-	Anton
--- 
-Anton Altaparmakov <aia21 at cam.ac.uk> (replace at with @)
-Unix Support, Computing Service, University of Cambridge, CB2 3QH, UK
-Linux NTFS maintainer, http://www.linux-ntfs.org/
-
----
-[PATCH] Fix __vmalloc(), vmap(), vm_map_ram(), etc on MIPS for non-GPL modules.
-
-Commit 351336929ccf222ae38ff0cb7a8dd5fd5c6236a0 broke these functions for 
-non-GPL modules by causing the page protection constants not to be 
-constants any more and instead to include a GPL-only symbol and as these 
-functions take a page protection argument this causes them to not be 
-callable from non-GPL modules any more even though the functions are 
-EXPORT_SYMBOL().
-
-Signed-off-by: Anton Altaparmakov <aia21@cantab.net>
-
-diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
-index be8627b..12af739 100644
---- a/arch/mips/mm/cache.c
-+++ b/arch/mips/mm/cache.c
-@@ -133,7 +133,7 @@ void __update_cache(struct vm_area_struct *vma, 
-unsigned lon
- }
- 
- unsigned long _page_cachable_default;
--EXPORT_SYMBOL_GPL(_page_cachable_default);
-+EXPORT_SYMBOL(_page_cachable_default);
- 
- static inline void setup_protection_map(void)
- {
-
+	Ingo
