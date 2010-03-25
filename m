@@ -1,118 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab0CYVKT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 17:10:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26892 "EHLO mx1.redhat.com"
+	id S1754870Ab0CYVK5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 17:10:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51475 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752053Ab0CYVKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 17:10:17 -0400
-Message-ID: <4BABD149.2050001@redhat.com>
-Date: Thu, 25 Mar 2010 22:10:33 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
-MIME-Version: 1.0
-To: Giel van Schijndel <me@mortis.eu>
-CC: Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+	id S1752053Ab0CYVK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 17:10:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement user_ops reader
+Date: Thu, 25 Mar 2010 22:13:44 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Jiri Slaby <jslaby@suse.cz>,
+       jirislaby@gmail.com, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] hwmon: f71882fg: use a muxed resource lock for the
- Super I/O port
-References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk> <1269523063-30346-1-git-send-email-me@mortis.eu> <1269523063-30346-2-git-send-email-me@mortis.eu>
-In-Reply-To: <1269523063-30346-2-git-send-email-me@mortis.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252129.10224.rjw@sisk.pl> <4BABC926.8060203@crca.org.au>
+In-Reply-To: <4BABC926.8060203@crca.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003252213.44763.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thursday 25 March 2010, Nigel Cunningham wrote:
+> Hi.
+> 
+> On 26/03/10 07:29, Rafael J. Wysocki wrote:
+> > On Thursday 25 March 2010, Nigel Cunningham wrote:
+> >> Hi.
+> >>
+> >> On 26/03/10 07:14, Rafael J. Wysocki wrote:
+> >>> On Thursday 25 March 2010, Nigel Cunningham wrote:
+> >>>> Hi.
+> >>>>
+> >>>> On 25/03/10 16:30, Pavel Machek wrote:
+> >>>> [...]
+> >>>>
+> >>>>> I have some problems with sws_module_ops interface (handcoded locking
+> >>>>> is too ugly to live), but it is better than I expected. But there may
+> >>>>> be better solution available, one that does not need two interfaces to
+> >>>>> maintain (we can't really get rid of userland interface). What about
+> >>>>> this?
+> >>>>
+> >>>> Just picking up on that bracketed part: Can we flag the userland
+> >>>> interface (and uswsusp) as being planned for eventual removal now... or
+> >>>> at least agree to work toward that?
+> >>>
+> >>> No, we can't.
+> >>>
+> >>>> I'm asking because if we're going to make a go of getting the in-kernel
+> >>>> code in much better shape, and we have Rafael, Jiri and I - and you? -
+> >>>> all pulling in the same direction to improve it, there's going to come a
+> >>>> point (hopefully not too far away) where uswsusp is just making life too
+> >>>> difficult, and getting rid of it will be a big help.
+> >>>
+> >>> We're not dropping user space interfaces used by every distro I know of.
+> >>
+> >> So what's your long term plan then?
+> >
+> > First, improve the in-kernel thing, second, switch people to it, _then_ remove
+> > the s2disk interface (after we're reasonably sure it's not used by any major
+> > distro) and _finally_ simplify things after it's been removed.
+> >
+> > Does that sound reasonable?
+> 
+> Well, that's pretty much what I was thinking too - improve then remove. 
+> I was just suggesting that we flag now that this is our plan, so it 
+> doesn't come as a surprise to anyone later and we can proceed more 
+> quickly than might otherwise be the case.
 
-On 03/25/2010 02:17 PM, Giel van Schijndel wrote:
-> Sleep while acquiring a resource lock on the Super I/O port. This should
-> prevent collisions from causing the hardware probe to fail with -EBUSY.
->
+I think it's too early for that at this point.
 
-Looks good to me (assuming the previous patch in the series gets applied).
-Acked-by: Hans de Goede <hdegoede@redhat.com>
-
-Regards,
-
-hans
-
-> Signed-off-by: Giel van Schijndel<me@mortis.eu>
-> ---
->   drivers/hwmon/f71882fg.c |   28 +++++++++++++++-------------
->   1 files changed, 15 insertions(+), 13 deletions(-)
->
-> diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-> index 7857ed3..e09416d 100644
-> --- a/drivers/hwmon/f71882fg.c
-> +++ b/drivers/hwmon/f71882fg.c
-> @@ -113,7 +113,7 @@ static struct platform_device *f71882fg_pdev;
->   /* Super-I/O Function prototypes */
->   static inline int superio_inb(int base, int reg);
->   static inline int superio_inw(int base, int reg);
-> -static inline void superio_enter(int base);
-> +static inline int superio_enter(int base);
->   static inline void superio_select(int base, int ld);
->   static inline void superio_exit(int base);
->
-> @@ -883,11 +883,20 @@ static int superio_inw(int base, int reg)
->   	return val;
->   }
->
-> -static inline void superio_enter(int base)
-> +static inline int superio_enter(int base)
->   {
-> +	/* Don't step on other drivers' I/O space by accident */
-> +	if (!request_muxed_region(base, 2, DRVNAME)) {
-> +		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-> +				(int)base);
-> +		return -EBUSY;
-> +	}
-> +
->   	/* according to the datasheet the key must be send twice! */
->   	outb(SIO_UNLOCK_KEY, base);
->   	outb(SIO_UNLOCK_KEY, base);
-> +
-> +	return 0;
->   }
->
->   static inline void superio_select(int base, int ld)
-> @@ -899,6 +908,7 @@ static inline void superio_select(int base, int ld)
->   static inline void superio_exit(int base)
->   {
->   	outb(SIO_LOCK_KEY, base);
-> +	release_region(base, 2);
->   }
->
->   static inline int fan_from_reg(u16 reg)
-> @@ -2239,17 +2249,10 @@ static int f71882fg_remove(struct platform_device *pdev)
->   static int __init f71882fg_find(int sioaddr, unsigned short *address,
->   	struct f71882fg_sio_data *sio_data)
->   {
-> -	int err = -ENODEV;
->   	u16 devid;
-> -
-> -	/* Don't step on other drivers' I/O space by accident */
-> -	if (!request_region(sioaddr, 2, DRVNAME)) {
-> -		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-> -				(int)sioaddr);
-> -		return -EBUSY;
-> -	}
-> -
-> -	superio_enter(sioaddr);
-> +	int err = superio_enter(sioaddr);
-> +	if (err)
-> +		return err;
->
->   	devid = superio_inw(sioaddr, SIO_REG_MANID);
->   	if (devid != SIO_FINTEK_ID) {
-> @@ -2306,7 +2309,6 @@ static int __init f71882fg_find(int sioaddr, unsigned short *address,
->   		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
->   exit:
->   	superio_exit(sioaddr);
-> -	release_region(sioaddr, 2);
->   	return err;
->   }
->
+Rafael
