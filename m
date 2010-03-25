@@ -1,438 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0CYG2t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 02:28:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60376 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751840Ab0CYG2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 02:28:47 -0400
-Message-ID: <4BAB027D.7000405@cn.fujitsu.com>
-Date: Thu, 25 Mar 2010 14:28:13 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-MIME-Version: 1.0
-To: jens.axboe@oracle.com
-CC: Vivek Goyal <vgoyal@redhat.com>, Chad Talbott <ctalbott@google.com>,
-       linux-kernel@vger.kernel.org, Nauman Rafique <nauman@google.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2 V3] io-controller: Add a new interface	"weight_device"
- for IO-Controller
-References: <4B8DFFD7.2000908@cn.fujitsu.com> <20100303143311.GA2866@redhat.com> <20100303154748.GC2866@redhat.com> <e98e18941003031519v14d4f79cg33da5c3cf1f5ac03@mail.gmail.com> <1786ab031003031825m5467c86jf5c355df10001dd2@mail.gmail.com> <4B8F27BD.2020704@cn.fujitsu.com> <4B8F62B7.3080401@cn.fujitsu.com> <20100304152400.GB18786@redhat.com> <4B906BB6.3080104@cn.fujitsu.com> <20100305141300.GA3296@redhat.com>
-In-Reply-To: <20100305141300.GA3296@redhat.com>
+	id S1752999Ab0CYGfN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 02:35:13 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55995 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab0CYGfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 02:35:11 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 15:31:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: =?UTF-8?B?QW3DqXJpY28=?= Wang <xiyou.wangcong@gmail.com>
+Cc: Janos Haar <janos.haar@netcenter.hu>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+Message-Id: <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com>
+References: <03ca01cacb92$195adf50$0400a8c0@dcccs>
+	<2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Fri, Mar 05, 2010 at 10:25:58AM +0800, Gui Jianfeng wrote:
->> Currently, IO Controller makes use of blkio.weight to assign weight for
->> all devices. Here a new user interface "blkio.weight_device" is introduced to
->> assign different weights for different devices. blkio.weight becomes the
->> default value for devices which are not configured by "blkio.weight_device"
->>
->> You can use the following format to assigned specific weight for a given
->> device:
->>
->> major:minor represents device number.
->>
->> And you can remove a specific weight as following:
->>
->> V1->V2 changes:
->> - use user interface "weight_device" instead of "policy" suggested by Vivek
->> - rename some struct suggested by Vivek
->> - rebase to 2.6-block "for-linus" branch
->> - remove an useless list_empty check pointed out by Li Zefan
->> - some trivial typo fix
->>
->> V2->V3 changes:
->> - Move policy_*_node() functions up to get rid of forward declarations
->> - rename related functions by adding prefix "blkio_"
->>
-> 
-> Thanks for the changes Gui. Looks good to me.
-> 
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+On Thu, 25 Mar 2010 11:29:25 +0800
+Américo Wang <xiyou.wangcong@gmail.com> wrote:
 
-Hi Jens,
+> (Cc'ing linux-mm)
+> 
+Hmm..here is summary of corruption (from log), but no idea.
 
-This patchset seems to get lost. Just for reminding. Any comments?
+==
+process's address		pte	      pnf->pte->page
+
+00000037b4008000		  2bf1e025 -> PG_reserved
+00000037b400a000		d900000000 -> bad swap
+00000037b400c000		  2bfe8025 -> PG_reserved
+00000037b400d000  		 12bfe9025 -> belongs to some other files' page cache
+00000037b400e000 		ff00000000 -> bad swap
+00000037b400f000 		5400000000 -> bad swap
+...
+00000037b4019000		ff00000000 -> bad swap
+==
+All ptes are on the same pmd 1535b5067.
+.
+I doubt some kind of buffer overflow bug overwrites page table...
+Because ptes for adddress of 00000037b4008000...00000037b400f000 are on head of
+a page (used for pmd), some data on page [0x1535b4000..0x1535b5000) caused buffer
+overflow and broke page table in [0x1535b5000...0x1535b6000)
+
+Is this bug found from 2.6.28.10 ?
+
+If I investigate this issue, I'll check the owner of page 0x1535b4000 by
+crash dump.
 
 Thanks,
-Gui
+-Kame
 
-> 
-> Vivek
-> 
->> Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
->> ---
->>  block/blk-cgroup.c  |  236 ++++++++++++++++++++++++++++++++++++++++++++++++++-
->>  block/blk-cgroup.h  |   10 ++
->>  block/cfq-iosched.c |    2 +-
->>  3 files changed, 246 insertions(+), 2 deletions(-)
->>
->> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
->> index c85d74c..8825e49 100644
->> --- a/block/blk-cgroup.c
->> +++ b/block/blk-cgroup.c
->> @@ -16,6 +16,7 @@
->>  #include <linux/module.h>
->>  #include <linux/err.h>
->>  #include "blk-cgroup.h"
->> +#include <linux/genhd.h>
->>  
->>  static DEFINE_SPINLOCK(blkio_list_lock);
->>  static LIST_HEAD(blkio_list);
->> @@ -23,6 +24,32 @@ static LIST_HEAD(blkio_list);
->>  struct blkio_cgroup blkio_root_cgroup = { .weight = 2*BLKIO_WEIGHT_DEFAULT };
->>  EXPORT_SYMBOL_GPL(blkio_root_cgroup);
->>  
->> +static inline void blkio_policy_insert_node(struct blkio_cgroup *blkcg,
->> +					    struct blkio_policy_node *pn)
->> +{
->> +	list_add(&pn->node, &blkcg->policy_list);
->> +}
->> +
->> +/* Must be called with blkcg->lock held */
->> +static inline void blkio_policy_delete_node(struct blkio_policy_node *pn)
->> +{
->> +	list_del(&pn->node);
->> +}
->> +
->> +/* Must be called with blkcg->lock held */
->> +static struct blkio_policy_node *
->> +blkio_policy_search_node(const struct blkio_cgroup *blkcg, dev_t dev)
->> +{
->> +	struct blkio_policy_node *pn;
->> +
->> +	list_for_each_entry(pn, &blkcg->policy_list, node) {
->> +		if (pn->dev == dev)
->> +			return pn;
->> +	}
->> +
->> +	return NULL;
->> +}
->> +
->>  struct blkio_cgroup *cgroup_to_blkio_cgroup(struct cgroup *cgroup)
->>  {
->>  	return container_of(cgroup_subsys_state(cgroup, blkio_subsys_id),
->> @@ -128,6 +155,7 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
->>  	struct blkio_group *blkg;
->>  	struct hlist_node *n;
->>  	struct blkio_policy_type *blkiop;
->> +	struct blkio_policy_node *pn;
->>  
->>  	if (val < BLKIO_WEIGHT_MIN || val > BLKIO_WEIGHT_MAX)
->>  		return -EINVAL;
->> @@ -136,7 +164,13 @@ blkiocg_weight_write(struct cgroup *cgroup, struct cftype *cftype, u64 val)
->>  	spin_lock(&blkio_list_lock);
->>  	spin_lock_irq(&blkcg->lock);
->>  	blkcg->weight = (unsigned int)val;
->> +
->>  	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
->> +		pn = blkio_policy_search_node(blkcg, blkg->dev);
->> +
->> +		if (pn)
->> +			continue;
->> +
->>  		list_for_each_entry(blkiop, &blkio_list, list)
->>  			blkiop->ops.blkio_update_group_weight_fn(blkg,
->>  					blkcg->weight);
->> @@ -178,15 +212,208 @@ SHOW_FUNCTION_PER_GROUP(dequeue);
->>  
->>  #ifdef CONFIG_DEBUG_BLK_CGROUP
->>  void blkiocg_update_blkio_group_dequeue_stats(struct blkio_group *blkg,
->> -			unsigned long dequeue)
->> +					      unsigned long dequeue)
->>  {
->>  	blkg->dequeue += dequeue;
->>  }
->>  EXPORT_SYMBOL_GPL(blkiocg_update_blkio_group_dequeue_stats);
->>  #endif
->>  
->> +static int blkio_check_dev_num(dev_t dev)
->> +{
->> +	int part = 0;
->> +	struct gendisk *disk;
->> +
->> +	disk = get_gendisk(dev, &part);
->> +	if (!disk || part)
->> +		return -ENODEV;
->> +
->> +	return 0;
->> +}
->> +
->> +static int blkio_policy_parse_and_set(char *buf,
->> +				      struct blkio_policy_node *newpn)
->> +{
->> +	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
->> +	int ret;
->> +	unsigned long major, minor, temp;
->> +	int i = 0;
->> +	dev_t dev;
->> +
->> +	memset(s, 0, sizeof(s));
->> +
->> +	while ((p = strsep(&buf, " ")) != NULL) {
->> +		if (!*p)
->> +			continue;
->> +
->> +		s[i++] = p;
->> +
->> +		/* Prevent from inputing too many things */
->> +		if (i == 3)
->> +			break;
->> +	}
->> +
->> +	if (i != 2)
->> +		return -EINVAL;
->> +
->> +	p = strsep(&s[0], ":");
->> +	if (p != NULL)
->> +		major_s = p;
->> +	else
->> +		return -EINVAL;
->> +
->> +	minor_s = s[0];
->> +	if (!minor_s)
->> +		return -EINVAL;
->> +
->> +	ret = strict_strtoul(major_s, 10, &major);
->> +	if (ret)
->> +		return -EINVAL;
->> +
->> +	ret = strict_strtoul(minor_s, 10, &minor);
->> +	if (ret)
->> +		return -EINVAL;
->> +
->> +	dev = MKDEV(major, minor);
->> +
->> +	ret = blkio_check_dev_num(dev);
->> +	if (ret)
->> +		return ret;
->> +
->> +	newpn->dev = dev;
->> +
->> +	if (s[1] == NULL)
->> +		return -EINVAL;
->> +
->> +	ret = strict_strtoul(s[1], 10, &temp);
->> +	if (ret || (temp < BLKIO_WEIGHT_MIN && temp > 0) ||
->> +	    temp > BLKIO_WEIGHT_MAX)
->> +		return -EINVAL;
->> +
->> +	newpn->weight =  temp;
->> +
->> +	return 0;
->> +}
->> +
->> +unsigned int blkcg_get_weight(struct blkio_cgroup *blkcg,
->> +			      dev_t dev)
->> +{
->> +	struct blkio_policy_node *pn;
->> +
->> +	pn = blkio_policy_search_node(blkcg, dev);
->> +	if (pn)
->> +		return pn->weight;
->> +	else
->> +		return blkcg->weight;
->> +}
->> +EXPORT_SYMBOL_GPL(blkcg_get_weight);
->> +
->> +static int blkiocg_weight_device_write(struct cgroup *cgrp, struct cftype *cft,
->> +				       const char *buffer)
->> +{
->> +	int ret = 0;
->> +	char *buf;
->> +	struct blkio_policy_node *newpn, *pn;
->> +	struct blkio_cgroup *blkcg;
->> +	struct blkio_group *blkg;
->> +	int keep_newpn = 0;
->> +	struct hlist_node *n;
->> +	struct blkio_policy_type *blkiop;
->> +
->> +	buf = kstrdup(buffer, GFP_KERNEL);
->> +	if (!buf)
->> +		return -ENOMEM;
->> +
->> +	newpn = kzalloc(sizeof(*newpn), GFP_KERNEL);
->> +	if (!newpn) {
->> +		ret = -ENOMEM;
->> +		goto free_buf;
->> +	}
->> +
->> +	ret = blkio_policy_parse_and_set(buf, newpn);
->> +	if (ret)
->> +		goto free_newpn;
->> +
->> +	blkcg = cgroup_to_blkio_cgroup(cgrp);
->> +
->> +	spin_lock_irq(&blkcg->lock);
->> +
->> +	pn = blkio_policy_search_node(blkcg, newpn->dev);
->> +	if (!pn) {
->> +		if (newpn->weight != 0) {
->> +			blkio_policy_insert_node(blkcg, newpn);
->> +			keep_newpn = 1;
->> +		}
->> +		spin_unlock_irq(&blkcg->lock);
->> +		goto update_io_group;
->> +	}
->> +
->> +	if (newpn->weight == 0) {
->> +		/* weight == 0 means deleteing a specific weight */
->> +		blkio_policy_delete_node(pn);
->> +		spin_unlock_irq(&blkcg->lock);
->> +		goto update_io_group;
->> +	}
->> +	spin_unlock_irq(&blkcg->lock);
->> +
->> +	pn->weight = newpn->weight;
->> +
->> +update_io_group:
->> +	/* update weight for each cfqg */
->> +	spin_lock(&blkio_list_lock);
->> +	spin_lock_irq(&blkcg->lock);
->> +
->> +	hlist_for_each_entry(blkg, n, &blkcg->blkg_list, blkcg_node) {
->> +		if (newpn->dev == blkg->dev) {
->> +			list_for_each_entry(blkiop, &blkio_list, list)
->> +				blkiop->ops.blkio_update_group_weight_fn(blkg,
->> +						newpn->weight ?
->> +						newpn->weight :
->> +						blkcg->weight);
->> +		}
->> +	}
->> +
->> +	spin_unlock_irq(&blkcg->lock);
->> +	spin_unlock(&blkio_list_lock);
->> +
->> +free_newpn:
->> +	if (!keep_newpn)
->> +		kfree(newpn);
->> +free_buf:
->> +	kfree(buf);
->> +	return ret;
->> +}
->> +
->> +static int blkiocg_weight_device_read(struct cgroup *cgrp, struct cftype *cft,
->> +				      struct seq_file *m)
->> +{
->> +	struct blkio_cgroup *blkcg;
->> +	struct blkio_policy_node *pn;
->> +
->> +	seq_printf(m, "dev\tweight\n");
->> +
->> +	blkcg = cgroup_to_blkio_cgroup(cgrp);
->> +	if (list_empty(&blkcg->policy_list))
->> +		goto out;
->> +
->> +	spin_lock_irq(&blkcg->lock);
->> +	list_for_each_entry(pn, &blkcg->policy_list, node) {
->> +		seq_printf(m, "%u:%u\t%u\n", MAJOR(pn->dev),
->> +			   MINOR(pn->dev), pn->weight);
->> +	}
->> +	spin_unlock_irq(&blkcg->lock);
->> +out:
->> +	return 0;
->> +}
->> +
->>  struct cftype blkio_files[] = {
->>  	{
->> +		.name = "weight_device",
->> +		.read_seq_string = blkiocg_weight_device_read,
->> +		.write_string = blkiocg_weight_device_write,
->> +		.max_write_len = 256,
->> +	},
->> +	{
->>  		.name = "weight",
->>  		.read_u64 = blkiocg_weight_read,
->>  		.write_u64 = blkiocg_weight_write,
->> @@ -220,6 +447,7 @@ static void blkiocg_destroy(struct cgroup_subsys *subsys, struct cgroup *cgroup)
->>  	struct blkio_group *blkg;
->>  	void *key;
->>  	struct blkio_policy_type *blkiop;
->> +	struct blkio_policy_node *pn, *pntmp;
->>  
->>  	rcu_read_lock();
->>  remove_entry:
->> @@ -250,7 +478,12 @@ remove_entry:
->>  		blkiop->ops.blkio_unlink_group_fn(key, blkg);
->>  	spin_unlock(&blkio_list_lock);
->>  	goto remove_entry;
->> +
->>  done:
->> +	list_for_each_entry_safe(pn, pntmp, &blkcg->policy_list, node) {
->> +		blkio_policy_delete_node(pn);
->> +		kfree(pn);
->> +	}
->>  	free_css_id(&blkio_subsys, &blkcg->css);
->>  	rcu_read_unlock();
->>  	kfree(blkcg);
->> @@ -280,6 +513,7 @@ done:
->>  	spin_lock_init(&blkcg->lock);
->>  	INIT_HLIST_HEAD(&blkcg->blkg_list);
->>  
->> +	INIT_LIST_HEAD(&blkcg->policy_list);
->>  	return &blkcg->css;
->>  }
->>  
->> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
->> index 84bf745..c8144a2 100644
->> --- a/block/blk-cgroup.h
->> +++ b/block/blk-cgroup.h
->> @@ -22,6 +22,7 @@ struct blkio_cgroup {
->>  	unsigned int weight;
->>  	spinlock_t lock;
->>  	struct hlist_head blkg_list;
->> +	struct list_head policy_list; /* list of blkio_policy_node */
->>  };
->>  
->>  struct blkio_group {
->> @@ -43,6 +44,15 @@ struct blkio_group {
->>  	unsigned long sectors;
->>  };
->>  
->> +struct blkio_policy_node {
->> +	struct list_head node;
->> +	dev_t dev;
->> +	unsigned int weight;
->> +};
->> +
->> +extern unsigned int blkcg_get_weight(struct blkio_cgroup *blkcg,
->> +				     dev_t dev);
->> +
->>  typedef void (blkio_unlink_group_fn) (void *key, struct blkio_group *blkg);
->>  typedef void (blkio_update_group_weight_fn) (struct blkio_group *blkg,
->>  						unsigned int weight);
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index dee9d93..6945e9b 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -954,7 +954,6 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->>  	if (!cfqg)
->>  		goto done;
->>  
->> -	cfqg->weight = blkcg->weight;
->>  	for_each_cfqg_st(cfqg, i, j, st)
->>  		*st = CFQ_RB_ROOT;
->>  	RB_CLEAR_NODE(&cfqg->rb_node);
->> @@ -971,6 +970,7 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->>  	sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
->>  	blkiocg_add_blkio_group(blkcg, &cfqg->blkg, (void *)cfqd,
->>  					MKDEV(major, minor));
->> +	cfqg->weight = blkcg_get_weight(blkcg, cfqg->blkg.dev);
->>  
->>  	/* Add group on cfqd list */
->>  	hlist_add_head(&cfqg->cfqd_node, &cfqd->cfqg_list);
->> -- 
->> 1.5.4.rc3
->>
->>
->>
->>
-> 
-> 
+
+
+> 2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
+> > Dear developers,
+> >
+> > This is one of my productive servers, wich suddenly starts to freeze (crash)
+> > some weeks before.
+> > I have done all what i can, (i think) please somebody give to me some
+> > suggestion:
+> >
+> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bf1e025
+> > pmd:1535b5067
+> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 flags:4000000000000404
+> > count:1 mapcount:-1 mapping:(null) index:0
+> > Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
+> > anon_vma:(null) mapping:ffff88022b5d25a8 index:8
+> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> > xfs_file_mmap+0x0/0x33
+> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 2.6.32.10 #2
+> > Mar 24 19:22:28 alfa kernel: Call Trace:
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
+> > tty_audit_exit+0x28/0x85
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
+> > __dequeue_signal+0xf1/0x127
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
+> > get_signal_to_deliver+0x32c/0x37f
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
+> > do_notify_resume+0x90/0x740
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
+> > __bad_area_nosemaphore+0x178/0x1a2
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
+> > Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel taint
+> > Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
+> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
+> > pte:d900000000 pmd:1535b5067
+> > Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
+> > anon_vma:(null) mapping:ffff88022b5d25a8 index:a
+> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> > xfs_file_mmap+0x0/0x33
+> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
+> > 2.6.32.10 #2
+> > Mar 24 19:22:28 alfa kernel: Call Trace:
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3d47>] unmap_vmas+0x4fa/0x787
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
+> > tty_audit_exit+0x28/0x85
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
+> > __dequeue_signal+0xf1/0x127
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
+> > get_signal_to_deliver+0x32c/0x37f
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
+> > do_notify_resume+0x90/0x740
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
+> > __bad_area_nosemaphore+0x178/0x1a2
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
+> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bfe8025
+> > pmd:1535b5067
+> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 flags:4000000000000404
+> > count:1 mapcount:-1 mapping:(null) index:0
+> > Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
+> > anon_vma:(null) mapping:ffff88022b5d25a8 index:c
+> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
+> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+> > xfs_file_mmap+0x0/0x33
+> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
+> > 2.6.32.10 #2
+> > Mar 24 19:22:28 alfa kernel: Call Trace:
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
+> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
+> > .....
+> >
+> > The entire log is here:
+> > http://download.netcenter.hu/bughunt/20100324/messages
+> >
+> > The actual kernel is 2.6.32.10, but the crash-series started @ 2.6.28.10.
+> >
+> > I have forwarded the tasks to another server, removed this from the room,
+> > and the hw survived memtest86 in >7 days continously + i have tested the
+> > HDDs one by one with badblocks -vvw, all is good.
+> > For me looks like this is not a hw problem.
+> >
+> > Somebody have any idea?
+> >
+> > Thanks a lot,
+> > Janos Haar
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
