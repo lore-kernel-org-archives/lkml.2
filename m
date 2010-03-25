@@ -1,128 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750834Ab0CYECX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 00:02:23 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:46883 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750702Ab0CYECW (ORCPT
+	id S1750866Ab0CYEDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 00:03:47 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:32071 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750702Ab0CYEDq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 00:02:22 -0400
-Subject: [PATCH] TPM: workaround to enforce PCR updates across suspends
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: jmorris@namei.org
-Cc: safford@watson.ibm.com, linux-kernel@vger.kernel.org
+	Thu, 25 Mar 2010 00:03:46 -0400
+Subject: Re: Regression in i915 on 2.6.34-rc1
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Pete Zaitcev <zaitcev@redhat.com>
+Cc: dri-devel@lists.sourceforge.net, jbarnes@virtuousgeek.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100321181920.1330d55a@redhat.com>
+References: <20100311003358.58194366@redhat.com>
+	 <1268535744.28444.16.camel@dc7800.home>
+	 <201003151151.01891.bjorn.helgaas@hp.com>
+	 <201003170926.59931.bjorn.helgaas@hp.com>
+	 <20100321181920.1330d55a@redhat.com>
 Content-Type: text/plain
-Organization: IBM
-Date: Thu, 25 Mar 2010 00:55:32 -0300
-Message-Id: <1269489332.12676.14.camel@blackbox.ibm.com>
+Date: Wed, 24 Mar 2010 22:04:02 -0600
+Message-Id: <1269489842.31485.43.camel@dc7800.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a workaround for TPM's which fail to flush last written
-PCR values in a TPM_SaveState, in preparation for suspend.
+On Sun, 2010-03-21 at 18:19 -0600, Pete Zaitcev wrote:
+> On Wed, 17 Mar 2010 08:26:59 -0700
+> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> 
+> > > > > http://bugzilla.kernel.org/show_bug.cgi?id=15533
+> > 
+> > Any luck testing the patch from the bugzilla?  I'd really like to get
+> > this figured out so we can get the fix in the next -rc and move on
+> > to the next _CRS issue :-)
+> 
+> I was on vacation, sorry. Got to it today. In short, the test patch fails.
+> Please see the dmesg with ACPI debugging in bugzilla as requested.
 
-Signed-off-by: David Safford <safford@watson.ibm.com>
-Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Ping!  If you haven't seen the last bugzilla update, I'd really like an
+acpidump and some details about what machine this is.
 
-diff -u -r a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
---- a/Documentation/kernel-parameters.txt	2010-02-24 13:52:17.000000000 -0500
-+++ b/Documentation/kernel-parameters.txt	2010-03-10 15:23:29.701436428 -0500
-@@ -98,6 +98,7 @@
- 	SWSUSP	Software suspend (hibernation) is enabled.
- 	SUSPEND	System suspend states are enabled.
- 	FTRACE	Function tracing enabled.
-+	TPM	TPM drivers are enabled.
- 	TS	Appropriate touchscreen support is enabled.
- 	UMS	USB Mass Storage support is enabled.
- 	USB	USB support is enabled.
-@@ -2588,6 +2589,15 @@
- 
- 	tp720=		[HW,PS2]
- 
-+	tpm_suspend_pcr=[HW,TPM]
-+			Format: integer pcr id
-+			Specify that at suspend time, the tpm driver
-+			should extend the specified pcr with zeros,
-+			as a workaround for some chips which fail to
-+			flush the last written pcr on TPM_SaveState.
-+			This will guarantee that all the other pcrs
-+			are saved.
-+
- 	trace_buf_size=nn[KMG]
- 			[FTRACE] will set tracing buffer size.
- 
-diff -u -r a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
---- a/drivers/char/tpm/tpm.c	2010-02-24 13:52:17.000000000 -0500
-+++ b/drivers/char/tpm/tpm.c	2010-03-17 09:50:36.221195050 -0400
-@@ -1067,6 +1067,27 @@
- }
- EXPORT_SYMBOL_GPL(tpm_remove_hardware);
- 
-+#define TPM_ORD_SAVESTATE cpu_to_be32(152)
-+#define SAVESTATE_RESULT_SIZE 10
-+
-+static struct tpm_input_header savestate_header = {
-+	.tag = TPM_TAG_RQU_COMMAND,
-+	.length = cpu_to_be32(10),
-+	.ordinal = TPM_ORD_SAVESTATE
-+};
-+
-+/* Bug workaround - some TPM's don't flush the most
-+ * recently changed pcr on suspend, so force the flush
-+ * with an extend to the selected _unused_ non-volatile pcr.
-+ */
-+static int tpm_suspend_pcr;
-+static int __init tpm_suspend_setup(char *str)
-+{
-+	get_option(&str, &tpm_suspend_pcr);
-+	return 1;
-+}
-+__setup("tpm_suspend_pcr=", tpm_suspend_setup);
-+
- /*
-  * We are about to suspend. Save the TPM state
-  * so that it can be restored.
-@@ -1074,17 +1095,29 @@
- int tpm_pm_suspend(struct device *dev, pm_message_t pm_state)
- {
- 	struct tpm_chip *chip = dev_get_drvdata(dev);
--	u8 savestate[] = {
--		0, 193,		/* TPM_TAG_RQU_COMMAND */
--		0, 0, 0, 10,	/* blob length (in bytes) */
--		0, 0, 0, 152	/* TPM_ORD_SaveState */
--	};
-+	struct tpm_cmd_t cmd;
-+	int rc;
-+
-+	u8 dummy_hash[TPM_DIGEST_SIZE] = { 0 };
- 
- 	if (chip == NULL)
- 		return -ENODEV;
- 
--	tpm_transmit(chip, savestate, sizeof(savestate));
--	return 0;
-+	/* for buggy tpm, flush pcrs with extend to selected dummy */
-+	if (tpm_suspend_pcr) {
-+		cmd.header.in = pcrextend_header;
-+		cmd.params.pcrextend_in.pcr_idx = cpu_to_be32(tpm_suspend_pcr);
-+		memcpy(cmd.params.pcrextend_in.hash, dummy_hash,
-+		       TPM_DIGEST_SIZE);
-+		rc = transmit_cmd(chip, &cmd, EXTEND_PCR_RESULT_SIZE,
-+				  "extending dummy pcr before suspend");
-+	}
-+
-+	/* now do the actual savestate */
-+	cmd.header.in = savestate_header;
-+	rc = transmit_cmd(chip, &cmd, SAVESTATE_RESULT_SIZE,
-+			  "sending savestate before suspend");
-+	return rc;
- }
- EXPORT_SYMBOL_GPL(tpm_pm_suspend);
- 
-
+Thanks,
+  Bjorn
 
 
