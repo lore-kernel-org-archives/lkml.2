@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab0CYNp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:45:58 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:55883 "EHLO
+	id S1753548Ab0CYNwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:52:31 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:47733 "EHLO
 	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751314Ab0CYNp4 (ORCPT
+	with ESMTP id S1751863Ab0CYNw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:45:56 -0400
-Message-ID: <4BAB6911.5020009@panasas.com>
-Date: Thu, 25 Mar 2010 15:45:53 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	Thu, 25 Mar 2010 09:52:29 -0400
+Message-ID: <4BAB6A99.5070209@panasas.com>
+Date: Thu, 25 Mar 2010 15:52:25 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
 To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Benny Halevy <bhalevy@panasas.com>,
+CC: Boaz Harrosh <bharrosh@panasas.com>,
        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
        "J. Bruce Fields" <bfields@citi.umich.edu>,
        pNFS Mailing List <pnfs@linux-nfs.org>,
        linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
+       Doug Nazar <nazard.lkml@gmail.com>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>
 Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
  case to use of do_last()
 References: <20100324180622.GS30031@ZenIV.linux.org.uk> <4BAA5955.4000001@gmail.com> <20100324185604.GT30031@ZenIV.linux.org.uk> <4BAB2F5A.30409@panasas.com> <20100325101231.GU30031@ZenIV.linux.org.uk> <20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com> <4BAB54B0.3080109@panasas.com> <20100325130610.GZ30031@ZenIV.linux.org.uk> <4BAB656E.8020204@panasas.com> <20100325133746.GA30031@ZenIV.linux.org.uk>
 In-Reply-To: <20100325133746.GA30031@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 13:45:55.0797 (UTC) FILETIME=[7E45C850:01CACC21]
+X-OriginalArrivalTime: 25 Mar 2010 13:52:28.0784 (UTC) FILETIME=[6882D700:01CACC22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2010 03:37 PM, Al Viro wrote:
+On Mar. 25, 2010, 15:37 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
 > On Thu, Mar 25, 2010 at 03:30:22PM +0200, Boaz Harrosh wrote:
 >>> Let's try this: before do_lookup() call there add
 >>> 	if (*want_dir)
 >>> 		nd->flags |= LOOKUP_DIRECTORY;
->>
 >> Yes this fixes it!!
 >> 2.6.34-rc2 plus above, now works, horay. (diff attached)
 >>
@@ -49,11 +49,10 @@ On 03/25/2010 03:37 PM, Al Viro wrote:
 > It certainly does for local filesystems and it does for NFSv3; does it work
 > for NFSv4?
 
-In my tests. Every thing is the same safe the client with the above change.
+No, it doesn't.
 
-So I guess NFSv4 does something different when asked for directory lookup
-as opposed to files lookup. I guess there is something added/removed to
-the compound depending on that flag. But I wouldn't know, I am not familiar 
-with this code. NFSv4 someone?
+# mount localhost:/usr0/nfs4export /mnt/localhost; strace cat /mnt/localhost/server 2>&1 | grep 'open.*server'; umount /mnt/localhost
+open("/mnt/localhost/server", O_RDONLY) = 3
 
-Boaz
+# mount -t nfs4 localhost:/ /mnt/localhost; strace cat /mnt/localhost/server 2>&1 | grep 'open.*server'; umount /mnt/localhost
+open("/mnt/localhost/server", O_RDONLY) = -1 EISDIR (Is a directory)
