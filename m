@@ -1,100 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0CYI7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 04:59:46 -0400
-Received: from mga06.intel.com ([134.134.136.21]:34338 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753296Ab0CYI7o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 04:59:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,306,1267430400"; 
-   d="scan'208";a="607457161"
-Subject: Re: [RFC] Unify KVM kernel-space and user-space code into a single
- project
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Joerg Roedel <joro@8bytes.org>,
-       Anthony Liguori <anthony@codemonkey.ws>, Ingo Molnar <mingo@elte.hu>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Sheng Yang <sheng@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Jes Sorensen <Jes.Sorensen@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       zhiteng.huang@intel.com, Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Gregory Haskins <ghaskins@novell.com>
-In-Reply-To: <4BAA57DA.5030707@redhat.com>
-References: <20100324125043.GC14800@8bytes.org>
-	 <4BAA0DFE.1080700@redhat.com> <20100324134642.GD14800@8bytes.org>
-	 <4BAA1A53.20207@redhat.com> <20100324150137.GE14800@8bytes.org>
-	 <4BAA2BF7.4060407@redhat.com> <20100324154605.GG14800@8bytes.org>
-	 <4BAA3496.2010901@redhat.com> <20100324155927.GI14800@8bytes.org>
-	 <4BAA393A.9000105@redhat.com> <20100324174703.GD3625@ghostprotocols.net>
-	 <4BAA57DA.5030707@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 25 Mar 2010 17:00:31 +0800
-Message-Id: <1269507631.2078.88.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753534Ab0CYJAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:00:31 -0400
+Received: from ns.netcenter.hu ([195.228.254.57]:41046 "EHLO mail.netcenter.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296Ab0CYJA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 05:00:29 -0400
+Message-ID: <02c101cacbf8$d21d1650$0400a8c0@dcccs>
+From: "Janos Haar" <janos.haar@netcenter.hu>
+To: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: <xiyou.wangcong@gmail.com>, <linux-kernel@vger.kernel.org>,
+       <linux-mm@kvack.org>
+References: <03ca01cacb92$195adf50$0400a8c0@dcccs><2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com> <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
+Date: Thu, 25 Mar 2010 09:54:38 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="UTF-8";
+	reply-type=original
+Content-Transfer-Encoding: 8bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3598
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-03-24 at 20:20 +0200, Avi Kivity wrote:
-> On 03/24/2010 07:47 PM, Arnaldo Carvalho de Melo wrote:
-> > Em Wed, Mar 24, 2010 at 06:09:30PM +0200, Avi Kivity escreveu:
-> >    
-> >> Doesn't perf already has a dependency on naming conventions for finding
-> >> debug information?
-> >>      
-> > It looks at several places, from most symbol rich (/usr/lib/debug/, aka
-> > -debuginfo packages, where we have full symtabs) to poorest (the
-> > packaged binary, where we may just have a .dynsym).
-> >
-> > In an ideal world, it would just get the build-id (a SHA1 cookie that is
-> > in an ELF session inserted in every binary (aka DSOs), kernel module,
-> > kallsyms or vmlinux file) and use that to look first in a local cache
-> > (implemented in perf for a long time already) or in some symbol server.
-> >
-> > For instance, for a random perf.data file I collected here in my machine
-> > I have:
-> >
-> > [acme@doppio linux-2.6-tip]$ perf buildid-list | grep libpthread
-> > 5c68f7afeb33309c78037e374b0deee84dd441f6 /lib64/libpthread-2.10.2.so
-> > [acme@doppio linux-2.6-tip]$
-> >
-> > So I don't have to access /lib64/libpthread-2.10.2.so directly, nor some
-> > convention to get a debuginfo in a local file like:
-> >
-> > /usr/lib/debug/lib64/libpthread-2.10.2.so.debug
-> >
-> > Instead the tools look at:
-> >
-> > [acme@doppio linux-2.6-tip]$ l ~/.debug/.build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6
-> > lrwxrwxrwx 1 acme acme 73 2010-01-06 18:53 /home/acme/.debug/.build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6 ->  ../../lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6*
-> >
-> > To find the file for that specific build-id, not the one installed in my
-> > machine (or on the different machine, of a different architecture) that
-> > may be completely unrelated, a new one, or one for a different arch.
-> >    
-> 
-> Thanks.  I believe qemu could easily act as a symbol server for this use 
-> case.
+
+----- Original Message ----- 
+From: "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Américo Wang" <xiyou.wangcong@gmail.com>
+Cc: "Janos Haar" <janos.haar@netcenter.hu>; <linux-kernel@vger.kernel.org>; 
+<linux-mm@kvack.org>
+Sent: Thursday, March 25, 2010 7:31 AM
+Subject: Re: Somebody take a look please! (some kind of kernel bug?)
 
 
-I spent a couple of days to investigate why sshfs/fuse doesn't work well with
-procfs and sysfs. Just after my patch against fuse is ready almost, I found
-fuse already supports such access by direct I/O. With parameter -o direct_io,
-it could work well.
+> On Thu, 25 Mar 2010 11:29:25 +0800
+> Américo Wang <xiyou.wangcong@gmail.com> wrote:
+>
+>> (Cc'ing linux-mm)
+>>
+> Hmm..here is summary of corruption (from log), but no idea.
+>
+> ==
+> process's address pte       pnf->pte->page
+>
+> 00000037b4008000   2bf1e025 -> PG_reserved
+> 00000037b400a000 d900000000 -> bad swap
+> 00000037b400c000   2bfe8025 -> PG_reserved
+> 00000037b400d000  12bfe9025 -> belongs to some other files' page cache
+> 00000037b400e000 ff00000000 -> bad swap
+> 00000037b400f000 5400000000 -> bad swap
+> ...
+> 00000037b4019000 ff00000000 -> bad swap
+> ==
+> All ptes are on the same pmd 1535b5067.
+> .
+> I doubt some kind of buffer overflow bug overwrites page table...
+> Because ptes for adddress of 00000037b4008000...00000037b400f000 are on 
+> head of
 
-Here is an example to mount / from a guest os.
-#sshfs -p 5551 -o direct_io localhost:/ guestmount
+This is only one bit, right? :-)
 
-We can read files and write files if permission is ok.
+> a page (used for pmd), some data on page [0x1535b4000..0x1535b5000) caused 
+> buffer
+> overflow and broke page table in [0x1535b5000...0x1535b6000)
+>
+> Is this bug found from 2.6.28.10 ?
 
-I will go ahead to support multiple guest os instance statistics parsing.
+No, the bug, what i have sent was from 2.6.32.10. (you can check it from the 
+messages file in the link)
+The story begins about marc 9-10 but unfortunately the system not all the 
+time was able to write down the messages file.
+(At Mar 13 11:20:09 i have triggered the sysreq's process and memory 
+information, you can see it in the link below.)
+We have more crashes with the 2.6.28.10 in the next some day and the server 
+is removed for testing (7 days hole in the log), but looks stable
 
-Yanmin
+Here is more serious crashes from the 2.6.28.10:
 
+http://download.netcenter.hu/bughunt/20100324/marc11-14
+
+For me looks like all memory, swap and xfs related.
+I have tested/repaired all the filesystems offline, corrected the errors 
+wich was left by the previous crashes, than disabled the swap, but nothing 
+helps. :(
+
+Finally in marc 21, i have replaced the kernel to the 32.10, and the crashes 
+looks gone but only for 4 days. (you can see the first dump in my first 
+mail)
+
+Thanks for all the help,
+
+Janos Haar
+
+
+>
+> If I investigate this issue, I'll check the owner of page 0x1535b4000 by
+> crash dump.
+>
+> Thanks,
+> -Kame
+>
+>
+>
+>> 2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
+>> > Dear developers,
+>> >
+>> > This is one of my productive servers, wich suddenly starts to freeze 
+>> > (crash)
+>> > some weeks before.
+>> > I have done all what i can, (i think) please somebody give to me some
+>> > suggestion:
+>> >
+>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
+>> > pte:2bf1e025
+>> > pmd:1535b5067
+>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 
+>> > flags:4000000000000404
+>> > count:1 mapcount:-1 mapping:(null) index:0
+>> > Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
+>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:8
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>> > filemap_fault+0x0/0x34d
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>> > xfs_file_mmap+0x0/0x33
+>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 
+>> > 2.6.32.10 #2
+>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>> > print_bad_pte+0x210/0x229
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
+>> > unmap_vmas+0x44b/0x787
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
+>> > tty_audit_exit+0x28/0x85
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
+>> > __dequeue_signal+0xf1/0x127
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
+>> > do_group_exit+0x77/0xa1
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
+>> > get_signal_to_deliver+0x32c/0x37f
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
+>> > do_notify_resume+0x90/0x740
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
+>> > __bad_area_nosemaphore+0x178/0x1a2
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
+>> > __bad_area+0x44/0x4d
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
+>> > retint_signal+0x46/0x84
+>> > Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel 
+>> > taint
+>> > Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
+>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
+>> > pte:d900000000 pmd:1535b5067
+>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
+>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:a
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>> > filemap_fault+0x0/0x34d
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>> > xfs_file_mmap+0x0/0x33
+>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
+>> > 2.6.32.10 #2
+>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? add_taint+0x32/0x3e
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>> > print_bad_pte+0x210/0x229
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3d47>] 
+>> > unmap_vmas+0x4fa/0x787
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81371287>] ?
+>> > tty_audit_exit+0x28/0x85
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81053c37>] ?
+>> > __dequeue_signal+0xf1/0x127
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81047d00>] 
+>> > do_group_exit+0x77/0xa1
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810560f7>]
+>> > get_signal_to_deliver+0x32c/0x37f
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100a484>]
+>> > do_notify_resume+0x90/0x740
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8102724b>] ?
+>> > __bad_area_nosemaphore+0x178/0x1a2
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810272b9>] ? 
+>> > __bad_area+0x44/0x4d
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff8100bba2>] 
+>> > retint_signal+0x46/0x84
+>> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd 
+>> > pte:2bfe8025
+>> > pmd:1535b5067
+>> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 
+>> > flags:4000000000000404
+>> > count:1 mapcount:-1 mapping:(null) index:0
+>> > Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
+>> > anon_vma:(null) mapping:ffff88022b5d25a8 index:c
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: 
+>> > filemap_fault+0x0/0x34d
+>> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
+>> > xfs_file_mmap+0x0/0x33
+>> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G B
+>> > 2.6.32.10 #2
+>> > Mar 24 19:22:28 alfa kernel: Call Trace:
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81044551>] ? add_taint+0x32/0x3e
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c2ea3>] 
+>> > print_bad_pte+0x210/0x229
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c3c98>] 
+>> > unmap_vmas+0x44b/0x787
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff81041f83>] mmput+0x48/0xb9
+>> > Mar 24 19:22:28 alfa kernel: [<ffffffff810463b0>] exit_mm+0x105/0x110
+>> > .....
+>> >
+>> > The entire log is here:
+>> > http://download.netcenter.hu/bughunt/20100324/messages
+>> >
+>> > The actual kernel is 2.6.32.10, but the crash-series started @ 
+>> > 2.6.28.10.
+>> >
+>> > I have forwarded the tasks to another server, removed this from the 
+>> > room,
+>> > and the hw survived memtest86 in >7 days continously + i have tested 
+>> > the
+>> > HDDs one by one with badblocks -vvw, all is good.
+>> > For me looks like this is not a hw problem.
+>> >
+>> > Somebody have any idea?
+>> >
+>> > Thanks a lot,
+>> > Janos Haar
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
+>> > in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at http://www.tux.org/lkml/
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
+>> in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/ 
 
