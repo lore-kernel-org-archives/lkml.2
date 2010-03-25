@@ -1,156 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab0CYQQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 12:16:41 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:41516 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab0CYQQk (ORCPT
+	id S1752657Ab0CYQSA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:18:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44867 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752275Ab0CYQR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 12:16:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=e5Q3oOR4regVU2wxj8gKRhv5KcC4N/esMCaBi2ZcEIZTyHO7qRL6gijlzcQJKpmYAs
-         zK9FpkgS7YbLOwFUTJBawX8c6dc7VFzx86ExMzBTaw3gAjG6oUYVduN+BLNo6MbLjuCU
-         CfcUycapCP95zNUG2M3Ygec4T4ei8op0eCHa0=
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
- anonymous pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100319152103.876F.A69D9226@jp.fujitsu.com>
-	 <20100319085949.GQ12388@csn.ul.ie>
-	 <20100325095349.944E.A69D9226@jp.fujitsu.com>
-	 <20100325083235.GF2024@csn.ul.ie>
-	 <20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Mar 2010 01:16:24 +0900
-Message-ID: <1269533784.1814.64.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 12:17:57 -0400
+Date: Thu, 25 Mar 2010 09:13:05 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+In-Reply-To: <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+ <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 18:02 +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 25 Mar 2010 08:32:35 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > On Thu, Mar 25, 2010 at 11:49:23AM +0900, KOSAKI Motohiro wrote:
-> > > > On Fri, Mar 19, 2010 at 03:21:41PM +0900, KOSAKI Motohiro wrote: 
-> > > Hmmm...
-> > > I haven't understand your mention because I guess I was wrong.
-> > > 
-> > > probably my last question was unclear. I mean,
-> > > 
-> > > 1) If we still need SLAB_DESTROY_BY_RCU, why do we need to add refcount?
-> > >     Which difference is exist between normal page migration and compaction?
+
+
+On Thu, 25 Mar 2010, Thomas Gleixner wrote:
+
+> On Thu, 25 Mar 2010, Andi Kleen wrote:
+> > On Thu, Mar 25, 2010 at 02:46:42AM +0100, Thomas Gleixner wrote:
+> > > 3) Why does the NIC driver code not set IRQF_DISABLED in the first
+> > >    place?  AFAICT the network drivers just kick off NAPI, so whats the
+> > >    point to run those handlers with IRQs enabled at all ?
 > > 
-> > The processes typically calling migration today own the page they are moving
-> > and is not going to exit unexpectedly during migration.
-> > 
-> > > 2) If we added refcount, which race will solve?
-> > > 
-> > 
-> > The process exiting and the last anon_vma being dropped while compaction
-> > is running. This can be reliably triggered with compaction.
-> > 
-> > > IOW, Is this patch fix old issue or compaction specific issue?
-> > > 
-> > 
-> > Strictly speaking, it's an old issue but in practice it's impossible to
-> > trigger because the process migrating always owns the page. Compaction
-> > moves pages belonging to arbitrary processes.
-> > 
-> Kosaki-san,
+> > I think the idea was to minimize irq latency for other interrupts
 > 
->  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
+> So what's the point ? Is the irq handler of that card so long running,
+> that it causes trouble ? If yes, then this needs to be fixed. If no,
+> then it simply can run with IRQs disabled.
+
+So historically _all_ interrupts allow nesting, except for what used to be 
+called "fast" irq handlers. Notably the serial line, which especially on 
+chips without buffering needs really low latencies.
+
+So that's where the irq handler code comes from: a "fast" interrupt will 
+not ever enable the CPU interrupts at all, and can run without ever doing 
+the whole "mask and ACK" code. But no, we absolutely MUST NOT make regular 
+interrupt handlers be that kind of fast handlers (ie IRQF_DISABLED in 
+modern parlance), because that would make the whole point moot.
+
+So Thomas, you're wrong. We can't fix all irq handlers to be really quick, 
+and we MUST NOT run them with all other irq's disabled if they are not - 
+because that obviates the whole point.
+
+[ There's another historical issue, which is that at least the SCSI layer 
+  used to depend on timer interrupts still coming in, because there were 
+  literally cases where the cdoe would wait for a timer tick while 
+  _inside_ the SCSI irq handler.
+
+  That may or may not be true any more - I certainly hope it isn't. But 
+  it's an example of the kinds of things drivers really can do. ]
+
+> What's the cost? Nothing at all. There is no f*cking difference between:
 > 
->  But, this behavior of unmap_and_move() requires access to _freed_
->  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
->  it't not good habit in general.
+>  IRQ1 10us
+>  IRQ2 10us
+>  IRQ3 10us
+>  IRQ4 10us
 
-I agree kosaki's opinion. 
+But there _is_ a big f*cking difference when there is another irq involved 
+that wants to happen immediately. For a network card that's not (much) of 
+an issue, since any sane network card will buffer things anyway. For an 
+original 8250 with a single-byte buffer running at 19200 bps on a slow 
+machine, it really is a _huge_ deal. On that slow machine, the other 
+interrupt handlers won't be 10us anyway. A single PIO op is 1us!
 
-I guess Mel met the problem before this patch. 
-Apparently, It had a problem like Mel's description. 
-But we can close race window by this patch. 
-so we don't need to new ref counter. 
+There are other cases where this matters, but that 8250 is the historical 
+one.
 
-At least, rcu_read_lock prevent anon_vma's free. 
-so we can hold spinlock of anon_vma although it's not good habit.
-About reusing anon_vma by SLAB_XXX_RCU, page_check_address and 
-vma_address can prevent wrong working in try_to_unmap.  
+NOTE! Historically, the "fast" handlers also had a much faster irq 
+response because they didn't do that whole MASK/ACK/END thing. So they'd 
+just keep the CPU interrupts disabled, and ACK at the end, and I think 
+we've even used AUTOEIO so that they didn't need any ACK at all, and we 
+never touched the interrupt controller itself for them.
 
+Again, that's a big deal when you're trying to push a serial line past 
+19200bps on a slow machine with no hardware buffering (or even to 9600bps, 
+for that matter - those IRQ controller accesses were traditionally all 1us 
+each, and to do mask+ack+unmask was a minimum of three writes if you were 
+off the slave chip, and while we have that magic 'cached_mask' we didn't 
+always do that, so it ended up being three PIO writes and two PIO reads: a 
+_minimim_ of 5us just for irq controller accesses).
 
->  After direct compaction, page-migration will be one of "core" code of
->  memory management. Then, I agree to patch [1/11] as our direction for
->  keeping sanity and showing direction to more updates. Maybe adding
->  refcnt and removing RCU in futuer is good.
+> So what's the point of running a well written (short) interrupt
+> handler with interrupts enabled ? Nothing at all. It just makes us
+> deal with crap like stacks overflowing for no good reason.
 
+If you know it's short and does almost nothing at all, then IRQF_DISABLED 
+would be fine. But you haven't thought it through: IRQF_DISABLED also 
+means that you cannot share interrupts with other people (think about it), 
+so if this was _only_ about that particular case of four network cards on 
+four separate irqs you'd be right, but it isn't.
 
-I agree. (use one locking rule) 
-I don't mean that we have to remove SLAB_XXX_RCU.
-I want to reduce two locking rule with just one if we can. 
-As far as we can do, I hope hide rcu_read_lock by Kame's version.
-(Kame's version copy & page)
-==
+You need to look at the bigger picture.
 
-       if (PageAnon(page)) {
-               struct anon_vma anon = page_lock_anon_vma(page);
-               /* to take this lock, this page must be mapped. */
-               if (!anon_vma)
-                       goto uncharge;
-               increase refcnt
-               page_unlock_anon_vma(anon);
-       }
-       ....
-==
-and
-==
-void anon_vma_free(struct anon_vma *anon)
-{
-       /*
-        * To increase refcnt of anon-vma, anon_vma->lock should be held by
-        * page_lock_anon_vma(). It means anon_vma has a "mapped" page.
-        * If this anon is freed by unmap or exit, all pages under this anon
-        * must be unmapped. Then, just checking refcnt without lock is ok.
-        */
-       if (check refcnt > 0)
-               return do nothing
-       kmem_cache_free(anon);
-}
-==
-Many locking rule would make many contributor very hard.
+> You just don't get it. Long running interrupt handlers are a
+> BUG. Period. If they are short they can run with IRQs disabled w/o any
+> harm to the system.
 
-> 
->  IMHO, pushing this patch [2/11] as "BUGFIX" independent of this set and
->  adding anon_vma->refcnt [1/11] and [3/11] in 1st Direct-compaction patch
->  series  to show the direction will makse sense.
->  (I think merging 1/11 and 3/11 will be okay...)
+Thomas, YOU are the one not getting it. Long-running is a fact. And 
+long-running is all relative. 100us is a long time, but with certain 
+hardware it's just a fact of life due to PIO costs. IDE drives in PIO mode 
+are perhaps the most well-known and extreme example, but tens of 
+microseconds is pretty much par for the course.
 
-Yes. For reducing locking, We can enhance it step by step after merge 
-[1/11] and [3/11] if others doesn't oppose it any more. 
+And yes, slow hardware still exists.
 
-> 
-> Thanks,
-> -Kame
-> 
-> 
+And even on fast hardware, we have the irq sharing issue, along with 
+random legacy driver issues.
 
+Now, that all said, I don't know whether Andi's patch is really the right 
+thing. But it may well approach being the best thing we'd have.
 
--- 
-Kind regards,
-Minchan Kim
+Now, it's also true that our IRQ infrastructure handlers _could_ be 
+smarter, and make the whole problem less likely to happen.
 
+In particular, it's probably true that especially on modern hardware with 
+multiple cores, and especially when you do _not_ have irq sharing (which 
+is the common case these days for things like network drivers that can use 
+MSI), we really would be better off having the irq disabled over the whole 
+thing, and on some interrupt controllers it might even be worth it to do 
+the old optimization of not masking-and-acking, but just acking.
 
+But see above. This is _not_ something that a driver can do any more. They 
+don't know whether the interrupt might end up being shared. Just blindly 
+setting IRAF_DISABLED in a driver is _not_ the answer. But being smarter 
+in the generic irq handler code might work.
+
+And then, what we could do, is to mark the drivers that absolutely _must_ 
+be able to nest specially. Like the IDE driver when in PIO mode. Or maybe 
+the SCSI drivers, if they still depend on that timer interrupt happening 
+while they are busy.
+
+		Linus
