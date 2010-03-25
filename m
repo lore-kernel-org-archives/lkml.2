@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab0CYS6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:58:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47526
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754069Ab0CYS6W convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:58:22 -0400
-Date: Thu, 25 Mar 2010 11:58:46 -0700 (PDT)
-Message-Id: <20100325.115846.00009969.davem@davemloft.net>
-To: isdn@linux-pingi.de
-Cc: henne@nachtwindheim.de, linux@dominikbrodowski.net,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] isdn: Cleanup Sections in PCMCIA driver sedlbauer
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201003251313.18144.isdn@linux-pingi.de>
-References: <1269518732-4515-1-git-send-email-henne@nachtwindheim.de>
-	<201003251313.18144.isdn@linux-pingi.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754262Ab0CYTBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 15:01:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25838 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754069Ab0CYTBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 15:01:10 -0400
+Message-ID: <4BABB2DB.8030305@redhat.com>
+Date: Thu, 25 Mar 2010 16:00:43 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: Jon Smirl <jonsmirl@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Krzysztof Halasa <khc@pm.waw.pl>,
+       hermann pitton <hermann-pitton@arcor.de>,
+       Christoph Bartelmus <lirc@bartelmus.de>, awalls@radix.net, j@jannau.net,
+       jarod@redhat.com, jarod@wilsonet.com, kraxel@redhat.com,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-media@vger.kernel.org, superm1@ubuntu.com
+Subject: Re: [RFC] What are the goals for the architecture of an in-kernel
+ IR 	system?
+References: <20091215115011.GB1385@ucw.cz> <4B279017.3080303@redhat.com> <20091215195859.GI24406@elf.ucw.cz> <9e4733910912151214n68161fc7tca0ffbf34c2c4e4@mail.gmail.com> <20091215201933.GK24406@elf.ucw.cz> <9e4733910912151229o371ee017tf3640d8f85728011@mail.gmail.com> <20091215203300.GL24406@elf.ucw.cz> <9e4733910912151245ne442a5dlcfee92609e364f70@mail.gmail.com> <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com> <4BAB7659.1040408@redhat.com> <20100325183259.GA22902@elf.ucw.cz>
+In-Reply-To: <20100325183259.GA22902@elf.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Karsten Keil <isdn@linux-pingi.de>
-Date: Thu, 25 Mar 2010 13:13:18 +0100
-
-> On Donnerstag, 25. März 2010 13:05:29 Henrik Kretzschmar wrote:
->> Compiling this driver gave a section mismatch,
->> so I reviewed the init/exit paths of the driver
->> and made the correct changes.
->> 
->> WARNING: drivers/isdn/hisax/built-in.o(.text+0x558d6): Section mismatch
->> in reference from the function sedlbauer_config() to the function
->> .devinit.text:hisax_init_pcmcia()
->> The function sedlbauer_config() references
->> the function __devinit hisax_init_pcmcia().
->> This is often because sedlbauer_config lacks a __devinit
->> annotation or the annotation of hisax_init_pcmcia is wrong.
->> 
->> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-> Acked-by: <keil@b1-systems.de>
+Pavel Machek wrote:
+> Hi!
 > 
-> Thank you for fixing this.
+>> This were the original plan we've discussed, back in December:
+> ....
+> 
+> Seems sane.
+> 
+>> struct keycode_table_entry {
+>> 	unsigned keycode;
+>> 	char scancode[32];	/* 32 is just an arbitrary long array - maybe shorter */
+>> 	int len;
+>> }
+> 
+> What about
+> 
+> struct keycode_table_entry {
+> 	unsigned keycode;
+> 	int len;
+> 	char scancode[];
+> }
+> 
+> ? gcc extension, but commonly used around kernel.
 
-Thanks for reviewing Karsten.
+Seems fine. Maybe we could just use "char *scancode" to avoid using a
+gcc extension on a public interface.
 
-Please put your proper name in your ACK lines in the
-future, they should look just like Signed-off-by: lines.
 
-I fixed this up when committing, thanks again.
+-- 
+
+Cheers,
+Mauro
