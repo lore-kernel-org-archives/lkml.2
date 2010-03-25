@@ -1,74 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab0CYKdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:33:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753957Ab0CYKdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:33:35 -0400
-Subject: Re: [PATCH] GFS2 docs update
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-Cc: linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
-References: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 25 Mar 2010 10:37:17 +0000
-Message-ID: <1269513437.2835.14.camel@localhost>
-Mime-Version: 1.0
+	id S1754152Ab0CYKdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:33:53 -0400
+Received: from stinky.trash.net ([213.144.137.162]:48665 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab0CYKdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:33:51 -0400
+Message-ID: <4BAB3C0D.4080906@trash.net>
+Date: Thu, 25 Mar 2010 11:33:49 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+MIME-Version: 1.0
+To: wzt.wzt@gmail.com
+CC: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] Netfilter: Code cleanup on net/netfilter
+References: <20100325092154.GB29056@localhost.localdomain>
+In-Reply-To: <20100325092154.GB29056@localhost.localdomain>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+wzt.wzt@gmail.com wrote:
+> Fix some coding styles and remove moduleparam.h
 
-Now in the GFS2 -nmw git tree. Thanks,
+I've already applied your patches to remove moduleparam.h.
+Please base your patches on
 
-Steve.
-
-On Thu, 2010-03-25 at 11:04 +0100, Andrea Gelmini wrote:
-> Now http://sources.redhat.com/cluster/ is redirected to
-> http://sources.redhat.com/cluster/wiki/
-> 
-> Also fixed tabs in the end.
-> 
-> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
-> ---
->  Documentation/filesystems/gfs2.txt |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/gfs2.txt b/Documentation/filesystems/gfs2.txt
-> index 5e3ab8f..0b59c02 100644
-> --- a/Documentation/filesystems/gfs2.txt
-> +++ b/Documentation/filesystems/gfs2.txt
-> @@ -1,7 +1,7 @@
->  Global File System
->  ------------------
->  
-> -http://sources.redhat.com/cluster/
-> +http://sources.redhat.com/cluster/wiki/
->  
->  GFS is a cluster file system. It allows a cluster of computers to
->  simultaneously use a block device that is shared between them (with FC,
-> @@ -36,11 +36,11 @@ GFS2 is not on-disk compatible with previous versions of GFS, but it
->  is pretty close.
->  
->  The following man pages can be found at the URL above:
-> -  fsck.gfs2	to repair a filesystem
-> -  gfs2_grow	to expand a filesystem online
-> -  gfs2_jadd	to add journals to a filesystem online
-> -  gfs2_tool	to manipulate, examine and tune a filesystem
-> +  fsck.gfs2		to repair a filesystem
-> +  gfs2_grow		to expand a filesystem online
-> +  gfs2_jadd		to add journals to a filesystem online
-> +  gfs2_tool		to manipulate, examine and tune a filesystem
->    gfs2_quota	to examine and change quota values in a filesystem
->    gfs2_convert	to convert a gfs filesystem to gfs2 in-place
->    mount.gfs2	to help mount(8) mount a filesystem
-> -  mkfs.gfs2	to make a filesystem
-> +  mkfs.gfs2		to make a filesystem
-
-
+git://git.kernel.org/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
