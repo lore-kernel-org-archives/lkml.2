@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab0CYFl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 01:41:59 -0400
-Received: from crca.org.au ([74.207.252.120]:57286 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab0CYFl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 01:41:58 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BAAF7DA.30506@crca.org.au>
-Date: Thu, 25 Mar 2010 16:42:50 +1100
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement
- user_ops reader
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-10-git-send-email-jslaby@suse.cz> <20100325053003.GB12935@elf.ucw.cz>
-In-Reply-To: <20100325053003.GB12935@elf.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752097Ab0CYFnF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 01:43:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36327 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0CYFnC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 01:43:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PeE7Q2KJuS+d7V5UxV7bzniJCimryXp/rsxlfr0HYyyGnuPPySsy4r7+6DeBhOX0pU
+         hYqSiTU3A0V6IkoIL9S/TQLgNVgyZB0fCzlBhF7+gVpDEv/Vn0YPsFDl7xrI6DgblC5d
+         aGh7qG+UNq49BWu4BNaxxhoJmQXZp16eF7QgA=
+Subject: Re: [PATCH] perf/scripts: tuple was set from long in both branches
+ in python_process_event()
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Roel Kluin <roel.kluin@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BA7A76E.3040007@gmail.com>
+References: <4BA7A76E.3040007@gmail.com>
+Content-Type: text/plain
+Date: Thu, 25 Mar 2010 00:42:58 -0500
+Message-Id: <1269495778.6606.86.camel@tropicana>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Hi,
 
-On 25/03/10 16:30, Pavel Machek wrote:
-[...]
+On Mon, 2010-03-22 at 18:22 +0100, Roel Kluin wrote:
+> Regardless of the sign, the tuple was set from a long.
+> 
+> Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+> ---
+>  .../util/scripting-engines/trace-event-python.c    |   13 ++++++++-----
+>  1 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> Was something like this intended?
 
-> I have some problems with sws_module_ops interface (handcoded locking
-> is too ugly to live), but it is better than I expected. But there may
-> be better solution available, one that does not need two interfaces to
-> maintain (we can't really get rid of userland interface). What about
-> this?
+Yeah, something like that - thanks for noticing it and providing the
+patch.  After looking at the Python implementation, I modified your
+patch as below...
 
-Just picking up on that bracketed part: Can we flag the userland 
-interface (and uswsusp) as being planned for eventual removal now... or 
-at least agree to work toward that?
+Basically, Python wants to use a PyInt (which is internally a long) if
+it can i.e. if the value will fit into that type.  If not, it stores it
+into a PyLong, which isn't actually a long, but an arbitrary-precision
+integer variable.
 
-I'm asking because if we're going to make a go of getting the in-kernel 
-code in much better shape, and we have Rafael, Jiri and I - and you? - 
-all pulling in the same direction to improve it, there's going to come a 
-point (hopefully not too far away) where uswsusp is just making life too 
-difficult, and getting rid of it will be a big help.
+The code below is similar to to what Python does internally, and it
+seems to work as expected on the x86 and x86_64 sytems I tested it on.
 
-Regards,
+Thanks,
 
-Nigel
+Tom
+
+Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 33a414b..6a72f14 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -208,7 +208,7 @@ static void python_process_event(int cpu, void *data,
+ 				 int size __unused,
+ 				 unsigned long long nsecs, char *comm)
+ {
+-	PyObject *handler, *retval, *context, *t;
++	PyObject *handler, *retval, *context, *t, *obj;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+ 	unsigned long long val;
+@@ -256,16 +256,23 @@ static void python_process_event(int cpu, void *data,
+ 				offset &= 0xffff;
+ 			} else
+ 				offset = field->offset;
+-			PyTuple_SetItem(t, n++,
+-				PyString_FromString((char *)data + offset));
++			obj = PyString_FromString((char *)data + offset);
+ 		} else { /* FIELD_IS_NUMERIC */
+ 			val = read_size(data + field->offset, field->size);
+ 			if (field->flags & FIELD_IS_SIGNED) {
+-				PyTuple_SetItem(t, n++, PyInt_FromLong(val));
++				if ((long long)val >= LONG_MIN &&
++				    (long long)val <= LONG_MAX)
++					obj = PyInt_FromLong(val);
++				else
++					obj = PyLong_FromLongLong(val);
+ 			} else {
+-				PyTuple_SetItem(t, n++, PyInt_FromLong(val));
++				if (val <= LONG_MAX)
++					obj = PyInt_FromLong(val);
++				else
++					obj = PyLong_FromUnsignedLongLong(val);
+ 			}
+ 		}
++		PyTuple_SetItem(t, n++, obj);
+ 	}
+ 
+ 	if (_PyTuple_Resize(&t, n) == -1)
+
+
+
+
