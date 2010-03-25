@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab0CYOtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:49:49 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:59538 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab0CYOts (ORCPT
+	id S1754846Ab0CYOz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:55:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59773 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab0CYOz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:49:48 -0400
-Date: Thu, 25 Mar 2010 09:49:39 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Alex Shi <alex.shi@intel.com>
-cc: linux-kernel@vger.kernel.org, ling.ma@intel.com,
-       "Zhang, Yanmin" <yanmin.zhang@intel.com>,
-       "Chen, Tim C" <tim.c.chen@intel.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: hackbench regression due to commit 9dfc6e68bfe6e
-In-Reply-To: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-Message-ID: <alpine.DEB.2.00.1003250942080.2670@router.home>
-References: <1269506457.4513.141.camel@alexs-hp.sh.intel.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 25 Mar 2010 10:55:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=TiH5zY3ionJScEr5HZQ7Rx/8HL6OgaKHrhJWD3QT5Ph7eu8z9pMnB16t0syJslcA/o
+         7vQ2tV+Qdfrjq8E31Nov4qud12bn9VDYZQPt5dwHfZXQSU21PZ3Sj0AZ2mgDF7dNrO8j
+         Qo9EHFepOl9pfX52jnT1rcO9Ay9dUA3ziDTVk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 25 Mar 2010 20:25:26 +0530
+Message-ID: <f750ee71003250755kf02f87au714f634070b94d26@mail.gmail.com>
+Subject: disabling kernel preemption from user space
+From: kartikeyan sadasivuni <s.kartikeyan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010, Alex Shi wrote:
+Hi,
 
->     SLUB: Use this_cpu operations in slub
->
-> The hackbench is prepared hundreds pair of processes/threads. And each
-> of pair of processes consists of a receiver and a sender. After all
-> pairs created and ready with a few memory block (by malloc), hackbench
-> let the sender do appointed times sending to receiver via socket, then
-> wait all pairs finished. The total sending running time is the indicator
-> of this benchmark. The less the better.
+I have a system where bootloader supports
+core0 running linux (control plane).
+core1 running application without OS (a data plane app).
 
-> The socket send/receiver generate lots of slub alloc/free. slabinfo
-> command show the following slub get huge increase from about 81412344 to
-> 141412497, after command "backbench 150 thread 1000" running.
+(core0 and core1 share some physical memory)
 
-The number of frees is different? From 81 mio to 141 mio? Are you sure it
-was the same load?
-
-> Name                   Objects      Alloc       Free   %Fast Fallb O
-> :t-0001024                 870  141412497  141412132  94   1     0 3
-> :t-0000256                1607  141225312  141224177  94   1     0 1
->
->
-> Via perf tool I collected the L1 data cache miss info of comamnd:
-> "./hackbench 150 thread 100"
->
-> On 33-rc1, about 1303976612 time L1 Dcache missing
->
-> On 9dfc6, about 1360574760 times L1 Dcache missing
-
-I hope this is the same load?
-
-What debugging options did you use? We are now using per cpu operations in
-the hot paths. Enabling debugging for per cpu ops could decrease your
-performance now. Have a look at a dissassembly of kfree() to verify that
-there is no instrumentation.
+Because of this setup and application requirements
+I want to ocassionally disable preemption of linux kernel
+for very small periods from user space process.
 
 
+Is the following valid solution to achive this ?
+
+I will load a kernel module foo.ko which supports the following
+ioctl's from user space.
+
+
+PREEMPT_DISABLE:
+ calls preempt_disable() from the driver (foo.ko)
+
+PREEMPT_ENABLE:
+ calls premept_enable() from the driver (foo.ko)
+
+user space process does
+
+ioctl(FOO_FD,  PREEMPT_DISABLE, ..);
+do some short critcal work
+ioctl(FOO_FD,  PREEMPT_ENABLE, ..);
+
+
+Basically I want to know, if preempt_disable() and preempt_enable()
+are legal across user to kernel space swtiches are only within kernel.
+
+I don't mind if the solution is wierd/stupid
+but works on all 2.6.* kernels.
+
+-- 
+S.Kartikeyan
