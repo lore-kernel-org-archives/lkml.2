@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651Ab0CYKQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:16:20 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58724 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753424Ab0CYKQS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:16:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 25 Mar 2010 19:12:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
- anonymous pages
-Message-Id: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100325185200.6C8C.A69D9226@jp.fujitsu.com>
-References: <20100325092131.GK2024@csn.ul.ie>
-	<20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100325185200.6C8C.A69D9226@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753742Ab0CYKQc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:16:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753706Ab0CYKQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:16:29 -0400
+Date: Thu, 25 Mar 2010 11:14:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Miao Xie <miaox@cn.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Ben Blum <bblum@google.com>, Jiri Slaby <jirislaby@gmail.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] kill the broken and deadlockable
+	cpuset_lock/cpuset_cpus_allowed_locked code
+Message-ID: <20100325101420.GA30779@redhat.com>
+References: <20100315091003.GA9123@redhat.com> <4BAAD1EB.4020201@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAAD1EB.4020201@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 18:59:25 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On 03/25, Miao Xie wrote:
+>
+> on 2010-3-15 17:10, Oleg Nesterov wrote:
+> > This patch just states the fact the cpusets/cpuhotplug interaction is
+> > broken and removes the deadlockable code which only pretends to work.
+> >
+> > - cpuset_lock() doesn't really work. It is needed for
+> >   cpuset_cpus_allowed_locked() but we can't take this lock in
+> >   try_to_wake_up()->select_fallback_rq() path.
+> >
+> > - cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
+> >   callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
+> >   stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
+> >   cpuset_lock() and hangs forever because CPU is already dead and thus
+> >   T can't be scheduled.
+>
+> The problem what you said don't exist, because the kernel already move T to
+> the active cpu when preparing to turn off a CPU.
 
-> > > > > Kosaki-san,
-> > > > > 
-> > > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
-> > > > > 
-> > > > >  But, this behavior of unmap_and_move() requires access to _freed_
-> > > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
-> > > > >  it't not good habit in general.
-> > > > > 
-> > > > >  After direct compaction, page-migration will be one of "core" code of
-> > > > >  memory management. Then, I agree to patch [1/11] as our direction for
-> > > > >  keeping sanity and showing direction to more updates. Maybe adding
-> > > > >  refcnt and removing RCU in futuer is good.
-> > > > 
-> > > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
-> > > > is meaningless now.
-> > > 
-> > > Christoph is opposed to removing it because of cache-hotness issues more
-> > > so than use-after-free concerns. The refcount is needed with or without
-> > > SLAB_DESTROY_BY_RCU.
-> > > 
-> > 
-> > I wonder a code which the easiest to be read will be like following.
-> > ==
-> > 
-> >         if (PageAnon(page)) {
-> >                 struct anon_vma anon = page_lock_anon_vma(page);
-> > 		/* to take this lock, this page must be mapped. */
-> > 		if (!anon_vma)
-> > 			goto uncharge;
-> > 		increase refcnt
-> > 		page_unlock_anon_vma(anon);
-> >         }
-> > 	....
-> > ==
-> 
-> This seems very good and acceptable to me. This refcnt usage
-> obviously reduce rcu-lock holding time.
-> 
-> I still think no refcount doesn't cause any disaster. but I agree
-> this is forward step patch.
-> 
+we need cpuset_lock() to move T. please look at _cpu_down().
 
-BTW, by above change and the change in patch [2/11], 
-"A page turnd to be SwapCache and free unmapped but not freed"
-page will be never migrated.
+OK.
 
-Mel, could you change the check as this ??
+	A task T holds callback_mutex, and it is bound to CPU 1.
 
-	if (PageAnon(page)) {
-		rcu_read_lock();
-		if (!page_mapcount(page)) {
-			rcu_read_unlock();
-			if (!PageSwapCache(page))
-				goto uncharge;
-			/* unmapped swap cache can be migrated */
-		} else {
-			...
-		}
-	.....
-	} else 
+	_cpu_down(cpu => 1) is called by the task X.
 
+	_cpu_down()->stop_machine() spawns rt-threads for each cpu,
+	a thread running on CPU 1 preempts T and calls take_cpu_down()
+	which removes CPU 1 from online/active masks.
 
-Thx,
--Kame
+	X continues, and does raw_notifier_call_chain(CPU_DEAD), this
+	calls migration_call(CPU_DEAD), and _this_ is what move the
+	tasks from the dead CPU.
 
+	migration_call(CPU_DEAD) calls cpuset_lock() and deadlocks.
+
+See?
+
+Oleg.
 
