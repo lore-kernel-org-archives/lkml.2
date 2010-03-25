@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0CYMTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 08:19:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42353 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751365Ab0CYMTW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 08:19:22 -0400
-Subject: Re: [RFC,PATCH 2/2] cputimers/proc:
- do_task_stat()->thread_group_times() is racy and O(n) under ->siglock
-From: Peter Zijlstra <peterz@infradead.org>
+	id S1752592Ab0CYM07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 08:26:59 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60457 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051Ab0CYM06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 08:26:58 -0400
+Message-ID: <4BAB569E.5060103@cn.fujitsu.com>
+Date: Thu, 25 Mar 2010 20:27:10 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+MIME-Version: 1.0
 To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Americo Wang <xiyou.wangcong@gmail.com>,
-       Balbir Singh <balbir@in.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Roland McGrath <roland@redhat.com>,
-       Spencer Candland <spencer@bluehost.com>,
-       Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100325121250.GA3664@redhat.com>
-References: <20100324204554.GA31780@redhat.com>
-	 <1269464082.12097.3.camel@laptop>  <20100325121250.GA3664@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Mar 2010 13:19:17 +0100
-Message-ID: <1269519557.12097.69.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Ben Blum <bblum@google.com>, Jiri Slaby <jirislaby@gmail.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] kill the broken and deadlockable	cpuset_lock/cpuset_cpus_allowed_locked
+ code
+References: <20100315091003.GA9123@redhat.com> <4BAAD1EB.4020201@cn.fujitsu.com> <20100325101420.GA30779@redhat.com>
+In-Reply-To: <20100325101420.GA30779@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 13:12 +0100, Oleg Nesterov wrote:
-> > Right, so from what I remember the issue is that, yes top et al rely on
-> > that monotonicity,
+on 2010-3-25 18:14, Oleg Nesterov wrote:
+> On 03/25, Miao Xie wrote:
+>>
+>> on 2010-3-15 17:10, Oleg Nesterov wrote:
+>>> This patch just states the fact the cpusets/cpuhotplug interaction is
+>>> broken and removes the deadlockable code which only pretends to work.
+>>>
+>>> - cpuset_lock() doesn't really work. It is needed for
+>>>   cpuset_cpus_allowed_locked() but we can't take this lock in
+>>>   try_to_wake_up()->select_fallback_rq() path.
+>>>
+>>> - cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
+>>>   callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
+>>>   stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
+>>>   cpuset_lock() and hangs forever because CPU is already dead and thus
+>>>   T can't be scheduled.
+>>
+>> The problem what you said don't exist, because the kernel already move T to
+>> the active cpu when preparing to turn off a CPU.
 > 
-> Really?  So, do you think the change above will break user-space?
+> we need cpuset_lock() to move T. please look at _cpu_down().
 > 
-> How sad :/ 
+> OK.
+> 
+> 	A task T holds callback_mutex, and it is bound to CPU 1.
+> 
+> 	_cpu_down(cpu => 1) is called by the task X.
+> 
+> 	_cpu_down()->stop_machine() spawns rt-threads for each cpu,
+> 	a thread running on CPU 1 preempts T and calls take_cpu_down()
+> 	which removes CPU 1 from online/active masks.
+> 
+> 	X continues, and does raw_notifier_call_chain(CPU_DEAD), this
+> 	calls migration_call(CPU_DEAD), and _this_ is what move the
+> 	tasks from the dead CPU.
+> 
+> 	migration_call(CPU_DEAD) calls cpuset_lock() and deadlocks.
+> 
+> See?
 
-IIRC top can give very funny results if you break it hard enough, it
-likes to give 9999% cputime if the thing goes backwards over the sample
-interval.
+But when the kernel want to offline a cpu, it does 
+	raw_notifier_call_chain(CPU_DOWN_PREPARE) 
+at first. this calls cpuset_track_online_cpus() to update cpuset's cpus
+and task->cpus_allowed, and then moves the task running on the dying cpu
+to the other online cpu. At that time, rt-threads for each cpu have not
+been created.
 
-But I'm not sure your race is large enough to ever show up like that, so
-it might all just work out, but in general it does tend to require
-monotonic times.
+And when the kernel does migration_call(CPU_DEAD), the rt-threads already
+exit. the task that holds callback_mutex can run as normal.
+
+Miao
+
+> 
+> Oleg.
+> 
+> 
+> 
+> 
+
 
