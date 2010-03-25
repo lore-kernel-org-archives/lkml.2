@@ -1,139 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab0CYN4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:56:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59957 "EHLO
+	id S1754086Ab0CYN4V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:56:21 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59958 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab0CYN4I (ORCPT
+	with ESMTP id S1753844Ab0CYN4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:56:08 -0400
-Message-Id: <20100325135413.861425293@chello.nl>
+	Thu, 25 Mar 2010 09:56:11 -0400
+Message-Id: <20100325135414.017536066@chello.nl>
 References: <20100325135148.626077692@chello.nl>
 User-Agent: quilt/0.46-1
-Date: Thu, 25 Mar 2010 14:51:49 +0100
+Date: Thu, 25 Mar 2010 14:51:51 +0100
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: mingo@elte.hu, tglx@linutronix.de
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/3] perf, x86: clean up debugctlmsr bit definitions
-Content-Disposition: inline; filename=perf-unify-debugctlmsr.patch
+Subject: [PATCH 3/3] x86, ptrace: Fix block-step
+Content-Disposition: inline; filename=x86-fix-btf.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move all debugctlmsr thingies into msr-index.h
+Implement ptrace-block-step using TIF_BLOCKSTEP which will set
+DEBUGCTLMSR_BTF when set for a task while preserving any other
+DEBUGCTLMSR bits.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- arch/x86/include/asm/msr-index.h           |   13 ++++++++-----
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |   23 +++++++----------------
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |    7 ++-----
- 3 files changed, 17 insertions(+), 26 deletions(-)
+ arch/x86/include/asm/processor.h   |    4 ++--
+ arch/x86/include/asm/thread_info.h |    4 +++-
+ arch/x86/kernel/kprobes.c          |   14 ++++++++++++--
+ arch/x86/kernel/process.c          |   11 +++++++++++
+ arch/x86/kernel/step.c             |   24 ++++++++++++++++++++----
+ arch/x86/kernel/traps.c            |    5 +++++
+ 6 files changed, 53 insertions(+), 9 deletions(-)
 
-Index: linux-2.6/arch/x86/include/asm/msr-index.h
+Index: linux-2.6/arch/x86/include/asm/processor.h
 ===================================================================
---- linux-2.6.orig/arch/x86/include/asm/msr-index.h
-+++ linux-2.6/arch/x86/include/asm/msr-index.h
-@@ -71,11 +71,14 @@
- #define MSR_IA32_LASTINTTOIP		0x000001de
+--- linux-2.6.orig/arch/x86/include/asm/processor.h
++++ linux-2.6/arch/x86/include/asm/processor.h
+@@ -798,7 +798,7 @@ extern void cpu_init(void);
  
- /* DEBUGCTLMSR bits (others vary by model): */
--#define _DEBUGCTLMSR_LBR	0 /* last branch recording */
--#define _DEBUGCTLMSR_BTF	1 /* single-step on branches */
--
--#define DEBUGCTLMSR_LBR		(1UL << _DEBUGCTLMSR_LBR)
--#define DEBUGCTLMSR_BTF		(1UL << _DEBUGCTLMSR_BTF)
-+#define DEBUGCTLMSR_LBR			(1UL <<  0) /* last branch recording */
-+#define DEBUGCTLMSR_BTF			(1UL <<  1) /* single-step on branches */
-+#define DEBUGCTLMSR_TR			(1UL <<  6)
-+#define DEBUGCTLMSR_BTS			(1UL <<  7)
-+#define DEBUGCTLMSR_BTINT		(1UL <<  8)
-+#define DEBUGCTLMSR_BTS_OFF_OS		(1UL <<  9)
-+#define DEBUGCTLMSR_BTS_OFF_USR		(1UL << 10)
-+#define DEBUGCTLMSR_FREEZE_LBRS_ON_PMI	(1UL << 11)
- 
- #define MSR_IA32_MC0_CTL		0x00000400
- #define MSR_IA32_MC0_STATUS		0x00000401
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -38,15 +38,6 @@ struct pebs_record_nhm {
- };
- 
- /*
-- * Bits in the debugctlmsr controlling branch tracing.
-- */
--#define X86_DEBUGCTL_TR			(1 << 6)
--#define X86_DEBUGCTL_BTS		(1 << 7)
--#define X86_DEBUGCTL_BTINT		(1 << 8)
--#define X86_DEBUGCTL_BTS_OFF_OS		(1 << 9)
--#define X86_DEBUGCTL_BTS_OFF_USR	(1 << 10)
--
--/*
-  * A debug store configuration.
-  *
-  * We only support architectures that use 64bit fields.
-@@ -193,15 +184,15 @@ static void intel_pmu_enable_bts(u64 con
- 
- 	debugctlmsr = get_debugctlmsr();
- 
--	debugctlmsr |= X86_DEBUGCTL_TR;
--	debugctlmsr |= X86_DEBUGCTL_BTS;
--	debugctlmsr |= X86_DEBUGCTL_BTINT;
-+	debugctlmsr |= DEBUGCTLMSR_TR;
-+	debugctlmsr |= DEBUGCTLMSR_BTS;
-+	debugctlmsr |= DEBUGCTLMSR_BTINT;
- 
- 	if (!(config & ARCH_PERFMON_EVENTSEL_OS))
--		debugctlmsr |= X86_DEBUGCTL_BTS_OFF_OS;
-+		debugctlmsr |= DEBUGCTLMSR_BTS_OFF_OS;
- 
- 	if (!(config & ARCH_PERFMON_EVENTSEL_USR))
--		debugctlmsr |= X86_DEBUGCTL_BTS_OFF_USR;
-+		debugctlmsr |= DEBUGCTLMSR_BTS_OFF_USR;
- 
- 	update_debugctlmsr(debugctlmsr);
- }
-@@ -217,8 +208,8 @@ static void intel_pmu_disable_bts(void)
- 	debugctlmsr = get_debugctlmsr();
- 
- 	debugctlmsr &=
--		~(X86_DEBUGCTL_TR | X86_DEBUGCTL_BTS | X86_DEBUGCTL_BTINT |
--		  X86_DEBUGCTL_BTS_OFF_OS | X86_DEBUGCTL_BTS_OFF_USR);
-+		~(DEBUGCTLMSR_TR | DEBUGCTLMSR_BTS | DEBUGCTLMSR_BTINT |
-+		  DEBUGCTLMSR_BTS_OFF_OS | DEBUGCTLMSR_BTS_OFF_USR);
- 
- 	update_debugctlmsr(debugctlmsr);
- }
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -12,15 +12,12 @@ enum {
-  * otherwise it becomes near impossible to get a reliable stack.
-  */
- 
--#define X86_DEBUGCTL_LBR               		(1 << 0)
--#define X86_DEBUGCTL_FREEZE_LBRS_ON_PMI		(1 << 11)
--
- static void __intel_pmu_lbr_enable(void)
+ static inline unsigned long get_debugctlmsr(void)
  {
- 	u64 debugctl;
+-    unsigned long debugctlmsr = 0;
++	unsigned long debugctlmsr = 0;
  
- 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
--	debugctl |= (X86_DEBUGCTL_LBR | X86_DEBUGCTL_FREEZE_LBRS_ON_PMI);
-+	debugctl |= (DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
- 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+ #ifndef CONFIG_X86_DEBUGCTLMSR
+ 	if (boot_cpu_data.x86 < 6)
+@@ -806,7 +806,7 @@ static inline unsigned long get_debugctl
+ #endif
+ 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctlmsr);
+ 
+-    return debugctlmsr;
++	return debugctlmsr;
  }
  
-@@ -29,7 +26,7 @@ static void __intel_pmu_lbr_disable(void
- 	u64 debugctl;
+ static inline void update_debugctlmsr(unsigned long debugctlmsr)
+Index: linux-2.6/arch/x86/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/thread_info.h
++++ linux-2.6/arch/x86/include/asm/thread_info.h
+@@ -92,6 +92,7 @@ struct thread_info {
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+ #define TIF_FREEZE		23	/* is freezing for suspend */
+ #define TIF_FORCED_TF		24	/* true if TF in eflags artificially */
++#define TIF_BLOCKSTEP		25	/* set when we want DEBUGCTLMSR_BTF */
+ #define TIF_LAZY_MMU_UPDATES	27	/* task is updating the mmu lazily */
+ #define TIF_SYSCALL_TRACEPOINT	28	/* syscall tracepoint instrumentation */
  
- 	rdmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
--	debugctl &= ~(X86_DEBUGCTL_LBR | X86_DEBUGCTL_FREEZE_LBRS_ON_PMI);
-+	debugctl &= ~(DEBUGCTLMSR_LBR | DEBUGCTLMSR_FREEZE_LBRS_ON_PMI);
- 	wrmsrl(MSR_IA32_DEBUGCTLMSR, debugctl);
+@@ -113,6 +114,7 @@ struct thread_info {
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_FREEZE		(1 << TIF_FREEZE)
+ #define _TIF_FORCED_TF		(1 << TIF_FORCED_TF)
++#define _TIF_BLOCKSTEP		(1 << TIF_BLOCKSTEP)
+ #define _TIF_LAZY_MMU_UPDATES	(1 << TIF_LAZY_MMU_UPDATES)
+ #define _TIF_SYSCALL_TRACEPOINT	(1 << TIF_SYSCALL_TRACEPOINT)
+ 
+@@ -143,7 +145,7 @@ struct thread_info {
+ 
+ /* flags to check in __switch_to() */
+ #define _TIF_WORK_CTXSW							\
+-	(_TIF_IO_BITMAP|_TIF_NOTSC)
++	(_TIF_IO_BITMAP|_TIF_NOTSC|_TIF_BLOCKSTEP)
+ 
+ #define _TIF_WORK_CTXSW_PREV (_TIF_WORK_CTXSW|_TIF_USER_RETURN_NOTIFY)
+ #define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW|_TIF_DEBUG)
+Index: linux-2.6/arch/x86/kernel/kprobes.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/kprobes.c
++++ linux-2.6/arch/x86/kernel/kprobes.c
+@@ -422,12 +422,22 @@ static void __kprobes set_current_kprobe
+ 
+ static void __kprobes clear_btf(void)
+ {
+-	/* XXX */
++	if (test_thread_flag(TIF_BLOCKSTEP)) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl &= ~DEBUGCTLMSR_BTF;
++		update_debugctlmsr(debugctl);
++	}
  }
+ 
+ static void __kprobes restore_btf(void)
+ {
+-	/* XXX */
++	if (test_thread_flag(TIF_BLOCKSTEP)) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl |= DEBUGCTLMSR_BTF;
++		update_debugctlmsr(debugctl);
++	}
+ }
+ 
+ void __kprobes arch_prepare_kretprobe(struct kretprobe_instance *ri,
+Index: linux-2.6/arch/x86/kernel/process.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/process.c
++++ linux-2.6/arch/x86/kernel/process.c
+@@ -195,6 +195,17 @@ void __switch_to_xtra(struct task_struct
+ 	prev = &prev_p->thread;
+ 	next = &next_p->thread;
+ 
++	if (test_tsk_thread_flag(prev_p, TIF_BLOCKSTEP) ^
++	    test_tsk_thread_flag(next_p, TIF_BLOCKSTEP)) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl &= ~DEBUGCTLMSR_BTF;
++		if (test_tsk_thread_flag(next_p, TIF_BLOCKSTEP))
++			debugctl |= DEBUGCTLMSR_BTF;
++
++		update_debugctlmsr(debugctl);
++	}
++
+ 	if (test_tsk_thread_flag(prev_p, TIF_NOTSC) ^
+ 	    test_tsk_thread_flag(next_p, TIF_NOTSC)) {
+ 		/* prev and next are different */
+Index: linux-2.6/arch/x86/kernel/step.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/step.c
++++ linux-2.6/arch/x86/kernel/step.c
+@@ -169,9 +169,19 @@ static void enable_step(struct task_stru
+ 	 * So noone should try to use debugger block stepping in a program
+ 	 * that uses user-mode single stepping itself.
+ 	 */
+-	if (!enable_single_step(child))
+-		return;
+-	/* XXX */
++	if (enable_single_step(child) && block) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl |= DEBUGCTLMSR_BTF;
++		update_debugctlmsr(debugctl);
++		set_tsk_thread_flag(child, TIF_BLOCKSTEP);
++	} else if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl &= ~DEBUGCTLMSR_BTF;
++		update_debugctlmsr(debugctl);
++		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
++	}
+ }
+ 
+ void user_enable_single_step(struct task_struct *child)
+@@ -189,7 +199,13 @@ void user_disable_single_step(struct tas
+ 	/*
+ 	 * Make sure block stepping (BTF) is disabled.
+ 	 */
+-	/* XXX */
++	if (test_tsk_thread_flag(child, TIF_BLOCKSTEP)) {
++		unsigned long debugctl = get_debugctlmsr();
++
++		debugctl &= ~DEBUGCTLMSR_BTF;
++		update_debugctlmsr(debugctl);
++		clear_tsk_thread_flag(child, TIF_BLOCKSTEP);
++	}
+ 
+ 	/* Always clear TIF_SINGLESTEP... */
+ 	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
+Index: linux-2.6/arch/x86/kernel/traps.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/traps.c
++++ linux-2.6/arch/x86/kernel/traps.c
+@@ -551,6 +551,11 @@ dotraplinkage void __kprobes do_debug(st
+ 	/* DR6 may or may not be cleared by the CPU */
+ 	set_debugreg(0, 6);
+ 
++	/*
++	 * The processor cleared BTF, so don't mark that we need it set.
++	 */
++	clear_tsk_thread_flag(tsk, TIF_BLOCKSTEP);
++
+ 	/* Store the virtualized DR6 value */
+ 	tsk->thread.debugreg6 = dr6;
  
 
 -- 
