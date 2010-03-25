@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0CYOQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:16:57 -0400
-Received: from www.tglx.de ([62.245.132.106]:39248 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753815Ab0CYOQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:16:56 -0400
-Date: Thu, 25 Mar 2010 15:16:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       jesse.brandeburg@intel.com,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-In-Reply-To: <20100325133204.GP20695@one.firstfloor.org>
-Message-ID: <alpine.LFD.2.00.1003251441420.3147@localhost.localdomain>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
- <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <20100325121141.GO20695@one.firstfloor.org> <alpine.LFD.2.00.1003251338130.3147@localhost.localdomain> <20100325133204.GP20695@one.firstfloor.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754726Ab0CYORV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:17:21 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51766 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753815Ab0CYORT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 10:17:19 -0400
+Date: Thu, 25 Mar 2010 15:17:12 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: isdn@linux-pingi.de, davem@davemloft.net, linux@dominikbrodowski.net,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] isdn: Cleanup Sections in PCMCIA driver sedlbauer
+Message-ID: <20100325141712.GF5069@pengutronix.de>
+References: <1269518732-4515-1-git-send-email-henne@nachtwindheim.de> <20100325121610.GB5069@pengutronix.de> <4BAB6DC1.4020507@nachtwindheim.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yRA+Bmk8aPhU85Qt"
+Content-Disposition: inline
+In-Reply-To: <4BAB6DC1.4020507@nachtwindheim.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010, Andi Kleen wrote:
-> > > > > Anyways if such a thing was done it would be a long term project
-> > > > > and that short term fix would be still needed.
-> > > > 
-> > > > Your patch is not a fix, It's a lousy, horrible and unreliable
-> > > > workaround. It's not fixing the root cause of the problem at hand.
-> > > 
-> > > It fixes the bug in a minimally intrusive way.
-> > 
-> > It papers over the problem. We already know that the NIC driver floods
-> > the machine with interrupts, so why are you insisting that we need to
-> 
-> Well in this case it's simply because it has 4 ports and they are all
-> active and have a lot of MSI-X vectors for each stream. 
-> 
-> Even if you had the perfect interrupt handler that ran in
-> one cycle, if you had enough of them in parallel from different ports
-> there could be still a stack overflow problem on individual CPUs.
 
-Not at all if the handler runs with irqs disabled.
- 
-> > The minimal intrusive way is a one liner in that very driver code and
-> > if it causes problems for that very driver then we don't fix them with
-> > adding a callback in the generic interrupt code path.
-> 
-> Ok.
-> 
-> > 
-> > The message which we would send out with applying that band aid would
-> > be simply: Go ahead driver writers and let your handlers run as long
-> 
-> Well it's simply the current state of affairs today. I'm merely
-> attempting to make the current state slightly safer without breaking
-> anything in the process.
-
-Well, I'd agree if those stack overflows would be a massive reported
-problem. 
-
-Right now they happen with a weird test case which points out a
-trouble spot. Multi vector NICs under heavy load. So why not go there
-and change the handful of drivers to run their handlers with irqs
-disabled?
-
-Band aids are the last resort if we can't deal with a problem by other
-sane means. And this problem falls not into that category, it can be
-solved in the affected drivers with zero effort.
-
-Thanks,
-
-	tglx
+--yRA+Bmk8aPhU85Qt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
 
+>  Imho should these functions be reorderd, so that no prototypes are requi=
+red
+>  in a driver file. If somebody wishes, I would do that for those.
 
+I stand corrected, missed that for prototypes. Sorry for the noise.
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--yRA+Bmk8aPhU85Qt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkurcGgACgkQD27XaX1/VRvLrgCfVj9nXpuqhz2BhDHuksrvHP2m
+0rwAn0YXpJ+94RnmqgKfLr7rggZWaJsz
+=oa2x
+-----END PGP SIGNATURE-----
+
+--yRA+Bmk8aPhU85Qt--
