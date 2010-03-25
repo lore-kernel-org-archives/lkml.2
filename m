@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab0CYSio (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:38:44 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:46934 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753674Ab0CYSim (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:38:42 -0400
-Subject: Re: [PATCH 11/16] XFS xfs_trace.c: duplicated include
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-Cc: linux-doc@vger.kernel.org, xfs-masters@oss.sgi.com,
-       Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-       xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1269537767-7553-11-git-send-email-andrea.gelmini@gelma.net>
-References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net>
-	 <1269537767-7553-11-git-send-email-andrea.gelmini@gelma.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Mar 2010 13:37:39 -0500
-Message-ID: <1269542259.2523.25.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 18:37:40.0531 (UTC) FILETIME=[3FE83830:01CACC4A]
+	id S1754127Ab0CYSjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:39:06 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:43663 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753674Ab0CYSjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 14:39:03 -0400
+Date: Thu, 25 Mar 2010 19:38:54 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Dan Carpenter <error27@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
+       Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       Chen Gong <gong.chen@linux.intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-acpi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch v2] acpi_pad: "processor_aggregator" name too long
+Message-ID: <20100325183853.GB22902@elf.ucw.cz>
+References: <20100319114806.GN5331@bicker>
+ <20100325142738.GD1602@ucw.cz>
+ <20100325144122.GF5069@bicker>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325144122.GF5069@bicker>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 18:22 +0100, Andrea Gelmini wrote:
-> fs/xfs/linux-2.6/xfs_trace.c: xfs_attr_sf.h is included more than once.
+On Thu 2010-03-25 17:41:22, Dan Carpenter wrote:
+> cpi_device_class can only be 19 characters and a NULL terminator.
 > 
-> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> With the current name we get a buffer overflow in acpi_pad_add()
+> 	strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Looks good.	-Alex
-
-Reviewed-by: Alex Elder <aelder@sgi.com>
+ACK.
 
 > ---
->  fs/xfs/linux-2.6/xfs_trace.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
+> V2: Thanks to Pavel Machek for coming up with the right name for this.
 > 
-> diff --git a/fs/xfs/linux-2.6/xfs_trace.c b/fs/xfs/linux-2.6/xfs_trace.c
-> index 5a10760..cb840e0 100644
-> --- a/fs/xfs/linux-2.6/xfs_trace.c
-> +++ b/fs/xfs/linux-2.6/xfs_trace.c
-> @@ -41,7 +41,6 @@
->  #include "xfs_alloc.h"
->  #include "xfs_bmap.h"
->  #include "xfs_attr.h"
-> -#include "xfs_attr_sf.h"
->  #include "xfs_attr_leaf.h"
->  #include "xfs_log_priv.h"
->  #include "xfs_buf_item.h"
+> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
+> index 7e52295..790aaa1 100644
+> --- a/drivers/acpi/acpi_pad.c
+> +++ b/drivers/acpi/acpi_pad.c
+> @@ -30,7 +30,7 @@
+>  #include <acpi/acpi_bus.h>
+>  #include <acpi/acpi_drivers.h>
+>  
+> -#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"processor_aggregator"
+> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"cpu_aggregator"
+>  #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
+>  #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
+>  static DEFINE_MUTEX(isolated_cpus_lock);
 
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
