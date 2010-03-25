@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab0CYQUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 12:20:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42336 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752287Ab0CYQUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 12:20:16 -0400
-Message-ID: <4BAB8D76.5040104@kernel.org>
-Date: Fri, 26 Mar 2010 01:21:10 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1752782Ab0CYQWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:22:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35371 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752588Ab0CYQWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 12:22:15 -0400
+Date: Thu, 25 Mar 2010 09:17:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+In-Reply-To: <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1003250915410.3721@i5.linux-foundation.org>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+ <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Pavel Roskin <proski@gnu.org>
-CC: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [git patches] libata fixes
-References: <20100323134226.GA14752@havoc.gtf.org> <1269367619.13592.12.camel@mj>
-In-Reply-To: <1269367619.13592.12.camel@mj>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 25 Mar 2010 16:18:01 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 03:06 AM, Pavel Roskin wrote:
-> By all means, please push this patch to all stable kernels, or more
-> money will be wasted on hard drives ;-)
 
-Oh, the original patch which caused the problem never saw the light of
-the day before 2.6.34-rc1 so there's no stable kernel to push the
-patch into.
 
-Thanks.
+On Thu, 25 Mar 2010, Linus Torvalds wrote:
+> 
+> NOTE! Historically, the "fast" handlers also had a much faster irq 
+> response because they didn't do that whole MASK/ACK/END thing. So they'd 
+> just keep the CPU interrupts disabled, and ACK at the end, and I think 
+> we've even used AUTOEIO so that they didn't need any ACK at all, and we 
+> never touched the interrupt controller itself for them.
 
--- 
-tejun
+Btw, it was even more extreme than that. The fast irq handlers got a 
+totally separate kernel entry point, and wouldn't save all registers, only 
+the compiler-clobbered ones. Which is why they then had no "struct 
+pt_regs" etc.
+
+And yes, it really mattered. Then later we got so bloated that it wasn't 
+much of an issue - and just made everything more complicated.
+
+		Linus
