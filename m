@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab0CYMru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 08:47:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38997 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751221Ab0CYMrs (ORCPT
+	id S1753869Ab0CYMwQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 08:52:16 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:33441 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab0CYMwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 08:47:48 -0400
-Date: Thu, 25 Mar 2010 12:50:05 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for F71808E
- and F71889
-Message-ID: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100325104014.GC20126@salidar.me.mortis.eu>
-References: <1269385936-3440-1-git-send-email-me@mortis.eu>
-	<1269385936-3440-2-git-send-email-me@mortis.eu>
-	<1269385936-3440-3-git-send-email-me@mortis.eu>
-	<1269385936-3440-4-git-send-email-me@mortis.eu>
-	<4BA9CF57.4030504@redhat.com>
-	<20100324093651.GG6368@salidar.me.mortis.eu>
-	<4BA9EA5C.9060506@redhat.com>
-	<20100324153550.GK6368@salidar.me.mortis.eu>
-	<20100324155151.2482952f@lxorguk.ukuu.org.uk>
-	<20100325085450.GA20126@salidar.me.mortis.eu>
-	<20100325104014.GC20126@salidar.me.mortis.eu>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 08:52:15 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Nikolaus Schulz <microschulz@web.de>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Marton Balint <cus@fazekas.hu>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Kevin Dankwardt <k@kcomputing.com>, Christoph Hellwig <hch@lst.de>,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] fat: fix buffer overflow in vfat_create_shortname()
+References: <20100325035010.GA3242@penelope.zusammrottung.local>
+	<8739zp6k9s.fsf@devron.myhome.or.jp>
+	<20100325122419.GA8896@luigi.zusammrottung.local>
+	<87y6hg60nw.fsf@devron.myhome.or.jp>
+Date: Thu, 25 Mar 2010 21:52:12 +0900
+In-Reply-To: <87y6hg60nw.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
+	"Thu, 25 Mar 2010 21:33:39 +0900")
+Message-ID: <87bpec4l8j.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-O> Using Alan's patch and the one following the dashed line I can implement
-> (and have already done so) a separate watchdog driver for the Fintek
-> F71808E.
-> 
-> Should I just ask for this patch to be applied together with Alan's?
-> Then submit the new driver? (I'm a bit new to the non-technical aspects
-> of Linux kernel development).
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
 
-I'd expect to see a submission of three patches I think
+> Nikolaus Schulz <microschulz@web.de> writes:
+>
+>>> However, anyway, your patch is much better off than current one. So,
+>>> I'll apply this in the next merge window.
+>>> 
+>>> Or should we apply this immediately?
+>>> 
+>>> Thanks.
+>>
+>> Given that this fixes a stack corruption which triggers the gcc stack
+>> smashing protection and thus basically a crash, I vote for not
+>> postponing it, but applying it immediately.
+>
+> Um..., where is a stack corruption? sprintf() overflow? But, it's
+> actually snprintf(), not sprintf()...
 
-1. Patch adding the muxed resource support
-2. Patch making the hwmon driver use it
-3. Patch adding the new driver which needs it
-
-and then we have a few other bits of code that probably should adopt it,
-but that is a separate matter and other maintainers can do that bit.
-
-Alan
+Whoops, it was really sprintf().
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
