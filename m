@@ -1,60 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab0CYBJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 21:09:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21003 "EHLO mx1.redhat.com"
+	id S1754528Ab0CYBLh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:11:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38799 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752111Ab0CYBJB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 21:09:01 -0400
-Date: Wed, 24 Mar 2010 21:08:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com
-Subject: Re: [PATCH] cfq-iosched: Do not merge queues of BE and IDLE classes
-Message-ID: <20100325010838.GC13225@redhat.com>
-References: <20100324205127.7477.97997.stgit@austin.mtv.corp.google.com>
+	id S1754328Ab0CYBLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 21:11:36 -0400
+Date: Wed, 24 Mar 2010 18:11:32 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Christoffer Dall <christofferdall@christofferdall.dk>
+Cc: Oren Laadan <orenl@cs.columbia.edu>, Matt Helsley <matthltc@us.ibm.com>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       containers <containers@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
+Message-ID: <20100325011132.GE5704@count0.beaverton.ibm.com>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
+ <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
+ <20100323205342.GA19572@n2100.arm.linux.org.uk>
+ <20100324020342.GB5704@count0.beaverton.ibm.com>
+ <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
+ <20100324140252.GC5704@count0.beaverton.ibm.com>
+ <4BAA3586.1020604@cs.columbia.edu>
+ <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100324205127.7477.97997.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 01:52:03PM -0700, Divyesh Shah wrote:
-> even if they are found to be co-operating.
+On Wed, Mar 24, 2010 at 08:36:39PM +0100, Christoffer Dall wrote:
+> On Wed, Mar 24, 2010 at 4:53 PM, Oren Laadan <orenl@cs.columbia.edu> wrote:
+> >
+> >
+> > Matt Helsley wrote:
+> >>
+> >> On Wed, Mar 24, 2010 at 12:57:46AM -0400, Oren Laadan wrote:
+> >>>
+> >>> On Tue, 23 Mar 2010, Matt Helsley wrote:
+> >>>
+> >>>> On Tue, Mar 23, 2010 at 08:53:42PM +0000, Russell King - ARM Linux
+> >>>> wrote:
+> >>>>>
+> >>>>> On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
+> >>>>>>
+> >>>>>> This small commit introduces a global state of system calls for ARM
+> >>>>>> making it possible for a debugger or checkpointing to gain information
+> >>>>>> about another process' state with respect to system calls.
+> >>>>>
+> >>>>> I don't particularly like the idea that we always store the syscall
+> >>>>> number to memory for every system call, whether the stored version is
+> >>>>> used or not.
+> >>>>>
+> >>>>> Since ARM caches are generally not write allocate, this means mostly
+> >>>>> write-only variables can have a higher than expected expense.
+> >>>>>
+> >>>>> Is there not some thread flag which can be checked to see if we need to
+> >>>>> store the syscall number?
+> >>>>
+> >>>> Perhaps before we freeze the task we can save the syscall number on ARM.
+> >>>> The patches suggest that the signal delivery path -- which the freezer
+> >>>> utilizes -- has the syscall number already.
+> >
+> > Actually, the signal path doesn't have the syscall number, it has
+> > a binary "in syscall" value.
+> >
+
+Argh. I read too much into the name :(.
+
 > 
-> The prio_trees do not have any IDLE cfqqs on them. cfq_close_cooperator()
-> is called from cfq_select_queue() and cfq_completed_request(). The latter
-> ensures that the close cooperator code does not get invoked if the current
-> cfqq is of class IDLE but the former doesn't seem to have any such checks.
-> So an IDLE cfqq may get merged with a BE cfqq from the same group which
-> should be avoided.
+> Well, this could be changed to pass the syscall number through
+> registers along to try_to_freeze without any mentionable performance
+> hit.
+
+Yes, that's possible. I was thinking we could still use your thread info
+field but only store to it when we know it will be useful for c/r rather
+than for each syscall. Personally, I'd rather avoid passing the extra
+parameter into try_to_freeze(). Your idea below seems better to me.
+
+> Re-using the assembly code or factoring it out so that it can be used
+> from multiple places doesn't seem very pleasing to me, as the assembly
+> code is in the critical path and written specifically for the context
+> of a process entering the kernel. Please correct me if I'm wrong.
 > 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
+> I imagine simply a function in C, more or less re-implementing the
+> logic that's already in entry-common.S, might do the trick. I wouldn't
+> worry much about the performance in this case as it will not be used
+> often. The following _untested_ snippet illustrates my idea:
+> 
 > ---
-
-Looks good to me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek
-
+>  arch/arm/include/asm/syscall.h |   93 +++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 92 insertions(+), 1 deletions(-)
 > 
->  block/cfq-iosched.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+> index 3b3248f..a7f2615 100644
+> --- a/arch/arm/include/asm/syscall.h
+> +++ b/arch/arm/include/asm/syscall.h
+> @@ -10,10 +10,101 @@
+>  #ifndef _ASM_ARM_SYSCALLS_H
+>  #define _ASM_ARM_SYSCALLS_H
 > 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index dee9d93..e6910dc 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1721,6 +1721,8 @@ static struct cfq_queue *cfq_close_cooperator(struct cfq_data *cfqd,
->  {
->  	struct cfq_queue *cfqq;
->  
-> +	if (cfq_class_idle(cur_cfqq))
-> +		return NULL;
->  	if (!cfq_cfqq_sync(cur_cfqq))
->  		return NULL;
->  	if (CFQQ_SEEKY(cur_cfqq))
+> +static inline int get_swi_instruction(struct task_struct *task,
+> +				      struct pt_regs *regs,
+> +				      unsigned long *instr)
+> +{
+> +	struct page *page = NULL;
+> +	unsigned long instr_addr;
+> +	unsigned long *ptr;
+> +	int ret;
+> +
+> +	instr_addr = regs->ARM_pc - 4;
+> +
+> +	down_read(&task->mm->mmap_sem);
+> +	ret = get_user_pages(task, task->mm, instr_addr,
+> +			     1, 0, 0, &page, NULL);
+> +	up_read(&task->mm->mmap_sem);
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ptr = (unsigned long *)kmap_atomic(page, KM_USER1);
+> +	memcpy(instr,
+> +	       ptr + (instr_addr >> PAGE_SHIFT),
+			^shouldn't this be:
+		      instr_addr & PAGE_MASK
+
+> +	       sizeof(unsigned long));
+> +	kunmap_atomic(ptr, KM_USER1);
+> +
+> +	page_cache_release(page);
+> +
+> +	return 0;
+> +}
+
+(again, not familiar with ARM so my understanding is:
+
+I guess swi is "syscall word immediate".
+
+The syscall nr is embedded in the instruction as an immediate
+value and you're getting a copy of that instruction using the value of
+the pc register just after the syscall instruction was executed.)
+
+Perhaps I am missing or forgetting something. Why isn't this as simple
+as calling get_user() or even copy_from_user() using instr_addr?
+
+Cheers,
+	-Matt Helsley
