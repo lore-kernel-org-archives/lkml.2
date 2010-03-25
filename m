@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0CYFTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 01:19:00 -0400
-Received: from mail.perches.com ([173.55.12.10]:1094 "EHLO mail.perches.com"
+	id S1752796Ab0CYFTT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 01:19:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:1092 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab0CYFRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 01:17:32 -0400
+	id S1752568Ab0CYFRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 01:17:31 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
-Subject: [PATCH 07/13] drivers/staging/rtl8187se: Hoist assign from if
-Date: Wed, 24 Mar 2010 22:17:01 -0700
-Message-Id: <65ce2b5aaf76237feec33b4dde5e553beb9ad03c.1269493047.git.joe@perches.com>
+Subject: [PATCH 06/13] drivers/staging/rt2870: Hoist assign from if
+Date: Wed, 24 Mar 2010 22:17:00 -0700
+Message-Id: <d314cf287493de6f5d036254f445f8ed463bcbec.1269493047.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.14.g7e948
 In-Reply-To: <cover.1269493047.git.joe@perches.com>
 References: <cover.1269493047.git.joe@perches.com>
@@ -22,48 +22,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- .../rtl8187se/ieee80211/ieee80211_softmac.c        |    3 ++-
- drivers/staging/rtl8187se/r8180_core.c             |    6 ++++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/staging/rt2870/common/rtusb_bulk.c |   15 ++++++++++-----
+ drivers/staging/rt2870/common/rtusb_io.c   |   10 +++++-----
+ 2 files changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-index c2f472e..1f858f8 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
-@@ -1554,7 +1554,8 @@ ieee80211_rx_auth_rq(struct ieee80211_device *ieee, struct sk_buff *skb)
- 	//IEEE80211DMESG("Rx probe");
- 	ieee->softmac_stats.rx_auth_rq++;
+diff --git a/drivers/staging/rt2870/common/rtusb_bulk.c b/drivers/staging/rt2870/common/rtusb_bulk.c
+index 379780c..23e52ff 100644
+--- a/drivers/staging/rt2870/common/rtusb_bulk.c
++++ b/drivers/staging/rt2870/common/rtusb_bulk.c
+@@ -475,7 +475,8 @@ void RTUSBBulkOutDataPacket(struct rt_rtmp_adapter *pAd,
+ 			  (usb_complete_t) RTUSBBulkOutDataPacketComplete);
  
--	if ((status = auth_rq_parse(skb, dest))!= -1){
-+	status = auth_rq_parse(skb, dest);
-+	if (status!= -1) {
- 		ieee80211_resp_to_auth(ieee, status, dest);
- 	}
- 	//DMESG("Dest is "MACSTR, MAC2STR(dest));
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index b1757ac..4fb2c05 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -402,7 +402,8 @@ short buffer_add(struct buffer **buffer, u32 *buf, dma_addr_t dma,
- 	tmp=*buffer;
+ 	pUrb = pHTTXContext->pUrb;
+-	if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {
++	ret = RTUSB_SUBMIT_URB(pUrb);
++	if (ret != 0) {
+ 		DBGPRINT(RT_DEBUG_ERROR,
+ 			 ("RTUSBBulkOutDataPacket: Submit Tx URB failed %d\n",
+ 			  ret));
+@@ -573,7 +574,8 @@ void RTUSBBulkOutNullFrame(struct rt_rtmp_adapter *pAd)
+ 			(usb_complete_t) RTUSBBulkOutNullFrameComplete);
  
- 	while(tmp->next!=(*buffer)) tmp=tmp->next;
--	if ((tmp->next= kmalloc(sizeof(struct buffer),GFP_KERNEL)) == NULL){
-+	tmp->next = kmalloc(sizeof(struct buffer),GFP_KERNEL);
-+	if (tmp->next == NULL) {
- 		DMESGE("Failed to kmalloc TX/RX struct");
- 		return -1;
- 	}
-@@ -1154,7 +1155,8 @@ short alloc_rx_desc_ring(struct net_device *dev, u16 bufsize, int count)
- 	tmp=desc;
+ 	pUrb = pNullContext->pUrb;
+-	if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {
++	ret = RTUSB_SUBMIT_URB(pUrb);
++	if (ret != 0) {
+ 		RTMP_IRQ_LOCK(&pAd->BulkOutLock[0], IrqFlags);
+ 		pAd->BulkOutPending[0] = FALSE;
+ 		pAd->watchDogTxPendingCnt[0] = 0;
+@@ -667,7 +669,8 @@ void RTUSBBulkOutMLMEPacket(struct rt_rtmp_adapter *pAd, u8 Index)
+ 	pUrb->transfer_flags &= (~URB_NO_TRANSFER_DMA_MAP);
  
- 	for (i = 0; i < count; i++) {
--		if ((buf= kmalloc(bufsize * sizeof(u8),GFP_ATOMIC)) == NULL){
-+		buf = kmalloc(bufsize * sizeof(u8),GFP_ATOMIC);
-+		if (buf == NULL) {
- 			DMESGE("Failed to kmalloc RX buffer");
- 			return -1;
- 		}
+ 	pUrb = pMLMEContext->pUrb;
+-	if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {
++	ret = RTUSB_SUBMIT_URB(pUrb);
++	if (ret != 0) {
+ 		DBGPRINT(RT_DEBUG_ERROR,
+ 			 ("RTUSBBulkOutMLMEPacket: Submit MLME URB failed %d\n",
+ 			  ret));
+@@ -742,7 +745,8 @@ void RTUSBBulkOutPsPoll(struct rt_rtmp_adapter *pAd)
+ 			(usb_complete_t) RTUSBBulkOutPsPollComplete);
+ 
+ 	pUrb = pPsPollContext->pUrb;
+-	if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {
++	ret = RTUSB_SUBMIT_URB(pUrb);
++	if (ret != 0) {
+ 		RTMP_IRQ_LOCK(&pAd->BulkOutLock[0], IrqFlags);
+ 		pAd->BulkOutPending[0] = FALSE;
+ 		pAd->watchDogTxPendingCnt[0] = 0;
+@@ -799,7 +803,8 @@ void DoBulkIn(struct rt_rtmp_adapter *pAd)
+ 	RTUSBInitRxDesc(pAd, pRxContext);
+ 
+ 	pUrb = pRxContext->pUrb;
+-	if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {	/* fail */
++	ret = RTUSB_SUBMIT_URB(pUrb);
++	if (ret != 0) {	/* fail */
+ 
+ 		RTMP_IRQ_LOCK(&pAd->BulkInLock, IrqFlags);
+ 		pRxContext->InUse = FALSE;
+diff --git a/drivers/staging/rt2870/common/rtusb_io.c b/drivers/staging/rt2870/common/rtusb_io.c
+index cf0d2f5..f0b6972 100644
+--- a/drivers/staging/rt2870/common/rtusb_io.c
++++ b/drivers/staging/rt2870/common/rtusb_io.c
+@@ -1169,11 +1169,10 @@ void CMDHandler(struct rt_rtmp_adapter *pAd)
+ 								     (usb_complete_t)
+ 								     RTUSBBulkOutDataPacketComplete);
+ 
+-								if ((ret =
+-								     RTUSB_SUBMIT_URB
++								ret = RTUSB_SUBMIT_URB
+ 								     (pHTTXContext->
+-								      pUrb)) !=
+-								    0) {
++								      pUrb);
++								if (ret != 0) {
+ 									RTMP_INT_LOCK
+ 									    (&pAd->
+ 									     BulkOutLock
+@@ -1545,7 +1544,8 @@ void CMDHandler(struct rt_rtmp_adapter *pAd)
+ 							RTUSBInitRxDesc(pAd,
+ 									pRxContext);
+ 							pUrb = pRxContext->pUrb;
+-							if ((ret = RTUSB_SUBMIT_URB(pUrb)) != 0) {	/* fail */
++							ret = RTUSB_SUBMIT_URB(pUrb);
++							if (ret != 0) {	/* fail */
+ 
+ 								RTMP_IRQ_LOCK
+ 								    (&pAd->
 -- 
 1.7.0.14.g7e948
 
