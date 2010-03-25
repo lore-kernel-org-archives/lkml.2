@@ -1,182 +1,288 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752999Ab0CYGfN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 02:35:13 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55995 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab0CYGfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 02:35:11 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 25 Mar 2010 15:31:10 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: =?UTF-8?B?QW3DqXJpY28=?= Wang <xiyou.wangcong@gmail.com>
-Cc: Janos Haar <janos.haar@netcenter.hu>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: Somebody take a look please! (some kind of kernel bug?)
-Message-Id: <20100325153110.6be9a3df.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com>
-References: <03ca01cacb92$195adf50$0400a8c0@dcccs>
-	<2375c9f91003242029p1efbbea1v8e313e460b118f14@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1753120Ab0CYGjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 02:39:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57335 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753069Ab0CYGjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 02:39:00 -0400
+Date: Thu, 25 Mar 2010 17:38:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for March 25
+Message-Id: <20100325173853.f06a7b33.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__25_Mar_2010_17_38_53_+1100_u=DluefxTwJoqKot"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 11:29:25 +0800
-Américo Wang <xiyou.wangcong@gmail.com> wrote:
+--Signature=_Thu__25_Mar_2010_17_38_53_+1100_u=DluefxTwJoqKot
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> (Cc'ing linux-mm)
-> 
-Hmm..here is summary of corruption (from log), but no idea.
+Hi all,
 
-==
-process's address		pte	      pnf->pte->page
+Changes since 20100324:
 
-00000037b4008000		  2bf1e025 -> PG_reserved
-00000037b400a000		d900000000 -> bad swap
-00000037b400c000		  2bfe8025 -> PG_reserved
-00000037b400d000  		 12bfe9025 -> belongs to some other files' page cache
-00000037b400e000 		ff00000000 -> bad swap
-00000037b400f000 		5400000000 -> bad swap
-...
-00000037b4019000		ff00000000 -> bad swap
-==
-All ptes are on the same pmd 1535b5067.
-.
-I doubt some kind of buffer overflow bug overwrites page table...
-Because ptes for adddress of 00000037b4008000...00000037b400f000 are on head of
-a page (used for pmd), some data on page [0x1535b4000..0x1535b5000) caused buffer
-overflow and broke page table in [0x1535b5000...0x1535b6000)
+Dropped tree: tmio-mmc (long unresolved conflicts and unable to fetch)
 
-Is this bug found from 2.6.28.10 ?
+My fixes tree contains:
+	a patch for a pktcdvd build error from Arnd Bergmann
+	a revert of the commit that broke virtual consoles on PowerPC
 
-If I investigate this issue, I'll check the owner of page 0x1535b4000 by
-crash dump.
+The input tree lost its build failure.
 
-Thanks,
--Kame
+The kgdb tree has its build failure back for which I have applied a merge
+fixup patch.
 
+The wireless tree lost its build failure.
 
+----------------------------------------------------------------------------
 
-> 2010/3/25 Janos Haar <janos.haar@netcenter.hu>:
-> > Dear developers,
-> >
-> > This is one of my productive servers, wich suddenly starts to freeze (crash)
-> > some weeks before.
-> > I have done all what i can, (i think) please somebody give to me some
-> > suggestion:
-> >
-> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bf1e025
-> > pmd:1535b5067
-> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1b250 flags:4000000000000404
-> > count:1 mapcount:-1 mapping:(null) index:0
-> > Mar 24 19:22:28 alfa kernel: addr:00000037b4008000 vm_flags:08000875
-> > anon_vma:(null) mapping:ffff88022b5d25a8 index:8
-> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
-> > xfs_file_mmap+0x0/0x33
-> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Not tainted 2.6.32.10 #2
-> > Mar 24 19:22:28 alfa kernel: Call Trace:
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
-> > tty_audit_exit+0x28/0x85
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
-> > __dequeue_signal+0xf1/0x127
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
-> > get_signal_to_deliver+0x32c/0x37f
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
-> > do_notify_resume+0x90/0x740
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
-> > __bad_area_nosemaphore+0x178/0x1a2
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
-> > Mar 24 19:22:28 alfa kernel: Disabling lock debugging due to kernel taint
-> > Mar 24 19:22:28 alfa kernel: swap_free: Bad swap file entry 6c800000
-> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd
-> > pte:d900000000 pmd:1535b5067
-> > Mar 24 19:22:28 alfa kernel: addr:00000037b400a000 vm_flags:08000875
-> > anon_vma:(null) mapping:ffff88022b5d25a8 index:a
-> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
-> > xfs_file_mmap+0x0/0x33
-> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
-> > 2.6.32.10 #2
-> > Mar 24 19:22:28 alfa kernel: Call Trace:
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3d47>] unmap_vmas+0x4fa/0x787
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81371287>] ?
-> > tty_audit_exit+0x28/0x85
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810477a0>] do_exit+0x1e9/0x6d2
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81053c37>] ?
-> > __dequeue_signal+0xf1/0x127
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81047d00>] do_group_exit+0x77/0xa1
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810560f7>]
-> > get_signal_to_deliver+0x32c/0x37f
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100a484>]
-> > do_notify_resume+0x90/0x740
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8102724b>] ?
-> > __bad_area_nosemaphore+0x178/0x1a2
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810272b9>] ? __bad_area+0x44/0x4d
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff8100bba2>] retint_signal+0x46/0x84
-> > Mar 24 19:22:28 alfa kernel: BUG: Bad page map in process httpd pte:2bfe8025
-> > pmd:1535b5067
-> > Mar 24 19:22:28 alfa kernel: page:ffffea0000f1f7c0 flags:4000000000000404
-> > count:1 mapcount:-1 mapping:(null) index:0
-> > Mar 24 19:22:28 alfa kernel: addr:00000037b400c000 vm_flags:08000875
-> > anon_vma:(null) mapping:ffff88022b5d25a8 index:c
-> > Mar 24 19:22:28 alfa kernel: vma->vm_ops->fault: filemap_fault+0x0/0x34d
-> > Mar 24 19:22:28 alfa kernel: vma->vm_file->f_op->mmap:
-> > xfs_file_mmap+0x0/0x33
-> > Mar 24 19:22:28 alfa kernel: Pid: 7512, comm: httpd Tainted: G    B
-> > 2.6.32.10 #2
-> > Mar 24 19:22:28 alfa kernel: Call Trace:
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81044551>] ? add_taint+0x32/0x3e
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c2ea3>] print_bad_pte+0x210/0x229
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c3c98>] unmap_vmas+0x44b/0x787
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810c81d5>] exit_mmap+0xb0/0x133
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff81041f83>] mmput+0x48/0xb9
-> > Mar 24 19:22:28 alfa kernel:  [<ffffffff810463b0>] exit_mm+0x105/0x110
-> > .....
-> >
-> > The entire log is here:
-> > http://download.netcenter.hu/bughunt/20100324/messages
-> >
-> > The actual kernel is 2.6.32.10, but the crash-series started @ 2.6.28.10.
-> >
-> > I have forwarded the tasks to another server, removed this from the room,
-> > and the hw survived memtest86 in >7 days continously + i have tested the
-> > HDDs one by one with badblocks -vvw, all is good.
-> > For me looks like this is not a hw problem.
-> >
-> > Somebody have any idea?
-> >
-> > Thanks a lot,
-> > Janos Haar
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 158 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Applying: ar9170: fix for driver-core ABI change
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging reiserfs-bkl/reiserfs/kill-bkl
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/inode.c
+CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
+CONFLICT (content): Merge conflict in fs/ufs/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+CONFLICT (content): Merge conflict in drivers/ata/ahci.c
+Merging infiniband/for-next
+Merging acpi/test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/nand/sh_flctl.c
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/char/hvc_console.c
+CONFLICT (content): Merge conflict in drivers/char/hvc_console.h
+CONFLICT (content): Merge conflict in drivers/char/virtio_console.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Applying: kgdb: update for sysrq handling change
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (content): Merge conflict in fs/notify/inotify/inotify_user.c
+CONFLICT (content): Merge conflict in include/linux/fsnotify.h
+CONFLICT (content): Merge conflict in kernel/audit_tree.c
+CONFLICT (content): Merge conflict in kernel/sysctl.c
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging hwlat/for-linus
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+CONFLICT (content): Merge conflict in lib/Kconfig
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging quilt/staging
+Merging scsi-post-merge/master
+
+--Signature=_Thu__25_Mar_2010_17_38_53_+1100_u=DluefxTwJoqKot
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEUEARECAAYFAkurBP0ACgkQjjKRsyhoI8xp4wCXV10VrWb/rpYvLuCvXzQ7YZSL
+ugCgiT2ktx1o5uEskNjLodhMaYuZSpA=
+=HjlB
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__25_Mar_2010_17_38_53_+1100_u=DluefxTwJoqKot--
