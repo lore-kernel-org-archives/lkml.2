@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab0CYWSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:18:42 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51674 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257Ab0CYWSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 18:18:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: what the patches do Re: [RFC 10/15] PM / Hibernate: user, implement user_ops reader
-Date: Thu, 25 Mar 2010 23:21:49 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-10-git-send-email-jslaby@suse.cz> <20100325053003.GB12935@elf.ucw.cz>
-In-Reply-To: <20100325053003.GB12935@elf.ucw.cz>
+	id S1752036Ab0CYW1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:27:52 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49082 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab0CYW1v convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 18:27:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UMdafwWadd2HT0gF+MBTysSGXc0sNOZoV0x0TnE0XZpsQZ5llIY2qWVwIQz0vuydUD
+         OWZVHE4LoenG2Yo1m2cGHuMK+B7aKtVr52Y4TR4Y14//abRQy/UwcB7N4uUo76PJwxq0
+         HPBYXAd2wjz7eNt5aemdDMQcd/5/xderGx8jk=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003252321.49135.rjw@sisk.pl>
+In-Reply-To: <4BAB7D9F.4070807@intel.com>
+References: <4BAAD5BB.7050101@samsung.com>
+	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
+	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
+	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
+	 <4BAB7D9F.4070807@intel.com>
+Date: Fri, 26 Mar 2010 07:27:49 +0900
+Message-ID: <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+From: jassi brar <jassisinghbrar@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+       Joonyoung Shim <jy0922.shim@samsung.com>,
+       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Ben Dooks <ben-linux@fluff.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 March 2010, Pavel Machek wrote:
-> Hi!
-> 
-> > Switch /dev/snapshot reader to sws_module_ops approach so that we
-> > can transparently rewrite the rest of the snapshot from pages pulling
-> > to their pushing through layers.
-> 
-> >  struct sws_module_ops user_ops = {
-> >  	.storage_available = user_storage_available,
-> >  
-> >  	.get_writer = get_user_writer,
-> >  	.put_writer = put_user_writer,
-> >  	.write_page = user_write_page,
-> > +
-> > +	.get_reader = get_user_reader,
-> > +	.put_reader = put_user_reader,
-> > +	.read_page = user_read_page,
-> >  };
-> 
-> Ok, I guess that now I see what you are doing.... adding interface
-> layer between /dev/snapshot and core hibernation code.
-> 
-> To recap, 2.6.33 hibernation looks like:
-> 
-> 			core hibernation
-> 				/\
-> 			       /  \
-> 			swsusp	  /dev/snapshot
-> 			swap            \
-> 			writing      -------- read/write/ioctl interface
->                                           \
-> 					 s2disk
-> 
-> and after your patches, we'd get
-> 
-> 			core hibernation
-> 				/\
->                             ---------- sws_module_ops interface
-> 			       /  \
-> 			swsusp	  /dev/snapshot
-> 			swap            \
-> 			writing      -------- read/write/ioctl interface
->                                           \
-> 					 s2disk
-> 
-> (Right? Did I understand the patches correctly?)
-> 
-> I have some problems with sws_module_ops interface (handcoded locking
-> is too ugly to live), but it is better than I expected. But there may
-> be better solution available, one that does not need two interfaces to
-> maintain (we can't really get rid of userland interface). What about
-> this?
-> 
-> 
-> 
-> 			core hibernation
-> 				 \
-> 			          \
-> 			      	  /dev/snapshot
-> 		                      / \
-> 			           ---------- read/write/ioctl interface
->                                     /     \
-> 				swsusp	 s2disk
-> 				swap
-> 				writing
-> 
-> ? That way, we have just one interface, and still keep the advantages
-> of modularity / defined interfaces.
-> 
-> (You could literary call sys_read() from inside the kernel -- after
-> set_fs() -- but going to that extreme is probably not neccessary. But
-> having interface very similar to what /dev/snapshot provides -- with
-> the same locking rules -- should result in better code.)
+On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+> jassi brar wrote:
+>>>
+>>> Perhaps Joonyoung can simply port over the stuff
+>>> you need to this driver if you show your code.
+>>
+>> Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
+>> _very_ surprised if any user found this implementation useful.
+>> Let alone testing, this implementation can't even explain usability
+>> for fast peripherals
+>> with shallow FIFOs. I didn't give feedback for this patch because I am
+>> not sure if this
+>> is the right way to go at all.
+>
+> This is the wrong attitude.  If it were not for a simple oversight
+> Joonyoung's driver would already be upstream for the past two kernel
+> releases.  So you need to work together to improve that driver to
+> incorporate what you need.
+Nothing wrong in attitude here.
+Giving feedback on the code only comes after one is convinced with the
+overall approach taken. The last time I raised the PL330 driver issue,
+most people were not enthusiastic with this drivers/dma/ approach.
+I wasn't active mainline discussions when the driver was originally
+submitted a few months ago.
+And now my replies are not very 'polite' because theres a lot going on
+in the background that people in public threads don't know about.
 
-The user space interface does things that the in-kernel one doesn't really care
-for, so I don't think that would be a good thing to do.  I admit it's a bit
-like this right now (snapshot_[read|write]_next() do some things to satisfy
-the user space interface's needs), but I don't really think it should go any
-further than that.
 
-Moreover, the Jiri's approach allows us to handle other types of storage as
-well as swap using uniform interface.
+> It sounds like you just need to add an extension for the arch specific dma
+> api.
+I actually plan more than that.
+Apart from inefficient design, JoonYoung's driver has made some fatal
+assumptions
+about PL330, which will result in DMA aborts if used with SoCs that implement
+configuration of PL330 that is very different from Samsung SoCs'
+Of course, I address all such issues that I can think of, in my implementation.
 
-Rafael
+regards.
