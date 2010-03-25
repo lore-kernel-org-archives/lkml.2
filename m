@@ -1,100 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab0CYIru (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 04:47:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:51359 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab0CYIrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 04:47:48 -0400
-Date: Thu, 25 Mar 2010 08:47:30 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 06/11] Export fragmentation index via
-	/proc/extfrag_index
-Message-ID: <20100325084730.GG2024@csn.ul.ie>
-References: <20100323050910.A473.A69D9226@jp.fujitsu.com> <20100323120329.GE9590@csn.ul.ie> <20100325102342.945A.A69D9226@jp.fujitsu.com>
+	id S1753360Ab0CYIvu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 04:51:50 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:40462 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751651Ab0CYIvs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 04:51:48 -0400
+Date: Thu, 25 Mar 2010 14:11:52 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
+       Oleg Nesterov <oleg@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       Ulrich Drepper <drepper@redhat.com>, Tom Tromey <tromey@redhat.com>
+Subject: Re: [PATCH v1 7/10] Uprobes Implementation
+Message-ID: <20100325084152.GB26371@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100320142455.11427.76925.sendpatchset@localhost6.localdomain6>
+ <20100320142617.11427.23852.sendpatchset@localhost6.localdomain6>
+ <1269342115.5279.1620.camel@twins>
+ <20100323122335.GB26762@linux.vnet.ibm.com>
+ <1269352012.5109.22.camel@twins>
+ <20100324075815.GC26762@linux.vnet.ibm.com>
+ <1269435604.5109.235.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100325102342.945A.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1269435604.5109.235.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 11:47:17AM +0900, KOSAKI Motohiro wrote:
-> > On Tue, Mar 23, 2010 at 09:22:04AM +0900, KOSAKI Motohiro wrote:
-> > > > > > +	/*
-> > > > > > +	 * Index is between 0 and 1 so return within 3 decimal places
-> > > > > > +	 *
-> > > > > > +	 * 0 => allocation would fail due to lack of memory
-> > > > > > +	 * 1 => allocation would fail due to fragmentation
-> > > > > > +	 */
-> > > > > > +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
-> > > > > > +}
-> > > > > 
-> > > > > Dumb question.
-> > > > > your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
-> > > > > fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
-> > > > > but your code have extra '1000+'. Why?
-> > > > 
-> > > > To get an approximation to three decimal places.
-> > > 
-> > > Do you mean this is poor man's round up logic?
-> > 
-> > Not exactly.
-> > 
-> > The intention is to have a value of 968 instead of 0.968231. i.e.
-> > instead of a value between 0 and 1, it'll be a value between 0 and 1000
-> > that matches the first three digits after the decimal place.
 > 
-> Let's consider extream case.
+> I'm not sure, currently all the tracing bits require root. One of the
+> complications is that dynamic trace events (kprobes and uprobes) share a
+> global namespace, so making that accessible to users might be
+> interesting.
 > 
-> free_pages: 1
-> requested: 1
-> free_blocks_total: 1
+> So one thing we can do to avoid some of the trap overhead is to
+> de-couple the trace event creation from trace event enable (pretty much
+> already so for existing implementations), so while you define a dynamic
+> trace event as dso:sym, you provide ways to enable it globally and per
+> task.
 > 
-> frag_index = 1000  - ((1000 + 1*1000/1))/1 = -1000
-> 
-> This is not your intension, I guess. 
+> We'd basically need a global and per-task refcount on enable and make
+> sure the breakpoint is installed properly for (global || task).
 
-Why not?
-
-See this comment
-
-/* Fragmentation index only makes sense when a request would fail */
-
-In your example, there is a free page of the requested size so the allocation
-would succeed. In this case, fragmentation index does indeed go negative
-but the value is not useful.
-
-> Probably we don't need any round_up/round_down logic. because fragmentation_index
-> is only used "if (fragindex >= 0 && fragindex <= 500)" check in try_to_compact_pages().
-> +1 or -1 inaccurate can be ignored. iow, I think we can remove '1000+' expression.
-> 
-
-This isn't about rounding, it's about having a value that normally is
-between 0 and 1 expressed as a number between 0 and 1000 because we
-can't use double in the kernel.
+Yes, when we allow two or more probes to co-exist at a probepoint, we
+will be able to do this.
 
 > 
-> > > Why don't you use DIV_ROUND_UP? likes following,
-> > > 
-> > > return 1000 - (DIV_ROUND_UP(info->free_pages * 1000 / requested) /  info->free_blocks_total);
-> > > 
-> > 
-> > Because it's not doing the same thing unless I missed something.
-> 
-> 
+> That way a perf per-cpu event will do the global enable, and a perf
+> per-task event will do the task enable.
 > 
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> 
+> A double scribble will be an issue for the current generation of
+> debuggers anyway, right?
+> 
+
+double scribble as in two apps writing to the same address? Uprobes
+handles this by failing into insert probes at location where there is a
+breakpoint already inserted. So if both apps were to use the uprobes
+interface, then they could co-operate and co-exist. (This would need the
+feature in uprobes to have multiple probes per probepoint which is
+excluded in this RFC).
+
+> But yes, I suppose if you want to use uprobes for debuggers then yes it
+> makes sense to allow to put the task to sleep. One way would be to
+> provide means for the handler to detect the context and simply always
+> return -EFAULT from the trap context.
+> 
+
+Yes, thats certainly possible. However lets consider the case when we
+allow multiple probes per probepoint and one handler faults (handler
+detects it could be sleeping) while the other handler may or may not
+fault (handler could be doing a copy_from_user). 
+When the thread switches to task context and runs the first handler but
+it has no state information about the second handler having run in the
+interrupt context. So here we may be unable to decide if we should run
+the second handler or not.
+
+--
+Thanks and Regards
+Srikar
