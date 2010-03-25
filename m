@@ -1,24 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751848Ab0CYPyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:54:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34035 "EHLO
+	id S1751691Ab0CYQCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:02:47 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34282 "EHLO
 	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750847Ab0CYPys (ORCPT
+	with ESMTP id S1750938Ab0CYQCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:54:48 -0400
-Date: Thu, 25 Mar 2010 15:57:05 +0000
+	Thu, 25 Mar 2010 12:02:45 -0400
+Date: Thu, 25 Mar 2010 16:06:12 +0000
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] resource: shared I/O region support
-Message-ID: <20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>
-In-Reply-To: <1269523063-30346-1-git-send-email-me@mortis.eu>
-References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
-	<1269523063-30346-1-git-send-email-me@mortis.eu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+Message-ID: <20100325160612.23ab0263@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1003251441420.3147@localhost.localdomain>
+References: <20100324190150.GA18803@basil.fritz.box>
+	<alpine.LFD.2.00.1003242125320.3147@localhost.localdomain>
+	<alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
+	<20100325003652.GG20695@one.firstfloor.org>
+	<alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+	<20100325093744.GH20695@one.firstfloor.org>
+	<alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
+	<20100325121141.GO20695@one.firstfloor.org>
+	<alpine.LFD.2.00.1003251338130.3147@localhost.localdomain>
+	<20100325133204.GP20695@one.firstfloor.org>
+	<alpine.LFD.2.00.1003251441420.3147@localhost.localdomain>
 X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -27,102 +36,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 14:17:41 +0100
-Giel van Schijndel <me@mortis.eu> wrote:
+O> Right now they happen with a weird test case which points out a
+> trouble spot. Multi vector NICs under heavy load. So why not go there
+> and change the handful of drivers to run their handlers with irqs
+> disabled?
 
-> From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-> 
-> This patch was originally written by Alan Cox [1]. I only updated it to
-> apply correctly to Linus' current tree and changed IORESOURCE_MUXED's
-> value from 0x00200000 to 0x00400000 because the former has already been
-> taken in use since.
-> 
-> [1] https://patchwork.kernel.org/patch/32397/
-> 
-> Patch after this line:
-> ========================================================================
-> SuperIO devices share regions and use lock/unlock operations to chip
-> select.  We therefore need to be able to request a resource and wait for
-> it to be freed by whichever other SuperIO device currently hogs it.
-> Right now you have to poll which is horrible.
-> 
-> Add a MUXED field to IO port resources. If the MUXED field is set on the
-> resource and on the request (via request_muxed_region) then we block
-> until the previous owner of the muxed resource releases their region.
-> 
-> This allows us to implement proper resource sharing and locking for
-> superio chips using code of the form
-> 
-> enable_my_superio_dev() {
-> 	request_muxed_region(0x44, 0x02, "superio:watchdog");
-> 	outb() ..sequence to enable chip
-> }
-> 
-> disable_my_superio_dev() {
-> 	outb() .. sequence of disable chip
-> 	release_region(0x44, 0x02);
-> }
-> 
-> Signed-off-by: Giel van Schijndel <me@mortis.eu>
-> ---
->  include/linux/ioport.h |    4 +++-
->  kernel/resource.c      |   14 +++++++++++++-
->  2 files changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-> index 71ab79d..604fd29 100644
-> --- a/include/linux/ioport.h
-> +++ b/include/linux/ioport.h
-> @@ -52,6 +52,7 @@ struct resource_list {
->  
->  #define IORESOURCE_MEM_64	0x00100000
->  #define IORESOURCE_WINDOW	0x00200000	/* forwarded by bridge */
-> +#define IORESOURCE_MUXED	0x00400000	/* Resource is software muxed */
->  
->  #define IORESOURCE_EXCLUSIVE	0x08000000	/* Userland may not map this resource */
->  #define IORESOURCE_DISABLED	0x10000000
-> @@ -141,7 +142,8 @@ static inline unsigned long resource_type(const struct resource *res)
->  }
->  
->  /* Convenience shorthand with allocation */
-> -#define request_region(start,n,name)	__request_region(&ioport_resource, (start), (n), (name), 0)
-> +#define request_region(start,n,name)		__request_region(&ioport_resource, (start), (n), (name), 0)
-> +#define request_muxed_region(start,n,name)	__request_region(&ioport_resource, (start), (n), (name), IORESOURCE_MUXED)
->  #define __request_mem_region(start,n,name, excl) __request_region(&iomem_resource, (start), (n), (name), excl)
->  #define request_mem_region(start,n,name) __request_region(&iomem_resource, (start), (n), (name), 0)
->  #define request_mem_region_exclusive(start,n,name) \
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index 2d5be5d..1484180 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -651,6 +651,8 @@ resource_size_t resource_alignment(struct resource *res)
->   * release_region releases a matching busy region.
->   */
->  
-> +static DECLARE_WAIT_QUEUE_HEAD(muxed_resource_wait);
-> +
->  /**
->   * __request_region - create a new busy resource region
->   * @parent: parent resource descriptor
-> @@ -663,6 +665,7 @@ struct resource * __request_region(struct resource *parent,
->  				   resource_size_t start, resource_size_t n,
->  				   const char *name, int flags)
->  {
-> +	DECLARE_WAITQUEUE(wait, current);
->  	struct resource *res = kzalloc(sizeof(*res), GFP_KERNEL);
->  
->  	if (!res)
-> @@ -687,7 +690,14 @@ struct resource * __request_region(struct resource *parent,
->  			if (!(conflict->flags & IORESOURCE_BUSY))
->  				continue;
->  		}
-> -
-> +		if (conflict->flags & flags & IORESOURCE_MUXED) {
-> +			add_wait_queue(&muxed_resource_wait, &wait);
-> +			write_unlock(&resource_lock);
+How about - because it can happen anyway ? It's merely a lot less likely
+and if it is occuring at random in very obscure situations the chances
+are it doesn't produce a nice neat report that it occurred either. Your
+assertion that this is the only case it is seen appears unbacked by
+evidence for or against.
 
-needs a set_current_state(TASK_UNINTERRUPTIBLE); here
+> Band aids are the last resort if we can't deal with a problem by other
+> sane means. And this problem falls not into that category, it can be
+> solved in the affected drivers with zero effort.
 
-(error from my original test patch that I noticed re-reviewing it)
+Thomas - you can't complain about Andi's patches being inadequate and
+then suggest an ever more incomplete 'solution'. Absolute minimum we need
+to WARN() in that situation so that kerneloops.org can gather statistics
+on what occurs and try to find out.
 
+The real fix is not zero effort, as you yourself said there are quite a
+few subsystems re-enabling interrupts in their IRQ paths and all would
+need fixing.
 
+Alan
