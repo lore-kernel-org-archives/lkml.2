@@ -1,150 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab0CYQpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 12:45:19 -0400
-Received: from lucidpixels.com ([75.144.35.66]:34502 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753047Ab0CYQpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 12:45:17 -0400
-Date: Thu, 25 Mar 2010 12:45:15 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
- failed: Inappropriate ioctl for device / PreInit returned NULL
-In-Reply-To: <Pine.LNX.4.44L0.1003251149300.1808-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.00.1003251240590.27738@p34.internal.lan>
-References: <Pine.LNX.4.44L0.1003251149300.1808-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1752793Ab0CYQqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:46:17 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54065 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0CYQqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 12:46:15 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-03-23 - IPv6 warnings...
+In-Reply-To: Your message of "Wed, 24 Mar 2010 18:42:26 EDT."
+             <20100324184226.3bf42d8f.akpm@linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201003232301.o2NN1bms031050@imap1.linux-foundation.org> <12096.1269481001@localhost>
+            <20100324184226.3bf42d8f.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1269535530_3923P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 25 Mar 2010 12:45:30 -0400
+Message-ID: <4788.1269535530@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail: UCE(50)
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=50/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=bulk(0),
+	refid=str=0001.0A020202.4BAB9332.01C8,ss=3,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1269535530_3923P
+Content-Type: text/plain; charset=us-ascii
 
-
-On Thu, 25 Mar 2010, Alan Stern wrote:
-
-> On Thu, 25 Mar 2010, Justin Piszcz wrote:
+On Wed, 24 Mar 2010 18:42:26 EDT, Andrew Morton said:
+> On Wed, 24 Mar 2010 21:36:41 -0400 Valdis.Kletnieks@vt.edu wrote:
 > 
-> > # cat /sys/kernel/debug/usb/devices
+> > On Tue, 23 Mar 2010 15:34:59 PDT, akpm@linux-foundation.org said:
+> > > The mm-of-the-moment snapshot 2010-03-23-15-34 has been uploaded to
+> > > 
+> > >    http://userweb.kernel.org/~akpm/mmotm/
 > > 
-> > T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 8
-> > B:  Alloc= 26/900 us ( 3%), #Int=  2, #Iso=  0
-> > D:  Ver= 1.10 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-> > P:  Vendor=1d6b ProdID=0001 Rev= 2.06
-> > S:  Manufacturer=Linux 2.6.33 ohci_hcd
-> > S:  Product=OHCI Host Controller
-> > S:  SerialNumber=0000:00:0b.0
-> > C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
-> > I:* If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
-> > E:  Ad=81(I) Atr=03(Int.) MxPS=   2 Ivl=255ms
-> > 
-> > T:  Bus=02 Lev=01 Prnt=01 Port=04 Cnt=01 Dev#=  2 Spd=1.5 MxCh= 0
-> > D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-> > P:  Vendor=413c ProdID=2005 Rev= 1.05
-> > S:  Manufacturer=DELL
-> > S:  Product=DELL USB Keyboard
-> > C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
-> > I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
-> > E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
-> > 
-> > T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=02 Dev#=  3 Spd=1.5 MxCh= 0
-> > D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-> > P:  Vendor=046d ProdID=c018 Rev=43.01
-> > S:  Manufacturer=Logitech
-> > S:  Product=USB Optical Mouse
-> > C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
-> > I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=usbhid
-> > E:  Ad=81(I) Atr=03(Int.) MxPS=   5 Ivl=10ms
+> > Seen in my dmesg.  It may be relevant that I'm at home, and my IPv6
+> > prefix arrives via a PPP VPN connection. This happened about 20-25 seconds
+> > after I launched pppd.
 > 
-> All right, the problematic mouse is attached to bus 2 (as is the
-> keyboard).  So the next step is to run a kernel with CONFIG_USB_DEBUG
-> enabled.  When the mouse stops working, go to
-> /sys/kernel/debug/usb/ohci/0000:00:0b.0 and see what the various files
-> in that directory contain.  Also, check if any additional debugging 
-> info shows up in the system log.
+> Yes, thanks, I get the same - it doesn't seem to break anything.  It
+> also happens some time after boot has completed.
 
-Ok, done, it froze up again:
+Just doing an 'ifup eth0' on a network with IPv6 on it is sufficient.
 
-# cat async 
-#
+And it does break stuff:
 
-# cat periodic 
-size = 32
-  0 [117]: ed8/f674a040 (ls dev2 ep1in-int qlen 1 max 8 00083082)
-  1 [ 98]: ed8/f674a0c0 (ls dev3 ep1in-int qlen 1 max 5 00053083)
-  8 [117]: ed8/f674a040
-  9 [ 98]: ed8/f674a0c0
-16 [117]: ed8/f674a040
-17 [ 98]: ed8/f674a0c0
-24 [117]: ed8/f674a040
-25 [ 98]: ed8/f674a0c0
+% ifconfig eth0
+eth0      Link encap:Ethernet  HWaddr 00:24:E8:C6:AD:17  
+          inet addr:128.173.14.107  Bcast:128.173.15.255  Mask:255.255.252.0
+          inet6 addr: fe80::224:e8ff:fec6:ad17/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
 
-# cat registers 
-bus pci, device 0000:00:0b.0
-OHCI Host Controller
-ohci_hcd
-OHCI 1.0, NO legacy support registers
-control 0x68f RWE RWC HCFS=operational IE PLE CBSR=3
-cmdstatus 0x00000 SOC=0
-intrstatus 0x00000024 FNO SF
-intrenable 0x8000004a MIE RHSC RD WDH
-ed_controlhead 3674a080
-hcca frame 0x61e7
-fmintvl 0xa7782edf FIT FSMPS=0xa778 FI=0x2edf
-fmremaining 0x80002565 FRT FR=0x2565
-periodicstart 0x2a2f
-lsthresh 0x0628
-hub poll timer off
-roothub.a 01000208 POTPGT=1 NPS NDP=8(8)
-roothub.b 00000000 PPCM=0000 DR=0000
-roothub.status 00008000 DRWE
-roothub.portstatus [0] 0x00000100 PPS
-roothub.portstatus [1] 0x00000100 PPS
-roothub.portstatus [2] 0x00000100 PPS
-roothub.portstatus [3] 0x00000100 PPS
-roothub.portstatus [4] 0x00000303 LSDA PPS PES CCS
-roothub.portstatus [5] 0x00000303 LSDA PPS PES CCS
-roothub.portstatus [6] 0x00000100 PPS
-roothub.portstatus [7] 0x00000100 PPS
+With 2.6.34-rc1-mmotm0309, I see:
 
-Nothing unusal in dmesg:
+% ifconfig eth0
+eth0      Link encap:Ethernet  HWaddr 00:24:E8:C6:AD:17  
+          inet addr:128.173.14.107  Bcast:128.173.15.255  Mask:255.255.252.0
+          inet6 addr: 2001:468:c80:2103:224:e8ff:fec6:ad17/64 Scope:Global
+          inet6 addr: fe80::224:e8ff:fec6:ad17/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
 
-[   30.569377] usb 2-5:1.0: uevent
-[   30.572365] usb 2-6:1.0: uevent
-[ 1053.663314] usb usb1: uevent
-[ 1053.663404] usb 1-0:1.0: uevent
-[ 1053.663455] usb usb2: uevent
-[ 1053.663530] usb 2-0:1.0: uevent
-[ 1053.663582] usb 2-5: uevent
-[ 1053.663656] usb 2-5:1.0: uevent
-[ 1053.663706] usb 2-6: uevent
-[ 1053.663777] usb 2-6:1.0: uevent
-<ends here>
-
-Anything else worth gathering?
-Does the above output show the problem?
-
-BTW this keyboard and mouse were used on another system for 4+ years without
-any problems, so it is not a device issue.
-
-Justin.
+Something ate my IPv6 address.  We run a lot of IPv6 in production, so stuff
+is acting wonky.
 
 
 
-> 
-> > > Suppose you don't run X at all.  Do the mouse and keyboard eventually
-> > > stop working even then?
-> > I have not tried that, the reason I use the host locally is for X.
-> 
-> You should try it anyway.  If the failure still occurs, then you can 
-> rule out any connection with X or the nVidia graphics.
-It takes a very long time for it to happen when I want it to happen, but
-if the above output does not help/this bug cannot be found/fixed, I can try
-that too.
+--==_Exmh_1269535530_3923P
+Content-Type: application/pgp-signature
 
-Justin.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLq5MqcC3lWbTT17ARAtBFAJ9A4+be940OdkBcHV2GMPkZcbvcsQCfVHkf
+hRF8cPitJhxdSO45oNVnnnA=
+=xB9H
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1269535530_3923P--
 
