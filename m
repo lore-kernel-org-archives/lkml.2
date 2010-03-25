@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab0CYO1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:27:50 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:38406 "EHLO
+	id S1754712Ab0CYOaI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:30:08 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:38565 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754611Ab0CYO1r (ORCPT
+	by vger.kernel.org with ESMTP id S1753338Ab0CYOaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:27:47 -0400
-Date: Thu, 25 Mar 2010 15:27:38 +0100
+	Thu, 25 Mar 2010 10:30:06 -0400
+Date: Thu, 25 Mar 2010 15:29:44 +0100
 From: Pavel Machek <pavel@ucw.cz>
-To: Dan Carpenter <error27@gmail.com>, Shaohua Li <shaohua.li@intel.com>,
-       Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Chen Gong <gong.chen@linux.intel.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-acpi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] acpi_pad: "processor_aggregator" name too long
-Message-ID: <20100325142738.GD1602@ucw.cz>
-References: <20100319114806.GN5331@bicker>
+To: Nigel Cunningham <ncunningham@crca.org.au>
+Cc: Jiri Slaby <jirislaby@gmail.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC 03/15] PM / Hibernate: separate block_io
+Message-ID: <20100325142943.GA1657@ucw.cz>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-3-git-send-email-jslaby@suse.cz> <20100324203021.GE5798@elf.ucw.cz> <4BAA829F.7060207@gmail.com> <4BAA98FC.9040302@crca.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100319114806.GN5331@bicker>
+In-Reply-To: <4BAA98FC.9040302@crca.org.au>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2010-03-19 14:48:06, Dan Carpenter wrote:
-> cpi_device_class can only be 19 characters and a NULL terminator.
-> 
-> With the current name we get a buffer overflow in acpi_pad_add()
->         strcpy(acpi_device_class(device), ACPI_PROCESSOR_AGGREGATOR_CLASS);
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
-> ---
-> Feel free to pick your own name if you don't like mine.  :)
-> 
-> 
-> diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-> index 7e52295..2db89d9 100644
-> --- a/drivers/acpi/acpi_pad.c
-> +++ b/drivers/acpi/acpi_pad.c
-> @@ -30,7 +30,7 @@
->  #include <acpi/acpi_bus.h>
->  #include <acpi/acpi_drivers.h>
->  
-> -#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"processor_aggregator"
-> +#define ACPI_PROCESSOR_AGGREGATOR_CLASS	"proc_aggregator"
+On Thu 2010-03-25 09:58:04, Nigel Cunningham wrote:
+> Hi.
+>
+> On 25/03/10 08:22, Jiri Slaby wrote:
+>> On 03/24/2010 09:30 PM, Pavel Machek wrote:
+>>> On Tue 2010-03-23 17:17:31, Jiri Slaby wrote:
+>>>> +int sws_bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
+>>>> +{
+>>>> +	return submit(READ, sws_resume_bdev, page_off * (PAGE_SIZE>>  9),
+>>>> +			virt_to_page(addr), bio_chain);
+>>>> +}
+>>>
+>>> sws_ is kind of strange prefix. We were trying to get away from
+>>> "swsuspend" name for quite some time...
+>>
+>> No problem to change the prefix to anything else. Do you (anybody)
+>> suggest anything?
+>>
+>
+> How about some abbreviation of hibernate? "hib"?
 
-Sounds like /proc aggregator to me. "cpu_aggregator"?
-
->  #define ACPI_PROCESSOR_AGGREGATOR_DEVICE_NAME "Processor Aggregator"
->  #define ACPI_PROCESSOR_AGGREGATOR_NOTIFY 0x80
->  static DEFINE_MUTEX(isolated_cpus_lock);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+hib_ certainly sounds better.
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
