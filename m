@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0CYOCY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:02:24 -0400
-Received: from mail.artecdesign.ee ([195.50.213.123]:51419 "EHLO
-	postikukk.artecdesign.ee" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab0CYOCX (ORCPT
+	id S1754213Ab0CYOFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:05:00 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59426 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751282Ab0CYOE7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:02:23 -0400
-X-Greylist: delayed 3106 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 10:02:22 EDT
-Message-ID: <4BAB609A.9030407@artecdesign.ee>
-Date: Thu, 25 Mar 2010 15:09:46 +0200
-From: Anti Sullin <anti.sullin@artecdesign.ee>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Thu, 25 Mar 2010 10:04:59 -0400
+Date: Thu, 25 Mar 2010 14:04:57 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100325140457.GB30031@ZenIV.linux.org.uk>
+References: <20100324185604.GT30031@ZenIV.linux.org.uk>
+ <4BAB2F5A.30409@panasas.com>
+ <20100325101231.GU30031@ZenIV.linux.org.uk>
+ <20100325105406.GW30031@ZenIV.linux.org.uk>
+ <4BAB51F5.609@panasas.com>
+ <4BAB54B0.3080109@panasas.com>
+ <20100325130610.GZ30031@ZenIV.linux.org.uk>
+ <4BAB656E.8020204@panasas.com>
+ <20100325133746.GA30031@ZenIV.linux.org.uk>
+ <4BAB6911.5020009@panasas.com>
 MIME-Version: 1.0
-To: Harro Haan <hrhaan@gmail.com>, Andrew Victor <avictor.za@gmail.com>
-CC: Ryan Mallon <ryan@bluewatersys.com>, Remy Bohmer <linux@bohmer.net>,
-       Andrew Victor <linux@maxim.org.za>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       H Hartley Sweeten <hartleys@visionengravers.com>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch v3 2/3] at91_udc HW glitch
-References: <20100203143736.564974126@gmail.com>	 <20100203143803.528679118@gmail.com>	 <cd73a99e1003231326r7623bbc0icba163f9b2e0e96e@mail.gmail.com> <6681f8e11003250503k20efc864ve6d916ad5a7c67b2@mail.gmail.com>
-In-Reply-To: <6681f8e11003250503k20efc864ve6d916ad5a7c67b2@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-ADG-Spam-Score: -4.4 (----)
-X-ADG-Spam-ScoreInt: -43
-X-ADG-Spam-Report: Content analysis details:   (-4.4 points, 5.0 required)
-	pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	-1.8 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
-X-ADG-ExiScan-Signature: ab4684dd8cf1a569b3f27c3f25c2be8e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAB6911.5020009@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Harro Haan wrote:
-> On 23 March 2010 21:26, Andrew Victor <avictor.za@gmail.com> wrote:
->> The at91_udc driver does not seem to do that for its CSR register writes.
->> So I was wondering if we implement what the datasheet says, would we
->> still need the "fix" above.
+On Thu, Mar 25, 2010 at 03:45:53PM +0200, Boaz Harrosh wrote:
+> > Does open() of directory _without_ O_DIRECTORY work in e.g. vanilla 2.6.33?
+> > It certainly does for local filesystems and it does for NFSv3; does it work
+> > for NFSv4?
+> 
+> In my tests. Every thing is the same safe the client with the above change.
+> 
+> So I guess NFSv4 does something different when asked for directory lookup
+> as opposed to files lookup. I guess there is something added/removed to
+> the compound depending on that flag. But I wouldn't know, I am not familiar 
+> with this code. NFSv4 someone?
 
-Another read is still needed after verifying that the flag is changed.
+OK, what happens if you do the following:
 
-We are writing a bit that does not have a register behind it. It just
-triggers the acknowledge that the data has been read.
-We could poll if the corresponding data ready flag is cleared to check
-if the write has propagated. But this leads to another problem:
-the reads do not seem to be re-syncronized between clock domains.
-We just get what is there at the moment the read is performed. This
-means that even if the "data ready" bit is cleared, we could not be sure
-at that moment that the rest of the changes have been performed
-that were triggered by the same write. We even get reads, where
-some bits in rx data counter have changed and some bits are old.
-So to be fully sure, we should wait until the bit has been cleared
-and then perform another read to be sure that the rest of the bits
-have been changed as well. See my 2009-03-25 17:08 e-mail for details.
+mount the same fs from two clients
+on one client:
+mkdir /mnt/weird_name_69
+on another:
+echo 'main() {open("/mnt/weird_name_69", 0);}' >/tmp/a.c
+gcc /tmp/a.c
+strace ./a.out
+ls -l /mnt/weird_name_69
+strace ./a.out
 
->From practical standpoint: I have not seen a case where the
-second read was not ready. If this delay is adequate for the worst
-case propagate time it takes for the bits to change, it is not
-needed to read the register more than twice. I determined this
-experimentally by reading the register 3 times right after write
-and comparing the  2nd and 3rd read when doing different transfers
-between PC and ARM. As I have tested it only on 9261, somebody should
-either run the same kind of tests on other SoC's as well or figure
-out the worst case timings on all of them.
-The datasheet describes that some changes are performed in
-3 USB clock + 3 master clock periods. If so, then one/some extra reads
-could create the master-clock dependant small delay needed to
-be sure that everything is ready.
+Will the first strace show EISDIR and the second succeed?
 
-Actually, this leads to a another problem. We are able to read the
-rx fifo count when the bits are changing there. If some data is being
-received at the very moment when we read the register, we're in
-trouble. When some bits are old and some new, we can get values that
-are larger or smaller than the actual value (ie 0111->1000 change).
-This is a rare condition, but it might happen. Should this register
-be read always twice to check that nothing was unstable during the
-first read?
+>From my reading of that code (2.6.33, before all that stuff got merged),
+we have different behaviour depending on which codepath do we hit.
+If we go through ->d_revalidate(), it sees that it's not S_ISREG() and
+doesn't try to play with atomic open.  If we go through ->lookup(), we
+tell the server to open it, and when it tells us to bugger off (it's a
+directory, NFSv4 doesn't support atomic open for those), -EISDIR is
+passed to caller.  Which leads to open() failing.
 
-I would still leave in this extra read because it is known to be
-unstable. If it is needed on some SoC's, we could read out the
-register value until we get 2 same results to verify that it is
-stable. But there is no point of reading the first (known bad) value.
+It definitely looks like a bug.  Masked by O_DIRECTORY in 2.6.33.  Bug
+in fs/namei.c patch has exposed that crap both for O_DIRECTORY and !O_DIRECTORY
+cases.
 
--- 
-Anti Sullin
-Embedded Software Engineer
-Artec Design LLC
-Teaduspargi 6/2, 12618, Tallinn, Estonia
-http://www.artecdesign.ee 
-
+So immediate fix will need to be along the lines of "add LOOKUP_DIRECTORY
+even on the last step if we have *want_dir" (and I'd probably get rid of
+want_dir then and just abuse nd->flags), but there's a real NFS bug as
+well.
