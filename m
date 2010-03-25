@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751577Ab0CYNGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:06:06 -0400
-Received: from exchtp08.via.com.tw ([61.66.243.7]:62097 "EHLO
-	exchtp08.via.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978Ab0CYNGE (ORCPT
+	id S1752467Ab0CYNGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:06:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50156 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab0CYNGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:06:04 -0400
-X-Greylist: delayed 855 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 09:06:04 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 25 Mar 2010 09:06:13 -0400
+Date: Thu, 25 Mar 2010 13:06:10 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Benny Halevy <bhalevy@panasas.com>
+Cc: "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100325130610.GZ30031@ZenIV.linux.org.uk>
+References: <4BAA5035.1060906@panasas.com>
+ <4BAA52A8.2080304@panasas.com>
+ <20100324180622.GS30031@ZenIV.linux.org.uk>
+ <4BAA5955.4000001@gmail.com>
+ <20100324185604.GT30031@ZenIV.linux.org.uk>
+ <4BAB2F5A.30409@panasas.com>
+ <20100325101231.GU30031@ZenIV.linux.org.uk>
+ <20100325105406.GW30031@ZenIV.linux.org.uk>
+ <4BAB51F5.609@panasas.com>
+ <4BAB54B0.3080109@panasas.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Subject: [Patch 1/1 v2] pata_via: HDD of VT6410/6415/6330 cannot be detected issue
-Date: Thu, 25 Mar 2010 20:51:47 +0800
-Message-ID: <9E058EE846170743AF7338FE064CB5AB38B477@exchtp04.taipei.via.com.tw>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [Patch 1/1 v2] pata_via: HDD of VT6410/6415/6330 cannot be detected issue
-thread-index: AcrMGe3ueTN7SzNbRsCdvGpbqQpJzQ==
-From: <JosephChan@via.com.tw>
-To: <linux-ide@vger.kernel.org>, <stable@kernel.org>,
-       <linux-kernel@vger.kernel.org>
-Cc: <sshtylyov@mvista.com>, <jeff@garzik.org>, <tj@kernel.org>
-X-OriginalArrivalTime: 25 Mar 2010 12:51:48.0217 (UTC) FILETIME=[EE906690:01CACC19]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAB54B0.3080109@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o2PD6FmE005399
 
-When using VT6410/6415/6330 chips on some VIA's platforms, the HDD connects to VT6410/6415/6330 cannot be detected.
-It is because the driver detects wrong via_isa_bridge ID, and then cause the this issue happen.
-This patch will fix this problem.
+On Thu, Mar 25, 2010 at 02:18:56PM +0200, Benny Halevy wrote:
 
+> Indeed this error is coming from the server:
+> 
+> nfsd_dispatch: vers 4 proc 1                                                                            
+> nfsv4 compound op #1/7: 22 (OP_PUTFH)                                                                   
+> nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
+> nfsv4 compound op ffff880076734078 opcnt 7 #1: 22: status 0                                             
+> nfsv4 compound op #2/7: 32 (OP_SAVEFH)                                                                  
+> nfsv4 compound op ffff880076734078 opcnt 7 #2: 32: status 0                                             
+> nfsv4 compound op #3/7: 18 (OP_OPEN)                                                                    
+> NFSD: nfsd4_open filename pack op_stateowner (null)                                                     
+> renewing client (clientid 4bab503e/00000002)                                                            
+> nfsd: nfsd_lookup(fh 16: 01010001 00000000 000e6592 345b9f25 00000000 00000000, pack)                   
+> nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
+> nfsd: fh_compose(exp 08:05/106497 objects/pack, ino=943508)                                             
+> nfsd: fh_verify(16: 01010001 00000000 000e6594 345b9f26 00000000 00000000)                              
+> nfsv4 compound op ffff880076734078 opcnt 7 #3: 18: status 21                                            
+> nfsv4 compound returned 21                                                                              
 
-Signed-off-by: Joseph Chan<josephchan@via.com.tw>
+Ho-hum...  So it hits the "let's try to open it atomically" path and
+gets told to FOAD by server (as it should, of course).
 
---- a/drivers/ata/pata_via.c	2010-03-16 06:00:01.000000000 -0400
-+++ b/drivers/ata/pata_via.c	2010-03-25 08:47:15.000000000 -0400
-@@ -576,6 +576,10 @@
- 			u8 rev = isa->revision;
- 			pci_dev_put(isa);
- 
-+			if ((id->device == 0x0415 || id->device == 0x3164) &&
-+			      (config->id != id->device))
-+				continue;
-+
- 			if (rev >= config->rev_min && rev <= config->rev_max)
- 				break;
- 		}
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+And if we see different behaviour after ls -l, presumably that's a
+difference between ->lookup() and ->d_revalidate() paths on client...
+
+OK, I think I see what's going on in this case.  However, it doesn't
+explain everything; my current theory is that we used to get LOOKUP_DIRECTORY
+on the last components in O_DIRECTORY opens and we don't do that now.
+That used to derail the is_atomic_open(), now it's hit and there we go.
+
+It's not hard to verify (and it might take care of this testcase), but
+I still have questions about the way this code used to work *without*
+O_DIRECTORY.
+
+Let's try this: before do_lookup() call there add
+	if (*want_dir)
+		nd->flags |= LOOKUP_DIRECTORY;
+and see how does it behave.
+
+However, even if it does help, it doesn't explain everything.  Normal
+open() on a directory without O_DIRECTORY if flags shouldn't fail with
+-EISDIR.  How did that manage to avoid it all along?
