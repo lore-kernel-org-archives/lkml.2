@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0CYOFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:05:00 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59426 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab0CYOE7 (ORCPT
+	id S1754241Ab0CYOFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:05:22 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:64274 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab0CYOFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:04:59 -0400
-Date: Thu, 25 Mar 2010 14:04:57 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Benny Halevy <bhalevy@panasas.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-Message-ID: <20100325140457.GB30031@ZenIV.linux.org.uk>
-References: <20100324185604.GT30031@ZenIV.linux.org.uk>
- <4BAB2F5A.30409@panasas.com>
- <20100325101231.GU30031@ZenIV.linux.org.uk>
- <20100325105406.GW30031@ZenIV.linux.org.uk>
- <4BAB51F5.609@panasas.com>
- <4BAB54B0.3080109@panasas.com>
- <20100325130610.GZ30031@ZenIV.linux.org.uk>
- <4BAB656E.8020204@panasas.com>
- <20100325133746.GA30031@ZenIV.linux.org.uk>
- <4BAB6911.5020009@panasas.com>
+	Thu, 25 Mar 2010 10:05:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=b6rUxa8vTUYkG+pkILErnP2ZcrRfoZAOGgjn/rhkLqnakr5wJtvyQlyhIex5pB0UMz
+         r38ePelwgTZbOnUPn6S7ONwPseS+7LjfUL15u57QHixLplq30qSnG97ucFhmGRM4Pe6N
+         US6kYbdvv9lVNavYA+F38emO9zcSlD0aX/aq8=
+Message-ID: <4BAB6D98.1090900@panasas.com>
+Date: Thu, 25 Mar 2010 16:05:12 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAB6911.5020009@panasas.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Neil Brown <neilb@suse.de>
+CC: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
+       linux-kernel@vger.kernel.org, Sachin Prabhu <sprabhu@redhat.com>
+Subject: Re: [PATCH] ocfs2: Skip check for mandatory locks when unlocking
+References: <19368.33225.516492.542519@notabene.brown>
+In-Reply-To: <19368.33225.516492.542519@notabene.brown>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 03:45:53PM +0200, Boaz Harrosh wrote:
-> > Does open() of directory _without_ O_DIRECTORY work in e.g. vanilla 2.6.33?
-> > It certainly does for local filesystems and it does for NFSv3; does it work
-> > for NFSv4?
+On 03/23/2010 10:54 AM, Neil Brown wrote:
 > 
-> In my tests. Every thing is the same safe the client with the above change.
+> The nfs bug fixed by 0800c5f7a499a8961c3868e95cc4cf1715166457
+> and the 9p bug fixed by f78233dd44a110c574fe760ad6f9c1e8741a0d00
+> and the gfs2 bug fixed by 720e7749279bde0d08684b1bb4e7a2eedeec6394
 > 
-> So I guess NFSv4 does something different when asked for directory lookup
-> as opposed to files lookup. I guess there is something added/removed to
-> the compound depending on that flag. But I wouldn't know, I am not familiar 
-> with this code. NFSv4 someone?
+> also needs to be fixed for ocfs2.  This patch does that.
+> 
+> Hopefully this is the last filesystem with this bug :-)
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Cc: stable@kernel.org
+> 
+> diff --git a/fs/ocfs2/locks.c b/fs/ocfs2/locks.c
+> index 544ac62..923d3d8 100644
+> --- a/fs/ocfs2/locks.c
+> +++ b/fs/ocfs2/locks.c
+> @@ -113,7 +113,8 @@ int ocfs2_flock(struct file *file, int cmd, struct file_lock *fl)
+>  
+>  	if (!(fl->fl_flags & FL_FLOCK))
+>  		return -ENOLCK;
+> -	if (__mandatory_lock(inode))
+> +	if (__mandatory_lock(inode) &&
+> +	    fl->fl_type != F_UNLCK)
 
-OK, what happens if you do the following:
+If you reverse the order of these then you'd optimize away
+the call to __mandatory_lock(inode). As it is now, it will
+call it but then ignore the return if  == F_UNLCK.
 
-mount the same fs from two clients
-on one client:
-mkdir /mnt/weird_name_69
-on another:
-echo 'main() {open("/mnt/weird_name_69", 0);}' >/tmp/a.c
-gcc /tmp/a.c
-strace ./a.out
-ls -l /mnt/weird_name_69
-strace ./a.out
+>  		return -ENOLCK;
+>  
+>  	if ((osb->s_mount_opt & OCFS2_MOUNT_LOCALFLOCKS) ||
+> --
 
-Will the first strace show EISDIR and the second succeed?
-
->From my reading of that code (2.6.33, before all that stuff got merged),
-we have different behaviour depending on which codepath do we hit.
-If we go through ->d_revalidate(), it sees that it's not S_ISREG() and
-doesn't try to play with atomic open.  If we go through ->lookup(), we
-tell the server to open it, and when it tells us to bugger off (it's a
-directory, NFSv4 doesn't support atomic open for those), -EISDIR is
-passed to caller.  Which leads to open() failing.
-
-It definitely looks like a bug.  Masked by O_DIRECTORY in 2.6.33.  Bug
-in fs/namei.c patch has exposed that crap both for O_DIRECTORY and !O_DIRECTORY
-cases.
-
-So immediate fix will need to be along the lines of "add LOOKUP_DIRECTORY
-even on the last step if we have *want_dir" (and I'd probably get rid of
-want_dir then and just abuse nd->flags), but there's a real NFS bug as
-well.
+Boaz
