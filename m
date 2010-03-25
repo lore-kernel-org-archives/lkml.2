@@ -1,291 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639Ab0CYXWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:22:15 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50449 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753Ab0CYXUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:20:38 -0400
-From: pavan_savoy@ti.com
-To: marcel@holtmann.org, gregkh@suse.de, alan@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org, pavan_savoy@yahoo.co.in,
-       Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH] drivers:staging: sources for HCI LL PM protocol
-Date: Thu, 25 Mar 2010 18:20:19 -0500
-Message-Id: <1269559223-4043-5-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.5.6.3
-In-Reply-To: <1269559223-4043-4-git-send-email-pavan_savoy@ti.com>
-References: <1269559223-4043-1-git-send-email-pavan_savoy@ti.com>
- <1269559223-4043-2-git-send-email-pavan_savoy@ti.com>
- <1269559223-4043-3-git-send-email-pavan_savoy@ti.com>
- <1269559223-4043-4-git-send-email-pavan_savoy@ti.com>
+	id S1753559Ab0CYXWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 19:22:48 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:42754 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab0CYXWq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 19:22:46 -0400
+Date: Thu, 25 Mar 2010 16:22:44 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       socketcan-core@lists.berlios.de
+Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus
+ Carrier Board
+Message-ID: <20100325232244.GG10454@ovro.caltech.edu>
+References: <>
+ <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
+ <20100319163849.GB30409@sortiz.org>
+ <20100319182209.GD13672@ovro.caltech.edu>
+ <20100325225929.GA20618@sortiz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325225929.GA20618@sortiz.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 25 Mar 2010 16:22:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Thu, Mar 25, 2010 at 11:59:30PM +0100, Samuel Ortiz wrote:
+> Hi Ira,
+> 
+> First of all, sorry for the late reply. Then my answers:
+> 
+> On Fri, Mar 19, 2010 at 11:22:09AM -0700, Ira W. Snyder wrote:
+> > 
+> > > > +/*
+> > > > + * Subdevice Support
+> > > > + */
+> > > Please use the mfd-core API for building and registering platform sub devices.
+> > > The pieces of code below should shrink significantly.
+> > > 
+> > 
+> > Using this framework, how is it possible to create  the devices that I
+> > do down below. For each subdevice, I need three resources:
+> > 
+> > 1) MODULbus registers -- PCI BAR3 + (0x200 * module_num)
+> > 2) PLX Control Registers -- PCI BAR4
+> > 3) IRQ
+> > 
+> > Specifically, the way IORESOURCE_MEM resources are copied seems wrong.
+> > They start at the base address of only one resource and use the offsets
+> > provided in the struct mfd_cell. See the if-statement at
+> > drivers/mfd/mfd-core.c line 48.
+> > 
+> > I need two use two different parent resources. The mfd_add_devices()
+> > function doesn't support this.
+> I would still like you to use the mfd-core API. Here is my proposal:
+> 
+> 1) I modify mfd_add_device() to support a NULL mem_base argument. When
+> mem_base is NULL, we would have:
+> 
+> res[r].parent = NULL and res[r].start = cell->resources[r].start;
+> 
+> The platform code will use iomem_resource as the parent for this resource.
+> 
 
-Texas Instruments BT, FM and GPS combo chips/drivers
-make use of a single TTY to communicate with the chip.
-This module constitutes the proprietary power management
-protocol from TI for the BT/FM/GPS combo chips
+I don't know the implications of using iomem_resource as the parent
+resource. If you think it is ok, I have no objections.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
----
- drivers/staging/ti-st/st_ll.c |  169 +++++++++++++++++++++++++++++++++++++++++
- drivers/staging/ti-st/st_ll.h |   67 ++++++++++++++++
- 2 files changed, 236 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/ti-st/st_ll.c
- create mode 100644 drivers/staging/ti-st/st_ll.h
+If it helps, I can provide the PCI resource as a parent resource in my
+resources. Then, when mem_base is NULL, the mfd-core could do this:
 
-diff --git a/drivers/staging/ti-st/st_ll.c b/drivers/staging/ti-st/st_ll.c
-new file mode 100644
-index 0000000..5e42cbe
---- /dev/null
-+++ b/drivers/staging/ti-st/st_ll.c
-@@ -0,0 +1,169 @@
-+/*
-+ *  Shared Transport driver
-+ *	HCI-LL module responsible for TI proprietary HCI_LL protocol
-+ *  Copyright (C) 2009 Texas Instruments
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ */
-+
-+#include "st_ll.h"
-+
-+/* all debug macros go in here */
-+#define ST_LL_ERR(fmt, arg...)  printk(KERN_ERR "(stll):"fmt"\n" , ## arg)
-+#if defined(DEBUG)		/* limited debug messages */
-+#define ST_LL_DBG(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
-+#define ST_LL_VER(fmt, arg...)
-+#elif defined(VERBOSE)		/* very verbose */
-+#define ST_LL_DBG(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
-+#define ST_LL_VER(fmt, arg...)  printk(KERN_INFO "(stll):"fmt"\n" , ## arg)
-+#else /* error msgs only */
-+#define ST_LL_DBG(fmt, arg...)
-+#define ST_LL_VER(fmt, arg...)
-+#endif
-+
-+static struct ll_struct_s *ll;
-+
-+/**********************************************************************/
-+/* internal functions */
-+static void send_ll_cmd(unsigned char cmd)
-+{
-+
-+	ST_LL_DBG("%s: writing %x", __func__, cmd);
-+	st_int_write(&cmd, 1);
-+	return;
-+}
-+
-+static void ll_device_want_to_sleep(void)
-+{
-+	ST_LL_DBG("%s", __func__);
-+	/* sanity check */
-+	if (ll->ll_state != ST_LL_AWAKE)
-+		ST_LL_ERR("ERR hcill: ST_LL_GO_TO_SLEEP_IND"
-+			  "in state %ld", ll->ll_state);
-+
-+	send_ll_cmd(LL_SLEEP_ACK);
-+	/* update state */
-+	ll->ll_state = ST_LL_ASLEEP;
-+}
-+
-+static void ll_device_want_to_wakeup(void)
-+{
-+	/* diff actions in diff states */
-+	switch (ll->ll_state) {
-+	case ST_LL_ASLEEP:
-+		send_ll_cmd(LL_WAKE_UP_ACK);	/* send wake_ack */
-+		break;
-+	case ST_LL_ASLEEP_TO_AWAKE:
-+		/* duplicate wake_ind */
-+		ST_LL_ERR("duplicate wake_ind while waiting for Wake ack");
-+		break;
-+	case ST_LL_AWAKE:
-+		/* duplicate wake_ind */
-+		ST_LL_ERR("duplicate wake_ind already AWAKE");
-+		break;
-+	case ST_LL_AWAKE_TO_ASLEEP:
-+		/* duplicate wake_ind */
-+		ST_LL_ERR("duplicate wake_ind");
-+		break;
-+	}
-+	/* update state */
-+	ll->ll_state = ST_LL_AWAKE;
-+}
-+
-+/**********************************************************************/
-+/* functions invoked by ST Core */
-+
-+/* called when ST Core wants to
-+ * enable ST LL */
-+void st_ll_enable(void)
-+{
-+	ll->ll_state = ST_LL_AWAKE;
-+}
-+
-+/* called when ST Core /local module wants to
-+ * disable ST LL */
-+void st_ll_disable(void)
-+{
-+	ll->ll_state = ST_LL_INVALID;
-+}
-+
-+/* called when ST Core wants to update the state */
-+void st_ll_wakeup(void)
-+{
-+	if (likely(ll->ll_state != ST_LL_AWAKE)) {
-+		send_ll_cmd(LL_WAKE_UP_IND);	/* WAKE_IND */
-+		ll->ll_state = ST_LL_ASLEEP_TO_AWAKE;
-+	} else {
-+		/* don't send the duplicate wake_indication */
-+		ST_LL_ERR(" Chip already AWAKE ");
-+	}
-+}
-+
-+/* called when ST Core wants the state */
-+unsigned long st_ll_getstate(void)
-+{
-+	ST_LL_DBG(" returning state %ld", ll->ll_state);
-+	return ll->ll_state;
-+}
-+
-+/* called from ST Core, when a PM related packet arrives */
-+unsigned long st_ll_sleep_state(unsigned char cmd)
-+{
-+	switch (cmd) {
-+	case LL_SLEEP_IND:	/* sleep ind */
-+		ST_LL_DBG("sleep indication recvd");
-+		ll_device_want_to_sleep();
-+		break;
-+	case LL_SLEEP_ACK:	/* sleep ack */
-+		ST_LL_ERR("sleep ack rcvd: host shouldn't");
-+		break;
-+	case LL_WAKE_UP_IND:	/* wake ind */
-+		ST_LL_DBG("wake indication recvd");
-+		ll_device_want_to_wakeup();
-+		break;
-+	case LL_WAKE_UP_ACK:	/* wake ack */
-+		ST_LL_DBG("wake ack rcvd");
-+		ll->ll_state = ST_LL_AWAKE;
-+		break;
-+	default:
-+		ST_LL_ERR(" unknown input/state ");
-+		return ST_ERR_FAILURE;
-+	}
-+	return ST_SUCCESS;
-+}
-+
-+/* Called from ST CORE to initialize ST LL */
-+long st_ll_init(void)
-+{
-+	long err = ST_SUCCESS;
-+
-+	/* Allocate memory for ST LL private structure */
-+	ll = kzalloc(sizeof(*ll), GFP_ATOMIC);
-+	if (!ll) {
-+		ST_LL_ERR("kzalloc failed to alloc memory for ST LL");
-+		err = -ENOMEM;
-+		return err;
-+	}
-+	/* set state to invalid */
-+	ll->ll_state = ST_LL_INVALID;
-+	return err;
-+}
-+
-+/* Called from ST CORE to de-initialize ST LL */
-+long st_ll_deinit(void)
-+{
-+	kfree(ll);
-+	return 0;
-+}
-diff --git a/drivers/staging/ti-st/st_ll.h b/drivers/staging/ti-st/st_ll.h
-new file mode 100644
-index 0000000..fff88cb
---- /dev/null
-+++ b/drivers/staging/ti-st/st_ll.h
-@@ -0,0 +1,67 @@
-+/*
-+ *  Shared Transport Low Level (ST LL)
-+ *
-+ *  Copyright (C) 2009 Texas Instruments
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License
-+ *  along with this program; if not, write to the Free Software
-+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ *
-+ */
-+
-+#ifndef ST_LL_H
-+#define ST_LL_H
-+
-+#include <linux/skbuff.h>
-+#include "st.h"
-+#include "st_core.h"
-+
-+/* ST LL receiver states */
-+#define ST_W4_PACKET_TYPE       0
-+#define ST_BT_W4_EVENT_HDR      1
-+#define ST_BT_W4_ACL_HDR        2
-+#define ST_BT_W4_SCO_HDR        3
-+#define ST_BT_W4_DATA           4
-+#define ST_FM_W4_EVENT_HDR      5
-+#define ST_GPS_W4_EVENT_HDR	6
-+
-+/* ST LL state machines */
-+#define ST_LL_ASLEEP               0
-+#define ST_LL_ASLEEP_TO_AWAKE      1
-+#define ST_LL_AWAKE                2
-+#define ST_LL_AWAKE_TO_ASLEEP      3
-+#define ST_LL_INVALID		   4
-+
-+#define LL_SLEEP_IND	0x30
-+#define LL_SLEEP_ACK	0x31
-+#define LL_WAKE_UP_IND	0x32
-+#define LL_WAKE_UP_ACK	0x33
-+
-+/* ST LL private information */
-+struct ll_struct_s {
-+	unsigned long ll_state;	/* ST LL power state */
-+};
-+
-+/* initialize and de-init ST LL */
-+long st_ll_init(void);
-+long st_ll_deinit(void);
-+
-+/* enable/disable ST LL along with KIM start/stop
-+ * called by ST Core
-+ */
-+void st_ll_enable(void);
-+void st_ll_disable(void);
-+
-+unsigned long st_ll_getstate(void);
-+unsigned long st_ll_sleep_state(unsigned char);
-+void st_ll_wakeup(void);
-+#endif /* ST_LL_H */
--- 
-1.5.4.3
+res[r].parent = cell->resources[r].parent
 
+This is basically what I did in my patch. I used the PCI resource as the
+parent of all child resources. I don't know if that is safe, but it
+works. :)
+
+The mfd_add_device() function does this for IORESOURCE_IO resources. It
+only tries to be smart for IORESOURCE_MEM and IORESOURCE_IRQ resources.
+
+> 2) Your mfd_cell cells would have 3 resources, and you just need to set the
+> IORESOURCE_MEM ones at probe time, with pci->resource[n]->start + offset as
+> the start field.
+> 
+> Would that make sense to you ?
+> 
+
+Yep, that makes sense.
+
+> > > > +	/* Onboard configuration registers */
+> > > > +	priv->ctrl = pci_ioremap_bar(dev, 4);
+> > > Why 4 ?
+> > > 
+> > > 
+> > 
+> > Because that is how the device works ;) There is a comment up above that
+> > describes them as the "PLX control registers". Are you suggesting that I
+> > add a comment here too?
+> No, that's ok, I missed the comment.
+> 
+> > > > +#define PCI_VENDOR_ID_JANZ		0x13c3
+> > > That probably belongs to pci_ids.h
+> > > 
+> > 
+> > Should I add a patch to the series for this?
+> Either that or merge the pci_ids.h changes with this patch.
+> 
+
+I guess it is a trivial enough change to merge with this patch.
+
+I'll wait for your patch to the mfd-core API before making changes and
+sending out the next round of updates.
+
+Thanks for replying,
+Ira
