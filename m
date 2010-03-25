@@ -1,125 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752773Ab0CYJk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:40:56 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45062 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab0CYJky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:40:54 -0400
-Date: Thu, 25 Mar 2010 09:40:36 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 11/11] Do not compact within a preferred zone after a
-	compaction failure
-Message-ID: <20100325094035.GL2024@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-12-git-send-email-mel@csn.ul.ie> <20100324135347.7a9eb37b.akpm@linux-foundation.org>
+	id S1752835Ab0CYJmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:42:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59328 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab0CYJmO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 05:42:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=anuH+dpC6Yyf+cGvaREtCBA7/k+BO6MiuDHuwHnp1j/+ySdyEUphpqE6vo7av2Eps1
+         XbY/yt9jIzJMTFd46RpagmFgINQG2bdS53EXMNn/4nQy+wsiPt4fJQeznZL0DzU9eFeC
+         bYSRvbz+PzkxL4Ndpz/VDLvasxPnMScHrp8F4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100324135347.7a9eb37b.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <86802c441003200001v237617e8pc1294b673e9a7947@mail.gmail.com>
+References: <d311c6a81003180906i1b28b5c6k1c20d8bbb4c2fc37@mail.gmail.com>
+	 <86802c441003200001v237617e8pc1294b673e9a7947@mail.gmail.com>
+Date: Thu, 25 Mar 2010 09:42:13 +0000
+Message-ID: <d311c6a81003250242y5f625ba3i6e1c6946c9739111@mail.gmail.com>
+Subject: Re: Memory Loss
+From: Tomasz Grzegurzko <tomasz89@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 01:53:47PM -0700, Andrew Morton wrote:
-> On Tue, 23 Mar 2010 12:25:46 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > The fragmentation index may indicate that a failure it due to external
-> > fragmentation, a compaction run complete and an allocation failure still
-> > fail. There are two obvious reasons as to why
-> > 
-> >   o Page migration cannot move all pages so fragmentation remains
-> >   o A suitable page may exist but watermarks are not met
-> > 
-> > In the event of compaction and allocation failure, this patch prevents
-> > compaction happening for a short interval. It's only recorded on the
-> > preferred zone but that should be enough coverage. This could have been
-> > implemented similar to the zonelist_cache but the increased size of the
-> > zonelist did not appear to be justified.
-> > 
-> >
-> > ...
-> >
-> > +/* defer_compaction - Do not compact within a zone until a given time */
-> > +static inline void defer_compaction(struct zone *zone, unsigned long resume)
-> > +{
-> > +	/*
-> > +	 * This function is called when compaction fails to result in a page
-> > +	 * allocation success. This is somewhat unsatisfactory as the failure
-> > +	 * to compact has nothing to do with time and everything to do with
-> > +	 * the requested order, the number of free pages and watermarks. How
-> > +	 * to wait on that is more unclear, but the answer would apply to
-> > +	 * other areas where the VM waits based on time.
-> 
-> um.  "Two wrongs don't make a right".  We should fix the other sites,
-> not use them as excuses ;)
-> 
+Hi,
 
-Heh, one of those sites is currently in dispute. Specifically, the patch
-that replaces congestion_wait() with a waitqueue that is woken when
-watermarks are reached. I wrote that comment around about the same time
-that patch was being developed which is why I found the situation
-particularly unsatisfactory.
+On Sat, Mar 20, 2010 at 7:01 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Thu, Mar 18, 2010 at 9:06 AM, Tomasz Grzegurzko <tomasz89@gmail.com> wrote:
+>> Hi,
+>>
+>> I have a Dell PowerEdge 2900 reporting the loss of some memory at boot
+>> time. It runs Ubuntu Karmic kernel 2.6.31-19-server (internal name).
+>> The server is loaded with 42 GB of RAM but I get a little over 40GB,
+>> and the following message from dmesg after bootup accounting for the
+>> loss of RAM.
+>>
+>> [    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory,
+>> losing 1275MB of RAM.
+>> [    0.000000] ------------[ cut here ]------------
+>> [    0.000000] WARNING: at
+>> /build/buildd/linux-2.6.31/arch/x86/kernel/cpu/mtrr/cleanup.c:1091
+>> mtrr_trim_uncached_memory+0x2a6/0x2d1()
+>> [    0.000000] Hardware name: PowerEdge 2900
+>> [    0.000000] Modules linked in:
+>> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.31-19-server #56-Ubuntu
+>> [    0.000000] Call Trace:
+>> [    0.000000]  [<ffffffff8105e508>] warn_slowpath_common+0x78/0xb0
+>> [    0.000000]  [<ffffffff8105e54f>] warn_slowpath_null+0xf/0x20
+>> [    0.000000]  [<ffffffff8184150e>] mtrr_trim_uncached_memory+0x2a6/0x2d1
+>> [    0.000000]  [<ffffffff8183ccfa>] setup_arch+0x3d0/0x647
+>> [    0.000000]  [<ffffffff81524b0d>] ? printk+0x3c/0x3f
+>> [    0.000000]  [<ffffffff81837db3>] start_kernel+0xbe/0x35b
+>> [    0.000000]  [<ffffffff8183759a>] x86_64_start_reservations+0x125/0x129
+>> [    0.000000]  [<ffffffff81837698>] x86_64_start_kernel+0xfa/0x109
+>> [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
+>
+> because your BIOS doesn't set var mtrr correctly to cover all memory.
+> so kernel trim those memory.
+> otherwise system could be very slow when use those range.
+> [0x8000000, 0xd0000000)
+>
+> you can specify "disable_mtrr_trim" in your boot command line of
+> /boot/grub/menu.lst.
+>
+> then after boot, you could input that in command line after log on
+>
+> echo "base=0x80000000 size=0x40000000 type=write-back" > /proc/mtrr
+> echo "base=0xc0000000 size=0x10000000 type=write-back" > /proc/mtrr
+>
 
-> What _is_ a good measure of "time" in this code?  "number of pages
-> scanned" is a pretty good one in reclaim. 
 
-In this case, a strong possibility is number of pages freed since deferral.
-It's not perfect though because heavy memory pressure would mean those
-pages are getting allocated again and the compaction is still not going
-to succeed. I could use NR_FREE_PAGES to make a guess at how much has
-changed since and whether it's worth trying to compact again but even
-that is not perfect.
+I've given this a go, it seems to run fine (no slowness issues
+reported yet..). Memory available has gone up. I'll let it run for a
+few days and see how it goes..
 
-Lets say for example that compaction failed because the zone was mostly slab
-pages. If all those were freed and replaced with migratable pages then the
-counters would look similar but compaction will now succeed.  I could make
-some sort of guess based on number of free, anon and file pages in the zone but
-ultimately it would be hard to tell if the heuristic was any better than time.
+# free -m
+             total       used       free     shared    buffers     cached
+Mem:         42337      11397      30940          0         36       5520
+-/+ buffers/cache:       5840      36497
 
-I think this is only worth worrying about if a workload is found where
-compact_fail is rising rapidly.
+# cat /proc/mtrr
+reg00: base=0x000000000 (    0MB), size= 2048MB, count=1: write-back
+reg01: base=0x100000000 ( 4096MB), size= 4096MB, count=1: write-back
+reg02: base=0x200000000 ( 8192MB), size= 8192MB, count=1: write-back
+reg03: base=0x400000000 (16384MB), size=16384MB, count=1: write-back
+reg04: base=0x800000000 (32768MB), size=16384MB, count=1: write-back
+reg05: base=0x080000000 ( 2048MB), size= 1024MB, count=1: write-back
+reg06: base=0x0c0000000 ( 3072MB), size=  256MB, count=1: write-back
 
-> We want something which will
-> adapt itself to amount-of-memory, number-of-cpus, speed-of-cpus,
-> nature-of-workload, etc, etc.
-> 
-> Is it possible to come up with some simple metric which approximately
-> reflects how busy this code is, then pace ourselves via that?
-> 
-
-I think a simple metric would be based on free anon and file pages but
-I think we would need a workload that was hitting compact_fail to devise
-it properly.
-
-> > +	 */
-> > +	zone->compact_resume = resume;
-> > +}
-> > +
-> > +static inline int compaction_deferred(struct zone *zone)
-> > +{
-> > +	/* init once if necessary */
-> > +	if (unlikely(!zone->compact_resume)) {
-> > +		zone->compact_resume = jiffies;
-> > +		return 0;
-> > +	}
-> > +
-> > +	return time_before(jiffies, zone->compact_resume);
-> > +}
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards,
+Tomasz
