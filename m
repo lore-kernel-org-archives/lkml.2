@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab0CYBA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 21:00:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754323Ab0CYBA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 21:00:58 -0400
-Date: Wed, 24 Mar 2010 21:00:52 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Divyesh Shah <dpshah@google.com>
-Cc: jens.axboe@oracle.com, linux-kernel@vger.kernel.org, nauman@google.com,
-       ctalbott@google.com
-Subject: Re: [PATCH] cfq-iosched: Add additional blktrace log messages in
-	CFQ for easier debugging.
-Message-ID: <20100325010052.GB13225@redhat.com>
-References: <20100325001856.18289.83328.stgit@austin.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325001856.18289.83328.stgit@austin.mtv.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754485Ab0CYBBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:01:24 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34796 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754422Ab0CYBBW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 21:01:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 09:57:32 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+Message-Id: <20100325095732.107fe878.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100324134816.529778bd.akpm@linux-foundation.org>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
+	<1269347146-7461-11-git-send-email-mel@csn.ul.ie>
+	<20100324134816.529778bd.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 05:19:34PM -0700, Divyesh Shah wrote:
-> These extra logging messages have helped us debug some issues we've noticed in
-> earlier IO controller versions and should be useful now as well. The extra
-> logging covers:
-> - idling behavior. Since there are so many conditions based on which we decide
-> to idle or not, this patch adds a log message for some conditions that we've
-> found useful.
-> - workload slices and current prio and workload type
+On Wed, 24 Mar 2010 13:48:16 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Tue, 23 Mar 2010 12:25:45 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
+
+> > +	/*
+> > +	 * We will not stall if the necessary conditions are not met for
+> > +	 * migration but direct reclaim seems to account stalls similarly
+> > +	 */
+> > +	count_vm_event(COMPACTSTALL);
+> > +
+> > +	/* Compact each zone in the list */
+> > +	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
+> > +								nodemask) {
 > 
-> Signed-off-by: Divyesh Shah<dpshah@google.com>
-> ---
+> Will all of this code play nicely with memory hotplug?
 > 
->  block/cfq-iosched.c |   17 +++++++++++++++--
->  1 files changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index e6910dc..556124a 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1646,6 +1646,10 @@ static struct cfq_queue *cfq_set_active_queue(struct cfq_data *cfqd,
->  	if (!cfqq)
->  		cfqq = cfq_get_next_queue(cfqd);
->  
-> +	if (cfqq)
-> +		cfq_log_cfqq(cfqd, cfqq, "New timeslice for wl_prio:%d "
-> +				"wl_type:%d", cfqd->serving_prio,
-> +				cfqd->serving_type);
->  	__cfq_set_active_queue(cfqd, cfqq);
 
-Divyesh, __cfq_set_active_queue(), is already logging message
-"set_active". Why don't you simply extend that to also print prio and
-workload type of the queue service tree.
+If your concern is a race with memory hotplug, I have no concern about that
+because memory hotplug makes a range of pages as "not for use" before starting.
+If your concern is "code sharing", shared codes between memory hotplug and
+compaction is "migrate_pages()".
 
->  	return cfqq;
->  }
-> @@ -1789,7 +1793,11 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	 * Otherwise, we do only if they are the last ones
->  	 * in their service tree.
->  	 */
-> -	return service_tree->count == 1 && cfq_cfqq_sync(cfqq);
-> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-> +		return 1;
-> +	cfq_log_cfqq(cfqd, cfqq, "Not idling. queue_count:%d",
-> +			service_tree->count);
-> +	return 0;
+Other parts are independent from each other.
 
-Instead of queue_count, probably st->count=%d will be better.
+IIUC.
+Memory Hotremove does
 
-Rest of it looks ok to me.
+	1. select a range for removal [start ....end)
+	2. mark free pages as "not for use" by migrate_type
+	3. move all used pages to other range.
+	4. Finally, all pages in the range will be "not for use"
 
-Vivek
+Compaction does
+	1. select a target order
+	2. move some free pages to private list
+	3. move some used pages to pages in private list.
+        4. free pages.
 
->  }
->  
->  static void cfq_arm_slice_timer(struct cfq_data *cfqd)
-> @@ -1834,8 +1842,11 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
->  	 * time slice.
->  	 */
->  	if (sample_valid(cic->ttime_samples) &&
-> -	    (cfqq->slice_end - jiffies < cic->ttime_mean))
-> +	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
-> +		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
-> +				cic->ttime_mean);
->  		return;
-> +	}
->  
->  	cfq_mark_cfqq_wait_request(cfqq);
->  
-> @@ -2043,6 +2054,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
->  		slice = max(slice, 2 * cfqd->cfq_slice_idle);
->  
->  	slice = max_t(unsigned, slice, CFQ_MIN_TT);
-> +	cfq_log(cfqd, "workload slice:%d", slice);
->  	cfqd->workload_expires = jiffies + slice;
->  	cfqd->noidle_tree_requires_idle = false;
->  }
-> @@ -3309,6 +3321,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
->  		if (cfq_should_wait_busy(cfqd, cfqq)) {
->  			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
->  			cfq_mark_cfqq_wait_busy(cfqq);
-> +			cfq_log_cfqq(cfqd, cfqq, "will busy wait");
->  		}
->  
->  		/*
+So, techniques to isolate freed pages is different. 
+I think it's from their purpose.
+ 
+"freed pages" by compaction is
+	- for use
+	- a chunk of page from anywhere is ok.
+
+but "freed pages" by memory unplug is 
+	- not for use
+	- a chunk of page should be in specified range.
+
+For using memory hotplug's code for compaction, we have to specify
+"not for use" range. It will make low order compaction innefficient
+and it seems not easy to find the best range for compaction.
+
+For compaction, logic used in memory hotplug is too big hummer, I guess.
+
+Thanks,
+-Kame
+
