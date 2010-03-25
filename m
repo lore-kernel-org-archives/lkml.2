@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0CYAgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 20:36:09 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:56552 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960Ab0CYAgG (ORCPT
+	id S1754171Ab0CYAg6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 20:36:58 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58357 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab0CYAg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 20:36:06 -0400
-X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Mar 2010 20:36:06 EDT
-Content-return: prohibited
-Date: Thu, 25 Mar 2010 00:26:00 +0000 (GMT)
-From: GeunSik Lim <geunsik.lim@samsung.com>
-Subject: Re: Re: [PATCH] cpuset: Fix documentation punctuation
-To: Randy Dunlap <rdunlap@xenotime.net>, Greg Thelen <gthelen@google.com>
-Cc: Paul Menage <menage@google.com>, Jiri Kosina <jkosina@suse.cz>,
-       Nikanth Karthikesan <knikanth@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       =?windows-1252?Q?=3F=3F=3F?= <geunsik.lim@samsung.com>,
-       "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "trivial@kernel.org" <trivial@kernel.org>
-Reply-to: geunsik.lim@samsung.com
-Message-id: <692899.190181269476760403.JavaMail.weblogic@epml06>
-MIME-version: 1.0
-MIME-version: 1.0
-Content-type: text/plain; charset=windows-1252
-X-Priority: 3
-Msgkey: 20100325002419778@geunsik.lim
-X-MTR: 20100325002419778@geunsik.lim
-X-EPLocale: ko_KR.windows-1252
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 
-X-ParentMTR: 
+	Wed, 24 Mar 2010 20:36:56 -0400
+Date: Thu, 25 Mar 2010 01:36:52 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       linux-kernel@vger.kernel.org, jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near overflowing v2
+Message-ID: <20100325003652.GG20695@one.firstfloor.org>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o2P0aMmE000840
 
-> Fix cpusets.txt documentation punctuation. 
-> Signed-off-by: Greg Thelen <gthelen@google.com> 
-Nict catch. It seems good to me at least. :)
-Acked-by: Geunsik Lim <geunsik.lim@samsung.com>
- 
+On Thu, Mar 25, 2010 at 12:08:23AM +0100, Thomas Gleixner wrote:
+> On Wed, 24 Mar 2010, Thomas Gleixner wrote:
+> 
+> > On Wed, 24 Mar 2010, Andi Kleen wrote:
+> > 
+> > > Prevent nested interrupts when the IRQ stack is near overflowing v2
+> > > 
+> > > Interrupts can always nest when they don't run with IRQF_DISABLED.
+> > > 
+> > > When a lot of interrupts hit the same vector on the same
+> > > CPU nested interrupts can overflow the irq stack and cause hangs.
+> That's utter nonsense. An interrupt storm on the same vector does not
+> cause irq nesting. The irq code prevents reentering a handler and in
 
-------- Original Message -------
-Sender : Randy Dunlap<rdunlap@xenotime.net>
-Date : 2010-03-25 06:58 (GMT+09:00)
-Title : Re: [PATCH] cpuset: Fix documentation punctuation
+Sorry it's the same CPU, not the same vector.  Yes the reference
+to same vector was misleading.
 
-On 03/24/10 14:48, Greg Thelen wrote: 
-> Fix cpusets.txt documentation punctuation. 
->  
-> Signed-off-by: Greg Thelen <gthelen@google.com> 
-> --- 
->  Documentation/cgroups/cpusets.txt |   38 ++++++++++++++++++------------------ 
->  1 files changed, 19 insertions(+), 19 deletions(-) 
->  
-> diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt 
-> index 4160df8..51682ab 100644 
-> --- a/Documentation/cgroups/cpusets.txt 
-> +++ b/Documentation/cgroups/cpusets.txt 
+"
+Multiple vectors on a multi port NIC pointing to the same CPU, 
+all hitting the irq stack until it overflows.
+"
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net> 
+> case of MSI-X it just disables the IRQ when it comes again while the
+> first irq on that vector is still in progress. So the maximum nesting
+> is two up to handle_edge_irq() where it disables the IRQ and returns
+> right away.
 
-Jiri, would you merge this, please? 
+Real maximum nesting is all IRQs running with interrupts on pointing
+to the same CPU. Enough from multiple busy IRQ sources and you go boom.
 
-thanks, 
---  
-~Randy 
+-Andi
 
- 
-   
- 
- 
-  
- ---------------------------------------------------------------------------  
-GeunSik Lim, Embedded Linux Solution, OS Group, Software Lab, SAIT
-TEL : +82-31-280-9705  FAX : +82-31-280-9859  Cell : +82-10-2884-5450
-e-Mail   : 1) geunsik.lim@samsung.com   
-           2) leemgs@gmail.com , leemgs1@gmail.com 
-MSN      : invain@hanmail.net 
-ICQ      : 46455794
-gTalker  : leemgs@gamil.com , leemgs1@gmail.com
-HomePage:  http://intomail.dnip.net/invain/me/ 
-? If you continue to keep a dream, you come to realize.  - Goethe  
----------------------------------------------------------------------------
- 
- 
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+ak@linux.intel.com -- Speaking for myself only.
