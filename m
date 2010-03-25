@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab0CYMTD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 08:19:03 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:15000 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751133Ab0CYMTA (ORCPT
+	id S1753960Ab0CYMTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 08:19:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42353 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751365Ab0CYMTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 08:19:00 -0400
-Message-ID: <4BAB54B0.3080109@panasas.com>
-Date: Thu, 25 Mar 2010 14:18:56 +0200
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-CC: pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>	<4BAA4CAC.6060104@panasas.com>	<4BAA5035.1060906@panasas.com>	<4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk>	<20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com>
-In-Reply-To: <4BAB51F5.609@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Mar 2010 08:19:22 -0400
+Subject: Re: [RFC,PATCH 2/2] cputimers/proc:
+ do_task_stat()->thread_group_times() is racy and O(n) under ->siglock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Americo Wang <xiyou.wangcong@gmail.com>,
+       Balbir Singh <balbir@in.ibm.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Roland McGrath <roland@redhat.com>,
+       Spencer Candland <spencer@bluehost.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100325121250.GA3664@redhat.com>
+References: <20100324204554.GA31780@redhat.com>
+	 <1269464082.12097.3.camel@laptop>  <20100325121250.GA3664@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 13:19:17 +0100
+Message-ID: <1269519557.12097.69.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 12:18:59.0248 (UTC) FILETIME=[58F79300:01CACC15]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar. 25, 2010, 14:07 +0200, Benny Halevy <bhalevy@panasas.com> wrote:
-> On Mar. 25, 2010, 12:54 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
->> On Thu, Mar 25, 2010 at 10:12:31AM +0000, Al Viro wrote:
->>> On Thu, Mar 25, 2010 at 11:39:38AM +0200, Boaz Harrosh wrote:
->>>
->>>> It makes no difference, fails just the same. Would an "strace" help?
->>> It might, especially if you ran it for identical repositories on local
->>> fs and on NFS; at least that way it would be possible to see where do
->>> they diverge...
->> I wonder...  What happens if you add
->> 	if (error == -EISDIR)
->> 		printk("blah: %s", pathname);
->> right after do_lookup() call in do_last()?  That would separate -EISDIR
->> coming from NFS from the same thing coming from fs/namei.c...
+On Thu, 2010-03-25 at 13:12 +0100, Oleg Nesterov wrote:
+> > Right, so from what I remember the issue is that, yes top et al rely on
+> > that monotonicity,
 > 
-> Bingo.
-> It is returned from do_lookup.
+> Really?  So, do you think the change above will break user-space?
+> 
+> How sad :/ 
 
-Indeed this error is coming from the server:
+IIRC top can give very funny results if you break it hard enough, it
+likes to give 9999% cputime if the thing goes backwards over the sample
+interval.
 
-nfsd_dispatch: vers 4 proc 1                                                                            
-nfsv4 compound op #1/7: 22 (OP_PUTFH)                                                                   
-nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
-nfsv4 compound op ffff880076734078 opcnt 7 #1: 22: status 0                                             
-nfsv4 compound op #2/7: 32 (OP_SAVEFH)                                                                  
-nfsv4 compound op ffff880076734078 opcnt 7 #2: 32: status 0                                             
-nfsv4 compound op #3/7: 18 (OP_OPEN)                                                                    
-NFSD: nfsd4_open filename pack op_stateowner (null)                                                     
-renewing client (clientid 4bab503e/00000002)                                                            
-nfsd: nfsd_lookup(fh 16: 01010001 00000000 000e6592 345b9f25 00000000 00000000, pack)                   
-nfsd: fh_verify(16: 01010001 00000000 000e6592 345b9f25 00000000 00000000)                              
-nfsd: fh_compose(exp 08:05/106497 objects/pack, ino=943508)                                             
-nfsd: fh_verify(16: 01010001 00000000 000e6594 345b9f26 00000000 00000000)                              
-nfsv4 compound op ffff880076734078 opcnt 7 #3: 18: status 21                                            
-nfsv4 compound returned 21                                                                              
+But I'm not sure your race is large enough to ever show up like that, so
+it might all just work out, but in general it does tend to require
+monotonic times.
 
-> 
-> @@ -1648,6 +1654,8 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
->  	/* just plain open? */
->  	if (!(open_flag & O_CREAT)) {
->  		error = do_lookup(nd, &nd->last, path);
-> +		if (error == -EISDIR)
-> +			printk("%s: do_lookup returned -EISDIR %s\n", __func__, pathname);
->  		if (error)
->  			goto exit;
->  		error = -ENOENT;
-> 
-> 
->> _______________________________________________
->> pNFS mailing list
->> pNFS@linux-nfs.org
->> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
-> _______________________________________________
-> pNFS mailing list
-> pNFS@linux-nfs.org
-> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
