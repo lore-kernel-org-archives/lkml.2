@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0CYS1K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:27:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54164 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752315Ab0CYS1I (ORCPT
+	id S1753970Ab0CYS3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:29:09 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57988 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab0CYS3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:27:08 -0400
-Date: Thu, 25 Mar 2010 19:27:02 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       jesse.brandeburg@intel.com
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near overflowing v2
-Message-ID: <20100325182702.GR20695@one.firstfloor.org>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain> <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org> <20100325162737.GA5276@elte.hu>
+	Thu, 25 Mar 2010 14:29:07 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
+In-Reply-To: Your message of "Thu, 25 Mar 2010 13:19:29 +0300."
+             <4BAB38B1.8080404@ru.mvista.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20100324230729.GA21359@n2100.arm.linux.org.uk>
+            <4BAB38B1.8080404@ru.mvista.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325162737.GA5276@elte.hu>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: multipart/signed; boundary="==_Exmh_1269541561_3923P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 25 Mar 2010 14:26:01 -0400
+Message-ID: <9610.1269541561@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail: UCE(50)
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=50/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=bulk(0),
+	refid=str=0001.0A02020A.4BAB9D45.00E0,ss=3,sh,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I think the patch as posted solves a real problem, but also perpetuates a bad 
-> situation.
-> 
-> At minimum we should print a (one-time) warning that some badness occured. 
-> That would push us either in the direction of improving drivers, or towards 
-> improving the generic code.
+--==_Exmh_1269541561_3923P
+Content-Type: text/plain; charset=us-ascii
 
-What should a driver do to prevent that? I don't see what it could do
-short of castrating itself (like refusing to use multiple ports)
-As Linus says the driver doesn't know if setting IRQF_DISABLED is safe.
+On Thu, 25 Mar 2010 13:19:29 +0300, Sergei Shtylyov said:
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+>    I'd disagree in this case. Anybody will hardly grep for "mask: 
+> %s%s%s%s%s%sflags: %s%s%s%s%s%s".
+
+However,  egrep 'mask: .*flags: ' is quite plausible.
+
+--==_Exmh_1269541561_3923P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLq6q5cC3lWbTT17ARAhj0AKDLRN8K9V67SKHKiokHG2Knw/+l9gCfWm78
+Yy8mKyjThNBl8PkKR5tLh7c=
+=+F89
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1269541561_3923P--
+
