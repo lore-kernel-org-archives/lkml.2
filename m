@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0CYNGp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:06:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab0CYNGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:06:43 -0400
-Message-ID: <4BAB5FF1.7060106@redhat.com>
-Date: Thu, 25 Mar 2010 14:06:57 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc13 Thunderbird/3.0.1
+	id S1753176Ab0CYNHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:07:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60250 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab0CYNHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 09:07:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Date: Thu, 25 Mar 2010 14:06:10 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>
+References: <201003242240.54907.arnd@arndb.de> <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
+In-Reply-To: <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Giel van Schijndel <me@mortis.eu>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for F71808E
- and F71889
-References: <1269385936-3440-1-git-send-email-me@mortis.eu>	<1269385936-3440-2-git-send-email-me@mortis.eu>	<1269385936-3440-3-git-send-email-me@mortis.eu>	<1269385936-3440-4-git-send-email-me@mortis.eu>	<4BA9CF57.4030504@redhat.com>	<20100324093651.GG6368@salidar.me.mortis.eu>	<4BA9EA5C.9060506@redhat.com>	<20100324153550.GK6368@salidar.me.mortis.eu>	<20100324155151.2482952f@lxorguk.ukuu.org.uk>	<20100325085450.GA20126@salidar.me.mortis.eu>	<20100325104014.GC20126@salidar.me.mortis.eu> <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003251406.10177.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18QmkMt1FOUNb5kohZ3lrImlqloX5suNVEuyDX
+ EZxGf3JB7LzeNZLtw1sM3mMkHIVZ4ZT5ljf4Ys9g9nU3bZPPsT
+ W+T+H5XF1TLQmDxGsgCCA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Giel,
+On Thursday 25 March 2010, Jiri Kosina wrote:
+> On Wed, 24 Mar 2010, Arnd Bergmann wrote:
+> 
+> > I've spent some time continuing the work of the people on Cc and many others
+> > to remove the big kernel lock from Linux and I now have bkl-removal branch
+> > in my git tree at git://git.kernel.org/pub/scm/linux/kernel/git/arnd/playground.git
+> > that lets me run a kernel on my quad-core machine with the only users of the BKL
+> > being mostly obscure device driver modules.
+> 
+>         config USB
+>                 tristate "Support for Host-side USB"
+>                 depends on USB_ARCH_HAS_HCD && BKL
+> 
+> Well, that's very interesting definition of "obscure" :)
+> 
 
-On 03/25/2010 01:50 PM, Alan Cox wrote:
-> O>  Using Alan's patch and the one following the dashed line I can implement
->> (and have already done so) a separate watchdog driver for the Fintek
->> F71808E.
->>
->> Should I just ask for this patch to be applied together with Alan's?
->> Then submit the new driver? (I'm a bit new to the non-technical aspects
->> of Linux kernel development).
->
-> I'd expect to see a submission of three patches I think
->
-> 1. Patch adding the muxed resource support
-> 2. Patch making the hwmon driver use it
-> 3. Patch adding the new driver which needs it
->
-> and then we have a few other bits of code that probably should adopt it,
-> but that is a separate matter and other maintainers can do that bit.
->
+That's why I said /mostly/ obscure modules. There are soundcore, usb-core, drm,
+vfat and a few other very common ones, along with many obscure ones.
 
-What Alan said :)
-
-Although I'm not sure what the proper place is to post this entire set,
-I guess linux-kernel itself, with lm_sensors in the CC.
-
-Regards,
-
-Hans
+	Arnd
