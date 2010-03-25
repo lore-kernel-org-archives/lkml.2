@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab0CYKE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:04:58 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:39482 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab0CYKE4 (ORCPT
+	id S1753397Ab0CYKLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:11:42 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:28967 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750927Ab0CYKLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:04:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=SfCZWEfm3yVMpeyVbe712Qko//gZSUrQMeZ6KUCZ2j2IdiKKBefysHarpGu46xiNpO
-         A47jh6vsUVC/sL5W6Aq12hsj9zrbZp4+e9ZBF6qTv9TRKwlDj0j7Frk5dlTvzfj0+vtz
-         Gtf0g0mtLBZki+VDK2mPe2+mRmHKLB0E6p0mk=
-From: Andrea Gelmini <andrea.gelmini@gelma.net>
-To: linux-doc@vger.kernel.org
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
-       Steven Whitehouse <swhiteho@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>, cluster-devel@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] GFS2 docs update
-Date: Thu, 25 Mar 2010 11:04:49 +0100
-Message-Id: <1269511489-22000-1-git-send-email-andrea.gelmini@gelma.net>
-X-Mailer: git-send-email 1.7.0.3.296.g9776a
+	Thu, 25 Mar 2010 06:11:40 -0400
+Message-ID: <4BAB36D8.6010402@panasas.com>
+Date: Thu, 25 Mar 2010 12:11:36 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+CC: Boaz Harrosh <bharrosh@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       Al Viro <viro@ZenIV.linux.org.uk>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <4BAA3493.1030802@panasas.com>	<20100324160037.GP30031@ZenIV.linux.org.uk>	<4BAA3828.2070506@panasas.com>	<20100324160754.GQ30031@ZenIV.linux.org.uk>	<4BAA398C.5050901@panasas.com>	<20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>	<4BAA4CAC.6060104@panasas.com>  <4BAA5035.1060906@panasas.com>	<1269453756.5982.33.camel@localhost.localdomain> <1269454208.5982.34.camel@localhost.localdomain>
+In-Reply-To: <1269454208.5982.34.camel@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2010 10:11:39.0464 (UTC) FILETIME=[8F4D0C80:01CACC03]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now http://sources.redhat.com/cluster/ is redirected to
-http://sources.redhat.com/cluster/wiki/
+On Mar. 24, 2010, 20:10 +0200, Trond Myklebust <trond.myklebust@fys.uio.no> wrote:
+> On Wed, 2010-03-24 at 14:02 -0400, Trond Myklebust wrote: 
+>> I'd say you have a corruption issue either on the server side or on your
+>> client.
+> 
+> By the way. Does this issue happen with NFSv4 too, or is it only
+> NFSv4.1?
 
-Also fixed tabs in the end.
+I reproduced this both over v4 and v4.1 with ext3 exported on the server.
 
-Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
----
- Documentation/filesystems/gfs2.txt |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Benny
 
-diff --git a/Documentation/filesystems/gfs2.txt b/Documentation/filesystems/gfs2.txt
-index 5e3ab8f..0b59c02 100644
---- a/Documentation/filesystems/gfs2.txt
-+++ b/Documentation/filesystems/gfs2.txt
-@@ -1,7 +1,7 @@
- Global File System
- ------------------
- 
--http://sources.redhat.com/cluster/
-+http://sources.redhat.com/cluster/wiki/
- 
- GFS is a cluster file system. It allows a cluster of computers to
- simultaneously use a block device that is shared between them (with FC,
-@@ -36,11 +36,11 @@ GFS2 is not on-disk compatible with previous versions of GFS, but it
- is pretty close.
- 
- The following man pages can be found at the URL above:
--  fsck.gfs2	to repair a filesystem
--  gfs2_grow	to expand a filesystem online
--  gfs2_jadd	to add journals to a filesystem online
--  gfs2_tool	to manipulate, examine and tune a filesystem
-+  fsck.gfs2		to repair a filesystem
-+  gfs2_grow		to expand a filesystem online
-+  gfs2_jadd		to add journals to a filesystem online
-+  gfs2_tool		to manipulate, examine and tune a filesystem
-   gfs2_quota	to examine and change quota values in a filesystem
-   gfs2_convert	to convert a gfs filesystem to gfs2 in-place
-   mount.gfs2	to help mount(8) mount a filesystem
--  mkfs.gfs2	to make a filesystem
-+  mkfs.gfs2		to make a filesystem
--- 
-1.7.0.2.326.gd00f
-
+> 
+> Trond
+> 
+> _______________________________________________
+> pNFS mailing list
+> pNFS@linux-nfs.org
+> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
