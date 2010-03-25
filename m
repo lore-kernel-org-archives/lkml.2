@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab0CYFXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 01:23:41 -0400
-Received: from quartz.orcorp.ca ([139.142.54.143]:51928 "EHLO quartz.orcorp.ca"
+	id S1751618Ab0CYF2W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 01:28:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47955 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752315Ab0CYFXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 01:23:40 -0400
-Date: Wed, 24 Mar 2010 23:23:28 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Cc: tpmdd-devel@lists.sourceforge.net, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] [PATCH] TPM: Provide a tpm_tis OF driver
-Message-ID: <20100325052328.GB9769@obsidianresearch.com>
-References: <20100309200135.GF30462@obsidianresearch.com> <1269490841.12676.32.camel@blackbox.ibm.com>
+	id S1751099Ab0CYF2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 01:28:21 -0400
+Date: Thu, 25 Mar 2010 16:28:14 +1100
+From: Nick Piggin <npiggin@suse.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Nathan Fontenot <nfont@austin.ibm.com>
+Subject: Re: [PATCH 1/2] mm/vmalloc: Export purge_vmap_area_lazy()
+Message-ID: <20100325052814.GA7493@laptop.nomadix.com>
+References: <1269417391.8599.188.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269490841.12676.32.camel@blackbox.ibm.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <1269417391.8599.188.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 01:20:41AM -0300, Rajiv Andrade wrote:
-
-> Why not 
+On Wed, Mar 24, 2010 at 06:56:31PM +1100, Benjamin Herrenschmidt wrote:
+> Some powerpc code needs to ensure that all previous iounmap/vunmap has
+> really been flushed out of the MMU hash table. Without that, various
+> hotplug operations may fail when trying to return those pieces to
+> the hypervisor due to existing active mappings.
 > 
-> +#ifdef CONFIG_OF
-> +	return of_register_platform_driver(&tis_of_driver);
-> +#elif CONFIG_PNP
-> +	return pnp_register_driver(&tis_pnp_driver);
-> +#endif
-> 
-> ?
+> This exports purge_vmap_area_lazy() to allow the powerpc code to perform
+> that purge when unplugging devices.
 
-AFAIK they are not exclusive options? I can't imagine anyone building
-a kernel with both, but the rest of the patch is designed to allow
-both at once..
+You want vm_unmap_aliases(), which also flushes entries in the
+per-cpu vmap allocator (and is already exported for other code
+that has similar problems).
 
-> Acked-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Thanks,
+Nick
 
-Thanks - who can pick this up to feed it upstream?
-
-Jason
