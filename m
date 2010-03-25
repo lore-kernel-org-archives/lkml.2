@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab0CYK3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:29:49 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:46181 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753895Ab0CYK3r convert rfc822-to-8bit (ORCPT
+	id S1754032Ab0CYKbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:31:32 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:33146 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753898Ab0CYKba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:29:47 -0400
+	Thu, 25 Mar 2010 06:31:30 -0400
+Message-ID: <4BAB3B7F.1060008@panasas.com>
+Date: Thu, 25 Mar 2010 12:31:27 +0200
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-In-Reply-To: <20100325011753.GF5704@count0.beaverton.ibm.com>
-References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
-	 <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk>
-	 <20100323205342.GA19572@n2100.arm.linux.org.uk>
-	 <20100324020342.GB5704@count0.beaverton.ibm.com>
-	 <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu>
-	 <20100324140252.GC5704@count0.beaverton.ibm.com>
-	 <4BAA3586.1020604@cs.columbia.edu>
-	 <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com>
-	 <20100325011132.GE5704@count0.beaverton.ibm.com>
-	 <20100325011753.GF5704@count0.beaverton.ibm.com>
-Date: Thu, 25 Mar 2010 11:29:45 +0100
-Message-ID: <7d08b87d1003250329t589ba41er2f1127190be078cf@mail.gmail.com>
-Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
-From: Christoffer Dall <christofferdall@christofferdall.dk>
-To: Matt Helsley <matthltc@us.ibm.com>
-Cc: Oren Laadan <orenl@cs.columbia.edu>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       containers <containers@lists.linux-foundation.org>,
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: pNFS Mailing List <pnfs@linux-nfs.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
        linux-kernel <linux-kernel@vger.kernel.org>,
-       Roland McGrath <roland@redhat.com>
+       Doug Nazar <nazard.lkml@gmail.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <4BAA398C.5050901@panasas.com>	<20100324163948.GR30031@ZenIV.linux.org.uk>	<4BAA48A3.1030801@panasas.com>	<4BAA4CAC.6060104@panasas.com>	<4BAA5035.1060906@panasas.com>	<4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk> <4BAB3967.6000702@panasas.com>
+In-Reply-To: <4BAB3967.6000702@panasas.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Mar 2010 10:31:29.0972 (UTC) FILETIME=[54E62740:01CACC06]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 2:17 AM, Matt Helsley <matthltc@us.ibm.com> wrote:
-> On Wed, Mar 24, 2010 at 06:11:32PM -0700, Matt Helsley wrote:
->> On Wed, Mar 24, 2010 at 08:36:39PM +0100, Christoffer Dall wrote:
-> <snip>
->> > Re-using the assembly code or factoring it out so that it can be used
->> > from multiple places doesn't seem very pleasing to me, as the assembly
->> > code is in the critical path and written specifically for the context
->> > of a process entering the kernel. Please correct me if I'm wrong.
->> >
->> > I imagine simply a function in C, more or less re-implementing the
->> > logic that's already in entry-common.S, might do the trick. I wouldn't
->> > worry much about the performance in this case as it will not be used
->> > often. The following _untested_ snippet illustrates my idea:
->> >
->> > ---
->> >  arch/arm/include/asm/syscall.h |   93 +++++++++++++++++++++++++++++++++++++++-
->> >  1 files changed, 92 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
->> > index 3b3248f..a7f2615 100644
->> > --- a/arch/arm/include/asm/syscall.h
->> > +++ b/arch/arm/include/asm/syscall.h
->> > @@ -10,10 +10,101 @@
->> >  #ifndef _ASM_ARM_SYSCALLS_H
->> >  #define _ASM_ARM_SYSCALLS_H
->> >
->> > +static inline int get_swi_instruction(struct task_struct *task,
->> > +                                 struct pt_regs *regs,
->> > +                                 unsigned long *instr)
->> > +{
->> > +   struct page *page = NULL;
->> > +   unsigned long instr_addr;
->> > +   unsigned long *ptr;
->> > +   int ret;
->> > +
->> > +   instr_addr = regs->ARM_pc - 4;
->> > +
->> > +   down_read(&task->mm->mmap_sem);
->> > +   ret = get_user_pages(task, task->mm, instr_addr,
->> > +                        1, 0, 0, &page, NULL);
->> > +   up_read(&task->mm->mmap_sem);
->> > +
->> > +   if (ret < 0)
->> > +           return ret;
->> > +
->> > +   ptr = (unsigned long *)kmap_atomic(page, KM_USER1);
->> > +   memcpy(instr,
->> > +          ptr + (instr_addr >> PAGE_SHIFT),
->>                       ^shouldn't this be:
->>                     instr_addr & PAGE_MASK
->
-> Oops, made my own mistake. I think the address of the kmap'd instruction
-> would be:
->
->        ptr + (instr_addr & ~PAGE_MASK)
->
+On Mar. 25, 2010, 12:22 +0200, Benny Halevy <bhalevy@panasas.com> wrote:
+> On Mar. 25, 2010, 12:12 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
+>> On Thu, Mar 25, 2010 at 11:39:38AM +0200, Boaz Harrosh wrote:
+>>
+>>> It makes no difference, fails just the same. Would an "strace" help?
+>> It might, especially if you ran it for identical repositories on local
+>> fs and on NFS; at least that way it would be possible to see where do
+>> they diverge...
+>> _______________________________________________
+>> pNFS mailing list
+>> pNFS@linux-nfs.org
+>> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
+> 
+> ext3 fs exported on the server
+> client mount -t nfs4 localhost:/ /mnt/localhost
+> $ strace git status
+> ...
+> open(".git/objects/pack", O_RDONLY|O_NONBLOCK|O_DIRECTORY|0x80000) = -1 EISDIR (Is a directory)
 
-Yes. Thanks for pointing it out.
+FWIW, This could be timing related as retrying with nfs debugging on
+failed to reproduce the problem.
+
+Benny
+
+> _______________________________________________
+> pNFS mailing list
+> pNFS@linux-nfs.org
+> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
