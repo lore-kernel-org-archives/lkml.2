@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab0CYWhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:37:21 -0400
-Received: from mail.gmx.net ([213.165.64.20]:53180 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752159Ab0CYWhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 18:37:18 -0400
-X-Authenticated: #20450766
-X-Provags-ID: V01U2FsdGVkX19Y1egsKw9YgXYb63OJ87/re5KuMfDC2t9e/DeCx/
-	LoghIQvVhWEYOX
-Date: Thu, 25 Mar 2010 23:37:14 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: Dan Williams <dan.j.williams@intel.com>
-cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-       Maciej Sosnowski <maciej.sosnowski@intel.com>,
-       Nicolas Ferre <nicolas.ferre@atmel.com>, Pavel Machek <pavel@ucw.cz>,
-       Li Yang <leoli@freescale.com>, Paul Mundt <lethal@linux-sh.org>,
-       Ralf Baechle <ralf@linux-mips.org>,
-       Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
-       Magnus Damm <damm@opensource.se>, Liam Girdwood <lrg@slimlogic.co.uk>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Joe Perches <joe@perches.com>, Roland Dreier <rdreier@cisco.com>
-Subject: Re: [PATCH 2/2] DMAENGINE: generic channel status
-In-Reply-To: <e9c3a7c21003251500r27077cci67b1f06727be97f1@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1003252334190.4413@axis700.grange>
-References: <1269529381-16914-1-git-send-email-linus.walleij@stericsson.com>
-  <Pine.LNX.4.64.1003252146070.4413@axis700.grange>
- <e9c3a7c21003251500r27077cci67b1f06727be97f1@mail.gmail.com>
+	id S1752398Ab0CYWjh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:39:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14129 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751863Ab0CYWjg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 18:39:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=td1EyxXJHWn7mpMG4JtenqgFLZK0kA6p/VXAR5gQY0K+4DWZzTrwOlnca9UQ7RqXw
+	xbvoqefoscgv+iXfocrKA==
+Date: Thu, 25 Mar 2010 15:39:27 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [patch v2] x86: increase CONFIG_NODES_SHIFT max to 10
+In-Reply-To: <alpine.DEB.2.00.1003101537330.30724@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1003251538060.8589@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1003101537330.30724@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Y-GMX-Trusted: 0
-X-FuHaFi: 0.56999999999999995
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010, Dan Williams wrote:
+Some larger systems require more than 512 nodes, so increase the maximum
+CONFIG_NODES_SHIFT to 10 for a new max of 1024 nodes.
 
-> On Thu, Mar 25, 2010 at 1:58 PM, Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> wrote:
-> > On Thu, 25 Mar 2010, Linus Walleij wrote:
-> >
-> >> Convert the device_is_tx_complete() operation on the
-> >> DMA engine to a generic device_tx_status()operation which
-> >> can return three states, DMA_TX_RUNNING, DMA_TX_COMPLETE,
-> >> DMA_TX_PAUSED.
-> >>
-> [..]
-> > General: you converted all drivers to the new .device_tx_status() API, but
-> > since they don't implement "residue," you left it uninitialised
-> > everywhere. Wouldn't it be better to set it to 0 or total length,
-> > depending on the complete / not complete status?
-> 
-> Agree that it should not be uninitialized.  At the same time I do not
-> want to require drivers that don't need it to go through the hassle of
-> looking up a byte count, so perhaps all but the drivers that want this
-> support can return a 'max byte count'??
+This was tested with numa=fake=64M on systems with more than 64GB of RAM.
+A total of 1022 nodes were initialized.
 
-Why not assign one of the two - 0 if the transfer is complete (DMA_SUCCESS 
-status returned) or whatever max count otherwise? Except I do think this 
-might confuse some users - seeing a residue larger than the total transfer 
-length...
+Successfully builds with no additional warnings on x86_64 allyesconfig.
 
-Thanks
-Guennadi
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ The BUILD_BUG_ON() in drivers/base/node.c has been fixed in Linus' -git
+ (see 12ee3c0), so CONFIG_NODES_SHIFT of 10 no longer fails to compile for
+ x86_64 allyesconfig.
+
+ arch/x86/Kconfig |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1213,8 +1213,8 @@ config NUMA_EMU
+ 
+ config NODES_SHIFT
+ 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
+-	range 1 9
+-	default "9" if MAXSMP
++	range 1 10
++	default "10" if MAXSMP
+ 	default "6" if X86_64
+ 	default "4" if X86_NUMAQ
+ 	default "3"
