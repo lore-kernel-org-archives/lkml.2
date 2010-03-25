@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab0CYR25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 13:28:57 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:12392 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750938Ab0CYR2z (ORCPT
+	id S1753186Ab0CYR3L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 13:29:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58417 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab0CYR3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 13:28:55 -0400
-Message-ID: <4BAB9D53.4000909@panasas.com>
-Date: Thu, 25 Mar 2010 19:28:51 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Benny Halevy <bhalevy@panasas.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <20100325101231.GU30031@ZenIV.linux.org.uk> <20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com> <4BAB54B0.3080109@panasas.com> <20100325130610.GZ30031@ZenIV.linux.org.uk> <4BAB656E.8020204@panasas.com> <20100325133746.GA30031@ZenIV.linux.org.uk> <4BAB6911.5020009@panasas.com> <20100325140457.GB30031@ZenIV.linux.org.uk> <4BAB72C1.6090002@panasas.com> <20100325152505.GD30031@ZenIV.linux.org.uk>
-In-Reply-To: <20100325152505.GD30031@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Mar 2010 13:29:08 -0400
+Subject: Re: [PATCH 0/6] sched/cpusets fixes, more changes are needed
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
+       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100325161008.GA11724@redhat.com>
+References: <20100315090958.GA9116@redhat.com>
+	 <1269452296.5109.508.camel@twins> <20100324180912.GA21774@redhat.com>
+	 <1269512531.12097.67.camel@laptop> <20100325154616.GA9773@redhat.com>
+	 <20100325160243.GA11517@redhat.com>  <20100325161008.GA11724@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 18:29:02 +0100
+Message-ID: <1269538142.12097.87.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 17:28:54.0367 (UTC) FILETIME=[A4858EF0:01CACC40]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2010 05:25 PM, Al Viro wrote:
-> On Thu, Mar 25, 2010 at 04:27:13PM +0200, Boaz Harrosh wrote:
->  
->> And about the NFS thing, let misbehaving applications byte there own bullets.
->> But a good app like git, does put an O_DIRECTORY on the directory open, and
->> therefore will receive consistent results, right?
+On Thu, 2010-03-25 at 17:10 +0100, Oleg Nesterov wrote:
+> Argh, sorry for noise...
 > 
-> What the hell do you mean, "misbehaving"?  O_DIRECTORY means one thing:
-> "refuse to open if it turns out to be a non-directory".  If open() succeed
-> with it and fails without, it's a definite bug.  Application has every
-> right to call the damn thing without that flag.
+> On 03/25, Oleg Nesterov wrote:
+> >
+> > On 03/25, Oleg Nesterov wrote:
+> > >
+> > > I like the current idea to call select_task_rq() without rq->lock, but
+> > > of course this is up to you.
+> > >
+> > > However, once again, can't we make a simpler patch?
+> > >
+> > > 	- remove PF_STARTING from task_waking()
+> > > 	
+> > > 	- change sched_fork() to set RUNNING instead of WAKING
 > 
-
-Ha, OK, sorry I thought exactly the opposite. I assumed it meant
-"don't allow a directory to be opened, unless set". As an application
-hint of saying I'm going to do file things to this handle, don't want
-any dirs.
-
-So yes definitely it looks like an NFS bug masked by the fact that everyone
-is using opendir() form libc for this.
-
-> It *can* be used as a hint by fs code, and it's a useful hint, so yes,
-> we need to restore LOOKUP_DIRECTORY (until we get rid of the entire
-> d_revalidate/lookup+open mess and pass struct file + open flags directly
-> to fs method for the last step of pathname resolution; basically, most
-> of the do_last() guts would become that method, killing the intents
-> crap for good; new method would simply check for O_DIRECTORY presence
-> instead of looking at LOOKUP_DIRECTORY).
+> When I reread this thread, suddenly finally I noticed you mentioned
+> _twice_ your patch does this too ;) Not to mention the patch itself
+> which I misread. Sorry.
 > 
-> However, NFS behaviour in cases when O_DIRECTORY is absent is a separate
-> (and quite real) bug.  If nfs_atomic_lookup() sees -EISDIR from attempt
-> to open on server, it should either issue plain lookup or try to use the
-> information it got in response to open attempt (if there's enough of it
-> there).  Passing -EISDIR to ->lookup() caller is simply wrong.
+> > IOW, something like the (unchecked, uncompiled) patch below.
 > 
-> I'm going to send a fix for O_DIRECTORY case (restoring the behaviour
-> we had in 2.6.33) today, but NFS side of things also needs to be dealt
-> with.
+> Still, what do you think?
 
-Thank you Al for fixing this, I hope some capable NFS person will take
-that issue to heart.
+Yeah, such a smaller patch might work too, but I was trying to remove
+some more of the complexity we grown.
 
-Boaz
+Being able to fully remove that TASK_WAKING check from task_rq_lock()
+and only have it in set_cpus_allowed_ptr() would reduce some fast-path
+logic.
+
+You patch add a memory barrier and an unlock_wait(), which, while
+seemingly correct, are harder to parse than the modified locking.
+
+(Ideally we'd protect ->cpus_allowed using a per-task lock, but adding
+more atomics ops to ttwu() is to be avoided)
+
+(Now if I could manage to remove that lock-drop for the cgroup muck we'd
+be able to remove TASK_WAKING... but that looks like a long term goal)
+
+
