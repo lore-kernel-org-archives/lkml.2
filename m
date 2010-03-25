@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab0CYUCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:02:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64936 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180Ab0CYUCr (ORCPT
+	id S1754634Ab0CYUEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:04:43 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:41365 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab0CYUEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:02:47 -0400
-Message-ID: <4BABC184.2070401@vlnb.net>
-Date: Thu, 25 Mar 2010 23:03:16 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Thu, 25 Mar 2010 16:04:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=A9gktRAykM3mMEZJrf+9LyzM+RJHQMUstPKjjlp1lQ7fG2s7vqPnqkuXC9w31o0vGC
+         9BN52cwrTiPbOULKCeRjO7t/aa5IUGxbAbwIgkM7Z3sBLBya09+dE0nzpkm1vzj9CgIq
+         Utf92ysM3CnOODlJptNwbFHnh6Ugf/vcbySlU=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
+       jbarnes@virtuousgeek.org, bjorn.helgaas@hp.com, airlied@linux.ie
+Subject: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+Date: Thu, 25 Mar 2010 21:04:24 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Jens Axboe <jens.axboe@oracle.com>
-Subject: [PATCH]: Remove dead copy_io_context()
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1/ZDSh5kWrtBz+8p9GKRRpY18tj618FXXpRpdn
- MTMcZXB1d3sxPEq9ej3bsYWRLGAi/t0XwqwMRXKdLJhxRPVZj+
- Jb2yTW3rY7/GhGLAt0aSQ==
+Message-Id: <201003252104.24965.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since anticipatory IO scheduler was removed, copy_io_context() function
-isn't used anymore, so this patch removes it.
+Last known good: 2.6.33
+Failing kernels: 2.6.34-rc1 and 2.6.34-rc2
+Driver: Video(DRI - Intel)
 
-Signed-off-by: Vladislav Bolkhovitin <vst@vlnb.net>
----
- block/blk-ioc.c           |   14 --------------
- include/linux/iocontext.h |    1 -
- 2 files changed, 15 deletions(-)
 
-diff -upkr linux-2.6.33/block/blk-ioc.c linux-2.6.33/block/blk-ioc.c
---- linux-2.6.33/block/blk-ioc.c	2010-02-24 21:52:17.000000000 +0300
-+++ linux-2.6.33/block/blk-ioc.c	2010-03-25 22:49:30.000000000 +0300
-@@ -152,20 +152,6 @@ struct io_context *get_io_context(gfp_t 
- }
- EXPORT_SYMBOL(get_io_context);
- 
--void copy_io_context(struct io_context **pdst, struct io_context **psrc)
--{
--	struct io_context *src = *psrc;
--	struct io_context *dst = *pdst;
--
--	if (src) {
--		BUG_ON(atomic_long_read(&src->refcount) == 0);
--		atomic_long_inc(&src->refcount);
--		put_io_context(dst);
--		*pdst = src;
--	}
--}
--EXPORT_SYMBOL(copy_io_context);
--
- static int __init blk_ioc_init(void)
- {
- 	iocontext_cachep = kmem_cache_create("blkdev_ioc",
-diff -upkr linux-2.6.33/include/linux/iocontext.h linux-2.6.33/include/linux/iocontext.h
---- linux-2.6.33/include/linux/iocontext.h	2010-02-24 21:52:17.000000000 +0300
-+++ linux-2.6.33/include/linux/iocontext.h	2010-03-25 22:49:16.000000000 +0300
-@@ -77,7 +77,6 @@ int put_io_context(struct io_context *io
- void exit_io_context(struct task_struct *task);
- struct io_context *get_io_context(gfp_t gfp_flags, int node);
- struct io_context *alloc_io_context(gfp_t gfp_flags, int node);
--void copy_io_context(struct io_context **pdst, struct io_context **psrc);
- #else
- static inline void exit_io_context(struct task_struct *task)
- {
+When XWindow starts I got:
+Mar 25 19:58:10 gumis kernel: [  133.624028] [drm:i915_hangcheck_elapsed] 
+*ERROR* Hangcheck timer elapsed... GPU hung
+Mar 25 19:58:10 gumis kernel: [  133.624221] render error detected, EIR: 
+0x00000000
+Mar 25 19:58:10 gumis kernel: [  133.624291] [drm:i915_do_wait_request] 
+*ERROR* i915_do_wait_request returns -5 ( awaiting 691 at 682)
+Mar 25 19:58:11 gumis kdm[2592]: X server for display :0 terminated 
+unexpectedly
+
+after this only SysRq keys work.
+
+Similar problem (older kernels):
+https://bugzilla.kernel.org/show_bug.cgi?id=15004
+
+Workaround: setting i915.modeset=1 pci=nocrs OR i915.modeset=0
+
+Dmesg with i915.modeset=1 pci=nocrs:
+http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/dmesg2.6.34-rc2.txt
+
+Config:
+http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/config-2.6.34-rc2
+
+Syslog (i915.modeset=1 -- when hangs)):
+http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/syslog-2.6.34-rc2
+
+lspci:
+http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/lspci.txt
+
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
