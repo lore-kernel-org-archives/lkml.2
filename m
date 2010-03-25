@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398Ab0CYWjh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 18:39:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14129 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab0CYWjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 18:39:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=td1EyxXJHWn7mpMG4JtenqgFLZK0kA6p/VXAR5gQY0K+4DWZzTrwOlnca9UQ7RqXw
-	xbvoqefoscgv+iXfocrKA==
-Date: Thu, 25 Mar 2010 15:39:27 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch v2] x86: increase CONFIG_NODES_SHIFT max to 10
-In-Reply-To: <alpine.DEB.2.00.1003101537330.30724@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1003251538060.8589@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1003101537330.30724@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752558Ab0CYWlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 18:41:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51737 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751950Ab0CYWla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 18:41:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [RFC 12/15] PM / Hibernate: split snapshot_read_next
+Date: Thu, 25 Mar 2010 23:44:39 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: jirislaby@gmail.com, pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org,
+       Nigel Cunningham <ncunningham@crca.org.au>
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <1269361063-3341-12-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1269361063-3341-12-git-send-email-jslaby@suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003252344.39415.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some larger systems require more than 512 nodes, so increase the maximum
-CONFIG_NODES_SHIFT to 10 for a new max of 1024 nodes.
+On Tuesday 23 March 2010, Jiri Slaby wrote:
+> When writing the snapshot, do the initialization and header write in
+> a separate function. This makes the code more readable and lowers
+> complexity of snapshot_read_next.
 
-This was tested with numa=fake=64M on systems with more than 64GB of RAM.
-A total of 1022 nodes were initialized.
+Good idea overall, but ->
 
-Successfully builds with no additional warnings on x86_64 allyesconfig.
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Nigel Cunningham <ncunningham@crca.org.au>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> ---
+>  kernel/power/power.h    |    1 +
+>  kernel/power/snapshot.c |   63 +++++++++++++++++++++++++++++-----------------
+>  kernel/power/swap.c     |   14 +++-------
+>  3 files changed, 45 insertions(+), 33 deletions(-)
+> 
+> diff --git a/kernel/power/power.h b/kernel/power/power.h
+> index 50a888a..638a97c 100644
+> --- a/kernel/power/power.h
+> +++ b/kernel/power/power.h
+> @@ -130,6 +130,7 @@ struct sws_module_ops {
+>  
+>  extern unsigned int snapshot_additional_pages(struct zone *zone);
+>  extern unsigned long snapshot_get_image_size(void);
+> +extern int snapshot_write_init(struct snapshot_handle *handle);
+>  extern int snapshot_read_next(struct snapshot_handle *handle);
+>  extern int snapshot_write_next(struct snapshot_handle *handle);
+>  extern void snapshot_write_finalize(struct snapshot_handle *handle);
+> diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+> index 7918351..c8864de 100644
+> --- a/kernel/power/snapshot.c
+> +++ b/kernel/power/snapshot.c
+> @@ -1597,10 +1597,44 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+>  }
+>  
+>  /**
+> + *	snapshot_write_init - initialization before writing the snapshot to
+> + *	a backing storage
+> + *
+> + *	This function *must* be called before snapshot_read_next to initialize
+> + *	@handle and write a header.
+> + *
+> + *	@handle: snapshot handle to init
+> + */
+> +int snapshot_write_init(struct snapshot_handle *handle)
+> +{
+> +	int ret;
+> +
+> +	/* This makes the buffer be freed by swsusp_free() */
+> +	buffer = get_image_page(GFP_ATOMIC, PG_ANY);
+> +	if (!buffer)
+> +		return -ENOMEM;
+> +	init_header(buffer);
+> +	ret = sws_rw_buffer_init(1);
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- The BUILD_BUG_ON() in drivers/base/node.c has been fixed in Linus' -git
- (see 12ee3c0), so CONFIG_NODES_SHIFT of 10 no longer fails to compile for
- x86_64 allyesconfig.
+-> That's hardly readable.  You could define something like
+HIBERNATE_WRITING and HIBERNATE_READING and pass one of them instead of the '1'.
+Or something.
 
- arch/x86/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Likewise in a few places below.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1213,8 +1213,8 @@ config NUMA_EMU
- 
- config NODES_SHIFT
- 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
--	range 1 9
--	default "9" if MAXSMP
-+	range 1 10
-+	default "10" if MAXSMP
- 	default "6" if X86_64
- 	default "4" if X86_NUMAQ
- 	default "3"
+[Or even better IMO, define hibernate_write_buffer_init() and
+hibernate_read_buffer_init() etc.]
+
+> +	if (ret)
+> +		return ret;
+> +	ret = sws_rw_buffer(1, buffer, sizeof(struct swsusp_info));
+> +	if (ret)
+> +		goto finish;
+> +	sws_rw_buffer_finish(1);
+> +	memory_bm_position_reset(&orig_bm);
+> +	memory_bm_position_reset(&copy_bm);
+> +	handle->buffer = buffer;
+> +	return 0;
+> +finish:
+> +	sws_rw_buffer_finish(1);
+> +	return ret;
+> +}
+> +
+> +/**
+>   *	snapshot_read_next - used for reading the system memory snapshot.
+>   *
+> - *	On the first call to it @handle should point to a zeroed
+> - *	snapshot_handle structure.  The structure gets updated and a pointer
+> + *	Before calling this function, snapshot_write_init has to be called with
+> + *	handle passed as @handle here. The structure gets updated and a pointer
+>   *	to it should be passed to this function every next time.
+>   *
+>   *	On success the function returns a positive number.  Then, the caller
+
+Rafael
