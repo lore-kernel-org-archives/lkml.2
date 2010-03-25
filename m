@@ -1,1028 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753857Ab0CYKXn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:23:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62888 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753329Ab0CYKXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:23:40 -0400
-Message-ID: <4BAB39B9.7080600@cn.fujitsu.com>
-Date: Thu, 25 Mar 2010 18:23:53 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1753950Ab0CYK2A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:28:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:62570 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753258Ab0CYK15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:27:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Date: Thu, 25 Mar 2010 11:26:56 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
+       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
+       Ingo Molnar <mingo@elte.hu>
+References: <201003242240.54907.arnd@arndb.de> <20100324170704.7ef8b9c1.akpm@linux-foundation.org>
+In-Reply-To: <20100324170704.7ef8b9c1.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Paul Menage <menage@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-CC: Linux-Kernel <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH V2 4/4] cpuset,mm: update task's mems_allowed lazily
-References: <4B94CD2D.8070401@cn.fujitsu.com> <alpine.DEB.2.00.1003081330370.18502@chino.kir.corp.google.com> <4B95F802.9020308@cn.fujitsu.com> <20100311081548.GJ5812@laptop> <4B98C6DE.3060602@cn.fujitsu.com> <20100311110317.GL5812@laptop>
-In-Reply-To: <20100311110317.GL5812@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201003251126.56640.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19FMOtn7oWlKktIsfxdgYdlBPDUQlMK+ltCxvN
+ Lg1RYXSm4HWvQqKAGI5ixGLFXLQPYIR6PnPXU/EvutbFat6KF+
+ 9Pv3AmzVS8/QHBSHv/gBw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2010-3-11 19:03, Nick Piggin wrote:
-> Well... I do think seqlocks would be a bit simpler because they don't
-> require this checking and synchronizing of this patch.
+On Wednesday 24 March 2010, Andrew Morton wrote:
+> On Wed, 24 Mar 2010 22:40:54 +0100 Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > I've spent some time continuing the work of the people on Cc and many others
+> > to remove the big kernel lock from Linux
+> 
+> <looks inside ptrace.c>
+> 
+> Seems that there might be a few tricksy bits in here.  Please do push
+> at least the non-obvious parts out to the relevant people.
 
-Hi, Nick Piggin
+Sure, that is certainly the plan.
 
-I have made a new patch which uses seqlock to protect mems_allowed and mempolicy.
-please review it.
+Regarding the ptrace bits, this is one of a handful of places where the BKL
+was put in by someone a really long time ago but with the rest of the
+series applied, it becomes evident that there is nothing whatsoever that
+it serializes with, so removing the BKL here does not make the situation
+worse. It could still be a bug that needs to be fixed by adding a new
+serialization method no matter if the BKL is there or not.
 
-title: [PATCH -mmotm] cpuset,mm: use seqlock to protect task->mempolicy and mems_allowed
+> It'd be interesting to see the overall diffstat?
 
-Before applying this patch, cpuset updates task->mems_allowed by setting all
-new bits in the nodemask first, and clearing all old unallowed bits later.
-But in the way, the allocator can see an empty nodemask, though it is infrequent.
+Let me give you three separate diffstats. One is for the trivial pushdown of
+the BKL into all the ioctl and llseek functions as well as marking all
+remaining users as 'depends on BKL' in Kconfig, the second one is for the
+TTY layer conversion to the Big TTY Mutex and the third one is all the rest.
 
-The problem is following:
-The size of nodemask_t is greater than the size of long integer, so loading
-and storing of nodemask_t are not atomic operations. If task->mems_allowed
-don't intersect with new_mask, such as the first word of the mask is empty
-and only the first word of new_mask is not empty. When the allocator
-loads a word of the mask before
+	Arnd
 
-	current->mems_allowed |= new_mask;
-
-and then loads another word of the mask after
-
-	current->mems_allowed = new_mask;
-
-the allocator gets an empty nodemask.
-
-Besides that, if the size of nodemask_t is less than the size of long integer,
-there is another problem. when the kernel allocater invokes the following function,
-
-	struct zoneref *next_zones_zonelist(struct zoneref *z,
-						enum zone_type highest_zoneidx,
-						nodemask_t *nodes,
-						struct zone **zone)
-	{
-		/*
-		 * Find the next suitable zone to use for the allocation.
-		 * Only filter based on nodemask if it's set
-		 */
-		if (likely(nodes == NULL))
-			......
- 	       else
-			while (zonelist_zone_idx(z) > highest_zoneidx ||
-					(z->zone && !zref_in_nodemask(z, nodes)))
-				z++;
-
-		*zone = zonelist_zone(z);
-		return z;
-	}
-
-if we change nodemask between two calls of zref_in_nodemask(), such as
-	Task1						Task2
-	zref_in_nodemask(z = node0's z, nodes = 1-2)
-	zref_in_nodemask return 0
-							nodes = 0
-	zref_in_nodemask(z = node1's z, nodes = 0)
-	zref_in_nodemask return 0
-z will overflow.
-
-when the kernel allocater accesses task->mempolicy, there is the same problem. 
-
-The following method is used to fix these two problem.
-A seqlock is used to protect task's mempolicy and mems_allowed for configs where
-MAX_NUMNODES > BITS_PER_LONG, and when the kernel allocater accesses nodemask,
-it locks the seqlock and gets the copy of nodemask, then it passes the copy of
-nodemask to the memory allocating function.
-
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
 ---
- include/linux/cpuset.h    |   79 +++++++++++++++++++++++++--
- include/linux/init_task.h |    8 +++
- include/linux/sched.h     |   17 +++++--
- kernel/cpuset.c           |   94 +++++++++++++++++++++++++-------
- kernel/exit.c             |    4 ++
- kernel/fork.c             |    4 ++
- mm/hugetlb.c              |   22 +++++++-
- mm/mempolicy.c            |  133 ++++++++++++++++++++++++++++++++++-----------
- mm/slab.c                 |   24 +++++++-
- mm/slub.c                 |    9 +++-
- 10 files changed, 326 insertions(+), 68 deletions(-)
+Big TTY Mutex conversion:
+ drivers/char/Makefile           |    2 +
+ drivers/char/amiserial.c        |   16 ++--
+ drivers/char/cyclades.c         |   20 ++--
+ drivers/char/epca.c             |    4 +-
+ drivers/char/isicom.c           |   10 +-
+ drivers/char/istallion.c        |   20 ++--
+ drivers/char/mxser.c            |   10 +-
+ drivers/char/n_hdlc.c           |   16 ++--
+ drivers/char/n_r3964.c          |   10 +-
+ drivers/char/pty.c              |    8 +-
+ drivers/char/riscom8.c          |    8 +-
+ drivers/char/rocket.c           |    8 +-
+ drivers/char/serial167.c        |    4 +-
+ drivers/char/specialix.c        |   10 +-
+ drivers/char/stallion.c         |   12 ++--
+ drivers/char/sx.c               |   12 ++--
+ drivers/char/synclink.c         |   10 ++-
+ drivers/char/synclink_gt.c      |    8 +-
+ drivers/char/synclinkmp.c       |   12 ++--
+ drivers/char/tty_buffer.c       |    2 +-
+ drivers/char/tty_io.c           |  123 +++++++++++++++------------
+ drivers/char/tty_ioctl.c        |   36 ++++----
+ drivers/char/tty_ldisc.c        |   53 +++++++-----
+ drivers/char/tty_lock.c         |  100 ++++++++++++++++++++++
+ drivers/char/tty_port.c         |    6 +-
+ drivers/char/vc_screen.c        |    4 +-
+ drivers/char/vt.c               |    4 +-
+ drivers/char/vt_ioctl.c         |   12 ++--
+ drivers/isdn/i4l/isdn_common.c  |   20 ++--
+ drivers/isdn/i4l/isdn_tty.c     |    8 +-
+ drivers/net/irda/irtty-sir.c    |    5 +-
+ drivers/net/ppp_generic.c       |   29 +++---
+ drivers/serial/68360serial.c    |    4 +-
+ drivers/serial/crisv10.c        |    8 +-
+ drivers/serial/serial_core.c    |   42 +++++-----
+ drivers/staging/strip/strip.c   |    2 +-
+ drivers/usb/class/cdc-acm.c     |    2 +-
+ drivers/usb/serial/usb-serial.c |   18 ++--
+ drivers/video/console/vgacon.c  |    4 +-
+ include/linux/init_task.h       |    1 +
+ include/linux/sched.h           |    1 +
+ include/linux/tty.h             |  180 +++++++++++++++++++++++++++++++++++++++
+ kernel/fork.c                   |    1 +
 
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index a5740fc..e307f89 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -53,8 +53,8 @@ static inline int cpuset_zone_allowed_hardwall(struct zone *z, gfp_t gfp_mask)
- 	return cpuset_node_allowed_hardwall(zone_to_nid(z), gfp_mask);
- }
- 
--extern int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
--					  const struct task_struct *tsk2);
-+extern int cpuset_mems_allowed_intersects(struct task_struct *tsk1,
-+					  struct task_struct *tsk2);
- 
- #define cpuset_memory_pressure_bump() 				\
- 	do {							\
-@@ -90,9 +90,68 @@ extern void rebuild_sched_domains(void);
- 
- extern void cpuset_print_task_mems_allowed(struct task_struct *p);
- 
-+# if MAX_NUMNODES > BITS_PER_LONG
-+/*
-+ * Be used to protect task->mempolicy and mems_allowed when reading them for
-+ * page allocation.
-+ *
-+ * we don't care that the kernel page allocator allocate a page on a node in
-+ * the old mems_allowed, which isn't a big deal, especially since it was
-+ * previously allowed.
-+ *
-+ * We just worry whether the kernel page allocator gets an empty mems_allowed
-+ * or not. But
-+ *   if MAX_NUMNODES <= BITS_PER_LONG, loading/storing task->mems_allowed are
-+ *   atomic operations. So we needn't do anything to protect the loading of
-+ *   task->mems_allowed in fastpaths.
-+ *
-+ *   if MAX_NUMNODES > BITS_PER_LONG, loading/storing task->mems_allowed are
-+ *   not atomic operations. So we use a seqlock to protect the loading of
-+ *   task->mems_allowed in fastpaths.
-+ */
-+#define mems_fastpath_lock_irqsave(p, flags)				\
-+	({								\
-+		read_seqbegin_irqsave(&p->mems_seqlock, flags);		\
-+	})
-+
-+#define mems_fastpath_unlock_irqrestore(p, seq, flags)			\
-+	({								\
-+		read_seqretry_irqrestore(&p->mems_seqlock, seq, flags);	\
-+	})
-+
-+#define mems_slowpath_lock_irqsave(p, flags)				\
-+	do {								\
-+		write_seqlock_irqsave(&p->mems_seqlock, flags);		\
-+	} while (0)
-+
-+#define mems_slowpath_unlock_irqrestore(p, flags)			\
-+	do {								\
-+		write_sequnlock_irqrestore(&p->mems_seqlock, flags);	\
-+	} while (0)
-+# else
-+#define mems_fastpath_lock_irqsave(p, flags)		({ (void)(flags); 0; })
-+
-+#define mems_fastpath_unlock_irqrestore(p, flags)	({ (void)(flags); 0; })
-+
-+#define mems_slowpath_lock_irqsave(p, flags)			\
-+	do {							\
-+		task_lock(p);					\
-+		(void)(flags);					\
-+	} while (0)
-+
-+#define mems_slowpath_unlock_irqrestore(p, flags)		\
-+	do {							\
-+		task_unlock(p);					\
-+		(void)(flags);					\
-+	} while (0)
-+# endif
-+
- static inline void set_mems_allowed(nodemask_t nodemask)
- {
-+	unsigned long flags;
-+	mems_slowpath_lock_irqsave(current, flags);
- 	current->mems_allowed = nodemask;
-+	mems_slowpath_unlock_irqrestore(current, flags);
- }
- 
- #else /* !CONFIG_CPUSETS */
-@@ -144,8 +203,8 @@ static inline int cpuset_zone_allowed_hardwall(struct zone *z, gfp_t gfp_mask)
- 	return 1;
- }
- 
--static inline int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
--						 const struct task_struct *tsk2)
-+static inline int cpuset_mems_allowed_intersects(struct task_struct *tsk1,
-+						 struct task_struct *tsk2)
- {
- 	return 1;
- }
-@@ -193,6 +252,18 @@ static inline void set_mems_allowed(nodemask_t nodemask)
- {
- }
- 
-+#define mems_fastpath_lock_irqsave(p, flags)				\
-+	({ (void)(flags); 0; })
-+
-+#define mems_fastpath_unlock_irqrestore(p, seq, flags)			\
-+	({ (void)(flags); 0; })
-+
-+#define mems_slowpath_lock_irqsave(p, flags)				\
-+	do { (void)(flags); } while (0)
-+
-+#define mems_slowpath_unlock_irqrestore(p, flags)			\
-+	do { (void)(flags); } while (0)
-+
- #endif /* !CONFIG_CPUSETS */
- 
- #endif /* _LINUX_CPUSET_H */
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index 1ed6797..0394e20 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -102,6 +102,13 @@ extern struct cred init_cred;
- # define INIT_PERF_EVENTS(tsk)
- #endif
- 
-+#if defined(CONFIG_CPUSETS) && MAX_NUMNODES > BITS_PER_LONG
-+# define INIT_MEM_SEQLOCK(tsk)						\
-+	.mems_seqlock	= __SEQLOCK_UNLOCKED(tsk.mems_seqlock),
-+#else
-+# define INIT_MEM_SEQLOCK(tsk)
-+#endif
-+
- /*
-  *  INIT_TASK is used to set up the first task table, touch at
-  * your own risk!. Base=0, limit=0x1fffff (=2MB)
-@@ -171,6 +178,7 @@ extern struct cred init_cred;
- 	INIT_FTRACE_GRAPH						\
- 	INIT_TRACE_RECURSION						\
- 	INIT_TASK_RCU_PREEMPT(tsk)					\
-+	INIT_MEM_SEQLOCK(tsk)						\
- }
- 
- 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 84b8c22..1cf5fd3 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1356,8 +1356,9 @@ struct task_struct {
- /* Thread group tracking */
-    	u32 parent_exec_id;
-    	u32 self_exec_id;
--/* Protection of (de-)allocation: mm, files, fs, tty, keyrings, mems_allowed,
-- * mempolicy */
-+/* Protection of (de-)allocation: mm, files, fs, tty, keyrings.
-+ * if MAX_NUMNODES <= BITS_PER_LONG,it will protect mems_allowed and mempolicy.
-+ * Or we use other seqlock - mems_seqlock to protect them. */
- 	spinlock_t alloc_lock;
- 
- #ifdef CONFIG_GENERIC_HARDIRQS
-@@ -1425,7 +1426,13 @@ struct task_struct {
- 	cputime_t acct_timexpd;	/* stime + utime since last update */
- #endif
- #ifdef CONFIG_CPUSETS
--	nodemask_t mems_allowed;	/* Protected by alloc_lock */
-+# if MAX_NUMNODES > BITS_PER_LONG
-+	/* Protection of mems_allowed, and mempolicy */
-+	seqlock_t mems_seqlock;
-+# endif
-+	/* if MAX_NUMNODES <= BITS_PER_LONG, Protected by alloc_lock;
-+	 * else Protected by mems_seqlock */
-+	nodemask_t mems_allowed;
- 	int cpuset_mem_spread_rotor;
- #endif
- #ifdef CONFIG_CGROUPS
-@@ -1448,7 +1455,9 @@ struct task_struct {
- 	struct list_head perf_event_list;
- #endif
- #ifdef CONFIG_NUMA
--	struct mempolicy *mempolicy;	/* Protected by alloc_lock */
-+	/* if MAX_NUMNODES <= BITS_PER_LONG, Protected by alloc_lock;
-+	 * else Protected by mems_seqlock */
-+	struct mempolicy *mempolicy;
- 	short il_next;
- #endif
- 	atomic_t fs_excl;	/* holding fs exclusive resources */
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index d109467..8a658c5 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -198,12 +198,13 @@ static struct cpuset top_cpuset = {
-  * from one of the callbacks into the cpuset code from within
-  * __alloc_pages().
-  *
-- * If a task is only holding callback_mutex, then it has read-only
-- * access to cpusets.
-+ * If a task is only holding callback_mutex or cgroup_mutext, then it has
-+ * read-only access to cpusets.
-  *
-  * Now, the task_struct fields mems_allowed and mempolicy may be changed
-- * by other task, we use alloc_lock in the task_struct fields to protect
-- * them.
-+ * by other task, we use alloc_lock(if MAX_NUMNODES <= BITS_PER_LONG) or
-+ * mems_seqlock(if MAX_NUMNODES > BITS_PER_LONG) in the task_struct fields
-+ * to protect them.
-  *
-  * The cpuset_common_file_read() handlers only hold callback_mutex across
-  * small pieces of code, such as when reading out possibly multi-word
-@@ -920,6 +921,10 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
-  *    call to guarantee_online_mems(), as we know no one is changing
-  *    our task's cpuset.
-  *
-+ *    As the above comment said, no one can change current task's mems_allowed
-+ *    except itself. so we needn't hold lock to protect task's mems_allowed
-+ *    during this call.
-+ *
-  *    While the mm_struct we are migrating is typically from some
-  *    other task, the task_struct mems_allowed that we are hacking
-  *    is for our current task, which must allocate new pages for that
-@@ -947,15 +952,13 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
-  * we structure updates as setting all new allowed nodes, then clearing newly
-  * disallowed ones.
-  *
-- * Called with task's alloc_lock held
-+ * Called with mems_slowpath_lock held
-  */
- static void cpuset_change_task_nodemask(struct task_struct *tsk,
- 					nodemask_t *newmems)
- {
--	nodes_or(tsk->mems_allowed, tsk->mems_allowed, *newmems);
--	mpol_rebind_task(tsk, &tsk->mems_allowed);
--	mpol_rebind_task(tsk, newmems);
- 	tsk->mems_allowed = *newmems;
-+	mpol_rebind_task(tsk, newmems);
- }
- 
- /*
-@@ -970,6 +973,7 @@ static void cpuset_change_nodemask(struct task_struct *p,
- 	struct cpuset *cs;
- 	int migrate;
- 	const nodemask_t *oldmem = scan->data;
-+	unsigned long flags;
- 	NODEMASK_ALLOC(nodemask_t, newmems, GFP_KERNEL);
- 
- 	if (!newmems)
-@@ -978,9 +982,9 @@ static void cpuset_change_nodemask(struct task_struct *p,
- 	cs = cgroup_cs(scan->cg);
- 	guarantee_online_mems(cs, newmems);
- 
--	task_lock(p);
-+	mems_slowpath_lock_irqsave(p, flags);
- 	cpuset_change_task_nodemask(p, newmems);
--	task_unlock(p);
-+	mems_slowpath_unlock_irqrestore(p, flags);
- 
- 	NODEMASK_FREE(newmems);
- 
-@@ -1375,6 +1379,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- static void cpuset_attach_task(struct task_struct *tsk, nodemask_t *to,
- 			       struct cpuset *cs)
- {
-+	unsigned long flags;
- 	int err;
- 	/*
- 	 * can_attach beforehand should guarantee that this doesn't fail.
-@@ -1383,9 +1388,10 @@ static void cpuset_attach_task(struct task_struct *tsk, nodemask_t *to,
- 	err = set_cpus_allowed_ptr(tsk, cpus_attach);
- 	WARN_ON_ONCE(err);
- 
--	task_lock(tsk);
-+	mems_slowpath_lock_irqsave(tsk, flags);
- 	cpuset_change_task_nodemask(tsk, to);
--	task_unlock(tsk);
-+	mems_slowpath_unlock_irqrestore(tsk, flags);
-+
- 	cpuset_update_task_spread_flag(cs, tsk);
- 
- }
-@@ -2233,7 +2239,15 @@ nodemask_t cpuset_mems_allowed(struct task_struct *tsk)
-  */
- int cpuset_nodemask_valid_mems_allowed(nodemask_t *nodemask)
- {
--	return nodes_intersects(*nodemask, current->mems_allowed);
-+	unsigned long flags, seq;
-+	int retval;
-+
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, flags);
-+		retval = nodes_intersects(*nodemask, current->mems_allowed);
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, flags));
-+
-+	return retval;
- }
- 
- /*
-@@ -2314,11 +2328,18 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
- {
- 	const struct cpuset *cs;	/* current cpuset ancestors */
- 	int allowed;			/* is allocation in zone z allowed? */
-+	unsigned long flags, seq;
- 
- 	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
- 		return 1;
- 	might_sleep_if(!(gfp_mask & __GFP_HARDWALL));
--	if (node_isset(node, current->mems_allowed))
-+
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, flags);
-+		allowed = node_isset(node, current->mems_allowed);
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, flags));
-+
-+	if (allowed)
- 		return 1;
- 	/*
- 	 * Allow tasks that have access to memory reserves because they have
-@@ -2369,9 +2390,18 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
-  */
- int __cpuset_node_allowed_hardwall(int node, gfp_t gfp_mask)
- {
-+	int allowed;
-+	unsigned long flags, seq;
-+
- 	if (in_interrupt() || (gfp_mask & __GFP_THISNODE))
- 		return 1;
--	if (node_isset(node, current->mems_allowed))
-+
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, flags);
-+		allowed = node_isset(node, current->mems_allowed);
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, flags));
-+
-+	if (allowed)
- 		return 1;
- 	/*
- 	 * Allow tasks that have access to memory reserves because they have
-@@ -2438,10 +2468,18 @@ void cpuset_unlock(void)
- int cpuset_mem_spread_node(void)
- {
- 	int node;
-+	unsigned long flags, seq;
-+	/* Used for allocating memory, so can't use NODEMASK_ALLOC */
-+	nodemask_t nodes;
- 
--	node = next_node(current->cpuset_mem_spread_rotor, current->mems_allowed);
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, flags);
-+		nodes = current->mems_allowed;
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, flags));
-+
-+	node = next_node(current->cpuset_mem_spread_rotor, nodes);
- 	if (node == MAX_NUMNODES)
--		node = first_node(current->mems_allowed);
-+		node = first_node(nodes);
- 	current->cpuset_mem_spread_rotor = node;
- 	return node;
- }
-@@ -2458,10 +2496,26 @@ EXPORT_SYMBOL_GPL(cpuset_mem_spread_node);
-  * to the other.
-  **/
- 
--int cpuset_mems_allowed_intersects(const struct task_struct *tsk1,
--				   const struct task_struct *tsk2)
-+int cpuset_mems_allowed_intersects(struct task_struct *tsk1,
-+				   struct task_struct *tsk2)
- {
--	return nodes_intersects(tsk1->mems_allowed, tsk2->mems_allowed);
-+	unsigned long flags1, flags2;
-+	int retval;
-+	struct task_struct *tsk;
-+
-+	if (tsk1 > tsk2) {
-+		tsk = tsk1;
-+		tsk1 = tsk2;
-+		tsk2 = tsk;
-+	}
-+
-+	mems_slowpath_lock_irqsave(tsk1, flags1);
-+	mems_slowpath_lock_irqsave(tsk2, flags2);
-+	retval = nodes_intersects(tsk1->mems_allowed, tsk2->mems_allowed);
-+	mems_slowpath_unlock_irqrestore(tsk2, flags2);
-+	mems_slowpath_unlock_irqrestore(tsk1, flags1);
-+
-+	return retval;
- }
- 
- /**
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 7b012a0..cbf045d 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -16,6 +16,7 @@
- #include <linux/key.h>
- #include <linux/security.h>
- #include <linux/cpu.h>
-+#include <linux/cpuset.h>
- #include <linux/acct.h>
- #include <linux/tsacct_kern.h>
- #include <linux/file.h>
-@@ -649,6 +650,7 @@ static void exit_mm(struct task_struct * tsk)
- {
- 	struct mm_struct *mm = tsk->mm;
- 	struct core_state *core_state;
-+	unsigned long flags;
- 
- 	mm_release(tsk, mm);
- 	if (!mm)
-@@ -694,8 +696,10 @@ static void exit_mm(struct task_struct * tsk)
- 	/* We don't want this task to be frozen prematurely */
- 	clear_freeze_flag(tsk);
- #ifdef CONFIG_NUMA
-+	mems_slowpath_lock_irqsave(tsk, flags);
- 	mpol_put(tsk->mempolicy);
- 	tsk->mempolicy = NULL;
-+	mems_slowpath_unlock_irqrestore(tsk, flags);
- #endif
- 	task_unlock(tsk);
- 	mm_update_next_owner(mm);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index fe73f8d..591346a 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -32,6 +32,7 @@
- #include <linux/capability.h>
- #include <linux/cpu.h>
- #include <linux/cgroup.h>
-+#include <linux/cpuset.h>
- #include <linux/security.h>
- #include <linux/hugetlb.h>
- #include <linux/swap.h>
-@@ -1075,6 +1076,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	p->io_context = NULL;
- 	p->audit_context = NULL;
- 	cgroup_fork(p);
-+#if defined(CONFIG_CPUSETS) && MAX_NUMNODES > BITS_PER_LONG
-+	seqlock_init(&p->mems_seqlock);
-+#endif
- #ifdef CONFIG_NUMA
- 	p->mempolicy = mpol_dup(p->mempolicy);
-  	if (IS_ERR(p->mempolicy)) {
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 3a5aeb3..523f0f9 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -465,6 +465,8 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	struct page *page = NULL;
- 	struct mempolicy *mpol;
- 	nodemask_t *nodemask;
-+	nodemask_t tmp_mask;
-+	unsigned long seq, irqflag;
- 	struct zonelist *zonelist = huge_zonelist(vma, address,
- 					htlb_alloc_mask, &mpol, &nodemask);
- 	struct zone *zone;
-@@ -483,6 +485,15 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
- 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
- 		return NULL;
- 
-+	if (mpol == current->mempolicy) {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, irqflag);
-+			tmp_mask = *nodemask;
-+		} while (mems_fastpath_unlock_irqrestore(current,
-+								seq, irqflag));
-+		nodemask = &tmp_mask;
-+	}
-+
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						MAX_NR_ZONES - 1, nodemask) {
- 		nid = zone_to_nid(zone);
-@@ -1835,10 +1846,15 @@ __setup("default_hugepagesz=", hugetlb_default_setup);
- static unsigned int cpuset_mems_nr(unsigned int *array)
- {
- 	int node;
--	unsigned int nr = 0;
-+	unsigned int nr;
-+	unsigned long flags, seq;
- 
--	for_each_node_mask(node, cpuset_current_mems_allowed)
--		nr += array[node];
-+	do {
-+		nr = 0;
-+		seq = mems_fastpath_lock_irqsave(current, flags);
-+		for_each_node_mask(node, cpuset_current_mems_allowed)
-+			nr += array[node];
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, flags));
- 
- 	return nr;
- }
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index dd3f5c5..2a42e8c 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -187,8 +187,10 @@ static int mpol_new_bind(struct mempolicy *pol, const nodemask_t *nodes)
-  * parameter with respect to the policy mode and flags.  But, we need to
-  * handle an empty nodemask with MPOL_PREFERRED here.
-  *
-- * Must be called holding task's alloc_lock to protect task's mems_allowed
-- * and mempolicy.  May also be called holding the mmap_semaphore for write.
-+ * Must be called using
-+ *     mems_slowpath_lock_irqsave()/mems_slowpath_unlock_irqrestore()
-+ * to protect task's mems_allowed and mempolicy.  May also be called holding
-+ * the mmap_semaphore for write.
-  */
- static int mpol_set_nodemask(struct mempolicy *pol,
- 		     const nodemask_t *nodes, struct nodemask_scratch *nsc)
-@@ -344,9 +346,13 @@ static void mpol_rebind_policy(struct mempolicy *pol,
-  * Wrapper for mpol_rebind_policy() that just requires task
-  * pointer, and updates task mempolicy.
-  *
-- * Called with task's alloc_lock held.
-+ * if task->pol==NULL, it will return -1, and tell us it is unnecessary to
-+ * rebind task's mempolicy.
-+ *
-+ * Using
-+ *     mems_slowpath_lock_irqsave()/mems_slowpath_unlock_irqrestore()
-+ * to protect it.
-  */
--
- void mpol_rebind_task(struct task_struct *tsk, const nodemask_t *new)
- {
- 	mpol_rebind_policy(tsk->mempolicy, new);
-@@ -644,6 +650,7 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 	struct mempolicy *new, *old;
- 	struct mm_struct *mm = current->mm;
- 	NODEMASK_SCRATCH(scratch);
-+	unsigned long irqflags;
- 	int ret;
- 
- 	if (!scratch)
-@@ -662,10 +669,10 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 	 */
- 	if (mm)
- 		down_write(&mm->mmap_sem);
--	task_lock(current);
-+	mems_slowpath_lock_irqsave(current, irqflags);
- 	ret = mpol_set_nodemask(new, nodes, scratch);
- 	if (ret) {
--		task_unlock(current);
-+		mems_slowpath_unlock_irqrestore(current, irqflags);
- 		if (mm)
- 			up_write(&mm->mmap_sem);
- 		mpol_put(new);
-@@ -677,7 +684,7 @@ static long do_set_mempolicy(unsigned short mode, unsigned short flags,
- 	if (new && new->mode == MPOL_INTERLEAVE &&
- 	    nodes_weight(new->v.nodes))
- 		current->il_next = first_node(new->v.nodes);
--	task_unlock(current);
-+	mems_slowpath_unlock_irqrestore(current, irqflags);
- 	if (mm)
- 		up_write(&mm->mmap_sem);
- 
-@@ -691,7 +698,9 @@ out:
- /*
-  * Return nodemask for policy for get_mempolicy() query
-  *
-- * Called with task's alloc_lock held
-+ * Must be called using mems_slowpath_lock_irqsave()/
-+ * mems_slowpath_unlock_irqrestore() to
-+ * protect it.
-  */
- static void get_policy_nodemask(struct mempolicy *p, nodemask_t *nodes)
- {
-@@ -736,6 +745,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma = NULL;
- 	struct mempolicy *pol = current->mempolicy;
-+	unsigned long irqflags;
- 
- 	if (flags &
- 		~(unsigned long)(MPOL_F_NODE|MPOL_F_ADDR|MPOL_F_MEMS_ALLOWED))
-@@ -745,9 +755,10 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 		if (flags & (MPOL_F_NODE|MPOL_F_ADDR))
- 			return -EINVAL;
- 		*policy = 0;	/* just so it's initialized */
--		task_lock(current);
-+
-+		mems_slowpath_lock_irqsave(current, irqflags);
- 		*nmask  = cpuset_current_mems_allowed;
--		task_unlock(current);
-+		mems_slowpath_unlock_irqrestore(current, irqflags);
- 		return 0;
- 	}
- 
-@@ -803,13 +814,13 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 
- 	err = 0;
- 	if (nmask) {
-+		mems_slowpath_lock_irqsave(current, irqflags);
- 		if (mpol_store_user_nodemask(pol)) {
- 			*nmask = pol->w.user_nodemask;
- 		} else {
--			task_lock(current);
- 			get_policy_nodemask(pol, nmask);
--			task_unlock(current);
- 		}
-+		mems_slowpath_unlock_irqrestore(current, irqflags);
- 	}
- 
-  out:
-@@ -1008,6 +1019,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	struct mempolicy *new;
- 	unsigned long end;
- 	int err;
-+	unsigned long irqflags;
- 	LIST_HEAD(pagelist);
- 
- 	if (flags & ~(unsigned long)(MPOL_MF_STRICT |
-@@ -1055,9 +1067,9 @@ static long do_mbind(unsigned long start, unsigned long len,
- 		NODEMASK_SCRATCH(scratch);
- 		if (scratch) {
- 			down_write(&mm->mmap_sem);
--			task_lock(current);
-+			mems_slowpath_lock_irqsave(current, irqflags);
- 			err = mpol_set_nodemask(new, nmask, scratch);
--			task_unlock(current);
-+			mems_slowpath_unlock_irqrestore(current, irqflags);
- 			if (err)
- 				up_write(&mm->mmap_sem);
- 		} else
-@@ -1408,8 +1420,10 @@ static struct mempolicy *get_vma_policy(struct task_struct *task,
- 		} else if (vma->vm_policy)
- 			pol = vma->vm_policy;
- 	}
-+
- 	if (!pol)
- 		pol = &default_policy;
-+
- 	return pol;
- }
- 
-@@ -1574,16 +1588,29 @@ struct zonelist *huge_zonelist(struct vm_area_struct *vma, unsigned long addr,
- 				nodemask_t **nodemask)
- {
- 	struct zonelist *zl;
-+	struct mempolicy policy;
-+	struct mempolicy *pol;
-+	unsigned long seq, irqflag;
- 
- 	*mpol = get_vma_policy(current, vma, addr);
- 	*nodemask = NULL;	/* assume !MPOL_BIND */
- 
--	if (unlikely((*mpol)->mode == MPOL_INTERLEAVE)) {
--		zl = node_zonelist(interleave_nid(*mpol, vma, addr,
-+	pol = *mpol;
-+	if (pol == current->mempolicy) {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, irqflag);
-+			policy = *pol;
-+		} while (mems_fastpath_unlock_irqrestore(current,
-+								seq, irqflag));
-+		pol = &policy;
-+	}
-+
-+	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
-+		zl = node_zonelist(interleave_nid(pol, vma, addr,
- 				huge_page_shift(hstate_vma(vma))), gfp_flags);
- 	} else {
--		zl = policy_zonelist(gfp_flags, *mpol);
--		if ((*mpol)->mode == MPOL_BIND)
-+		zl = policy_zonelist(gfp_flags, pol);
-+		if (pol->mode == MPOL_BIND)
- 			*nodemask = &(*mpol)->v.nodes;
- 	}
- 	return zl;
-@@ -1609,11 +1636,14 @@ bool init_nodemask_of_mempolicy(nodemask_t *mask)
- {
- 	struct mempolicy *mempolicy;
- 	int nid;
-+	unsigned long irqflags;
- 
- 	if (!(mask && current->mempolicy))
- 		return false;
- 
-+	mems_slowpath_lock_irqsave(current, irqflags);
- 	mempolicy = current->mempolicy;
-+
- 	switch (mempolicy->mode) {
- 	case MPOL_PREFERRED:
- 		if (mempolicy->flags & MPOL_F_LOCAL)
-@@ -1633,6 +1663,8 @@ bool init_nodemask_of_mempolicy(nodemask_t *mask)
- 		BUG();
- 	}
- 
-+	mems_slowpath_unlock_irqrestore(current, irqflags);
-+
- 	return true;
- }
- #endif
-@@ -1722,7 +1754,18 @@ struct page *
- alloc_page_vma(gfp_t gfp, struct vm_area_struct *vma, unsigned long addr)
- {
- 	struct mempolicy *pol = get_vma_policy(current, vma, addr);
-+	struct mempolicy policy;
- 	struct zonelist *zl;
-+	struct page *page;
-+	unsigned long seq, iflags;
-+
-+	if (pol == current->mempolicy) {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, iflags);
-+			policy = *pol;
-+		} while (mems_fastpath_unlock_irqrestore(current, seq, iflags));
-+		pol = &policy;
-+	}
- 
- 	if (unlikely(pol->mode == MPOL_INTERLEAVE)) {
- 		unsigned nid;
-@@ -1736,15 +1779,16 @@ alloc_page_vma(gfp_t gfp, struct vm_area_struct *vma, unsigned long addr)
- 		/*
- 		 * slow path: ref counted shared policy
- 		 */
--		struct page *page =  __alloc_pages_nodemask(gfp, 0,
--						zl, policy_nodemask(gfp, pol));
-+		page =  __alloc_pages_nodemask(gfp, 0, zl,
-+					policy_nodemask(gfp, pol));
- 		__mpol_put(pol);
- 		return page;
- 	}
- 	/*
- 	 * fast path:  default or task policy
- 	 */
--	return __alloc_pages_nodemask(gfp, 0, zl, policy_nodemask(gfp, pol));
-+	page = __alloc_pages_nodemask(gfp, 0, zl, policy_nodemask(gfp, pol));
-+	return page;
- }
- 
- /**
-@@ -1761,26 +1805,37 @@ alloc_page_vma(gfp_t gfp, struct vm_area_struct *vma, unsigned long addr)
-  *	Allocate a page from the kernel page pool.  When not in
-  *	interrupt context and apply the current process NUMA policy.
-  *	Returns NULL when no page can be allocated.
-- *
-- *	Don't call cpuset_update_task_memory_state() unless
-- *	1) it's ok to take cpuset_sem (can WAIT), and
-- *	2) allocating for current task (not interrupt).
-  */
- struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- {
- 	struct mempolicy *pol = current->mempolicy;
-+	struct mempolicy policy;
-+	struct page *page;
-+	unsigned long seq, irqflags;
-+
- 
- 	if (!pol || in_interrupt() || (gfp & __GFP_THISNODE))
- 		pol = &default_policy;
--
-+	else {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, irqflags);
-+			policy = *pol;
-+		} while (mems_fastpath_unlock_irqrestore(current,
-+								seq, irqflags));
-+		pol = &policy;
-+	}
- 	/*
- 	 * No reference counting needed for current->mempolicy
- 	 * nor system default_policy
- 	 */
- 	if (pol->mode == MPOL_INTERLEAVE)
--		return alloc_page_interleave(gfp, order, interleave_nodes(pol));
--	return __alloc_pages_nodemask(gfp, order,
--			policy_zonelist(gfp, pol), policy_nodemask(gfp, pol));
-+		page = alloc_page_interleave(gfp, order, interleave_nodes(pol));
-+	else
-+		page =  __alloc_pages_nodemask(gfp, order,
-+					policy_zonelist(gfp, pol),
-+					policy_nodemask(gfp, pol));
-+
-+	return page;
- }
- EXPORT_SYMBOL(alloc_pages_current);
- 
-@@ -2026,6 +2081,7 @@ restart:
-  */
- void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
- {
-+	unsigned long irqflags;
- 	int ret;
- 
- 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
-@@ -2043,9 +2099,9 @@ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
- 		if (IS_ERR(new))
- 			goto put_free; /* no valid nodemask intersection */
- 
--		task_lock(current);
-+		mems_slowpath_lock_irqsave(current, irqflags);
- 		ret = mpol_set_nodemask(new, &mpol->w.user_nodemask, scratch);
--		task_unlock(current);
-+		mems_slowpath_unlock_irqrestore(current, irqflags);
- 		mpol_put(mpol);	/* drop our ref on sb mpol */
- 		if (ret)
- 			goto put_free;
-@@ -2200,6 +2256,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 	nodemask_t nodes;
- 	char *nodelist = strchr(str, ':');
- 	char *flags = strchr(str, '=');
-+	unsigned long irqflags;
- 	int err = 1;
- 
- 	if (nodelist) {
-@@ -2291,9 +2348,9 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
- 		int ret;
- 		NODEMASK_SCRATCH(scratch);
- 		if (scratch) {
--			task_lock(current);
-+			mems_slowpath_lock_irqsave(current, irqflags);
- 			ret = mpol_set_nodemask(new, &nodes, scratch);
--			task_unlock(current);
-+			mems_slowpath_unlock_irqrestore(current, irqflags);
- 		} else
- 			ret = -ENOMEM;
- 		NODEMASK_SCRATCH_FREE(scratch);
-@@ -2487,8 +2544,10 @@ int show_numa_map(struct seq_file *m, void *v)
- 	struct file *file = vma->vm_file;
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct mempolicy *pol;
-+	struct mempolicy policy;
- 	int n;
- 	char buffer[50];
-+	unsigned long iflags, seq;
- 
- 	if (!mm)
- 		return 0;
-@@ -2498,6 +2557,14 @@ int show_numa_map(struct seq_file *m, void *v)
- 		return 0;
- 
- 	pol = get_vma_policy(priv->task, vma, vma->vm_start);
-+	if (pol == current->mempolicy) {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, iflags);
-+			policy = *pol;
-+		} while (mems_fastpath_unlock_irqrestore(current, seq, iflags));
-+		pol = &policy;
-+	}
-+
- 	mpol_to_str(buffer, sizeof(buffer), pol, 0);
- 	mpol_cond_put(pol);
- 
-diff --git a/mm/slab.c b/mm/slab.c
-index 09f1572..18e84a9 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3282,14 +3282,24 @@ static inline void *____cache_alloc(struct kmem_cache *cachep, gfp_t flags)
- static void *alternate_node_alloc(struct kmem_cache *cachep, gfp_t flags)
- {
- 	int nid_alloc, nid_here;
-+	unsigned long lflags, seq;
-+	struct mempolicy mpol;
- 
- 	if (in_interrupt() || (flags & __GFP_THISNODE))
- 		return NULL;
-+
- 	nid_alloc = nid_here = numa_node_id();
- 	if (cpuset_do_slab_mem_spread() && (cachep->flags & SLAB_MEM_SPREAD))
- 		nid_alloc = cpuset_mem_spread_node();
--	else if (current->mempolicy)
--		nid_alloc = slab_node(current->mempolicy);
-+	else if (current->mempolicy) {
-+		do {
-+			seq = mems_fastpath_lock_irqsave(current, lflags);
-+			mpol = *(current->mempolicy);
-+		} while (mems_fastpath_unlock_irqrestore(current, seq, lflags));
-+
-+		nid_alloc = slab_node(&mpol);
-+	}
-+
- 	if (nid_alloc != nid_here)
- 		return ____cache_alloc_node(cachep, flags, nid_alloc);
- 	return NULL;
-@@ -3312,11 +3322,19 @@ static void *fallback_alloc(struct kmem_cache *cache, gfp_t flags)
- 	enum zone_type high_zoneidx = gfp_zone(flags);
- 	void *obj = NULL;
- 	int nid;
-+	unsigned long lflags, seq;
-+	struct mempolicy mpol;
- 
- 	if (flags & __GFP_THISNODE)
- 		return NULL;
- 
--	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, lflags);
-+		mpol = *(current->mempolicy);
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, lflags));
-+
-+	zonelist = node_zonelist(slab_node(&mpol), flags);
-+
- 	local_flags = flags & (GFP_CONSTRAINT_MASK|GFP_RECLAIM_MASK);
- 
- retry:
-diff --git a/mm/slub.c b/mm/slub.c
-index b364844..cd29f48 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1345,6 +1345,8 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags)
- 	struct zone *zone;
- 	enum zone_type high_zoneidx = gfp_zone(flags);
- 	struct page *page;
-+	unsigned long lflags, seq;
-+	struct mempolicy mpol;
- 
- 	/*
- 	 * The defrag ratio allows a configuration of the tradeoffs between
-@@ -1368,7 +1370,12 @@ static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags)
- 			get_cycles() % 1024 > s->remote_node_defrag_ratio)
- 		return NULL;
- 
--	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
-+	do {
-+		seq = mems_fastpath_lock_irqsave(current, lflags);
-+		mpol = *(current->mempolicy);
-+	} while (mems_fastpath_unlock_irqrestore(current, seq, lflags));
-+
-+	zonelist = node_zonelist(slab_node(&mpol), flags);
- 	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
- 		struct kmem_cache_node *n;
- 
--- 
-1.6.5.2
+
+ioctl/llseek pushdown, Kconfig: 
+ 43 files changed, 590 insertions(+), 275 deletions(-)
+ Documentation/DocBook/kernel-hacking.tmpl   |    2 +-
+ Documentation/filesystems/vfs.txt           |    3 +-
+ arch/arm/kernel/etm.c                       |    1 -
+ arch/cris/arch-v10/drivers/ds1302.c         |    3 -
+ arch/cris/arch-v10/drivers/gpio.c           |    2 -
+ arch/cris/arch-v10/drivers/i2c.c            |    2 -
+ arch/cris/arch-v10/drivers/pcf8563.c        |    3 -
+ arch/cris/arch-v10/drivers/sync_serial.c    |    4 +-
+ arch/cris/arch-v32/drivers/cryptocop.c      |    4 +-
+ arch/cris/arch-v32/drivers/i2c.c            |    2 -
+ arch/cris/arch-v32/drivers/mach-a3/gpio.c   |    2 -
+ arch/cris/arch-v32/drivers/mach-fs/gpio.c   |    2 -
+ arch/cris/arch-v32/drivers/pcf8563.c        |    5 +-
+ arch/cris/arch-v32/drivers/sync_serial.c    |    4 +-
+ arch/ia64/kernel/perfmon.c                  |    2 -
+ arch/ia64/sn/kernel/sn2/sn_hwperf.c         |    2 -
+ arch/m68k/bvme6000/rtc.c                    |    2 -
+ arch/m68k/mvme16x/rtc.c                     |    2 -
+ arch/powerpc/platforms/iseries/Kconfig      |    1 -
+ arch/s390/Kconfig                           |    1 -
+ arch/um/drivers/harddog_kern.c              |    2 -
+ arch/um/drivers/hostaudio_kern.c            |    3 -
+ arch/um/drivers/mmapper_kern.c              |    3 -
+ arch/x86/Kconfig                            |    3 +-
+ arch/x86/kvm/Kconfig                        |    1 -
+ drivers/block/DAC960.c                      |    3 +-
+ drivers/block/Kconfig                       |    6 +-
+ drivers/block/paride/pg.c                   |    2 -
+ drivers/block/paride/pt.c                   |    2 -
+ drivers/block/pktcdvd.c                     |    3 -
+ drivers/char/Kconfig                        |   25 +-
+ drivers/char/apm-emulation.c                |    2 -
+ drivers/char/applicom.c                     |    2 -
+ drivers/char/ds1302.c                       |    1 -
+ drivers/char/ds1620.c                       |    2 -
+ drivers/char/dtlk.c                         |    2 -
+ drivers/char/generic_nvram.c                |    2 -
+ drivers/char/genrtc.c                       |    2 -
+ drivers/char/i8k.c                          |    2 -
+ drivers/char/ip2/ip2main.c                  |    1 -
+ drivers/char/ipmi/Kconfig                   |    2 -
+ drivers/char/ipmi/ipmi_devintf.c            |    2 -
+ drivers/char/ipmi/ipmi_watchdog.c           |    2 -
+ drivers/char/istallion.c                    |    1 -
+ drivers/char/lp.c                           |    1 -
+ drivers/char/mmtimer.c                      |    1 -
+ drivers/char/nwflash.c                      |    1 -
+ drivers/char/pcmcia/Kconfig                 |    4 +-
+ drivers/char/raw.c                          |    4 -
+ drivers/char/rio/rio_linux.c                |    1 -
+ drivers/char/stallion.c                     |    1 -
+ drivers/char/sx.c                           |    1 -
+ drivers/char/uv_mmtimer.c                   |    1 -
+ drivers/char/viotape.c                      |    1 -
+ drivers/crypto/Kconfig                      |    2 +-
+ drivers/firewire/Kconfig                    |    1 -
+ drivers/firewire/core-cdev.c                |    2 -
+ drivers/gpu/drm/Kconfig                     |    5 +-
+ drivers/gpu/drm/i810/i810_dma.c             |    2 -
+ drivers/gpu/drm/i830/i830_dma.c             |    2 -
+ drivers/hid/Kconfig                         |    2 +-
+ drivers/hid/usbhid/Kconfig                  |    2 +-
+ drivers/hid/usbhid/hiddev.c                 |    3 +-
+ drivers/hwmon/Kconfig                       |    2 +-
+ drivers/hwmon/fschmd.c                      |    2 -
+ drivers/ide/Kconfig                         |    1 -
+ drivers/ide/ide-tape.c                      |    1 -
+ drivers/ieee1394/Kconfig                    |    6 +-
+ drivers/ieee1394/dv1394.c                   |    2 -
+ drivers/ieee1394/raw1394.c                  |    2 -
+ drivers/ieee1394/video1394.c                |    4 +-
+ drivers/infiniband/Kconfig                  |    6 +-
+ drivers/infiniband/core/ucm.c               |    2 -
+ drivers/infiniband/core/ucma.c              |    2 -
+ drivers/infiniband/core/user_mad.c          |    3 -
+ drivers/infiniband/core/uverbs_main.c       |   11 +-
+ drivers/input/joystick/Kconfig              |    2 +-
+ drivers/input/misc/Kconfig                  |   13 +-
+ drivers/input/misc/hp_sdc_rtc.c             |    2 -
+ drivers/input/misc/uinput.c                 |    1 -
+ drivers/input/mouse/Kconfig                 |    4 +-
+ drivers/input/serio/Kconfig                 |    1 -
+ drivers/input/tablet/Kconfig                |    8 +-
+ drivers/input/touchscreen/Kconfig           |    2 +-
+ drivers/isdn/Kconfig                        |    2 -
+ drivers/isdn/capi/Kconfig                   |    2 +-
+ drivers/isdn/capi/capi.c                    |    1 -
+ drivers/isdn/divert/divert_procfs.c         |    2 -
+ drivers/isdn/hardware/eicon/Kconfig         |    2 +-
+ drivers/isdn/hysdn/Kconfig                  |    2 +-
+ drivers/isdn/i4l/Kconfig                    |    1 -
+ drivers/isdn/i4l/isdn_common.c              |    1 -
+ drivers/isdn/mISDN/Kconfig                  |    1 -
+ drivers/isdn/mISDN/timerdev.c               |    3 -
+ drivers/macintosh/Kconfig                   |    7 +-
+ drivers/macintosh/ans-lcd.c                 |    2 -
+ drivers/macintosh/nvram.c                   |    2 -
+ drivers/macintosh/via-pmu.c                 |    2 -
+ drivers/media/Kconfig                       |    5 +-
+ drivers/media/dvb/bt8xx/Kconfig             |    2 +-
+ drivers/media/dvb/bt8xx/dst_ca.c            |    1 -
+ drivers/media/dvb/dvb-core/dmxdev.c         |    3 -
+ drivers/media/dvb/dvb-core/dvb_ca_en50221.c |    3 -
+ drivers/media/dvb/dvb-core/dvb_frontend.c   |    5 +-
+ drivers/media/dvb/dvb-core/dvb_net.c        |    3 -
+ drivers/media/dvb/firewire/Kconfig          |    2 +-
+ drivers/media/dvb/firewire/firedtv-ci.c     |    3 -
+ drivers/media/dvb/ttpci/Kconfig             |    2 +-
+ drivers/media/dvb/ttpci/av7110.c            |    3 -
+ drivers/media/dvb/ttpci/av7110_av.c         |    5 -
+ drivers/media/dvb/ttpci/av7110_ca.c         |    3 -
+ drivers/media/video/Kconfig                 |   13 +-
+ drivers/media/video/cpia.c                  |    2 -
+ drivers/media/video/v4l2-dev.c              |    2 -
+ drivers/message/fusion/Kconfig              |    2 +-
+ drivers/message/i2o/Kconfig                 |    2 +-
+ drivers/misc/Kconfig                        |    2 +-
+ drivers/mtd/Kconfig                         |    1 -
+ drivers/mtd/mtdchar.c                       |    1 -
+ drivers/mtd/ubi/Kconfig                     |    2 +-
+ drivers/mtd/ubi/cdev.c                      |    2 -
+ drivers/net/Kconfig                         |    1 -
+ drivers/net/appletalk/Kconfig               |    1 -
+ drivers/net/ppp_generic.c                   |    4 +-
+ drivers/net/wan/Kconfig                     |    2 +-
+ drivers/net/wireless/Kconfig                |    4 +-
+ drivers/net/wireless/airo.c                 |    9 -
+ drivers/net/wireless/ray_cs.c               |    3 -
+ drivers/pci/hotplug/Kconfig                 |    2 +-
+ drivers/pcmcia/Kconfig                      |    3 +-
+ drivers/platform/x86/Kconfig                |    1 -
+ drivers/pnp/isapnp/Kconfig                  |    2 +-
+ drivers/rtc/Kconfig                         |    1 -
+ drivers/rtc/rtc-m41t80.c                    |    1 -
+ drivers/s390/block/Kconfig                  |    2 +-
+ drivers/s390/char/Kconfig                   |    2 +-
+ drivers/s390/char/fs3270.c                  |    1 -
+ drivers/s390/char/tape_char.c               |    2 +-
+ drivers/s390/cio/chsc_sch.c                 |    2 -
+ drivers/s390/crypto/zcrypt_api.c            |    1 -
+ drivers/s390/scsi/zfcp_cfdc.c               |    2 -
+ drivers/sbus/char/envctrl.c                 |    1 -
+ drivers/sbus/char/openprom.c                |    1 -
+ drivers/scsi/3w-9xxx.c                      |    2 -
+ drivers/scsi/3w-sas.c                       |    2 -
+ drivers/scsi/3w-xxxx.c                      |    2 -
+ drivers/scsi/Kconfig                        |   28 +-
+ drivers/scsi/aacraid/linit.c                |    1 -
+ drivers/scsi/dpt_i2o.c                      |    2 -
+ drivers/scsi/gdth.c                         |    2 -
+ drivers/scsi/megaraid.c                     |    2 -
+ drivers/scsi/megaraid/Kconfig.megaraid      |    6 +-
+ drivers/scsi/megaraid/megaraid_mm.c         |    2 -
+ drivers/scsi/megaraid/megaraid_sas.c        |    1 -
+ drivers/scsi/mpt2sas/Kconfig                |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c          |    1 -
+ drivers/scsi/osd/Kconfig                    |    2 +-
+ drivers/scsi/osd/osd_uld.c                  |    2 -
+ drivers/scsi/osst.c                         |    2 -
+ drivers/scsi/pmcraid.c                      |    2 -
+ drivers/scsi/st.c                           |    1 -
+ drivers/spi/spidev.c                        |    2 -
+ drivers/staging/comedi/comedi_fops.c        |    2 -
+ drivers/staging/dream/pmem.c                |    3 -
+ drivers/staging/dream/qdsp5/audio_aac.c     |    2 -
+ drivers/staging/dream/qdsp5/audio_mp3.c     |    2 -
+ drivers/staging/poch/poch.c                 |    3 -
+ drivers/staging/sep/sep_driver.c            |    2 -
+ drivers/staging/vme/devices/vme_user.c      |    2 -
+ drivers/telephony/Kconfig                   |    2 +-
+ drivers/telephony/ixj.c                     |    1 -
+ drivers/usb/Kconfig                         |    2 +-
+ drivers/usb/class/Kconfig                   |    1 -
+ drivers/usb/class/usblp.c                   |    2 -
+ drivers/usb/gadget/Kconfig                  |    2 -
+ drivers/usb/gadget/printer.c                |    1 -
+ drivers/usb/host/Kconfig                    |    2 +-
+ drivers/usb/misc/Kconfig                    |    8 +-
+ drivers/usb/misc/idmouse.c                  |    2 -
+ drivers/usb/misc/iowarrior.c                |    1 -
+ drivers/usb/misc/rio500.c                   |    1 -
+ drivers/usb/misc/sisusbvga/Kconfig          |    2 +-
+ fs/adfs/Kconfig                             |    1 -
+ fs/afs/Kconfig                              |    1 -
+ fs/autofs/Kconfig                           |    1 -
+ fs/autofs/root.c                            |    1 -
+ fs/autofs4/Kconfig                          |    1 -
+ fs/autofs4/dev-ioctl.c                      |    2 -
+ fs/btrfs/super.c                            |    1 -
+ fs/coda/Kconfig                             |    1 -
+ fs/coda/pioctl.c                            |    3 -
+ fs/coda/psdev.c                             |    2 -
+ fs/ecryptfs/Kconfig                         |    1 -
+ fs/ecryptfs/file.c                          |    2 -
+ fs/ecryptfs/miscdev.c                       |    2 -
+ fs/fat/Kconfig                              |    3 -
+ fs/freevxfs/Kconfig                         |    1 -
+ fs/hfsplus/Kconfig                          |    1 -
+ fs/hfsplus/dir.c                            |    2 -
+ fs/hfsplus/inode.c                          |    2 -
+ fs/hpfs/Kconfig                             |    1 -
+ fs/ioctl.c                                  |   11 +-
+ fs/isofs/Kconfig                            |    1 -
+ fs/jffs2/Kconfig                            |    1 -
+ fs/ncpfs/Kconfig                            |    1 -
+ fs/ncpfs/dir.c                              |    2 -
+ fs/ncpfs/file.c                             |    1 -
+ fs/nfs/Kconfig                              |    2 +-
+ fs/nfsd/Kconfig                             |    1 -
+ fs/ocfs2/Kconfig                            |    1 -
+ fs/qnx4/Kconfig                             |    1 -
+ fs/read_write.c                             |   34 +
+ fs/reiserfs/Kconfig                         |    1 -
+ fs/smbfs/Kconfig                            |    1 -
+ fs/smbfs/dir.c                              |    2 -
+ fs/smbfs/file.c                             |    1 -
+ fs/squashfs/Kconfig                         |    1 -
+ fs/udf/Kconfig                              |    1 -
+ fs/udf/dir.c                                |    2 -
+ fs/udf/file.c                               |    1 -
+ fs/ufs/Kconfig                              |    2 +-
+ include/linux/fs.h                          |    5 +
+ kernel/power/Kconfig                        |    2 +-
+ lib/Kconfig.debug                           |    2 +-
+ lib/kernel_lock.c                           |   37 +-
+ net/bluetooth/hidp/Kconfig                  |    1 -
+ net/ipx/Kconfig                             |    1 -
+ net/irda/Kconfig                            |    2 +-
+ net/irda/irnet/Kconfig                      |    2 +-
+ net/socket.c                                |    1 -
+ net/sunrpc/Kconfig                          |    4 +-
+ net/wanrouter/Kconfig                       |    2 +-
+ net/x25/Kconfig                             |    2 +-
+ sound/Kconfig                               |    2 +-
+ sound/core/control.c                        |    2 -
+ sound/core/oss/pcm_oss.c                    |    2 -
+ sound/core/pcm_native.c                     |    2 -
+ sound/core/seq/seq_clientmgr.c              |    2 -
+ sound/oss/au1550_ac97.c                     |   30 +-
+ sound/oss/dmasound/dmasound_core.c          |    2 -
+ sound/oss/msnd_pinnacle.c                   |    2 -
+ sound/oss/sh_dac_audio.c                    |    3 -
+ sound/oss/swarm_cs4297a.c                   |    3 -
+ sound/oss/vwsnd.c                           |    2 -
+ sound/soc/soc-core.c                        |    2 -
+ virt/kvm/kvm_main.c                         |    1 -
+ 248 files changed, 190 insertions(+), 516 deletions(-)
+
+The rest:
+ arch/arm/lib/uaccess_with_memcpy.c         |    1 +
+ arch/x86/configs/x86_64_defconfig          |   29 +-
+ arch/x86/kernel/microcode_core.c           |    6 +-
+ block/bsg.c                                |    2 -
+ block/compat_ioctl.c                       |    8 +-
+ block/ioctl.c                              |   24 +-
+ drivers/block/DAC960.c                     |    4 +-
+ drivers/block/aoe/aoechr.c                 |    6 +-
+ drivers/block/cciss.c                      |    4 +-
+ drivers/block/paride/pg.c                  |    4 +-
+ drivers/block/paride/pt.c                  |   16 +-
+ drivers/char/briq_panel.c                  |    1 +
+ drivers/char/dsp56k.c                      |    1 +
+ drivers/char/hpet.c                        |   96 +++--
+ drivers/char/mwave/mwavedd.c               |    1 +
+ drivers/char/nvram.c                       |    7 +-
+ drivers/char/pcmcia/cm4000_cs.c            |    1 +
+ drivers/char/pcmcia/cm4040_cs.c            |    1 +
+ drivers/char/random.c                      |    2 +
+ drivers/char/snsc.c                        |    1 +
+ drivers/char/tlclk.c                       |    1 +
+ drivers/char/toshiba.c                     |    1 +
+ drivers/char/xilinx_hwicap/xilinx_hwicap.c |    1 +
+ drivers/gpu/vga/vgaarb.c                   |    4 +-
+ drivers/hid/hidraw.c                       |    1 +
+ drivers/input/serio/serio_raw.c            |    1 +
+ drivers/isdn/capi/capifs.c                 |   10 +-
+ drivers/md/dm-ioctl.c                      |    2 +
+ drivers/media/dvb/dvb-core/dvbdev.c        |    1 +
+ drivers/misc/phantom.c                     |    1 +
+ drivers/pci/proc.c                         |    4 +-
+ drivers/pcmcia/pcmcia_ioctl.c              |   23 +-
+ drivers/sbus/char/display7seg.c            |    1 +
+ drivers/sbus/char/jsflash.c                |   20 +-
+ drivers/scsi/aacraid/linit.c               |    1 +
+ drivers/scsi/ch.c                          |    1 +
+ drivers/scsi/sg.c                          |   22 +-
+ drivers/usb/core/file.c                    |    1 +
+ drivers/usb/core/inode.c                   |    5 +
+ drivers/usb/gadget/inode.c                 |   12 +-
+ drivers/usb/misc/usblcd.c                  |    1 +
+ drivers/usb/mon/mon_bin.c                  |   14 +-
+ drivers/watchdog/cpwd.c                    |    1 +
+ fs/adfs/super.c                            |    8 +-
+ fs/affs/super.c                            |   14 +-
+ fs/afs/super.c                             |    5 +
+ fs/autofs/root.c                           |   67 +++-
+ fs/autofs4/root.c                          |   69 +++-
+ fs/bad_inode.c                             |    4 +
+ fs/bfs/inode.c                             |    7 +-
+ fs/block_dev.c                             |   20 +-
+ fs/cifs/cifsfs.c                           |    9 +-
+ fs/coda/inode.c                            |    8 +-
+ fs/compat_ioctl.c                          |   43 +--
+ fs/ecryptfs/main.c                         |    4 +
+ fs/exec.c                                  |    6 -
+ fs/exofs/super.c                           |    1 -
+ fs/ext2/inode.c                            |    5 +-
+ fs/ext2/super.c                            |   58 ++-
+ fs/ext3/super.c                            |   12 -
+ fs/ext4/super.c                            |   11 -
+ fs/fat/dir.c                               |   11 +-
+ fs/fat/fat.h                               |    2 +-
+ fs/fat/file.c                              |   33 ++-
+ fs/fat/namei_msdos.c                       |    7 +-
+ fs/fat/namei_vfat.c                        |    7 +-
+ fs/freevxfs/vxfs_lookup.c                  |    1 +
+ fs/freevxfs/vxfs_super.c                   |    7 +-
+ fs/hfs/super.c                             |    6 +-
+ fs/hfsplus/super.c                         |    5 -
+ fs/hpfs/super.c                            |    8 +-
+ fs/hppfs/hppfs.c                           |    2 +-
+ fs/ioctl.c                                 |    2 +
+ fs/isofs/dir.c                             |    1 +
+ fs/isofs/inode.c                           |    8 +-
+ fs/jffs2/super.c                           |   11 +-
+ fs/jfs/super.c                             |   22 +-
+ fs/locks.c                                 |  110 +++--
+ fs/namespace.c                             |    2 -
+ fs/ncpfs/inode.c                           |    8 +-
+ fs/nfs/super.c                             |   24 +
+ fs/nilfs2/ioctl.c                          |    1 -
+ fs/nilfs2/super.c                          |   10 -
+ fs/ntfs/super.c                            |   24 +-
+ fs/ocfs2/stack_user.c                      |    1 +
+ fs/ocfs2/super.c                           |    5 +
+ fs/proc/base.c                             |   10 +-
+ fs/proc/inode.c                            |    8 +-
+ fs/qnx4/dir.c                              |    1 +
+ fs/qnx4/inode.c                            |    8 +-
+ fs/read_write.c                            |    8 +
+ fs/reiserfs/super.c                        |    4 +
+ fs/smbfs/inode.c                           |    5 +
+ fs/squashfs/super.c                        |    6 +
+ fs/super.c                                 |    3 -
+ fs/udf/super.c                             |    8 +-
+ fs/ufs/super.c                             |    5 +
+ include/linux/auto_fs.h                    |    1 +
+ include/linux/blkdev.h                     |    6 +
+ include/linux/ext2_fs_sb.h                 |    6 +
+ include/linux/fs.h                         |    2 +
+ include/linux/sched.h                      |    2 +
+ include/linux/smp_lock.h                   |   57 ++-
+ init/main.c                                |    5 -
+ kernel/cgroup.c                            |    4 -
+ kernel/perf_event.c                        |    2 +
+ kernel/ptrace.c                            |   10 -
+ kernel/sched.c                             |   17 +
+ kernel/trace/blktrace.c                    |   14 +-
+ kernel/trace/trace.c                       |    8 -
+ lib/Kconfig.debug                          |   17 +
+ lib/Makefile                               |    4 +
+ lib/kernel_lock.c                          |  104 +-----
+ lib/kernel_lock_core.c                     |  307 +++++++++++++
+ net/sunrpc/cache.c                         |   30 +-
+ net/sunrpc/rpc_pipe.c                      |    9 +-
+ sound/core/timer.c                         |    5 +-
+ sound/sound_core.c                         |    1 +
+ virt/kvm/kvm_main.c                        |    6 +
+ 120 files changed, 1156 insertions(+), 540 deletions(-)
 
