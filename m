@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0CYJMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:12:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58480 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab0CYJMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:12:13 -0400
-Date: Thu, 25 Mar 2010 10:12:10 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Greg Thelen <gthelen@google.com>, Paul Menage <menage@google.com>,
-       Nikanth Karthikesan <knikanth@suse.de>,
+	id S1753629Ab0CYJMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:12:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35116 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab0CYJMf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 05:12:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 18:08:46 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Geunsik Lim <geunsik.lim@samsung.com>, linux-doc@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpuset: Fix documentation punctuation
-In-Reply-To: <4BAA8B1D.6000705@xenotime.net>
-Message-ID: <alpine.LNX.2.00.1003251011490.4242@pobox.suse.cz>
-References: <1269467310-27685-1-git-send-email-gthelen@google.com> <4BAA8B1D.6000705@xenotime.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+Message-Id: <20100325180846.c6ded3ab.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100325180726.6C89.A69D9226@jp.fujitsu.com>
+References: <20100325083235.GF2024@csn.ul.ie>
+	<20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100325180726.6C89.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Mar 2010, Randy Dunlap wrote:
+On Thu, 25 Mar 2010 18:09:34 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-> On 03/24/10 14:48, Greg Thelen wrote:
-> > Fix cpusets.txt documentation punctuation.
+> > On Thu, 25 Mar 2010 08:32:35 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+
+> >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
 > > 
-> > Signed-off-by: Greg Thelen <gthelen@google.com>
-> > ---
-> >  Documentation/cgroups/cpusets.txt |   38 ++++++++++++++++++------------------
-> >  1 files changed, 19 insertions(+), 19 deletions(-)
+> >  But, this behavior of unmap_and_move() requires access to _freed_
+> >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
+> >  it't not good habit in general.
 > > 
-> > diff --git a/Documentation/cgroups/cpusets.txt b/Documentation/cgroups/cpusets.txt
-> > index 4160df8..51682ab 100644
-> > --- a/Documentation/cgroups/cpusets.txt
-> > +++ b/Documentation/cgroups/cpusets.txt
+> >  After direct compaction, page-migration will be one of "core" code of
+> >  memory management. Then, I agree to patch [1/11] as our direction for
+> >  keeping sanity and showing direction to more updates. Maybe adding
+> >  refcnt and removing RCU in futuer is good.
 > 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
+> is meaningless now. I agree you if we will remove SLAB_DESTROY_BY_RCU
+> in the future.
 > 
-> Jiri, would you merge this, please?
+removing rcu_read_lock/unlock in unmap_and_move() and removing
+SLAB_DESTROY_BY_RCU is different story.
 
-Yup, applied, thanks.
+Thanks,
+-Kame
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
