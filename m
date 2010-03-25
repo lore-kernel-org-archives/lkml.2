@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab0CYTSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 15:18:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab0CYTSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 15:18:01 -0400
-Date: Thu, 25 Mar 2010 20:15:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
-       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/6] sched/cpusets fixes, more changes are needed
-Message-ID: <20100325191554.GA19830@redhat.com>
-References: <20100315090958.GA9116@redhat.com> <1269452296.5109.508.camel@twins> <20100324180912.GA21774@redhat.com> <1269512531.12097.67.camel@laptop> <20100325154616.GA9773@redhat.com> <20100325160243.GA11517@redhat.com> <20100325161008.GA11724@redhat.com> <1269538142.12097.87.camel@laptop>
+	id S1754472Ab0CYT3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 15:29:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46367 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab0CYT3Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 15:29:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CwxajbJwdtJHk4ubJ/rNd52gUt3QZizHzBJCW8qAt6GDMn3hV11Cr0uoF75thyePU1
+         R2GdXNNHTMMXbBRxy/MM10lmB/uLCGBwgDJlIfoiReraosxdAoATjcaTEFHo6JbdT33X
+         jNLWUQKACgB6ZKEO3jR4j/IMs8fE2GSiNhAjs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269538142.12097.87.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
+References: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com>
+	 <g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
+Date: Thu, 25 Mar 2010 20:29:14 +0100
+Message-ID: <b2cc26e41003251229w5d266c18gd17fdcf404136bd7@mail.gmail.com>
+Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
+From: Olaf van der Spek <olafvdspek@gmail.com>
+To: drepper@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Peter Zijlstra wrote:
+On Wed, Mar 24, 2010 at 11:45 PM,  <drepper@gmail.com> wrote:
+> On Wed, Mar 24, 2010 at 15:37, Olaf van der Spek <olafvdspek@gmail.com>
+> wrote:
+>>
+>> Why not?
+>> It's an improvement IMO, although it could be better.
 >
-> Yeah, such a smaller patch might work too, but I was trying to remove
-> some more of the complexity we grown.
->
-> Being able to fully remove that TASK_WAKING check from task_rq_lock()
-> and only have it in set_cpus_allowed_ptr() would reduce some fast-path
-> logic.
+> It's blatantly wrong.  There is no dynamic linker.  ENOEXEC means the file
+> exists but is not of the right format.
 
-OK. Agreed.
+That sounds closer to the actual error than ENOENT.
 
-> You patch add a memory barrier and an unlock_wait(), which, while
-> seemingly correct, are harder to parse than the modified locking.
+ENOENT: The file filename or a script or ELF interpreter does not
+exist, or a shared library needed for file or interpreter cannot be
+found.
+ENOEXEC: An executable is not in a recognized format, is for the wrong
+architecture, or has some other format error that means it cannot be
+executed.
 
-Yes, lock + set WAKING + unlock is simpler and cleaner, but this
-doesn't matter.
+ENOENT shouldn't be overloaded like this, as it's common meaning is:
+file not found. So it shouldn't be returned if the argument to execve
+is actually found.
 
-I think your patch should address all problems.
-
-Oleg.
-
+Olaf
