@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754336Ab0CYAv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 20:51:29 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55651 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242Ab0CYAv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 20:51:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=q26zVN2w1u32YWLnRXcrgxaXBVTPC+d1/6h9RwWP5th5qQ6vkr6YMC63BJYfGBq9f1
-         jftuPR7UKjgV/Z0tl/IywVJW/QHdoIhVtHb4H+NgQrtBOhueSFKJr/JTcw+4h6GLZ+ou
-         1CIutmec4AB3+xLAI19SK69S/EZynjYRyoas4=
-Message-ID: <4BAAB38C.3070202@gmail.com>
-Date: Wed, 24 Mar 2010 18:51:24 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	id S1754386Ab0CYAwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 20:52:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18193 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754226Ab0CYAwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 20:52:39 -0400
+Date: Wed, 24 Mar 2010 20:52:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Ricky Benitez <rickyb@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Expose the statistics in blkio.time and blkio.sectors
+	for the root cgroup
+Message-ID: <20100325005228.GA13225@redhat.com>
+References: <1269473756-30327-1-git-send-email-rickyb@google.com>
 MIME-Version: 1.0
-To: turbolad995@yahoo.co.uk
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Major Linux sound bugs
-References: <4BAA6405.968.842BC@turbolad995.yahoo.co.uk>
-In-Reply-To: <4BAA6405.968.842BC@turbolad995.yahoo.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269473756-30327-1-git-send-email-rickyb@google.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 01:12 PM, turbolad995@yahoo.co.uk wrote:
-> Hi. I don't know who to contact about this, but nobody seems to know
-> how to fix this problem or where/why it's occurring.  Here's the
-> lowdown: in Linux distributions such as Ubuntu, some programs will
-> only work with sound when you close ALL other programs first. I've
-> mentioned this on Launchpad, but nobody seems to know why or how to
-> fix it.
->
-> Thank you for reading.
+On Wed, Mar 24, 2010 at 04:35:56PM -0700, Ricky Benitez wrote:
+> Currently, the io statistics for the root cgroup are maintained, but
+> they are not shown because the device information is not available at
+> the point that the root blkio cgroup is created. This patch updates
+> the device information when the statistics are updated so that the
+> statistics become visible.
+> 
 
-This isn't a kernel issue. Usually this is due to those programs 
-incorrectly accessing device-specific ALSA devices like "hw:0", etc. 
-rather than just using the "default" PCM device. Doing this bypasses 
-software mixing and requires exclusive access to the sound device.
+Ok, root group is created when request queue is being initialized and
+device information like major/minor number is not available. This is
+not the cleanest solution but can't think of something better right now.
+
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Thanks
+Vivek
+
+> Signed-off-by: Ricky Benitez <rickyb@google.com>
+> ---
+>  block/cfq-iosched.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index dee9d93..4a3579a 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -947,6 +947,11 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>  	unsigned int major, minor;
+>  
+>  	cfqg = cfqg_of_blkg(blkiocg_lookup_group(blkcg, key));
+> +	if (cfqg && !cfqg->blkg.dev && bdi->dev && dev_name(bdi->dev)) {
+> +		sscanf(dev_name(bdi->dev), "%u:%u", &major, &minor);
+> +		cfqg->blkg.dev = MKDEV(major, minor);
+> +		goto done;
+> +	}
+>  	if (cfqg || !create)
+>  		goto done;
+>  
+> -- 
+> 1.7.0.1
