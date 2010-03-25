@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab0CYSSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 14:18:40 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:60030 "EHLO mail-out1.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751754Ab0CYSSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 14:18:39 -0400
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Benny Halevy <bhalevy@panasas.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       pNFS Mailing List <pnfs@linux-nfs.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>
-In-Reply-To: <4BABA609.3060408@panasas.com>
-References: <20100325101231.GU30031@ZenIV.linux.org.uk>
-	 <20100325105406.GW30031@ZenIV.linux.org.uk> <4BAB51F5.609@panasas.com>
-	 <4BAB54B0.3080109@panasas.com> <20100325130610.GZ30031@ZenIV.linux.org.uk>
-	 <4BAB656E.8020204@panasas.com> <20100325133746.GA30031@ZenIV.linux.org.uk>
-	 <4BAB6911.5020009@panasas.com> <20100325140457.GB30031@ZenIV.linux.org.uk>
-	 <4BAB72C1.6090002@panasas.com> <20100325152505.GD30031@ZenIV.linux.org.uk>
-	 <4BAB9D53.4000909@panasas.com>
-	 <1269539981.3648.31.camel@localhost.localdomain>
-	 <4BABA609.3060408@panasas.com>
+	id S1753872Ab0CYSV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 14:21:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44231 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529Ab0CYSVZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 14:21:25 -0400
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       jesse.brandeburg@intel.com
+In-Reply-To: <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
+References: <20100324190150.GA18803@basil.fritz.box>
+	 <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain>
+	 <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
+	 <20100325003652.GG20695@one.firstfloor.org>
+	 <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+	 <20100325093744.GH20695@one.firstfloor.org>
+	 <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
+	 <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+	 <1269539254.12097.100.camel@laptop>
+	 <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Mar 2010 14:18:32 -0400
-Message-ID: <1269541112.3648.48.camel@localhost.localdomain>
+Date: Thu, 25 Mar 2010 19:21:22 +0100
+Message-ID: <1269541282.12097.106.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 13 msgs/h 2 sum rcpts/h 18 sum msgs/h 2 total rcpts 2651 max rcpts/h 27 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: F8A30514F3D25295310D414B2B3C18A40146E620
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 2 total 266 max/h 7 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 20:06 +0200, Boaz Harrosh wrote: 
-> On 03/25/2010 07:59 PM, Trond Myklebust wrote:
-> > Now to understand that screwed up xdr decode...
-> > 
-> 
-> Tell me if you need that I run any tests. I still have that
-> failing setup if you need it.
+On Thu, 2010-03-25 at 11:01 -0700, Linus Torvalds wrote:
+> Are there any cases around 
+> that still have busy-loop delays based on real-time in their irq handlers? 
+> I simply don't know. 
 
-Do you have a wireshark (binary) dump that includes that particular
-getattr call and reply? That would help.
+I recently found a few in drivers/net/ there's all kinds of funny stuff
+in there.. not sure how common the matching hardware is though.
 
-Trond
+One thing we could do is instrument jiffies to yell when its used from
+hardirq context and fix up these things.
+
+But yeah, there's funky hardware around, but I think we should provide
+more incentives to keep modern hardware drivers saner.
+
+
 
