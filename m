@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0CYJBG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:01:06 -0400
-Received: from mailout5.samsung.com ([203.254.224.35]:33953 "EHLO
-	mailout5.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab0CYJBD (ORCPT
+	id S1753612Ab0CYJGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:06:11 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35349 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab0CYJGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:01:03 -0400
-Date: Thu, 25 Mar 2010 18:01:00 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-In-reply-to: <20100325054430.165311fa@taxman.wild-wind.fr.eu.org>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: dan.j.williams@intel.com, linus.ml.walleij@gmail.com,
-       kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Message-id: <4BAB264C.2090502@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-References: <4BAAD5BB.7050101@samsung.com>
- <20100325054430.165311fa@taxman.wild-wind.fr.eu.org>
-X-OriginalArrivalTime: 25 Mar 2010 09:01:01.0010 (UTC)
- FILETIME=[B0FC4B20:01CACBF9]
+	Thu, 25 Mar 2010 05:06:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 18:02:21 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+Message-Id: <20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100325083235.GF2024@csn.ul.ie>
+References: <20100319152103.876F.A69D9226@jp.fujitsu.com>
+	<20100319085949.GQ12388@csn.ul.ie>
+	<20100325095349.944E.A69D9226@jp.fujitsu.com>
+	<20100325083235.GF2024@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/25/2010 2:44 PM, Marc Zyngier wrote:
-> On Thu, 25 Mar 2010 12:17:15 +0900
-> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
-> 
->> +/* instruction set functions */
->> +static inline int pl330_dmaaddh(u8 *desc_pool_virt, u16 imm, bool ra)
->> +{
->> +	u8 opcode = DMAADDH | (ra << 1);
->> +
->> +	writeb(opcode, desc_pool_virt++);
-> 
-> desc_pool_virt is a virtual address (from dma_alloc_coherent). In such
-> case, write[bwl] seems to be the wrong interface. I suggest the
-> following code:
-> 
-> 	*desc_pool_virt++ = opcode;
-> 
->> +	writew(imm, desc_pool_virt);
-> 
+On Thu, 25 Mar 2010 08:32:35 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-Right. The write[bwl] is api for address ioremapped of io device. I will
-change these.
-
-> Does anything ensure that this won't generate an unaligned access?
+> On Thu, Mar 25, 2010 at 11:49:23AM +0900, KOSAKI Motohiro wrote:
+> > > On Fri, Mar 19, 2010 at 03:21:41PM +0900, KOSAKI Motohiro wrote: 
+> > Hmmm...
+> > I haven't understand your mention because I guess I was wrong.
+> > 
+> > probably my last question was unclear. I mean,
+> > 
+> > 1) If we still need SLAB_DESTROY_BY_RCU, why do we need to add refcount?
+> >     Which difference is exist between normal page migration and compaction?
 > 
-
-PL330 DMA controller fetches variable length instructions that consist of
-one to six bytes, so i think unaligned access is no problem.
-
->> +	return 3;
->> +}
+> The processes typically calling migration today own the page they are moving
+> and is not going to exit unexpectedly during migration.
 > 
-> 	M.
+> > 2) If we added refcount, which race will solve?
+> > 
+> 
+> The process exiting and the last anon_vma being dropped while compaction
+> is running. This can be reliably triggered with compaction.
+> 
+> > IOW, Is this patch fix old issue or compaction specific issue?
+> > 
+> 
+> Strictly speaking, it's an old issue but in practice it's impossible to
+> trigger because the process migrating always owns the page. Compaction
+> moves pages belonging to arbitrary processes.
+> 
+Kosaki-san,
+
+ IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
+
+ But, this behavior of unmap_and_move() requires access to _freed_
+ objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
+ it't not good habit in general.
+
+ After direct compaction, page-migration will be one of "core" code of
+ memory management. Then, I agree to patch [1/11] as our direction for
+ keeping sanity and showing direction to more updates. Maybe adding
+ refcnt and removing RCU in futuer is good.
+
+ IMHO, pushing this patch [2/11] as "BUGFIX" independent of this set and
+ adding anon_vma->refcnt [1/11] and [3/11] in 1st Direct-compaction patch
+ series  to show the direction will makse sense.
+ (I think merging 1/11 and 3/11 will be okay...)
+
+Thanks,
+-Kame
+
 
