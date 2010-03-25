@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab0CYJyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:54:16 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57863 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab0CYJyO (ORCPT
+	id S1753170Ab0CYJy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:54:57 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54482 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab0CYJy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:54:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 25 Mar 2010 18:50:21 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
-Message-Id: <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100325094826.GM2024@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie>
-	<1269347146-7461-11-git-send-email-mel@csn.ul.ie>
-	<20100324101927.0d54f4ad.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100324114056.GE21147@csn.ul.ie>
-	<20100325093006.cd0361e6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100325094826.GM2024@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 25 Mar 2010 05:54:56 -0400
+Subject: Re: [BUG] perf: hard lockup when using perf-sched
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+In-Reply-To: <1269509241.8438.30.camel@marge.simson.net>
+References: <4BA082EC.8030101@cn.fujitsu.com>
+	 <4BA9A885.9050105@cn.fujitsu.com>
+	 <1269415964.6530.25.camel@marge.simson.net>
+	 <1269418671.6465.6.camel@marge.simson.net>
+	 <4BAB1924.4060304@cn.fujitsu.com>
+	 <1269509241.8438.30.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Mar 2010 10:54:52 +0100
+Message-ID: <1269510892.12097.41.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 09:48:26 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-> > In that case, compact_finished() can't
-> > find there is a free chunk and do more work.  How about using a function like
-> > 	 free_pcppages_bulk(zone, pcp->batch, pcp);
-> > to bypass pcp list and freeing pages at once ?
+On Thu, 2010-03-25 at 10:27 +0100, Mike Galbraith wrote:
+> On Thu, 2010-03-25 at 16:04 +0800, Li Zefan wrote:
+> > Mike Galbraith wrote:
+> > > On Wed, 2010-03-24 at 08:32 +0100, Mike Galbraith wrote:
+> > > 
+> > >> I just saw this, hunted down your testcase and tried it here.  Looks
+> > >> like perf_output_lock() wedged box.
+> > > 
+> > > (turns on frame pointers, and adds noinline)
+> > > 
 > > 
+> > Thanks! Then who's going to fix this...
 > 
-> I think you mean to drain the PCP lists while compaction is happening
-> but is it justified? It's potentially a lot of IPI calls just to check
-> if compaction can finish a little earlier. If the pages on the PCP lists
-> are making that much of a difference to high-order page availability, it
-> implies that the zone is pretty full and it's likely that compaction was
-> avoided and we direct reclaimed.
+> Well, that kinda depends on whether I figure out how the heck it's all
+> supposed to work before somebody else whacks it or not.
 > 
-Ah, sorry for my short word again. I mean draining "local" pcp list because
-a thread which run direct-compaction freed pages. IPI is not necessary and
-overkill.
+> ATM, I've instrumented, know _what's_ happening, but find myself saying
+> "wtf?" a lot, especially wrt handle->locked.  The act of attempting to
+> lock a handle declares it unlocked, turning perf_output_unlock() into a
+> noop, which looks a bit strange.  We're spinning on those "unlocked"
+> locks, all left genuinely locked by one CPU.  I just whacked the thing,
+> and am very likely about to see in yet another trace.
+> 
+> Locking is hard, "curious construct" locking is even harder :)
 
-Thanks,
--Kame
+Yeah, that perf_output_{un,}lock() stuff is a pain.. 
+
+handle->locked should indicate if we're the outer most context
+
+the problem this stuff is solving is that of publishing the data head
+pointer, suppose two concurrent writers:
+
+ head = 0;
+
+ A: reserve N bytes
+    write content
+    commit
+
+ B: reserve M bytes
+    write content
+    commit
+
+Now, if B happens during A, and B completes before A is done, B's commit
+would expose a head pointer of N+M bytes, even though the first N aren't
+completely written yet.
+
+So the trick is to only update the head pointer once everybody is done
+writing. You can model this as a recursion problem and only update once
+the recursion count hits 0 again.
+
+However, with multiple cpus and NMIs and a busy enough environment this
+never needs to happen, which would be bad, since we then cannot make
+progress.
+
+Hence the curious construct which basically serializes per cpu. Since
+each cpu can only have a limited nesting context, and any one cpu is
+bound to make progress (unless of course there is another bug that
+prevents that) we'll post regular updates to the head pointer.
+
+
 
