@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab0CYPw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:52:28 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:54967 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab0CYPw1 (ORCPT
+	id S1751438Ab0CYPxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:53:52 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52231 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750827Ab0CYPxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:52:27 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zba6lz1432R98dN936eM62a3Lzz1202hzzz32i6bh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 5,
-X-WSS-ID: 0KZUHEX-02-M8J-02
-X-M-MSG: 
-Date: Thu, 25 Mar 2010 16:52:08 +0100
-From: Robert Richter <robert.richter@amd.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       oprofile-list <oprofile-list@lists.sourceforge.net>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/9] oprofile, perf, x86: introduce new functions to
- reserve perfctrs by index
-Message-ID: <20100325155208.GI1585@erda.amd.com>
-References: <1267716131-17908-1-git-send-email-robert.richter@amd.com>
- <1267716131-17908-4-git-send-email-robert.richter@amd.com>
- <87eijfczqv.fsf@basil.nowhere.org>
+	Thu, 25 Mar 2010 11:53:51 -0400
+Date: Thu, 25 Mar 2010 11:53:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
+ failed: Inappropriate ioctl for device / PreInit returned NULL
+In-Reply-To: <alpine.DEB.2.00.1003251023400.22668@p34.internal.lan>
+Message-ID: <Pine.LNX.4.44L0.1003251149300.1808-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <87eijfczqv.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 25 Mar 2010 15:52:08.0960 (UTC) FILETIME=[203AC000:01CACC33]
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi,
+On Thu, 25 Mar 2010, Justin Piszcz wrote:
 
-so far it does not seem this reservation patches will go upstream. So
-we still do not have a solution of how to share the pmu with perf. The
-current approach is a global pmu lock. I don't think this is a good
-solution and we already see questions on the oprofile mailing list why
-counters are not available to use. This will become much worse if perf
-is using counters permanently in the kernel (e.g. the perf nmi
-watchdog). This will make oprofile unusable.
-
-On 20.03.10 06:45:44, Andi Kleen wrote:
-> Robert Richter <robert.richter@amd.com> writes:
+> # cat /sys/kernel/debug/usb/devices
 > 
-> > Current perfctr reservation code allocates single pmu msrs. The msr
-> > addresses may differ depending on the model and offset calculation is
-> > necessary. This can be easier implemented by reserving a counter by
-> > its index only.
+> T:  Bus=02 Lev=00 Prnt=00 Port=00 Cnt=00 Dev#=  1 Spd=12  MxCh= 8
+> B:  Alloc= 26/900 us ( 3%), #Int=  2, #Iso=  0
+> D:  Ver= 1.10 Cls=09(hub  ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+> P:  Vendor=1d6b ProdID=0001 Rev= 2.06
+> S:  Manufacturer=Linux 2.6.33 ohci_hcd
+> S:  Product=OHCI Host Controller
+> S:  SerialNumber=0000:00:0b.0
+> C:* #Ifs= 1 Cfg#= 1 Atr=e0 MxPwr=  0mA
+> I:* If#= 0 Alt= 0 #EPs= 1 Cls=09(hub  ) Sub=00 Prot=00 Driver=hub
+> E:  Ad=81(I) Atr=03(Int.) MxPS=   2 Ivl=255ms
 > 
-> Sorry reviewing old patch. This doesn't work for the fixed counters on intel,
-> which don't have a index (or rather they have a separate number space)
+> T:  Bus=02 Lev=01 Prnt=01 Port=04 Cnt=01 Dev#=  2 Spd=1.5 MxCh= 0
+> D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+> P:  Vendor=413c ProdID=2005 Rev= 1.05
+> S:  Manufacturer=DELL
+> S:  Product=DELL USB Keyboard
+> C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=01 Driver=usbhid
+> E:  Ad=81(I) Atr=03(Int.) MxPS=   8 Ivl=10ms
 > 
-> I had a old patch to fix the reservation for them (and a matching
-> patch to perf to use it).
-> 
-> How to resolve this?
+> T:  Bus=02 Lev=01 Prnt=01 Port=05 Cnt=02 Dev#=  3 Spd=1.5 MxCh= 0
+> D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+> P:  Vendor=046d ProdID=c018 Rev=43.01
+> S:  Manufacturer=Logitech
+> S:  Product=USB Optical Mouse
+> C:* #Ifs= 1 Cfg#= 1 Atr=a0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 1 Cls=03(HID  ) Sub=01 Prot=02 Driver=usbhid
+> E:  Ad=81(I) Atr=03(Int.) MxPS=   5 Ivl=10ms
 
-Fixed counter reservation is not really used in the kernel except for
-p4. Oprofile only reserves generic counters. Unless there is a general
-solution how to reserve counters I don't see the need to extend the
-reservation code for fixed counters since the only subsystem using it
-would be the nmi watchdog.
+All right, the problematic mouse is attached to bus 2 (as is the
+keyboard).  So the next step is to run a kernel with CONFIG_USB_DEBUG
+enabled.  When the mouse stops working, go to
+/sys/kernel/debug/usb/ohci/0000:00:0b.0 and see what the various files
+in that directory contain.  Also, check if any additional debugging 
+info shows up in the system log.
 
--Robert
+> > Suppose you don't run X at all.  Do the mouse and keyboard eventually
+> > stop working even then?
+> I have not tried that, the reason I use the host locally is for X.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+You should try it anyway.  If the failure still occurs, then you can 
+rule out any connection with X or the nVidia graphics.
+
+Alan Stern
 
