@@ -1,129 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0CYNkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:40:01 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35313 "EHLO gir.skynet.ie"
+	id S1753612Ab0CYNky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:40:54 -0400
+Received: from lucidpixels.com ([75.144.35.66]:39741 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751283Ab0CYNkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:40:00 -0400
-Date: Thu, 25 Mar 2010 13:39:36 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
-	anonymous pages
-Message-ID: <20100325133936.GR2024@csn.ul.ie>
-References: <20100325092131.GK2024@csn.ul.ie> <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com> <20100325185200.6C8C.A69D9226@jp.fujitsu.com> <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1751283Ab0CYNkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 09:40:52 -0400
+Date: Thu, 25 Mar 2010 09:40:51 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       xorg@lists.freedesktop.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
+ failed: Inappropriate ioctl for device / PreInit returned NULL
+In-Reply-To: <alpine.DEB.2.00.1003250833040.13307@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1003250935030.21591@p34.internal.lan>
+References: <alpine.DEB.2.00.1003250800200.13307@p34.internal.lan> <alpine.DEB.2.00.1003250833040.13307@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 07:12:29PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 25 Mar 2010 18:59:25 +0900 (JST)
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> 
-> > > > > > Kosaki-san,
-> > > > > > 
-> > > > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
-> > > > > > 
-> > > > > >  But, this behavior of unmap_and_move() requires access to _freed_
-> > > > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
-> > > > > >  it't not good habit in general.
-> > > > > > 
-> > > > > >  After direct compaction, page-migration will be one of "core" code of
-> > > > > >  memory management. Then, I agree to patch [1/11] as our direction for
-> > > > > >  keeping sanity and showing direction to more updates. Maybe adding
-> > > > > >  refcnt and removing RCU in futuer is good.
-> > > > > 
-> > > > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
-> > > > > is meaningless now.
-> > > > 
-> > > > Christoph is opposed to removing it because of cache-hotness issues more
-> > > > so than use-after-free concerns. The refcount is needed with or without
-> > > > SLAB_DESTROY_BY_RCU.
-> > > > 
-> > > 
-> > > I wonder a code which the easiest to be read will be like following.
-> > > ==
-> > > 
-> > >         if (PageAnon(page)) {
-> > >                 struct anon_vma anon = page_lock_anon_vma(page);
-> > > 		/* to take this lock, this page must be mapped. */
-> > > 		if (!anon_vma)
-> > > 			goto uncharge;
-> > > 		increase refcnt
-> > > 		page_unlock_anon_vma(anon);
-> > >         }
-> > > 	....
-> > > ==
-> > 
-> > This seems very good and acceptable to me. This refcnt usage
-> > obviously reduce rcu-lock holding time.
-> > 
-> > I still think no refcount doesn't cause any disaster. but I agree
-> > this is forward step patch.
-> > 
-> 
-> BTW, by above change and the change in patch [2/11], 
-> "A page turnd to be SwapCache and free unmapped but not freed"
-> page will be never migrated.
-> 
 
-Good point.
 
-> Mel, could you change the check as this ??
-> 
-> 	if (PageAnon(page)) {
-> 		rcu_read_lock();
-> 		if (!page_mapcount(page)) {
-> 			rcu_read_unlock();
-> 			if (!PageSwapCache(page))
-> 				goto uncharge;
-> 			/* unmapped swap cache can be migrated */
-> 		} else {
-> 			...
-> 		}
-> 	.....
-> 	} else 
-> 
+On Thu, 25 Mar 2010, Justin Piszcz wrote:
 
-There were minor changes in how the rcu_read_lock is taken and released
-based on other comments. With your suggestion, the block now looks like;
+>
+>
+> On Thu, 25 Mar 2010, Justin Piszcz wrote:
+>
+> The same problem has been reported by another person, he says his entire 
+> system freezes, which, it appears to do unless you can SSH into the box:
+> http://www.openoffice.org/issues/show_bug.cgi?id=76797
+>
+> Look at his lspci listing.
+> james@dv6105us:~$ lspci
+> 00:00.0 RAM memory: nVidia Corporation C51 Host Bridge (rev a2)
+> 00:00.1 RAM memory: nVidia Corporation C51 Memory Controller 0 (rev a2)
+> 00:00.2 RAM memory: nVidia Corporation C51 Memory Controller 1 (rev a2)
+>
+> Here is mine:
+> $ lspci
+> 00:00.0 RAM memory: nVidia Corporation C51 Host Bridge (rev a2)
+> 00:00.1 RAM memory: nVidia Corporation C51 Memory Controller 0 (rev a2)
+> 00:00.2 RAM memory: nVidia Corporation C51 Memory Controller 1 (rev a2)
+> 00:00.3 RAM memory: nVidia Corporation C51 Memory Controller 5 (rev a2)
+>
+> Looks like the bug may be in the USB subsystem for this chipset.
+>
+> Justin.
+>
+>
 
-        if (PageAnon(page)) {
-                rcu_read_lock();
-                rcu_locked = 1;
+Hi,
 
-                /*
-                 * If the page has no mappings any more, just bail. An
-                 * unmapped anon page is likely to be freed soon but
-                 * worse,
-                 * it's possible its anon_vma disappeared between when
-                 * the page was isolated and when we reached here while
-                 * the RCU lock was not held
-                 */
-                if (!page_mapcount(page) && !PageSwapCache(page))
-                        goto rcu_unlock;
+And there it goes again *LOCK*
+root      2190  0.5  1.5  37832 31424 tty7     Ds+  09:00   0:12 /usr/bin/X :0 vt7 -nolisten tcp -auth /var/lib/xdm/authdir/authfiles/A:0-N5V00o
 
-                anon_vma = page_anon_vma(page);
-                atomic_inc(&anon_vma->external_refcount);
-        }
+When this happens, the keyboard also stops working (if you try to go to
+the console), e.g. caps lock doesn't light up anymore, etc..
 
-Thanks.
+Here is the oops with frame pointer enabled:
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+  2280.291281] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 2280.291283] Xorg          D f38d5edc     0  2190   2177 0x00400004
+[ 2280.291287]  f38d5ef0 00203082 00000002 f38d5edc c3203324 00000000 f38d5ec8 c13eb91d
+[ 2280.291292]  c13f4c40 f7115234 f69904dc 00203292 001af807 f3845f40 c3203324 f38d5ecc
+[ 2280.291296]  c15da000 c15dd324 c15e0480 00000001 f71150b0 f80ae94e f38d5ed0 f38d5ed4
+[ 2280.291301] Call Trace:
+[ 2280.291309]  [<c13eb91d>] ? schedule_timeout+0x11d/0x170
+[ 2280.291318]  [<f80ae94e>] ? unlink1+0x2e/0xe0 [usbcore]
+[ 2280.291322]  [<c128a13f>] ? put_device+0xf/0x20
+[ 2280.291327]  [<f80afdcd>] usb_kill_urb+0x5d/0x90 [usbcore]
+[ 2280.291331]  [<c105f840>] ? autoremove_wake_function+0x0/0x40
+[ 2280.291334]  [<f812b7ae>] usbhid_close+0x6e/0x80 [usbhid]
+[ 2280.291338]  [<c1304936>] hidinput_close+0x16/0x20
+[ 2280.291342]  [<c12ed5c9>] input_close_device+0x49/0x70
+[ 2280.291344]  [<c12f08f0>] evdev_release+0x80/0xa0
+[ 2280.291348]  [<c10ab99e>] __fput+0xce/0x1c0
+[ 2280.291351]  [<c10abaa5>] fput+0x15/0x20
+[ 2280.291353]  [<c10a8a97>] filp_close+0x47/0x70
+[ 2280.291356]  [<c10a8b1a>] sys_close+0x5a/0xa0
+[ 2280.291358]  [<c1023550>] sysenter_do_call+0x12/0x26
+[ 2400.291277] INFO: task Xorg:2190 blocked for more than 120 seconds.
+[ 2400.291280] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 2400.291283] Xorg          D f38d5edc     0  2190   2177 0x00400004
+[ 2400.291287]  f38d5ef0 00203082 00000002 f38d5edc c3203324 00000000 f38d5ec8 c13eb91d
+[ 2400.291292]  c13f4c40 f7115234 f69904dc 00203292 001af807 f3845f40 c3203324 f38d5ecc
+[ 2400.291296]  c15da000 c15dd324 c15e0480 00000001 f71150b0 f80ae94e f38d5ed0 f38d5ed4
+[ 2400.291300] Call Trace:
+[ 2400.291307]  [<c13eb91d>] ? schedule_timeout+0x11d/0x170
+[ 2400.291315]  [<f80ae94e>] ? unlink1+0x2e/0xe0 [usbcore]
+[ 2400.291319]  [<c128a13f>] ? put_device+0xf/0x20
+[ 2400.291324]  [<f80afdcd>] usb_kill_urb+0x5d/0x90 [usbcore]
+[ 2400.291328]  [<c105f840>] ? autoremove_wake_function+0x0/0x40
+[ 2400.291331]  [<f812b7ae>] usbhid_close+0x6e/0x80 [usbhid]
+[ 2400.291335]  [<c1304936>] hidinput_close+0x16/0x20
+[ 2400.291338]  [<c12ed5c9>] input_close_device+0x49/0x70
+[ 2400.291341]  [<c12f08f0>] evdev_release+0x80/0xa0
+[ 2400.291345]  [<c10ab99e>] __fput+0xce/0x1c0
+[ 2400.291347]  [<c10abaa5>] fput+0x15/0x20
+[ 2400.291350]  [<c10a8a97>] filp_close+0x47/0x70
+[ 2400.291352]  [<c10a8b1a>] sys_close+0x5a/0xa0
+[ 2400.291355]  [<c1023550>] sysenter_do_call+0x12/0x26
+
+Justin.
