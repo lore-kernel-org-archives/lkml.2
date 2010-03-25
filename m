@@ -1,90 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985Ab0CYP2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:28:35 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:25760 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914Ab0CYP2a (ORCPT
+	id S1755039Ab0CYP3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:29:24 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:60813 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754907Ab0CYP3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:28:30 -0400
-Subject: [PATCH 2/2] x86/PCI: truncate _CRS windows with _LEN > _MAX - _MIN + 1
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Yanko Kaneti <yaneti@declera.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Renninger <trenn@suse.de>, maciej.rutecki@gmail.com
-Date: Thu, 25 Mar 2010 09:28:30 -0600
-Message-ID: <20100325152829.10117.91511.stgit@bob.kio>
-In-Reply-To: <20100325152750.10117.81615.stgit@bob.kio>
-References: <20100325152750.10117.81615.stgit@bob.kio>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 25 Mar 2010 11:29:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tkeUHbcZJlKqsyycDK3KmYoiIw4jB1j5uVAP1J9f9cYhcUnLTJigCEPrlC5wyBiprl
+         cykRRd+B5IvrccauLiUmMtLtUx0fImeSCTj9n9DkuZmHO8/KFb1Va7t5QxlqJE2IrlJn
+         X54r39a/gvPpB1V2tdxDAB+zd4HCMnu1ZwlgE=
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100325092131.GK2024@csn.ul.ie>
+	 <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100325185200.6C8C.A69D9226@jp.fujitsu.com>
+	 <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Mar 2010 00:29:01 +0900
+Message-ID: <1269530941.1814.21.camel@barrios-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Kame. 
 
-Yanko's GA-MA78GM-S2H (BIOS F11) reports the following resource in a PCI
-host bridge _CRS:
+On Thu, 2010-03-25 at 19:12 +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 25 Mar 2010 18:59:25 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > > > > > Kosaki-san,
+> > > > > > 
+> > > > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
+> > > > > > 
+> > > > > >  But, this behavior of unmap_and_move() requires access to _freed_
+> > > > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
+> > > > > >  it't not good habit in general.
+> > > > > > 
+> > > > > >  After direct compaction, page-migration will be one of "core" code of
+> > > > > >  memory management. Then, I agree to patch [1/11] as our direction for
+> > > > > >  keeping sanity and showing direction to more updates. Maybe adding
+> > > > > >  refcnt and removing RCU in futuer is good.
+> > > > > 
+> > > > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
+> > > > > is meaningless now.
+> > > > 
+> > > > Christoph is opposed to removing it because of cache-hotness issues more
+> > > > so than use-after-free concerns. The refcount is needed with or without
+> > > > SLAB_DESTROY_BY_RCU.
+> > > > 
+> > > 
+> > > I wonder a code which the easiest to be read will be like following.
+> > > ==
+> > > 
+> > >         if (PageAnon(page)) {
+> > >                 struct anon_vma anon = page_lock_anon_vma(page);
+> > > 		/* to take this lock, this page must be mapped. */
+> > > 		if (!anon_vma)
+> > > 			goto uncharge;
+> > > 		increase refcnt
+> > > 		page_unlock_anon_vma(anon);
+> > >         }
+> > > 	....
+> > > ==
+> > 
+> > This seems very good and acceptable to me. This refcnt usage
+> > obviously reduce rcu-lock holding time.
+> > 
+> > I still think no refcount doesn't cause any disaster. but I agree
+> > this is forward step patch.
+> > 
+> 
+> BTW, by above change and the change in patch [2/11], 
+> "A page turnd to be SwapCache and free unmapped but not freed"
+> page will be never migrated.
+> 
+> Mel, could you change the check as this ??
+> 
+> 	if (PageAnon(page)) {
+> 		rcu_read_lock();
+> 		if (!page_mapcount(page)) {
+> 			rcu_read_unlock();
+> 			if (!PageSwapCache(page))
+> 				goto uncharge;
+> 			/* unmapped swap cache can be migrated */
 
-    [07] 32-Bit DWORD Address Space Resource
-         Min Relocatability : MinFixed
-         Max Relocatability : MaxFixed
-            Address Minimum : CFF00000  (_MIN)
-            Address Maximum : FEBFFFFF  (_MAX)
-             Address Length : 3EE10000  (_LEN)
 
-This is invalid per spec (ACPI 4.0, 6.4.3.5) because it's a fixed size,
-fixed location descriptor, but _LEN != _MAX - _MIN + 1.
+Which case do we have PageAnon && (page_mapcount == 0) && PageSwapCache ?
+With looking over code which add_to_swap_cache, I found somewhere. 
 
-Based on https://bugzilla.kernel.org/show_bug.cgi?id=15480#c15, I think
-Windows handles this by truncating the window so it fits between _MIN and
-_MAX.  I also verified this by modifying the SeaBIOS DSDT and booting
-Windows 2008 R2 with qemu.
+1) shrink_page_list
+I think this case doesn't matter by isolate_lru_xxx.
 
-This patch makes Linux truncate the window, too, which fixes:
-    http://bugzilla.kernel.org/show_bug.cgi?id=15480
+2) shmem_swapin
+It seems to be !PageAnon
 
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Tested-by: Yanko Kaneti <yaneti@declera.com>
+3) shmem_writepage
+It seems to be !PageAnon. 
+
+4) do_swap_page
+page_add_anon_rmap increases _mapcount before setting page->mapping to anon_vma. 
+So It doesn't matter. 
+
+
+I think following codes in unmap_and_move seems to handle 3) case. 
+
+---
+         * Corner case handling:
+         * 1. When a new swap-cache page is read into, it is added to the LRU
+         * and treated as swapcache but it has no rmap yet.
+        ...
+        if (!page->mapping) {
+                if (!PageAnon(page) && page_has_private(page)) {
+                ....
+                }    
+                goto skip_unmap;
+        }    
+
 ---
 
- arch/x86/pci/acpi.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+Do we really check PageSwapCache in there?
+Do I miss any case?
 
 
-diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-index 75ac3f8..e311602 100644
---- a/arch/x86/pci/acpi.c
-+++ b/arch/x86/pci/acpi.c
-@@ -123,7 +123,7 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 	acpi_status status;
- 	unsigned long flags;
- 	struct resource *root, *conflict;
--	u64 start, end;
-+	u64 start, end, max_len;
- 
- 	status = resource_to_addr(acpi_res, &addr);
- 	if (!ACPI_SUCCESS(status))
-@@ -140,6 +140,17 @@ setup_resource(struct acpi_resource *acpi_res, void *data)
- 	} else
- 		return AE_OK;
- 
-+	max_len = addr.maximum - addr.minimum + 1;
-+	if (addr.address_length > max_len) {
-+		dev_printk(KERN_DEBUG, &info->bridge->dev,
-+			   "host bridge window length %#llx doesn't fit in "
-+			   "%#llx-%#llx, trimming\n",
-+			   (unsigned long long) addr.address_length,
-+			   (unsigned long long) addr.minimum,
-+			   (unsigned long long) addr.maximum);
-+		addr.address_length = max_len;
-+	}
-+
- 	start = addr.minimum + addr.translation_offset;
- 	end = start + addr.address_length - 1;
- 
+
+-- 
+Kind regards,
+Minchan Kim
+
 
