@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0CYTCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 15:02:17 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38035 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754150Ab0CYTCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 15:02:16 -0400
-Date: Thu, 25 Mar 2010 20:01:26 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1754247Ab0CYTPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 15:15:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33599 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753181Ab0CYTPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 15:15:48 -0400
+Date: Thu, 25 Mar 2010 12:10:22 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Peter Zijlstra <peterz@infradead.org>,
        Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
        x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       jesse.brandeburg@intel.com, Arjan Van De Ven <arjan@infradead.org>
+       jesse.brandeburg@intel.com
 Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
  overflowing v2
-Message-ID: <20100325190126.GA19536@elte.hu>
-References: <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain>
- <20100325003652.GG20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
- <20100325093744.GH20695@one.firstfloor.org>
- <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain>
- <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
- <1269539254.12097.100.camel@laptop>
- <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
- <1269541282.12097.106.camel@laptop>
- <1269541438.12097.107.camel@laptop>
+In-Reply-To: <20100325182930.GA7709@elte.hu>
+Message-ID: <alpine.LFD.2.00.1003251206550.3721@i5.linux-foundation.org>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+ <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org> <1269539254.12097.100.camel@laptop> <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
+ <20100325182930.GA7709@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269541438.12097.107.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Thu, 2010-03-25 at 19:21 +0100, Peter Zijlstra wrote:
-> > On Thu, 2010-03-25 at 11:01 -0700, Linus Torvalds wrote:
-> > > Are there any cases around 
-> > > that still have busy-loop delays based on real-time in their irq handlers? 
-> > > I simply don't know. 
-> > 
-> > I recently found a few in drivers/net/ there's all kinds of funny stuff
-> > in there.. not sure how common the matching hardware is though.
-> > 
-> > One thing we could do is instrument jiffies to yell when its used from
-> > hardirq context and fix up these things.
+On Thu, 25 Mar 2010, Ingo Molnar wrote:
 > 
-> Also, Arjan mentioned he wanted to sweep the kernel for jiffies users and 
-> convert them to timer interfaces..
+> So the patch below should at most trigger bugs in areas that need fixing 
+> anyway, and i'm quite sure that under no circumstance would it cause 
+> unforeseen problems in 'thousands of drivers'.
 
-Dynticks found most of the loop-for-jiffies-in-handlers cruft: an IRQ handler 
-hitting the idle loop and then spinning for jiffies, with dynticks enabled, 
-would spin forver because there's no timer irq.
+If we do this, then we should just remove all the IRQF_DISABLED code in 
+kernel/irq/manage.c too, and basically make IRQF_DISABLED a clear no-op 
+(still leave it around as a #define, to not break any users). 
 
-That is because in dynticks mode we dont reactivate the tick when we go into 
-an irq handler (that has hit the idle task). So any looping on jiffies will 
-loop forever. We only reactivate the tick when we go out of idle.
+It won't make it any harder to revert if it causes problems, and that way 
+there will be no crazy dead code (and comments) left around.
 
-We had a few bugs of that kind in the early days of dynticks - they were not 
-particularly numerous and all were fixed.
+And I just checked: even the 8250 serial driver doesn't use IRQF_DISABLED 
+any more, so doing that shouldn't cause any latency issues (sure, the 
+serial driver may interrupt another irq, but another irq can also 
+interrupt the serial driver as things stand now, so the original latency 
+issue with fast irq handlers doesn't actually work these days _anyway_).
 
-Thanks,
-
-	Ingo
+		Linus
