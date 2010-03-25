@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab0CYNfh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:35:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:36302 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab0CYNfg (ORCPT
+	id S1752766Ab0CYNhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:37:48 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52932 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751234Ab0CYNhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:35:36 -0400
-X-Authority-Analysis: v=1.0 c=1 a=TA12unEhaaEA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=95YEHrbnwv_LDzxmKCAA:9 a=iv_ju_PtrkfUbh0qxrfNb-SiSMYA:4 a=PUjeQqilurYA:10 a=Kf_ysI2uTWo9o-o-:21 a=ZiO1URjKHhpOG1Kn:21
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: sched_wakeup_new and sched_kthread_stop events cause great
- overload
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BAB2EAF.2030804@cn.fujitsu.com>
-References: <4BAB2EAF.2030804@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 25 Mar 2010 09:35:33 -0400
-Message-ID: <1269524133.2957.4067.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 09:37:47 -0400
+Date: Thu, 25 Mar 2010 13:37:46 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Benny Halevy <bhalevy@panasas.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       pNFS Mailing List <pnfs@linux-nfs.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+Message-ID: <20100325133746.GA30031@ZenIV.linux.org.uk>
+References: <20100324180622.GS30031@ZenIV.linux.org.uk>
+ <4BAA5955.4000001@gmail.com>
+ <20100324185604.GT30031@ZenIV.linux.org.uk>
+ <4BAB2F5A.30409@panasas.com>
+ <20100325101231.GU30031@ZenIV.linux.org.uk>
+ <20100325105406.GW30031@ZenIV.linux.org.uk>
+ <4BAB51F5.609@panasas.com>
+ <4BAB54B0.3080109@panasas.com>
+ <20100325130610.GZ30031@ZenIV.linux.org.uk>
+ <4BAB656E.8020204@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BAB656E.8020204@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-03-25 at 17:36 +0800, Xiao Guangrong wrote:
-> We have done sysbench test for ftrace's performance and it looks sched_wakeup_new
-> and sched_kthread_stop events can cause great overload.
+On Thu, Mar 25, 2010 at 03:30:22PM +0200, Boaz Harrosh wrote:
+> > Let's try this: before do_lookup() call there add
+> > 	if (*want_dir)
+> > 		nd->flags |= LOOKUP_DIRECTORY;
 > 
-> When we only enable sched_wakeup_new and sched_kthread_stop events, sysbench.threads
-> shows the overload is 10%, sysbench.mutex shows the overload is 7.5%.
+> Yes this fixes it!!
+> 2.6.34-rc2 plus above, now works, horay. (diff attached)
 > 
-> The more weird thing is that we found the sched_kthread_stop event is never called
-> in this test, the test steps as follow:
-> 
-> echo > debugfs/tracing/set_event
-> echo 1 > debugfs/tracing/events/sched/sched_wakeup_new/enable
-> echo 1 > debugfs/tracing/events/sched/sched_kthread_stop/enable
-> 
-> com_opt="--num-threads=5000 --max-requests=50000"
-> echo > debugfs/tracing/trace
-> sysbench $com_opt --test=threads --thread-yields=1000 --thread-locks=10000 run >& log
-> [or sysbench $com_opt --test=mutex --mutex-num=100 --mutex-locks=50000 --mutex-loops=10000 run for mutex]
-> echo > debugfs/tracing/set_event
-> 
-> For sysbench.threads:
-> cat debugfs/tracing/trace | grep "sched_wakeup_new" | wc -l
-> 5001
-> cat debugfs/tracing/trace | grep "sched_kthread_stop" | wc -l
-> 0
+> > and see how does it behave.
+> > 
+> > However, even if it does help, it doesn't explain everything.  Normal
+> > open() on a directory without O_DIRECTORY if flags shouldn't fail with
+> > -EISDIR.  How did that manage to avoid it all along?
 
-Strange? So if you did:
-
-cat debugfs/tracing/trace | wc -l
-
-you should get 5005?
-
-> 
-> For sysbench.mutex:
-> cat debugfs/tracing/trace | grep "sched_wakeup_new" | wc -l
-> 5001
-> cat debugfs/tracing/trace | grep "sched_kthread_stop" | wc -l
-> 0
-> 
-> And, if only enable sched_kthread_stop event, the sysbench.threads's
-> overload is 5.90%, the sysbench.mutex's overload is 3.36%.
-
-Could be something that messes with the cache lines?
-
-> 
-> It hardly explain why sched_kthread_stop is never called but cause great overload.
-
-Would be worth running perf against this test, to see where the issues
-are occurring.
-
--- Steve
-
-
+Does open() of directory _without_ O_DIRECTORY work in e.g. vanilla 2.6.33?
+It certainly does for local filesystems and it does for NFSv3; does it work
+for NFSv4?
