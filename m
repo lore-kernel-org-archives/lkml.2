@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0CYOaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 10:30:11 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:29769 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754637Ab0CYOaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 10:30:09 -0400
-From: Vitaliy Gusev <vgusev@openvz.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] bsdacct: delete timer with sync intension
-Date: Thu, 25 Mar 2010 17:35:10 +0300
-User-Agent: KMail/1.10.3 (Linux/2.6.27.45-0.1-default; KDE/4.1.3; x86_64; ; )
-Cc: Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org
+	id S1754760Ab0CYOd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 10:33:29 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:58396 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753844Ab0CYOd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 10:33:28 -0400
+Date: Thu, 25 Mar 2010 15:33:22 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
+       harvey.harrison@gmail.com, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: winbond: wb35reg.c Coding style fixes v2.
+Message-ID: <20100325143322.GB1657@ucw.cz>
+References: <1269524693-27586-1-git-send-email-lindley@coyote.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201003251735.10907.vgusev@openvz.org>
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1269524693-27586-1-git-send-email-lindley@coyote.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acct_exit_ns --> acct_file_reopen deletes timer without
-check timer execution on other CPUs. So acct_timeout() can
-change an unmapped memory.
+On Thu 2010-03-25 14:44:53, Lars Lindley wrote:
+> I fixed the problems reported by checkpatch.pl excetp for
+> long lines, a couple of printks and some warnings about usb_free_urb(NULL).
+> I checked for regressions with Dan Carpenters strip_whitespace.pl
+> and diff and everything looks good.
+> Generated .o is identical to master.
+> 
+> This is a new patch against master where I fixed up a switch-statement
+> after comments from Pavel Machek.
+> 
+> Signed-off-by: Lars Lindley <lindley@coyote.org>
 
-Signed-off-by: Vitaliy Gusev <vgusev@openvz.org>
+Ack.
 
----
- kernel/acct.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/acct.c b/kernel/acct.c
-index a6605ca..6ac80ca 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -353,17 +353,18 @@ restart:
- 
- void acct_exit_ns(struct pid_namespace *ns)
- {
--	struct bsd_acct_struct *acct;
-+	struct bsd_acct_struct *acct = ns->bacct;
- 
--	spin_lock(&acct_lock);
--	acct = ns->bacct;
--	if (acct != NULL) {
--		if (acct->file != NULL)
--			acct_file_reopen(acct, NULL, NULL);
-+	if (acct == NULL)
-+		return;
- 
--		kfree(acct);
--	}
-+	del_timer_sync(&acct->timer);
-+	spin_lock(&acct_lock);
-+	if (acct->file != NULL)
-+		acct_file_reopen(acct, NULL, NULL);
- 	spin_unlock(&acct_lock);
-+
-+	kfree(acct);
- }
- 
- /*
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
