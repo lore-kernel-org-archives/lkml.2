@@ -1,50 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab0CYBXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Mar 2010 21:23:32 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:55119 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754400Ab0CYBXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Mar 2010 21:23:31 -0400
-Date: Thu, 25 Mar 2010 02:23:16 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [rfc 5/5] mincore: transparent huge page support
-Message-ID: <20100325012316.GB27304@cmpxchg.org>
-References: <1269354902-18975-1-git-send-email-hannes@cmpxchg.org> <1269354902-18975-6-git-send-email-hannes@cmpxchg.org> <20100324224858.GP10659@random.random>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324224858.GP10659@random.random>
+	id S1754615Ab0CYBfo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Mar 2010 21:35:44 -0400
+Received: from brinza.cc.columbia.edu ([128.59.29.8]:60121 "EHLO
+	brinza.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab0CYBfn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Mar 2010 21:35:43 -0400
+Message-ID: <4BAABDF4.8070904@cs.columbia.edu>
+Date: Wed, 24 Mar 2010 21:35:48 -0400
+From: Oren Laadan <orenl@cs.columbia.edu>
+Organization: Columbia University
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Christoffer Dall <christofferdall@christofferdall.dk>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       containers <containers@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [C/R ARM][PATCH 1/3] ARM: Rudimentary syscall interfaces
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk> <1269219965-23923-2-git-send-email-christofferdall@christofferdall.dk> <20100323205342.GA19572@n2100.arm.linux.org.uk> <20100324020342.GB5704@count0.beaverton.ibm.com> <Pine.LNX.4.64.1003240055050.5867@takamine.ncl.cs.columbia.edu> <20100324140252.GC5704@count0.beaverton.ibm.com> <4BAA3586.1020604@cs.columbia.edu> <7d08b87d1003241236n2b45e6f4ife36da841351df9d@mail.gmail.com> <20100325011132.GE5704@count0.beaverton.ibm.com>
+In-Reply-To: <20100325011132.GE5704@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 11:48:58PM +0100, Andrea Arcangeli wrote:
-> On Tue, Mar 23, 2010 at 03:35:02PM +0100, Johannes Weiner wrote:
-> > +static int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
-> > +			unsigned long addr, unsigned long end,
-> > +			unsigned char *vec)
-> > +{
-> > +	int huge = 0;
-> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
-> > +	spin_lock(&vma->vm_mm->page_table_lock);
-> > +	if (likely(pmd_trans_huge(*pmd))) {
-> > +		huge = !pmd_trans_splitting(*pmd);
+
+
+Matt Helsley wrote:
+> On Wed, Mar 24, 2010 at 08:36:39PM +0100, Christoffer Dall wrote:
+>> On Wed, Mar 24, 2010 at 4:53 PM, Oren Laadan <orenl@cs.columbia.edu> wrote:
+>>>
+>>> Matt Helsley wrote:
+>>>> On Wed, Mar 24, 2010 at 12:57:46AM -0400, Oren Laadan wrote:
+>>>>> On Tue, 23 Mar 2010, Matt Helsley wrote:
+>>>>>
+>>>>>> On Tue, Mar 23, 2010 at 08:53:42PM +0000, Russell King - ARM Linux
+>>>>>> wrote:
+>>>>>>> On Sun, Mar 21, 2010 at 09:06:03PM -0400, Christoffer Dall wrote:
+>>>>>>>> This small commit introduces a global state of system calls for ARM
+>>>>>>>> making it possible for a debugger or checkpointing to gain information
+>>>>>>>> about another process' state with respect to system calls.
+>>>>>>> I don't particularly like the idea that we always store the syscall
+>>>>>>> number to memory for every system call, whether the stored version is
+>>>>>>> used or not.
+>>>>>>>
+>>>>>>> Since ARM caches are generally not write allocate, this means mostly
+>>>>>>> write-only variables can have a higher than expected expense.
+>>>>>>>
+>>>>>>> Is there not some thread flag which can be checked to see if we need to
+>>>>>>> store the syscall number?
+>>>>>> Perhaps before we freeze the task we can save the syscall number on ARM.
+>>>>>> The patches suggest that the signal delivery path -- which the freezer
+>>>>>> utilizes -- has the syscall number already.
+>>> Actually, the signal path doesn't have the syscall number, it has
+>>> a binary "in syscall" value.
+>>>
 > 
-> Under mmap_sem (read or write) a hugepage can't materialize under
-> us. So here the pmd_trans_huge can be lockless and run _before_ taking
-> the page_table_lock. That's the invariant I used to keep identical
-> performance for all fast paths.
+> Argh. I read too much into the name :(.
+> 
+>> Well, this could be changed to pass the syscall number through
+>> registers along to try_to_freeze without any mentionable performance
+>> hit.
+> 
+> Yes, that's possible. I was thinking we could still use your thread info
+> field but only store to it when we know it will be useful for c/r rather
+> than for each syscall. Personally, I'd rather avoid passing the extra
+> parameter into try_to_freeze(). Your idea below seems better to me.
+> 
+>> Re-using the assembly code or factoring it out so that it can be used
+>> from multiple places doesn't seem very pleasing to me, as the assembly
+>> code is in the critical path and written specifically for the context
+>> of a process entering the kernel. Please correct me if I'm wrong.
+>>
+>> I imagine simply a function in C, more or less re-implementing the
+>> logic that's already in entry-common.S, might do the trick. I wouldn't
+>> worry much about the performance in this case as it will not be used
+>> often. The following _untested_ snippet illustrates my idea:
+>>
+>> ---
+>>  arch/arm/include/asm/syscall.h |   93 +++++++++++++++++++++++++++++++++++++++-
+>>  1 files changed, 92 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
+>> index 3b3248f..a7f2615 100644
+>> --- a/arch/arm/include/asm/syscall.h
+>> +++ b/arch/arm/include/asm/syscall.h
+>> @@ -10,10 +10,101 @@
+>>  #ifndef _ASM_ARM_SYSCALLS_H
+>>  #define _ASM_ARM_SYSCALLS_H
+>>
+>> +static inline int get_swi_instruction(struct task_struct *task,
+>> +				      struct pt_regs *regs,
+>> +				      unsigned long *instr)
+>> +{
+>> +	struct page *page = NULL;
+>> +	unsigned long instr_addr;
+>> +	unsigned long *ptr;
+>> +	int ret;
+>> +
+>> +	instr_addr = regs->ARM_pc - 4;
+>> +
+>> +	down_read(&task->mm->mmap_sem);
+>> +	ret = get_user_pages(task, task->mm, instr_addr,
+>> +			     1, 0, 0, &page, NULL);
+>> +	up_read(&task->mm->mmap_sem);
+>> +
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	ptr = (unsigned long *)kmap_atomic(page, KM_USER1);
+>> +	memcpy(instr,
+>> +	       ptr + (instr_addr >> PAGE_SHIFT),
+> 			^shouldn't this be:
+> 		      instr_addr & PAGE_MASK
+> 
+>> +	       sizeof(unsigned long));
+>> +	kunmap_atomic(ptr, KM_USER1);
+>> +
+>> +	page_cache_release(page);
+>> +
+>> +	return 0;
+>> +}
+> 
+> (again, not familiar with ARM so my understanding is:
+> 
+> I guess swi is "syscall word immediate".
+> 
+> The syscall nr is embedded in the instruction as an immediate
+> value and you're getting a copy of that instruction using the value of
+> the pc register just after the syscall instruction was executed.)
+> 
+> Perhaps I am missing or forgetting something. Why isn't this as simple
+> as calling get_user() or even copy_from_user() using instr_addr?
 
-Wait, there _is_ an unlocked fast-path pmd_trans_huge()
-in mincore_pmd_range(), maybe you missed it?
+In c/r, we only need it at restart when a task calls it on itself.
 
-This function is never called if the pmd is not huge.
+However the interface itself of get_syscall_nr() can be called by
+any task on another task.
 
-So the above is the _second check_ under lock to get a stable
-read on the entry that could be splitting or already have been
-split while we checked locklessly.
+(In fact, I think that for the most part, saving the syscall number
+at checkpoint time may be better than figuring out at restart time).
+
+Oren.
+
+
