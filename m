@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0CYRXV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 13:23:21 -0400
-Received: from mail-fx0-f213.google.com ([209.85.220.213]:40717 "EHLO
+	id S1753220Ab0CYRY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 13:24:28 -0400
+Received: from mail-fx0-f213.google.com ([209.85.220.213]:35786 "EHLO
 	mail-fx0-f213.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab0CYRXN (ORCPT
+	with ESMTP id S1751587Ab0CYRX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 13:23:13 -0400
+	Thu, 25 Mar 2010 13:23:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
          :references;
-        b=hN8JQZCZSzeMxW93huSPQOdUuDSUUJZ+QhEmrIsPlo9atB8Zj7SbrwgVDVsG25y8mO
-         IbkosufBYBUitPBj2LoHWsd14EWnK6Nzblh5coGT7rnayLh6uCpFSRBA3jrNjRAguCVc
-         9Glf4BiSyn3bjrz44QNFGLmNck3BjhBfttO2U=
+        b=Zw1fTktWZ7co3nv19zttgRGoULmsWwG3C6BWn826L+ZBsfzsWKfoIMF5fUm9GjIwga
+         AKkEVp6RNULyol5M10Ij4Vz1GZ2M8QByTaLoD3JUCYmter351jC24XcyLYeYz/r7BTVr
+         p0neE3x99srIYtl8rM6HgWsw1UHmsPhHpVyQ0=
 From: Andrea Gelmini <andrea.gelmini@gelma.net>
 To: linux-doc@vger.kernel.org
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] Docs hpet_example.c: duplicated includes
-Date: Thu, 25 Mar 2010 18:22:36 +0100
-Message-Id: <1269537767-7553-6-git-send-email-andrea.gelmini@gelma.net>
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 12/16] Scripts lex.c: remove extra spaces
+Date: Thu, 25 Mar 2010 18:22:42 +0100
+Message-Id: <1269537767-7553-12-git-send-email-andrea.gelmini@gelma.net>
 X-Mailer: git-send-email 1.7.0.3.296.g9776a
 In-Reply-To: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net>
 References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net>
@@ -30,34 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/timers/hpet_example.c: fcntl.h is included more than once.
-Documentation/timers/hpet_example.c: signal.h is included more than once.
+scripts/genksyms/lex.c: deleted extra spaces
 
 Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
 ---
- Documentation/timers/hpet_example.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ scripts/genksyms/lex.c_shipped |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/timers/hpet_example.c b/Documentation/timers/hpet_example.c
-index f9ce2d9..4bfafb7 100644
---- a/Documentation/timers/hpet_example.c
-+++ b/Documentation/timers/hpet_example.c
-@@ -10,7 +10,6 @@
- #include <sys/types.h>
- #include <sys/wait.h>
- #include <signal.h>
--#include <fcntl.h>
- #include <errno.h>
- #include <sys/time.h>
- #include <linux/hpet.h>
-@@ -24,7 +23,6 @@ extern void hpet_read(int, const char **);
+diff --git a/scripts/genksyms/lex.c_shipped b/scripts/genksyms/lex.c_shipped
+index 2ac23bc..5682dfd 100644
+--- a/scripts/genksyms/lex.c_shipped
++++ b/scripts/genksyms/lex.c_shipped
+@@ -27,7 +27,7 @@
+ /* %endif */
  
- #include <sys/poll.h>
- #include <sys/ioctl.h>
--#include <signal.h>
+ /* %if-c-only */
+-    
++
+ /* %endif */
  
- struct hpet_command {
- 	char		*command;
+ /* %if-c-only */
 -- 
 1.7.0.3.296.g9776a
 
