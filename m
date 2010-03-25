@@ -1,191 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab0CYKkW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:40:22 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:35328 "EHLO vps.mortis.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751604Ab0CYKkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:40:19 -0400
-Date: Thu, 25 Mar 2010 11:40:15 +0100
-From: Giel van Schijndel <me@mortis.eu>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] [RFC] hwmon: f71882fg: Add watchdog API for
- F71808E and F71889
-Message-ID: <20100325104014.GC20126@salidar.me.mortis.eu>
-References: <1269385936-3440-1-git-send-email-me@mortis.eu>
- <1269385936-3440-2-git-send-email-me@mortis.eu>
- <1269385936-3440-3-git-send-email-me@mortis.eu>
- <1269385936-3440-4-git-send-email-me@mortis.eu>
- <4BA9CF57.4030504@redhat.com>
- <20100324093651.GG6368@salidar.me.mortis.eu>
- <4BA9EA5C.9060506@redhat.com>
- <20100324153550.GK6368@salidar.me.mortis.eu>
- <20100324155151.2482952f@lxorguk.ukuu.org.uk>
- <20100325085450.GA20126@salidar.me.mortis.eu>
+	id S1754141Ab0CYKky (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:40:54 -0400
+Received: from mga05.intel.com ([192.55.52.89]:36658 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751604Ab0CYKkw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 06:40:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,306,1267430400"; 
+   d="scan'208";a="783801809"
+Date: Thu, 25 Mar 2010 11:41:38 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: kernel-janitors@vger.kernel.org, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 13/24] mfd: fix dangling pointers
+Message-ID: <20100325104137.GA3720@sortiz.org>
+References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de>
+ <1269094385-16114-14-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100325085450.GA20126@salidar.me.mortis.eu>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+In-Reply-To: <1269094385-16114-14-git-send-email-w.sang@pengutronix.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfram,
 
---z4+8/lEcDcG5Ke9S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Mar 20, 2010 at 03:12:54PM +0100, Wolfram Sang wrote:
+> Fix I2C-drivers which missed setting clientdata to NULL before freeing the
+> structure it points to. Also fix drivers which do this _after_ the structure
+> was freed already.
+Patch applied, many thanks.
 
-On Thu, Mar 25, 2010 at 09:54:50AM +0100, Giel van Schijndel wrote:
-> On Wed, Mar 24, 2010 at 03:51:51PM +0000, Alan Cox wrote:
->>> hold on the SIO port range. This would thus interfere with the
->>> operation of the f71882fg driver. I.e. it would prevent the device
->>> probing stage from working, thus preventing it from loading *after*
->>> my in-development watchdog driver.
->>=20
->> There are two ways to deal with that really
->>=20
->> ... snip ...
->>
->> 2. Fix the kernel request_resource stuff to support a sleeping non
->> exclusive resource so request/free of regions can be used as a resource
->> semaphore by co-operative devices.
->>=20
->> #2 is actually not hard but when I did the patch originally it then
->> wasn't needed by the driver I had in mind for other reasons.
->>=20
->> See http://groups.google.com/group/linux.kernel/msg/1425fc2aad32e6ea
->>=20
->> Maybe its worth resurrecting ?
->=20
-> In this particular case I most definitely think it's worth resurrecting.
-> Using your patch (I had to change the IORESOURCE_MUXED constant's value
-> though) I can completely solve the I/O sharing issue for the f71882fg +
-> watchdog case with only a single line modification to the f71882fg
-> driver.
->=20
-> ... snip ...
-
-Using Alan's patch and the one following the dashed line I can implement
-(and have already done so) a separate watchdog driver for the Fintek
-F71808E.
-
-Should I just ask for this patch to be applied together with Alan's?
-Then submit the new driver? (I'm a bit new to the non-technical aspects
-of Linux kernel development).
-
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-hwmon: f71882fg: use a muxed resource lock for the Super I/O port
-
-Sleep while acquiring a resource lock on the Super I/O port. This should
-prevent collisions from causing the hardware probe to fail with -EBUSY.
----
- drivers/hwmon/f71882fg.c |   28 +++++++++++++++-------------
- 1 files changed, 15 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-index 7857ed3..e09416d 100644
---- a/drivers/hwmon/f71882fg.c
-+++ b/drivers/hwmon/f71882fg.c
-@@ -113,7 +113,7 @@ static struct platform_device *f71882fg_pdev;
- /* Super-I/O Function prototypes */
- static inline int superio_inb(int base, int reg);
- static inline int superio_inw(int base, int reg);
--static inline void superio_enter(int base);
-+static inline int superio_enter(int base);
- static inline void superio_select(int base, int ld);
- static inline void superio_exit(int base);
-=20
-@@ -883,11 +883,20 @@ static int superio_inw(int base, int reg)
- 	return val;
- }
-=20
--static inline void superio_enter(int base)
-+static inline int superio_enter(int base)
- {
-+	/* Don't step on other drivers' I/O space by accident */
-+	if (!request_muxed_region(base, 2, DRVNAME)) {
-+		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-+				(int)base);
-+		return -EBUSY;
-+	}
-+
- 	/* according to the datasheet the key must be send twice! */
- 	outb(SIO_UNLOCK_KEY, base);
- 	outb(SIO_UNLOCK_KEY, base);
-+
-+	return 0;
- }
-=20
- static inline void superio_select(int base, int ld)
-@@ -899,6 +908,7 @@ static inline void superio_select(int base, int ld)
- static inline void superio_exit(int base)
- {
- 	outb(SIO_LOCK_KEY, base);
-+	release_region(base, 2);
- }
-=20
- static inline int fan_from_reg(u16 reg)
-@@ -2239,17 +2249,10 @@ static int f71882fg_remove(struct platform_device *=
-pdev)
- static int __init f71882fg_find(int sioaddr, unsigned short *address,
- 	struct f71882fg_sio_data *sio_data)
- {
--	int err =3D -ENODEV;
- 	u16 devid;
--
--	/* Don't step on other drivers' I/O space by accident */
--	if (!request_region(sioaddr, 2, DRVNAME)) {
--		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
--				(int)sioaddr);
--		return -EBUSY;
--	}
--
--	superio_enter(sioaddr);
-+	int err =3D superio_enter(sioaddr);
-+	if (err)
-+		return err;
-=20
- 	devid =3D superio_inw(sioaddr, SIO_REG_MANID);
- 	if (devid !=3D SIO_FINTEK_ID) {
-@@ -2306,7 +2309,6 @@ static int __init f71882fg_find(int sioaddr, unsigned=
- short *address,
- 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
- exit:
- 	superio_exit(sioaddr);
--	release_region(sioaddr, 2);
- 	return err;
- }
-=20
---=20
-1.6.4.4
+Cheers,
+Samuel.
 
 
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+> 
+> Found using coccinelle, then reviewed. Full patchset is available via
+> kernel-janitors, linux-i2c, and LKML.
+> ---
+>  drivers/mfd/88pm860x-i2c.c  |    1 +
+>  drivers/mfd/ab3100-core.c   |    2 ++
+>  drivers/mfd/da903x.c        |    1 +
+>  drivers/mfd/menelaus.c      |    3 ++-
+>  drivers/mfd/pcf50633-core.c |    1 +
+>  drivers/mfd/tps65010.c      |    2 +-
+>  drivers/mfd/wm8350-i2c.c    |    2 ++
+>  7 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
+> index c37e12b..aa81448 100644
+> --- a/drivers/mfd/88pm860x-i2c.c
+> +++ b/drivers/mfd/88pm860x-i2c.c
+> @@ -201,6 +201,7 @@ static int __devexit pm860x_remove(struct i2c_client *client)
+>  	i2c_unregister_device(chip->companion);
+>  	i2c_set_clientdata(chip->companion, NULL);
+>  	i2c_set_clientdata(chip->client, NULL);
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(chip);
+>  	return 0;
+>  }
+> diff --git a/drivers/mfd/ab3100-core.c b/drivers/mfd/ab3100-core.c
+> index a2ce3b6..e6fc43f 100644
+> --- a/drivers/mfd/ab3100-core.c
+> +++ b/drivers/mfd/ab3100-core.c
+> @@ -919,6 +919,7 @@ static int __init ab3100_probe(struct i2c_client *client,
+>  	i2c_unregister_device(ab3100->testreg_client);
+>   exit_no_testreg_client:
+>   exit_no_detect:
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(ab3100);
+>  	return err;
+>  }
+> @@ -940,6 +941,7 @@ static int __exit ab3100_remove(struct i2c_client *client)
+>  	 * their notifiers so deactivate IRQ
+>  	 */
+>  	free_irq(client->irq, ab3100);
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(ab3100);
+>  	return 0;
+>  }
+> diff --git a/drivers/mfd/da903x.c b/drivers/mfd/da903x.c
+> index e5ffe56..ec8178c 100644
+> --- a/drivers/mfd/da903x.c
+> +++ b/drivers/mfd/da903x.c
+> @@ -543,6 +543,7 @@ static int __devexit da903x_remove(struct i2c_client *client)
+>  	struct da903x_chip *chip = i2c_get_clientdata(client);
+>  
+>  	da903x_remove_subdevs(chip);
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(chip);
+>  	return 0;
+>  }
+> diff --git a/drivers/mfd/menelaus.c b/drivers/mfd/menelaus.c
+> index 970afa1..d9e60ba 100644
+> --- a/drivers/mfd/menelaus.c
+> +++ b/drivers/mfd/menelaus.c
+> @@ -1227,6 +1227,7 @@ fail2:
+>  	free_irq(client->irq, menelaus);
+>  	flush_scheduled_work();
+>  fail1:
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(menelaus);
+>  	return err;
+>  }
+> @@ -1236,8 +1237,8 @@ static int __exit menelaus_remove(struct i2c_client *client)
+>  	struct menelaus_chip	*menelaus = i2c_get_clientdata(client);
+>  
+>  	free_irq(client->irq, menelaus);
+> -	kfree(menelaus);
+>  	i2c_set_clientdata(client, NULL);
+> +	kfree(menelaus);
+>  	the_menelaus = NULL;
+>  	return 0;
+>  }
+> diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+> index 03dcc92..ab7b4dd 100644
+> --- a/drivers/mfd/pcf50633-core.c
+> +++ b/drivers/mfd/pcf50633-core.c
+> @@ -675,6 +675,7 @@ static int __devexit pcf50633_remove(struct i2c_client *client)
+>  	for (i = 0; i < PCF50633_NUM_REGULATORS; i++)
+>  		platform_device_unregister(pcf->regulator_pdev[i]);
+>  
+> +	i2c_set_clientdata(client, NULL);
+>  	kfree(pcf);
+>  
+>  	return 0;
+> diff --git a/drivers/mfd/tps65010.c b/drivers/mfd/tps65010.c
+> index e595530..9b22a77 100644
+> --- a/drivers/mfd/tps65010.c
+> +++ b/drivers/mfd/tps65010.c
+> @@ -530,8 +530,8 @@ static int __exit tps65010_remove(struct i2c_client *client)
+>  	cancel_delayed_work(&tps->work);
+>  	flush_scheduled_work();
+>  	debugfs_remove(tps->file);
+> -	kfree(tps);
+>  	i2c_set_clientdata(client, NULL);
+> +	kfree(tps);
+>  	the_tps = NULL;
+>  	return 0;
+>  }
+> diff --git a/drivers/mfd/wm8350-i2c.c b/drivers/mfd/wm8350-i2c.c
+> index 8d8c932..2dd3e8a 100644
+> --- a/drivers/mfd/wm8350-i2c.c
+> +++ b/drivers/mfd/wm8350-i2c.c
+> @@ -81,6 +81,7 @@ static int wm8350_i2c_probe(struct i2c_client *i2c,
+>  	return ret;
+>  
+>  err:
+> +	i2c_set_clientdata(i2c, NULL);
+>  	kfree(wm8350);
+>  	return ret;
+>  }
+> @@ -90,6 +91,7 @@ static int wm8350_i2c_remove(struct i2c_client *i2c)
+>  	struct wm8350 *wm8350 = i2c_get_clientdata(i2c);
+>  
+>  	wm8350_device_exit(wm8350);
+> +	i2c_set_clientdata(i2c, NULL);
+>  	kfree(wm8350);
+>  
+>  	return 0;
+> -- 
+> 1.7.0
+> 
 
---z4+8/lEcDcG5Ke9S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkurPY4ACgkQZBYm/87l50LdLwCeMIThd8aDVCc1F/Dvpu2rjEgT
-3GcAoJULDnvL0Xwic5mMFRcVSUzulW4Y
-=zL/H
------END PGP SIGNATURE-----
-
---z4+8/lEcDcG5Ke9S--
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
