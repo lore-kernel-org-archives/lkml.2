@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab0CYNHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 09:07:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60250 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab0CYNHP (ORCPT
+	id S1752347Ab0CYNL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 09:11:58 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:56418 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750931Ab0CYNL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 09:07:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Date: Thu, 25 Mar 2010 14:06:10 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       Matthew Wilcox <matthew@wil.cx>, Thomas Gleixner <tglx@linutronix.de>,
-       jblunck@suse.de, Alan Cox <alan@linux.intel.com>,
-       Ingo Molnar <mingo@elte.hu>
-References: <201003242240.54907.arnd@arndb.de> <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
-In-Reply-To: <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
+	Thu, 25 Mar 2010 09:11:56 -0400
+Message-ID: <4BAB6118.4080201@panasas.com>
+Date: Thu, 25 Mar 2010 15:11:52 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: pNFS Mailing List <pnfs@linux-nfs.org>,
+       "J. Bruce Fields" <bfields@citi.umich.edu>,
+       Trond Myklebust <Trond.Myklebust@netapp.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Doug Nazar <nazard.lkml@gmail.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
+ case to use of do_last()
+References: <4BAA4CAC.6060104@panasas.com> <4BAA5035.1060906@panasas.com>	<4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk>	<4BAB3967.6000702@panasas.com>	<20100325104924.GV30031@ZenIV.linux.org.uk>	<20100325115514.GY30031@ZenIV.linux.org.uk> <4BAB5E69.4090407@panasas.com>
+In-Reply-To: <4BAB5E69.4090407@panasas.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003251406.10177.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18QmkMt1FOUNb5kohZ3lrImlqloX5suNVEuyDX
- EZxGf3JB7LzeNZLtw1sM3mMkHIVZ4ZT5ljf4Ys9g9nU3bZPPsT
- W+T+H5XF1TLQmDxGsgCCA==
+X-OriginalArrivalTime: 25 Mar 2010 13:11:55.0377 (UTC) FILETIME=[BE166610:01CACC1C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 March 2010, Jiri Kosina wrote:
-> On Wed, 24 Mar 2010, Arnd Bergmann wrote:
+On 03/25/2010 03:00 PM, Boaz Harrosh wrote:
+> On 03/25/2010 01:55 PM, Al Viro wrote:
+>> On Thu, Mar 25, 2010 at 10:49:24AM +0000, Al Viro wrote:
+>>
+>>> Does that happen with nfsv3 or is that v4-only?  I'm going to set up v4
+>>> server and client and see what happens, but that information could be
+>>> useful...
+>>
+>> *grumble*
+>> I'd managed to forget that rpc.imapd in its infinite wisdom relies on
+>> the FPOS I normally disable.  Oh, well... rebuilding testbox kernel
+>> with dnotify enabled ;-/
 > 
-> > I've spent some time continuing the work of the people on Cc and many others
-> > to remove the big kernel lock from Linux and I now have bkl-removal branch
-> > in my git tree at git://git.kernel.org/pub/scm/linux/kernel/git/arnd/playground.git
-> > that lets me run a kernel on my quad-core machine with the only users of the BKL
-> > being mostly obscure device driver modules.
+> I just wanted to make sure, on top of 2.6.34-rc2 i did:
+> git revert 781b16775ba0bb55fac0e1757bf0bd87c8879632
+> 	Revert "Fix a dumb typo - use of & instead of &&"
+> and:
+> git revert 1f36f774b22a0ceb7dd33eca626746c81a97b6a5
+> 	Revert "Switch !O_CREAT case to use of do_last()"
 > 
->         config USB
->                 tristate "Support for Host-side USB"
->                 depends on USB_ARCH_HAS_HCD && BKL
-> 
-> Well, that's very interesting definition of "obscure" :)
+> The revert is now clean and the problem does not show.
+> Are you able to reproduce this? Anything I can do to help?
 > 
 
-That's why I said /mostly/ obscure modules. There are soundcore, usb-core, drm,
-vfat and a few other very common ones, along with many obscure ones.
+I'm not sure I mentioned this. If you are able to reproduce the
+error, then after the error in "git status" the tree becomes unusable.
+Not even from the local_mount. I have not found a method to fix the tree.
+So what I do is:
+- Before I start playing I save "cp some_tree/.git/index index.back"
+- then after the error and tree damage On local mount I:
+  "rm some_tree/.git/index"
+  "cp index.back cp some_tree/.git/index"
+  "cd some_tree; git status"
 
-	Arnd
+this will fix it so I can try a new iteration
+
+> Thanks
+> Boaz
