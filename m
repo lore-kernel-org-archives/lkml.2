@@ -1,148 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755039Ab0CYP3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 11:29:24 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:60813 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab0CYP3V (ORCPT
+	id S1754970Ab0CYPf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 11:35:29 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55488 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753999Ab0CYPf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 11:29:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tkeUHbcZJlKqsyycDK3KmYoiIw4jB1j5uVAP1J9f9cYhcUnLTJigCEPrlC5wyBiprl
-         cykRRd+B5IvrccauLiUmMtLtUx0fImeSCTj9n9DkuZmHO8/KFb1Va7t5QxlqJE2IrlJn
-         X54r39a/gvPpB1V2tdxDAB+zd4HCMnu1ZwlgE=
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
- anonymous pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100325092131.GK2024@csn.ul.ie>
-	 <20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20100325185200.6C8C.A69D9226@jp.fujitsu.com>
-	 <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Mar 2010 00:29:01 +0900
-Message-ID: <1269530941.1814.21.camel@barrios-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 11:35:27 -0400
+Date: Thu, 25 Mar 2010 11:35:24 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
+Message-ID: <20100325153524.GB22007@Krystal>
+References: <20100325153436.GA22007@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325153436.GA22007@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:34:47 up 61 days, 18:11,  6 users,  load average: 0.26, 0.75,
+	0.91
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kame. 
+(should really have CC'd lkml, here it is)
 
-On Thu, 2010-03-25 at 19:12 +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 25 Mar 2010 18:59:25 +0900 (JST)
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> __module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
+> (RELOC_HIDE is needed for per cpu pointers).
 > 
-> > > > > > Kosaki-san,
-> > > > > > 
-> > > > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
-> > > > > > 
-> > > > > >  But, this behavior of unmap_and_move() requires access to _freed_
-> > > > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
-> > > > > >  it't not good habit in general.
-> > > > > > 
-> > > > > >  After direct compaction, page-migration will be one of "core" code of
-> > > > > >  memory management. Then, I agree to patch [1/11] as our direction for
-> > > > > >  keeping sanity and showing direction to more updates. Maybe adding
-> > > > > >  refcnt and removing RCU in futuer is good.
-> > > > > 
-> > > > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
-> > > > > is meaningless now.
-> > > > 
-> > > > Christoph is opposed to removing it because of cache-hotness issues more
-> > > > so than use-after-free concerns. The refcount is needed with or without
-> > > > SLAB_DESTROY_BY_RCU.
-> > > > 
-> > > 
-> > > I wonder a code which the easiest to be read will be like following.
-> > > ==
-> > > 
-> > >         if (PageAnon(page)) {
-> > >                 struct anon_vma anon = page_lock_anon_vma(page);
-> > > 		/* to take this lock, this page must be mapped. */
-> > > 		if (!anon_vma)
-> > > 			goto uncharge;
-> > > 		increase refcnt
-> > > 		page_unlock_anon_vma(anon);
-> > >         }
-> > > 	....
-> > > ==
-> > 
-> > This seems very good and acceptable to me. This refcnt usage
-> > obviously reduce rcu-lock holding time.
-> > 
-> > I still think no refcount doesn't cause any disaster. but I agree
-> > this is forward step patch.
-> > 
+> This non-standard per-cpu pointer use has been introduced by commit
+> 720eba31f47aeade8ec130ca7f4353223c49170f
 > 
-> BTW, by above change and the change in patch [2/11], 
-> "A page turnd to be SwapCache and free unmapped but not freed"
-> page will be never migrated.
+> It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
+> enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
+> reported the bug).
 > 
-> Mel, could you change the check as this ??
+> It did not appear to hurt previously because most of the accesses were done
+> through local_inc, which probably obfuscated the access enough that no compiler
+> optimizations were done. But with local_read() done when CONFIG_TRACING is
+> active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
+> (module.c contains local_set and local_read that use __module_ref_addr()), but I
+> guess nobody noticed because we've been lucky enough that the compiler did not
+> generate the inappropriate optimization pattern there.
 > 
-> 	if (PageAnon(page)) {
-> 		rcu_read_lock();
-> 		if (!page_mapcount(page)) {
-> 			rcu_read_unlock();
-> 			if (!PageSwapCache(page))
-> 				goto uncharge;
-> 			/* unmapped swap cache can be migrated */
-
-
-Which case do we have PageAnon && (page_mapcount == 0) && PageSwapCache ?
-With looking over code which add_to_swap_cache, I found somewhere. 
-
-1) shrink_page_list
-I think this case doesn't matter by isolate_lru_xxx.
-
-2) shmem_swapin
-It seems to be !PageAnon
-
-3) shmem_writepage
-It seems to be !PageAnon. 
-
-4) do_swap_page
-page_add_anon_rmap increases _mapcount before setting page->mapping to anon_vma. 
-So It doesn't matter. 
-
-
-I think following codes in unmap_and_move seems to handle 3) case. 
-
----
-         * Corner case handling:
-         * 1. When a new swap-cache page is read into, it is added to the LRU
-         * and treated as swapcache but it has no rmap yet.
-        ...
-        if (!page->mapping) {
-                if (!PageAnon(page) && page_has_private(page)) {
-                ....
-                }    
-                goto skip_unmap;
-        }    
-
----
-
-Do we really check PageSwapCache in there?
-Do I miss any case?
-
-
+> This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
+> (tested on 2.6.33.1 x86_64)
+> 
+> The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
+> percpu accesses were re-factored.
+> 
+> It makes me wonder about other non-standard uses of per_cpu_offset: there is one
+> in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
+> probably be fixed by the code authors in separate patches.
+> 
+> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+> 
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+> CC: Eric Dumazet <dada1@cosmosbay.com>
+> CC: Rusty Russell <rusty@rustcorp.com.au>
+> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Linus Torvalds <torvalds@linux-foundation.org>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> ---
+>  include/linux/module.h |    2 +-
+>  kernel/module.c        |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6-lttng/include/linux/module.h
+> ===================================================================
+> --- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
+> +++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
+> @@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
+>  static inline local_t *__module_ref_addr(struct module *mod, int cpu)
+>  {
+>  #ifdef CONFIG_SMP
+> -	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
+> +	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
+>  #else
+>  	return &mod->ref;
+>  #endif
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
 
 -- 
-Kind regards,
-Minchan Kim
-
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
