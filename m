@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab0CYLNz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 07:13:55 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:19195 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751063Ab0CYLNy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 07:13:54 -0400
-Message-ID: <4BAB456F.7080501@panasas.com>
-Date: Thu, 25 Mar 2010 13:13:51 +0200
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754546Ab0CYLQu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 07:16:50 -0400
+Received: from www.tglx.de ([62.245.132.106]:52285 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751536Ab0CYLQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 07:16:48 -0400
+Date: Thu, 25 Mar 2010 12:16:17 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+In-Reply-To: <20100325105033.35bceffd@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LFD.2.00.1003251211350.3147@localhost.localdomain>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+ <20100325105033.35bceffd@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: pNFS Mailing List <pnfs@linux-nfs.org>,
-       "J. Bruce Fields" <bfields@citi.umich.edu>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Doug Nazar <nazard.lkml@gmail.com>,
-       linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [pnfs] [GIT BISECT] first bad commit: 1f36f774 Switch !O_CREAT
- case to use of do_last()
-References: <4BAA5035.1060906@panasas.com> <4BAA52A8.2080304@panasas.com>	<20100324180622.GS30031@ZenIV.linux.org.uk>	<4BAA5955.4000001@gmail.com>	<20100324185604.GT30031@ZenIV.linux.org.uk>	<4BAB2F5A.30409@panasas.com>	<20100325101231.GU30031@ZenIV.linux.org.uk>	<4BAB3967.6000702@panasas.com>	<20100325104924.GV30031@ZenIV.linux.org.uk>	<4BAB4168.2090404@panasas.com>	<20100325110031.GX30031@ZenIV.linux.org.uk> <4BAB4523.1010601@panasas.com>
-In-Reply-To: <4BAB4523.1010601@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 Mar 2010 11:13:53.0848 (UTC) FILETIME=[412AD380:01CACC0C]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mar. 25, 2010, 13:12 +0200, Benny Halevy <bhalevy@panasas.com> wrote:
-> On Mar. 25, 2010, 13:00 +0200, Al Viro <viro@ZenIV.linux.org.uk> wrote:
->> On Thu, Mar 25, 2010 at 12:56:40PM +0200, Benny Halevy wrote:
->>> -		if (*want_dir && !path->dentry->d_inode->i_op->lookup)
->>> +		if (*want_dir && !path->dentry->d_inode->i_op->lookup) {
->>> +			WARN_ON(1);
->>>  			goto exit_dput;
->>> +		}
->>>  		path_to_nameidata(path, nd);
->>>  		audit_inode(pathname, nd->path.dentry);
->>>  		goto ok;
->>>
->>> but it is NOT tripping for this scenario.
->>>
->>> (for some reason I saw it tripping when building the kernel over nfs
->>> but it's benign)
->> It's ENOTDIR, not EISDIR, anyway.  Happens if you ask to open foo/ or
->> foo with O_DIRECTORY when foo is not a directory.
-> 
-> Hmm, not according to my strace (or am I blind today? :)
+On Thu, 25 Mar 2010, Alan Cox wrote:
 
-Duh, you were referring to the hunk I added a WARN_ON to.
-Sure. you're right!
+> > Which leads to the general question why we have that IRQF_DISABLED
+> > shite at all. AFAICT the historical reason were IDE drivers, but we
+> > grew other abusers like USB, SCSI and other crap which runs hard irq
+> > handlers for hundreds of micro seconds in the worst case.
+> 
+> Anyone you've forgotten to offend ?
 
-> 
->>> open(".git/objects/pack", O_RDONLY|O_NONBLOCK|O_DIRECTORY|0x80000) = -1 EISDIR (Is a directory)
-> 
-> The odd thing is the app incorrectly gets EISDIR despite
-> the fact that it is opening a directory with O_DIRECTORY.
-> _______________________________________________
-> pNFS mailing list
-> pNFS@linux-nfs.org
-> http://linux-nfs.org/cgi-bin/mailman/listinfo/pnfs
+Hmm, not sure. Have not measured IRQ handler run times for quite a
+while :)
+
+> Pretty much the only 'core' driver today which enables IRQs in the irq
+> handlers and needs it is the old IDE layer. There are also a couple of
+> drivers which play games with disable/enable_irq in the IRQ paths for
+> other reasons (lack of irq threads when written and a hardware model thats
+> totally SMP unfriendly). 8390 is the obvious one here and it at least
+> would be far far saner using threaded IRQs and normal locking with IRQs
+> unmasked.
+
+Right, but that's not the problem here. We talk about a (hopefully)
+well written interrupt handler which runs for a very short
+time. What's the point of running it with interrupts enabled ?
+Nothing, we just run into stack overflow problems. So what's better:
+an unreliable and ugly hackaround or just avoiding the possible stack
+overflow in the first place ?
+
+Thanks,
+
+	tglx
+
+
