@@ -1,97 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155Ab0CYE7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 00:59:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55486 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750842Ab0CYE7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 00:59:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=sRhUY/nDxcsfGZ2MolK8/pnn8dJ6ueZmp/Ji5D5/S9XO4CNyEUn04ZyM38AJFz/8t9
-         gGB2ww/f6X5LfdRsr9ERfVr++7wKhf8ifhZwar2lEhSK65C48qnLutyV5I+TL9EdAZFd
-         VpbvzRPVtEJ3Q+xusS+hinfU6TpIzF4dAdGJg=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-Date: Wed, 24 Mar 2010 21:59:25 -0700
-User-Agent: KMail/1.13.1 (Linux/2.6.34-rc2; KDE/4.4.1; x86_64; ; )
-Cc: Jason Wessel <jason.wessel@windriver.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au> <20100325154307.9cdeae10.sfr@canb.auug.org.au>
-In-Reply-To: <20100325154307.9cdeae10.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003242159.25770.dmitry.torokhov@gmail.com>
+	id S1752422Ab0CYFRX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 01:17:23 -0400
+Received: from mail.perches.com ([173.55.12.10]:1075 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752204Ab0CYFRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 01:17:22 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+Subject: [PATCH 00/13] drivers/staging: Hoist assigns from if
+Date: Wed, 24 Mar 2010 22:16:54 -0700
+Message-Id: <cover.1269493047.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.0.14.g7e948
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 March 2010 09:43:07 pm Stephen Rothwell wrote:
-> Hi Jason, Dmitry,
-> 
-> On Tue, 23 Mar 2010 15:04:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> 
-wrote:
-> > After merging the kgdb tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > kernel/debug/kdb/kdb_main.c: In function 'kdb_sr':
-> > kernel/debug/kdb/kdb_main.c:1822: error: '__sysrq_enabled' undeclared
-> > (first use in this function)
-> > 
-> > Caused by commit ab28988df9667f8dd70c7434c8ca463beb00b300 ("kdb: core for
-> > kgdb back end (1 of 2)") from the kgdb tree interacting with commit
-> > edc6e384f9d96e54a6d03068d3b03fa5b56b6449 ("") fromInput: implement SysRq
-> > as a separate input handler the input tree.
-> 
-> I got this again today (I stopped reverting the input tree commits that I
-> was reverting for another build problem).  The patch below still seems to
-> work OK.
+Used scripts/cvt_kernel.style.pl: --convert-hoist_assigns_from_if
+and verified visually.
 
-Yes, I  of __sysrq_enabled is not global anymore...
+checkpatch errors ignored
 
-I am not sure I like kgdb enabling sysrq functonality on its own, I'd rather
-export __handle_sysrq that does not check sysrq state...
+Joe Perches (13):
+  drivers/staging/cx25821: Hoist assign from if
+  drivers/staging/dt3155: Hoist assign from if
+  drivers/staging/otus/80211core: Hoist assign from if
+  drivers/staging/otus: Hoist assign from if
+  drivers/staging/rt2860: Hoist assign from if
+  drivers/staging/rt2870: Hoist assign from if
+  drivers/staging/rtl8187se: Hoist assign from if
+  drivers/staging/rtl8192e: Hoist assign from if
+  drivers/staging/rtl8192su: Hoist assign from if
+  drivers/staging/rtl8192u: Hoist assign from if
+  drivers/staging/vt6655: Hoist assign from if
+  drivers/staging/vt6656: Hoist assign from if
+  drivers/staging/wlags49_h2: Hoist assign from if
 
-> 
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Tue, 23 Mar 2010 14:45:22 +1100
-> > Subject: [PATCH] kgdb: update for sysrq handling change
-> > 
-> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > ---
-> > 
-> >  kernel/debug/kdb/kdb_main.c |    6 ++----
-> >  1 files changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-> > index f1f9309..bad8e63 100644
-> > --- a/kernel/debug/kdb/kdb_main.c
-> > +++ b/kernel/debug/kdb/kdb_main.c
-> > @@ -1819,10 +1819,8 @@ static int kdb_sr(int argc, const char **argv)
-> > 
-> >  {
-> >  
-> >  	if (argc != 1)
-> >  	
-> >  		return KDB_ARGCOUNT;
-> > 
-> > -	if (!__sysrq_enabled) {
-> > -		kdb_printf("Auto activating sysrq\n");
-> > -		__sysrq_enabled = 1;
-> > -	}
-> > +
-> > +	sysrq_toggle_support(1);
-> > 
-> >  	kdb_trap_printk++;
-> >  	handle_sysrq(*argv[1], NULL);
+ drivers/staging/cx25821/cx25821-core.c             |    3 +-
+ drivers/staging/dt3155/dt3155_drv.c                |   20 ++-
+ drivers/staging/dt3155/dt3155_isr.c                |    3 +-
+ drivers/staging/otus/80211core/cagg.c              |   34 +++--
+ drivers/staging/otus/80211core/ccmd.c              |    3 +-
+ drivers/staging/otus/80211core/cfunc.c             |    3 +-
+ drivers/staging/otus/80211core/cic.c               |    9 +-
+ drivers/staging/otus/80211core/cinit.c             |    3 +-
+ drivers/staging/otus/80211core/cmm.c               |  144 +++++++++++++-------
+ drivers/staging/otus/80211core/cmmap.c             |  103 +++++++++-----
+ drivers/staging/otus/80211core/cmmsta.c            |  123 +++++++++++------
+ drivers/staging/otus/80211core/coid.c              |    3 +-
+ drivers/staging/otus/80211core/cpsmgr.c            |    3 +-
+ drivers/staging/otus/80211core/ctxrx.c             |   81 +++++++----
+ drivers/staging/otus/80211core/queue.c             |    5 +-
+ drivers/staging/otus/80211core/ratectrl.c          |    3 +-
+ drivers/staging/otus/hal/hpmain.c                  |   30 +++--
+ drivers/staging/otus/usbdrv.c                      |    6 +-
+ drivers/staging/otus/zdusb.c                       |    3 +-
+ drivers/staging/rt2860/common/cmm_data.c           |    6 +-
+ drivers/staging/rt2860/common/cmm_wpa.c            |   18 +--
+ drivers/staging/rt2860/common/spectrum.c           |    7 +-
+ drivers/staging/rt2860/pci_main_dev.c              |    6 +-
+ drivers/staging/rt2860/rt_linux.c                  |    7 +-
+ drivers/staging/rt2870/common/rtusb_bulk.c         |   15 ++-
+ drivers/staging/rt2870/common/rtusb_io.c           |   10 +-
+ .../rtl8187se/ieee80211/ieee80211_softmac.c        |    3 +-
+ drivers/staging/rtl8187se/r8180_core.c             |    6 +-
+ .../staging/rtl8192e/ieee80211/ieee80211_softmac.c |    3 +-
+ drivers/staging/rtl8192e/r8192E_core.c             |    6 +-
+ .../rtl8192su/ieee80211/ieee80211_softmac.c        |    3 +-
+ .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |    3 +-
+ drivers/staging/vt6655/desc.h                      |    6 +-
+ drivers/staging/vt6655/device.h                    |    6 +-
+ drivers/staging/vt6655/device_main.c               |    3 +-
+ drivers/staging/vt6655/iwctl.c                     |    3 +-
+ drivers/staging/vt6656/main_usb.c                  |   12 +-
+ drivers/staging/vt6656/usbpipe.c                   |   21 ++-
+ drivers/staging/wlags49_h2/hcf.c                   |   15 ++-
+ drivers/staging/wlags49_h2/wl_main.c               |    3 +-
+ drivers/staging/wlags49_h2/wl_netdev.c             |   12 +-
+ drivers/staging/wlags49_h2/wl_priv.c               |    9 +-
+ drivers/staging/wlags49_h2/wl_sysfs.c              |    3 +-
+ 43 files changed, 496 insertions(+), 272 deletions(-)
 
-Thanks.
-
--- 
-Dmitry
