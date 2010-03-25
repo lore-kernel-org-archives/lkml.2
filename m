@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0CYKPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 06:15:52 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57925 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab0CYKPv (ORCPT
+	id S1753651Ab0CYKQU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 06:16:20 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58724 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab0CYKQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 06:15:51 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 06:15:50 EDT
-Date: Thu, 25 Mar 2010 19:05:47 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-In-reply-to: <960f4547118a62d5863ee38ba760844c@localhost>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: dan.j.williams@intel.com, linus.ml.walleij@gmail.com,
-       kyungmin.park@samsung.com, linux-kernel@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Message-id: <4BAB357B.7040108@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-References: <4BAAD5BB.7050101@samsung.com>
- <20100325054430.165311fa@taxman.wild-wind.fr.eu.org>
- <4BAB264C.2090502@samsung.com> <960f4547118a62d5863ee38ba760844c@localhost>
-X-OriginalArrivalTime: 25 Mar 2010 10:05:47.0523 (UTC)
- FILETIME=[BD871D30:01CACC02]
+	Thu, 25 Mar 2010 06:16:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 25 Mar 2010 19:12:29 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+ anonymous pages
+Message-Id: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100325185200.6C8C.A69D9226@jp.fujitsu.com>
+References: <20100325092131.GK2024@csn.ul.ie>
+	<20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100325185200.6C8C.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/25/2010 6:32 PM, Marc Zyngier wrote:
-> On Thu, 25 Mar 2010 18:01:00 +0900, Joonyoung Shim
-> <jy0922.shim@samsung.com> wrote:
->> On 3/25/2010 2:44 PM, Marc Zyngier wrote:
->>> On Thu, 25 Mar 2010 12:17:15 +0900
->>> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
->>>
->>>> +	writew(imm, desc_pool_virt);
->> Right. The write[bwl] is api for address ioremapped of io device. I will
->> change these.
->>
->>> Does anything ensure that this won't generate an unaligned access?
->>>
->> PL330 DMA controller fetches variable length instructions that consist
-> of
->> one to six bytes, so i think unaligned access is no problem.
+On Thu, 25 Mar 2010 18:59:25 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
+> > > > > Kosaki-san,
+> > > > > 
+> > > > >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
+> > > > > 
+> > > > >  But, this behavior of unmap_and_move() requires access to _freed_
+> > > > >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
+> > > > >  it't not good habit in general.
+> > > > > 
+> > > > >  After direct compaction, page-migration will be one of "core" code of
+> > > > >  memory management. Then, I agree to patch [1/11] as our direction for
+> > > > >  keeping sanity and showing direction to more updates. Maybe adding
+> > > > >  refcnt and removing RCU in futuer is good.
+> > > > 
+> > > > But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
+> > > > is meaningless now.
+> > > 
+> > > Christoph is opposed to removing it because of cache-hotness issues more
+> > > so than use-after-free concerns. The refcount is needed with or without
+> > > SLAB_DESTROY_BY_RCU.
+> > > 
+> > 
+> > I wonder a code which the easiest to be read will be like following.
+> > ==
+> > 
+> >         if (PageAnon(page)) {
+> >                 struct anon_vma anon = page_lock_anon_vma(page);
+> > 		/* to take this lock, this page must be mapped. */
+> > 		if (!anon_vma)
+> > 			goto uncharge;
+> > 		increase refcnt
+> > 		page_unlock_anon_vma(anon);
+> >         }
+> > 	....
+> > ==
 > 
-> I'm not too concerned about the device side of things. I'm more worried
-> about the CPU access when writing the 'imm' value to memory.
+> This seems very good and acceptable to me. This refcnt usage
+> obviously reduce rcu-lock holding time.
 > 
-> Consider desc_pool_virt 16bit aligned when entering the function. Writing
-> the opcode makes it unaligned and then writing the 'imm' value will result
-> as an unaligned access.
+> I still think no refcount doesn't cause any disaster. but I agree
+> this is forward step patch.
 > 
 
-Why desc_pool_virt should be aligned more than 16bit?
+BTW, by above change and the change in patch [2/11], 
+"A page turnd to be SwapCache and free unmapped but not freed"
+page will be never migrated.
+
+Mel, could you change the check as this ??
+
+	if (PageAnon(page)) {
+		rcu_read_lock();
+		if (!page_mapcount(page)) {
+			rcu_read_unlock();
+			if (!PageSwapCache(page))
+				goto uncharge;
+			/* unmapped swap cache can be migrated */
+		} else {
+			...
+		}
+	.....
+	} else 
+
+
+Thx,
+-Kame
+
+
