@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752592Ab0CYM07 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 08:26:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60457 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751051Ab0CYM06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 08:26:58 -0400
-Message-ID: <4BAB569E.5060103@cn.fujitsu.com>
-Date: Thu, 25 Mar 2010 20:27:10 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1752709Ab0CYM2U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 08:28:20 -0400
+Received: from fmmailgate02.web.de ([217.72.192.227]:37770 "EHLO
+	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0CYM2S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 08:28:18 -0400
+Date: Thu, 25 Mar 2010 13:24:19 +0100
+From: Nikolaus Schulz <microschulz@web.de>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Marton Balint <cus@fazekas.hu>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Kevin Dankwardt <k@kcomputing.com>, Christoph Hellwig <hch@lst.de>,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] fat: fix buffer overflow in vfat_create_shortname()
+Message-ID: <20100325122419.GA8896@luigi.zusammrottung.local>
+References: <20100325035010.GA3242@penelope.zusammrottung.local>
+ <8739zp6k9s.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Ben Blum <bblum@google.com>, Jiri Slaby <jirislaby@gmail.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] kill the broken and deadlockable	cpuset_lock/cpuset_cpus_allowed_locked
- code
-References: <20100315091003.GA9123@redhat.com> <4BAAD1EB.4020201@cn.fujitsu.com> <20100325101420.GA30779@redhat.com>
-In-Reply-To: <20100325101420.GA30779@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8739zp6k9s.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Provags-ID: V01U2FsdGVkX19MjlUwNg3uditdx/gWJG3NLdjKE5zdFPoSHQdS
+	ZttXbhoSV+ksU2rd3+hdKJOYH22mU/bR7v/7DEgeRRudD4uxUl
+	DN+ZR5Oss=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2010-3-25 18:14, Oleg Nesterov wrote:
-> On 03/25, Miao Xie wrote:
->>
->> on 2010-3-15 17:10, Oleg Nesterov wrote:
->>> This patch just states the fact the cpusets/cpuhotplug interaction is
->>> broken and removes the deadlockable code which only pretends to work.
->>>
->>> - cpuset_lock() doesn't really work. It is needed for
->>>   cpuset_cpus_allowed_locked() but we can't take this lock in
->>>   try_to_wake_up()->select_fallback_rq() path.
->>>
->>> - cpuset_lock() is deadlockable. Suppose that a task T bound to CPU takes
->>>   callback_mutex. If cpu_down(CPU) happens before T drops callback_mutex
->>>   stop_machine() preempts T, then migration_call(CPU_DEAD) tries to take
->>>   cpuset_lock() and hangs forever because CPU is already dead and thus
->>>   T can't be scheduled.
->>
->> The problem what you said don't exist, because the kernel already move T to
->> the active cpu when preparing to turn off a CPU.
+On Thu, Mar 25, 2010 at 02:30:07PM +0900, OGAWA Hirofumi wrote:
+> Nikolaus Schulz <microschulz@web.de> writes:
 > 
-> we need cpuset_lock() to move T. please look at _cpu_down().
+> > When using the string representation of a random counter as part of the base
+> > name, ensure that it is no longer than 4 bytes.
+> >
+> > Since we are repeatedly decrementing the counter in a loop until we have found a
+> > unique base name, the counter may wrap around zero; therefore, it is not enough
+> > to mask its higher bits before entering the loop, this must be done inside the
+> > loop.
 > 
-> OK.
-> 
-> 	A task T holds callback_mutex, and it is bound to CPU 1.
-> 
-> 	_cpu_down(cpu => 1) is called by the task X.
-> 
-> 	_cpu_down()->stop_machine() spawns rt-threads for each cpu,
-> 	a thread running on CPU 1 preempts T and calls take_cpu_down()
-> 	which removes CPU 1 from online/active masks.
-> 
-> 	X continues, and does raw_notifier_call_chain(CPU_DEAD), this
-> 	calls migration_call(CPU_DEAD), and _this_ is what move the
-> 	tasks from the dead CPU.
-> 
-> 	migration_call(CPU_DEAD) calls cpuset_lock() and deadlocks.
-> 
-> See?
+> This logic seems to still be strange after applying this patch. 
 
-But when the kernel want to offline a cpu, it does 
-	raw_notifier_call_chain(CPU_DOWN_PREPARE) 
-at first. this calls cpuset_track_online_cpus() to update cpuset's cpus
-and task->cpus_allowed, and then moves the task running on the dying cpu
-to the other online cpu. At that time, rt-threads for each cpu have not
-been created.
+Yeah, I find that code not terribly convincing either. :)
 
-And when the kernel does migration_call(CPU_DEAD), the rt-threads already
-exit. the task that holds callback_mutex can run as normal.
+> However, anyway, your patch is much better off than current one. So,
+> I'll apply this in the next merge window.
+> 
+> Or should we apply this immediately?
+> 
+> Thanks.
 
-Miao
+Given that this fixes a stack corruption which triggers the gcc stack
+smashing protection and thus basically a crash, I vote for not
+postponing it, but applying it immediately.
 
+> > Signed-off-by: Nikolaus Schulz <microschulz@web.de>
+> > Cc: stable@kernel.org
+> > ---
+> >  fs/fat/namei_vfat.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/fs/fat/namei_vfat.c b/fs/fat/namei_vfat.c
+> > index c1ef501..a448ee5 100644
+> > --- a/fs/fat/namei_vfat.c
+> > +++ b/fs/fat/namei_vfat.c
+> > @@ -309,7 +309,7 @@ static int vfat_create_shortname(struct inode *dir, struct nls_table *nls,
+> >  {
+> >  	struct fat_mount_options *opts = &MSDOS_SB(dir->i_sb)->options;
+> >  	wchar_t *ip, *ext_start, *end, *name_start;
+> > -	unsigned char base[9], ext[4], buf[8], *p;
+> > +	unsigned char base[9], ext[4], buf[5], *p;
+> >  	unsigned char charbuf[NLS_MAX_CHARSET_SIZE];
+> >  	int chl, chi;
+> >  	int sz = 0, extlen, baselen, i, numtail_baselen, numtail2_baselen;
+> > @@ -467,7 +467,7 @@ static int vfat_create_shortname(struct inode *dir, struct nls_table *nls,
+> >  			return 0;
+> >  	}
+> >  
+> > -	i = jiffies & 0xffff;
+> > +	i = jiffies;
+> >  	sz = (jiffies >> 16) & 0x7;
+> >  	if (baselen > 2) {
+> >  		baselen = numtail2_baselen;
+> > @@ -476,7 +476,7 @@ static int vfat_create_shortname(struct inode *dir, struct nls_table *nls,
+> >  	name_res[baselen + 4] = '~';
+> >  	name_res[baselen + 5] = '1' + sz;
+> >  	while (1) {
+> > -		sprintf(buf, "%04X", i);
+> > +		sprintf(buf, "%04X", i & 0xffff);
+> >  		memcpy(&name_res[baselen], buf, 4);
+> >  		if (vfat_find_form(dir, name_res) < 0)
+> >  			break;
 > 
-> Oleg.
+> -- 
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 > 
-> 
-> 
-> 
-
-
