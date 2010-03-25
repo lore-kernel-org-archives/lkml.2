@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab0CYTPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 15:15:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33599 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753181Ab0CYTPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 15:15:48 -0400
-Date: Thu, 25 Mar 2010 12:10:22 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-       x86@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       jesse.brandeburg@intel.com
-Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
- overflowing v2
-In-Reply-To: <20100325182930.GA7709@elte.hu>
-Message-ID: <alpine.LFD.2.00.1003251206550.3721@i5.linux-foundation.org>
-References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
- <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org> <1269539254.12097.100.camel@laptop> <alpine.LFD.2.00.1003251054030.3721@i5.linux-foundation.org>
- <20100325182930.GA7709@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754328Ab0CYTSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 15:18:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5693 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753181Ab0CYTSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 15:18:01 -0400
+Date: Thu, 25 Mar 2010 20:15:54 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Blum <bblum@google.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Miao Xie <miaox@cn.fujitsu.com>,
+       Paul Menage <menage@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] sched/cpusets fixes, more changes are needed
+Message-ID: <20100325191554.GA19830@redhat.com>
+References: <20100315090958.GA9116@redhat.com> <1269452296.5109.508.camel@twins> <20100324180912.GA21774@redhat.com> <1269512531.12097.67.camel@laptop> <20100325154616.GA9773@redhat.com> <20100325160243.GA11517@redhat.com> <20100325161008.GA11724@redhat.com> <1269538142.12097.87.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269538142.12097.87.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/25, Peter Zijlstra wrote:
+>
+> Yeah, such a smaller patch might work too, but I was trying to remove
+> some more of the complexity we grown.
+>
+> Being able to fully remove that TASK_WAKING check from task_rq_lock()
+> and only have it in set_cpus_allowed_ptr() would reduce some fast-path
+> logic.
 
+OK. Agreed.
 
-On Thu, 25 Mar 2010, Ingo Molnar wrote:
-> 
-> So the patch below should at most trigger bugs in areas that need fixing 
-> anyway, and i'm quite sure that under no circumstance would it cause 
-> unforeseen problems in 'thousands of drivers'.
+> You patch add a memory barrier and an unlock_wait(), which, while
+> seemingly correct, are harder to parse than the modified locking.
 
-If we do this, then we should just remove all the IRQF_DISABLED code in 
-kernel/irq/manage.c too, and basically make IRQF_DISABLED a clear no-op 
-(still leave it around as a #define, to not break any users). 
+Yes, lock + set WAKING + unlock is simpler and cleaner, but this
+doesn't matter.
 
-It won't make it any harder to revert if it causes problems, and that way 
-there will be no crazy dead code (and comments) left around.
+I think your patch should address all problems.
 
-And I just checked: even the 8250 serial driver doesn't use IRQF_DISABLED 
-any more, so doing that shouldn't cause any latency issues (sure, the 
-serial driver may interrupt another irq, but another irq can also 
-interrupt the serial driver as things stand now, so the original latency 
-issue with fast irq handlers doesn't actually work these days _anyway_).
+Oleg.
 
-		Linus
