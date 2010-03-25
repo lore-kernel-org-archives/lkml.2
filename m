@@ -1,108 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0CYJVv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:21:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54239 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab0CYJVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:21:50 -0400
-Date: Thu, 25 Mar 2010 09:21:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
-	anonymous pages
-Message-ID: <20100325092131.GK2024@csn.ul.ie>
-References: <20100325083235.GF2024@csn.ul.ie> <20100325180221.e1d9bae7.kamezawa.hiroyu@jp.fujitsu.com> <20100325180726.6C89.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+	id S1752795Ab0CYJWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:22:01 -0400
+Received: from mail-px0-f184.google.com ([209.85.216.184]:38915 "EHLO
+	mail-px0-f184.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab0CYJV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 05:21:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=JD93iDxapBh3GrpqakqyH+gGu5Xz0PG2TP+rcEz+Y+hNxiIsjl8agn8vUPD4N/d3lQ
+         RiTXy2f+rgsicU4BmrUO5iagaL4SpZbJ8C83TJgzdOlyyYt3aVHqj4lJ6yrqsPK2GH4G
+         Vj+urnniHNRICXe2GaFe5e4iRZU1CLu9wvrgU=
+Date: Thu, 25 Mar 2010 17:21:54 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: netfilter-devel@vger.kernel.org, kaber@trash.net
+Subject: [PATCH] Netfilter: Code cleanup on net/netfilter
+Message-ID: <20100325092154.GB29056@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100325180726.6C89.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 06:09:34PM +0900, KOSAKI Motohiro wrote:
-> > On Thu, 25 Mar 2010 08:32:35 +0000
-> > Mel Gorman <mel@csn.ul.ie> wrote:
-> > 
-> > > On Thu, Mar 25, 2010 at 11:49:23AM +0900, KOSAKI Motohiro wrote:
-> > > > > On Fri, Mar 19, 2010 at 03:21:41PM +0900, KOSAKI Motohiro wrote: 
-> > > > Hmmm...
-> > > > I haven't understand your mention because I guess I was wrong.
-> > > > 
-> > > > probably my last question was unclear. I mean,
-> > > > 
-> > > > 1) If we still need SLAB_DESTROY_BY_RCU, why do we need to add refcount?
-> > > >     Which difference is exist between normal page migration and compaction?
-> > > 
-> > > The processes typically calling migration today own the page they are moving
-> > > and is not going to exit unexpectedly during migration.
-> > > 
-> > > > 2) If we added refcount, which race will solve?
-> > > > 
-> > > 
-> > > The process exiting and the last anon_vma being dropped while compaction
-> > > is running. This can be reliably triggered with compaction.
-> > > 
-> > > > IOW, Is this patch fix old issue or compaction specific issue?
-> > > > 
-> > > 
-> > > Strictly speaking, it's an old issue but in practice it's impossible to
-> > > trigger because the process migrating always owns the page. Compaction
-> > > moves pages belonging to arbitrary processes.
-> > > 
-> > Kosaki-san,
-> > 
-> >  IIUC, the race in memory-hotunplug was fixed by this patch [2/11].
-> > 
-> >  But, this behavior of unmap_and_move() requires access to _freed_
-> >  objects (spinlock). Even if it's safe because of SLAB_DESTROY_BY_RCU,
-> >  it't not good habit in general.
-> > 
-> >  After direct compaction, page-migration will be one of "core" code of
-> >  memory management. Then, I agree to patch [1/11] as our direction for
-> >  keeping sanity and showing direction to more updates. Maybe adding
-> >  refcnt and removing RCU in futuer is good.
-> 
-> But Christoph seems oppose to remove SLAB_DESTROY_BY_RCU. then refcount
-> is meaningless now.
+Fix some coding styles and remove moduleparam.h
 
-Christoph is opposed to removing it because of cache-hotness issues more
-so than use-after-free concerns. The refcount is needed with or without
-SLAB_DESTROY_BY_RCU.
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-> I agree you if we will remove SLAB_DESTROY_BY_RCU
-> in the future.
-> 
-> refcount is easy understanding than rcu trick.
-> 
-> 
-> >  IMHO, pushing this patch [2/11] as "BUGFIX" independent of this set and
-> >  adding anon_vma->refcnt [1/11] and [3/11] in 1st Direct-compaction patch
-> >  series  to show the direction will makse sense.
-> >  (I think merging 1/11 and 3/11 will be okay...)
-> 
-> agreed.
-> 
-> > 
-> > Thanks,
-> > -Kame
-> > 
-> > 
-> 
-> 
-> 
+---
+ net/ipv4/netfilter/nf_nat_h323.c       |    1 -
+ net/ipv4/netfilter/nf_nat_standalone.c |    3 +--
+ net/ipv4/netfilter/nf_nat_tftp.c       |    1 -
+ net/netfilter/nf_conntrack_proto.c     |    2 --
+ 4 files changed, 1 insertions(+), 6 deletions(-)
 
+diff --git a/net/ipv4/netfilter/nf_nat_h323.c b/net/ipv4/netfilter/nf_nat_h323.c
+index 7e8e6fc..d4c0618 100644
+--- a/net/ipv4/netfilter/nf_nat_h323.c
++++ b/net/ipv4/netfilter/nf_nat_h323.c
+@@ -10,7 +10,6 @@
+  */
+ 
+ #include <linux/module.h>
+-#include <linux/moduleparam.h>
+ #include <linux/tcp.h>
+ #include <net/tcp.h>
+ 
+diff --git a/net/ipv4/netfilter/nf_nat_standalone.c b/net/ipv4/netfilter/nf_nat_standalone.c
+index 5678e95..0b49248 100644
+--- a/net/ipv4/netfilter/nf_nat_standalone.c
++++ b/net/ipv4/netfilter/nf_nat_standalone.c
+@@ -137,9 +137,8 @@ nf_nat_fn(unsigned int hooknum,
+ 				ret = nf_nat_rule_find(skb, hooknum, in, out,
+ 						       ct);
+ 
+-			if (ret != NF_ACCEPT) {
++			if (ret != NF_ACCEPT)
+ 				return ret;
+-			}
+ 		} else
+ 			pr_debug("Already setup manip %s for ct %p\n",
+ 				 maniptype == IP_NAT_MANIP_SRC ? "SRC" : "DST",
+diff --git a/net/ipv4/netfilter/nf_nat_tftp.c b/net/ipv4/netfilter/nf_nat_tftp.c
+index b096e81..7274a43 100644
+--- a/net/ipv4/netfilter/nf_nat_tftp.c
++++ b/net/ipv4/netfilter/nf_nat_tftp.c
+@@ -6,7 +6,6 @@
+  */
+ 
+ #include <linux/module.h>
+-#include <linux/moduleparam.h>
+ #include <linux/udp.h>
+ 
+ #include <net/netfilter/nf_nat_helper.h>
+diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
+index 1a4568b..f71cd5d 100644
+--- a/net/netfilter/nf_conntrack_proto.c
++++ b/net/netfilter/nf_conntrack_proto.c
+@@ -13,12 +13,10 @@
+ #include <linux/netfilter.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+-#include <linux/skbuff.h>
+ #include <linux/vmalloc.h>
+ #include <linux/stddef.h>
+ #include <linux/err.h>
+ #include <linux/percpu.h>
+-#include <linux/moduleparam.h>
+ #include <linux/notifier.h>
+ #include <linux/kernel.h>
+ #include <linux/netdevice.h>
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.6.5.3
+
