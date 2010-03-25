@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab0CYQwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 12:52:34 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:38636 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab0CYQwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 12:52:31 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Bugme-new] [Bug 15621] New: BUG: unable to handle kernel paging request - comm: pccardd
-Date: Thu, 25 Mar 2010 10:51:39 -0600
-User-Agent: KMail/1.9.10
-Cc: Yinghai Lu <yinghai@kernel.org>, Dmitry Torokhov <dtor@mail.ru>,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       ozgur.yuksel@oracle.com, linux-kernel@vger.kernel.org,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-References: <bug-15621-10286@https.bugzilla.kernel.org/> <20100324071229.5c42e213.akpm@linux-foundation.org>
-In-Reply-To: <20100324071229.5c42e213.akpm@linux-foundation.org>
+	id S1751970Ab0CYQw3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 12:52:29 -0400
+Received: from www.tglx.de ([62.245.132.106]:50888 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750827Ab0CYQw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 12:52:28 -0400
+Date: Thu, 25 Mar 2010 17:52:11 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near
+ overflowing v2
+In-Reply-To: <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1003251749260.3147@localhost.localdomain>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+ <20100325093744.GH20695@one.firstfloor.org> <alpine.LFD.2.00.1003251133010.3147@localhost.localdomain> <alpine.LFD.2.00.1003250842240.3721@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201003251051.40453.bjorn.helgaas@hp.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It looks like the iomem_resource tree got wrecked.  Has anyone been
-> changing anything in there lately?
+On Thu, 25 Mar 2010, Linus Torvalds wrote:
+> In particular, it's probably true that especially on modern hardware with 
+> multiple cores, and especially when you do _not_ have irq sharing (which 
+> is the common case these days for things like network drivers that can use 
+> MSI), we really would be better off having the irq disabled over the whole 
+> thing, and on some interrupt controllers it might even be worth it to do 
+> the old optimization of not masking-and-acking, but just acking.
+> 
+> But see above. This is _not_ something that a driver can do any more. They 
+> don't know whether the interrupt might end up being shared. Just blindly 
+> setting IRAF_DISABLED in a driver is _not_ the answer. But being smarter 
+> in the generic irq handler code might work.
 
-My pci=use_crs patches change the contents of the iomem_resource tree,
-and it's possible they broke some assumptions PCMCIA was making, so
-you might see if "pci=nocrs" makes any difference.  If it does, please
-attach an acpidump and the entire dmesg logs with and without that option.
+For the MSI ones it definitely works as they can not be shared. I'm
+just not sure whether we can just enforce that for MSI.
+ 
+Thanks,
+
+	tglx
