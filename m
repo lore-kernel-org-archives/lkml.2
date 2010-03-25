@@ -1,38 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab0CYX0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:26:43 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53005 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750901Ab0CYX0m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:26:42 -0400
-Date: Thu, 25 Mar 2010 23:30:30 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: pavan_savoy@ti.com
-Cc: marcel@holtmann.org, gregkh@suse.de, linux-kernel@vger.kernel.org,
-       pavan_savoy@yahoo.co.in
-Subject: Re: [PATCH] serial: TTY: new ldiscs for staging
-Message-ID: <20100325233030.57ae6544@lxorguk.ukuu.org.uk>
-In-Reply-To: <1269559223-4043-2-git-send-email-pavan_savoy@ti.com>
-References: <1269559223-4043-1-git-send-email-pavan_savoy@ti.com>
-	<1269559223-4043-2-git-send-email-pavan_savoy@ti.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752378Ab0CYXce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 19:32:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:47146 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751567Ab0CYXcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 19:32:33 -0400
+Date: Fri, 26 Mar 2010 10:30:31 +1100
+From: Anton Blanchard <anton@samba.org>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, tglx@linutronix.de, mingo@elte.hu,
+       a.p.zijlstra@chello.nl
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
+ hvc_remove
+Message-ID: <20100325233031.GC5594@kryten>
+References: <20100319151326.GC8541@kroah.com>
+ <1269011916-8836-4-git-send-email-gregkh@suse.de>
+ <1269119079.8599.65.camel@pasglop>
+ <20100321043725.GA21566@amit-x200.redhat.com>
+ <20100324121902.GJ15789@amit-x200.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100324121902.GJ15789@amit-x200.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 18:20:16 -0500
-pavan_savoy@ti.com wrote:
+ 
+Hi,
 
-> From: Pavan Savoy <pavan_savoy@ti.com>
-> 
-> Push the max ldiscs by a few number to allow ldiscs
-> to exist in the staging directory
-> 
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> And this suggests that hvc_kick() is called before hvc_task is
+> initialised, ie, before hvc_init() is called.
+>
+> Does this help?
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+Looks good, tests OK on my POWER5 box. Thanks!
+
+Tested-by: Anton Blanchard <anton@samba.org>
+
+> diff --git a/drivers/char/hvc_console.c b/drivers/char/hvc_console.c
+> index ba55bba..50ac983 100644
+> --- a/drivers/char/hvc_console.c
+> +++ b/drivers/char/hvc_console.c
+> @@ -285,6 +285,9 @@ EXPORT_SYMBOL_GPL(hvc_instantiate);
+>  /* Wake the sleeping khvcd */
+>  void hvc_kick(void)
+>  {
+> +       if (!hvc_task)
+> +               return;
+> +
+>         hvc_kicked = 1;
+>         wake_up_process(hvc_task);
+>  }
+> 
+> 		Amit
