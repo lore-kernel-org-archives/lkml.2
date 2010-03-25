@@ -1,62 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab0CYJco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 05:32:44 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:39126 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751051Ab0CYJcn (ORCPT
+	id S1752155Ab0CYJhv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 05:37:51 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44418 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab0CYJht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 05:32:43 -0400
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-MIME-Version: 1.0
-Date: Thu, 25 Mar 2010 10:32:37 +0100
-From: Marc Zyngier <maz@misterjones.org>
-Cc: <dan.j.williams@intel.com>, <linus.ml.walleij@gmail.com>,
-       <kyungmin.park@samsung.com>, <linux-kernel@vger.kernel.org>,
-       <linux-arm-kernel@lists.infradead.org>
-Organization: Metropolis
-In-Reply-To: <4BAB264C.2090502@samsung.com>
-References: <4BAAD5BB.7050101@samsung.com> <20100325054430.165311fa@taxman.wild-wind.fr.eu.org> <4BAB264C.2090502@samsung.com>
-Message-ID: <960f4547118a62d5863ee38ba760844c@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: jy0922.shim@samsung.com, dan.j.williams@intel.com, linus.ml.walleij@gmail.com, kyungmin.park@samsung.com, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	Thu, 25 Mar 2010 05:37:49 -0400
+Date: Thu, 25 Mar 2010 10:37:44 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, jesse.brandeburg@intel.com,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] Prevent nested interrupts when the IRQ stack is near overflowing v2
+Message-ID: <20100325093744.GH20695@one.firstfloor.org>
+References: <20100324190150.GA18803@basil.fritz.box> <alpine.LFD.2.00.1003242125320.3147@localhost.localdomain> <alpine.LFD.2.00.1003250001500.3147@localhost.localdomain> <20100325003652.GG20695@one.firstfloor.org> <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1003250201370.3147@localhost.localdomain>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thu, 25 Mar 2010 18:01:00 +0900, Joonyoung Shim
-<jy0922.shim@samsung.com> wrote:
-> On 3/25/2010 2:44 PM, Marc Zyngier wrote:
->> On Thu, 25 Mar 2010 12:17:15 +0900
->> Joonyoung Shim <jy0922.shim@samsung.com> wrote:
->> 
->>> +	writew(imm, desc_pool_virt);
->> 
+On Thu, Mar 25, 2010 at 02:46:42AM +0100, Thomas Gleixner wrote:
+> "misleading" is an euphemism at best ... 
 > 
-> Right. The write[bwl] is api for address ioremapped of io device. I will
-> change these.
+> This is ever repeating shit: your changelogs suck big time!
+
+As much as your comments I guess.
+
 > 
->> Does anything ensure that this won't generate an unaligned access?
->> 
+> > "
+> > Multiple vectors on a multi port NIC pointing to the same CPU, 
+> > all hitting the irq stack until it overflows.
+> > "
 > 
-> PL330 DMA controller fetches variable length instructions that consist
-of
-> one to six bytes, so i think unaligned access is no problem.
+> So there are several questions:
+> 
+> 1) Why are those multiple vectors all hitting the same cpu at the same
+>    time ? How many of them are firing at the same time ?
 
-I'm not too concerned about the device side of things. I'm more worried
-about the CPU access when writing the 'imm' value to memory.
+This was 4 NIC ports being operational under stress at the same time
 
-Consider desc_pool_virt 16bit aligned when entering the function. Writing
-the opcode makes it unaligned and then writing the 'imm' value will result
-as an unaligned access.
+> 
+> 2) What kind of scenario is that ? Massive traffic on the card or some
+>    corner case ?
 
-        M.
+Massive traffic on the card from multiple ports on a large system.
+
+> 3) Why does the NIC driver code not set IRQF_DISABLED in the first
+>    place?  AFAICT the network drivers just kick off NAPI, so whats the
+>    point to run those handlers with IRQs enabled at all ?
+
+I think the idea was to minimize irq latency for other interrupts
+
+But yes defaulting to IRQF_DISABLED would fix it too, at some 
+cost. In principle that could be done also.
+
+> 
+> > > case of MSI-X it just disables the IRQ when it comes again while the
+> > > first irq on that vector is still in progress. So the maximum nesting
+> > > is two up to handle_edge_irq() where it disables the IRQ and returns
+> > > right away.
+> > 
+> > Real maximum nesting is all IRQs running with interrupts on pointing
+> > to the same CPU. Enough from multiple busy IRQ sources and you go boom.
+> 
+> Which leads to the general question why we have that IRQF_DISABLED
+> shite at all. AFAICT the historical reason were IDE drivers, but we
+
+My understanding was that traditionally the irq handlers were
+allowed to nest and the "fast" non nest case was only added for some 
+fast handlers like serial with small FIFOs.
+
+> grew other abusers like USB, SCSI and other crap which runs hard irq
+> handlers for hundreds of micro seconds in the worst case. All those
+> offenders need to be fixed (e.g. by converting to threaded irq
+> handlers) so we can run _ALL_ hard irq context handlers with interrupts
+> disabled. lockdep will sort out the nasty ones which enable irqs in the
+> middle of that hard irq handler.
+
+Ok glad to give you advertisement time for your pet project...
+
+Anyways if such a thing was done it would be a long term project
+and that short term fix would be still needed.
+
+> the handlers on which you enforce IRQ_DISABLED does not enable
+> interrupts itself ? You _CANNOT_.
+
+I can't, just as much as I cannot enforce they won't crash or not loop
+forever or something. But afaik they don't. 
+
+I did some quick grepping and didn't found a driver who does that
+at least.
+
+-Andi
 -- 
-Who you jivin' with that Cosmik Debris?
+ak@linux.intel.com -- Speaking for myself only.
