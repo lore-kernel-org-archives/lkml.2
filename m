@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab0CYUEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 16:04:43 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:41365 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab0CYUEl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 16:04:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=A9gktRAykM3mMEZJrf+9LyzM+RJHQMUstPKjjlp1lQ7fG2s7vqPnqkuXC9w31o0vGC
-         9BN52cwrTiPbOULKCeRjO7t/aa5IUGxbAbwIgkM7Z3sBLBya09+dE0nzpkm1vzj9CgIq
-         Utf92ysM3CnOODlJptNwbFHnh6Ugf/vcbySlU=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-       jbarnes@virtuousgeek.org, bjorn.helgaas@hp.com, airlied@linux.ie
-Subject: [Regresion] [2.6.34-rc1] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-Date: Thu, 25 Mar 2010 21:04:24 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
+	id S1754777Ab0CYUJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 16:09:48 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51263 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754394Ab0CYUJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 16:09:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: [linux-pm] [RFC 03/15] PM / Hibernate: separate block_io
+Date: Thu, 25 Mar 2010 21:12:25 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Jiri Slaby <jirislaby@gmail.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <4BAA98FC.9040302@crca.org.au> <4BAACC0A.2040009@crca.org.au>
+In-Reply-To: <4BAACC0A.2040009@crca.org.au>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="us-ascii"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003252104.24965.maciej.rutecki@gmail.com>
+Message-Id: <201003252112.25204.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last known good: 2.6.33
-Failing kernels: 2.6.34-rc1 and 2.6.34-rc2
-Driver: Video(DRI - Intel)
+On Thursday 25 March 2010, Nigel Cunningham wrote:
+> Hi again.
+> 
+> On 25/03/10 09:58, Nigel Cunningham wrote:
+> > Hi.
+> >
+> > On 25/03/10 08:22, Jiri Slaby wrote:
+> >> On 03/24/2010 09:30 PM, Pavel Machek wrote:
+> >>> On Tue 2010-03-23 17:17:31, Jiri Slaby wrote:
+> >>>> +int sws_bio_read_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
+> >>>> +{
+> >>>> +	return submit(READ, sws_resume_bdev, page_off * (PAGE_SIZE>>   9),
+> >>>> +			virt_to_page(addr), bio_chain);
+> >>>> +}
+> >>>
+> >>> sws_ is kind of strange prefix. We were trying to get away from
+> >>> "swsuspend" name for quite some time...
+> >>
+> >> No problem to change the prefix to anything else. Do you (anybody)
+> >> suggest anything?
+> >>
+> >
+> > How about some abbreviation of hibernate? "hib"?
+> 
+> On further reflection, how about "std" (suspend to disk)? I think that's 
+> less ugly than the 'hib' suggestion :)
 
+But it also decodes as "standard" if someone is not in the right context. :-)
 
-When XWindow starts I got:
-Mar 25 19:58:10 gumis kernel: [  133.624028] [drm:i915_hangcheck_elapsed] 
-*ERROR* Hangcheck timer elapsed... GPU hung
-Mar 25 19:58:10 gumis kernel: [  133.624221] render error detected, EIR: 
-0x00000000
-Mar 25 19:58:10 gumis kernel: [  133.624291] [drm:i915_do_wait_request] 
-*ERROR* i915_do_wait_request returns -5 ( awaiting 691 at 682)
-Mar 25 19:58:11 gumis kdm[2592]: X server for display :0 terminated 
-unexpectedly
+If the "bio" part of the name is not essential (ie. there's no conflicting name
+already), we could call it simply hibernate_read_page().
 
-after this only SysRq keys work.
-
-Similar problem (older kernels):
-https://bugzilla.kernel.org/show_bug.cgi?id=15004
-
-Workaround: setting i915.modeset=1 pci=nocrs OR i915.modeset=0
-
-Dmesg with i915.modeset=1 pci=nocrs:
-http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/dmesg2.6.34-rc2.txt
-
-Config:
-http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/config-2.6.34-rc2
-
-Syslog (i915.modeset=1 -- when hangs)):
-http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/syslog-2.6.34-rc2
-
-lspci:
-http://unixy.pl/maciek/download/kernel/2.6.34-rc2/gumis/lspci.txt
-
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Rafael
