@@ -1,66 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab0CYVsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 17:48:21 -0400
-Received: from crca.org.au ([74.207.252.120]:49783 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab0CYVsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 17:48:20 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BABDA59.8070107@crca.org.au>
-Date: Fri, 26 Mar 2010 08:49:13 +1100
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9pre) Gecko/20100301 Shredder/3.0.4pre
+	id S1752992Ab0CYVv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 17:51:56 -0400
+Received: from e208.rev.megiteam.pl ([77.79.226.8]:52360 "EHLO
+	vadmin.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097Ab0CYVvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 17:51:54 -0400
+X-Greylist: delayed 1075 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 17:51:54 EDT
+Date: Thu, 25 Mar 2010 22:33:56 +0100
+From: Grzegorz Nosek <root@localdomain.pl>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Testing lxc 0.6.5 in Fedora 13
+Message-ID: <20100325213356.GB20541@megiteam.pl>
+References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-       Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] what the patches do Re: [RFC 10/15] PM / Hibernate:
- user, implement user_ops reader
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz>	<201003252114.36605.rjw@sisk.pl> <4BABC5B6.2070301@crca.org.au>	<201003252129.10224.rjw@sisk.pl> <20100325212656.GD22902@elf.ucw.cz>
-In-Reply-To: <20100325212656.GD22902@elf.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100323212834.GH20796@count0.beaverton.ibm.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On wto, mar 23, 2010 at 02:28:34 -0700, Matt Helsley wrote:
+> On Sun, Mar 21, 2010 at 08:50:44PM +0100, Grzegorz Nosek wrote:
+> 
+> <snip>
+> 
+> > 2. Weird strace behaviour across pidns boundary
+> > 
+> > When strace'ing (with -ff) lxc-start, I get a proper strace for the
+> > directly spawned process and the container init. However, any processes
+> > spawned by the container's init are not straced properly (I get two
+> > empty files, named <foo>.<pid-in-root-ns> and <foo>.2 -- presumably pid
+> > inside the container). The container also seems to malfunction under
+> > strace (looks like exec() failing as lxc-ps shows two "init" processes).
+> > 
+> > This is quite painful as it prevents strace'ing processes in containers
+> > even after startup. Here's a snippet of strace'ing a bash (pid 179
+> > inside, pid 2959 outside) trying to run 'ls'. The shell hangs until I
+> > kill the strace process.
+> > 
+> > pipe([3, 4])                            = 0
+> > clone(Process 197 attached
+> > child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb7859708) = 197
+> > Process 2999 attached (waiting for parent)
+> > [pid  2959] setpgid(197, 197)           = 0
+> > [pid  2959] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+> > [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+> > [pid  2959] close(3)                    = 0
+> > [pid  2959] close(4)                    = 0
+> > [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD TSTP TTIN TTOU], [CHLD], 8) = 0
+> > [pid  2959] ioctl(255, TIOCSPGRP, [197]) = 0
+> > [pid  2959] rt_sigprocmask(SIG_SETMASK, [CHLD], NULL, 8) = 0
+> > [pid  2959] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+> > [pid  2959] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+> > [pid  2959] waitpid(-1, Process 2959 suspended
+> > ^C <unfinished ...>
+> > Process 2959 detached
+> > Process 197 detached
+> > Process 2999 detached
+> > 
+> > 'strace ls' ran completely inside the container works as expected.
+> 
+> I'm suprised strace of ls works across pid namespaces. I've been looking
+> at strace and it seemed to me that one kernel change and a bunch of strace
+> changes are needed to make strace'ing in child pid namespaces work. Eric
+> Biederman's setns() patches also might help.
 
-On 26/03/10 08:26, Pavel Machek wrote:
-> Hi!
->
->>>>> I'm asking because if we're going to make a go of getting the in-kernel
->>>>> code in much better shape, and we have Rafael, Jiri and I - and you? -
->>>>> all pulling in the same direction to improve it, there's going to come a
->>>>> point (hopefully not too far away) where uswsusp is just making life too
->>>>> difficult, and getting rid of it will be a big help.
->>>>
->>>> We're not dropping user space interfaces used by every distro I know of.
->
-> Good.
->
->>> So what's your long term plan then?
->>
->> First, improve the in-kernel thing, second, switch people to it, _then_ remove
->> the s2disk interface (after we're reasonably sure it's not used by any major
->> distro) and _finally_ simplify things after it's been removed.
->
-> I'd really prefer to keep s2disk interface. It allows advanced stuff
-> like internet suspend resume (yep someone is doing it), crazy stuff
-> like multiple resumes from same image for fast booting (yep, some
-> embedded people are doing that) and might-be-useful stuff like
-> s2both...
+Thanks for the patch and the detailed explanation.
 
-Neither of those are impossible with in-kernel code, so I'd argue that 
-there's no need to keep the s2disk interface long-term. Userspace 
-helpers might be necessary for the first one (to manage the network 
-interface), but I already have multiple-resumes-from-the-same-image 
-support in TuxOnice (and more 'crazy stuff' like support for resuming a 
-different image after writing one - that can be used to switch to an 
-initramfs containing the binaries needed to power down a UPS).
+> Can you get a little farther with the kernel fix below?
 
-Regards,
+No, not really. Attaching from outside to a shell running in a container
+and running a command yields:
 
-Nigel
+| rt_sigprocmask(SIG_BLOCK, [INT CHLD], [], 8) = 0
+| pipe([3, 4])                            = 0
+| clone(Process 2581 attached (waiting for parent)
+| Process 190 attached
+
+Without the patch the order of reported pids is reversed (and at least
+with the patched kernel the outside pid is consistently reported first)
+
+| child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xb7713708) = 190
+| [pid  2549] setpgid(190, 190)           = 0
+| [pid  2549] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+| [pid  2549] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+| [pid  2549] close(3)                    = 0
+| [pid  2549] close(4)                    = 0
+| [pid  2549] rt_sigprocmask(SIG_BLOCK, [CHLD TSTP TTIN TTOU], [CHLD], 8) = 0
+| [pid  2549] ioctl(255, TIOCSPGRP, [190]) = 0
+| [pid  2549] rt_sigprocmask(SIG_SETMASK, [CHLD], NULL, 8) = 0
+| [pid  2549] rt_sigprocmask(SIG_SETMASK, [], NULL, 8) = 0
+| [pid  2549] rt_sigprocmask(SIG_BLOCK, [CHLD], [], 8) = 0
+| [pid  2549] waitpid(-1, Process 2549 suspended
+
+(the shell hangs here)
+
+^C <unfinished ...>
+| Process 2549 detached
+| Process 2581 detached
+| Process 190 detached
+
+(the command executes here normally).
+
+Best regards,
+ Grzegorz Nosek
