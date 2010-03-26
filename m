@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab0CZRGE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:06:04 -0400
-Received: from mga06.intel.com ([134.134.136.21]:22352 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750925Ab0CZRGB (ORCPT
+	id S1752640Ab0CZRLk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:11:40 -0400
+Received: from mail-px0-f194.google.com ([209.85.216.194]:60222 "EHLO
+	mail-px0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0CZRLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:06:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,315,1267430400"; 
-   d="scan'208";a="607973479"
-Date: Fri, 26 Mar 2010 18:06:47 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: Remove unused wm831x IRQ handler data
-Message-ID: <20100326170646.GE3237@sortiz.org>
-References: <1269614824-29056-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Fri, 26 Mar 2010 13:11:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Pa45tCCK/xnEfrW1eUYORv2vfh0xyJmoH70Txb55NZkT43cTJxWEM8QsijeQFhXN/a
+         2LBBW6LMVQQWI2DP1ItqIuwnspPsEmF2G96UWu07Nut7K57I9V8ERAY0PoMShHpRLjxi
+         z1U/IMywtbaonRCfi/CXrbx5qOTOFyjEot1Qk=
+Date: Fri, 26 Mar 2010 18:11:34 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
+Message-ID: <20100326171130.GB5188@nowhere>
+References: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com> <1269573118-11120-1-git-send-regression-fweisbec@gmail.com> <20100326091639.GG27394@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269614824-29056-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100326091639.GG27394@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-
-On Fri, Mar 26, 2010 at 02:47:04PM +0000, Mark Brown wrote:
-> This was used by the old, pre-genirq IRQ implementation but is no
-> longer required.
+On Fri, Mar 26, 2010 at 10:16:39AM +0100, Ingo Molnar wrote:
 > 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Thanks, patch applied.
-
-Cheers,
-Samuel.
-
-
-> ---
->  drivers/mfd/wm831x-irq.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
-> index 3013276..b1d66b8 100644
-> --- a/drivers/mfd/wm831x-irq.c
-> +++ b/drivers/mfd/wm831x-irq.c
-> @@ -38,8 +38,6 @@ struct wm831x_irq_data {
->  	int primary;
->  	int reg;
->  	int mask;
-> -	irq_handler_t handler;
-> -	void *handler_data;
->  };
->  
->  static struct wm831x_irq_data wm831x_irqs[] = {
-> -- 
-> 1.7.0.2
+> > +DEFINE_PER_CPU(local_t, chain_lookup_hits);
+> > +DEFINE_PER_CPU(local_t, chain_lookup_misses);
+> > +DEFINE_PER_CPU(local_t, hardirqs_on_events);
+> > +DEFINE_PER_CPU(local_t, hardirqs_off_events);
+> > +DEFINE_PER_CPU(local_t, redundant_hardirqs_on);
+> > +DEFINE_PER_CPU(local_t, redundant_hardirqs_off);
+> > +DEFINE_PER_CPU(local_t, softirqs_on_events);
+> > +DEFINE_PER_CPU(local_t, softirqs_off_events);
+> > +DEFINE_PER_CPU(local_t, redundant_softirqs_on);
+> > +DEFINE_PER_CPU(local_t, redundant_softirqs_off);
+> > +DEFINE_PER_CPU(local_t, nr_unused_locks);
+> > +DEFINE_PER_CPU(local_t, nr_cyclic_checks);
+> > +DEFINE_PER_CPU(local_t, nr_find_usage_forwards_checks);
+> > +DEFINE_PER_CPU(local_t, nr_find_usage_backwards_checks);
 > 
+> btw., i think this should really be cleaned up and put into a helper struct.
+> 
+> 'struct lockdep_stats' or so?
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+
+
+Yep, looks like a good idea.
+
