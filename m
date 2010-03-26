@@ -1,34 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753113Ab0CZRm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750772Ab0CZRm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:42:28 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org> <20100326144241.8583.95617.stgit@warthog.procyon.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: dhowells@redhat.com, mingo@elte.hu, tglx@linutronix.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
-Date: Fri, 26 Mar 2010 17:42:05 +0000
-Message-ID: <28287.1269625325@redhat.com>
+	id S1753252Ab0CZRmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:42:45 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:26885 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0CZRmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 13:42:43 -0400
+Date: Fri, 26 Mar 2010 10:40:26 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>, linux-fbdev@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Krzysztof Helt <krzysztof.h1@poczta.fm>,
+       Arnaud Patard <arnaud.patard@rtp-net.org>,
+       Andres Salomon <dilinger@debian.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix section mismatches in virtual framebuffer
+Message-Id: <20100326104026.5cda2fbf.randy.dunlap@oracle.com>
+In-Reply-To: <1269433035-6141-1-git-send-email-henne@nachtwindheim.de>
+References: <1269433035-6141-1-git-send-email-henne@nachtwindheim.de>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4BACF1F2.0181:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+[adding linux-fbdev mailing list]
 
-> Where did you find that "doesn't modify its output" thing? It's not true. 
-> The truth is that the destination is undefined. Just read the dang Intel 
-> documentation, it's very clearly stated right there.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Hmmm...  My ancient Borland Assembler dead-tree manual doesn't mention that.
 
-David
+On Wed, 24 Mar 2010 13:17:15 +0100 Henrik Kretzschmar wrote:
+
+> Both structs, vfb_default and vfb_fix, should not be freed,
+> since they are referenced and used by the struct fb_info of that device.
+> 
+> WARNING: drivers/video/vfb.o(.devinit.text+0x13f): Section mismatch in
+> reference from the function vfb_probe() to the variable
+> .init.data:vfb_default
+> The function __devinit vfb_probe() references
+> a variable __initdata vfb_default.
+> If vfb_default is only used by vfb_probe then
+> annotate vfb_default with a matching annotation.
+> 
+> WARNING: drivers/video/vfb.o(.devinit.text+0x162): Section mismatch in
+> reference from the function vfb_probe() to the variable
+> .init.data:vfb_fix
+> The function __devinit vfb_probe() references
+> a variable __initdata vfb_fix.
+> If vfb_fix is only used by vfb_probe then
+> annotate vfb_fix with a matching annotation.
+> 
+> WARNING: drivers/video/vfb.o(.devinit.text+0x177): Section mismatch in
+> reference from the function vfb_probe() to the variable
+> .init.data:vfb_fix
+> The function __devinit vfb_probe() references
+> a variable __initdata vfb_fix.
+> If vfb_fix is only used by vfb_probe then
+> annotate vfb_fix with a matching annotation.
+> 
+> WARNING: drivers/video/vfb.o(.devinit.text+0x184): Section mismatch in
+> reference from the function vfb_probe() to the (unknown reference)
+> .init.data:(unknown)
+> The function __devinit vfb_probe() references
+> a (unknown reference) __initdata (unknown).
+> If (unknown) is only used by vfb_probe then
+> annotate (unknown) with a matching annotation.
+> 
+> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+> ---
+>  drivers/video/vfb.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/vfb.c b/drivers/video/vfb.c
+> index b8ab995..ae5796d 100644
+> --- a/drivers/video/vfb.c
+> +++ b/drivers/video/vfb.c
+> @@ -79,7 +79,7 @@ static void rvfree(void *mem, unsigned long size)
+>  	vfree(mem);
+>  }
+>  
+> -static struct fb_var_screeninfo vfb_default __initdata = {
+> +static struct fb_var_screeninfo vfb_default = {
+>  	.xres =		640,
+>  	.yres =		480,
+>  	.xres_virtual =	640,
+> @@ -101,7 +101,7 @@ static struct fb_var_screeninfo vfb_default __initdata = {
+>        	.vmode =	FB_VMODE_NONINTERLACED,
+>  };
+>  
+> -static struct fb_fix_screeninfo vfb_fix __initdata = {
+> +static struct fb_fix_screeninfo vfb_fix = {
+>  	.id =		"Virtual FB",
+>  	.type =		FB_TYPE_PACKED_PIXELS,
+>  	.visual =	FB_VISUAL_PSEUDOCOLOR,
+> -- 
+
+
+---
+~Randy
