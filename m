@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab0CZWcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:32:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56438 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754401Ab0CZWcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:32:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH/RFC] platform_bus: Allow runtime PM by default
-Date: Fri, 26 Mar 2010 23:35:06 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       linux-pm@lists.linux-foundation.org
-References: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1269625370-17754-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754412Ab0CZWfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:35:40 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:35460 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883Ab0CZWfi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:35:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=d/ZiHqUJ0ANhq2SKus8EZ53nRyZGGJLNDKQN28NAKMHjaBzKLO1LJRa7/70AtxW9zw
+         m+iYnUIfC/hbIpFbISKMfD7Qfh8eGqdiSB1CGYPbXdBq47jvAjUjcoKCqB9HVUtrz6nj
+         Rypw8rbH5xgcJgjcJblwrgUHzx2cz7BfmDJcI=
+Date: Fri, 26 Mar 2010 17:35:30 -0500
+From: Brandon L Black <blblack@gmail.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Ulrich Drepper <drepper@gmail.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] Add MSG_WAITFORONE flag to recvmmsg
+Message-ID: <20100326223530.GA11817@xpc.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003262335.06941.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 March 2010, Mark Brown wrote:
-> Currently the default runtime PM callbacks for platform devices return
-> -ENOSYS, preventing the use of runtime PM platforms until they have
-> provided at least a default implementation. This hinders the use of
-> runtime PM by devices which work with many platforms such as memory
-> mapped devices, MFDs and on chip IPs shared by multiple architectures.
-> 
-> Change the default implementation to the standard pm_generic_runtime
-> one, allowing drivers to use runtime PM without per-architecture
-> changes.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+From: Brandon L Black <blblack@gmail.com>
 
-Is it very urgent?
+Add new flag MSG_WAITFORONE for the recvmmsg() syscall.
+When this flag is specified for a blocking socket, recvmmsg()
+will only block until at least 1 packet is available.  The
+default behavior is to block until all vlen packets are
+available.  This flag has no effect on non-blocking sockets
+or when used in combination with MSG_DONTWAIT.
 
-Rafael
+Signed-off-by: Brandon L Black <blblack@gmail.com>
 
-
-> ---
-> 
-> I'm not 100% sure why the curret implementation returns -ENOSYS - I've
-> got a horrible feeling I might be breaking something somewhere.
-> 
->  drivers/base/platform.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 43479a9..eb0f8d9 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -967,17 +967,17 @@ static int platform_pm_restore_noirq(struct device *dev)
->  
->  int __weak platform_pm_runtime_suspend(struct device *dev)
->  {
-> -	return -ENOSYS;
-> +	return pm_generic_runtime_suspend(dev);
->  };
->  
->  int __weak platform_pm_runtime_resume(struct device *dev)
->  {
-> -	return -ENOSYS;
-> +	return pm_generic_runtime_resume(dev);
->  };
->  
->  int __weak platform_pm_runtime_idle(struct device *dev)
->  {
-> -	return -ENOSYS;
-> +	return pm_generic_runtime_idle(dev);
->  };
->  
->  #else /* !CONFIG_PM_RUNTIME */
-> 
-
+---
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 7b3aae2..354cc56 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -255,6 +255,7 @@ struct ucred {
+ #define MSG_ERRQUEUE	0x2000	/* Fetch message from error queue */
+ #define MSG_NOSIGNAL	0x4000	/* Do not generate SIGPIPE */
+ #define MSG_MORE	0x8000	/* Sender will send more */
++#define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
+ 
+ #define MSG_EOF         MSG_FIN
+ 
+diff --git a/net/socket.c b/net/socket.c
+index 769c386..33304d1 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -2133,7 +2133,10 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+ 
+ 		if (err)
+ 			break;
+-		++datagrams;
++
++		/* MSG_WAITFORONE turns on MSG_DONTWAIT after one packet */
++		if (!datagrams++ && (flags & MSG_WAITFORONE))
++			flags |= MSG_DONTWAIT;
+ 
+ 		if (timeout) {
+ 			ktime_get_ts(timeout);
