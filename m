@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab0CZU56 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:57:58 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43328 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab0CZU54 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:57:56 -0400
-Date: Fri, 26 Mar 2010 18:18:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
-       linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in
-	soc_common.c
-Message-ID: <20100326181800.GB21682@n2100.arm.linux.org.uk>
-References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20100324230729.GA21359@n2100.arm.linux.org.uk> <4BAB38B1.8080404@ru.mvista.com>
+	id S1753737Ab0CZU7Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:59:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34558 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753378Ab0CZU7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:59:22 -0400
+Date: Fri, 26 Mar 2010 21:59:19 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
+In-Reply-To: <20100326102951.3b9ecda1@neptune.home>
+Message-ID: <alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+References: <20100324233707.7243b04d@neptune.home> <20100324234022.0361bd80@neptune.home> <20100326065656.GC26602@core.coreip.homeip.net> <20100326102951.3b9ecda1@neptune.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAB38B1.8080404@ru.mvista.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 01:19:29PM +0300, Sergei Shtylyov wrote:
-> Hello.
->
-> Russell King - ARM Linux wrote:
->
->>> -	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
->>> -			(state->csc_mask==0)?"<NONE> ":"",
->>> -			(state->csc_mask&SS_DETECT)?"DETECT ":"",
->>> -			(state->csc_mask&SS_READY)?"READY ":"",
->>> -			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
->>> -			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
->>> -			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
->>> -			(state->flags==0)?"<NONE> ":"",
->>> -			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
->>> -			(state->flags&SS_IOCARD)?"IOCARD ":"",
->>> -			(state->flags&SS_RESET)?"RESET ":"",
->>> -			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
->>> -			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
->>> +	debug(skt, 2,	"mask: %s%s%s%s%s%s "
->>> +			"flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
->>>     
->>
->> NAK.  Breaking kernel messages across multiple lines makes them impossible
->> to grep for.  checkpatch.pl is wrong on this one.
->>   
->
->   I'd disagree in this case. Anybody will hardly grep for "mask:  
-> %s%s%s%s%s%sflags: %s%s%s%s%s%s".
+On Fri, 26 Mar 2010, Bruno Prémont wrote:
 
-Well, I disagree on a matter of principle with you.  If you want to avoid
-the line going over 80 columns, move the entire string onto the next line.
-Then we can have the entire string intact _and_ we can have it fitting
-within 80 columns.
+> > > +	for (i = 0; i < PICOLCD_KEYS; i++) {
+> > > +		int key = ((int *)idev->keycode)[i];
+> > 
+> > Keycodes are now short, not int. Also, just do:
+> > 
+> > 		input_set_capability(idev, EV_KEY, data->keycode[i]);
+> > 
+> > > +		if (key < KEY_MAX && key >= 0)
+> > > +			input_set_capability(idev, EV_KEY, key);
+> 
+> Oops, I was not careful enough when switching over...
+
+Dmitry, thanks a lot for rapid review the driver.
+
+Bruno, could you please fix this and submit a followup 1/6 patch, so that 
+I could queue the driver in my tree?
+
+I have almost finished going over the driver and haven't encountered any 
+other issues that would require immediate fixing.
+
+Still, it would be nice to have the framebuffer/LCD/backlight bits 
+reviewed by respective subsystem maintainers. But I'll probably queue the 
+driver nevertheless and add potential ACKs later.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
