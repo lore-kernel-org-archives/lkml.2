@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab0CZXdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 19:33:36 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:49218 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab0CZXde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 19:33:34 -0400
-Date: Sat, 27 Mar 2010 00:33:15 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 01/24] x86: Make smp_locks end with page alignment
-Message-ID: <20100326233315.GC29222@cmpxchg.org>
-References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-2-git-send-email-yinghai@kernel.org>
+	id S1753935Ab0CZXeb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 19:34:31 -0400
+Received: from outbound-mail-01.bluehost.com ([69.89.21.11]:34539 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753437Ab0CZXe3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 19:34:29 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=DbopL3ro0UtKGagXiMduZyAzowBIy3Q8sifLBOr8lSXM+FE85q4bs44L/p7cNaI18gD1K2jy9Dosm2Jb25S0lpxF1OIj58hrx4+qP0UfBR7ld1UzxQqM2rZ8j2I31U9A;
+Date: Fri, 26 Mar 2010 16:33:49 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20100326163349.3ba918c2@jbarnes-piketon>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269642114-16588-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 03:21:31PM -0700, Yinghai Lu wrote:
-> Try to fix
-> ------------[ cut here ]------------
-> WARNING: at arch/x86/mm/init.c:342 free_init_pages+0x4c/0xfa()
-> free_init_pages: range [0x40daf000, 0x40db5c24] is not aligned
-> Modules linked in:
-> Pid: 0, comm: swapper Not tainted 2.6.34-rc2-tip-03946-g4f16b23-dirty #50
-> Call Trace:
->  [<40232e9f>] warn_slowpath_common+0x65/0x7c
->  [<4021c9f0>] ? free_init_pages+0x4c/0xfa
->  [<40881434>] ? _etext+0x0/0x24
->  [<40232eea>] warn_slowpath_fmt+0x24/0x27
->  [<4021c9f0>] free_init_pages+0x4c/0xfa
->  [<40881434>] ? _etext+0x0/0x24
->  [<40d3f4bd>] alternative_instructions+0xf6/0x100
->  [<40d3fe4f>] check_bugs+0xbd/0xbf
->  [<40d398a7>] start_kernel+0x2d5/0x2e4
->  [<40d390ce>] i386_start_kernel+0xce/0xd5
-> ---[ end trace 4eaa2a86a8e2da22 ]---
-> 
-> Comments in vmlinux.lds.S already said:
-> |        /*
-> |         * smp_locks might be freed after init
-> |         * start/end must be page aligned
-> |         */
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+The following changes since commit
+fc7f99cf36ebae853639dabb43bc2f0098c59aef: Linus Torvalds (1):
+        Merge branch 'for-linus' of
+git://git.kernel.org/.../sage/ceph-client
 
-FWIW, Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+are available in the git repository at:
 
-> ---
->  arch/x86/kernel/vmlinux.lds.S |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-> index 44879df..2cc2497 100644
-> --- a/arch/x86/kernel/vmlinux.lds.S
-> +++ b/arch/x86/kernel/vmlinux.lds.S
-> @@ -291,8 +291,8 @@ SECTIONS
->  	.smp_locks : AT(ADDR(.smp_locks) - LOAD_OFFSET) {
->  		__smp_locks = .;
->  		*(.smp_locks)
-> -		__smp_locks_end = .;
->  		. = ALIGN(PAGE_SIZE);
-> +		__smp_locks_end = .;
->  	}
->  
->  #ifdef CONFIG_X86_64
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
+
+Bjorn's been working hard to track down regressions related to the new
+"use _CRS by default" code, and things are looking better than I
+thought they would at this point.  I believe Yinghai is also tracking a
+regression or two related to the new re-allocation code, but that's
+also looking fairly good.
+
+Note this does include a few extra bits of debug output; though not
+strictly bug fixes I figured they'd help us track down any remaining
+issues with the new code, and so were important enough to include here.
+
+Bjorn Helgaas (11):
+      resources: add interfaces that return conflict information
+      PCI: for address space collisions, show conflicting resource
+      PCI: break out primary/secondary/subordinate for readability
+      PCI: make disabled window printk style match the enabled ones
+      PCI: print resources consistently with %pR
+      PCI: complain about devices that seem to be broken
+      PCI: don't say we claimed a resource if we failed
+      x86/PCI: remove redundant warnings
+      frv/PCI: remove redundant warnings
+      x86/PCI: for host bridge address space collisions, show conflicting resource
+      x86/PCI: truncate _CRS windows with _LEN > _MAX - _MIN + 1
+
+Clemens Ladisch (1):
+      PCI quirk: RS780/RS880: work around missing MSI initialization
+
+Dean Nelson (3):
+      PCI: fix return value from pcix_get_max_mmrbc()
+      PCI: fix access of PCI_X_CMD by pcix get and set mmrbc functions
+      PCI: cleanup error return for pcix get and set mmrbc functions
+
+Matthew Wilcox (1):
+      PCI quirk: Disable MSI on VIA K8T890 systems
+
+Paul Mundt (1):
+      PCI: kill off pci_register_set_vga_state() symbol export.
+
+Tim Yamin (1):
+      PCI quirk: only apply CX700 PCI bus parking quirk if external VT6212L is present
+
+ arch/frv/mb93090-mb00/pci-frv.c         |    4 +--
+ arch/x86/pci/acpi.c                     |   22 +++++++++--
+ arch/x86/pci/i386.c                     |    5 ---
+ drivers/gpu/drm/radeon/radeon_irq_kms.c |    8 +----
+ drivers/pci/hotplug/pciehp_hpc.c        |    5 +--
+ drivers/pci/ioapic.c                    |    9 ++---
+ drivers/pci/pci.c                       |   44 ++++++++++------------
+ drivers/pci/probe.c                     |   53 +++++++++++++++++----------
+ drivers/pci/quirks.c                    |   59 ++++++++++++++++++++++++++++---
+ drivers/pci/setup-res.c                 |   14 ++++---
+ drivers/pcmcia/rsrc_nonstatic.c         |   12 ++----
+ include/linux/ioport.h                  |    2 +
+ kernel/resource.c                       |   44 +++++++++++++++++++----
+ 13 files changed, 184 insertions(+), 97 deletions(-)
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
