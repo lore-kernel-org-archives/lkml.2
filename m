@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0CZLcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 07:32:07 -0400
-Received: from e208.rev.megiteam.pl ([77.79.226.8]:60303 "EHLO
-	vadmin.megiteam.com.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753486Ab0CZLcF (ORCPT
+	id S1753645Ab0CZLmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 07:42:31 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:47117 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753345Ab0CZLma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 07:32:05 -0400
-Date: Fri, 26 Mar 2010 12:32:01 +0100
-From: Grzegorz Nosek <root@localdomain.pl>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100326113201.GB17113@megiteam.pl>
-References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com> <20100325213356.GB20541@megiteam.pl> <20100326111131.GA8604@redhat.com>
+	Fri, 26 Mar 2010 07:42:30 -0400
+Message-ID: <4BAC9D9E.5070901@in.ibm.com>
+Date: Fri, 26 Mar 2010 17:12:22 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100326111131.GA8604@redhat.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Amit Shah <amit.shah@redhat.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, a.p.zijlstra@chello.nl,
+       Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, Anton Blanchard <anton@samba.org>,
+       tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
+       mingo@elte.hu, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and hvc_remove
+References: <20100319151326.GC8541@kroah.com> <1269011916-8836-4-git-send-email-gregkh@suse.de> <1269119079.8599.65.camel@pasglop> <20100321043725.GA21566@amit-x200.redhat.com> <20100324121902.GJ15789@amit-x200.redhat.com> <4BAC7AD4.4030309@in.ibm.com> <20100326095821.GA7039@amit-x200.redhat.com>
+In-Reply-To: <20100326095821.GA7039@amit-x200.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 12:11:31PM +0100, Oleg Nesterov wrote:
-> Yes, this is broken. More precisely, this wasn't even supposed to work.
-> 
-> Even stracing of the sub-init itself (or global init btw) has problems,
-> the straced init is not protected from unwanted signals.
+Amit Shah wrote:
+> On (Fri) Mar 26 2010 [14:43:56], Sachin Sant wrote:
+>   
+>>> And this suggests that hvc_kick() is called before hvc_task is
+>>> initialised, ie, before hvc_init() is called.
+>>>
+>>> Does this help?
+>>>   
+>>>       
+>> Hi Amit,
+>>
+>> I too ran into this issue as reported by Anton. Unfortunately in my
+>> case the following suggested patch does not help boot the powerpc
+>> box successfully. The boot still hangs with following messages
+>>     
+>
+> Was the hang you saw before applying this patch at the same place / for
+> the same reason?
+>   
+Yes the machine hangs at the same place with or without the patch.
 
-Is this impossible/very hard to do cleanly? I understand that container's
-init becomes vulnerable to signals sent from root-owned processes in the
-container. If so, the impact of this issue should be quite limited, no?
+>> mount: can't find /root/proc in /etc/fstab or /etc/mtab
+>> /sbin/smart_agetty: can not determine 'console' speed
+>>     
+>
+> OK, this gets even murkier. I don't know why taking a few krefs modifies
+> hvc_console behaviour to such an extent.
+>   
+Looking at the commit e74d098c66543d0731de62eb747ccd5b636a6f4c,
+i see that for every tty_kref_get() there is a corresponding
+tty_kref_put() except maybe for the one in the following patch snippet
 
-Strace'ing processes across pidns boundary would be really useful in day
-to day administrative work but if it's unfixable, I guess at least
-preventing strace from attaching to processes in a descendant pidns
-would be required in order to prevent container malfunction.
+        spin_lock_irqsave(&hp->lock, flags);
+        /* Check and then increment for fast path open. */
+        if (hp->count++ > 0) {
++               tty_kref_get(tty);
+                spin_unlock_irqrestore(&hp->lock, flags);
+                hvc_kick();
+                return 0;
 
-> Yes. First of all, tracehook_report_clone_complete() reports the wrong pid nr,
-> as it seen inside the init's namespace. This is easy to fix, but I doubt this
-> can help. IIRC strace doesn't use PTRACE_GETEVENTMSG at all, it looks at eax
-> after syscall.
-> 
-> which patch?
+I don't know this code very well but we might be missing a
+corresponding tty_kref_put() some place ?
 
-The patch below posted by Matt. AIUI, it fixes the
-tracehook_report_clone_complete() part, which results in an observable
-change in strace's behaviour (not that it makes strace work, though).
-Anyway, are there any remaining issues on the kernel side or does strace
-have to be taught about pid namespaces?
+If i comment out the above tty_kref_get() call, the machine
+boots fine with or without the suggested patch.
 
-Best regards,
- Grzegorz Nosek
+Thanks
+-Sachin
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 3a65513..7946ea6 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1404,6 +1404,7 @@ long do_fork(unsigned long clone_flags,
-         */
-        if (!IS_ERR(p)) {
-                struct completion vfork;
-+               int ptrace_pid_vnr;
 
-                trace_sched_process_fork(current, p);
+>   
+>> Just to confirm i too am facing same issue as reported by Anton,
+>> reverted commit e74d098c66543d0731de62eb747ccd5b636a6f4c and that allowed
+>> by box to boot successfully.
+>>     
+>
+> Which module uses hvc_console in your case?
+>
+> 		Amit
+>
+>   
 
-@@ -1439,14 +1440,21 @@ long do_fork(unsigned long clone_flags,
-                        wake_up_new_task(p, clone_flags);
-                }
 
-+               ptrace_pid_vnr = nr;
-+               if (unlikely(p->parent != p->real_parent)) {
-+                       rcu_read_lock();
-+                       ptrace_pid_vnr = task_pid_nr_ns(p, p->parent->nsproxy->pid_ns);
-+                       rcu_read_unlock();
-+               }
-                tracehook_report_clone_complete(trace, regs,
--                                               clone_flags, nr, p);
-+                                               clone_flags,
-+                                               ptrace_pid_vnr, p);
+-- 
 
-                if (clone_flags & CLONE_VFORK) {
-                        freezer_do_not_count();
-                        wait_for_completion(&vfork);
-                        freezer_count();
--                       tracehook_report_vfork_done(p, nr);
-+                       tracehook_report_vfork_done(p, ptrace_pid_vnr);
-                }
-        } else {
-                nr = PTR_ERR(p);
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
 
