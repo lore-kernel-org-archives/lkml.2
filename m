@@ -1,51 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752658Ab0CZFnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 01:43:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35890 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751752Ab0CZFnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 01:43:03 -0400
-Message-ID: <4BAC4961.4060302@suse.de>
-Date: Fri, 26 Mar 2010 14:42:57 +0900
-From: Tejun Heo <teheo@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1752987Ab0CZGBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 02:01:49 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46189 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab0CZGBs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 02:01:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20100325151121.GU2024@csn.ul.ie>
+References: <20100325142414.6C80.A69D9226@jp.fujitsu.com> <20100325151121.GU2024@csn.ul.ie>
+Message-Id: <20100326142552.6CA4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Neil Brown <neilb@suse.de>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] sysfs: simplify handling for s_active refcount
-References: <20100324031829.2136.66489.stgit@notabene.brown>	<20100324032008.2136.52640.stgit@notabene.brown>	<m139znogl0.fsf@fess.ebiederm.org> <20100326163236.1ffb2c2b@notabene.brown>
-In-Reply-To: <20100326163236.1ffb2c2b@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 26 Mar 2010 15:01:43 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Neil.
+> If you insist, I can limit direct compaction for > PAGE_ALLOC_COSTLY_ORDER. The
+> allocator is already meant to be able to handle these orders without special
+> assistance and it'd avoid compaction becoming a cruch for subsystems that
+> suddently decide it's a great idea to use order-1 or order-2 heavily.
+> 
+> > My point is, We have to consider to disard useful cached pages and to
+> > discard no longer accessed pages. latter is nearly zero cost.
+> 
+> I am not opposed to moving in this sort of direction although
+> particularly if we disable compaction for the lower orders. I believe
+> what you are suggesting is that the allocator would take the steps
+> 
+> 1. Try allocate from lists
+> 2. If that fails, do something like zone_reclaim_mode and lumpy reclaim
+>    only pages which are cheap to discard
+> 3. If that fails, try compaction to move around the active pages
+> 4. If that fails, lumpy reclaim 
 
-On 03/26/2010 02:32 PM, Neil Brown wrote:
-> Hopefully if there are really problems (maybe I've fundamentally
-> misunderstood caches) they can be easily resolved (a couple of memory
-> barriers at worst?).
+This seems makes a lot of sense. 
+I think todo are
 
-Oh, no, please don't do that.  That will inject a whole lot more of
-complexity into the mix.  Now, it's only a problem of logical
-complexity.  If you add memory barriers there, it not only complicates
-the problem itself beyond recognition but also reduces problem
-reproducibility (especially because x86/64 are relatively strongly
-ordered) and thus test coverage significantly.  Now the refcounting
-can be understood by most people who put some time into it but if you
-put memory barriers into it, only Oleg would be able to identify
-problems.  :-P
+1) now almost system doesn't use zone_reclaim. we need to consider change
+    zone_reclaim as by default or not.
+2) current zone_reclaim doesn't have light reclaim mode. it start reclaim as priority=5.
+    we need to consider adding new zone reclaim mode or not.
 
-If you really want to kill the bias and in an easy readable way,
-please put it inside a struct w/ dedicated spinlock but if you are
-gonna do that it might as well be better to simply implement the bias
-anti-pattern correctly there once.
 
-Thanks.
+> > please
+> > don't consider page discard itself is bad, it is correct page life cycle.
+> > To protest discard useless cached page can makes reduce IO throughput.
+> 
+> I don't consider it bad as such but I had generally considered compaction to
+> be better than discarding pages. I take your point though that if we compact
+> many old pages, it might be a net loss.
 
--- 
-tejun
+thanks.
+
+
+> > > How do you figure? I think it goes a long way to mitigating the worst of
+> > > the problems you laid out above.
+> > 
+> > Both lumpy reclaim and page comaction have some advantage and some disadvantage.
+> > However we already have lumpy reclaim. I hope you rememver we are attacking
+> > very narrowing corner case. we have to consider to reduce the downside of compaction
+> > at first priority.
+> > Not only big benefit but also big downside seems no good.
+> > 
+> > So, I'd suggest either way
+> > 1) no change caller place, but invoke compaction at very limited situation, or
+> 
+> I'm ok with enabling compaction only for >= PAGE_ALLOC_COSTLY_ORDER.
+> This will likely limit it to just huge pages for the moment but even
+> that would be very useful to me on swapless systems
+
+Agreed! thanks.
+
+sidenote: I don't think this is only a feature for swapless systems. example, btrfs
+doesn't have pageout implementation, it mean btrfs can't use lumpy reclaim.
+page comaction can help to solve this issue.
+
+
+> > 2) invoke compaction at only lumpy reclaim unfit situation
+> > 
+> > My last mail, I proposed about (2). but you seems got bad impression. then,
+> > now I propsed (1).
+> 
+> 1 would be my preference to start with.
+> 
+> After merge, I'd look into "cheap" lumpy reclaim which is used as a
+> first option, then compaction, then full direct reclaim. Would that be
+> satisfactory?
+
+Yeah! this is very nice for me!
+
+
+> > I mean we will _start_ to treat the compaction is for
+> > hugepage allocation assistance feature, not generic allocation change.
+> > 
+> 
+> Agreed.
+> 
+> > btw, I hope drop or improve patch 11/11 ;-)
+> 
+> I expect it to be improved over time. The compactfail counter is there to
+> identify when a bad situation occurs so that the workload can be better
+> understood. There are different heuristics that could be applied there to
+> avoid the wait but all of them have disadvantages.
+
+great!
+
+
+> > > > Honestly, I think this patch was very impressive and useful at 2-3 years ago.
+> > > > because 1) we didn't have lumpy reclaim 2) we didn't have sane reclaim bail out.
+> > > > then, old vmscan is very heavyweight and inefficient operation for high order reclaim.
+> > > > therefore the downside of adding this page migration is hidden relatively. but...
+> > > > 
+> > > > We have to make an effort to reduce reclaim latency, not adding new latency source.
+> > > 
+> > > I recognise that reclaim latency has been reduced but there is a wall.
+> > 
+> > If it is a wall, we have to fix this! :)
+> 
+> Well, the wall I had in mind was IO bandwidth :)
+
+ok, I catched you mention.
+
+> > > Right now, it is identifed when pageout should happen instead of page
+> > > migration. It's known before compaction starts if it's likely to be
+> > > successful or not.
+> > > 
+> > 
+> > patch 11/11 says, it's known likely to be successfull or not, but not exactly.
+> 
+> Indeed. For example, it might not have been possible to migrate the necessary
+> pages because they were pagetables, slab etc. It might also be simply memory
+> pressure. It might look like there should be enough pages to compaction but
+> there are too many processes allocating at the same time.
+
+agreed.
+
+
+> > > I can drop the min_free_kbytes change but the likely result will be that
+> > > allocation success rates will simply be lower. The calculations on
+> > > whether compaction should be used or not are based on watermarks which
+> > > adjust to the value of min_free_kbytes.
+> > 
+> > Then, should we need min_free_kbytes auto adjustment trick?
+> 
+> I have considered this in the past. Specifically that it would be auto-adjusted
+> the first time a huge page was allocated. I never got around to it though.
+
+Hmhm, ok.
+we can discuss it as separate patch and separate thread.
+
+
+> > But please remember, now compaction might makes very large lru shuffling
+> > in compaction failure case. It mean vmscan might discard very wrong pages.
+> > I have big worry about it.
+> > 
+> 
+> Would disabling compaction for the lower orders alleviate your concerns?
+> I have also taken note to investigate how much LRU churn can be avoided.
+
+that's really great.
+
+I'm looking for your v6 post :)
+
+
