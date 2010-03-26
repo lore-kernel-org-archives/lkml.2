@@ -1,142 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751059Ab0CZEBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 00:01:18 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43391 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab0CZEBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 00:01:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,311,1267430400"; 
-   d="scan'208";a="784081123"
-Date: Fri, 26 Mar 2010 12:01:14 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Yan, Zheng " <yanzheng@21cn.com>
-Cc: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
-       "kirill@shutemov.name" <kirill@shutemov.name>,
-       Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Oops on btrfs filesystem balance
-Message-ID: <20100326040114.GA20717@localhost>
-References: <cc557aab1003250606g6b4e3e7dgb1adfd46adc89124@mail.gmail.com> <3d0408631003252040r70c54b2fm24d64b819c59c9c@mail.gmail.com>
+	id S1751925Ab0CZEQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 00:16:27 -0400
+Received: from smtp-out4.blueyonder.co.uk ([195.188.213.7]:55139 "EHLO
+	smtp-out4.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750917Ab0CZEQY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 00:16:24 -0400
+Message-ID: <4BAC3515.4030708@blueyonder.co.uk>
+Date: Fri, 26 Mar 2010 04:16:21 +0000
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-2.1 Thunderbird/3.0.3 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <3d0408631003252040r70c54b2fm24d64b819c59c9c@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: LKML Mailing List <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-x86_64@vger.kernel.org
+Subject: Re: Fwd: Re: Boot failure 2.6.33 - 2.6.33-git12 - 2.6.34-rc2 inclusive
+References: <4B9A4337.9030609@blueyonder.co.uk> <4BA233A9.1030407@blueyonder.co.uk>
+In-Reply-To: <4BA233A9.1030407@blueyonder.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 11:40:51AM +0800, Yan, Zheng  wrote:
-> On Thu, Mar 25, 2010 at 9:06 PM, Kirill A. Shutemov
-> <kirill@shutemov.name> wrote:
-> > On lastest Linus' git.
-> >
-> > [ 4005.426805] BUG: unable to handle kernel NULL pointer dereference at 00000021
-> > [ 4005.426818] IP: [<c109a130>] page_cache_sync_readahead+0x18/0x3e
-> > [ 4005.426837] *pde = 00000000
-> > [ 4005.426844] Oops: 0000 [#1] PREEMPT SMP
-> > [ 4005.426854] last sysfs file:
-> > /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:00/PNP0C09:00/PNP0C0A:00/power_supply/BAT0/energy_full
-> > [ 4005.426864] Modules linked in: btrfs zlib_deflate crc32c libcrc32c
-> > loop coretemp ext2 arc4 ecb iwlagn iwlcore snd_hda_codec_conexant
-> > snd_hda_intel mac80211 snd_hda_codec snd_hwdep snd_pcm snd_timer snd
-> > uvcvideo e1000e rtc_cmos rtc_core cdc_ether videodev uhci_hcd usbnet
-> > sg snd_page_alloc video thinkpad_acpi cdc_acm rtc_lib v4l1_compat mii
-> > output ext3 jbd usbhid sd_mod sha256_generic cbc ata_piix ehci_hcd
-> > aes_i586 aes_generic libata dm_crypt usbcore scsi_mod nls_base dm_mod
-> > [ 4005.426971]
-> > [ 4005.426979] Pid: 25838, comm: btrfs Not tainted 2.6.34-rc2 #67
-> > 2767BC8/2767BC8
-> > [ 4005.426987] EIP: 0060:[<c109a130>] EFLAGS: 00010206 CPU: 0
-> > [ 4005.426996] EIP is at page_cache_sync_readahead+0x18/0x3e
-> > [ 4005.427002] EAX: f58dcb84 EBX: 00000000 ECX: 00000000 EDX: f45efe40
-> > [ 4005.427009] ESI: 00033b43 EDI: f58dcad4 EBP: f4b61ce0 ESP: f4b61cd8
-> > [ 4005.427010]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-> > [ 4005.427010] Process btrfs (pid: 25838, ti=f4b60000 task=f6680a60
-> > task.ti=f4b60000)
-> > [ 4005.427010] Stack:
-> > [ 4005.427010]  41c00001 00000001 f4b61d50 f9443902 00000000 00033b43
-> > f93fc3dc f6bf4d80
-> > [ 4005.427010] <0> f4cc74d0 41c00001 00000001 f58dcb4c 00033b42
-> > f58dc9e0 f72e7600 f4b61d2c
-> > [ 4005.427010] <0> f45efe40 00000000 00000000 00033b43 41c00000
-> > 00000001 00000000 00000000
-> > [ 4005.427010] Call Trace:
-> > [ 4005.427010]  [<f9443902>] ? relocate_file_extent_cluster+0x195/0x3bd [btrfs]
-> > [ 4005.427010]  [<f93fc3dc>] ? btrfs_release_path+0x39/0x4a [btrfs]
-> > [ 4005.427010]  [<f9444bd2>] ? relocate_block_group+0x2be/0x32a [btrfs]
-> > [ 4005.427010]  [<f9411dd3>] ? btrfs_clean_old_snapshots+0x66/0xd9 [btrfs]
-> > [ 4005.427010]  [<f9444d87>] ? btrfs_relocate_block_group+0x149/0x2e3 [btrfs]
-> > [ 4005.427010]  [<f942eecc>] ? btrfs_relocate_chunk+0x5c/0x423 [btrfs]
-> > [ 4005.427010]  [<c10217cc>] ? kmap_atomic+0x13/0x15
-> > [ 4005.427010]  [<f9428f32>] ? map_private_extent_buffer+0x94/0xb6 [btrfs]
-> > [ 4005.427010]  [<f9428fa3>] ? map_extent_buffer+0x4f/0x7f [btrfs]
-> > [ 4005.427010]  [<c10216d3>] ? kunmap_atomic+0x6c/0x83
-> > [ 4005.427010]  [<f9428aca>] ? unmap_extent_buffer+0x11/0x13 [btrfs]
-> > [ 4005.427010]  [<f94206dd>] ? btrfs_item_offset+0x98/0xa2 [btrfs]
-> > [ 4005.427010]  [<f942f856>] ? btrfs_balance+0x20f/0x265 [btrfs]
-> > [ 4005.427010]  [<f9436ab9>] ? btrfs_ioctl+0x6ad/0x824 [btrfs]
-> > [ 4005.427010]  [<c10bf8e1>] ? __memcg_event_check+0x50/0x72
-> > [ 4005.427010]  [<c11461e2>] ? file_has_perm+0x8c/0xa6
-> > [ 4005.427010]  [<c10cf310>] ? vfs_ioctl+0x2c/0x96
-> > [ 4005.427010]  [<f943640c>] ? btrfs_ioctl+0x0/0x824 [btrfs]
-> > [ 4005.427010]  [<c10cf8ac>] ? do_vfs_ioctl+0x48e/0x4cc
-> > [ 4005.427010]  [<c11463ca>] ? selinux_file_ioctl+0x43/0x46
-> > [ 4005.427010]  [<c10cf930>] ? sys_ioctl+0x46/0x66
-> > [ 4005.427010]  [<c132ae88>] ? syscall_call+0x7/0xb
-> > [ 4005.427010] Code: 8b 48 24 85 c9 74 04 31 d2 ff d1 8d 65 f4 5b 5e
-> > 5f c9 c3 55 89 e5 56 53 0f 1f 44 00 00 89 cb 8b 75 0c 8b 4d 08 83 7a
-> > 0c 00 74 1f <f6> 43 21 10 74 0b 89 da 56 e8 f5 fc ff ff 5b eb 0e 56 51
-> > 89 d9
-> > [ 4005.427010] EIP: [<c109a130>] page_cache_sync_readahead+0x18/0x3e
-> > SS:ESP 0068:f4b61cd8
-> > [ 4005.427010] CR2: 0000000000000021
-> > [ 4005.427898] ---[ end trace 0e53ab674cd5bfb9 ]---
-> >
-> 
-> The 'filp' parameter for page_cache_sync_readahead is NULL in this case.
-> Commit 0141450f66c3c12a3aaa869748caa64241885cdf  added code that
-> dereference 'filp'.
-> 
-> Fengguang, would you please fix this.
+Problem still exists at 2.6.34-rc2-git2.
+Motherboard/CPU/memory has been changed to Asus Crosshair III/AMD
+Phenom(tm) II X4 965 Processor/8GB DDR3. Rebuilt kernel on the new
+motherboard.
+I notice that a kernel that boots generates far more output than I see
+with kernels up to 2.6.34-rc2-git2, tried and rebuilt without netconsole.
 
-Ah Sorry! Here is the patch.
+Here is the full output
+========================
+==== 4 Penguins appear, then the following output and the freeze ====
+Console: switching to colour frame buffer device 160x64
+fb0: VESA VGA frame buffer device
+Initializing Nozomi driver 2.1d (build date: Mar 25 2010 13:37:52)
+Non-volatile memory driver 1.3
+Linux agpgart interface v0.103
+Serial: 8250/16550 driver, 8 ports, IRQ sharing disables
+Console [netcon0] enabled
+netconsole: network logging started
+PNP: No PS/2 controller found. Probing ports directly.
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+mice: PS/2 mouse device common for all mice
+cpuidle: using governor ladder
+cpuidle: using governor menu
+TCP cubic registered
+registered taskstats version 1
+Kmemleak: kernel memory leak detector initialized
+Kmemleak: Automatic memory scanning thread started
+No TPM chip found, activating TPM-bypass!
+Freeing unused kernel memory: 688K freed
+Write Protecting kernel memory read-only data: 6144K
+Testing CPA: undo ffffffff81000000 - ffffffff81600000
+Testing CPA: again
+Freeing unused kernel memory: 964K freed
+Freeing unused kernel memory: 212K freed
+init[1] segfault at ffffffff8100eea8 ip ffffffff8100eea8 sp
+00007fff62e804b8 error 15
+kernel panic - not syncing: Attempted to kill init!
+Pid: 1,comm: init not tainted 2.6.33-git12-smp #2
+Call Trace:
+[<ffffffff81300876>] panic+0x73/0xfa
+[<ffffffff8104b45c>] do_exit+0x6d/0x713
+[<ffffffff8104bd85>] do_group_exit+0x72/0x9b
+[<ffffffff8105917e>] get_signal_to_deliver+0x356/0x375
+[<ffffffff8130310b>] ? _raw_spin_unlock_irqrestore+0x2f/0x34
+[<ffffffff81007fc3>] do_signal+0x6d/0x660
+[<ffffffff81300939>] ? printk+0x3c/0x43
+[<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+[<ffffffff81300939>] ? printk+0x3c/0x43
+[<ffffffff8102b78c>] ? __bad_area_nosemaphore+0x183/0x1ad
+[<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+[<ffffffff810085fc>] do_notify_resume+0x27/0x69
+[<ffffffff8130351c>] retint_signal+0x48/0x8c
+[<ffffffff8100eea8>] ? rdtsc_barrier+0x0/0xc
+Regards
+Sid.
 
-Andrew and Greg: this should go for .34 and .33-stable after Kirill's
-confirmation, thanks!
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
-Thanks,
-Fengguang
----
-Subject: readahead: fix NULL filp dereference
-From: Wu Fengguang <fengguang.wu@intel.com>
-Date: Fri Mar 26 11:53:32 CST 2010
-
-The btrfs relocate_file_extent_cluster() calls us with NULL filp:
-
-  [ 4005.426805] BUG: unable to handle kernel NULL pointer dereference at 00000021
-  [ 4005.426818] IP: [<c109a130>] page_cache_sync_readahead+0x18/0x3e
-
-Fix it.
-
-CC: Yan Zheng <yanzheng@21cn.com>
-Reported-by: Kirill A. Shutemov <kirill@shutemov.name>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/readahead.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- sound-2.6.orig/mm/readahead.c	2010-03-26 11:51:57.000000000 +0800
-+++ sound-2.6/mm/readahead.c	2010-03-26 11:52:11.000000000 +0800
-@@ -502,7 +502,7 @@ void page_cache_sync_readahead(struct ad
- 		return;
- 
- 	/* be dumb */
--	if (filp->f_mode & FMODE_RANDOM) {
-+	if (filp && (filp->f_mode & FMODE_RANDOM)) {
- 		force_page_cache_readahead(mapping, filp, offset, req_size);
- 		return;
- 	}
