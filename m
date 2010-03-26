@@ -1,173 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0CZXrO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 19:47:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41785 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246Ab0CZXrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 19:47:12 -0400
-Message-ID: <4BAD4734.8020503@kernel.org>
-Date: Fri, 26 Mar 2010 16:45:56 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1753771Ab0CZXrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 19:47:53 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39501 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab0CZXrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 19:47:52 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BAD4795.2040700@s5r6.in-berlin.de>
+Date: Sat, 27 Mar 2010 00:47:33 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: [PATCH 02/24] x86: Make sure free_init_pages() free pages in
- boundary
-References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-3-git-send-email-yinghai@kernel.org> <20100326230615.GB29222@cmpxchg.org>
-In-Reply-To: <20100326230615.GB29222@cmpxchg.org>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
+       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
+       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+References: <201003242240.54907.arnd@arndb.de> <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz> <201003251406.10177.arnd@arndb.de> <201003251438.59062.arnd@arndb.de>
+In-Reply-To: <201003251438.59062.arnd@arndb.de>
+X-Enigmail-Version: 0.96.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2010 04:06 PM, Johannes Weiner wrote:
-> On Fri, Mar 26, 2010 at 03:21:32PM -0700, Yinghai Lu wrote:
->> diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
->> index adedeef..fe3d953 100644
->> --- a/arch/x86/kernel/head32.c
->> +++ b/arch/x86/kernel/head32.c
->> @@ -47,6 +47,7 @@ void __init i386_start_kernel(void)
->>  		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
->>  		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
->>  		u64 ramdisk_end   = ramdisk_image + ramdisk_size;
->> +		ramdisk_end = PFN_UP(ramdisk_end) << PAGE_SHIFT;
+Arnd Bergmann wrote:
+> On Thursday 25 March 2010, Arnd Bergmann wrote:
+>> On Thursday 25 March 2010, Jiri Kosina wrote:
+>>>         config USB
+>>>                 tristate "Support for Host-side USB"
+>>>                 depends on USB_ARCH_HAS_HCD && BKL
+>>>
+>>> Well, that's very interesting definition of "obscure" :)
+>>>
+>> That's why I said /mostly/ obscure modules. There are soundcore, usb-core, drm,
+>> vfat and a few other very common ones, along with many obscure ones.
 > 
-> Why not PAGE_ALIGN()?
+> FWIW, this is the full list of 148 modules that require the BKL in an x86 allmodconfig,
+> which is probably the configuration with the largest code coverage.
+...
+> drivers/media/dvb/firewire/firedtv.ko
+...
+> drivers/ieee1394/video1394.ko
+> drivers/ieee1394/raw1394.ko
+> drivers/ieee1394/dv1394.ko
+...
+> drivers/firewire/firewire-core.ko
 
-looks like PFN_UP is more clear.
+firewire-core and raw1394 do not actually require the BKL, they only
+miss to declare their files as not seekable.  I will post patches which
+change these accordingly.
 
->> +	size_aligned = ramdisk_end - ramdisk_image;
->> +
->>  	/* We need to move the initrd down into lowmem */
->> -	ramdisk_here = find_e820_area(0, end_of_lowmem, ramdisk_size,
->> +	ramdisk_here = find_e820_area(0, end_of_lowmem, size_aligned,
->>  					 PAGE_SIZE);
->>  
->>  	if (ramdisk_here == -1ULL)
->>  		panic("Cannot find place for new RAMDISK of size %lld\n",
->> -			 ramdisk_size);
->> +			 size_aligned);
->>  
->>  	/* Note: this includes all the lowmem currently occupied by
->>  	   the initrd, we rely on that fact to keep the data intact. */
->> -	reserve_early(ramdisk_here, ramdisk_here + ramdisk_size,
->> +	reserve_early(ramdisk_here, ramdisk_here + size_aligned,
->>  			 "NEW RAMDISK");
->>  	initrd_start = ramdisk_here + PAGE_OFFSET;
->>  	initrd_end   = initrd_start + ramdisk_size;
->>  	printk(KERN_INFO "Allocated new RAMDISK: %08llx - %08llx\n",
->> -			 ramdisk_here, ramdisk_here + ramdisk_size);
->> +			 ramdisk_here, ramdisk_here + size_aligned);
->>  
->>  	q = (char *)initrd_start;
->>  
->>  	/* Copy any lowmem portion of the initrd */
->> -	if (ramdisk_image < end_of_lowmem) {
->> -		clen = end_of_lowmem - ramdisk_image;
->> -		p = (char *)__va(ramdisk_image);
->> +	image = ramdisk_image;
->> +	if (image < end_of_lowmem) {
->> +		clen = end_of_lowmem - image;
->> +		p = (char *)__va(image);
->>  		memcpy(q, p, clen);
->>  		q += clen;
->> -		ramdisk_image += clen;
->> -		ramdisk_size  -= clen;
->> +		image += clen;
->> +		size_aligned  -= clen;
->>  	}
->>  
->>  	/* Copy the highmem portion of the initrd */
->> -	while (ramdisk_size) {
->> -		slop = ramdisk_image & ~PAGE_MASK;
->> -		clen = ramdisk_size;
->> +	while (size_aligned) {
->> +		slop = image & ~PAGE_MASK;
->> +		clen = size_aligned;
->>  		if (clen > MAX_MAP_CHUNK-slop)
->>  			clen = MAX_MAP_CHUNK-slop;
->> -		mapaddr = ramdisk_image & PAGE_MASK;
->> +		mapaddr = image & PAGE_MASK;
->>  		p = early_memremap(mapaddr, clen+slop);
->>  		memcpy(q, p+slop, clen);
->>  		early_iounmap(p, clen+slop);
->>  		q += clen;
->> -		ramdisk_image += clen;
->> -		ramdisk_size  -= clen;
->> +		image += clen;
->> +		size_aligned  -= clen;
-> 
-> Those appear to be a lot of spurious changes.  We don't need to
-> copy the alignment padding as well, so it only matters that the
-> arguments to find_e820_area() and reserve_early() are aligned, no?
+My guess is that there is nothing to seek in dv1394, video1394, and
+firedtv either.
 
-we need to reserve that whole page, otherwise other user may use the same page.
-
-then we can not use PFN_UP() later to free the whole page.
-
->> --- a/arch/x86/mm/init.c
->> +++ b/arch/x86/mm/init.c
->> @@ -332,6 +332,16 @@ int devmem_is_allowed(unsigned long pagenr)
->>  void free_init_pages(char *what, unsigned long begin, unsigned long end)
->>  {
->>  	unsigned long addr = begin;
->> +	unsigned long addr_aligned, end_aligned;
->> +
->> +	/* Make sure boundaries are page aligned */
->> +	addr_aligned = PFN_UP(addr) << PAGE_SHIFT;
->> +	end_aligned = PFN_DOWN(end) << PAGE_SHIFT;
->> +
->> +	if (WARN(addr_aligned != addr || end_aligned != end, "free_init_pages: range [%#lx, %#lx] is not aligned\n", addr, end)) {
->> +		addr = addr_aligned;
->> +		end = end_aligned;
->> +	}
-> 
-> Maybe realign only for when it is not aligned?  So to keep the fixup
-> out of line.
-> 
-> I suppose WARN_ON() is enough as it will print a stack trace which
-> should be enough clue of what went wrong.
-
-we need to PFN_DOWN the end, and don't free the partial page.
-otherwise could crash the system.
-
-So just print out the trace, and system still can be used. reporter to get dmesg if
-he don't have serial console.
-
-> 
->>  	if (addr >= end)
->>  		return;
->> @@ -376,6 +386,18 @@ void free_initmem(void)
->>  #ifdef CONFIG_BLK_DEV_INITRD
->>  void free_initrd_mem(unsigned long start, unsigned long end)
->>  {
->> -	free_init_pages("initrd memory", start, end);
->> +	unsigned long end_aligned;
->> +
->> +	/*
->> +	 * end could be not aligned, and We can not align that,
->> +	 * decompresser could be confused by aligned initrd_end
->> +	 * We already reserve the end partial page before in
->> +	 *   - i386_start_kernel()
->> +	 *   - x86_64_start_kernel()
->> +	 *   - relocate_initrd()
->> +	 * So here we can do PFN_UP() safely to get partial page to be freed
->> +	 */
->> +	end_aligned = PFN_UP(end) << PAGE_SHIFT;
-> 
-> PAGE_ALIGN()
-
-no PAGE_ALIGN is bad name, it is not clear UP or DOWN.
-
-Thanks
-
-Yinghai
+Needless to say, there may be other character device file interfaces
+which cannot be seeked but don't admit it yet.
+-- 
+Stefan Richter
+-=====-==-=- --== ==-==
+http://arcgraph.de/sr/
