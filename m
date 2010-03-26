@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab0CZWoi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:44:38 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:60991 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab0CZWoh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:44:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=mmTuPOxewxGo9L6fQgu/5/PIss9HfolGwehNmUPynW3xD5DdglGmiN0TkWydmxNwu4
-         T0xtQ2tlqAF758aF4yDFbcSzoONu1uLV1pr8JmzQLl6iuLynWRxi363fZu5myhMKbau4
-         pMcdO/YW9HVCHnEbnEYtO5kr+ln4/7fozEF9Y=
-Subject: Re: [PATCH] Add MSG_WAITFORONE flag to recvmmsg
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Brandon L Black <blblack@gmail.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Ulrich Drepper <drepper@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100326223530.GA11817@xpc.home>
-References: <20100326223530.GA11817@xpc.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Mar 2010 23:44:30 +0100
-Message-ID: <1269643470.2256.17.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754637Ab0CZWuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:50:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:56463 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754464Ab0CZWuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:50:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Oren Laadan <orenl@cs.columbia.edu>
+Subject: Re: [C/R v20][PATCH 15/96] cgroup freezer: Fix buggy resume test for tasks frozen with cgroup freezer
+Date: Fri, 26 Mar 2010 23:53:26 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, linux-api@vger.kernel.org,
+       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       containers@lists.linux-foundation.org,
+       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <legoater@free.fr>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org
+References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu> <201003230028.40915.rjw@sisk.pl> <4BA8E659.1030702@cs.columbia.edu>
+In-Reply-To: <4BA8E659.1030702@cs.columbia.edu>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003262353.26181.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 26 mars 2010 à 17:35 -0500, Brandon L Black a écrit :
-> From: Brandon L Black <blblack@gmail.com>
+On Tuesday 23 March 2010, Oren Laadan wrote:
 > 
-> Add new flag MSG_WAITFORONE for the recvmmsg() syscall.
-> When this flag is specified for a blocking socket, recvmmsg()
-> will only block until at least 1 packet is available.  The
-> default behavior is to block until all vlen packets are
-> available.  This flag has no effect on non-blocking sockets
-> or when used in combination with MSG_DONTWAIT.
+> Rafael J. Wysocki wrote:
+> > On Wednesday 17 March 2010, Oren Laadan wrote:
+> >> From: Matt Helsley <matthltc@us.ibm.com>
+> >>
+> >> When the cgroup freezer is used to freeze tasks we do not want to thaw
+> >> those tasks during resume. Currently we test the cgroup freezer
+> >> state of the resuming tasks to see if the cgroup is FROZEN.  If so
+> >> then we don't thaw the task. However, the FREEZING state also indicates
+> >> that the task should remain frozen.
+> >>
+> >> This also avoids a problem pointed out by Oren Ladaan: the freezer state
+> >> transition from FREEZING to FROZEN is updated lazily when userspace reads
+> >> or writes the freezer.state file in the cgroup filesystem. This means that
+> >> resume will thaw tasks in cgroups which should be in the FROZEN state if
+> >> there is no read/write of the freezer.state file to trigger this
+> >> transition before suspend.
+> >>
+> >> NOTE: Another "simple" solution would be to always update the cgroup
+> >> freezer state during resume. However it's a bad choice for several reasons:
+> >> Updating the cgroup freezer state is somewhat expensive because it requires
+> >> walking all the tasks in the cgroup and checking if they are each frozen.
+> >> Worse, this could easily make resume run in N^2 time where N is the number
+> >> of tasks in the cgroup. Finally, updating the freezer state from this code
+> >> path requires trickier locking because of the way locks must be ordered.
+> >>
+> >> Instead of updating the freezer state we rely on the fact that lazy
+> >> updates only manage the transition from FREEZING to FROZEN. We know that
+> >> a cgroup with the FREEZING state may actually be FROZEN so test for that
+> >> state too. This makes sense in the resume path even for partially-frozen
+> >> cgroups -- those that really are FREEZING but not FROZEN.
+> >>
+> >> Reported-by: Oren Ladaan <orenl@cs.columbia.edu>
+> >> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
+> >> Cc: Cedric Le Goater <legoater@free.fr>
+> >> Cc: Paul Menage <menage@google.com>
+> >> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> >> Cc: Pavel Machek <pavel@ucw.cz>
+> >> Cc: linux-pm@lists.linux-foundation.org
+> > 
+> > Looks reasonable.
+> > 
+> > Is anyone handling that already or do you want me to take it to my tree?
 > 
-> Signed-off-by: Brandon L Black <blblack@gmail.com>
+> Yes, please do.
 
+Applied.
 
-> 
-> ---
-> diff --git a/include/linux/socket.h b/include/linux/socket.h
-> index 7b3aae2..354cc56 100644
-> --- a/include/linux/socket.h
-> +++ b/include/linux/socket.h
-> @@ -255,6 +255,7 @@ struct ucred {
->  #define MSG_ERRQUEUE	0x2000	/* Fetch message from error queue */
->  #define MSG_NOSIGNAL	0x4000	/* Do not generate SIGPIPE */
->  #define MSG_MORE	0x8000	/* Sender will send more */
-> +#define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
->  
->  #define MSG_EOF         MSG_FIN
->  
-> diff --git a/net/socket.c b/net/socket.c
-> index 769c386..33304d1 100644
-> --- a/net/socket.c
-> +++ b/net/socket.c
-> @@ -2133,7 +2133,10 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
->  
->  		if (err)
->  			break;
-> -		++datagrams;
-> +
-> +		/* MSG_WAITFORONE turns on MSG_DONTWAIT after one packet */
-> +		if (!datagrams++ && (flags & MSG_WAITFORONE))
-> +			flags |= MSG_DONTWAIT;
-
-
-Hmmm, no need to test !datagram, just do :
-
-	++datagrams;
-
-	if (flags & MSG_WAITFORONE)
-		flags |= MSG_DONTWAIT;
-
-
-
+Rafael
