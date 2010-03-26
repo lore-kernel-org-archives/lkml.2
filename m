@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752413Ab0CZMCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 08:02:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12079 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751505Ab0CZMCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 08:02:08 -0400
-Date: Fri, 26 Mar 2010 13:00:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Grzegorz Nosek <root@localdomain.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100326120028.GA11311@redhat.com>
-References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com> <20100325213356.GB20541@megiteam.pl> <20100326111131.GA8604@redhat.com> <20100326113201.GB17113@megiteam.pl>
+	id S1752799Ab0CZMC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 08:02:26 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:45383 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab0CZMCY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 08:02:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=HmRl3LgXDI3JjaEt7CCWSuCj31T8LXm0EPh54wQrWL3GFld4kt2DXwi9/1g7EMvOK8
+         OLKtXiY+sb+Ph6BlQRrgLy6FCy5D2DYYfz3VIiY4mIoeM/WwXx7F+pIP4KuZJCs1Px4w
+         F7/Dr3skKsQbd0LYRC9cN3OyOxZ5en4SzF1TI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100326113201.GB17113@megiteam.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Fri, 26 Mar 2010 13:02:22 +0100
+X-Google-Sender-Auth: a1b810942d33a230
+Message-ID: <520f0cf11003260502o5ecb23adpe69f6eb465142821@mail.gmail.com>
+Subject: [BUG-REPORT][PREEMPT-RT] 2.6.33.1-rt11 triggers DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled), 
+	in a 32-bit kvm session
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26, Grzegorz Nosek wrote:
->
-> On Fri, Mar 26, 2010 at 12:11:31PM +0100, Oleg Nesterov wrote:
-> > Yes, this is broken. More precisely, this wasn't even supposed to work.
-> >
-> > Even stracing of the sub-init itself (or global init btw) has problems,
-> > the straced init is not protected from unwanted signals.
->
-> Is this impossible/very hard to do cleanly? I understand that container's
-> init becomes vulnerable to signals sent from root-owned processes in the
-> container. If so, the impact of this issue should be quite limited, no?
+During boot-up of 2.6.33.1-rt11 in a 32-bit qemu-kvm machine,
+The following warning is reliably (every time) triggered.
 
-Yes, probably we can ignore this.
+------------[ cut here ]------------
+WARNING: at /home/jkacur/jk-2.6/kernel/fork.c:1065 copy_process+0x299/0x160f()
+Hardware name:
+Modules linked in:
+Pid: 64, comm: khelper Not tainted 2.6.33.1-rt11 #1
+Call Trace:
+ [<c104961a>] warn_slowpath_common+0x83/0x9a
+ [<c1049643>] warn_slowpath_null+0x12/0x15
+ [<c1046f89>] copy_process+0x299/0x160f
+ [<c1048711>] do_fork+0x235/0x4e2
+ [<c107da08>] ? register_lock_class+0x17/0x22d
+ [<c107e6dc>] ? mark_lock+0x1e/0x1c0
+ [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+ [<c100ae09>] kernel_thread+0x79/0x81
+ [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+ [<c100391c>] ? kernel_thread_helper+0x0/0x10
+ [<c1064cc7>] __call_usermodehelper+0x75/0xa0
+ [<c10673b6>] worker_thread+0x1f6/0x2fb
+ [<c1067374>] ? worker_thread+0x1b4/0x2fb
+ [<c1064c52>] ? __call_usermodehelper+0x0/0xa0
+ [<c106a91e>] ? autoremove_wake_function+0x0/0x46
+ [<c106a740>] kthread+0x6b/0x74
+ [<c10671c0>] ? worker_thread+0x0/0x2fb
+ [<c106a6d5>] ? kthread+0x0/0x74
+ [<c106a6d5>] ? kthread+0x0/0x74
+ [<c1003922>] kernel_thread_helper+0x6/0x10
+---[ end trace a22d306b065d4a66 ]---
 
-> > Yes. First of all, tracehook_report_clone_complete() reports the wrong pid nr,
-> > as it seen inside the init's namespace. This is easy to fix, but I doubt this
-> > can help. IIRC strace doesn't use PTRACE_GETEVENTMSG at all, it looks at eax
-> > after syscall.
-> >
-> > which patch?
->
-> The patch below posted by Matt. AIUI, it fixes the
-> tracehook_report_clone_complete() part, which results in an observable
-> change in strace's behaviour (not that it makes strace work, though).
+I am happy to provide more information to help debug this.
 
-I guess it doesn't work because we need to fix strace, see "strace doesn't
-use PTRACE_GETEVENTMSG" above.
-
-> Anyway, are there any remaining issues on the kernel side or does strace
-> have to be taught about pid namespaces?
-
-At first glance, I don't see other problems, except sometimes the reported
-pid is wrong (like in do_fork). 
-
-> +               ptrace_pid_vnr = nr;
-> +               if (unlikely(p->parent != p->real_parent)) {
-> +                       rcu_read_lock();
-> +                       ptrace_pid_vnr = task_pid_nr_ns(p, p->parent->nsproxy->pid_ns);
-
-Yes, this is what I meant.
-
-But we should not do this in do_fork().
-
-
-But once again. This change fixes the value in "tracee->ptrace_message == newpid",
-but a quick grep shows that strace-4.5.19 doesn't use PTRACE_GETEVENTMSG at all.
-
-Oleg.
-
+Thanks
