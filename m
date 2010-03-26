@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab0CZAwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 20:52:13 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:45509 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085Ab0CZAwM (ORCPT
+	id S1752933Ab0CZAye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:54:34 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:55971 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab0CZAyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 20:52:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N2CnVV3zOu1LAey3ubz6ZEC+5fnTmsjRZbGDsRO43e5UJJNgYy+SBf3+yiW+bP/v7L
-         z33Oyz0jWhYytrzQbJ32pUx9oMbTnrzjZ2kY1I/MPo3RTYOOEWHSFanmE12urIoa/le1
-         HmPMOBgrX7PnxDwTVjqw/BfrYQJ5Qlp6OJXno=
-MIME-Version: 1.0
-In-Reply-To: <4BAB3C0D.4080906@trash.net>
-References: <20100325092154.GB29056@localhost.localdomain>
-	 <4BAB3C0D.4080906@trash.net>
-Date: Fri, 26 Mar 2010 08:52:09 +0800
-Message-ID: <628d1651003251752v3d49b8acs6b43d76b2477b8a3@mail.gmail.com>
-Subject: Re: [PATCH] Netfilter: Code cleanup on net/netfilter
-From: wzt wzt <wzt.wzt@gmail.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Thu, 25 Mar 2010 20:54:33 -0400
+Date: Fri, 26 Mar 2010 09:54:31 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+In-reply-to: <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       Linus Walleij <linus.ml.walleij@gmail.com>,
+       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Ben Dooks <ben-linux@fluff.org>
+Message-id: <4BAC05C7.2030208@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+References: <4BAAD5BB.7050101@samsung.com>
+ <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
+ <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
+ <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
+ <4BAB7D9F.4070807@intel.com>
+ <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+X-OriginalArrivalTime: 26 Mar 2010 00:54:31.0206 (UTC)
+ FILETIME=[E4EB6C60:01CACC7E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ok, thx, i'll send a new patch soon.
+On 3/26/2010 7:27 AM, jassi brar wrote:
+> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> jassi brar wrote:
+>>>> Perhaps Joonyoung can simply port over the stuff
+>>>> you need to this driver if you show your code.
+>>> Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
+>>> _very_ surprised if any user found this implementation useful.
+>>> Let alone testing, this implementation can't even explain usability
+>>> for fast peripherals
+>>> with shallow FIFOs. I didn't give feedback for this patch because I am
+>>> not sure if this
+>>> is the right way to go at all.
+>> This is the wrong attitude. 혻If it were not for a simple oversight
+>> Joonyoung's driver would already be upstream for the past two kernel
+>> releases. 혻So you need to work together to improve that driver to
+>> incorporate what you need.
+> Nothing wrong in attitude here.
+> Giving feedback on the code only comes after one is convinced with the
+> overall approach taken. The last time I raised the PL330 driver issue,
+> most people were not enthusiastic with this drivers/dma/ approach.
+> I wasn't active mainline discussions when the driver was originally
+> submitted a few months ago.
+> And now my replies are not very 'polite' because theres a lot going on
+> in the background that people in public threads don't know about.
+> 
+> 
+>> It sounds like you just need to add an extension for the arch specific dma
+>> api.
+> I actually plan more than that.
+> Apart from inefficient design, JoonYoung's driver has made some fatal
+> assumptions
+> about PL330, which will result in DMA aborts if used with SoCs that implement
+> configuration of PL330 that is very different from Samsung SoCs'
+> Of course, I address all such issues that I can think of, in my implementation.
+> 
 
-On Thu, Mar 25, 2010 at 6:33 PM, Patrick McHardy <kaber@trash.net> wrote:
-> wzt.wzt@gmail.com wrote:
->> Fix some coding styles and remove moduleparam.h
->
-> I've already applied your patches to remove moduleparam.h.
-> Please base your patches on
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/kaber/nf-next-2.6.git
->
+I can wait your implementation and wonder what is the issue also.
+
+I welcome you try other design and want better driver is committed at 
+mainline kernel too.
