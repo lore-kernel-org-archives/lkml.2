@@ -1,102 +1,313 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab0CZVb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:31:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab0CZVb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:31:27 -0400
-Message-ID: <4BAD2782.3010704@redhat.com>
-Date: Fri, 26 Mar 2010 17:30:42 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1753721Ab0CZVeG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:34:06 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38221 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab0CZVeE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 17:34:04 -0400
 MIME-Version: 1.0
-To: Jason Baron <jbaron@redhat.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       fweisbec@gmail.com
-Subject: Re: [PATCH 2/5] jump label: base patch
-References: <cover.1269272444.git.jbaron@redhat.com> <79304b525d61cb0e7516cdee1ddcdb5ac3f2579a.1269272444.git.jbaron@redhat.com>
-In-Reply-To: <79304b525d61cb0e7516cdee1ddcdb5ac3f2579a.1269272444.git.jbaron@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1268843188-15292-1-git-send-email-steve@digidescorp.com>
+References: <1268843188-15292-1-git-send-email-steve@digidescorp.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 26 Mar 2010 15:33:41 -0600
+X-Google-Sender-Auth: 9e2e292dec9496c3
+Message-ID: <fa686aa41003261433x312453dfgca325cae3bbaf91@mail.gmail.com>
+Subject: Re: [PATCH 3/4] dmaengine: xlldma platform bus driver
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+       microblaze-uclinux@itee.uq.edu.au, monstr@monstr.eu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Baron wrote:
-> base patch to implement 'jump labeling'. Based on a new 'asm goto' inline
-> assembly gcc mechanism, we can now branch to labels from an 'asm goto'
-> statment. This allows us to create a 'no-op' fastpath, which can subsequently
-> be patched with a jump to the slowpath code. This is useful for code which
-> might be rarely used, but which we'd like to be able to call, if needed.
-> Tracepoints are the current usecase that these are being implemented for.
-> 
-> Signed-off-by: Jason Baron <jbaron@redhat.com>
+On Wed, Mar 17, 2010 at 10:26 AM, Steven J. Magnani
+<steve@digidescorp.com> wrote:
+> Platform bus attachment for the Xilinx MPMC Soft Direct Memory
+> Access Controller DMA engine.
+>
+> Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
 > ---
->  include/asm-generic/vmlinux.lds.h |   10 ++-
->  include/linux/jump_label.h        |   57 +++++++++++++
->  kernel/Makefile                   |    2 +-
->  kernel/jump_label.c               |  165 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 232 insertions(+), 2 deletions(-)
->  create mode 100644 include/linux/jump_label.h
->  create mode 100644 kernel/jump_label.c
-> 
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index 67e6520..83a469d 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -167,7 +167,8 @@
->  	BRANCH_PROFILE()						\
->  	TRACE_PRINTKS()							\
->  	FTRACE_EVENTS()							\
-> -	TRACE_SYSCALLS()
-> +	TRACE_SYSCALLS()						\
-> +	JUMP_TABLE()							\
+> diff -uprN a/drivers/dma/xlldma_plat.c b/drivers/dma/xlldma_plat.c
+> --- a/drivers/dma/xlldma_plat.c 1969-12-31 18:00:00.000000000 -0600
+> +++ b/drivers/dma/xlldma_plat.c 2010-03-17 11:11:16.000000000 -0500
 
-Just a minor style issue: no need to add '\' on the last line.
+Not really worth putting into a separate file.  Just put this hunk in
+the xlldma.c file to keep a few more symbols out of the global
+namespace.
 
->  
->  /*
->   * Data section helpers
-> @@ -206,6 +207,7 @@
->  		*(__vermagic)		/* Kernel version magic */	\
->  		*(__markers_strings)	/* Markers: strings */		\
->  		*(__tracepoints_strings)/* Tracepoints: strings */	\
-> +		*(__jump_strings)/* Jump: strings */	\
->  	}								\
->  									\
-
-Just a minor style issue: please align the tab.
-
-[...]
-> +static struct jump_label_entry *add_jump_label_entry(const char *name, int nr_entries, struct jump_entry *table)
-> +{
-> +	struct hlist_head *head;
-> +	struct hlist_node *node;
-> +	struct jump_label_entry *e;
-> +	size_t name_len = strlen(name) + 1;
-> +	u32 hash = jhash(name, name_len-1, 0);
+> @@ -0,0 +1,222 @@
+> +/*
+> + * Xilinx Multi-Port Memory Controller (MPMC) DMA Engine support
+> + *
+> + * Copyright (C) 2010 Digital Design Corporation. All rights reserved.
+> + *
+> + * Author:
+> + *   Steve Magnani <steve@digidescorp.com>, Mar 2010
+> + *
+> + * Description:
+> + *   Platform bus attachment for the Xilinx MPMC Soft Direct Memory
+> + *   Access Controller DMA engine.
+> + *
+> + * This is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
 > +
-> +	head = &jump_label_table[hash & (JUMP_LABEL_TABLE_SIZE - 1)];
-> +	hlist_for_each_entry(e, node, head, hlist) {
-> +		if (!strcmp(name, e->name))
-> +			return ERR_PTR(-EEXIST);
-> +	}
-> +	e = kmalloc(sizeof(struct jump_label_entry) + name_len, GFP_KERNEL);
-> +	if (!e)
-> +		return ERR_PTR(-ENOMEM);
-> +	memcpy(&e->name[0], name, name_len);
+> +#include <linux/platform_device.h>
+> +#include <linux/module.h>
+> +
+> +#include "xlldma.h"
+> +
+> +static int __devinit xlldma_plat_chan_probe(struct xlldma_device *xdev)
+> +{
+> +       struct xlldma_chan *chan;
+> +       struct resource *plat_rsrc;
+> +       int err;
+> +       struct platform_device *pdev = to_platform_device(xdev->dev);
+> +       char irq_name[9];
+> +
+> +       plat_rsrc = platform_get_resource(pdev, IORESOURCE_MEM,
+> +                                         xdev->common.chancnt);
+> +       if (!plat_rsrc)
+> +               return -ENXIO;
+> +
+> +       /* alloc channel */
+> +       chan = kzalloc(sizeof(struct xlldma_chan), GFP_KERNEL);
+> +       if (!chan) {
+> +               dev_err(xdev->dev,
+> +                       "No free memory for allocating dma channels!\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       /* get dma channel register base */
+> +       chan->reg_base = NULL;
 
-Hmm, why don't you just have a pointer for e->name which points name?
-Or, maybe you can find it easily from e->table[0].name (so you can save
-some memory).
+Superfluous statement.
 
-Thank you,
+> +
+> +       /* map device registers */
+> +       chan->reg_base = ioremap(plat_rsrc->start,
+> +                                plat_rsrc->end - plat_rsrc->start + 1);
+> +       if (chan->reg_base) {
+> +               dev_dbg(xdev->dev, "MEM base: %p\n", chan->reg_base);
+> +       } else {
+> +               dev_err(xdev->dev, "unable to map DMA registers\n");
+> +               err = -ENXIO;
+> +               goto err_no_reg;
+> +       }
+
+General convention is to do this the other way around.  No else clause required:
+
+if (!chan->reg_base) {
+      /* bail out here */
+}
+dev_dbg(...)
+
+
+> +
+> +       chan->xdev = xdev;
+> +
+> +       chan->id = xdev->common.chancnt;
+> +       if (chan->id >= XLLDMA_MAX_CHANS_PER_DEVICE) {
+> +               dev_err(xdev->dev, "There is no %d channel!\n", chan->id);
+> +               err = -EINVAL;
+> +               goto err_no_chan;
+> +       }
+> +       xdev->chan[chan->id] = chan;
+> +       tasklet_init(&chan->tasklet, xlldma_cleanup_tasklet,
+> +                    (unsigned long)chan);
+> +
+> +       spin_lock_init(&chan->desc_lock);
+> +       INIT_LIST_HEAD(&chan->desc_queue);
+> +       INIT_LIST_HEAD(&chan->pending_free);
+> +
+> +       chan->common.device = &xdev->common;
+> +
+> +       /* Add the channel to DMA device channel list */
+> +       list_add_tail(&chan->common.device_node, &xdev->common.channels);
+> +       xdev->common.chancnt++;
+
+Don't you need a spinlock protecting the list access?
+
+> +
+> +       /* RX interrupt is required */
+> +       sprintf(irq_name, "chan%d-rx", chan->id);
+
+Be defensive.  Make irq_name at least 20 bytes long in case chan->id
+somehow becomes huge.
+
+> +       plat_rsrc = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+> +                                                irq_name);
+> +       if (!plat_rsrc) {
+> +               dev_err(xdev->dev, "DMA channel %d - missing %s IRQ\n",
+> +                       chan->id, irq_name);
+> +               err = -ENXIO;
+> +               goto err_no_irq;
+> +       }
+> +
+> +       chan->rx_irq = plat_rsrc->start;
+> +       BUG_ON(plat_rsrc->end != plat_rsrc->start);
+> +
+> +       err = request_irq(chan->rx_irq, &xlldma_chan_rx_interrupt,
+> +                         IRQF_SHARED, "xlldma-rx", chan);
+> +       if (err) {
+> +               dev_err(xdev->dev, "request_irq error on %s, return %d\n",
+> +                       irq_name, err);
+> +               err = -ENXIO;
+> +               goto err_no_irq;
+> +       }
+> +
+> +       /* TX interrupt is optional - only needed for DMA_INTERRUPT */
+> +       irq_name[6] = 't';
+
+And if irq # is in the double digits?  This is clever, but unclear and
+potentially risky.  Just do another sprintf()
+
+> +       plat_rsrc = platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+> +                                                irq_name);
+> +       if (plat_rsrc) {
+> +               chan->tx_irq = plat_rsrc->start;
+> +               BUG_ON(plat_rsrc->end != plat_rsrc->start);
+> +       } else {
+> +               chan->tx_irq = NO_IRQ;
+> +       }
+
+put chan->tx_irq = NO_IRQ before the if(), and you can drop the else
+statement (a bit simpler).
+
+> +
+> +       if (chan->tx_irq != NO_IRQ) {
+> +               err = request_irq(chan->tx_irq, &xlldma_chan_tx_interrupt,
+> +                                 IRQF_SHARED, "xlldma-tx", chan);
+> +               if (err) {
+> +                       dev_err(xdev->dev,
+> +                               "request_irq error on %s, return %d\n",
+> +                               irq_name, err);
+> +                       goto err_rx_irq;
+> +               }
+> +       }
+> +
+> +       dev_info(xdev->dev, "#%d, tx irq %d, rx irq %d\n", chan->id,
+> +                chan->tx_irq, chan->rx_irq);
+> +
+> +       return 0;
+> +err_rx_irq:
+> +       free_irq(chan->rx_irq, chan);
+> +err_no_irq:
+> +       list_del(&chan->common.device_node);
+> +err_no_chan:
+> +       iounmap(chan->reg_base);
+> +err_no_reg:
+> +       kfree(chan);
+> +       return err;
+> +}
+> +
+> +static int __devinit xlldma_plat_probe(struct platform_device *pdev)
+> +{
+> +       struct xlldma_device *xdev;
+> +       int i, rc;
+> +
+> +       dev_info(&pdev->dev, "Xilinx DMA engine...\n");
+> +
+> +       xdev = kzalloc(sizeof(struct xlldma_device), GFP_KERNEL);
+> +       if (!xdev) {
+> +               dev_err(&pdev->dev, "Not enough memory for 'priv'\n");
+> +               rc = -ENOMEM;
+> +               goto fail_alloc;
+> +       }
+> +       xdev->dev = &pdev->dev;
+> +       INIT_LIST_HEAD(&xdev->common.channels);
+> +
+> +       xdev->common.dev = &pdev->dev;
+> +       platform_set_drvdata(pdev, xdev);
+> +
+> +       do {
+> +               rc = xlldma_plat_chan_probe(xdev);
+> +       } while (rc == 0);
+> +
+> +       if (xdev->common.chancnt == 0)
+> +               goto fail_nochan;
+> +
+> +       rc = xlldma_device_setup(xdev->dev);
+> +       if (rc == 0)
+> +               return 0;
+> +
+> +/* fail: */
+> +       for (i = 0; i < XLLDMA_MAX_CHANS_PER_DEVICE; i++) {
+> +               if (xdev->chan[i])
+> +                       xlldma_chan_remove(xdev->chan[i]);
+> +       }
+> +fail_nochan:
+> +       platform_set_drvdata(pdev, NULL);
+> +       kfree(xdev);
+> +
+> +fail_alloc:
+> +       return rc;
+> +}
+> +
+> +static int __devexit xlldma_plat_remove(struct platform_device *pdev)
+> +{
+> +       return xlldma_device_teardown(&pdev->dev);
+> +}
+> +
+> +static struct platform_driver xlldma_driver = {
+> +       .probe  = xlldma_plat_probe,
+> +       .remove = __devexit_p(xlldma_plat_remove),
+> +       .driver = {
+> +               .owner = THIS_MODULE,
+> +               .name  = "xlldma",
+> +       },
+> +};
+> +
+> +static int __init xlldma_plat_init(void)
+> +{
+> +       int ret;
+> +
+> +       pr_info("Xilinx LocalLink DMA driver\n");
+> +
+> +       ret = platform_driver_register(&xlldma_driver);
+> +       if (ret)
+> +               pr_err("xlldma: failed to register platform driver\n");
+> +
+> +       return ret;
+> +}
+
+Don't bother with all this.  sysfs will tell you whether or not the
+driver got registered.  Do this instead:
+
++static int __init xlldma_plat_init(void)
++{
++       return platform_driver_register(&xlldma_driver);
++}
+
+
+> +
+> +static void __exit xlldma_plat_exit(void)
+> +{
+> +       platform_driver_unregister(&xlldma_driver);
+> +}
+> +
+> +module_init(xlldma_plat_init);
+
+Put the module_init directly after the xlldma_plat_init() function definition.
+
+> +module_exit(xlldma_plat_exit);
+> +
+> +MODULE_AUTHOR("Digital Design Corporation");
+> +MODULE_DESCRIPTION("Xilinx LocalLink DMA Platform driver");
+> +MODULE_LICENSE("GPL");
+>
+>
+>
+
 
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
