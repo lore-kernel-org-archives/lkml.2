@@ -1,107 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab0CZVkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:40:23 -0400
-Received: from legolas.restena.lu ([158.64.1.34]:48023 "EHLO
-	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab0CZVkU convert rfc822-to-8bit (ORCPT
+	id S1754085Ab0CZVlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:41:07 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:48394 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab0CZVlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:40:20 -0400
-Date: Fri, 26 Mar 2010 22:39:32 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>
-Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
-Message-ID: <20100326223932.01305c17@neptune.home>
-In-Reply-To: <201003261416.25387.dmitry.torokhov@gmail.com>
-References: <20100324233707.7243b04d@neptune.home>
-	<20100326102951.3b9ecda1@neptune.home>
-	<alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
-	<201003261416.25387.dmitry.torokhov@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Mar 2010 17:41:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NT4ip7WQuv8ehW0JuXYFZCFmPdBWSFAhbzmDbg01cjiO7xVm3ak3XTB9tB60H45H8G
+         F44ydWfx8YD2v+MY/k//abJC6O4Y+ekc6VoNPlVhzXKxObX0Iw8sXHZNWGuS/RkG4To6
+         ekz9KynRNDEjrU3rQAJ6v2om/nI0V+YcDZOjs=
+Date: Fri, 26 Mar 2010 22:41:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+Subject: Re: [BUG] perf: hard lockup when using perf-sched
+Message-ID: <20100326214101.GE7166@nowhere>
+References: <4BA9A885.9050105@cn.fujitsu.com> <1269415964.6530.25.camel@marge.simson.net> <1269418671.6465.6.camel@marge.simson.net> <4BAB1924.4060304@cn.fujitsu.com> <1269509241.8438.30.camel@marge.simson.net> <1269598293.6174.8.camel@marge.simson.net> <20100326172350.GC5188@nowhere> <1269630640.6331.18.camel@marge.simson.net> <20100326192712.GA7166@nowhere> <1269634924.6488.6.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269634924.6488.6.camel@marge.simson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 March 2010 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> On Friday 26 March 2010 01:59:19 pm Jiri Kosina wrote:
-> > On Fri, 26 Mar 2010, Bruno Prémont wrote:
-> > > > > +	for (i = 0; i < PICOLCD_KEYS; i++) {
-> > > > > +		int key = ((int *)idev->keycode)[i];
-> > > > 
-> > > > Keycodes are now short, not int. Also, just do:
-> > > > 		input_set_capability(idev, EV_KEY, data->keycode[i]);
-> > > > 		
-> > > > > +		if (key < KEY_MAX && key >= 0)
-> > > > > +			input_set_capability(idev, EV_KEY, key);
-> > > 
-> > > Oops, I was not careful enough when switching over...
-> > 
-> > Dmitry, thanks a lot for rapid review the driver.
-> > 
-> > Bruno, could you please fix this and submit a followup 1/6 patch, so that
-> > I could queue the driver in my tree?
-> > 
-> > I have almost finished going over the driver and haven't encountered any
-> > other issues that would require immediate fixing.
-> > 
-> > Still, it would be nice to have the framebuffer/LCD/backlight bits
-> > reviewed by respective subsystem maintainers. But I'll probably queue the
-> > driver nevertheless and add potential ACKs later.
+On Fri, Mar 26, 2010 at 09:22:04PM +0100, Mike Galbraith wrote:
+> Hm.  Last trace I took is below.
 > 
-> FWIW I am not entrely happy with the whole send-and_wait implementation -
-> it looks like it is not being called concurrently so we don't need mutex
-> there... I'd do something like:
-
-It can be called concurrently, not within patch 1/6 but it definitely
-can once patch 6/6 is applied (concurrent access to debugfs files for
-EEPROM and/or FLASH).
-Even later on when FLASH (and EEPROM) access get moved to a better home
-concurrent access will still exist.
+> ./forkbomb&
 
 
-> send_nand_wait() {
-> 
-> 	set_bit(WAITING_RESPONSE, data->state);
-> 	prepare message
-> 	send message
-> 	wait_for_event_interruptible_timeout(&data->wait,
-> 					!test_bit(WAITING_RESPONSE, data->state));
-> 	if (!test_bit()) {
-> 		process
-> 		return 0;
-> 	}
-> 
-> 	return -ETIME;
-> }
-> 
-> irq(...) {
-> 
-> 	else if (test_bit(WAITING_RESPONSE, data->state)) {
-> 		copy response...
-> 		clear_bit(WAITING_RESPONSE, data->state);	
-> 		wake_up(&data->wait);
-> 	}
-> }
-> 
-> and not bother with kmallocing pending structure, but it should not
-> stop from merging driver.
+Hmm, Yeah that's indeed what the traces show.
+And your patch really fix this on your box?
 
-It might be an option to not allocate the pending structure but as
-the whole "pending" access is definitely not a hot path (flashing
-firmware or splash and changing EEPROM values will most probably
-not be done very often). The only more common use is version check
-on probe.
-
-So what is more expensive, the used memory or the CPU usage to
-allocate/release the struct? That probably depends on reader's taste.
-
-Bruno
