@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab0CZUol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:44:41 -0400
-Received: from fischerfamily.org ([71.216.156.246]:23869 "EHLO gw"
+	id S1753570Ab0CZUop (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:44:45 -0400
+Received: from fischerfamily.org ([71.216.156.246]:23877 "EHLO gw"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752837Ab0CZUoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:44:38 -0400
-X-Greylist: delayed 2017 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 16:44:37 EDT
+	id S1753462Ab0CZUon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:44:43 -0400
 From: Todd Fischer <todd.fischer@ridgerun.com>
 To: linux-kernel@vger.kernel.org,
        davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
        lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
        todd.fischer@ridgerun.com
-Subject: [PATCH 4/5] Cleaned up name space so each MFD sub-driver uses a different name space.
-Date: Fri, 26 Mar 2010 14:11:31 -0600
-Message-Id: <1269634292-29686-5-git-send-email-todd.fischer@ridgerun.com>
+Subject: [PATCH 3/5] Add MFD driver for TPS6507x family of multi-function chips
+Date: Fri, 26 Mar 2010 14:11:30 -0600
+Message-Id: <1269634292-29686-4-git-send-email-todd.fischer@ridgerun.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1269634292-29686-4-git-send-email-todd.fischer@ridgerun.com>
+In-Reply-To: <1269634292-29686-3-git-send-email-todd.fischer@ridgerun.com>
 References: <1269634292-29686-1-git-send-email-todd.fischer@ridgerun.com>
  <1269634292-29686-2-git-send-email-todd.fischer@ridgerun.com>
  <1269634292-29686-3-git-send-email-todd.fischer@ridgerun.com>
- <1269634292-29686-4-git-send-email-todd.fischer@ridgerun.com>
 Organization: RidgeRun
 X-SA-Exim-Connect-IP: 10.0.0.3
 X-SA-Exim-Mail-From: todd.fischer@ridgerun.com
@@ -29,493 +27,286 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move from using tps or tsp6507x to tps6057x_pmic in a consistent
-manner.
+MFD driver for TPS6507x family of multi-function chips.
 
 Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
 ---
- drivers/regulator/tps6507x-regulator.c |  172 ++++++++++++++++----------------
- 1 files changed, 87 insertions(+), 85 deletions(-)
+ drivers/mfd/Kconfig          |   11 +++
+ drivers/mfd/Makefile         |    3 +-
+ drivers/mfd/tps6507x.c       |  186 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps6507x.h |   20 +++++
+ 4 files changed, 219 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/mfd/tps6507x.c
 
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index 27f4e7a..30211fb 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -103,7 +103,7 @@ struct tps_info {
- 	const u16 *table;
- };
- 
--struct tps_pmic {
-+struct tps6507x_pmic {
- 	struct regulator_desc desc[TPS6507X_NUM_REGULATOR];
- 	struct i2c_client *client;
- 	struct regulator_dev *rdev[TPS6507X_NUM_REGULATOR];
-@@ -111,23 +111,23 @@ struct tps_pmic {
- 	struct mutex io_lock;
- };
- 
--static inline int tps_6507x_read(struct tps_pmic *tps, u8 reg)
-+static inline int tps6507x_pmic_read(struct tps6507x_pmic *tps, u8 reg)
- {
- 	return i2c_smbus_read_byte_data(tps->client, reg);
- }
- 
--static inline int tps_6507x_write(struct tps_pmic *tps, u8 reg, u8 val)
-+static inline int tps6507x_pmic_write(struct tps6507x_pmic *tps, u8 reg, u8 val)
- {
- 	return i2c_smbus_write_byte_data(tps->client, reg, val);
- }
- 
--static int tps_6507x_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
-+static int tps6507x_pmic_set_bits(struct tps6507x_pmic *tps, u8 reg, u8 mask)
- {
- 	int err, data;
- 
- 	mutex_lock(&tps->io_lock);
- 
--	data = tps_6507x_read(tps, reg);
-+	data = tps6507x_pmic_read(tps, reg);
- 	if (data < 0) {
- 		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
- 		err = data;
-@@ -135,7 +135,7 @@ static int tps_6507x_set_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- 	}
- 
- 	data |= mask;
--	err = tps_6507x_write(tps, reg, data);
-+	err = tps6507x_pmic_write(tps, reg, data);
- 	if (err)
- 		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
- 
-@@ -144,13 +144,13 @@ out:
- 	return err;
- }
- 
--static int tps_6507x_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
-+static int tps6507x_pmic_clear_bits(struct tps6507x_pmic *tps, u8 reg, u8 mask)
- {
- 	int err, data;
- 
- 	mutex_lock(&tps->io_lock);
- 
--	data = tps_6507x_read(tps, reg);
-+	data = tps6507x_pmic_read(tps, reg);
- 	if (data < 0) {
- 		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
- 		err = data;
-@@ -158,7 +158,7 @@ static int tps_6507x_clear_bits(struct tps_pmic *tps, u8 reg, u8 mask)
- 	}
- 
- 	data &= ~mask;
--	err = tps_6507x_write(tps, reg, data);
-+	err = tps6507x_pmic_write(tps, reg, data);
- 	if (err)
- 		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
- 
-@@ -167,13 +167,13 @@ out:
- 	return err;
- }
- 
--static int tps_6507x_reg_read(struct tps_pmic *tps, u8 reg)
-+static int tps6507x_pmic_reg_read(struct tps6507x_pmic *tps, u8 reg)
- {
- 	int data;
- 
- 	mutex_lock(&tps->io_lock);
- 
--	data = tps_6507x_read(tps, reg);
-+	data = tps6507x_pmic_read(tps, reg);
- 	if (data < 0)
- 		dev_err(&tps->client->dev, "Read from reg 0x%x failed\n", reg);
- 
-@@ -181,13 +181,13 @@ static int tps_6507x_reg_read(struct tps_pmic *tps, u8 reg)
- 	return data;
- }
- 
--static int tps_6507x_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
-+static int tps6507x_pmic_reg_write(struct tps6507x_pmic *tps, u8 reg, u8 val)
- {
- 	int err;
- 
- 	mutex_lock(&tps->io_lock);
- 
--	err = tps_6507x_write(tps, reg, val);
-+	err = tps6507x_pmic_write(tps, reg, val);
- 	if (err < 0)
- 		dev_err(&tps->client->dev, "Write for reg 0x%x failed\n", reg);
- 
-@@ -195,9 +195,9 @@ static int tps_6507x_reg_write(struct tps_pmic *tps, u8 reg, u8 val)
- 	return err;
- }
- 
--static int tps6507x_dcdc_is_enabled(struct regulator_dev *dev)
-+static int tps6507x_pmic_dcdc_is_enabled(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, dcdc = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -205,7 +205,7 @@ static int tps6507x_dcdc_is_enabled(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - dcdc;
--	data = tps_6507x_reg_read(tps, TPS6507X_REG_CON_CTRL1);
-+	data = tps6507x_pmic_reg_read(tps, TPS6507X_REG_CON_CTRL1);
- 
- 	if (data < 0)
- 		return data;
-@@ -213,9 +213,9 @@ static int tps6507x_dcdc_is_enabled(struct regulator_dev *dev)
- 		return (data & 1<<shift) ? 1 : 0;
- }
- 
--static int tps6507x_ldo_is_enabled(struct regulator_dev *dev)
-+static int tps6507x_pmic_ldo_is_enabled(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, ldo = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -223,7 +223,7 @@ static int tps6507x_ldo_is_enabled(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - ldo;
--	data = tps_6507x_reg_read(tps, TPS6507X_REG_CON_CTRL1);
-+	data = tps6507x_pmic_reg_read(tps, TPS6507X_REG_CON_CTRL1);
- 
- 	if (data < 0)
- 		return data;
-@@ -231,9 +231,9 @@ static int tps6507x_ldo_is_enabled(struct regulator_dev *dev)
- 		return (data & 1<<shift) ? 1 : 0;
- }
- 
--static int tps6507x_dcdc_enable(struct regulator_dev *dev)
-+static int tps6507x_pmic_dcdc_enable(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -241,12 +241,12 @@ static int tps6507x_dcdc_enable(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - dcdc;
--	return tps_6507x_set_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
-+	return tps6507x_pmic_set_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
- }
- 
--static int tps6507x_dcdc_disable(struct regulator_dev *dev)
-+static int tps6507x_pmic_dcdc_disable(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -254,12 +254,13 @@ static int tps6507x_dcdc_disable(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - dcdc;
--	return tps_6507x_clear_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
-+	return tps6507x_pmic_clear_bits(tps, TPS6507X_REG_CON_CTRL1,
-+					1 << shift);
- }
- 
--static int tps6507x_ldo_enable(struct regulator_dev *dev)
-+static int tps6507x_pmic_ldo_enable(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int ldo = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -267,12 +268,12 @@ static int tps6507x_ldo_enable(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - ldo;
--	return tps_6507x_set_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
-+	return tps6507x_pmic_set_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
- }
- 
--static int tps6507x_ldo_disable(struct regulator_dev *dev)
-+static int tps6507x_pmic_ldo_disable(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int ldo = rdev_get_id(dev);
- 	u8 shift;
- 
-@@ -280,12 +281,13 @@ static int tps6507x_ldo_disable(struct regulator_dev *dev)
- 		return -EINVAL;
- 
- 	shift = TPS6507X_MAX_REG_ID - ldo;
--	return tps_6507x_clear_bits(tps, TPS6507X_REG_CON_CTRL1, 1 << shift);
-+	return tps6507x_pmic_clear_bits(tps, TPS6507X_REG_CON_CTRL1,
-+					1 << shift);
- }
- 
--static int tps6507x_dcdc_get_voltage(struct regulator_dev *dev)
-+static int tps6507x_pmic_dcdc_get_voltage(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, dcdc = rdev_get_id(dev);
- 	u8 reg;
- 
-@@ -303,7 +305,7 @@ static int tps6507x_dcdc_get_voltage(struct regulator_dev *dev)
- 		return -EINVAL;
- 	}
- 
--	data = tps_6507x_reg_read(tps, reg);
-+	data = tps6507x_pmic_reg_read(tps, reg);
- 	if (data < 0)
- 		return data;
- 
-@@ -311,10 +313,10 @@ static int tps6507x_dcdc_get_voltage(struct regulator_dev *dev)
- 	return tps->info[dcdc]->table[data] * 1000;
- }
- 
--static int tps6507x_dcdc_set_voltage(struct regulator_dev *dev,
-+static int tps6507x_pmic_dcdc_set_voltage(struct regulator_dev *dev,
- 				int min_uV, int max_uV)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, vsel, dcdc = rdev_get_id(dev);
- 	u8 reg;
- 
-@@ -352,19 +354,19 @@ static int tps6507x_dcdc_set_voltage(struct regulator_dev *dev,
- 	if (vsel == tps->info[dcdc]->table_len)
- 		return -EINVAL;
- 
--	data = tps_6507x_reg_read(tps, reg);
-+	data = tps6507x_pmic_reg_read(tps, reg);
- 	if (data < 0)
- 		return data;
- 
- 	data &= ~TPS6507X_DEFDCDCX_DCDC_MASK;
- 	data |= vsel;
- 
--	return tps_6507x_reg_write(tps, reg, data);
-+	return tps6507x_pmic_reg_write(tps, reg, data);
- }
- 
--static int tps6507x_ldo_get_voltage(struct regulator_dev *dev)
-+static int tps6507x_pmic_ldo_get_voltage(struct regulator_dev *dev)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, ldo = rdev_get_id(dev);
- 	u8 reg, mask;
- 
-@@ -378,7 +380,7 @@ static int tps6507x_ldo_get_voltage(struct regulator_dev *dev)
- 				TPS6507X_REG_DEFLDO2_LDO2_MASK);
- 	}
- 
--	data = tps_6507x_reg_read(tps, reg);
-+	data = tps6507x_pmic_reg_read(tps, reg);
- 	if (data < 0)
- 		return data;
- 
-@@ -386,10 +388,10 @@ static int tps6507x_ldo_get_voltage(struct regulator_dev *dev)
- 	return tps->info[ldo]->table[data] * 1000;
- }
- 
--static int tps6507x_ldo_set_voltage(struct regulator_dev *dev,
-+static int tps6507x_pmic_ldo_set_voltage(struct regulator_dev *dev,
- 				int min_uV, int max_uV)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int data, vsel, ldo = rdev_get_id(dev);
- 	u8 reg, mask;
- 
-@@ -420,20 +422,20 @@ static int tps6507x_ldo_set_voltage(struct regulator_dev *dev,
- 	if (vsel == tps->info[ldo]->table_len)
- 		return -EINVAL;
- 
--	data = tps_6507x_reg_read(tps, reg);
-+	data = tps6507x_pmic_reg_read(tps, reg);
- 	if (data < 0)
- 		return data;
- 
- 	data &= ~mask;
- 	data |= vsel;
- 
--	return tps_6507x_reg_write(tps, reg, data);
-+	return tps6507x_pmic_reg_write(tps, reg, data);
- }
- 
--static int tps6507x_dcdc_list_voltage(struct regulator_dev *dev,
-+static int tps6507x_pmic_dcdc_list_voltage(struct regulator_dev *dev,
- 					unsigned selector)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int dcdc = rdev_get_id(dev);
- 
- 	if (dcdc < TPS6507X_DCDC_1 || dcdc > TPS6507X_DCDC_3)
-@@ -445,10 +447,10 @@ static int tps6507x_dcdc_list_voltage(struct regulator_dev *dev,
- 		return tps->info[dcdc]->table[selector] * 1000;
- }
- 
--static int tps6507x_ldo_list_voltage(struct regulator_dev *dev,
-+static int tps6507x_pmic_ldo_list_voltage(struct regulator_dev *dev,
- 					unsigned selector)
- {
--	struct tps_pmic *tps = rdev_get_drvdata(dev);
-+	struct tps6507x_pmic *tps = rdev_get_drvdata(dev);
- 	int ldo = rdev_get_id(dev);
- 
- 	if (ldo < TPS6507X_LDO_1 || ldo > TPS6507X_LDO_2)
-@@ -461,33 +463,33 @@ static int tps6507x_ldo_list_voltage(struct regulator_dev *dev,
- }
- 
- /* Operations permitted on VDCDCx */
--static struct regulator_ops tps6507x_dcdc_ops = {
--	.is_enabled = tps6507x_dcdc_is_enabled,
--	.enable = tps6507x_dcdc_enable,
--	.disable = tps6507x_dcdc_disable,
--	.get_voltage = tps6507x_dcdc_get_voltage,
--	.set_voltage = tps6507x_dcdc_set_voltage,
--	.list_voltage = tps6507x_dcdc_list_voltage,
-+static struct regulator_ops tps6507x_pmic_dcdc_ops = {
-+	.is_enabled = tps6507x_pmic_dcdc_is_enabled,
-+	.enable = tps6507x_pmic_dcdc_enable,
-+	.disable = tps6507x_pmic_dcdc_disable,
-+	.get_voltage = tps6507x_pmic_dcdc_get_voltage,
-+	.set_voltage = tps6507x_pmic_dcdc_set_voltage,
-+	.list_voltage = tps6507x_pmic_dcdc_list_voltage,
- };
- 
- /* Operations permitted on LDOx */
--static struct regulator_ops tps6507x_ldo_ops = {
--	.is_enabled = tps6507x_ldo_is_enabled,
--	.enable = tps6507x_ldo_enable,
--	.disable = tps6507x_ldo_disable,
--	.get_voltage = tps6507x_ldo_get_voltage,
--	.set_voltage = tps6507x_ldo_set_voltage,
--	.list_voltage = tps6507x_ldo_list_voltage,
-+static struct regulator_ops tps6507x_pmic_ldo_ops = {
-+	.is_enabled = tps6507x_pmic_ldo_is_enabled,
-+	.enable = tps6507x_pmic_ldo_enable,
-+	.disable = tps6507x_pmic_ldo_disable,
-+	.get_voltage = tps6507x_pmic_ldo_get_voltage,
-+	.set_voltage = tps6507x_pmic_ldo_set_voltage,
-+	.list_voltage = tps6507x_pmic_ldo_list_voltage,
- };
- 
--static int __devinit tps_6507x_probe(struct i2c_client *client,
-+static int __devinit tps6507x_pmic_probe(struct i2c_client *client,
- 				     const struct i2c_device_id *id)
- {
- 	static int desc_id;
- 	const struct tps_info *info = (void *)id->driver_data;
- 	struct regulator_init_data *init_data;
- 	struct regulator_dev *rdev;
--	struct tps_pmic *tps;
-+	struct tps6507x_pmic *tps;
- 	struct tps6507x_board *tps_board;
- 	int i;
- 	int error;
-@@ -529,7 +531,7 @@ static int __devinit tps_6507x_probe(struct i2c_client *client,
- 		tps->desc[i].id = desc_id++;
- 		tps->desc[i].n_voltages = num_voltages[i];
- 		tps->desc[i].ops = (i > TPS6507X_DCDC_3 ?
--				&tps6507x_ldo_ops : &tps6507x_dcdc_ops);
-+		&tps6507x_pmic_ldo_ops : &tps6507x_pmic_dcdc_ops);
- 		tps->desc[i].type = REGULATOR_VOLTAGE;
- 		tps->desc[i].owner = THIS_MODULE;
- 
-@@ -559,14 +561,14 @@ fail:
- }
- 
- /**
-- * tps_6507x_remove - TPS6507x driver i2c remove handler
-+ * tps6507x_remove - TPS6507x driver i2c remove handler
-  * @client: i2c driver client device structure
-  *
-  * Unregister TPS driver as an i2c client device driver
-  */
--static int __devexit tps_6507x_remove(struct i2c_client *client)
-+static int __devexit tps6507x_pmic_remove(struct i2c_client *client)
- {
--	struct tps_pmic *tps = i2c_get_clientdata(client);
-+	struct tps6507x_pmic *tps = i2c_get_clientdata(client);
- 	int i;
- 
- 	/* clear the client data in i2c */
-@@ -580,7 +582,7 @@ static int __devexit tps_6507x_remove(struct i2c_client *client)
- 	return 0;
- }
- 
--static const struct tps_info tps6507x_regs[] = {
-+static const struct tps_info tps6507x_pmic_regs[] = {
- 	{
- 		.name = "VDCDC1",
- 		.min_uV = 725000,
-@@ -618,44 +620,44 @@ static const struct tps_info tps6507x_regs[] = {
- 	},
- };
- 
--static const struct i2c_device_id tps_6507x_id[] = {
-+static const struct i2c_device_id tps6507x_pmic_id[] = {
- 	{.name = "tps6507x",
--	.driver_data = (unsigned long) tps6507x_regs,},
-+	.driver_data = (unsigned long) tps6507x_pmic_regs,},
- 	{ },
- };
--MODULE_DEVICE_TABLE(i2c, tps_6507x_id);
-+MODULE_DEVICE_TABLE(i2c, tps6507x_pmic_id);
- 
--static struct i2c_driver tps_6507x_i2c_driver = {
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 951fa9b..8853cab 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -111,6 +111,17 @@ config TPS65010
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called tps65010.
+ 
++config TPS6507X
++	tristate "TPS6507x Power Management / Touch Screen chips"
++	depends on I2C
++	help
++	  If you say yes here you get support for the TPS6507x series of
++	  Power Management / Touch Screen chips.  These include voltage
++	  regulators, lithium ion/polymer battery charging, touch screen
++	  and other features that are often used in portable devices.
++	  This driver can also be built as a module.  If so, the module
++	  will be called tps6507x.
++
+ config MENELAUS
+ 	bool "Texas Instruments TWL92330/Menelaus PM chip"
+ 	depends on I2C=y && ARCH_OMAP2
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 22715ad..2bebc95 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_MFD_WM8350_I2C)	+= wm8350-i2c.o
+ obj-$(CONFIG_MFD_WM8994)	+= wm8994-core.o
+ 
+ obj-$(CONFIG_TPS65010)		+= tps65010.o
++obj-$(CONFIG_TPS6507X)		+= tps6507x.o
+ obj-$(CONFIG_MENELAUS)		+= menelaus.o
+ 
+ obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
+@@ -62,4 +63,4 @@ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
+ obj-$(CONFIG_AB4500_CORE)	+= ab4500-core.o
+ obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+ obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+-obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+\ No newline at end of file
++obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
+new file mode 100644
+index 0000000..f0c2695
+--- /dev/null
++++ b/drivers/mfd/tps6507x.c
+@@ -0,0 +1,186 @@
++/*
++ * tps6507x.c  --  TPS6507x chip family multi-function driver
++ *
++ *  Copyright (c) 2010 RidgeRun (todd.fischer@ridgerun.com)
++ *
++ * Author: Todd Fischer
++ *         todd.fischer@ridgerun.com
++ *
++ * Credits:
++ *
++ *    Using code from wm8350-i2c.c, Wolfson Microelectronics PLC.
++ *
++ * For licencing details see kernel-base/COPYING
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/tps6507x.h>
++
++struct tps_sub_devices {
++	const char *name;
++	struct platform_device *pdev;
++};
++
++static struct tps_sub_devices tps6507x_sub_devices[] = {
++	{ NULL, NULL }
++};
++
++static int tps6507x_i2c_read_device(struct tps6507x_dev *tps6507x, char reg,
++				  int bytes, void *dest)
++{
++	int ret;
++
++	ret = i2c_master_send(tps6507x->i2c_client, &reg, 1);
++	if (ret < 0)
++		return ret;
++	ret = i2c_master_recv(tps6507x->i2c_client, dest, bytes);
++	if (ret < 0)
++		return ret;
++	if (ret != bytes)
++		return -EIO;
++	return 0;
++}
++
++static int tps6507x_i2c_write_device(struct tps6507x_dev *tps6507x, char reg,
++				   int bytes, void *src)
++{
++	/* we add 1 byte for device register */
++	u8 msg[(TPS6507X_MAX_REGISTER << 1) + 1];
++	int ret;
++
++	if (bytes > ((TPS6507X_MAX_REGISTER << 1) + 1))
++		return -EINVAL;
++
++	msg[0] = reg;
++	memcpy(&msg[1], src, bytes);
++	ret = i2c_master_send(tps6507x->i2c_client, msg, bytes + 1);
++	if (ret < 0)
++		return ret;
++	if (ret != bytes + 1)
++		return -EIO;
++	return 0;
++}
++
++/*
++ * Register a client device.  This is non-fatal since there is no need to
++ * fail the entire device init due to a single platform device failing.
++ */
++static void tps6507x_client_dev_register(struct tps6507x_dev *tps6507x,
++					 const char *name,
++					 struct platform_device **pdev)
++{
++	int ret;
++
++	*pdev = platform_device_alloc(name, -1);
++	if (*pdev == NULL) {
++		dev_err(tps6507x->dev, "Failed to allocate %s\n", name);
++		return;
++	}
++
++	(*pdev)->dev.parent = tps6507x->dev;
++	platform_set_drvdata(*pdev, tps6507x);
++	ret = platform_device_add(*pdev);
++	if (ret != 0) {
++		dev_err(tps6507x->dev, "Failed to register %s: %d\n",
++			name, ret);
++		platform_device_put(*pdev);
++		*pdev = NULL;
++	}
++}
++
++int tps6507x_device_init(struct tps6507x_dev *tps6507x, int irq,
++		       struct tps6507x_board *pdata)
++{
++	int ret = 0;
++	struct tps_sub_devices *d = &tps6507x_sub_devices[0];
++
++	while (d->name) {
++		tps6507x_client_dev_register(tps6507x, d->name, &(d->pdev));
++		d++;
++	}
++
++	return ret;
++}
++
++static int tps6507x_i2c_probe(struct i2c_client *i2c,
++			    const struct i2c_device_id *id)
++{
++	struct tps6507x_dev *tps6507x;
++	int ret = 0;
++
++	tps6507x = kzalloc(sizeof(struct tps6507x_dev), GFP_KERNEL);
++	if (tps6507x == NULL) {
++		kfree(i2c);
++		return -ENOMEM;
++	}
++
++	i2c_set_clientdata(i2c, tps6507x);
++	tps6507x->dev = &i2c->dev;
++	tps6507x->i2c_client = i2c;
++	tps6507x->read_dev = tps6507x_i2c_read_device;
++	tps6507x->write_dev = tps6507x_i2c_write_device;
++	mutex_init(&tps6507x->adc_mutex);
++
++	ret = tps6507x_device_init(tps6507x, i2c->irq, i2c->dev.platform_data);
++	if (ret < 0)
++		goto err;
++
++	return ret;
++
++err:
++	kfree(tps6507x);
++	return ret;
++}
++
++static int tps6507x_i2c_remove(struct i2c_client *i2c)
++{
++	struct tps6507x_dev *tps6507x = i2c_get_clientdata(i2c);
++	struct tps_sub_devices *d = &tps6507x_sub_devices[0];
++
++	while (d->name) {
++		platform_device_unregister(d->pdev);
++		d++;
++	}
++
++	kfree(tps6507x);
++
++	return 0;
++}
++
++static const struct i2c_device_id tps6507x_i2c_id[] = {
++       { "tps6507x", 0 },
++       { }
++};
++MODULE_DEVICE_TABLE(i2c, tps6507x_i2c_id);
++
++
 +static struct i2c_driver tps6507x_i2c_driver = {
- 	.driver = {
- 		.name = "tps6507x",
- 		.owner = THIS_MODULE,
- 	},
--	.probe = tps_6507x_probe,
--	.remove = __devexit_p(tps_6507x_remove),
--	.id_table = tps_6507x_id,
-+	.probe = tps6507x_pmic_probe,
-+	.remove = __devexit_p(tps6507x_pmic_remove),
-+	.id_table = tps6507x_pmic_id,
++	.driver = {
++		   .name = "tps6507x",
++		   .owner = THIS_MODULE,
++	},
++	.probe = tps6507x_i2c_probe,
++	.remove = tps6507x_i2c_remove,
++	.id_table = tps6507x_i2c_id,
++};
++
++static int __init tps6507x_i2c_init(void)
++{
++	return i2c_add_driver(&tps6507x_i2c_driver);
++}
++/* init early so consumer devices can complete system boot */
++subsys_initcall(tps6507x_i2c_init);
++
++static void __exit tps6507x_i2c_exit(void)
++{
++	i2c_del_driver(&tps6507x_i2c_driver);
++}
++module_exit(tps6507x_i2c_exit);
++
++MODULE_DESCRIPTION("TPS6507x chip family multi-function driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
+index fd73af5..46c3331 100644
+--- a/include/linux/mfd/tps6507x.h
++++ b/include/linux/mfd/tps6507x.h
+@@ -131,6 +131,8 @@
+ /* VDCDC MASK */
+ #define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
+ 
++#define TPS6507X_MAX_REGISTER			0X19
++
+ /**
+  * struct tps6507x_board - packages regulator and touchscreen init data
+  * @tps6507x_regulator_data: regulator initialization values
+@@ -142,4 +144,22 @@ struct tps6507x_board {
+ 	struct regulator_init_data *tps6507x_pmic_init_data;
  };
  
- /**
-- * tps_6507x_init
-+ * tps6507x_pmic_init
-  *
-  * Module init function
-  */
--static int __init tps_6507x_init(void)
-+static int __init tps6507x_pmic_init(void)
- {
--	return i2c_add_driver(&tps_6507x_i2c_driver);
-+	return i2c_add_driver(&tps6507x_i2c_driver);
- }
--subsys_initcall(tps_6507x_init);
-+subsys_initcall(tps6507x_pmic_init);
- 
- /**
-- * tps_6507x_cleanup
-+ * tps6507x_pmic_cleanup
-  *
-  * Module exit function
-  */
--static void __exit tps_6507x_cleanup(void)
-+static void __exit tps6507x_pmic_cleanup(void)
- {
--	i2c_del_driver(&tps_6507x_i2c_driver);
-+	i2c_del_driver(&tps6507x_i2c_driver);
- }
--module_exit(tps_6507x_cleanup);
-+module_exit(tps6507x_pmic_cleanup);
- 
- MODULE_AUTHOR("Texas Instruments");
- MODULE_DESCRIPTION("TPS6507x voltage regulator driver");
++/**
++ * struct tps6507x_dev - tps6507x sub-driver chip access routines
++ * @read_dev() - I2C register read function
++ * @write_dev() - I2C register write function
++ *
++ * Device data may be used to access the TPS6507x chip
++ */
++
++struct tps6507x_dev {
++	struct device *dev;
++	struct i2c_client *i2c_client;
++	int (*read_dev)(struct tps6507x_dev *tps6507x, char reg, int size,
++			void *dest);
++	int (*write_dev)(struct tps6507x_dev *tps6507x, char reg, int size,
++			 void *src);
++	struct mutex adc_mutex;
++};
++
+ #endif /*  __LINUX_MFD_TPS6507X_H */
 -- 
 1.6.0.4
 
