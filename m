@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab0CZTZI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 15:25:08 -0400
-Received: from sca-es-mail-1.Sun.COM ([192.18.43.132]:36966 "EHLO
-	sca-es-mail-1.sun.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751426Ab0CZTZG (ORCPT
+	id S1751970Ab0CZT1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:27:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44395 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646Ab0CZT1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 15:25:06 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; delsp=yes; format=flowed
-Date: Fri, 26 Mar 2010 13:24:58 -0600
-From: Andreas Dilger <adilger@sun.com>
-Subject: Re: [PATCH] ext3: call blkdev_issue_flush on fsync
-In-reply-to: <1269622243-26689-1-git-send-email-surbhi.palande@canonical.com>
-To: Surbhi Palande <surbhi.palande@canonical.com>
-Cc: linux-ext4@vger.kernel.org, Stephen Tweedie <sct@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Message-id: <37C3E508-AE2F-4FA5-9536-7F59B26CBBAC@sun.com>
-X-Mailer: Apple Mail (2.936)
-References: <1269622243-26689-1-git-send-email-surbhi.palande@canonical.com>
+	Fri, 26 Mar 2010 15:27:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QCEfJVI5gst0KotkVe6xMq66LbOw/pV9r853xKJcJwwNgGwji+P6PU69yyY0bbUj94
+         2vT3OLnUBzmDcUWNkGc8Yf8uZV7wH2Vbjjtdm1lVye5yZExEgSXW5/l4YYkjputei4rB
+         3pKQuSzcoVBJn6LUBx2i9A0Y/5g2gEEYMt4Ic=
+Date: Fri, 26 Mar 2010 20:27:16 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+Subject: Re: [BUG] perf: hard lockup when using perf-sched
+Message-ID: <20100326192712.GA7166@nowhere>
+References: <4BA082EC.8030101@cn.fujitsu.com> <4BA9A885.9050105@cn.fujitsu.com> <1269415964.6530.25.camel@marge.simson.net> <1269418671.6465.6.camel@marge.simson.net> <4BAB1924.4060304@cn.fujitsu.com> <1269509241.8438.30.camel@marge.simson.net> <1269598293.6174.8.camel@marge.simson.net> <20100326172350.GC5188@nowhere> <1269630640.6331.18.camel@marge.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269630640.6331.18.camel@marge.simson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-03-26, at 10:50, Surbhi Palande wrote:
-> To ensure that bits are truly on-disk after an fsync,
-> we should call blkdev_issue_flush if barriers are supported.
->
-> @@ -87,5 +89,7 @@ int ext3_sync_file(struct file * file, struct  
-> dentry *dentry, int datasync)
-> 		ret = sync_inode(inode, &wbc);
-> 	}
-> out:
-> +	if (journal && (journal->j_flags & JFS_BARRIER))
-> +		blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
-> 	return ret;
+On Fri, Mar 26, 2010 at 08:10:40PM +0100, Mike Galbraith wrote:
+> On Fri, 2010-03-26 at 18:23 +0100, Frederic Weisbecker wrote:
+> > On Fri, Mar 26, 2010 at 11:11:33AM +0100, Mike Galbraith wrote:
+> 
+> > > perf: fix perf sched record forkbomb deadlock
+> > > 
+> > > perf sched record can deadlock a box should the holder of handle->data->lock
+> > > take an interrupt, and then attempt to acquire an rq lock held by a CPU trying
+> > > to acquire the same lock.  Disable interrupts.
+> > 
+> > 
+> > 
+> > Aah.
+> > 
+> > So the scenario is the following inversion?
+> > 
+> > 	CPU0				CPU1
+> > sched event with rq->lock held
+> > 				grab handle->data->lock
+> > spin on handle->data->lock
+> > 				interrupt
+> > 				try to grab rq->lock
+> 
+> Yeah, handle->data->lock holder dare not try to grab any rq lock because
+> of sched event with rq->lock held.
+> 
 
 
-I don't think we need yet ANOTHER barrier here.  If the filesystem is  
-mounted in data={journaled,ordered} mode it will have flushed the data  
-to disk as part of the journal commit.  If there is an external  
-journal, there were patches posted to have it flush the data on the  
-filesystem device at transaction commit time.
+But if that happens with perf sched, there is something weird.
+perf sched only use sched events, which have interrupt disabled
+from the trace event handler, so this is not supposed to happen.
 
-Since fsync on any inode always implies sync of the journal, the only  
-time that this would be needed is if we are running in no-journal  
-mode, or possibly in data=writeback mode.
-
-Cheers, Andreas
---
-Andreas Dilger
-Sr. Staff Engineer, Lustre Group
-Sun Microsystems of Canada, Inc.
+But if there is another kind of event involved, something that has
+interrupts enabled, may be some software events, then it may
+happen indeed.
 
