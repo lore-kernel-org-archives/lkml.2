@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab0CZTxq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 15:53:46 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:56299 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807Ab0CZTxo (ORCPT
+	id S1752688Ab0CZTzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:55:32 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:52893 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab0CZTzb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 15:53:44 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: jbarnes@virtuousgeek.org
-Cc: David.Woodhouse@intel.com, len.brown@intel.com, chrisw@sous-sol.org,
-       suresh.b.siddha@intel.com, mingo@elte.hu, yu.zhao@intel.com,
-       fenghua.yu@intel.com, weidong@intel.com, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-       Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH] dmar: section mismatch cleanup
-Date: Fri, 26 Mar 2010 20:53:20 +0100
-Message-Id: <1269633200-19970-1-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.6.3.3
+	Fri, 26 Mar 2010 15:55:31 -0400
+Subject: Re: [PATCH] ext3: call blkdev_issue_flush on fsync
+From: Surbhi Palande <Surbhi.Palande@canonical.com>
+Reply-To: Surbhi.Palande@canonical.com
+To: linux-ext4@vger.kernel.org
+Cc: Stephen Tweedie <sct@redhat.com>, Andreas Dilger <adilger@sun.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <1269622243-26689-1-git-send-email-surbhi.palande@canonical.com>
+References: <1269622243-26689-1-git-send-email-surbhi.palande@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Canonical Pvt. Ltd.
+Date: Fri, 26 Mar 2010 21:55:20 +0200
+Message-ID: <1269633320.30275.25.camel@subu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a section mismatch.
+Please ignore this patch! Sorry for this!
 
-WARNING: drivers/pci/built-in.o(.text+0x182f5): Section mismatch in
-reference from the function dmar_ir_support() to the variable
-.init.data:acpi_slot_detected
-The function dmar_ir_support() references
-the variable __initdata acpi_slot_detected.
-This is often because dmar_ir_support lacks a __initdata
-annotation or the annotation of acpi_slot_detected is wrong.
+Warm Regards,
+Surbhi.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
- drivers/pci/dmar.c          |    2 +-
- include/linux/intel-iommu.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Fri, 2010-03-26 at 18:50 +0200, Surbhi Palande wrote:
+> To ensure that bits are truly on-disk after an fsync,
+> we should call blkdev_issue_flush if barriers are supported.
+> 
+> This code is seen in ext4 through commits
+> d755fb384250d6bd7fd18a0930e71965acc8e72e and
+> 5f3481e9a80c240f169b36ea886e2325b9aeb745.
+> 
+> Signed-off-by: Surbhi Palande <surbhi.palande@canonical.com>
+> ---
+>  fs/ext3/fsync.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/ext3/fsync.c b/fs/ext3/fsync.c
+> index d336341..2184a40 100644
+> --- a/fs/ext3/fsync.c
+> +++ b/fs/ext3/fsync.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/jbd.h>
+>  #include <linux/ext3_fs.h>
+>  #include <linux/ext3_jbd.h>
+> +#include <linux/blkdev.h>
+>  
+>  /*
+>   * akpm: A new design for ext3_sync_file().
+> @@ -46,6 +47,7 @@ int ext3_sync_file(struct file * file, struct dentry *dentry, int datasync)
+>  {
+>  	struct inode *inode = dentry->d_inode;
+>  	int ret = 0;
+> +	journal_t *journal = EXT3_SB(inode->i_sb)->s_journal;
+>  
+>  	J_ASSERT(ext3_journal_current_handle() == NULL);
+>  
+> @@ -87,5 +89,7 @@ int ext3_sync_file(struct file * file, struct dentry *dentry, int datasync)
+>  		ret = sync_inode(inode, &wbc);
+>  	}
+>  out:
+> +	if (journal && (journal->j_flags & JFS_BARRIER))
+> +		blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
+>  	return ret;
+>  }
 
-diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
-index 83aae47..ffe22bc 100644
---- a/drivers/pci/dmar.c
-+++ b/drivers/pci/dmar.c
-@@ -1456,7 +1456,7 @@ int dmar_reenable_qi(struct intel_iommu *iommu)
- /*
-  * Check interrupt remapping support in DMAR table description.
-  */
--int dmar_ir_support(void)
-+int __init dmar_ir_support(void)
- {
- 	struct acpi_table_dmar *dmar;
- 	dmar = (struct acpi_table_dmar *)dmar_tbl;
-diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
-index 9310c69..f51a553 100644
---- a/include/linux/intel-iommu.h
-+++ b/include/linux/intel-iommu.h
-@@ -361,6 +361,6 @@ extern void qi_flush_dev_iotlb(struct intel_iommu *iommu, u16 sid, u16 qdep,
- 
- extern int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu);
- 
--extern int dmar_ir_support(void);
-+extern int dmar_ir_support(void) __init;
- 
- #endif
--- 
-1.6.3.3
 
