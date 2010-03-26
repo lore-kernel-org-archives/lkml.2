@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0CZVsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:48:47 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:31114 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab0CZVsp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:48:45 -0400
-Date: Fri, 26 Mar 2010 14:46:49 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Yury Polyanskiy <ypolyans@princeton.edu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
-       john stultz <johnstul@us.ibm.com>, Jan Glauber <jan.glauber@de.ibm.com>
-Subject: Re: [PATCH] hangcheck-timer is broken on x86
-Message-ID: <20100326214648.GF9984@mail.oracle.com>
-Mail-Followup-To: Yury Polyanskiy <ypolyans@princeton.edu>,
-	linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
-	john stultz <johnstul@us.ibm.com>,
-	Jan Glauber <jan.glauber@de.ibm.com>
-References: <20100323233611.6dcbe4f4@penta.localdomain>
+	id S1753520Ab0CZVvX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:51:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39802 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752034Ab0CZVvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 17:51:21 -0400
+Date: Fri, 26 Mar 2010 22:49:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Americo Wang <xiyou.wangcong@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Roland McGrath <roland@redhat.com>,
+       Spencer Candland <spencer@bluehost.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC,PATCH 1/2] cputimers/proc: do_task_stat()->task_times()
+	can race with getrusage()
+Message-ID: <20100326214906.GA18467@redhat.com>
+References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100323233611.6dcbe4f4@penta.localdomain>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0207.4BAD2B90.0065:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100326035344.GQ3308@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 23, 2010 at 11:36:11PM -0400, Yury Polyanskiy wrote:
-> Second, and more importantly, loops_per_jiffy has little to do with the conversion from the
-> the time scale of get_cycles() (aka rdtsc) to the time scale of jiffies.
+On 03/26, Balbir Singh wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2010-03-24 21:45:50]:
+>
+> > do_task_stat()->task_times() can race with getrusage(), they both can
+> > try to update task->prev_Xtime at the same time.
+> >
+> > Remove this bit of d180c5bc "sched: Introduce task_times() to replace
+> > task_{u,s}time()".
+>
+> One of the reasons for adding this accuracy was to avoid sampling
+> based noise and errors that occur with utime and stime.
+>
+> As long as there is no preemption during the assignment, I think we
+> should be OK.
 
-	It used to!  Fundamentally, of course, we didn't have a
-monotonic clock everywhere that satisfied hangcheck-timer's needs.  So
-we had to use different approaches on different architectures.
+I don't think preemp_disable() can help. Probably we can use task_lock().
 
-> @@ -130,7 +129,9 @@ extern unsigned long long monotonic_clock(void);
->  #else
->  static inline unsigned long long monotonic_clock(void)
->  {
-> -	return get_cycles();
-> +	struct timespec ts;
-> +	getrawmonotonic(&ts);
-> +	return timespec_to_ns(&ts);
->  }
->  #endif  /* HAVE_MONOTONIC */
 
-	I have two questions:
+As for do_task_stat()->thread_group_times(), I think we can make it
+rc-safe without breaking /bin/top.
 
-1) Does getrawmonotonic() satisfy hangcheck-timer?  What I mean is, will
-it always return the wallclock nanoseconds even in the face of CPU speed
-changes, suspend, udelay, or any other suspension of kernel operation?
-Yes, I know this is a tougher standard than rdtsc(), but this is what
-hangcheck-timer wants.  rdtsc() at least satisfied udelay and PCI hangs.
+	1. add spin_lock_irqsave(&sig->cputimer.lock) around
+	   sig->prev_Xtime = max(...)
 
-2) If it does satisfy, why not use it for all hangcheck usage instead of
-any ifdefs?
+	2. Add a couple of barriers into thread_group_cputime()
+	   and __exit_signal() so that without ->siglock we can
+	   never overestimate utime/stime if we race with exit.
 
-Joel
+	   If we underestimate these values, this should be fine:
 
--- 
+	   - the error can't be "systematic", the next read from
+	     /prod/pid/stat will see the updated values
 
-"The cynics are right nine times out of ten."  
-        - H. L. Mencken
+	   - the prev_Xtime logic in thread_group_times() ensures
+	     the reported time can never go back.
 
-Joel Becker
-Principal Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+	   IOW: at worse, cat /proc/pid/stat can miss the time
+	   which the exited thread spent on CPU after the previous
+	   read of /proc/pid/stat. This looks absolutely harmless,
+	   the next read will see this time.
+
+	   Probably we can even detect this case if we look at
+	   sig->nr_threads and retry.
+
+I'll try to make patches unless someone has a better idea.
+
+I just can't accept the fact that we are doing while_each_thread()
+under ->siglock here ;)
+
+Oleg.
+
