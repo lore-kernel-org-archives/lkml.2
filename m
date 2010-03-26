@@ -1,65 +1,499 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab0CZUgw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:36:52 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:54576 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752771Ab0CZUgu convert rfc822-to-8bit (ORCPT
+	id S1753336Ab0CZUic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:38:32 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47182 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753117Ab0CZUia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:36:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GaHmzEat/i5DVMe/5qIAD5rdCSVZnOO5NitRFLvEFdy/TFFAncFh5uNtuFLFrk8dXJ
-         ywNSMfyWzAIRkW2nxS26xrxxJQEHua9lS4nbK0yEyHWxpUx/aHmPodMgR0pfKh5aTBR4
-         6oHIgSTqDhainWBM19JWHw2omYloHkotgnVzg=
+	Fri, 26 Mar 2010 16:38:30 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/3] perf symbols: Move more map_groups methods to map.c
+Date: Fri, 26 Mar 2010 17:38:17 -0300
+Message-Id: <1269635899-3221-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
 MIME-Version: 1.0
-In-Reply-To: <201003152038.47124.rjw@sisk.pl>
-References: <alpine.LFD.2.00.1003142155470.19244@sony>
-	 <b170af451003142310i3fe61282pb6536f6d2000c9c8@mail.gmail.com>
-	 <201003152038.47124.rjw@sisk.pl>
-Date: Fri, 26 Mar 2010 21:36:48 +0100
-Message-ID: <b170af451003261336u44e6e4b9qe9bd6e6b6909256e@mail.gmail.com>
-Subject: Re: ACPI patches for Linux-2.6.34-rc1
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <lenb@kernel.org>, Len Brown <len.brown@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-acpi@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/3/15 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Monday 15 March 2010, Rafał Miłecki wrote:
->> 2010/3/15 Len Brown <lenb@kernel.org>:
->> > Hi Linus,
->> >
->> > please pull from:
->> >
->> > git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
->> >
->> > Here is why three things included in this request
->> > look somewhat "merge-windo-ish".
->>
->> Len, you seem to hardly ignore
->> [PATCH] ACPI / PM: Move ACPI video resume to a PM notifier
->>
->> AFAIK this didn't hit rc1, is not included in this patchset and we
->> couldn't get any response from you in this thread.
->
-> I wanted to mention that too.  Here's the patchwork link:
->
-> http://patchwork.kernel.org/patch/83479/
->
-> Len, if you want me to push it myself, I can do that.
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-I do not see that patch in changelogs for rc1 or rc2 of .34. Can you
-submit this patch some other way Rafael?
+While writing a standalone test app that uses the symbol system to
+find kernel space symbols I noticed these also need to be moved.
 
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/hist.c   |    2 +-
+ tools/perf/util/map.c    |  168 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/map.h    |   11 +++-
+ tools/perf/util/thread.c |  169 +---------------------------------------------
+ 4 files changed, 180 insertions(+), 170 deletions(-)
+
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 09e09e7..de31901 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -658,7 +658,7 @@ print_entries:
+ 
+ 		if (h->ms.map == NULL && verbose > 1) {
+ 			__map_groups__fprintf_maps(&h->thread->mg,
+-						   MAP__FUNCTION, fp);
++						   MAP__FUNCTION, verbose, fp);
+ 			fprintf(fp, "%.10s end\n", graph_dotted_line);
+ 		}
+ 	}
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 9f2963f..e21f980 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -1,4 +1,5 @@
+ #include "symbol.h"
++#include <errno.h>
+ #include <limits.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -234,6 +235,37 @@ u64 map__objdump_2ip(struct map *map, u64 addr)
+ 	return ip;
+ }
+ 
++void map_groups__init(struct map_groups *self)
++{
++	int i;
++	for (i = 0; i < MAP__NR_TYPES; ++i) {
++		self->maps[i] = RB_ROOT;
++		INIT_LIST_HEAD(&self->removed_maps[i]);
++	}
++}
++
++void map_groups__flush(struct map_groups *self)
++{
++	int type;
++
++	for (type = 0; type < MAP__NR_TYPES; type++) {
++		struct rb_root *root = &self->maps[type];
++		struct rb_node *next = rb_first(root);
++
++		while (next) {
++			struct map *pos = rb_entry(next, struct map, rb_node);
++			next = rb_next(&pos->rb_node);
++			rb_erase(&pos->rb_node, root);
++			/*
++			 * We may have references to this map, for
++			 * instance in some hist_entry instances, so
++			 * just move them to a separate list.
++			 */
++			list_add_tail(&pos->node, &self->removed_maps[pos->type]);
++		}
++	}
++}
++
+ struct symbol *map_groups__find_symbol(struct map_groups *self,
+ 				       enum map_type type, u64 addr,
+ 				       symbol_filter_t filter)
+@@ -246,6 +278,142 @@ struct symbol *map_groups__find_symbol(struct map_groups *self,
+ 	return NULL;
+ }
+ 
++size_t __map_groups__fprintf_maps(struct map_groups *self,
++				  enum map_type type, int verbose, FILE *fp)
++{
++	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
++	struct rb_node *nd;
++
++	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
++		struct map *pos = rb_entry(nd, struct map, rb_node);
++		printed += fprintf(fp, "Map:");
++		printed += map__fprintf(pos, fp);
++		if (verbose > 2) {
++			printed += dso__fprintf(pos->dso, type, fp);
++			printed += fprintf(fp, "--\n");
++		}
++	}
++
++	return printed;
++}
++
++size_t map_groups__fprintf_maps(struct map_groups *self, int verbose, FILE *fp)
++{
++	size_t printed = 0, i;
++	for (i = 0; i < MAP__NR_TYPES; ++i)
++		printed += __map_groups__fprintf_maps(self, i, verbose, fp);
++	return printed;
++}
++
++static size_t __map_groups__fprintf_removed_maps(struct map_groups *self,
++						 enum map_type type,
++						 int verbose, FILE *fp)
++{
++	struct map *pos;
++	size_t printed = 0;
++
++	list_for_each_entry(pos, &self->removed_maps[type], node) {
++		printed += fprintf(fp, "Map:");
++		printed += map__fprintf(pos, fp);
++		if (verbose > 1) {
++			printed += dso__fprintf(pos->dso, type, fp);
++			printed += fprintf(fp, "--\n");
++		}
++	}
++	return printed;
++}
++
++static size_t map_groups__fprintf_removed_maps(struct map_groups *self,
++					       int verbose, FILE *fp)
++{
++	size_t printed = 0, i;
++	for (i = 0; i < MAP__NR_TYPES; ++i)
++		printed += __map_groups__fprintf_removed_maps(self, i, verbose, fp);
++	return printed;
++}
++
++size_t map_groups__fprintf(struct map_groups *self, int verbose, FILE *fp)
++{
++	size_t printed = map_groups__fprintf_maps(self, verbose, fp);
++	printed += fprintf(fp, "Removed maps:\n");
++	return printed + map_groups__fprintf_removed_maps(self, verbose, fp);
++}
++
++int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
++				   int verbose, FILE *fp)
++{
++	struct rb_root *root = &self->maps[map->type];
++	struct rb_node *next = rb_first(root);
++
++	while (next) {
++		struct map *pos = rb_entry(next, struct map, rb_node);
++		next = rb_next(&pos->rb_node);
++
++		if (!map__overlap(pos, map))
++			continue;
++
++		if (verbose >= 2) {
++			fputs("overlapping maps:\n", fp);
++			map__fprintf(map, fp);
++			map__fprintf(pos, fp);
++		}
++
++		rb_erase(&pos->rb_node, root);
++		/*
++		 * We may have references to this map, for instance in some
++		 * hist_entry instances, so just move them to a separate
++		 * list.
++		 */
++		list_add_tail(&pos->node, &self->removed_maps[map->type]);
++		/*
++		 * Now check if we need to create new maps for areas not
++		 * overlapped by the new map:
++		 */
++		if (map->start > pos->start) {
++			struct map *before = map__clone(pos);
++
++			if (before == NULL)
++				return -ENOMEM;
++
++			before->end = map->start - 1;
++			map_groups__insert(self, before);
++			if (verbose >= 2)
++				map__fprintf(before, fp);
++		}
++
++		if (map->end < pos->end) {
++			struct map *after = map__clone(pos);
++
++			if (after == NULL)
++				return -ENOMEM;
++
++			after->start = map->end + 1;
++			map_groups__insert(self, after);
++			if (verbose >= 2)
++				map__fprintf(after, fp);
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * XXX This should not really _copy_ te maps, but refcount them.
++ */
++int map_groups__clone(struct map_groups *self,
++		      struct map_groups *parent, enum map_type type)
++{
++	struct rb_node *nd;
++	for (nd = rb_first(&parent->maps[type]); nd; nd = rb_next(nd)) {
++		struct map *map = rb_entry(nd, struct map, rb_node);
++		struct map *new = map__clone(map);
++		if (new == NULL)
++			return -ENOMEM;
++		map_groups__insert(self, new);
++	}
++	return 0;
++}
++
+ static u64 map__reloc_map_ip(struct map *map, u64 ip)
+ {
+ 	return ip + (s64)map->pgoff;
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index 6a703fa..4e7a11d 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -97,11 +97,14 @@ struct map_groups {
+ };
+ 
+ size_t __map_groups__fprintf_maps(struct map_groups *self,
+-				  enum map_type type, FILE *fp);
++				  enum map_type type, int verbose, FILE *fp);
+ void maps__insert(struct rb_root *maps, struct map *map);
+ struct map *maps__find(struct rb_root *maps, u64 addr);
+ void map_groups__init(struct map_groups *self);
+-size_t map_groups__fprintf_maps(struct map_groups *self, FILE *fp);
++int map_groups__clone(struct map_groups *self,
++		      struct map_groups *parent, enum map_type type);
++size_t map_groups__fprintf(struct map_groups *self, int verbose, FILE *fp);
++size_t map_groups__fprintf_maps(struct map_groups *self, int verbose, FILE *fp);
+ 
+ static inline void map_groups__insert(struct map_groups *self, struct map *map)
+ {
+@@ -125,6 +128,9 @@ static inline struct symbol *map_groups__find_function(struct map_groups *self,
+ 	return map_groups__find_symbol(self, MAP__FUNCTION, addr, filter);
+ }
+ 
++int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
++				   int verbose, FILE *fp);
++
+ struct map *map_groups__find_by_name(struct map_groups *self,
+ 				     enum map_type type, const char *name);
+ int __map_groups__create_kernel_maps(struct map_groups *self,
+@@ -134,5 +140,6 @@ int map_groups__create_kernel_maps(struct map_groups *self,
+ 				   struct map *vmlinux_maps[MAP__NR_TYPES]);
+ struct map *map_groups__new_module(struct map_groups *self, u64 start,
+ 				   const char *filename);
++void map_groups__flush(struct map_groups *self);
+ 
+ #endif /* __PERF_MAP_H */
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 9bbe27d..1f7ecd4 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -38,15 +38,6 @@ failure:
+ 	return ret;
+ }
+ 
+-void map_groups__init(struct map_groups *self)
+-{
+-	int i;
+-	for (i = 0; i < MAP__NR_TYPES; ++i) {
+-		self->maps[i] = RB_ROOT;
+-		INIT_LIST_HEAD(&self->removed_maps[i]);
+-	}
+-}
+-
+ static struct thread *thread__new(pid_t pid)
+ {
+ 	struct thread *self = zalloc(sizeof(*self));
+@@ -62,28 +53,6 @@ static struct thread *thread__new(pid_t pid)
+ 	return self;
+ }
+ 
+-static void map_groups__flush(struct map_groups *self)
+-{
+-	int type;
+-
+-	for (type = 0; type < MAP__NR_TYPES; type++) {
+-		struct rb_root *root = &self->maps[type];
+-		struct rb_node *next = rb_first(root);
+-
+-		while (next) {
+-			struct map *pos = rb_entry(next, struct map, rb_node);
+-			next = rb_next(&pos->rb_node);
+-			rb_erase(&pos->rb_node, root);
+-			/*
+-			 * We may have references to this map, for
+-			 * instance in some hist_entry instances, so
+-			 * just move them to a separate list.
+-			 */
+-			list_add_tail(&pos->node, &self->removed_maps[pos->type]);
+-		}
+-	}
+-}
+-
+ int thread__set_comm(struct thread *self, const char *comm)
+ {
+ 	int err;
+@@ -110,69 +79,10 @@ int thread__comm_len(struct thread *self)
+ 	return self->comm_len;
+ }
+ 
+-size_t __map_groups__fprintf_maps(struct map_groups *self,
+-				  enum map_type type, FILE *fp)
+-{
+-	size_t printed = fprintf(fp, "%s:\n", map_type__name[type]);
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
+-		struct map *pos = rb_entry(nd, struct map, rb_node);
+-		printed += fprintf(fp, "Map:");
+-		printed += map__fprintf(pos, fp);
+-		if (verbose > 2) {
+-			printed += dso__fprintf(pos->dso, type, fp);
+-			printed += fprintf(fp, "--\n");
+-		}
+-	}
+-
+-	return printed;
+-}
+-
+-size_t map_groups__fprintf_maps(struct map_groups *self, FILE *fp)
+-{
+-	size_t printed = 0, i;
+-	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		printed += __map_groups__fprintf_maps(self, i, fp);
+-	return printed;
+-}
+-
+-static size_t __map_groups__fprintf_removed_maps(struct map_groups *self,
+-						 enum map_type type, FILE *fp)
+-{
+-	struct map *pos;
+-	size_t printed = 0;
+-
+-	list_for_each_entry(pos, &self->removed_maps[type], node) {
+-		printed += fprintf(fp, "Map:");
+-		printed += map__fprintf(pos, fp);
+-		if (verbose > 1) {
+-			printed += dso__fprintf(pos->dso, type, fp);
+-			printed += fprintf(fp, "--\n");
+-		}
+-	}
+-	return printed;
+-}
+-
+-static size_t map_groups__fprintf_removed_maps(struct map_groups *self, FILE *fp)
+-{
+-	size_t printed = 0, i;
+-	for (i = 0; i < MAP__NR_TYPES; ++i)
+-		printed += __map_groups__fprintf_removed_maps(self, i, fp);
+-	return printed;
+-}
+-
+-static size_t map_groups__fprintf(struct map_groups *self, FILE *fp)
+-{
+-	size_t printed = map_groups__fprintf_maps(self, fp);
+-	printed += fprintf(fp, "Removed maps:\n");
+-	return printed + map_groups__fprintf_removed_maps(self, fp);
+-}
+-
+ static size_t thread__fprintf(struct thread *self, FILE *fp)
+ {
+ 	return fprintf(fp, "Thread %d %s\n", self->pid, self->comm) +
+-	       map_groups__fprintf(&self->mg, fp);
++	       map_groups__fprintf(&self->mg, verbose, fp);
+ }
+ 
+ struct thread *perf_session__findnew(struct perf_session *self, pid_t pid)
+@@ -214,87 +124,12 @@ struct thread *perf_session__findnew(struct perf_session *self, pid_t pid)
+ 	return th;
+ }
+ 
+-static int map_groups__fixup_overlappings(struct map_groups *self,
+-					  struct map *map)
+-{
+-	struct rb_root *root = &self->maps[map->type];
+-	struct rb_node *next = rb_first(root);
+-
+-	while (next) {
+-		struct map *pos = rb_entry(next, struct map, rb_node);
+-		next = rb_next(&pos->rb_node);
+-
+-		if (!map__overlap(pos, map))
+-			continue;
+-
+-		if (verbose >= 2) {
+-			fputs("overlapping maps:\n", stderr);
+-			map__fprintf(map, stderr);
+-			map__fprintf(pos, stderr);
+-		}
+-
+-		rb_erase(&pos->rb_node, root);
+-		/*
+-		 * We may have references to this map, for instance in some
+-		 * hist_entry instances, so just move them to a separate
+-		 * list.
+-		 */
+-		list_add_tail(&pos->node, &self->removed_maps[map->type]);
+-		/*
+-		 * Now check if we need to create new maps for areas not
+-		 * overlapped by the new map:
+-		 */
+-		if (map->start > pos->start) {
+-			struct map *before = map__clone(pos);
+-
+-			if (before == NULL)
+-				return -ENOMEM;
+-
+-			before->end = map->start - 1;
+-			map_groups__insert(self, before);
+-			if (verbose >= 2)
+-				map__fprintf(before, stderr);
+-		}
+-
+-		if (map->end < pos->end) {
+-			struct map *after = map__clone(pos);
+-
+-			if (after == NULL)
+-				return -ENOMEM;
+-
+-			after->start = map->end + 1;
+-			map_groups__insert(self, after);
+-			if (verbose >= 2)
+-				map__fprintf(after, stderr);
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ void thread__insert_map(struct thread *self, struct map *map)
+ {
+-	map_groups__fixup_overlappings(&self->mg, map);
++	map_groups__fixup_overlappings(&self->mg, map, verbose, stderr);
+ 	map_groups__insert(&self->mg, map);
+ }
+ 
+-/*
+- * XXX This should not really _copy_ te maps, but refcount them.
+- */
+-static int map_groups__clone(struct map_groups *self,
+-			     struct map_groups *parent, enum map_type type)
+-{
+-	struct rb_node *nd;
+-	for (nd = rb_first(&parent->maps[type]); nd; nd = rb_next(nd)) {
+-		struct map *map = rb_entry(nd, struct map, rb_node);
+-		struct map *new = map__clone(map);
+-		if (new == NULL)
+-			return -ENOMEM;
+-		map_groups__insert(self, new);
+-	}
+-	return 0;
+-}
+-
+ int thread__fork(struct thread *self, struct thread *parent)
+ {
+ 	int i;
 -- 
-Rafał
+1.6.2.5
+
