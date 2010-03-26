@@ -1,265 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab0CZUpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:45:35 -0400
-Received: from fischerfamily.org ([71.216.156.246]:23895 "EHLO gw"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753656Ab0CZUou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:44:50 -0400
-From: Todd Fischer <todd.fischer@ridgerun.com>
-To: linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
-       lrg@slimlogic.co.uk, broonie@opensource.wolfsonmicro.com,
-       todd.fischer@ridgerun.com
-Subject: [PATCH 1/5] Move TPS6507x register definition to header file.
-Date: Fri, 26 Mar 2010 14:11:28 -0600
-Message-Id: <1269634292-29686-2-git-send-email-todd.fischer@ridgerun.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1269634292-29686-1-git-send-email-todd.fischer@ridgerun.com>
-References: <1269634292-29686-1-git-send-email-todd.fischer@ridgerun.com>
-Organization: RidgeRun
-X-SA-Exim-Connect-IP: 10.0.0.3
-X-SA-Exim-Mail-From: todd.fischer@ridgerun.com
-X-SA-Exim-Scanned: No (on gw); SAEximRunCond expanded to false
+	id S1753514Ab0CZUy4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:54:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34987 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753024Ab0CZUyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:54:54 -0400
+Date: Fri, 26 Mar 2010 20:54:35 GMT
+From: tip-bot for Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, henne@nachtwindheim.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, henne@nachtwindheim.de
+In-Reply-To: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
+References: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/debugobjects] debugobjects: Section mismatch cleanup
+Message-ID: <tip-1fb2f77c037624601fd214fb7c29faa84cd7bdd7@git.kernel.org>
+Git-Commit-ID: 1fb2f77c037624601fd214fb7c29faa84cd7bdd7
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Mar 2010 20:54:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other sub-drivers for the TPS6507x chip will need to use register 
-definition so move it out of the source file and into a header file.
+Commit-ID:  1fb2f77c037624601fd214fb7c29faa84cd7bdd7
+Gitweb:     http://git.kernel.org/tip/1fb2f77c037624601fd214fb7c29faa84cd7bdd7
+Author:     Henrik Kretzschmar <henne@nachtwindheim.de>
+AuthorDate: Fri, 26 Mar 2010 20:38:35 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 26 Mar 2010 21:52:29 +0100
 
+debugobjects: Section mismatch cleanup
 
-Signed-off-by: Todd Fischer <todd.fischer@ridgerun.com>
+This patch marks two functions, which only get called at
+initialization, as __init.
+
+Here is also interesting, that modpost doesn't catch here the right
+function name.
+
+WARNING: lib/built-in.o(.text+0x585f): Section mismatch in reference
+from the function T.506() to the variable .init.data:obj
+The function T.506() references the variable __initdata obj.
+This is often because T.506 lacks a __initdata annotation or the 
+annotation of obj is wrong.
+
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+LKML-Reference: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/regulator/Kconfig              |    1 +
- drivers/regulator/tps6507x-regulator.c |   60 +--------------
- include/linux/mfd/tps6507x.h           |  134 ++++++++++++++++++++++++++++++++
- 3 files changed, 136 insertions(+), 59 deletions(-)
- create mode 100644 include/linux/mfd/tps6507x.h
+ lib/debugobjects.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 04f2e08..f090829 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -190,6 +190,7 @@ config REGULATOR_TPS65023
- config REGULATOR_TPS6507X
- 	tristate "TI TPS6507X Power regulators"
- 	depends on I2C
-+	depends on CPU_FREQ
- 	help
- 	  This driver supports TPS6507X voltage regulator chips. TPS6507X provides
- 	  three step-down converters and two general-purpose LDO voltage regulators.
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index c2a9539..91172e3 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -24,65 +24,7 @@
- #include <linux/regulator/machine.h>
- #include <linux/i2c.h>
- #include <linux/delay.h>
--
--/* Register definitions */
--#define	TPS6507X_REG_PPATH1				0X01
--#define	TPS6507X_REG_INT				0X02
--#define	TPS6507X_REG_CHGCONFIG0				0X03
--#define	TPS6507X_REG_CHGCONFIG1				0X04
--#define	TPS6507X_REG_CHGCONFIG2				0X05
--#define	TPS6507X_REG_CHGCONFIG3				0X06
--#define	TPS6507X_REG_REG_ADCONFIG			0X07
--#define	TPS6507X_REG_TSCMODE				0X08
--#define	TPS6507X_REG_ADRESULT_1				0X09
--#define	TPS6507X_REG_ADRESULT_2				0X0A
--#define	TPS6507X_REG_PGOOD				0X0B
--#define	TPS6507X_REG_PGOODMASK				0X0C
--#define	TPS6507X_REG_CON_CTRL1				0X0D
--#define	TPS6507X_REG_CON_CTRL2				0X0E
--#define	TPS6507X_REG_CON_CTRL3				0X0F
--#define	TPS6507X_REG_DEFDCDC1				0X10
--#define	TPS6507X_REG_DEFDCDC2_LOW			0X11
--#define	TPS6507X_REG_DEFDCDC2_HIGH			0X12
--#define	TPS6507X_REG_DEFDCDC3_LOW			0X13
--#define	TPS6507X_REG_DEFDCDC3_HIGH			0X14
--#define	TPS6507X_REG_DEFSLEW				0X15
--#define	TPS6507X_REG_LDO_CTRL1				0X16
--#define	TPS6507X_REG_DEFLDO2				0X17
--#define	TPS6507X_REG_WLED_CTRL1				0X18
--#define	TPS6507X_REG_WLED_CTRL2				0X19
--
--/* CON_CTRL1 bitfields */
--#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
--#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
--#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
--#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
--#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
--
--/* DEFDCDC1 bitfields */
--#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
--#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
--
--/* DEFDCDC2_LOW bitfields */
--#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
--
--/* DEFDCDC2_HIGH bitfields */
--#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
--
--/* DEFDCDC3_LOW bitfields */
--#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
--
--/* DEFDCDC3_HIGH bitfields */
--#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
--
--/* TPS6507X_REG_LDO_CTRL1 bitfields */
--#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
--
--/* TPS6507X_REG_DEFLDO2 bitfields */
--#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
--
--/* VDCDC MASK */
--#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
-+#include <linux/mfd/tps6507x.h>
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index a9a8996..c4ecd3c 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -773,7 +773,7 @@ static int __init fixup_free(void *addr, enum debug_obj_state state)
+ 	}
+ }
  
- /* DCDC's */
- #define TPS6507X_DCDC_1				0
-diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
-new file mode 100644
-index 0000000..155bee1
---- /dev/null
-+++ b/include/linux/mfd/tps6507x.h
-@@ -0,0 +1,134 @@
-+/* linux/mfd/tps6507x.h
-+ *
-+ * Functions to access TPS65070 power management chip.
-+ *
-+ * Copyright (c) 2009 RidgeRun (todd.fischer@ridgerun.com)
-+ *
-+ *
-+ *  For licencing details see kernel-base/COPYING
-+ */
-+
-+#ifndef __LINUX_MFD_TPS6507X_H
-+#define __LINUX_MFD_TPS6507X_H
-+
-+/*
-+ * ----------------------------------------------------------------------------
-+ * Registers, all 8 bits
-+ * ----------------------------------------------------------------------------
-+ */
-+
-+
-+/* Register definitions */
-+#define	TPS6507X_REG_PPATH1			0X01
-+#define	TPS6507X_CHG_USB			BIT(7)
-+#define	TPS6507X_CHG_AC				BIT(6)
-+#define	TPS6507X_CHG_USB_PW_ENABLE		BIT(5)
-+#define	TPS6507X_CHG_AC_PW_ENABLE		BIT(4)
-+#define	TPS6507X_CHG_AC_CURRENT			BIT(2)
-+#define	TPS6507X_CHG_USB_CURRENT		BIT(0)
-+
-+#define	TPS6507X_REG_INT			0X02
-+#define	TPS6507X_REG_MASK_AC_USB		BIT(7)
-+#define	TPS6507X_REG_MASK_TSC			BIT(6)
-+#define	TPS6507X_REG_MASK_PB_IN			BIT(5)
-+#define	TPS6507X_REG_TSC_INT			BIT(3)
-+#define	TPS6507X_REG_PB_IN_INT			BIT(2)
-+#define	TPS6507X_REG_AC_USB_APPLIED		BIT(1)
-+#define	TPS6507X_REG_AC_USB_REMOVED		BIT(0)
-+
-+#define	TPS6507X_REG_CHGCONFIG0			0X03
-+
-+#define	TPS6507X_REG_CHGCONFIG1			0X04
-+#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
-+#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
-+#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
-+#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
-+#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
-+
-+#define	TPS6507X_REG_CHGCONFIG2			0X05
-+
-+#define	TPS6507X_REG_CHGCONFIG3			0X06
-+
-+#define	TPS6507X_REG_ADCONFIG			0X07
-+#define	TPS6507X_ADCONFIG_AD_ENABLE		BIT(7)
-+#define	TPS6507X_ADCONFIG_START_CONVERSION	BIT(6)
-+#define	TPS6507X_ADCONFIG_CONVERSION_DONE	BIT(5)
-+#define	TPS6507X_ADCONFIG_VREF_ENABLE		BIT(4)
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN1		0
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN2		1
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN3		2
-+#define	TPS6507X_ADCONFIG_INPUT_AD_IN4		3
-+#define	TPS6507X_ADCONFIG_INPUT_TS_PIN		4
-+#define	TPS6507X_ADCONFIG_INPUT_BAT_CURRENT	5
-+#define	TPS6507X_ADCONFIG_INPUT_AC_VOLTAGE	6
-+#define	TPS6507X_ADCONFIG_INPUT_SYS_VOLTAGE	7
-+#define	TPS6507X_ADCONFIG_INPUT_CHARGER_VOLTAGE 8
-+#define	TPS6507X_ADCONFIG_INPUT_BAT_VOLTAGE	9
-+#define	TPS6507X_ADCONFIG_INPUT_THRESHOLD_VOLTAGE 10
-+#define	TPS6507X_ADCONFIG_INPUT_ISET1_VOLTAGE	11
-+#define	TPS6507X_ADCONFIG_INPUT_ISET2_VOLTAGE	12
-+#define	TPS6507X_ADCONFIG_INPUT_REAL_TSC	14
-+#define	TPS6507X_ADCONFIG_INPUT_TSC		15
-+
-+#define	TPS6507X_REG_TSCMODE			0X08
-+#define	TPS6507X_TSCMODE_X_POSITION		0
-+#define	TPS6507X_TSCMODE_Y_POSITION		1
-+#define	TPS6507X_TSCMODE_PRESSURE		2
-+#define	TPS6507X_TSCMODE_X_PLATE		3
-+#define	TPS6507X_TSCMODE_Y_PLATE		4
-+#define	TPS6507X_TSCMODE_STANDBY		5
-+#define	TPS6507X_TSCMODE_ADC_INPUT		6
-+#define	TPS6507X_TSCMODE_DISABLE		7
-+
-+#define	TPS6507X_REG_ADRESULT_1			0X09
-+
-+#define	TPS6507X_REG_ADRESULT_2			0X0A
-+#define	TPS6507X_REG_ADRESULT_2_MASK		(BIT(1) | BIT(0))
-+
-+#define	TPS6507X_REG_PGOOD			0X0B
-+
-+#define	TPS6507X_REG_PGOODMASK			0X0C
-+
-+#define	TPS6507X_REG_CON_CTRL1			0X0D
-+#define	TPS6507X_CON_CTRL1_DCDC1_ENABLE		BIT(4)
-+#define	TPS6507X_CON_CTRL1_DCDC2_ENABLE		BIT(3)
-+#define	TPS6507X_CON_CTRL1_DCDC3_ENABLE		BIT(2)
-+#define	TPS6507X_CON_CTRL1_LDO1_ENABLE		BIT(1)
-+#define	TPS6507X_CON_CTRL1_LDO2_ENABLE		BIT(0)
-+
-+#define	TPS6507X_REG_CON_CTRL2			0X0E
-+
-+#define	TPS6507X_REG_CON_CTRL3			0X0F
-+
-+#define	TPS6507X_REG_DEFDCDC1			0X10
-+#define TPS6507X_DEFDCDC1_DCDC1_EXT_ADJ_EN	BIT(7)
-+#define TPS6507X_DEFDCDC1_DCDC1_MASK		0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC2_LOW		0X11
-+#define TPS6507X_DEFDCDC2_LOW_DCDC2_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC2_HIGH		0X12
-+#define TPS6507X_DEFDCDC2_HIGH_DCDC2_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC3_LOW		0X13
-+#define TPS6507X_DEFDCDC3_LOW_DCDC3_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFDCDC3_HIGH		0X14
-+#define TPS6507X_DEFDCDC3_HIGH_DCDC3_MASK	0X3F
-+
-+#define	TPS6507X_REG_DEFSLEW			0X15
-+
-+#define	TPS6507X_REG_LDO_CTRL1			0X16
-+#define TPS6507X_REG_LDO_CTRL1_LDO1_MASK	0X0F
-+
-+#define	TPS6507X_REG_DEFLDO2			0X17
-+#define TPS6507X_REG_DEFLDO2_LDO2_MASK		0X3F
-+
-+#define	TPS6507X_REG_WLED_CTRL1			0X18
-+
-+#define	TPS6507X_REG_WLED_CTRL2			0X19
-+
-+/* VDCDC MASK */
-+#define TPS6507X_DEFDCDCX_DCDC_MASK		0X3F
-+
-+#endif /*  __LINUX_MFD_TPS6507X_H */
--- 
-1.6.0.4
-
+-static int
++static int __init
+ check_results(void *addr, enum debug_obj_state state, int fixups, int warnings)
+ {
+ 	struct debug_bucket *db;
+@@ -916,7 +916,7 @@ void __init debug_objects_early_init(void)
+ /*
+  * Convert the statically allocated objects to dynamic ones:
+  */
+-static int debug_objects_replace_static_objects(void)
++static int __init debug_objects_replace_static_objects(void)
+ {
+ 	struct debug_bucket *db = obj_hash;
+ 	struct hlist_node *node, *tmp;
