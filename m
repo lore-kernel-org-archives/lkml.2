@@ -1,69 +1,2010 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab0CZMzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 08:55:07 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35330 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0CZMzD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 08:55:03 -0400
-Date: Fri, 26 Mar 2010 05:54:59 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Grzegorz Nosek <root@localdomain.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-       Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100326125459.GD3345@count0.beaverton.ibm.com>
-References: <20100321195044.GA23757@megiteam.pl>
- <20100323212834.GH20796@count0.beaverton.ibm.com>
- <20100325213356.GB20541@megiteam.pl>
- <20100326111131.GA8604@redhat.com>
- <20100326115357.GA3345@count0.beaverton.ibm.com>
- <20100326124522.GD17113@megiteam.pl>
+	id S1753003Ab0CZMzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 08:55:52 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55231 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab0CZMzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 08:55:50 -0400
+Date: Fri, 26 Mar 2010 12:54:46 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
+       hpa@zytor.com, mingo@redhat.com, gorcunov@openvz.org,
+       peterz@infradead.org, gorcunov@gmail.com, fweisbec@gmail.com,
+       robert.richter@amd.com, ming.m.lin@intel.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
+       linux-kernel@vger.kernel.org, gorcunov@openvz.org, peterz@infradead.org,
+       gorcunov@gmail.com, robert.richter@amd.com, fweisbec@gmail.com,
+       ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1269403766.3409.6.camel@minggr.sh.intel.com>
+References: <1269403766.3409.6.camel@minggr.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86, perf: Add raw events support for the P4 PMU
+Message-ID: <tip-d814f30105798b6677ecb73ed61d691ff96dada9@git.kernel.org>
+Git-Commit-ID: d814f30105798b6677ecb73ed61d691ff96dada9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100326124522.GD17113@megiteam.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Mar 2010 12:54:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 01:45:22PM +0100, Grzegorz Nosek wrote:
-> On Fri, Mar 26, 2010 at 04:53:57AM -0700, Matt Helsley wrote:
-> > Yup. strace would need to be modified to use that. I tried that and it still
-> > won't work -- I seem to recall it didn't work because strace uses pid values
-> > obtained from the wait syscall too. To make it work we'd need to be able to
-> > translate those pids in userspace. That's do-able from userspace if you trace
-> > all forks descending from the pidns init task. But it's not do-able for
-> > simple attaches. That's why I was thinking Eric's setns() might be able to
-> > help if strace used it to enter the tracee's pid namespace whenever we need to.
-> > 
-> > gdb often doesn't use the same methods but has similar problems with pid
-> > namespaces.
-> 
-> Hmm, is there a good reason why strace does not use the data explicitly
-> provided by the kernel but instead second-guesses it from syscall return
-> values? I don't know anything about ptrace, really, but I'd expect the
+Commit-ID:  d814f30105798b6677ecb73ed61d691ff96dada9
+Gitweb:     http://git.kernel.org/tip/d814f30105798b6677ecb73ed61d691ff96dada9
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Wed, 24 Mar 2010 12:09:26 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 26 Mar 2010 08:45:49 +0100
 
-strace isn't linux-only. Checking the syscall return values may be seen
-as being more portable. At least that's my guess. That said there are
-plenty of #ifdefs in strace and patching it to use GETEVENTMSG is quite
-a small patch.
+x86, perf: Add raw events support for the P4 PMU
 
-However, as I said, that still doesn't "fix" strace so that it can
-be used to trace tasks in child pid namespaces. Especially when the
-traced tasks are more than one namepace deeper. :(
+The adding of raw event support lead to complete code
+refactoring. I hope is became more readable then it was.
 
-> kernel to provide the tracer with out-of-band information otherwise
-> taken from clone/waitpid/other syscalls?
+The list of changes:
 
-I don't think the kernel provides special out-of-band methods for fetching
-pids related to traced tasks except during fork and clone. Not wait*(). The
-rest of ptrace tends to be focused on reading/writing registers/memory and
-managing signal delivery.
+1)  The 64bit config field is enough to hold all information we need
+    to track event details. To achieve it we used *own* enum for
+    events selection in ESCR register and map this key into proper
+    value at moment of event enabling.
 
-Cheers,
-	-Matt Helsley
+    For the same reason we use 12LSB bits in CCCR register -- to track
+    which exactly cache trace event was requested. And we cear this bits
+    at real 'write' moment.
+
+2)  There is no per-cpu area reserved for P4 PMU anymore. We
+    don't need it. All is held by config.
+
+3)  Now we may use any available counter, ie we try to grab any
+    possible counter.
+
+v2:
+  - Lin Ming reported the lack of ESCR selector in CCCR for cache events
+
+v3:
+  - Don't loose cache event codes at config unpacking procedure, we may
+    need it one day so no obscure hack behind our back, better to clear
+    reserved bits explicitly when needed (thanks Ming for pointing out)
+
+  - Lin Ming fixed misplaced opcodes in cache events
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Tested-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <1269403766.3409.6.camel@minggr.sh.intel.com>
+[ v4: did a few whitespace fixlets ]
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/include/asm/perf_event_p4.h |  691 +++++++++++++++++--------------
+ arch/x86/kernel/cpu/perf_event_p4.c  |  746 +++++++++++++++++++---------------
+ 2 files changed, 806 insertions(+), 631 deletions(-)
+
+diff --git a/arch/x86/include/asm/perf_event_p4.h b/arch/x86/include/asm/perf_event_p4.h
+index facf961..b05400a 100644
+--- a/arch/x86/include/asm/perf_event_p4.h
++++ b/arch/x86/include/asm/perf_event_p4.h
+@@ -15,38 +15,40 @@
+  * perf-MSRs are not shared and every thread has its
+  * own perf-MSRs set)
+  */
+-#define ARCH_P4_TOTAL_ESCR		(46)
+-#define ARCH_P4_RESERVED_ESCR		(2) /* IQ_ESCR(0,1) not always present */
+-#define ARCH_P4_MAX_ESCR		(ARCH_P4_TOTAL_ESCR - ARCH_P4_RESERVED_ESCR)
+-#define ARCH_P4_MAX_CCCR		(18)
+-#define ARCH_P4_MAX_COUNTER		(ARCH_P4_MAX_CCCR / 2)
+-
+-#define P4_EVNTSEL_EVENT_MASK		0x7e000000U
+-#define P4_EVNTSEL_EVENT_SHIFT		25
+-#define P4_EVNTSEL_EVENTMASK_MASK	0x01fffe00U
+-#define P4_EVNTSEL_EVENTMASK_SHIFT	9
+-#define P4_EVNTSEL_TAG_MASK		0x000001e0U
+-#define P4_EVNTSEL_TAG_SHIFT		5
+-#define P4_EVNTSEL_TAG_ENABLE		0x00000010U
+-#define P4_EVNTSEL_T0_OS		0x00000008U
+-#define P4_EVNTSEL_T0_USR		0x00000004U
+-#define P4_EVNTSEL_T1_OS		0x00000002U
+-#define P4_EVNTSEL_T1_USR		0x00000001U
++#define ARCH_P4_TOTAL_ESCR	(46)
++#define ARCH_P4_RESERVED_ESCR	(2) /* IQ_ESCR(0,1) not always present */
++#define ARCH_P4_MAX_ESCR	(ARCH_P4_TOTAL_ESCR - ARCH_P4_RESERVED_ESCR)
++#define ARCH_P4_MAX_CCCR	(18)
++#define ARCH_P4_MAX_COUNTER	(ARCH_P4_MAX_CCCR / 2)
++
++#define P4_ESCR_EVENT_MASK	0x7e000000U
++#define P4_ESCR_EVENT_SHIFT	25
++#define P4_ESCR_EVENTMASK_MASK	0x01fffe00U
++#define P4_ESCR_EVENTMASK_SHIFT	9
++#define P4_ESCR_TAG_MASK	0x000001e0U
++#define P4_ESCR_TAG_SHIFT	5
++#define P4_ESCR_TAG_ENABLE	0x00000010U
++#define P4_ESCR_T0_OS		0x00000008U
++#define P4_ESCR_T0_USR		0x00000004U
++#define P4_ESCR_T1_OS		0x00000002U
++#define P4_ESCR_T1_USR		0x00000001U
++
++#define P4_ESCR_EVENT(v)	((v) << P4_ESCR_EVENT_SHIFT)
++#define P4_ESCR_EMASK(v)	((v) << P4_ESCR_EVENTMASK_SHIFT)
++#define P4_ESCR_TAG(v)		((v) << P4_ESCR_TAG_SHIFT)
+ 
+ /* Non HT mask */
+-#define P4_EVNTSEL_MASK				\
+-	(P4_EVNTSEL_EVENT_MASK		|	\
+-	P4_EVNTSEL_EVENTMASK_MASK	|	\
+-	P4_EVNTSEL_TAG_MASK		|	\
+-	P4_EVNTSEL_TAG_ENABLE		|	\
+-	P4_EVNTSEL_T0_OS		|	\
+-	P4_EVNTSEL_T0_USR)
++#define P4_ESCR_MASK			\
++	(P4_ESCR_EVENT_MASK	|	\
++	P4_ESCR_EVENTMASK_MASK	|	\
++	P4_ESCR_TAG_MASK	|	\
++	P4_ESCR_TAG_ENABLE	|	\
++	P4_ESCR_T0_OS		|	\
++	P4_ESCR_T0_USR)
+ 
+ /* HT mask */
+-#define P4_EVNTSEL_MASK_HT			\
+-	(P4_EVNTSEL_MASK		|	\
+-	P4_EVNTSEL_T1_OS		|	\
+-	P4_EVNTSEL_T1_USR)
++#define P4_ESCR_MASK_HT			\
++	(P4_ESCR_MASK |	P4_ESCR_T1_OS | P4_ESCR_T1_USR)
+ 
+ #define P4_CCCR_OVF			0x80000000U
+ #define P4_CCCR_CASCADE			0x40000000U
+@@ -56,7 +58,6 @@
+ #define P4_CCCR_EDGE			0x01000000U
+ #define P4_CCCR_THRESHOLD_MASK		0x00f00000U
+ #define P4_CCCR_THRESHOLD_SHIFT		20
+-#define P4_CCCR_THRESHOLD(v)		((v) << P4_CCCR_THRESHOLD_SHIFT)
+ #define P4_CCCR_COMPLEMENT		0x00080000U
+ #define P4_CCCR_COMPARE			0x00040000U
+ #define P4_CCCR_ESCR_SELECT_MASK	0x0000e000U
+@@ -67,6 +68,13 @@
+ #define P4_CCCR_THREAD_ANY		0x00030000U
+ #define P4_CCCR_RESERVED		0x00000fffU
+ 
++#define P4_CCCR_THRESHOLD(v)		((v) << P4_CCCR_THRESHOLD_SHIFT)
++#define P4_CCCR_ESEL(v)			((v) << P4_CCCR_ESCR_SELECT_SHIFT)
++
++/* Custom bits in reerved CCCR area */
++#define P4_CCCR_CACHE_OPS_MASK		0x0000003fU
++
++
+ /* Non HT mask */
+ #define P4_CCCR_MASK				\
+ 	(P4_CCCR_OVF			|	\
+@@ -81,25 +89,11 @@
+ 	P4_CCCR_ENABLE)
+ 
+ /* HT mask */
+-#define P4_CCCR_MASK_HT				\
+-	(P4_CCCR_MASK			|	\
+-	P4_CCCR_THREAD_ANY)
++#define P4_CCCR_MASK_HT	(P4_CCCR_MASK | P4_CCCR_THREAD_ANY)
+ 
+-/*
+- * format is 32 bit: ee ss aa aa
+- * where
+- *	ee - 8 bit event
+- *	ss - 8 bit selector
+- *	aa aa - 16 bits reserved for tags/attributes
+- */
+-#define P4_EVENT_PACK(event, selector)		(((event) << 24) | ((selector) << 16))
+-#define P4_EVENT_UNPACK_EVENT(packed)		(((packed) >> 24) & 0xff)
+-#define P4_EVENT_UNPACK_SELECTOR(packed)	(((packed) >> 16) & 0xff)
+-#define P4_EVENT_PACK_ATTR(attr)		((attr))
+-#define P4_EVENT_UNPACK_ATTR(packed)		((packed) & 0xffff)
+-#define P4_MAKE_EVENT_ATTR(class, name, bit)	class##_##name = (1 << bit)
+-#define P4_EVENT_ATTR(class, name)		class##_##name
+-#define P4_EVENT_ATTR_STR(class, name)		__stringify(class##_##name)
++#define P4_GEN_ESCR_EMASK(class, name, bit)	\
++	class##__##name = ((1 << bit) << P4_ESCR_EVENTMASK_SHIFT)
++#define P4_ESCR_EMASK_BIT(class, name)		class##__##name
+ 
+ /*
+  * config field is 64bit width and consists of
+@@ -117,35 +111,29 @@
+ #define p4_config_pack_escr(v)		(((u64)(v)) << 32)
+ #define p4_config_pack_cccr(v)		(((u64)(v)) & 0xffffffffULL)
+ #define p4_config_unpack_escr(v)	(((u64)(v)) >> 32)
+-#define p4_config_unpack_cccr(v)	(((u64)(v)) & 0xfffff000ULL)
++#define p4_config_unpack_cccr(v)	(((u64)(v)) & 0xffffffffULL)
+ 
+ #define p4_config_unpack_emask(v)			\
+ 	({						\
+ 		u32 t = p4_config_unpack_escr((v));	\
+-		t  &= P4_EVNTSEL_EVENTMASK_MASK;	\
+-		t >>= P4_EVNTSEL_EVENTMASK_SHIFT;	\
++		t = t &  P4_ESCR_EVENTMASK_MASK;	\
++		t = t >> P4_ESCR_EVENTMASK_SHIFT;	\
++		t;					\
++	})
++
++#define p4_config_unpack_event(v)			\
++	({						\
++		u32 t = p4_config_unpack_escr((v));	\
++		t = t &  P4_ESCR_EVENT_MASK;		\
++		t = t >> P4_ESCR_EVENT_SHIFT;		\
+ 		t;					\
+ 	})
+ 
+-#define p4_config_unpack_key(v)		(((u64)(v)) & P4_CCCR_RESERVED)
++#define p4_config_unpack_cache_event(v)	(((u64)(v)) & P4_CCCR_CACHE_OPS_MASK)
+ 
+ #define P4_CONFIG_HT_SHIFT		63
+ #define P4_CONFIG_HT			(1ULL << P4_CONFIG_HT_SHIFT)
+ 
+-static inline u32 p4_config_unpack_opcode(u64 config)
+-{
+-	u32 e, s;
+-
+-	/*
+-	 * we don't care about HT presence here since
+-	 * event opcode doesn't depend on it
+-	 */
+-	e = (p4_config_unpack_escr(config) & P4_EVNTSEL_EVENT_MASK) >> P4_EVNTSEL_EVENT_SHIFT;
+-	s = (p4_config_unpack_cccr(config) & P4_CCCR_ESCR_SELECT_MASK) >> P4_CCCR_ESCR_SELECT_SHIFT;
+-
+-	return P4_EVENT_PACK(e, s);
+-}
+-
+ static inline bool p4_is_event_cascaded(u64 config)
+ {
+ 	u32 cccr = p4_config_unpack_cccr(config);
+@@ -212,19 +200,73 @@ static inline u32 p4_default_escr_conf(int cpu, int exclude_os, int exclude_usr)
+ 
+ 	if (!p4_ht_thread(cpu)) {
+ 		if (!exclude_os)
+-			escr |= P4_EVNTSEL_T0_OS;
++			escr |= P4_ESCR_T0_OS;
+ 		if (!exclude_usr)
+-			escr |= P4_EVNTSEL_T0_USR;
++			escr |= P4_ESCR_T0_USR;
+ 	} else {
+ 		if (!exclude_os)
+-			escr |= P4_EVNTSEL_T1_OS;
++			escr |= P4_ESCR_T1_OS;
+ 		if (!exclude_usr)
+-			escr |= P4_EVNTSEL_T1_USR;
++			escr |= P4_ESCR_T1_USR;
+ 	}
+ 
+ 	return escr;
+ }
+ 
++enum P4_EVENTS {
++	P4_EVENT_TC_DELIVER_MODE,
++	P4_EVENT_BPU_FETCH_REQUEST,
++	P4_EVENT_ITLB_REFERENCE,
++	P4_EVENT_MEMORY_CANCEL,
++	P4_EVENT_MEMORY_COMPLETE,
++	P4_EVENT_LOAD_PORT_REPLAY,
++	P4_EVENT_STORE_PORT_REPLAY,
++	P4_EVENT_MOB_LOAD_REPLAY,
++	P4_EVENT_PAGE_WALK_TYPE,
++	P4_EVENT_BSQ_CACHE_REFERENCE,
++	P4_EVENT_IOQ_ALLOCATION,
++	P4_EVENT_IOQ_ACTIVE_ENTRIES,
++	P4_EVENT_FSB_DATA_ACTIVITY,
++	P4_EVENT_BSQ_ALLOCATION,
++	P4_EVENT_BSQ_ACTIVE_ENTRIES,
++	P4_EVENT_SSE_INPUT_ASSIST,
++	P4_EVENT_PACKED_SP_UOP,
++	P4_EVENT_PACKED_DP_UOP,
++	P4_EVENT_SCALAR_SP_UOP,
++	P4_EVENT_SCALAR_DP_UOP,
++	P4_EVENT_64BIT_MMX_UOP,
++	P4_EVENT_128BIT_MMX_UOP,
++	P4_EVENT_X87_FP_UOP,
++	P4_EVENT_TC_MISC,
++	P4_EVENT_GLOBAL_POWER_EVENTS,
++	P4_EVENT_TC_MS_XFER,
++	P4_EVENT_UOP_QUEUE_WRITES,
++	P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE,
++	P4_EVENT_RETIRED_BRANCH_TYPE,
++	P4_EVENT_RESOURCE_STALL,
++	P4_EVENT_WC_BUFFER,
++	P4_EVENT_B2B_CYCLES,
++	P4_EVENT_BNR,
++	P4_EVENT_SNOOP,
++	P4_EVENT_RESPONSE,
++	P4_EVENT_FRONT_END_EVENT,
++	P4_EVENT_EXECUTION_EVENT,
++	P4_EVENT_REPLAY_EVENT,
++	P4_EVENT_INSTR_RETIRED,
++	P4_EVENT_UOPS_RETIRED,
++	P4_EVENT_UOP_TYPE,
++	P4_EVENT_BRANCH_RETIRED,
++	P4_EVENT_MISPRED_BRANCH_RETIRED,
++	P4_EVENT_X87_ASSIST,
++	P4_EVENT_MACHINE_CLEAR,
++	P4_EVENT_INSTR_COMPLETED,
++};
++
++#define P4_OPCODE(event)		event##_OPCODE
++#define P4_OPCODE_ESEL(opcode)		((opcode & 0x00ff) >> 0)
++#define P4_OPCODE_EVNT(opcode)		((opcode & 0xff00) >> 8)
++#define P4_OPCODE_PACK(event, sel)	(((event) << 8) | sel)
++
+ /*
+  * Comments below the event represent ESCR restriction
+  * for this event and counter index per ESCR
+@@ -238,484 +280,515 @@ static inline u32 p4_default_escr_conf(int cpu, int exclude_os, int exclude_usr)
+  * working so that we should not use this CCCR and respective
+  * counter as result
+  */
+-#define P4_TC_DELIVER_MODE		P4_EVENT_PACK(0x01, 0x01)
++enum P4_EVENT_OPCODES {
++	P4_OPCODE(P4_EVENT_TC_DELIVER_MODE)		= P4_OPCODE_PACK(0x01, 0x01),
+ 	/*
+ 	 * MSR_P4_TC_ESCR0:	4, 5
+ 	 * MSR_P4_TC_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_BPU_FETCH_REQUEST		P4_EVENT_PACK(0x03, 0x00)
++	P4_OPCODE(P4_EVENT_BPU_FETCH_REQUEST)		= P4_OPCODE_PACK(0x03, 0x00),
+ 	/*
+ 	 * MSR_P4_BPU_ESCR0:	0, 1
+ 	 * MSR_P4_BPU_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_ITLB_REFERENCE		P4_EVENT_PACK(0x18, 0x03)
++	P4_OPCODE(P4_EVENT_ITLB_REFERENCE)		= P4_OPCODE_PACK(0x18, 0x03),
+ 	/*
+ 	 * MSR_P4_ITLB_ESCR0:	0, 1
+ 	 * MSR_P4_ITLB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_MEMORY_CANCEL		P4_EVENT_PACK(0x02, 0x05)
++	P4_OPCODE(P4_EVENT_MEMORY_CANCEL)		= P4_OPCODE_PACK(0x02, 0x05),
+ 	/*
+ 	 * MSR_P4_DAC_ESCR0:	8, 9
+ 	 * MSR_P4_DAC_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_MEMORY_COMPLETE		P4_EVENT_PACK(0x08, 0x02)
++	P4_OPCODE(P4_EVENT_MEMORY_COMPLETE)		= P4_OPCODE_PACK(0x08, 0x02),
+ 	/*
+ 	 * MSR_P4_SAAT_ESCR0:	8, 9
+ 	 * MSR_P4_SAAT_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_LOAD_PORT_REPLAY		P4_EVENT_PACK(0x04, 0x02)
++	P4_OPCODE(P4_EVENT_LOAD_PORT_REPLAY)		= P4_OPCODE_PACK(0x04, 0x02),
+ 	/*
+ 	 * MSR_P4_SAAT_ESCR0:	8, 9
+ 	 * MSR_P4_SAAT_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_STORE_PORT_REPLAY		P4_EVENT_PACK(0x05, 0x02)
++	P4_OPCODE(P4_EVENT_STORE_PORT_REPLAY)		= P4_OPCODE_PACK(0x05, 0x02),
+ 	/*
+ 	 * MSR_P4_SAAT_ESCR0:	8, 9
+ 	 * MSR_P4_SAAT_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_MOB_LOAD_REPLAY		P4_EVENT_PACK(0x03, 0x02)
++	P4_OPCODE(P4_EVENT_MOB_LOAD_REPLAY)		= P4_OPCODE_PACK(0x03, 0x02),
+ 	/*
+ 	 * MSR_P4_MOB_ESCR0:	0, 1
+ 	 * MSR_P4_MOB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_PAGE_WALK_TYPE		P4_EVENT_PACK(0x01, 0x04)
++	P4_OPCODE(P4_EVENT_PAGE_WALK_TYPE)		= P4_OPCODE_PACK(0x01, 0x04),
+ 	/*
+ 	 * MSR_P4_PMH_ESCR0:	0, 1
+ 	 * MSR_P4_PMH_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_BSQ_CACHE_REFERENCE		P4_EVENT_PACK(0x0c, 0x07)
++	P4_OPCODE(P4_EVENT_BSQ_CACHE_REFERENCE)		= P4_OPCODE_PACK(0x0c, 0x07),
+ 	/*
+ 	 * MSR_P4_BSU_ESCR0:	0, 1
+ 	 * MSR_P4_BSU_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_IOQ_ALLOCATION		P4_EVENT_PACK(0x03, 0x06)
++	P4_OPCODE(P4_EVENT_IOQ_ALLOCATION)		= P4_OPCODE_PACK(0x03, 0x06),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_IOQ_ACTIVE_ENTRIES		P4_EVENT_PACK(0x1a, 0x06)
++	P4_OPCODE(P4_EVENT_IOQ_ACTIVE_ENTRIES)		= P4_OPCODE_PACK(0x1a, 0x06),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_FSB_DATA_ACTIVITY		P4_EVENT_PACK(0x17, 0x06)
++	P4_OPCODE(P4_EVENT_FSB_DATA_ACTIVITY)		= P4_OPCODE_PACK(0x17, 0x06),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_BSQ_ALLOCATION		P4_EVENT_PACK(0x05, 0x07)
++	P4_OPCODE(P4_EVENT_BSQ_ALLOCATION)		= P4_OPCODE_PACK(0x05, 0x07),
+ 	/*
+ 	 * MSR_P4_BSU_ESCR0:	0, 1
+ 	 */
+ 
+-#define P4_BSQ_ACTIVE_ENTRIES		P4_EVENT_PACK(0x06, 0x07)
++	P4_OPCODE(P4_EVENT_BSQ_ACTIVE_ENTRIES)		= P4_OPCODE_PACK(0x06, 0x07),
+ 	/*
+ 	 * NOTE: no ESCR name in docs, it's guessed
+ 	 * MSR_P4_BSU_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_SSE_INPUT_ASSIST		P4_EVENT_PACK(0x34, 0x01)
++	P4_OPCODE(P4_EVENT_SSE_INPUT_ASSIST)		= P4_OPCODE_PACK(0x34, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_PACKED_SP_UOP		P4_EVENT_PACK(0x08, 0x01)
++	P4_OPCODE(P4_EVENT_PACKED_SP_UOP)		= P4_OPCODE_PACK(0x08, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_PACKED_DP_UOP		P4_EVENT_PACK(0x0c, 0x01)
++	P4_OPCODE(P4_EVENT_PACKED_DP_UOP)		= P4_OPCODE_PACK(0x0c, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_SCALAR_SP_UOP		P4_EVENT_PACK(0x0a, 0x01)
++	P4_OPCODE(P4_EVENT_SCALAR_SP_UOP)		= P4_OPCODE_PACK(0x0a, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_SCALAR_DP_UOP		P4_EVENT_PACK(0x0e, 0x01)
++	P4_OPCODE(P4_EVENT_SCALAR_DP_UOP)		= P4_OPCODE_PACK(0x0e, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_64BIT_MMX_UOP		P4_EVENT_PACK(0x02, 0x01)
++	P4_OPCODE(P4_EVENT_64BIT_MMX_UOP)		= P4_OPCODE_PACK(0x02, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_128BIT_MMX_UOP		P4_EVENT_PACK(0x1a, 0x01)
++	P4_OPCODE(P4_EVENT_128BIT_MMX_UOP)		= P4_OPCODE_PACK(0x1a, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_X87_FP_UOP			P4_EVENT_PACK(0x04, 0x01)
++	P4_OPCODE(P4_EVENT_X87_FP_UOP)			= P4_OPCODE_PACK(0x04, 0x01),
+ 	/*
+ 	 * MSR_P4_FIRM_ESCR0:	8, 9
+ 	 * MSR_P4_FIRM_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_TC_MISC			P4_EVENT_PACK(0x06, 0x01)
++	P4_OPCODE(P4_EVENT_TC_MISC)			= P4_OPCODE_PACK(0x06, 0x01),
+ 	/*
+ 	 * MSR_P4_TC_ESCR0:	4, 5
+ 	 * MSR_P4_TC_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_GLOBAL_POWER_EVENTS		P4_EVENT_PACK(0x13, 0x06)
++	P4_OPCODE(P4_EVENT_GLOBAL_POWER_EVENTS)		= P4_OPCODE_PACK(0x13, 0x06),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_TC_MS_XFER			P4_EVENT_PACK(0x05, 0x00)
++	P4_OPCODE(P4_EVENT_TC_MS_XFER)			= P4_OPCODE_PACK(0x05, 0x00),
+ 	/*
+ 	 * MSR_P4_MS_ESCR0:	4, 5
+ 	 * MSR_P4_MS_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_UOP_QUEUE_WRITES		P4_EVENT_PACK(0x09, 0x00)
++	P4_OPCODE(P4_EVENT_UOP_QUEUE_WRITES)		= P4_OPCODE_PACK(0x09, 0x00),
+ 	/*
+ 	 * MSR_P4_MS_ESCR0:	4, 5
+ 	 * MSR_P4_MS_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_RETIRED_MISPRED_BRANCH_TYPE	P4_EVENT_PACK(0x05, 0x02)
++	P4_OPCODE(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE)	= P4_OPCODE_PACK(0x05, 0x02),
+ 	/*
+ 	 * MSR_P4_TBPU_ESCR0:	4, 5
+ 	 * MSR_P4_TBPU_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_RETIRED_BRANCH_TYPE		P4_EVENT_PACK(0x04, 0x02)
++	P4_OPCODE(P4_EVENT_RETIRED_BRANCH_TYPE)		= P4_OPCODE_PACK(0x04, 0x02),
+ 	/*
+ 	 * MSR_P4_TBPU_ESCR0:	4, 5
+ 	 * MSR_P4_TBPU_ESCR1:	6, 7
+ 	 */
+ 
+-#define P4_RESOURCE_STALL		P4_EVENT_PACK(0x01, 0x01)
++	P4_OPCODE(P4_EVENT_RESOURCE_STALL)		= P4_OPCODE_PACK(0x01, 0x01),
+ 	/*
+ 	 * MSR_P4_ALF_ESCR0:	12, 13, 16
+ 	 * MSR_P4_ALF_ESCR1:	14, 15, 17
+ 	 */
+ 
+-#define P4_WC_BUFFER			P4_EVENT_PACK(0x05, 0x05)
++	P4_OPCODE(P4_EVENT_WC_BUFFER)			= P4_OPCODE_PACK(0x05, 0x05),
+ 	/*
+ 	 * MSR_P4_DAC_ESCR0:	8, 9
+ 	 * MSR_P4_DAC_ESCR1:	10, 11
+ 	 */
+ 
+-#define P4_B2B_CYCLES			P4_EVENT_PACK(0x16, 0x03)
++	P4_OPCODE(P4_EVENT_B2B_CYCLES)			= P4_OPCODE_PACK(0x16, 0x03),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_BNR				P4_EVENT_PACK(0x08, 0x03)
++	P4_OPCODE(P4_EVENT_BNR)				= P4_OPCODE_PACK(0x08, 0x03),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_SNOOP			P4_EVENT_PACK(0x06, 0x03)
++	P4_OPCODE(P4_EVENT_SNOOP)			= P4_OPCODE_PACK(0x06, 0x03),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_RESPONSE			P4_EVENT_PACK(0x04, 0x03)
++	P4_OPCODE(P4_EVENT_RESPONSE)			= P4_OPCODE_PACK(0x04, 0x03),
+ 	/*
+ 	 * MSR_P4_FSB_ESCR0:	0, 1
+ 	 * MSR_P4_FSB_ESCR1:	2, 3
+ 	 */
+ 
+-#define P4_FRONT_END_EVENT		P4_EVENT_PACK(0x08, 0x05)
++	P4_OPCODE(P4_EVENT_FRONT_END_EVENT)		= P4_OPCODE_PACK(0x08, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_EXECUTION_EVENT		P4_EVENT_PACK(0x0c, 0x05)
++	P4_OPCODE(P4_EVENT_EXECUTION_EVENT)		= P4_OPCODE_PACK(0x0c, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_REPLAY_EVENT			P4_EVENT_PACK(0x09, 0x05)
++	P4_OPCODE(P4_EVENT_REPLAY_EVENT)		= P4_OPCODE_PACK(0x09, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_INSTR_RETIRED		P4_EVENT_PACK(0x02, 0x04)
++	P4_OPCODE(P4_EVENT_INSTR_RETIRED)		= P4_OPCODE_PACK(0x02, 0x04),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR0:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR1:	14, 15, 17
+ 	 */
+ 
+-#define P4_UOPS_RETIRED			P4_EVENT_PACK(0x01, 0x04)
++	P4_OPCODE(P4_EVENT_UOPS_RETIRED)		= P4_OPCODE_PACK(0x01, 0x04),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR0:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR1:	14, 15, 17
+ 	 */
+ 
+-#define P4_UOP_TYPE			P4_EVENT_PACK(0x02, 0x02)
++	P4_OPCODE(P4_EVENT_UOP_TYPE)			= P4_OPCODE_PACK(0x02, 0x02),
+ 	/*
+ 	 * MSR_P4_RAT_ESCR0:	12, 13, 16
+ 	 * MSR_P4_RAT_ESCR1:	14, 15, 17
+ 	 */
+ 
+-#define P4_BRANCH_RETIRED		P4_EVENT_PACK(0x06, 0x05)
++	P4_OPCODE(P4_EVENT_BRANCH_RETIRED)		= P4_OPCODE_PACK(0x06, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_MISPRED_BRANCH_RETIRED	P4_EVENT_PACK(0x03, 0x04)
++	P4_OPCODE(P4_EVENT_MISPRED_BRANCH_RETIRED)	= P4_OPCODE_PACK(0x03, 0x04),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR0:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR1:	14, 15, 17
+ 	 */
+ 
+-#define P4_X87_ASSIST			P4_EVENT_PACK(0x03, 0x05)
++	P4_OPCODE(P4_EVENT_X87_ASSIST)			= P4_OPCODE_PACK(0x03, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_MACHINE_CLEAR		P4_EVENT_PACK(0x02, 0x05)
++	P4_OPCODE(P4_EVENT_MACHINE_CLEAR)		= P4_OPCODE_PACK(0x02, 0x05),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR2:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR3:	14, 15, 17
+ 	 */
+ 
+-#define P4_INSTR_COMPLETED		P4_EVENT_PACK(0x07, 0x04)
++	P4_OPCODE(P4_EVENT_INSTR_COMPLETED)		= P4_OPCODE_PACK(0x07, 0x04),
+ 	/*
+ 	 * MSR_P4_CRU_ESCR0:	12, 13, 16
+ 	 * MSR_P4_CRU_ESCR1:	14, 15, 17
+ 	 */
++};
+ 
+ /*
+- * a caller should use P4_EVENT_ATTR helper to
+- * pick the attribute needed, for example
++ * a caller should use P4_ESCR_EMASK_NAME helper to
++ * pick the EventMask needed, for example
+  *
+- *	P4_EVENT_ATTR(P4_TC_DELIVER_MODE, DD)
++ *	P4_ESCR_EMASK_NAME(P4_EVENT_TC_DELIVER_MODE, DD)
+  */
+-enum P4_EVENTS_ATTR {
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, DD, 0),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, DB, 1),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, DI, 2),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, BD, 3),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, BB, 4),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, BI, 5),
+-	P4_MAKE_EVENT_ATTR(P4_TC_DELIVER_MODE, ID, 6),
+-
+-	P4_MAKE_EVENT_ATTR(P4_BPU_FETCH_REQUEST, TCMISS, 0),
+-
+-	P4_MAKE_EVENT_ATTR(P4_ITLB_REFERENCE, HIT, 0),
+-	P4_MAKE_EVENT_ATTR(P4_ITLB_REFERENCE, MISS, 1),
+-	P4_MAKE_EVENT_ATTR(P4_ITLB_REFERENCE, HIT_UK, 2),
+-
+-	P4_MAKE_EVENT_ATTR(P4_MEMORY_CANCEL, ST_RB_FULL, 2),
+-	P4_MAKE_EVENT_ATTR(P4_MEMORY_CANCEL, 64K_CONF, 3),
+-
+-	P4_MAKE_EVENT_ATTR(P4_MEMORY_COMPLETE, LSC, 0),
+-	P4_MAKE_EVENT_ATTR(P4_MEMORY_COMPLETE, SSC, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_LOAD_PORT_REPLAY, SPLIT_LD, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_STORE_PORT_REPLAY, SPLIT_ST, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_MOB_LOAD_REPLAY, NO_STA, 1),
+-	P4_MAKE_EVENT_ATTR(P4_MOB_LOAD_REPLAY, NO_STD, 3),
+-	P4_MAKE_EVENT_ATTR(P4_MOB_LOAD_REPLAY, PARTIAL_DATA, 4),
+-	P4_MAKE_EVENT_ATTR(P4_MOB_LOAD_REPLAY, UNALGN_ADDR, 5),
+-
+-	P4_MAKE_EVENT_ATTR(P4_PAGE_WALK_TYPE, DTMISS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_PAGE_WALK_TYPE, ITMISS, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITE, 1),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITM, 2),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITS, 3),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITE, 4),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITM, 5),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_MISS, 8),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_MISS, 9),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, WR_2ndL_MISS, 10),
+-
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, DEFAULT, 0),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, ALL_READ, 5),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, ALL_WRITE, 6),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, MEM_UC, 7),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, MEM_WC, 8),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, MEM_WT, 9),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, MEM_WP, 10),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, MEM_WB, 11),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, OWN, 13),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, OTHER, 14),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ALLOCATION, PREFETCH, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, DEFAULT, 0),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, ALL_READ, 5),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, ALL_WRITE, 6),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, MEM_UC, 7),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, MEM_WC, 8),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, MEM_WT, 9),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, MEM_WP, 10),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, MEM_WB, 11),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, OWN, 13),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, OTHER, 14),
+-	P4_MAKE_EVENT_ATTR(P4_IOQ_ACTIVE_ENTRIES, PREFETCH, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_DRV, 0),
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_OWN, 1),
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_OTHER, 2),
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DBSY_DRV, 3),
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DBSY_OWN, 4),
+-	P4_MAKE_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DBSY_OTHER, 5),
+-
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_TYPE0, 0),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_TYPE1, 1),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_LEN0, 2),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_LEN1, 3),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_IO_TYPE, 5),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_LOCK_TYPE, 6),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_CACHE_TYPE, 7),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_SPLIT_TYPE, 8),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_DEM_TYPE, 9),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, REQ_ORD_TYPE, 10),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, MEM_TYPE0, 11),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, MEM_TYPE1, 12),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ALLOCATION, MEM_TYPE2, 13),
+-
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_TYPE0, 0),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_TYPE1, 1),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_LEN0, 2),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_LEN1, 3),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_IO_TYPE, 5),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_LOCK_TYPE, 6),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_CACHE_TYPE, 7),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_SPLIT_TYPE, 8),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_DEM_TYPE, 9),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, REQ_ORD_TYPE, 10),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, MEM_TYPE0, 11),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, MEM_TYPE1, 12),
+-	P4_MAKE_EVENT_ATTR(P4_BSQ_ACTIVE_ENTRIES, MEM_TYPE2, 13),
+-
+-	P4_MAKE_EVENT_ATTR(P4_SSE_INPUT_ASSIST, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_PACKED_SP_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_PACKED_DP_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_SCALAR_SP_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_SCALAR_DP_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_64BIT_MMX_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_128BIT_MMX_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_X87_FP_UOP, ALL, 15),
+-
+-	P4_MAKE_EVENT_ATTR(P4_TC_MISC, FLUSH, 4),
+-
+-	P4_MAKE_EVENT_ATTR(P4_GLOBAL_POWER_EVENTS, RUNNING, 0),
+-
+-	P4_MAKE_EVENT_ATTR(P4_TC_MS_XFER, CISC, 0),
+-
+-	P4_MAKE_EVENT_ATTR(P4_UOP_QUEUE_WRITES, FROM_TC_BUILD, 0),
+-	P4_MAKE_EVENT_ATTR(P4_UOP_QUEUE_WRITES, FROM_TC_DELIVER, 1),
+-	P4_MAKE_EVENT_ATTR(P4_UOP_QUEUE_WRITES, FROM_ROM, 2),
+-
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_MISPRED_BRANCH_TYPE, CONDITIONAL, 1),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_MISPRED_BRANCH_TYPE, CALL, 2),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_MISPRED_BRANCH_TYPE, RETURN, 3),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_MISPRED_BRANCH_TYPE, INDIRECT, 4),
+-
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CONDITIONAL, 1),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CALL, 2),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, RETURN, 3),
+-	P4_MAKE_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, INDIRECT, 4),
+-
+-	P4_MAKE_EVENT_ATTR(P4_RESOURCE_STALL, SBFULL, 5),
+-
+-	P4_MAKE_EVENT_ATTR(P4_WC_BUFFER, WCB_EVICTS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_WC_BUFFER, WCB_FULL_EVICTS, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_FRONT_END_EVENT, NBOGUS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_FRONT_END_EVENT, BOGUS, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, NBOGUS0, 0),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, NBOGUS1, 1),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, NBOGUS2, 2),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, NBOGUS3, 3),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, BOGUS0, 4),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, BOGUS1, 5),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, BOGUS2, 6),
+-	P4_MAKE_EVENT_ATTR(P4_EXECUTION_EVENT, BOGUS3, 7),
+-
+-	P4_MAKE_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_REPLAY_EVENT, BOGUS, 1),
+-
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_RETIRED, NBOGUSNTAG, 0),
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_RETIRED, NBOGUSTAG, 1),
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_RETIRED, BOGUSNTAG, 2),
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_RETIRED, BOGUSTAG, 3),
+-
+-	P4_MAKE_EVENT_ATTR(P4_UOPS_RETIRED, NBOGUS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_UOPS_RETIRED, BOGUS, 1),
++enum P4_ESCR_EMASKS {
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, DD, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, DB, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, DI, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, BD, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, BB, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, BI, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_DELIVER_MODE, ID, 6),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_BPU_FETCH_REQUEST, TCMISS, 0),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_ITLB_REFERENCE, HIT, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_ITLB_REFERENCE, MISS, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_ITLB_REFERENCE, HIT_UK, 2),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_MEMORY_CANCEL, ST_RB_FULL, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MEMORY_CANCEL, 64K_CONF, 3),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_MEMORY_COMPLETE, LSC, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MEMORY_COMPLETE, SSC, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_LOAD_PORT_REPLAY, SPLIT_LD, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_STORE_PORT_REPLAY, SPLIT_ST, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_MOB_LOAD_REPLAY, NO_STA, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MOB_LOAD_REPLAY, NO_STD, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MOB_LOAD_REPLAY, PARTIAL_DATA, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MOB_LOAD_REPLAY, UNALGN_ADDR, 5),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_PAGE_WALK_TYPE, DTMISS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_PAGE_WALK_TYPE, ITMISS, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITE, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITM, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITS, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITE, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITM, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_MISS, 8),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_MISS, 9),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_CACHE_REFERENCE, WR_2ndL_MISS, 10),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, DEFAULT, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, ALL_READ, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, ALL_WRITE, 6),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, MEM_UC, 7),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, MEM_WC, 8),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, MEM_WT, 9),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, MEM_WP, 10),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, MEM_WB, 11),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, OWN, 13),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, OTHER, 14),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ALLOCATION, PREFETCH, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, DEFAULT, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, ALL_READ, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, ALL_WRITE, 6),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, MEM_UC, 7),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, MEM_WC, 8),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, MEM_WT, 9),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, MEM_WP, 10),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, MEM_WB, 11),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, OWN, 13),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, OTHER, 14),
++	P4_GEN_ESCR_EMASK(P4_EVENT_IOQ_ACTIVE_ENTRIES, PREFETCH, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DRDY_DRV, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DRDY_OWN, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DRDY_OTHER, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DBSY_DRV, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DBSY_OWN, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FSB_DATA_ACTIVITY, DBSY_OTHER, 5),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_TYPE0, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_TYPE1, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_LEN0, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_LEN1, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_IO_TYPE, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_LOCK_TYPE, 6),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_CACHE_TYPE, 7),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_SPLIT_TYPE, 8),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_DEM_TYPE, 9),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, REQ_ORD_TYPE, 10),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, MEM_TYPE0, 11),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, MEM_TYPE1, 12),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ALLOCATION, MEM_TYPE2, 13),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_TYPE0, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_TYPE1, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_LEN0, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_LEN1, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_IO_TYPE, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_LOCK_TYPE, 6),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_CACHE_TYPE, 7),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_SPLIT_TYPE, 8),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_DEM_TYPE, 9),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, REQ_ORD_TYPE, 10),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, MEM_TYPE0, 11),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, MEM_TYPE1, 12),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BSQ_ACTIVE_ENTRIES, MEM_TYPE2, 13),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_SSE_INPUT_ASSIST, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_PACKED_SP_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_PACKED_DP_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_SCALAR_SP_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_SCALAR_DP_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_64BIT_MMX_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_128BIT_MMX_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_FP_UOP, ALL, 15),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_MISC, FLUSH, 4),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING, 0),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_TC_MS_XFER, CISC, 0),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOP_QUEUE_WRITES, FROM_TC_BUILD, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOP_QUEUE_WRITES, FROM_TC_DELIVER, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOP_QUEUE_WRITES, FROM_ROM, 2),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE, CONDITIONAL, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE, CALL, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE, RETURN, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE, INDIRECT, 4),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_BRANCH_TYPE, CONDITIONAL, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_BRANCH_TYPE, CALL, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_BRANCH_TYPE, RETURN, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_RETIRED_BRANCH_TYPE, INDIRECT, 4),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_RESOURCE_STALL, SBFULL, 5),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_WC_BUFFER, WCB_EVICTS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_WC_BUFFER, WCB_FULL_EVICTS, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_FRONT_END_EVENT, NBOGUS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_FRONT_END_EVENT, BOGUS, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, NBOGUS0, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, NBOGUS1, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, NBOGUS2, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, NBOGUS3, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, BOGUS0, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, BOGUS1, 5),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, BOGUS2, 6),
++	P4_GEN_ESCR_EMASK(P4_EVENT_EXECUTION_EVENT, BOGUS3, 7),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_REPLAY_EVENT, NBOGUS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_REPLAY_EVENT, BOGUS, 1),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_RETIRED, NBOGUSNTAG, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_RETIRED, NBOGUSTAG, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_RETIRED, BOGUSNTAG, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_RETIRED, BOGUSTAG, 3),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOPS_RETIRED, NBOGUS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOPS_RETIRED, BOGUS, 1),
+ 
+-	P4_MAKE_EVENT_ATTR(P4_UOP_TYPE, TAGLOADS, 1),
+-	P4_MAKE_EVENT_ATTR(P4_UOP_TYPE, TAGSTORES, 2),
+-
+-	P4_MAKE_EVENT_ATTR(P4_BRANCH_RETIRED, MMNP, 0),
+-	P4_MAKE_EVENT_ATTR(P4_BRANCH_RETIRED, MMNM, 1),
+-	P4_MAKE_EVENT_ATTR(P4_BRANCH_RETIRED, MMTP, 2),
+-	P4_MAKE_EVENT_ATTR(P4_BRANCH_RETIRED, MMTM, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOP_TYPE, TAGLOADS, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_UOP_TYPE, TAGSTORES, 2),
++
++	P4_GEN_ESCR_EMASK(P4_EVENT_BRANCH_RETIRED, MMNP, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BRANCH_RETIRED, MMNM, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BRANCH_RETIRED, MMTP, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_BRANCH_RETIRED, MMTM, 3),
+ 
+-	P4_MAKE_EVENT_ATTR(P4_MISPRED_BRANCH_RETIRED, NBOGUS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MISPRED_BRANCH_RETIRED, NBOGUS, 0),
+ 
+-	P4_MAKE_EVENT_ATTR(P4_X87_ASSIST, FPSU, 0),
+-	P4_MAKE_EVENT_ATTR(P4_X87_ASSIST, FPSO, 1),
+-	P4_MAKE_EVENT_ATTR(P4_X87_ASSIST, POAO, 2),
+-	P4_MAKE_EVENT_ATTR(P4_X87_ASSIST, POAU, 3),
+-	P4_MAKE_EVENT_ATTR(P4_X87_ASSIST, PREA, 4),
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_ASSIST, FPSU, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_ASSIST, FPSO, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_ASSIST, POAO, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_ASSIST, POAU, 3),
++	P4_GEN_ESCR_EMASK(P4_EVENT_X87_ASSIST, PREA, 4),
+ 
+-	P4_MAKE_EVENT_ATTR(P4_MACHINE_CLEAR, CLEAR, 0),
+-	P4_MAKE_EVENT_ATTR(P4_MACHINE_CLEAR, MOCLEAR, 1),
+-	P4_MAKE_EVENT_ATTR(P4_MACHINE_CLEAR, SMCLEAR, 2),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MACHINE_CLEAR, CLEAR, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MACHINE_CLEAR, MOCLEAR, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_MACHINE_CLEAR, SMCLEAR, 2),
+ 
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_COMPLETED, NBOGUS, 0),
+-	P4_MAKE_EVENT_ATTR(P4_INSTR_COMPLETED, BOGUS, 1),
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_COMPLETED, NBOGUS, 0),
++	P4_GEN_ESCR_EMASK(P4_EVENT_INSTR_COMPLETED, BOGUS, 1),
+ };
+ 
+-enum {
+-	KEY_P4_L1D_OP_READ_RESULT_MISS = PERF_COUNT_HW_MAX,
+-	KEY_P4_LL_OP_READ_RESULT_MISS,
+-	KEY_P4_DTLB_OP_READ_RESULT_MISS,
+-	KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
+-	KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
+-	KEY_P4_ITLB_OP_READ_RESULT_MISS,
+-	KEY_P4_UOP_TYPE,
++/* P4 PEBS: stale for a while */
++#define P4_PEBS_METRIC_MASK	0x00001fffU
++#define P4_PEBS_UOB_TAG		0x01000000U
++#define P4_PEBS_ENABLE		0x02000000U
++
++/* Replay metrics for MSR_IA32_PEBS_ENABLE and MSR_P4_PEBS_MATRIX_VERT */
++#define P4_PEBS__1stl_cache_load_miss_retired	0x3000001
++#define P4_PEBS__2ndl_cache_load_miss_retired	0x3000002
++#define P4_PEBS__dtlb_load_miss_retired		0x3000004
++#define P4_PEBS__dtlb_store_miss_retired	0x3000004
++#define P4_PEBS__dtlb_all_miss_retired		0x3000004
++#define P4_PEBS__tagged_mispred_branch		0x3018000
++#define P4_PEBS__mob_load_replay_retired	0x3000200
++#define P4_PEBS__split_load_retired		0x3000400
++#define P4_PEBS__split_store_retired		0x3000400
++
++#define P4_VERT__1stl_cache_load_miss_retired	0x0000001
++#define P4_VERT__2ndl_cache_load_miss_retired	0x0000001
++#define P4_VERT__dtlb_load_miss_retired		0x0000001
++#define P4_VERT__dtlb_store_miss_retired	0x0000002
++#define P4_VERT__dtlb_all_miss_retired		0x0000003
++#define P4_VERT__tagged_mispred_branch		0x0000010
++#define P4_VERT__mob_load_replay_retired	0x0000001
++#define P4_VERT__split_load_retired		0x0000001
++#define P4_VERT__split_store_retired		0x0000002
++
++enum P4_CACHE_EVENTS {
++	P4_CACHE__NONE,
++
++	P4_CACHE__1stl_cache_load_miss_retired,
++	P4_CACHE__2ndl_cache_load_miss_retired,
++	P4_CACHE__dtlb_load_miss_retired,
++	P4_CACHE__dtlb_store_miss_retired,
++	P4_CACHE__itlb_reference_hit,
++	P4_CACHE__itlb_reference_miss,
++
++	P4_CACHE__MAX
+ };
+ 
+ #endif /* PERF_EVENT_P4_H */
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index b8a811a..f8fe069 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -11,35 +11,281 @@
+ 
+ #include <asm/perf_event_p4.h>
+ 
++#define P4_CNTR_LIMIT 3
+ /*
+  * array indices: 0,1 - HT threads, used with HT enabled cpu
+  */
+-struct p4_event_template {
+-	u32 opcode;			/* ESCR event + CCCR selector */
+-	u64 config;			/* packed predefined bits */
+-	int dep;			/* upstream dependency event index */
+-	int key;			/* index into p4_templates */
+-	u64 msr;			/*
+-					 * the high 32 bits set into MSR_IA32_PEBS_ENABLE and
+-					 * the low 32 bits set into MSR_P4_PEBS_MATRIX_VERT
+-					 * for cache events
+-					 */
+-	unsigned int emask;		/* ESCR EventMask */
+-	unsigned int escr_msr[2];	/* ESCR MSR for this event */
+-	unsigned int cntr[2];		/* counter index (offset) */
++struct p4_event_bind {
++	unsigned int opcode;			/* Event code and ESCR selector */
++	unsigned int escr_msr[2];		/* ESCR MSR for this event */
++	unsigned char cntr[2][P4_CNTR_LIMIT];	/* counter index (offset), -1 on abscence */
+ };
+ 
+-struct p4_pmu_res {
+-	/* maps hw_conf::idx into template for ESCR sake */
+-	struct p4_event_template *tpl[ARCH_P4_MAX_CCCR];
++struct p4_cache_event_bind {
++	unsigned int metric_pebs;
++	unsigned int metric_vert;
+ };
+ 
+-static DEFINE_PER_CPU(struct p4_pmu_res, p4_pmu_config);
++#define P4_GEN_CACHE_EVENT_BIND(name)		\
++	[P4_CACHE__##name] = {			\
++		.metric_pebs = P4_PEBS__##name,	\
++		.metric_vert = P4_VERT__##name,	\
++	}
++
++static struct p4_cache_event_bind p4_cache_event_bind_map[] = {
++	P4_GEN_CACHE_EVENT_BIND(1stl_cache_load_miss_retired),
++	P4_GEN_CACHE_EVENT_BIND(2ndl_cache_load_miss_retired),
++	P4_GEN_CACHE_EVENT_BIND(dtlb_load_miss_retired),
++	P4_GEN_CACHE_EVENT_BIND(dtlb_store_miss_retired),
++};
++
++/*
++ * Note that we don't use CCCR1 here, there is an
++ * exception for P4_BSQ_ALLOCATION but we just have
++ * no workaround
++ *
++ * consider this binding as resources which particular
++ * event may borrow, it doesn't contain EventMask,
++ * Tags and friends -- they are left to a caller
++ */
++static struct p4_event_bind p4_event_bind_map[] = {
++	[P4_EVENT_TC_DELIVER_MODE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_TC_DELIVER_MODE),
++		.escr_msr	= { MSR_P4_TC_ESCR0, MSR_P4_TC_ESCR1 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_BPU_FETCH_REQUEST] = {
++		.opcode		= P4_OPCODE(P4_EVENT_BPU_FETCH_REQUEST),
++		.escr_msr	= { MSR_P4_BPU_ESCR0, MSR_P4_BPU_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_ITLB_REFERENCE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_ITLB_REFERENCE),
++		.escr_msr	= { MSR_P4_ITLB_ESCR0, MSR_P4_ITLB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_MEMORY_CANCEL] = {
++		.opcode		= P4_OPCODE(P4_EVENT_MEMORY_CANCEL),
++		.escr_msr	= { MSR_P4_DAC_ESCR0, MSR_P4_DAC_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_MEMORY_COMPLETE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_MEMORY_COMPLETE),
++		.escr_msr	= { MSR_P4_SAAT_ESCR0 , MSR_P4_SAAT_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_LOAD_PORT_REPLAY] = {
++		.opcode		= P4_OPCODE(P4_EVENT_LOAD_PORT_REPLAY),
++		.escr_msr	= { MSR_P4_SAAT_ESCR0, MSR_P4_SAAT_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_STORE_PORT_REPLAY] = {
++		.opcode		= P4_OPCODE(P4_EVENT_STORE_PORT_REPLAY),
++		.escr_msr	= { MSR_P4_SAAT_ESCR0 ,  MSR_P4_SAAT_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_MOB_LOAD_REPLAY] = {
++		.opcode		= P4_OPCODE(P4_EVENT_MOB_LOAD_REPLAY),
++		.escr_msr	= { MSR_P4_MOB_ESCR0, MSR_P4_MOB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_PAGE_WALK_TYPE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_PAGE_WALK_TYPE),
++		.escr_msr	= { MSR_P4_PMH_ESCR0, MSR_P4_PMH_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_BSQ_CACHE_REFERENCE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_BSQ_CACHE_REFERENCE),
++		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_IOQ_ALLOCATION] = {
++		.opcode		= P4_OPCODE(P4_EVENT_IOQ_ALLOCATION),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_IOQ_ACTIVE_ENTRIES] = {	/* shared ESCR */
++		.opcode		= P4_OPCODE(P4_EVENT_IOQ_ACTIVE_ENTRIES),
++		.escr_msr	= { MSR_P4_FSB_ESCR1,  MSR_P4_FSB_ESCR1 },
++		.cntr		= { {2, -1, -1}, {3, -1, -1} },
++	},
++	[P4_EVENT_FSB_DATA_ACTIVITY] = {
++		.opcode		= P4_OPCODE(P4_EVENT_FSB_DATA_ACTIVITY),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_BSQ_ALLOCATION] = {		/* shared ESCR, broken CCCR1 */
++		.opcode		= P4_OPCODE(P4_EVENT_BSQ_ALLOCATION),
++		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR0 },
++		.cntr		= { {0, -1, -1}, {1, -1, -1} },
++	},
++	[P4_EVENT_BSQ_ACTIVE_ENTRIES] = {	/* shared ESCR */
++		.opcode		= P4_OPCODE(P4_EVENT_BSQ_ACTIVE_ENTRIES),
++		.escr_msr	= { MSR_P4_BSU_ESCR1 , MSR_P4_BSU_ESCR1 },
++		.cntr		= { {2, -1, -1}, {3, -1, -1} },
++	},
++	[P4_EVENT_SSE_INPUT_ASSIST] = {
++		.opcode		= P4_OPCODE(P4_EVENT_SSE_INPUT_ASSIST),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_PACKED_SP_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_PACKED_SP_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_PACKED_DP_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_PACKED_DP_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_SCALAR_SP_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_SCALAR_SP_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_SCALAR_DP_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_SCALAR_DP_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_64BIT_MMX_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_64BIT_MMX_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_128BIT_MMX_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_128BIT_MMX_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_X87_FP_UOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_X87_FP_UOP),
++		.escr_msr	= { MSR_P4_FIRM_ESCR0, MSR_P4_FIRM_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_TC_MISC] = {
++		.opcode		= P4_OPCODE(P4_EVENT_TC_MISC),
++		.escr_msr	= { MSR_P4_TC_ESCR0, MSR_P4_TC_ESCR1 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_GLOBAL_POWER_EVENTS] = {
++		.opcode		= P4_OPCODE(P4_EVENT_GLOBAL_POWER_EVENTS),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_TC_MS_XFER] = {
++		.opcode		= P4_OPCODE(P4_EVENT_TC_MS_XFER),
++		.escr_msr	= { MSR_P4_MS_ESCR0, MSR_P4_MS_ESCR1 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_UOP_QUEUE_WRITES] = {
++		.opcode		= P4_OPCODE(P4_EVENT_UOP_QUEUE_WRITES),
++		.escr_msr	= { MSR_P4_MS_ESCR0, MSR_P4_MS_ESCR1 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_RETIRED_MISPRED_BRANCH_TYPE),
++		.escr_msr	= { MSR_P4_TBPU_ESCR0 , MSR_P4_TBPU_ESCR0 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_RETIRED_BRANCH_TYPE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_RETIRED_BRANCH_TYPE),
++		.escr_msr	= { MSR_P4_TBPU_ESCR0 , MSR_P4_TBPU_ESCR1 },
++		.cntr		= { {4, 5, -1}, {6, 7, -1} },
++	},
++	[P4_EVENT_RESOURCE_STALL] = {
++		.opcode		= P4_OPCODE(P4_EVENT_RESOURCE_STALL),
++		.escr_msr	= { MSR_P4_ALF_ESCR0, MSR_P4_ALF_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_WC_BUFFER] = {
++		.opcode		= P4_OPCODE(P4_EVENT_WC_BUFFER),
++		.escr_msr	= { MSR_P4_DAC_ESCR0, MSR_P4_DAC_ESCR1 },
++		.cntr		= { {8, 9, -1}, {10, 11, -1} },
++	},
++	[P4_EVENT_B2B_CYCLES] = {
++		.opcode		= P4_OPCODE(P4_EVENT_B2B_CYCLES),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_BNR] = {
++		.opcode		= P4_OPCODE(P4_EVENT_BNR),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_SNOOP] = {
++		.opcode		= P4_OPCODE(P4_EVENT_SNOOP),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_RESPONSE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_RESPONSE),
++		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
++		.cntr		= { {0, -1, -1}, {2, -1, -1} },
++	},
++	[P4_EVENT_FRONT_END_EVENT] = {
++		.opcode		= P4_OPCODE(P4_EVENT_FRONT_END_EVENT),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_EXECUTION_EVENT] = {
++		.opcode		= P4_OPCODE(P4_EVENT_EXECUTION_EVENT),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_REPLAY_EVENT] = {
++		.opcode		= P4_OPCODE(P4_EVENT_REPLAY_EVENT),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_INSTR_RETIRED] = {
++		.opcode		= P4_OPCODE(P4_EVENT_INSTR_RETIRED),
++		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_UOPS_RETIRED] = {
++		.opcode		= P4_OPCODE(P4_EVENT_UOPS_RETIRED),
++		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_UOP_TYPE] = {
++		.opcode		= P4_OPCODE(P4_EVENT_UOP_TYPE),
++		.escr_msr	= { MSR_P4_RAT_ESCR0, MSR_P4_RAT_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_BRANCH_RETIRED] = {
++		.opcode		= P4_OPCODE(P4_EVENT_BRANCH_RETIRED),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_MISPRED_BRANCH_RETIRED] = {
++		.opcode		= P4_OPCODE(P4_EVENT_MISPRED_BRANCH_RETIRED),
++		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_X87_ASSIST] = {
++		.opcode		= P4_OPCODE(P4_EVENT_X87_ASSIST),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_MACHINE_CLEAR] = {
++		.opcode		= P4_OPCODE(P4_EVENT_MACHINE_CLEAR),
++		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR3 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++	[P4_EVENT_INSTR_COMPLETED] = {
++		.opcode		= P4_OPCODE(P4_EVENT_INSTR_COMPLETED),
++		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
++		.cntr		= { {12, 13, 16}, {14, 15, 17} },
++	},
++};
+ 
+-#define P4_CACHE_EVENT_CONFIG(event, bit) \
+-	p4_config_pack_escr(P4_EVENT_UNPACK_EVENT(event) << P4_EVNTSEL_EVENT_SHIFT) | \
+-	p4_config_pack_escr((event##_##bit) << P4_EVNTSEL_EVENTMASK_SHIFT) | \
+-	p4_config_pack_cccr(P4_EVENT_UNPACK_SELECTOR(event) << P4_CCCR_ESCR_SELECT_SHIFT)
++#define P4_GEN_CACHE_EVENT(event, bit, cache_event)			  \
++	p4_config_pack_escr(P4_ESCR_EVENT(event)			| \
++			    P4_ESCR_EMASK_BIT(event, bit))		| \
++	p4_config_pack_cccr(cache_event					| \
++			    P4_CCCR_ESEL(P4_OPCODE_ESEL(P4_OPCODE(event))))
+ 
+ static __initconst u64 p4_hw_cache_event_ids
+ 				[PERF_COUNT_HW_CACHE_MAX]
+@@ -49,42 +295,35 @@ static __initconst u64 p4_hw_cache_event_ids
+  [ C(L1D ) ] = {
+ 	[ C(OP_READ) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0,
+-					/* 1stL_cache_load_miss_retired */
+-		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
+-					| KEY_P4_L1D_OP_READ_RESULT_MISS,
++		[ C(RESULT_MISS)   ] = P4_GEN_CACHE_EVENT(P4_EVENT_REPLAY_EVENT, NBOGUS,
++						P4_CACHE__1stl_cache_load_miss_retired),
+ 	},
+  },
+  [ C(LL  ) ] = {
+ 	[ C(OP_READ) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0,
+-					/* 2ndL_cache_load_miss_retired */
+-		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
+-					| KEY_P4_LL_OP_READ_RESULT_MISS,
++		[ C(RESULT_MISS)   ] = P4_GEN_CACHE_EVENT(P4_EVENT_REPLAY_EVENT, NBOGUS,
++						P4_CACHE__2ndl_cache_load_miss_retired),
+ 	},
+- },
++},
+  [ C(DTLB) ] = {
+ 	[ C(OP_READ) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0,
+-					/* DTLB_load_miss_retired */
+-		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
+-					| KEY_P4_DTLB_OP_READ_RESULT_MISS,
++		[ C(RESULT_MISS)   ] = P4_GEN_CACHE_EVENT(P4_EVENT_REPLAY_EVENT, NBOGUS,
++						P4_CACHE__dtlb_load_miss_retired),
+ 	},
+ 	[ C(OP_WRITE) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0,
+-					/* DTLB_store_miss_retired */
+-		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_REPLAY_EVENT, NBOGUS)
+-					| KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
++		[ C(RESULT_MISS)   ] = P4_GEN_CACHE_EVENT(P4_EVENT_REPLAY_EVENT, NBOGUS,
++						P4_CACHE__dtlb_store_miss_retired),
+ 	},
+  },
+  [ C(ITLB) ] = {
+ 	[ C(OP_READ) ] = {
+-					/* ITLB_reference.HIT */
+-		[ C(RESULT_ACCESS) ] = P4_CACHE_EVENT_CONFIG(P4_ITLB_REFERENCE, HIT)
+-					| KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
+-
+-					/* ITLB_reference.MISS */
+-		[ C(RESULT_MISS)   ] = P4_CACHE_EVENT_CONFIG(P4_ITLB_REFERENCE, MISS)
+-					| KEY_P4_ITLB_OP_READ_RESULT_MISS,
++		[ C(RESULT_ACCESS) ] = P4_GEN_CACHE_EVENT(P4_EVENT_ITLB_REFERENCE, HIT,
++						P4_CACHE__itlb_reference_hit),
++		[ C(RESULT_MISS)   ] = P4_GEN_CACHE_EVENT(P4_EVENT_ITLB_REFERENCE, MISS,
++						P4_CACHE__itlb_reference_miss),
+ 	},
+ 	[ C(OP_WRITE) ] = {
+ 		[ C(RESULT_ACCESS) ] = -1,
+@@ -97,220 +336,90 @@ static __initconst u64 p4_hw_cache_event_ids
+  },
+ };
+ 
+-/*
+- * WARN: CCCR1 doesn't have a working enable bit so try to not
+- * use it if possible
+- *
+- * Also as only we start to support raw events we will need to
+- * append _all_ P4_EVENT_PACK'ed events here
+- */
+-struct p4_event_template p4_templates[] = {
+-	[0] = {
+-		.opcode	= P4_GLOBAL_POWER_EVENTS,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= 0,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_GLOBAL_POWER_EVENTS, RUNNING),
+-		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
+-		.cntr		= { 0, 2 },
+-	},
+-	[1] = {
+-		.opcode	= P4_INSTR_RETIRED,
+-		.config	= 0,
+-		.dep	= -1, /* needs front-end tagging */
+-		.key	= 1,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_INSTR_RETIRED, NBOGUSNTAG)	|
+-			P4_EVENT_ATTR(P4_INSTR_RETIRED, BOGUSNTAG),
+-		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
+-		.cntr		= { 12, 14 },
+-	},
+-	[2] = {
+-		.opcode	= P4_BSQ_CACHE_REFERENCE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= 2,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITS)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITE)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_HITM)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITS)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITE)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_HITM),
+-		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR1 },
+-		.cntr		= { 0, 2 },
+-	},
+-	[3] = {
+-		.opcode	= P4_BSQ_CACHE_REFERENCE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= 3,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_2ndL_MISS)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, RD_3rdL_MISS)	|
+-			P4_EVENT_ATTR(P4_BSQ_CACHE_REFERENCE, WR_2ndL_MISS),
+-		.escr_msr	= { MSR_P4_BSU_ESCR0, MSR_P4_BSU_ESCR1 },
+-		.cntr		= { 0, 3 },
+-	},
+-	[4] = {
+-		.opcode	= P4_RETIRED_BRANCH_TYPE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= 4,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CONDITIONAL)	|
+-			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, CALL)		|
+-			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, RETURN)		|
+-			P4_EVENT_ATTR(P4_RETIRED_BRANCH_TYPE, INDIRECT),
+-		.escr_msr	= { MSR_P4_TBPU_ESCR0, MSR_P4_TBPU_ESCR1 },
+-		.cntr		= { 4, 6 },
+-	},
+-	[5] = {
+-		.opcode	= P4_MISPRED_BRANCH_RETIRED,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= 5,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_MISPRED_BRANCH_RETIRED, NBOGUS),
+-		.escr_msr	= { MSR_P4_CRU_ESCR0, MSR_P4_CRU_ESCR1 },
+-		.cntr		= { 12, 14 },
+-	},
+-	[6] = {
+-		.opcode	= P4_FSB_DATA_ACTIVITY,
+-		.config	= p4_config_pack_cccr(P4_CCCR_EDGE | P4_CCCR_COMPARE),
+-		.dep	= -1,
+-		.key	= 6,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_DRV)	|
+-			P4_EVENT_ATTR(P4_FSB_DATA_ACTIVITY, DRDY_OWN),
+-		.escr_msr	= { MSR_P4_FSB_ESCR0, MSR_P4_FSB_ESCR1 },
+-		.cntr		= { 0, 2 },
+-	},
+-	[KEY_P4_L1D_OP_READ_RESULT_MISS] = {
+-		.opcode	= P4_REPLAY_EVENT,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= (u64)(1 << 0 | 1 << 24) << 32 | (1 << 0),
+-		.key	= KEY_P4_L1D_OP_READ_RESULT_MISS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
+-		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
+-		.cntr		= { 16, 17 },
+-	},
+-	[KEY_P4_LL_OP_READ_RESULT_MISS] = {
+-		.opcode	= P4_REPLAY_EVENT,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= (u64)(1 << 1 | 1 << 24) << 32 | (1 << 0),
+-		.key	= KEY_P4_LL_OP_READ_RESULT_MISS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
+-		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
+-		.cntr		= { 16, 17 },
+-	},
+-	[KEY_P4_DTLB_OP_READ_RESULT_MISS] = {
+-		.opcode	= P4_REPLAY_EVENT,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= (u64)(1 << 2 | 1 << 24) << 32 | (1 << 0),
+-		.key	= KEY_P4_DTLB_OP_READ_RESULT_MISS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
+-		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
+-		.cntr		= { 16, 17 },
+-	},
+-	[KEY_P4_DTLB_OP_WRITE_RESULT_MISS] = {
+-		.opcode	= P4_REPLAY_EVENT,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= (u64)(1 << 2 | 1 << 24) << 32 | (1 << 1),
+-		.key	= KEY_P4_DTLB_OP_WRITE_RESULT_MISS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_REPLAY_EVENT, NBOGUS),
+-		.escr_msr	= { MSR_P4_CRU_ESCR2, MSR_P4_CRU_ESCR2 },
+-		.cntr		= { 16, 17 },
+-	},
+-	[KEY_P4_ITLB_OP_READ_RESULT_ACCESS] = {
+-		.opcode	= P4_ITLB_REFERENCE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= 0,
+-		.key	= KEY_P4_ITLB_OP_READ_RESULT_ACCESS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_ITLB_REFERENCE, HIT),
+-		.escr_msr	= { MSR_P4_ITLB_ESCR0, MSR_P4_ITLB_ESCR1 },
+-		.cntr		= { 0, 2 },
+-	},
+-	[KEY_P4_ITLB_OP_READ_RESULT_MISS] = {
+-		.opcode	= P4_ITLB_REFERENCE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.msr	= 0,
+-		.key	= KEY_P4_ITLB_OP_READ_RESULT_MISS,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_ITLB_REFERENCE, MISS),
+-		.escr_msr	= { MSR_P4_ITLB_ESCR0, MSR_P4_ITLB_ESCR1 },
+-		.cntr		= { 0, 2 },
+-	},
+-	[KEY_P4_UOP_TYPE] = {
+-		.opcode	= P4_UOP_TYPE,
+-		.config	= 0,
+-		.dep	= -1,
+-		.key	= KEY_P4_UOP_TYPE,
+-		.emask	=
+-			P4_EVENT_ATTR(P4_UOP_TYPE, TAGLOADS)	|
+-			P4_EVENT_ATTR(P4_UOP_TYPE, TAGSTORES),
+-		.escr_msr	= { MSR_P4_RAT_ESCR0, MSR_P4_RAT_ESCR1 },
+-		.cntr		= { 16, 17 },
+-	},
++static u64 p4_general_events[PERF_COUNT_HW_MAX] = {
++  /* non-halted CPU clocks */
++  [PERF_COUNT_HW_CPU_CYCLES] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_GLOBAL_POWER_EVENTS)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_GLOBAL_POWER_EVENTS, RUNNING)),
++
++  /*
++   * retired instructions
++   * in a sake of simplicity we don't use the FSB tagging
++   */
++  [PERF_COUNT_HW_INSTRUCTIONS] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_INSTR_RETIRED)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_INSTR_RETIRED, NBOGUSNTAG)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_INSTR_RETIRED, BOGUSNTAG)),
++
++  /* cache hits */
++  [PERF_COUNT_HW_CACHE_REFERENCES] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_BSQ_CACHE_REFERENCE)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITS)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITE)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_HITM)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITS)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITE)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_HITM)),
++
++  /* cache misses */
++  [PERF_COUNT_HW_CACHE_MISSES] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_BSQ_CACHE_REFERENCE)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_2ndL_MISS)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, RD_3rdL_MISS)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_BSQ_CACHE_REFERENCE, WR_2ndL_MISS)),
++
++  /* branch instructions retired */
++  [PERF_COUNT_HW_BRANCH_INSTRUCTIONS] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_RETIRED_BRANCH_TYPE)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_RETIRED_BRANCH_TYPE, CONDITIONAL)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_RETIRED_BRANCH_TYPE, CALL)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_RETIRED_BRANCH_TYPE, RETURN)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_RETIRED_BRANCH_TYPE, INDIRECT)),
++
++  /* mispredicted branches retired */
++  [PERF_COUNT_HW_BRANCH_MISSES]	=
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_MISPRED_BRANCH_RETIRED)	|
++		P4_ESCR_EMASK_BIT(P4_EVENT_MISPRED_BRANCH_RETIRED, NBOGUS)),
++
++  /* bus ready clocks (cpu is driving #DRDY_DRV\#DRDY_OWN):  */
++  [PERF_COUNT_HW_BUS_CYCLES] =
++	p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_FSB_DATA_ACTIVITY)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_FSB_DATA_ACTIVITY, DRDY_DRV)		|
++		P4_ESCR_EMASK_BIT(P4_EVENT_FSB_DATA_ACTIVITY, DRDY_OWN))	|
++	p4_config_pack_cccr(P4_CCCR_EDGE | P4_CCCR_COMPARE),
+ };
+ 
++static struct p4_event_bind *p4_config_get_bind(u64 config)
++{
++	unsigned int evnt = p4_config_unpack_event(config);
++	struct p4_event_bind *bind = NULL;
++
++	if (evnt < ARRAY_SIZE(p4_event_bind_map))
++		bind = &p4_event_bind_map[evnt];
++
++	return bind;
++}
++
+ static u64 p4_pmu_event_map(int hw_event)
+ {
+-	struct p4_event_template *tpl;
++	struct p4_event_bind *bind;
++	unsigned int esel;
+ 	u64 config;
+ 
+-	if (hw_event > ARRAY_SIZE(p4_templates)) {
+-		printk_once(KERN_ERR "PMU: Incorrect event index\n");
++	if (hw_event > ARRAY_SIZE(p4_general_events)) {
++		printk_once(KERN_ERR "P4 PMU: Bad index: %i\n", hw_event);
+ 		return 0;
+ 	}
+-	tpl = &p4_templates[hw_event];
+ 
+-	/*
+-	 * fill config up according to
+-	 * a predefined event template
+-	 */
+-	config  = tpl->config;
+-	config |= p4_config_pack_escr(P4_EVENT_UNPACK_EVENT(tpl->opcode) << P4_EVNTSEL_EVENT_SHIFT);
+-	config |= p4_config_pack_escr(tpl->emask << P4_EVNTSEL_EVENTMASK_SHIFT);
+-	config |= p4_config_pack_cccr(P4_EVENT_UNPACK_SELECTOR(tpl->opcode) << P4_CCCR_ESCR_SELECT_SHIFT);
+-	config |= p4_config_pack_cccr(hw_event & P4_CCCR_RESERVED);
++	config = p4_general_events[hw_event];
++	bind = p4_config_get_bind(config);
++	esel = P4_OPCODE_ESEL(bind->opcode);
++	config |= p4_config_pack_cccr(P4_CCCR_ESEL(esel));
+ 
+ 	return config;
+ }
+ 
+ /*
+- * Note that we still have 5 events (from global events SDM list)
+- * intersected in opcode+emask bits so we will need another
+- * scheme there do distinguish templates.
+- */
+-static inline int p4_pmu_emask_match(unsigned int dst, unsigned int src)
+-{
+-	return dst & src;
+-}
+-
+-static struct p4_event_template *p4_pmu_template_lookup(u64 config)
+-{
+-	int key = p4_config_unpack_key(config);
+-
+-	if (key < ARRAY_SIZE(p4_templates))
+-		return &p4_templates[key];
+-	else
+-		return NULL;
+-}
+-
+-/*
+  * We don't control raw events so it's up to the caller
+  * to pass sane values (and we don't count the thread number
+  * on HT machine but allow HT-compatible specifics to be
+@@ -319,13 +428,14 @@ static struct p4_event_template *p4_pmu_template_lookup(u64 config)
+ static u64 p4_pmu_raw_event(u64 hw_event)
+ {
+ 	return hw_event &
+-		(p4_config_pack_escr(P4_EVNTSEL_MASK_HT) |
++		(p4_config_pack_escr(P4_ESCR_MASK_HT) |
+ 		 p4_config_pack_cccr(P4_CCCR_MASK_HT));
+ }
+ 
+ static int p4_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc)
+ {
+ 	int cpu = raw_smp_processor_id();
++	u32 escr, cccr;
+ 
+ 	/*
+ 	 * the reason we use cpu that early is that: if we get scheduled
+@@ -333,13 +443,10 @@ static int p4_hw_config(struct perf_event_attr *attr, struct hw_perf_event *hwc)
+ 	 * specific flags in config (and will save some cpu cycles)
+ 	 */
+ 
+-	/* CCCR by default */
+-	hwc->config = p4_config_pack_cccr(p4_default_cccr_conf(cpu));
++	cccr = p4_default_cccr_conf(cpu);
++	escr = p4_default_escr_conf(cpu, attr->exclude_kernel, attr->exclude_user);
++	hwc->config = p4_config_pack_escr(escr) | p4_config_pack_cccr(cccr);
+ 
+-	/* Count user and OS events unless not requested to */
+-	hwc->config |= p4_config_pack_escr(p4_default_escr_conf(cpu, attr->exclude_kernel,
+-								attr->exclude_user));
+-	/* on HT machine we need a special bit */
+ 	if (p4_ht_active() && p4_ht_thread(cpu))
+ 		hwc->config = p4_set_ht_bit(hwc->config);
+ 
+@@ -368,7 +475,7 @@ static inline void p4_pmu_disable_event(struct perf_event *event)
+ 	 */
+ 	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
+ 		(u64)(p4_config_unpack_cccr(hwc->config)) &
+-			~P4_CCCR_ENABLE & ~P4_CCCR_OVF);
++			~P4_CCCR_ENABLE & ~P4_CCCR_OVF & ~P4_CCCR_RESERVED);
+ }
+ 
+ static void p4_pmu_disable_all(void)
+@@ -389,27 +496,14 @@ static void p4_pmu_enable_event(struct perf_event *event)
+ 	struct hw_perf_event *hwc = &event->hw;
+ 	int thread = p4_ht_config_thread(hwc->config);
+ 	u64 escr_conf = p4_config_unpack_escr(p4_clear_ht_bit(hwc->config));
+-	u64 escr_base;
+-	struct p4_event_template *tpl;
+-	struct p4_pmu_res *c;
++	unsigned int idx = p4_config_unpack_event(hwc->config);
++	unsigned int idx_cache = p4_config_unpack_cache_event(hwc->config);
++	struct p4_event_bind *bind;
++	struct p4_cache_event_bind *bind_cache;
++	u64 escr_addr, cccr;
+ 
+-	/*
+-	 * some preparation work from per-cpu private fields
+-	 * since we need to find out which ESCR to use
+-	 */
+-	c = &__get_cpu_var(p4_pmu_config);
+-	tpl = c->tpl[hwc->idx];
+-	if (!tpl) {
+-		pr_crit("%s: Wrong index: %d\n", __func__, hwc->idx);
+-		return;
+-	}
+-
+-	if (tpl->msr) {
+-		(void)checking_wrmsrl(MSR_IA32_PEBS_ENABLE, tpl->msr >> 32);
+-		(void)checking_wrmsrl(MSR_P4_PEBS_MATRIX_VERT, tpl->msr & 0xffffffff);
+-	}
+-
+-	escr_base = (u64)tpl->escr_msr[thread];
++	bind = &p4_event_bind_map[idx];
++	escr_addr = (u64)bind->escr_msr[thread];
+ 
+ 	/*
+ 	 * - we dont support cascaded counters yet
+@@ -418,9 +512,27 @@ static void p4_pmu_enable_event(struct perf_event *event)
+ 	WARN_ON_ONCE(p4_is_event_cascaded(hwc->config));
+ 	WARN_ON_ONCE(hwc->idx == 1);
+ 
+-	(void)checking_wrmsrl(escr_base, escr_conf);
++	/* we need a real Event value */
++	escr_conf &= ~P4_ESCR_EVENT_MASK;
++	escr_conf |= P4_ESCR_EVENT(P4_OPCODE_EVNT(bind->opcode));
++
++	cccr = p4_config_unpack_cccr(hwc->config);
++
++	/*
++	 * it could be Cache event so that we need to
++	 * set metrics into additional MSRs
++	 */
++	BUILD_BUG_ON(P4_CACHE__MAX > P4_CCCR_CACHE_OPS_MASK);
++	if (idx_cache > P4_CACHE__NONE &&
++		idx_cache < ARRAY_SIZE(p4_cache_event_bind_map)) {
++		bind_cache = &p4_cache_event_bind_map[idx_cache];
++		(void)checking_wrmsrl(MSR_IA32_PEBS_ENABLE, (u64)bind_cache->metric_pebs);
++		(void)checking_wrmsrl(MSR_P4_PEBS_MATRIX_VERT, (u64)bind_cache->metric_vert);
++	}
++
++	(void)checking_wrmsrl(escr_addr, escr_conf);
+ 	(void)checking_wrmsrl(hwc->config_base + hwc->idx,
+-		(u64)(p4_config_unpack_cccr(hwc->config)) | P4_CCCR_ENABLE);
++				(cccr & ~P4_CCCR_RESERVED) | P4_CCCR_ENABLE);
+ }
+ 
+ static void p4_pmu_enable_all(void)
+@@ -516,13 +628,13 @@ static void p4_pmu_swap_config_ts(struct hw_perf_event *hwc, int cpu)
+ 	if (p4_ht_thread(cpu)) {
+ 		cccr &= ~P4_CCCR_OVF_PMI_T0;
+ 		cccr |= P4_CCCR_OVF_PMI_T1;
+-		if (escr & P4_EVNTSEL_T0_OS) {
+-			escr &= ~P4_EVNTSEL_T0_OS;
+-			escr |= P4_EVNTSEL_T1_OS;
++		if (escr & P4_ESCR_T0_OS) {
++			escr &= ~P4_ESCR_T0_OS;
++			escr |= P4_ESCR_T1_OS;
+ 		}
+-		if (escr & P4_EVNTSEL_T0_USR) {
+-			escr &= ~P4_EVNTSEL_T0_USR;
+-			escr |= P4_EVNTSEL_T1_USR;
++		if (escr & P4_ESCR_T0_USR) {
++			escr &= ~P4_ESCR_T0_USR;
++			escr |= P4_ESCR_T1_USR;
+ 		}
+ 		hwc->config  = p4_config_pack_escr(escr);
+ 		hwc->config |= p4_config_pack_cccr(cccr);
+@@ -530,13 +642,13 @@ static void p4_pmu_swap_config_ts(struct hw_perf_event *hwc, int cpu)
+ 	} else {
+ 		cccr &= ~P4_CCCR_OVF_PMI_T1;
+ 		cccr |= P4_CCCR_OVF_PMI_T0;
+-		if (escr & P4_EVNTSEL_T1_OS) {
+-			escr &= ~P4_EVNTSEL_T1_OS;
+-			escr |= P4_EVNTSEL_T0_OS;
++		if (escr & P4_ESCR_T1_OS) {
++			escr &= ~P4_ESCR_T1_OS;
++			escr |= P4_ESCR_T0_OS;
+ 		}
+-		if (escr & P4_EVNTSEL_T1_USR) {
+-			escr &= ~P4_EVNTSEL_T1_USR;
+-			escr |= P4_EVNTSEL_T0_USR;
++		if (escr & P4_ESCR_T1_USR) {
++			escr &= ~P4_ESCR_T1_USR;
++			escr |= P4_ESCR_T0_USR;
+ 		}
+ 		hwc->config  = p4_config_pack_escr(escr);
+ 		hwc->config |= p4_config_pack_cccr(cccr);
+@@ -606,66 +718,56 @@ static int p4_get_escr_idx(unsigned int addr)
+ 	return -1;
+ }
+ 
++static int p4_next_cntr(int thread, unsigned long *used_mask,
++			struct p4_event_bind *bind)
++{
++	int i = 0, j;
++
++	for (i = 0; i < P4_CNTR_LIMIT; i++) {
++		j = bind->cntr[thread][i++];
++		if (j == -1 || !test_bit(j, used_mask))
++			return j;
++	}
++
++	return -1;
++}
++
+ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+ 	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
+-
+-	struct hw_perf_event *hwc;
+-	struct p4_event_template *tpl;
+-	struct p4_pmu_res *c;
+ 	int cpu = raw_smp_processor_id();
+-	int escr_idx, thread, i, num;
++	struct hw_perf_event *hwc;
++	struct p4_event_bind *bind;
++	unsigned int i, thread, num;
++	int cntr_idx, escr_idx;
+ 
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+ 	bitmap_zero(escr_mask, ARCH_P4_TOTAL_ESCR);
+ 
+-	c = &__get_cpu_var(p4_pmu_config);
+-	/*
+-	 * Firstly find out which resource events are going
+-	 * to use, if ESCR+CCCR tuple is already borrowed
+-	 * then get out of here
+-	 */
+ 	for (i = 0, num = n; i < n; i++, num--) {
++
+ 		hwc = &cpuc->event_list[i]->hw;
+-		tpl = p4_pmu_template_lookup(hwc->config);
+-		if (!tpl)
+-			goto done;
+ 		thread = p4_ht_thread(cpu);
+-		escr_idx = p4_get_escr_idx(tpl->escr_msr[thread]);
+-		if (escr_idx == -1)
+-			goto done;
++		bind = p4_config_get_bind(hwc->config);
++		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
+ 
+-		/* already allocated and remains on the same cpu */
+ 		if (hwc->idx != -1 && !p4_should_swap_ts(hwc->config, cpu)) {
++			cntr_idx = hwc->idx;
+ 			if (assign)
+ 				assign[i] = hwc->idx;
+-			/* upstream dependent event */
+-			if (unlikely(tpl->dep != -1))
+-				printk_once(KERN_WARNING "PMU: Dep events are "
+-					"not implemented yet\n");
+ 			goto reserve;
+ 		}
+ 
+-		/* it may be already borrowed */
+-		if (test_bit(tpl->cntr[thread], used_mask) ||
+-			test_bit(escr_idx, escr_mask))
++		cntr_idx = p4_next_cntr(thread, used_mask, bind);
++		if (cntr_idx == -1 || test_bit(escr_idx, escr_mask))
+ 			goto done;
+ 
+-		/*
+-		 * ESCR+CCCR+COUNTERs are available to use lets swap
+-		 * thread specific bits, push assigned bits
+-		 * back and save template into per-cpu
+-		 * area (which will allow us to find out the ESCR
+-		 * to be used at moment of "enable event via real MSR")
+-		 */
+ 		p4_pmu_swap_config_ts(hwc, cpu);
+-		if (assign) {
+-			assign[i] = tpl->cntr[thread];
+-			c->tpl[assign[i]] = tpl;
+-		}
++		if (assign)
++			assign[i] = cntr_idx;
+ reserve:
+-		set_bit(tpl->cntr[thread], used_mask);
++		set_bit(cntr_idx, used_mask);
+ 		set_bit(escr_idx, escr_mask);
+ 	}
+ 
+@@ -684,7 +786,7 @@ static __initconst struct x86_pmu p4_pmu = {
+ 	.perfctr		= MSR_P4_BPU_PERFCTR0,
+ 	.event_map		= p4_pmu_event_map,
+ 	.raw_event		= p4_pmu_raw_event,
+-	.max_events		= ARRAY_SIZE(p4_templates),
++	.max_events		= ARRAY_SIZE(p4_general_events),
+ 	.get_event_constraints	= x86_get_event_constraints,
+ 	/*
+ 	 * IF HT disabled we may need to use all
+@@ -716,7 +818,7 @@ static __init int p4_pmu_init(void)
+ 	}
+ 
+ 	memcpy(hw_cache_event_ids, p4_hw_cache_event_ids,
+-	       sizeof(hw_cache_event_ids));
++		sizeof(hw_cache_event_ids));
+ 
+ 	pr_cont("Netburst events, ");
+ 
