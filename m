@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799Ab0CZRMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:12:33 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:39835 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab0CZRMc (ORCPT
+	id S1752287Ab0CZRQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:16:28 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:34777 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751531Ab0CZRQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:12:32 -0400
-Subject: Re: [PATCH] rfkill: core: add custom rfkill switch
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Pavan Savoy <pavan_savoy@yahoo.co.in>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <911285.11966.qm@web94910.mail.in2.yahoo.com>
-References: <911285.11966.qm@web94910.mail.in2.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Mar 2010 10:12:38 -0700
-Message-ID: <1269623558.4342.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.29.91 
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Mar 2010 13:16:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:organization
+         :user-agent:x-os;
+        b=qPSrnVFuw/qW8hplgzAGMEk+dC3TYceN5EKsjiw5QhQ+6zNKqGlGopq0LzNeu8xInJ
+         YMEIH8cSLXnk+tGYVocc530L/9xfzEkKsHJQtKrWvYks2bMMUv7znIeQPpCE2buTbrkI
+         1suWH8gz4vChpZBUvjWjEiVzqeHFk37LHtRNU=
+Date: Fri, 26 Mar 2010 22:46:18 +0530
+From: Ajit Khaparde <ajitkhaparde@gmail.com>
+To: wzt.wzt@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-drivers@serverengines.com, sathyap@serverengines.com
+Subject: Re: [PATCH] benet: Fix compile warnnings in
+ drivers/net/benet/be_ethtool.c
+Message-ID: <20100326171616.GA20879@serverengines.com>
+Reply-To: Ajit Khaparde <ajitk@serverengines.com>
+References: <20100326061259.GB30341@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326061259.GB30341@localhost.localdomain>
+X-URL: http://www.serverengines.com
+Organization: ServerEngines Corp
+User-Agent: "Ajit's Mutt"
+X-OS: Linux x86_64
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-26 at 21:43 +0530, Pavan Savoy wrote:
-
-> Well, Almost, I don't want to signal the user-space about the counter.
-> Have a look @ http://lkml.org/lkml/2010/3/24/303
+On 26/03/10 14:12 +0800, wzt.wzt@gmail.com wrote:
+> Fix the following warnings:
 > 
-> See the kernel space (bluetooth driver) would register itself, to my line discipline driver, when someone does a 'hciconfig hci0 up' which is essentially BT-On.
+> be_ethtool.c:493: warning: integer constant is too large for 'long' type
+> be_ethtool.c:493: warning: integer constant is too large for 'long' type
 > 
-> So, now from my ldisc driver (which intends to mux BT/FM and GPS over UART), I need to signal a user-space daemon to open the TTY device, set the baud rate and install the ldisc - So I can make use of it.
-> 
-> To notify that user-space daemon, I had planned to use /dev/rfkill.
-> However, now with BT application also toggling the rfkill switch by writing to sysfs entry - is causing a bit of confusion to my user-space daemon.
-> 
-> Although I now use hard/soft members of struct rfkill_event now to differentiate the 2 events (1 auto generated, another from BT app) - This patch would make it a bit more proper.
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-No. The proper way would be to either have your driver manage the UART
-instead of userspace, or have your driver have its own userspace
-interface. rfkill has nothing to do with it.
+I would suggest using be2net instead of benet during the commit. 
+be2net: Fix compile warnnings in drivers/net/benet/be_ethtool.c
 
-johannes
-
+Acked-by: Ajit Khaparde <ajitk@serverengines.com>
