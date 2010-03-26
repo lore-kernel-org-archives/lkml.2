@@ -1,82 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0CZXvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 19:51:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35576 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab0CZXvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 19:51:05 -0400
-Message-ID: <4BAD47F6.3000003@kernel.org>
-Date: Fri, 26 Mar 2010 16:49:10 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1754217Ab0CZXxy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 19:53:54 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:51398 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab0CZXxx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 19:53:53 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Ian Campbell <ian.campbell@citrix.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 03/24] x86: Do not free zero sized per cpu areas
-References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-4-git-send-email-yinghai@kernel.org> <20100326234203.GD29222@cmpxchg.org>
-In-Reply-To: <20100326234203.GD29222@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201003172118.41559.temerkhanov@cifronik.ru>
+References: <201003172118.41559.temerkhanov@cifronik.ru>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 26 Mar 2010 17:53:32 -0600
+X-Google-Sender-Auth: 869c554daf3e1ff3
+Message-ID: <fa686aa41003261653j5a9be6e8gbe8f12e19a563cd6@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] Xilinx MPMC SDMA subsystem
+To: Sergey Temerkhanov <temerkhanov@cifronik.ru>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       microblaze-uclinux@itee.uq.edu.au,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2010 04:42 PM, Johannes Weiner wrote:
-> On Fri, Mar 26, 2010 at 03:21:33PM -0700, Yinghai Lu wrote:
->> From: Ian Campbell <ian.campbell@citrix.com>
->>
->> This avoids an infinite loop in free_early_partial().
->>
->> Add a warning to free_early_partial to catch future problems.
->>
->> -v5: put back start > end back into WARN_ONCE()
->> -v6: use one line for warning according to linus
->> -v7: more test by
->>
->> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Tested-by: Joel Becker <joel.becker@oracle.com>
->> Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Ingo Molnar <mingo@elte.hu>
->> ---
->>  kernel/early_res.c |    6 ++++++
->>  1 files changed, 6 insertions(+), 0 deletions(-)
->>
->> diff --git a/kernel/early_res.c b/kernel/early_res.c
->> index 3cb2c66..69bed5b 100644
->> --- a/kernel/early_res.c
->> +++ b/kernel/early_res.c
->> @@ -333,6 +333,12 @@ void __init free_early_partial(u64 start, u64 end)
->>  	struct early_res *r;
->>  	int i;
->>  
->> +	if (start == end)
->> +		return;
->> +
->> +	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
->> +		return;
-> 
-> I think you can drop the function name, it will be in the stack dump
-> anyway.  And that would get the line back into bounds :)
-> 
-> Other than that,
-> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+I've not got time to review this patch right now, but Sergey and
+Steven, you both posted MPMC drivers on the same day; Steven on the
+microblaze list and Sergey on the powerpc list.  Can you two please
+coordinate and figure out how to mork toward a single driver that will
+meet both your needs?  I don't want to have 2 drivers (3 if you count
+the ll_temac driver) in mainline for the same hardware interface.
 
-Thanks.
+Thanks,
+g.
 
-is there any chance that dump stack only print out address instead of function name ?
+On Wed, Mar 17, 2010 at 12:18 PM, Sergey Temerkhanov
+<temerkhanov@cifronik.ru> wrote:
+> This patch adds generic support for Xilinx MPMC SoftDMA channels which are
+> used by, e.g., LLTEMAC and other IP cores (including custom cores). So, the
+> implemented functions include only SDMA channels enumeration and control
+> (finding device by phandle property, channel reset, initialization of RX/TX
+> links, enabling/disabling IRQs, šIRQ coalescing control and submission of
+> descriptors (struct sdma_desc).
+>
+> The users of this subsystem are supposed to get the pointer to the struct
+> sdma_device by phandle (using sdma_find_device() function), fill the struct
+> sdma_client with pointers to the callback functions which are called on rx/tx
+> completion, on error, and when sdma_reset is called by any client and then
+> register the client with add_client() (sdma_del_client can be used to
+> unregister the struct sdma_client)
+>
+> Also, some auxiliary functions are provided to check the status of descriptors
+> (busy, done, start of packet, end of packet).
+>
+> The user is also responsible for maintenance of linked descriptors queue,
+> proper initialization of their fields, and submission of the descriptors list
+> to SDMA channel. IRQ acknowledge must be performed by user too (calling
+> sdma_[rx|tx]_irq_ack respectively in [rx|tx]_complete callbacks). Also on RX
+> side user must check the __be32 user[4] fields of descriptors to get the
+> information supplied by SDMA channel.
+>
+> This code uses SDMA channels in "Tail pointer fashion", i.e. the call to
+> sdma_[rx|tx]_init is performed only once after reset and then only sdma_[rx|
+> tx]_submit calls are used to update the pointer to the last descriptor in SDMA
+> channel.
+>
+> Simple bus driver for MPMC is also added by this patch.
+>
+> This code is in production use with our internal LLTEMAC driver implementation
+> since 2008 and with a few custom cores drivers since 2009.
+>
+> This code currently supports only soft MPMCs, i.e., only SDMA channels with
+> memory-mapped registers. In order to support channels with DCR, a few
+> modifications are needed.
+>
+> Any comments and suggestions are appreciated.
+>
+> Regards, Sergey Temerkhanov, Cifronic ZAO
+>
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+>
 
-BTW, kernel/early_res.c will be replaced by lmb.c
 
-Yinghai
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
