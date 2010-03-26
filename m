@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab0CZTJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 15:09:15 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:50381 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751246Ab0CZTJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 15:09:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m/az4z94W/9jKgJfrPPRK4BzG9EILL4M9yLNU2SmAgB3O8ECnmStM+oea3GAJxmZrA
-         DueYMZQF4c1FsLUUowVFK5F9/2yy5aJTzKjteYcK0iHeDik25RaqdAje8mXEP0yBRfOC
-         EZEMPF5zBHoQtvezQ4Xxnot+bmHfNo+sQduM0=
-Date: Fri, 26 Mar 2010 20:09:10 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizf@cn.fujitsu.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
-	independently
-Message-ID: <20100326190907.GJ5188@nowhere>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz> <20100323010419.GA8292@nowhere> <20100326002029.GH3145@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100326002029.GH3145@quack.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753742Ab0CZTKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:10:46 -0400
+Received: from mail.gmx.net ([213.165.64.20]:48924 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753229Ab0CZTKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 15:10:45 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+showiblis/mIt30hF51PehG75fEvrY50g5ED1gQ
+	NEEcbSrfn4bb/W
+Subject: Re: [BUG] perf: hard lockup when using perf-sched
+From: Mike Galbraith <efault@gmx.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+In-Reply-To: <20100326172350.GC5188@nowhere>
+References: <4BA082EC.8030101@cn.fujitsu.com>
+	 <4BA9A885.9050105@cn.fujitsu.com>
+	 <1269415964.6530.25.camel@marge.simson.net>
+	 <1269418671.6465.6.camel@marge.simson.net>
+	 <4BAB1924.4060304@cn.fujitsu.com>
+	 <1269509241.8438.30.camel@marge.simson.net>
+	 <1269598293.6174.8.camel@marge.simson.net>  <20100326172350.GC5188@nowhere>
+Content-Type: text/plain
+Date: Fri, 26 Mar 2010 20:10:40 +0100
+Message-Id: <1269630640.6331.18.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+X-FuHaFi: 0.63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 01:20:29AM +0100, Jan Kara wrote:
-> On Tue 23-03-10 02:04:21, Frederic Weisbecker wrote:
-> > On Tue, Mar 23, 2010 at 01:32:02AM +0100, Jan Kara wrote:
-> > > 
-> > >   Hi,
-> > > 
-> > >   currently, when one tracer is selected, most of tracepoints for other
-> > > tracers also gets pulled into the kernel. So for example it's not possible
-> > > to enable BLK_DEV_IO_TRACE without polluting slab allocation paths with
-> > > tracepoint checks (see changelog of patch 01). This patch set adds a
-> > > possibility for each set of trace points to be compile-enabled separately.
-> > >   The first patch contains the necessary magic in linux/tracepoint.h. Other
-> > > patches just tell tracing framework about correspoding config options
-> > > and possibly introduce them if they did not exist before.
-> > >   The patches in this patch set are actually completely independent so 
-> > > they can be merged via respective subsystem trees. But changes are rather
-> > > tiny so I don't expect much conflicts...
-> > > 
-> > > 								Honza
+On Fri, 2010-03-26 at 18:23 +0100, Frederic Weisbecker wrote:
+> On Fri, Mar 26, 2010 at 11:11:33AM +0100, Mike Galbraith wrote:
+
+> > perf: fix perf sched record forkbomb deadlock
 > > 
-> > (Adding more people in Cc)
-> > 
-> > I don't know. Yeah this first looks like a good idea but once
-> > CONFIG_EVENT_TRACING is enabled, each tracepoint is a lightweight
-> > thing and induce a tiny overhead, probably hard to notice, and
-> > this is going to be even more the case after the jmp label
-> > optimization patches.
->   Sorry for replying late, I was on vacation. My motivation was that we
-> wanted BLK_DEV_IO_TRACE enabled in all our distro kernels but there is
-> a concern that this could have some impact on performance especially
-> in SLAB allocator due to more icache pressure or so. This is not completely
-> bogus concern if you look at bloat-o-meter output. For example:
-> function                                     old     new   delta
-> kmem_cache_alloc                             542     768    +226
+> > perf sched record can deadlock a box should the holder of handle->data->lock
+> > take an interrupt, and then attempt to acquire an rq lock held by a CPU trying
+> > to acquire the same lock.  Disable interrupts.
 > 
->   But looking at the disassembly now, I can see that the difference in
-> inline code is actually only ~40 bytes (on x86_64) - so that's about 7%.
-> Not a huge deal but still noticeable. 
 > 
-> > I liked the fact we had a general tracing kernel once the above
-> > config is selected. And we don't bother telling people that to
-> > use tool X you need CONFIG_EVENT_Y, and you need to rebuild your
-> > kernel, etc...
->   OK, I understand this. I guess I should go and measure whether disabling
-> tracepoints really makes some performance difference or not.
+> 
+> Aah.
+> 
+> So the scenario is the following inversion?
+> 
+> 	CPU0				CPU1
+> sched event with rq->lock held
+> 				grab handle->data->lock
+> spin on handle->data->lock
+> 				interrupt
+> 				try to grab rq->lock
 
+Yeah, handle->data->lock holder dare not try to grab any rq lock because
+of sched event with rq->lock held.
 
-
-If you do so, please try with with the jmp label patches:
-http://lwn.net/Articles/379776/
+	-Mike
 
