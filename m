@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753813Ab0CZQPQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 12:15:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6625 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab0CZQPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 12:15:14 -0400
-Date: Fri, 26 Mar 2010 17:12:18 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Americo Wang <xiyou.wangcong@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Roland McGrath <roland@redhat.com>,
-       Spencer Candland <spencer@bluehost.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC,PATCH 1/2] cputimers/proc: do_task_stat()->task_times()
-	can race with getrusage()
-Message-ID: <20100326161218.GA3169@dhcp-lab-161.englab.brq.redhat.com>
-References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326073723.GA2596@dhcp-lab-161.englab.brq.redhat.com>
+	id S1753436Ab0CZQZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 12:25:36 -0400
+Received: from isilmar.linta.de ([213.133.102.198]:57862 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752418Ab0CZQZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 12:25:35 -0400
+Date: Fri, 26 Mar 2010 17:25:27 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org, akpm@osdl.org
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA bugfixes for 2.6.34-rc3
+Message-ID: <20100326162527.GA5192@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100326073723.GA2596@dhcp-lab-161.englab.brq.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 08:37:23AM +0100, Stanislaw Gruszka wrote:
-> On Fri, Mar 26, 2010 at 09:23:44AM +0530, Balbir Singh wrote:
-> > * Oleg Nesterov <oleg@redhat.com> [2010-03-24 21:45:50]:
-> > 
-> > > do_task_stat()->task_times() can race with getrusage(), they both can
-> > > try to update task->prev_Xtime at the same time.
-> > > 
-> > > Remove this bit of d180c5bc "sched: Introduce task_times() to replace
-> > > task_{u,s}time()".
-> > 
-> > One of the reasons for adding this accuracy was to avoid sampling
-> > based noise and errors that occur with utime and stime.
-> > 
-> > As long as there is no preemption during the assignment, I think we
-> > should be OK. 
-> > 
-> > I see two options
-> > 
-> > 1. Disable preemption around assignment
-> That one sounds very good.
-No. Preemption will not help here.
+Linus,
 
-Stanislaw
+some PCMCIA bugfixes for 2.6.34-rc3 are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+
+Please pull from that location. The diffstat and list of changes follows.
+The PM-related change is ACKed by Rafael and needed for the PCMCIA bugfix.
+
+Thanks,
+	Dominik
+
+----
+
+Dominik Brodowski (4):
+      pcmcia: do not use ioports < 0x100 on x86
+      pcmcia: allow for four multifunction subdevices (again)
+      power: support _noirq actions on device types and classes
+      pcmcia: use dev_pm_ops for class pcmcia_socket_class
+
+Komuro (1):
+      pd6729: Coding Style fixes
+
+ drivers/base/power/main.c       |   31 ++++++++++
+ drivers/pcmcia/at91_cf.c        |    2 -
+ drivers/pcmcia/au1000_generic.c |   13 ----
+ drivers/pcmcia/bfin_cf_pcmcia.c |   12 ----
+ drivers/pcmcia/cs.c             |  124 ++++++++++++++++++++-------------------
+ drivers/pcmcia/db1xxx_ss.c      |   27 ---------
+ drivers/pcmcia/ds.c             |    8 ++-
+ drivers/pcmcia/i82092.c         |   16 -----
+ drivers/pcmcia/i82365.c         |   11 ----
+ drivers/pcmcia/m32r_cfc.c       |   11 ----
+ drivers/pcmcia/m32r_pcc.c       |   12 ----
+ drivers/pcmcia/m8xx_pcmcia.c    |   17 -----
+ drivers/pcmcia/omap_cf.c        |   12 ----
+ drivers/pcmcia/pd6729.c         |   80 ++++++++++++-------------
+ drivers/pcmcia/pxa2xx_base.c    |    8 +--
+ drivers/pcmcia/rsrc_nonstatic.c |    7 ++
+ drivers/pcmcia/sa1100_generic.c |   13 ----
+ drivers/pcmcia/sa1111_generic.c |   12 ----
+ drivers/pcmcia/tcic.c           |   12 ----
+ drivers/pcmcia/vrc4171_card.c   |   13 ----
+ drivers/pcmcia/yenta_socket.c   |   17 +-----
+ include/pcmcia/ss.h             |    6 --
+ 22 files changed, 149 insertions(+), 315 deletions(-)
