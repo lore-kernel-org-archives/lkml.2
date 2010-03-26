@@ -1,121 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0CZXWK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 19:22:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37530 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab0CZXWI convert rfc822-to-8bit (ORCPT
+	id S1753083Ab0CZX1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 19:27:19 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:36536 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab0CZX1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 19:22:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=o714SYr+hCSC4O1SCb5WsUwXRJsPSG05ofA0Nm9pMI7a/+Iu4ud8WF8EQbso9jhd0
-	wsaL4YAWeW1C36M2X3eGg==
+	Fri, 26 Mar 2010 19:27:18 -0400
+X-Greylist: delayed 364 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 19:27:17 EDT
+Date: Fri, 26 Mar 2010 18:21:04 -0500
+From: David Fries <david@fries.net>
+To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: 2.6.34-rc2 breaks via82cxxx Host Protected Area
+Message-ID: <20100326232104.GA10769@spacedout.fries.net>
 MIME-Version: 1.0
-In-Reply-To: <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
-References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com> 
-	<4BAC0E7D.9080305@cn.fujitsu.com> <20100326152012.GB18128@redhat.com> 
-	<1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
-From: Divyesh Shah <dpshah@google.com>
-Date: Fri, 26 Mar 2010 16:21:41 -0700
-Message-ID: <af41c7c41003261621qe95f634rc795045e29048295@mail.gmail.com>
-Subject: Re: [PATCH 0/4] io-controller: Use names rather than major:minor
-To: Chad Talbott <ctalbott@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       jens.axboe@oracle.com, mrubin@google.com,
-       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-       Nauman Rafique <nauman@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-3.0 (SpacedOut.fries.net [127.0.0.1]); Fri, 26 Mar 2010 18:21:05 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 3:54 PM, Chad Talbott <ctalbott@google.com> wrote:
-> On Fri, Mar 26, 2010 at 8:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> On Fri, Mar 26, 2010 at 09:31:41AM +0800, Gui Jianfeng wrote:
->>> +int blk_lookup_devname(dev_t devt, char *name)
->>> +{
->
-> [ snip... loop through all block devices for devt ...snip ]
->
->>> So we can keep dev_t in blkio layer, and export to user a device name by calling
->>> this function. Also, we retrive device number by calling blk_lookup_devt().
->>> This change might keep things much simple. Jens, do you have any thoughts?
->>>
->> I agree with Gui that lets keep the dev_t the core in blkio layer. Keeping
->> a pointer to gendisk in request queue is becoming little messy.
->
-> Agreed on leaving gendisk pointer out of request_queue.  In doing
-> further investigation, I've found that it's up to the driver to
-> maintain the association between gendisk and request_queue, and some
-> drivers put multiple gendisk behind a single request_queue, so the
-> back pointer would be ill-specified.
->
->> But if that does not work for you, then I would also like to keep things
->> simple and translate dev_t to diskname during read routine. Similiarly,
->> while somebody is putting policy, use blk_lookup_devt().
->
-> I like the simplicity of blk_lookup_devt(), but I don't like the idea
-> of iterating through all block devices on every lookup of the name.
-> Perhaps we could cache the name somewhere?
->
-> Actually, the name is the name of the *queue* (or the key in
-> blk-cgroup), because as I mentioned above there can be a many to one
-> relationship between disks and queues in general.
->
-> The more I think about it, the more it seems to make sense to extend
-> blkio_policy_ops to include a function to get the name of the key.
-> blk-cgroup makes no current use of the dev, except to invent a name
-> for the request_queue whose policy is being set or printed.  It could
-> be argued that the thing being scheduled has a better idea of the name
-> of that thing.
->
->> But this will lead to issue of how do you now display both device number
->> and disk name in the output. May be following.
->>
->> major:minor  diskname  data
->>
->> I am not sure if people are fond of multiple values in a single file. At
->> the same time for setting the rules or deleting the rules, it will make
->> syntax complicated/confusing. Also will require breaking ABI for existing
->> blkio.time, blkio.sectors, blkio.dequeue files.
->
-> I don't like this, either.  It breaks ABI and is more confusing for users.
->
->> So I would prefer to keep the major/minor number based interface for
->> follwing reasons.
->>
->> - Chaning it now breaks ABI.
->> - Other cgroup controller "device" is also using major/minor number based
->>  interface for device access policy. So it is consistent with other
->>  controller.
->
-> Which controllers are these?
->
->> - Displaying both device major/minor and diskname is an option but that
->>  makes the file format syntax little complicated and new rule setting
->>  or removoal confusing.
->
-> A few messages back you mentioned that you preferred device names
-> because they would be better for users of the system.  If there was a
-> simple implementation, would you still be behind a new name-based
-> interface?  We could go that direction and maintain ABI by deprecating
-> current interface and making a new interface with names.
->
-> If you can't tell, I'm a big fan of using the name! :)  It's *much*
-> more consistent with the interfaces in /sys.
+The kernel fails to see the entire disk with 2.6.34-rc2 with VIA
+vt82c586b chipset.  I tracked it down to commit
+f931a5d5785d7b7c44871bd7ad2762e29dfddf29 "via82cxxx: workaround h/w
+bugs" and reverting just that one solves the problem, or just
+commenting out just one outb write in that change.
 
-I agree with Chad here. The major/minor number interface to me seems
-like a departure from convention as /proc/diskstat, /sys/block all use
-the device names at the kernel-user interface. About deprecating the
-current ABI, we could do that but do we expect a lot of user tools to
-be built around this interface since the 2.6.33 release already?
+via82cxxx 0000:00:07.1: VIA vt82c586b (rev 41) IDE UDMA33
+via82cxxx 0000:00:07.1: IDE controller (0x1106:0x0571 rev 0x06)
+via82cxxx 0000:00:07.1: not 100% native mode: will probe irqs later
 
--Divyesh
+Note the kernel panic is intentional as I'm given the test kernel an
+invalid root device, so that I can suspend to disk, try a kernel,
+resume and pick up where I left off.  It does have a side benefit of
+dumping the size of all partitions.
 
->
-> Chad
->
+2.6.34-rc2 unmodified, fails and sees 30985416 KiB for the last
+partition.
+ide-gd driver 1.18
+hda: max request size: 128KiB
+hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
+hda: cache flushes supported
+ hda: hda1 hda2 hda3
+hda: p3 size 236037312 exceeds device capacity, enabling native capacity
+hda: p3 size 236037312 exceeds device capacity, limited to end of disk
+ide-cd driver 5.00
+...
+Please append a correct "root=" boot option; here are the available partitions:
+0300        33027624 hda driver: ide-gd
+  0301           49391 hda1
+  0302         1992816 hda2
+  0303        30985416 hda3
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
+
+2.6.34-rc2 with patch revered, correct size 118018656
+ide-gd driver 1.18
+hda: max request size: 128KiB
+hda: Host Protected Area detected.
+        current capacity is 66055248 sectors (33820 MB)
+        native  capacity is 240121728 sectors (122942 MB)
+hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
+hda: cache flushes supported
+ hda: hda1 hda2 hda3
+hda: p3 size 236037312 exceeds device capacity, enabling native capacity
+hda: detected capacity change from 33820286976 to 122942324736
+ide-cd driver 5.00
+0300       120060864 hda driver: ide-gd
+  0301           49391 hda1
+  0302         1992816 hda2
+  0303       118018656 hda3
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
+
+Here are two debug patches, the first adds debug prints and the second
+disables the problematic write, I  have the output of both included.
+
+>From dac7d14ce1f227d8a084c3ec218ea1430bffdc57 Mon Sep 17 00:00:00 2001
+From: David Fries <david@fries.net>
+Date: Thu, 25 Mar 2010 19:51:31 -0500
+Subject: [PATCH 1/2] fails: add print messages
+
+add print messages for debugging
+---
+ drivers/ide/via82cxxx.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/ide/via82cxxx.c b/drivers/ide/via82cxxx.c
+index e65d010..ccd5640 100644
+--- a/drivers/ide/via82cxxx.c
++++ b/drivers/ide/via82cxxx.c
+@@ -409,6 +409,8 @@ static void via_write_devctl(ide_hwif_t *hwif, u8 ctl)
+ 
+ 	outb(ctl, hwif->io_ports.ctl_addr);
+ 	outb(vdev->cached_device[hwif->channel], hwif->io_ports.device_addr);
++	printk("via_write_devctl        write %u, %lu\n",
++		vdev->cached_device[hwif->channel], hwif->io_ports.device_addr);
+ }
+ 
+ static void __via_dev_select(ide_drive_t *drive, u8 select)
+@@ -442,6 +444,9 @@ static void via_tf_load(ide_drive_t *drive, struct ide_taskfile *tf, u8 valid)
+ 		outb(tf->lbah, io_ports->lbah_addr);
+ 	if (valid & IDE_VALID_DEVICE)
+ 		__via_dev_select(drive, tf->device);
++	printk("via_tf_load write tf->device %u in place of tf->device %u\n"
++		" value io_ports->device_addr %lu\n",
++		tf->device, tf->device, io_ports->device_addr);
+ }
+ 
+ const struct ide_tp_ops via_tp_ops = {
+-- 
+1.7.0
+
+
+
+Uniform Multi-Platform E-IDE driver
+via82cxxx 0000:00:07.1: VIA vt82c586b (rev 41) IDE UDMA33
+via82cxxx 0000:00:07.1: IDE controller (0x1106:0x0571 rev 0x06)
+via82cxxx 0000:00:07.1: not 100% native mode: will probe irqs later
+ide: disallowing DMA for hda
+ide: disallowing DMA for hdb
+    ide0: BM-DMA at 0xe400-0xe407
+ide: disallowing DMA for hdc
+ide: disallowing DMA for hdd
+    ide1: BM-DMA at 0xe408-0xe40f
+via_write_devctl        write 160, 502
+via_write_devctl        write 176, 502
+via_write_devctl        write 160, 502
+hda: Maxtor 6Y120P0, ATA DISK drive
+via_write_devctl        write 176, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl        write 176, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+ide1: no devices on the port
+via_write_devctl        write 160, 502
+via_write_devctl        write 0, 374
+ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
+ide1 at 0x170-0x177,0x376 on irq 15
+ide_generic: please use "probe_mask=0x3f" module parameter for probing all legacy ISA IDE ports
+ide-gd driver 1.18
+hda: max request size: 128KiB
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 175 in place of tf->device 175
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+via_write_devctl        write 224, 502
+hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+hda: cache flushes supported
+ hda:via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+ hda1 hda2 hda3
+hda: p3 size 236037312 exceeds device capacity, enabling native capacity
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+via_write_devctl        write 224, 502
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 227 in place of tf->device 227
+ value io_ports->device_addr 502
+via_write_devctl        write 227, 502
+hda: p3 size 236037312 exceeds device capacity, limited to end of disk
+via_write_devctl        write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl        write 160, 502
+ide-cd driver 5.00
+VFS: Cannot open root device "1602" or unknown-block(22,2)
+Please append a correct "root=" boot option; here are the available partitions:
+0300        33027624 hda driver: ide-gd
+  0301           49391 hda1
+  0302         1992816 hda2
+  0303        30985416 hda3
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
+
+
+>From 72da5cd66e1f857fbe6afa0e92634e8adf684737 Mon Sep 17 00:00:00 2001
+From: David Fries <david@fries.net>
+Date: Thu, 25 Mar 2010 20:07:19 -0500
+Subject: [PATCH 2/2] via82cxxx works: skip write
+
+This fixes via82cxxx host protected area problems.
+---
+ drivers/ide/via82cxxx.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/ide/via82cxxx.c b/drivers/ide/via82cxxx.c
+index ccd5640..d598b63 100644
+--- a/drivers/ide/via82cxxx.c
++++ b/drivers/ide/via82cxxx.c
+@@ -408,8 +408,10 @@ static void via_write_devctl(ide_hwif_t *hwif, u8 ctl)
+ 	struct via82cxxx_dev *vdev = hwif->host->host_priv;
+ 
+ 	outb(ctl, hwif->io_ports.ctl_addr);
++	/*
+ 	outb(vdev->cached_device[hwif->channel], hwif->io_ports.device_addr);
+-	printk("via_write_devctl        write %u, %lu\n",
++	*/
++	printk("via_write_devctl   skip write %u, %lu\n",
+ 		vdev->cached_device[hwif->channel], hwif->io_ports.device_addr);
+ }
+ 
+-- 
+1.7.0
+
+
+
+Uniform Multi-Platform E-IDE driver
+via82cxxx 0000:00:07.1: VIA vt82c586b (rev 41) IDE UDMA33
+via82cxxx 0000:00:07.1: IDE controller (0x1106:0x0571 rev 0x06)
+via82cxxx 0000:00:07.1: not 100% native mode: will probe irqs later
+ide: disallowing DMA for hda
+ide: disallowing DMA for hdb
+    ide0: BM-DMA at 0xe400-0xe407
+ide: disallowing DMA for hdc
+ide: disallowing DMA for hdd
+    ide1: BM-DMA at 0xe408-0xe40f
+via_write_devctl   skip write 160, 502
+via_write_devctl   skip write 176, 502
+via_write_devctl   skip write 160, 502
+hda: Maxtor 6Y120P0, ATA DISK drive
+via_write_devctl   skip write 176, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl   skip write 176, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+ide1: no devices on the port
+via_write_devctl   skip write 160, 502
+via_write_devctl   skip write 0, 374
+ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
+ide1 at 0x170-0x177,0x376 on irq 15
+ide_generic: please use "probe_mask=0x3f" module parameter for probing all legacy ISA IDE ports
+ide-gd driver 1.18
+hda: max request size: 128KiB
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 175 in place of tf->device 175
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+via_write_devctl   skip write 224, 502
+hda: Host Protected Area detected.
+        current capacity is 66055248 sectors (33820 MB)
+        native  capacity is 240121728 sectors (122942 MB)
+hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+hda: cache flushes supported
+ hda:via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+ hda1 hda2 hda3
+hda: p3 size 236037312 exceeds device capacity, enabling native capacity
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 224 in place of tf->device 224
+ value io_ports->device_addr 502
+via_write_devctl   skip write 224, 502
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 238 in place of tf->device 238
+ value io_ports->device_addr 502
+via_write_devctl   skip write 238, 502
+hda: detected capacity change from 33820286976 to 122942324736
+via_write_devctl   skip write 160, 502
+via_tf_load write tf->device 0 in place of tf->device 0
+ value io_ports->device_addr 502
+via_tf_load write tf->device 160 in place of tf->device 160
+ value io_ports->device_addr 502
+via_write_devctl   skip write 160, 502
+ide-cd driver 5.00
+VFS: Cannot open root device "1602" or unknown-block(22,2)
+Please append a correct "root=" boot option; here are the available partitions:
+0300       120060864 hda driver: ide-gd
+  0301           49391 hda1
+  0302         1992816 hda2
+  0303       118018656 hda3
+Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
+
+-- 
+David Fries <david@fries.net>
+http://fries.net/~david/ (PGP encryption key available)
