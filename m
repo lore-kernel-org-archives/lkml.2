@@ -1,52 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab0CZRnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:43:23 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37089 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750772Ab0CZRnW (ORCPT
+	id S1753296Ab0CZRph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:45:37 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:37708 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab0CZRpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:43:22 -0400
+	Fri, 26 Mar 2010 13:45:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=dfMH3G9aMBChhNtl7zolzNfT+LRFMuFSSEtrHWy5Olt2z4FiW1n4T61P1U7mHLJrGq
-         lOFqZTpwK8FZzPcAmARoBdBFb92iJoI5KZMgPaVxMsnviixxmAXCZKMq8R6MsKG555jh
-         710FyCxQz7fYyFrhhfGoNk7eGA2JCeokRUMwk=
-Date: Fri, 26 Mar 2010 18:43:20 +0100
+        b=tBeCXFGeer+SBxu9SnFNjA9o350GICjKg+oe7VWdaBRmMK8Q2aEUQODx+4NnBG/imk
+         cpYQM/GWkDMznK0EVovkutYVTw96fTgAC+8Lb4KKPlqHbmTNG3Bc/RHEkz4bYUChoNkD
+         OF72sPVAyvQht1SxhsxOqar6B7dskZFJRz6b0=
+Date: Fri, 26 Mar 2010 18:45:32 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
-Message-ID: <20100326174318.GF5188@nowhere>
-References: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com> <1269586358.12097.117.camel@laptop> <1269589714.12097.122.camel@laptop>
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       David Miller <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Archs <linux-arch@vger.kernel.org>, "H . Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 0/7] perf updates and fixes
+Message-ID: <20100326174529.GG5188@nowhere>
+References: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com> <20100326060229.GA5259@drongo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269589714.12097.122.camel@laptop>
+In-Reply-To: <20100326060229.GA5259@drongo>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 08:48:34AM +0100, Peter Zijlstra wrote:
-> On Fri, 2010-03-26 at 07:52 +0100, Peter Zijlstra wrote:
-> > On Fri, 2010-03-26 at 03:22 +0100, Frederic Weisbecker wrote:
-> > > We can't use irqsafe per cpu counters for that as
-> > > these stats might be also written from NMI path, and irqsafe per
-> > > cpu counters are not NMI safe, but local_t operations are.
-> > > 
-> > lockdep shouldn't do NMI, nmi_enter() has an explicit lockdep_off().
+On Fri, Mar 26, 2010 at 05:02:30PM +1100, Paul Mackerras wrote:
+> On Fri, Mar 26, 2010 at 02:52:35AM +0100, Frederic Weisbecker wrote:
 > 
-> Also, more importantly, you simply should never use locks in NMI context
-> to begin with ;-)
+> > The series is not yet mergeable because it would break PowerPc
+> > (hot regs snapshot API has been changed, and I don't know how
+> > to update PowerPc for that).
+> > 
+> > But if you're fine with the ideas, I can integrate the necessary
+> > changes to fix this, and also separate fixes and updates.
+> 
+> The patch below adds the necessary stuff for powerpc.  You could fold
+> it into your "perf: Move perf_arch_fetch_caller_regs into a macro"
+> patch, or keep it as a separate patch in the series (though that would
+> make preserving bisectability more difficult).
+> 
+> There is a little difficulty in that you first create a 3-argument
+> form of perf_arch_fetch_caller_regs and then remove one argument in a
+> later patch, whereas my patch below just creates the 2-argument form.
+> I'm sure you can resolve that one way or another.
+> 
+> The patch to add the old-style perf_arch_fetch_caller_regs for powerpc
+> is sitting in the tip/perf/urgent branch but hasn't gone anywhere.
+> I suppose we need to get Ingo to pull that branch into tip/perf/core
+> and then include a revert patch in the series that switches to the new
+> interface.  Alternatively, if the urgent branch isn't append-only then
+> we could disappear it (the urgent branch would need to be rewound by
+> one commit).
 
 
-Right. I just thought ther could be some path that use rcu_read_lock
-things there or whatever check. I mean, NMI don't need rcu_read_lock
-but it could call helpers that use it.
 
-Whatever, lockdep is off there. Looks like I can safely use per cpu counters.
+Thanks a lot, that's axactly what I needed.
+I'll sort it out to not break things in the middle :)
+
+
+
+> 
+> Paul.
+> ----------
+> [PATCH] perf/powerpc: Implement perf_arch_fetch_caller_regs for powerpc
+> 
+> This adds the ability to get a hot register snapshot for powerpc,
+> enabling us to get meaningful call chains for tracepoints and context
+> switch events.
+> 
+> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> ---
+>  arch/powerpc/include/asm/perf_event.h |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/perf_event.h b/arch/powerpc/include/asm/perf_event.h
+> index e6d4ce6..5c16b89 100644
+> --- a/arch/powerpc/include/asm/perf_event.h
+> +++ b/arch/powerpc/include/asm/perf_event.h
+> @@ -21,3 +21,15 @@
+>  #ifdef CONFIG_FSL_EMB_PERF_EVENT
+>  #include <asm/perf_event_fsl_emb.h>
+>  #endif
+> +
+> +#ifdef CONFIG_PERF_EVENTS
+> +#include <asm/ptrace.h>
+> +#include <asm/reg.h>
+> +
+> +#define perf_arch_fetch_caller_regs(regs, __ip)			\
+> +	do {							\
+> +		(regs)->nip = __ip;				\
+> +		(regs)->gpr[1] = *(unsigned long *)__get_SP();	\
+> +		asm volatile("mfmsr %0" : "=r" ((regs)->msr));	\
+> +	} while (0)
+> +#endif
 
