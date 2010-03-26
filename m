@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754239Ab0CZWBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:01:32 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56311 "EHLO ogre.sisk.pl"
+	id S1754290Ab0CZWB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:01:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45592 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754175Ab0CZWBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:01:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [RFC 09/15] PM / Hibernate: user, implement user_ops writer
-Date: Fri, 26 Mar 2010 23:04:32 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <201003252314.33256.rjw@sisk.pl> <4BAC7FC3.50405@gmail.com>
-In-Reply-To: <4BAC7FC3.50405@gmail.com>
+	id S1754246Ab0CZWBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:01:54 -0400
+Date: Fri, 26 Mar 2010 23:01:51 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
+       Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/7] arch/arm: Use set_cpus_allowed_ptr
+Message-ID: <Pine.LNX.4.64.1003262301300.6480@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003262304.32118.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 March 2010, Jiri Slaby wrote:
-> On 03/25/2010 11:14 PM, Rafael J. Wysocki wrote:
-> > On Wednesday 24 March 2010, Jiri Slaby wrote:
-> >> On 03/24/2010 09:42 PM, Pavel Machek wrote:
-> >>>> +	if (test_bit(TODO_CLOSED, to_do_flags))
-> >>>> +		return -EIO;
-> >>>> +
-> >>>> +	to_do_buf = buf;
-> >>>> +	wmb();
-> >>>> +	set_bit(TODO_WORK, to_do_flags);
-> >>>> +	wake_up_interruptible(&to_do_wait);
-> >>>
-> >>> Uhuh, open-coded barriers... these need to be commented, and I guess
-> >>> you just should not play this kind of trickery.
-> >>
-> >> It's just to ensure the to_do_buf store is not reordered with the
-> >> set_bit. I wanted to avoid locks as too heavy tools here.
-> > 
-> > No, please use them, at least in a prototype version.
-> > 
-> > We can always optimize things out later, but doing optimizations upfront
-> > doesn't really work well from my experience.
-> > 
-> > So, if you'd use a lock somewhere, please use it, or maybe use a completion if
-> > that fits the design better.
-> 
-> That's it, I don't think a lock is appropriate here (I didn't even think
-> of that) -- I don't know what to lock (OK, I see it, but it's not that
-> clear). There is no potential for race per se, I only need to disable
-> reordering (which locks do as a side-effect). I need the steps to be
-> done in the A-B order where there is a barrier appropriate. Here, A is
-> store to to_do_buf, B is set_bit. It's I set to_do_buf, flag that it may
-> be used, the consumer will see the flag and use to_do_buf, in this order.
-> 
-> Above that if I introduce locks the wait_event on the other side will
-> grow into an unreadable mess. I would need to hold a lock when checking
-> the condition and hold it until I reach to_do_buf use, but also unlock
-> it on all paths that do not reach that point. Yeah, it's indeed doable,
-> but I don't think, it will improve things.
-> 
-> I also don't think completion is appropriate here, as I have a condition
-> to check for and it differs over wake_up sites.
+From: Julia Lawall <julia@diku.dk>
 
-OK
+Use set_cpus_allowed_ptr rather than set_cpus_allowed.
 
-I have some other comments to this patch, but I'd like to understand what
-really happens here, since the changelog is not too verbose.
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-Please explain the design here.
+// <smpl>
+@@
+expression E1,E2;
+@@
 
-Thanks,
-Rafael
+- set_cpus_allowed(E1, cpumask_of_cpu(E2))
++ set_cpus_allowed_ptr(E1, cpumask_of(E2))
+
+@@
+expression E;
+identifier I;
+@@
+
+- set_cpus_allowed(E, I)
++ set_cpus_allowed_ptr(E, &I)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ arch/arm/mach-integrator/cpu.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff -u -p a/arch/arm/mach-integrator/cpu.c b/arch/arm/mach-integrator/cpu.c
+--- a/arch/arm/mach-integrator/cpu.c
++++ b/arch/arm/mach-integrator/cpu.c
+@@ -99,7 +99,7 @@ static int integrator_set_target(struct 
+ 	 * Bind to the specified CPU.  When this call returns,
+ 	 * we should be running on the right CPU.
+ 	 */
+-	set_cpus_allowed(current, cpumask_of_cpu(cpu));
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 	BUG_ON(cpu != smp_processor_id());
+ 
+ 	/* get current setting */
+@@ -127,7 +127,7 @@ static int integrator_set_target(struct 
+ 	freqs.cpu = policy->cpu;
+ 
+ 	if (freqs.old == freqs.new) {
+-		set_cpus_allowed(current, cpus_allowed);
++		set_cpus_allowed_ptr(current, &cpus_allowed);
+ 		return 0;
+ 	}
+ 
+@@ -150,7 +150,7 @@ static int integrator_set_target(struct 
+ 	/*
+ 	 * Restore the CPUs allowed mask.
+ 	 */
+-	set_cpus_allowed(current, cpus_allowed);
++	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+ 
+@@ -166,7 +166,7 @@ static unsigned int integrator_get(unsig
+ 
+ 	cpus_allowed = current->cpus_allowed;
+ 
+-	set_cpus_allowed(current, cpumask_of_cpu(cpu));
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 	BUG_ON(cpu != smp_processor_id());
+ 
+ 	/* detect memory etc. */
+@@ -182,7 +182,7 @@ static unsigned int integrator_get(unsig
+ 
+ 	current_freq = icst_hz(&cclk_params, vco) / 1000; /* current freq */
+ 
+-	set_cpus_allowed(current, cpus_allowed);
++	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 
+ 	return current_freq;
+ }
