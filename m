@@ -1,293 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab0CZNky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 09:40:54 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57930 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab0CZNjc (ORCPT
+	id S1753800Ab0CZNnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 09:43:52 -0400
+Received: from DMZ-MAILSEC-SCANNER-8.MIT.EDU ([18.7.68.37]:53000 "EHLO
+	dmz-mailsec-scanner-8.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753448Ab0CZNnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 09:39:32 -0400
-From: Borislav Petkov <bp@amd64.org>
-To: <akpm@linux-foundation.org>, davej@redhat.com
-Cc: trenn@suse.de, linux@dominikbrodowski.net, <mingo@elte.hu>,
-       <hpa@zytor.com>, <tglx@linutronix.de>, cpufreq@vger.kernel.org,
-       <x86@kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [-v2 PATCH 6/6] cpufreq: Unify sysfs attribute definition macros
-Date: Fri, 26 Mar 2010 14:40:00 +0100
-Message-Id: <1269610800-23847-7-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1269610800-23847-1-git-send-email-bp@amd64.org>
-References: <1269610800-23847-1-git-send-email-bp@amd64.org>
+	Fri, 26 Mar 2010 09:43:50 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 09:43:50 EDT
+X-AuditID: 12074425-b7d00ae000002295-58-4bacb8e887e8
+From: Andy Lutomirski <luto@MIT.EDU>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: Eric Biederman <ebiederm@xmission.com>,
+       "Andrew G. Morgan" <morgan@kernel.org>, Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH 0/3] Taming execve, setuid, and LSMs
+Date: Fri, 26 Mar 2010 07:38:33 -0600
+Message-Id: <cover.1269610458.git.luto@mit.edu>
+X-Mailer: git-send-email 1.6.6.1
+X-Brightmail-Tracker: AAAAARNt6nE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+Every now and then, someone wants to let unprivileged programs change
+something about their execution environment (think unsharing namespaces,
+changing capabilities, disabling networking, chrooting, mounting and
+unmounting filesystems).  Whether or not any of these abilities are good
+ideas, there's a recurring problem that gets most of these patches shot
+down: setuid executables.
 
-Multiple modules used to define those which are with identical
-functionality and were needlessly replicated among the different cpufreq
-drivers. Push them into the header and remove duplication.
+The obvious solution is to allow a process to opt out of setuid
+semantics and require processes to do this before using these shiny new
+features. [1] [2]
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Reviewed-by: Thomas Renninger <trenn@suse.de>
----
- drivers/cpufreq/cpufreq.c              |   40 +++++++++-----------------
- drivers/cpufreq/cpufreq_conservative.c |   48 ++++++++++---------------------
- drivers/cpufreq/cpufreq_ondemand.c     |   40 ++++++++------------------
- include/linux/cpufreq.h                |   30 ++++++++++++++++++++
- 4 files changed, 72 insertions(+), 86 deletions(-)
+But there's a problem with this, too: with LSMs running, execve can do
+pretty much anything, and even unprivileged users running unprivileged
+programs can have crazy security implications.  (Take a look at a
+default install of Fedora.  If you can understand the security
+implications of disabling setuid, you get a cookie.  If you can figure
+out which programs will result in a change of security label when
+exec'd, you get another cookie.)
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 2d5d575..e02e417 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -662,32 +662,20 @@ static ssize_t show_bios_limit(struct cpufreq_policy *policy, char *buf)
- 	return sprintf(buf, "%u\n", policy->cpuinfo.max_freq);
- }
- 
--#define define_one_ro(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0444, show_##_name, NULL)
--
--#define define_one_ro0400(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0400, show_##_name, NULL)
--
--#define define_one_rw(_name) \
--static struct freq_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_ro0400(cpuinfo_cur_freq);
--define_one_ro(cpuinfo_min_freq);
--define_one_ro(cpuinfo_max_freq);
--define_one_ro(cpuinfo_transition_latency);
--define_one_ro(scaling_available_governors);
--define_one_ro(scaling_driver);
--define_one_ro(scaling_cur_freq);
--define_one_ro(bios_limit);
--define_one_ro(related_cpus);
--define_one_ro(affected_cpus);
--define_one_rw(scaling_min_freq);
--define_one_rw(scaling_max_freq);
--define_one_rw(scaling_governor);
--define_one_rw(scaling_setspeed);
-+cpufreq_freq_attr_ro_perm(cpuinfo_cur_freq, 0400);
-+cpufreq_freq_attr_ro(cpuinfo_min_freq);
-+cpufreq_freq_attr_ro(cpuinfo_max_freq);
-+cpufreq_freq_attr_ro(cpuinfo_transition_latency);
-+cpufreq_freq_attr_ro(scaling_available_governors);
-+cpufreq_freq_attr_ro(scaling_driver);
-+cpufreq_freq_attr_ro(scaling_cur_freq);
-+cpufreq_freq_attr_ro(bios_limit);
-+cpufreq_freq_attr_ro(related_cpus);
-+cpufreq_freq_attr_ro(affected_cpus);
-+cpufreq_freq_attr_rw(scaling_min_freq);
-+cpufreq_freq_attr_rw(scaling_max_freq);
-+cpufreq_freq_attr_rw(scaling_governor);
-+cpufreq_freq_attr_rw(scaling_setspeed);
- 
- static struct attribute *default_attrs[] = {
- 	&cpuinfo_min_freq.attr,
-diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
-index 599a40b..ce5248e 100644
---- a/drivers/cpufreq/cpufreq_conservative.c
-+++ b/drivers/cpufreq/cpufreq_conservative.c
-@@ -178,12 +178,8 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
- 	return sprintf(buf, "%u\n", min_sampling_rate);
- }
- 
--#define define_one_ro(_name)		\
--static struct global_attr _name =	\
--__ATTR(_name, 0444, show_##_name, NULL)
--
--define_one_ro(sampling_rate_max);
--define_one_ro(sampling_rate_min);
-+define_one_global_ro(sampling_rate_max);
-+define_one_global_ro(sampling_rate_min);
- 
- /* cpufreq_conservative Governor Tunables */
- #define show_one(file_name, object)					\
-@@ -221,12 +217,8 @@ show_one_old(freq_step);
- show_one_old(sampling_rate_min);
- show_one_old(sampling_rate_max);
- 
--#define define_one_ro_old(object, _name)	\
--static struct freq_attr object =		\
--__ATTR(_name, 0444, show_##_name##_old, NULL)
--
--define_one_ro_old(sampling_rate_min_old, sampling_rate_min);
--define_one_ro_old(sampling_rate_max_old, sampling_rate_max);
-+cpufreq_freq_attr_ro_old(sampling_rate_min);
-+cpufreq_freq_attr_ro_old(sampling_rate_max);
- 
- /*** delete after deprecation time ***/
- 
-@@ -364,16 +356,12 @@ static ssize_t store_freq_step(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
--#define define_one_rw(_name) \
--static struct global_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_rw(sampling_rate);
--define_one_rw(sampling_down_factor);
--define_one_rw(up_threshold);
--define_one_rw(down_threshold);
--define_one_rw(ignore_nice_load);
--define_one_rw(freq_step);
-+define_one_global_rw(sampling_rate);
-+define_one_global_rw(sampling_down_factor);
-+define_one_global_rw(up_threshold);
-+define_one_global_rw(down_threshold);
-+define_one_global_rw(ignore_nice_load);
-+define_one_global_rw(freq_step);
- 
- static struct attribute *dbs_attributes[] = {
- 	&sampling_rate_max.attr,
-@@ -409,16 +397,12 @@ write_one_old(down_threshold);
- write_one_old(ignore_nice_load);
- write_one_old(freq_step);
- 
--#define define_one_rw_old(object, _name)	\
--static struct freq_attr object =		\
--__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
--
--define_one_rw_old(sampling_rate_old, sampling_rate);
--define_one_rw_old(sampling_down_factor_old, sampling_down_factor);
--define_one_rw_old(up_threshold_old, up_threshold);
--define_one_rw_old(down_threshold_old, down_threshold);
--define_one_rw_old(ignore_nice_load_old, ignore_nice_load);
--define_one_rw_old(freq_step_old, freq_step);
-+cpufreq_freq_attr_rw_old(sampling_rate);
-+cpufreq_freq_attr_rw_old(sampling_down_factor);
-+cpufreq_freq_attr_rw_old(up_threshold);
-+cpufreq_freq_attr_rw_old(down_threshold);
-+cpufreq_freq_attr_rw_old(ignore_nice_load);
-+cpufreq_freq_attr_rw_old(freq_step);
- 
- static struct attribute *dbs_attributes_old[] = {
- 	&sampling_rate_max_old.attr,
-diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index bd444dc..c00b25f 100644
---- a/drivers/cpufreq/cpufreq_ondemand.c
-+++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -234,12 +234,8 @@ static ssize_t show_sampling_rate_min(struct kobject *kobj,
- 	return sprintf(buf, "%u\n", min_sampling_rate);
- }
- 
--#define define_one_ro(_name)		\
--static struct global_attr _name =	\
--__ATTR(_name, 0444, show_##_name, NULL)
--
--define_one_ro(sampling_rate_max);
--define_one_ro(sampling_rate_min);
-+define_one_global_ro(sampling_rate_max);
-+define_one_global_ro(sampling_rate_min);
- 
- /* cpufreq_ondemand Governor Tunables */
- #define show_one(file_name, object)					\
-@@ -274,12 +270,8 @@ show_one_old(powersave_bias);
- show_one_old(sampling_rate_min);
- show_one_old(sampling_rate_max);
- 
--#define define_one_ro_old(object, _name)       \
--static struct freq_attr object =               \
--__ATTR(_name, 0444, show_##_name##_old, NULL)
--
--define_one_ro_old(sampling_rate_min_old, sampling_rate_min);
--define_one_ro_old(sampling_rate_max_old, sampling_rate_max);
-+cpufreq_freq_attr_ro_old(sampling_rate_min);
-+cpufreq_freq_attr_ro_old(sampling_rate_max);
- 
- /*** delete after deprecation time ***/
- 
-@@ -376,14 +368,10 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
- 	return count;
- }
- 
--#define define_one_rw(_name) \
--static struct global_attr _name = \
--__ATTR(_name, 0644, show_##_name, store_##_name)
--
--define_one_rw(sampling_rate);
--define_one_rw(up_threshold);
--define_one_rw(ignore_nice_load);
--define_one_rw(powersave_bias);
-+define_one_global_rw(sampling_rate);
-+define_one_global_rw(up_threshold);
-+define_one_global_rw(ignore_nice_load);
-+define_one_global_rw(powersave_bias);
- 
- static struct attribute *dbs_attributes[] = {
- 	&sampling_rate_max.attr,
-@@ -415,14 +403,10 @@ write_one_old(up_threshold);
- write_one_old(ignore_nice_load);
- write_one_old(powersave_bias);
- 
--#define define_one_rw_old(object, _name)       \
--static struct freq_attr object =               \
--__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
--
--define_one_rw_old(sampling_rate_old, sampling_rate);
--define_one_rw_old(up_threshold_old, up_threshold);
--define_one_rw_old(ignore_nice_load_old, ignore_nice_load);
--define_one_rw_old(powersave_bias_old, powersave_bias);
-+cpufreq_freq_attr_rw_old(sampling_rate);
-+cpufreq_freq_attr_rw_old(up_threshold);
-+cpufreq_freq_attr_rw_old(ignore_nice_load);
-+cpufreq_freq_attr_rw_old(powersave_bias);
- 
- static struct attribute *dbs_attributes_old[] = {
-        &sampling_rate_max_old.attr,
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 4de02b1..9f15150 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -278,6 +278,27 @@ struct freq_attr {
- 	ssize_t (*store)(struct cpufreq_policy *, const char *, size_t count);
- };
- 
-+#define cpufreq_freq_attr_ro(_name)		\
-+static struct freq_attr _name =			\
-+__ATTR(_name, 0444, show_##_name, NULL)
-+
-+#define cpufreq_freq_attr_ro_perm(_name, _perm)	\
-+static struct freq_attr _name =			\
-+__ATTR(_name, _perm, show_##_name, NULL)
-+
-+#define cpufreq_freq_attr_ro_old(_name)		\
-+static struct freq_attr _name##_old =		\
-+__ATTR(_name, 0444, show_##_name##_old, NULL)
-+
-+#define cpufreq_freq_attr_rw(_name)		\
-+static struct freq_attr _name =			\
-+__ATTR(_name, 0644, show_##_name, store_##_name)
-+
-+#define cpufreq_freq_attr_rw_old(_name)		\
-+static struct freq_attr _name##_old =		\
-+__ATTR(_name, 0644, show_##_name##_old, store_##_name##_old)
-+
-+
- struct global_attr {
- 	struct attribute attr;
- 	ssize_t (*show)(struct kobject *kobj,
-@@ -286,6 +307,15 @@ struct global_attr {
- 			 const char *c, size_t count);
- };
- 
-+#define define_one_global_ro(_name)		\
-+static struct global_attr _name =		\
-+__ATTR(_name, 0444, show_##_name, NULL)
-+
-+#define define_one_global_rw(_name)		\
-+static struct global_attr _name =		\
-+__ATTR(_name, 0644, show_##_name, store_##_name)
-+
-+
- /*********************************************************************
-  *                        CPUFREQ 2.6. INTERFACE                     *
-  *********************************************************************/
--- 
-1.7.0
+So here's another solution, based on the idea that in a sane world,
+execve should be a lot less magical than it is.  Any unprivileged
+program can open an executable, parse its headers, map it, and run it,
+although getting all the details right is tedious at best (and there's
+no good way to get all of the threading semantics right from userspace).
+
+Patch 1 adds a new syscall execve_nosecurity.  It does an exec, but
+without changing any security properties.  This means no setuid, no
+setgid, no LSM credential hooks (e.g. no SELinux type transitions), and
+no ptrace restrictions.  (You have to have read access to the program,
+because disabling security stuff could allow someone to ptrace a program
+that they couldn't otherwise ptrace.)  This shouldn't be particularly
+scary -- any process could do much the same thing with open and mmap.
+(You can easily shoot yourself in the foot with this syscall -- think
+LD_PRELOAD or running some program with insufficient error checking that
+can get subverted when run in the wrong security context.  So don't do
+that.)
+
+Patch 2 adds a prctl that irrevocably disables execve.  Making execve do
+something different that could confuse LSMs is dangerous.  Turning the
+whole thing off shouldn't be.  (Of course, with execve disabled, you can
+still use execve_nosecurity.  But any program that does that should take
+precautions not to shoot itself in the foot.)  (In a future revision,
+this should probably be a new syscall.)
+
+Sadly, programs that have opted out of execve might want to use
+subprocesses that in turn run execve.  This will fail.  So patch 3
+(which is ugly, but I don't see anything fundamentally wrong with it)
+allows processes to set a flag that turns execve into execve_nosecurity.
+This flag survives exec.  Of course, this could be used to subvert
+setuid programs, so you can't set this flag unless you disable ordinary
+exec first.
+
+[1] Unprivileged: http://lkml.org/lkml/2009/12/30/265
+[2] securebit approach: http://lwn.net/Articles/368600/
+
+Andy Lutomirski (3):
+  Add the execve_nosecurity syscall.
+  Add PR_RESTRICT_ME to disable security-sensitive features for a
+    process tree.
+  Add PR_SET_FORCE_EXECVE_NOSECURITY to turn execve calls into
+    execve_nosecurity.
+
+ arch/x86/ia32/sys_ia32.c         |    2 +-
+ arch/x86/include/asm/unistd_64.h |    2 +
+ arch/x86/kernel/entry_64.S       |   16 +++++
+ arch/x86/kernel/process.c        |   28 ++++++++-
+ fs/binfmt_elf.c                  |    6 +-
+ fs/binfmt_elf_fdpic.c            |    6 +-
+ fs/binfmt_em86.c                 |    2 +-
+ fs/binfmt_flat.c                 |    7 ++-
+ fs/binfmt_misc.c                 |    2 +-
+ fs/binfmt_script.c               |    2 +-
+ fs/compat.c                      |   14 ++++-
+ fs/exec.c                        |  126 ++++++++++++++++++++++++-------------
+ include/linux/binfmts.h          |    3 +
+ include/linux/compat.h           |    2 +-
+ include/linux/fs.h               |    2 +-
+ include/linux/prctl.h            |   11 +++
+ include/linux/sched.h            |    5 +-
+ kernel/fork.c                    |    3 +
+ kernel/sys.c                     |   42 +++++++++++++
+ 19 files changed, 221 insertions(+), 60 deletions(-)
+
+The code below can be used to play with these new features.
+
+
+/* gcc -I /lib/modules/2.6.33/build/usr/include no_exec.c */
+
+#include <asm/unistd.h>
+#include <linux/prctl.h>
+#include <stdio.h>
+
+int execve_nosecurity(const char *filename, char *const argv[],
+		      char *const envp[])
+{
+	return syscall(__NR_execve_nosecurity, filename, argv, envp);
+}
+
+int main(int argc, char **argv, char **envp)
+{
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s <force | noforce> program args...\n");
+		return 1;
+	}
+
+	int force_execve_nosecurity;
+	if (!strcmp(argv[1], "force")) {
+		force_execve_nosecurity = 1;
+	} else if (!strcmp(argv[1], "noforce")) {
+		force_execve_nosecurity = 0;
+	} else {
+		fprintf(stderr, "Invalid argument\n");
+		return 1;
+	}	
+
+	if (prctl(PR_RESTRICT_ME, PR_RESTRICT_EXEC, 0, 0, 0) != 0) {
+		perror("PR_RESTRICT_ME");
+		return 1;
+	}
+
+	if (prctl(PR_SET_FORCE_EXECVE_NOSECURITY, force_execve_nosecurity,
+		  0, 0, 0) != 0) {
+		perror("PR_SET_FORCE_EXECVE_NOSECURITY");
+		return 1;
+	}
+	execve_nosecurity(argv[2], argv + 2, envp);
+	perror("execve_nosecurity");
+	return 1;
+}
 
