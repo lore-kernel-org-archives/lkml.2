@@ -1,82 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab0CZDNA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:13:00 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:46975 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab0CZDM7 (ORCPT
+	id S1754064Ab0CZDNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:13:09 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:41332 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab0CZDNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:12:59 -0400
+	Thu, 25 Mar 2010 23:13:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=b01wxo0QxSCUk+jXyASYRNmG/LCwCGeIew6reKteMpJm6MgYwRJFYKb0eqDXfC0TOA
-         nbl+4Yt6ZAXqYFqBCT1EwG5ZWs902cYggvZJIzIgrnDFJl4Kb7B3op79ymPDZSccb3DG
-         JvmTPPWvUHEJAez3BW3BWe3n3M2qGB4GRddR0=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gs3iwVWztM4R27DZFHwHG00wRQyej5YCjEb/6oQ+w+DB3OBRPAYY/cFAa9cuUdBmAC
+         0ES5tVPHG8hKNi33iOPjAitmXX8rDbS7ub8u9cTUcgySDu8uRtpBStcTc3rE0hdNFZyh
+         87HkoXK8Mw6xQc7nPIc8OKTiIlkyolbWeSuFc=
+Date: Fri, 26 Mar 2010 04:13:02 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
+Message-ID: <20100326031301.GC9858@nowhere>
+References: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com> <1269573118-11120-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-Date: Fri, 26 Mar 2010 11:12:57 +0800
-Message-ID: <f163bb471003252012o2d6e72bep723847cc1317e69c@mail.gmail.com>
-Subject: Small issue to receive "org.bluez.AudioSource" dbus message
-From: dove xia <dovexia@gmail.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269573118-11120-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I forgot to mention in the title of this patch, this is
+the "v2".
 
-	This is Dove as a new comer to Linux-bluetooth group.
-	
-	Currently, I am developing BlueZ stack works as A2DP Sink. After the
-BlueZ runs, it works smoothly. I have developed a program run on Linux
-user space to catch the BlueZ DBus messages. But the program can't
-receive DBus messages from "org.bluez.AudioSource".
-	I have test the BlueZ works as source before, I can receive DBus
-messages from  "org.bluez.AudioSink".
-	
-	The test step is:
-	1. Update the audio.conf to set the bluetooth works as A2DP Sink.
-	2. Set the bluetooth into discoverable mode.
-	3. Use another bluetooth device (a mobile), search and connect BlueZ.
-	3. Play music from mobile.
-	4. use a test program on Linux user space to catch the BlueZ
-AudioSource DBus messages.
-	The test case will expect the test program can catch the AudioSource
-dbus messages, but it failed.
-	
-	I have traced the BlueZ source code, found a little clew in
-audio/a2dp.c, the function sbc_setconf_ind() and mpeg_setconf_ind()
-have not called source_new_stream() while the a2dp_sep->type is
-AVDTP_SEP_TYPE_SINK, I patched code to call source_new_stream().
-base on BlueZ 4.62, in audio/a2dp.c
 
-@@ -341,6 +341,8 @@
+On Fri, Mar 26, 2010 at 04:11:58AM +0100, Frederic Weisbecker wrote:
+> Locking statistics are implemented using global atomic variables.
+> This is usually fine unless some path write them very often.
+> 
+> This is the case for the function and function graph tracers
+> that disable irqs for each entry saved (except if the function
+> tracer is in preempt disabled only mode).
+> And calls to local_irq_save/restore() increment hardirqs_on_events
+> and hardirqs_off_events stats (or similar stats for redundant
+> versions).
+> 
+> Incrementing these global vars for each function ends up in too
+> much cache bouncing if lockstats are enabled.
+> 
+> To solve this, implement the debug_atomic_*() operations using
+> per cpu vars. We can't use irqsafe per cpu counters for that as
+> these stats might be also written from NMI path, and irqsafe per
+> cpu counters are not NMI safe, but local_t oprations are.
+> 
+> This version then uses local_t based per cpu counters.
+> 
+> v2: Use per_cpu() instead of get_cpu_var() to fetch the desired
+> cpu vars on debug_atomic_read()
+> 
+> Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/lockdep.c           |   28 ++++++++--------
+>  kernel/lockdep_internals.h |   71 +++++++++++++++++++++++++++++++-------------
+>  2 files changed, 64 insertions(+), 35 deletions(-)
+> 
+> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+> index 65b5f5b..55e60a0 100644
+> --- a/kernel/lockdep.c
+> +++ b/kernel/lockdep.c
+> @@ -430,20 +430,20 @@ static struct stack_trace lockdep_init_trace = {
+>  /*
+>   * Various lockdep statistics:
+>   */
+> -atomic_t chain_lookup_hits;
+> -atomic_t chain_lookup_misses;
+> -atomic_t hardirqs_on_events;
+> -atomic_t hardirqs_off_events;
+> -atomic_t redundant_hardirqs_on;
+> -atomic_t redundant_hardirqs_off;
+> -atomic_t softirqs_on_events;
+> -atomic_t softirqs_off_events;
+> -atomic_t redundant_softirqs_on;
+> -atomic_t redundant_softirqs_off;
+> -atomic_t nr_unused_locks;
+> -atomic_t nr_cyclic_checks;
+> -atomic_t nr_find_usage_forwards_checks;
+> -atomic_t nr_find_usage_backwards_checks;
+> +DEFINE_PER_CPU(local_t, chain_lookup_hits);
+> +DEFINE_PER_CPU(local_t, chain_lookup_misses);
+> +DEFINE_PER_CPU(local_t, hardirqs_on_events);
+> +DEFINE_PER_CPU(local_t, hardirqs_off_events);
+> +DEFINE_PER_CPU(local_t, redundant_hardirqs_on);
+> +DEFINE_PER_CPU(local_t, redundant_hardirqs_off);
+> +DEFINE_PER_CPU(local_t, softirqs_on_events);
+> +DEFINE_PER_CPU(local_t, softirqs_off_events);
+> +DEFINE_PER_CPU(local_t, redundant_softirqs_on);
+> +DEFINE_PER_CPU(local_t, redundant_softirqs_off);
+> +DEFINE_PER_CPU(local_t, nr_unused_locks);
+> +DEFINE_PER_CPU(local_t, nr_cyclic_checks);
+> +DEFINE_PER_CPU(local_t, nr_find_usage_forwards_checks);
+> +DEFINE_PER_CPU(local_t, nr_find_usage_backwards_checks);
+>  #endif
+>  
+>  /*
+> diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
+> index a2ee95a..38c8ac7 100644
+> --- a/kernel/lockdep_internals.h
+> +++ b/kernel/lockdep_internals.h
+> @@ -110,29 +110,58 @@ lockdep_count_backward_deps(struct lock_class *class)
+>  #endif
+>  
+>  #ifdef CONFIG_DEBUG_LOCKDEP
+> +
+> +#include <asm/local.h>
+> +/*
+> + * Various lockdep statistics.
+> + * We want them per cpu as they are often accessed in fast path
+> + * and we want to avoid too much cache bouncing.
+> + * We can't use irqsafe per cpu counters as those are not NMI safe, as
+> + * opposite to local_t.
+> + */
+> +DECLARE_PER_CPU(local_t, chain_lookup_hits);
+> +DECLARE_PER_CPU(local_t, chain_lookup_misses);
+> +DECLARE_PER_CPU(local_t, hardirqs_on_events);
+> +DECLARE_PER_CPU(local_t, hardirqs_off_events);
+> +DECLARE_PER_CPU(local_t, redundant_hardirqs_on);
+> +DECLARE_PER_CPU(local_t, redundant_hardirqs_off);
+> +DECLARE_PER_CPU(local_t, softirqs_on_events);
+> +DECLARE_PER_CPU(local_t, softirqs_off_events);
+> +DECLARE_PER_CPU(local_t, redundant_softirqs_on);
+> +DECLARE_PER_CPU(local_t, redundant_softirqs_off);
+> +DECLARE_PER_CPU(local_t, nr_unused_locks);
+> +DECLARE_PER_CPU(local_t, nr_cyclic_checks);
+> +DECLARE_PER_CPU(local_t, nr_cyclic_check_recursions);
+> +DECLARE_PER_CPU(local_t, nr_find_usage_forwards_checks);
+> +DECLARE_PER_CPU(local_t, nr_find_usage_forwards_recursions);
+> +DECLARE_PER_CPU(local_t, nr_find_usage_backwards_checks);
+> +DECLARE_PER_CPU(local_t, nr_find_usage_backwards_recursions);
+> +
+> +# define debug_atomic_inc(ptr)			{	\
+> +	WARN_ON_ONCE(!irq_disabled());			\
+> +	local_t *__ptr = &__get_cpu_var(ptr);		\
+> +	local_inc(__ptr);				\
+> +}
+> +
+> +# define debug_atomic_dec(ptr)			{	\
+> +	WARN_ON_ONCE(!irq_disabled());			\
+> +	local_t *__ptr = &__get_cpu_var(ptr);		\
+> +	local_dec(__ptr);				\
+> +}
+> +
+>  /*
+> - * Various lockdep statistics:
+> + * It's fine to use local_read from other cpus. Read is racy anyway,
+> + * but it's guaranteed high and low parts are read atomically.
+>   */
+> -extern atomic_t chain_lookup_hits;
+> -extern atomic_t chain_lookup_misses;
+> -extern atomic_t hardirqs_on_events;
+> -extern atomic_t hardirqs_off_events;
+> -extern atomic_t redundant_hardirqs_on;
+> -extern atomic_t redundant_hardirqs_off;
+> -extern atomic_t softirqs_on_events;
+> -extern atomic_t softirqs_off_events;
+> -extern atomic_t redundant_softirqs_on;
+> -extern atomic_t redundant_softirqs_off;
+> -extern atomic_t nr_unused_locks;
+> -extern atomic_t nr_cyclic_checks;
+> -extern atomic_t nr_cyclic_check_recursions;
+> -extern atomic_t nr_find_usage_forwards_checks;
+> -extern atomic_t nr_find_usage_forwards_recursions;
+> -extern atomic_t nr_find_usage_backwards_checks;
+> -extern atomic_t nr_find_usage_backwards_recursions;
+> -# define debug_atomic_inc(ptr)		atomic_inc(ptr)
+> -# define debug_atomic_dec(ptr)		atomic_dec(ptr)
+> -# define debug_atomic_read(ptr)		atomic_read(ptr)
+> +# define debug_atomic_read(ptr)		({		\
+> +	unsigned long long __total = 0;			\
+> +	int __cpu;					\
+> +	for_each_possible_cpu(__cpu) {			\
+> +		local_t *__ptr = &per_cpu(ptr, cpu);	\
+> +		__total += local_read(__ptr);		\
+> +	}						\
+> +	__total;					\
+> +})
+>  #else
+>  # define debug_atomic_inc(ptr)		do { } while (0)
+>  # define debug_atomic_dec(ptr)		do { } while (0)
+> -- 
+> 1.6.2.3
+> 
 
- 	if (a2dp_sep->type == AVDTP_SEP_TYPE_SOURCE)
- 		sink_new_stream(dev, session, stream);
-+	if (a2dp_sep->type == AVDTP_SEP_TYPE_SINK)
-+		source_new_stream(dev, session, stream);
-
- 	return TRUE;
- }
-@@ -445,6 +447,8 @@
-
- 	if (a2dp_sep->type == AVDTP_SEP_TYPE_SOURCE)
- 		sink_new_stream(dev, session, stream);
-+	if (a2dp_sep->type == AVDTP_SEP_TYPE_SINK)
-+		source_new_stream(dev, session, stream);
-
- 	return TRUE;
- }
-
-	After I patched the code, my test program can receive the
-"org.bluez.AudioSource" DBus messages. the BlueZ work smoothly as
-before. so I think this is a correct fix.
-
-	Need your confirm.
-	
--- 
-BR
-Dove
