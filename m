@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab0CZBxT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:53:19 -0400
+	id S1753852Ab0CZByT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:54:19 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:37194 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753533Ab0CZBw6 (ORCPT
+	with ESMTP id S1753657Ab0CZBxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:52:58 -0400
+	Thu, 25 Mar 2010 21:53:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YnVvHeCL/DtGg6In7szJtBrtqSJMdwgc4d6OFvYrIu9ClJd/fVk0+6AUBFLzfSvgME
-         LhHeoJ7XlDziaIhW9hOJAPFzy6vlaXJyHW6yXlRHq9R5RWKTsBFUOWqubE6m+gcv6EZX
-         ih7ZnNz/A353RJnTxUolTTlz0CVOCjFfdVmHQ=
+        b=x2JS+cIYLWB+tl7aaGFsHBHjVd6eh4sjiUrarExdVPyzTO2hQB+0BFqPs4KouRkKWq
+         Nfg9Y5yzXq8qGrNkd2xrZbcgYwA8U1TJxH/lZdkEFiRA66Mzk7evnQ0TeaLEZHD2oDZ1
+         apGBwVfO9WaComMB9rQStuSRTebp35gbt1ZPQ=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 2/7] perf: Fetch hot regs from the template caller
-Date: Fri, 26 Mar 2010 02:52:37 +0100
-Message-Id: <1269568362-13690-3-git-send-regression-fweisbec@gmail.com>
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       David Miller <davem@davemloft.net>
+Subject: [PATCH 6/7] perf: Use hot regs with software sched/migrate events
+Date: Fri, 26 Mar 2010 02:52:41 +0100
+Message-Id: <1269568362-13690-7-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
 In-Reply-To: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
 References: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
@@ -30,121 +31,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace events can be defined from a template using
-DECLARE_EVENT_CLASS/DEFINE_EVENT or directly with TRACE_EVENT.
+Scheduler's task migration events don't work because they always
+pass NULL regs perf_sw_event(). The event hence gets filtered
+in perf_swevent_add().
 
-In both cases we have a template tracepoint handler, used to
-record the trace, to which we pass our ftrace event instance.
+Scheduler's context switches events use task_pt_regs() to get
+the context when the event occured which is a wrong thing to
+do as this won't give us the place in the kernel where we went
+to sleep but the place where we left userspace. The result is
+even more wrong if we switch from a kernel thread.
 
-In the function level, if the class is named "foo" and the event
-is named "blah", we have the following chain of calls:
+Use the hot regs snapshot for both events as they belong to the
+non-interrupt/exception based events family. Unlike page faults
+or so that provide the regs matching the exact origin of the event,
+we need to save the current context.
 
-perf_trace_blah() -> perf_trace_templ_foo()
+This makes the task migration event working and fix the context
+switch callchains and origin ip.
 
-In the case we have several events sharing the class "blah",
-we'll have multiple users of perf_trace_templ_foo(), and it
-won't be inlined by the compiler. This is usually what happens
-with the DECLARE_EVENT_CLASS/DEFINE_EVENT based definition.
+Example: perf record -a -e cs
 
-But if perf_trace_blah() is the only caller of perf_trace_templ_foo()
-there are fair chances that it will be inlined.
+Before:
 
-The problem is that we fetch the regs from perf_trace_templ_foo()
-after we rewinded the frame pointer to the second caller, we want
-to reach the caller of perf_trace_blah() to get the right source
-of the event. And we do this by always assuming that
-perf_trace_templ_foo() is not inlined. But as shown above this
-is not always true. And if it is inlined we miss the first caller,
-losing the most important level of precision.
+    10.91%      ksoftirqd/0                  0  [k] 0000000000000000
+                |
+                --- (nil)
+                    perf_callchain
+                    perf_prepare_sample
+                    __perf_event_overflow
+                    perf_swevent_overflow
+                    perf_swevent_add
+                    perf_swevent_ctx_event
+                    do_perf_sw_event
+                    __perf_sw_event
+                    perf_event_task_sched_out
+                    schedule
+                    run_ksoftirqd
+                    kthread
+                    kernel_thread_helper
 
-We get:
-	    61.31%       ls  [kernel.kallsyms]  [k] do_softirq
-                         |
-                         --- do_softirq
-                             irq_exit
-                             do_IRQ
-                             common_interrupt
-                            |
-                            |--25.00%-- tty_buffer_request_room
+After:
 
-Instead of:
-	    61.31%       ls  [kernel.kallsyms]  [k] __do_softirq
-                         |
-                         --- __do_softirq
-                             do_softirq
-                             irq_exit
-                             do_IRQ
-                             common_interrupt
-                            |
-                            |--25.00%-- tty_buffer_request_room
-
-To fix this, we fetch the regs from perf_trace_blah() rather than
-perf_trace_templ_foo() so that we don't have to deal with inlining
-surprises.
-
-That also bring us the advantage of having the true source of the
-event even if we don't have frame pointers.
+    23.77%  hald-addon-stor  [kernel.kallsyms]  [k] schedule
+            |
+            --- schedule
+               |
+               |--60.00%-- schedule_timeout
+               |          wait_for_common
+               |          wait_for_completion
+               |          blk_execute_rq
+               |          scsi_execute
+               |          scsi_execute_req
+               |          sr_test_unit_ready
+               |          |
+               |          |--66.67%-- sr_media_change
+               |          |          media_changed
+               |          |          cdrom_media_changed
+               |          |          sr_block_media_changed
+               |          |          check_disk_change
+               |          |          cdrom_open
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
+Cc: David Miller <davem@davemloft.net>
 ---
- include/trace/ftrace.h |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
+ include/linux/perf_event.h |   21 ++++++++++++++-------
+ kernel/perf_event.c        |    3 +--
+ 2 files changed, 15 insertions(+), 9 deletions(-)
 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index ea6f9d4..882c648 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -758,13 +758,12 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace void							\
- perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
--			    proto)					\
-+			struct pt_regs *__regs, proto)			\
- {									\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
- 	struct ftrace_raw_##call *entry;				\
- 	u64 __addr = 0, __count = 1;					\
- 	unsigned long irq_flags;					\
--	struct pt_regs *__regs;						\
- 	int __entry_size;						\
- 	int __data_size;						\
- 	int rctx;							\
-@@ -785,20 +784,22 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
- 									\
- 	{ assign; }							\
- 									\
--	__regs = &__get_cpu_var(perf_trace_regs);			\
--	perf_fetch_caller_regs(__regs, 2);				\
--									\
- 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
- 			       __count, irq_flags, __regs);		\
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 3b59cf7..613b419 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -860,13 +860,6 @@ extern atomic_t perf_swevent_enabled[PERF_COUNT_SW_MAX];
+ 
+ extern void __perf_sw_event(u32, u64, int, struct pt_regs *, u64);
+ 
+-static inline void
+-perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
+-{
+-	if (atomic_read(&perf_swevent_enabled[event_id]))
+-		__perf_sw_event(event_id, nr, nmi, regs, addr);
+-}
+-
+ #ifndef perf_arch_fetch_caller_regs
+ static inline void
+ perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
+@@ -887,6 +880,20 @@ static inline void perf_fetch_caller_regs(struct pt_regs *regs)
+ 	perf_arch_fetch_caller_regs(regs, CALLER_ADDR0);
  }
  
- #undef DEFINE_EVENT
--#define DEFINE_EVENT(template, call, proto, args)		\
--static notrace void perf_trace_##call(proto)			\
--{								\
--	struct ftrace_event_call *event_call = &event_##call;	\
--								\
--	perf_trace_templ_##template(event_call, args);		\
-+#define DEFINE_EVENT(template, call, proto, args)			\
-+static notrace void perf_trace_##call(proto)				\
-+{									\
-+	struct ftrace_event_call *event_call = &event_##call;		\
-+	struct pt_regs *__regs = &get_cpu_var(perf_trace_regs);		\
-+									\
-+	perf_fetch_caller_regs(__regs, 1);				\
-+									\
-+	perf_trace_templ_##template(event_call, __regs, args);		\
-+									\
-+	put_cpu_var(perf_trace_regs);					\
- }
++static inline void
++perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
++{
++	if (atomic_read(&perf_swevent_enabled[event_id])) {
++		struct pt_regs caller_regs;
++
++		if (!regs) {
++			perf_fetch_caller_regs(&caller_regs);
++			regs = &caller_regs;
++		}
++		__perf_sw_event(event_id, nr, nmi, regs, addr);
++	}
++}
++
+ extern void __perf_event_mmap(struct vm_area_struct *vma);
  
- #undef DEFINE_EVENT_PRINT
+ static inline void perf_event_mmap(struct vm_area_struct *vma)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index bbed6f0..8b392c3 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1167,8 +1167,7 @@ void perf_event_task_sched_out(struct task_struct *task,
+ 	struct pt_regs *regs;
+ 	int do_switch = 1;
+ 
+-	regs = task_pt_regs(task);
+-	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, regs, 0);
++	perf_sw_event(PERF_COUNT_SW_CONTEXT_SWITCHES, 1, 1, NULL, 0);
+ 
+ 	if (likely(!ctx || !cpuctx->task_ctx))
+ 		return;
 -- 
 1.6.2.3
 
