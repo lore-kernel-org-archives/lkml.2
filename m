@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0CZNsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 09:48:00 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:35270 "EHLO
+	id S1753871Ab0CZNsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 09:48:06 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:48987 "EHLO
 	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab0CZNr6 (ORCPT
+	with ESMTP id S1753509Ab0CZNr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 09:47:58 -0400
+	Fri, 26 Mar 2010 09:47:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=rryDOh5FfMgjAbBlyvDLiVAEZorw6yWluXglwh8QoBWEaIS6GA0JNPoUS4gv+sgTgv
-         /FO0nwxgjb2sVC2/3T0TVSOh96o86hDo4CSUYrch1N3ZZgsQuLAjLHqm+OOLE0Lpcf3d
-         jwaW2+puxAnkE1+Iq6eRMSE9DembrOXQmAXOI=
+         :references:mime-version:content-type:content-transfer-encoding;
+        b=S5wcO+w0x74gM9UoBiE0LmdriGaCi64G0VzbyWSlys9aADfF+g2N5qzaSQKKaIWkEL
+         zqDYXLOfbj75bW8N7DTG6DqKuBYsuCQOvhcAfQCHmScC8Ky7Iz9gQNL+dAu6mNI7YEZp
+         hDYaFGwf5dEN1bCv6SxiRUjFumU/vzKK8T/QM=
 From: Andrea Gelmini <andrea.gelmini@gelma.net>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, Andrea Gelmini <andrea.gelmini@gelma.net>,
@@ -22,64 +22,41 @@ Cc: mingo@elte.hu, Andrea Gelmini <andrea.gelmini@gelma.net>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Tom Zanussi <tzanussi@gmail.com>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] Tools perf builtin-trace.c: #includes cleanup
-Date: Fri, 26 Mar 2010 14:47:50 +0100
-Message-Id: <1269611272-29406-1-git-send-email-andrea.gelmini@gelma.net>
+Subject: [PATCH 2/2] Tools perf builtin-trace.c: %Ld -> %lld
+Date: Fri, 26 Mar 2010 14:47:51 +0100
+Message-Id: <1269611272-29406-2-git-send-email-andrea.gelmini@gelma.net>
 X-Mailer: git-send-email 1.7.0.3.296.g9776a
 In-Reply-To: <20100326080226.GC27394@elte.hu>
 References: <20100326080226.GC27394@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed util/exec_cmd.h and util/trace-event.h included more than once.
-Grouped and ordered includes.
+Chackpatch.pl cleanup:
+WARNING: %Ld/%Lu are not-standard C, use %lld/%llu
++·⁖⁖dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
 
 Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
 ---
- tools/perf/builtin-trace.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+ tools/perf/builtin-trace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 407041d..c743c86 100644
+index c743c86..49b772f 100644
 --- a/tools/perf/builtin-trace.c
 +++ b/tools/perf/builtin-trace.c
-@@ -1,13 +1,16 @@
- #include "builtin.h"
-+#include "perf.h"
+@@ -71,7 +71,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
  
--#include "util/util.h"
- #include "util/cache.h"
-+#include "util/debug.h"
-+#include "util/exec_cmd.h"
-+#include "util/header.h"
-+#include "util/parse-options.h"
-+#include "util/session.h"
- #include "util/symbol.h"
- #include "util/thread.h"
--#include "util/header.h"
--#include "util/exec_cmd.h"
- #include "util/trace-event.h"
--#include "util/session.h"
-+#include "util/util.h"
+ 	event__parse_sample(event, session->sample_type, &data);
  
- static char const		*script_name;
- static char const		*generate_script_lang;
-@@ -54,14 +57,6 @@ static int cleanup_scripting(void)
- 	return scripting_ops->stop_script();
- }
+-	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
++	dump_printf("(IP, %d): %d/%d: %#Lx period: %lld\n", event->header.misc,
+ 		    data.pid, data.tid, data.ip, data.period);
  
--#include "util/parse-options.h"
--
--#include "perf.h"
--#include "util/debug.h"
--
--#include "util/trace-event.h"
--#include "util/exec_cmd.h"
--
- static char const		*input_name = "perf.data";
- 
- static int process_sample_event(event_t *event, struct perf_session *session)
+ 	thread = perf_session__findnew(session, event->ip.pid);
 -- 
 1.7.0.3.296.g9776a
 
