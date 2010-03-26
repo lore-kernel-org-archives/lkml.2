@@ -1,112 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266Ab0CZAZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 20:25:45 -0400
-Received: from mga07.intel.com ([143.182.124.22]:36715 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751646Ab0CZAZn (ORCPT
+	id S1752492Ab0CZAaA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:30:00 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34076 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab0CZA36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 20:25:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,310,1267430400"; 
-   d="scan'208";a="258832810"
-Date: Fri, 26 Mar 2010 01:26:30 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: "Ira W. Snyder" <iws@ovro.caltech.edu>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       socketcan-core@lists.berlios.de
-Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus
- Carrier Board
-Message-ID: <20100326002629.GA31389@sortiz.org>
-References: <>
- <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
- <20100319163849.GB30409@sortiz.org>
- <20100319182209.GD13672@ovro.caltech.edu>
- <20100325225929.GA20618@sortiz.org>
- <20100325232244.GG10454@ovro.caltech.edu>
+	Thu, 25 Mar 2010 20:29:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=YWLpFom2zmlC8RAI1XqcKqdvtHYWx+q/1cENCuuZVKGA+gXFnLiwFQmsXq1x4oqbrt
+         JjtprtooTIqHcYYfr5BTeVmQQCSA0QCFDkTGDm2ncgie82w2CnNaJQ8w9T4J/ryJeLc7
+         BLa93iMi2U3/eHAWM1kO+ovtiATkg/T2COvh8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325232244.GG10454@ovro.caltech.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1b68c6791003251659w4c6c8d12rf97458c2380f25e0@mail.gmail.com>
+References: <4BAAD5BB.7050101@samsung.com>
+	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
+	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
+	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
+	 <4BAB7D9F.4070807@intel.com>
+	 <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
+	 <e9c3a7c21003251612l59d77753o8f56e2643a96fe0d@mail.gmail.com>
+	 <1b68c6791003251659w4c6c8d12rf97458c2380f25e0@mail.gmail.com>
+Date: Fri, 26 Mar 2010 09:29:56 +0900
+X-Google-Sender-Auth: 230bc72aca1f678a
+Message-ID: <9c9fda241003251729y28ccbadfs7ac72ad99b6d6ffa@mail.gmail.com>
+Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: jassi brar <jassisinghbrar@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Joonyoung Shim <jy0922.shim@samsung.com>,
+       Linus Walleij <linus.ml.walleij@gmail.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Ben Dooks <ben-linux@fluff.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 04:22:44PM -0700, Ira W. Snyder wrote:
-> On Thu, Mar 25, 2010 at 11:59:30PM +0100, Samuel Ortiz wrote:
-> > Hi Ira,
-> > 
-> > First of all, sorry for the late reply. Then my answers:
-> > 
-> > On Fri, Mar 19, 2010 at 11:22:09AM -0700, Ira W. Snyder wrote:
-> > > 
-> > > > > +/*
-> > > > > + * Subdevice Support
-> > > > > + */
-> > > > Please use the mfd-core API for building and registering platform sub devices.
-> > > > The pieces of code below should shrink significantly.
-> > > > 
-> > > 
-> > > Using this framework, how is it possible to create  the devices that I
-> > > do down below. For each subdevice, I need three resources:
-> > > 
-> > > 1) MODULbus registers -- PCI BAR3 + (0x200 * module_num)
-> > > 2) PLX Control Registers -- PCI BAR4
-> > > 3) IRQ
-> > > 
-> > > Specifically, the way IORESOURCE_MEM resources are copied seems wrong.
-> > > They start at the base address of only one resource and use the offsets
-> > > provided in the struct mfd_cell. See the if-statement at
-> > > drivers/mfd/mfd-core.c line 48.
-> > > 
-> > > I need two use two different parent resources. The mfd_add_devices()
-> > > function doesn't support this.
-> > I would still like you to use the mfd-core API. Here is my proposal:
-> > 
-> > 1) I modify mfd_add_device() to support a NULL mem_base argument. When
-> > mem_base is NULL, we would have:
-> > 
-> > res[r].parent = NULL and res[r].start = cell->resources[r].start;
-> > 
-> > The platform code will use iomem_resource as the parent for this resource.
-> > 
-> 
-> I don't know the implications of using iomem_resource as the parent
-> resource. If you think it is ok, I have no objections.
-> 
-> If it helps, I can provide the PCI resource as a parent resource in my
-> resources. Then, when mem_base is NULL, the mfd-core could do this:
-> 
-> res[r].parent = cell->resources[r].parent
-> 
-> This is basically what I did in my patch. I used the PCI resource as the
-> parent of all child resources. I don't know if that is safe, but it
-> works. :)
-> 
-> The mfd_add_device() function does this for IORESOURCE_IO resources. It
-> only tries to be smart for IORESOURCE_MEM and IORESOURCE_IRQ resources.
-I pushed an mfd-core change that basically falls back to the default resource
-copying when mem_base is NULL. That should allow you to use the API now.
+On Fri, Mar 26, 2010 at 8:59 AM, jassi brar <jassisinghbrar@gmail.com> wrote:
+> On Fri, Mar 26, 2010 at 8:12 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>> On Thu, Mar 25, 2010 at 3:27 PM, jassi brar <jassisinghbrar@gmail.com> wrote:
+>>> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+>>>> It sounds like you just need to add an extension for the arch specific dma
+>>>> api.
+>>> I actually plan more than that.
+>>> Apart from inefficient design, JoonYoung's driver has made some fatal
+>>> assumptions
+>>> about PL330, which will result in DMA aborts if used with SoCs that implement
+>>> configuration of PL330 that is very different from Samsung SoCs'
+Exactly what? We are already tested it our board and play the music well.
+What's condition DMA aborts are happen?
+>>> Of course, I address all such issues that I can think of, in my implementation.
+>>
+>> Ok, I'll rely on acked-by's from the interested parties once your
+>> driver is out as I do not have a vested interest in this hardware,
+>> just the dmaengine framework issues.
+> Fair enough. Thank you.
 
-> > > > > +#define PCI_VENDOR_ID_JANZ		0x13c3
-> > > > That probably belongs to pci_ids.h
-> > > > 
-> > > 
-> > > Should I add a patch to the series for this?
-> > Either that or merge the pci_ids.h changes with this patch.
-> > 
-> 
-> I guess it is a trivial enough change to merge with this patch.
-> 
-> I'll wait for your patch to the mfd-core API before making changes and
-> sending out the next round of updates.
-Very nice. The above mentioned change in my for-next branch, commit
-6802a325f541bbea3168cf61ba239443193e1f9a.
+As your previous mail, we can wait until this weekend. but If you
+don't post the your codes until this weekend.
+We assume that your works are not yet done so merge this patch first
+and then fix it if your words(DMA aborts issue) are right.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thank you,
+Kyungmin Park
