@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0CZVex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:34:53 -0400
-Received: from smtp2.caviumnetworks.com ([209.113.159.134]:16264 "EHLO
-	smtp2.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab0CZVeu (ORCPT
+	id S1754025Ab0CZViI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:38:08 -0400
+Received: from server78.greatnet.de ([83.133.96.102]:52851 "EHLO
+	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab0CZViG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:34:50 -0400
-X-Greylist: delayed 980 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 17:34:50 EDT
-Message-ID: <4BAD248D.7070603@caviumnetworks.com>
-Date: Fri, 26 Mar 2010 14:18:05 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+	Fri, 26 Mar 2010 17:38:06 -0400
+Message-ID: <4BAD2936.2050106@nachtwindheim.de>
+Date: Fri, 26 Mar 2010 22:37:58 +0100
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH] Protect prefetch macro arguments.
-References: <1269636240-8895-1-git-send-email-ddaney@caviumnetworks.com> <alpine.LFD.2.00.1003261402170.3721@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1003261402170.3721@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Krzysztof Helt <krzysztof.h1@poczta.fm>,
+       Arnaud Patard <arnaud.patard@rtp-net.org>,
+       Andres Salomon <dilinger@debian.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix section mismatches in virtual framebuffer
+References: <1269433035-6141-1-git-send-email-henne@nachtwindheim.de> <20100326104026.5cda2fbf.randy.dunlap@oracle.com>
+In-Reply-To: <20100326104026.5cda2fbf.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 Mar 2010 21:18:11.0284 (UTC) FILETIME=[D6B24140:01CACD29]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2010 02:04 PM, Linus Torvalds wrote:
+Sorry, this patch is crap.
+
+These structures can be freed cause they are struct and not struct*
+But they should be __devinitdata.
+
+I'm going to resend this and a couple of other fb-patches tomorrow.
+
+Thanks 
+
+Randy Dunlap schrieb:
+
+> [adding linux-fbdev mailing list]
+>
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 >
 >
-> On Fri, 26 Mar 2010, David Daney wrote:
+> On Wed, 24 Mar 2010 13:17:15 +0100 Henrik Kretzschmar wrote:
+>
+>   
+>> Both structs, vfb_default and vfb_fix, should not be freed,
+>> since they are referenced and used by the struct fb_info of that device.
 >>
->> The GCC built-in __builtin_prefetch() is a vargs function.  If we
->> don't wrap the macro parameter in parentheses, a comma operator in the
->> actual argument list might cause unintended parameters to be passed to
->> __builtin_prefetch().
+>> WARNING: drivers/video/vfb.o(.devinit.text+0x13f): Section mismatch in
+>> reference from the function vfb_probe() to the variable
+>> .init.data:vfb_default
+>> The function __devinit vfb_probe() references
+>> a variable __initdata vfb_default.
+>> If vfb_default is only used by vfb_probe then
+>> annotate vfb_default with a matching annotation.
+>>
+>> WARNING: drivers/video/vfb.o(.devinit.text+0x162): Section mismatch in
+>> reference from the function vfb_probe() to the variable
+>> .init.data:vfb_fix
+>> The function __devinit vfb_probe() references
+>> a variable __initdata vfb_fix.
+>> If vfb_fix is only used by vfb_probe then
+>> annotate vfb_fix with a matching annotation.
+>>
+>> WARNING: drivers/video/vfb.o(.devinit.text+0x177): Section mismatch in
+>> reference from the function vfb_probe() to the variable
+>> .init.data:vfb_fix
+>> The function __devinit vfb_probe() references
+>> a variable __initdata vfb_fix.
+>> If vfb_fix is only used by vfb_probe then
+>> annotate vfb_fix with a matching annotation.
+>>
+>> WARNING: drivers/video/vfb.o(.devinit.text+0x184): Section mismatch in
+>> reference from the function vfb_probe() to the (unknown reference)
+>> .init.data:(unknown)
+>> The function __devinit vfb_probe() references
+>> a (unknown reference) __initdata (unknown).
+>> If (unknown) is only used by vfb_probe then
+>> annotate (unknown) with a matching annotation.
+>>
+>> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+>> ---
+>>  drivers/video/vfb.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/video/vfb.c b/drivers/video/vfb.c
+>> index b8ab995..ae5796d 100644
+>> --- a/drivers/video/vfb.c
+>> +++ b/drivers/video/vfb.c
+>> @@ -79,7 +79,7 @@ static void rvfree(void *mem, unsigned long size)
+>>  	vfree(mem);
+>>  }
+>>  
+>> -static struct fb_var_screeninfo vfb_default __initdata = {
+>> +static struct fb_var_screeninfo vfb_default = {
+>>  	.xres =		640,
+>>  	.yres =		480,
+>>  	.xres_virtual =	640,
+>> @@ -101,7 +101,7 @@ static struct fb_var_screeninfo vfb_default __initdata = {
+>>        	.vmode =	FB_VMODE_NONINTERLACED,
+>>  };
+>>  
+>> -static struct fb_fix_screeninfo vfb_fix __initdata = {
+>> +static struct fb_fix_screeninfo vfb_fix = {
+>>  	.id =		"Virtual FB",
+>>  	.type =		FB_TYPE_PACKED_PIXELS,
+>>  	.visual =	FB_VISUAL_PSEUDOCOLOR,
+>> -- 
+>>     
 >
-> This seems totally pointless and actively wrong.
-
-Pointless, perhaps.  But 'actively wrong'?  Are you sure about that?
-
-In any event I guess I don't care much one way or the other.  I was 
-working on something else when I saw this. It looked wrong to me.
-
-Thanks,
-David Daney
-
-
 >
-> You cannot have a comma operator in the actual argument list to the
-> #define, because if you did, then you'd get a
+> ---
+> ~Randy
 >
-> 	macro "prefetch()" passed 2 arguments, but takes just 1
->
-> so the only way I see to pass a comma operator is to _already_ have the
-> macro parameter in parenthesis.
->
-> 		Linus
+>   
 
