@@ -1,82 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab0CZWuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:50:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:56463 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464Ab0CZWuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:50:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Oren Laadan <orenl@cs.columbia.edu>
-Subject: Re: [C/R v20][PATCH 15/96] cgroup freezer: Fix buggy resume test for tasks frozen with cgroup freezer
-Date: Fri, 26 Mar 2010 23:53:26 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, linux-api@vger.kernel.org,
-       Serge Hallyn <serue@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       containers@lists.linux-foundation.org,
-       Matt Helsley <matthltc@us.ibm.com>, Cedric Le Goater <legoater@free.fr>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org
-References: <1268842164-5590-1-git-send-email-orenl@cs.columbia.edu> <201003230028.40915.rjw@sisk.pl> <4BA8E659.1030702@cs.columbia.edu>
-In-Reply-To: <4BA8E659.1030702@cs.columbia.edu>
+	id S1754666Ab0CZWyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:54:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:28912 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754482Ab0CZWym convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:54:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=RA4jdi5FcSreNmnRuhVpNB5V3KoM+UaECDOy4vBHPdoBFkdCtCr/RONVXHV//I+C6
+	oSTs2SPTXnMWE2rKf/vAQ==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003262353.26181.rjw@sisk.pl>
+In-Reply-To: <20100326152012.GB18128@redhat.com>
+References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
+	 <4BAC0E7D.9080305@cn.fujitsu.com> <20100326152012.GB18128@redhat.com>
+Date: Fri, 26 Mar 2010 15:54:40 -0700
+Message-ID: <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
+Subject: Re: [PATCH 0/4] io-controller: Use names rather than major:minor
+From: Chad Talbott <ctalbott@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jens.axboe@oracle.com,
+       mrubin@google.com, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-kernel@vger.kernel.org, dpshah@google.com,
+       Nauman Rafique <nauman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 March 2010, Oren Laadan wrote:
-> 
-> Rafael J. Wysocki wrote:
-> > On Wednesday 17 March 2010, Oren Laadan wrote:
-> >> From: Matt Helsley <matthltc@us.ibm.com>
-> >>
-> >> When the cgroup freezer is used to freeze tasks we do not want to thaw
-> >> those tasks during resume. Currently we test the cgroup freezer
-> >> state of the resuming tasks to see if the cgroup is FROZEN.  If so
-> >> then we don't thaw the task. However, the FREEZING state also indicates
-> >> that the task should remain frozen.
-> >>
-> >> This also avoids a problem pointed out by Oren Ladaan: the freezer state
-> >> transition from FREEZING to FROZEN is updated lazily when userspace reads
-> >> or writes the freezer.state file in the cgroup filesystem. This means that
-> >> resume will thaw tasks in cgroups which should be in the FROZEN state if
-> >> there is no read/write of the freezer.state file to trigger this
-> >> transition before suspend.
-> >>
-> >> NOTE: Another "simple" solution would be to always update the cgroup
-> >> freezer state during resume. However it's a bad choice for several reasons:
-> >> Updating the cgroup freezer state is somewhat expensive because it requires
-> >> walking all the tasks in the cgroup and checking if they are each frozen.
-> >> Worse, this could easily make resume run in N^2 time where N is the number
-> >> of tasks in the cgroup. Finally, updating the freezer state from this code
-> >> path requires trickier locking because of the way locks must be ordered.
-> >>
-> >> Instead of updating the freezer state we rely on the fact that lazy
-> >> updates only manage the transition from FREEZING to FROZEN. We know that
-> >> a cgroup with the FREEZING state may actually be FROZEN so test for that
-> >> state too. This makes sense in the resume path even for partially-frozen
-> >> cgroups -- those that really are FREEZING but not FROZEN.
-> >>
-> >> Reported-by: Oren Ladaan <orenl@cs.columbia.edu>
-> >> Signed-off-by: Matt Helsley <matthltc@us.ibm.com>
-> >> Cc: Cedric Le Goater <legoater@free.fr>
-> >> Cc: Paul Menage <menage@google.com>
-> >> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> >> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >> Cc: Pavel Machek <pavel@ucw.cz>
-> >> Cc: linux-pm@lists.linux-foundation.org
-> > 
-> > Looks reasonable.
-> > 
-> > Is anyone handling that already or do you want me to take it to my tree?
-> 
-> Yes, please do.
+On Fri, Mar 26, 2010 at 8:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Fri, Mar 26, 2010 at 09:31:41AM +0800, Gui Jianfeng wrote:
+>> +int blk_lookup_devname(dev_t devt, char *name)
+>> +{
 
-Applied.
+[ snip... loop through all block devices for devt ...snip ]
 
-Rafael
+>> So we can keep dev_t in blkio layer, and export to user a device name by calling
+>> this function. Also, we retrive device number by calling blk_lookup_devt().
+>> This change might keep things much simple. Jens, do you have any thoughts?
+>>
+> I agree with Gui that lets keep the dev_t the core in blkio layer. Keeping
+> a pointer to gendisk in request queue is becoming little messy.
+
+Agreed on leaving gendisk pointer out of request_queue.  In doing
+further investigation, I've found that it's up to the driver to
+maintain the association between gendisk and request_queue, and some
+drivers put multiple gendisk behind a single request_queue, so the
+back pointer would be ill-specified.
+
+> But if that does not work for you, then I would also like to keep things
+> simple and translate dev_t to diskname during read routine. Similiarly,
+> while somebody is putting policy, use blk_lookup_devt().
+
+I like the simplicity of blk_lookup_devt(), but I don't like the idea
+of iterating through all block devices on every lookup of the name.
+Perhaps we could cache the name somewhere?
+
+Actually, the name is the name of the *queue* (or the key in
+blk-cgroup), because as I mentioned above there can be a many to one
+relationship between disks and queues in general.
+
+The more I think about it, the more it seems to make sense to extend
+blkio_policy_ops to include a function to get the name of the key.
+blk-cgroup makes no current use of the dev, except to invent a name
+for the request_queue whose policy is being set or printed.  It could
+be argued that the thing being scheduled has a better idea of the name
+of that thing.
+
+> But this will lead to issue of how do you now display both device number
+> and disk name in the output. May be following.
+>
+> major:minor  diskname  data
+>
+> I am not sure if people are fond of multiple values in a single file. At
+> the same time for setting the rules or deleting the rules, it will make
+> syntax complicated/confusing. Also will require breaking ABI for existing
+> blkio.time, blkio.sectors, blkio.dequeue files.
+
+I don't like this, either.  It breaks ABI and is more confusing for users.
+
+> So I would prefer to keep the major/minor number based interface for
+> follwing reasons.
+>
+> - Chaning it now breaks ABI.
+> - Other cgroup controller "device" is also using major/minor number based
+>  interface for device access policy. So it is consistent with other
+>  controller.
+
+Which controllers are these?
+
+> - Displaying both device major/minor and diskname is an option but that
+>  makes the file format syntax little complicated and new rule setting
+>  or removoal confusing.
+
+A few messages back you mentioned that you preferred device names
+because they would be better for users of the system.  If there was a
+simple implementation, would you still be behind a new name-based
+interface?  We could go that direction and maintain ABI by deprecating
+current interface and making a new interface with names.
+
+If you can't tell, I'm a big fan of using the name! :)  It's *much*
+more consistent with the interfaces in /sys.
+
+Chad
