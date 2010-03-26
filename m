@@ -1,54 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0CZPop (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 11:44:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab0CZPon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 11:44:43 -0400
-Message-ID: <4BACD64F.4090005@redhat.com>
-Date: Fri, 26 Mar 2010 11:44:15 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+	id S1752910Ab0CZPur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 11:50:47 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:51264 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878Ab0CZPuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 11:50:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=LJLwvjxv3oAObO7oWF0R8rFWW7SWnrn6OANOZ85xK3zvDJyZHFh5vo7PO6GBr/G989
+         wT8ilaP4BpR42siJnuN6seaX5/y8lkFnARoQCnhlJwpKFIYa3ISRLqkH0Q3QRdzT68Gm
+         G1vVGykxBIvraSJBsiopqYXQhrMw06RAptpi0=
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Andrea Gelmini <andrea.gelmini@gelma.net>, linux-doc@vger.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/16] Tools perf probe-finder.c: duplicated include
-References: <1269537767-7553-14-git-send-email-andrea.gelmini@gelma.net> <4BABA088.2000405@redhat.com> <20100326142933.6CA7.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100326142933.6CA7.A69D9226@jp.fujitsu.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Fri, 26 Mar 2010 16:50:42 +0100
+Message-ID: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
+Subject: [Patch] fix packet loss and massive ping spikes with PPP multi-link
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-ppp@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro wrote:
->> Hi Andrea,
->>
->> Andrea Gelmini wrote:
->>> tools/perf/util/probe-finder.c: string.h is included more than once.
->>
->> Would you mean that <string.h> and "string.h" are duplicated? 
->> If so, NAK, sorry. Those are different, <string.h> is for
->> /usr/include/string.h, and "string.h" is for tools/perf/util/string.h.
->>
->> Thank you,
-> 
-> I think this discussion suggested "string.h" should be renameed more review
-> friendly name. probably.
+Hi all,
 
-Hmm, we'd better review files under tools/utils/include too. :(
-(not sure why we have those files, because some files includes
- headers from original include directory, as like as 
- "../../include/linux/blahblah.h")
+as you may be aware, it is recommended to switch of fragmentation when
+doing PPP multi-link. Problems which will be seen if you don't do that
+involve packet loss and massive spikes in the round-trip times.
+An increase of 1.5 seconds(!) is what we usually see.
 
-Thank you,
+Every Cisco CPE offers to switch off fragmentation for multi-link, other
+manufacturers are likely to offer it, as well.
+We implemented a really ugly hack which allows us to do the same with
+the Linux kernel. I can confirm that it gets rid of the problem 100%
+of the time.
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+We are fully aware that this code is not nearly up for inclusion into
+the kernel. What we hope to achieve is that someone with the skills to
+do this properly will introduce an option to turn off fragmentation on
+PPP multi-link or to just do away with it completely.
+
+Some stats for a run of 4 hours each:
+
+No patch:
+    129 lost fragments, 575803 reordered
+    127/3960 discarded fragments/bytes, 0 lost received
+
+Patch:
+    0 lost fragments, 0 reordered
+    0/0 discarded fragments/bytes, 0 lost received
+
+Unfortunately, I don't have paste-able stats for ping times available,
+at the moment.
+
+
+Any and all feedback on this is appreciated,
+Richard
+
+PS: Our image which is deployed in the field is using 2.6.32 which is
+why we were forced to develop for and test with 2.6.32 instead of
+linux-next; sorry for that.
+
+
+--- /usr/src/linux-2.6.32.3/drivers/net/ppp_generic.c.orig	2010-03-25
+16:56:05.000000000 +0100
++++ /usr/src/linux-2.6.32.3/drivers/net/ppp_generic.c	2010-03-26
+14:42:42.000000000 +0100
+@@ -123,6 +123,7 @@
+ 	struct net_device *dev;		/* network interface device a4 */
+ 	int		closing;	/* is device closing down? a8 */
+ #ifdef CONFIG_PPP_MULTILINK
++	int		rrsched;	/* round robin scheduler for packet distribution */
+ 	int		nxchan;		/* next channel to send something on */
+ 	u32		nxseq;		/* next sequence number to send */
+ 	int		mrru;		/* MP: max reconst. receive unit */
+@@ -1261,6 +1262,7 @@
+ 	struct list_head *list;
+ 	struct channel *pch;
+ 	struct sk_buff *skb = ppp->xmit_pending;
++	int i;
+
+ 	if (!skb)
+ 		return;
+@@ -1292,10 +1294,40 @@
+ 	}
+
+ #ifdef CONFIG_PPP_MULTILINK
+-	/* Multilink: fragment the packet over as many links
+-	   as can take the packet at the moment. */
+-	if (!ppp_mp_explode(ppp, skb))
+-		return;
++	ppp->rrsched++;
++//    printk(KERN_ERR "ppp: multi new packet, rrsched = %d\n", ppp->rrsched);
++
++	i = 0;
++	list_for_each_entry(pch, &ppp->channels, clist)      {
++//    	printk(KERN_ERR "ppp: channel %d ... \n", i);
++		if(pch->chan == NULL) continue;
++
++		if (ppp->rrsched % ppp->n_channels == i) {
++//    		printk(KERN_ERR "use channel %d\n", i);
++			spin_lock_bh(&pch->downl);
++			if (pch->chan) {
++//				++ppp->nxseq;
++				if (pch->chan->ops->start_xmit(pch->chan, skb)) {
++					ppp->xmit_pending = NULL;
++				}
++			} else {
++				/* channel got unregistered */
++				kfree_skb(skb);
++				ppp->xmit_pending = NULL;
++			}
++			spin_unlock_bh(&pch->downl);
++			return;
++		}
++		i++;
++	}
++//	printk(KERN_ERR "keep in queue\n");
++	return;
++
++
++//	/* Multilink: fragment the packet over as many links
++//	   as can take the packet at the moment. */
++//	if (!ppp_mp_explode(ppp, skb))
++//		return;
+ #endif /* CONFIG_PPP_MULTILINK */
+
+ 	ppp->xmit_pending = NULL;
