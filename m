@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab0CZDNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:13:52 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:34716 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab0CZDNu (ORCPT
+	id S1753978Ab0CZDQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:16:57 -0400
+Received: from mail-iw0-f196.google.com ([209.85.223.196]:53063 "EHLO
+	mail-iw0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab0CZDQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:13:50 -0400
-Date: Fri, 26 Mar 2010 12:12:36 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-Cc: linux-doc@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Magnus Damm <damm@igel.co.jp>,
-       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/16] USB gadget r8a66597-udc.c: duplicated include
-Message-ID: <20100326031235.GB5815@linux-sh.org>
-References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net> <1269537767-7553-10-git-send-email-andrea.gelmini@gelma.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269537767-7553-10-git-send-email-andrea.gelmini@gelma.net>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Thu, 25 Mar 2010 23:16:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=W5A4EFjEd43TM57DmyumE5KqcByXGIO4TuazbMXk6TR1TDQ3afsjt4LpYUYsIaMniX
+         qdgi9bQ7nTMNB463Nxl9EfrEEHEJXsnU+H4Xjh5EepVqcByzsbQVtwO8UmlNz7KC/hYA
+         InQ/h0uQ78wHpGZrAtZ16+r19p3EDADE1qEtQ=
+Message-ID: <4bac2726.017ee70a.188b.1305@mx.google.com>
+Date: Thu, 25 Mar 2010 20:16:54 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Poor interactive performance with I/O loads with fsync()ing
+To: tytso@mit.edu
+Cc: linux-kernel@vger.kernel.org, Olly Betts <olly@survex.com>,
+       martin f krafft <madduck@madduck.net>
+In-Reply-To: <4ba05b07.9f15f10a.5ac5.144f@mx.google.com>
+References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
+	<20100317012439.GA8256@thunk.org>
+	<4ba049f1.017ee70a.5ce6.1456@mx.google.com>
+	<20100317033010.GE8256@thunk.org>
+	<4ba05b07.9f15f10a.5ac5.144f@mx.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 06:22:40PM +0100, Andrea Gelmini wrote:
-> drivers/usb/gadget/r8a66597-udc.c: linux/err.h is included more than once.
+On Tue, 16 Mar 2010 21:31:03 -0700 (PDT), Ben Gamari <bgamari.foss@gmail.com> wrote:
+> On Tue, 16 Mar 2010 23:30:10 -0400, tytso@mit.edu wrote:
+> > .... so did switching to Btrfs solve your latency issues, or are you
+> > still having problems?
 > 
-> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> Still having troubles although I'm now running 2.6.34-rc1 and things seem
+> mildly better. I'll try doing a backup tonight and report back.
+> 
+I stand by my assertion that 2.6.34 does seem better in some regards. While
+there certainly are still latency issues, it's now less often that heavy I/O
+spills over into over processes' interactive performance. That being said,
+earlier this evening Tracker and notmuch were both indexing and I saw several
+events of tens of seconds of latency.
 
-It seems the same fix was done in two different trees and merged at
-different times, resulting in the duplication now.
-
-Applied, thanks.
+- Ben
