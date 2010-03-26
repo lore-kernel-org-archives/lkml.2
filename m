@@ -1,92 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0CZObL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 10:31:11 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:47753 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab0CZObI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 10:31:08 -0400
-Message-ID: <4BACC526.7090109@monstr.eu>
-Date: Fri, 26 Mar 2010 15:31:02 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1754109Ab0CZOed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 10:34:33 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47048 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754035Ab0CZOeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 10:34:31 -0400
+Date: Fri, 26 Mar 2010 14:33:39 GMT
+From: tip-bot for Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+       mingo@redhat.com, a.p.zijlstra@chello.nl, peterz@infradead.org,
+       tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1269608924.12097.147.camel@laptop>
+References: <1269608924.12097.147.camel@laptop>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf, x86: Add Nehelem PMU programming errata workaround
+Message-ID: <tip-1ac62cfff252fb668405ef3398a1fa7f4a0d6d15@git.kernel.org>
+Git-Commit-ID: 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 3/7] uartlite: Fix build on sparc.
-References: <20100319151326.GC8541@kroah.com> <1269011916-8836-3-git-send-email-gregkh@suse.de>
-In-Reply-To: <1269011916-8836-3-git-send-email-gregkh@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Mar 2010 14:33:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman wrote:
-> From: David Miller <davem@davemloft.net>
-> 
-> We can get this driver enabled via MFD_TIMBERDALE which only
-> requires GPIO to be on.
-> 
-> But the of_address_to_resource() function is only present on
-> powerpc and microblaze, so we have to conditionalize the
-> CONFIG_OF probing bits on that.
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/serial/uartlite.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
-> index ab2ab3c..f0a6c61 100644
-> --- a/drivers/serial/uartlite.c
-> +++ b/drivers/serial/uartlite.c
-> @@ -19,7 +19,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/init.h>
->  #include <asm/io.h>
-> -#if defined(CONFIG_OF)
-> +#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
+Commit-ID:  1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+Gitweb:     http://git.kernel.org/tip/1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Fri, 26 Mar 2010 14:08:44 +0100
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 26 Mar 2010 14:12:44 +0100
 
-What about do this in Kconfig?
+perf, x86: Add Nehelem PMU programming errata workaround
 
-Michal
+workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Fri Mar 26 13:59:41 CET 2010
 
->  #include <linux/of.h>
->  #include <linux/of_device.h>
->  #include <linux/of_platform.h>
-> @@ -581,7 +581,7 @@ static struct platform_driver ulite_platform_driver = {
->  /* ---------------------------------------------------------------------
->   * OF bus bindings
->   */
-> -#if defined(CONFIG_OF)
-> +#if defined(CONFIG_OF) && (defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE))
->  static int __devinit
->  ulite_of_probe(struct of_device *op, const struct of_device_id *match)
->  {
-> @@ -631,11 +631,11 @@ static inline void __exit ulite_of_unregister(void)
->  {
->  	of_unregister_platform_driver(&ulite_of_driver);
->  }
-> -#else /* CONFIG_OF */
-> -/* CONFIG_OF not enabled; do nothing helpers */
-> +#else /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
-> +/* Appropriate config not enabled; do nothing helpers */
->  static inline int __init ulite_of_register(void) { return 0; }
->  static inline void __exit ulite_of_unregister(void) { }
-> -#endif /* CONFIG_OF */
-> +#endif /* CONFIG_OF && (CONFIG_PPC32 || CONFIG_MICROBLAZE) */
->  
->  /* ---------------------------------------------------------------------
->   * Module setup/teardown
+Implement the workaround for Intel Errata AAK100 and AAP53.
 
+Also, remove the Core-i7 name for Nehalem events since there are
+also Westmere based i7 chips.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <1269608924.12097.147.camel@laptop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event.c       |    8 +++---
+ arch/x86/kernel/cpu/perf_event_intel.c |   43 +++++++++++++++++++++++++++++---
+ arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
+ arch/x86/kernel/cpu/perf_event_p6.c    |    2 +-
+ 4 files changed, 45 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index f571f51..6f66d4a 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -184,7 +184,7 @@ struct x86_pmu {
+ 	int		version;
+ 	int		(*handle_irq)(struct pt_regs *);
+ 	void		(*disable_all)(void);
+-	void		(*enable_all)(void);
++	void		(*enable_all)(int added);
+ 	void		(*enable)(struct perf_event *);
+ 	void		(*disable)(struct perf_event *);
+ 	int		(*hw_config)(struct perf_event_attr *attr, struct hw_perf_event *hwc);
+@@ -576,7 +576,7 @@ void hw_perf_disable(void)
+ 	x86_pmu.disable_all();
+ }
+ 
+-static void x86_pmu_enable_all(void)
++static void x86_pmu_enable_all(int added)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	int idx;
+@@ -784,7 +784,7 @@ void hw_perf_enable(void)
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+-	int i;
++	int i, added = cpuc->n_added;
+ 
+ 	if (!x86_pmu_initialized())
+ 		return;
+@@ -836,7 +836,7 @@ void hw_perf_enable(void)
+ 	cpuc->enabled = 1;
+ 	barrier();
+ 
+-	x86_pmu.enable_all();
++	x86_pmu.enable_all(added);
+ }
+ 
+ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 044b843..676aac2 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -483,7 +483,7 @@ static void intel_pmu_disable_all(void)
+ 	intel_pmu_lbr_disable_all();
+ }
+ 
+-static void intel_pmu_enable_all(void)
++static void intel_pmu_enable_all(int added)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+@@ -502,6 +502,40 @@ static void intel_pmu_enable_all(void)
+ 	}
+ }
+ 
++/*
++ * Workaround for:
++ *   Intel Errata AAK100 (model 26)
++ *   Intel Errata AAP53  (model 30)
++ *
++ * These chips need to be 'reset' when adding counters by programming
++ * the magic three (non counting) events 0x4300D2, 0x4300B1 and 0x4300B5
++ * either in sequence on the same PMC or on different PMCs.
++ */
++static void intel_pmu_nhm_enable_all(int added)
++{
++	if (added) {
++		struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++		int i;
++
++		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 0, 0x4300D2);
++		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
++		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
++
++		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
++		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
++
++		for (i = 0; i < 3; i++) {
++			struct perf_event *event = cpuc->events[i];
++
++			if (!event)
++				continue;
++
++			__x86_pmu_enable_event(&event->hw);
++		}
++	}
++	intel_pmu_enable_all(added);
++}
++
+ static inline u64 intel_pmu_get_status(void)
+ {
+ 	u64 status;
+@@ -658,7 +692,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
+ 	intel_pmu_drain_bts_buffer();
+ 	status = intel_pmu_get_status();
+ 	if (!status) {
+-		intel_pmu_enable_all();
++		intel_pmu_enable_all(0);
+ 		return 0;
+ 	}
+ 
+@@ -707,7 +741,7 @@ again:
+ 		goto again;
+ 
+ done:
+-	intel_pmu_enable_all();
++	intel_pmu_enable_all(0);
+ 	return 1;
+ }
+ 
+@@ -920,7 +954,8 @@ static __init int intel_pmu_init(void)
+ 		intel_pmu_lbr_init_nhm();
+ 
+ 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
+-		pr_cont("Nehalem/Corei7 events, ");
++		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
++		pr_cont("Nehalem events, ");
+ 		break;
+ 
+ 	case 28: /* Atom */
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index f8fe069..0d1be36 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -535,7 +535,7 @@ static void p4_pmu_enable_event(struct perf_event *event)
+ 				(cccr & ~P4_CCCR_RESERVED) | P4_CCCR_ENABLE);
+ }
+ 
+-static void p4_pmu_enable_all(void)
++static void p4_pmu_enable_all(int added)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 	int idx;
+diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
+index 6ff4d01..877182c 100644
+--- a/arch/x86/kernel/cpu/perf_event_p6.c
++++ b/arch/x86/kernel/cpu/perf_event_p6.c
+@@ -66,7 +66,7 @@ static void p6_pmu_disable_all(void)
+ 	wrmsrl(MSR_P6_EVNTSEL0, val);
+ }
+ 
+-static void p6_pmu_enable_all(void)
++static void p6_pmu_enable_all(int added)
+ {
+ 	unsigned long val;
+ 
