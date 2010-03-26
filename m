@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab0CZSkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 14:40:20 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46576 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab0CZSkS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 14:40:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UCRQ+c/ZJq7iGK3F5dtozq1Y4mlst6TolI95KHn7Pqd0rHx+mCwJgilm4C45ZN+PuS
-         /pm56Kkzxf4QvSHeiEXkC9TZz3d5S23sEUA/b9B2bjH/fiPmE4ro5hPi68E6GvlpV1G9
-         DL3xsq8bRsNtiI99k+7igMN7PLHXq2ZBVAASs=
+	id S1753615Ab0CZTBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:01:17 -0400
+Received: from www.tglx.de ([62.245.132.106]:41049 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753232Ab0CZTBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 15:01:15 -0400
+Date: Fri, 26 Mar 2010 20:01:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: John Kacur <jkacur@redhat.com>
+cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Subject: Re: [BUG-REPORT][PREEMPT-RT] 2.6.33.1-rt11 triggers
+ DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled), in a 32-bit kvm session
+In-Reply-To: <520f0cf11003260502o5ecb23adpe69f6eb465142821@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1003261951330.3147@localhost.localdomain>
+References: <520f0cf11003260502o5ecb23adpe69f6eb465142821@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <a36005b51003260456m441568c1vcc8b90eed0421b9d@mail.gmail.com>
-References: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com>
-	 <g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
-	 <b2cc26e41003251229w5d266c18gd17fdcf404136bd7@mail.gmail.com>
-	 <ff13bc9a1003251400ted1993ao73c15ee86e3e717a@mail.gmail.com>
-	 <a36005b51003260456m441568c1vcc8b90eed0421b9d@mail.gmail.com>
-Date: Fri, 26 Mar 2010 19:40:16 +0100
-Message-ID: <b2cc26e41003261140k3b089e3esda02dd3da0aaf8a6@mail.gmail.com>
-Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
-From: Olaf van der Spek <olafvdspek@gmail.com>
-To: Ulrich Drepper <drepper@gmail.com>
-Cc: Luca Barbieri <luca.barbieri@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 12:56 PM, Ulrich Drepper <drepper@gmail.com> wrote:
-> No.  ENOENT is the right value.
->
-> Once again, read my first message.  The shell cannot just report the
-> error anyway since there can be many different reasons for the
-> problem.  If the dynamic linker is missing it has to be discovered and
-> then reported.  In that message the correct error code is ENOENT.
->
-> Don't try to change things which are as good as any other solution.
-> The error message alone is in no case sufficient.  Fix your shells.
+On Fri, 26 Mar 2010, John Kacur wrote:
 
-What about other apps that call execve?
-Sounds like a lot of code duplication is needed.
+> During boot-up of 2.6.33.1-rt11 in a 32-bit qemu-kvm machine,
+> The following warning is reliably (every time) triggered.
+> 
+> ------------[ cut here ]------------
+> WARNING: at /home/jkacur/jk-2.6/kernel/fork.c:1065 copy_process+0x299/0x160f()
+> Hardware name:
+> Modules linked in:
+> Pid: 64, comm: khelper Not tainted 2.6.33.1-rt11 #1
+> Call Trace:
+>  [<c104961a>] warn_slowpath_common+0x83/0x9a
+>  [<c1049643>] warn_slowpath_null+0x12/0x15
+>  [<c1046f89>] copy_process+0x299/0x160f
+>  [<c1048711>] do_fork+0x235/0x4e2
+>  [<c107da08>] ? register_lock_class+0x17/0x22d
+>  [<c107e6dc>] ? mark_lock+0x1e/0x1c0
+>  [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+>  [<c100ae09>] kernel_thread+0x79/0x81
+>  [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+>  [<c100391c>] ? kernel_thread_helper+0x0/0x10
+>  [<c1064cc7>] __call_usermodehelper+0x75/0xa0
+>  [<c10673b6>] worker_thread+0x1f6/0x2fb
+>  [<c1067374>] ? worker_thread+0x1b4/0x2fb
+>  [<c1064c52>] ? __call_usermodehelper+0x0/0xa0
+>  [<c106a91e>] ? autoremove_wake_function+0x0/0x46
+>  [<c106a740>] kthread+0x6b/0x74
+>  [<c10671c0>] ? worker_thread+0x0/0x2fb
+>  [<c106a6d5>] ? kthread+0x0/0x74
+>  [<c106a6d5>] ? kthread+0x0/0x74
+>  [<c1003922>] kernel_thread_helper+0x6/0x10
+> ---[ end trace a22d306b065d4a66 ]---
+> 
+> I am happy to provide more information to help debug this.
 
-Olaf
+Can you run the following patch please ?
+
+Thanks,
+
+	tglx
+---
+
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 340cbc8..b63e8f5 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1062,7 +1062,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	rt_mutex_init_task(p);
+ 
+ #ifdef CONFIG_PROVE_LOCKING
+-	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
++	//DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
++	if (!p->hardirqs_enabled)
++		print_irqtrace_events(p);
+ 	DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
+ #endif
+ 	retval = -EAGAIN;
