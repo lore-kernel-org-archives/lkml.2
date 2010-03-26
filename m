@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab0CZD3G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:29:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38343 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab0CZD3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:29:01 -0400
-Date: Fri, 26 Mar 2010 14:28:52 +1100
-From: Neil Brown <neilb@suse.de>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 0/3] refcounting improvements in sysfs.
-Message-ID: <20100326142852.1d4f7b3b@notabene.brown>
-In-Reply-To: <m1sk7npylk.fsf@fess.ebiederm.org>
-References: <20100324031829.2136.66489.stgit@notabene.brown>
-	<m1sk7npylk.fsf@fess.ebiederm.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754152Ab0CZDbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:31:13 -0400
+Received: from mail-iw0-f196.google.com ([209.85.223.196]:53574 "EHLO
+	mail-iw0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753729Ab0CZDbM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 23:31:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=kIVNCaC3GLNqTx2hd3pRQEx73Qu1ix6mjhnUjTEZoQmJC2+kKiQ8ntHGOcaSv9znDh
+         ROsoi+4rhQ1evs/tlIhBu8yol9mLPd+JzZ8blEhA2O540by80x3bKgi2Upx0ayFCbvvu
+         uvHh0qSQd43xIf5xdgPVBGXzXWqSVS4gtx2CE=
+Message-ID: <4bac2a7e.8278e70a.5fa7.1315@mx.google.com>
+Date: Thu, 25 Mar 2010 20:31:10 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Poor interactive performance with I/O loads with fsync()ing
+To: Ingo Molnar <mingo@elte.hu>, Nick Piggin <npiggin@suse.de>
+Cc: tytso@mit.edu, linux-kernel@vger.kernel.org, Olly Betts <olly@survex.com>,
+       martin f krafft <madduck@madduck.net>
+In-Reply-To: <20100317093704.GA17146@elte.hu>
+References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
+	<20100317045350.GA2869@laptop> <20100317093704.GA17146@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Mar 2010 20:10:15 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
-
-> NeilBrown <neilb@suse.de> writes:
+On Wed, 17 Mar 2010 10:37:04 +0100, Ingo Molnar <mingo@elte.hu> wrote:
 > 
-> > This series tidies up the refcount of sysfs_dirents in sysfs,
-> > using kref where appropriate and a new karef for s_active.
-> > This achieves significant code simplification, especially the first
-> > patch.
-> >
-> > This is in part inspired by http://lwn.net/Articles/336224/ :-)
+> A call-graph profile will show the precise reason for IO latencies, and their 
+> relatively likelihood.
 > 
-> Neil I would appreciate if you would cc' Tejun and myself on
-> these kind of patches as we wrote the code and the best canidates
-> to review it.
->
+Once I get home I'll try to reproduce the issue and get a call graph. Thanks!
 
-Yes, you are right of course.
-I just pulled names out of MAINTAINERS figuring the maintainer would know
-what best to do with the patch.
-
-NeilBrown
+- Ben
