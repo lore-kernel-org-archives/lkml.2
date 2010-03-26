@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab0CZCso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 22:48:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34577 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229Ab0CZCsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 22:48:43 -0400
-Date: Fri, 26 Mar 2010 13:48:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>
-Subject: Re: linux-next: manual merge of the pci tree with the pci-current
- tree
-Message-Id: <20100326134836.ebe45694.sfr@canb.auug.org.au>
-In-Reply-To: <20100325191049.18020272@jbarnes-piketon>
-References: <20100326115712.2d800053.sfr@canb.auug.org.au>
-	<20100325191049.18020272@jbarnes-piketon>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__26_Mar_2010_13_48_36_+1100_4ggyYe3QGkW8c9zW"
+	id S1753881Ab0CZDD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:03:27 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:43754 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab0CZDDZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 23:03:25 -0400
+Date: Fri, 26 Mar 2010 12:02:08 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Christoffer Dall <christofferdall@christofferdall.dk>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       containers <containers@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [C/R ARM][PATCH 3/3] c/r: ARM implementation of checkpoint/restart
+Message-ID: <20100326030208.GA5815@linux-sh.org>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk> <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk> <20100323211843.GC19572@n2100.arm.linux.org.uk> <7d08b87d1003241348g347f092k1142318490e0bdcc@mail.gmail.com> <20100326024759.GN19308@shareable.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326024759.GN19308@shareable.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Mar_2010_13_48_36_+1100_4ggyYe3QGkW8c9zW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Jesse,
-
-On Thu, 25 Mar 2010 19:10:49 -0700 Jesse Barnes <jbarnes@virtuousgeek.org> =
-wrote:
->
-> Time to rebase my -next branch onto my for-linus branch again I guess.
-
-Any reason you wouldn't just merge your for-linus branch into your -next br=
-anch?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__26_Mar_2010_13_48_36_+1100_4ggyYe3QGkW8c9zW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkusIIQACgkQjjKRsyhoI8wZpwCghUVt96bvenmq05KRZqtg4Dci
-BEwAniek8Bt/3rDLJkm5uA4c79lN4nmE
-=fVkA
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Mar_2010_13_48_36_+1100_4ggyYe3QGkW8c9zW--
+On Fri, Mar 26, 2010 at 02:47:59AM +0000, Jamie Lokier wrote:
+> Christoffer Dall wrote:
+> > >> We checkpoint whether the system is running with CONFIG_MMU or not and
+> > >> require the same configuration for the system on which we restore the
+> > >> process. It might be possible to allow something more fine-grained,
+> > >> if it's worth the energy. Input on this item is also very welcome,
+> > >> specifically from someone who knows the exact meaning of the end_brk
+> > >> field.
+> > >
+> > > Processes which run on MMU and non-MMU CPUs are unlikely to be
+> > > interchangable - the run time environments are quite different. ?I
+> > > think this is a sane check.
+> > >
+> > thanks.
+> 
+> It's possible in principle to run many non-MMU binaries on MMU
+> kernels, but I've never heard of anyone doing it.
+> 
+FDPIC supports running the same binaries with or without MMU depending on
+your ABI, it's not really that uncommon, even if it's mostly just used
+for prototyping.
