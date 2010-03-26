@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab0CZQjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 12:39:31 -0400
-Received: from mail-ew0-f221.google.com ([209.85.219.221]:43475 "EHLO
-	mail-ew0-f221.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0CZQj3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 12:39:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=v0eIjayY0wVvdh2c9stGAkCtq5+8WEl2KjnnsK2tarWiO71EoXt6YjDU8bPdFPlpXa
-         aKd+WRAjieZrGc7DdLgfR8++AOqOnITHNIWJgkNZ3/vRxr+PWSOyuWgM7v8JFdHN4+8z
-         34AkO4U+ePW4cmPq34h1ZfWV3AAWZMSoa+STM=
-MIME-Version: 1.0
-In-Reply-To: <20100326160226.0159ac3b@lxorguk.ukuu.org.uk>
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
-	 <20100326160226.0159ac3b@lxorguk.ukuu.org.uk>
-Date: Fri, 26 Mar 2010 17:39:27 +0100
-Message-ID: <v2v2d460de71003260939w4877df7em9e3084a315b0962f@mail.gmail.com>
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP 
-	multi-link
-From: Richard Hartmann <richih.mailinglist@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-ppp@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1752312Ab0CZQla (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 12:41:30 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:3965 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab0CZQl3 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:2:1>);
+	Fri, 26 Mar 2010 12:41:29 -0400
+Message-Id: <4BACF1CB020000780003737A@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 26 Mar 2010 16:41:31 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <yinghai@kernel.org>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix allocation done in get_free_all_memory_range()
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 17:02, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+Even when get_max_mapped() returns a value beyond the DMA32 range,
+this can't be taken to mean an alocation from that range will succeed.
+Hence, the code should still fall back to an allocation starting at
+the bottom of memory if the first one failed.
 
-> You should be able to manage that I'm sure:
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
-Hopefully. We will see :)
+---
+ kernel/early_res.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+--- linux-2.6.34-rc2/kernel/early_res.c	2010-03-25 15:23:45.000000000 +0100
++++ 2.6.34-rc2-get_free_all_memory_range-retry-alloc/kernel/early_res.c	2010-03-26 14:49:41.000000000 +0100
+@@ -387,9 +387,7 @@ static void __init subtract_early_res(st
+ int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+ {
+ 	int i, count;
+-	u64 start = 0, end;
+-	u64 size;
+-	u64 mem;
++	u64 end, size, mem = -1ULL;
+ 	struct range *range;
+ 	int nr_range;
+ 
+@@ -403,9 +401,11 @@ int __init get_free_all_memory_range(str
+ 	end = get_max_mapped();
+ #ifdef MAX_DMA32_PFN
+ 	if (end > (MAX_DMA32_PFN << PAGE_SHIFT))
+-		start = MAX_DMA32_PFN << PAGE_SHIFT;
++		mem = find_fw_memmap_area(MAX_DMA32_PFN << PAGE_SHIFT, end,
++					  size, sizeof(struct range));
+ #endif
+-	mem = find_fw_memmap_area(start, end, size, sizeof(struct range));
++	if (mem == -1ULL)
++		mem = find_fw_memmap_area(0, end, size, sizeof(struct range));
+ 	if (mem == -1ULL)
+ 		panic("can not find more space for range free");
+ 
 
 
-> MODULE_PARM_DESC(ml_expode, "Set this to zero to disabling multilink \
->        fragmentation when talking to cisco devices");
 
-To be exact, this is not a Linux vs. Cisco issue, but a Linux vs. world
-issue.
-
-At least the last-level support of Telefonica and QSC was definite and
-adamant about not enabling fragmentation on _any_ PPP multi-link, ever.
-
-Also, I am not sure if it would not be better to default to no
-fragmentation and enable it optionally. I am aware that changing default
-behaviour is always a bit of a problem but to the best of my knowledge
-enabling fragmentation is a bug in any and all real-world applications.
-
-
-Richard
