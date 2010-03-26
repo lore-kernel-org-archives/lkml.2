@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab0CZThy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 15:37:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094Ab0CZThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 15:37:53 -0400
-Message-ID: <4BAD0D06.3000607@redhat.com>
-Date: Fri, 26 Mar 2010 14:37:42 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Lightning/1.0b2pre Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Andreas Dilger <adilger@sun.com>
-CC: Surbhi Palande <surbhi.palande@canonical.com>, linux-ext4@vger.kernel.org,
-       Stephen Tweedie <sct@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ext3: call blkdev_issue_flush on fsync
-References: <1269622243-26689-1-git-send-email-surbhi.palande@canonical.com> <37C3E508-AE2F-4FA5-9536-7F59B26CBBAC@sun.com>
-In-Reply-To: <37C3E508-AE2F-4FA5-9536-7F59B26CBBAC@sun.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753397Ab0CZTiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:38:55 -0400
+Received: from server78.greatnet.de ([83.133.96.102]:34783 "EHLO
+	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab0CZTiy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 15:38:54 -0400
+From: Henrik Kretzschmar <henne@nachtwindheim.de>
+To: tglx@linutronix.de, apw@canonical.com, sam@ravnborg.org
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, dwalker@fifo99.co,
+       joe@perches.com, dwalker@fifo99.com, rusty@rustcorp.com.au,
+       smaclennan@pikatech.com, khali@linux-fr.org, peterz@infradead.org,
+       adobriyan@gmail.com, mingo@elte.hu,
+       Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [PATCH] debugobjects: section mismatch cleanup
+Date: Fri, 26 Mar 2010 20:38:35 +0100
+Message-Id: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2010 02:24 PM, Andreas Dilger wrote:
-> On 2010-03-26, at 10:50, Surbhi Palande wrote:
->> To ensure that bits are truly on-disk after an fsync,
->> we should call blkdev_issue_flush if barriers are supported.
->>
->> @@ -87,5 +89,7 @@ int ext3_sync_file(struct file * file, struct  
->> dentry *dentry, int datasync)
->> 		ret = sync_inode(inode, &wbc);
->> 	}
->> out:
->> +	if (journal && (journal->j_flags & JFS_BARRIER))
->> +		blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
->> 	return ret;
-> 
-> 
-> I don't think we need yet ANOTHER barrier here.  If the filesystem is  
-> mounted in data={journaled,ordered} mode it will have flushed the data  
-> to disk as part of the journal commit.  If there is an external  
-> journal, there were patches posted to have it flush the data on the  
-> filesystem device at transaction commit time.
-> 
-> Since fsync on any inode always implies sync of the journal, the only  
-> time that this would be needed is if we are running in no-journal  
-> mode, or possibly in data=writeback mode.
+This patch marks two functions, which only get called at initialization,
+as __init.
 
-And no-journal mode isn't possible in ext3 :)
+Here is also interesting, that modpost doesn't catch here the right function
+name.
 
-Actually unless I'm totally confused, this patch doesn't apply at all,
-and we already have:
+Also does this patch produce 2 false positives for checkpatch.pl.
 
-        if (log_start_commit(journal, commit_tid)) {
-                log_wait_commit(journal, commit_tid);
-                goto out;
-        }
+WARNING: lib/built-in.o(.text+0x585f): Section mismatch in reference
+from the function T.506() to the variable .init.data:obj
+The function T.506() references
+the variable __initdata obj.
+This is often because T.506 lacks a __initdata
+annotation or the annotation of obj is wrong.
 
-        /*
-         * In case we didn't commit a transaction, we have to flush
-         * disk caches manually so that data really is on persistent
-         * storage
-         */
-        if (test_opt(inode->i_sb, BARRIER))
-                blkdev_issue_flush(inode->i_sb->s_bdev, NULL);
-out:
-        return ret;
+Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+---
+ lib/debugobjects.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-in ext3_sync_file(), from commit 56fcad29d4b3cbcbb2ed47a9d3ceca3f57175417...
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index a9a8996..c4ecd3c 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -773,7 +773,7 @@ static int __init fixup_free(void *addr, enum debug_obj_state state)
+ 	}
+ }
+ 
+-static int
++static int __init
+ check_results(void *addr, enum debug_obj_state state, int fixups, int warnings)
+ {
+ 	struct debug_bucket *db;
+@@ -916,7 +916,7 @@ void __init debug_objects_early_init(void)
+ /*
+  * Convert the statically allocated objects to dynamic ones:
+  */
+-static int debug_objects_replace_static_objects(void)
++static int __init debug_objects_replace_static_objects(void)
+ {
+ 	struct debug_bucket *db = obj_hash;
+ 	struct hlist_node *node, *tmp;
+-- 
+1.6.3.3
 
--Eric
