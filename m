@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab0CZHjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 03:39:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028Ab0CZHjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 03:39:44 -0400
-Date: Fri, 26 Mar 2010 08:37:24 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Americo Wang <xiyou.wangcong@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Roland McGrath <roland@redhat.com>,
-       Spencer Candland <spencer@bluehost.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC,PATCH 1/2] cputimers/proc: do_task_stat()->task_times()
-	can race with getrusage()
-Message-ID: <20100326073723.GA2596@dhcp-lab-161.englab.brq.redhat.com>
-References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100326035344.GQ3308@balbir.in.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1751863Ab0CZHsn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 03:48:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55402 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab0CZHsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 03:48:42 -0400
+Subject: Re: [PATCH] lockdep: Make lockstats counting per cpu
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1269586358.12097.117.camel@laptop>
+References: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com>
+	 <1269586358.12097.117.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Mar 2010 08:48:34 +0100
+Message-ID: <1269589714.12097.122.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 09:23:44AM +0530, Balbir Singh wrote:
-> * Oleg Nesterov <oleg@redhat.com> [2010-03-24 21:45:50]:
-> 
-> > do_task_stat()->task_times() can race with getrusage(), they both can
-> > try to update task->prev_Xtime at the same time.
+On Fri, 2010-03-26 at 07:52 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-03-26 at 03:22 +0100, Frederic Weisbecker wrote:
+> > We can't use irqsafe per cpu counters for that as
+> > these stats might be also written from NMI path, and irqsafe per
+> > cpu counters are not NMI safe, but local_t operations are.
 > > 
-> > Remove this bit of d180c5bc "sched: Introduce task_times() to replace
-> > task_{u,s}time()".
-> 
-> One of the reasons for adding this accuracy was to avoid sampling
-> based noise and errors that occur with utime and stime.
-> 
-> As long as there is no preemption during the assignment, I think we
-> should be OK. 
-> 
-> I see two options
-> 
-> 1. Disable preemption around assignment
-That one sounds very good.
+> lockdep shouldn't do NMI, nmi_enter() has an explicit lockdep_off().
 
-> 2. Remove task_times() from getrusage()
-We want more accurate and what more important monotonic values
-in getrusage.
+Also, more importantly, you simply should never use locks in NMI context
+to begin with ;-)
 
-Stanislaw
