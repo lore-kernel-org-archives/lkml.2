@@ -1,207 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab0CZOed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 10:34:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47048 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754035Ab0CZOeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 10:34:31 -0400
-Date: Fri, 26 Mar 2010 14:33:39 GMT
-From: tip-bot for Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
-       mingo@redhat.com, a.p.zijlstra@chello.nl, peterz@infradead.org,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-       peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1269608924.12097.147.camel@laptop>
-References: <1269608924.12097.147.camel@laptop>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Add Nehelem PMU programming errata workaround
-Message-ID: <tip-1ac62cfff252fb668405ef3398a1fa7f4a0d6d15@git.kernel.org>
-Git-Commit-ID: 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-X-Mailer: tip-git-log-daemon
+	id S1754140Ab0CZOiY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 10:38:24 -0400
+Received: from host2.200-71-230.telecom.net.ar ([200.71.230.2]:45817 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754035Ab0CZOiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 10:38:22 -0400
+X-Greylist: delayed 17288 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 10:38:21 EDT
+Message-ID: <53985.41.206.15.1.1269592580.squirrel@41.206.15.1>
+Date: Fri, 26 Mar 2010 06:36:20 -0200 (FNT)
+Subject: Congratulations - You have (Gratulujeme - jste)
+From: "Microsoft Email Promotions" <info.win@microsoft.com>
+Reply-To: mrivannickerson2@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Mar 2010 14:33:42 +0000 (UTC)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-Gitweb:     http://git.kernel.org/tip/1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Fri, 26 Mar 2010 14:08:44 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 26 Mar 2010 14:12:44 +0100
+Congratulations - You have (Gratulujeme - jste)
 
-perf, x86: Add Nehelem PMU programming errata workaround
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+24th March 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Fri Mar 26 13:59:41 CET 2010
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
 
-Implement the workaround for Intel Errata AAK100 and AAP53.
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
 
-Also, remove the Core-i7 name for Nehalem events since there are
-also Westmere based i7 chips.
+NAME:  Ivan Nickerson
+EMAIL: mrivan_nickerson01@yahoo.com.hk
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <1269608924.12097.147.camel@laptop>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c       |    8 +++---
- arch/x86/kernel/cpu/perf_event_intel.c |   43 +++++++++++++++++++++++++++++---
- arch/x86/kernel/cpu/perf_event_p4.c    |    2 +-
- arch/x86/kernel/cpu/perf_event_p6.c    |    2 +-
- 4 files changed, 45 insertions(+), 10 deletions(-)
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f571f51..6f66d4a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -184,7 +184,7 @@ struct x86_pmu {
- 	int		version;
- 	int		(*handle_irq)(struct pt_regs *);
- 	void		(*disable_all)(void);
--	void		(*enable_all)(void);
-+	void		(*enable_all)(int added);
- 	void		(*enable)(struct perf_event *);
- 	void		(*disable)(struct perf_event *);
- 	int		(*hw_config)(struct perf_event_attr *attr, struct hw_perf_event *hwc);
-@@ -576,7 +576,7 @@ void hw_perf_disable(void)
- 	x86_pmu.disable_all();
- }
- 
--static void x86_pmu_enable_all(void)
-+static void x86_pmu_enable_all(int added)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int idx;
-@@ -784,7 +784,7 @@ void hw_perf_enable(void)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	struct perf_event *event;
- 	struct hw_perf_event *hwc;
--	int i;
-+	int i, added = cpuc->n_added;
- 
- 	if (!x86_pmu_initialized())
- 		return;
-@@ -836,7 +836,7 @@ void hw_perf_enable(void)
- 	cpuc->enabled = 1;
- 	barrier();
- 
--	x86_pmu.enable_all();
-+	x86_pmu.enable_all(added);
- }
- 
- static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc)
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 044b843..676aac2 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -483,7 +483,7 @@ static void intel_pmu_disable_all(void)
- 	intel_pmu_lbr_disable_all();
- }
- 
--static void intel_pmu_enable_all(void)
-+static void intel_pmu_enable_all(int added)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
-@@ -502,6 +502,40 @@ static void intel_pmu_enable_all(void)
- 	}
- }
- 
-+/*
-+ * Workaround for:
-+ *   Intel Errata AAK100 (model 26)
-+ *   Intel Errata AAP53  (model 30)
-+ *
-+ * These chips need to be 'reset' when adding counters by programming
-+ * the magic three (non counting) events 0x4300D2, 0x4300B1 and 0x4300B5
-+ * either in sequence on the same PMC or on different PMCs.
-+ */
-+static void intel_pmu_nhm_enable_all(int added)
-+{
-+	if (added) {
-+		struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+		int i;
-+
-+		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 0, 0x4300D2);
-+		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
-+		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
-+
-+		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-+		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-+
-+		for (i = 0; i < 3; i++) {
-+			struct perf_event *event = cpuc->events[i];
-+
-+			if (!event)
-+				continue;
-+
-+			__x86_pmu_enable_event(&event->hw);
-+		}
-+	}
-+	intel_pmu_enable_all(added);
-+}
-+
- static inline u64 intel_pmu_get_status(void)
- {
- 	u64 status;
-@@ -658,7 +692,7 @@ static int intel_pmu_handle_irq(struct pt_regs *regs)
- 	intel_pmu_drain_bts_buffer();
- 	status = intel_pmu_get_status();
- 	if (!status) {
--		intel_pmu_enable_all();
-+		intel_pmu_enable_all(0);
- 		return 0;
- 	}
- 
-@@ -707,7 +741,7 @@ again:
- 		goto again;
- 
- done:
--	intel_pmu_enable_all();
-+	intel_pmu_enable_all(0);
- 	return 1;
- }
- 
-@@ -920,7 +954,8 @@ static __init int intel_pmu_init(void)
- 		intel_pmu_lbr_init_nhm();
- 
- 		x86_pmu.event_constraints = intel_nehalem_event_constraints;
--		pr_cont("Nehalem/Corei7 events, ");
-+		x86_pmu.enable_all = intel_pmu_nhm_enable_all;
-+		pr_cont("Nehalem events, ");
- 		break;
- 
- 	case 28: /* Atom */
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index f8fe069..0d1be36 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -535,7 +535,7 @@ static void p4_pmu_enable_event(struct perf_event *event)
- 				(cccr & ~P4_CCCR_RESERVED) | P4_CCCR_ENABLE);
- }
- 
--static void p4_pmu_enable_all(void)
-+static void p4_pmu_enable_all(int added)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int idx;
-diff --git a/arch/x86/kernel/cpu/perf_event_p6.c b/arch/x86/kernel/cpu/perf_event_p6.c
-index 6ff4d01..877182c 100644
---- a/arch/x86/kernel/cpu/perf_event_p6.c
-+++ b/arch/x86/kernel/cpu/perf_event_p6.c
-@@ -66,7 +66,7 @@ static void p6_pmu_disable_all(void)
- 	wrmsrl(MSR_P6_EVNTSEL0, val);
- }
- 
--static void p6_pmu_enable_all(void)
-+static void p6_pmu_enable_all(int added)
- {
- 	unsigned long val;
- 
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
+____________________________________________
+
+Gratulujeme - jste
+
+MICROSOFT EMAIL PROMO TÝM je pot&#283;šením oznamujeme, že
+Po úsp&#283;šném dokon&#269;ení PROMO sestavuje se konalo ve dnech
+24 b&#345;ezna 2010, svou e-mailovou adresu, p&#345;ipojené k vít&#283;zství
+&#269;ísla: (11) (80) (12) (96) (09) (43) vyhrál v desátém
+loterie kategorie.
+
+Jste byl schválen proto, aby pohledávky v celkové výši
+250,000,00 K&#269; libra v hotovosti p&#345;ipsána na Odkaz
+NO: MICRO-L/2009-END10.
+
+Všichni ú&#269;astníci byli vybráni prost&#345;ednictvím naší
+po&#269;íta&#269;ové spole&#269;nosti Microsoft
+volební systém, vycházející z 167.000 jména, jako sou&#269;ást našeho
+Mezinárodní "E-MAIL:" Podpora Program pro naše p&#345;ední
+MS-WORD uživatel&#367; po celém sv&#283;t&#283; a pro trvalé použití
+z internetu. Nacházíte se doporu&#269;uje kontaktovat pohledávek
+procesor s detaily níže prost&#345;ednictvím svého e-mailovou adresu:
+
+Jméno: Ivan Nickerson
+EMAIL: mrivan_nickerson01@yahoo.com.hk
+
+UPOZORN&#282;NÍ JSTE zaslat tyto informace
+
+Požádejte CENA:
+1.Full Jméno: ... 2.Address: ... 3.Phone: ... 4.Country: ...
+
+5.Sex/Gender: ...
+
+
+S pozdravem,
+Anastacia SHEFFIELD.
+
