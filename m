@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784Ab0CZBx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:53:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44324 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753577Ab0CZBxM (ORCPT
+	id S1753540Ab0CZBxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:53:42 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:45965 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab0CZBxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:53:12 -0400
+	Thu, 25 Mar 2010 21:53:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=I2ZtdoEC69DwCZVUVeeOSxLnj1SVPkSbFerAPaAZrmtkD/Cjvn+QW6QliGaMnxcprn
-         3WezsGBkYgvC7JYctksYjilprevRuj8CG+iLHGIYQtUxuoJD5sLoA0KUZtiPVTRuDDAI
-         b9AUGlsp+rkp3LdBRUy90wyE49uf6WisjRGxk=
+        b=P2lMCNouBvowvEfXX27d6khHbu1TKge1AZTgGOV20RpZZdZXEEi1ZjFxWRXOPlOt9U
+         Asva3DIh74hjSSo+zAmtEC7216ozJIbSI3W/xUfes1JhqAye7Z0KFWv1repDbqLhKZqa
+         RKwNTpjyh2yv74nt2Qazx0j198fFG6PTgIXRs=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -20,10 +20,11 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       David Miller <davem@davemloft.net>, Archs <linux-arch@vger.kernel.org>
-Subject: [PATCH 5/7] perf: Make perf_fetch_caller_regs rewind to the first caller only
-Date: Fri, 26 Mar 2010 02:52:40 +0100
-Message-Id: <1269568362-13690-6-git-send-regression-fweisbec@gmail.com>
+       David Miller <davem@davemloft.net>, Tejun Heo <htejun@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 7/7] perf: Correctly align perf event tracing buffer
+Date: Fri, 26 Mar 2010 02:52:42 +0100
+Message-Id: <1269568362-13690-8-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
 In-Reply-To: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
 References: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
@@ -31,128 +32,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trace events now only need to rewind the regs to the immediate
-caller, so we don't need anymore to implement the support for
-further stack walking.
+The trace event buffer used by perf to record raw sample events
+is typed as an array of char and may then not be aligned to 8
+by alloc_percpu().
 
+But we need it to be aligned to 8 in sparc64 because we cast
+this buffer into a random structure type built by the TRACE_EVENT()
+macro to store the traces. So if a random 64 bits field is accessed
+inside, it may be not under an expected good alignment.
+
+Use an array of long instead to force the appropriate alignment, and
+perform a compile time check to ensure the size in byte of the buffer
+is a multiple of sizeof(long) so that its actual size doesn't get
+shrinked under us.
+
+This fixes unaligned accesses reported while using perf lock
+in sparc 64.
+
+Suggested-by: David Miller <davem@davemloft.net>
+Suggested-by: Tejun Heo <htejun@gmail.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: David Miller <davem@davemloft.net>
-Cc: Archs <linux-arch@vger.kernel.org>
+Cc: Tejun Heo <htejun@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/include/asm/perf_event.h |    6 +++---
- arch/x86/include/asm/stacktrace.h |    5 ++---
- include/linux/perf_event.h        |   30 +++++-------------------------
- include/trace/ftrace.h            |    2 +-
- 4 files changed, 11 insertions(+), 32 deletions(-)
+ kernel/trace/trace_event_perf.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 4bf3d37..1df2317 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -157,9 +157,9 @@ extern void perf_events_lapic_init(void);
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 8e9edcd..30314f5 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -15,7 +15,12 @@ EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
+ static char *perf_trace_buf;
+ static char *perf_trace_buf_nmi;
  
- #include <asm/stacktrace.h>
+-typedef typeof(char [PERF_MAX_TRACE_SIZE]) perf_trace_t ;
++/*
++ * Force it to be aligned to unsigned long to avoid misaligned accesses
++ * suprises
++ */
++typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
++	perf_trace_t;
  
--#define perf_arch_fetch_caller_regs(regs, ip, skip)	\
--	(regs)->ip = ip;				\
--	(regs)->bp = rewind_frame_pointer(skip);	\
-+#define perf_arch_fetch_caller_regs(regs, __ip)		\
-+	(regs)->ip = __ip;				\
-+	(regs)->bp = caller_frame_pointer();		\
- 	(regs)->cs = __KERNEL_CS;			\
- 	local_save_flags((regs)->flags);
+ /* Count the events in use (per event id, not per instance) */
+ static int	total_ref_count;
+@@ -128,6 +133,8 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+ 	char *trace_buf, *raw_data;
+ 	int pc, cpu;
  
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 8fb70b7..62c9897 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -74,15 +74,14 @@ struct stack_frame {
- 	unsigned long return_address;
- };
++	BUILD_BUG_ON(PERF_MAX_TRACE_SIZE % sizeof(unsigned long));
++
+ 	pc = preempt_count();
  
--static inline unsigned long rewind_frame_pointer(int n)
-+static inline unsigned long caller_frame_pointer(void)
- {
- 	struct stack_frame *frame;
+ 	/* Protect the per cpu buffer, begin the rcu read side */
+@@ -150,7 +157,7 @@ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+ 	raw_data = per_cpu_ptr(trace_buf, cpu);
  
- 	get_bp(frame);
+ 	/* zero the dead bytes from align to not leak stack to user */
+-	*(u64 *)(&raw_data[size - sizeof(u64)]) = 0ULL;
++	memset(&raw_data[size - sizeof(u64)], 0, sizeof(u64));
  
- #ifdef CONFIG_FRAME_POINTER
--	while (n--)
--		frame = frame->next_frame;
-+	frame = frame->next_frame;
- #endif
- 
- 	return (unsigned long)frame;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 76b680f..3b59cf7 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -869,42 +869,22 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- 
- #ifndef perf_arch_fetch_caller_regs
- static inline void
--perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip){ }
-+perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip) { }
- #endif
- 
- /*
-- * Take a snapshot of the regs. Skip ip and frame pointer to
-- * the nth caller. We only need a few of the regs:
-+ * Take a snapshot of the regs. Rewind ip and frame pointer to
-+ * the caller. We only need a few of the regs:
-  * - ip for PERF_SAMPLE_IP
-  * - cs for user_mode() tests
-  * - bp for callchains
-  * - eflags, for future purposes, just in case
-  */
--static inline void perf_fetch_caller_regs(struct pt_regs *regs, int skip)
-+static inline void perf_fetch_caller_regs(struct pt_regs *regs)
- {
--	unsigned long ip;
--
- 	memset(regs, 0, sizeof(*regs));
- 
--	switch (skip) {
--	case 1 :
--		ip = CALLER_ADDR0;
--		break;
--	case 2 :
--		ip = CALLER_ADDR1;
--		break;
--	case 3 :
--		ip = CALLER_ADDR2;
--		break;
--	case 4:
--		ip = CALLER_ADDR3;
--		break;
--	/* No need to support further for now */
--	default:
--		ip = 0;
--	}
--
--	perf_arch_fetch_caller_regs(regs, ip, skip);
-+	perf_arch_fetch_caller_regs(regs, CALLER_ADDR0);
- }
- 
- extern void __perf_event_mmap(struct vm_area_struct *vma);
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 882c648..82e9977 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -795,7 +795,7 @@ static notrace void perf_trace_##call(proto)				\
- 	struct ftrace_event_call *event_call = &event_##call;		\
- 	struct pt_regs *__regs = &get_cpu_var(perf_trace_regs);		\
- 									\
--	perf_fetch_caller_regs(__regs, 1);				\
-+	perf_fetch_caller_regs(__regs);					\
- 									\
- 	perf_trace_templ_##template(event_call, __regs, args);		\
- 									\
+ 	entry = (struct trace_entry *)raw_data;
+ 	tracing_generic_entry_update(entry, *irq_flags, pc);
 -- 
 1.6.2.3
 
