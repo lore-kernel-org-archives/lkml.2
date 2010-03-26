@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab0CZUy4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:54:56 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34987 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753024Ab0CZUyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:54:54 -0400
-Date: Fri, 26 Mar 2010 20:54:35 GMT
-From: tip-bot for Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, henne@nachtwindheim.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, henne@nachtwindheim.de
-In-Reply-To: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
-References: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/debugobjects] debugobjects: Section mismatch cleanup
-Message-ID: <tip-1fb2f77c037624601fd214fb7c29faa84cd7bdd7@git.kernel.org>
-Git-Commit-ID: 1fb2f77c037624601fd214fb7c29faa84cd7bdd7
-X-Mailer: tip-git-log-daemon
+	id S1753667Ab0CZU56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:57:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43328 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609Ab0CZU54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:57:56 -0400
+Date: Fri, 26 Mar 2010 18:18:00 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>,
+       linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in
+	soc_common.c
+Message-ID: <20100326181800.GB21682@n2100.arm.linux.org.uk>
+References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20100324230729.GA21359@n2100.arm.linux.org.uk> <4BAB38B1.8080404@ru.mvista.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 26 Mar 2010 20:54:36 +0000 (UTC)
+In-Reply-To: <4BAB38B1.8080404@ru.mvista.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1fb2f77c037624601fd214fb7c29faa84cd7bdd7
-Gitweb:     http://git.kernel.org/tip/1fb2f77c037624601fd214fb7c29faa84cd7bdd7
-Author:     Henrik Kretzschmar <henne@nachtwindheim.de>
-AuthorDate: Fri, 26 Mar 2010 20:38:35 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 26 Mar 2010 21:52:29 +0100
+On Thu, Mar 25, 2010 at 01:19:29PM +0300, Sergei Shtylyov wrote:
+> Hello.
+>
+> Russell King - ARM Linux wrote:
+>
+>>> -	debug(skt, 2, "mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d Vpp %d irq %d\n",
+>>> -			(state->csc_mask==0)?"<NONE> ":"",
+>>> -			(state->csc_mask&SS_DETECT)?"DETECT ":"",
+>>> -			(state->csc_mask&SS_READY)?"READY ":"",
+>>> -			(state->csc_mask&SS_BATDEAD)?"BATDEAD ":"",
+>>> -			(state->csc_mask&SS_BATWARN)?"BATWARN ":"",
+>>> -			(state->csc_mask&SS_STSCHG)?"STSCHG ":"",
+>>> -			(state->flags==0)?"<NONE> ":"",
+>>> -			(state->flags&SS_PWR_AUTO)?"PWR_AUTO ":"",
+>>> -			(state->flags&SS_IOCARD)?"IOCARD ":"",
+>>> -			(state->flags&SS_RESET)?"RESET ":"",
+>>> -			(state->flags&SS_SPKR_ENA)?"SPKR_ENA ":"",
+>>> -			(state->flags&SS_OUTPUT_ENA)?"OUTPUT_ENA ":"",
+>>> +	debug(skt, 2,	"mask: %s%s%s%s%s%s "
+>>> +			"flags: %s%s%s%s%s%s Vcc %d Vpp %d irq %d\n",
+>>>     
+>>
+>> NAK.  Breaking kernel messages across multiple lines makes them impossible
+>> to grep for.  checkpatch.pl is wrong on this one.
+>>   
+>
+>   I'd disagree in this case. Anybody will hardly grep for "mask:  
+> %s%s%s%s%s%sflags: %s%s%s%s%s%s".
 
-debugobjects: Section mismatch cleanup
-
-This patch marks two functions, which only get called at
-initialization, as __init.
-
-Here is also interesting, that modpost doesn't catch here the right
-function name.
-
-WARNING: lib/built-in.o(.text+0x585f): Section mismatch in reference
-from the function T.506() to the variable .init.data:obj
-The function T.506() references the variable __initdata obj.
-This is often because T.506 lacks a __initdata annotation or the 
-annotation of obj is wrong.
-
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-LKML-Reference: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- lib/debugobjects.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index a9a8996..c4ecd3c 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -773,7 +773,7 @@ static int __init fixup_free(void *addr, enum debug_obj_state state)
- 	}
- }
- 
--static int
-+static int __init
- check_results(void *addr, enum debug_obj_state state, int fixups, int warnings)
- {
- 	struct debug_bucket *db;
-@@ -916,7 +916,7 @@ void __init debug_objects_early_init(void)
- /*
-  * Convert the statically allocated objects to dynamic ones:
-  */
--static int debug_objects_replace_static_objects(void)
-+static int __init debug_objects_replace_static_objects(void)
- {
- 	struct debug_bucket *db = obj_hash;
- 	struct hlist_node *node, *tmp;
+Well, I disagree on a matter of principle with you.  If you want to avoid
+the line going over 80 columns, move the entire string onto the next line.
+Then we can have the entire string intact _and_ we can have it fitting
+within 80 columns.
