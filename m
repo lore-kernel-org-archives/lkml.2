@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab0CZNsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 09:48:06 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:48987 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab0CZNr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 09:47:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references:mime-version:content-type:content-transfer-encoding;
-        b=S5wcO+w0x74gM9UoBiE0LmdriGaCi64G0VzbyWSlys9aADfF+g2N5qzaSQKKaIWkEL
-         zqDYXLOfbj75bW8N7DTG6DqKuBYsuCQOvhcAfQCHmScC8Ky7Iz9gQNL+dAu6mNI7YEZp
-         hDYaFGwf5dEN1bCv6SxiRUjFumU/vzKK8T/QM=
-From: Andrea Gelmini <andrea.gelmini@gelma.net>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, Andrea Gelmini <andrea.gelmini@gelma.net>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/2] Tools perf builtin-trace.c: %Ld -> %lld
-Date: Fri, 26 Mar 2010 14:47:51 +0100
-Message-Id: <1269611272-29406-2-git-send-email-andrea.gelmini@gelma.net>
-X-Mailer: git-send-email 1.7.0.3.296.g9776a
-In-Reply-To: <20100326080226.GC27394@elte.hu>
-References: <20100326080226.GC27394@elte.hu>
+	id S1753899Ab0CZNtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 09:49:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29583 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752256Ab0CZNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 09:49:07 -0400
+Date: Fri, 26 Mar 2010 14:47:09 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Grzegorz Nosek <root@localdomain.pl>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
+       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
+       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Testing lxc 0.6.5 in Fedora 13
+Message-ID: <20100326134709.GB15790@redhat.com>
+References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com> <20100325213356.GB20541@megiteam.pl> <20100326111131.GA8604@redhat.com> <20100326115357.GA3345@count0.beaverton.ibm.com> <20100326124522.GD17113@megiteam.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326124522.GD17113@megiteam.pl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chackpatch.pl cleanup:
-WARNING: %Ld/%Lu are not-standard C, use %lld/%llu
-+·⁖⁖dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
+On 03/26, Grzegorz Nosek wrote:
+>
+> Hmm, is there a good reason why strace does not use the data explicitly
+> provided by the kernel but instead second-guesses it from syscall return
+> values? I don't know anything about ptrace, really,
 
-Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
----
- tools/perf/builtin-trace.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I know almost nothing too. But _iirc_, this all is even worse, strace
+doesn't necessary gets the notification from do_fork(), at least
+another quick grep shows it doesn't use PTRACE_O_TRACEFORK.
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index c743c86..49b772f 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -71,7 +71,7 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 
- 	event__parse_sample(event, session->sample_type, &data);
- 
--	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
-+	dump_printf("(IP, %d): %d/%d: %#Lx period: %lld\n", event->header.misc,
- 		    data.pid, data.tid, data.ip, data.period);
- 
- 	thread = perf_session__findnew(session, event->ip.pid);
--- 
-1.7.0.3.296.g9776a
+This is another reason why the change in do_fork() can't really help
+right now.
+
+Oleg.
 
