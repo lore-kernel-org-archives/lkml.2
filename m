@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0CZP6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 11:58:32 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50628 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751473Ab0CZP63 (ORCPT
+	id S1754231Ab0CZP6n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 11:58:43 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:59584 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939Ab0CZP6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 11:58:29 -0400
-Date: Fri, 26 Mar 2010 16:02:26 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Hartmann <richih.mailinglist@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-ppp@vger.kernel.org
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP
- multi-link
-Message-ID: <20100326160226.0159ac3b@lxorguk.ukuu.org.uk>
-In-Reply-To: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+	Fri, 26 Mar 2010 11:58:40 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
+In-Reply-To: Your message of "Wed, 24 Mar 2010 20:20:19 -0300."
+             <cecb6d8f1003241620v55fb960ds14818bf3a03fa334@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> <20100324230729.GA21359@n2100.arm.linux.org.uk>
+            <cecb6d8f1003241620v55fb960ds14818bf3a03fa334@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1269618994_4209P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Fri, 26 Mar 2010 11:56:34 -0400
+Message-ID: <10080.1269618994@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020206.4BACD935.0283,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We are fully aware that this code is not nearly up for inclusion into
-> the kernel. What we hope to achieve is that someone with the skills to
-> do this properly will introduce an option to turn off fragmentation on
-> PPP multi-link or to just do away with it completely.
+--==_Exmh_1269618994_4209P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-You should be able to manage that I'm sure:
+On Wed, 24 Mar 2010 20:20:19 -0300, Marcelo Jimenez said:
 
-The main thing will be to take this chunk, strip out the // stuff and
-then make it a function of its own so you've got clean code in the main
-path of the form
+>> - =A0 =A0 debug(skt, 2, =22mask: %s%s%s%s%s%sflags: %s%s%s%s%s%sVcc %d=
+ Vpp %d irq %d=5Cn=22,
 
-#ifdef CONFIG_PPP_MULTILINK
-	if (ml_explode) {
-		if (!ppp_mp_explode(...)
-	..
-	} else {
-		ppp_mp_roundrobin(...)
-	}
+> I will redo it, no problem. But just for my information, in that
+> particular case, is it usefull to grep using format specifiers?
 
-and your bits as a new routine. You can then do this
+Until you find the format string, you really don't know for sure if
+it's a %d or a %u or a %alt-ctl-cokebottle so you end up grepping like th=
+is:
 
-static int ml_explode = 1;
-module_param(ml_explode, int, 0600);
-MODULE_PARM_DESC(ml_expode, "Set this to zero to disabling multilink \
-	fragmentation when talking to cisco devices");
+egrep 'mask: .*flags: .*Vcc .* Vpp .* irq'
 
-which will let you load the module with the option ml_explode = 0 if you
-want that property.
+basically wildcarding your way across whatever %foo might be there.
 
-Making it runtime per link selectable would be nicer but thats a bit more
-work.
+--==_Exmh_1269618994_4209P
+Content-Type: application/pgp-signature
 
-Alan
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFLrNkycC3lWbTT17ARAvw8AJ0fkJ9pFeGhInoowQnCeXMbzvfw/gCgq0Oo
+mUp/GoaATxy6mPCt6nOE6fo=
+=2pV/
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1269618994_4209P--
 
