@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0CZDQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:16:57 -0400
-Received: from mail-iw0-f196.google.com ([209.85.223.196]:53063 "EHLO
-	mail-iw0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753300Ab0CZDQ4 (ORCPT
+	id S1754045Ab0CZDSY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:18:24 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:57309 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753300Ab0CZDSW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:16:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc:in-reply-to:references;
-        b=W5A4EFjEd43TM57DmyumE5KqcByXGIO4TuazbMXk6TR1TDQ3afsjt4LpYUYsIaMniX
-         qdgi9bQ7nTMNB463Nxl9EfrEEHEJXsnU+H4Xjh5EepVqcByzsbQVtwO8UmlNz7KC/hYA
-         InQ/h0uQ78wHpGZrAtZ16+r19p3EDADE1qEtQ=
-Message-ID: <4bac2726.017ee70a.188b.1305@mx.google.com>
-Date: Thu, 25 Mar 2010 20:16:54 -0700 (PDT)
-From: Ben Gamari <bgamari.foss@gmail.com>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-To: tytso@mit.edu
-Cc: linux-kernel@vger.kernel.org, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-In-Reply-To: <4ba05b07.9f15f10a.5ac5.144f@mx.google.com>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
-	<20100317012439.GA8256@thunk.org>
-	<4ba049f1.017ee70a.5ce6.1456@mx.google.com>
-	<20100317033010.GE8256@thunk.org>
-	<4ba05b07.9f15f10a.5ac5.144f@mx.google.com>
+	Thu, 25 Mar 2010 23:18:22 -0400
+Date: Fri, 26 Mar 2010 03:18:14 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@suse.de>, Jan Kara <jack@suse.cz>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [rfc][patch] mm: lockdep page lock
+Message-ID: <20100326031814.GQ19308@shareable.org>
+References: <20100315155859.GE2869@laptop> <20100315180759.GA7744@quack.suse.cz> <20100316022153.GJ2869@laptop> <1269437291.5109.238.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269437291.5109.238.camel@twins>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Mar 2010 21:31:03 -0700 (PDT), Ben Gamari <bgamari.foss@gmail.com> wrote:
-> On Tue, 16 Mar 2010 23:30:10 -0400, tytso@mit.edu wrote:
-> > .... so did switching to Btrfs solve your latency issues, or are you
-> > still having problems?
+Peter Zijlstra wrote:
+> On Tue, 2010-03-16 at 13:21 +1100, Nick Piggin wrote:
+> > 
+> > 
+> > Agreed (btw. Peter is there any way to turn lock debugging back on?
+> > it's annoying when cpufreq hotplug code or something early breaks and
+> > you have to reboot in order to do any testing).
 > 
-> Still having troubles although I'm now running 2.6.34-rc1 and things seem
-> mildly better. I'll try doing a backup tonight and report back.
-> 
-I stand by my assertion that 2.6.34 does seem better in some regards. While
-there certainly are still latency issues, it's now less often that heavy I/O
-spills over into over processes' interactive performance. That being said,
-earlier this evening Tracker and notmuch were both indexing and I saw several
-events of tens of seconds of latency.
+> Not really, the only way to do that is to get the full system back into
+> a known (zero) lock state and then fully reset the lockdep state.
 
-- Ben
+How about: Set a variable nr_pending = number of CPUs, run a task on
+each CPU which disables interrupts, atomically decrements nr_pending
+and then spins waiting for it to become negative (raw, not counted in
+lockdep), and whichever one takes it to zero, that task knows there
+are no locks held, and can reset the lockdep state.  Then sets it to
+-1 to wake everyone.
+
+-- Jamie
