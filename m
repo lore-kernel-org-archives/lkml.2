@@ -1,179 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab0CZGBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 02:01:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46189 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab0CZGBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 02:01:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100325151121.GU2024@csn.ul.ie>
-References: <20100325142414.6C80.A69D9226@jp.fujitsu.com> <20100325151121.GU2024@csn.ul.ie>
-Message-Id: <20100326142552.6CA4.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1753209Ab0CZGC0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 02:02:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41573 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752934Ab0CZGCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 02:02:24 -0400
+Date: Fri, 26 Mar 2010 17:02:14 +1100
+From: Neil Brown <neilb@suse.de>
+To: Tejun Heo <teheo@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] refcounting improvements in sysfs.
+Message-ID: <20100326170214.517a17cc@notabene.brown>
+In-Reply-To: <4BAC3CE0.2010408@suse.de>
+References: <20100324031829.2136.66489.stgit@notabene.brown>
+	<4BAC3CE0.2010408@suse.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 26 Mar 2010 15:01:43 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If you insist, I can limit direct compaction for > PAGE_ALLOC_COSTLY_ORDER. The
-> allocator is already meant to be able to handle these orders without special
-> assistance and it'd avoid compaction becoming a cruch for subsystems that
-> suddently decide it's a great idea to use order-1 or order-2 heavily.
+On Fri, 26 Mar 2010 13:49:36 +0900
+Tejun Heo <teheo@suse.de> wrote:
+
+> Hello,
 > 
-> > My point is, We have to consider to disard useful cached pages and to
-> > discard no longer accessed pages. latter is nearly zero cost.
-> 
-> I am not opposed to moving in this sort of direction although
-> particularly if we disable compaction for the lower orders. I believe
-> what you are suggesting is that the allocator would take the steps
-> 
-> 1. Try allocate from lists
-> 2. If that fails, do something like zone_reclaim_mode and lumpy reclaim
->    only pages which are cheap to discard
-> 3. If that fails, try compaction to move around the active pages
-> 4. If that fails, lumpy reclaim 
-
-This seems makes a lot of sense. 
-I think todo are
-
-1) now almost system doesn't use zone_reclaim. we need to consider change
-    zone_reclaim as by default or not.
-2) current zone_reclaim doesn't have light reclaim mode. it start reclaim as priority=5.
-    we need to consider adding new zone reclaim mode or not.
-
-
-> > please
-> > don't consider page discard itself is bad, it is correct page life cycle.
-> > To protest discard useless cached page can makes reduce IO throughput.
-> 
-> I don't consider it bad as such but I had generally considered compaction to
-> be better than discarding pages. I take your point though that if we compact
-> many old pages, it might be a net loss.
-
-thanks.
-
-
-> > > How do you figure? I think it goes a long way to mitigating the worst of
-> > > the problems you laid out above.
+> On 03/24/2010 12:20 PM, NeilBrown wrote:
+> > This series tidies up the refcount of sysfs_dirents in sysfs,
+> > using kref where appropriate and a new karef for s_active.
+> > This achieves significant code simplification, especially the first
+> > patch.
 > > 
-> > Both lumpy reclaim and page comaction have some advantage and some disadvantage.
-> > However we already have lumpy reclaim. I hope you rememver we are attacking
-> > very narrowing corner case. we have to consider to reduce the downside of compaction
-> > at first priority.
-> > Not only big benefit but also big downside seems no good.
-> > 
-> > So, I'd suggest either way
-> > 1) no change caller place, but invoke compaction at very limited situation, or
+> > This is in part inspired by http://lwn.net/Articles/336224/ :-)
 > 
-> I'm ok with enabling compaction only for >= PAGE_ALLOC_COSTLY_ORDER.
-> This will likely limit it to just huge pages for the moment but even
-> that would be very useful to me on swapless systems
+> Nice article.  In general, yeap, I agree it would be nice to have a
+> working reference count abstraction.  However, kref along with kobject
+> is a good example of obscurity by abstraction anti pattern.  :-)
 
-Agreed! thanks.
+I'm not at all sure that opinion would be universal....
 
-sidenote: I don't think this is only a feature for swapless systems. example, btrfs
-doesn't have pageout implementation, it mean btrfs can't use lumpy reclaim.
-page comaction can help to solve this issue.
+refcounting is something that it is quite easy to get wrong.  There are
+several slightly different models for refcounting and if you don't have a
+clear understanding of the different use cases it is easy to get confused
+about exactly what model is being used and so use a refcount wrongly.
+kref certainly doesn't cover all models for refcounting but it does cover one
+fairly common one very well and I think that it's use bring clarity rather
+than obscurity.
+Of course if it is used for a refcount which should really follow a different
+model then that can cause confusion...
 
-
-> > 2) invoke compaction at only lumpy reclaim unfit situation
-> > 
-> > My last mail, I proposed about (2). but you seems got bad impression. then,
-> > now I propsed (1).
 > 
-> 1 would be my preference to start with.
+> kobject API incorrectly suggests that it deals with the last put
+> problem.  There still are large number of code paths which do the
+> following,
 > 
-> After merge, I'd look into "cheap" lumpy reclaim which is used as a
-> first option, then compaction, then full direct reclaim. Would that be
-> satisfactory?
+>   if (!(kob = kobject_get(kobj)))
+> 	return;
 
-Yeah! this is very nice for me!
+kobject_get *always* returns exactly the argument that was passed to it.
+(kref_get doesn't have a return value.)
 
+I don't see how the code above has any bearing on the last-put problem, which
+I think kref and thus kobject do handle exactly correctly.
 
-> > I mean we will _start_ to treat the compaction is for
-> > hugepage allocation assistance feature, not generic allocation change.
-> > 
 > 
-> Agreed.
+> I believe (or at least hope) the actual problem cases are mostly fixed
+> now but there still are a lot of misconceptions around how stuff built
+> on kref/kobject is synchronized and they sometimes lead to race
+> conditions buried deep under several layers of abstractions and it
+> becomes very hard to see those race conditions when they are buried
+> deep.
+
+I agree that there probably misconceptions about how kref works and they are
+probably based on a lack of appreciation of the subtle differences in
+flavours of refcounts.  Hence my desire to create and document different
+k*ref types which clarify the different use cases.
+
 > 
-> > btw, I hope drop or improve patch 11/11 ;-)
-> 
-> I expect it to be improved over time. The compactfail counter is there to
-> identify when a bad situation occurs so that the workload can be better
-> understood. There are different heuristics that could be applied there to
-> avoid the wait but all of them have disadvantages.
+> If you want to kill refcounts w/ bias based off switch, please put it
+> inside an abstraction which at least synchronizes itself properly.
+> Open coding w/ bias at least warns you that there is some complex
+> stuff going on and you need to trade carefully.  Putting the switch on
+> a separate flag - people often forget how bits in a flag field are
+> synchronized - and the rest of refcount in a nice looking kref bundle
+> is very likely to lead to subtle race conditions which are *very*
+> difficult to notice.
 
-great!
+The only other use of a BIAS that I am aware of is in struct super_block, and
+Al Viro recently removed that in his bleeding edge tree (two days before I
+sent him a patch to do the same thing:-)
 
+It is dangerous to build too much into an abstraction else you will find that
+no-one uses it as it is too specific.
 
-> > > > Honestly, I think this patch was very impressive and useful at 2-3 years ago.
-> > > > because 1) we didn't have lumpy reclaim 2) we didn't have sane reclaim bail out.
-> > > > then, old vmscan is very heavyweight and inefficient operation for high order reclaim.
-> > > > therefore the downside of adding this page migration is hidden relatively. but...
-> > > > 
-> > > > We have to make an effort to reduce reclaim latency, not adding new latency source.
-> > > 
-> > > I recognise that reclaim latency has been reduced but there is a wall.
-> > 
-> > If it is a wall, we have to fix this! :)
-> 
-> Well, the wall I had in mind was IO bandwidth :)
+The s_count and s_active in struct super_block are very similar to s_count
+and s_active in struct sysfs_dirent, however they are also quite different.
+super_block uses a non-atomic s_count (because a spinlock is always held
+anyway) and has a separate way of preventing new s_active references (s_root
+becomes NULL).  The only real similarity is that they both have an 'active'
+refcount that *can* become zero and still be visible, which is different to a
+kref but still a model worth encapsulating (I think) in karef.
 
-ok, I catched you mention.
+BTW I'd be perfectly happy if the first patch was taken and subsequent ones
+not.  I think they are a good idea, but I'm happy to forgo them (for now:-).
 
-> > > Right now, it is identifed when pageout should happen instead of page
-> > > migration. It's known before compaction starts if it's likely to be
-> > > successful or not.
-> > > 
-> > 
-> > patch 11/11 says, it's known likely to be successfull or not, but not exactly.
-> 
-> Indeed. For example, it might not have been possible to migrate the necessary
-> pages because they were pagetables, slab etc. It might also be simply memory
-> pressure. It might look like there should be enough pages to compaction but
-> there are too many processes allocating at the same time.
-
-agreed.
-
-
-> > > I can drop the min_free_kbytes change but the likely result will be that
-> > > allocation success rates will simply be lower. The calculations on
-> > > whether compaction should be used or not are based on watermarks which
-> > > adjust to the value of min_free_kbytes.
-> > 
-> > Then, should we need min_free_kbytes auto adjustment trick?
-> 
-> I have considered this in the past. Specifically that it would be auto-adjusted
-> the first time a huge page was allocated. I never got around to it though.
-
-Hmhm, ok.
-we can discuss it as separate patch and separate thread.
-
-
-> > But please remember, now compaction might makes very large lru shuffling
-> > in compaction failure case. It mean vmscan might discard very wrong pages.
-> > I have big worry about it.
-> > 
-> 
-> Would disabling compaction for the lower orders alleviate your concerns?
-> I have also taken note to investigate how much LRU churn can be avoided.
-
-that's really great.
-
-I'm looking for your v6 post :)
-
-
+NeilBrown
