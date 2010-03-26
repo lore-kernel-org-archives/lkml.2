@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab0CZV53 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:57:29 -0400
-Received: from mail-iw0-f196.google.com ([209.85.223.196]:35756 "EHLO
-	mail-iw0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276Ab0CZV52 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:57:28 -0400
+	id S1754169Ab0CZV67 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:58:59 -0400
+Received: from sous-sol.org ([216.99.217.87]:57336 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752385Ab0CZV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 17:58:58 -0400
+Date: Fri, 26 Mar 2010 14:58:04 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: jbarnes@virtuousgeek.org, David.Woodhouse@intel.com, len.brown@intel.com,
+       chrisw@sous-sol.org, suresh.b.siddha@intel.com, mingo@elte.hu,
+       yu.zhao@intel.com, fenghua.yu@intel.com, weidong@intel.com,
+       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       iommu@lists.linux-foundation.org
+Subject: Re: [PATCH] dmar: section mismatch cleanup
+Message-ID: <20100326215804.GF29241@sequoia.sous-sol.org>
+References: <1269633200-19970-1-git-send-email-henne@nachtwindheim.de>
 MIME-Version: 1.0
-In-Reply-To: <20100326181800.GB21682@n2100.arm.linux.org.uk>
-References: <1269471898-26301-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> 
-	<1269471898-26301-2-git-send-email-mroberto@cpti.cetuc.puc-rio.br> 
-	<20100324230729.GA21359@n2100.arm.linux.org.uk> <4BAB38B1.8080404@ru.mvista.com> 
-	<20100326181800.GB21682@n2100.arm.linux.org.uk>
-From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Date: Fri, 26 Mar 2010 18:57:07 -0300
-Message-ID: <cecb6d8f1003261457x69c319c1w884ade1746f81e8b@mail.gmail.com>
-Subject: Re: [PATCH 2/2] ARM: pcmcia: fix checkpatch.pl issues in soc_common.c
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-       linux-arm-kernel@lists.infradead.org, linux-pcmcia@lists.infradead.org,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269633200-19970-1-git-send-email-henne@nachtwindheim.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 15:18, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Mar 25, 2010 at 01:19:29PM +0300, Sergei Shtylyov wrote:
->>
->>   I'd disagree in this case. Anybody will hardly grep for "mask:
->> %s%s%s%s%s%sflags: %s%s%s%s%s%s".
->
-> Well, I disagree on a matter of principle with you.  If you want to avoid
-> the line going over 80 columns, move the entire string onto the next line.
-> Then we can have the entire string intact _and_ we can have it fitting
-> within 80 columns.
+* Henrik Kretzschmar (henne@nachtwindheim.de) wrote:
+> This patch fixes a section mismatch.
+> 
+> WARNING: drivers/pci/built-in.o(.text+0x182f5): Section mismatch in
+> reference from the function dmar_ir_support() to the variable
+> .init.data:acpi_slot_detected
+> The function dmar_ir_support() references
+> the variable __initdata acpi_slot_detected.
+> This is often because dmar_ir_support lacks a __initdata
+> annotation or the annotation of acpi_slot_detected is wrong.
+> 
+> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
 
-This is no big deal. Also, I have already submitted the new patch and
-Valdis had a good point for egrep.
+Acked-by: Chris Wright <chrisw@sous-sol.org>
 
-Regards,
-Marcelo.
+> -int dmar_ir_support(void)
+> +int __init dmar_ir_support(void)
+
+> -extern int dmar_ir_support(void);
+> +extern int dmar_ir_support(void) __init;
+
+Nit, but prerfer to see:
+
+-extern int dmar_ir_support(void);
++extern int __init dmar_ir_support(void);
+
+thanks,
+-chris
