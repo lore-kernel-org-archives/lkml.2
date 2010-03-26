@@ -1,49 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753382Ab0CZR6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:58:39 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:37898 "EHLO
-	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0CZR6i (ORCPT
+	id S1753422Ab0CZR7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:59:21 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:41145 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab0CZR7T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:58:38 -0400
-Date: Fri, 26 Mar 2010 18:58:28 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, mingo@elte.hu, tglx@linutronix.de,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
-Message-ID: <20100326175827.GD20055@linux-mips.org>
-References: <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org>
- <20100326144241.8583.95617.stgit@warthog.procyon.org.uk>
- <28287.1269625325@redhat.com>
- <alpine.LFD.2.00.1003261042580.3721@i5.linux-foundation.org>
+	Fri, 26 Mar 2010 13:59:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qfVFjlr96Dbtu6FdOk+gy+Ba3R9oIipjcv67byJl8Enyt5auS8RUNwhFpdUXWxJ9kJ
+         HU1zuKXhJySvklkBWH8+IiJwFRCnW8+2rpcE0UM3DglesNx46Sk57Ib49AbvMs5UJD2Y
+         snRwAE1iGfIiypBlLp8e5GfmlPW3+9mJ0GWOs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003261042580.3721@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <s5hfx3nm1lh.wl%tiwai@suse.de>
+References: <64bb37e1003261025l14e2d82r64ba1e90d024bea6@mail.gmail.com>
+	 <s5hfx3nm1lh.wl%tiwai@suse.de>
+Date: Fri, 26 Mar 2010 18:59:17 +0100
+Message-ID: <64bb37e1003261059w3de67654m11ca17f1645f6c1@mail.gmail.com>
+Subject: Re: Regressions: MSI vs HDA-Intel
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 10:45:05AM -0700, Linus Torvalds wrote:
+On Fri, Mar 26, 2010 at 6:31 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 26 Mar 2010 18:25:22 +0100,
+> Torsten Kaiser wrote:
+>>
+>> I have two systems that use the alsa hda-intel driver, both show
+>> regressions in relation to MSI.
+>>
+>> System 1: Athlon(tm) X2 BE-2400 with an AMD RS690/SB600 chipset
+>> 00:14.2 Audio device [0403]: ATI Technologies Inc SBx00 Azalia (Intel
+>> HDA) [1002:4383]
+>> (Mainboard is a MSI MS-7368)
+>>
+>> After upgrading from 2.6.31 to 2.6.33 I get a delay during bootup:
+>> [    1.155925] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level,
+>> low) -> IRQ 16
+>> [    1.159143] input: AT Translated Set 2 keyboard as
+>> /devices/platform/i8042/serio0/input/input2
+>> [    1.232595] firewire_core: created device fw0: GUID 00dc10000129c48f, S400
+>> [    1.252677] hda_codec: ALC888: BIOS auto-probing.
+>> [    1.259226] HDA Intel 0000:01:05.2: PCI INT B -> GSI 19 (level,
+>> low) -> IRQ 19
+>> [    1.260293] HDA Intel 0000:01:05.2: irq 27 for MSI/MSI-X
+>> [    1.314712] input: GenPS/2 Genius Mouse as
+>> /devices/platform/i8042/serio1/input/input3
+>> [    4.322508] hda-intel: azx_get_response timeout, switching to
+>> polling mode: last cmd=0x000f0000
+>> [    5.332508] hda-intel: No response from codec, disabling MSI: last
+>> cmd=0x000f0000
+>> [    6.342508] hda-intel: Codec #0 probe error; disabling it...
+>> [    7.392508] hda_intel: azx_get_response timeout, switching to
+>> single_cmd mode: last cmd=0x000f0000
+>> [    7.430464] ALSA device list:
+>> [    7.431549]   #0: HDA ATI SB at 0xfe7f4000 irq 16
+>> [    7.432656]   #1: HDA ATI HDMI at 0xfe9e8000 irq 27
+>>
+>> 2.6.34-rc2 does not boot on this system, something related to the new
+>> bootmem allocator, so I can't say if this might already be fixed for
+>> 2.6.34.
+>>
+>> Should the system be blacklisted like the two Asus Athlon X2 boards,
+>> or is this some other bug?
+>
+> If it happens on 2.6.33 and enable_msi=0 solves the issue, then yes,
+> we should put them on the blacklist.
 
-> I went back and checked the old Intel 386 docs from -92 or something, and 
-> it was "undefined" in there too. So at least Intel seems to have been very 
-> consistent on this.
-> 
-> That said, maybe all implementations actually do the "don't touch" thing. 
-> 
-> But I do have this memory of us doing this ten+ years ago, though, and 
-> having to check the ZF after all. Which is why I reacted to the patch in 
-> the first place and checked the documentation.
+Surprisingly this did not fix the delay. After all the trouble I had
+with MSI on the other system, I was sure it was related to the fact,
+that 2.6.33 tried to use MSI.
+2.6.33 with snd_hda_intel.enable_msi=0:
+[    1.155712] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level,
+low) -> IRQ 16
+[    1.158852] input: AT Translated Set 2 keyboard as
+/devices/platform/i8042/serio0/in
+put/input2
+[    1.232597] firewire_core: created device fw0: GUID 00dc10000129c48f, S400
+[    1.252679] hda_codec: ALC888: BIOS auto-probing.
+[    1.259206] HDA Intel 0000:01:05.2: PCI INT B -> GSI 19 (level,
+low) -> IRQ 19
+[    1.314745] input: GenPS/2 Genius Mouse as
+/devices/platform/i8042/serio1/input/input3
+[    4.322508] hda-intel: azx_get_response timeout, switching to
+polling mode: last cmd=0x000f0000
+[    5.332508] hda-intel: Codec #0 probe error; disabling it...
+[    6.382508] hda_intel: azx_get_response timeout, switching to
+single_cmd mode: last cmd=0x000f0000
+[    6.420470] ALSA device list:
+[    6.421545]   #0: HDA ATI SB at 0xfe7f4000 irq 16
+[    6.422628]   #1: HDA ATI HDMI at 0xfe9e8000 irq 19
 
-My trusty old 486 book [1] in the remarks about the BSF instruction:
+... if I had read these messages, instead of just copy&pasting them, I
+could have noted, that the delay is from codec *0*, but MSI gets
+enabled for codec *1*.
+Info about the HDMI output:
+01:05.2 Audio device [0403]: ATI Technologies Inc Radeon X1200 Series
+Audio Controller [1002:7919]
 
-"The documentation on the 80386 and 80486 states that op1 is undefined if
-op2 is 0.  In reality the 80386 will leave the value in op1 unchanged.
-The first versions of the 80486 will change op1 to an undefined value.
-Later version again will leave it unchanged."
+But that is a clear bug in the alsa code: After codec 0 (the
+integrated audio from the SB600) does not responds, it disables the
+MSI support for codec 1 (part of the intregrated graphic chipset).
+(I don't know if the HDMI audio support is working or not, as I do not
+have an HDMI display I could attach there.)
 
-[1] Die Intel Familie in German language, by Robert Hummel, 1992
+2.6.31 was working without the delay:
+[    0.930754] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level,
+low) -> IRQ 16
+[    0.946676] input: AT Translated Set 2 keyboard as
+/devices/platform/i8042/serio0/input/input2
+[    1.031402] hda_codec: Unknown model for ALC888, trying auto-probe
+from BIOS...
+[    1.035263] HDA Intel 0000:01:05.2: PCI INT B -> GSI 19 (level,
+low) -> IRQ 19
+[    1.090754] input: GenPS/2 Genius Mouse as
+/devices/platform/i8042/serio1/input/input3
+[    1.102573] firewire_core: created device fw0: GUID 00dc10000129c48f, S400
+[    1.112916] ALSA device list:
+[    1.112974]   #0: HDA ATI SB at 0xfe7f4000 irq 16
+[    1.113033]   #1: HDA ATI HDMI at 0xfe9e8000 irq 19
+
+
+>> System 2: Opteron(tm) 2218 with an nVidia MCP55 chipset
+>> 00:06.1 Audio device [0403]: nVidia Corporation MCP55 High Definition
+>> Audio [10de:0371] (rev a2)
+>> (Mainboard is an ASUS KFN5-D SLI)
+>>
+>> Commit 80c43ed724797627d8f86855248c497a6161a214 disabled MSI for this
+>> system, but the MSI mode was working fine for all 2.6.33 versions I
+>> used.
+>>
+>> Should the generic blacklist disable MSI for all Athlon X2 instead of
+>> all nNvidia chipsets?
+>
+> Well, it's not clear yet.  I don't bet that non-athlon would have
+> any problem.  So I keep it still disabled for Nvidia controllers.
+> You can put it in the whitelist instead.
+
+OK, just wanted to let you know, that there are MCP55 out there that
+do work with MSI. :-)
+
+Thanks, Torsten
