@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab0CZDe7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:34:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60262
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754202Ab0CZDe5 (ORCPT
+	id S1754464Ab0CZDf2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:35:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45669 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab0CZDfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:34:57 -0400
-Date: Thu, 25 Mar 2010 20:35:20 -0700 (PDT)
-Message-Id: <20100325.203520.234306178.davem@davemloft.net>
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: hancockrwd@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-usb@vger.kernel.org, bzolnier@gmail.com
-Subject: Re: [PATCH RFC] fix problems with NETIF_F_HIGHDMA in networking
- drivers v2
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100326123250A.fujita.tomonori@lab.ntt.co.jp>
-References: <20100304135738C.fujita.tomonori@lab.ntt.co.jp>
-	<51f3faa71003251803q7ccec5d5x82bc277c590e2848@mail.gmail.com>
-	<20100326123250A.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 23:35:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:subject:to:cc:in-reply-to:references;
+        b=HZT3ozTRcJYIYVp65BirgpfhQbS9eNdYOXsXTfu62V/qKD/AUQRy+NLfCKvrFLknCC
+         R/6ZZuu+1b3ur7Px8bad+cth5MRN92li2HItbux/l0gu3yoAJg4wjqF2/OE70LOZG3cg
+         3u2fJmbfhQrJnoAUTXkKgAiHXTUBe/TA/7rWY=
+Message-ID: <4bac2b7b.a115f10a.7d1e.18d7@mx.google.com>
+Date: Thu, 25 Mar 2010 20:35:23 -0700 (PDT)
+From: Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Poor interactive performance with I/O loads with fsync()ing
+To: Jens Axboe <jens.axboe@oracle.com>, Pawel S <spawels13@gmail.com>
+Cc: linux-kernel@vger.kernel.org, tytso <tytso@mit.edu>,
+       Nick Piggin <npiggin@suse.de>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100323132719.GY5768@kernel.dk>
+References: <8c4cf08c1003230428t274b8ca8y13d67d65b8830dd7@mail.gmail.com>
+	<20100323132719.GY5768@kernel.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Date: Fri, 26 Mar 2010 12:33:12 +0900
-
-> On Thu, 25 Mar 2010 19:03:37 -0600
-> Robert Hancock <hancockrwd@gmail.com> wrote:
+On Tue, 23 Mar 2010 14:27:19 +0100, Jens Axboe <jens.axboe@oracle.com> wrote:
+> It's also been my sneaking suspicion that swap is involved. I had lots
+> of RAM in anything I use, even the laptop and workstation. I'll try and
+> run some tests with lower memory and force it into swap, I've seen nasty
+> hangs that way.
 > 
->> This seems like it could be a reasonable approach. The only thing is
->> that in this code you're returning 1 if the parent device has no DMA
->> mask set. Wouldn't it make more sense to return 0 in this case? I'm
->> assuming that in that situation it's a virtual device not backed by
->> any hardware and there should be no DMA mask restriction...
-> 
-> I chose the safer option because I don't know enough how net_device
-> structure is used. If returning zero in such case is always safe, it's
-> fine by me. any example of such virtual device driver?
+Find out anything useful?
 
-Like Fujita I'd rather play it safe here.
-
-Even for virtual devices, DMA information up to the root bus
-ought to be sane.
+- Ben
