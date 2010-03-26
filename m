@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab0CZBxQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:53:16 -0400
-Received: from mail-px0-f194.google.com ([209.85.216.194]:39839 "EHLO
-	mail-px0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753529Ab0CZBwy (ORCPT
+	id S1753692Ab0CZBxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:53:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37194 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab0CZBw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:52:54 -0400
+	Thu, 25 Mar 2010 21:52:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Q7CyLBEgKcmkdnHsDxPAD777EntfV6uTOmDVjdFlrq4xol8BIjHzXkwGUzISrCfEZ5
-         DyDPATU2LSIPEA7VBrxrZ/ydL/lFdDTqAPKXUoytBlb5g5hwYdicGzWOdGAm22F2WUMs
-         QJhAjCdTISbwFrsQUcb1ofbmTyXoytrl+XceA=
+        b=YnVvHeCL/DtGg6In7szJtBrtqSJMdwgc4d6OFvYrIu9ClJd/fVk0+6AUBFLzfSvgME
+         LhHeoJ7XlDziaIhW9hOJAPFzy6vlaXJyHW6yXlRHq9R5RWKTsBFUOWqubE6m+gcv6EZX
+         ih7ZnNz/A353RJnTxUolTTlz0CVOCjFfdVmHQ=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 1/7] perf: Drop the frame reliablity check
-Date: Fri, 26 Mar 2010 02:52:36 +0100
-Message-Id: <1269568362-13690-2-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 2/7] perf: Fetch hot regs from the template caller
+Date: Fri, 26 Mar 2010 02:52:37 +0100
+Message-Id: <1269568362-13690-3-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.6.2.3
 In-Reply-To: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
 References: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
@@ -31,33 +30,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is useless now that we have a pure stack frame
-walker, as given addr are always reliable.
+Trace events can be defined from a template using
+DECLARE_EVENT_CLASS/DEFINE_EVENT or directly with TRACE_EVENT.
+
+In both cases we have a template tracepoint handler, used to
+record the trace, to which we pass our ftrace event instance.
+
+In the function level, if the class is named "foo" and the event
+is named "blah", we have the following chain of calls:
+
+perf_trace_blah() -> perf_trace_templ_foo()
+
+In the case we have several events sharing the class "blah",
+we'll have multiple users of perf_trace_templ_foo(), and it
+won't be inlined by the compiler. This is usually what happens
+with the DECLARE_EVENT_CLASS/DEFINE_EVENT based definition.
+
+But if perf_trace_blah() is the only caller of perf_trace_templ_foo()
+there are fair chances that it will be inlined.
+
+The problem is that we fetch the regs from perf_trace_templ_foo()
+after we rewinded the frame pointer to the second caller, we want
+to reach the caller of perf_trace_blah() to get the right source
+of the event. And we do this by always assuming that
+perf_trace_templ_foo() is not inlined. But as shown above this
+is not always true. And if it is inlined we miss the first caller,
+losing the most important level of precision.
+
+We get:
+	    61.31%       ls  [kernel.kallsyms]  [k] do_softirq
+                         |
+                         --- do_softirq
+                             irq_exit
+                             do_IRQ
+                             common_interrupt
+                            |
+                            |--25.00%-- tty_buffer_request_room
+
+Instead of:
+	    61.31%       ls  [kernel.kallsyms]  [k] __do_softirq
+                         |
+                         --- __do_softirq
+                             do_softirq
+                             irq_exit
+                             do_IRQ
+                             common_interrupt
+                            |
+                            |--25.00%-- tty_buffer_request_room
+
+To fix this, we fetch the regs from perf_trace_blah() rather than
+perf_trace_templ_foo() so that we don't have to deal with inlining
+surprises.
+
+That also bring us the advantage of having the true source of the
+event even if we don't have frame pointers.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ include/trace/ftrace.h |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f571f51..9bc6550 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1597,8 +1597,7 @@ static void backtrace_address(void *data, unsigned long addr, int reliable)
- {
- 	struct perf_callchain_entry *entry = data;
- 
--	if (reliable)
--		callchain_store(entry, addr);
-+	callchain_store(entry, addr);
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index ea6f9d4..882c648 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -758,13 +758,12 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ static notrace void							\
+ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
+-			    proto)					\
++			struct pt_regs *__regs, proto)			\
+ {									\
+ 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
+ 	struct ftrace_raw_##call *entry;				\
+ 	u64 __addr = 0, __count = 1;					\
+ 	unsigned long irq_flags;					\
+-	struct pt_regs *__regs;						\
+ 	int __entry_size;						\
+ 	int __data_size;						\
+ 	int rctx;							\
+@@ -785,20 +784,22 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
+ 									\
+ 	{ assign; }							\
+ 									\
+-	__regs = &__get_cpu_var(perf_trace_regs);			\
+-	perf_fetch_caller_regs(__regs, 2);				\
+-									\
+ 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
+ 			       __count, irq_flags, __regs);		\
  }
  
- static const struct stacktrace_ops backtrace_ops = {
+ #undef DEFINE_EVENT
+-#define DEFINE_EVENT(template, call, proto, args)		\
+-static notrace void perf_trace_##call(proto)			\
+-{								\
+-	struct ftrace_event_call *event_call = &event_##call;	\
+-								\
+-	perf_trace_templ_##template(event_call, args);		\
++#define DEFINE_EVENT(template, call, proto, args)			\
++static notrace void perf_trace_##call(proto)				\
++{									\
++	struct ftrace_event_call *event_call = &event_##call;		\
++	struct pt_regs *__regs = &get_cpu_var(perf_trace_regs);		\
++									\
++	perf_fetch_caller_regs(__regs, 1);				\
++									\
++	perf_trace_templ_##template(event_call, __regs, args);		\
++									\
++	put_cpu_var(perf_trace_regs);					\
+ }
+ 
+ #undef DEFINE_EVENT_PRINT
 -- 
 1.6.2.3
 
