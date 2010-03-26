@@ -1,184 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0CZCWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 22:22:25 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:64124 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab0CZCWX (ORCPT
+	id S1753782Ab0CZCYb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 22:24:31 -0400
+Received: from daleenterprise.com ([67.78.11.229]:56652 "EHLO
+	daleenterprise.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729Ab0CZCYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 22:22:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=fNWZnbv0h0sbMRmuYWN9JFqwyfcUPDzkr+kBhuPEzfnIN6orQ0HqKxIq3J1XguZM4x
-         q29W2godOIF5S+pT+farlrrXNVlU47QjxzJcO10KaR/uaZyKwTwoefTXlSSyCQ9ubdyx
-         mWnzMOHYqSzV9/sfPNK2Ce6FoLmq7NtyPXvbg=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] lockdep: Make lockstats counting per cpu
-Date: Fri, 26 Mar 2010 03:22:22 +0100
-Message-Id: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
+	Thu, 25 Mar 2010 22:24:30 -0400
+X-Greylist: delayed 1341 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 22:24:30 EDT
+Mime-Version: 1.0 (Apple Message framework v752.2)
+Content-Transfer-Encoding: 7bit
+Message-Id: <22829ADB-1F3C-4DC4-83A9-F3E9F37DAA35@macftphttp.serverbox.org>
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+From: websrvr <websrvr@macftphttp.serverbox.org>
+Subject: nVidia related rom issue.
+Date: Thu, 25 Mar 2010 22:02:05 -0400
+X-Mailer: Apple Mail (2.752.2)
+MTA-Interface: amavisd-new-2.3.3 (2005-08-22) + Maia Mailguard 1.0.1 at daleenterprise.com
+X-Spam-Scanned: using SpamAssassin 3.1.7 (2006-10-05) at daleenterprise.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Locking statistics are implemented using global atomic variables.
-This is usually fine unless some path write them very often.
+I'm hoping that someone here can help me with an issue I'm having.
 
-This is the case for the function and function graph tracers
-that disable irqs for each entry saved (except if the function
-tracer is in preempt disabled only mode).
-And calls to local_irq_save/restore() increment hardirqs_on_events
-and hardirqs_off_events stats (or similar stats for redundant
-versions).
+First, this is not specifically linux kernel related but an  
+integration of some of the linux code in a boot loader.
 
-Incrementing these global vars for each function ends up in too
-much cache bouncing if lockstats are enabled.
+I don't have all the structs used in the kernel and most of the  
+functions don't exist (some I have ported over) however I do believe  
+I have the basics minimum requirements.
 
-To solve this, implement the debug_atomic_*() operations using
-per cpu vars. We can't use irqsafe per cpu counters for that as
-these stats might be also written from NMI path, and irqsafe per
-cpu counters are not NMI safe, but local_t operations are.
+The specific issue I'm having is when a system contains more than one  
+nvidia card, I am unable to obtain a copy of the rom for the  
+additional card which is needed for patching and to extract and  
+provide some data for the OS to utilize.
 
-This version then uses local_t based per cpu counters.
+I currently grab all of the base regs (0..5), their type, mask and  
+size and save them in a struct (in case they are needed).
 
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/lockdep.c           |   28 ++++++++--------
- kernel/lockdep_internals.h |   71 +++++++++++++++++++++++++++++++-------------
- 2 files changed, 64 insertions(+), 35 deletions(-)
+I have implemented the nv_rd08, nv_rd32, nv_wr08 and nv_wr32  
+functions which I deciphered back to the build_mmio_read and  
+build_mmio_write macro's which I have added and they do work.
 
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 65b5f5b..55e60a0 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -430,20 +430,20 @@ static struct stack_trace lockdep_init_trace = {
- /*
-  * Various lockdep statistics:
-  */
--atomic_t chain_lookup_hits;
--atomic_t chain_lookup_misses;
--atomic_t hardirqs_on_events;
--atomic_t hardirqs_off_events;
--atomic_t redundant_hardirqs_on;
--atomic_t redundant_hardirqs_off;
--atomic_t softirqs_on_events;
--atomic_t softirqs_off_events;
--atomic_t redundant_softirqs_on;
--atomic_t redundant_softirqs_off;
--atomic_t nr_unused_locks;
--atomic_t nr_cyclic_checks;
--atomic_t nr_find_usage_forwards_checks;
--atomic_t nr_find_usage_backwards_checks;
-+DEFINE_PER_CPU(local_t, chain_lookup_hits);
-+DEFINE_PER_CPU(local_t, chain_lookup_misses);
-+DEFINE_PER_CPU(local_t, hardirqs_on_events);
-+DEFINE_PER_CPU(local_t, hardirqs_off_events);
-+DEFINE_PER_CPU(local_t, redundant_hardirqs_on);
-+DEFINE_PER_CPU(local_t, redundant_hardirqs_off);
-+DEFINE_PER_CPU(local_t, softirqs_on_events);
-+DEFINE_PER_CPU(local_t, softirqs_off_events);
-+DEFINE_PER_CPU(local_t, redundant_softirqs_on);
-+DEFINE_PER_CPU(local_t, redundant_softirqs_off);
-+DEFINE_PER_CPU(local_t, nr_unused_locks);
-+DEFINE_PER_CPU(local_t, nr_cyclic_checks);
-+DEFINE_PER_CPU(local_t, nr_find_usage_forwards_checks);
-+DEFINE_PER_CPU(local_t, nr_find_usage_backwards_checks);
- #endif
- 
- /*
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index a2ee95a..c4c54ee 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -110,29 +110,58 @@ lockdep_count_backward_deps(struct lock_class *class)
- #endif
- 
- #ifdef CONFIG_DEBUG_LOCKDEP
-+
-+#include <asm/local.h>
-+/*
-+ * Various lockdep statistics.
-+ * We want them per cpu as they are often accessed in fast path
-+ * and we want to avoid too much cache bouncing.
-+ * We can't use irqsafe per cpu counters as those are not NMI safe, as
-+ * opposite to local_t.
-+ */
-+DECLARE_PER_CPU(local_t, chain_lookup_hits);
-+DECLARE_PER_CPU(local_t, chain_lookup_misses);
-+DECLARE_PER_CPU(local_t, hardirqs_on_events);
-+DECLARE_PER_CPU(local_t, hardirqs_off_events);
-+DECLARE_PER_CPU(local_t, redundant_hardirqs_on);
-+DECLARE_PER_CPU(local_t, redundant_hardirqs_off);
-+DECLARE_PER_CPU(local_t, softirqs_on_events);
-+DECLARE_PER_CPU(local_t, softirqs_off_events);
-+DECLARE_PER_CPU(local_t, redundant_softirqs_on);
-+DECLARE_PER_CPU(local_t, redundant_softirqs_off);
-+DECLARE_PER_CPU(local_t, nr_unused_locks);
-+DECLARE_PER_CPU(local_t, nr_cyclic_checks);
-+DECLARE_PER_CPU(local_t, nr_cyclic_check_recursions);
-+DECLARE_PER_CPU(local_t, nr_find_usage_forwards_checks);
-+DECLARE_PER_CPU(local_t, nr_find_usage_forwards_recursions);
-+DECLARE_PER_CPU(local_t, nr_find_usage_backwards_checks);
-+DECLARE_PER_CPU(local_t, nr_find_usage_backwards_recursions);
-+
-+# define debug_atomic_inc(ptr)			{	\
-+	WARN_ON_ONCE(!irq_disabled());			\
-+	local_t *__ptr = &__get_cpu_var(ptr);		\
-+	local_inc(__ptr);				\
-+}
-+
-+# define debug_atomic_dec(ptr)			{	\
-+	WARN_ON_ONCE(!irq_disabled());			\
-+	local_t *__ptr = &__get_cpu_var(ptr);		\
-+	local_dec(__ptr);				\
-+}
-+
- /*
-- * Various lockdep statistics:
-+ * It's fine to use local_read from other cpus. Read is racy anyway,
-+ * but it's guaranteed high and low parts are read atomically.
-  */
--extern atomic_t chain_lookup_hits;
--extern atomic_t chain_lookup_misses;
--extern atomic_t hardirqs_on_events;
--extern atomic_t hardirqs_off_events;
--extern atomic_t redundant_hardirqs_on;
--extern atomic_t redundant_hardirqs_off;
--extern atomic_t softirqs_on_events;
--extern atomic_t softirqs_off_events;
--extern atomic_t redundant_softirqs_on;
--extern atomic_t redundant_softirqs_off;
--extern atomic_t nr_unused_locks;
--extern atomic_t nr_cyclic_checks;
--extern atomic_t nr_cyclic_check_recursions;
--extern atomic_t nr_find_usage_forwards_checks;
--extern atomic_t nr_find_usage_forwards_recursions;
--extern atomic_t nr_find_usage_backwards_checks;
--extern atomic_t nr_find_usage_backwards_recursions;
--# define debug_atomic_inc(ptr)		atomic_inc(ptr)
--# define debug_atomic_dec(ptr)		atomic_dec(ptr)
--# define debug_atomic_read(ptr)		atomic_read(ptr)
-+# define debug_atomic_read(ptr)		({		\
-+	unsigned long long __total = 0;			\
-+	int __cpu;					\
-+	for_each_possible_cpu(__cpu) {			\
-+		local_t *__ptr = &__get_cpu_var(ptr);	\
-+		__total += local_read(__ptr);		\
-+	}						\
-+	__total;					\
-+})
- #else
- # define debug_atomic_inc(ptr)		do { } while (0)
- # define debug_atomic_dec(ptr)		do { } while (0)
--- 
-1.6.2.3
+I can verify that my implementation of load_vbios_pramin() and  
+load_vbios_prom() work for the primary card (depending on it's type)  
+but the secondary card seems completely invisible and is preventing  
+multi-card support.
+
+I have a 7300 GS which uses the load_vbios_prom() function (when it  
+is the only card in the System) and a 9400GT which uses the  
+load_vbios_pramin() function (when it is the only card in the System)  
+but when 2 cards exist the second card is not enabled and I can't get  
+the rom.
+
+What do I need to do to make the second card visible or at least  
+extract it's rom?
+
+
+some code which might help show what I've got so far.
+
+++++++++++++++++
+
+void load_vbios_pci(pci_dt_t *dev, uint8_t *data)
+{
+     if (pci_config_read16(dev->dev.addr, PCI_COMMAND) &  
+(PCI_COMMAND_IO | PCI_COMMAND_MEMORY))
+     {
+         // primary video is shadowed at 0x000C0000
+         bcopy((char *)0x000C0000, data, NV_PROM_SIZE);
+         return;
+     }
+
+     /* try to shadow second card at 0xD0000 - I also tried 0xC0000  
+which didn't work */
+     uint32_t use_addr = 0x000D0000 | IORESOURCE_ROM_ENABLE |  
+IORESOURCE_ROM_SHADOW /*| IORESOURCE_ROM_COPY*/;
+     pci_config_write32(dev->dev.addr, PCI_ROM_ADDRESS, use_addr );
+
+     bcopy((char *)0x000D0000, data, NV_PROM_SIZE);
+
+     /* restore state */
+     uint32_t rom_addr = pci_config_read32(dev->dev.addr,  
+PCI_ROM_ADDRESS) & PCI_ROM_ADDRESS_MASK;
+     pci_config_write32(dev->dev.addr, PCI_ROM_ADDRESS, rom_addr);
+}
+
+++++++++++++++++
+
+typedef struct {
+     uint32_t        :2;
+     uint32_t    reg :6;
+     uint32_t    func:3;
+     uint32_t    dev :5;
+     uint32_t    bus :8;
+     uint32_t        :7;
+     uint32_t    eb  :1;
+} pci_addr_t;
+
+typedef union {
+     pci_addr_t  bits;
+     uint32_t    addr;
+} pci_dev_t;
+
+typedef struct pci_dt_t {
+     pci_dev_t   dev;
+
+     uint16_t    vendor_id;
+     uint16_t    device_id;
+     uint16_t    subsys_vendor_id;
+     uint16_t    subsys_device_id;
+     uint16_t    class_id;
+     uint8_t     header_type;
+     uint8_t     card_type;
+     uint8_t     chipset;
+     uint32_t    base_reg_0;
+     uint32_t    base_size_0;
+     uint32_t    base_mask_0;
+     uint8_t     base_type_0;
+     uint32_t    base_reg_1;
+     uint32_t    base_size_1;
+     uint32_t    base_mask_1;
+     uint8_t     base_type_1;
+     uint32_t    base_reg_2;
+     uint32_t    base_size_2;
+     uint32_t    base_mask_2;
+     uint8_t     base_type_2;
+     uint32_t    base_reg_3;
+     uint32_t    base_size_3;
+     uint32_t    base_mask_3;
+     uint8_t     base_type_3;
+     uint32_t    base_reg_4;
+     uint32_t    base_size_4;
+     uint32_t    base_mask_4;
+     uint8_t     base_type_4;
+     uint32_t    base_reg_5;
+     uint32_t    base_size_5;
+     uint32_t    base_mask_5;
+     uint8_t     base_type_5;
+
+     struct pci_dt_t    *parent;
+     struct pci_dt_t    *children;
+     struct pci_dt_t    *next;
+} pci_dt_t;
 
