@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab0CZLvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 07:51:09 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35254 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751028Ab0CZLvG (ORCPT
+	id S1751807Ab0CZLwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 07:52:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36693 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab0CZLwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 07:51:06 -0400
-Date: Fri, 26 Mar 2010 11:52:33 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: Amit Shah <amit.shah@redhat.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, a.p.zijlstra@chello.nl,
-       Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, Anton Blanchard <anton@samba.org>,
-       tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
-       mingo@elte.hu
-Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
- hvc_remove
-Message-ID: <20100326115233.30288d3c@lxorguk.ukuu.org.uk>
-In-Reply-To: <4BAC9D9E.5070901@in.ibm.com>
-References: <20100319151326.GC8541@kroah.com>
-	<1269011916-8836-4-git-send-email-gregkh@suse.de>
-	<1269119079.8599.65.camel@pasglop>
-	<20100321043725.GA21566@amit-x200.redhat.com>
-	<20100324121902.GJ15789@amit-x200.redhat.com>
-	<4BAC7AD4.4030309@in.ibm.com>
-	<20100326095821.GA7039@amit-x200.redhat.com>
-	<4BAC9D9E.5070901@in.ibm.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
+	Fri, 26 Mar 2010 07:52:42 -0400
+Subject: Re: set_cpus_allowed_ptr
+From: Peter Zijlstra <peterz@infradead.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>,
+       Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <Pine.LNX.4.64.1003261218410.27328@ask.diku.dk>
+References: <1269597796.12097.133.camel@laptop>
+	 <Pine.LNX.4.64.1003261218410.27328@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Mar 2010 12:52:38 +0100
+Message-ID: <1269604358.12097.143.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> mount: can't find /root/proc in /etc/fstab or /etc/mtab
-> >> /sbin/smart_agetty: can not determine 'console' speed
-> >>     
-> >
-> > OK, this gets even murkier. I don't know why taking a few krefs modifies
-> > hvc_console behaviour to such an extent.
+On Fri, 2010-03-26 at 12:22 +0100, Julia Lawall wrote:
+> On Fri, 26 Mar 2010, Peter Zijlstra wrote:
+> 
+> > Hi,
+> > 
+> > Would it make sense to clean up the set_cpus_allowed() vs
+> > set_cpus_allowed_ptr() mess using the semantic patch tool?
+> > 
+> > I guess it would be three patches:
+> >  1) converting the current remaining set_cpus_allowed() users into
+> >     set_cpus_allowed_ptr().
+> >  2) remove set_cpus_allowed().
+> >  3) rename set_cpus_allowed_ptr() to set_cpus_allowed()
+> 
+> Perhaps a subtlety is that set_cpus_allowed is creating a new variable, 
+> whose address it sends to set_cpus_allowed_ptr?
 
-Can you see if the agetty is getting a hangup or open failing. I wonder
-if its just a timing change ?
+Yes it does that, but I don't think that actually matters,
+set_cpus_allowed_ptr()'s arg is const, so making that temporary copy
+shouldn't have any side effects.
 
-Alan
+
+
