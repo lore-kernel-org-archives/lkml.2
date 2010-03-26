@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab0CZMC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 08:02:26 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:45383 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab0CZMCY (ORCPT
+	id S1753024Ab0CZMCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 08:02:51 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:36531 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab0CZMCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 08:02:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=HmRl3LgXDI3JjaEt7CCWSuCj31T8LXm0EPh54wQrWL3GFld4kt2DXwi9/1g7EMvOK8
-         OLKtXiY+sb+Ph6BlQRrgLy6FCy5D2DYYfz3VIiY4mIoeM/WwXx7F+pIP4KuZJCs1Px4w
-         F7/Dr3skKsQbd0LYRC9cN3OyOxZ5en4SzF1TI=
+	Fri, 26 Mar 2010 08:02:48 -0400
+Date: Fri, 26 Mar 2010 12:02:28 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Nicolas Pitre <nico@fluxnic.net>, Linus Torvalds <torvalds@osdl.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+       David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [patch 0/2] Run interrupt handlers always with interrupts disabled
+Message-ID: <20100326120228.GC19308@shareable.org>
+References: <20100326000325.917127328@linutronix.de> <20100326081457.GA23570@flint.arm.linux.org.uk> <20100326092023.GH27394@elte.hu> <1269595692.12097.128.camel@laptop>
 MIME-Version: 1.0
-Date: Fri, 26 Mar 2010 13:02:22 +0100
-X-Google-Sender-Auth: a1b810942d33a230
-Message-ID: <520f0cf11003260502o5ecb23adpe69f6eb465142821@mail.gmail.com>
-Subject: [BUG-REPORT][PREEMPT-RT] 2.6.33.1-rt11 triggers DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled), 
-	in a 32-bit kvm session
-From: John Kacur <jkacur@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269595692.12097.128.camel@laptop>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During boot-up of 2.6.33.1-rt11 in a 32-bit qemu-kvm machine,
-The following warning is reliably (every time) triggered.
+Peter Zijlstra wrote:
+> On Fri, 2010-03-26 at 10:20 +0100, Ingo Molnar wrote:
+> > * Russell King <rmk@arm.linux.org.uk> wrote:
+> > 
+> > > On Fri, Mar 26, 2010 at 12:06:44AM -0000, Thomas Gleixner wrote:
+> > > > The following patch series removes the IRQF_DISABLED functionality
+> > > > from the core interrupt code and runs all interrupt handlers with
+> > > > interrupts disabled.
+> > > 
+> > > As was covered in previous discussions, what about drivers such as SMC91x 
+> > > which take a long time to retrieve packets from the hardware? Always running 
+> > > handlers with IRQs disabled will kill things such as serial on these 
+> > > platforms.
+> > 
+> > As long as it's rare (which it is) i dont see a problem: you can enable 
+> > interrupts in the handler by using local_irq_enable(), like the IDE PIO 
+> > drivers do. That way it's documented a bit better as well, because it shows 
+> > the precise source of the latency, with a big comment explaining it, etc.
+> 
+> Or alternatively, use threaded interrupts for such slow hardware.
 
-------------[ cut here ]------------
-WARNING: at /home/jkacur/jk-2.6/kernel/fork.c:1065 copy_process+0x299/0x160f()
-Hardware name:
-Modules linked in:
-Pid: 64, comm: khelper Not tainted 2.6.33.1-rt11 #1
-Call Trace:
- [<c104961a>] warn_slowpath_common+0x83/0x9a
- [<c1049643>] warn_slowpath_null+0x12/0x15
- [<c1046f89>] copy_process+0x299/0x160f
- [<c1048711>] do_fork+0x235/0x4e2
- [<c107da08>] ? register_lock_class+0x17/0x22d
- [<c107e6dc>] ? mark_lock+0x1e/0x1c0
- [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
- [<c100ae09>] kernel_thread+0x79/0x81
- [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
- [<c100391c>] ? kernel_thread_helper+0x0/0x10
- [<c1064cc7>] __call_usermodehelper+0x75/0xa0
- [<c10673b6>] worker_thread+0x1f6/0x2fb
- [<c1067374>] ? worker_thread+0x1b4/0x2fb
- [<c1064c52>] ? __call_usermodehelper+0x0/0xa0
- [<c106a91e>] ? autoremove_wake_function+0x0/0x46
- [<c106a740>] kthread+0x6b/0x74
- [<c10671c0>] ? worker_thread+0x0/0x2fb
- [<c106a6d5>] ? kthread+0x0/0x74
- [<c106a6d5>] ? kthread+0x0/0x74
- [<c1003922>] kernel_thread_helper+0x6/0x10
----[ end trace a22d306b065d4a66 ]---
+What is the latency of threaded interrupts these days, compared with
+non-threaded interrupts?
 
-I am happy to provide more information to help debug this.
+Slow hardware is quite sensitive to increases in latency.  Obviously
+not a problem for the sources of latency: it's a problem for the irq
+which is _sensitive_ to latency caused by the other one.  That is
+typically a serial port or something.
 
-Thanks
+But the benefit of kernel-settable interrupt priorities (i.e. due to
+the threads) may be worth it even for serial ports.  I would love to
+see some measurements comparing with and without.
+
+-- Jamie
