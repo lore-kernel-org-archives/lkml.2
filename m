@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab0CZXrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 19:47:53 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39501 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751550Ab0CZXrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 19:47:52 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4BAD4795.2040700@s5r6.in-berlin.de>
-Date: Sat, 27 Mar 2010 00:47:33 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
+	id S1754152Ab0CZXvI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 19:51:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35576 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753861Ab0CZXvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 19:51:05 -0400
+Message-ID: <4BAD47F6.3000003@kernel.org>
+Date: Fri, 26 Mar 2010 16:49:10 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-References: <201003242240.54907.arnd@arndb.de> <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz> <201003251406.10177.arnd@arndb.de> <201003251438.59062.arnd@arndb.de>
-In-Reply-To: <201003251438.59062.arnd@arndb.de>
-X-Enigmail-Version: 0.96.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Ian Campbell <ian.campbell@citrix.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 03/24] x86: Do not free zero sized per cpu areas
+References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-4-git-send-email-yinghai@kernel.org> <20100326234203.GD29222@cmpxchg.org>
+In-Reply-To: <20100326234203.GD29222@cmpxchg.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> On Thursday 25 March 2010, Arnd Bergmann wrote:
->> On Thursday 25 March 2010, Jiri Kosina wrote:
->>>         config USB
->>>                 tristate "Support for Host-side USB"
->>>                 depends on USB_ARCH_HAS_HCD && BKL
->>>
->>> Well, that's very interesting definition of "obscure" :)
->>>
->> That's why I said /mostly/ obscure modules. There are soundcore, usb-core, drm,
->> vfat and a few other very common ones, along with many obscure ones.
+On 03/26/2010 04:42 PM, Johannes Weiner wrote:
+> On Fri, Mar 26, 2010 at 03:21:33PM -0700, Yinghai Lu wrote:
+>> From: Ian Campbell <ian.campbell@citrix.com>
+>>
+>> This avoids an infinite loop in free_early_partial().
+>>
+>> Add a warning to free_early_partial to catch future problems.
+>>
+>> -v5: put back start > end back into WARN_ONCE()
+>> -v6: use one line for warning according to linus
+>> -v7: more test by
+>>
+>> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Tested-by: Joel Becker <joel.becker@oracle.com>
+>> Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Ingo Molnar <mingo@elte.hu>
+>> ---
+>>  kernel/early_res.c |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/early_res.c b/kernel/early_res.c
+>> index 3cb2c66..69bed5b 100644
+>> --- a/kernel/early_res.c
+>> +++ b/kernel/early_res.c
+>> @@ -333,6 +333,12 @@ void __init free_early_partial(u64 start, u64 end)
+>>  	struct early_res *r;
+>>  	int i;
+>>  
+>> +	if (start == end)
+>> +		return;
+>> +
+>> +	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
+>> +		return;
 > 
-> FWIW, this is the full list of 148 modules that require the BKL in an x86 allmodconfig,
-> which is probably the configuration with the largest code coverage.
-...
-> drivers/media/dvb/firewire/firedtv.ko
-...
-> drivers/ieee1394/video1394.ko
-> drivers/ieee1394/raw1394.ko
-> drivers/ieee1394/dv1394.ko
-...
-> drivers/firewire/firewire-core.ko
+> I think you can drop the function name, it will be in the stack dump
+> anyway.  And that would get the line back into bounds :)
+> 
+> Other than that,
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-firewire-core and raw1394 do not actually require the BKL, they only
-miss to declare their files as not seekable.  I will post patches which
-change these accordingly.
+Thanks.
 
-My guess is that there is nothing to seek in dv1394, video1394, and
-firedtv either.
+is there any chance that dump stack only print out address instead of function name ?
 
-Needless to say, there may be other character device file interfaces
-which cannot be seeked but don't admit it yet.
--- 
-Stefan Richter
--=====-==-=- --== ==-==
-http://arcgraph.de/sr/
+BTW, kernel/early_res.c will be replaced by lmb.c
+
+Yinghai
