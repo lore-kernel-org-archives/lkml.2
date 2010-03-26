@@ -1,41 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab0CZNtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 09:49:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29583 "EHLO mx1.redhat.com"
+	id S1753954Ab0CZNtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 09:49:49 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53691 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752256Ab0CZNtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 09:49:07 -0400
-Date: Fri, 26 Mar 2010 14:47:09 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Grzegorz Nosek <root@localdomain.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100326134709.GB15790@redhat.com>
-References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com> <20100325213356.GB20541@megiteam.pl> <20100326111131.GA8604@redhat.com> <20100326115357.GA3345@count0.beaverton.ibm.com> <20100326124522.GD17113@megiteam.pl>
+	id S1752955Ab0CZNts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 09:49:48 -0400
+Date: Fri, 26 Mar 2010 13:49:30 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
+	anonymous pages
+Message-ID: <20100326134930.GA2024@csn.ul.ie>
+References: <20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com> <20100325133936.GR2024@csn.ul.ie> <20100326120429.6C98.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100326124522.GD17113@megiteam.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100326120429.6C98.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26, Grzegorz Nosek wrote:
->
-> Hmm, is there a good reason why strace does not use the data explicitly
-> provided by the kernel but instead second-guesses it from syscall return
-> values? I don't know anything about ptrace, really,
+On Fri, Mar 26, 2010 at 12:07:02PM +0900, KOSAKI Motohiro wrote:
+> very small nit
+> 
+> > There were minor changes in how the rcu_read_lock is taken and released
+> > based on other comments. With your suggestion, the block now looks like;
+> > 
+> >         if (PageAnon(page)) {
+> >                 rcu_read_lock();
+> >                 rcu_locked = 1;
+> > 
+> >                 /*
+> >                  * If the page has no mappings any more, just bail. An
+> >                  * unmapped anon page is likely to be freed soon but
+> >                  * worse,
+> >                  * it's possible its anon_vma disappeared between when
+> >                  * the page was isolated and when we reached here while
+> >                  * the RCU lock was not held
+> >                  */
+> >                 if (!page_mapcount(page) && !PageSwapCache(page))
+> 
+>                         page_mapped?
+> 
 
-I know almost nothing too. But _iirc_, this all is even worse, strace
-doesn't necessary gets the notification from do_fork(), at least
-another quick grep shows it doesn't use PTRACE_O_TRACEFORK.
+Will be fixed in V6.
 
-This is another reason why the change in do_fork() can't really help
-right now.
+Thanks
 
-Oleg.
+> >                         goto rcu_unlock;
+> > 
+> >                 anon_vma = page_anon_vma(page);
+> >                 atomic_inc(&anon_vma->external_refcount);
+> >         }
+> 
+> 
+> 
 
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
