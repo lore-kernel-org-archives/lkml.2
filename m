@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab0CZAHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 20:07:48 -0400
-Received: from www.tglx.de ([62.245.132.106]:58661 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752635Ab0CZAHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 20:07:44 -0400
-Message-Id: <20100326000405.758579387@linutronix.de>
-User-Agent: quilt/0.47-1
-Date: Fri, 26 Mar 2010 00:06:51 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@osdl.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-       David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [patch 1/2] genirq: Run irq handlers with interrupts disabled
-References: <20100326000325.917127328@linutronix.de>
-Content-Disposition: inline;
-	filename=genirq-run-handlers-with-irqs-disabled.patch
+	id S1752677Ab0CZARk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:17:40 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:31248 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab0CZARj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 20:17:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=qEq1Nggd7Tfsu88Kal/k45KlDIX/ffMDf2OFS4sLDptX6Ua0u6XOfVGeyuo7dXYYe
+	tbkbIX6AgBWR8jBLtTznA==
+MIME-Version: 1.0
+In-Reply-To: <20100325232511.GF3041@redhat.com>
+References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
+	 <20100325180423.25299.60415.stgit@meat.mtv.corp.google.com>
+	 <20100325232511.GF3041@redhat.com>
+Date: Thu, 25 Mar 2010 17:17:34 -0700
+Message-ID: <1786ab031003251717o71f51d4l41a63e7b564fe8e7@mail.gmail.com>
+Subject: Re: [PATCH 1/4] blkio_group key change: void * -> request_queue *
+From: Chad Talbott <ctalbott@google.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: jens.axboe@oracle.com, mrubin@google.com, guijianfeng@cn.fujitsu.com,
+       Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+       dpshah@google.com, Nauman Rafique <nauman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running interrupt handlers with interrupts enabled can cause stack
-overflows. That has been observed with multiqueue NICs delivering all
-their interrupts to a single core. We might band aid that somehow by
-checking the interrupt stacks, but the real safe fix is to run the irq
-handlers with interrupts disabled.
+On Thu, Mar 25, 2010 at 4:25 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> human-readable disk names probably are more convenient. I got few general
+> concerns.
 
-Drivers for whacky hardware still can reenable them in the handler
-itself, if the need arises. (They do already due to lockdep)
+Thanks for the quick and detailed review.
 
-The risk of doing this is rather low:
+> - Can we change the sysfs interface now. In 2.6.33 kernel we released the
+>  code to export blkio.time and blkio.sectors using device numbers. We
+>  shall have to change those interfaces also to reflect device stats in
+>  terms of device names.
 
- - lockdep already enforces this
- - CONFIG_NOHZ has shaken out the drivers which relied on jiffies updates
- - time keeping is not longer sensitive to the timer interrupt being delayed
+I wasn't aware of those interface, but I'm all for consistency.  I'll
+look into it.
 
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/handle.c |    3 ---
- 1 file changed, 3 deletions(-)
+> - I had kept void* as the key in blkg object so that it does not make any
+>  assumption about the key. This allowed that any xyz code in kernel can
+>  register with blkio code and implement some kind of IO control policy
+>  and it does not have to instanciate a request queue.
+>
+>  But I am not sure if there will be any subsystems which will really do
+>  that. I am assuming that all the device mapper and md code do
+>  instanciate the request queue? (In case we implement max bw policy
+>  there).
 
-Index: linux-2.6/kernel/irq/handle.c
-===================================================================
---- linux-2.6.orig/kernel/irq/handle.c
-+++ linux-2.6/kernel/irq/handle.c
-@@ -370,9 +370,6 @@ irqreturn_t handle_IRQ_event(unsigned in
- 	irqreturn_t ret, retval = IRQ_NONE;
- 	unsigned int status = 0;
- 
--	if (!(action->flags & IRQF_DISABLED))
--		local_irq_enable_in_hardirq();
--
- 	do {
- 		trace_irq_handler_entry(irq, action);
- 		ret = action->handler(irq, action->dev_id);
+I understand your preference to keep the key generic, but I wonder if
+there is *any* device that won't have a request_queue?  The penalty of
+keeping it very generic might be the complexity of another auxiliary
+structure to lookup gendisks or the next thing.  I wish the device
+mapper folks would speak up and be involved in these discussions.
 
+> - How do you make sure that request queue does not go away and while
+>  somebody is accessing blkg->queue under rcu read lock? This can happen
+>  while we call unlink code.
 
+Here I'll admit to being very new to RCU, and I'll defer to your
+worries.  More homework needed on my part.
+
+>  blkio_unlink_group_fn().
+>
+>  Because we store the pointer to cfqd as key, we make sure cfqd does not
+>  get deleted before one rcu grace period. (call_rcu). But this gurantees
+>  only that cfqd object is around and not cfqd->queue. So this is a
+>  problem with even today's code.
+>
+> ...
+> - How do you make sure that gendisk does not go away while q->disk is
+>  being accessed under rcu lock. (Already asked in other thread too.)
+
+On locking between gendisk deletion and stats printing: I suppose that
+you've already considered and discarded using the queue_lock to
+protect a  gendisk pointer in request_queue?
+
+> These are some quick thoughs. More later...
+
+Thanks again!
+Chad
