@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0CZBpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:45:53 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33577 "EHLO
+	id S1753520Ab0CZBwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:52:51 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44324 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab0CZBpw convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751981Ab0CZBwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:45:52 -0400
+	Thu, 25 Mar 2010 21:52:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XOi//LvCcgHps+VyOYwOBPhCLrjRF59MTdU2/jD24T5W3gxjYHSDhY48YPnnTVnHQx
-         uynOClnEiD9JEUE0wSr6P2lLwg86Esdl18+0tgcUmoEDPWQa5afkISfIWpftk/q7G2m6
-         1Mf2GF5PPZ9WuhZ/Q/YHPVc9k8/tPBn+AealQ=
-MIME-Version: 1.0
-In-Reply-To: <20100326104042T.fujita.tomonori@lab.ntt.co.jp>
-References: <1269401628.18314.264.camel@localhost>
-	 <20100326104042T.fujita.tomonori@lab.ntt.co.jp>
-Date: Fri, 26 Mar 2010 11:45:50 +1000
-Message-ID: <21d7e9971003251845i24af9712qb64aa3ca5f8f042c@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sis-agp: Remove SIS 760, handled by amd64-agp
-From: Dave Airlie <airlied@gmail.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: ben@decadent.org.uk, airlied@linux.ie, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=c7M4XVhih0rLCXHvGn1+F13X4tdc8A7QpIGmwYX5V/axEIAJsM5bEJA4HE7/S1uxFu
+         9IQ3ojdvU0iduA11AkEnKt9t1YN3P2hOxHCdvCDXwXkWcihAeb40bp/lK6+3SPSd2o+S
+         WWZijBhDQ0jWjMxqQuHDDOza8QP3ojrit+rAA=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Archs <linux-arch@vger.kernel.org>, "H . Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Stephane Eranian <eranian@google.com>
+Subject: [PATCH 0/7] perf updates and fixes
+Date: Fri, 26 Mar 2010 02:52:35 +0100
+Message-Id: <1269568362-13690-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 11:41 AM, FUJITA Tomonori
-<fujita.tomonori@lab.ntt.co.jp> wrote:
-> On Wed, 24 Mar 2010 03:33:48 +0000
-> Ben Hutchings <ben@decadent.org.uk> wrote:
->
->> SIS 760 is listed in the device tables for both amd64-agp and sis-agp.
->> amd64-agp is apparently preferable since it has workarounds for some
->> BIOS misconfigurations that sis-agp doesn't handle.
->>
+Hi,
 
-Will this not cause problems in 32-bit kernels?
+The series is not yet mergeable because it would break PowerPc
+(hot regs snapshot API has been changed, and I don't know how
+to update PowerPc for that).
 
-Dave.
+But if you're fine with the ideas, I can integrate the necessary
+changes to fix this, and also separate fixes and updates.
 
->> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->> ---
->>  drivers/char/agp/sis-agp.c |    8 --------
->>  1 files changed, 0 insertions(+), 8 deletions(-)
->
-> Looks fine to me. Hopefully, amd64-agp can handle all SIS 760 systems.
->
-> Can we confirm that this can fix bugs reported in Debian's bug
-> tracking system (which you mentioned earlier)?
->
->
->> diff --git a/drivers/char/agp/sis-agp.c b/drivers/char/agp/sis-agp.c
->> index 6c3837a..95fdd4d 100644
->> --- a/drivers/char/agp/sis-agp.c
->> +++ b/drivers/char/agp/sis-agp.c
->> @@ -415,14 +415,6 @@ static struct pci_device_id agp_sis_pci_table[] = {
->>               .subvendor      = PCI_ANY_ID,
->>               .subdevice      = PCI_ANY_ID,
->>       },
->> -     {
->> -             .class          = (PCI_CLASS_BRIDGE_HOST << 8),
->> -             .class_mask     = ~0,
->> -             .vendor         = PCI_VENDOR_ID_SI,
->> -             .device         = PCI_DEVICE_ID_SI_760,
->> -             .subvendor      = PCI_ANY_ID,
->> -             .subdevice      = PCI_ANY_ID,
->> -     },
->>       { }
->>  };
->>
->> --
->> 1.7.0
->>
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+Thanks.
+
+Frederic Weisbecker (7):
+  perf: Drop the frame reliablity check
+  perf: Fetch hot regs from the template caller
+  x86: Unify dumpstack.h and stacktrace.h
+  perf: Move perf_arch_fetch_caller_regs into a macro
+  perf: Make perf_fetch_caller_regs rewind to the first caller only
+  perf: Use hot regs with software sched/migrate events
+  perf: Correctly align perf event tracing buffer
+
+ arch/x86/include/asm/perf_event.h |   10 ++++++-
+ arch/x86/include/asm/stacktrace.h |   45 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.c  |   18 +------------
+ arch/x86/kernel/dumpstack.c       |    1 -
+ arch/x86/kernel/dumpstack.h       |   47 ----------------------------------
+ arch/x86/kernel/dumpstack_32.c    |    2 -
+ arch/x86/kernel/dumpstack_64.c    |    2 -
+ arch/x86/kernel/stacktrace.c      |    7 +++--
+ include/linux/perf_event.h        |   51 ++++++++++++++----------------------
+ include/trace/ftrace.h            |   23 ++++++++--------
+ kernel/perf_event.c               |   10 +------
+ kernel/trace/trace_event_perf.c   |   13 ++++++---
+ 12 files changed, 101 insertions(+), 128 deletions(-)
+ delete mode 100644 arch/x86/kernel/dumpstack.h
+
