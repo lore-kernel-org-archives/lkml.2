@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab0CZAye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 20:54:34 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:55971 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752620Ab0CZAyd (ORCPT
+	id S1753003Ab0CZAzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:55:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34281 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab0CZAzM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 20:54:33 -0400
-Date: Fri, 26 Mar 2010 09:54:31 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-In-reply-to: <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
-To: jassi brar <jassisinghbrar@gmail.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-       Linus Walleij <linus.ml.walleij@gmail.com>,
-       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Message-id: <4BAC05C7.2030208@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
-References: <4BAAD5BB.7050101@samsung.com>
- <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
- <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
- <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
- <4BAB7D9F.4070807@intel.com>
- <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
-X-OriginalArrivalTime: 26 Mar 2010 00:54:31.0206 (UTC)
- FILETIME=[E4EB6C60:01CACC7E]
+	Thu, 25 Mar 2010 20:55:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=sEn1AJ7utmGDi3Ntfm1ZUx+u3hWkQymt/JV4YD5aYnd4Pah1YUUmquXqWEOjNVSBvz
+         lLEtNXg+y6BZ75nudJY+2xggYQtDzpzC/PjECuNmNTEYSiX8FZTwUJayjmyHlKP9hTDg
+         8KWscZauUxCWRNwJ5Uz5tWWmiRyaFq/tP+KMg=
+MIME-Version: 1.0
+In-Reply-To: <1269542661.9188.38.camel@debian>
+References: <1269542661.9188.38.camel@debian>
+Date: Thu, 25 Mar 2010 17:55:11 -0700
+X-Google-Sender-Auth: e00d3f124922661d
+Message-ID: <e9c3a7c21003251755r251af427pf4f5ead9aca8a482@mail.gmail.com>
+Subject: Re: [PATCH 1/2] dma: Add timb-dma
+From: Dan Williams <dan.j.williams@intel.com>
+To: =?ISO-8859-1?Q?Richard_R=F6jfors?= <richard.rojfors@pelagicore.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Samuel Ortiz <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/26/2010 7:27 AM, jassi brar wrote:
-> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
->> jassi brar wrote:
->>>> Perhaps Joonyoung can simply port over the stuff
->>>> you need to this driver if you show your code.
->>> Having worked on Samsung SoCs(with PL330 DMAC) based products, I would be
->>> _very_ surprised if any user found this implementation useful.
->>> Let alone testing, this implementation can't even explain usability
->>> for fast peripherals
->>> with shallow FIFOs. I didn't give feedback for this patch because I am
->>> not sure if this
->>> is the right way to go at all.
->> This is the wrong attitude. í˜»If it were not for a simple oversight
->> Joonyoung's driver would already be upstream for the past two kernel
->> releases. í˜»So you need to work together to improve that driver to
->> incorporate what you need.
-> Nothing wrong in attitude here.
-> Giving feedback on the code only comes after one is convinced with the
-> overall approach taken. The last time I raised the PL330 driver issue,
-> most people were not enthusiastic with this drivers/dma/ approach.
-> I wasn't active mainline discussions when the driver was originally
-> submitted a few months ago.
-> And now my replies are not very 'polite' because theres a lot going on
-> in the background that people in public threads don't know about.
-> 
-> 
->> It sounds like you just need to add an extension for the arch specific dma
->> api.
-> I actually plan more than that.
-> Apart from inefficient design, JoonYoung's driver has made some fatal
-> assumptions
-> about PL330, which will result in DMA aborts if used with SoCs that implement
-> configuration of PL330 that is very different from Samsung SoCs'
-> Of course, I address all such issues that I can think of, in my implementation.
-> 
+On Thu, Mar 25, 2010 at 11:44 AM, Richard Röjfors
+<richard.rojfors@pelagicore.com> wrote:
+> Adds the support for the DMA engine withing the timberdale FPGA.
+>
+> The DMA channels are strict device to host, or host to device
+> and can not be used for generic memcpy.
+>
+> Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+[..]
+> +struct timb_dma_chan {
+> +       struct dma_chan         chan;
+> +       void __iomem            *membase;
+> +       spinlock_t              lock; /* Used for mutual exclusion */
 
-I can wait your implementation and wonder what is the issue also.
+Please add some value to this comment.  I can assume it protects all
+list manipulations, anything non-obvious worth noting?
 
-I welcome you try other design and want better driver is committed at 
-mainline kernel too.
+[..]
+> +
+> +static int td_fill_desc(struct timb_dma_chan *td_chan, u8 *dma_desc,
+> +       struct scatterlist *sg, bool last)
+> +{
+> +       if (sg_dma_len(sg) > USHORT_MAX) {
+> +               dev_err(chan2dev(&td_chan->chan), "Too big sg element\n");
+> +               return -EINVAL;
+> +       }
+> +
+> +       /* length must be word aligned */
+> +       if (sg_dma_len(sg) % sizeof(u32)) {
+> +               dev_err(chan2dev(&td_chan->chan), "Incorrect length: %d\n",
+> +                       sg_dma_len(sg));
+> +               return -EINVAL;
+> +       }
+> +
+> +       dev_dbg(chan2dev(&td_chan->chan), "desc: %p, addr: %p\n",
+> +               dma_desc, (void *)(int)sg_dma_address(sg));
+
+That (int) cast is not needed, causes a compiler warning, and can be dropped.
+
+Nice simple driver.  You can just send a follow up patch to fix up
+those minor issues.  I've pushed it out to my 'next' branch [1].
+
+--
+Dan
+
+git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git next
