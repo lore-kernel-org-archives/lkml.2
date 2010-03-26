@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab0CZIAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 04:00:21 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60819 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab0CZIAS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 04:00:18 -0400
-Date: Fri, 26 Mar 2010 09:00:15 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: miguel.ojeda.sandonis@gmail.com, gregkh@suse.de,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] auxdisplay: section cleanup in cfag12864bfb driver
-Message-ID: <20100326080015.GA20553@pengutronix.de>
-References: <1269566774-26330-1-git-send-email-henne@nachtwindheim.de>
+	id S1752177Ab0CZIBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 04:01:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54705 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752043Ab0CZIBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 04:01:19 -0400
+Date: Fri, 26 Mar 2010 09:00:48 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: linux-doc@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 13/16] Tools perf builtin-trace.c: duplicated includes
+Message-ID: <20100326080048.GB27394@elte.hu>
+References: <1269537767-7553-1-git-send-email-andrea.gelmini@gelma.net>
+ <1269537767-7553-13-git-send-email-andrea.gelmini@gelma.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1269566774-26330-1-git-send-email-henne@nachtwindheim.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1269537767-7553-13-git-send-email-andrea.gelmini@gelma.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 02:26:14AM +0100, Henrik Kretzschmar wrote:
-> This fixes a two section mismatches and makes
-> remove() __devexit.
+
+* Andrea Gelmini <andrea.gelmini@gelma.net> wrote:
+
+> tools/perf/builtin-trace.c: util/exec_cmd.h and util/trace-event.h are included more than once.
 > 
-> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-Looks good,
+> Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
+> ---
+>  tools/perf/builtin-trace.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> index 407041d..3c699c5 100644
+> --- a/tools/perf/builtin-trace.c
+> +++ b/tools/perf/builtin-trace.c
+> @@ -59,9 +59,6 @@ static int cleanup_scripting(void)
+>  #include "perf.h"
+>  #include "util/debug.h"
+>  
+> -#include "util/trace-event.h"
+> -#include "util/exec_cmd.h"
+> -
+>  static char const		*input_name = "perf.data";
+>  
+>  static int process_sample_event(event_t *event, struct perf_session *session)
 
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Please send a more complete patch that fixes the root cause of the 
+duplication: a few header files are in the middle of the .c file - all 
+inclusions should be at the top of the file.
 
-Thanks
-Uwe
+Thanks,
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+	Ingo
