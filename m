@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751649Ab0CZEYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 00:24:50 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:54917 "EHLO
+	id S1752054Ab0CZE3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 00:29:30 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:60125 "EHLO
 	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab0CZEYt (ORCPT
+	with ESMTP id S1751002Ab0CZE33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 00:24:49 -0400
+	Fri, 26 Mar 2010 00:29:29 -0400
 To: NeilBrown <neilb@suse.de>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] sysfs: simplify handling for s_active refcount
+Subject: Re: [PATCH 2/3] sysfs: make s_count a kref
 References: <20100324031829.2136.66489.stgit@notabene.brown>
-	<20100324032008.2136.52640.stgit@notabene.brown>
+	<20100324032008.2136.15346.stgit@notabene.brown>
 From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 25 Mar 2010 21:24:43 -0700
-In-Reply-To: <20100324032008.2136.52640.stgit@notabene.brown> (NeilBrown's message of "Wed\, 24 Mar 2010 14\:20\:08 +1100")
-Message-ID: <m139znogl0.fsf@fess.ebiederm.org>
+Date: Thu, 25 Mar 2010 21:29:24 -0700
+In-Reply-To: <20100324032008.2136.15346.stgit@notabene.brown> (NeilBrown's message of "Wed\, 24 Mar 2010 14\:20\:08 +1100")
+Message-ID: <m1wrwzln8b.fsf@fess.ebiederm.org>
 User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,33 +30,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 NeilBrown <neilb@suse.de> writes:
 
-> s_active counts the number of active references to a 'sysfs_direct'.
-> When we wish to deactivate a sysfs_direct, we subtract a large
-> number for the refcount so it will always appear negative.  When
-> it is negative, new references will not be taken.
-> After that subtraction, we wait for all the active references to
-> drain away.
->
-> The subtraction of the large number contains exactly the same
-> information as the setting of the flag SYSFS_FLAG_REMOVED.
-> (We know this as we already assert that SYSFS_FLAG_REMOVED is set
-> before adding the large-negative-bias).
-> So doing both is pointless.
->
-> By starting s_active with a value of 1, not 0 (as is typical of
-> reference counts) and using atomic_inc_not_zero, we can significantly
-> simplify the code while keeping exactly the same functionality.
+> s_count in sysfs behaves exactly like a kref, so change it to
+> be one.
+> This requires adding a KREF_INIT macro to kref.h
 
-Overall your logic appears correct but in detail this patch scares me.
+Except where it doesn't.  The whole no_recurse thing is definitely
+not idiomatic kref usage.  I could find only 3 instances of someone even
+looking at the return value.  I would argue based on that the return
+value of kref_put should be removed.
 
-sd->s_flags is protected by the sysfs_mutex, and you aren't
-taking it when you read it.  So in general I don't see the new check
-if (sd->s_flags & SYSFS_FLAG_REMOVED) == 0 providing any guarantee of
-progress whatsoever with user space applications repeated reading from
-a sysfs file when that sysfs file is being removed.  They could easily
-have the sd->s_flags value cached and never see the new value, given a
-crazy enough cache architecture.
+KREF_INIT if we want it should be added in a separate patch.
 
-So as attractive as this patch is I don't think it is correct.
+kref should be kept for the stupid simple cases where so we don't have
+to think about refcounting, and just know it works.  kref should not
+be where we are getting clever, and it this feels like getting clever
+to me.
 
-Eric 
+It isn't like the atomic primitives are any worse than kref.
+
+Eric
