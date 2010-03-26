@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab0CZViI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:38:08 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:52851 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752488Ab0CZViG (ORCPT
+	id S1754072Ab0CZVkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:40:23 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:48023 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338Ab0CZVkU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:38:06 -0400
-Message-ID: <4BAD2936.2050106@nachtwindheim.de>
-Date: Fri, 26 Mar 2010 22:37:58 +0100
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Krzysztof Helt <krzysztof.h1@poczta.fm>,
-       Arnaud Patard <arnaud.patard@rtp-net.org>,
-       Andres Salomon <dilinger@debian.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix section mismatches in virtual framebuffer
-References: <1269433035-6141-1-git-send-email-henne@nachtwindheim.de> <20100326104026.5cda2fbf.randy.dunlap@oracle.com>
-In-Reply-To: <20100326104026.5cda2fbf.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Mar 2010 17:40:20 -0400
+Date: Fri, 26 Mar 2010 22:39:32 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
+Message-ID: <20100326223932.01305c17@neptune.home>
+In-Reply-To: <201003261416.25387.dmitry.torokhov@gmail.com>
+References: <20100324233707.7243b04d@neptune.home>
+	<20100326102951.3b9ecda1@neptune.home>
+	<alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+	<201003261416.25387.dmitry.torokhov@gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, this patch is crap.
+On Fri, 26 March 2010 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> On Friday 26 March 2010 01:59:19 pm Jiri Kosina wrote:
+> > On Fri, 26 Mar 2010, Bruno Prémont wrote:
+> > > > > +	for (i = 0; i < PICOLCD_KEYS; i++) {
+> > > > > +		int key = ((int *)idev->keycode)[i];
+> > > > 
+> > > > Keycodes are now short, not int. Also, just do:
+> > > > 		input_set_capability(idev, EV_KEY, data->keycode[i]);
+> > > > 		
+> > > > > +		if (key < KEY_MAX && key >= 0)
+> > > > > +			input_set_capability(idev, EV_KEY, key);
+> > > 
+> > > Oops, I was not careful enough when switching over...
+> > 
+> > Dmitry, thanks a lot for rapid review the driver.
+> > 
+> > Bruno, could you please fix this and submit a followup 1/6 patch, so that
+> > I could queue the driver in my tree?
+> > 
+> > I have almost finished going over the driver and haven't encountered any
+> > other issues that would require immediate fixing.
+> > 
+> > Still, it would be nice to have the framebuffer/LCD/backlight bits
+> > reviewed by respective subsystem maintainers. But I'll probably queue the
+> > driver nevertheless and add potential ACKs later.
+> 
+> FWIW I am not entrely happy with the whole send-and_wait implementation -
+> it looks like it is not being called concurrently so we don't need mutex
+> there... I'd do something like:
 
-These structures can be freed cause they are struct and not struct*
-But they should be __devinitdata.
+It can be called concurrently, not within patch 1/6 but it definitely
+can once patch 6/6 is applied (concurrent access to debugfs files for
+EEPROM and/or FLASH).
+Even later on when FLASH (and EEPROM) access get moved to a better home
+concurrent access will still exist.
 
-I'm going to resend this and a couple of other fb-patches tomorrow.
 
-Thanks 
+> send_nand_wait() {
+> 
+> 	set_bit(WAITING_RESPONSE, data->state);
+> 	prepare message
+> 	send message
+> 	wait_for_event_interruptible_timeout(&data->wait,
+> 					!test_bit(WAITING_RESPONSE, data->state));
+> 	if (!test_bit()) {
+> 		process
+> 		return 0;
+> 	}
+> 
+> 	return -ETIME;
+> }
+> 
+> irq(...) {
+> 
+> 	else if (test_bit(WAITING_RESPONSE, data->state)) {
+> 		copy response...
+> 		clear_bit(WAITING_RESPONSE, data->state);	
+> 		wake_up(&data->wait);
+> 	}
+> }
+> 
+> and not bother with kmallocing pending structure, but it should not
+> stop from merging driver.
 
-Randy Dunlap schrieb:
+It might be an option to not allocate the pending structure but as
+the whole "pending" access is definitely not a hot path (flashing
+firmware or splash and changing EEPROM values will most probably
+not be done very often). The only more common use is version check
+on probe.
 
-> [adding linux-fbdev mailing list]
->
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
->
->
-> On Wed, 24 Mar 2010 13:17:15 +0100 Henrik Kretzschmar wrote:
->
->   
->> Both structs, vfb_default and vfb_fix, should not be freed,
->> since they are referenced and used by the struct fb_info of that device.
->>
->> WARNING: drivers/video/vfb.o(.devinit.text+0x13f): Section mismatch in
->> reference from the function vfb_probe() to the variable
->> .init.data:vfb_default
->> The function __devinit vfb_probe() references
->> a variable __initdata vfb_default.
->> If vfb_default is only used by vfb_probe then
->> annotate vfb_default with a matching annotation.
->>
->> WARNING: drivers/video/vfb.o(.devinit.text+0x162): Section mismatch in
->> reference from the function vfb_probe() to the variable
->> .init.data:vfb_fix
->> The function __devinit vfb_probe() references
->> a variable __initdata vfb_fix.
->> If vfb_fix is only used by vfb_probe then
->> annotate vfb_fix with a matching annotation.
->>
->> WARNING: drivers/video/vfb.o(.devinit.text+0x177): Section mismatch in
->> reference from the function vfb_probe() to the variable
->> .init.data:vfb_fix
->> The function __devinit vfb_probe() references
->> a variable __initdata vfb_fix.
->> If vfb_fix is only used by vfb_probe then
->> annotate vfb_fix with a matching annotation.
->>
->> WARNING: drivers/video/vfb.o(.devinit.text+0x184): Section mismatch in
->> reference from the function vfb_probe() to the (unknown reference)
->> .init.data:(unknown)
->> The function __devinit vfb_probe() references
->> a (unknown reference) __initdata (unknown).
->> If (unknown) is only used by vfb_probe then
->> annotate (unknown) with a matching annotation.
->>
->> Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
->> ---
->>  drivers/video/vfb.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/video/vfb.c b/drivers/video/vfb.c
->> index b8ab995..ae5796d 100644
->> --- a/drivers/video/vfb.c
->> +++ b/drivers/video/vfb.c
->> @@ -79,7 +79,7 @@ static void rvfree(void *mem, unsigned long size)
->>  	vfree(mem);
->>  }
->>  
->> -static struct fb_var_screeninfo vfb_default __initdata = {
->> +static struct fb_var_screeninfo vfb_default = {
->>  	.xres =		640,
->>  	.yres =		480,
->>  	.xres_virtual =	640,
->> @@ -101,7 +101,7 @@ static struct fb_var_screeninfo vfb_default __initdata = {
->>        	.vmode =	FB_VMODE_NONINTERLACED,
->>  };
->>  
->> -static struct fb_fix_screeninfo vfb_fix __initdata = {
->> +static struct fb_fix_screeninfo vfb_fix = {
->>  	.id =		"Virtual FB",
->>  	.type =		FB_TYPE_PACKED_PIXELS,
->>  	.visual =	FB_VISUAL_PSEUDOCOLOR,
->> -- 
->>     
->
->
-> ---
-> ~Randy
->
->   
+So what is more expensive, the used memory or the CPU usage to
+allocate/release the struct? That probably depends on reader's taste.
 
+Bruno
