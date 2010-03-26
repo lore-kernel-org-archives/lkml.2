@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab0CZUR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:17:56 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:21847 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab0CZURz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:17:55 -0400
-Subject: Re: [git patches] libata fixes
-From: Pavel Roskin <proski@gnu.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jeff Garzik <jeff@garzik.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BAB8D76.5040104@kernel.org>
-References: <20100323134226.GA14752@havoc.gtf.org>
-	 <1269367619.13592.12.camel@mj>  <4BAB8D76.5040104@kernel.org>
-Content-Type: text/plain
-Date: Fri, 26 Mar 2010 16:17:52 -0400
-Message-Id: <1269634672.8534.2.camel@mj>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1752143Ab0CZUTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:19:03 -0400
+Received: from daleenterprise.com ([67.78.11.229]:60941 "EHLO
+	daleenterprise.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab0CZUTA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:19:00 -0400
+Mime-Version: 1.0 (Apple Message framework v752.2)
 Content-Transfer-Encoding: 7bit
+Message-Id: <58634E81-116E-4141-8592-CB563902D1DA@macftphttp.serverbox.org>
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+From: websrvr <websrvr@macftphttp.serverbox.org>
+Subject: pciregions_read_proc() function results.
+Date: Fri, 26 Mar 2010 16:18:57 -0400
+X-Mailer: Apple Mail (2.752.2)
+MTA-Interface: amavisd-new-2.3.3 (2005-08-22) + Maia Mailguard 1.0.1 at daleenterprise.com
+X-Spam-Scanned: using SpamAssassin 3.1.7 (2006-10-05) at daleenterprise.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-26 at 01:21 +0900, Tejun Heo wrote:
-> On 03/24/2010 03:06 AM, Pavel Roskin wrote:
-> > By all means, please push this patch to all stable kernels, or more
-> > money will be wasted on hard drives ;-)
-> 
-> Oh, the original patch which caused the problem never saw the light of
-> the day before 2.6.34-rc1 so there's no stable kernel to push the
-> patch into.
+I've implemented the pciregions_read_proc code as a debugging tool  
+for video cards and I'm not sure if the output is correct I've listed  
+the results below, are they look valid?
 
-It looks like I'm still getting "clearing spurious IRQ".  In most cases,
-it's not followed by anything, but in one case, there was a lost
-interrupt followed by a link reset.
+card1: BFG 7300 GS
+region 0: mask 0xFF000000, now at 0xA4000000
+region 0: type mem, size 588908 (588908B)
+region 1: mask 0xF0000000, now at  0x80000000
+region 1: type mem, size 588908 (588908B)
+region 3: mask 0xFF000000, now at 0xA3000000
+region 3: type mem, size 588908 (588908B)
 
-[ 5030.881191] ata2: clearing spurious IRQ
-[ 5060.950036] ata2: lost interrupt (Status 0x50)
-[ 5060.950055] ata2.01: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6
-frozen
-[ 5060.950059] ata2.01: failed command: WRITE DMA
-[ 5060.950066] ata2.01: cmd ca/00:08:b7:11:a9/00:00:00:00:00/f0 tag 0
-dma 4096 out
-[ 5060.950068]          res 40/00:00:00:4f:c2/00:00:00:00:00/10 Emask
-0x4 (timeout)
-[ 5060.950071] ata2.01: status: { DRDY }
-[ 5060.950080] ata2: soft resetting link
-[ 5061.160268] ata2.01: configured for UDMA/133
-[ 5061.160275] ata2.01: device reported invalid CHS sector 0
-[ 5061.160283] ata2: EH complete
-[80540.010652] ata2: clearing spurious IRQ
+card2: BFG 9400 GT
+region 0: mask 0xFF000000, now at 0xA2000000
+region 0: type mem, size 588908 (588908B)
+region 1: mask 0xF0000000, now at  0x90000000
+region 1: type mem, size 588908 (588908B)
+region 3: mask 0xFE000000, now at 0xA0000000
+region 3: type mem, size 588908 (588908B)
+region 5: mask 0xFFFFFF80, now at 0x00002000
+region 5: type I/O, size 588908 (588908B)
 
-That last line is apparently a separate event.
-
--- 
-Regards,
-Pavel Roskin
