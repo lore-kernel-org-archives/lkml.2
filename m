@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab0CZPXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 11:23:34 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46238 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751408Ab0CZPXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 11:23:33 -0400
-Date: Fri, 26 Mar 2010 16:23:24 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20100326152324.GA2632@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754337Ab0CZP3l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 11:29:41 -0400
+Received: from dallas.jonmasters.org ([72.29.103.172]:43809 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751408Ab0CZP3j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 11:29:39 -0400
+Subject: PROBLEM: crash on halt with 2.6.34-0.16.rc2.git0.fc14.x86_64
+From: Jon Masters <jonathan@jonmasters.org>
+To: fedora-kernel-list <fedora-kernel-list@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Fri, 26 Mar 2010 11:29:32 -0400
+Message-ID: <1269617372.3779.234.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+No analysis yet. Just passing this along.
 
-Please pull the latest sched-fixes-for-linus git tree from:
+Jon.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git sched-fixes-for-linus
+--- begin oops log ---
 
- Thanks,
+Halting system...
+BUG: unable to handle kernel NULL pointer dereference at
+0000000000000004
+IP: [<ffffffff81017e7b>] amd_pmu_cpu_offline+0x38/0x6b
+PGD 741d5067 PUD 77715067 PMD 0 
+Oops: 0000 [#1] SMP 
+last sysfs file: /sys/devices/virtual/block/dm-1/dm/name
+CPU 0 
+Modules linked in: sit tunnel4 tun sunrpc powernow_k8 freq_table bridge
+stp llc nf_conntrack_netbios_ns ip6t_REJECT nf_conntrack_ipv6 ipv6
+kvm_amd kvm uinput snd_hda_codec_realtek snd_hda_intel snd_hda_codec
+snd_hwdep snd_seq snd_seq_device snd_pcm ppdev parport_pc parport r8169
+snd_timer mii snd edac_core soundcore microcode serio_raw snd_page_alloc
+edac_mce_amd k8temp i2c_nforce2 hwmon ata_generic pata_acpi
+firewire_ohci firewire_core crc_itu_t floppy sata_nv pata_amd nouveau
+ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded:
+cpufreq_ondemand]
 
-	Ingo
+Pid: 2792, comm: halt Not tainted 2.6.34-0.16.rc2.git0.fc14.x86_64 #1
+www.abit.com.tw  /System Product Name
+RIP: 0010:[<ffffffff81017e7b>]  [<ffffffff81017e7b>] amd_pmu_cpu_offline
++0x38/0x6b
+RSP: 0018:ffff880024289ca8  EFLAGS: 00010292
+RAX: ffff880024124900 RBX: ffff88000520cc70 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: ffffffff81017e74 RDI: ffffffff81488830
+RBP: ffff880024289cb8 R08: 0000000000000002 R09: 0000000000000000
+R10: 0000000000000046 R11: ffffe8ffffc01980 R12: 00000000fffffffd
+R13: ffffffff81ac70c0 R14: 0000000000000001 R15: 0000000000000000
+FS:  00007f7ec4f8a700(0000) GS:ffff880005000000(0000)
+knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000004 CR3: 0000000077381000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process halt (pid: 2792, threadinfo ffff880024288000, task
+ffff880024124900)
+Stack:
+ ffff880024289cb8 0000000000000017 ffff880024289cc8 ffffffff8147fbb0
+<0> ffff880024289d18 ffffffff8148dede 0000000000000001 ffffffffa0294020
+<0> ffff880024289d28 0000000000000001 ffffffff81ba1de0 0000000000000010
+Call Trace:
+ [<ffffffff8147fbb0>] x86_pmu_notifier+0x52/0x59
+ [<ffffffff8148dede>] notifier_call_chain+0x68/0x9c
+ [<ffffffff81070b21>] raw_notifier_call_chain+0x14/0x16
+ [<ffffffff81471efc>] _cpu_down+0x1bb/0x2bf
+ [<ffffffff81051d71>] disable_nonboot_cpus+0x7a/0x112
+ [<ffffffff8106593e>] kernel_power_off+0x26/0x40
+ [<ffffffff81065c02>] sys_reboot+0x126/0x1b2
+ [<ffffffff811316bf>] ? __d_free+0x56/0x5a
+ [<ffffffff811316fa>] ? d_free+0x37/0x50
+ [<ffffffff81138ad0>] ? mntput_no_expire+0x2c/0xfd
+ [<ffffffff81122ab7>] ? __fput+0x1d0/0x1df
+ [<ffffffff8111f7b8>] ? sys_close+0x32/0x10f
+ [<ffffffff81129fb7>] ? path_put+0x22/0x27
+ [<ffffffff810a875a>] ? audit_syscall_entry+0x11e/0x14a
+ [<ffffffff81489c15>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
+Code: 76 b8 00 01 76 54 48 63 ff 48 c7 c3 70 cc 00 00 48 03 1c fd 40 fa
+b9 81 48 c7 c7 40 b5 a4 81 e8 f9 1f 47 00 48 8b 93 28 07 00 00 <8b> 42
+04 ff c8 85 c0 89 42 04 75 0c 48 8b bb 28 07 00 00 e8 b5 
+RIP  [<ffffffff81017e7b>] amd_pmu_cpu_offline+0x38/0x6b
+ RSP <ffff880024289ca8>
+CR2: 0000000000000004
+---[ end trace 7d3f5b5a80d53cb0 ]---
+init: rc main process (2792) killed by KILL signal
 
------------------->
-Andrew Morton (1):
-      kernel/sched.c: Suppress unused var warning
 
-KOSAKI Motohiro (2):
-      sched: sched_getaffinity(): Allow less than NR_CPUS length
-      sched: Use proper type in sched_getaffinity()
-
-
- kernel/sched.c |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9ab3cd7..49d2fa7 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2650,7 +2650,7 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- {
- 	unsigned long flags;
- 	struct rq *rq;
--	int cpu = get_cpu();
-+	int cpu __maybe_unused = get_cpu();
- 
- #ifdef CONFIG_SMP
- 	/*
-@@ -4902,7 +4902,9 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
- 	int ret;
- 	cpumask_var_t mask;
- 
--	if (len < cpumask_size())
-+	if (len < nr_cpu_ids)
-+		return -EINVAL;
-+	if (len & (sizeof(unsigned long)-1))
- 		return -EINVAL;
- 
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-@@ -4910,10 +4912,12 @@ SYSCALL_DEFINE3(sched_getaffinity, pid_t, pid, unsigned int, len,
- 
- 	ret = sched_getaffinity(pid, mask);
- 	if (ret == 0) {
--		if (copy_to_user(user_mask_ptr, mask, cpumask_size()))
-+		size_t retlen = min_t(size_t, len, cpumask_size());
-+
-+		if (copy_to_user(user_mask_ptr, mask, retlen))
- 			ret = -EFAULT;
- 		else
--			ret = cpumask_size();
-+			ret = retlen;
- 	}
- 	free_cpumask_var(mask);
- 
