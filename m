@@ -1,285 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135Ab0CZHtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 03:49:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47824 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751909Ab0CZHsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 03:48:50 -0400
-Date: Fri, 26 Mar 2010 18:48:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for March 26
-Message-Id: <20100326184842.2f64ca42.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__26_Mar_2010_18_48_42_+1100_3rgihR+PcuYXAGd0"
+	id S1752024Ab0CZHx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 03:53:56 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:51587 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab0CZHxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 03:53:54 -0400
+To: Neil Brown <neilb@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] sysfs: simplify handling for s_active refcount
+References: <20100324031829.2136.66489.stgit@notabene.brown>
+	<20100324032008.2136.52640.stgit@notabene.brown>
+	<m139znogl0.fsf@fess.ebiederm.org>
+	<20100326163236.1ffb2c2b@notabene.brown>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Fri, 26 Mar 2010 00:53:48 -0700
+In-Reply-To: <20100326163236.1ffb2c2b@notabene.brown> (Neil Brown's message of "Fri\, 26 Mar 2010 16\:32\:36 +1100")
+Message-ID: <m1bpebfrhv.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=76.21.114.89;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 76.21.114.89
+X-SA-Exim-Rcpt-To: neilb@suse.de, linux-kernel@vger.kernel.org, gregkh@suse.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Mar_2010_18_48_42_+1100_3rgihR+PcuYXAGd0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Neil Brown <neilb@suse.de> writes:
 
-Hi all,
+> On Thu, 25 Mar 2010 21:24:43 -0700
+> ebiederm@xmission.com (Eric W. Biederman) wrote:
+>
+>> NeilBrown <neilb@suse.de> writes:
+>> 
+>> > s_active counts the number of active references to a 'sysfs_direct'.
+>> > When we wish to deactivate a sysfs_direct, we subtract a large
+>> > number for the refcount so it will always appear negative.  When
+>> > it is negative, new references will not be taken.
+>> > After that subtraction, we wait for all the active references to
+>> > drain away.
+>> >
+>> > The subtraction of the large number contains exactly the same
+>> > information as the setting of the flag SYSFS_FLAG_REMOVED.
+>> > (We know this as we already assert that SYSFS_FLAG_REMOVED is set
+>> > before adding the large-negative-bias).
+>> > So doing both is pointless.
+>> >
+>> > By starting s_active with a value of 1, not 0 (as is typical of
+>> > reference counts) and using atomic_inc_not_zero, we can significantly
+>> > simplify the code while keeping exactly the same functionality.
+>> 
+>> Overall your logic appears correct but in detail this patch scares me.
+>> 
+>> sd->s_flags is protected by the sysfs_mutex, and you aren't
+>> taking it when you read it.  So in general I don't see the new check
+>> if (sd->s_flags & SYSFS_FLAG_REMOVED) == 0 providing any guarantee of
+>> progress whatsoever with user space applications repeated reading from
+>> a sysfs file when that sysfs file is being removed.  They could easily
+>> have the sd->s_flags value cached and never see the new value, given a
+>> crazy enough cache architecture.
+>
+> As you say, this is only a liveness issue.  The atomic_inc_not_zero
+> guarantees that we don't take a new reference after the last one is gone.
+> The test on SYSFS_FLAG_REMOVED is only there to ensure that the count does
+> eventually get to zero.
+> There could only be a problem here if the change to s_flags was not
+> propagated to all CPUs in some reasonably small time.
 
-Changes since 20100325:
+Having this handled correctly is a key part of the abstraction
+implemented with sysfs_get_active sysfs_put_active and
+sysfs_deactivate.  It is a requirement that userspace can not cuause
+denial of service attacks on the rest of the kernel.
 
-Dropped tree: tmio-mmc (long unresolved conflicts and unable to fetch)
+> I'm not expert on these things but it was my understanding that interesting
+> cache architectures could arbitrarily re-order accesses, but does not delay
+> them indefinitely.
+> Inserting barriers could possibly make this more predictable, but that would
+> just delay certain loads/stores until a known state was reached - it would
+> not make the data visible at another CPU any faster (or would it?).
 
-My fixes tree contains:
-	a patch for a pktcdvd build error from Arnd Bergmann
-	a revert of the commit that broke virtual consoles on PowerPC
+> So unless there is no cache-coherency protocol at all, I think that
+> SYSFS_FLAG_REMOVED will be seen promptly and that s_active will drop to zero
+> and quickly as it does today.
 
-The pci tree gained a conflict against the pci-current tree.
+This is my problem with your patch.  You have replaced something that
+used an existing abstraction properly, with something that does not
+use any abstraction at all and we are reduced to talking about cpu
+memory ordering requirements.
 
-----------------------------------------------------------------------------
+Furthermore this code you are changing is not used raw but it is the
+building blocks for a well defined abstraction.  The users of
+sysfs_get_active sysfs_put_active and sysfs_deactivate don't have to
+know the details of how they are implemented to think about and
+reason about it accurately.
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+I am very much in favor of a general primitive that we can use for
+blocking ref counts.  We have them in sysfs, proc, sysctl, and a few
+other places with similar requirements.  Each location has a different
+implementation, but essentially the same semantics.
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
+What is really needed is something with the semantics of:
+read_trylock
+read_unlock
+write_lock() perhaps synchronize?
 
-Below is a summary of the state of the merge.
+With multiple reads in side the read side critical section, and 
+biased so that the read side is very cheap, and the data structure
+size is very cheap.  We have an ugly but otherwise near optimal
+implementation in sysfs.  srcu is close the data structure
+costs too much to use on every sysfs dirent.
 
-We are up to 158 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
+Improving and getting it right is very attractive.  The code that
+exists today is correct and signals that something fishy is going
+on so there is no point in doing something less than right.
 
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
+Eric
 
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Applying: ar9170: fix for driver-core ABI change
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging reiserfs-bkl/reiserfs/kill-bkl
-Merging vfs/for-next
-CONFLICT (content): Merge conflict in fs/namei.c
-CONFLICT (content): Merge conflict in fs/nfs/inode.c
-CONFLICT (content): Merge conflict in fs/nfsd/nfs4xdr.c
-CONFLICT (content): Merge conflict in fs/nfsd/vfs.c
-CONFLICT (content): Merge conflict in fs/ufs/inode.c
-CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
-CONFLICT (content): Merge conflict in security/tomoyo/realpath.c
-Merging pci/linux-next
-CONFLICT (content): Merge conflict in arch/x86/pci/acpi.c
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-CONFLICT (content): Merge conflict in drivers/ata/ahci.c
-Merging infiniband/for-next
-Merging acpi/test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging mtd/master
-CONFLICT (content): Merge conflict in drivers/mtd/nand/sh_flctl.c
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in drivers/char/hvc_console.c
-CONFLICT (content): Merge conflict in drivers/char/hvc_console.h
-CONFLICT (content): Merge conflict in drivers/char/virtio_console.c
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Applying: kgdb: update for sysrq handling change
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (content): Merge conflict in fs/notify/inotify/inotify_user.c
-CONFLICT (content): Merge conflict in include/linux/fsnotify.h
-CONFLICT (content): Merge conflict in kernel/audit_tree.c
-CONFLICT (content): Merge conflict in kernel/sysctl.c
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging hwlat/for-linus
-CONFLICT (content): Merge conflict in MAINTAINERS
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging drbd/for-jens
-Merging catalin/for-next
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-CONFLICT (content): Merge conflict in lib/Kconfig
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging limits/writable_limits
-CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
-CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
-CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
-CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging quilt/staging
-Merging scsi-post-merge/master
-
---Signature=_Fri__26_Mar_2010_18_48_42_+1100_3rgihR+PcuYXAGd0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkusZtoACgkQjjKRsyhoI8wDEQCgiWyL/0VTaw0PXRL7XdnlWj9E
-EzwAn2TCuBW8eHFrpE3alaKl9osan6gj
-=4F9s
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Mar_2010_18_48_42_+1100_3rgihR+PcuYXAGd0--
