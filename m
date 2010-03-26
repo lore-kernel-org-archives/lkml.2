@@ -1,163 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab0CZKql (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 06:46:41 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44414 "EHLO gir.skynet.ie"
+	id S1753660Ab0CZKya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 06:54:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42019 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753186Ab0CZKqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 06:46:40 -0400
-Date: Fri, 26 Mar 2010 10:46:18 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-Subject: Re: [PATCH 08/11] Add /proc trigger for memory compaction
-Message-ID: <20100326104618.GZ2024@csn.ul.ie>
-References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-9-git-send-email-mel@csn.ul.ie> <20100324133351.c7730969.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100324133351.c7730969.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753562Ab0CZKy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 06:54:27 -0400
+Date: Fri, 26 Mar 2010 21:54:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Amit Shah <amit.shah@redhat.com>
+Cc: Sachin Sant <sachinp@in.ibm.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       a.p.zijlstra@chello.nl, Rusty Russell <rusty@rustcorp.com.au>,
+       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+       Anton Blanchard <anton@samba.org>, tglx@linutronix.de,
+       Linus Torvalds <torvalds@linux-foundation.org>, mingo@elte.hu,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
+ hvc_remove
+Message-Id: <20100326215416.80d09610.sfr@canb.auug.org.au>
+In-Reply-To: <20100326095821.GA7039@amit-x200.redhat.com>
+References: <20100319151326.GC8541@kroah.com>
+	<1269011916-8836-4-git-send-email-gregkh@suse.de>
+	<1269119079.8599.65.camel@pasglop>
+	<20100321043725.GA21566@amit-x200.redhat.com>
+	<20100324121902.GJ15789@amit-x200.redhat.com>
+	<4BAC7AD4.4030309@in.ibm.com>
+	<20100326095821.GA7039@amit-x200.redhat.com>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 01:33:51PM -0700, Andrew Morton wrote:
-> On Tue, 23 Mar 2010 12:25:43 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > This patch adds a proc file /proc/sys/vm/compact_memory. When an arbitrary
-> > value is written to the file, all zones are compacted. The expected user
-> > of such a trigger is a job scheduler that prepares the system before the
-> > target application runs.
-> > 
+--Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Amit,
+
+On Fri, 26 Mar 2010 15:28:21 +0530 Amit Shah <amit.shah@redhat.com> wrote:
+>
+> On (Fri) Mar 26 2010 [14:43:56], Sachin Sant wrote:
 > >
-> > ...
-> >
-> > +/* This is the entry point for compacting all nodes via /proc/sys/vm */
-> > +int sysctl_compaction_handler(struct ctl_table *table, int write,
-> > +			void __user *buffer, size_t *length, loff_t *ppos)
-> > +{
-> > +	if (write)
-> > +		return compact_nodes();
-> > +
-> > +	return 0;
-> > +}
-> 
-> Neato.  When I saw the overall description I was afraid that this stuff
-> would be fiddling with kernel threads.
-> 
+> > I too ran into this issue as reported by Anton. Unfortunately in my
+> > case the following suggested patch does not help boot the powerpc
+> > box successfully. The boot still hangs with following messages
 
-Not yet anyway. It has been floated in the past to have a kcompactd
-similar to kswapd but right now there is no justification for it. Like
-other suggestions made in the past, it has potential but needs data to
-justify.
+I have been getting this on my linux-next boot tests for a while as well.
 
-> The underlying compaction code can at times cause rather large amounts
-> of memory to be put onto private lists, so it's lost to the rest of the
-> kernel.  What happens if 10000 processes simultaneously write to this
-> thing?  It's root-only so I guess the answer is "root becomes unemployed".
-> 
+> Was the hang you saw before applying this patch at the same place / for
+> the same reason?
 
-Well, root becomes unemployed but I shouldn't be supplying the rope.
-Lets keep min_free_kbytes as the "fall off the cliff" tunable. I added
-too_many_isolated()-like logic and also handling of fatal signals.
+I get the same hangs with and without the patch.  Paulus bisected it
+(again) to the commit below and reverting that commit fixes the problem.
 
-> I fear that the overall effect of this feature is that people will come
-> up with ghastly hacks which keep on poking this tunable as a workaround
-> for some VM shortcoming.  This will lead to more shortcomings, and
-> longer-lived ones.
-> 
+> OK, this gets even murkier. I don't know why taking a few krefs modifies
+> hvc_console behaviour to such an extent.
+>=20
+> > Just to confirm i too am facing same issue as reported by Anton,
+> > reverted commit e74d098c66543d0731de62eb747ccd5b636a6f4c and that allow=
+ed
+> > by box to boot successfully.
+>=20
+> Which module uses hvc_console in your case?
 
-That would be very unfortunate and also a self-defeating measure in the short
-run, let alone the long run.  I consider the tunable to be more like the
-"drop_caches" tunable. It can be used for good or bad and all the bad uses
-kick you in the ass because it does not resolve the underlying problem and
-is expensive to use.
+I assume hcv_vio.
 
-I had three legit uses in mind for it
+I also tested using "init=3D/bin/bash" as a kernel command line option and
+the console worked while I was running bash, but everything was very
+sluggish.  Then when I did "exec /sbin/init" the console hung completely
+- sysrq (^O) didn't even work any more (it did while I was running bash).
 
-1. Batch-systems that compact memory before a job is scheduler to reduce
-   start-up time of applications using huge pages. Depending on their
-   setup, sysfs might be a better fit for them
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-2. Illustrate a bug in direct compaction. i.e. I'd get a report on some
-   allocation failure that was consistent but when the tunable is poked,
-   it works perfectly
+--Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3
+Content-Type: application/pgp-signature
 
-3. Development uses. Measuring worst-case scenarios for compaction (rare
-   obviously), stress testing compaction to try catch bugs in migration
-   and measuring how effective compaction currently is.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Do these justify the existance of the tunable or is the risk of abuse
-too high?
+iEYEARECAAYFAkusklgACgkQjjKRsyhoI8z2rgCfdQK7HbJ3o86vDpbSbghLmQwd
+7CEAoI4ZvlWTUDm4FooAu/N5fA3VfHXg
+=wzAl
+-----END PGP SIGNATURE-----
 
-This is what the isolate logic looks like
-
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index e0e8100..a6a6958 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -13,6 +13,7 @@
- #include <linux/mm_inline.h>
- #include <linux/sysctl.h>
- #include <linux/sysfs.h>
-+#include <linux/backing-dev.h>
- #include "internal.h"
- 
- /*
-@@ -197,6 +198,20 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
- 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, cc->nr_file);
- }
- 
-+/* Similar to reclaim, but different enough that they don't share logic */
-+static int too_many_isolated(struct zone *zone)
-+{
-+
-+	unsigned long inactive, isolated;
-+
-+	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
-+					zone_page_state(zone, NR_INACTIVE_ANON);
-+	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
-+					zone_page_state(zone, NR_ISOLATED_ANON);
-+
-+	return isolated > inactive;
-+}
-+
- /*
-  * Isolate all pages that can be migrated from the block pointed to by
-  * the migrate scanner within compact_control.
-@@ -223,6 +238,14 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 		return 0;
- 	}
- 
-+	/* Do not isolate the world */
-+	while (unlikely(too_many_isolated(zone))) {
-+		congestion_wait(BLK_RW_ASYNC, HZ/10);
-+
-+		if (fatal_signal_pending(current))
-+			return 0;
-+	}
-+
- 	/* Time to isolate some pages for migration */
- 	spin_lock_irq(&zone->lru_lock);
- 	for (; low_pfn < end_pfn; low_pfn++) {
-@@ -309,6 +332,9 @@ static int compact_finished(struct zone *zone,
- 	unsigned int order;
- 	unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
- 
-+	if (fatal_signal_pending(current))
-+		return COMPACT_PARTIAL;
-+
- 	/* Compaction run completes if the migrate and free scanner meet */
- 	if (cc->free_pfn <= cc->migrate_pfn)
- 		return COMPACT_COMPLETE;
+--Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3--
