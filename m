@@ -1,134 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab0CZBCS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:02:18 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60180 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab0CZBCQ (ORCPT
+	id S1753281Ab0CZBDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:03:41 -0400
+Received: from mail-px0-f194.google.com ([209.85.216.194]:56626 "EHLO
+	mail-px0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab0CZBDj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:02:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 26 Mar 2010 09:58:25 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 02/11] mm,migration: Do not try to migrate unmapped
- anonymous pages
-Message-Id: <20100326095825.69fd63a9.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1269530941.1814.21.camel@barrios-desktop>
-References: <20100325092131.GK2024@csn.ul.ie>
-	<20100325184123.e3e3b009.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100325185200.6C8C.A69D9226@jp.fujitsu.com>
-	<20100325191229.8e3d2ba1.kamezawa.hiroyu@jp.fujitsu.com>
-	<1269530941.1814.21.camel@barrios-desktop>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Mar 2010 21:03:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UAmBktPQ0nGUxeNSg2ncJBJ6QxUxaaBszSI7GggzySToBn4ubmATVZMnNsoWiAcr7Q
+         ZlaFbfmkF5P2AirMaAFSTSsJd6ZCTQbvxoNAatsBaHnRmil8CNqcFIbRo+OlpyUNqhGP
+         jvvlcggI35wRqjUI3uJflQG0eniTrcWPBFHGU=
+MIME-Version: 1.0
+In-Reply-To: <20100304135738C.fujita.tomonori@lab.ntt.co.jp>
+References: <4B8F213B.40603@gmail.com>
+	 <20100304135738C.fujita.tomonori@lab.ntt.co.jp>
+Date: Thu, 25 Mar 2010 19:03:37 -0600
+Message-ID: <51f3faa71003251803q7ccec5d5x82bc277c590e2848@mail.gmail.com>
+Subject: Re: [PATCH RFC] fix problems with NETIF_F_HIGHDMA in networking 
+	drivers v2
+From: Robert Hancock <hancockrwd@gmail.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-usb@vger.kernel.org, davem@davemloft.net, bzolnier@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Mar 2010 00:29:01 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+On Wed, Mar 3, 2010 at 10:58 PM, FUJITA Tomonori
+<fujita.tomonori@lab.ntt.co.jp> wrote:
+> On Wed, 03 Mar 2010 20:55:55 -0600
+> Robert Hancock <hancockrwd@gmail.com> wrote:
+>
+>> Many networking drivers have issues with the use of the NETIF_F_HIGHDMA flag.
+>> This flag actually indicates whether or not the device/driver can handle
+>> skbs located in high memory (as opposed to lowmem). If the flag isn't set and
+>> the skb is located in highmem, it needs to be copied.
+>> There are two problems with this flag:
+>>
+>> -Many drivers only set the flag when they detect they can use 64-bit DMA,
+>> since otherwise they could receive DMA addresses that they can't handle
+>> (which on platforms without IOMMU/SWIOTLB support is fatal). This means that if
+>> 64-bit support isn't available, even buffers located below 4GB will get copied
+>> unnecessarily.
+>>
+>> -Some drivers set the flag even though they can't actually handle 64-bit DMA,
+>> which would mean that on platforms without IOMMU/SWIOTLB they would get a DMA
+>> mapping error if the memory they received happened to be located above 4GB.
+>>
+>> In order to fix this problem, the existing NETIF_F_HIGHDMA flag is split into
+>> two new flags:
+>>
+>> NETIF_F_DMA_HIGH - indicates if the driver can do DMA to highmem at all
+>> NETIF_F_DMA_64BIT - indicates the driver can do DMA to 64-bit memory
+>
+> Why can't you use dev->dma_mask here like the following?
+>
+> Then you can fix drivers that use the NETIF_F_HIGHDMA flag to indicate
+> that they don't support 64bit DMA.
+>
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index bcc490c..b15f94b 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -129,6 +129,7 @@
+>  #include <linux/jhash.h>
+>  #include <linux/random.h>
+>  #include <trace/events/napi.h>
+> +#include <linux/pci.h>
+>
+>  #include "net-sysfs.h"
+>
+> @@ -1787,14 +1788,21 @@ static inline int illegal_highdma(struct net_device *dev, struct sk_buff *skb)
+>  {
+>  #ifdef CONFIG_HIGHMEM
+>        int i;
+> +       if (!(dev->features & NETIF_F_HIGHDMA)) {
+> +               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> +                       if (PageHighMem(skb_shinfo(skb)->frags[i].page))
+> +                               return 1;
+> +       }
+>
+> -       if (dev->features & NETIF_F_HIGHDMA)
+> -               return 0;
+> -
+> -       for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> -               if (PageHighMem(skb_shinfo(skb)->frags[i].page))
+> -                       return 1;
+> +       if (PCI_DMA_BUS_IS_PHYS) {
+> +               struct device *pdev = dev->dev.parent;
+>
+> +               for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+> +                       dma_addr_t addr = page_to_phys(skb_shinfo(skb)->frags[i].page);
+> +                       if (!pdev->dma_mask || addr + PAGE_SIZE - 1 > *pdev->dma_mask)
+> +                               return 1;
+> +               }
+> +       }
+>  #endif
+>        return 0;
+>  }
+>
 
-> Hi, Kame. 
-<snip>
-
-> Which case do we have PageAnon && (page_mapcount == 0) && PageSwapCache ?
-> With looking over code which add_to_swap_cache, I found somewhere. 
-> 
-> 1) shrink_page_list
-> I think this case doesn't matter by isolate_lru_xxx.
-> 
-> 2) shmem_swapin
-> It seems to be !PageAnon
-> 
-> 3) shmem_writepage
-> It seems to be !PageAnon. 
-> 
-> 4) do_swap_page
-> page_add_anon_rmap increases _mapcount before setting page->mapping to anon_vma. 
-> So It doesn't matter. 
-
-> 
-> 
-> I think following codes in unmap_and_move seems to handle 3) case. 
-> 
-> ---
->          * Corner case handling:
->          * 1. When a new swap-cache page is read into, it is added to the LRU
->          * and treated as swapcache but it has no rmap yet.
->         ...
->         if (!page->mapping) {
->                 if (!PageAnon(page) && page_has_private(page)) {
->                 ....
->                 }    
->                 goto skip_unmap;
->         }    
-> 
-> ---
-> 
-> Do we really check PageSwapCache in there?
-> Do I miss any case?
-> 
-
-When a page is fully unmapped, page->mapping is not cleared.
-
-from rmap.c
-==
- 734 void page_remove_rmap(struct page *page)
- 735 {
-	....
- 758         /*
- 759          * It would be tidy to reset the PageAnon mapping here,
- 760          * but that might overwrite a racing page_add_anon_rmap
- 761          * which increments mapcount after us but sets mapping
- 762          * before us: so leave the reset to free_hot_cold_page,
- 763          * and remember that it's only reliable while mapped.
- 764          * Leaving it set also helps swapoff to reinstate ptes
- 765          * faster for those pages still in swapcache.
- 766          */
- 767 }
-==
-
-What happens at memory reclaim is...
-
-	the first vmscan
-	1. isolate a page from LRU.
-	2. add_to_swap_cache it.
-	3. try_to_unmap it
-	4. pageout it (PG_reclaim && PG_writeback)
-	5. move page to the tail of LRU.
-	.....<after some time>
-	6. I/O ends and PG_writeback is cleared.
-
-Here, in above cycle, the page is not freed. Still in LRU list.
-	next vmscan
-	7. isolate a page from LRU.
-	8. finds a unmapped clean SwapCache
-	9. drop it.
-
-So, to _free_ unmapped SwapCache, sequence 7-9 should happen.
-If enough memory is freed by the first itelation of vmscan before I/O end,
-next vmscan doesn't happen. Then, we have "unmmaped clean Swapcache which has
-anon_vma pointer on page->mapping" on LRU.
-
-Thanks,
--Kame
-
-
-	
-
-
-
-	
-
-
+This seems like it could be a reasonable approach. The only thing is
+that in this code you're returning 1 if the parent device has no DMA
+mask set. Wouldn't it make more sense to return 0 in this case? I'm
+assuming that in that situation it's a virtual device not backed by
+any hardware and there should be no DMA mask restriction...
