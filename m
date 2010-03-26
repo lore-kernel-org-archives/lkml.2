@@ -1,101 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754337Ab0CZP3l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 11:29:41 -0400
-Received: from dallas.jonmasters.org ([72.29.103.172]:43809 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751408Ab0CZP3j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 11:29:39 -0400
-Subject: PROBLEM: crash on halt with 2.6.34-0.16.rc2.git0.fc14.x86_64
-From: Jon Masters <jonathan@jonmasters.org>
-To: fedora-kernel-list <fedora-kernel-list@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Fri, 26 Mar 2010 11:29:32 -0400
-Message-ID: <1269617372.3779.234.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	id S1754533Ab0CZPe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 11:34:58 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46621 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754121Ab0CZPe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 11:34:56 -0400
+Date: Fri, 26 Mar 2010 16:34:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer fixes
+Message-ID: <20100326153423.GA4044@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No analysis yet. Just passing this along.
+Linus,
 
-Jon.
+Please pull the latest timers-fixes-for-linus git tree from:
 
---- begin oops log ---
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
 
-Halting system...
-BUG: unable to handle kernel NULL pointer dereference at
-0000000000000004
-IP: [<ffffffff81017e7b>] amd_pmu_cpu_offline+0x38/0x6b
-PGD 741d5067 PUD 77715067 PMD 0 
-Oops: 0000 [#1] SMP 
-last sysfs file: /sys/devices/virtual/block/dm-1/dm/name
-CPU 0 
-Modules linked in: sit tunnel4 tun sunrpc powernow_k8 freq_table bridge
-stp llc nf_conntrack_netbios_ns ip6t_REJECT nf_conntrack_ipv6 ipv6
-kvm_amd kvm uinput snd_hda_codec_realtek snd_hda_intel snd_hda_codec
-snd_hwdep snd_seq snd_seq_device snd_pcm ppdev parport_pc parport r8169
-snd_timer mii snd edac_core soundcore microcode serio_raw snd_page_alloc
-edac_mce_amd k8temp i2c_nforce2 hwmon ata_generic pata_acpi
-firewire_ohci firewire_core crc_itu_t floppy sata_nv pata_amd nouveau
-ttm drm_kms_helper drm i2c_algo_bit i2c_core [last unloaded:
-cpufreq_ondemand]
+ Thanks,
 
-Pid: 2792, comm: halt Not tainted 2.6.34-0.16.rc2.git0.fc14.x86_64 #1
-www.abit.com.tw  /System Product Name
-RIP: 0010:[<ffffffff81017e7b>]  [<ffffffff81017e7b>] amd_pmu_cpu_offline
-+0x38/0x6b
-RSP: 0018:ffff880024289ca8  EFLAGS: 00010292
-RAX: ffff880024124900 RBX: ffff88000520cc70 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffffffff81017e74 RDI: ffffffff81488830
-RBP: ffff880024289cb8 R08: 0000000000000002 R09: 0000000000000000
-R10: 0000000000000046 R11: ffffe8ffffc01980 R12: 00000000fffffffd
-R13: ffffffff81ac70c0 R14: 0000000000000001 R15: 0000000000000000
-FS:  00007f7ec4f8a700(0000) GS:ffff880005000000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000004 CR3: 0000000077381000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process halt (pid: 2792, threadinfo ffff880024288000, task
-ffff880024124900)
-Stack:
- ffff880024289cb8 0000000000000017 ffff880024289cc8 ffffffff8147fbb0
-<0> ffff880024289d18 ffffffff8148dede 0000000000000001 ffffffffa0294020
-<0> ffff880024289d28 0000000000000001 ffffffff81ba1de0 0000000000000010
-Call Trace:
- [<ffffffff8147fbb0>] x86_pmu_notifier+0x52/0x59
- [<ffffffff8148dede>] notifier_call_chain+0x68/0x9c
- [<ffffffff81070b21>] raw_notifier_call_chain+0x14/0x16
- [<ffffffff81471efc>] _cpu_down+0x1bb/0x2bf
- [<ffffffff81051d71>] disable_nonboot_cpus+0x7a/0x112
- [<ffffffff8106593e>] kernel_power_off+0x26/0x40
- [<ffffffff81065c02>] sys_reboot+0x126/0x1b2
- [<ffffffff811316bf>] ? __d_free+0x56/0x5a
- [<ffffffff811316fa>] ? d_free+0x37/0x50
- [<ffffffff81138ad0>] ? mntput_no_expire+0x2c/0xfd
- [<ffffffff81122ab7>] ? __fput+0x1d0/0x1df
- [<ffffffff8111f7b8>] ? sys_close+0x32/0x10f
- [<ffffffff81129fb7>] ? path_put+0x22/0x27
- [<ffffffff810a875a>] ? audit_syscall_entry+0x11e/0x14a
- [<ffffffff81489c15>] ? trace_hardirqs_on_thunk+0x3a/0x3f
- [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
-Code: 76 b8 00 01 76 54 48 63 ff 48 c7 c3 70 cc 00 00 48 03 1c fd 40 fa
-b9 81 48 c7 c7 40 b5 a4 81 e8 f9 1f 47 00 48 8b 93 28 07 00 00 <8b> 42
-04 ff c8 85 c0 89 42 04 75 0c 48 8b bb 28 07 00 00 e8 b5 
-RIP  [<ffffffff81017e7b>] amd_pmu_cpu_offline+0x38/0x6b
- RSP <ffff880024289ca8>
-CR2: 0000000000000004
----[ end trace 7d3f5b5a80d53cb0 ]---
-init: rc main process (2792) killed by KILL signal
+	Ingo
+
+------------------>
+Andrew Morton (1):
+      timer stats: Fix del_timer_sync() and try_to_del_timer_sync()
+
+John Stultz (1):
+      time: Fix accumulation bug triggered by long delay.
+
+Stanislaw Gruszka (1):
+      posix-cpu-timers: Reset expire cache when no timer is running
+
+Thomas Gleixner (1):
+      clockevents: Sanitize min_delta_ns adjustment and prevent overflows
 
 
+ include/linux/clockchips.h |    2 +
+ kernel/posix-cpu-timers.c  |   10 ++++++--
+ kernel/time/tick-oneshot.c |   52 +++++++++++++++++++++++++++++++++----------
+ kernel/time/timekeeping.c  |    3 +-
+ kernel/time/timer_list.c   |    3 +-
+ kernel/timer.c             |    1 +
+ 6 files changed, 54 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+index 0cf725b..fc53492 100644
+--- a/include/linux/clockchips.h
++++ b/include/linux/clockchips.h
+@@ -73,6 +73,7 @@ enum clock_event_nofitiers {
+  * @list:		list head for the management code
+  * @mode:		operating mode assigned by the management code
+  * @next_event:		local storage for the next event in oneshot mode
++ * @retries:		number of forced programming retries
+  */
+ struct clock_event_device {
+ 	const char		*name;
+@@ -93,6 +94,7 @@ struct clock_event_device {
+ 	struct list_head	list;
+ 	enum clock_event_mode	mode;
+ 	ktime_t			next_event;
++	unsigned long		retries;
+ };
+ 
+ /*
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 438ff45..edec25a 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1060,9 +1060,9 @@ static void check_thread_timers(struct task_struct *tsk,
+ 	}
+ }
+ 
+-static void stop_process_timers(struct task_struct *tsk)
++static void stop_process_timers(struct signal_struct *sig)
+ {
+-	struct thread_group_cputimer *cputimer = &tsk->signal->cputimer;
++	struct thread_group_cputimer *cputimer = &sig->cputimer;
+ 	unsigned long flags;
+ 
+ 	if (!cputimer->running)
+@@ -1071,6 +1071,10 @@ static void stop_process_timers(struct task_struct *tsk)
+ 	spin_lock_irqsave(&cputimer->lock, flags);
+ 	cputimer->running = 0;
+ 	spin_unlock_irqrestore(&cputimer->lock, flags);
++
++	sig->cputime_expires.prof_exp = cputime_zero;
++	sig->cputime_expires.virt_exp = cputime_zero;
++	sig->cputime_expires.sched_exp = 0;
+ }
+ 
+ static u32 onecputick;
+@@ -1131,7 +1135,7 @@ static void check_process_timers(struct task_struct *tsk,
+ 	    list_empty(&timers[CPUCLOCK_VIRT]) &&
+ 	    cputime_eq(sig->it[CPUCLOCK_VIRT].expires, cputime_zero) &&
+ 	    list_empty(&timers[CPUCLOCK_SCHED])) {
+-		stop_process_timers(tsk);
++		stop_process_timers(sig);
+ 		return;
+ 	}
+ 
+diff --git a/kernel/time/tick-oneshot.c b/kernel/time/tick-oneshot.c
+index 0a8a213..aada0e5 100644
+--- a/kernel/time/tick-oneshot.c
++++ b/kernel/time/tick-oneshot.c
+@@ -22,6 +22,29 @@
+ 
+ #include "tick-internal.h"
+ 
++/* Limit min_delta to a jiffie */
++#define MIN_DELTA_LIMIT		(NSEC_PER_SEC / HZ)
++
++static int tick_increase_min_delta(struct clock_event_device *dev)
++{
++	/* Nothing to do if we already reached the limit */
++	if (dev->min_delta_ns >= MIN_DELTA_LIMIT)
++		return -ETIME;
++
++	if (dev->min_delta_ns < 5000)
++		dev->min_delta_ns = 5000;
++	else
++		dev->min_delta_ns += dev->min_delta_ns >> 1;
++
++	if (dev->min_delta_ns > MIN_DELTA_LIMIT)
++		dev->min_delta_ns = MIN_DELTA_LIMIT;
++
++	printk(KERN_WARNING "CE: %s increased min_delta_ns to %llu nsec\n",
++	       dev->name ? dev->name : "?",
++	       (unsigned long long) dev->min_delta_ns);
++	return 0;
++}
++
+ /**
+  * tick_program_event internal worker function
+  */
+@@ -37,23 +60,28 @@ int tick_dev_program_event(struct clock_event_device *dev, ktime_t expires,
+ 		if (!ret || !force)
+ 			return ret;
+ 
++		dev->retries++;
+ 		/*
+-		 * We tried 2 times to program the device with the given
+-		 * min_delta_ns. If that's not working then we double it
++		 * We tried 3 times to program the device with the given
++		 * min_delta_ns. If that's not working then we increase it
+ 		 * and emit a warning.
+ 		 */
+ 		if (++i > 2) {
+ 			/* Increase the min. delta and try again */
+-			if (!dev->min_delta_ns)
+-				dev->min_delta_ns = 5000;
+-			else
+-				dev->min_delta_ns += dev->min_delta_ns >> 1;
+-
+-			printk(KERN_WARNING
+-			       "CE: %s increasing min_delta_ns to %llu nsec\n",
+-			       dev->name ? dev->name : "?",
+-			       (unsigned long long) dev->min_delta_ns << 1);
+-
++			if (tick_increase_min_delta(dev)) {
++				/*
++				 * Get out of the loop if min_delta_ns
++				 * hit the limit already. That's
++				 * better than staying here forever.
++				 *
++				 * We clear next_event so we have a
++				 * chance that the box survives.
++				 */
++				printk(KERN_WARNING
++				       "CE: Reprogramming failure. Giving up\n");
++				dev->next_event.tv64 = KTIME_MAX;
++				return -ETIME;
++			}
+ 			i = 0;
+ 		}
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 1673637..39f6177 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -818,7 +818,8 @@ void update_wall_time(void)
+ 	shift = min(shift, maxshift);
+ 	while (offset >= timekeeper.cycle_interval) {
+ 		offset = logarithmic_accumulation(offset, shift);
+-		shift--;
++		if(offset < timekeeper.cycle_interval<<shift)
++			shift--;
+ 	}
+ 
+ 	/* correct the clock when NTP error is too big */
+diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
+index bdfb8dd..1a4a7dd 100644
+--- a/kernel/time/timer_list.c
++++ b/kernel/time/timer_list.c
+@@ -228,6 +228,7 @@ print_tickdevice(struct seq_file *m, struct tick_device *td, int cpu)
+ 	SEQ_printf(m, " event_handler:  ");
+ 	print_name_offset(m, dev->event_handler);
+ 	SEQ_printf(m, "\n");
++	SEQ_printf(m, " retries:        %lu\n", dev->retries);
+ }
+ 
+ static void timer_list_show_tickdevices(struct seq_file *m)
+@@ -257,7 +258,7 @@ static int timer_list_show(struct seq_file *m, void *v)
+ 	u64 now = ktime_to_ns(ktime_get());
+ 	int cpu;
+ 
+-	SEQ_printf(m, "Timer List Version: v0.5\n");
++	SEQ_printf(m, "Timer List Version: v0.6\n");
+ 	SEQ_printf(m, "HRTIMER_MAX_CLOCK_BASES: %d\n", HRTIMER_MAX_CLOCK_BASES);
+ 	SEQ_printf(m, "now at %Ld nsecs\n", (unsigned long long)now);
+ 
+diff --git a/kernel/timer.c b/kernel/timer.c
+index c61a794..fc965ea 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -880,6 +880,7 @@ int try_to_del_timer_sync(struct timer_list *timer)
+ 	if (base->running_timer == timer)
+ 		goto out;
+ 
++	timer_stats_timer_clear_start_info(timer);
+ 	ret = 0;
+ 	if (timer_pending(timer)) {
+ 		detach_timer(timer, 1);
