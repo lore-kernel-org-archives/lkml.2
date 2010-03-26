@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0CZR1M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 13:27:12 -0400
-Received: from carlson.workingcode.com ([75.150.68.97]:43292 "EHLO
-	carlson.workingcode.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525Ab0CZR1K (ORCPT
+	id S1752902Ab0CZR2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 13:28:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55196 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671Ab0CZR2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 13:27:10 -0400
-X-Greylist: delayed 1349 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 13:27:10 EDT
-Message-ID: <4BACE918.7020508@workingcode.com>
-Date: Fri, 26 Mar 2010 13:04:24 -0400
-From: James Carlson <carlsonj@workingcode.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090605)
+	Fri, 26 Mar 2010 13:28:34 -0400
+Date: Fri, 26 Mar 2010 10:23:46 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+cc: mingo@elte.hu, tglx@linutronix.de, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] X86: Optimise fls(), ffs() and fls64()
+In-Reply-To: <20100326144241.8583.95617.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LFD.2.00.1003261005490.3721@i5.linux-foundation.org>
+References: <20100326144241.8583.95617.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Richard Hartmann <richih.mailinglist@gmail.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, linux-ppp@vger.kernel.org
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP 	multi-link
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>	 <20100326160226.0159ac3b@lxorguk.ukuu.org.uk> <v2v2d460de71003260939w4877df7em9e3084a315b0962f@mail.gmail.com>
-In-Reply-To: <v2v2d460de71003260939w4877df7em9e3084a315b0962f@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-DCC-dmv.com-Metrics: carlson; whitelist
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Hartmann wrote:
-> Also, I am not sure if it would not be better to default to no
-> fragmentation and enable it optionally. I am aware that changing default
-> behaviour is always a bit of a problem but to the best of my knowledge
-> enabling fragmentation is a bug in any and all real-world applications.
 
-It worked well and was enabled by default on all the Bay Networks
-equipment I used ~15 years ago.  And I know for certain that we tested
-with other gear (Ascend and Clam, probably) that did it right.
 
-If it works with the equipment you're using, it's a useful feature in
-that it can balance out the latencies among the links, resulting in much
-lower overall latency observed by higher layers -- especially so on
-lower-speed links where MP is more likely to be used.  Without it,
-you're left either waiting for the one slow link choking on a big packet
-to catch up, or (worse) disabling the sequence headers altogether,
-resulting in reordering unless you're really "clever."
+On Fri, 26 Mar 2010, David Howells wrote:
+>
+> fls(N), ffs(N) and fls64(N) can be optimised on x86/x86_64.  Currently they
+> perform checks against N being 0 before invoking the BSR/BSF instruction, or
+> use a CMOV instruction afterwards.  Either the check involves a conditional
+> jump which we'd like to avoid, or a CMOV, which we'd also quite like to avoid.
+> 
+> Instead, we can make use of the fact that BSR/BSF doesn't modify its output
+> register if its input is 0.  By preloading the output with -1 and incrementing
+> the result, we achieve the desired result without the need for a conditional
+> check.
 
-It's a darned shame that lame implementations would force a change in
-the default ...
+This is totally incorrect.
 
--- 
-James Carlson         42.703N 71.076W         <carlsonj@workingcode.com>
+Where did you find that "doesn't modify its output" thing? It's not true. 
+The truth is that the destination is undefined. Just read the dang Intel 
+documentation, it's very clearly stated right there.
+
+If you can show otherwise, feel free. But I'm pretty sure there are 
+actually x86 chips out there that _do_ modify the destination. I have a 
+pretty strong memory of us trying this at some point, and it not working.
+
+		Linus
