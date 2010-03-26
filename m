@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab0CZBkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:40:36 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:41148 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752729Ab0CZBke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:40:34 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: Henrik Kretzschmar <henne@nachtwindheim.de>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Haojian Zhuang <haojian.zhuang@marvell.com>,
-       Dmitry Torokhov <dtor@mail.ru>, linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd: section cleanup of 88pm860x driver
-Date: Fri, 26 Mar 2010 02:40:13 +0100
-Message-Id: <1269567614-26995-1-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.6.3.3
-To: unlisted-recipients:; (no To-header on input)
+	id S1753498Ab0CZBmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:42:07 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38597 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752729Ab0CZBmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 21:42:05 -0400
+Date: Fri, 26 Mar 2010 10:41:23 +0900
+To: ben@decadent.org.uk
+Cc: airlied@linux.ie, fujita.tomonori@lab.ntt.co.jp,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/2] sis-agp: Remove SIS 760, handled by amd64-agp
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1269401628.18314.264.camel@localhost>
+References: <1269401628.18314.264.camel@localhost>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100326104042T.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 26 Mar 2010 10:41:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes three section mismatches.
+On Wed, 24 Mar 2010 03:33:48 +0000
+Ben Hutchings <ben@decadent.org.uk> wrote:
 
-WARNING: drivers/mfd/88pm860x.o(.text+0x12): Section mismatch in
-reference from the function pm860x_device_exit() to the function
-.devexit.text:device_irq_exit()
-The function pm860x_device_exit() references a function in an exit
-section.
-Often the function device_irq_exit() has valid usage outside the exit
-section
-and the fix is to remove the __devexit annotation of device_irq_exit.
+> SIS 760 is listed in the device tables for both amd64-agp and sis-agp.
+> amd64-agp is apparently preferable since it has workarounds for some
+> BIOS misconfigurations that sis-agp doesn't handle.
+> 
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/char/agp/sis-agp.c |    8 --------
+>  1 files changed, 0 insertions(+), 8 deletions(-)
 
-WARNING: drivers/mfd/88pm860x.o(.text+0xb0): Section mismatch in
-reference from the function pm860x_device_init() to the function
-.devinit.text:device_8606_init()
-The function pm860x_device_init() references
-the function __devinit device_8606_init().
-This is often because pm860x_device_init lacks a __devinit
-annotation or the annotation of device_8606_init is wrong.
+Looks fine to me. Hopefully, amd64-agp can handle all SIS 760 systems.
 
-WARNING: drivers/mfd/88pm860x.o(.text+0xbe): Section mismatch in
-reference from the function pm860x_device_init() to the function
-.devinit.text:device_8607_init()
-The function pm860x_device_init() references
-the function __devinit device_8607_init().
-This is often because pm860x_device_init lacks a __devinit
-annotation or the annotation of device_8607_init is wrong.
+Can we confirm that this can fix bugs reported in Debian's bug
+tracking system (which you mentioned earlier)?
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
- drivers/mfd/88pm860x-core.c  |    6 +++---
- include/linux/mfd/88pm860x.h |    4 ++--
- 2 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index 6a14d2b..5b53c76 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -564,7 +564,7 @@ out:
- 	return ret;
- }
- 
--static void __devexit device_irq_exit(struct pm860x_chip *chip)
-+static void device_irq_exit(struct pm860x_chip *chip)
- {
- 	if (chip->core_irq)
- 		free_irq(chip->core_irq, chip);
-@@ -701,7 +701,7 @@ out:
- 	return;
- }
- 
--int pm860x_device_init(struct pm860x_chip *chip,
-+int __devinit pm860x_device_init(struct pm860x_chip *chip,
- 		       struct pm860x_platform_data *pdata)
- {
- 	chip->core_irq = 0;
-@@ -729,7 +729,7 @@ int pm860x_device_init(struct pm860x_chip *chip,
- 	return 0;
- }
- 
--void pm860x_device_exit(struct pm860x_chip *chip)
-+void __devexit pm860x_device_exit(struct pm860x_chip *chip)
- {
- 	device_irq_exit(chip);
- 	mfd_remove_devices(chip->dev);
-diff --git a/include/linux/mfd/88pm860x.h b/include/linux/mfd/88pm860x.h
-index 73f92c5..2165a2c 100644
---- a/include/linux/mfd/88pm860x.h
-+++ b/include/linux/mfd/88pm860x.h
-@@ -369,7 +369,7 @@ extern int pm860x_set_bits(struct i2c_client *, int, unsigned char,
- 			   unsigned char);
- 
- extern int pm860x_device_init(struct pm860x_chip *chip,
--			      struct pm860x_platform_data *pdata);
--extern void pm860x_device_exit(struct pm860x_chip *chip);
-+			      struct pm860x_platform_data *pdata) __devinit ;
-+extern void pm860x_device_exit(struct pm860x_chip *chip) __devexit ;
- 
- #endif /* __LINUX_MFD_88PM860X_H */
--- 
-1.6.3.3
-
+> diff --git a/drivers/char/agp/sis-agp.c b/drivers/char/agp/sis-agp.c
+> index 6c3837a..95fdd4d 100644
+> --- a/drivers/char/agp/sis-agp.c
+> +++ b/drivers/char/agp/sis-agp.c
+> @@ -415,14 +415,6 @@ static struct pci_device_id agp_sis_pci_table[] = {
+>  		.subvendor	= PCI_ANY_ID,
+>  		.subdevice	= PCI_ANY_ID,
+>  	},
+> -	{
+> -		.class		= (PCI_CLASS_BRIDGE_HOST << 8),
+> -		.class_mask	= ~0,
+> -		.vendor		= PCI_VENDOR_ID_SI,
+> -		.device		= PCI_DEVICE_ID_SI_760,
+> -		.subvendor	= PCI_ANY_ID,
+> -		.subdevice	= PCI_ANY_ID,
+> -	},
+>  	{ }
+>  };
+>  
+> -- 
+> 1.7.0
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
