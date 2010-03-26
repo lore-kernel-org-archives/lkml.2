@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0CZVQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 17:16:42 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:43305 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939Ab0CZVQj convert rfc822-to-8bit (ORCPT
+	id S1753918Ab0CZVSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 17:18:46 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64446 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab0CZVSp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 17:16:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=gBTHFk74tawk0YgZD4QY7rPgANoOdxRJygVtQl9uYIDzmZuwC8xhhJ8CJ7pEMaYXw7
-         hYD160kRaukUlf4jdXR76d85iVur4BgfD8SypKK8E/h/bsnwIX8uW5uH+0GmZV9UF7c6
-         SvEYgh9McYawHKUweiahNDQ/i1RmIQtPdnGBk=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
-Date: Fri, 26 Mar 2010 14:16:24 -0700
-User-Agent: KMail/1.13.1 (Linux/2.6.34-rc2; KDE/4.4.1; x86_64; ; )
-Cc: Bruno =?iso-8859-15?q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-       linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>
-References: <20100324233707.7243b04d@neptune.home> <20100326102951.3b9ecda1@neptune.home> <alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1003262156280.24576@pobox.suse.cz>
+	Fri, 26 Mar 2010 17:18:45 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+In-Reply-To: <1268843158-15223-1-git-send-email-steve@digidescorp.com>
+References: <1268843158-15223-1-git-send-email-steve@digidescorp.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 26 Mar 2010 15:18:24 -0600
+X-Google-Sender-Auth: d03c98a483a84b65
+Message-ID: <fa686aa41003261418w4e28ed03m9ae3d87696e88af0@mail.gmail.com>
+Subject: Re: [PATCH 0/4] dmaengine: Add driver for Xilinx MPMC
+To: "Steven J. Magnani" <steve@digidescorp.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+       microblaze-uclinux@itee.uq.edu.au, monstr@monstr.eu
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201003261416.25387.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 March 2010 01:59:19 pm Jiri Kosina wrote:
-> On Fri, 26 Mar 2010, Bruno Prémont wrote:
-> > > > +	for (i = 0; i < PICOLCD_KEYS; i++) {
-> > > > +		int key = ((int *)idev->keycode)[i];
-> > > 
-> > > Keycodes are now short, not int. Also, just do:
-> > > 		input_set_capability(idev, EV_KEY, data->keycode[i]);
-> > > 		
-> > > > +		if (key < KEY_MAX && key >= 0)
-> > > > +			input_set_capability(idev, EV_KEY, key);
-> > 
-> > Oops, I was not careful enough when switching over...
-> 
-> Dmitry, thanks a lot for rapid review the driver.
-> 
-> Bruno, could you please fix this and submit a followup 1/6 patch, so that
-> I could queue the driver in my tree?
-> 
-> I have almost finished going over the driver and haven't encountered any
-> other issues that would require immediate fixing.
-> 
-> Still, it would be nice to have the framebuffer/LCD/backlight bits
-> reviewed by respective subsystem maintainers. But I'll probably queue the
-> driver nevertheless and add potential ACKs later.
+On Wed, Mar 17, 2010 at 10:25 AM, Steven J. Magnani
+<steve@digidescorp.com> wrote:
+> This is a DMA engine driver for SDMA channels on a Xilinx Multi-Port
+> Memory Controller (MPMC).
+>
+> Caveats:
+> * The OF bus driver (part 4) is based on the fsldma driver and how I
+>  thought the device and channels might be represented in a device tree blob.
+>  As I don't use OF in my kernel, all I am able to do is verify that the code
+>  compiles. Suggestions for improvement are especially welcome here.
 
-FWIW I am not entrely happy with the whole send-and_wait implementation -
-it looks like it is not being called concurrently so we don't need mutex
-there... I'd do something like:
+If you're not using the OF bits, then don't worry about them yet.
+They can be added later.  of_platform is getting merged with platform
+bus anyway, so one driver will work with both.
 
-send_nand_wait() {
+> * Similarly, I took a stab at DCR support based on the ll_temac driver
+>  and some discussions about supporting both DCR and simple pointer access
+>  to device registers. I'm working on Microblaze so cannot test the DCR code.
 
-	set_bit(WAITING_RESPONSE, data->state);
-	prepare message
-	send message
-	wait_for_event_interruptible_timeout(&data->wait,
-					!test_bit(WAITING_RESPONSE, data->state));
-	if (!test_bit()) {
-		process
-		return 0;
-	}
+Again, don't bother with stuff you don't have.  It can be added after the fact.
 
-	return -ETIME;
-}
-
-irq(...) {
-
-	else if (test_bit(WAITING_RESPONSE, data->state)) {
-		copy response...
-		clear_bit(WAITING_RESPONSE, data->state);	
-		wake_up(&data->wait);
-	}
-}
-
-and not bother with kmallocing pending structure, but it should not
-stop from merging driver.
-
--- 
-Dmitry
+g.
