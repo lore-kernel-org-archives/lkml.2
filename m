@@ -1,100 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab0CZBcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 21:32:09 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50276 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752642Ab0CZBcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 21:32:07 -0400
-Message-ID: <4BAC0E7D.9080305@cn.fujitsu.com>
-Date: Fri, 26 Mar 2010 09:31:41 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
+	id S1753454Ab0CZBhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 21:37:20 -0400
+Received: from web37904.mail.mud.yahoo.com ([209.191.91.166]:22764 "HELO
+	web37904.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752845Ab0CZBhS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 21:37:18 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Mar 2010 21:37:18 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
+  b=qAhRk1VzyoH6eqSRoxKuh5B4eLfEtF5tUbRmM92W9pn/TMP6+BqeCiARrYC35mJvcM8WHzf9JGTPPcr49+oD7Kbd7LHC5FE+hdOQn41X+sjh83yEHXcBH4bBFb5HRxxettMi3dSIxHKa3WqZDAauDNEoWaPPwb7sCRTUeshk2EQ=;
+Message-ID: <16733.35890.qm@web37904.mail.mud.yahoo.com>
+X-YMail-OSG: d.bZhbEVM1kjdiH1ApMWDZfHwYGs9Pgbdw6T5bUltN4Fzgy
+ 0gW_gadnKrLtH40vQ8c8Kma9wFNKwU76F0JXvu83ozg2blN.xhWcBTkmJavJ
+ .m1R6UuQAJNDG3DIgcsi00ztce7wdCgo30NCl3eE6fMXv.tFU9Fb4_9eqaU0
+ ZChmKcgdYJ7D2vAIe8bHIsSezh2RHWU9_Z3EOXPA6oAc0qGmCeePoXry6IX4
+ ftzXE1DWiHqruEI9lcbMiZ6D72w94JnxMUg7cYRazHwovag9WXK_aw3CxjAR
+ h3tXn_CmKXeF_Lc0bfmJDlW9fyoLg
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Thu, 25 Mar 2010 18:30:36 -0700 (PDT)
+From: Gary Yang <garyyang6@yahoo.com>
+Subject: How to insert splint info Makefile? Any idea?
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Chad Talbott <ctalbott@google.com>, vgoyal@redhat.com,
-       jens.axboe@oracle.com
-CC: mrubin@google.com, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-kernel@vger.kernel.org, dpshah@google.com,
-       Nauman Rafique <nauman@google.com>
-Subject: Re: [PATCH 0/4] io-controller: Use names rather than major:minor
-References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
-In-Reply-To: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chad Talbott wrote:
-> This stack (which includes Gui's patch for per-device weights),
-> changes the various blkio.* stats to use the disks' names (sda, sdb,
-> etc.) rather than major:minor pairs when printing statistics.
+Hi,
 
-Hi Chad,
+I am working on linux-2.6.25. I would like to use splint. At one of the source directory, I typed "splint *.c". I got "Cannot find include file", "Cannot continue". I understand that I need to run splint inside the Makefile so that it will find the correct include files. However, how to insert splint info Makefile? Any idea?
 
-I have the same concern with Vivek. We'v already exported device number
-pair to user since 2.6.33, It's better to keep the original ABI.
 
-> Additionally setting a per-device policy can be done via the disk's
-> name.
+splint *.c
+Splint 3.1.2 --- 24 Mar 2010
 
-To keep things simple, can we add new API in block layer to lookup
-device name by device number as following.
+cache.c:7:25: Cannot find include file asm/pgtable.h on search path:
+                 /usr/include;/usr/local/include
+  Preprocessing error. (Use -preproc to inhibit warning)
+cache.c:42:27: #error Unknown cache type.
+Preprocessing error for file: /projects/svdc/P4wsIPCSW/buildsw_canyonlands/linux
+                  /arch/m32r/mm/cache.c
+*** Cannot continue.
 
-+int blk_lookup_devname(dev_t devt, char *name)
-+{
-+       struct class_dev_iter iter;
-+       struct device *dev;
-+       struct gendisk *disk;
-+
-+       class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
-+       while ((dev = class_dev_iter_next(&iter))) {
-+               if (dev->devt != devt)
-+                       continue;
-+
-+               disk = dev_to_disk(dev);
-+
-+               disk_name(disk, 0, name);
-+
-+               return 0;
-+       }
-+       class_dev_iter_exit(&iter);
-+
-+       return 1;
-+}
-+EXPORT_SYMBOL(blk_lookup_devname);
-+
-
-So we can keep dev_t in blkio layer, and export to user a device name by calling 
-this function. Also, we retrive device number by calling blk_lookup_devt().
-This change might keep things much simple. Jens, do you have any thoughts?
 
 Thanks,
-Gui
 
-> 
-> This has the side effect of fixing the "root cgroup shows no stats"
-> problem that Ricky mentioned.
-> 
-> Chad
-> 
-> ---
-> 
-> Chad Talbott (4):
->       blkio_group key change: void * -> request_queue *
->       Adds an RCU-protected pointer to request_queue that makes it easy to
->       io-controller: Add a new interface "weight_device" for IO-Controller
->       Use disk-names to set blkio.weight_device policy
-> 
-> 
->  block/blk-cgroup.c     |  224 +++++++++++++++++++++++++++++++++++++++++++++---
->  block/blk-cgroup.h     |   23 ++++-
->  block/blk-sysfs.c      |    4 +
->  block/cfq-iosched.c    |   27 ++----
->  include/linux/blkdev.h |    6 +
->  5 files changed, 248 insertions(+), 36 deletions(-)
-> 
-> 
-> 
-> 
 
+Gary
+
+
+
+
+
+
+      
