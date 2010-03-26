@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab0CYX7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 19:59:14 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62033 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab0CYX7M (ORCPT
+	id S1752174Ab0CZAFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:05:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56587 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577Ab0CZAFV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 19:59:12 -0400
+	Thu, 25 Mar 2010 20:05:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QuCjMo9HEiXGwQTc2lbUk3hHm+l33jBIekFGtAzBIZhFQzi2CWPHy42000PpnbsM9f
-         F6l2aPnXzDdKaGZaGV22gN4ld/Oc+2g3euSm/JKq78m7Vf8CEVIpQ2T67okDOJeiNie5
-         fxgYtjW+xMPAvarpX5KcNLgW3wFycLN7FMvAA=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=WI98K7HsGjX/sJ0ocZvB6eGIaLfbOedlwKGIPWCVyFWxKbSC5kwSBEbJlp58hMTdVN
+         1PGWkYJk8k7MIMP4rTgQJKhRrZGs7LJZ3elEw6upKet0vUZfS7Rd9hBf0UarFgAXvO3B
+         Poj+Sbb/6ska2Q0gZuJEDFeY6rJpdV0xXmGXo=
 MIME-Version: 1.0
-In-Reply-To: <e9c3a7c21003251612l59d77753o8f56e2643a96fe0d@mail.gmail.com>
-References: <4BAAD5BB.7050101@samsung.com>
-	 <1b68c6791003242234h106d9530p12b5a046a906227e@mail.gmail.com>
-	 <63386a3d1003250130w6f34854ag2ca163799e9b7bed@mail.gmail.com>
-	 <1b68c6791003250517y4e2789baoe147e5982c363682@mail.gmail.com>
-	 <4BAB7D9F.4070807@intel.com>
-	 <1b68c6791003251527s1ef985d2m4a309a3c09e31e0a@mail.gmail.com>
-	 <e9c3a7c21003251612l59d77753o8f56e2643a96fe0d@mail.gmail.com>
-Date: Fri, 26 Mar 2010 08:59:12 +0900
-Message-ID: <1b68c6791003251659w4c6c8d12rf97458c2380f25e0@mail.gmail.com>
-Subject: Re: [PATCH v2] PL330: Add PL330 DMA controller driver
-From: jassi brar <jassisinghbrar@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       Joonyoung Shim <jy0922.shim@samsung.com>,
-       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Ben Dooks <ben-linux@fluff.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <Pine.LNX.4.64.1003252334190.4413@axis700.grange>
+References: <1269529381-16914-1-git-send-email-linus.walleij@stericsson.com>
+	 <Pine.LNX.4.64.1003252146070.4413@axis700.grange>
+	 <e9c3a7c21003251500r27077cci67b1f06727be97f1@mail.gmail.com>
+	 <Pine.LNX.4.64.1003252334190.4413@axis700.grange>
+Date: Thu, 25 Mar 2010 17:05:20 -0700
+X-Google-Sender-Auth: b3f84d18b33fe75c
+Message-ID: <e9c3a7c21003251705o63687fa5vfbe77ebeda8c0440@mail.gmail.com>
+Subject: Re: [PATCH 2/2] DMAENGINE: generic channel status
+From: Dan Williams <dan.j.williams@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+       Maciej Sosnowski <maciej.sosnowski@intel.com>,
+       Nicolas Ferre <nicolas.ferre@atmel.com>, Pavel Machek <pavel@ucw.cz>,
+       Li Yang <leoli@freescale.com>, Paul Mundt <lethal@linux-sh.org>,
+       Ralf Baechle <ralf@linux-mips.org>,
+       Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
+       Magnus Damm <damm@opensource.se>, Liam Girdwood <lrg@slimlogic.co.uk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Joe Perches <joe@perches.com>, Roland Dreier <rdreier@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 8:12 AM, Dan Williams <dan.j.williams@intel.com> wrote:
-> On Thu, Mar 25, 2010 at 3:27 PM, jassi brar <jassisinghbrar@gmail.com> wrote:
->> On Fri, Mar 26, 2010 at 12:13 AM, Dan Williams <dan.j.williams@intel.com> wrote:
->>> It sounds like you just need to add an extension for the arch specific dma
->>> api.
->> I actually plan more than that.
->> Apart from inefficient design, JoonYoung's driver has made some fatal
->> assumptions
->> about PL330, which will result in DMA aborts if used with SoCs that implement
->> configuration of PL330 that is very different from Samsung SoCs'
->> Of course, I address all such issues that I can think of, in my implementation.
+On Thu, Mar 25, 2010 at 3:37 PM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Thu, 25 Mar 2010, Dan Williams wrote:
 >
-> Ok, I'll rely on acked-by's from the interested parties once your
-> driver is out as I do not have a vested interest in this hardware,
-> just the dmaengine framework issues.
-Fair enough. Thank you.
+>> On Thu, Mar 25, 2010 at 1:58 PM, Guennadi Liakhovetski
+>> <g.liakhovetski@gmx.de> wrote:
+>> > On Thu, 25 Mar 2010, Linus Walleij wrote:
+>> >
+>> >> Convert the device_is_tx_complete() operation on the
+>> >> DMA engine to a generic device_tx_status()operation which
+>> >> can return three states, DMA_TX_RUNNING, DMA_TX_COMPLETE,
+>> >> DMA_TX_PAUSED.
+>> >>
+>> [..]
+>> > General: you converted all drivers to the new .device_tx_status() API, but
+>> > since they don't implement "residue," you left it uninitialised
+>> > everywhere. Wouldn't it be better to set it to 0 or total length,
+>> > depending on the complete / not complete status?
+>>
+>> Agree that it should not be uninitialized.  At the same time I do not
+>> want to require drivers that don't need it to go through the hassle of
+>> looking up a byte count, so perhaps all but the drivers that want this
+>> support can return a 'max byte count'??
+>
+> Why not assign one of the two - 0 if the transfer is complete (DMA_SUCCESS
+> status returned) or whatever max count otherwise? Except I do think this
+> might confuse some users - seeing a residue larger than the total transfer
+> length...
+>
+
+0 if complete makes sense and then the actual residue or all 0xf's to
+indicate "I don't support inflight residue reporting".
+
+--
+Dan
