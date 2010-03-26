@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab0CZIMM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 04:12:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:49965 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649Ab0CZIMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 04:12:09 -0400
-Message-ID: <4BAC6C03.3030801@kernel.org>
-Date: Fri, 26 Mar 2010 01:10:43 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1752343Ab0CZIQK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 04:16:10 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56858 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054Ab0CZIQH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 04:16:07 -0400
+Date: Fri, 26 Mar 2010 08:14:57 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>
+Cc: Linus Torvalds <torvalds@osdl.org>, LKML <linux-kernel@vger.kernel.org>,
+       linux-arch@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+       David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [patch 0/2] Run interrupt handlers always with interrupts
+	disabled
+Message-ID: <20100326081457.GA23570@flint.arm.linux.org.uk>
+Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
+	Nicolas Pitre <nico@fluxnic.net>,
+	Linus Torvalds <torvalds@osdl.org>,
+	LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Andi Kleen <andi@firstfloor.org>,
+	David Miller <davem@davemloft.net>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>
+References: <20100326000325.917127328@linutronix.de>
 MIME-Version: 1.0
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-CC: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Dave Airlie <airlied@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: Can not boot with CONFIG_NO_BOOTMEM=y on i686
-References: <20100319131208.GA3911@dhcp-lab-161.englab.brq.redhat.com> <86802c441003201126j407eaf89j91cf91ae69454f30@mail.gmail.com> <20100323113551.GA3862@dhcp-lab-161.englab.brq.redhat.com> <4BA98FA8.1040600@kernel.org> <20100324090438.GA7512@dhcp-lab-161.englab.brq.redhat.com>
-In-Reply-To: <20100324090438.GA7512@dhcp-lab-161.englab.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326000325.917127328@linutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2010 02:04 AM, Stanislaw Gruszka wrote:
-> On Tue, Mar 23, 2010 at 09:06:00PM -0700, Yinghai Lu wrote:
->> On 03/23/2010 04:35 AM, Stanislaw Gruszka wrote:
->>> On Sat, Mar 20, 2010 at 11:26:06AM -0700, Yinghai Lu wrote:
->>>>> After update to 2.6.34-rc1, I was experimented by strange oopses during
->>>>> boot, what looked like memory corruption. Bisection shows that first bad
->>>>> commit is 59be5a8e8ce765cf739ec7f07176219972de7481 ("x86: Make 32bit
->>>>> support NO_BOOTMEM"). When I disable CONFIG_NO_BOOTMEM I'm able to start
->>>>> system. Not sure what info is need to track down this issue, so please
->>>>> let me know.
->>>>
->>>> can you check patch
->>>>
->>>> https://patchwork.kernel.org/patch/87081/
->>>
->>> Patch helps somehow. Instead of many random oopses, now I have one and
->>> the same oops, here is photo:
->>> http://people.redhat.com/sgruszka/20100322_001.jpg
->>
->> how does e820 look like?
-> 
-> dmesg below, I hope everything you asked for is here:
-> 
-> Linux version 2.6.34-rc1 (stasiu@yellow) (gcc version 4.4.2 20091222 (Red Hat 4.4.2-20) (GCC) ) #26 SMP Tue Mar 23 11:31:22 CET 2010
-> BIOS-provided physical RAM map:
->  BIOS-e820: 0000000000000000 - 0000000000096400 (usable)
->  BIOS-e820: 0000000000096400 - 00000000000a0000 (reserved)
->  BIOS-e820: 00000000000e8000 - 0000000000100000 (reserved)
->  BIOS-e820: 0000000000100000 - 00000000cffc2840 (usable)
->  BIOS-e820: 00000000cffc2840 - 00000000d0000000 (reserved)
->  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
->  BIOS-e820: 00000000fec00000 - 0000000100000000 (reserved)
->  BIOS-e820: 0000000100000000 - 0000000130000000 (usable)
-...
-> initial memory mapped : 0 - 01000000
-> found SMP MP-table at [c00fe700] fe700
-> init_memory_mapping: 0000000000000000-00000000373fe000
->  0000000000 - 0000400000 page 4k
->  0000400000 - 0037000000 page 2M
->  0037000000 - 00373fe000 page 4k
-> kernel direct mapping tables up to 373fe000 @ 7000-d000
-> RAMDISK: 373b8000 - 37fef224
-> Allocated new RAMDISK: 00b2f000 - 01766224
-> Move RAMDISK from 00000000373b8000 - 0000000037fef223 to 00b2f000 - 01766223
-> Reserving 256MB of memory at 32MB for crashkernel (System RAM: 3327MB)
+On Fri, Mar 26, 2010 at 12:06:44AM -0000, Thomas Gleixner wrote:
+> The following patch series removes the IRQF_DISABLED functionality
+> from the core interrupt code and runs all interrupt handlers with
+> interrupts disabled.
 
-Please check if this one helps
+As was covered in previous discussions, what about drivers such as
+SMC91x which take a long time to retrieve packets from the hardware?
+Always running handlers with IRQs disabled will kill things such as
+serial on these platforms.
 
-Thanks
+So based on your description, I have no option but to NAK this.
 
-Yinghai
-
----
-[PATCH] x86: Make sure free_init_pages() free pages in boundary
-
-When CONFIG_NO_BOOTMEM, it could use memory more efficient, or more compact.
-
-Example is:
-Allocated new RAMDISK: 00ec2000 - 0248ce57
-Move RAMDISK from 000000002ea04000 - 000000002ffcee56 to 00ec2000 - 0248ce56
-
-The new RAMDISK's end is not page aligned.
-Last page could use shared with other user.
-
-When free_init_pages are called for initrd or .init, the page could be freed
-could have chance to corrupt other data.
-
-code segment in free_init_pages()
-|        for (; addr < end; addr += PAGE_SIZE) {
-|                ClearPageReserved(virt_to_page(addr));
-|                init_page_count(virt_to_page(addr));
-|                memset((void *)(addr & ~(PAGE_SIZE-1)),
-|                        POISON_FREE_INITMEM, PAGE_SIZE);
-|                free_page(addr);
-|                totalram_pages++;
-|        }
-last half page could be used as one whole free page.
-
-Try to make the boundaries to be page aligned.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/mm/init.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-Index: linux-2.6/arch/x86/mm/init.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init.c
-+++ linux-2.6/arch/x86/mm/init.c
-@@ -334,6 +334,10 @@ void free_init_pages(char *what, unsigne
- {
- 	unsigned long addr = begin;
- 
-+	/* Make sure boundaries are page aligned */
-+	addr = PFN_UP(addr) << PAGE_SHIFT;
-+	end = PFN_DOWN(end) << PAGE_SHIFT;
-+
- 	if (addr >= end)
- 		return;
- 
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
