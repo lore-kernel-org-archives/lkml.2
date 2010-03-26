@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab0CZUkQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:40:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57625 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab0CZUkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:40:14 -0400
-Message-ID: <4BAD1B72.9040002@kernel.org>
-Date: Fri, 26 Mar 2010 13:39:14 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: hpa@zytor.com, teheo@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] free_early_partial() should permit start == end
-References: <4BACF0E60200007800037373@vpn.id2.novell.com>
-In-Reply-To: <4BACF0E60200007800037373@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753303Ab0CZUok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:44:40 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:12697 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752902Ab0CZUoi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:44:38 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] Protect prefetch macro arguments.
+Date: Fri, 26 Mar 2010 13:44:00 -0700
+Message-Id: <1269636240-8895-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.6.6.1
+X-OriginalArrivalTime: 26 Mar 2010 20:44:07.0384 (UTC) FILETIME=[146FDD80:01CACD25]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2010 09:37 AM, Jan Beulich wrote:
-> The per-CPU allocator, when using atom_size == PAGE_SIZE, may call
-> free_area_init_partial() this way.
-> 
-> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> 
-> ---
->  kernel/early_res.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- linux-2.6.34-rc2/kernel/early_res.c	2010-03-25 15:23:45.000000000 +0100
-> +++ 2.6.34-rc2-free_early_partial-zero-size/kernel/early_res.c	2010-03-26 14:49:41.000000000 +0100
-> @@ -335,10 +335,10 @@ void __init free_early_partial(u64 start
->  
->  try_next:
->  	i = find_overlapped_early(start, end);
-> -	if (i >= max_early_res)
-> +	r = &early_res[i];
-> +	if (i >= max_early_res || !r->end)
->  		return;
->  
-> -	r = &early_res[i];
->  	/* hole ? */
->  	if (r->end >= end && r->start <= start) {
->  		drop_range_partial(i, start, end);
-> 
-> 
+The GCC built-in __builtin_prefetch() is a vargs function.  If we
+don't wrap the macro parameter in parentheses, a comma operator in the
+actual argument list might cause unintended parameters to be passed to
+__builtin_prefetch().
 
-can you check if this patch work for you?
-
-Thanks
-
-Yinghai Lu
-
-Subject: [PATCH -v6] x86: do not free zero sized per cpu areas
-From: Ian Campbell <ian.campbell@citrix.com>
-
-This avoids an infinite loop in free_early_partial().
-
-Add a warning to free_early_partial to catch future problems.
-
--v5: put back start > end back into WARN_ONCE()
--v6: use one line for if according to linus
-
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 ---
- kernel/early_res.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/prefetch.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/kernel/early_res.c
-===================================================================
---- linux-2.6.orig/kernel/early_res.c
-+++ linux-2.6/kernel/early_res.c
-@@ -333,6 +333,12 @@ void __init free_early_partial(u64 start
- 	struct early_res *r;
- 	int i;
+diff --git a/include/linux/prefetch.h b/include/linux/prefetch.h
+index af7c36a..6179433 100644
+--- a/include/linux/prefetch.h
++++ b/include/linux/prefetch.h
+@@ -35,11 +35,11 @@
+ */
  
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
- try_next:
- 	i = find_overlapped_early(start, end);
- 	if (i >= max_early_res)
+ #ifndef ARCH_HAS_PREFETCH
+-#define prefetch(x) __builtin_prefetch(x)
++#define prefetch(x) __builtin_prefetch((x))
+ #endif
+ 
+ #ifndef ARCH_HAS_PREFETCHW
+-#define prefetchw(x) __builtin_prefetch(x,1)
++#define prefetchw(x) __builtin_prefetch((x), 1)
+ #endif
+ 
+ #ifndef ARCH_HAS_SPINLOCK_PREFETCH
+-- 
+1.6.6.1
+
