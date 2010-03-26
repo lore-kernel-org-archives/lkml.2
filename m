@@ -1,130 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab0CZDKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 23:10:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37948 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab0CZDKn (ORCPT
+	id S1754005Ab0CZDME (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 23:12:04 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:47566 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab0CZDMA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 23:10:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 06/11] Export fragmentation index via /proc/extfrag_index
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       David Rientjes <rientjes@google.com>, Rik van Riel <riel@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <20100325141142.GS2024@csn.ul.ie>
-References: <20100325200919.6C8F.A69D9226@jp.fujitsu.com> <20100325141142.GS2024@csn.ul.ie>
-Message-Id: <20100326120844.6C9B.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 26 Mar 2010 12:10:34 +0900 (JST)
+	Thu, 25 Mar 2010 23:12:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=dSsIozyhCUHhhoxncIbaISX6b1R/yM3hY5+N3ZYe9IGWxLVAmU0s0ei9EufhIsirK8
+         M1UZCSnkUVjk74RHlwFrjaq/1ks3aQrHe7Y2u01hjGgMEy7inZ8JmtVZV77FJtWkfZs8
+         rhhgaUcPtpqMEultNQVWwyakOi9lMq5xv3U8A=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] lockdep: Make lockstats counting per cpu
+Date: Fri, 26 Mar 2010 04:11:58 +0100
+Message-Id: <1269573118-11120-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.6.2.3
+In-Reply-To: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com>
+References: <1269570142-13965-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Mar 25, 2010 at 08:20:04PM +0900, KOSAKI Motohiro wrote:
-> > > On Thu, Mar 25, 2010 at 11:47:17AM +0900, KOSAKI Motohiro wrote:
-> > > > > On Tue, Mar 23, 2010 at 09:22:04AM +0900, KOSAKI Motohiro wrote:
-> > > > > > > > > +	/*
-> > > > > > > > > +	 * Index is between 0 and 1 so return within 3 decimal places
-> > > > > > > > > +	 *
-> > > > > > > > > +	 * 0 => allocation would fail due to lack of memory
-> > > > > > > > > +	 * 1 => allocation would fail due to fragmentation
-> > > > > > > > > +	 */
-> > > > > > > > > +	return 1000 - ( (1000+(info->free_pages * 1000 / requested)) / info->free_blocks_total);
-> > > > > > > > > +}
-> > > > > > > > 
-> > > > > > > > Dumb question.
-> > > > > > > > your paper (http://portal.acm.org/citation.cfm?id=1375634.1375641) says
-> > > > > > > > fragmentation_index = 1 - (TotalFree/SizeRequested)/BlocksFree
-> > > > > > > > but your code have extra '1000+'. Why?
-> > > > > > > 
-> > > > > > > To get an approximation to three decimal places.
-> > > > > > 
-> > > > > > Do you mean this is poor man's round up logic?
-> > > > > 
-> > > > > Not exactly.
-> > > > > 
-> > > > > The intention is to have a value of 968 instead of 0.968231. i.e.
-> > > > > instead of a value between 0 and 1, it'll be a value between 0 and 1000
-> > > > > that matches the first three digits after the decimal place.
-> > > > 
-> > > > Let's consider extream case.
-> > > > 
-> > > > free_pages: 1
-> > > > requested: 1
-> > > > free_blocks_total: 1
-> > > > 
-> > > > frag_index = 1000  - ((1000 + 1*1000/1))/1 = -1000
-> > > > 
-> > > > This is not your intension, I guess. 
-> > > 
-> > > Why not?
-> > > 
-> > > See this comment
-> > > 
-> > > /* Fragmentation index only makes sense when a request would fail */
-> > > 
-> > > In your example, there is a free page of the requested size so the allocation
-> > > would succeed. In this case, fragmentation index does indeed go negative
-> > > but the value is not useful.
-> > >
-> > > > Probably we don't need any round_up/round_down logic. because fragmentation_index
-> > > > is only used "if (fragindex >= 0 && fragindex <= 500)" check in try_to_compact_pages().
-> > > > +1 or -1 inaccurate can be ignored. iow, I think we can remove '1000+' expression.
-> > > > 
-> > > 
-> > > This isn't about rounding, it's about having a value that normally is
-> > > between 0 and 1 expressed as a number between 0 and 1000 because we
-> > > can't use double in the kernel.
-> > 
-> > Sorry, My example was wrong. new example is here.
-> > 
-> > free_pages: 4
-> > requested: 2
-> > free_blocks_total: 4
-> > 
-> > theory: 1 - (TotalFree/SizeRequested)/BlocksFree
-> >             = 1 - (4/2)/4 = 0.5
-> > 
-> > code : 1000 - ((1000 + 4*1000/2))/4 = 1000 - (1000 + 2000)/4 = 1000/4 = 250
-> > 
-> > I don't think this is three decimal picking up code. This seems might makes
-> > lots compaction invocation rather than theory.
-> > 
-> 
-> Ok, I cannot apologise for this enough.
-> 
-> Since that paper was published, further work showed that the equation could
-> be much improved. As part of that, I updated the equation to the following;
-> 
-> double index = 1    - ( (1    + ((double)info->free_pages        / requested)) / info->free_blocks_total);
-> 
-> or when approximated to three decimal places
-> 
-> int index =    1000 - ( (1000 + (        info->free_pages * 1000 / requested)) / info->free_blocks_total);
-> 
-> Your analysis of the paper is perfect. When slotted into a driver program
-> with your example figures, I get the following results
-> 
-> old equation = 0.500000
-> current equation = 0.250000
-> integer approximation = 250
-> 
-> The code as-is is correct and is what I intended. My explanation on the
-> other hand sucks and I should have remembered that I updated equation since
-> I published that paper 2 years ago.
-> 
-> Again, I am extremely sorry for misleading you.
+Locking statistics are implemented using global atomic variables.
+This is usually fine unless some path write them very often.
 
-No worry at all. it is merely review. I have no objection this equation if it is intentional. :)
+This is the case for the function and function graph tracers
+that disable irqs for each entry saved (except if the function
+tracer is in preempt disabled only mode).
+And calls to local_irq_save/restore() increment hardirqs_on_events
+and hardirqs_off_events stats (or similar stats for redundant
+versions).
 
+Incrementing these global vars for each function ends up in too
+much cache bouncing if lockstats are enabled.
 
+To solve this, implement the debug_atomic_*() operations using
+per cpu vars. We can't use irqsafe per cpu counters for that as
+these stats might be also written from NMI path, and irqsafe per
+cpu counters are not NMI safe, but local_t oprations are.
+
+This version then uses local_t based per cpu counters.
+
+v2: Use per_cpu() instead of get_cpu_var() to fetch the desired
+cpu vars on debug_atomic_read()
+
+Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/lockdep.c           |   28 ++++++++--------
+ kernel/lockdep_internals.h |   71 +++++++++++++++++++++++++++++++-------------
+ 2 files changed, 64 insertions(+), 35 deletions(-)
+
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 65b5f5b..55e60a0 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -430,20 +430,20 @@ static struct stack_trace lockdep_init_trace = {
+ /*
+  * Various lockdep statistics:
+  */
+-atomic_t chain_lookup_hits;
+-atomic_t chain_lookup_misses;
+-atomic_t hardirqs_on_events;
+-atomic_t hardirqs_off_events;
+-atomic_t redundant_hardirqs_on;
+-atomic_t redundant_hardirqs_off;
+-atomic_t softirqs_on_events;
+-atomic_t softirqs_off_events;
+-atomic_t redundant_softirqs_on;
+-atomic_t redundant_softirqs_off;
+-atomic_t nr_unused_locks;
+-atomic_t nr_cyclic_checks;
+-atomic_t nr_find_usage_forwards_checks;
+-atomic_t nr_find_usage_backwards_checks;
++DEFINE_PER_CPU(local_t, chain_lookup_hits);
++DEFINE_PER_CPU(local_t, chain_lookup_misses);
++DEFINE_PER_CPU(local_t, hardirqs_on_events);
++DEFINE_PER_CPU(local_t, hardirqs_off_events);
++DEFINE_PER_CPU(local_t, redundant_hardirqs_on);
++DEFINE_PER_CPU(local_t, redundant_hardirqs_off);
++DEFINE_PER_CPU(local_t, softirqs_on_events);
++DEFINE_PER_CPU(local_t, softirqs_off_events);
++DEFINE_PER_CPU(local_t, redundant_softirqs_on);
++DEFINE_PER_CPU(local_t, redundant_softirqs_off);
++DEFINE_PER_CPU(local_t, nr_unused_locks);
++DEFINE_PER_CPU(local_t, nr_cyclic_checks);
++DEFINE_PER_CPU(local_t, nr_find_usage_forwards_checks);
++DEFINE_PER_CPU(local_t, nr_find_usage_backwards_checks);
+ #endif
+ 
+ /*
+diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
+index a2ee95a..38c8ac7 100644
+--- a/kernel/lockdep_internals.h
++++ b/kernel/lockdep_internals.h
+@@ -110,29 +110,58 @@ lockdep_count_backward_deps(struct lock_class *class)
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_LOCKDEP
++
++#include <asm/local.h>
++/*
++ * Various lockdep statistics.
++ * We want them per cpu as they are often accessed in fast path
++ * and we want to avoid too much cache bouncing.
++ * We can't use irqsafe per cpu counters as those are not NMI safe, as
++ * opposite to local_t.
++ */
++DECLARE_PER_CPU(local_t, chain_lookup_hits);
++DECLARE_PER_CPU(local_t, chain_lookup_misses);
++DECLARE_PER_CPU(local_t, hardirqs_on_events);
++DECLARE_PER_CPU(local_t, hardirqs_off_events);
++DECLARE_PER_CPU(local_t, redundant_hardirqs_on);
++DECLARE_PER_CPU(local_t, redundant_hardirqs_off);
++DECLARE_PER_CPU(local_t, softirqs_on_events);
++DECLARE_PER_CPU(local_t, softirqs_off_events);
++DECLARE_PER_CPU(local_t, redundant_softirqs_on);
++DECLARE_PER_CPU(local_t, redundant_softirqs_off);
++DECLARE_PER_CPU(local_t, nr_unused_locks);
++DECLARE_PER_CPU(local_t, nr_cyclic_checks);
++DECLARE_PER_CPU(local_t, nr_cyclic_check_recursions);
++DECLARE_PER_CPU(local_t, nr_find_usage_forwards_checks);
++DECLARE_PER_CPU(local_t, nr_find_usage_forwards_recursions);
++DECLARE_PER_CPU(local_t, nr_find_usage_backwards_checks);
++DECLARE_PER_CPU(local_t, nr_find_usage_backwards_recursions);
++
++# define debug_atomic_inc(ptr)			{	\
++	WARN_ON_ONCE(!irq_disabled());			\
++	local_t *__ptr = &__get_cpu_var(ptr);		\
++	local_inc(__ptr);				\
++}
++
++# define debug_atomic_dec(ptr)			{	\
++	WARN_ON_ONCE(!irq_disabled());			\
++	local_t *__ptr = &__get_cpu_var(ptr);		\
++	local_dec(__ptr);				\
++}
++
+ /*
+- * Various lockdep statistics:
++ * It's fine to use local_read from other cpus. Read is racy anyway,
++ * but it's guaranteed high and low parts are read atomically.
+  */
+-extern atomic_t chain_lookup_hits;
+-extern atomic_t chain_lookup_misses;
+-extern atomic_t hardirqs_on_events;
+-extern atomic_t hardirqs_off_events;
+-extern atomic_t redundant_hardirqs_on;
+-extern atomic_t redundant_hardirqs_off;
+-extern atomic_t softirqs_on_events;
+-extern atomic_t softirqs_off_events;
+-extern atomic_t redundant_softirqs_on;
+-extern atomic_t redundant_softirqs_off;
+-extern atomic_t nr_unused_locks;
+-extern atomic_t nr_cyclic_checks;
+-extern atomic_t nr_cyclic_check_recursions;
+-extern atomic_t nr_find_usage_forwards_checks;
+-extern atomic_t nr_find_usage_forwards_recursions;
+-extern atomic_t nr_find_usage_backwards_checks;
+-extern atomic_t nr_find_usage_backwards_recursions;
+-# define debug_atomic_inc(ptr)		atomic_inc(ptr)
+-# define debug_atomic_dec(ptr)		atomic_dec(ptr)
+-# define debug_atomic_read(ptr)		atomic_read(ptr)
++# define debug_atomic_read(ptr)		({		\
++	unsigned long long __total = 0;			\
++	int __cpu;					\
++	for_each_possible_cpu(__cpu) {			\
++		local_t *__ptr = &per_cpu(ptr, cpu);	\
++		__total += local_read(__ptr);		\
++	}						\
++	__total;					\
++})
+ #else
+ # define debug_atomic_inc(ptr)		do { } while (0)
+ # define debug_atomic_dec(ptr)		do { } while (0)
+-- 
+1.6.2.3
 
