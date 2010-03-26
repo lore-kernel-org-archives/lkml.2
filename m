@@ -1,80 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab0CZAUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Mar 2010 20:20:20 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34525 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab0CZAUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Mar 2010 20:20:18 -0400
-Date: Fri, 26 Mar 2010 01:20:29 +0100
-From: Jan Kara <jack@suse.cz>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Li Zefan <lizf@cn.fujitsu.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/18] Allow different tracers to be compiled
- independently
-Message-ID: <20100326002029.GH3145@quack.suse.cz>
-References: <1269304340-25372-1-git-send-email-jack@suse.cz>
- <20100323010419.GA8292@nowhere>
+	id S1752266Ab0CZAZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Mar 2010 20:25:45 -0400
+Received: from mga07.intel.com ([143.182.124.22]:36715 "EHLO
+	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751646Ab0CZAZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Mar 2010 20:25:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.51,310,1267430400"; 
+   d="scan'208";a="258832810"
+Date: Fri, 26 Mar 2010 01:26:30 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Ira W. Snyder" <iws@ovro.caltech.edu>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       socketcan-core@lists.berlios.de
+Subject: Re: [PATCH 1/3] mfd: add support for Janz CMOD-IO PCI MODULbus
+ Carrier Board
+Message-ID: <20100326002629.GA31389@sortiz.org>
+References: <>
+ <1268930324-29841-2-git-send-email-iws@ovro.caltech.edu>
+ <20100319163849.GB30409@sortiz.org>
+ <20100319182209.GD13672@ovro.caltech.edu>
+ <20100325225929.GA20618@sortiz.org>
+ <20100325232244.GG10454@ovro.caltech.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100323010419.GA8292@nowhere>
+In-Reply-To: <20100325232244.GG10454@ovro.caltech.edu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-03-10 02:04:21, Frederic Weisbecker wrote:
-> On Tue, Mar 23, 2010 at 01:32:02AM +0100, Jan Kara wrote:
+On Thu, Mar 25, 2010 at 04:22:44PM -0700, Ira W. Snyder wrote:
+> On Thu, Mar 25, 2010 at 11:59:30PM +0100, Samuel Ortiz wrote:
+> > Hi Ira,
 > > 
-> >   Hi,
+> > First of all, sorry for the late reply. Then my answers:
 > > 
-> >   currently, when one tracer is selected, most of tracepoints for other
-> > tracers also gets pulled into the kernel. So for example it's not possible
-> > to enable BLK_DEV_IO_TRACE without polluting slab allocation paths with
-> > tracepoint checks (see changelog of patch 01). This patch set adds a
-> > possibility for each set of trace points to be compile-enabled separately.
-> >   The first patch contains the necessary magic in linux/tracepoint.h. Other
-> > patches just tell tracing framework about correspoding config options
-> > and possibly introduce them if they did not exist before.
-> >   The patches in this patch set are actually completely independent so 
-> > they can be merged via respective subsystem trees. But changes are rather
-> > tiny so I don't expect much conflicts...
+> > On Fri, Mar 19, 2010 at 11:22:09AM -0700, Ira W. Snyder wrote:
+> > > 
+> > > > > +/*
+> > > > > + * Subdevice Support
+> > > > > + */
+> > > > Please use the mfd-core API for building and registering platform sub devices.
+> > > > The pieces of code below should shrink significantly.
+> > > > 
+> > > 
+> > > Using this framework, how is it possible to create  the devices that I
+> > > do down below. For each subdevice, I need three resources:
+> > > 
+> > > 1) MODULbus registers -- PCI BAR3 + (0x200 * module_num)
+> > > 2) PLX Control Registers -- PCI BAR4
+> > > 3) IRQ
+> > > 
+> > > Specifically, the way IORESOURCE_MEM resources are copied seems wrong.
+> > > They start at the base address of only one resource and use the offsets
+> > > provided in the struct mfd_cell. See the if-statement at
+> > > drivers/mfd/mfd-core.c line 48.
+> > > 
+> > > I need two use two different parent resources. The mfd_add_devices()
+> > > function doesn't support this.
+> > I would still like you to use the mfd-core API. Here is my proposal:
 > > 
-> > 								Honza
+> > 1) I modify mfd_add_device() to support a NULL mem_base argument. When
+> > mem_base is NULL, we would have:
+> > 
+> > res[r].parent = NULL and res[r].start = cell->resources[r].start;
+> > 
+> > The platform code will use iomem_resource as the parent for this resource.
+> > 
 > 
-> (Adding more people in Cc)
+> I don't know the implications of using iomem_resource as the parent
+> resource. If you think it is ok, I have no objections.
 > 
-> I don't know. Yeah this first looks like a good idea but once
-> CONFIG_EVENT_TRACING is enabled, each tracepoint is a lightweight
-> thing and induce a tiny overhead, probably hard to notice, and
-> this is going to be even more the case after the jmp label
-> optimization patches.
-  Sorry for replying late, I was on vacation. My motivation was that we
-wanted BLK_DEV_IO_TRACE enabled in all our distro kernels but there is
-a concern that this could have some impact on performance especially
-in SLAB allocator due to more icache pressure or so. This is not completely
-bogus concern if you look at bloat-o-meter output. For example:
-function                                     old     new   delta
-kmem_cache_alloc                             542     768    +226
+> If it helps, I can provide the PCI resource as a parent resource in my
+> resources. Then, when mem_base is NULL, the mfd-core could do this:
+> 
+> res[r].parent = cell->resources[r].parent
+> 
+> This is basically what I did in my patch. I used the PCI resource as the
+> parent of all child resources. I don't know if that is safe, but it
+> works. :)
+> 
+> The mfd_add_device() function does this for IORESOURCE_IO resources. It
+> only tries to be smart for IORESOURCE_MEM and IORESOURCE_IRQ resources.
+I pushed an mfd-core change that basically falls back to the default resource
+copying when mem_base is NULL. That should allow you to use the API now.
 
-  But looking at the disassembly now, I can see that the difference in
-inline code is actually only ~40 bytes (on x86_64) - so that's about 7%.
-Not a huge deal but still noticeable. 
+> > > > > +#define PCI_VENDOR_ID_JANZ		0x13c3
+> > > > That probably belongs to pci_ids.h
+> > > > 
+> > > 
+> > > Should I add a patch to the series for this?
+> > Either that or merge the pci_ids.h changes with this patch.
+> > 
+> 
+> I guess it is a trivial enough change to merge with this patch.
+> 
+> I'll wait for your patch to the mfd-core API before making changes and
+> sending out the next round of updates.
+Very nice. The above mentioned change in my for-next branch, commit
+6802a325f541bbea3168cf61ba239443193e1f9a.
 
-> I liked the fact we had a general tracing kernel once the above
-> config is selected. And we don't bother telling people that to
-> use tool X you need CONFIG_EVENT_Y, and you need to rebuild your
-> kernel, etc...
-  OK, I understand this. I guess I should go and measure whether disabling
-tracepoints really makes some performance difference or not.
+Cheers,
+Samuel.
 
-								Honza
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Intel Open Source Technology Centre
+http://oss.intel.com/
