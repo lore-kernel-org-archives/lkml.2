@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753274Ab0CZG5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 02:57:07 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:61602 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752874Ab0CZG5E (ORCPT
+	id S1751730Ab0CZHYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 03:24:06 -0400
+Received: from av9-2-sn2.hy.skanova.net ([81.228.8.180]:52917 "EHLO
+	av9-2-sn2.hy.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab0CZHYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 02:57:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=CaBOzONkM0v6GJUfuu95TJy+IYLoHJGtNN/5QILz758Z5tBe1cDRdeHRhdMDdzNhtY
-         QIwWcOSaoa7gb8nUJ7Jgs7azcjulPhTBUt5lDeGAkitkd4cBcxnw+vKIicJbBI7H1fk5
-         rXmeslTKHhF5+S48cVRHnMsSW6sbCY/q3d+gE=
-Date: Thu, 25 Mar 2010 23:56:57 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
-       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>
-Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
-Message-ID: <20100326065656.GC26602@core.coreip.homeip.net>
-References: <20100324233707.7243b04d@neptune.home>
- <20100324234022.0361bd80@neptune.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+	Fri, 26 Mar 2010 03:24:03 -0400
+Subject: [PATCH] dma: timb-dma: Update comment and fix compiler warning
+From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       "Williams, Dan J" <dan.j.williams@intel.com>,
+       "Dan J <dan.j.williams"@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 26 Mar 2010 08:23:58 +0100
+Message-ID: <1269588238.26867.8.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100324234022.0361bd80@neptune.home>
-User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 11:40:22PM +0100, Bruno Prémont wrote:
-> +	for (i = 0; i < PICOLCD_KEYS; i++) {
-> +		int key = ((int *)idev->keycode)[i];
+An incremental patch which clarifies what the spinlock is used for
+and fixes a compiler warning.
 
-Keycodes are now short, not int. Also, just do:
+Signed-off-by: Richard RÃ¶jfors <richard.rojfors@pelagicore.com>
+---
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index 4dd7102..145f1c2 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -79,7 +79,10 @@ struct timb_dma_desc {
+ struct timb_dma_chan {
+ 	struct dma_chan		chan;
+ 	void __iomem		*membase;
+-	spinlock_t		lock; /* Used for mutual exclusion */
++	spinlock_t		lock; /* Used to protect data structures,
++					especially the lists and descriptors,
++					from races between the tasklet and calls
++					from above */
+ 	dma_cookie_t		last_completed_cookie;
+ 	bool			ongoing;
+ 	struct list_head	active_list;
+@@ -197,7 +200,7 @@ static int td_fill_desc(struct timb_dma_chan *td_chan, u8 *dma_desc,
+ 	}
+ 
+ 	dev_dbg(chan2dev(&td_chan->chan), "desc: %p, addr: %p\n",
+-		dma_desc, (void *)(int)sg_dma_address(sg));
++		dma_desc, (void *)sg_dma_address(sg));
+ 
+ 	dma_desc[7] = (sg_dma_address(sg) >> 24) & 0xff;
+ 	dma_desc[6] = (sg_dma_address(sg) >> 16) & 0xff;
 
-		input_set_capability(idev, EV_KEY, data->keycode[i]);
 
-> +		if (key < KEY_MAX && key >= 0)
-> +			input_set_capability(idev, EV_KEY, key);
--- 
-Dmitry
+
