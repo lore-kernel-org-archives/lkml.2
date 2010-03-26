@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab0CZKya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 06:54:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42019 "EHLO smtps.tip.net.au"
+	id S1753800Ab0CZKys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 06:54:48 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51802 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753562Ab0CZKy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 06:54:27 -0400
-Date: Fri, 26 Mar 2010 21:54:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Sachin Sant <sachinp@in.ibm.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       a.p.zijlstra@chello.nl, Rusty Russell <rusty@rustcorp.com.au>,
-       linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-       Anton Blanchard <anton@samba.org>, tglx@linutronix.de,
-       Linus Torvalds <torvalds@linux-foundation.org>, mingo@elte.hu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 4/7] hvc_console: Fix race between hvc_close and
- hvc_remove
-Message-Id: <20100326215416.80d09610.sfr@canb.auug.org.au>
-In-Reply-To: <20100326095821.GA7039@amit-x200.redhat.com>
-References: <20100319151326.GC8541@kroah.com>
-	<1269011916-8836-4-git-send-email-gregkh@suse.de>
-	<1269119079.8599.65.camel@pasglop>
-	<20100321043725.GA21566@amit-x200.redhat.com>
-	<20100324121902.GJ15789@amit-x200.redhat.com>
-	<4BAC7AD4.4030309@in.ibm.com>
-	<20100326095821.GA7039@amit-x200.redhat.com>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3"
+	id S1753760Ab0CZKyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 06:54:41 -0400
+Date: Fri, 26 Mar 2010 11:53:58 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+       Nicolas Pitre <nico@fluxnic.net>, Linus Torvalds <torvalds@osdl.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [patch 0/2] Run interrupt handlers always with interrupts
+ disabled
+Message-ID: <20100326105358.GA4424@elte.hu>
+References: <20100326000325.917127328@linutronix.de>
+ <20100326081457.GA23570@flint.arm.linux.org.uk>
+ <20100326092023.GH27394@elte.hu>
+ <20100326095929.063c5f63@lxorguk.ukuu.org.uk>
+ <1269598133.12097.138.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269598133.12097.138.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Amit,
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-On Fri, 26 Mar 2010 15:28:21 +0530 Amit Shah <amit.shah@redhat.com> wrote:
->
-> On (Fri) Mar 26 2010 [14:43:56], Sachin Sant wrote:
-> >
-> > I too ran into this issue as reported by Anton. Unfortunately in my
-> > case the following suggested patch does not help boot the powerpc
-> > box successfully. The boot still hangs with following messages
+> On Fri, 2010-03-26 at 09:59 +0000, Alan Cox wrote:
+> > > As long as it's rare (which it is) i dont see a problem: you can enable 
+> > > interrupts in the handler by using local_irq_enable(), like the IDE PIO 
+> > > drivers do. That way it's documented a bit better as well, because it shows 
+> > > the precise source of the latency, with a big comment explaining it, etc.
+> > 
+> > I don't think it's as rare as you think particularly in embedded, and the 
+> > moment you start explicitly using local_irq_enable() you've simply moved 
+> > the underlying problem back and made it far harder to grep for.
+> 
+> We've got local_irq_enable_in_hardirq() which should be used and can easily 
+> be grep'ed for.
+> 
+> But yes, I would much prefer to simply convert these known slow handlers to 
+> threaded interrupts.
 
-I have been getting this on my linux-next boot tests for a while as well.
+Yeah, agreed. So there's multiple solutions:
 
-> Was the hang you saw before applying this patch at the same place / for
-> the same reason?
+ - On old hw with a driver that nobody is willing to convert to threaded IRQs: 
+   use the existing local_irq_enable_in_hardirq() API. This preserves the 
+   status quo.
 
-I get the same hangs with and without the patch.  Paulus bisected it
-(again) to the commit below and reverting that commit fixes the problem.
+ - On new hw with new drivers where there's such a level of IRQ parallelism 
+   that enabling IRQs in hardirqs is not an option, use threaded IRQ handlers.
 
-> OK, this gets even murkier. I don't know why taking a few krefs modifies
-> hvc_console behaviour to such an extent.
->=20
-> > Just to confirm i too am facing same issue as reported by Anton,
-> > reverted commit e74d098c66543d0731de62eb747ccd5b636a6f4c and that allow=
-ed
-> > by box to boot successfully.
->=20
-> Which module uses hvc_console in your case?
+Thanks,
 
-I assume hcv_vio.
-
-I also tested using "init=3D/bin/bash" as a kernel command line option and
-the console worked while I was running bash, but everything was very
-sluggish.  Then when I did "exec /sbin/init" the console hung completely
-- sysrq (^O) didn't even work any more (it did while I was running bash).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkusklgACgkQjjKRsyhoI8z2rgCfdQK7HbJ3o86vDpbSbghLmQwd
-7CEAoI4ZvlWTUDm4FooAu/N5fA3VfHXg
-=wzAl
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Mar_2010_21_54_16_+1100_YZLZJcjnOWU7PRW3--
+	Ingo
