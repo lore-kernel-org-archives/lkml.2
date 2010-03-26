@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab0CZWZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:25:49 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:39789 "EHLO
+	id S1754700Ab0CZWZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:25:56 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:39886 "EHLO
 	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648Ab0CZWZq (ORCPT
+	with ESMTP id S1754570Ab0CZWZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:25:46 -0400
+	Fri, 26 Mar 2010 18:25:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,114 +15,60 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 09/24] bootmem, x86: Add weak version of reserve_bootmem_generic
-Date: Fri, 26 Mar 2010 15:21:39 -0700
-Message-Id: <1269642114-16588-10-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Ian Campbell <ian.campbell@citrix.com>,
+       Yinghai Lu <yinghai@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 03/24] x86: Do not free zero sized per cpu areas
+Date: Fri, 26 Mar 2010 15:21:33 -0700
+Message-Id: <1269642114-16588-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269642114-16588-1-git-send-email-yinghai@kernel.org>
 References: <1269642114-16588-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BAD3436.0165,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4BAD343A.00C7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used lmb_to_bootmem converting
+From: Ian Campbell <ian.campbell@citrix.com>
 
-It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
+This avoids an infinite loop in free_early_partial().
 
-Also clean up that version for x86_64. We don't need to take care of numa
-path for that, bootmem can handle it how
+Add a warning to free_early_partial to catch future problems.
 
+-v5: put back start > end back into WARN_ONCE()
+-v6: use one line for warning according to linus
+-v7: more test by
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Tested-by: Joel Becker <joel.becker@oracle.com>
+Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/mm/init_32.c |    6 ------
- arch/x86/mm/init_64.c |   20 ++------------------
- mm/bootmem.c          |    6 ++++++
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ kernel/early_res.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 5cb3f0f..804bbe9 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
- #endif
- }
- #endif
--
--int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
--				   int flags)
--{
--	return reserve_bootmem(phys, len, flags);
--}
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index e9b040e..5ba6b0e 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -798,13 +798,10 @@ void mark_rodata_ro(void)
+diff --git a/kernel/early_res.c b/kernel/early_res.c
+index 3cb2c66..69bed5b 100644
+--- a/kernel/early_res.c
++++ b/kernel/early_res.c
+@@ -333,6 +333,12 @@ void __init free_early_partial(u64 start, u64 end)
+ 	struct early_res *r;
+ 	int i;
  
- #endif
- 
-+#ifndef CONFIG_NO_BOOTMEM
- int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 				   int flags)
- {
--#ifdef CONFIG_NUMA
--	int nid, next_nid;
--	int ret;
--#endif
- 	unsigned long pfn = phys >> PAGE_SHIFT;
- 
- 	if (pfn >= max_pfn) {
-@@ -820,21 +817,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 		return -EFAULT;
- 	}
- 
--	/* Should check here against the e820 map to avoid double free */
--#ifdef CONFIG_NUMA
--	nid = phys_to_nid(phys);
--	next_nid = phys_to_nid(phys + len - 1);
--	if (nid == next_nid)
--		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
--	else
--		ret = reserve_bootmem(phys, len, flags);
--
--	if (ret != 0)
--		return ret;
--
--#else
- 	reserve_bootmem(phys, len, flags);
--#endif
- 
- 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
- 		dma_reserve += len / PAGE_SIZE;
-@@ -843,6 +826,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	return 0;
- }
-+#endif
- 
- int kern_addr_valid(unsigned long addr)
- {
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 9b13446..fadbc3b 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -512,6 +512,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
- }
- 
- #ifndef CONFIG_NO_BOOTMEM
-+int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
-+				   int flags)
-+{
-+	return reserve_bootmem(phys, len, flags);
-+}
++	if (start == end)
++		return;
 +
- static unsigned long __init align_idx(struct bootmem_data *bdata,
- 				      unsigned long idx, unsigned long step)
- {
++	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
+ try_next:
+ 	i = find_overlapped_early(start, end);
+ 	if (i >= max_early_res)
 -- 
 1.6.4.2
 
