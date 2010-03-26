@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab0CZJfF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 05:35:05 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:42159 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab0CZJfC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 05:35:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=tRzyzZeMUKIP6MvXEUlLSxLnIH/NRrrV26QQfKdwD4LWESY2rMXgADz55L+EYkdS8a
-         qcBWwyqcwbRFc86hAeicL897jNH30WDA+vhHaaLWmTYL/19Rod/q7NUprvwkHrPnFOYD
-         H/eRg/y9ePIXf1L1BbWMmti+aYTMelnI6TJC8=
-Message-ID: <4BAC7FC3.50405@gmail.com>
-Date: Fri, 26 Mar 2010 10:34:59 +0100
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.2pre) Gecko/20100308 SUSE/3.1b1-6.1 Thunderbird/3.1b1
+	id S1752817Ab0CZJkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 05:40:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39476 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752665Ab0CZJkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 05:40:21 -0400
+Date: Fri, 26 Mar 2010 09:40:01 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+       David Rientjes <rientjes@google.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [PATCH 10/11] Direct compact when a high-order allocation fails
+Message-ID: <20100326094001.GX2024@csn.ul.ie>
+References: <1269347146-7461-1-git-send-email-mel@csn.ul.ie> <1269347146-7461-11-git-send-email-mel@csn.ul.ie> <20100324101927.0d54f4ad.kamezawa.hiroyu@jp.fujitsu.com> <20100324114056.GE21147@csn.ul.ie> <20100325093006.cd0361e6.kamezawa.hiroyu@jp.fujitsu.com> <20100325094826.GM2024@csn.ul.ie> <20100325185021.63e16884.kamezawa.hiroyu@jp.fujitsu.com> <20100325101653.GN2024@csn.ul.ie> <20100326100308.564ebb7b.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org,
-       Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [RFC 09/15] PM / Hibernate: user, implement user_ops writer
-References: <1269361063-3341-1-git-send-email-jslaby@suse.cz> <20100324204259.GA6423@elf.ucw.cz> <4BAA86E8.5090108@gmail.com> <201003252314.33256.rjw@sisk.pl>
-In-Reply-To: <201003252314.33256.rjw@sisk.pl>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100326100308.564ebb7b.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2010 11:14 PM, Rafael J. Wysocki wrote:
-> On Wednesday 24 March 2010, Jiri Slaby wrote:
->> On 03/24/2010 09:42 PM, Pavel Machek wrote:
->>>> +	if (test_bit(TODO_CLOSED, to_do_flags))
->>>> +		return -EIO;
->>>> +
->>>> +	to_do_buf = buf;
->>>> +	wmb();
->>>> +	set_bit(TODO_WORK, to_do_flags);
->>>> +	wake_up_interruptible(&to_do_wait);
->>>
->>> Uhuh, open-coded barriers... these need to be commented, and I guess
->>> you just should not play this kind of trickery.
->>
->> It's just to ensure the to_do_buf store is not reordered with the
->> set_bit. I wanted to avoid locks as too heavy tools here.
+On Fri, Mar 26, 2010 at 10:03:08AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 25 Mar 2010 10:16:54 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> No, please use them, at least in a prototype version.
+> > On Thu, Mar 25, 2010 at 06:50:21PM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Thu, 25 Mar 2010 09:48:26 +0000
+> > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > 
+> > > > > In that case, compact_finished() can't
+> > > > > find there is a free chunk and do more work.  How about using a function like
+> > > > > 	 free_pcppages_bulk(zone, pcp->batch, pcp);
+> > > > > to bypass pcp list and freeing pages at once ?
+> > > > > 
+> > > > 
+> > > > I think you mean to drain the PCP lists while compaction is happening
+> > > > but is it justified? It's potentially a lot of IPI calls just to check
+> > > > if compaction can finish a little earlier. If the pages on the PCP lists
+> > > > are making that much of a difference to high-order page availability, it
+> > > > implies that the zone is pretty full and it's likely that compaction was
+> > > > avoided and we direct reclaimed.
+> > > > 
+> > > Ah, sorry for my short word again. I mean draining "local" pcp list because
+> > > a thread which run direct-compaction freed pages. IPI is not necessary and
+> > > overkill.
+> > > 
+> > 
+> > Ah, I see now. There are two places that pages get freed.  release_freepages()
+> > at the end of compaction when it's too late for compact_finished() to be
+> > helped and within migration itself. Migration frees with either
+> > free_page() or more commonly put_page() with put_page() being the most
+> > frequently used. As free_page() is called on failure to migrate (rare),
+> > there is little help in changing it and I'd rather not modify how
+> > put_page() works.
+> > 
+> > I could add a variant of drain_local_pages() that drains just the local PCP of
+> > a given zone before compact_finished() is called. The cost would be a doubling
+> > of the number of times zone->lock is taken to do the drain. Is it
+> > justified? It seems overkill to me to take the zone->lock just in case
+> > compaction can finish a little earlier. It feels like it would be adding
+> > a guaranteed cost for a potential saving.
+> > 
+> If you want to keep code comapct, I don't ask more.
 > 
-> We can always optimize things out later, but doing optimizations upfront
-> doesn't really work well from my experience.
+> I worried about that just because memory hot-unplug were suffered by pagevec
+> and pcp list before using  MIGRATE_ISOLATE and proper lru_add_drain().
 > 
-> So, if you'd use a lock somewhere, please use it, or maybe use a completion if
-> that fits the design better.
 
-That's it, I don't think a lock is appropriate here (I didn't even think
-of that) -- I don't know what to lock (OK, I see it, but it's not that
-clear). There is no potential for race per se, I only need to disable
-reordering (which locks do as a side-effect). I need the steps to be
-done in the A-B order where there is a barrier appropriate. Here, A is
-store to to_do_buf, B is set_bit. It's I set to_do_buf, flag that it may
-be used, the consumer will see the flag and use to_do_buf, in this order.
+What I can do to cover that situation that won't cost much is to call
+drain_local_pages after compaction completes.
 
-Above that if I introduce locks the wait_event on the other side will
-grow into an unreadable mess. I would need to hold a lock when checking
-the condition and hold it until I reach to_do_buf use, but also unlock
-it on all paths that do not reach that point. Yeah, it's indeed doable,
-but I don't think, it will improve things.
+Thanks
 
-I also don't think completion is appropriate here, as I have a condition
-to check for and it differs over wake_up sites.
 
-thanks,
 -- 
-js
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
