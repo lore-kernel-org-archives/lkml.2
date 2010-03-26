@@ -1,143 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530Ab0CZWEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:04:15 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39875 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754268Ab0CZWEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:04:12 -0400
-Date: Fri, 26 Mar 2010 23:04:09 +0100 (CET)
-From: Julia Lawall <julia@diku.dk>
-To: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
-       "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 7/7] arch/sparc/kernel: Use set_cpus_allowed_ptr
-Message-ID: <Pine.LNX.4.64.1003262303500.6480@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754268Ab0CZWIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:08:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49979 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753848Ab0CZWIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:08:22 -0400
+Date: Fri, 26 Mar 2010 15:08:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anfei Zhou <anfei.zhou@gmail.com>
+Cc: rientjes@google.com, kosaki.motohiro@jp.fujitsu.com,
+       nishimura@mxp.nes.nec.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-Id: <20100326150805.f5853d1c.akpm@linux-foundation.org>
+In-Reply-To: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Thu, 25 Mar 2010 00:25:05 +0800
+Anfei Zhou <anfei.zhou@gmail.com> wrote:
 
-Use set_cpus_allowed_ptr rather than set_cpus_allowed.
+> In multi-threading environment, if the current task(A) have got
+> the mm->mmap_sem semaphore, and the thread(B) in the same process
+> is selected to be oom killed, because they shares the same semaphore,
+> thread B can not really be killed.  So __alloc_pages_slowpath turns
+> to be a infinite loop.  Here set all the threads in the group to
+> TIF_MEMDIE, it gets a chance to break and exit.
+> 
+> Signed-off-by: Anfei Zhou <anfei.zhou@gmail.com>
+> ---
+>  mm/oom_kill.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 9b223af..aab9892 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -381,6 +381,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+>   */
+>  static void __oom_kill_task(struct task_struct *p, int verbose)
+>  {
+> +	struct task_struct *t;
+> +
+>  	if (is_global_init(p)) {
+>  		WARN_ON(1);
+>  		printk(KERN_WARNING "tried to kill init!\n");
+> @@ -412,6 +414,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+>  	 */
+>  	p->rt.time_slice = HZ;
+>  	set_tsk_thread_flag(p, TIF_MEMDIE);
+> +	for (t = next_thread(p); t != p; t = next_thread(t))
+> +		set_tsk_thread_flag(t, TIF_MEMDIE);
+>  
+>  	force_sig(SIGKILL, p);
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+Don't we need some sort of locking while walking that ring? 
+Unintuitively it appears to be spin_lock_irq(&p->sighand->siglock).
 
-// <smpl>
-@@
-expression E1,E2;
-@@
 
-- set_cpus_allowed(E1, cpumask_of_cpu(E2))
-+ set_cpus_allowed_ptr(E1, cpumask_of(E2))
-
-@@
-expression E;
-identifier I;
-@@
-
-- set_cpus_allowed(E, I)
-+ set_cpus_allowed_ptr(E, &I)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- arch/sparc/kernel/sysfs.c        |    4 ++--
- arch/sparc/kernel/us2e_cpufreq.c |    8 ++++----
- arch/sparc/kernel/us3_cpufreq.c  |    8 ++++----
- 3 files changed, 10 insertions(+), 10 deletions(-)
-
-diff -u -p a/arch/sparc/kernel/sysfs.c b/arch/sparc/kernel/sysfs.c
---- a/arch/sparc/kernel/sysfs.c
-+++ b/arch/sparc/kernel/sysfs.c
-@@ -107,12 +107,12 @@ static unsigned long run_on_cpu(unsigned
- 	unsigned long ret;
- 
- 	/* should return -EINVAL to userspace */
--	if (set_cpus_allowed(current, cpumask_of_cpu(cpu)))
-+	if (set_cpus_allowed_ptr(current, cpumask_of(cpu)))
- 		return 0;
- 
- 	ret = func(arg);
- 
--	set_cpus_allowed(current, old_affinity);
-+	set_cpus_allowed_ptr(current, &old_affinity);
- 
- 	return ret;
- }
-diff -u -p a/arch/sparc/kernel/us2e_cpufreq.c b/arch/sparc/kernel/us2e_cpufreq.c
---- a/arch/sparc/kernel/us2e_cpufreq.c
-+++ b/arch/sparc/kernel/us2e_cpufreq.c
-@@ -238,12 +238,12 @@ static unsigned int us2e_freq_get(unsign
- 		return 0;
- 
- 	cpus_allowed = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
- 	clock_tick = sparc64_get_clock_tick(cpu) / 1000;
- 	estar = read_hbreg(HBIRD_ESTAR_MODE_ADDR);
- 
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
- 
- 	return clock_tick / estar_to_divisor(estar);
- }
-@@ -259,7 +259,7 @@ static void us2e_set_cpu_divider_index(u
- 		return;
- 
- 	cpus_allowed = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
- 	new_freq = clock_tick = sparc64_get_clock_tick(cpu) / 1000;
- 	new_bits = index_to_estar_mode(index);
-@@ -281,7 +281,7 @@ static void us2e_set_cpu_divider_index(u
- 
- 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
- 
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
- }
- 
- static int us2e_freq_target(struct cpufreq_policy *policy,
-diff -u -p a/arch/sparc/kernel/us3_cpufreq.c b/arch/sparc/kernel/us3_cpufreq.c
---- a/arch/sparc/kernel/us3_cpufreq.c
-+++ b/arch/sparc/kernel/us3_cpufreq.c
-@@ -86,12 +86,12 @@ static unsigned int us3_freq_get(unsigne
- 		return 0;
- 
- 	cpus_allowed = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
- 	reg = read_safari_cfg();
- 	ret = get_current_freq(cpu, reg);
- 
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
- 
- 	return ret;
- }
-@@ -106,7 +106,7 @@ static void us3_set_cpu_divider_index(un
- 		return;
- 
- 	cpus_allowed = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 
- 	new_freq = sparc64_get_clock_tick(cpu) / 1000;
- 	switch (index) {
-@@ -140,7 +140,7 @@ static void us3_set_cpu_divider_index(un
- 
- 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
- 
--	set_cpus_allowed(current, cpus_allowed);
-+	set_cpus_allowed_ptr(current, &cpus_allowed);
- }
- 
- static int us3_freq_target(struct cpufreq_policy *policy,
