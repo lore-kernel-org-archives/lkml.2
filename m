@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab0CZJ3D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 05:29:03 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:60820 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751499Ab0CZJ3A convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 05:29:00 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Mar 2010 10:26:04 +0100
-Subject: RE: [PATCH 0/2] DMAENGINE: generic slave, generic status
-Thread-Topic: [PATCH 0/2] DMAENGINE: generic slave, generic status
-Thread-Index: AcrML3ZPjhOoHxeXRSqmTCeGdqRnsQAlsTgQ
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A0391F483@EXDCVYMBSTM006.EQ1STM.local>
-References: <1269529319-16369-1-git-send-email-linus.walleij@stericsson.com>
- <4BAB7F3D.7090703@intel.com>
-In-Reply-To: <4BAB7F3D.7090703@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
+	id S1752766Ab0CZJam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 05:30:42 -0400
+Received: from legolas.restena.lu ([158.64.1.34]:45089 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754Ab0CZJaj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 05:30:39 -0400
+Date: Fri, 26 Mar 2010 10:29:51 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+       linux-usb@vger.kernel.org, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Rick L. Vinyard Jr." <rvinyard@cs.nmsu.edu>,
+       Nicu Pavel <npavel@ituner.com>, Oliver Neukum <oliver@neukum.org>,
+       Jaya Kumar <jayakumar.lkml@gmail.com>
+Subject: Re: [PATCH v3 1/6] hid: new driver for PicoLCD device
+Message-ID: <20100326102951.3b9ecda1@neptune.home>
+In-Reply-To: <20100326065656.GC26602@core.coreip.homeip.net>
+References: <20100324233707.7243b04d@neptune.home>
+	<20100324234022.0361bd80@neptune.home>
+	<20100326065656.GC26602@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Dan]
+On Thu, 25 March 2010 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> On Wed, Mar 24, 2010 at 11:40:22PM +0100, Bruno Prémont wrote:
+> > +	for (i = 0; i < PICOLCD_KEYS; i++) {
+> > +		int key = ((int *)idev->keycode)[i];
+> 
+> Keycodes are now short, not int. Also, just do:
+> 
+> 		input_set_capability(idev, EV_KEY, data->keycode[i]);
+> 
+> > +		if (key < KEY_MAX && key >= 0)
+> > +			input_set_capability(idev, EV_KEY, key);
 
-> I can check this out with my dmaengine build system.  I have attached
-> the script and the defconfigs that I use.  Yes, it does require a small
-> arsenal of cross-compilers.
-
-OK, that would be much appreciated because when I look at that
-build system I see it will take some time for me to get such
-a beast up and running...
-
-Yours,
-Linus Walleij
+Oops, I was not careful enough when switching over...
+Thanks for catching,
+Bruno
