@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0CZWDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:03:33 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39839 "EHLO mgw2.diku.dk"
+	id S1754476Ab0CZWDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:03:54 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39867 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754227Ab0CZWDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:03:32 -0400
-Date: Fri, 26 Mar 2010 23:03:29 +0100 (CET)
+	id S1754267Ab0CZWDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:03:52 -0400
+Date: Fri, 26 Mar 2010 23:03:49 +0100 (CET)
 From: Julia Lawall <julia@diku.dk>
 To: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
+       Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/7] arch/powerpc/kernel: Use set_cpus_allowed_ptr
-Message-ID: <Pine.LNX.4.64.1003262303080.6480@ask.diku.dk>
+Subject: [PATCH 6/7] arch/sh/kernel: Use set_cpus_allowed_ptr
+Message-ID: <Pine.LNX.4.64.1003262303300.6480@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,25 +46,27 @@ identifier I;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/powerpc/kernel/smp.c |    4 ++--
+ arch/sh/kernel/cpufreq.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff -u -p a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -561,12 +561,12 @@ void __init smp_cpus_done(unsigned int m
- 	 * se we pin us down to CPU 0 for a short while
- 	 */
- 	old_mask = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(boot_cpuid));
-+	set_cpus_allowed_ptr(current, cpumask_of(boot_cpuid));
- 	
- 	if (smp_ops && smp_ops->setup_cpu)
- 		smp_ops->setup_cpu(boot_cpuid);
+diff -u -p a/arch/sh/kernel/cpufreq.c b/arch/sh/kernel/cpufreq.c
+--- a/arch/sh/kernel/cpufreq.c
++++ b/arch/sh/kernel/cpufreq.c
+@@ -48,7 +48,7 @@ static int sh_cpufreq_target(struct cpuf
+ 		return -ENODEV;
  
--	set_cpus_allowed(current, old_mask);
-+	set_cpus_allowed_ptr(current, &old_mask);
+ 	cpus_allowed = current->cpus_allowed;
+-	set_cpus_allowed(current, cpumask_of_cpu(cpu));
++	set_cpus_allowed_ptr(current, cpumask_of(cpu));
  
- 	snapshot_timebases();
+ 	BUG_ON(smp_processor_id() != cpu);
  
-
+@@ -66,7 +66,7 @@ static int sh_cpufreq_target(struct cpuf
+ 	freqs.flags	= 0;
+ 
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
+-	set_cpus_allowed(current, cpus_allowed);
++	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 	clk_set_rate(cpuclk, freq);
+ 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
+ 
