@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753397Ab0CZTiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 15:38:55 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:34783 "EHLO
+	id S1752574Ab0CZTxq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 15:53:46 -0400
+Received: from server78.greatnet.de ([83.133.96.102]:56299 "EHLO
 	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752658Ab0CZTiy (ORCPT
+	with ESMTP id S1751807Ab0CZTxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 15:38:54 -0400
+	Fri, 26 Mar 2010 15:53:44 -0400
 From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: tglx@linutronix.de, apw@canonical.com, sam@ravnborg.org
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, dwalker@fifo99.co,
-       joe@perches.com, dwalker@fifo99.com, rusty@rustcorp.com.au,
-       smaclennan@pikatech.com, khali@linux-fr.org, peterz@infradead.org,
-       adobriyan@gmail.com, mingo@elte.hu,
+To: jbarnes@virtuousgeek.org
+Cc: David.Woodhouse@intel.com, len.brown@intel.com, chrisw@sous-sol.org,
+       suresh.b.siddha@intel.com, mingo@elte.hu, yu.zhao@intel.com,
+       fenghua.yu@intel.com, weidong@intel.com, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [PATCH] debugobjects: section mismatch cleanup
-Date: Fri, 26 Mar 2010 20:38:35 +0100
-Message-Id: <1269632315-19403-1-git-send-email-henne@nachtwindheim.de>
+Subject: [PATCH] dmar: section mismatch cleanup
+Date: Fri, 26 Mar 2010 20:53:20 +0100
+Message-Id: <1269633200-19970-1-git-send-email-henne@nachtwindheim.de>
 X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch marks two functions, which only get called at initialization,
-as __init.
+This patch fixes a section mismatch.
 
-Here is also interesting, that modpost doesn't catch here the right function
-name.
-
-Also does this patch produce 2 false positives for checkpatch.pl.
-
-WARNING: lib/built-in.o(.text+0x585f): Section mismatch in reference
-from the function T.506() to the variable .init.data:obj
-The function T.506() references
-the variable __initdata obj.
-This is often because T.506 lacks a __initdata
-annotation or the annotation of obj is wrong.
+WARNING: drivers/pci/built-in.o(.text+0x182f5): Section mismatch in
+reference from the function dmar_ir_support() to the variable
+.init.data:acpi_slot_detected
+The function dmar_ir_support() references
+the variable __initdata acpi_slot_detected.
+This is often because dmar_ir_support lacks a __initdata
+annotation or the annotation of acpi_slot_detected is wrong.
 
 Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
 ---
- lib/debugobjects.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/pci/dmar.c          |    2 +-
+ include/linux/intel-iommu.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index a9a8996..c4ecd3c 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -773,7 +773,7 @@ static int __init fixup_free(void *addr, enum debug_obj_state state)
- 	}
- }
- 
--static int
-+static int __init
- check_results(void *addr, enum debug_obj_state state, int fixups, int warnings)
- {
- 	struct debug_bucket *db;
-@@ -916,7 +916,7 @@ void __init debug_objects_early_init(void)
+diff --git a/drivers/pci/dmar.c b/drivers/pci/dmar.c
+index 83aae47..ffe22bc 100644
+--- a/drivers/pci/dmar.c
++++ b/drivers/pci/dmar.c
+@@ -1456,7 +1456,7 @@ int dmar_reenable_qi(struct intel_iommu *iommu)
  /*
-  * Convert the statically allocated objects to dynamic ones:
+  * Check interrupt remapping support in DMAR table description.
   */
--static int debug_objects_replace_static_objects(void)
-+static int __init debug_objects_replace_static_objects(void)
+-int dmar_ir_support(void)
++int __init dmar_ir_support(void)
  {
- 	struct debug_bucket *db = obj_hash;
- 	struct hlist_node *node, *tmp;
+ 	struct acpi_table_dmar *dmar;
+ 	dmar = (struct acpi_table_dmar *)dmar_tbl;
+diff --git a/include/linux/intel-iommu.h b/include/linux/intel-iommu.h
+index 9310c69..f51a553 100644
+--- a/include/linux/intel-iommu.h
++++ b/include/linux/intel-iommu.h
+@@ -361,6 +361,6 @@ extern void qi_flush_dev_iotlb(struct intel_iommu *iommu, u16 sid, u16 qdep,
+ 
+ extern int qi_submit_sync(struct qi_desc *desc, struct intel_iommu *iommu);
+ 
+-extern int dmar_ir_support(void);
++extern int dmar_ir_support(void) __init;
+ 
+ #endif
 -- 
 1.6.3.3
 
