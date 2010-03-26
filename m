@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754329Ab0CZWCb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 18:02:31 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:37978 "EHLO mgw1.diku.dk"
+	id S1754300Ab0CZWCw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 18:02:52 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:45621 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab0CZWC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 18:02:29 -0400
-Date: Fri, 26 Mar 2010 23:02:23 +0100 (CET)
+	id S1754230Ab0CZWCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 18:02:50 -0400
+Date: Fri, 26 Mar 2010 23:02:47 +0100 (CET)
 From: Julia Lawall <julia@diku.dk>
 To: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
-       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       Jes Sorensen <jes@sgi.com>, Tony Luck <tony.luck@intel.com>,
+       Fenghua Yu <fenghua.yu@intel.com>, linux-altix@sgi.com,
        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/7] arch/ia64/kernel: Use set_cpus_allowed_ptr
-Message-ID: <Pine.LNX.4.64.1003262301510.6480@ask.diku.dk>
+Subject: [PATCH 3/7] arch/ia64/sn/kernel: Use set_cpus_allowed_ptr
+Message-ID: <Pine.LNX.4.64.1003262302250.6480@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -47,91 +48,21 @@ identifier I;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/ia64/kernel/cpufreq/acpi-cpufreq.c |   10 +++++-----
- arch/ia64/kernel/salinfo.c              |    5 ++---
- arch/ia64/kernel/topology.c             |    4 ++--
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ arch/ia64/sn/kernel/sn2/sn_hwperf.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff -u -p a/arch/ia64/kernel/cpufreq/acpi-cpufreq.c b/arch/ia64/kernel/cpufreq/acpi-cpufreq.c
---- a/arch/ia64/kernel/cpufreq/acpi-cpufreq.c
-+++ b/arch/ia64/kernel/cpufreq/acpi-cpufreq.c
-@@ -112,7 +112,7 @@ processor_get_freq (
- 	dprintk("processor_get_freq\n");
- 
- 	saved_mask = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	if (smp_processor_id() != cpu)
- 		goto migrate_end;
- 
-@@ -120,7 +120,7 @@ processor_get_freq (
- 	ret = processor_get_pstate(&value);
- 
- 	if (ret) {
--		set_cpus_allowed(current, saved_mask);
-+		set_cpus_allowed_ptr(current, &saved_mask);
- 		printk(KERN_WARNING "get performance failed with error %d\n",
- 		       ret);
- 		ret = 0;
-@@ -130,7 +130,7 @@ processor_get_freq (
- 	ret = (clock_freq*1000);
- 
- migrate_end:
--	set_cpus_allowed(current, saved_mask);
-+	set_cpus_allowed_ptr(current, &saved_mask);
- 	return ret;
- }
- 
-@@ -150,7 +150,7 @@ processor_set_freq (
- 	dprintk("processor_set_freq\n");
- 
- 	saved_mask = current->cpus_allowed;
--	set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	if (smp_processor_id() != cpu) {
- 		retval = -EAGAIN;
- 		goto migrate_end;
-@@ -207,7 +207,7 @@ processor_set_freq (
- 	retval = 0;
- 
- migrate_end:
--	set_cpus_allowed(current, saved_mask);
-+	set_cpus_allowed_ptr(current, &saved_mask);
- 	return (retval);
- }
- 
-diff -u -p a/arch/ia64/kernel/topology.c b/arch/ia64/kernel/topology.c
---- a/arch/ia64/kernel/topology.c
-+++ b/arch/ia64/kernel/topology.c
-@@ -360,12 +360,12 @@ static int __cpuinit cache_add_dev(struc
- 		return 0;
- 
- 	oldmask = current->cpus_allowed;
--	retval = set_cpus_allowed(current, cpumask_of_cpu(cpu));
-+	retval = set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	if (unlikely(retval))
- 		return retval;
- 
- 	retval = cpu_cache_sysfs_init(cpu);
--	set_cpus_allowed(current, oldmask);
-+	set_cpus_allowed_ptr(current, &oldmask);
- 	if (unlikely(retval < 0))
- 		return retval;
- 
-diff --git a/arch/ia64/kernel/salinfo.c b/arch/ia64/kernel/salinfo.c
-index e6676fc..aa8b5fa 100644
---- a/arch/ia64/kernel/salinfo.c
-+++ b/arch/ia64/kernel/salinfo.c
-@@ -404,10 +404,9 @@ static void
- call_on_cpu(int cpu, void (*fn)(void *), void *arg)
- {
- 	cpumask_t save_cpus_allowed = current->cpus_allowed;
--	cpumask_t new_cpus_allowed = cpumask_of_cpu(cpu);
--	set_cpus_allowed(current, new_cpus_allowed);
-+	set_cpus_allowed_ptr(current, cpumask_of(cpu));
- 	(*fn)(arg);
--	set_cpus_allowed(current, save_cpus_allowed);
-+	set_cpus_allowed_ptr(current, &save_cpus_allowed);
- }
- 
- static void
+diff -u -p a/arch/ia64/sn/kernel/sn2/sn_hwperf.c b/arch/ia64/sn/kernel/sn2/sn_hwperf.c
+--- a/arch/ia64/sn/kernel/sn2/sn_hwperf.c
++++ b/arch/ia64/sn/kernel/sn2/sn_hwperf.c
+@@ -629,9 +629,9 @@ static int sn_hwperf_op_cpu(struct sn_hw
+ 		else {
+ 			/* migrate the task before calling SAL */ 
+ 			save_allowed = current->cpus_allowed;
+-			set_cpus_allowed(current, cpumask_of_cpu(cpu));
++			set_cpus_allowed_ptr(current, cpumask_of(cpu));
+ 			sn_hwperf_call_sal(op_info);
+-			set_cpus_allowed(current, save_allowed);
++			set_cpus_allowed_ptr(current, &save_allowed);
+ 		}
+ 	}
+ 	r = op_info->ret;
