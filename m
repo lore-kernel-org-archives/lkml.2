@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab0CZLNb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 07:13:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14763 "EHLO mx1.redhat.com"
+	id S1753530Ab0CZLUG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 07:20:06 -0400
+Received: from www.tglx.de ([62.245.132.106]:57009 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753186Ab0CZLNa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 07:13:30 -0400
-Date: Fri, 26 Mar 2010 12:11:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Grzegorz Nosek <root@localdomain.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Roland McGrath <roland@redhat.com>,
-       Sukadev Bhattiprolu <sukadev@us.ibm.com>,
-       containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: Testing lxc 0.6.5 in Fedora 13
-Message-ID: <20100326111131.GA8604@redhat.com>
-References: <20100321195044.GA23757@megiteam.pl> <20100323212834.GH20796@count0.beaverton.ibm.com> <20100325213356.GB20541@megiteam.pl>
+	id S1753352Ab0CZLUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 07:20:03 -0400
+Date: Fri, 26 Mar 2010 12:19:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: Linus Torvalds <torvalds@osdl.org>, LKML <linux-kernel@vger.kernel.org>,
+       linux-arch@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, David Miller <davem@davemloft.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [patch 2/2] genirq: Remove IRQF_DISABLED from core code
+In-Reply-To: <20100326062054.GW20695@one.firstfloor.org>
+Message-ID: <alpine.LFD.2.00.1003261215460.3147@localhost.localdomain>
+References: <20100326000325.917127328@linutronix.de> <20100326000405.991244690@linutronix.de> <20100326062054.GW20695@one.firstfloor.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100325213356.GB20541@megiteam.pl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Grzegorz Nosek wrote:
->
-> On wto, mar 23, 2010 at 02:28:34 -0700, Matt Helsley wrote:
-> > On Sun, Mar 21, 2010 at 08:50:44PM +0100, Grzegorz Nosek wrote:
-> >
-> > <snip>
-> >
-> > > 2. Weird strace behaviour across pidns boundary
-> > >
-> > > When strace'ing (with -ff) lxc-start, I get a proper strace for the
-> > > directly spawned process and the container init. However, any processes
-> > > spawned by the container's init are not straced properly
+On Fri, 26 Mar 2010, Andi Kleen wrote:
 
-Yes, this is broken. More precisely, this wasn't even supposed to work.
+> On Fri, Mar 26, 2010 at 12:06:55AM -0000, Thomas Gleixner wrote:
+> > Remove all code which is related to IRQF_DISABLED from the core kernel
+> > code. IRQF_DISABLED still exists as a flag, but becomes a NOOP and
+> > will be removed after a grace period. That way we can easily revert to
+> > the previous behaviour by just restoring the core code.
+> 
+> Perhaps I'm dense but it's not fully clear to me why is suddenly safe to use 
+> the behaviour of this flags on shared interrupts when it wasn't before?
 
-Even stracing of the sub-init itself (or global init btw) has problems,
-the straced init is not protected from unwanted signals.
+The shared handlers cannot guarantee to run one with irqs enabled and
+the other with irqs disabled. That's all. There is absolutely no
+reason why we would need interrupts enabled to process the shared
+handler chain.
 
-> > I'm suprised strace of ls works across pid namespaces. I've been looking
-> > at strace and it seemed to me that one kernel change and a bunch of strace
-> > changes are needed to make strace'ing in child pid namespaces work.
+Thanks,
 
-Yes. First of all, tracehook_report_clone_complete() reports the wrong pid nr,
-as it seen inside the init's namespace. This is easy to fix, but I doubt this
-can help. IIRC strace doesn't use PTRACE_GETEVENTMSG at all, it looks at eax
-after syscall.
-
-> Eric
-> > Biederman's setns() patches also might help.
->
-> Thanks for the patch and the detailed explanation.
-
-which patch?
-
-Oleg.
-
+	tglx
