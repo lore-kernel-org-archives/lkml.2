@@ -1,147 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0CZUib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 16:38:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:47180 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752973Ab0CZUia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 16:38:30 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH 2/3] perf symbols: map_groups__find_symbol must return the map too
-Date: Fri, 26 Mar 2010 17:38:18 -0300
-Message-Id: <1269635899-3221-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1269635899-3221-1-git-send-email-acme@infradead.org>
-References: <1269635899-3221-1-git-send-email-acme@infradead.org>
+	id S1753226Ab0CZUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 16:40:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57625 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752070Ab0CZUkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 16:40:14 -0400
+Message-ID: <4BAD1B72.9040002@kernel.org>
+Date: Fri, 26 Mar 2010 13:39:14 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Jan Beulich <JBeulich@novell.com>
+CC: hpa@zytor.com, teheo@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] free_early_partial() should permit start == end
+References: <4BACF0E60200007800037373@vpn.id2.novell.com>
+In-Reply-To: <4BACF0E60200007800037373@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On 03/26/2010 09:37 AM, Jan Beulich wrote:
+> The per-CPU allocator, when using atom_size == PAGE_SIZE, may call
+> free_area_init_partial() this way.
+> 
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> 
+> ---
+>  kernel/early_res.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- linux-2.6.34-rc2/kernel/early_res.c	2010-03-25 15:23:45.000000000 +0100
+> +++ 2.6.34-rc2-free_early_partial-zero-size/kernel/early_res.c	2010-03-26 14:49:41.000000000 +0100
+> @@ -335,10 +335,10 @@ void __init free_early_partial(u64 start
+>  
+>  try_next:
+>  	i = find_overlapped_early(start, end);
+> -	if (i >= max_early_res)
+> +	r = &early_res[i];
+> +	if (i >= max_early_res || !r->end)
+>  		return;
+>  
+> -	r = &early_res[i];
+>  	/* hole ? */
+>  	if (r->end >= end && r->start <= start) {
+>  		drop_range_partial(i, start, end);
+> 
+> 
 
-Tools need to know from which map in the map_group a symbol was resolved
-to, so that, for isntance, we can annotate kernel modules symbols by
-getting its precise name, etc.
+can you check if this patch work for you?
 
-Also add the _by_name variants for completeness.
+Thanks
 
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Yinghai Lu
+
+Subject: [PATCH -v6] x86: do not free zero sized per cpu areas
+From: Ian Campbell <ian.campbell@citrix.com>
+
+This avoids an infinite loop in free_early_partial().
+
+Add a warning to free_early_partial to catch future problems.
+
+-v5: put back start > end back into WARN_ONCE()
+-v6: use one line for if according to linus
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/builtin-kmem.c |    3 ++-
- tools/perf/util/map.c     |   28 +++++++++++++++++++++++++++-
- tools/perf/util/map.h     |   23 +++++++++++++++++++----
- 3 files changed, 48 insertions(+), 6 deletions(-)
+ kernel/early_res.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 924a951..32edb6a 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -369,7 +369,8 @@ static void __print_result(struct rb_root *root, struct perf_session *session,
- 		if (is_caller) {
- 			addr = data->call_site;
- 			if (!raw_ip)
--				sym = map_groups__find_function(&session->kmaps, addr, NULL);
-+				sym = map_groups__find_function(&session->kmaps,
-+								addr, NULL, NULL);
- 		} else
- 			addr = data->ptr;
+Index: linux-2.6/kernel/early_res.c
+===================================================================
+--- linux-2.6.orig/kernel/early_res.c
++++ linux-2.6/kernel/early_res.c
+@@ -333,6 +333,12 @@ void __init free_early_partial(u64 start
+ 	struct early_res *r;
+ 	int i;
  
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index e21f980..37913b2 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -268,12 +268,38 @@ void map_groups__flush(struct map_groups *self)
- 
- struct symbol *map_groups__find_symbol(struct map_groups *self,
- 				       enum map_type type, u64 addr,
-+				       struct map **mapp,
- 				       symbol_filter_t filter)
- {
- 	struct map *map = map_groups__find(self, type, addr);
- 
--	if (map != NULL)
-+	if (map != NULL) {
-+		if (mapp != NULL)
-+			*mapp = map;
- 		return map__find_symbol(map, map->map_ip(map, addr), filter);
-+	}
++	if (start == end)
++		return;
 +
-+	return NULL;
-+}
++	if (WARN_ONCE(start > end, "free_early_partial: wrong range [%#llx, %#llx]\n", start, end))
++		return;
 +
-+struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
-+					       enum map_type type,
-+					       const char *name,
-+					       struct map **mapp,
-+					       symbol_filter_t filter)
-+{
-+	struct rb_node *nd;
-+
-+	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node);
-+		struct symbol *sym = map__find_symbol_by_name(pos, name, filter);
-+
-+		if (sym == NULL)
-+			continue;
-+		if (mapp != NULL)
-+			*mapp = pos;
-+		return sym;
-+	}
- 
- 	return NULL;
- }
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 4e7a11d..2031278 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -119,13 +119,28 @@ static inline struct map *map_groups__find(struct map_groups *self,
- 
- struct symbol *map_groups__find_symbol(struct map_groups *self,
- 				       enum map_type type, u64 addr,
-+				       struct map **mapp,
- 				       symbol_filter_t filter);
- 
--static inline struct symbol *map_groups__find_function(struct map_groups *self,
--						       u64 addr,
--						       symbol_filter_t filter)
-+struct symbol *map_groups__find_symbol_by_name(struct map_groups *self,
-+					       enum map_type type,
-+					       const char *name,
-+					       struct map **mapp,
-+					       symbol_filter_t filter);
-+
-+static inline
-+struct symbol *map_groups__find_function(struct map_groups *self, u64 addr,
-+					 struct map **mapp, symbol_filter_t filter)
-+{
-+	return map_groups__find_symbol(self, MAP__FUNCTION, addr, mapp, filter);
-+}
-+
-+static inline
-+struct symbol *map_groups__find_function_by_name(struct map_groups *self,
-+						 const char *name, struct map **mapp,
-+						 symbol_filter_t filter)
- {
--	return map_groups__find_symbol(self, MAP__FUNCTION, addr, filter);
-+	return map_groups__find_symbol_by_name(self, MAP__FUNCTION, name, mapp, filter);
- }
- 
- int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
--- 
-1.6.2.5
-
+ try_next:
+ 	i = find_overlapped_early(start, end);
+ 	if (i >= max_early_res)
