@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525Ab0C0P2s (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 11:28:48 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58766
+	id S1753540Ab0C0Pb5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 11:31:57 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53693
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752158Ab0C0P2q (ORCPT
+	by vger.kernel.org with ESMTP id S1753502Ab0C0Pbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 11:28:46 -0400
-Date: Sat, 27 Mar 2010 08:29:10 -0700 (PDT)
-Message-Id: <20100327.082910.71119369.davem@davemloft.net>
-To: acme@redhat.com
-Cc: blblack@gmail.com, netdev@vger.kernel.org, drepper@gmail.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Add MSG_WAITFORONE flag to recvmmsg
+	Sat, 27 Mar 2010 11:31:55 -0400
+Date: Sat, 27 Mar 2010 08:32:19 -0700 (PDT)
+Message-Id: <20100327.083219.104064186.davem@davemloft.net>
+To: ajitk@serverengines.com, ajitkhaparde@gmail.com
+Cc: wzt.wzt@gmail.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-drivers@serverengines.com, sathyap@serverengines.com
+Subject: Re: [PATCH] benet: Fix compile warnnings in
+ drivers/net/benet/be_ethtool.c
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100327140717.GN3625@ghostprotocols.net>
-References: <20100327021803.GA10866@xpc.home>
-	<20100326.205428.44779758.davem@davemloft.net>
-	<20100327140717.GN3625@ghostprotocols.net>
+In-Reply-To: <20100326171616.GA20879@serverengines.com>
+References: <20100326061259.GB30341@localhost.localdomain>
+	<20100326171616.GA20879@serverengines.com>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,29 +26,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Sat, 27 Mar 2010 11:07:17 -0300
+From: Ajit Khaparde <ajitkhaparde@gmail.com>
+Date: Fri, 26 Mar 2010 22:46:18 +0530
 
-> Em Fri, Mar 26, 2010 at 08:54:28PM -0700, David Miller escreveu:
->> From: Brandon L Black <blblack@gmail.com>
->> Date: Fri, 26 Mar 2010 21:18:03 -0500
+> On 26/03/10 14:12 +0800, wzt.wzt@gmail.com wrote:
+>> Fix the following warnings:
 >> 
->> > 
->> > From: Brandon L Black <blblack@gmail.com>
->> > 
->> > Add new flag MSG_WAITFORONE for the recvmmsg() syscall.
->> > When this flag is specified for a blocking socket, recvmmsg()
->> > will only block until at least 1 packet is available.  The
->> > default behavior is to block until all vlen packets are
->> > available.  This flag has no effect on non-blocking sockets
->> > or when used in combination with MSG_DONTWAIT.
->> > 
->> > Signed-off-by: Brandon L Black <blblack@gmail.com>
+>> be_ethtool.c:493: warning: integer constant is too large for 'long' type
+>> be_ethtool.c:493: warning: integer constant is too large for 'long' type
 >> 
->> Arnaldo, please review this, thanks.
+>> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 > 
-> I'm ok with it.
+> I would suggest using be2net instead of benet during the commit. 
+> be2net: Fix compile warnnings in drivers/net/benet/be_ethtool.c
 > 
-> Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Acked-by: Ajit Khaparde <ajitk@serverengines.com>
 
-Applied, thanks everyone.
+Well, you cannot be surprised that people will use "benet"
+since that is the name of the directory the driver lives
+under.  It is not even referred to as "be2net" in the
+MAINTAINERS entry.
+
+I'm applying this fix as-is.
