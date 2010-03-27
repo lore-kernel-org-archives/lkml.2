@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219Ab0C0WvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 18:51:06 -0400
-Received: from qw-out-2122.google.com ([74.125.92.25]:48353 "EHLO
-	qw-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab0C0WvC convert rfc822-to-8bit (ORCPT
+	id S1753896Ab0C0Wzu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 18:55:50 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46431 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab0C0Wzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 18:51:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=YavNwvs4ffcizydQZPELuAnq4CKe35ZUpoKlhZ5a3f9ySL+sqlP8c46VH+nNIoSc6s
-         7MYItCdGaNK4I251HEk+pWK5ttunrSewZznjhUrl0Q5RULkhFEHYgYwctW/MiNkixeOl
-         7RPaFbg/d/ffiqU43tLhj7nsx5KKG7CBbzOfI=
+	Sat, 27 Mar 2010 18:55:49 -0400
+Date: Sat, 27 Mar 2010 22:55:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Cc: mad_soft@inbox.ru, rpjday@crashcourse.ca, jaswinderrajput@gmail.com,
+       kristoffer.ericson@gmail.com, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: mach-sa1100: Put nanoEngine support back in the
+	kernel.
+Message-ID: <20100327225522.GD13203@n2100.arm.linux.org.uk>
+References: <1268338199-32222-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
 MIME-Version: 1.0
-In-Reply-To: <20100327220355.GA1810@mail.oracle.com>
-References: <20100323233611.6dcbe4f4@penta.localdomain>
-	 <20100326214648.GF9984@mail.oracle.com>
-	 <20100326180025.052d930f@penta.localdomain>
-	 <20100327005710.GA31009@mail.oracle.com>
-	 <20100326220259.702859e9@penta.localdomain>
-	 <20100327220355.GA1810@mail.oracle.com>
-Date: Sat, 27 Mar 2010 18:51:01 -0400
-X-Google-Sender-Auth: 381473215e5d791d
-Message-ID: <ea182b21003271551k10d0ef1oa0757ba921f1870f@mail.gmail.com>
-Subject: Re: [PATCH] hangcheck-timer is broken on x86
-From: Yury Polyanskiy <ypolyans@princeton.edu>
-To: Yury Polyanskiy <ypolyans@princeton.edu>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@osdl.org>, john stultz <johnstul@us.ibm.com>,
-       Jan Glauber <jan.glauber@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1268338199-32222-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 27, 2010 at 6:03 PM, Joel Becker <Joel.Becker@oracle.com> wrote:
-> On Fri, Mar 26, 2010 at 10:02:59PM -0400, Yury Polyanskiy wrote:
->> Joel, just realized there is a slight mistake in what I said before.
->> getrawmonotonic() is a refined jiffies (and actually resolves to
->> get_cycles() on my system in the end). Thus it doesn't count while in
->> suspend. However, jiffies-based timers (aka timer-wheel) are also
->> stopped while in suspend. So getrawmonotonic() is the right call to
->> check the precision of the jiffies-based timer (i.e. you dont need to
->> make a correction by calling monotonic_to_bootbased()).
->
->        It's OK to tell hangcheck-timer users that suspend is not
-> allowed.  After all, you're running something that you don't want to see
-> hang.
+On Thu, Mar 11, 2010 at 05:09:59PM -0300, Marcelo Roberto Jimenez wrote:
+> --- /dev/null
+> +++ b/arch/arm/configs/nanoengine_defconfig
+> @@ -0,0 +1,1396 @@
 
-Joel, what I am saying is exactly the opposite: it is totally ok to
-suspend-resume with hangcheck-timer (jiffies are stopped and so is
-getrawmonotonic() when system suspended).
+Please don't include defconfigs along with other code.
 
->        Is there a clock in the system that is a true wallclock?  I'm
-> guessing, since getrawmonotonic() is get_cycles() based, that it doesn't
-> provide accurate time in the face of cpufreq changes.  Is that true?
+> +/*
+> + * linux/arch/arm/mach-sa1100/nanoengine.c
+> + *
+> + * Bright Star Engineering's nanoEngine board init code.
+> + *
+> + * Copyright (C) 2009 Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + */
+> +
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/mtd/mtd.h>
+> +#include <linux/mtd/partitions.h>
+> +#include <linux/root_dev.h>
+> +#include <linux/tty.h>
 
-Of course, getrawmonotonic accounts for cpufreq changes (see
-arch/x86/kernel/tsc.c:time_cpufreq_notifier()).
+Do you really need tty.h in here?
 
+> +
+> +#include <asm/mach-types.h>
+> +#include <asm/setup.h>
+> +
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/flash.h>
+> +#include <asm/mach/map.h>
+> +#include <asm/mach/serial_sa1100.h>
+> +
+> +#include <mach/hardware.h>
+> +
+> +#include "generic.h"
+> +
+> +/* Flash bank 0 */
+> +static struct mtd_partition nanoengine_partitions[] = {
+> +	{
+> +	.name		= "nanoEngine boot firmware and parameter table",
 
-Yury
+Each '{' should indent the next line by a tab.
