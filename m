@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab0C0DO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 23:14:59 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:49407 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab0C0DO5 (ORCPT
+	id S1752787Ab0C0Df5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 23:35:57 -0400
+Received: from static-71-162-243-5.phlapa.fios.verizon.net ([71.162.243.5]:46421
+	"EHLO grelber.thyrsus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752648Ab0C0Df4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 23:14:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WtCRMoUmU5YYylZjLwzwh4zvtvzCajHcGTPPDIpr+qbNAGHIYO2KhkNksUVYWZU5+S
-         IeFiVJZekHqaxK87YvQCZXNj/liPrcU3OA9/5X4szIpmJYxo7OwL10IiRYvqaQ3OMMIb
-         KWHwIY6EUbkxo88y7OPl8F1HvBLK3ZS8Z0sQM=
-Date: Sat, 27 Mar 2010 04:14:57 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tom Zanussi <tzanussi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, rostedt@goodmis.org,
-       k-keiichi@bx.jp.nec.com
-Subject: Re: [RFC PATCH 2/7] perf: add pipe-specific header read/write and
-	event processing code
-Message-ID: <20100327031455.GN7166@nowhere>
-References: <1267599929-8310-1-git-send-email-tzanussi@gmail.com> <1267599929-8310-3-git-send-email-tzanussi@gmail.com>
+	Fri, 26 Mar 2010 23:35:56 -0400
+From: Rob Landley <rob@landley.net>
+Organization: Boundaries Unlimited
+To: David Miller <davem@davemloft.net>, blauwirbel@gmail.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: Commit 085219f79cad broke Sparc-32 back in 2.6.28.
+Date: Fri, 26 Mar 2010 22:35:47 -0500
+User-Agent: KMail/1.11.2 (Linux/2.6.28-18-generic; KDE/4.2.2; x86_64; ; )
+References: <f43fc5581002201359x50aff2b1ofc4f816762bda597@mail.gmail.com> <201002211025.11588.rob@landley.net> <20100221.180658.226784107.davem@davemloft.net>
+In-Reply-To: <20100221.180658.226784107.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1267599929-8310-3-git-send-email-tzanussi@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Message-Id: <201003262235.48736.rob@landley.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 03, 2010 at 01:05:24AM -0600, Tom Zanussi wrote:
->  
-> +int perf_header__write_pipe(struct perf_header *self, int fd)
-> +{
-> +	struct perf_file_header_pipe f_header;
-> +	int err;
-> +
-> +	f_header = (struct perf_file_header_pipe){
-> +		.magic	   = PERF_MAGIC,
-> +		.size	   = sizeof(f_header),
-> +	};
-> +
-> +	err = do_write(fd, &f_header, sizeof(f_header));
-> +	if (err < 0) {
-> +		pr_debug("failed to write perf pipe header\n");
-> +		return err;
-> +	}
-> +
-> +	self->frozen = 1;
-> +	return 0;
-> +}
+On Sunday 21 February 2010 20:06:58 David Miller wrote:
+> Here's the fix I'll use, thanks for the report Rob:
+>
+> sparc32: Fix struct stat uid/gid types.
+>
+> Commit 085219f79cad89291699bd2bfb21c9fdabafe65f
+> ("sparc32: use proper types in struct stat")
 
+Unfortunately, while this fix makes sparc buidl and run again, the exported 
+kernel headers are horked and can't build strace natively.
 
+gcc -DHAVE_CONFIG_H -I. -Ilinux/sparc -I./linux/sparc -Ilinux -I./linux   -
+Wall --static -MT file.o -MD -MP -MF .deps/file.Tpo -c -o file.o file.c
+In file included from file.c:88:
+/usr/bin/../include/asm/stat.h:56: error: expected specifier-qualifier-list 
+before 'uid16_t'
+file.c: In function 'realprintstat':
+file.c:951: warning: format '%lu' expects type 'long unsigned int', but 
+argument 2 has type 'unsigned int'
+make[1]: *** [file.o] Error 1
+make[1]: Leaving directory `/home/strace-4.5.19'
+make: *** [all] Error 2
 
-I actually wonder why you bother with a header in the pipe mode,
-since it only contains MAGIC and its size.
+The problem is that uid16_t is a kernel internal type that gets cleaned out of 
+the headers when they're exported, thus there's no definition for userspace to 
+pick up if that structure is ever used from a userspace build.
 
+What exactly was the problem with just saying "unsigned short" when you mean 
+an unsigned short?  The way x86 does, and arm?  (If these ever change, it 
+breaks binary compatability.  Not sure what these changes were trying to 
+accomplish...)
+
+Rob
+-- 
+Latency is more important than throughput. It's that simple. - Linus Torvalds
