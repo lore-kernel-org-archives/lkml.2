@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0C0Xbg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 19:31:36 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42942
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754118Ab0C0Xbf (ORCPT
+	id S1754234Ab0C0Xhm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 19:37:42 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:61759 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab0C0Xhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 19:31:35 -0400
-Date: Sat, 27 Mar 2010 16:31:59 -0700 (PDT)
-Message-Id: <20100327.163159.102547305.davem@davemloft.net>
-To: rob@landley.net
-Cc: blauwirbel@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: Commit 085219f79cad broke Sparc-32 back in 2.6.28.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201003270244.17865.rob@landley.net>
-References: <201003262235.48736.rob@landley.net>
-	<20100326.203745.04177541.davem@davemloft.net>
-	<201003270244.17865.rob@landley.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Mar 2010 19:37:41 -0400
+Date: Sat, 27 Mar 2010 16:36:30 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Yury Polyanskiy <ypolyans@princeton.edu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       john stultz <johnstul@us.ibm.com>, Jan Glauber <jan.glauber@de.ibm.com>
+Subject: Re: [PATCH] hangcheck-timer is broken on x86
+Message-ID: <20100327233630.GB1810@mail.oracle.com>
+Mail-Followup-To: Yury Polyanskiy <ypolyans@princeton.edu>,
+	linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+	john stultz <johnstul@us.ibm.com>,
+	Jan Glauber <jan.glauber@de.ibm.com>
+References: <20100323233611.6dcbe4f4@penta.localdomain>
+ <20100326214648.GF9984@mail.oracle.com>
+ <20100326180025.052d930f@penta.localdomain>
+ <20100327005710.GA31009@mail.oracle.com>
+ <20100326220259.702859e9@penta.localdomain>
+ <20100327220355.GA1810@mail.oracle.com>
+ <ea182b21003271551k10d0ef1oa0757ba921f1870f@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <ea182b21003271551k10d0ef1oa0757ba921f1870f@mail.gmail.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4BAE9699.00B9:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Landley <rob@landley.net>
-Date: Sat, 27 Mar 2010 02:44:16 -0500
-
-> On Friday 26 March 2010 22:37:45 David Miller wrote:
->> From: Rob Landley <rob@landley.net>
->> Date: Fri, 26 Mar 2010 22:35:47 -0500
->>
->> > What exactly was the problem with just saying "unsigned short" when you
->> > mean an unsigned short?  The way x86 does, and arm?  (If these ever
->> > change, it breaks binary compatability.  Not sure what these changes were
->> > trying to accomplish...)
->>
->> I was trying to use well defined types that described the
->> usage and the origin of the definition.
->>
->> I'm happy to use "unsigned short" or whatever works better.
->> Please send a patch.
+On Sat, Mar 27, 2010 at 06:51:01PM -0400, Yury Polyanskiy wrote:
+> >        It's OK to tell hangcheck-timer users that suspend is not
+> > allowed.  After all, you're running something that you don't want to see
+> > hang.
 > 
-> Sure thing:
+> Joel, what I am saying is exactly the opposite: it is totally ok to
+> suspend-resume with hangcheck-timer (jiffies are stopped and so is
+> getrawmonotonic() when system suspended).
 
-Thanks a lot Rob, applied.
+	Nope.  The point of hangcheck-timer is that it reboots should
+the system not be running for a certain amountof time.  If
+suspend-resume is allowed, a system can resume after days and think it
+wasn't more than a second.  hangcheck-timer will not know to reboot.
 
-Please supply a complete commit log message and place your signoff
-right before (instead of after) the patch next time, thanks!
+> >        Is there a clock in the system that is a true wallclock?  I'm
+> > guessing, since getrawmonotonic() is get_cycles() based, that it doesn't
+> > provide accurate time in the face of cpufreq changes.  Is that true?
+> 
+> Of course, getrawmonotonic accounts for cpufreq changes (see
+> arch/x86/kernel/tsc.c:time_cpufreq_notifier()).
+
+	Excellent!  That's a definite improvement over raw get_cycles().
+
+Joel
+
+-- 
+
+Life's Little Instruction Book #182
+
+	"Be romantic."
+
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
