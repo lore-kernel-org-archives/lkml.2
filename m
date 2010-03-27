@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753677Ab0C0RCg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 13:02:36 -0400
-Received: from chrocht.moloch.sk ([62.176.169.44]:39876 "EHLO mail.moloch.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753597Ab0C0RCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 13:02:35 -0400
-X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Mar 2010 13:02:35 EDT
-Message-ID: <4BAE382D.7090903@250bpm.com>
-Date: Sat, 27 Mar 2010 17:54:05 +0100
-From: Martin Sustrik <sustrik@250bpm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-       David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Add PGM protocol support to the IP stack
-References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home> <877hp4i76d.fsf@basil.now <20100327131138.GD20695@one.firstfloor.org>
-In-Reply-To: <20100327131138.GD20695@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753734Ab0C0RTI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 13:19:08 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:48822 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab0C0RTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 13:19:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=jS4Ts8GfpdFdo1iijzjdsO07h8biugkL9ote6Y+Kkt8yotUNE6G1ejrUR5jhhIXVXh
+         ETVokE+s/srjHKb5Uji8Rc0iwKZU2Y+coDAulAAYo4zXXa8Ha/5M1JInmzeiebf6Hfpf
+         PgEu0SftsbWdm6BB4yzginn5Z/jik4QFd753k=
+Date: Sat, 27 Mar 2010 14:21:00 -0400
+From: Michael Gilbert <michael.s.gilbert@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: CVE-2009-4537
+Message-Id: <20100327142100.38d21565.michael.s.gilbert@gmail.com>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andi Kleen wrote:
+Hi,
 
-> I did a quick read and the manpage/interface seem reasonable to me.
+CVE-2009-4537 has been disclosed without any upstream activity for a
+while now. Discussion about the issue dried up in January [0], and a
+patch had been proposed [1], but no arguments were seen either for or
+against it. Note that redhat has already shipped that in their various
+kernel security updates.  Would it make sense to merge those changes
+officially?
 
-You may also have a look at original PGM implementation by Luigi Rizzo 
-(FreeBSD). It's not maintained, but it might give you broader view.
+Best wishes,
+Mike
 
-http://info.iet.unipi.it/~luigi/pgm-code/
-
-Martin
+[0] http://marc.info/?t=126202986900002&r=1&w=2
+[1] http://marc.info/?l=linux-netdev&m=126210110408898&w=2
