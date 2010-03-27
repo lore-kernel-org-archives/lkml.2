@@ -1,382 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab0C0AVG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 20:21:06 -0400
-Received: from mga14.intel.com ([143.182.124.37]:35480 "EHLO mga14.intel.com"
+	id S1753303Ab0C0AVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 20:21:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32925 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752077Ab0C0AVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 20:21:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,317,1267430400"; 
-   d="scan'208";a="259307177"
-Subject: Re: [PATCH 2/2] DMAENGINE: generic channel status v2
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Sosnowski, Maciej" <maciej.sosnowski@intel.com>,
-       Nicolas Ferre <nicolas.ferre@atmel.com>, Pavel Machek <pavel@ucw.cz>,
-       Li Yang <leoli@freescale.com>, Paul Mundt <lethal@linux-sh.org>,
-       Ralf Baechle <ralf@linux-mips.org>,
-       Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
-       Magnus Damm <damm@opensource.se>, Liam Girdwood <lrg@slimlogic.co.uk>,
-       Joe Perches <joe@perches.com>, Roland Dreier <rdreier@cisco.com>,
-       Richard =?ISO-8859-1?Q?R=F6jfors?= 
-	<richard.rojfors@pelagicore.com>,
-       "Steven J. Magnani" <steve@digidescorp.com>
-In-Reply-To: <1269613211-12673-1-git-send-email-linus.walleij@stericsson.com>
-References: <1269613211-12673-1-git-send-email-linus.walleij@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 26 Mar 2010 17:17:19 -0700
-Message-ID: <1269649039.23499.15.camel@dwillia2-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1753056Ab0C0AVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 20:21:10 -0400
+Date: Fri, 26 Mar 2010 20:20:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Chad Talbott <ctalbott@google.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jens.axboe@oracle.com,
+       mrubin@google.com, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-kernel@vger.kernel.org, dpshah@google.com,
+       Nauman Rafique <nauman@google.com>
+Subject: Re: [PATCH 0/4] io-controller: Use names rather than major:minor
+Message-ID: <20100327002056.GA9280@redhat.com>
+References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com> <4BAC0E7D.9080305@cn.fujitsu.com> <20100326152012.GB18128@redhat.com> <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-03-26 at 07:20 -0700, Linus Walleij wrote:
-> Convert the device_is_tx_complete() operation on the
-> DMA engine to a generic device_tx_status()operation which
-> can return three states, DMA_TX_RUNNING, DMA_TX_COMPLETE,
-> DMA_TX_PAUSED.
+On Fri, Mar 26, 2010 at 03:54:40PM -0700, Chad Talbott wrote:
+> On Fri, Mar 26, 2010 at 8:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Fri, Mar 26, 2010 at 09:31:41AM +0800, Gui Jianfeng wrote:
+> >> +int blk_lookup_devname(dev_t devt, char *name)
+> >> +{
+> 
+> [ snip... loop through all block devices for devt ...snip ]
+> 
+> >> So we can keep dev_t in blkio layer, and export to user a device name by calling
+> >> this function. Also, we retrive device number by calling blk_lookup_devt().
+> >> This change might keep things much simple. Jens, do you have any thoughts?
+> >>
+> > I agree with Gui that lets keep the dev_t the core in blkio layer. Keeping
+> > a pointer to gendisk in request queue is becoming little messy.
+> 
+> Agreed on leaving gendisk pointer out of request_queue.  In doing
+> further investigation, I've found that it's up to the driver to
+> maintain the association between gendisk and request_queue, and some
+> drivers put multiple gendisk behind a single request_queue, so the
+> back pointer would be ill-specified.
+> 
+> > But if that does not work for you, then I would also like to keep things
+> > simple and translate dev_t to diskname during read routine. Similiarly,
+> > while somebody is putting policy, use blk_lookup_devt().
+> 
+> I like the simplicity of blk_lookup_devt(), but I don't like the idea
+> of iterating through all block devices on every lookup of the name.
+> Perhaps we could cache the name somewhere?
+
+Setting up the policies is not a fast path. So iterating through
+devices probably is not a bad idea. Caching infact will make it more
+complicated.
+
+It is no different than than /proc/diskstat which is also iterating
+through all the devices.
+
+In fact blk_lookup_devt() is also doing the same thing, iterating
+through all the block_class devices.
+
+> 
+> Actually, the name is the name of the *queue* (or the key in
+> blk-cgroup), because as I mentioned above there can be a many to one
+> relationship between disks and queues in general.
 > 
 
-Ok, this one and the previous both look good to me.  I fixed them up for
-the new timberdale driver, and added the patch below.  They pass
-build_dma.sh without issue, so I'll get them pushed out to my next
-branch.
+What is the significance of one queue serving to multiple gendisk
+structures. How this relationship is handled in /sys/block?
 
-Sidenote: one thing I notice via this exercise is that not every driver
-is triggering a descriptor cleanup in their device_tx_status()
-implementation.  It's really only needed for the drivers that will
-service requests from the async_tx api (now the minority), but something
-to keep in mind.  In some cases async_tx polls for completion on
-descriptor allocation failure, so either ->device_tx_status() or
-->device_prep* needs to run descriptor reclaim.
+> The more I think about it, the more it seems to make sense to extend
+> blkio_policy_ops to include a function to get the name of the key.
+> blk-cgroup makes no current use of the dev, except to invent a name
+> for the request_queue whose policy is being set or printed.  It could
+> be argued that the thing being scheduled has a better idea of the name
+> of that thing.
 
-Thanks,
-Dan
+request_queue is something internal to block layer. To a user, block
+deivce will make sense (device file, major:minor, and sysfs disk name).
+So keeping a name for request queue also and implmeneting a function
+in blkio_policy_ops to retrieve that name, does not make much sense
+to me.
+  
+> 
+> > But this will lead to issue of how do you now display both device number
+> > and disk name in the output. May be following.
+> >
+> > major:minor  diskname  data
+> >
+> > I am not sure if people are fond of multiple values in a single file. At
+> > the same time for setting the rules or deleting the rules, it will make
+> > syntax complicated/confusing. Also will require breaking ABI for existing
+> > blkio.time, blkio.sectors, blkio.dequeue files.
+> 
+> I don't like this, either.  It breaks ABI and is more confusing for users.
+> 
+> > So I would prefer to keep the major/minor number based interface for
+> > follwing reasons.
+> >
+> > - Chaning it now breaks ABI.
+> > - Other cgroup controller "device" is also using major/minor number based
+> >  interface for device access policy. So it is consistent with other
+> >  controller.
+> 
+> Which controllers are these?
+> 
 
----
+linux-2.6/Documentation/cgroups/devices.txt
 
-dmaengine: provide helper for setting txstate
+> > - Displaying both device major/minor and diskname is an option but that
+> >  makes the file format syntax little complicated and new rule setting
+> >  or removoal confusing.
+> 
+> A few messages back you mentioned that you preferred device names
+> because they would be better for users of the system.  If there was a
+> simple implementation, would you still be behind a new name-based
+> interface?  We could go that direction and maintain ABI by deprecating
+> current interface and making a new interface with names.
+> 
+> If you can't tell, I'm a big fan of using the name! :)  It's *much*
+> more consistent with the interfaces in /sys.
 
-From: Dan Williams <dan.j.williams@intel.com>
+/sys provides facility to access device both through device number
+(/sys/dev/block/<major:minor>) and disk name (/sys/block/<diskname>). So
+I don't know why do you think it is more consistent with /sys if we
+use diskname.
 
-Simple conditional struct filler to cut out some duplicated code.
+In general user space seems to be accessing devices using device files.
+For example, blockdev utility. These device file inodes in turn store
+major/minor number of device and then get to respective gendisk object.
 
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
----
+I think one advantage of major:minor number scheme is that it is simple
+and there is no confusion. For example, looks like device mapper layer
+can create multiple device files for same disk. On my system, multipath target
+has created /dev/mapper/mpathe and also /dev/dm-3 which is referring to
+same device. /sys/block has dm-3 created under it.
 
- drivers/dma/at_hdmac.c      |    7 +------
- drivers/dma/coh901318.c     |    8 ++------
- drivers/dma/dw_dmac.c       |    6 +-----
- drivers/dma/fsldma.c        |    6 +-----
- drivers/dma/ioat/dma.h      |    6 +-----
- drivers/dma/iop-adma.c      |   15 ++-------------
- drivers/dma/ipu/ipu_idmac.c |    6 +-----
- drivers/dma/mpc512x_dma.c   |    7 +------
- drivers/dma/mv_xor.c        |   13 ++-----------
- drivers/dma/ppc4xx/adma.c   |   12 ++----------
- drivers/dma/shdma.c         |    7 +------
- drivers/dma/timb_dma.c      |    6 +-----
- drivers/dma/txx9dmac.c      |    6 +-----
- include/linux/dmaengine.h   |   10 ++++++++++
- 14 files changed, 27 insertions(+), 88 deletions(-)
+brw-rw---- 1 root disk 253, 3 2010-03-25 22:57 /dev/mapper/mpathe
+brw-rw---- 1 root disk 253, 3 2010-03-25 22:57 /dev/dm-3
 
+Now lets somebody is accessing the device using /dev/mapper/mpathe, he
+can easily extract the major:minor of this device and see if there is
+any rule for that device. If we keep rules in disk name, then application
+shall have to go through the all the /sys/block/diskname entries and
+first figure out diskname and then grep for that disk name in rules.
 
-diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-index ff75cf1..93ed99c 100644
---- a/drivers/dma/at_hdmac.c
-+++ b/drivers/dma/at_hdmac.c
-@@ -834,12 +834,7 @@ atc_tx_status(struct dma_chan *chan,
- 
- 	spin_unlock_bh(&atchan->lock);
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
--
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 	dev_vdbg(chan2dev(chan), "tx_status: %d (d%d, u%d)\n",
- 		 cookie, last_complete ? last_complete : 0,
- 		 last_used ? last_used : 0);
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 309db3b..4233440 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1147,12 +1147,8 @@ coh901318_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
- 
- 	ret = dma_async_is_complete(cookie, last_complete, last_used);
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = coh901318_get_bytes_left(chan);
--	}
--
-+	dma_set_tx_state(txstate, last_complete, last_used,
-+			 coh901318_get_bytes_left(chan));
- 	if (ret == DMA_IN_PROGRESS && cohc->stopped)
- 		ret = DMA_PAUSED;
- 
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index 263b70e..18fb5b4 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -841,11 +841,7 @@ dwc_tx_status(struct dma_chan *chan,
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	}
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return ret;
- }
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index ca5e8a3..cb1924f 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -987,11 +987,7 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
- 	last_used = dchan->cookie;
- 	last_complete = chan->completed_cookie;
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 2339967..26f48ef 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -158,11 +158,7 @@ ioat_tx_status(struct dma_chan *c, dma_cookie_t cookie,
- 	last_used = c->cookie;
- 	last_complete = chan->completed_cookie;
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
-diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
-index ee40dbb..e5d4b97 100644
---- a/drivers/dma/iop-adma.c
-+++ b/drivers/dma/iop-adma.c
-@@ -909,13 +909,7 @@ static enum dma_status iop_adma_status(struct dma_chan *chan,
- 
- 	last_used = chan->cookie;
- 	last_complete = iop_chan->completed_cookie;
--
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
--
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 	ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	if (ret == DMA_SUCCESS)
- 		return ret;
-@@ -924,12 +918,7 @@ static enum dma_status iop_adma_status(struct dma_chan *chan,
- 
- 	last_used = chan->cookie;
- 	last_complete = iop_chan->completed_cookie;
--
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
-diff --git a/drivers/dma/ipu/ipu_idmac.c b/drivers/dma/ipu/ipu_idmac.c
-index b9cef8b..246a614 100644
---- a/drivers/dma/ipu/ipu_idmac.c
-+++ b/drivers/dma/ipu/ipu_idmac.c
-@@ -1651,11 +1651,7 @@ static enum dma_status idmac_tx_status(struct dma_chan *chan,
- {
- 	struct idmac_channel *ichan = to_idmac_chan(chan);
- 
--	if (txstate) {
--		txstate->last = ichan->completed;
--		txstate->used = chan->cookie;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, ichan->completed, chan->cookie, 0);
- 	if (cookie != chan->cookie)
- 		return DMA_ERROR;
- 	return DMA_SUCCESS;
-diff --git a/drivers/dma/mpc512x_dma.c b/drivers/dma/mpc512x_dma.c
-index cb3a8e9..7a750b9 100644
---- a/drivers/dma/mpc512x_dma.c
-+++ b/drivers/dma/mpc512x_dma.c
-@@ -553,12 +553,7 @@ mpc_dma_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
- 	last_complete = mchan->completed_cookie;
- 	spin_unlock_irqrestore(&mchan->lock, flags);
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
--
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
- 
-diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
-index 79fb1de..4b8c1fc 100644
---- a/drivers/dma/mv_xor.c
-+++ b/drivers/dma/mv_xor.c
-@@ -826,11 +826,7 @@ static enum dma_status mv_xor_status(struct dma_chan *chan,
- 	last_used = chan->cookie;
- 	last_complete = mv_chan->completed_cookie;
- 	mv_chan->is_complete_cookie = cookie;
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	if (ret == DMA_SUCCESS) {
-@@ -842,12 +838,7 @@ static enum dma_status mv_xor_status(struct dma_chan *chan,
- 	last_used = chan->cookie;
- 	last_complete = mv_chan->completed_cookie;
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
--
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
- 
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index d9a54c0..5558419 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -3951,11 +3951,7 @@ static enum dma_status ppc440spe_adma_tx_status(struct dma_chan *chan,
- 	last_used = chan->cookie;
- 	last_complete = ppc440spe_chan->completed_cookie;
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	if (ret == DMA_SUCCESS)
-@@ -3966,11 +3962,7 @@ static enum dma_status ppc440spe_adma_tx_status(struct dma_chan *chan,
- 	last_used = chan->cookie;
- 	last_complete = ppc440spe_chan->completed_cookie;
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return dma_async_is_complete(cookie, last_complete, last_used);
- }
-diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-index 8aeda9c..98f82cd 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/shdma.c
-@@ -752,12 +752,7 @@ static enum dma_status sh_dmae_tx_status(struct dma_chan *chan,
- 	last_used = chan->cookie;
- 	last_complete = sh_chan->completed_cookie;
- 	BUG_ON(last_complete < 0);
--
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	spin_lock_bh(&sh_chan->desc_lock);
- 
-diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
-index 8fc2881..e20d5c1 100644
---- a/drivers/dma/timb_dma.c
-+++ b/drivers/dma/timb_dma.c
-@@ -527,11 +527,7 @@ static enum dma_status td_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
- 
- 	ret = dma_async_is_complete(cookie, last_complete, last_used);
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	dev_dbg(chan2dev(chan),
- 		"%s: exit, ret: %d, last_complete: %d, last_used: %d\n",
-diff --git a/drivers/dma/txx9dmac.c b/drivers/dma/txx9dmac.c
-index a44e422..e523737 100644
---- a/drivers/dma/txx9dmac.c
-+++ b/drivers/dma/txx9dmac.c
-@@ -990,11 +990,7 @@ txx9dmac_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
- 		ret = dma_async_is_complete(cookie, last_complete, last_used);
- 	}
- 
--	if (txstate) {
--		txstate->last = last_complete;
--		txstate->used = last_used;
--		txstate->residue = 0;
--	}
-+	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 
- 	return ret;
- }
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 55b08e8..50b7b3e 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -628,6 +628,16 @@ static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
- 	return DMA_IN_PROGRESS;
- }
- 
-+static inline void
-+dma_set_tx_state(struct dma_tx_state *st, dma_cookie_t last, dma_cookie_t used, u32 residue)
-+{
-+	if (st) {
-+		st->last = last;
-+		st->used = used;
-+		st->residue = residue;
-+	}
-+}
-+
- enum dma_status dma_sync_wait(struct dma_chan *chan, dma_cookie_t cookie);
- #ifdef CONFIG_DMA_ENGINE
- enum dma_status dma_wait_for_async_tx(struct dma_async_tx_descriptor *tx);
+So in case of multiple device files for same disk, I think retrieving
+major/minor and then doing lookup in rules file is easier. Keeping rules
+in terms of disk names is more intutive in the case of single device
+file and diskname being same as device file (/dev/sda). 
 
-
-
+So because major:minor number scheme is simple, does not break ABI, is
+consistent with "devices" cgroup controller, works well in case of
+multiple device files for same disk, I kind of like it and wouldn't
+mind continuing with it.
+  
+Thanks
+Vivek
