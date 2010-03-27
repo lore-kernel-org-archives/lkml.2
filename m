@@ -1,83 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752317Ab0C0CEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 22:04:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:54728 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751981Ab0C0CEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 22:04:11 -0400
-Date: Sat, 27 Mar 2010 02:03:57 GMT
-From: tip-bot for Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       rostedt@goodmis.org, a.p.zijlstra@chello.nl, lizf@cn.fujitsu.com,
-       tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       lizf@cn.fujitsu.com, a.p.zijlstra@chello.nl, rostedt@goodmis.org,
-       tglx@linutronix.de
-In-Reply-To: <4BA97FA1.7030606@cn.fujitsu.com>
-References: <4BA97FA1.7030606@cn.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:tracing/urgent] tracing: Fix lockdep warning in global_clock()
-Message-ID: <tip-581fe9449d181f6bd5afc5dcae37526eeee02b1d@git.kernel.org>
-Git-Commit-ID: 581fe9449d181f6bd5afc5dcae37526eeee02b1d
-X-Mailer: tip-git-log-daemon
+	id S1752245Ab0C0CHd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 22:07:33 -0400
+Received: from mail-yw0-f172.google.com ([209.85.211.172]:58011 "EHLO
+	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751598Ab0C0CHc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 22:07:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=hyTpAssDJ13odrZtvwUZmjdVBdGV9YMnY4QAuj/8aQhkr8T6m6byjpe1bvEvyoCK1x
+         +9vkEJsJ9LJhE7IxLPodT5Rqxu9NSMUdJgQxT49+EKk3zsC8wNmEuuiROwW9IqRLkPZc
+         D5ldiZImoi1yAIOdAJf9ndnMlKVAWwBd/KOXE=
 MIME-Version: 1.0
+In-Reply-To: <84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com>
+References: <20100326223530.GA11817@xpc.home> <1269643470.2256.17.camel@edumazet-laptop> 
+	<84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com>
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Fri, 26 Mar 2010 19:07:11 -0700
+Message-ID: <a36005b51003261907x7ebe057bt2d541f63f20f632b@mail.gmail.com>
+Subject: Re: [PATCH] Add MSG_WAITFORONE flag to recvmmsg
+To: Brandon Black <blblack@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+       "David S. Miller" <davem@davemloft.net>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 27 Mar 2010 02:03:58 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  581fe9449d181f6bd5afc5dcae37526eeee02b1d
-Gitweb:     http://git.kernel.org/tip/581fe9449d181f6bd5afc5dcae37526eeee02b1d
-Author:     Li Zefan <lizf@cn.fujitsu.com>
-AuthorDate: Wed, 24 Mar 2010 10:57:37 +0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 26 Mar 2010 15:41:59 -0400
+On Fri, Mar 26, 2010 at 15:55, Brandon Black <blblack@gmail.com> wrote:
+> Ok.  I've never been through this process before.  Do I resubmit a new
+> subject/thread with the changed patch and [PATCH v2] at this point?
 
-tracing: Fix lockdep warning in global_clock()
-
-# echo 1 > events/enable
- # echo global > trace_clock
-
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:3162 check_flags+0xb2/0x190()
-...
----[ end trace 3f86734a89416623 ]---
-possible reason: unannotated irqs-on.
-...
-
-There's no reason to use the raw_local_irq_save() in trace_clock_global.
-The local_irq_save() version is fine, and does not cause the bug in lockdep.
-
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BA97FA1.7030606@cn.fujitsu.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_clock.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 6fbfb8f..9d589d8 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -84,7 +84,7 @@ u64 notrace trace_clock_global(void)
- 	int this_cpu;
- 	u64 now;
- 
--	raw_local_irq_save(flags);
-+	local_irq_save(flags);
- 
- 	this_cpu = raw_smp_processor_id();
- 	now = cpu_clock(this_cpu);
-@@ -110,7 +110,7 @@ u64 notrace trace_clock_global(void)
- 	arch_spin_unlock(&trace_clock_struct.lock);
- 
-  out:
--	raw_local_irq_restore(flags);
-+	local_irq_restore(flags);
- 
- 	return now;
- }
+The patch is small enough for this to be OK.
