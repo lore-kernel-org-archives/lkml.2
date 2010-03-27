@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0C0RTI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 13:19:08 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:48822 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab0C0RTG (ORCPT
+	id S1753772Ab0C0Rca (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 13:32:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58486 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab0C0Rc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 13:19:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=jS4Ts8GfpdFdo1iijzjdsO07h8biugkL9ote6Y+Kkt8yotUNE6G1ejrUR5jhhIXVXh
-         ETVokE+s/srjHKb5Uji8Rc0iwKZU2Y+coDAulAAYo4zXXa8Ha/5M1JInmzeiebf6Hfpf
-         PgEu0SftsbWdm6BB4yzginn5Z/jik4QFd753k=
-Date: Sat, 27 Mar 2010 14:21:00 -0400
-From: Michael Gilbert <michael.s.gilbert@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: CVE-2009-4537
-Message-Id: <20100327142100.38d21565.michael.s.gilbert@gmail.com>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Mar 2010 13:32:29 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/2] perf tools: Use -o $(BITBUCKET) in one more case
+Date: Sat, 27 Mar 2010 14:32:12 -0300
+Message-Id: <1269711133-7743-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-CVE-2009-4537 has been disclosed without any upstream activity for a
-while now. Discussion about the issue dried up in January [0], and a
-patch had been proposed [1], but no arguments were seen either for or
-against it. Note that redhat has already shipped that in their various
-kernel security updates.  Would it make sense to merge those changes
-officially?
+As described in 1703f2c some gcc versions has issues using /dev/null, so
+use the mechanism used elsewhere.
 
-Best wishes,
-Mike
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[0] http://marc.info/?t=126202986900002&r=1&w=2
-[1] http://marc.info/?l=linux-netdev&m=126210110408898&w=2
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index b474641..0d36c8c 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -541,7 +541,7 @@ PYTHON_EMBED_LDOPTS = `python-config --ldflags 2>/dev/null`
+ PYTHON_EMBED_CCOPTS = `python-config --cflags 2>/dev/null`
+ endif
+ 
+-ifneq ($(shell sh -c "(echo '\#include <Python.h>'; echo 'int main(void) { Py_Initialize(); return 0; }') | $(CC) -x c - $(PYTHON_EMBED_CCOPTS) -o /dev/null $(PYTHON_EMBED_LDOPTS) > /dev/null 2>&1 && echo y"), y)
++ifneq ($(shell sh -c "(echo '\#include <Python.h>'; echo 'int main(void) { Py_Initialize(); return 0; }') | $(CC) -x c - $(PYTHON_EMBED_CCOPTS) -o $(BITBUCKET) $(PYTHON_EMBED_LDOPTS) > /dev/null 2>&1 && echo y"), y)
+ 	BASIC_CFLAGS += -DNO_LIBPYTHON
+ else
+ 	ALL_LDFLAGS += $(PYTHON_EMBED_LDOPTS)
+-- 
+1.6.2.5
+
