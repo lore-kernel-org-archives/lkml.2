@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab0C0Bt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 21:49:59 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:53567 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752087Ab0C0Btu (ORCPT
+	id S1752351Ab0C0BuG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 21:50:06 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:33801 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752028Ab0C0BuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 21:49:50 -0400
+	Fri, 26 Mar 2010 21:50:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=s85Me39nn/ENeKwrEcZuY2ByBElx5rw5l0CGpa4C8Ld4wRbJtoZYygg+FB0koK1ITq
-         UAtTSq4kY5p059CU6fah0NxvV/vugObDBKB5jUFWNxFKfgYLIvJQUFk97fKYqFBeNcKM
-         o9+GLQsfe85Q0MSnw+9rE46tjNXF98K8dM59Y=
+        b=WCUjLq2a6HM78SWciJfa4w8BZh6rV4JIQDQusaAzQoGevQr+5wQh17rkkJIqt6oBn0
+         9pZ01+pP8aeVQLv3B5QR5T2irYSl/sO1/TANPo88+I7EL9vsjN3yArkF0CTSsgL9EoyR
+         2J0bGIWniDFBnYcE5jYHieX5FaXP5CB8xBcHU=
 From: Jason Wong <tsanghan@gmail.com>
 To: gregkh@suse.de
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        Jason Wong <tsanghan@gmail.com>
-Subject: [PATCH 5/9] Staging: comedi: adv_pci1710: fixed multiple brace coding style issue
-Date: Sat, 27 Mar 2010 09:48:39 +0800
-Message-Id: <1269654523-2682-6-git-send-email-tsanghan@gmail.com>
+Subject: [PATCH 8/9] Staging: comedi: cb_pcidas64: fixed multiple brace coding style issue
+Date: Sat, 27 Mar 2010 09:48:42 +0800
+Message-Id: <1269654523-2682-9-git-send-email-tsanghan@gmail.com>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <Jason Wong <tsanghan@gmail.com>
 References: <Jason Wong <tsanghan@gmail.com>
@@ -31,69 +31,133 @@ Fixed multiple coding style issue.
 
 Signed-off-by: Jason Wong <tsanghan@gmail.com>
 ---
- drivers/staging/comedi/drivers/adv_pci1710.c |   22 +++++++++++-----------
- 1 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/staging/comedi/drivers/cb_pcidas64.c |   40 +++++++++++++-------------
+ 1 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/adv_pci1710.c b/drivers/staging/comedi/drivers/adv_pci1710.c
-index 394d2ea..f5bb286 100644
---- a/drivers/staging/comedi/drivers/adv_pci1710.c
-+++ b/drivers/staging/comedi/drivers/adv_pci1710.c
-@@ -657,9 +657,9 @@ static void interrupt_pci1710_every_sample(void *d)
- #endif
- 		++s->async->cur_chan;
- 
--		if (s->async->cur_chan >= devpriv->ai_n_chan) {
-+		if (s->async->cur_chan >= devpriv->ai_n_chan)
- 			s->async->cur_chan = 0;
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index 82295e0..1d43d0d 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -1621,9 +1621,9 @@ int alloc_and_init_dma_members(struct comedi_device *dev)
+ 		priv(dev)->ai_buffer[i] =
+ 		    pci_alloc_consistent(priv(dev)->hw_dev, DMA_BUFFER_SIZE,
+ 					 &priv(dev)->ai_buffer_bus_addr[i]);
+-		if (priv(dev)->ai_buffer[i] == NULL) {
++		if (priv(dev)->ai_buffer[i] == NULL)
+ 			return -ENOMEM;
 -		}
 +
- 
- 		if (s->async->cur_chan == 0) {	/*  one scan done */
- 			devpriv->ai_act_scan++;
-@@ -863,12 +863,12 @@ static int pci171x_ai_docmd_and_mode(int mode, struct comedi_device *dev,
- 		devpriv->ai_eos = 0;
  	}
- 
--	if ((devpriv->ai_scans == 0) || (devpriv->ai_scans == -1)) {
-+	if ((devpriv->ai_scans == 0) || (devpriv->ai_scans == -1))
- 		devpriv->neverending_ai = 1;
--	} /* well, user want neverending */
--	else {
-+	/* well, user want neverending */
-+	else
- 		devpriv->neverending_ai = 0;
--	}
-+
- 	switch (mode) {
- 	case 1:
- 	case 2:
-@@ -1109,11 +1109,11 @@ static int pci171x_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
- 	devpriv->ai_timer1 = 0;
- 	devpriv->ai_timer2 = 0;
- 
--	if (cmd->stop_src == TRIG_COUNT) {
-+	if (cmd->stop_src == TRIG_COUNT)
- 		devpriv->ai_scans = cmd->stop_arg;
--	} else {
-+	else
- 		devpriv->ai_scans = 0;
--	}
-+
- 
- 	if (cmd->scan_begin_src == TRIG_FOLLOW) {	/*  mode 1, 2, 3 */
- 		if (cmd->convert_src == TRIG_TIMER) {	/*  mode 1 and 2 */
-@@ -1593,9 +1593,9 @@ static int pci1710_detach(struct comedi_device *dev)
- 		if (dev->irq)
- 			free_irq(dev->irq, dev);
- 		if (devpriv->pcidev) {
--			if (dev->iobase) {
-+			if (dev->iobase)
- 				comedi_pci_disable(devpriv->pcidev);
+ 	for (i = 0; i < AO_DMA_RING_COUNT; i++) {
+ 		if (ao_cmd_is_supported(board(dev))) {
+@@ -1632,9 +1632,9 @@ int alloc_and_init_dma_members(struct comedi_device *dev)
+ 						 DMA_BUFFER_SIZE,
+ 						 &priv(dev)->
+ 						 ao_buffer_bus_addr[i]);
+-			if (priv(dev)->ao_buffer[i] == NULL) {
++			if (priv(dev)->ao_buffer[i] == NULL)
+ 				return -ENOMEM;
 -			}
 +
- 			pci_dev_put(devpriv->pcidev);
  		}
  	}
+ 	/*  allocate dma descriptors */
+@@ -1643,9 +1643,9 @@ int alloc_and_init_dma_members(struct comedi_device *dev)
+ 				 sizeof(struct plx_dma_desc) *
+ 				 ai_dma_ring_count(board(dev)),
+ 				 &priv(dev)->ai_dma_desc_bus_addr);
+-	if (priv(dev)->ai_dma_desc == NULL) {
++	if (priv(dev)->ai_dma_desc == NULL)
+ 		return -ENOMEM;
+-	}
++
+ 	DEBUG_PRINT("ai dma descriptors start at bus addr 0x%x\n",
+ 		    priv(dev)->ai_dma_desc_bus_addr);
+ 	if (ao_cmd_is_supported(board(dev))) {
+@@ -1654,9 +1654,9 @@ int alloc_and_init_dma_members(struct comedi_device *dev)
+ 					 sizeof(struct plx_dma_desc) *
+ 					 AO_DMA_RING_COUNT,
+ 					 &priv(dev)->ao_dma_desc_bus_addr);
+-		if (priv(dev)->ao_dma_desc == NULL) {
++		if (priv(dev)->ao_dma_desc == NULL)
+ 			return -ENOMEM;
+-		}
++
+ 		DEBUG_PRINT("ao dma descriptors start at bus addr 0x%x\n",
+ 			    priv(dev)->ao_dma_desc_bus_addr);
+ 	}
+@@ -1848,9 +1848,9 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	printk(" irq %u\n", dev->irq);
+ 
+ 	retval = setup_subdevices(dev);
+-	if (retval < 0) {
++	if (retval < 0)
+ 		return retval;
+-	}
++
+ 
+ 	return 0;
+ }
+@@ -1919,9 +1919,9 @@ static int detach(struct comedi_device *dev)
+ 						    priv(dev)->ao_dma_desc,
+ 						    priv(dev)->
+ 						    ao_dma_desc_bus_addr);
+-			if (priv(dev)->main_phys_iobase) {
++			if (priv(dev)->main_phys_iobase)
+ 				comedi_pci_disable(priv(dev)->hw_dev);
+-			}
++	
+ 			pci_dev_put(priv(dev)->hw_dev);
+ 		}
+ 	}
+@@ -2902,9 +2902,9 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
+ 		if (cmd->stop_src == TRIG_COUNT) {
+ 			if (priv(dev)->ai_count == 0)
+ 				break;
+-			if (num_samples > priv(dev)->ai_count) {
++			if (num_samples > priv(dev)->ai_count)
+ 				num_samples = priv(dev)->ai_count;
+-			}
++
+ 			priv(dev)->ai_count -= num_samples;
+ 		}
+ 
+@@ -2943,9 +2943,9 @@ static void pio_drain_ai_fifo_32(struct comedi_device *dev)
+ 	    readw(priv(dev)->main_iobase + ADC_READ_PNTR_REG) & 0x7fff;
+ 
+ 	if (cmd->stop_src == TRIG_COUNT) {
+-		if (max_transfer > priv(dev)->ai_count) {
++		if (max_transfer > priv(dev)->ai_count)
+ 			max_transfer = priv(dev)->ai_count;
+-		}
++
+ 	}
+ 	for (i = 0; read_code != write_code && i < max_transfer;) {
+ 		fifo_data = readl(priv(dev)->dio_counter_iobase + ADC_FIFO_REG);
+@@ -2964,9 +2964,9 @@ static void pio_drain_ai_fifo_32(struct comedi_device *dev)
+ /* empty fifo */
+ static void pio_drain_ai_fifo(struct comedi_device *dev)
+ {
+-	if (board(dev)->layout == LAYOUT_4020) {
++	if (board(dev)->layout == LAYOUT_4020)
+ 		pio_drain_ai_fifo_32(dev);
+-	} else
++	else
+ 		pio_drain_ai_fifo_16(dev);
+ }
+ 
+@@ -3038,9 +3038,9 @@ void handle_ai_interrupt(struct comedi_device *dev, unsigned short status,
+ 		       priv(dev)->plx9080_iobase + PLX_DMA1_CS_REG);
+ 		DEBUG_PRINT("dma1 status 0x%x\n", dma1_status);
+ 
+-		if (dma1_status & PLX_DMA_EN_BIT) {
++		if (dma1_status & PLX_DMA_EN_BIT)
+ 			drain_dma_buffers(dev, 1);
+-		}
++
+ 		DEBUG_PRINT(" cleared dma ch1 interrupt\n");
+ 	}
+ 	spin_unlock_irqrestore(&dev->spinlock, flags);
 -- 
 1.7.0.3
 
