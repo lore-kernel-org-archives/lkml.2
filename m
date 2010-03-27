@@ -1,51 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753998Ab0C0VRb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 17:17:31 -0400
-Received: from web82701.mail.mud.yahoo.com ([68.142.201.82]:31769 "HELO
-	web82701.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751235Ab0C0VRa (ORCPT
+	id S1754014Ab0C0VbW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 17:31:22 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:34847 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab0C0VbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 17:17:30 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=00LL3hfObDjOJvcFOPyEnKJSKhwn8xdow0tmpwYsCv2wmXtSTfFJUKxFc3jZ9E8ii52NdJYJ4dy3gym3G5FU6DM4oWrCXFSv8lrZD1dEB/TJbNMu3WUgQP1wtWtW9Vefz/29d+/Wd3sc75C/IdcVlSOFbWbMOenHqJEdnk5IJlg=;
-Message-ID: <757983.94500.qm@web82701.mail.mud.yahoo.com>
-X-YMail-OSG: aipNxvMVM1m1finRfIN8G_PhxzT.X4mNQo88EoaLyN6v9Dc
- TSJ0RK.FXkfk4MxOsvkqUlWgiiEWFBbJr9JDBZqxU3g4u3AMV.EW.BBKB6hl
- EKKyRWOLJXhhDFfKH.NHh0srHfy73PGCRdOr9dTcfReuDMTnb7zyEYlplCYp
- eLnu_N6z4HMjG5thlcrNTwqjSKmt.2LplpQgISn5Q0wRpaGG9RVcTh1t40Ek
- tIDC8IeDL3TsGtLAy7_qN__g4JbZk9CBhMy6hpY_ugZeuTIpe69SemaMwtwr
- ZYYh.VHBBzlNeMuFo.ZT7g9MBvXUI2xxlK8BiVD8rOPhekXF1Jffv1DNFhjk
- vMujfjLZ3alkS9a3w5_bJyDmn1qGii7kTEzlEisniKtSd23n75hWyr37feRd
- 5NBfPW7l4QHoI46groqIwLk4icMlMOHtLw3bmKDaevB6ZpeM7s0DEMVlyccc
- p1k539QzJYkqc6L1tLilJqbxY4OOnJg9k29qowt7GzBECh8ZWyViPSkjXRnv
- DSn49fQKhjHr1WebuL4hz3FIxTzmxkGKbTCwvRIyYtItxn.e.Zw5u1MPkHgL
- sAS9_fMnnOUxewNmFsvhR13zF1.bpHaxppVkmH28oR.0pLYJKOI7Kwj3il_W
- 7vB5O7PWSA3JT_sO6ZzqeMwipxjeVVBbB2dPzkgIXdLn_0rL.ZOV2ufrSRcE
- kb0CxDduvE24eHC6sRuuMJN6k1Nf7TatE1aMPFK1TZdELrHX68EUbL0b3c4q
- rpv3_spuUpV4hQO04GSf9e8QRw2XSiLRLr3i0UZbrSIfUTCLVHnTFvCCohzi
- NQ3xKvHHrStnymNQTFXj31RoO4JORysak_Qty0SaTKt87QT2HRdEBU5uiXL.
- bXLXXWXvQ44FdvVrXtyX0PKu30qoOdnRz430XrnequNmkjrkS0TKVjrb4aZa
- XEqvo635hmhu8kf7VyBBiWSJBzE6LDAd5k96GmSdXmFG_MegjleleB8KJoGV
- yY__belra4.tTLP082QjIqwbEVCymn3Ae7wrDNtbnrt0BXcFMpqxtctA2aPA
- fpQ4qhwPg46sJMfn0FbEzVzGxolbKOj8NlxxB16U23htjWIiy7J3aIhm3imZ
- TBmsGNyky4TDOupNR0fTi5dXapWPi2UTAtcKweCmwSD1vTSj6MHRW5TrqsxF
- 4wKRcxc.UgPLDr0FhPb3XWH1j5mFjicyBugcH3R1GlXHJV_x6c73RF1UKugF
- f0o_eRFfwwFiyOIzj.po6vwXLdPuthcyh4YvCWiYQ67yg9An8egnRoGTUFEI
- jtWHcioxfzRDDTE0FO45jW30NLgv.TXipRpiOXr5490hBhYFw62DeKxk-
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Sat, 27 Mar 2010 14:17:27 -0700 (PDT)
-From: Toyota Award Office <tom-coffey@sbcglobal.net>
-Subject: You have been Awarded the sum of 750,000.00 GBP in the British Toyota 2010 Program
-To: undisclosed recipients:;
+	Sat, 27 Mar 2010 17:31:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=BZY6WMWuLKHPMJ13OZIoJ7ZRjxLvS3f7hPIgkyuRXHW+mhrQr5rKujjj+rnCaUmVDc
+         JqYbtcqkHxb8UPwqWzkg9Q1HFdyomjcgC/mHrMHgjjwyyQUADkHmETU6yHGf53+WwcNB
+         wK0oqu7fFXQ/wD9+Frg1QKfPFzF6xtN0oFYHA=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Norbert Preining <preining@logic.at>, jbarnes@virtuousgeek.org,
+       bjorn.helgaas@hp.com, airlied@linux.ie, eric@anholt.net
+Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
+Date: Sat, 27 Mar 2010 22:31:15 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+In-Reply-To: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003272231.15897.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On sobota, 27 marca 2010 o 17:11:05 Norbert Preining wrote:
+> Dear all,
+> 
+> (please Cc)
 
-Names:..
-Address:..
+[Added more CCs]
+
+Similar:
+http://marc.info/?l=linux-kernel&m=126954749618319&w=2
+
+> 
+> I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on
+>  Debian/sid: xserver-xorg: 7.5+5
+> video-intel: 2.9.1-3
+> 
+> Running D2X-xl (self compiled) (descent2 open source code) X suddenly died,
+> and after that gdm could not be restarted because after a few secs
+> it went dead again.
+> 
+> In the logs I see:
+> kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+>  elapsed... GPU hung kernel: [ 2486.341240] render error detected, EIR:
+>  0x00000000
+> kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR*
+>  i915_do_wait_request returns -5 (awaiting 113671 at 113604) kernel: [
+>  2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+>  elapsed... GPU hung kernel: [ 2486.669012] render error detected, EIR:
+>  0x00000000
+> kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR*
+>  i915_do_wait_request returns -5 (awaiting 113672 at 113604) kernel: [
+>  2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+>  elapsed... GPU hung kernel: [ 2487.524243] render error detected, EIR:
+>  0x00000000
+> kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR*
+>  i915_do_wait_request returns -5 (awaiting 113673 at 113604) kernel: [
+>  2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
+>  elapsed... GPU hung kernel: [ 2487.916175] render error detected, EIR:
+>  0x00000000
+> kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR*
+>  i915_do_wait_request returns -5 (awaiting 113674 at 113604)
+> 
+> Stopping gdm and restarting didn't help to get the graphics card back to
+>  normal.
+> 
+> If you have any ideas how to fix/track/debug that please let me know,
+> same if you need more information.
+> 
+> Best wishes
+> 
+> Norbert
+> ------------------------------------------------------------------------
+> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+> JAIST, Japan            TU Wien, Austria           Debian TeX Task Force
+> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+> ------------------------------------------------------------------------
+> HUCKNALL (vb.)
+> To crouch upwards: as in the movement of a seated person's feet and
+> legs made in order to allow a cleaner's hoover to pass beneath them.
+> 			--- Douglas Adams, The Meaning of Liff
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
