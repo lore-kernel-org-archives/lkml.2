@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753430Ab0C0O1I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 10:27:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40389 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab0C0O1F (ORCPT
+	id S1753438Ab0C0Obb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 10:31:31 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:58162 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753382Ab0C0Ob3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 10:27:05 -0400
-Date: Sat, 27 Mar 2010 11:26:58 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Brandon Black <blblack@gmail.com>
-Cc: Chris Friesen <cfriesen@nortel.com>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org
-Subject: Re: behavior of recvmmsg() on blocking sockets
-Message-ID: <20100327142658.GO3625@ghostprotocols.net>
-References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com> <4BAA4EE4.3090900@nortel.com> <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com> <4BAA69BF.3080600@nortel.com> <84621a61003241255i74282f53v3bb0111808895401@mail.gmail.com> <84621a61003270619p6b4fe81bi24bb1961aba77ffb@mail.gmail.com>
+	Sat, 27 Mar 2010 10:31:29 -0400
+Date: Sat, 27 Mar 2010 10:31:26 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
+Message-ID: <20100327143126.GA25615@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <84621a61003270619p6b4fe81bi24bb1961aba77ffb@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:28:23 up 63 days, 17:05,  3 users,  load average: 0.02, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Mar 27, 2010 at 08:19:09AM -0500, Brandon Black escreveu:
-> On Wed, Mar 24, 2010 at 2:55 PM, Brandon Black <blblack@gmail.com> wrote:
-> > On Wed, Mar 24, 2010 at 2:36 PM, Chris Friesen <cfriesen@nortel.com> wrote:
-> >> Consider the case where you want to do some other useful work in
-> >> addition to running your network server.  Every cpu cycle spent on the
-> >> network server is robbed from the other work.  In this scenario you want
-> >> to handle packets as efficiently as possible, so the timeout-based
-> >> behaviour is better since it is more likely to give you multiple packets
-> >> per syscall.
-> >
-> > That's a good point, I tend to tunnelvision on the dedicated server
-> > scenario.  I should probably have a user-level option for
-> > timeout-based operation as well, since the decision here gets to the
-> > systems admin/engineering level and will be situational.
-> 
-> I've been playing with the timeout argument to recvmmsg as well now,
-> and I'm struggling to see how one would ever use it correctly with the
-> current implementation.  It seems to rely on the assumption of a
-> never-ending stream of tightly-spaced input packets?  It seems like it
+__module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
+(RELOC_HIDE is needed for per cpu pointers).
 
-As said by somebody else in this recent discussion (perhaps Chris), it
-is based on the maximum latency acceptable.
+This non-standard per-cpu pointer use has been introduced by commit
+720eba31f47aeade8ec130ca7f4353223c49170f
 
-If minimum latency is desired, use a zero timeout and get as many
-packets get queued up while the application is processing the last
-batch.
+It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
+enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
+reported the bug).
 
-If instead more packets are desired per batch and some latency is
-acceptable, use a timeout.
+It did not appear to hurt previously because most of the accesses were done
+through local_inc, which probably obfuscated the access enough that no compiler
+optimizations were done. But with local_read() done when CONFIG_TRACING is
+active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
+(module.c contains local_set and local_read that use __module_ref_addr()), but I
+guess nobody noticed because we've been lucky enough that the compiler did not
+generate the inappropriate optimization pattern there.
 
-10 Gbit/s interfaces were the target but results with simple app
-published when the syscall was posted initially showed that even on 1
-1 Gbit/s eth this helped.
+This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
+(tested on 2.6.33.1 x86_64)
 
-> was meant for usage on blocking sockets.  Given a blocking socket with
-> timeout 0 (infinite), and a recvmmsg timeout of 100us, if you had a
-> very steady stream of input packets, it recvmmsg would pull in all of
-> them that it could within a max timeframe of (100us +
-> time_to_execute_one_recvmsg).  However, any disruption to the input
-> stream for a time-window of N would result in delaying some
-> already-received packets by N.  For example, consider the case that 2
-> packets are already queued when you invoke recvmmsg(), but then the
-> next packet doesn't arrive for another 300ms.  In this scenario, you'd
-> end up with recvmmsg() blocking for 300ms and then returning all 3
-> packets, two of which have been delayed way beyond the specified
-> timeout.
+The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
+percpu accesses were re-factored.
 
-And that is a use case that is fixed by your patch, thanks, now we cover
-more use cases :-)
+It makes me wonder about other non-standard uses of per_cpu_offset: there is one
+in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
+probably be fixed by the code authors in separate patches.
 
-- Arnaldo
+lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
+module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Eric Dumazet <dada1@cosmosbay.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Tejun Heo <tj@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/module.h |    2 +-
+ kernel/module.c        |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6-lttng/include/linux/module.h
+===================================================================
+--- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
++++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
+@@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
+ static inline local_t *__module_ref_addr(struct module *mod, int cpu)
+ {
+ #ifdef CONFIG_SMP
+-	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
++	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
+ #else
+ 	return &mod->ref;
+ #endif
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
