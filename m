@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab0C0F5M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 01:57:12 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57956 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751255Ab0C0F5J (ORCPT
+	id S1751701Ab0C0GAM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 02:00:12 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:57785 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab0C0GAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 01:57:09 -0400
-Date: Sat, 27 Mar 2010 06:56:54 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>, Jon Smirl <jonsmirl@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Krzysztof Halasa <khc@pm.waw.pl>,
-       hermann pitton <hermann-pitton@arcor.de>,
-       Christoph Bartelmus <lirc@bartelmus.de>, awalls@radix.net, j@jannau.net,
-       jarod@redhat.com, jarod@wilsonet.com, kraxel@redhat.com,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org, superm1@ubuntu.com
-Subject: Re: [RFC] What are the goals for the architecture of an in-kernel
- IR 	system?
-Message-ID: <20100327055654.GA18689@elf.ucw.cz>
-References: <9e4733910912151214n68161fc7tca0ffbf34c2c4e4@mail.gmail.com>
- <20091215201933.GK24406@elf.ucw.cz>
- <9e4733910912151229o371ee017tf3640d8f85728011@mail.gmail.com>
- <20091215203300.GL24406@elf.ucw.cz>
- <9e4733910912151245ne442a5dlcfee92609e364f70@mail.gmail.com>
- <9e4733910912151338n62b30af5i35f8d0963e6591c@mail.gmail.com>
- <4BAB7659.1040408@redhat.com>
- <20100326122317.GC5387@hardeman.nu>
- <4BACD00E.7040401@redhat.com>
- <20100326192117.GA9290@hardeman.nu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100326192117.GA9290@hardeman.nu>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 27 Mar 2010 02:00:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WhyD3EQrZIHoxXmiVqyFxMFHWp2btKiZEqiRgahytsHtIEqmbrcs8UrGnnqZhtz8C9
+         DtjsK/PMes5juqX1qP4YAoiafsKOT2e5eolKjYtJS1Daw1+WmcyKh0boUhZ9LdTP9EOR
+         Kfbo6IO9JNZtx1SPV1+HRnqTd4XLLQWcsCb8A=
+Subject: Re: [PATCH v2] Add MSG_WAITFORONE flag to recvmmsg
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Brandon L Black <blblack@gmail.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Ulrich Drepper <drepper@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100327021803.GA10866@xpc.home>
+References: <20100326223530.GA11817@xpc.home>
+	 <1269643470.2256.17.camel@edumazet-laptop>
+	 <84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com>
+	 <a36005b51003261907x7ebe057bt2d541f63f20f632b@mail.gmail.com>
+	 <20100327021803.GA10866@xpc.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 27 Mar 2010 07:00:04 +0100
+Message-ID: <1269669604.2256.20.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > Anyway, one simple way to avoid
-> > resetting the hardware for every new parameter change would be to use a timer
-> > for reset. This way, an userspace application or script that is touching on 
-> > several parameters would just send the complete RX init sequence and
-> > after some dozens of milliseconds, the hardware will load the new parameters.
+Le vendredi 26 mars 2010 à 21:18 -0500, Brandon L Black a écrit :
+> From: Brandon L Black <blblack@gmail.com>
 > 
-> And I do not think that sounds like a good interface.
+> Add new flag MSG_WAITFORONE for the recvmmsg() syscall.
+> When this flag is specified for a blocking socket, recvmmsg()
+> will only block until at least 1 packet is available.  The
+> default behavior is to block until all vlen packets are
+> available.  This flag has no effect on non-blocking sockets
+> or when used in combination with MSG_DONTWAIT.
+> 
+> Signed-off-by: Brandon L Black <blblack@gmail.com>
+> 
 
-Yep. Having artifical delay is ugly, racy and error prone. (If
-application is swapped out, you'll set the hardware to middle state,
-anyway).
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Better solution would be to have "COMMIT" command that actually does
-the setup, or interface that allows all parameters at once...
+> ---
+> diff --git a/include/linux/socket.h b/include/linux/socket.h
+> index 7b3aae2..354cc56 100644
+> --- a/include/linux/socket.h
+> +++ b/include/linux/socket.h
+> @@ -255,6 +255,7 @@ struct ucred {
+>  #define MSG_ERRQUEUE	0x2000	/* Fetch message from error queue */
+>  #define MSG_NOSIGNAL	0x4000	/* Do not generate SIGPIPE */
+>  #define MSG_MORE	0x8000	/* Sender will send more */
+> +#define MSG_WAITFORONE	0x10000	/* recvmmsg(): block until 1+ packets avail */
+>  
+>  #define MSG_EOF         MSG_FIN
+>  
+> diff --git a/net/socket.c b/net/socket.c
+> index 769c386..f55ffe9 100644
+> --- a/net/socket.c
+> +++ b/net/socket.c
+> @@ -2135,6 +2135,10 @@ int __sys_recvmmsg(int fd, struct mmsghdr __user *mmsg, unsigned int vlen,
+>  			break;
+>  		++datagrams;
+>  
+> +		/* MSG_WAITFORONE turns on MSG_DONTWAIT after one packet */
+> +		if (flags & MSG_WAITFORONE)
+> +			flags |= MSG_DONTWAIT;
+> +
+>  		if (timeout) {
+>  			ktime_get_ts(timeout);
+>  			*timeout = timespec_sub(end_time, *timeout);
+> --
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
