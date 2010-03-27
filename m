@@ -1,86 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab0C0Gaf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 02:30:35 -0400
-Received: from server78.greatnet.de ([83.133.96.102]:45712 "EHLO
-	server78.greatnet.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257Ab0C0Gab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 02:30:31 -0400
-From: Henrik Kretzschmar <henne@nachtwindheim.de>
-To: linux-fbdev@vger.kernel.org
-Cc: Henrik Kretzschmar <henne@nachtwindheim.de>,
-       Krzysztof Helt <krzysztof.h1@wp.pl>,
-       Arnaud Patard <arnaud.patard@rtp-net.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jaya Kumar <jayakumar.lkml@gmail.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] fbdev: section cleanup in w100fb
-Date: Sat, 27 Mar 2010 07:29:11 +0100
-Message-Id: <1269671353-22041-6-git-send-email-henne@nachtwindheim.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1269671353-22041-1-git-send-email-henne@nachtwindheim.de>
-References: <1269671353-22041-1-git-send-email-henne@nachtwindheim.de>
+	id S1752004Ab0C0Gir (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 02:38:47 -0400
+Received: from [85.183.11.32] ([85.183.11.32]:52831 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751326Ab0C0Giq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 02:38:46 -0400
+Date: Sat, 27 Mar 2010 07:38:38 +0100
+From: =?utf-8?Q?J=F6rn?= Engel <joern@dublin.logfs.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       romieu@fr.zoreil.com
+Subject: Re: [Regression] r8169: enable 64-bit DMA by default for PCI
+	Express devices (v2)
+Message-ID: <20100327063838.GB11959@Dublin.logfs.org>
+References: <20100315150806.GA15354@Dublin.logfs.org> <20100315151041.GA15667@Dublin.logfs.org> <20100315.115748.13754030.davem@davemloft.net> <51f3faa71003151628g5edc4d7av8916ac76cb337bfe@mail.gmail.com> <20100316083501.GA3489@Dublin.logfs.org> <51f3faa71003161630g69160ea9tc1a2d448682632e5@mail.gmail.com> <51f3faa71003251756h17374375yd3a5d2acee2ffab9@mail.gmail.com> <20100326091234.GA11959@Dublin.logfs.org> <4BAD65A0.7090309@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4BAD65A0.7090309@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch cleans up the section in the w100fb driver.
+On Fri, 26 March 2010 19:55:44 -0600, Robert Hancock wrote:
+>
+> Well, that one's 36 bits, but it's unclear whether that driver would  
+> actually be likely to access anything over 4GB. It's possible that  
+> there's just some general problem with 64-bit DMA on that machine.
 
-Signed-off-by: Henrik Kretzschmar <henne@nachtwindheim.de>
----
- drivers/video/w100fb.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+That may very well be.  I've had trouble using a PCIe card in that
+machine as well.  "Solution" was to buy a different computer.  Sad, I
+know, but not my money.
 
-diff --git a/drivers/video/w100fb.c b/drivers/video/w100fb.c
-index 5d22395..a37a46c 100644
---- a/drivers/video/w100fb.c
-+++ b/drivers/video/w100fb.c
-@@ -52,7 +52,7 @@ static void w100_update_enable(void);
- static void w100_update_disable(void);
- static void calc_hsync(struct w100fb_par *par);
- static void w100_init_graphic_engine(struct w100fb_par *par);
--struct w100_pll_info *w100_get_xtal_table(unsigned int freq);
-+struct w100_pll_info *w100_get_xtal_table(unsigned int freq) __devinit;
- 
- /* Pseudo palette size */
- #define MAX_PALETTES      16
-@@ -781,7 +781,7 @@ out:
- }
- 
- 
--static int w100fb_remove(struct platform_device *pdev)
-+static int __devexit w100fb_remove(struct platform_device *pdev)
- {
- 	struct fb_info *info = platform_get_drvdata(pdev);
- 	struct w100fb_par *par=info->par;
-@@ -1019,7 +1019,7 @@ static struct pll_entries {
- 	{ 0 },
- };
- 
--struct w100_pll_info *w100_get_xtal_table(unsigned int freq)
-+struct w100_pll_info __devinit *w100_get_xtal_table(unsigned int freq)
- {
- 	struct pll_entries *pll_entry = w100_pll_tables;
- 
-@@ -1610,7 +1610,7 @@ static void w100_vsync(void)
- 
- static struct platform_driver w100fb_driver = {
- 	.probe		= w100fb_probe,
--	.remove		= w100fb_remove,
-+	.remove		= __devexit_p(w100fb_remove),
- 	.suspend	= w100fb_suspend,
- 	.resume		= w100fb_resume,
- 	.driver		= {
-@@ -1618,7 +1618,7 @@ static struct platform_driver w100fb_driver = {
- 	},
- };
- 
--int __devinit w100fb_init(void)
-+int __init w100fb_init(void)
- {
- 	return platform_driver_register(&w100fb_driver);
- }
--- 
-1.7.0
+> The fact that even stuff like lspci and MII is breaking seems odd,  
+> though. It could be that model of card doesn't like the PCIDAC register  
+> bit being set (maybe it means something different on that model, or  
+> something).
+>
+> I suppose a publicly accessible datasheet for these chips is too much to  
+> hope for?
 
+Which chips?
+
+J�rn
