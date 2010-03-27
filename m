@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab0C0LH4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 07:07:56 -0400
-Received: from web81102.mail.mud.yahoo.com ([68.142.199.94]:27929 "HELO
-	web81102.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752281Ab0C0LHy (ORCPT
+	id S1752814Ab0C0LuV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 07:50:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38124 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752724Ab0C0LuU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 07:07:54 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=PQT5EgKyjY1FX/X62RM0AtdACYsbnaykEluLFByFpsyAb+bLUg2s5io2kPh/3tcBNKsSxugFI95093+Ynx8UIRIsxL2y6boEdInzq8H94PXpZ+O+nwTxi9maMPeqw+J1S27xV2hled31ziAIi+9Ue0kM1Bu2gdhD2X16hHoNvqM=;
-Message-ID: <330933.36101.qm@web81102.mail.mud.yahoo.com>
-X-YMail-OSG: dDqxDFUVM1mDv24OuqTNwPUHO.mAaWZC1mpdlfhAqoxC5JD
- xFi6L7wAv2PkSsulKeeq0RsK2n2eKo6yMUFF7GV1bQHTw5IQu62ygFz9HhZN
- 5Ni2fF0G0G2fx21KLXe5iso2vS2exXVRXykAV5b.PLVAiLTEc2zn.DUSbDG7
- lHN1RuieBbh4W.Lkh8uNHVobmk1zv8rLVCKTCJWsX2qqTSFMUq4OGIhMteki
- to5xCnvF45R8QFli9IQrQ.u8npOOQmVBUmkGtpaTVZlhtlhYRtR5nmfksjZG
- OWm6uPS6oIYCsnoh24bm.Z2sA8SfN4NoupLO45.FPzyXSXqxvUQ0oFRLT2cJ
- OEOZWSJAfKy6ROxuMAcUKgBd3IscWD90TgsBiG0w_EdCo6koz32ZEd09fVRb
- XpwaRKlh9j0c.4fVB7L3DictRlz_NidFYqeXuWDGTHI7tSPzgtDWkDV5F3vD
- PP4klC0j_vqz094UTGd4Yhm.gtsPl9xbLlBd0tezJyNsPWQyMhYNKQycBK.i
- 50pQlKYmAyqCI2vouCpwKjnRj0k5Nrk9bXHeydwuqeuoaSxDFjYwb0zxY5Zw
- eCwBdYY1gpaNyPl0ACgfyWt6_cGO_3V0QQIwmw_RwaM3KUuJMgJmw4k1huP6
- 8hX5Df9DWVra6_.05E4TBYWEI1iUZEg0mflqyQs94n.32dpW48yDcnUzUcBZ
- hiEzHOIwuSaIwbTfU1vpArd8n0paOdiC_soSS.BK5KuzaqxvzN3XUF1PdwC.
- uVxy4cV.dsoCpFLeAwggwmU0bBjQ0mruJ94Ikqp_y7Z35RrY2innLD3QFlKz
- I2hRU9lmB_YNYRmf4HmNB5WuDz5nt7AgT9Z4PFC1Mef1xUov3TwCOyT4YCf1
- BNYsZi359CsCD7ij2MPaXhmfwgSevd7xTejLRk29rddDuN_SxfXqMOL.hn8E
- ccDpCreAu.MmHV9xRulIc.gVJw32gejDJBK_CsYADHBG1HtM_1rtrVOWDzin
- KrKT8GMnY954Sw_zCqOYMJu22R5.E5pXmGnTm8vXAap0M7pT0jp9g_nanr00
- LqSEvNCJ0SoQoNjsFprdUrdE3m5tuW2_995dEI3hd30irslPcMsJ5pdhACUv
- 52RbEKulVinDAcntZwUij8_AMrvhca67sVgIwC4Ip3MaIW2TzS7m_onOV.1e
- COv08kvawn62mOcZimrfUWyBtE9eYdGMijFK.UBhrcuFG4MmGKVOE63WN.Iy
- AFG3GysUR5QQQI9iyFqO8RpqO2c09QullX6E0SHIYYmXZvIFCuiud76ovYHn
- NR_chK59SGpRSUFUZIRw8bzWI5Yw3H3PHsB.lJB1T7kgfF4DuDbnDYkAzP9X
- SlnHKyoTTrUKfI1qs9X4vUKp75oPi_Np657_xayMckhYlkfKPfKZXE6NpsiH
- e9hzXMUEL9kSW3T0fve9pd0Z5gyuichyuXZSOz6QeBO9p7hEyQhE8erIGLnD
- CCUDjQVivBtL5p3RPiLQpO4SsTffnQLM1Q.bVUSTR0RbjbeVKg7LyCZV2Dqw
- OBzqvV6BsMmf99100IGYz3V1b_YMkmz0naHRXltAtz4Lb0gcDlkrtuuXSjN2
- vK.ZOMj9xlD7Va3nzwHC6rFAqbfcL8NhrjTqQMU0mdaaF.pI5yAONYX1zes1
- hKn0LFUFxib6jVDEpSwYjEz6dB1h.bFS68NZBMtZ2D1fRaZPcOLy2F9aoTwi
- PGgOuDkkZ38Oot0oXuh_GBSnlaOW.BK_h1Qn6_yR6kyVskDpdVQoFK2l14u7
- Y47zpJE6R5wWFQpm8eGNr2z.Tp.cTcz5xiFaie.R7HR_Y9SLDm7hP7e2WMMa
- stq33aYgF.plRKu9mRL5mSJN4JQyCgmd15lzgIutTvOL4bCoYLDW9ZmU4W5s
- WAeRBncJGPlRRi7jdCk5Jw6jIszNYvNUnFqCVq0cqjJR2aTBTPhqUWWWw19P
- WuDr2y_CB2wxgnHEkIGZ2gNBMoq2L.5BTfihCDBVMUXemOTo.RdjGHnMKUHx
- 0lZbdCDThAjIWOaemMTSeS9KJnnU0Vh9rW9c7iuisvQIVlG6ih88rsJXZK1E
- KJ65rP0MxNr3ul95_Np4aMQyDsQuexg5vRyHiSnJjj6XKwu84A2D5cNu67nD
- PMMDOch5aj8XNC_GarDUL03NNtdOrwzFykCWGBHsskokaz1vK0LYM5p2jt.8
- 8TKQhXqtTIjblInsJbOkx8Gjl5YbpxxbHoraSvnET99f88vG7X1MY9r1hs7D
- Guh2rA4GUJ6mE6H78qaTmCEJmK9PFiv7Jx5PrJq0vtbf.CvFa.2oZZnhTFCr
- aR1FM7iwrFcmd7KaBtnv7d8v78_29z49GDMFcsWLs3GmuIqITzu9VwBI.BZh
- 0aQrRmwpZI4w1thIPD0hLnG.8cjmvhz9MiJk4nxgn3G.BLIQTX235j4IIFGv
- bMN6wgROhrtkkx65z0ggiaMVYyHSqSYsLWpZW6gSSYmHu8NSdjB_cCcpCL7g
- FYo6Fqgl8XCr3IiQ8e4DoMsCBHOeIFL93zY5lw.1cyIpRVGjgpPGCEg1wmyF
- Re8BSgc3GBdEwCyXA2Hrf_R406ejix3D5cqGL.0MnMTvrf.0bVvrzl6BslOB
- xnmNSNqWs6uJoYXRzWfdwfFbcntQa5OnH7Ph.S56hW2fQ6LxGzTE5TPbM5V7
- gNYvWgtXxmqubzFuXL9pxXdG2q2WK0mkGii1jQI7ncnq0OzXxt.SAaX_WF4W
- b3gES6kQVxQH6gQWKJfSpz9hnar90FKVw4lRno_nkiSb.1c1XmSGC6NYOO9h
- BQOQI73LzD6CKmpSjDMe9V7f8Kg_wrwefXNEEhi2_2kXp5wzyfc9KRlxOpG1
- mouLC07cY4J4QdZ.X6oTAXpol_P6jpU92dWCbm18V6WwPN5pzoFbpKMgILbb
- 1wfg9NKuhmSZON1gn_dVjfcYIoVeWF.FquWG.2SblcQW9j6YaIQ1a5wW6Q7V
- u3kO6tC68pM0KwRzGtlBFfnNB0ATmTqcGZ_3CHn.4U498_f.LpdlPJIBsZhT
- yCwrFBHv7KQLgfZPDpxuYQb8wW2i7d5TgxC3FJ3WP5GPo.UOE_MuUu285LDf
- fG2OFMfLlbUt.MOK7safEdhyIk81gCbsIE9e.hsmuJaqg7.SLoTuoy7TIajy
- bby5CQpy6c78YffmjW1sQgqFK0hhRyKQ98Ej.Dym1zjFWF2ikjlr9r9NJ6HY
- PD4qjHUrib0tjMmWR.KNv3ri59QQ47o99dJfJpRFhaPFoiJah7qL0OH2q4xa
- Blmp4kKa131jbbq__yE24xGbboABiibIXBr1DeYhcYVt6CyMxYUkl4x2.yZH
- 7_YpGpBd7TSaSS_jC0Y7fgDP7gCYBIpCtJmJ5ncORD_sSxWuinySvpsGc8sP
- C.2fT9vmKzo7xtA2AKTBz7L99zB2IMfCXS1ZO791iTC2zgZcS8nhLNch2uZ0
- BDDVmmynv
-X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
-Date: Sat, 27 Mar 2010 04:07:52 -0700 (PDT)
-From: FOREIGN TRANSFER MANAGER <apurplehaze52@sbcglobal.net>
-Reply-To: sj_inldept@w.cn
-Subject: File For Claims!
-To: undisclosed recipients:;
+	Sat, 27 Mar 2010 07:50:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Yw7Btd5ZgpLN+cAN+Miiyu84lbUMqk3lncBFgO2nj7oWuRElv5r6+3Rnyk4dfzyixD
+         qXoPZLeLpo6xGtJohCPUEZeLaIOXtYDL4QkKT7kh079DQ7ndVmnC6qSAtvs4lQzjEwHU
+         eq8lnE8UTFSgb/pd1OVa8eLPd+8lcMouBywk4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <a36005b51003261415u1cc89f84r843abaa81f1d7396@mail.gmail.com>
+References: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com>
+	 <g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
+	 <b2cc26e41003251229w5d266c18gd17fdcf404136bd7@mail.gmail.com>
+	 <ff13bc9a1003251400ted1993ao73c15ee86e3e717a@mail.gmail.com>
+	 <a36005b51003260456m441568c1vcc8b90eed0421b9d@mail.gmail.com>
+	 <ff13bc9a1003261406w7bf4bb77sf57edce14f0dcc73@mail.gmail.com>
+	 <a36005b51003261415u1cc89f84r843abaa81f1d7396@mail.gmail.com>
+Date: Sat, 27 Mar 2010 12:50:18 +0100
+Message-ID: <b2cc26e41003270450w1a90f9b2j5cbbae9726122b4e@mail.gmail.com>
+Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
+From: Olaf van der Spek <olafvdspek@gmail.com>
+To: Ulrich Drepper <drepper@gmail.com>
+Cc: Luca Barbieri <luca.barbieri@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have won 891,934.00 pounds Send Necessary :name,age,occupation, country
+On Fri, Mar 26, 2010 at 10:15 PM, Ulrich Drepper <drepper@gmail.com> wrote:
+>> Not according to POSIX 2008, which does not explicitly specify this case.
+>
+> That argumentation is bogus.  You wrote yourself, this situation isn't
+> (and cannot) be described in POSIX.  For such cases the any error
+> value is consistent with POSIX.
+>
+>
+> Again: any value is as good as any other.  The existing value works
+> and changing it breaks existing code.
+
+It didn't 'work' for me.
+What code would break?
+
+Olaf
