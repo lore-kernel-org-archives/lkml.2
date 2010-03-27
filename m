@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0C0C2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 22:28:08 -0400
-Received: from mail.perches.com ([173.55.12.10]:1136 "EHLO mail.perches.com"
+	id S1752778Ab0C0C2F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 22:28:05 -0400
+Received: from mail.perches.com ([173.55.12.10]:1125 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab0C0C2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 22:28:02 -0400
+	id S1752642Ab0C0C2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 22:28:00 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Eric Moore <Eric.Moore@lsi.com>, support@lsi.com,
-       DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org
-Subject: [PATCH 5/9] drivers/message: Fix continuation lines
-Date: Fri, 26 Mar 2010 19:27:54 -0700
-Message-Id: <8fa446e7fdb52da2402bb243fe260b0bca20059d.1269655208.git.joe@perches.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 1/9] arch/arm: Fix continuation lines
+Date: Fri, 26 Mar 2010 19:27:50 -0700
+Message-Id: <0c97f736400ec243e71ba794ae7046a61d2449c1.1269655208.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.14.g7e948
 In-Reply-To: <cover.1269655208.git.joe@perches.com>
 References: <cover.1269655208.git.joe@perches.com>
@@ -22,43 +22,24 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/message/fusion/mptbase.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-s5pv210/clock.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index 5382b5a..6ab5f8e 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -83,17 +83,17 @@ MODULE_VERSION(my_VERSION);
- static int mpt_msi_enable_spi;
- module_param(mpt_msi_enable_spi, int, 0);
- MODULE_PARM_DESC(mpt_msi_enable_spi, " Enable MSI Support for SPI \
--		controllers (default=0)");
-+controllers (default=0)");
+diff --git a/arch/arm/mach-s5pv210/clock.c b/arch/arm/mach-s5pv210/clock.c
+index ccccae2..a989c5e 100644
+--- a/arch/arm/mach-s5pv210/clock.c
++++ b/arch/arm/mach-s5pv210/clock.c
+@@ -394,8 +394,8 @@ void __init_or_cpufreq s5pv210_setup_clocks(void)
+ 	pclk83 = hclk166 / GET_DIV(clkdiv0, S5P_CLKDIV0_PCLK83);
+ 	pclk66 = hclk133 / GET_DIV(clkdiv0, S5P_CLKDIV0_PCLK66);
  
- static int mpt_msi_enable_fc;
- module_param(mpt_msi_enable_fc, int, 0);
- MODULE_PARM_DESC(mpt_msi_enable_fc, " Enable MSI Support for FC \
--		controllers (default=0)");
-+controllers (default=0)");
+-	printk(KERN_INFO "S5PV210: ARMCLK=%ld, HCLKM=%ld, HCLKD=%ld, \
+-			HCLKP=%ld, PCLKM=%ld, PCLKD=%ld, PCLKP=%ld\n",
++	printk(KERN_INFO "S5PV210: ARMCLK=%ld, HCLKM=%ld, HCLKD=%ld, "
++			"HCLKP=%ld, PCLKM=%ld, PCLKD=%ld, PCLKP=%ld\n",
+ 	       armclk, hclk200, hclk166, hclk133, pclk100, pclk83, pclk66);
  
- static int mpt_msi_enable_sas;
- module_param(mpt_msi_enable_sas, int, 0);
- MODULE_PARM_DESC(mpt_msi_enable_sas, " Enable MSI Support for SAS \
--		controllers (default=0)");
-+controllers (default=0)");
- 
- 
- static int mpt_channel_mapping;
-@@ -105,7 +105,7 @@ static int mpt_set_debug_level(const char *val, struct kernel_param *kp);
- module_param_call(mpt_debug_level, mpt_set_debug_level, param_get_int,
- 		  &mpt_debug_level, 0600);
- MODULE_PARM_DESC(mpt_debug_level, " debug level - refer to mptdebug.h \
--	- (default=0)");
-+- (default=0)");
- 
- int mpt_fwfault_debug;
- EXPORT_SYMBOL(mpt_fwfault_debug);
+ 	clk_fout_apll.rate = apll;
 -- 
 1.7.0.14.g7e948
 
