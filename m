@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0C0N3Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 09:29:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49594 "EHLO mx1.redhat.com"
+	id S1753362Ab0C0OHZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 10:07:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753087Ab0C0N3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 09:29:15 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <18162.1269696414@redhat.com>
-References: <18162.1269696414@redhat.com> <Pine.LNX.4.64.1003262303080.6480@ask.diku.dk>
-To: Julia Lawall <julia@diku.dk>
-Cc: dhowells@redhat.com, peterz@infradead.org, mingo@elte.hu,
-       tglx@linutronix.de, oleg@redhat.com,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 5/7] arch/powerpc/kernel: Use set_cpus_allowed_ptr
-Date: Sat, 27 Mar 2010 13:28:37 +0000
-Message-ID: <18215.1269696517@redhat.com>
+	id S1753323Ab0C0OHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 10:07:23 -0400
+Date: Sat, 27 Mar 2010 11:07:17 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: blblack@gmail.com, netdev@vger.kernel.org, drepper@gmail.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Add MSG_WAITFORONE flag to recvmmsg
+Message-ID: <20100327140717.GN3625@ghostprotocols.net>
+References: <84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com> <a36005b51003261907x7ebe057bt2d541f63f20f632b@mail.gmail.com> <20100327021803.GA10866@xpc.home> <20100326.205428.44779758.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326.205428.44779758.davem@davemloft.net>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> wrote:
-
-> > The semantic patch that makes this change is as follows:
-> > (http://coccinelle.lip6.fr/)
+Em Fri, Mar 26, 2010 at 08:54:28PM -0700, David Miller escreveu:
+> From: Brandon L Black <blblack@gmail.com>
+> Date: Fri, 26 Mar 2010 21:18:03 -0500
 > 
-> That URL doesn't appear to work:
+> > 
+> > From: Brandon L Black <blblack@gmail.com>
+> > 
+> > Add new flag MSG_WAITFORONE for the recvmmsg() syscall.
+> > When this flag is specified for a blocking socket, recvmmsg()
+> > will only block until at least 1 packet is available.  The
+> > default behavior is to block until all vlen packets are
+> > available.  This flag has no effect on non-blocking sockets
+> > or when used in combination with MSG_DONTWAIT.
+> > 
+> > Signed-off-by: Brandon L Black <blblack@gmail.com>
 > 
-> Not Found
-> The requested URL /) was not found on this server.
-> Additionally, a 404 Not Found error was encountered while trying to use an ErrorDocument to handle the request.
-> Apache/2.2.8 (Mandriva Linux/PREFORK-6mdv2008.1) Server at coccinelle.lip6.fr Port 80
+> Arnaldo, please review this, thanks.
 
-Actually, it does.  It's just that my email client thought that the closing
-bracket after it was part of the URL:-/
+I'm ok with it.
 
-David
+Acked-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+- Arnaldo
