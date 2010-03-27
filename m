@@ -1,126 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab0C0JUc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 05:20:32 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41641 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab0C0JUb (ORCPT
+	id S1752609Ab0C0Je6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 05:34:58 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:47711 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab0C0Je4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 05:20:31 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 27 Mar 2010 10:20:18 +0100 (CET)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] ieee1394: char device files are not seekable (BKL removal)
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       Dan Dennedy <dan@dennedy.org>
-In-Reply-To: <4BAD4795.2040700@s5r6.in-berlin.de>
-Message-ID: <tkrat.3d0d526ea7cecc39@s5r6.in-berlin.de>
-References: <201003242240.54907.arnd@arndb.de>
- <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
- <201003251406.10177.arnd@arndb.de> <201003251438.59062.arnd@arndb.de>
- <4BAD4795.2040700@s5r6.in-berlin.de>
+	Sat, 27 Mar 2010 05:34:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VTwe8dR3BEwtaJKVW+/k59gfACP3R85e9bBTcG88efmoFD84FiePwnTbEASgYY7F29
+         3M1UN2rl2fH8fkwg3kQmy2ZNjTVmPxTwrK+STpkl6pVd9GQaH17GIafe/S5apWhWvTM7
+         3R5zthAt5MaGXihQ1esTpxECu1n34Ap82f5zU=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+In-Reply-To: <s5hd3yq6anu.wl%tiwai@suse.de>
+References: <64bb37e1003261025l14e2d82r64ba1e90d024bea6@mail.gmail.com>
+	 <s5hfx3nm1lh.wl%tiwai@suse.de>
+	 <64bb37e1003261059w3de67654m11ca17f1645f6c1@mail.gmail.com>
+	 <s5hhbo26d68.wl%tiwai@suse.de>
+	 <64bb37e1003261407y4d46c71cr3b39fc3058e0294a@mail.gmail.com>
+	 <s5hd3yq6anu.wl%tiwai@suse.de>
+Date: Sat, 27 Mar 2010 10:34:54 +0100
+Message-ID: <64bb37e1003270234p3c7a10e2kd066d4459a60bb51@mail.gmail.com>
+Subject: Re: Regressions: MSI vs HDA-Intel
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The raw1394 character device file ABI is based on
-  - write() or ioctl() to initiate actions,
-    with write being used exactly like _IOW ioctls,
-  - read() to consume events,
-  - mmap() for isochronous I/O DMA buffers.
+On Fri, Mar 26, 2010 at 10:22 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Fri, 26 Mar 2010 22:07:53 +0100,
+> Torsten Kaiser wrote:
+>>
+>> On Fri, Mar 26, 2010 at 9:27 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Fri, 26 Mar 2010 18:59:17 +0100,
+>> > Torsten Kaiser wrote:
+>> >> Surprisingly this did not fix the delay. After all the trouble I had
+>> >> with MSI on the other system, I was sure it was related to the fact,
+>> >> that 2.6.33 tried to use MSI.
+>> >> 2.6.33 with snd_hda_intel.enable_msi=0:
+>> >> [    1.155712] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level,
+>> >> low) -> IRQ 16
+>> >> [    1.158852] input: AT Translated Set 2 keyboard as
+>> >> /devices/platform/i8042/serio0/in
+>> >> put/input2
+>> >> [    1.232597] firewire_core: created device fw0: GUID 00dc10000129c48f, S400
+>> >> [    1.252679] hda_codec: ALC888: BIOS auto-probing.
+>> >> [    1.259206] HDA Intel 0000:01:05.2: PCI INT B -> GSI 19 (level,
+>> >> low) -> IRQ 19
+>> >> [    1.314745] input: GenPS/2 Genius Mouse as
+>> >> /devices/platform/i8042/serio1/input/input3
+>> >> [    4.322508] hda-intel: azx_get_response timeout, switching to
+>> >> polling mode: last cmd=0x000f0000
+>> >> [    5.332508] hda-intel: Codec #0 probe error; disabling it...
+>> >> [    6.382508] hda_intel: azx_get_response timeout, switching to
+>> >> single_cmd mode: last cmd=0x000f0000
+>> >> [    6.420470] ALSA device list:
+>> >> [    6.421545]   #0: HDA ATI SB at 0xfe7f4000 irq 16
+>> >> [    6.422628]   #1: HDA ATI HDMI at 0xfe9e8000 irq 19
+>> >>
+>> >> ... if I had read these messages, instead of just copy&pasting them, I
+>> >> could have noted, that the delay is from codec *0*, but MSI gets
+>> >> enabled for codec *1*.
+>> >> Info about the HDMI output:
+>> >> 01:05.2 Audio device [0403]: ATI Technologies Inc Radeon X1200 Series
+>> >> Audio Controller [1002:7919]
+>> >>
+>> >> But that is a clear bug in the alsa code: After codec 0 (the
+>> >> integrated audio from the SB600) does not responds, it disables the
+>> >> MSI support for codec 1 (part of the intregrated graphic chipset).
+>> >> (I don't know if the HDMI audio support is working or not, as I do not
+>> >> have an HDMI display I could attach there.)
+>> >
+>> > It's no bug.  The driver has only one flag to use MSI or not.
+>> > So it disable MSI for both.  It's on the same board, after all,
+>> > so better to take a safer option.
+>>
+>> It's a bug, because the failing codec 0 never used MSI at all. So
+>> disabling it will not help.
+>>
+>> The first log (without the MSI disable option) showed:
+>> codec 0 was using IRQ 16
+>> codec 1 was using IRQ 19, but got switched to MSI-IRQ 27
+>> then the 5 sec pause followed, because codec 0 failed.
+>> switching off MSI for codec 1 seemed to work, because I only see
+>> hda_intel on IRQ 16 and 19 in /proc/interrupts.
+>> But the device list still showed "#1: HDA ATI HDMI at 0xfe9e8000 irq
+>> 27" after the "No response from codec, disabling MSI" message!
+>
+> This is no driver behavior bug.  The point is that this string
+> (chip->longname) was set at the time before disabling MSI.  The driver
+> can switch back at any time, but the string remains as is.  One reason
+> is that this field is exposed to the user-space as a sort of
+> identifier, thus it's not always wise to change it dynamically during
+> operation.  Yeah, it's confusing, but this is a trade-off.
 
-The video1394 character device file ABI is based on
-  - ioctl() to initiate actions,
-  - mmap() for isochronous I/O DMA buffers.
+Ah, ok. I understand this trade-off.
 
-The dv1394 character device file ABI is based on
-  - ioctl() to initiate actions,
-  - read() and write() for simple serial reception and transmission of
-    DV streams with a copy_to/from_user,
-  - mmap() for isochronous I/O DMA buffers for I/O without user copy.
+>> The second log showed the same sequence:
+>> codec 0 using IRQ 16, codec 1 using 19, but this time without the switch to 27
+>> the 5 sec pause and the failing of codec 0 still append, because the
+>> ALC888 never used MSI.
+>>
+>> So I think there are two bugs:
+>> One (the regression) that the ALC888 codec is no longer initialized
+>> correctly, and so causing the delay during the boot.
+>
+> This seems irrelevant with the MSI.
 
-lseek(), pread(), pwrite() on the other hand are not applicable to
-/dev/raw1394, /dev/video1394/*, and /dev/dv1394/* device files.
+What I wrote was bogus.
+I confused the listing of #0 and #1 from the "ALSA device list" with
+the message about "Codec #0"
 
-Alas, file_operations.llseek == NULL causes lseek() to call
-fs/read_write.c::default_llseek per default.  This looks like not doing
-any harm in either of the three drivers, but it grabs the Big Kernel
-Lock.  We don't want that, and we should return an error on lseek() and
-friends.  This is provided by fs/read_write.c::no_llseek which we get if
-we clear the FMODE_LSEEK (and FMODE_PREAD, FMODE_PWRITE) flag by means
-of nonseekable_open().
+After adding more debug output into hda_intel.c, I could see that the
+initialisation of the SB600/ALC888 and the ATIHDMI "cards" are not
+done in parallel (Like the messages from the input subsystem and the
+firewire core that can be seen between the alsa messages), but serial.
+So all the messages about the failing codec and MSI belong to
+0000:01:05.2, the HDMI output.
 
-Side note:  Apart from this oversight regarding default_llseek, the
-raw1394, video1394, and dv1394 interfaces have been converted away from
-BKL usage some time ago.  Although all this is legacy code which should
-be left in peace until it is eventually removed (as it is superseded by
-firewire-core's <linux/firewire-cdev.h> ABI), this change seems still
-worth doing to further minimize the presence of BKL usage in the kernel.
+But this is rather confusing: Alsa "card" #0, the SB600/ALC888, only
+has one codec #3 and "card" #1 has a codec #0.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
+So the ALC888 (that never tries MSI) works perfect in 2.6.31 and 2.6.33.
+The ATIHDMI has a regession that the initialisation in 2.6.33 needs ~6
+seconds, while 2.6.31 only needed 0.08 seconds.
+(Compared to the total time of 1.4 seconds that 2.6.31 needed until
+"Freeing unused kernel memory" that is rather significant)
 
-Somebody correct me if I misunderstood anything of these ABIs.
+I can't say if the HDMI output in 2.6.31 worked, because I have no
+devices that I could attach there to test this.
 
-This patch is motivated by Arnd's
-"bkl removal: make unlocked_ioctl mandatory"
-http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git;a=blobdiff;f=drivers/ieee1394/raw1394.c;h=7c312331fc14facd8d3e2f8cf05daf090fd88e71;hp=8aa56ac07e2920d371a5af41eca7f09c8b752380;hb=05e7753338045e9ee3950b2da032c5e5774efa90;hpb=03165e1d096afb4b1d9cfccdad66eed038121cec
-etc., and
-"BKL removal: mark remaining users as 'depends on BKL'"
-http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git;a=blobdiff;f=drivers/ieee1394/Kconfig;h=0d4954c2615233ccdd8ed28ba2e7b36ed1c7941d;hp=e02096cf7d95bfa383bddb703bbfbff6b782e688;hb=abb83d8fe5f8dcc8fca09bd9117429f73e1417e0;hpb=33c014b118f45516113d4b6823e40ea6f834dc6a
+Torsten
 
-
- drivers/ieee1394/dv1394.c    |    2 +-
- drivers/ieee1394/raw1394.c   |    2 +-
- drivers/ieee1394/video1394.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-Index: b/drivers/ieee1394/dv1394.c
-===================================================================
---- a/drivers/ieee1394/dv1394.c
-+++ b/drivers/ieee1394/dv1394.c
-@@ -1824,7 +1824,7 @@ static int dv1394_open(struct inode *ino
- 	       "and will not be available in the new firewire driver stack. "
- 	       "Try libraw1394 based programs instead.\n", current->comm);
- 
--	return 0;
-+	return nonseekable_open(inode, file);
- }
- 
- 
-Index: b/drivers/ieee1394/raw1394.c
-===================================================================
---- a/drivers/ieee1394/raw1394.c
-+++ b/drivers/ieee1394/raw1394.c
-@@ -2834,7 +2834,7 @@ static int raw1394_open(struct inode *in
- 
- 	file->private_data = fi;
- 
--	return 0;
-+	return nonseekable_open(inode, file);
- }
- 
- static int raw1394_release(struct inode *inode, struct file *file)
-Index: b/drivers/ieee1394/video1394.c
-===================================================================
---- a/drivers/ieee1394/video1394.c
-+++ b/drivers/ieee1394/video1394.c
-@@ -1239,7 +1239,7 @@ static int video1394_open(struct inode *
- 	ctx->current_ctx = NULL;
- 	file->private_data = ctx;
- 
--	return 0;
-+	return nonseekable_open(inode, file);
- }
- 
- static int video1394_release(struct inode *inode, struct file *file)
-
--- 
-Stefan Richter
--=====-==-=- --== ==-==
-http://arcgraph.de/sr/
-
+>> And two that the fallback in azx_rirb_get_response() tries to disable
+>> the never enabled MSI.
+>
+> And this is the designed behavior.  We've never trusted MSI from
+> experiences.  So, prepared to go away from it at any moment :)
+>
+>
+> Takashi
+>
+>> ... Umm. The code disagrees with my description of bug two: It already
+>> does check for an per chip msi flag.
+>>
+>> I will try to add more debug to see what codec emits what errors, and
+>> post again, with that information.
+>>
+>> Thanks, Torsten
+>>
+>
