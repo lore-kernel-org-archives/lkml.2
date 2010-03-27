@@ -1,155 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab0C0Kks (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 06:40:48 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:42050 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752036Ab0C0Kkq (ORCPT
+	id S1752697Ab0C0LH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 07:07:56 -0400
+Received: from web81102.mail.mud.yahoo.com ([68.142.199.94]:27929 "HELO
+	web81102.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752281Ab0C0LHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 06:40:46 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 27 Mar 2010 11:40:31 +0100 (CET)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH RFC] DVB: add dvb_generic_nonseekable_open,
- dvb_generic_unlocked_ioctl, use in firedtv
-To: linux-media@vger.kernel.org
-cc: linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Arnd Bergmann <arnd@arndb.de>, Henrik Kurelid <henrik@kurelid.se>
-In-Reply-To: <4BAD4795.2040700@s5r6.in-berlin.de>
-Message-ID: <tkrat.7662a00017241225@s5r6.in-berlin.de>
-References: <201003242240.54907.arnd@arndb.de>
- <alpine.LRH.2.00.1003251354200.16443@twin.jikos.cz>
- <201003251406.10177.arnd@arndb.de> <201003251438.59062.arnd@arndb.de>
- <4BAD4795.2040700@s5r6.in-berlin.de>
+	Sat, 27 Mar 2010 07:07:54 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=sbcglobal.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
+  b=PQT5EgKyjY1FX/X62RM0AtdACYsbnaykEluLFByFpsyAb+bLUg2s5io2kPh/3tcBNKsSxugFI95093+Ynx8UIRIsxL2y6boEdInzq8H94PXpZ+O+nwTxi9maMPeqw+J1S27xV2hled31ziAIi+9Ue0kM1Bu2gdhD2X16hHoNvqM=;
+Message-ID: <330933.36101.qm@web81102.mail.mud.yahoo.com>
+X-YMail-OSG: dDqxDFUVM1mDv24OuqTNwPUHO.mAaWZC1mpdlfhAqoxC5JD
+ xFi6L7wAv2PkSsulKeeq0RsK2n2eKo6yMUFF7GV1bQHTw5IQu62ygFz9HhZN
+ 5Ni2fF0G0G2fx21KLXe5iso2vS2exXVRXykAV5b.PLVAiLTEc2zn.DUSbDG7
+ lHN1RuieBbh4W.Lkh8uNHVobmk1zv8rLVCKTCJWsX2qqTSFMUq4OGIhMteki
+ to5xCnvF45R8QFli9IQrQ.u8npOOQmVBUmkGtpaTVZlhtlhYRtR5nmfksjZG
+ OWm6uPS6oIYCsnoh24bm.Z2sA8SfN4NoupLO45.FPzyXSXqxvUQ0oFRLT2cJ
+ OEOZWSJAfKy6ROxuMAcUKgBd3IscWD90TgsBiG0w_EdCo6koz32ZEd09fVRb
+ XpwaRKlh9j0c.4fVB7L3DictRlz_NidFYqeXuWDGTHI7tSPzgtDWkDV5F3vD
+ PP4klC0j_vqz094UTGd4Yhm.gtsPl9xbLlBd0tezJyNsPWQyMhYNKQycBK.i
+ 50pQlKYmAyqCI2vouCpwKjnRj0k5Nrk9bXHeydwuqeuoaSxDFjYwb0zxY5Zw
+ eCwBdYY1gpaNyPl0ACgfyWt6_cGO_3V0QQIwmw_RwaM3KUuJMgJmw4k1huP6
+ 8hX5Df9DWVra6_.05E4TBYWEI1iUZEg0mflqyQs94n.32dpW48yDcnUzUcBZ
+ hiEzHOIwuSaIwbTfU1vpArd8n0paOdiC_soSS.BK5KuzaqxvzN3XUF1PdwC.
+ uVxy4cV.dsoCpFLeAwggwmU0bBjQ0mruJ94Ikqp_y7Z35RrY2innLD3QFlKz
+ I2hRU9lmB_YNYRmf4HmNB5WuDz5nt7AgT9Z4PFC1Mef1xUov3TwCOyT4YCf1
+ BNYsZi359CsCD7ij2MPaXhmfwgSevd7xTejLRk29rddDuN_SxfXqMOL.hn8E
+ ccDpCreAu.MmHV9xRulIc.gVJw32gejDJBK_CsYADHBG1HtM_1rtrVOWDzin
+ KrKT8GMnY954Sw_zCqOYMJu22R5.E5pXmGnTm8vXAap0M7pT0jp9g_nanr00
+ LqSEvNCJ0SoQoNjsFprdUrdE3m5tuW2_995dEI3hd30irslPcMsJ5pdhACUv
+ 52RbEKulVinDAcntZwUij8_AMrvhca67sVgIwC4Ip3MaIW2TzS7m_onOV.1e
+ COv08kvawn62mOcZimrfUWyBtE9eYdGMijFK.UBhrcuFG4MmGKVOE63WN.Iy
+ AFG3GysUR5QQQI9iyFqO8RpqO2c09QullX6E0SHIYYmXZvIFCuiud76ovYHn
+ NR_chK59SGpRSUFUZIRw8bzWI5Yw3H3PHsB.lJB1T7kgfF4DuDbnDYkAzP9X
+ SlnHKyoTTrUKfI1qs9X4vUKp75oPi_Np657_xayMckhYlkfKPfKZXE6NpsiH
+ e9hzXMUEL9kSW3T0fve9pd0Z5gyuichyuXZSOz6QeBO9p7hEyQhE8erIGLnD
+ CCUDjQVivBtL5p3RPiLQpO4SsTffnQLM1Q.bVUSTR0RbjbeVKg7LyCZV2Dqw
+ OBzqvV6BsMmf99100IGYz3V1b_YMkmz0naHRXltAtz4Lb0gcDlkrtuuXSjN2
+ vK.ZOMj9xlD7Va3nzwHC6rFAqbfcL8NhrjTqQMU0mdaaF.pI5yAONYX1zes1
+ hKn0LFUFxib6jVDEpSwYjEz6dB1h.bFS68NZBMtZ2D1fRaZPcOLy2F9aoTwi
+ PGgOuDkkZ38Oot0oXuh_GBSnlaOW.BK_h1Qn6_yR6kyVskDpdVQoFK2l14u7
+ Y47zpJE6R5wWFQpm8eGNr2z.Tp.cTcz5xiFaie.R7HR_Y9SLDm7hP7e2WMMa
+ stq33aYgF.plRKu9mRL5mSJN4JQyCgmd15lzgIutTvOL4bCoYLDW9ZmU4W5s
+ WAeRBncJGPlRRi7jdCk5Jw6jIszNYvNUnFqCVq0cqjJR2aTBTPhqUWWWw19P
+ WuDr2y_CB2wxgnHEkIGZ2gNBMoq2L.5BTfihCDBVMUXemOTo.RdjGHnMKUHx
+ 0lZbdCDThAjIWOaemMTSeS9KJnnU0Vh9rW9c7iuisvQIVlG6ih88rsJXZK1E
+ KJ65rP0MxNr3ul95_Np4aMQyDsQuexg5vRyHiSnJjj6XKwu84A2D5cNu67nD
+ PMMDOch5aj8XNC_GarDUL03NNtdOrwzFykCWGBHsskokaz1vK0LYM5p2jt.8
+ 8TKQhXqtTIjblInsJbOkx8Gjl5YbpxxbHoraSvnET99f88vG7X1MY9r1hs7D
+ Guh2rA4GUJ6mE6H78qaTmCEJmK9PFiv7Jx5PrJq0vtbf.CvFa.2oZZnhTFCr
+ aR1FM7iwrFcmd7KaBtnv7d8v78_29z49GDMFcsWLs3GmuIqITzu9VwBI.BZh
+ 0aQrRmwpZI4w1thIPD0hLnG.8cjmvhz9MiJk4nxgn3G.BLIQTX235j4IIFGv
+ bMN6wgROhrtkkx65z0ggiaMVYyHSqSYsLWpZW6gSSYmHu8NSdjB_cCcpCL7g
+ FYo6Fqgl8XCr3IiQ8e4DoMsCBHOeIFL93zY5lw.1cyIpRVGjgpPGCEg1wmyF
+ Re8BSgc3GBdEwCyXA2Hrf_R406ejix3D5cqGL.0MnMTvrf.0bVvrzl6BslOB
+ xnmNSNqWs6uJoYXRzWfdwfFbcntQa5OnH7Ph.S56hW2fQ6LxGzTE5TPbM5V7
+ gNYvWgtXxmqubzFuXL9pxXdG2q2WK0mkGii1jQI7ncnq0OzXxt.SAaX_WF4W
+ b3gES6kQVxQH6gQWKJfSpz9hnar90FKVw4lRno_nkiSb.1c1XmSGC6NYOO9h
+ BQOQI73LzD6CKmpSjDMe9V7f8Kg_wrwefXNEEhi2_2kXp5wzyfc9KRlxOpG1
+ mouLC07cY4J4QdZ.X6oTAXpol_P6jpU92dWCbm18V6WwPN5pzoFbpKMgILbb
+ 1wfg9NKuhmSZON1gn_dVjfcYIoVeWF.FquWG.2SblcQW9j6YaIQ1a5wW6Q7V
+ u3kO6tC68pM0KwRzGtlBFfnNB0ATmTqcGZ_3CHn.4U498_f.LpdlPJIBsZhT
+ yCwrFBHv7KQLgfZPDpxuYQb8wW2i7d5TgxC3FJ3WP5GPo.UOE_MuUu285LDf
+ fG2OFMfLlbUt.MOK7safEdhyIk81gCbsIE9e.hsmuJaqg7.SLoTuoy7TIajy
+ bby5CQpy6c78YffmjW1sQgqFK0hhRyKQ98Ej.Dym1zjFWF2ikjlr9r9NJ6HY
+ PD4qjHUrib0tjMmWR.KNv3ri59QQ47o99dJfJpRFhaPFoiJah7qL0OH2q4xa
+ Blmp4kKa131jbbq__yE24xGbboABiibIXBr1DeYhcYVt6CyMxYUkl4x2.yZH
+ 7_YpGpBd7TSaSS_jC0Y7fgDP7gCYBIpCtJmJ5ncORD_sSxWuinySvpsGc8sP
+ C.2fT9vmKzo7xtA2AKTBz7L99zB2IMfCXS1ZO791iTC2zgZcS8nhLNch2uZ0
+ BDDVmmynv
+X-Mailer: YahooMailClassic/10.0.8 YahooMailWebService/0.8.100.260964
+Date: Sat, 27 Mar 2010 04:07:52 -0700 (PDT)
+From: FOREIGN TRANSFER MANAGER <apurplehaze52@sbcglobal.net>
+Reply-To: sj_inldept@w.cn
+Subject: File For Claims!
+To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to remove Big Kernel Lock usages from the DVB subsystem,
-we need to
-  - provide .llseek file operations that do not grab the BKL (unlike
-    fs/read_write.c::default_llseek) or mark files as not seekable,
-  - provide .unlocked_ioctl file operations.
-
-Add two dvb_generic_ file operations for file interfaces which are not
-seekable and, respectively, do not require the BKL in their ioctl
-handlers.
-
-Use them in one driver of which I am sure of that these are applicable.
-(Affected code paths were not runtime-tested since I don't have a CAM.)
-
-Notes:
-
-  - In order to maximize code reuse and minimize API churn, I pass a
-    dummy NULL struct inode * through dvb_usercopy() to
-    dvbdev->kernel_ioctl().  Very ugly; it may be better to convert
-    everything from .ioctl to .unlocked_ioctl in one go and remove the
-    inode pointer argument everywhere.
-
-  - I suspect that actually all dvb_generic_open() users really want
-    nonseekable_open --- then we should simply change dvb_generic_open()
-    instead of adding dvb_generic_nonseekable_open() --- but I haven't
-    checked other users of dvb_generic_open whether they require
-    .llssek mehods other than fs/read_write.c::no_llseek.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
-
-This patch is motivated by Arnd's
-"bkl removal: make unlocked_ioctl mandatory"
-http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git;a=blobdiff;f=drivers/media/dvb/firewire/firedtv-ci.c;h=7ab89035c101240a860d6c72bf8541a0fdf3aed9;hp=853e04b7cb361d45257f80dcafdcf121cd340c63;hb=05e7753338045e9ee3950b2da032c5e5774efa90;hpb=03165e1d096afb4b1d9cfccdad66eed038121cec
-"BKL removal: mark remaining users as 'depends on BKL'"
-http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git;a=blobdiff;f=drivers/media/dvb/firewire/Kconfig;h=ba8938e26414c8c82c41677f87c1361ed8fcebd0;hp=4afa29256df110d3383b6b469762cefbb46436b6;hb=abb83d8fe5f8dcc8fca09bd9117429f73e1417e0;hpb=33c014b118f45516113d4b6823e40ea6f834dc6a
-
-
- drivers/media/dvb/dvb-core/dvbdev.c     |   20 ++++++++++++++++++++
- drivers/media/dvb/dvb-core/dvbdev.h     |   11 +++++++----
- drivers/media/dvb/firewire/firedtv-ci.c |    4 ++--
- 3 files changed, 29 insertions(+), 6 deletions(-)
-
-Index: b/drivers/media/dvb/dvb-core/dvbdev.c
-===================================================================
---- a/drivers/media/dvb/dvb-core/dvbdev.c
-+++ b/drivers/media/dvb/dvb-core/dvbdev.c
-@@ -135,6 +135,18 @@ int dvb_generic_open(struct inode *inode
- EXPORT_SYMBOL(dvb_generic_open);
- 
- 
-+int dvb_generic_nonseekable_open(struct inode *inode, struct file *file)
-+{
-+	int retval = dvb_generic_open(inode, file);
-+
-+	if (retval == 0)
-+		retval = nonseekable_open(inode, file);
-+
-+	return retval;
-+}
-+EXPORT_SYMBOL(dvb_generic_nonseekable_open);
-+
-+
- int dvb_generic_release(struct inode *inode, struct file *file)
- {
- 	struct dvb_device *dvbdev = file->private_data;
-@@ -170,6 +182,14 @@ int dvb_generic_ioctl(struct inode *inod
- EXPORT_SYMBOL(dvb_generic_ioctl);
- 
- 
-+long dvb_generic_unlocked_ioctl(struct file *file,
-+				unsigned int cmd, unsigned long arg)
-+{
-+	return dvb_generic_ioctl(NULL, file, cmd, arg);
-+}
-+EXPORT_SYMBOL(dvb_generic_unlocked_ioctl);
-+
-+
- static int dvbdev_get_free_id (struct dvb_adapter *adap, int type)
- {
- 	u32 id = 0;
-Index: b/drivers/media/dvb/dvb-core/dvbdev.h
-===================================================================
---- a/drivers/media/dvb/dvb-core/dvbdev.h
-+++ b/drivers/media/dvb/dvb-core/dvbdev.h
-@@ -136,10 +136,13 @@ extern int dvb_register_device (struct d
- 
- extern void dvb_unregister_device (struct dvb_device *dvbdev);
- 
--extern int dvb_generic_open (struct inode *inode, struct file *file);
--extern int dvb_generic_release (struct inode *inode, struct file *file);
--extern int dvb_generic_ioctl (struct inode *inode, struct file *file,
--			      unsigned int cmd, unsigned long arg);
-+extern int dvb_generic_open(struct inode *inode, struct file *file);
-+extern int dvb_generic_nonseekable_open(struct inode *inode, struct file *file);
-+extern int dvb_generic_release(struct inode *inode, struct file *file);
-+extern int dvb_generic_ioctl(struct inode *inode, struct file *file,
-+			     unsigned int cmd, unsigned long arg);
-+extern long dvb_generic_unlocked_ioctl(struct file *file,
-+				       unsigned int cmd, unsigned long arg);
- 
- /* we don't mess with video_usercopy() any more,
- we simply define out own dvb_usercopy(), which will hopefully become
-Index: b/drivers/media/dvb/firewire/firedtv-ci.c
-===================================================================
---- a/drivers/media/dvb/firewire/firedtv-ci.c
-+++ b/drivers/media/dvb/firewire/firedtv-ci.c
-@@ -217,8 +217,8 @@ static unsigned int fdtv_ca_io_poll(stru
- 
- static const struct file_operations fdtv_ca_fops = {
- 	.owner		= THIS_MODULE,
--	.ioctl		= dvb_generic_ioctl,
--	.open		= dvb_generic_open,
-+	.unlocked_ioctl	= dvb_generic_unlocked_ioctl,
-+	.open		= dvb_generic_nonseekable_open,
- 	.release	= dvb_generic_release,
- 	.poll		= fdtv_ca_io_poll,
- };
-
--- 
-Stefan Richter
--=====-==-=- --== ==-==
-http://arcgraph.de/sr/
-
-
+You have won 891,934.00 pounds Send Necessary :name,age,occupation, country
