@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0C0HU1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 03:20:27 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63855 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab0C0HU0 (ORCPT
+	id S1752390Ab0C0HoY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 03:44:24 -0400
+Received: from static-71-162-243-5.phlapa.fios.verizon.net ([71.162.243.5]:37920
+	"EHLO grelber.thyrsus.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab0C0HoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 03:20:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=tdwfxl7k07LIHS5+wozeGM3vmkIs+bHwR/eYzUV15oEqxd2Yc4HytgtelrEUFEq97M
-         OcPrXLAvjfLQy4bNBlhHAmdvgD0jBo1LzJvo5wJJAuDYvaByylIsedsndwQTfwiHrf6u
-         cZ3r+R3KRf4q1xpMKR1fHcR2OocsO+SE7xAEA=
+	Sat, 27 Mar 2010 03:44:23 -0400
+From: Rob Landley <rob@landley.net>
+Organization: Boundaries Unlimited
+To: David Miller <davem@davemloft.net>
+Subject: Re: Commit 085219f79cad broke Sparc-32 back in 2.6.28.
+Date: Sat, 27 Mar 2010 02:44:16 -0500
+User-Agent: KMail/1.11.2 (Linux/2.6.28-18-generic; KDE/4.2.2; x86_64; ; )
+Cc: blauwirbel@gmail.com, linux-kernel@vger.kernel.org
+References: <201002211025.11588.rob@landley.net> <201003262235.48736.rob@landley.net> <20100326.203745.04177541.davem@davemloft.net>
+In-Reply-To: <20100326.203745.04177541.davem@davemloft.net>
 MIME-Version: 1.0
-Date: Sat, 27 Mar 2010 16:20:25 +0900
-Message-ID: <8d2eb1f1003270020j12c6e519y40ce2203d378ad19@mail.gmail.com>
-Subject: Status of a patch to export built-in kernel module info to sysfs
-From: Yangkook Kim <yangkookkim@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: open-iscsi <open-iscsi@googlegroups.com>,
-       Yangkook Kim <yangkookkim@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201003270244.17865.rob@landley.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, lkml list.
+On Friday 26 March 2010 22:37:45 David Miller wrote:
+> From: Rob Landley <rob@landley.net>
+> Date: Fri, 26 Mar 2010 22:35:47 -0500
+>
+> > What exactly was the problem with just saying "unsigned short" when you
+> > mean an unsigned short?  The way x86 does, and arm?  (If these ever
+> > change, it breaks binary compatability.  Not sure what these changes were
+> > trying to accomplish...)
+>
+> I was trying to use well defined types that described the
+> usage and the origin of the definition.
+>
+> I'm happy to use "unsigned short" or whatever works better.
+> Please send a patch.
 
-I'm from open-iscsi mailing list and want to know if somebody
-already worked on a patch to export module information of
-scsi_transport_iscsi module to sysfs when it is compiled
-and built in kernel.
+Sure thing:
 
-Digging through open-iscsi and lkml list, I found some discussions
-about this issue at
+--- a/arch/sparc/include/asm/stat.h
++++ b/arch/sparc/include/asm/stat.h
+@@ -53,8 +53,8 @@ struct stat {
+ 	ino_t		st_ino;
+ 	mode_t		st_mode;
+ 	short		st_nlink;
+-	uid16_t		st_uid;
+-	gid16_t		st_gid;
++	unsigned short	st_uid;
++	unsigned short	st_gid;
+ 	unsigned short	st_rdev;
+ 	off_t		st_size;
+ 	time_t		st_atime;
 
-http://groups.google.com/group/open-iscsi/browse_thread/thread/5d0fd37e7d6a606c/d42284704f3bdf95?lnk=gst&q=Rusty#d42284704f3bdf95
+Signed-off-by: Rob Landley <rob@landley.net>
 
-It looks like someone already made a patch but, can't find the one.
-
-So, if you have any ideas about where I can find the patch, please
-point it to me. Otherwise, I will make the one by myself.
-
-Please include yangkookkim@gmail.com or open-iscsi@googlegroups.com
-at CC in reply since I am not subscribing lkml list.
-
-Thanks,
-
-Kim
+Rob
+-- 
+Latency is more important than throughput. It's that simple. - Linus Torvalds
