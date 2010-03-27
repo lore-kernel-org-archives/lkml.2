@@ -1,104 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab0C0VbW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 17:31:22 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:34847 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753980Ab0C0VbV (ORCPT
+	id S1754026Ab0C0Vef (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 17:34:35 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:38051 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753987Ab0C0Vee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 17:31:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=BZY6WMWuLKHPMJ13OZIoJ7ZRjxLvS3f7hPIgkyuRXHW+mhrQr5rKujjj+rnCaUmVDc
-         JqYbtcqkHxb8UPwqWzkg9Q1HFdyomjcgC/mHrMHgjjwyyQUADkHmETU6yHGf53+WwcNB
-         wK0oqu7fFXQ/wD9+Frg1QKfPFzF6xtN0oFYHA=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Norbert Preining <preining@logic.at>, jbarnes@virtuousgeek.org,
-       bjorn.helgaas@hp.com, airlied@linux.ie, eric@anholt.net
-Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU hung)
-Date: Sat, 27 Mar 2010 22:31:15 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc2; KDE/4.3.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
-In-Reply-To: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+	Sat, 27 Mar 2010 17:34:34 -0400
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf, x86: Add Nehelem PMU programming errata workaround
+From: Andi Kleen <andi@firstfloor.org>
+References: <1269608924.12097.147.camel@laptop>
+Date: Sat, 27 Mar 2010 22:27:55 +0100
+In-Reply-To: <1269608924.12097.147.camel@laptop> (Peter Zijlstra's message of "Fri, 26 Mar 2010 14:08:44 +0100")
+Message-ID: <87aattpi90.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003272231.15897.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On sobota, 27 marca 2010 o 17:11:05 Norbert Preining wrote:
-> Dear all,
-> 
-> (please Cc)
+Peter Zijlstra <peterz@infradead.org> writes:
 
-[Added more CCs]
+> Subject: perf, x86: Add Nehelem PMU programming errata workaround
+> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date: Fri Mar 26 13:59:41 CET 2010
+>
+> Implement the workaround for Intel Errata AAK100 and AAP53.
+>
+> Also, remove the Core-i7 name for Nehalem events since there are also
+> Westmere based i7 chips.
 
-Similar:
-http://marc.info/?l=linux-kernel&m=126954749618319&w=2
+Did you actually see this happen?
 
-> 
-> I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on
->  Debian/sid: xserver-xorg: 7.5+5
-> video-intel: 2.9.1-3
-> 
-> Running D2X-xl (self compiled) (descent2 open source code) X suddenly died,
-> and after that gdm could not be restarted because after a few secs
-> it went dead again.
-> 
-> In the logs I see:
-> kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->  elapsed... GPU hung kernel: [ 2486.341240] render error detected, EIR:
->  0x00000000
-> kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR*
->  i915_do_wait_request returns -5 (awaiting 113671 at 113604) kernel: [
->  2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->  elapsed... GPU hung kernel: [ 2486.669012] render error detected, EIR:
->  0x00000000
-> kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR*
->  i915_do_wait_request returns -5 (awaiting 113672 at 113604) kernel: [
->  2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->  elapsed... GPU hung kernel: [ 2487.524243] render error detected, EIR:
->  0x00000000
-> kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR*
->  i915_do_wait_request returns -5 (awaiting 113673 at 113604) kernel: [
->  2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
->  elapsed... GPU hung kernel: [ 2487.916175] render error detected, EIR:
->  0x00000000
-> kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR*
->  i915_do_wait_request returns -5 (awaiting 113674 at 113604)
-> 
-> Stopping gdm and restarting didn't help to get the graphics card back to
->  normal.
-> 
-> If you have any ideas how to fix/track/debug that please let me know,
-> same if you need more information.
-> 
-> Best wishes
-> 
-> Norbert
-> ------------------------------------------------------------------------
-> Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-> JAIST, Japan            TU Wien, Austria           Debian TeX Task Force
-> DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-> ------------------------------------------------------------------------
-> HUCKNALL (vb.)
-> To crouch upwards: as in the movement of a seated person's feet and
-> legs made in order to allow a cleaner's hoover to pass beneath them.
-> 			--- Douglas Adams, The Meaning of Liff
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+It looks like this will make the context switch into a perf
+enabled process _MUCH_ more expensive, MSR writes are very slow.
+
+-Andi
 
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+ak@linux.intel.com -- Speaking for myself only.
