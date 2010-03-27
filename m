@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab0C0WAs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 18:00:48 -0400
-Received: from [85.183.11.32] ([85.183.11.32]:48713 "EHLO Dublin.logfs.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754020Ab0C0WAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 18:00:46 -0400
-Date: Sat, 27 Mar 2010 23:00:39 +0100
-From: =?utf-8?Q?J=F6rn?= Engel <joern@dublin.logfs.org>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       romieu@fr.zoreil.com
-Subject: Re: [Regression] r8169: enable 64-bit DMA by default for PCI
-	Express devices (v2)
-Message-ID: <20100327220039.GA2083@Dublin.logfs.org>
-References: <20100315151041.GA15667@Dublin.logfs.org> <20100315.115748.13754030.davem@davemloft.net> <51f3faa71003151628g5edc4d7av8916ac76cb337bfe@mail.gmail.com> <20100316083501.GA3489@Dublin.logfs.org> <51f3faa71003161630g69160ea9tc1a2d448682632e5@mail.gmail.com> <51f3faa71003251756h17374375yd3a5d2acee2ffab9@mail.gmail.com> <20100326091234.GA11959@Dublin.logfs.org> <4BAD65A0.7090309@gmail.com> <20100327063838.GB11959@Dublin.logfs.org> <4BAE4464.9060909@gmail.com>
+	id S1754076Ab0C0WEf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 18:04:35 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:24263 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab0C0WEe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 18:04:34 -0400
+Date: Sat, 27 Mar 2010 15:03:55 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Yury Polyanskiy <ypolyans@princeton.edu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+       john stultz <johnstul@us.ibm.com>, Jan Glauber <jan.glauber@de.ibm.com>
+Subject: Re: [PATCH] hangcheck-timer is broken on x86
+Message-ID: <20100327220355.GA1810@mail.oracle.com>
+Mail-Followup-To: Yury Polyanskiy <ypolyans@princeton.edu>,
+	linux-kernel@vger.kernel.org, Andrew Morton <akpm@osdl.org>,
+	john stultz <johnstul@us.ibm.com>,
+	Jan Glauber <jan.glauber@de.ibm.com>
+References: <20100323233611.6dcbe4f4@penta.localdomain>
+ <20100326214648.GF9984@mail.oracle.com>
+ <20100326180025.052d930f@penta.localdomain>
+ <20100327005710.GA31009@mail.oracle.com>
+ <20100326220259.702859e9@penta.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4BAE4464.9060909@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100326220259.702859e9@penta.localdomain>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4BAE80E3.011E:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 March 2010 11:46:12 -0600, Robert Hancock wrote:
->
-> Hm, do you recall/have the details of what happened with the other card?
+On Fri, Mar 26, 2010 at 10:02:59PM -0400, Yury Polyanskiy wrote:
+> Joel, just realized there is a slight mistake in what I said before.
+> getrawmonotonic() is a refined jiffies (and actually resolves to
+> get_cycles() on my system in the end). Thus it doesn't count while in
+> suspend. However, jiffies-based timers (aka timer-wheel) are also
+> stopped while in suspend. So getrawmonotonic() is the right call to
+> check the precision of the jiffies-based timer (i.e. you dont need to
+> make a correction by calling monotonic_to_bootbased()). 
 
-It lost interrupts.  I had a testcase that should have received three
-interrupts and only two were received by the driver.  100%
-reproducable.  Card used MSI-Interrupts (no MSI-X) and worked
-reasonably well otherwise.  But it is a prototype, so the card is just
-as likely to be the cause as the motherboard.
+	It's OK to tell hangcheck-timer users that suspend is not
+allowed.  After all, you're running something that you don't want to see
+hang.
+	Is there a clock in the system that is a true wallclock?  I'm
+guessing, since getrawmonotonic() is get_cycles() based, that it doesn't
+provide accurate time in the face of cpufreq changes.  Is that true?
 
-> It's possible this is some general problem with that machine/motherboard  
-> and not actually an issue with what the driver is doing. What kind of  
-> board is that?
+Joel
 
-Possible, yes.  But I wouldn't know how to prove it.
-Asrock G31M-S with Intel E5200.
 
-J�rn
+
+-- 
+
+Life's Little Instruction Book #497
+
+	"Go down swinging."
+
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
