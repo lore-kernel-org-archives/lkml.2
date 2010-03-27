@@ -1,76 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753896Ab0C0Wzu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 18:55:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46431 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab0C0Wzt (ORCPT
+	id S1754150Ab0C0W4U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 18:56:20 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:16786 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab0C0W4Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 18:55:49 -0400
-Date: Sat, 27 Mar 2010 22:55:22 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-Cc: mad_soft@inbox.ru, rpjday@crashcourse.ca, jaswinderrajput@gmail.com,
-       kristoffer.ericson@gmail.com, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: mach-sa1100: Put nanoEngine support back in the
-	kernel.
-Message-ID: <20100327225522.GD13203@n2100.arm.linux.org.uk>
-References: <1268338199-32222-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
+	Sat, 27 Mar 2010 18:56:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=VuhmnB166B9FmSAPbzVrEptbAhksyECjSeAvZUGz7k2Xz6dESmYSbTxezdsJpeeUhh
+         Vj6RTUbZeD6QjyGLYuHd5lDXMgJRUH7ysjNJEutp/sX46PTbB7OF+diioPgpZHvNL4hx
+         wRUwjTYTAYVjrhRkGMcEyIwsZqWFEUrYUlVtY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1268338199-32222-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.LFD.2.00.1003261951330.3147@localhost.localdomain>
+References: <520f0cf11003260502o5ecb23adpe69f6eb465142821@mail.gmail.com>
+	 <alpine.LFD.2.00.1003261951330.3147@localhost.localdomain>
+Date: Sat, 27 Mar 2010 23:56:14 +0100
+X-Google-Sender-Auth: be4716e40525f915
+Message-ID: <520f0cf11003271556n2b4e9774x8b15a6e34fbcf1bf@mail.gmail.com>
+Subject: Re: [BUG-REPORT][PREEMPT-RT] 2.6.33.1-rt11 triggers 
+	DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled), in a 32-bit kvm session
+From: John Kacur <jkacur@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 11, 2010 at 05:09:59PM -0300, Marcelo Roberto Jimenez wrote:
-> --- /dev/null
-> +++ b/arch/arm/configs/nanoengine_defconfig
-> @@ -0,0 +1,1396 @@
+On Fri, Mar 26, 2010 at 8:01 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 26 Mar 2010, John Kacur wrote:
+>
+>> During boot-up of 2.6.33.1-rt11 in a 32-bit qemu-kvm machine,
+>> The following warning is reliably (every time) triggered.
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at /home/jkacur/jk-2.6/kernel/fork.c:1065 copy_process+0x299/0x160f()
+>> Hardware name:
+>> Modules linked in:
+>> Pid: 64, comm: khelper Not tainted 2.6.33.1-rt11 #1
+>> Call Trace:
+>>  [<c104961a>] warn_slowpath_common+0x83/0x9a
+>>  [<c1049643>] warn_slowpath_null+0x12/0x15
+>>  [<c1046f89>] copy_process+0x299/0x160f
+>>  [<c1048711>] do_fork+0x235/0x4e2
+>>  [<c107da08>] ? register_lock_class+0x17/0x22d
+>>  [<c107e6dc>] ? mark_lock+0x1e/0x1c0
+>>  [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+>>  [<c100ae09>] kernel_thread+0x79/0x81
+>>  [<c1064a2f>] ? ____call_usermodehelper+0x0/0x138
+>>  [<c100391c>] ? kernel_thread_helper+0x0/0x10
+>>  [<c1064cc7>] __call_usermodehelper+0x75/0xa0
+>>  [<c10673b6>] worker_thread+0x1f6/0x2fb
+>>  [<c1067374>] ? worker_thread+0x1b4/0x2fb
+>>  [<c1064c52>] ? __call_usermodehelper+0x0/0xa0
+>>  [<c106a91e>] ? autoremove_wake_function+0x0/0x46
+>>  [<c106a740>] kthread+0x6b/0x74
+>>  [<c10671c0>] ? worker_thread+0x0/0x2fb
+>>  [<c106a6d5>] ? kthread+0x0/0x74
+>>  [<c106a6d5>] ? kthread+0x0/0x74
+>>  [<c1003922>] kernel_thread_helper+0x6/0x10
+>> ---[ end trace a22d306b065d4a66 ]---
+>>
+>> I am happy to provide more information to help debug this.
+>
+> Can you run the following patch please ?
+>
+> Thanks,
+>
+>        tglx
+> ---
+>
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 340cbc8..b63e8f5 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1062,7 +1062,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>        rt_mutex_init_task(p);
+>
+>  #ifdef CONFIG_PROVE_LOCKING
+> -       DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
+> +       //DEBUG_LOCKS_WARN_ON(!p->hardirqs_enabled);
+> +       if (!p->hardirqs_enabled)
+> +               print_irqtrace_events(p);
+>        DEBUG_LOCKS_WARN_ON(!p->softirqs_enabled);
+>  #endif
+>        retval = -EAGAIN;
+> --
 
-Please don't include defconfigs along with other code.
+With the above patch I got the following.
 
-> +/*
-> + * linux/arch/arm/mach-sa1100/nanoengine.c
-> + *
-> + * Bright Star Engineering's nanoEngine board init code.
-> + *
-> + * Copyright (C) 2009 Marcelo Roberto Jimenez <mroberto@cpti.cetuc.puc-rio.br>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/kernel.h>
-> +#include <linux/mtd/mtd.h>
-> +#include <linux/mtd/partitions.h>
-> +#include <linux/root_dev.h>
-> +#include <linux/tty.h>
+8139cp: 10/100 PCI Ethernet driver v1.3 (Mar 22, 2004)
+ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 10
+8139cp 0000:00:03.0: PCI INT A -> Link[LNKC] -> GSI 10 (level, high) -> IRQ 10
+eth0: RTL-8139C+ at 0xf886c000, 52:54:00:3c:11:54, IRQ 10
+8139cp 0000:00:03.0: setting latency timer to 64
+irq event stamp: 5988
+hardirqs last  enabled at (5987): [<c13e4696>]
+_raw_spin_unlock_irqrestore+0x49/0x8f
+hardirqs last disabled at (5988): [<c13e4ce3>] call_function_interrupt+0x2f/0x3c
+softirqs last  enabled at (0): [<c10470a6>] copy_process+0x3b6/0x15ad
+softirqs last disabled at (0): [<(null)>] (null)
+8139too Fast Ethernet driver 0.9.28
+irq event stamp: 10638
+hardirqs last  enabled at (10637): [<c13e4696>]
+_raw_spin_unlock_irqrestore+0x49/0x8f
+hardirqs last disabled at (10638): [<c13e4feb>] apic_timer_interrupt+0x2f/0x3c
+softirqs last  enabled at (0): [<c10470a6>] copy_process+0x3b6/0x15ad
+softirqs last disabled at (0): [<(null)>] (null)
+irq event stamp: 2914
+hardirqs last  enabled at (2913): [<c13e4696>]
+_raw_spin_unlock_irqrestore+0x49/0x8f
+hardirqs last disabled at (2914): [<c13e4feb>] apic_timer_interrupt+0x2f/0x3c
+softirqs last  enabled at (0): [<c10470a6>] copy_process+0x3b6/0x15ad
+softirqs last disabled at (0): [<(null)>] (null)
 
-Do you really need tty.h in here?
 
-> +
-> +#include <asm/mach-types.h>
-> +#include <asm/setup.h>
-> +
-> +#include <asm/mach/arch.h>
-> +#include <asm/mach/flash.h>
-> +#include <asm/mach/map.h>
-> +#include <asm/mach/serial_sa1100.h>
-> +
-> +#include <mach/hardware.h>
-> +
-> +#include "generic.h"
-> +
-> +/* Flash bank 0 */
-> +static struct mtd_partition nanoengine_partitions[] = {
-> +	{
-> +	.name		= "nanoEngine boot firmware and parameter table",
+and then
 
-Each '{' should indent the next line by a tab.
+irq event stamp: 36510
+hardirqs last  enabled at (36509): [<c13e4696>]
+_raw_spin_unlock_irqrestore+0x49/0x8f
+hardirqs last disabled at (36510): [<c13e4feb>] apic_timer_interrupt+0x2f/0x3c
+softirqs last  enabled at (0): [<c10470a6>] copy_process+0x3b6/0x15ad
+softirqs last disabled at (0): [<(null)>] (null)
+eth0: no IPv6 routers present
+irq event stamp: 103682
+hardirqs last  enabled at (103681): [<c13e4696>]
+_raw_spin_unlock_irqrestore+0x49/0x8f
+hardirqs last disabled at (103682): [<c13e4feb>] apic_timer_interrupt+0x2f/0x3c
+softirqs last  enabled at (0): [<c10470a6>] copy_process+0x3b6/0x15ad
+softirqs last disabled at (0): [<(null)>] (null)
