@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab0C0OiK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 10:38:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57062 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752931Ab0C0OiI (ORCPT
+	id S1753440Ab0C0OoN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 10:44:13 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50618
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752931Ab0C0OoM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 10:38:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Date: Sat, 27 Mar 2010 15:37:38 +0100
-User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
-Cc: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-       John Kacur <jkacur@redhat.com>
-References: <201003242240.54907.arnd@arndb.de> <201003251438.59062.arnd@arndb.de> <4BAD4795.2040700@s5r6.in-berlin.de>
-In-Reply-To: <4BAD4795.2040700@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sat, 27 Mar 2010 10:44:12 -0400
+Date: Sat, 27 Mar 2010 07:44:34 -0700 (PDT)
+Message-Id: <20100327.074434.193717071.davem@davemloft.net>
+To: bzolnier@gmail.com
+Cc: david@fries.net, jeff@garzik.org, linux-kernel@vger.kernel.org,
+       linux-ide@vger.kernel.org
+Subject: Re: 2.6.34-rc2 breaks via82cxxx Host Protected Area
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201003271119.53757.bzolnier@gmail.com>
+References: <4BAD5472.9050303@garzik.org>
+	<20100327020934.GA8224@spacedout.fries.net>
+	<201003271119.53757.bzolnier@gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003271537.40488.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/LdXSnm0gS4Hzna88NRYqPW/VOlWhPVh0r1Oq
- Fj/5oTyLmW7s1oI4Yub8EA7i9r5OfiQML1plRIczpcNFAMP73R
- omWlBoGIoK30fufpuHZEQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 27 March 2010 00:47:33 Stefan Richter wrote:
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+Date: Sat, 27 Mar 2010 11:19:53 +0100
 
-> firewire-core and raw1394 do not actually require the BKL, they only
-> miss to declare their files as not seekable.  I will post patches which
-> change these accordingly.
-> 
-> My guess is that there is nothing to seek in dv1394, video1394, and
-> firedtv either.
-> 
-> Needless to say, there may be other character device file interfaces
-> which cannot be seeked but don't admit it yet.
-> 
+> The commit itself may also have a problem but since it was _never_ in
+> linux-next tree it never saw a wider upstream testing.
 
-Your patches look good, but it would be helpful to also set .llseek = no_llseek
-in the file operations, because that is much easier to grep for than
-only the nonseekable_open. While it's technically a NOP on the presence of
-nonseekable_open, it will help that I don't accidentally apply my patch on
-top of yours.
+This is not true Bart.
 
-	Arnd
+My ide-2.6 and ide-next-2.6 trees are both included in
+linux-next   And if they are not, that needs to be fixed
+because they very much are intended to be.
+
+In any event, you wrote a patch which broke something and
+if you're not willing to work on a fix I have no choice
+but to simply revert.
