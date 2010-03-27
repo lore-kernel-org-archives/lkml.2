@@ -1,164 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab0C0AVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 20:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32925 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab0C0AVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 20:21:10 -0400
-Date: Fri, 26 Mar 2010 20:20:56 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Chad Talbott <ctalbott@google.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, jens.axboe@oracle.com,
-       mrubin@google.com, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-kernel@vger.kernel.org, dpshah@google.com,
-       Nauman Rafique <nauman@google.com>
-Subject: Re: [PATCH 0/4] io-controller: Use names rather than major:minor
-Message-ID: <20100327002056.GA9280@redhat.com>
-References: <20100325180310.25299.64877.stgit@meat.mtv.corp.google.com> <4BAC0E7D.9080305@cn.fujitsu.com> <20100326152012.GB18128@redhat.com> <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
+	id S1753520Ab0C0AVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 20:21:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43868 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753335Ab0C0AVV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Mar 2010 20:21:21 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH 1/1] perf report: Add progress bars
+Date: Fri, 26 Mar 2010 21:21:12 -0300
+Message-Id: <1269649272-12094-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1786ab031003261554y40c21bc8sb4ea2f347c2c8bf8@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 03:54:40PM -0700, Chad Talbott wrote:
-> On Fri, Mar 26, 2010 at 8:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Fri, Mar 26, 2010 at 09:31:41AM +0800, Gui Jianfeng wrote:
-> >> +int blk_lookup_devname(dev_t devt, char *name)
-> >> +{
-> 
-> [ snip... loop through all block devices for devt ...snip ]
-> 
-> >> So we can keep dev_t in blkio layer, and export to user a device name by calling
-> >> this function. Also, we retrive device number by calling blk_lookup_devt().
-> >> This change might keep things much simple. Jens, do you have any thoughts?
-> >>
-> > I agree with Gui that lets keep the dev_t the core in blkio layer. Keeping
-> > a pointer to gendisk in request queue is becoming little messy.
-> 
-> Agreed on leaving gendisk pointer out of request_queue.  In doing
-> further investigation, I've found that it's up to the driver to
-> maintain the association between gendisk and request_queue, and some
-> drivers put multiple gendisk behind a single request_queue, so the
-> back pointer would be ill-specified.
-> 
-> > But if that does not work for you, then I would also like to keep things
-> > simple and translate dev_t to diskname during read routine. Similiarly,
-> > while somebody is putting policy, use blk_lookup_devt().
-> 
-> I like the simplicity of blk_lookup_devt(), but I don't like the idea
-> of iterating through all block devices on every lookup of the name.
-> Perhaps we could cache the name somewhere?
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Setting up the policies is not a fast path. So iterating through
-devices probably is not a bad idea. Caching infact will make it more
-complicated.
+For when we are processing the events and inserting the entries in the
+browser.
 
-It is no different than than /proc/diskstat which is also iterating
-through all the devices.
+Experimentation here: naming "ui_something" we may be treading into
+creating a TUI/GUI set of routines that can then be implemented in terms
+of multiple backends.
 
-In fact blk_lookup_devt() is also doing the same thing, iterating
-through all the block_class devices.
+Also the time it takes for adding things to the "browser" takes, visually
+(I guess I should do some profiling here ;-) ), more time than for
+processing the events...
 
-> 
-> Actually, the name is the name of the *queue* (or the key in
-> blk-cgroup), because as I mentioned above there can be a many to one
-> relationship between disks and queues in general.
-> 
+That means we probably need to create a custom hist_entry browser, so
+that we reuse the structures we have in place instead of duplicating
+them in newt.
 
-What is the significance of one queue serving to multiple gendisk
-structures. How this relationship is handled in /sys/block?
+But progress was made and at least we can see something while long files
+are being loaded, that must be one of UI 101 bullet points :-)
 
-> The more I think about it, the more it seems to make sense to extend
-> blkio_policy_ops to include a function to get the name of the key.
-> blk-cgroup makes no current use of the dev, except to invent a name
-> for the request_queue whose policy is being set or printed.  It could
-> be argued that the thing being scheduled has a better idea of the name
-> of that thing.
+Cc: Fr√©d√©ric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c |    7 ++-
+ tools/perf/util/debug.h     |   16 +++++++
+ tools/perf/util/hist.c      |    5 ++-
+ tools/perf/util/hist.h      |    2 +-
+ tools/perf/util/newt.c      |  103 +++++++++++++++++++++++++++++++++----------
+ tools/perf/util/session.c   |    6 +++
+ tools/perf/util/session.h   |   12 +++--
+ 7 files changed, 119 insertions(+), 32 deletions(-)
 
-request_queue is something internal to block layer. To a user, block
-deivce will make sense (device file, major:minor, and sysfs disk name).
-So keeping a name for request queue also and implmeneting a function
-in blkio_policy_ops to retrieve that name, does not make much sense
-to me.
-  
-> 
-> > But this will lead to issue of how do you now display both device number
-> > and disk name in the output. May be following.
-> >
-> > major:minor †diskname †data
-> >
-> > I am not sure if people are fond of multiple values in a single file. At
-> > the same time for setting the rules or deleting the rules, it will make
-> > syntax complicated/confusing. Also will require breaking ABI for existing
-> > blkio.time, blkio.sectors, blkio.dequeue files.
-> 
-> I don't like this, either.  It breaks ABI and is more confusing for users.
-> 
-> > So I would prefer to keep the major/minor number based interface for
-> > follwing reasons.
-> >
-> > - Chaning it now breaks ABI.
-> > - Other cgroup controller "device" is also using major/minor number based
-> > †interface for device access policy. So it is consistent with other
-> > †controller.
-> 
-> Which controllers are these?
-> 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3ab6d9e..e93a7ed 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -302,13 +302,14 @@ static int __cmd_report(void)
+ 	next = rb_first(&session->stats_by_id);
+ 	while (next) {
+ 		struct event_stat_id *stats;
++		u64 nr_hists;
+ 
+ 		stats = rb_entry(next, struct event_stat_id, rb_node);
+ 		perf_session__collapse_resort(&stats->hists);
+-		perf_session__output_resort(&stats->hists, stats->stats.total);
+-
++		nr_hists = perf_session__output_resort(&stats->hists,
++						       stats->stats.total);
+ 		if (use_browser)
+-			perf_session__browse_hists(&stats->hists,
++			perf_session__browse_hists(&stats->hists, nr_hists,
+ 						   stats->stats.total, help);
+ 		else {
+ 			if (rb_first(&session->stats_by_id) ==
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 0172edf..5cb0a1b 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -10,13 +10,29 @@ extern int dump_trace;
+ int dump_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+ void trace_event(event_t *event);
+ 
++struct ui_progress;
++
+ #ifdef NO_NEWT_SUPPORT
+ static inline int browser__show_help(const char *format __used, va_list ap __used)
+ {
+ 	return 0;
+ }
++
++static inline struct ui_progress *ui_progress__new(const char *title __used,
++						   u64 total __used)
++{
++	return (struct ui_progress *)1;
++}
++
++static inline void ui_progress__update(struct ui_progress *self __used,
++				       u64 curr __used) {}
++
++static inline void ui_progress__delete(struct ui_progress *self __used) {}
+ #else
+ int browser__show_help(const char *format, va_list ap);
++struct ui_progress *ui_progress__new(const char *title, u64 total);
++void ui_progress__update(struct ui_progress *self, u64 curr);
++void ui_progress__delete(struct ui_progress *self);
+ #endif
+ 
+ #endif	/* __PERF_DEBUG_H */
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index de31901..a46d093 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -185,12 +185,13 @@ static void perf_session__insert_output_hist_entry(struct rb_root *root,
+ 	rb_insert_color(&he->rb_node, root);
+ }
+ 
+-void perf_session__output_resort(struct rb_root *hists, u64 total_samples)
++u64 perf_session__output_resort(struct rb_root *hists, u64 total_samples)
+ {
+ 	struct rb_root tmp;
+ 	struct rb_node *next;
+ 	struct hist_entry *n;
+ 	u64 min_callchain_hits;
++	u64 nr_hists = 0;
+ 
+ 	min_callchain_hits =
+ 		total_samples * (callchain_param.min_percent / 100);
+@@ -205,9 +206,11 @@ void perf_session__output_resort(struct rb_root *hists, u64 total_samples)
+ 		rb_erase(&n->rb_node, hists);
+ 		perf_session__insert_output_hist_entry(&tmp, n,
+ 						       min_callchain_hits);
++		++nr_hists;
+ 	}
+ 
+ 	*hists = tmp;
++	return nr_hists;
+ }
+ 
+ static size_t callchain__fprintf_left_margin(FILE *fp, int left_margin)
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index fe366ce..da6a8c1 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -25,7 +25,7 @@ size_t hist_entry__fprintf(struct hist_entry *self,
+ 			   u64 session_total);
+ void hist_entry__free(struct hist_entry *);
+ 
+-void perf_session__output_resort(struct rb_root *hists, u64 total_samples);
++u64 perf_session__output_resort(struct rb_root *hists, u64 total_samples);
+ void perf_session__collapse_resort(struct rb_root *hists);
+ size_t perf_session__fprintf_hists(struct rb_root *hists,
+ 				   struct perf_session *pair,
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index e99bcc8..b0210ae 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -12,6 +12,72 @@
+ #include "sort.h"
+ #include "symbol.h"
+ 
++struct ui_progress {
++	newtComponent form, scale;
++};
++
++struct ui_progress *ui_progress__new(const char *title, u64 total)
++{
++	struct ui_progress *self = malloc(sizeof(*self));
++
++	if (self != NULL) {
++		int cols;
++		newtGetScreenSize(&cols, NULL);
++		cols -= 4;
++		newtCenteredWindow(cols, 1, title);
++		self->form  = newtForm(NULL, NULL, 0);
++		if (self->form == NULL)
++			goto out_free_self;
++		self->scale = newtScale(0, 0, cols, total);
++		if (self->scale == NULL)
++			goto out_free_form;
++		newtFormAddComponents(self->form, self->scale, NULL);
++		newtRefresh();
++	}
++
++	return self;
++
++out_free_form:
++	newtFormDestroy(self->form);
++out_free_self:
++	free(self);
++	return NULL;
++}
++
++void ui_progress__update(struct ui_progress *self, u64 curr)
++{
++	newtScaleSet(self->scale, curr);
++	newtRefresh();
++}
++
++void ui_progress__delete(struct ui_progress *self)
++{
++	newtFormDestroy(self->form);
++	newtPopWindow();
++	free(self);
++}
++
++static char browser__last_msg[1024];
++
++int browser__show_help(const char *format, va_list ap)
++{
++	int ret;
++	static int backlog;
++
++        ret = vsnprintf(browser__last_msg + backlog,
++			sizeof(browser__last_msg) - backlog, format, ap);
++	backlog += ret;
++
++	if (browser__last_msg[backlog - 1] == '\n') {
++		newtPopHelpLine();
++		newtPushHelpLine(browser__last_msg);
++		newtRefresh();
++		backlog = 0;
++	}
++
++	return ret;
++}
++
+ static void newt_form__set_exit_keys(newtComponent self)
+ {
+ 	newtFormAddHotKey(self, NEWT_KEY_ESCAPE);
+@@ -364,8 +430,8 @@ static void perf_session__selection(newtComponent self, void *data)
+ 	*symbol_ptr = newt__symbol_tree_get_current(self);
+ }
+ 
+-void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+-				const char *helpline)
++int perf_session__browse_hists(struct rb_root *hists, u64 nr_hists,
++			       u64 session_total, const char *helpline)
+ {
+ 	struct sort_entry *se;
+ 	struct rb_node *nd;
+@@ -378,6 +444,12 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 	newtComponent form, tree;
+ 	struct newtExitStruct es;
+ 	const struct map_symbol *selection;
++	u64 curr_hist = 0;
++	struct ui_progress *progress;
++
++	progress = ui_progress__new("Adding entries to the browser...", nr_hists);
++	if (progress == NULL)
++		return -1;
+ 
+ 	snprintf(str, sizeof(str), "Samples: %Ld", session_total);
+ 	newtDrawRootText(0, 0, str);
+@@ -419,8 +491,13 @@ void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+ 			max_len = len;
+ 		if (symbol_conf.use_callchain)
+ 			hist_entry__append_callchain_browser(h, tree, session_total, idx++);
++		++curr_hist;
++		if (curr_hist % 5)
++			ui_progress__update(progress, curr_hist);
+ 	}
+ 
++	ui_progress__delete(progress);
++
+ 	if (max_len > cols)
+ 		max_len = cols - 3;
+ 
+@@ -480,27 +557,7 @@ do_annotate:
+ 
+ 	newtFormDestroy(form);
+ 	newtPopWindow();
+-}
+-
+-static char browser__last_msg[1024];
+-
+-int browser__show_help(const char *format, va_list ap)
+-{
+-	int ret;
+-	static int backlog;
+-
+-        ret = vsnprintf(browser__last_msg + backlog,
+-			sizeof(browser__last_msg) - backlog, format, ap);
+-	backlog += ret;
+-
+-	if (browser__last_msg[backlog - 1] == '\n') {
+-		newtPopHelpLine();
+-		newtPushHelpLine(browser__last_msg);
+-		newtRefresh();
+-		backlog = 0;
+-	}
+-
+-	return ret;
++	return 0;
+ }
+ 
+ void setup_browser(void)
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 76b4ac6..32765cd 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -397,6 +397,10 @@ int __perf_session__process_events(struct perf_session *self,
+ 	event_t *event;
+ 	uint32_t size;
+ 	char *buf;
++	struct ui_progress *progress = ui_progress__new("Processing events...",
++							self->size);
++	if (progress == NULL)
++		return -1;
+ 
+ 	perf_event_ops__fill_defaults(ops);
+ 
+@@ -425,6 +429,7 @@ remap:
+ 
+ more:
+ 	event = (event_t *)(buf + head);
++	ui_progress__update(progress, offset);
+ 
+ 	if (self->header.needs_swap)
+ 		perf_event_header__bswap(&event->header);
+@@ -475,6 +480,7 @@ more:
+ done:
+ 	err = 0;
+ out_err:
++	ui_progress__delete(progress);
+ 	return err;
+ }
+ 
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 631f815..6a15dae 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -88,11 +88,15 @@ static inline struct map *
+ }
+ 
+ #ifdef NO_NEWT_SUPPORT
+-static inline void perf_session__browse_hists(struct rb_root *hists __used,
++static inline int perf_session__browse_hists(struct rb_root *hists __used,
++					      u64 nr_hists __used,
+ 					      u64 session_total __used,
+-					      const char *helpline __used) {}
++					      const char *helpline __used)
++{
++	return 0;
++}
+ #else
+-void perf_session__browse_hists(struct rb_root *hists, u64 session_total,
+-				const char *helpline);
++int perf_session__browse_hists(struct rb_root *hists, u64 nr_hists,
++				u64 session_total, const char *helpline);
+ #endif
+ #endif /* __PERF_SESSION_H */
+-- 
+1.6.2.5
 
-linux-2.6/Documentation/cgroups/devices.txt
-
-> > - Displaying both device major/minor and diskname is an option but that
-> > †makes the file format syntax little complicated and new rule setting
-> > †or removoal confusing.
-> 
-> A few messages back you mentioned that you preferred device names
-> because they would be better for users of the system.  If there was a
-> simple implementation, would you still be behind a new name-based
-> interface?  We could go that direction and maintain ABI by deprecating
-> current interface and making a new interface with names.
-> 
-> If you can't tell, I'm a big fan of using the name! :)  It's *much*
-> more consistent with the interfaces in /sys.
-
-/sys provides facility to access device both through device number
-(/sys/dev/block/<major:minor>) and disk name (/sys/block/<diskname>). So
-I don't know why do you think it is more consistent with /sys if we
-use diskname.
-
-In general user space seems to be accessing devices using device files.
-For example, blockdev utility. These device file inodes in turn store
-major/minor number of device and then get to respective gendisk object.
-
-I think one advantage of major:minor number scheme is that it is simple
-and there is no confusion. For example, looks like device mapper layer
-can create multiple device files for same disk. On my system, multipath target
-has created /dev/mapper/mpathe and also /dev/dm-3 which is referring to
-same device. /sys/block has dm-3 created under it.
-
-brw-rw---- 1 root disk 253, 3 2010-03-25 22:57 /dev/mapper/mpathe
-brw-rw---- 1 root disk 253, 3 2010-03-25 22:57 /dev/dm-3
-
-Now lets somebody is accessing the device using /dev/mapper/mpathe, he
-can easily extract the major:minor of this device and see if there is
-any rule for that device. If we keep rules in disk name, then application
-shall have to go through the all the /sys/block/diskname entries and
-first figure out diskname and then grep for that disk name in rules.
-
-So in case of multiple device files for same disk, I think retrieving
-major/minor and then doing lookup in rules file is easier. Keeping rules
-in terms of disk names is more intutive in the case of single device
-file and diskname being same as device file (/dev/sda). 
-
-So because major:minor number scheme is simple, does not break ABI, is
-consistent with "devices" cgroup controller, works well in case of
-multiple device files for same disk, I kind of like it and wouldn't
-mind continuing with it.
-  
-Thanks
-Vivek
