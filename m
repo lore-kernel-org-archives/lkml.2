@@ -1,40 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab0C0CHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Mar 2010 22:07:33 -0400
-Received: from mail-yw0-f172.google.com ([209.85.211.172]:58011 "EHLO
-	mail-yw0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab0C0CHc convert rfc822-to-8bit (ORCPT
+	id S1752416Ab0C0CJc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Mar 2010 22:09:32 -0400
+Received: from mailhub129.itcs.purdue.edu ([128.210.5.129]:51121 "EHLO
+	mailhub129.itcs.purdue.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752072Ab0C0CJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Mar 2010 22:07:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hyTpAssDJ13odrZtvwUZmjdVBdGV9YMnY4QAuj/8aQhkr8T6m6byjpe1bvEvyoCK1x
-         +9vkEJsJ9LJhE7IxLPodT5Rqxu9NSMUdJgQxT49+EKk3zsC8wNmEuuiROwW9IqRLkPZc
-         D5ldiZImoi1yAIOdAJf9ndnMlKVAWwBd/KOXE=
+	Fri, 26 Mar 2010 22:09:31 -0400
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Mar 2010 22:09:31 EDT
+Message-ID: <4BAD675E.3050600@purdue.edu>
+Date: Fri, 26 Mar 2010 22:03:10 -0400
+From: Naresh Rapolu <nrapolu@purdue.edu>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
 MIME-Version: 1.0
-In-Reply-To: <84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com>
-References: <20100326223530.GA11817@xpc.home> <1269643470.2256.17.camel@edumazet-laptop> 
-	<84621a61003261555q2c78f6a8o5b438113bed6bd2@mail.gmail.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Fri, 26 Mar 2010 19:07:11 -0700
-Message-ID: <a36005b51003261907x7ebe057bt2d541f63f20f632b@mail.gmail.com>
-Subject: Re: [PATCH] Add MSG_WAITFORONE flag to recvmmsg
-To: Brandon Black <blblack@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-       "David S. Miller" <davem@davemloft.net>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: linux-kernel@vger.kernel.org
+Subject: Hardware performance events are not counted by  "perf"   in a 2.6.31.12
+  KVM guest
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-PMX-Version: 5.5.7.378829
+X-PerlMx-Virus-Scanned: Yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 15:55, Brandon Black <blblack@gmail.com> wrote:
-> Ok.  I've never been through this process before.  Do I resubmit a new
-> subject/thread with the changed patch and [PATCH v2] at this point?
+Hello,
 
-The patch is small enough for this to be OK.
+"perf"  tool does not count  hardware performance events ( cache misses 
+etc) in a  KVM guest ( Ubuntu 9.10 karmic,  2.6.31-14-generic  kernel) 
+on  Xeon 5530 quad-core.  The host  is  2.6.28  kernel , Ubuntu 8.04 
+LTS, Hardy.
+
+readfile.sh  reads in a  large file (1430 lines),  which should cause  
+cache-misses.
+root@multicore4-vm3:/usr/src/linux-2.6.31.12/tools/perf# ./perf stat -r 
+5 -- bash readfile.sh
+
+Performance counter stats for 'bash readfile.sh' (5 runs):
+
+  11002.207467  task-clock-msecs         #      1.042 CPUs    ( +-  
+10.834% )
+          3480  context-switches                 #      0.000 M/sec   ( 
++-  19.017% )
+          2238  CPU-migrations                 #      0.000 M/sec   ( 
++-  29.488% )
+        482299  page-faults                      #      0.044 M/sec   ( 
++-   0.141% )
+             0  cycles                                  #      0.000 
+M/sec   ( +-     nan% )
+             0  instructions                          #        nan 
+IPC     ( +-     nan% )
+             0  cache-references                 #      0.000 M/sec   ( 
++-     nan% )
+             0  cache-misses                      #      0.000 M/sec   ( 
++-     nan% )
+
+  10.560510393  seconds time elapsed   ( +-  11.401% )
+
+Do I need to make some configuration changes to enable hardware events 
+?  A similar question was posted recently here : 
+http://lkml.org/lkml/2010/3/18/342   but no response !
+Any help would be greatly appreciated.
+
+Thanks,
+Naresh Rapolu.
