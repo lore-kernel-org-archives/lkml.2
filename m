@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab0C0PhI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 11:37:08 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:43247 "EHLO smtp.polymtl.ca"
+	id S1753607Ab0C0Phc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 11:37:32 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:43291 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753142Ab0C0PhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 11:37:06 -0400
-Message-Id: <20100327153619.331014310@efficios.com>
+	id S1752158Ab0C0Phb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 11:37:31 -0400
+Message-Id: <20100327153618.821249363@efficios.com>
 References: <20100327153233.993367557@efficios.com>
 User-Agent: quilt/0.46-1
-Date: Sat, 27 Mar 2010 11:32:36 -0400
+Date: Sat, 27 Mar 2010 11:32:34 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
@@ -17,20 +17,16 @@ To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
        dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com
-Subject: [patch 3/6] commit 418b6f2c2ddba7c91d1186b68618092910260c32 Author: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca> Date: Sat Mar 27 11:05:38 2010 -0400
-Content-Disposition: inline; filename=revert-net-dont-use-init-rcu-head.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Sat, 27 Mar 2010 15:36:19 +0000
+Subject: [patch 1/6] commit 501fdb3aeeb2444f86d289a4a044cf7c8fbc17df Author: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca> Date: Sat Mar 27 10:52:11 2010 -0400
+Content-Disposition: inline; filename=revert-net-remove-init-rcu-head-usage.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Sat, 27 Mar 2010 15:36:18 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    Revert "net: don't use INIT_RCU_HEAD"
+    Revert "net: remove INIT_RCU_HEAD() usage"
     
-    This reverts commit 93adcc80f3288f1827baf6f821af818f6eeef7f9.
-    
-    Conflicts (resolved):
-    
-    	net/core/net_namespace.c
+    This reverts commit dc4c2c31053ba5bf685d273cd62ecca406dddb2d.
     
     If we ever want to be able to properly detect double rcu_head activation, we
     need to separate the initialization from call_rcu().
@@ -52,101 +48,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
     CC: eric.dumazet@gmail.com
     CC: Alexey Dobriyan <adobriyan@gmail.com>
 
-diff --git a/net/core/neighbour.c b/net/core/neighbour.c
-index 6cee643..99d6ac9 100644
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -1346,6 +1346,7 @@ struct neigh_parms *neigh_parms_alloc(struct net_device *dev,
- 	if (p) {
- 		p->tbl		  = tbl;
- 		atomic_set(&p->refcnt, 1);
-+		INIT_RCU_HEAD(&p->rcu_head);
- 		p->reachable_time =
- 				neigh_rand_reach_time(p->base_reachable_time);
+diff --git a/net/core/drop_monitor.c b/net/core/drop_monitor.c
+index f8c8749..b8e9d3a 100644
+--- a/net/core/drop_monitor.c
++++ b/net/core/drop_monitor.c
+@@ -296,6 +296,7 @@ static int dropmon_net_event(struct notifier_block *ev_block,
  
-@@ -1413,6 +1414,7 @@ void neigh_table_init_no_netlink(struct neigh_table *tbl)
- 
- 	write_pnet(&tbl->parms.net, &init_net);
- 	atomic_set(&tbl->parms.refcnt, 1);
-+	INIT_RCU_HEAD(&tbl->parms.rcu_head);
- 	tbl->parms.reachable_time =
- 			  neigh_rand_reach_time(tbl->parms.base_reachable_time);
- 
-diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index bd8c471..cad70c6 100644
---- a/net/core/net_namespace.c
-+++ b/net/core/net_namespace.c
-@@ -124,8 +124,10 @@ static struct net_generic *net_alloc_generic(void)
- 		INITIAL_NET_GEN_PTRS * sizeof(void *);
- 
- 	ng = kzalloc(generic_size, GFP_KERNEL);
--	if (ng)
-+	if (ng) {
- 		ng->len = INITIAL_NET_GEN_PTRS;
-+		INIT_RCU_HEAD(&ng->rcu);
-+	}
- 
- 	return ng;
- }
-@@ -563,6 +565,7 @@ int net_assign_generic(struct net *net, int id, void *data)
- 	 */
- 
- 	ng->len = id;
-+	INIT_RCU_HEAD(&ng->rcu);
- 	memcpy(&ng->ptr, &old_ng->ptr, old_ng->len * sizeof(void*));
- 
- 	rcu_assign_pointer(net->gen, ng);
-diff --git a/net/ipv4/cipso_ipv4.c b/net/ipv4/cipso_ipv4.c
-index 1e029dc..231972b 100644
---- a/net/ipv4/cipso_ipv4.c
-+++ b/net/ipv4/cipso_ipv4.c
-@@ -502,6 +502,7 @@ int cipso_v4_doi_add(struct cipso_v4_doi *doi_def,
+ 		new_stat->dev = dev;
+ 		new_stat->last_rx = jiffies;
++		INIT_RCU_HEAD(&new_stat->rcu);
+ 		spin_lock(&trace_state_lock);
+ 		list_add_rcu(&new_stat->list, &hw_stats_list);
+ 		spin_unlock(&trace_state_lock);
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index b1eea81..51eb389 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -363,6 +363,7 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a, int chg)
+ 		goto out;
  	}
  
- 	atomic_set(&doi_def->refcount, 1);
-+	INIT_RCU_HEAD(&doi_def->rcu);
- 
- 	spin_lock(&cipso_v4_doi_list_lock);
- 	if (cipso_v4_doi_search(doi_def->doi) != NULL) {
-diff --git a/net/ipv4/devinet.c b/net/ipv4/devinet.c
-index 51ca946..3088271 100644
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -112,7 +112,13 @@ static inline void devinet_sysctl_unregister(struct in_device *idev)
- 
- static struct in_ifaddr *inet_alloc_ifa(void)
- {
--	return kzalloc(sizeof(struct in_ifaddr), GFP_KERNEL);
-+	struct in_ifaddr *ifa = kzalloc(sizeof(*ifa), GFP_KERNEL);
-+
-+	if (ifa) {
-+		INIT_RCU_HEAD(&ifa->rcu_head);
-+	}
-+
-+	return ifa;
- }
- 
- static void inet_rcu_free_ifa(struct rcu_head *head)
-@@ -155,6 +161,7 @@ static struct in_device *inetdev_init(struct net_device *dev)
- 	in_dev = kzalloc(sizeof(*in_dev), GFP_KERNEL);
- 	if (!in_dev)
++	INIT_RCU_HEAD(&p->rcu_head);
+ 	p->next = t->prl;
+ 	p->addr = a->addr;
+ 	p->flags = a->flags;
+diff --git a/net/ipv6/xfrm6_tunnel.c b/net/ipv6/xfrm6_tunnel.c
+index fa85a7d..ddce21e 100644
+--- a/net/ipv6/xfrm6_tunnel.c
++++ b/net/ipv6/xfrm6_tunnel.c
+@@ -161,6 +161,7 @@ alloc_spi:
+ 	if (!x6spi)
  		goto out;
-+	INIT_RCU_HEAD(&in_dev->rcu_head);
- 	memcpy(&in_dev->cnf, dev_net(dev)->ipv4.devconf_dflt,
- 			sizeof(in_dev->cnf));
- 	in_dev->cnf.sysctl = NULL;
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 54fd68c..ba42180 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1434,6 +1434,7 @@ void ip_rt_redirect(__be32 old_gw, __be32 daddr, __be32 new_gw,
  
- 				/* Copy all the information. */
- 				*rt = *rth;
-+				INIT_RCU_HEAD(&rt->u.dst.rcu_head);
- 				rt->u.dst.__use		= 1;
- 				atomic_set(&rt->u.dst.__refcnt, 1);
- 				rt->u.dst.child		= NULL;
++	INIT_RCU_HEAD(&x6spi->rcu_head);
+ 	memcpy(&x6spi->addr, saddr, sizeof(x6spi->addr));
+ 	x6spi->spi = spi;
+ 	atomic_set(&x6spi->refcnt, 1);
+diff --git a/net/netlabel/netlabel_domainhash.c b/net/netlabel/netlabel_domainhash.c
+index 0bfeaab..c5d9f97 100644
+--- a/net/netlabel/netlabel_domainhash.c
++++ b/net/netlabel/netlabel_domainhash.c
+@@ -315,6 +315,7 @@ int netlbl_domhsh_add(struct netlbl_dom_map *entry,
+ 		entry_old = netlbl_domhsh_search_def(entry->domain);
+ 	if (entry_old == NULL) {
+ 		entry->valid = 1;
++		INIT_RCU_HEAD(&entry->rcu);
+ 
+ 		if (entry->domain != NULL) {
+ 			u32 bkt = netlbl_domhsh_hash(entry->domain);
+diff --git a/net/netlabel/netlabel_unlabeled.c b/net/netlabel/netlabel_unlabeled.c
+index 852d9d7..98ed22e 100644
+--- a/net/netlabel/netlabel_unlabeled.c
++++ b/net/netlabel/netlabel_unlabeled.c
+@@ -327,6 +327,7 @@ static int netlbl_unlhsh_add_addr4(struct netlbl_unlhsh_iface *iface,
+ 	entry->list.addr = addr->s_addr & mask->s_addr;
+ 	entry->list.mask = mask->s_addr;
+ 	entry->list.valid = 1;
++	INIT_RCU_HEAD(&entry->rcu);
+ 	entry->secid = secid;
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+@@ -372,6 +373,7 @@ static int netlbl_unlhsh_add_addr6(struct netlbl_unlhsh_iface *iface,
+ 	entry->list.addr.s6_addr32[3] &= mask->s6_addr32[3];
+ 	ipv6_addr_copy(&entry->list.mask, mask);
+ 	entry->list.valid = 1;
++	INIT_RCU_HEAD(&entry->rcu);
+ 	entry->secid = secid;
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+@@ -408,6 +410,7 @@ static struct netlbl_unlhsh_iface *netlbl_unlhsh_add_iface(int ifindex)
+ 	INIT_LIST_HEAD(&iface->addr4_list);
+ 	INIT_LIST_HEAD(&iface->addr6_list);
+ 	iface->valid = 1;
++	INIT_RCU_HEAD(&iface->rcu);
+ 
+ 	spin_lock(&netlbl_unlhsh_lock);
+ 	if (ifindex > 0) {
+diff --git a/net/sctp/bind_addr.c b/net/sctp/bind_addr.c
+index bef1337..13a6fba 100644
+--- a/net/sctp/bind_addr.c
++++ b/net/sctp/bind_addr.c
+@@ -186,6 +186,7 @@ int sctp_add_bind_addr(struct sctp_bind_addr *bp, union sctp_addr *new,
+ 	addr->valid = 1;
+ 
+ 	INIT_LIST_HEAD(&addr->list);
++	INIT_RCU_HEAD(&addr->rcu);
+ 
+ 	/* We always hold a socket lock when calling this function,
+ 	 * and that acts as a writer synchronizing lock.
+diff --git a/net/sctp/ipv6.c b/net/sctp/ipv6.c
+index 1d7ac70..cc50fbe 100644
+--- a/net/sctp/ipv6.c
++++ b/net/sctp/ipv6.c
+@@ -381,6 +381,7 @@ static void sctp_v6_copy_addrlist(struct list_head *addrlist,
+ 			addr->a.v6.sin6_scope_id = dev->ifindex;
+ 			addr->valid = 1;
+ 			INIT_LIST_HEAD(&addr->list);
++			INIT_RCU_HEAD(&addr->rcu);
+ 			list_add_tail(&addr->list, addrlist);
+ 		}
+ 	}
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index e771690..9687177 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -188,6 +188,7 @@ static void sctp_v4_copy_addrlist(struct list_head *addrlist,
+ 			addr->a.v4.sin_addr.s_addr = ifa->ifa_local;
+ 			addr->valid = 1;
+ 			INIT_LIST_HEAD(&addr->list);
++			INIT_RCU_HEAD(&addr->rcu);
+ 			list_add_tail(&addr->list, addrlist);
+ 		}
+ 	}
 
 -- 
 Mathieu Desnoyers
