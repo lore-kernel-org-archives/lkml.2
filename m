@@ -1,85 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab0C1Lb4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 07:31:56 -0400
-Received: from www17.your-server.de ([213.133.104.17]:41539 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab0C1Lby (ORCPT
+	id S1754191Ab0C1LsU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 07:48:20 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:54303 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab0C1LsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 07:31:54 -0400
-Subject: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-From: Thomas Meyer <thomas@m3y3r.de>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Mar 2010 13:31:49 +0200
-Message-ID: <1269775909.5301.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.29.91 (2.29.91-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
+	Sun, 28 Mar 2010 07:48:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=FvcMMepW+k0EGOLiyvQUvETwH3c9UZfbH+odPGe1GIRA6WqL3b6fk2+1xHos/cbeBa
+         38igcLdd6LGiIIuSRkSvfX8usdQBMjznplcIBBIFA+gfdXQiNIRqSBqVdOE7HdjBJVFJ
+         wBnwnp9WSdN7VfVeicPaGENMP0AkWu08TfthI=
+Date: Sun, 28 Mar 2010 14:48:10 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] hpani: using the wrong variable
+Message-ID: <20100328114810.GS5069@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This warning/error/notice is new in 2.6.34-rc2+:
+We're updating the "HpPriv->ani" array here so we should use that to
+determine the end of the for loop.  "HpPriv->ani" has 50 elements and 
+"wd->regulationTable.allowChannel" has 59 elements.
 
-[ 1878.810147] PM: Syncing filesystems ... done.
-[ 1878.903316] Freezing user space processes ... (elapsed 0.01 seconds) done.
-[ 1878.916589] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-[ 1878.929866] Suspending console(s) (use no_console_suspend to debug)
-[ 1878.930229] sd 0:0:0:0: [sda] Synchronizing SCSI cache
-[ 1878.930370] sd 0:0:0:0: [sda] Stopping disk
-[ 1878.981086] atl1c 0000:01:00.0: PCI INT A disabled
-[ 1878.981369] uhci_hcd 0000:00:1d.2: PCI INT D disabled
-[ 1878.981379] uhci_hcd 0000:00:1d.1: PCI INT B disabled
-[ 1878.981389] uhci_hcd 0000:00:1d.0: PCI INT A disabled
-[ 1878.981454] HDA Intel 0000:00:1b.0: PCI INT A disabled
-[ 1878.981500] ACPI handle has no context!
-[ 1878.981529] ehci_hcd 0000:00:1a.7: PCI INT D disabled
-[ 1878.981540] uhci_hcd 0000:00:1a.0: PCI INT A disabled
-[ 1878.981602] IMA: unmeasured files on fsmagic: 1021994
-[ 1878.981605] ima_dec_counts: open/free imbalance (r:0 w:-1 o:-1)
-[ 1878.981609] Pid: 4888, comm: async/10 Tainted: G        W  2.6.34-rc2 #88
-[ 1878.981612] Call Trace:
-[ 1878.981620]  [<c0886ac2>] ? printk+0x1d/0x23
-[ 1878.981627]  [<c05f966f>] ima_file_free+0x16f/0x210
-[ 1878.981632]  [<c04d7132>] __fput+0xf2/0x1f0
-[ 1878.981636]  [<c04d724d>] fput+0x1d/0x30
-[ 1878.981641]  [<c06cbd2f>] drm_gem_object_free_common+0x1f/0x40
-[ 1878.981645]  [<c06cbdd0>] ? drm_gem_object_free+0x0/0x40
-[ 1878.981649]  [<c06cbe01>] drm_gem_object_free+0x31/0x40
-[ 1878.981653]  [<c061d20c>] kref_put+0x2c/0x60
-[ 1878.981658]  [<c06e8078>] i915_gem_cleanup_ringbuffer+0x48/0x70
-[ 1878.981662]  [<c06e97ec>] i915_gem_idle+0x9c/0x120
-[ 1878.981666]  [<c06dcefd>] i915_drm_freeze+0x3d/0xa0
-[ 1878.981670]  [<c06dd01e>] i915_pm_suspend+0x2e/0x80
-[ 1878.981674]  [<c08871ca>] ? wait_for_common+0x1a/0x100
-[ 1878.981679]  [<c0636269>] pci_pm_suspend+0x49/0x110
-[ 1878.981682]  [<c0636220>] ? pci_pm_suspend+0x0/0x110
-[ 1878.981687]  [<c07194f1>] pm_op+0x181/0x1d0
-[ 1878.981691]  [<c07126f4>] ? device_for_each_child+0x54/0x60
-[ 1878.981695]  [<c0719eaf>] __device_suspend+0xbf/0x110
-[ 1878.981699]  [<c071a2f3>] async_suspend+0x23/0x60
-[ 1878.981703]  [<c044ff25>] async_thread+0xc5/0x210
-[ 1878.981707]  [<c0886e31>] ? schedule+0x1e1/0x450
-[ 1878.981713]  [<c042c030>] ? default_wake_function+0x0/0x20
-[ 1878.981716]  [<c044fe60>] ? async_thread+0x0/0x210
-[ 1878.981720]  [<c0449254>] kthread+0x74/0x80
-[ 1878.981724]  [<c04491e0>] ? kthread+0x0/0x80
-[ 1878.981728]  [<c04034be>] kernel_thread_helper+0x6/0x10
-[ 1878.986489] iint_free: writecount: -1
-[ 1878.986492] iint_free: opencount: -1
-[ 1878.986494] iint_free: writecount: -1
-[ 1878.986496] iint_free: opencount: -1
-[ 1878.993205] ehci_hcd 0000:00:1d.7: PCI INT A disabled
-[ 1879.649836] PM: suspend of devices complete after 719.812 msecs
-[ 1879.676555] PM: late suspend of devices complete after 26.714 msecs
-[ 1879.677144] ACPI: Preparing to enter system sleep state S3
-[ 1879.677144] Back to C!
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Does anybody care?
-
-mfg
-thomas
-
-
+diff --git a/drivers/staging/otus/hal/hpani.c b/drivers/staging/otus/hal/hpani.c
+index 0afecd8..d401504 100644
+--- a/drivers/staging/otus/hal/hpani.c
++++ b/drivers/staging/otus/hal/hpani.c
+@@ -96,7 +96,7 @@ void zfHpAniAttach(zdev_t* dev)
+     HpPriv->hasHwPhyCounters = 1;
+ 
+     memset((char *)&HpPriv->ani, 0, sizeof(HpPriv->ani));
+-    for (i = 0; i < N(wd->regulationTable.allowChannel); i++)
++    for (i = 0; i < ARRAY_SIZE(HpPriv->ani); i++)
+     {
+         /* New ANI stuff */
+         HpPriv->ani[i].ofdmTrigHigh = ZM_HAL_ANI_OFDM_TRIG_HIGH;
