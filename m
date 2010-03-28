@@ -1,110 +1,2199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab0C1Eaz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 00:30:55 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:36870 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab0C1Eax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 00:30:53 -0400
-Date: Sat, 27 Mar 2010 21:30:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com
-Subject: Re: [patch 0/6] rcu head debugobjects
-Message-ID: <20100328043047.GT2343@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100327153233.993367557@efficios.com>
- <20100327224606.GK2343@linux.vnet.ibm.com>
- <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
+	id S1753031Ab0C1Eev (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 00:34:51 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:55124 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab0C1Eet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 00:34:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Ixg4RxjAln5lQ0asSrggxjXf0zQt2KJfMOLNcTOoWLExinjV21gnzLFBWsh7bOals5
+         S8nb99OLIp7vWstyQNYVLJ+gVYg93zTbnw9yQM5yXRud1QzMbQLerBZGb1ZI16sRKM8t
+         uquL4DcYMFy0Dbg4r7dcRc0TyebKo6SGl8gTk=
+Date: Sun, 28 Mar 2010 06:34:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       SparcLinux <sparclinux@vger.kernel.org>
+Subject: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100328043446.GA11748@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="G4iJoqBmSsgzjUCe"
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 04:07:10AM +0200, Thomas Gleixner wrote:
-> B1;2005;0cOn Sat, 27 Mar 2010, Paul E. McKenney wrote:
-> > 
-> > o	Patch 4/6 looks good to me, and given that Thomas hasn't
-> > 	complained, I am guessing that he is OK with it.
-> 
-> Looks sane at the first glance. Will go over it in detail tomorrow.
-> 
-> > o	Patch 6/6: Would it be possible to use the object_is_on_stack()
-> > 	function defined in include/linux/sched.h instead of passing
-> > 	in the flag on_stack to bdi_work_init()?  It looks like
-> > 	fs/fs-writeback.c already includes include/linux/sched.h, so
-> > 	shouldn't be a problem from a #include-hell viewpoint.
-> 
-> Well, I'm a bit wary about that. The reason is that we really want
-> the annotation of:
-> 
->        init_on_stack();
->        ....
->        destroy_on_stack();
-> 
-> instead of the confusing:
-> 
->        init();
->        ....
->        destroy_on_stack();
-> 
-> So having an automatism in the bdi_work_init() function will people
-> make forget to put the destroy_on_stack() annotation into it.
-> 
-> The flag is horrible as well. How about this:
-> 
-> /* helper function, do not use in code ! */
-> __bdi_work_init(....., onstack)
-> {
-> 	....
-> 	if (on_stack) {
-> 	   work.state |= WS_ONSTACK;
-> 	   init_rcu_head_on_stack(&work.rcu_head);
-> 	} else {
-> 	....
-> }
-> 
-> See, how this moves also the "work.state |= WS_ONSTACK;" line out of
-> the calling code.
-> 
-> bdi_work_init(...)
-> {
-> 	 __bdi_work_init(...., false);
-> }
-> 
-> bdi_work_init_on_stack(...)
-> {
-> 	 __bdi_work_init(...., true);
-> }
-> 
-> 
-> out of the code.
-> 
-> To make it complete, please do not use the asymmetric:
-> 
->    destroy_rcu_head_on_stack(&work.rcu_head);
-> 
-> Create a helper function:
-> 
-> bdi_destroy_work_on_stack(...)
-> {
->    destroy_rcu_head_on_stack(work->rcu_head);
-> }    
-> 
-> That makes it way more readable and we did that with the other on
-> stack initializers as well.
 
-Hello, Thomas,
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I must defer to you on this one.  ;-)
+Hi,
 
-							Thanx, Paul
+I get kernel crashes each time I use perf with callchains
+on sparc 64.
+
+It triggers with a simple:
+
+	perf record -a -f -g sleep 1
+
+
+I'm attaching two different crashlogs, as it seem to happen
+randomly, and also my config.
+
+Tell me everything else you need.
+
+Thanks.
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=crashlog1
+
+[ 7474.629221] FAULT[perf:2141]: 32-bit process reports 64-bit fault address [1ffb0c000]
+[ 7474.631465] Unable to handle kernel paging request at virtual address 00000000f7e68000
+[ 7474.631480] tsk->{mm,active_mm}->context = 0000000000000689
+[ 7474.631491] tsk->{mm,active_mm}->pgd = fffff803f0d82000
+[ 7474.631502]               \|/ ____ \|/
+[ 7474.631508]               "@'/ .. \`@"
+[ 7474.631514]               /_| \__/ |_\
+[ 7474.631519]                  \__U_/
+[ 7474.631531] perf(2141): Oops [#1]
+[ 7474.631547] TSTATE: 0000009980f01601 TPC: 0000000000449dbc TNPC: 0000000000449dc0 Y: 00000000    Tainted: G        W 
+[ 7474.631575] TPC: <sparc_perf_event_update+0xc/0x64>
+[ 7474.631589] g0: 0000000000000000 g1: 0000000000000041 g2: 0000000000000030 g3: 00000000c0000000
+[ 7474.631606] g4: fffff803f65687c0 g5: 0000000000000000 g6: fffff803ef218000 g7: 00000000f7e690b0
+[ 7474.631623] o0: 0000000000000000 o1: 00000000f7e68f98 o2: 0000000000000065 o3: 00000000ffffffff
+[ 7474.631640] o4: 0000000000749a70 o5: 0000000000000105 sp: fffff803ef20e2f1 ret_pc: 000000000043900c
+[ 7474.631667] RPC: <n2_pcr_write+0x8/0x24>
+[ 7474.631679] l0: 0000000000000000 l1: 000000000000c000 l2: 00000000004209f0 l3: 0000000000807898
+[ 7474.631696] l4: 00000000000003c0 l5: 0000000000000004 l6: fffff803ef218000 l7: 0000000080001001
+[ 7474.631713] i0: 00000000f7e68f98 i1: 00000000f7e69068 i2: 0000000000000006 i3: 0000000000000004
+[ 7474.631729] i4: 0000000000000000 i5: 0000000000000001 i6: fffff803ef20e3c1 i7: 0000000000449f94
+[ 7474.631747] I7: <perf_event_nmi_handler+0xbc/0x190>
+[ 7474.631758] Instruction DUMP: 9de3bf30  92100018  8e066048 <c65e6048> 83444000  85307020  c677a7e7  837e8402  b1306000 
+[ 7474.631807] Kernel panic - not syncing: Aiee, killing interrupt handler!
+[ 7474.631823] Call Trace:
+[ 7474.638662] Unable to handle kernel NULL pointer dereference
+[ 7474.638676] tsk->{mm,active_mm}->context = 0000000000000689
+[ 7474.638687] tsk->{mm,active_mm}->pgd = fffff803f0d82000
+[ 7474.638698]               \|/ ____ \|/
+[ 7474.638704]               "@'/ .. \`@"
+[ 7474.638710]               /_| \__/ |_\
+[ 7474.638716]                  \__U_/
+[ 7474.638727] perf(2141): Oops [#2]
+[ 7474.638742] TSTATE: 0000000080e01600 TPC: 00000000004ffdf0 TNPC: 00000000004ffdf4 Y: 00000000    Tainted: G      D W 
+[ 7474.638774] TPC: <__kmalloc+0x118/0x25c>
+[ 7474.638786] g0: 0000000000624eb0 g1: 000000000000c000 g2: 000000000200f820 g3: 00000000c0000000
+[ 7474.638804] g4: fffff803f65687c0 g5: 0000000000000000 g6: fffff803ef218000 g7: 0000000000000278
+[ 7474.638827] o0: 0000000000000000 o1: 0000000000000000 o2: 0000000000000000 o3: fffff803f3b0a648
+[ 7474.638856] o4: 0000000000000000 o5: 5555ffff5555ffff sp: fffff803ef20d591 ret_pc: 00000000004ffddc
+[ 7474.638882] RPC: <__kmalloc+0x104/0x25c>
+[ 7474.638894] l0: 0000000000000001 l1: fffff803ff002660 l2: 0000000000000020 l3: 000000000000000f
+[ 7474.638911] l4: 0000000000000010 l5: 00000000005e636c l6: 0000000001447af8 l7: 0000000001447ad8
+[ 7474.638928] i0: 0000000000000010 i1: 0000000000000020 i2: 00000000007495b0 i3: 00000000ffffffff
+[ 7474.638944] i4: 00000000007495b0 i5: 0000000000000008 i6: fffff803ef20d651 i7: 00000000005e636c
+[ 7474.638968] I7: <bit_cursor+0x338/0x508>
+[ 7474.638977] Instruction DUMP: 91322000  912a3003  d05c4008 <c2020000> 80a06000  0240000a  82007fff  c2220000  84102001 
+[ 7474.639025] note: perf[2141] exited with preempt_count 33554464
+[ 7474.639075] Kernel unaligned access at TPC[42ee30] timer_interrupt+0xb0/0xec
+[ 7474.639089] Unsupported unaligned load/store trap for kernel at <000000000042ee30>.
+[ 7474.639102]               \|/ ____ \|/
+[ 7474.639108]               "@'/ .. \`@"
+[ 7474.639114]               /_| \__/ |_\
+[ 7474.639119]                  \__U_/
+[ 7474.639131] perf(2141): Kernel does fpu/atomic unaligned load/store. [#3]
+[ 7474.639148] TSTATE: 0000000080e01603 TPC: 000000000042ee30 TNPC: 000000000042ee34 Y: 00000000    Tainted: G      D W 
+[ 7474.639171] TPC: <timer_interrupt+0xb0/0xec>
+[ 7474.639184] g0: 0000000000000000 g1: 0000001000000002 g2: 0000000002010100 g3: 00000000c0000000
+[ 7474.639201] g4: fffff803f65687c0 g5: 0000000000000000 g6: fffff803ef218000 g7: 0000000000b06798
+[ 7474.639217] o0: 0000000000808800 o1: 0000000000912310 o2: 000000000049d018 o3: 0000000000000000
+[ 7474.639234] o4: 0000000000000000 o5: 0000000000000000 sp: 0000000000b0e1c1 ret_pc: 000000000042edf4
+[ 7474.639254] RPC: <timer_interrupt+0x74/0xec>
+[ 7474.639266] l0: 0000000001409df0 l1: 0000000000944010 l2: 0000000000000000 l3: 0000000000000002
+[ 7474.639283] l4: 000000000000c000 l5: 00000000008a7de0 l6: 0000000000946530 l7: 000000000000000a
+[ 7474.639299] i0: 000000000000000e i1: 000000000000c000 i2: 0000000000944090 i3: 000000000000c000
+[ 7474.639316] i4: 0000000000000002 i5: 0000000000b0c340 i6: 0000000000b0e281 i7: 0000000000426b04
+[ 7474.639334] I7: <valid_addr_bitmap_patch+0xbc/0x238>
+[ 7474.639344] Instruction DUMP: 90122108  10680004  01000000 <9fc04000> 90100011  4000fa7e  21002c25  40064f89  a01420b0 
+[ 7474.639390] Kernel panic - not syncing: Aiee, killing interrupt handler!
+[ 7474.639400] Call Trace:
+[ 7474.639474] Press Stop-A (L1-A) to return to the boot prom
+[ 7474.639618] sun4v_data_access_exception: ADDR[ffffcccccccccd18] CTX[0000] TYPE[0009], going.
+[ 7474.639633]               \|/ ____ \|/
+[ 7474.639639]               "@'/ .. \`@"
+[ 7474.639645]               /_| \__/ |_\
+[ 7474.639650]                  \__U_/
+[ 7474.639661] swapper(0): Dax [#4]
+[ 7474.639675] TSTATE: 0000000080001602 TPC: 000000000045effc TNPC: 000000000045ef28 Y: 00000000    Tainted: G      D W 
+[ 7474.639705] TPC: <rebalance_domains+0x138/0x150>
+[ 7474.639718] g0: 0000000000000000 g1: 0000000000000019
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=crashlog2
+
+[ 1493.346287] FAULT[perf:2137]: 32-bit process reports 64-bit fault address [1ff89c000]
+ handler11002025  821063ff 
+at virtual address 0000004480001609
+[ 1498.802757] current->{active_,}mm->context = 0000000000000659
+[ 1498.802769] current->{active_,}mm->pgd = fffff803f211a000
+[ 1498.802779]               \|/ ____ \|/
+[ 1498.802785]               "@'/ .. \`@"
+[ 1498.802790]               /_| \__/ |_\
+[ 1498.802796]                  \__U_/
+[ 1498.802807] swapper(0): Oops [#13081]
+[ 1498.802822] TSTATE: 0000004480001605 TPC: 00000000005c1fec TNPC: 00000000005c1ff0 Y: 00000000    Tainted: G      D W 
+[ 1498.802846] TPC: <do_raw_spin_unlock+0x4/0x9c>
+[ 1498.802875] g0: fffff803ffa6b221 g1: 000000000044c448 g2: 000000000089f330 g3: 00000000008e8400
+[ 1498.802892] g4: 000000000089f330 g5: fffff800112bc000 g6: 0000000000884000 g7: 00000000000f4240
+[ 1498.802909] o0: fffff80011dc8510 o1: fffff803ffa6baa8 o2: 0000000000000001 o3: 0000000000000000
+[ 1498.802925] o4: 0000000000000000 o5: fffff803ffa6baa8 sp: fffff803ffa6b261 ret_pc: 00000000004587cc
+[ 1498.802947] RPC: <__wake_up+0x2c/0x3c>
+[ 1498.802959] l0: 000000000089f330 l1: 0000000000000000 l2: fffff803ecc5c500 l3: 00000000008a7ddc
+[ 1498.802975] l4: 00000000008109e0 l5: 0000000000000001 l6: fffff803ffa6b2e1 l7: 0000000000407a88
+[ 1498.802991] i0: 0000004480001601 i1: 0000000000000000 i2: 0000000000000001 i3: 0000000000000000
+[ 1498.803019] i4: 0000000000000002 i5: 0000000000000000 i6: fffff803ffa6b321 i7: 0000000000722278
+[ 1498.803041] I7: <_raw_spin_unlock_irqrestore+0x14/0x70>
+[ 1498.803051] Instruction DUMP: 81cfe008  01000000  9de3bf40 <c4062008> 0337ab53  821062ad  80a08001  02480005  90100018 
+[ 1498.803098] Kernel panic - not syncing: Aiee, killing interrupt handler!
+[ 1498.803109] Call Trace:
+[ 1498.803132]  [000000000071e5dc] panic+0x58/0x124
+[ 1498.803148]  [000000000046a74c] do_exit+0x64/0x6fc
+[ 1498.803164]  [0000000000427d4c] die_if_kernel+0x264/0x290
+[ 1498.803184]  [0000000000432a7c] kernel_mna_trap_fault+0xc4/0xfc
+[ 1498.803203]  [000000000043300c] kernel_unaligned_trap+0x558/0x5a4
+[ 1498.803296] Press Stop-A (L1-A) to return to the boot prom
+1498.747820] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.747859] Call Trace:
+[ 1498.747876] Unable to handle kernel paging request in mna handler
+[ 1498.747888]  at virtual address 55472061742025b1
+[ 1498.747903] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.747917]               \|/ ____ \|/
+[ 1498.747923]               "@'/ .. \`@"
+[ 1498.747928]               /_| \__/ |_\
+[ 1498.747934]                  \__U_/
+[ 1498.747946] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.747951] (1113678880): Dax [#12950]
+[ 1498.747966] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.747993] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.748006] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 000000000187ef23
+[ 1498.748023] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.748039] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.748055] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccba9c1 ret_pc: 0000000000432a1c
+[ 1498.748076] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.748089] l0: 55472061742025b1 l1: fffff803eccbb550 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.748105] l4: 000000000000000f l5: 000000000000003d l6: 0000000000000000 l7: 0000000000000008
+[ 1498.748122] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.748138] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccbaa81 i7: 000000000043300c
+[ 1498.748159] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.748168] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.748211] ------------[ cut here ]------------
+[ 1498.748229] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.748238] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.748274] Call Trace:
+[ 1498.748290] Unable to handle kernel paging request in mna handler
+[ 1498.748302]  at virtual address 55472061742025b1
+[ 1498.748317] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.748331]               \|/ ____ \|/
+[ 1498.748337]               "@'/ .. \`@"
+[ 1498.748342]               /_| \__/ |_\
+[ 1498.748348]                  \__U_/
+[ 1498.748359] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.748365] (1113678880): Dax [#12951]
+[ 1498.748379] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.748405] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.748418] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 000000000187f6e1
+[ 1498.748435] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.748451] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.748467] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb9e31 ret_pc: 0000000000432a1c
+[ 1498.748488] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.748501] l0: 55472061742025b1 l1: fffff803eccba9c0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.748518] l4: 000000000000000f l5: 0000000000000041 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.748534] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.748550] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb9ef1 i7: 000000000043300c
+[ 1498.748571] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.748580] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.748623] ------------[ cut here ]------------
+[ 1498.748641] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.748651] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.748690] Call Trace:
+[ 1498.748708] Unable to handle kernel paging request in mna handler
+[ 1498.748721]  at virtual address 55472061742025b1
+[ 1498.748736] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.748750]               \|/ ____ \|/
+[ 1498.748756]               "@'/ .. \`@"
+[ 1498.748762]               /_| \__/ |_\
+[ 1498.748767]                  \__U_/
+[ 1498.748779] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.748785] (1113678880): Dax [#12952]
+[ 1498.748800] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.748830] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.748847] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 000000000187fe9f
+[ 1498.748865] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.748882] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.748899] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb92a1 ret_pc: 0000000000432a1c
+[ 1498.748924] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.748938] l0: 55472061742025b1 l1: fffff803eccb9e30 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.748955] l4: 000000000000000f l5: 0000000000000045 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.748971] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.748989] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb9361 i7: 000000000043300c
+[ 1498.749016] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.749027] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.749074] ------------[ cut here ]------------
+[ 1498.749094] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.749104] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.749141] Call Trace:
+[ 1498.749158] Unable to handle kernel paging request in mna handler
+[ 1498.749170]  at virtual address 55472061742025b1
+[ 1498.749185] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.749199]               \|/ ____ \|/
+[ 1498.749205]               "@'/ .. \`@"
+[ 1498.749211]               /_| \__/ |_\
+[ 1498.749216]                  \__U_/
+[ 1498.749228] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.749233] (1113678880): Dax [#12953]
+[ 1498.749248] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.749275] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.749288] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 000000000188065d
+[ 1498.749305] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.749321] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.749338] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb8711 ret_pc: 0000000000432a1c
+[ 1498.749358] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.749372] l0: 55472061742025b1 l1: fffff803eccb92a0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.749388] l4: 000000000000000f l5: 0000000000000049 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.749404] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.749420] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb87d1 i7: 000000000043300c
+[ 1498.749441] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.749450] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.749494] ------------[ cut here ]------------
+[ 1498.749511] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.749521] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.749557] Call Trace:
+[ 1498.749572] Unable to handle kernel paging request in mna handler
+[ 1498.749584]  at virtual address 55472061742025b1
+[ 1498.749600] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.749614]               \|/ ____ \|/
+[ 1498.749619]               "@'/ .. \`@"
+[ 1498.749625]               /_| \__/ |_\
+[ 1498.749630]                  \__U_/
+[ 1498.749642] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.749648] (1113678880): Dax [#12954]
+[ 1498.749662] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.749688] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.749701] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001880e1b
+[ 1498.749718] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.749734] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.749750] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb7b81 ret_pc: 0000000000432a1c
+[ 1498.749771] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.749784] l0: 55472061742025b1 l1: fffff803eccb8710 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.749801] l4: 000000000000000f l5: 000000000000004d l6: 0000000000000000 l7: 0000000000000008
+[ 1498.749819] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.749839] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb7c41 i7: 000000000043300c
+[ 1498.749866] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.749876] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.749920] ------------[ cut here ]------------
+[ 1498.749938] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.749948] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.749985] Call Trace:
+[ 1498.750001] Unable to handle kernel paging request in mna handler
+[ 1498.750013]  at virtual address 55472061742025b1
+[ 1498.750028] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.750042]               \|/ ____ \|/
+[ 1498.750048]               "@'/ .. \`@"
+[ 1498.750053]               /_| \__/ |_\
+[ 1498.750059]                  \__U_/
+[ 1498.750070] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.750076] (1113678880): Dax [#12955]
+[ 1498.750090] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.750117] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.750130] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 00000000018815d9
+[ 1498.750147] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.750163] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.750179] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb6ff1 ret_pc: 0000000000432a1c
+[ 1498.750200] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.750213] l0: 55472061742025b1 l1: fffff803eccb7b80 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.750229] l4: 000000000000000f l5: 0000000000000051 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.750246] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.750262] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb70b1 i7: 000000000043300c
+[ 1498.750282] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.750292] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.750335] ------------[ cut here ]------------
+[ 1498.750352] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.750362] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.750398] Call Trace:
+[ 1498.750413] Unable to handle kernel paging request in mna handler
+[ 1498.750425]  at virtual address 55472061742025b1
+[ 1498.750440] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.750454]               \|/ ____ \|/
+[ 1498.750460]               "@'/ .. \`@"
+[ 1498.750465]               /_| \__/ |_\
+[ 1498.750471]                  \__U_/
+[ 1498.750482] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.750488] (1113678880): Dax [#12956]
+[ 1498.750502] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.750528] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.750541] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001881d97
+[ 1498.750558] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.750574] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.750590] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb6461 ret_pc: 0000000000432a1c
+[ 1498.750611] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.750625] l0: 55472061742025b1 l1: fffff803eccb6ff0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.750641] l4: 000000000000000f l5: 0000000000000055 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.750657] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.750673] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb6521 i7: 000000000043300c
+[ 1498.750694] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.750703] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.750747] ------------[ cut here ]------------
+[ 1498.750764] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.750773] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.750810] Call Trace:
+[ 1498.750828] Unable to handle kernel paging request in mna handler
+[ 1498.750842]  at virtual address 55472061742025b1
+[ 1498.750858] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.750872]               \|/ ____ \|/
+[ 1498.750878]               "@'/ .. \`@"
+[ 1498.750883]               /_| \__/ |_\
+[ 1498.750889]                  \__U_/
+[ 1498.750900] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.750906] (1113678880): Dax [#12957]
+[ 1498.750921] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.750948] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.750961] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001882555
+[ 1498.750977] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.750994] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.751010] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb58d1 ret_pc: 0000000000432a1c
+[ 1498.751031] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.751044] l0: 55472061742025b1 l1: fffff803eccb6460 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.751060] l4: 000000000000000f l5: 0000000000000059 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.751076] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.751093] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb5991 i7: 000000000043300c
+[ 1498.751113] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.751122] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.751166] ------------[ cut here ]------------
+[ 1498.751183] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.751193] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.751229] Call Trace:
+[ 1498.751245] Unable to handle kernel paging request in mna handler
+[ 1498.751257]  at virtual address 55472061742025b1
+[ 1498.751272] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.751286]               \|/ ____ \|/
+[ 1498.751292]               "@'/ .. \`@"
+[ 1498.751297]               /_| \__/ |_\
+[ 1498.751303]                  \__U_/
+[ 1498.751314] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.751320] (1113678880): Dax [#12958]
+[ 1498.751334] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.751360] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.751373] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001882d13
+[ 1498.751390] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.751406] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.751422] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb4d41 ret_pc: 0000000000432a1c
+[ 1498.751443] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.751456] l0: 55472061742025b1 l1: fffff803eccb58d0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.751472] l4: 000000000000000f l5: 000000000000005d l6: 0000000000000000 l7: 0000000000000008
+[ 1498.751489] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.751505] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb4e01 i7: 000000000043300c
+[ 1498.751526] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.751535] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.751578] ------------[ cut here ]------------
+[ 1498.751595] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.751605] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.751642] Call Trace:
+[ 1498.751659] Unable to handle kernel paging request in mna handler
+[ 1498.751672]  at virtual address 55472061742025b1
+[ 1498.751688] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.751702]               \|/ ____ \|/
+[ 1498.751709]               "@'/ .. \`@"
+[ 1498.751714]               /_| \__/ |_\
+[ 1498.751720]                  \__U_/
+[ 1498.751731] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.751737] (1113678880): Dax [#12959]
+[ 1498.751752] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.751780] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.751794] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 00000000018834d1
+[ 1498.751811] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.751831] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.751852] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb41b1 ret_pc: 0000000000432a1c
+[ 1498.751883] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.751898] l0: 55472061742025b1 l1: fffff803eccb4d40 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.751915] l4: 000000000000000f l5: 0000000000000061 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.751931] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.751948] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb4271 i7: 000000000043300c
+[ 1498.751972] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.751982] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.752031] ------------[ cut here ]------------
+[ 1498.752051] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.752062] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.752100] Call Trace:
+[ 1498.752118] Unable to handle kernel paging request in mna handler
+[ 1498.752130]  at virtual address 55472061742025b1
+[ 1498.752146] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.752160]               \|/ ____ \|/
+[ 1498.752165]               "@'/ .. \`@"
+[ 1498.752171]               /_| \__/ |_\
+[ 1498.752176]                  \__U_/
+[ 1498.752188] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.752194] (1113678880): Dax [#12960]
+[ 1498.752208] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.752235] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.752249] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001883c8f
+[ 1498.752265] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.752281] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.752298] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb3621 ret_pc: 0000000000432a1c
+[ 1498.752319] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.752332] l0: 55472061742025b1 l1: fffff803eccb41b0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.752348] l4: 000000000000000f l5: 0000000000000065 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.752364] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.752381] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb36e1 i7: 000000000043300c
+[ 1498.752401] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.752411] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.752454] ------------[ cut here ]------------
+[ 1498.752472] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.752482] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.752518] Call Trace:
+[ 1498.752534] Unable to handle kernel paging request in mna handler
+[ 1498.752546]  at virtual address 55472061742025b1
+[ 1498.752561] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.752574]               \|/ ____ \|/
+[ 1498.752580]               "@'/ .. \`@"
+[ 1498.752586]               /_| \__/ |_\
+[ 1498.752591]                  \__U_/
+[ 1498.752603] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.752608] (1113678880): Dax [#12961]
+[ 1498.752623] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.752648] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.752661] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 000000000188444d
+[ 1498.752678] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.752694] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.752711] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb2a91 ret_pc: 0000000000432a1c
+[ 1498.752731] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.752744] l0: 55472061742025b1 l1: fffff803eccb3620 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.752761] l4: 000000000000000f l5: 0000000000000069 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.752777] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.752793] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb2b51 i7: 000000000043300c
+[ 1498.752815] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.752826] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.752876] ------------[ cut here ]------------
+[ 1498.752896] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.752906] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.752942] Call Trace:
+[ 1498.752959] Unable to handle kernel paging request in mna handler
+[ 1498.752971]  at virtual address 55472061742025b1
+[ 1498.752986] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.753000]               \|/ ____ \|/
+[ 1498.753006]               "@'/ .. \`@"
+[ 1498.753011]               /_| \__/ |_\
+[ 1498.753017]                  \__U_/
+[ 1498.753028] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.753034] (1113678880): Dax [#12962]
+[ 1498.753048] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.753075] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.753088] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001884c0b
+[ 1498.753105] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.753121] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.753138] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb1f01 ret_pc: 0000000000432a1c
+[ 1498.753159] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.753172] l0: 55472061742025b1 l1: fffff803eccb2a90 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.753188] l4: 000000000000000f l5: 000000000000006d l6: 0000000000000000 l7: 0000000000000008
+[ 1498.753204] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.753221] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb1fc1 i7: 000000000043300c
+[ 1498.753241] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.753250] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.753294] ------------[ cut here ]------------
+[ 1498.753311] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.753321] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.753357] Call Trace:
+[ 1498.753372] Unable to handle kernel paging request in mna handler
+[ 1498.753384]  at virtual address 55472061742025b1
+[ 1498.753399] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.753413]               \|/ ____ \|/
+[ 1498.753419]               "@'/ .. \`@"
+[ 1498.753425]               /_| \__/ |_\
+[ 1498.753430]                  \__U_/
+[ 1498.753441] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.753447] (1113678880): Dax [#12963]
+[ 1498.753461] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.753487] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.753500] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 00000000018853c9
+[ 1498.753517] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.753533] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.753550] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb1371 ret_pc: 0000000000432a1c
+[ 1498.753571] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.753584] l0: 55472061742025b1 l1: fffff803eccb1f00 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.753600] l4: 000000000000000f l5: 0000000000000071 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.753616] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.753633] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb1431 i7: 000000000043300c
+[ 1498.753653] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.753663] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.753706] ------------[ cut here ]------------
+[ 1498.753723] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.753733] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.753769] Call Trace:
+[ 1498.753784] Unable to handle kernel paging request in mna handler
+[ 1498.753796]  at virtual address 55472061742025b1
+[ 1498.753811] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.753827]               \|/ ____ \|/
+[ 1498.753835]               "@'/ .. \`@"
+[ 1498.753841]               /_| \__/ |_\
+[ 1498.753846]                  \__U_/
+[ 1498.753858] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.753864] (1113678880): Dax [#12964]
+[ 1498.753879] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.753906] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.753919] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001885b87
+[ 1498.753936] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.753952] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.753969] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccb07e1 ret_pc: 0000000000432a1c
+[ 1498.753989] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.754002] l0: 55472061742025b1 l1: fffff803eccb1370 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.754019] l4: 000000000000000f l5: 0000000000000075 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.754035] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.754051] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccb08a1 i7: 000000000043300c
+[ 1498.754072] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.754081] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.754125] ------------[ cut here ]------------
+[ 1498.754142] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.754152] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.754188] Call Trace:
+[ 1498.754205] Unable to handle kernel paging request in mna handler
+[ 1498.754217]  at virtual address 55472061742025b1
+[ 1498.754232] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.754246]               \|/ ____ \|/
+[ 1498.754252]               "@'/ .. \`@"
+[ 1498.754257]               /_| \__/ |_\
+[ 1498.754263]                  \__U_/
+[ 1498.754274] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.754280] (1113678880): Dax [#12965]
+[ 1498.754295] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.754320] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.754333] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001886345
+[ 1498.754350] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.754366] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.754383] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccafc51 ret_pc: 0000000000432a1c
+[ 1498.754404] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.754417] l0: 55472061742025b1 l1: fffff803eccb07e0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.754433] l4: 000000000000000f l5: 0000000000000079 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.754449] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.754465] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccafd11 i7: 000000000043300c
+[ 1498.754486] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.754495] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.754539] ------------[ cut here ]------------
+[ 1498.754556] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.754566] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.754602] Call Trace:
+[ 1498.754617] Unable to handle kernel paging request in mna handler
+[ 1498.754629]  at virtual address 55472061742025b1
+[ 1498.754644] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.754659]               \|/ ____ \|/
+[ 1498.754665]               "@'/ .. \`@"
+[ 1498.754671]               /_| \__/ |_\
+[ 1498.754677]                  \__U_/
+[ 1498.754689] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.754695] (1113678880): Dax [#12966]
+[ 1498.754710] TSTATE: 0000004480f01601 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.754738] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.754752] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 0000000001886b03
+[ 1498.754769] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.754786] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.754802] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccaf0c1 ret_pc: 0000000000432a1c
+[ 1498.754830] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.754847] l0: 55472061742025b1 l1: fffff803eccafc50 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.754867] l4: 000000000000000f l5: 000000000000007d l6: 0000000000000000 l7: 0000000000000008
+[ 1498.754885] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.754902] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccaf181 i7: 000000000043300c
+[ 1498.754928] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.754938] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.754983] ------------[ cut here ]------------
+[ 1498.755003] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.755015] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.755054] Call Trace:
+[ 1498.755072] Unable to handle kernel paging request in mna handler
+[ 1498.755085]  at virtual address 55472061742025b1
+[ 1498.755102] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.755116]               \|/ ____ \|/
+[ 1498.755122]               "@'/ .. \`@"
+[ 1498.755127]               /_| \__/ |_\
+[ 1498.755133]                  \__U_/
+[ 1498.755145] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.755150] (1113678880): Dax [#12967]
+[ 1498.755165] TSTATE: 0000004480f01605 TPC: 0000000000432a2c TNPC: 0000000000432a38 Y: 00000000    Tainted: G      D W 
+[ 1498.755192] TPC: <kernel_mna_trap_fault+0x74/0xfc>
+[ 1498.755206] g0: 0000000000000000 g1: 4261642074726170 g2: 0000000000000000 g3: 00000000018872c1
+[ 1498.755222] g4: 0000000000807898 g5: fffff800112bc000 g6: fffff803ef148000 g7: 0000000000b38c00
+[ 1498.755238] o0: 000000000000003a o1: 55472061742025b1 o2: 0000000000000002 o3: 0000000000000000
+[ 1498.755255] o4: 0000000000000000 o5: 0000000000000036 sp: fffff803eccae531 ret_pc: 0000000000432a1c
+[ 1498.755276] RPC: <kernel_mna_trap_fault+0x64/0xfc>
+[ 1498.755289] l0: 55472061742025b1 l1: fffff803eccaf0c0 l2: 000000000090c338 l3: 0000000000000400
+[ 1498.755305] l4: 000000000000000f l5: 0000000000000081 l6: 0000000000000000 l7: 0000000000000008
+[ 1498.755322] i0: 0000000000000001 i1: 0000000000000002 i2: 55472061742025b1 i3: 0000000000000000
+[ 1498.755338] i4: 0000000000000080 i5: 0000000000000080 i6: fffff803eccae5f1 i7: 000000000043300c
+[ 1498.755359] I7: <kernel_unaligned_trap+0x558/0x5a4>
+[ 1498.755368] Instruction DUMP: 90122070  c2592138  2ac84004 <c4586380> c2592140  c4586380  03000fc7  11002025  821063ff 
+[ 1498.755412] ------------[ cut here ]------------
+[ 1498.755429] WARNING: at kernel/exit.c:907 do_exit+0x28/0x6fc()
+[ 1498.755439] Modules linked in: loop usbhid ehci_hcd ohci_hcd e1000e sg sr_mod cdrom
+[ 1498.755475] Call Trace:
+[ 1498.755491] Unable to handle kernel paging request in mna handler
+[ 1498.755503]  at virtual address 55472061742025b1
+[ 1498.755518] sun4v_data_access_exception: ADDR[00006420747264f0] CTX[0000] TYPE[0009], going.
+[ 1498.755532]               \|/ ____ \|/
+[ 1498.755538]               "@'/ .. \`@"
+[ 1498.755543]               /_| \__/ |_\
+[ 1498.755549]                  \__U_/
+[ 1498.755561] ,HV_INTR_STATE_IDLE): err(%d)
+[ 1498.755566] (1113678880): Dax [#12968]
+[ 1498.755581] TSTATE: 0000004480f01601 TPC: 00000000004
+
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=sparc-config
+
+#
+# Automatically generated make config: don't edit
+# Linux kernel version: 2.6.34-rc2
+# Sun Mar 28 03:50:43 2010
+#
+CONFIG_64BIT=y
+CONFIG_SPARC=y
+# CONFIG_SPARC32 is not set
+CONFIG_SPARC64=y
+CONFIG_ARCH_DEFCONFIG="arch/sparc/configs/sparc64_defconfig"
+CONFIG_BITS=64
+CONFIG_GENERIC_TIME=y
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_QUICKLIST=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
+CONFIG_MMU=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_ARCH_NO_VIRT_TO_BUS=y
+CONFIG_OF=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_CONSTRUCTORS=y
+
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_LOCK_KERNEL=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_LOCALVERSION=""
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+# CONFIG_BSD_PROCESS_ACCT is not set
+# CONFIG_TASKSTATS is not set
+# CONFIG_AUDIT is not set
+
+#
+# RCU Subsystem
+#
+CONFIG_TREE_RCU=y
+# CONFIG_TREE_PREEMPT_RCU is not set
+# CONFIG_TINY_RCU is not set
+# CONFIG_RCU_TRACE is not set
+CONFIG_RCU_FANOUT=64
+# CONFIG_RCU_FANOUT_EXACT is not set
+# CONFIG_RCU_FAST_NO_HZ is not set
+# CONFIG_TREE_RCU_TRACE is not set
+CONFIG_IKCONFIG=y
+# CONFIG_IKCONFIG_PROC is not set
+CONFIG_LOG_BUF_SHIFT=18
+# CONFIG_CGROUPS is not set
+CONFIG_SYSFS_DEPRECATED=y
+CONFIG_SYSFS_DEPRECATED_V2=y
+CONFIG_RELAY=y
+CONFIG_NAMESPACES=y
+# CONFIG_UTS_NS is not set
+# CONFIG_IPC_NS is not set
+# CONFIG_USER_NS is not set
+# CONFIG_PID_NS is not set
+# CONFIG_NET_NS is not set
+# CONFIG_BLK_DEV_INITRD is not set
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+# CONFIG_EMBEDDED is not set
+CONFIG_UID16=y
+CONFIG_SYSCTL_SYSCALL=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+# CONFIG_KALLSYMS_EXTRA_PASS is not set
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_USE_VMALLOC=y
+
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+CONFIG_PERF_COUNTERS=y
+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_PCI_QUIRKS=y
+# CONFIG_COMPAT_BRK is not set
+CONFIG_SLAB=y
+# CONFIG_SLUB is not set
+# CONFIG_SLOB is not set
+# CONFIG_PROFILING is not set
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+# CONFIG_KPROBES is not set
+CONFIG_HAVE_SYSCALL_WRAPPERS=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+# CONFIG_SLOW_WORK is not set
+# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_MODULES=y
+# CONFIG_MODULE_FORCE_LOAD is not set
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODULE_FORCE_UNLOAD=y
+CONFIG_MODVERSIONS=y
+CONFIG_MODULE_SRCVERSION_ALL=y
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+# CONFIG_BLK_DEV_BSG is not set
+# CONFIG_BLK_DEV_INTEGRITY is not set
+CONFIG_BLOCK_COMPAT=y
+
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_DEADLINE is not set
+CONFIG_IOSCHED_CFQ=y
+# CONFIG_DEFAULT_DEADLINE is not set
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+# CONFIG_INLINE_SPIN_TRYLOCK is not set
+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK is not set
+# CONFIG_INLINE_SPIN_LOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_SPIN_UNLOCK is not set
+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_READ_TRYLOCK is not set
+# CONFIG_INLINE_READ_LOCK is not set
+# CONFIG_INLINE_READ_LOCK_BH is not set
+# CONFIG_INLINE_READ_LOCK_IRQ is not set
+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_READ_UNLOCK is not set
+# CONFIG_INLINE_READ_UNLOCK_BH is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQ is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_WRITE_TRYLOCK is not set
+# CONFIG_INLINE_WRITE_LOCK is not set
+# CONFIG_INLINE_WRITE_LOCK_BH is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_WRITE_UNLOCK is not set
+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
+# CONFIG_MUTEX_SPIN_ON_OWNER is not set
+# CONFIG_FREEZER is not set
+
+#
+# Processor type and features
+#
+CONFIG_SMP=y
+CONFIG_NR_CPUS=64
+# CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
+CONFIG_HZ_1000=y
+CONFIG_HZ=1000
+CONFIG_SCHED_HRTICK=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_FIND_NEXT_BIT=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_SPARC64_SMP=y
+CONFIG_EARLYFB=y
+CONFIG_SPARC64_PAGE_SIZE_8KB=y
+# CONFIG_SPARC64_PAGE_SIZE_64KB is not set
+# CONFIG_SECCOMP is not set
+CONFIG_HOTPLUG_CPU=y
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+# CONFIG_CPU_FREQ is not set
+CONFIG_US3_MC=y
+CONFIG_GENERIC_LOCKBREAK=y
+CONFIG_HUGETLB_PAGE_SIZE_4MB=y
+# CONFIG_HUGETLB_PAGE_SIZE_512K is not set
+# CONFIG_HUGETLB_PAGE_SIZE_64K is not set
+CONFIG_NUMA=y
+CONFIG_NODES_SHIFT=4
+CONFIG_NODES_SPAN_OTHER_NODES=y
+CONFIG_ARCH_POPULATES_NODE_MAP=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_SELECT_MEMORY_MODEL=y
+# CONFIG_FLATMEM_MANUAL is not set
+# CONFIG_DISCONTIGMEM_MANUAL is not set
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_NEED_MULTIPLE_NODES=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=999999
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=0
+CONFIG_NR_QUICK=1
+# CONFIG_KSM is not set
+CONFIG_DEFAULT_MMAP_MIN_ADDR=8192
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+# CONFIG_PREEMPT_NONE is not set
+# CONFIG_PREEMPT_VOLUNTARY is not set
+CONFIG_PREEMPT=y
+# CONFIG_CMDLINE_BOOL is not set
+
+#
+# Bus options (PCI etc.)
+#
+CONFIG_SBUS=y
+CONFIG_SBUSCHAR=y
+CONFIG_SUN_LDOMS=y
+CONFIG_PCI=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_PCI_SYSCALL=y
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+# CONFIG_PCI_DEBUG is not set
+# CONFIG_PCI_STUB is not set
+# CONFIG_PCI_IOV is not set
+# CONFIG_PCCARD is not set
+CONFIG_SUN_OPENPROMFS=m
+CONFIG_SPARC64_PCI=y
+
+#
+# Executable file formats
+#
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+# CONFIG_HAVE_AOUT is not set
+# CONFIG_BINFMT_MISC is not set
+CONFIG_COMPAT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_XFRM=y
+CONFIG_XFRM_USER=m
+# CONFIG_XFRM_SUB_POLICY is not set
+CONFIG_XFRM_MIGRATE=y
+# CONFIG_XFRM_STATISTICS is not set
+CONFIG_XFRM_IPCOMP=m
+# CONFIG_NET_KEY is not set
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+# CONFIG_IP_ADVANCED_ROUTER is not set
+CONFIG_IP_FIB_HASH=y
+# CONFIG_IP_PNP is not set
+# CONFIG_NET_IPIP is not set
+# CONFIG_NET_IPGRE is not set
+# CONFIG_IP_MROUTE is not set
+CONFIG_ARPD=y
+CONFIG_SYN_COOKIES=y
+CONFIG_INET_AH=m
+CONFIG_INET_ESP=m
+CONFIG_INET_IPCOMP=m
+CONFIG_INET_XFRM_TUNNEL=m
+CONFIG_INET_TUNNEL=m
+CONFIG_INET_XFRM_MODE_TRANSPORT=m
+CONFIG_INET_XFRM_MODE_TUNNEL=m
+CONFIG_INET_XFRM_MODE_BEET=m
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=m
+CONFIG_INET_TCP_DIAG=m
+# CONFIG_TCP_CONG_ADVANCED is not set
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+# CONFIG_TCP_MD5SIG is not set
+# CONFIG_IPV6 is not set
+# CONFIG_NETWORK_SECMARK is not set
+# CONFIG_NETFILTER is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_RDS is not set
+# CONFIG_TIPC is not set
+# CONFIG_ATM is not set
+# CONFIG_BRIDGE is not set
+# CONFIG_NET_DSA is not set
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+# CONFIG_LLC2 is not set
+# CONFIG_IPX is not set
+# CONFIG_ATALK is not set
+# CONFIG_X25 is not set
+# CONFIG_LAPB is not set
+# CONFIG_ECONET is not set
+# CONFIG_WAN_ROUTER is not set
+# CONFIG_PHONET is not set
+# CONFIG_IEEE802154 is not set
+# CONFIG_NET_SCHED is not set
+# CONFIG_DCB is not set
+
+#
+# Network testing
+#
+# CONFIG_NET_PKTGEN is not set
+# CONFIG_NET_DROP_MONITOR is not set
+# CONFIG_HAMRADIO is not set
+# CONFIG_CAN is not set
+# CONFIG_IRDA is not set
+# CONFIG_BT is not set
+# CONFIG_AF_RXRPC is not set
+# CONFIG_WIRELESS is not set
+# CONFIG_WIMAX is not set
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+# CONFIG_DEVTMPFS is not set
+CONFIG_STANDALONE=y
+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_DEBUG_DRIVER is not set
+# CONFIG_DEBUG_DEVRES is not set
+# CONFIG_SYS_HYPERVISOR is not set
+CONFIG_CONNECTOR=m
+# CONFIG_MTD is not set
+CONFIG_OF_DEVICE=y
+# CONFIG_PARPORT is not set
+CONFIG_BLK_DEV=y
+# CONFIG_BLK_DEV_FD is not set
+# CONFIG_BLK_CPQ_CISS_DA is not set
+# CONFIG_BLK_DEV_DAC960 is not set
+# CONFIG_BLK_DEV_UMEM is not set
+# CONFIG_BLK_DEV_COW_COMMON is not set
+CONFIG_BLK_DEV_LOOP=m
+# CONFIG_BLK_DEV_CRYPTOLOOP is not set
+# CONFIG_BLK_DEV_DRBD is not set
+# CONFIG_BLK_DEV_NBD is not set
+# CONFIG_BLK_DEV_SX8 is not set
+# CONFIG_BLK_DEV_UB is not set
+# CONFIG_BLK_DEV_RAM is not set
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+CONFIG_SUNVDC=m
+# CONFIG_BLK_DEV_HD is not set
+CONFIG_MISC_DEVICES=y
+# CONFIG_AD525X_DPOT is not set
+# CONFIG_PHANTOM is not set
+# CONFIG_SGI_IOC4 is not set
+# CONFIG_TIFM_CORE is not set
+# CONFIG_ICS932S401 is not set
+# CONFIG_ENCLOSURE_SERVICES is not set
+# CONFIG_HP_ILO is not set
+# CONFIG_ISL29003 is not set
+# CONFIG_SENSORS_TSL2550 is not set
+# CONFIG_DS1682 is not set
+# CONFIG_C2PORT is not set
+
+#
+# EEPROM support
+#
+# CONFIG_EEPROM_AT24 is not set
+# CONFIG_EEPROM_LEGACY is not set
+# CONFIG_EEPROM_MAX6875 is not set
+# CONFIG_EEPROM_93CX6 is not set
+# CONFIG_CB710_CORE is not set
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+# CONFIG_RAID_ATTRS is not set
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+# CONFIG_SCSI_TGT is not set
+CONFIG_SCSI_NETLINK=y
+CONFIG_SCSI_PROC_FS=y
+
+#
+# SCSI support type (disk, tape, CD-ROM)
+#
+CONFIG_BLK_DEV_SD=y
+# CONFIG_CHR_DEV_ST is not set
+# CONFIG_CHR_DEV_OSST is not set
+CONFIG_BLK_DEV_SR=m
+CONFIG_BLK_DEV_SR_VENDOR=y
+CONFIG_CHR_DEV_SG=m
+# CONFIG_CHR_DEV_SCH is not set
+CONFIG_SCSI_MULTI_LUN=y
+CONFIG_SCSI_CONSTANTS=y
+# CONFIG_SCSI_LOGGING is not set
+# CONFIG_SCSI_SCAN_ASYNC is not set
+CONFIG_SCSI_WAIT_SCAN=m
+
+#
+# SCSI Transports
+#
+CONFIG_SCSI_SPI_ATTRS=y
+CONFIG_SCSI_FC_ATTRS=y
+# CONFIG_SCSI_ISCSI_ATTRS is not set
+CONFIG_SCSI_SAS_ATTRS=y
+# CONFIG_SCSI_SAS_LIBSAS is not set
+# CONFIG_SCSI_SRP_ATTRS is not set
+CONFIG_SCSI_LOWLEVEL=y
+# CONFIG_ISCSI_TCP is not set
+# CONFIG_SCSI_BNX2_ISCSI is not set
+# CONFIG_BE2ISCSI is not set
+# CONFIG_BLK_DEV_3W_XXXX_RAID is not set
+# CONFIG_SCSI_HPSA is not set
+# CONFIG_SCSI_3W_9XXX is not set
+# CONFIG_SCSI_3W_SAS is not set
+# CONFIG_SCSI_ACARD is not set
+# CONFIG_SCSI_AACRAID is not set
+# CONFIG_SCSI_AIC7XXX is not set
+# CONFIG_SCSI_AIC7XXX_OLD is not set
+# CONFIG_SCSI_AIC79XX is not set
+# CONFIG_SCSI_AIC94XX is not set
+# CONFIG_SCSI_MVSAS is not set
+# CONFIG_SCSI_ARCMSR is not set
+# CONFIG_MEGARAID_NEWGEN is not set
+# CONFIG_MEGARAID_LEGACY is not set
+# CONFIG_MEGARAID_SAS is not set
+# CONFIG_SCSI_MPT2SAS is not set
+# CONFIG_SCSI_HPTIOP is not set
+# CONFIG_LIBFC is not set
+# CONFIG_LIBFCOE is not set
+# CONFIG_FCOE is not set
+# CONFIG_SCSI_DMX3191D is not set
+# CONFIG_SCSI_FUTURE_DOMAIN is not set
+# CONFIG_SCSI_IPS is not set
+# CONFIG_SCSI_INITIO is not set
+# CONFIG_SCSI_INIA100 is not set
+# CONFIG_SCSI_STEX is not set
+# CONFIG_SCSI_SYM53C8XX_2 is not set
+# CONFIG_SCSI_QLOGIC_1280 is not set
+# CONFIG_SCSI_QLOGICPTI is not set
+# CONFIG_SCSI_QLA_FC is not set
+# CONFIG_SCSI_QLA_ISCSI is not set
+# CONFIG_SCSI_LPFC is not set
+# CONFIG_SCSI_DC395x is not set
+# CONFIG_SCSI_DC390T is not set
+# CONFIG_SCSI_DEBUG is not set
+# CONFIG_SCSI_SUNESP is not set
+# CONFIG_SCSI_PMCRAID is not set
+# CONFIG_SCSI_PM8001 is not set
+# CONFIG_SCSI_SRP is not set
+# CONFIG_SCSI_BFA_FC is not set
+# CONFIG_SCSI_DH is not set
+# CONFIG_SCSI_OSD_INITIATOR is not set
+# CONFIG_ATA is not set
+# CONFIG_MD is not set
+CONFIG_FUSION=y
+# CONFIG_FUSION_SPI is not set
+# CONFIG_FUSION_FC is not set
+CONFIG_FUSION_SAS=y
+CONFIG_FUSION_MAX_SGE=128
+CONFIG_FUSION_CTL=m
+# CONFIG_FUSION_LOGGING is not set
+
+#
+# IEEE 1394 (FireWire) support
+#
+
+#
+# You can enable one or both FireWire driver stacks.
+#
+
+#
+# The newer stack is recommended.
+#
+# CONFIG_FIREWIRE is not set
+# CONFIG_IEEE1394 is not set
+# CONFIG_I2O is not set
+CONFIG_NETDEVICES=y
+# CONFIG_DUMMY is not set
+# CONFIG_BONDING is not set
+# CONFIG_MACVLAN is not set
+# CONFIG_EQUALIZER is not set
+# CONFIG_TUN is not set
+# CONFIG_VETH is not set
+# CONFIG_ARCNET is not set
+# CONFIG_NET_ETHERNET is not set
+CONFIG_NETDEV_1000=y
+# CONFIG_ACENIC is not set
+# CONFIG_DL2K is not set
+# CONFIG_E1000 is not set
+CONFIG_E1000E=m
+# CONFIG_IP1000 is not set
+# CONFIG_IGB is not set
+# CONFIG_IGBVF is not set
+# CONFIG_MYRI_SBUS is not set
+# CONFIG_NS83820 is not set
+# CONFIG_HAMACHI is not set
+# CONFIG_YELLOWFIN is not set
+# CONFIG_R8169 is not set
+# CONFIG_SIS190 is not set
+# CONFIG_SKGE is not set
+# CONFIG_SKY2 is not set
+# CONFIG_VIA_VELOCITY is not set
+# CONFIG_TIGON3 is not set
+# CONFIG_BNX2 is not set
+# CONFIG_CNIC is not set
+# CONFIG_QLA3XXX is not set
+# CONFIG_ATL1 is not set
+# CONFIG_ATL1E is not set
+# CONFIG_ATL1C is not set
+# CONFIG_JME is not set
+# CONFIG_NETDEV_10000 is not set
+# CONFIG_TR is not set
+# CONFIG_WLAN is not set
+
+#
+# Enable WiMAX (Networking options) to see the WiMAX drivers
+#
+
+#
+# USB Network Adapters
+#
+# CONFIG_USB_CATC is not set
+# CONFIG_USB_KAWETH is not set
+# CONFIG_USB_PEGASUS is not set
+# CONFIG_USB_RTL8150 is not set
+# CONFIG_USB_USBNET is not set
+# CONFIG_WAN is not set
+# CONFIG_FDDI is not set
+# CONFIG_HIPPI is not set
+# CONFIG_PPP is not set
+# CONFIG_SLIP is not set
+# CONFIG_NET_FC is not set
+CONFIG_NETCONSOLE=m
+CONFIG_NETCONSOLE_DYNAMIC=y
+CONFIG_NETPOLL=y
+# CONFIG_NETPOLL_TRAP is not set
+CONFIG_NET_POLL_CONTROLLER=y
+# CONFIG_VMXNET3 is not set
+# CONFIG_ISDN is not set
+# CONFIG_PHONE is not set
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+# CONFIG_INPUT_FF_MEMLESS is not set
+# CONFIG_INPUT_POLLDEV is not set
+# CONFIG_INPUT_SPARSEKMAP is not set
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_PSAUX=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+# CONFIG_INPUT_JOYDEV is not set
+CONFIG_INPUT_EVDEV=y
+# CONFIG_INPUT_EVBUG is not set
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+# CONFIG_KEYBOARD_ADP5588 is not set
+CONFIG_KEYBOARD_ATKBD=y
+# CONFIG_QT2160 is not set
+CONFIG_KEYBOARD_LKKBD=m
+# CONFIG_KEYBOARD_MAX7359 is not set
+# CONFIG_KEYBOARD_NEWTON is not set
+# CONFIG_KEYBOARD_OPENCORES is not set
+# CONFIG_KEYBOARD_STOWAWAY is not set
+CONFIG_KEYBOARD_SUNKBD=y
+# CONFIG_KEYBOARD_XTKBD is not set
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+# CONFIG_MOUSE_PS2_ELANTECH is not set
+# CONFIG_MOUSE_PS2_SENTELIC is not set
+# CONFIG_MOUSE_PS2_TOUCHKIT is not set
+CONFIG_MOUSE_SERIAL=y
+# CONFIG_MOUSE_APPLETOUCH is not set
+# CONFIG_MOUSE_BCM5974 is not set
+# CONFIG_MOUSE_VSXXXAA is not set
+# CONFIG_MOUSE_SYNAPTICS_I2C is not set
+# CONFIG_INPUT_JOYSTICK is not set
+# CONFIG_INPUT_TABLET is not set
+# CONFIG_INPUT_TOUCHSCREEN is not set
+CONFIG_INPUT_MISC=y
+CONFIG_INPUT_SPARCSPKR=y
+# CONFIG_INPUT_ATI_REMOTE is not set
+# CONFIG_INPUT_ATI_REMOTE2 is not set
+# CONFIG_INPUT_KEYSPAN_REMOTE is not set
+# CONFIG_INPUT_POWERMATE is not set
+# CONFIG_INPUT_YEALINK is not set
+# CONFIG_INPUT_CM109 is not set
+# CONFIG_INPUT_UINPUT is not set
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+# CONFIG_SERIO_SERPORT is not set
+CONFIG_SERIO_PCIPS2=m
+CONFIG_SERIO_LIBPS2=y
+CONFIG_SERIO_RAW=m
+# CONFIG_SERIO_ALTERA_PS2 is not set
+# CONFIG_GAMEPORT is not set
+
+#
+# Character devices
+#
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+# CONFIG_VT_HW_CONSOLE_BINDING is not set
+# CONFIG_DEVKMEM is not set
+# CONFIG_SERIAL_NONSTANDARD is not set
+# CONFIG_NOZOMI is not set
+
+#
+# Serial drivers
+#
+# CONFIG_SERIAL_8250 is not set
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_SUNCORE=y
+# CONFIG_SERIAL_SUNZILOG is not set
+CONFIG_SERIAL_SUNSU=y
+CONFIG_SERIAL_SUNSU_CONSOLE=y
+CONFIG_SERIAL_SUNSAB=y
+CONFIG_SERIAL_SUNSAB_CONSOLE=y
+CONFIG_SERIAL_SUNHV=y
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+# CONFIG_SERIAL_JSM is not set
+# CONFIG_SERIAL_TIMBERDALE is not set
+# CONFIG_SERIAL_GRLIB_GAISLER_APBUART is not set
+CONFIG_UNIX98_PTYS=y
+# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_IPMI_HANDLER is not set
+CONFIG_HW_RANDOM=m
+# CONFIG_HW_RANDOM_TIMERIOMEM is not set
+CONFIG_HW_RANDOM_N2RNG=m
+# CONFIG_R3964 is not set
+# CONFIG_APPLICOM is not set
+CONFIG_RAW_DRIVER=y
+CONFIG_MAX_RAW_DEVS=256
+# CONFIG_TCG_TPM is not set
+CONFIG_DEVPORT=y
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+# CONFIG_I2C_CHARDEV is not set
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_ALGOBIT=y
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+# CONFIG_I2C_ALI1535 is not set
+# CONFIG_I2C_ALI1563 is not set
+# CONFIG_I2C_ALI15X3 is not set
+# CONFIG_I2C_AMD756 is not set
+# CONFIG_I2C_AMD8111 is not set
+# CONFIG_I2C_I801 is not set
+# CONFIG_I2C_ISCH is not set
+# CONFIG_I2C_PIIX4 is not set
+# CONFIG_I2C_NFORCE2 is not set
+# CONFIG_I2C_SIS5595 is not set
+# CONFIG_I2C_SIS630 is not set
+# CONFIG_I2C_SIS96X is not set
+# CONFIG_I2C_VIA is not set
+# CONFIG_I2C_VIAPRO is not set
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+# CONFIG_I2C_OCORES is not set
+# CONFIG_I2C_SIMTEC is not set
+# CONFIG_I2C_XILINX is not set
+
+#
+# External I2C/SMBus adapter drivers
+#
+# CONFIG_I2C_PARPORT_LIGHT is not set
+# CONFIG_I2C_TAOS_EVM is not set
+# CONFIG_I2C_TINY_USB is not set
+
+#
+# Other I2C/SMBus bus drivers
+#
+# CONFIG_I2C_PCA_PLATFORM is not set
+# CONFIG_I2C_STUB is not set
+# CONFIG_I2C_DEBUG_CORE is not set
+# CONFIG_I2C_DEBUG_ALGO is not set
+# CONFIG_I2C_DEBUG_BUS is not set
+# CONFIG_SPI is not set
+
+#
+# PPS support
+#
+# CONFIG_PPS is not set
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+# CONFIG_GPIOLIB is not set
+# CONFIG_W1 is not set
+# CONFIG_POWER_SUPPLY is not set
+# CONFIG_HWMON is not set
+# CONFIG_THERMAL is not set
+# CONFIG_WATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+
+#
+# Multifunction device drivers
+#
+# CONFIG_MFD_CORE is not set
+# CONFIG_MFD_88PM860X is not set
+# CONFIG_MFD_SM501 is not set
+# CONFIG_HTC_PASIC3 is not set
+# CONFIG_TWL4030_CORE is not set
+# CONFIG_MFD_TMIO is not set
+# CONFIG_PMIC_DA903X is not set
+# CONFIG_PMIC_ADP5520 is not set
+# CONFIG_MFD_MAX8925 is not set
+# CONFIG_MFD_WM8400 is not set
+# CONFIG_MFD_WM831X is not set
+# CONFIG_MFD_WM8350_I2C is not set
+# CONFIG_MFD_WM8994 is not set
+# CONFIG_MFD_PCF50633 is not set
+# CONFIG_AB3100_CORE is not set
+# CONFIG_LPC_SCH is not set
+# CONFIG_REGULATOR is not set
+# CONFIG_MEDIA_SUPPORT is not set
+
+#
+# Graphics support
+#
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+# CONFIG_DRM is not set
+# CONFIG_VGASTATE is not set
+# CONFIG_VIDEO_OUTPUT_CONTROL is not set
+CONFIG_FB=y
+# CONFIG_FIRMWARE_EDID is not set
+CONFIG_FB_DDC=y
+# CONFIG_FB_BOOT_VESA_SUPPORT is not set
+CONFIG_FB_CFB_FILLRECT=y
+CONFIG_FB_CFB_COPYAREA=y
+CONFIG_FB_CFB_IMAGEBLIT=y
+# CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
+# CONFIG_FB_SYS_FILLRECT is not set
+# CONFIG_FB_SYS_COPYAREA is not set
+# CONFIG_FB_SYS_IMAGEBLIT is not set
+# CONFIG_FB_FOREIGN_ENDIAN is not set
+# CONFIG_FB_SYS_FOPS is not set
+# CONFIG_FB_SVGALIB is not set
+# CONFIG_FB_MACMODES is not set
+# CONFIG_FB_BACKLIGHT is not set
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
+
+#
+# Frame buffer hardware drivers
+#
+# CONFIG_FB_CIRRUS is not set
+# CONFIG_FB_PM2 is not set
+# CONFIG_FB_ASILIANT is not set
+# CONFIG_FB_IMSTT is not set
+# CONFIG_FB_UVESA is not set
+# CONFIG_FB_SBUS is not set
+# CONFIG_FB_XVR500 is not set
+# CONFIG_FB_XVR2500 is not set
+# CONFIG_FB_XVR1000 is not set
+# CONFIG_FB_S1D13XXX is not set
+# CONFIG_FB_NVIDIA is not set
+# CONFIG_FB_RIVA is not set
+# CONFIG_FB_MATROX is not set
+CONFIG_FB_RADEON=y
+CONFIG_FB_RADEON_I2C=y
+# CONFIG_FB_RADEON_BACKLIGHT is not set
+# CONFIG_FB_RADEON_DEBUG is not set
+# CONFIG_FB_ATY128 is not set
+CONFIG_FB_ATY=y
+CONFIG_FB_ATY_CT=y
+# CONFIG_FB_ATY_GENERIC_LCD is not set
+CONFIG_FB_ATY_GX=y
+# CONFIG_FB_ATY_BACKLIGHT is not set
+# CONFIG_FB_S3 is not set
+# CONFIG_FB_SAVAGE is not set
+# CONFIG_FB_SIS is not set
+# CONFIG_FB_VIA is not set
+# CONFIG_FB_NEOMAGIC is not set
+# CONFIG_FB_KYRO is not set
+# CONFIG_FB_3DFX is not set
+# CONFIG_FB_VOODOO1 is not set
+# CONFIG_FB_VT8623 is not set
+# CONFIG_FB_TRIDENT is not set
+# CONFIG_FB_ARK is not set
+# CONFIG_FB_PM3 is not set
+# CONFIG_FB_CARMINE is not set
+# CONFIG_FB_VIRTUAL is not set
+# CONFIG_FB_METRONOME is not set
+# CONFIG_FB_MB862XX is not set
+# CONFIG_FB_BROADSHEET is not set
+# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
+
+#
+# Display device support
+#
+# CONFIG_DISPLAY_SUPPORT is not set
+
+#
+# Console display driver support
+#
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+# CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
+CONFIG_FONTS=y
+# CONFIG_FONT_8x8 is not set
+# CONFIG_FONT_8x16 is not set
+# CONFIG_FONT_6x11 is not set
+# CONFIG_FONT_7x14 is not set
+# CONFIG_FONT_PEARL_8x8 is not set
+# CONFIG_FONT_ACORN_8x8 is not set
+CONFIG_FONT_SUN8x16=y
+# CONFIG_FONT_SUN12x22 is not set
+# CONFIG_FONT_10x18 is not set
+CONFIG_LOGO=y
+# CONFIG_LOGO_LINUX_MONO is not set
+# CONFIG_LOGO_LINUX_VGA16 is not set
+# CONFIG_LOGO_LINUX_CLUT224 is not set
+CONFIG_LOGO_SUN_CLUT224=y
+# CONFIG_SOUND is not set
+CONFIG_HID_SUPPORT=y
+CONFIG_HID=y
+# CONFIG_HIDRAW is not set
+
+#
+# USB Input Devices
+#
+CONFIG_USB_HID=m
+# CONFIG_HID_PID is not set
+CONFIG_USB_HIDDEV=y
+
+#
+# Special HID drivers
+#
+# CONFIG_HID_3M_PCT is not set
+CONFIG_HID_A4TECH=m
+CONFIG_HID_APPLE=m
+CONFIG_HID_BELKIN=m
+CONFIG_HID_CHERRY=m
+CONFIG_HID_CHICONY=m
+CONFIG_HID_CYPRESS=m
+CONFIG_HID_DRAGONRISE=m
+# CONFIG_DRAGONRISE_FF is not set
+CONFIG_HID_EZKEY=m
+CONFIG_HID_KYE=m
+CONFIG_HID_GYRATION=m
+CONFIG_HID_TWINHAN=m
+CONFIG_HID_KENSINGTON=m
+CONFIG_HID_LOGITECH=m
+# CONFIG_LOGITECH_FF is not set
+# CONFIG_LOGIRUMBLEPAD2_FF is not set
+# CONFIG_LOGIG940_FF is not set
+CONFIG_HID_MICROSOFT=m
+# CONFIG_HID_MOSART is not set
+CONFIG_HID_MONTEREY=m
+CONFIG_HID_NTRIG=m
+CONFIG_HID_ORTEK=m
+CONFIG_HID_PANTHERLORD=m
+# CONFIG_PANTHERLORD_FF is not set
+CONFIG_HID_PETALYNX=m
+# CONFIG_HID_QUANTA is not set
+CONFIG_HID_SAMSUNG=m
+CONFIG_HID_SONY=m
+# CONFIG_HID_STANTUM is not set
+CONFIG_HID_SUNPLUS=m
+CONFIG_HID_GREENASIA=m
+# CONFIG_GREENASIA_FF is not set
+CONFIG_HID_SMARTJOYPLUS=m
+# CONFIG_SMARTJOYPLUS_FF is not set
+CONFIG_HID_TOPSEED=m
+CONFIG_HID_THRUSTMASTER=m
+# CONFIG_THRUSTMASTER_FF is not set
+CONFIG_HID_ZEROPLUS=m
+# CONFIG_ZEROPLUS_FF is not set
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB=y
+# CONFIG_USB_DEBUG is not set
+# CONFIG_USB_ANNOUNCE_NEW_DEVICES is not set
+
+#
+# Miscellaneous USB options
+#
+# CONFIG_USB_DEVICEFS is not set
+# CONFIG_USB_DEVICE_CLASS is not set
+# CONFIG_USB_DYNAMIC_MINORS is not set
+# CONFIG_USB_OTG is not set
+# CONFIG_USB_MON is not set
+# CONFIG_USB_WUSB is not set
+# CONFIG_USB_WUSB_CBAF is not set
+
+#
+# USB Host Controller Drivers
+#
+# CONFIG_USB_C67X00_HCD is not set
+# CONFIG_USB_XHCI_HCD is not set
+CONFIG_USB_EHCI_HCD=m
+# CONFIG_USB_EHCI_ROOT_HUB_TT is not set
+# CONFIG_USB_EHCI_TT_NEWSCHED is not set
+# CONFIG_USB_OXU210HP_HCD is not set
+# CONFIG_USB_ISP116X_HCD is not set
+# CONFIG_USB_ISP1760_HCD is not set
+# CONFIG_USB_ISP1362_HCD is not set
+CONFIG_USB_OHCI_HCD=m
+# CONFIG_USB_OHCI_BIG_ENDIAN_DESC is not set
+# CONFIG_USB_OHCI_BIG_ENDIAN_MMIO is not set
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+# CONFIG_USB_UHCI_HCD is not set
+# CONFIG_USB_SL811_HCD is not set
+# CONFIG_USB_R8A66597_HCD is not set
+# CONFIG_USB_WHCI_HCD is not set
+# CONFIG_USB_HWA_HCD is not set
+
+#
+# USB Device Class drivers
+#
+# CONFIG_USB_ACM is not set
+# CONFIG_USB_PRINTER is not set
+# CONFIG_USB_WDM is not set
+# CONFIG_USB_TMC is not set
+
+#
+# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
+#
+
+#
+# also be needed; see USB_STORAGE Help for more info
+#
+CONFIG_USB_STORAGE=m
+# CONFIG_USB_STORAGE_DEBUG is not set
+# CONFIG_USB_STORAGE_DATAFAB is not set
+# CONFIG_USB_STORAGE_FREECOM is not set
+# CONFIG_USB_STORAGE_ISD200 is not set
+# CONFIG_USB_STORAGE_USBAT is not set
+# CONFIG_USB_STORAGE_SDDR09 is not set
+# CONFIG_USB_STORAGE_SDDR55 is not set
+# CONFIG_USB_STORAGE_JUMPSHOT is not set
+# CONFIG_USB_STORAGE_ALAUDA is not set
+# CONFIG_USB_STORAGE_ONETOUCH is not set
+# CONFIG_USB_STORAGE_KARMA is not set
+# CONFIG_USB_STORAGE_CYPRESS_ATACB is not set
+# CONFIG_USB_LIBUSUAL is not set
+
+#
+# USB Imaging devices
+#
+# CONFIG_USB_MDC800 is not set
+# CONFIG_USB_MICROTEK is not set
+
+#
+# USB port drivers
+#
+# CONFIG_USB_SERIAL is not set
+
+#
+# USB Miscellaneous drivers
+#
+# CONFIG_USB_EMI62 is not set
+# CONFIG_USB_EMI26 is not set
+# CONFIG_USB_ADUTUX is not set
+# CONFIG_USB_SEVSEG is not set
+# CONFIG_USB_RIO500 is not set
+# CONFIG_USB_LEGOTOWER is not set
+# CONFIG_USB_LCD is not set
+# CONFIG_USB_LED is not set
+# CONFIG_USB_CYPRESS_CY7C63 is not set
+# CONFIG_USB_CYTHERM is not set
+# CONFIG_USB_IDMOUSE is not set
+# CONFIG_USB_FTDI_ELAN is not set
+# CONFIG_USB_APPLEDISPLAY is not set
+# CONFIG_USB_SISUSBVGA is not set
+# CONFIG_USB_LD is not set
+# CONFIG_USB_TRANCEVIBRATOR is not set
+# CONFIG_USB_IOWARRIOR is not set
+# CONFIG_USB_TEST is not set
+# CONFIG_USB_ISIGHTFW is not set
+# CONFIG_USB_GADGET is not set
+
+#
+# OTG and related infrastructure
+#
+# CONFIG_NOP_USB_XCEIV is not set
+# CONFIG_UWB is not set
+# CONFIG_MMC is not set
+# CONFIG_MEMSTICK is not set
+# CONFIG_NEW_LEDS is not set
+# CONFIG_ACCESSIBILITY is not set
+# CONFIG_INFINIBAND is not set
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+# CONFIG_RTC_DEBUG is not set
+
+#
+# RTC interfaces
+#
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+# CONFIG_RTC_INTF_DEV_UIE_EMUL is not set
+# CONFIG_RTC_DRV_TEST is not set
+
+#
+# I2C RTC drivers
+#
+# CONFIG_RTC_DRV_DS1307 is not set
+# CONFIG_RTC_DRV_DS1374 is not set
+# CONFIG_RTC_DRV_DS1672 is not set
+# CONFIG_RTC_DRV_MAX6900 is not set
+# CONFIG_RTC_DRV_RS5C372 is not set
+# CONFIG_RTC_DRV_ISL1208 is not set
+# CONFIG_RTC_DRV_X1205 is not set
+# CONFIG_RTC_DRV_PCF8563 is not set
+# CONFIG_RTC_DRV_PCF8583 is not set
+# CONFIG_RTC_DRV_M41T80 is not set
+# CONFIG_RTC_DRV_BQ32K is not set
+# CONFIG_RTC_DRV_S35390A is not set
+# CONFIG_RTC_DRV_FM3130 is not set
+# CONFIG_RTC_DRV_RX8581 is not set
+# CONFIG_RTC_DRV_RX8025 is not set
+
+#
+# SPI RTC drivers
+#
+
+#
+# Platform RTC drivers
+#
+CONFIG_RTC_DRV_CMOS=y
+# CONFIG_RTC_DRV_DS1286 is not set
+# CONFIG_RTC_DRV_DS1511 is not set
+# CONFIG_RTC_DRV_DS1553 is not set
+# CONFIG_RTC_DRV_DS1742 is not set
+# CONFIG_RTC_DRV_STK17TA8 is not set
+# CONFIG_RTC_DRV_M48T86 is not set
+# CONFIG_RTC_DRV_M48T35 is not set
+CONFIG_RTC_DRV_M48T59=y
+# CONFIG_RTC_DRV_MSM6242 is not set
+CONFIG_RTC_DRV_BQ4802=y
+# CONFIG_RTC_DRV_RP5C01 is not set
+# CONFIG_RTC_DRV_V3020 is not set
+
+#
+# on-CPU RTC drivers
+#
+CONFIG_RTC_DRV_SUN4V=y
+CONFIG_RTC_DRV_STARFIRE=y
+# CONFIG_DMADEVICES is not set
+# CONFIG_AUXDISPLAY is not set
+# CONFIG_UIO is not set
+
+#
+# TI VLYNQ
+#
+# CONFIG_STAGING is not set
+
+#
+# Misc Linux/SPARC drivers
+#
+CONFIG_SUN_OPENPROMIO=y
+# CONFIG_OBP_FLASH is not set
+# CONFIG_TADPOLE_TS102_UCTRL is not set
+# CONFIG_BBC_I2C is not set
+# CONFIG_ENVCTRL is not set
+# CONFIG_DISPLAY7SEG is not set
+
+#
+# File systems
+#
+# CONFIG_EXT2_FS is not set
+CONFIG_EXT3_FS=y
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+# CONFIG_EXT3_FS_XATTR is not set
+# CONFIG_EXT4_FS is not set
+CONFIG_JBD=y
+# CONFIG_JBD_DEBUG is not set
+# CONFIG_REISERFS_FS is not set
+# CONFIG_JFS_FS is not set
+# CONFIG_FS_POSIX_ACL is not set
+# CONFIG_XFS_FS is not set
+# CONFIG_GFS2_FS is not set
+# CONFIG_OCFS2_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_NILFS2_FS is not set
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_INOTIFY=y
+CONFIG_INOTIFY_USER=y
+# CONFIG_QUOTA is not set
+# CONFIG_AUTOFS_FS is not set
+# CONFIG_AUTOFS4_FS is not set
+# CONFIG_FUSE_FS is not set
+
+#
+# Caches
+#
+# CONFIG_FSCACHE is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+CONFIG_ISO9660_FS=m
+# CONFIG_JOLIET is not set
+# CONFIG_ZISOFS is not set
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+CONFIG_FAT_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=m
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+CONFIG_NTFS_FS=m
+# CONFIG_NTFS_DEBUG is not set
+CONFIG_NTFS_RW=y
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+# CONFIG_TMPFS_POSIX_ACL is not set
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+CONFIG_CONFIGFS_FS=y
+CONFIG_MISC_FILESYSTEMS=y
+# CONFIG_ADFS_FS is not set
+# CONFIG_AFFS_FS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+# CONFIG_BEFS_FS is not set
+# CONFIG_BFS_FS is not set
+# CONFIG_EFS_FS is not set
+# CONFIG_LOGFS is not set
+# CONFIG_CRAMFS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_VXFS_FS is not set
+# CONFIG_MINIX_FS is not set
+# CONFIG_OMFS_FS is not set
+# CONFIG_HPFS_FS is not set
+# CONFIG_QNX4FS_FS is not set
+# CONFIG_ROMFS_FS is not set
+# CONFIG_SYSV_FS is not set
+CONFIG_UFS_FS=m
+CONFIG_UFS_FS_WRITE=y
+# CONFIG_UFS_DEBUG is not set
+CONFIG_NETWORK_FILESYSTEMS=y
+# CONFIG_NFS_FS is not set
+# CONFIG_NFSD is not set
+# CONFIG_SMB_FS is not set
+# CONFIG_CEPH_FS is not set
+# CONFIG_CIFS is not set
+# CONFIG_NCP_FS is not set
+# CONFIG_CODA_FS is not set
+# CONFIG_AFS_FS is not set
+
+#
+# Partition Types
+#
+CONFIG_PARTITION_ADVANCED=y
+# CONFIG_ACORN_PARTITION is not set
+# CONFIG_OSF_PARTITION is not set
+# CONFIG_AMIGA_PARTITION is not set
+# CONFIG_ATARI_PARTITION is not set
+# CONFIG_MAC_PARTITION is not set
+CONFIG_MSDOS_PARTITION=y
+# CONFIG_BSD_DISKLABEL is not set
+# CONFIG_MINIX_SUBPARTITION is not set
+# CONFIG_SOLARIS_X86_PARTITION is not set
+# CONFIG_UNIXWARE_DISKLABEL is not set
+# CONFIG_LDM_PARTITION is not set
+# CONFIG_SGI_PARTITION is not set
+# CONFIG_ULTRIX_PARTITION is not set
+CONFIG_SUN_PARTITION=y
+# CONFIG_KARMA_PARTITION is not set
+# CONFIG_EFI_PARTITION is not set
+# CONFIG_SYSV68_PARTITION is not set
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso8859-1"
+CONFIG_NLS_CODEPAGE_437=m
+# CONFIG_NLS_CODEPAGE_737 is not set
+# CONFIG_NLS_CODEPAGE_775 is not set
+CONFIG_NLS_CODEPAGE_850=m
+# CONFIG_NLS_CODEPAGE_852 is not set
+# CONFIG_NLS_CODEPAGE_855 is not set
+# CONFIG_NLS_CODEPAGE_857 is not set
+# CONFIG_NLS_CODEPAGE_860 is not set
+# CONFIG_NLS_CODEPAGE_861 is not set
+# CONFIG_NLS_CODEPAGE_862 is not set
+# CONFIG_NLS_CODEPAGE_863 is not set
+# CONFIG_NLS_CODEPAGE_864 is not set
+CONFIG_NLS_CODEPAGE_865=m
+# CONFIG_NLS_CODEPAGE_866 is not set
+# CONFIG_NLS_CODEPAGE_869 is not set
+# CONFIG_NLS_CODEPAGE_936 is not set
+# CONFIG_NLS_CODEPAGE_950 is not set
+# CONFIG_NLS_CODEPAGE_932 is not set
+# CONFIG_NLS_CODEPAGE_949 is not set
+# CONFIG_NLS_CODEPAGE_874 is not set
+# CONFIG_NLS_ISO8859_8 is not set
+# CONFIG_NLS_CODEPAGE_1250 is not set
+# CONFIG_NLS_CODEPAGE_1251 is not set
+# CONFIG_NLS_ASCII is not set
+CONFIG_NLS_ISO8859_1=m
+# CONFIG_NLS_ISO8859_2 is not set
+# CONFIG_NLS_ISO8859_3 is not set
+# CONFIG_NLS_ISO8859_4 is not set
+# CONFIG_NLS_ISO8859_5 is not set
+# CONFIG_NLS_ISO8859_6 is not set
+# CONFIG_NLS_ISO8859_7 is not set
+# CONFIG_NLS_ISO8859_9 is not set
+# CONFIG_NLS_ISO8859_13 is not set
+# CONFIG_NLS_ISO8859_14 is not set
+# CONFIG_NLS_ISO8859_15 is not set
+# CONFIG_NLS_KOI8_R is not set
+# CONFIG_NLS_KOI8_U is not set
+CONFIG_NLS_UTF8=m
+# CONFIG_DLM is not set
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_PRINTK_TIME=y
+# CONFIG_ENABLE_WARN_DEPRECATED is not set
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=2048
+CONFIG_MAGIC_SYSRQ=y
+# CONFIG_STRIP_ASM_SYMS is not set
+# CONFIG_UNUSED_SYMBOLS is not set
+CONFIG_DEBUG_FS=y
+# CONFIG_HEADERS_CHECK is not set
+CONFIG_DEBUG_KERNEL=y
+# CONFIG_DEBUG_SHIRQ is not set
+CONFIG_DETECT_SOFTLOCKUP=y
+# CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+CONFIG_DETECT_HUNG_TASK=y
+# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_TIMER_STATS is not set
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_DEBUG_SLAB is not set
+CONFIG_DEBUG_PREEMPT=y
+# CONFIG_DEBUG_RT_MUTEXES is not set
+# CONFIG_RT_MUTEX_TESTER is not set
+CONFIG_DEBUG_SPINLOCK=y
+CONFIG_DEBUG_MUTEXES=y
+CONFIG_DEBUG_LOCK_ALLOC=y
+CONFIG_PROVE_LOCKING=y
+# CONFIG_PROVE_RCU is not set
+CONFIG_LOCKDEP=y
+CONFIG_LOCK_STAT=y
+# CONFIG_DEBUG_LOCKDEP is not set
+CONFIG_TRACE_IRQFLAGS=y
+CONFIG_DEBUG_SPINLOCK_SLEEP=y
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+CONFIG_STACKTRACE=y
+# CONFIG_DEBUG_KOBJECT is not set
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_INFO=y
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_WRITECOUNT is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_LIST is not set
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+CONFIG_FRAME_POINTER=y
+# CONFIG_BOOT_PRINTK_DELAY is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+CONFIG_RCU_CPU_STALL_DETECTOR=y
+# CONFIG_BACKTRACE_SELF_TEST is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+# CONFIG_LKDTM is not set
+# CONFIG_FAULT_INJECTION is not set
+# CONFIG_LATENCYTOP is not set
+# CONFIG_SYSCTL_SYSCALL_CHECK is not set
+# CONFIG_DEBUG_PAGEALLOC is not set
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+# CONFIG_FUNCTION_TRACER is not set
+# CONFIG_IRQSOFF_TRACER is not set
+# CONFIG_PREEMPT_TRACER is not set
+# CONFIG_SCHED_TRACER is not set
+CONFIG_FTRACE_SYSCALLS=y
+# CONFIG_BOOT_TRACER is not set
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+# CONFIG_STACK_TRACER is not set
+# CONFIG_KMEMTRACE is not set
+# CONFIG_WORKQUEUE_TRACER is not set
+# CONFIG_BLK_DEV_IO_TRACE is not set
+# CONFIG_FTRACE_STARTUP_TEST is not set
+# CONFIG_RING_BUFFER_BENCHMARK is not set
+# CONFIG_DYNAMIC_DEBUG is not set
+# CONFIG_DMA_API_DEBUG is not set
+# CONFIG_SAMPLES is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+# CONFIG_DEBUG_STACK_USAGE is not set
+# CONFIG_DEBUG_DCFLUSH is not set
+# CONFIG_STACK_DEBUG is not set
+# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+
+#
+# Security options
+#
+# CONFIG_KEYS is not set
+# CONFIG_SECURITY is not set
+# CONFIG_SECURITYFS is not set
+# CONFIG_DEFAULT_SECURITY_SELINUX is not set
+# CONFIG_DEFAULT_SECURITY_SMACK is not set
+# CONFIG_DEFAULT_SECURITY_TOMOYO is not set
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_GF128MUL=m
+CONFIG_CRYPTO_NULL=m
+# CONFIG_CRYPTO_PCRYPT is not set
+CONFIG_CRYPTO_WORKQUEUE=y
+# CONFIG_CRYPTO_CRYPTD is not set
+CONFIG_CRYPTO_AUTHENC=y
+CONFIG_CRYPTO_TEST=m
+
+#
+# Authenticated Encryption with Associated Data
+#
+# CONFIG_CRYPTO_CCM is not set
+# CONFIG_CRYPTO_GCM is not set
+# CONFIG_CRYPTO_SEQIV is not set
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=y
+# CONFIG_CRYPTO_CTR is not set
+# CONFIG_CRYPTO_CTS is not set
+CONFIG_CRYPTO_ECB=m
+CONFIG_CRYPTO_LRW=m
+CONFIG_CRYPTO_PCBC=m
+CONFIG_CRYPTO_XTS=m
+
+#
+# Hash modes
+#
+CONFIG_CRYPTO_HMAC=y
+CONFIG_CRYPTO_XCBC=y
+# CONFIG_CRYPTO_VMAC is not set
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=m
+# CONFIG_CRYPTO_GHASH is not set
+CONFIG_CRYPTO_MD4=y
+CONFIG_CRYPTO_MD5=y
+CONFIG_CRYPTO_MICHAEL_MIC=m
+# CONFIG_CRYPTO_RMD128 is not set
+# CONFIG_CRYPTO_RMD160 is not set
+# CONFIG_CRYPTO_RMD256 is not set
+# CONFIG_CRYPTO_RMD320 is not set
+CONFIG_CRYPTO_SHA1=y
+CONFIG_CRYPTO_SHA256=m
+CONFIG_CRYPTO_SHA512=m
+CONFIG_CRYPTO_TGR192=m
+CONFIG_CRYPTO_WP512=m
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=m
+CONFIG_CRYPTO_ANUBIS=m
+CONFIG_CRYPTO_ARC4=m
+CONFIG_CRYPTO_BLOWFISH=m
+CONFIG_CRYPTO_CAMELLIA=m
+CONFIG_CRYPTO_CAST5=m
+CONFIG_CRYPTO_CAST6=m
+CONFIG_CRYPTO_DES=y
+CONFIG_CRYPTO_FCRYPT=m
+CONFIG_CRYPTO_KHAZAD=m
+# CONFIG_CRYPTO_SALSA20 is not set
+CONFIG_CRYPTO_SEED=m
+CONFIG_CRYPTO_SERPENT=m
+CONFIG_CRYPTO_TEA=m
+CONFIG_CRYPTO_TWOFISH=m
+CONFIG_CRYPTO_TWOFISH_COMMON=m
+
+#
+# Compression
+#
+CONFIG_CRYPTO_DEFLATE=y
+# CONFIG_CRYPTO_ZLIB is not set
+# CONFIG_CRYPTO_LZO is not set
+
+#
+# Random Number Generation
+#
+# CONFIG_CRYPTO_ANSI_CPRNG is not set
+CONFIG_CRYPTO_HW=y
+# CONFIG_CRYPTO_DEV_HIFN_795X is not set
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_FIND_LAST_BIT=y
+CONFIG_CRC_CCITT=m
+CONFIG_CRC16=m
+# CONFIG_CRC_T10DIF is not set
+# CONFIG_CRC_ITU_T is not set
+CONFIG_CRC32=y
+# CONFIG_CRC7 is not set
+CONFIG_LIBCRC32C=m
+CONFIG_ZLIB_INFLATE=y
+CONFIG_ZLIB_DEFLATE=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_HAVE_LMB=y
+CONFIG_NLATTR=y
+
+--G4iJoqBmSsgzjUCe--
+
