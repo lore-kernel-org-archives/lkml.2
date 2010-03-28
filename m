@@ -1,128 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999Ab0C1Set (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 14:34:49 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43845 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754961Ab0C1Ses (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 14:34:48 -0400
-Date: Sun, 28 Mar 2010 14:34:46 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Imre Deak <imre.deak@nokia.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-       Alexander Shishkin <virtuoso@slind.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Jamie Lokier <jamie@shareable.org>,
-       "rostedt@goodmis.org" <rostedt@goodmis.org>,
-       "mingo@elte.hu" <mingo@elte.hu>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] create generic alignment api (v3)
-Message-ID: <20100328183445.GB13135@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:33:34 up 64 days, 21:10,  4 users,  load average: 0.15, 0.11,
-	0.03
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754931Ab0C1Sfs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 14:35:48 -0400
+Received: from mail.perches.com ([173.55.12.10]:1167 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754858Ab0C1Sfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 14:35:46 -0400
+Subject: [PATCH net-next trivial] drivers/net/ipg: Remove invalid
+ IPG_DDEBUG_MSG uses, neaten
+From: Joe Perches <joe@perches.com>
+To: Francois Romieu <romieu@fr.zoreil.com>,
+       Sorbica Shieh <sorbica@icplus.com.tw>,
+       Jesse Huang <jesse@icplus.com.tw>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 28 Mar 2010 11:35:45 -0700
+Message-ID: <1269801345.1500.32.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than re-doing the "alignment on a type size" trick all over again at
-different levels, import the "ltt_align" from LTTng into kernel.h and make this
-available to everyone. Renaming to:
+Some no longer valid IPG_DDEBUG_MSG uses are removed
+Validate IPG_DDEBUG_MSG arguments when not #defined
+Neaten #defines
+marco/macro typo correction
 
-- offset_align
-- offset_align_floor
-- object_align
-- object_align_floor
-
-Changelog since v2:
-- Fix object_align*(): should use object size alignment, not pointer alignment.
-
-Changelog since v1:
-- Align on the object natural alignment
-    (rather than min(arch word alignment, natural alignment))
-
-The advantage of separating the API in "object alignment" and "offset alignment"
-is that it gives more freedom to play with offset alignment. Very useful to
-implement a tracer ring-buffer alignment. (hint hint)
-
-Typical users will use "object alignment", but infrastructures like tracers
-which need to perform dynamic alignment will typically use "offset alignment",
-because it allows to align with respect to a base rather than to pass an
-absolute address.
-
-We use "sizeof(object)" rather than "__alignof__()" object because alignof
-returns "recommended" object alignment for the architecture, which can be
-sub-optimal on some architectures. By ensuring alignment on the object size, we
-are sure to make the right choice.
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-CC: linux-arm-kernel@lists.infradead.org
-CC: Imre Deak <imre.deak@nokia.com>
-CC: Jamie Lokier <jamie@shareable.org>
-CC: rostedt@goodmis.org
-CC: mingo@elte.hu
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/linux/kernel.h |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/net/ipg.c |    5 --
+ drivers/net/ipg.h |  109 +++++++++++++++++++++++++++++-----------------------
+ 2 files changed, 61 insertions(+), 53 deletions(-)
 
-Index: linux-2.6-lttng/include/linux/kernel.h
-===================================================================
---- linux-2.6-lttng.orig/include/linux/kernel.h	2010-03-27 20:46:07.000000000 -0400
-+++ linux-2.6-lttng/include/linux/kernel.h	2010-03-28 14:33:12.000000000 -0400
-@@ -42,6 +42,41 @@ extern const char linux_proc_banner[];
- #define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
- #define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+diff --git a/drivers/net/ipg.c b/drivers/net/ipg.c
+index 150415e..0d7ad3f 100644
+--- a/drivers/net/ipg.c
++++ b/drivers/net/ipg.c
+@@ -1547,8 +1547,6 @@ static void ipg_reset_after_host_error(struct work_struct *work)
+ 		container_of(work, struct ipg_nic_private, task.work);
+ 	struct net_device *dev = sp->dev;
  
-+/**
-+ * offset_align - Calculate the offset needed to align an object on its natural
-+ *                alignment towards higher addresses.
-+ * @align_drift:  object offset from an "alignment"-aligned address.
-+ * @alignment:    natural object alignment. Must be non-zero, power of 2.
-+ *
-+ * Returns the offset that must be added to align towards higher
-+ * addresses.
-+ */
-+static inline size_t offset_align(size_t align_drift, size_t alignment)
-+{
-+	return (alignment - align_drift) & (alignment - 1);
-+}
-+
-+/**
-+ * offset_align_floor - Calculate the offset needed to align an object
-+ *                      on its natural alignment towards lower addresses.
-+ * @align_drift:  object offset from an "alignment"-aligned address.
-+ * @alignment:    natural object alignment. Must be non-zero, power of 2.
-+ *
-+ * Returns the offset that must be substracted to align towards lower addresses.
-+ */
-+static inline size_t offset_align_floor(size_t align_drift, size_t alignment)
-+{
-+	return (align_drift - alignment) & (alignment - 1);
-+}
-+
-+#define object_align(obj)						      \
-+	((typeof(object))((size_t) (obj) + offset_align((size_t) (obj),	      \
-+							sizeof(*(obj)))))
-+
-+#define object_align_floor(obj)						      \
-+	((typeof(object))((size_t) (obj) - offset_align_floor((size_t) (obj), \
-+							      sizeof(*(obj)))))
-+
- #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
+-	IPG_DDEBUG_MSG("DMACtrl = %8.8x\n", ioread32(sp->ioaddr + IPG_DMACTRL));
+-
+ 	/*
+ 	 * Acknowledge HostError interrupt by resetting
+ 	 * IPG DMA and HOST.
+@@ -1825,9 +1823,6 @@ static int ipg_nic_stop(struct net_device *dev)
  
- #define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ 	netif_stop_queue(dev);
+ 
+-	IPG_DDEBUG_MSG("RFDlistendCount = %i\n", sp->RFDlistendCount);
+-	IPG_DDEBUG_MSG("RFDListCheckedCount = %i\n", sp->rxdCheckedCount);
+-	IPG_DDEBUG_MSG("EmptyRFDListCount = %i\n", sp->EmptyRFDListCount);
+ 	IPG_DUMPTFDLIST(dev);
+ 
+ 	do {
+diff --git a/drivers/net/ipg.h b/drivers/net/ipg.h
+index dfc2541..6ce0273 100644
+--- a/drivers/net/ipg.h
++++ b/drivers/net/ipg.h
+@@ -29,7 +29,7 @@
+ /* GMII based PHY IDs */
+ #define		NS				0x2000
+ #define		MARVELL				0x0141
+-#define		ICPLUS_PHY		0x243
++#define		ICPLUS_PHY			0x243
+ 
+ /* NIC Physical Layer Device MII register fields. */
+ #define         MII_PHY_SELECTOR_IEEE8023       0x0001
+@@ -96,31 +96,31 @@ enum ipg_regs {
+ };
+ 
+ /* Ethernet MIB statistic register offsets. */
+-#define	IPG_OCTETRCVOK		0xA8
++#define	IPG_OCTETRCVOK			0xA8
+ #define	IPG_MCSTOCTETRCVDOK		0xAC
+ #define	IPG_BCSTOCTETRCVOK		0xB0
+ #define	IPG_FRAMESRCVDOK		0xB4
+ #define	IPG_MCSTFRAMESRCVDOK		0xB8
+ #define	IPG_BCSTFRAMESRCVDOK		0xBE
+ #define	IPG_MACCONTROLFRAMESRCVD	0xC6
+-#define	IPG_FRAMETOOLONGERRRORS	0xC8
+-#define	IPG_INRANGELENGTHERRORS	0xCA
+-#define	IPG_FRAMECHECKSEQERRORS	0xCC
+-#define	IPG_FRAMESLOSTRXERRORS	0xCE
+-#define	IPG_OCTETXMTOK		0xD0
++#define	IPG_FRAMETOOLONGERRRORS		0xC8
++#define	IPG_INRANGELENGTHERRORS		0xCA
++#define	IPG_FRAMECHECKSEQERRORS		0xCC
++#define	IPG_FRAMESLOSTRXERRORS		0xCE
++#define	IPG_OCTETXMTOK			0xD0
+ #define	IPG_MCSTOCTETXMTOK		0xD4
+ #define	IPG_BCSTOCTETXMTOK		0xD8
+ #define	IPG_FRAMESXMTDOK		0xDC
+ #define	IPG_MCSTFRAMESXMTDOK		0xE0
+-#define	IPG_FRAMESWDEFERREDXMT	0xE4
++#define	IPG_FRAMESWDEFERREDXMT		0xE4
+ #define	IPG_LATECOLLISIONS		0xE8
+ #define	IPG_MULTICOLFRAMES		0xEC
+ #define	IPG_SINGLECOLFRAMES		0xF0
+ #define	IPG_BCSTFRAMESXMTDOK		0xF6
+-#define	IPG_CARRIERSENSEERRORS	0xF8
++#define	IPG_CARRIERSENSEERRORS		0xF8
+ #define	IPG_MACCONTROLFRAMESXMTDOK	0xFA
+-#define	IPG_FRAMESABORTXSCOLLS	0xFC
+-#define	IPG_FRAMESWEXDEFERRAL	0xFE
++#define	IPG_FRAMESABORTXSCOLLS		0xFC
++#define	IPG_FRAMESWEXDEFERRAL		0xFE
+ 
+ /* RMON statistic register offsets. */
+ #define	IPG_ETHERSTATSCOLLISIONS			0x100
+@@ -134,8 +134,8 @@ enum ipg_regs {
+ #define	IPG_ETHERSTATSPKTS1024TO1518OCTESTSTRANSMIT	0x120
+ #define	IPG_ETHERSTATSCRCALIGNERRORS			0x124
+ #define	IPG_ETHERSTATSUNDERSIZEPKTS			0x128
+-#define	IPG_ETHERSTATSFRAGMENTS			0x12C
+-#define	IPG_ETHERSTATSJABBERS			0x130
++#define	IPG_ETHERSTATSFRAGMENTS				0x12C
++#define	IPG_ETHERSTATSJABBERS				0x130
+ #define	IPG_ETHERSTATSOCTETS				0x134
+ #define	IPG_ETHERSTATSPKTS				0x138
+ #define	IPG_ETHERSTATSPKTS64OCTESTS			0x13C
+@@ -154,10 +154,10 @@ enum ipg_regs {
+ #define	IPG_ETHERSTATSDROPEVENTS			0xCE
+ 
+ /* Serial EEPROM offsets */
+-#define	IPG_EEPROM_CONFIGPARAM	0x00
++#define	IPG_EEPROM_CONFIGPARAM		0x00
+ #define	IPG_EEPROM_ASICCTRL		0x01
+ #define	IPG_EEPROM_SUBSYSTEMVENDORID	0x02
+-#define	IPG_EEPROM_SUBSYSTEMID	0x03
++#define	IPG_EEPROM_SUBSYSTEMID		0x03
+ #define	IPG_EEPROM_STATIONADDRESS0	0x10
+ #define	IPG_EEPROM_STATIONADDRESS1	0x11
+ #define	IPG_EEPROM_STATIONADDRESS2	0x12
+@@ -168,16 +168,16 @@ enum ipg_regs {
+ 
+ /* IOBaseAddress */
+ #define         IPG_PIB_RSVD_MASK		0xFFFFFE01
+-#define         IPG_PIB_IOBASEADDRESS	0xFFFFFF00
+-#define         IPG_PIB_IOBASEADDRIND	0x00000001
++#define         IPG_PIB_IOBASEADDRESS		0xFFFFFF00
++#define         IPG_PIB_IOBASEADDRIND		0x00000001
+ 
+ /* MemBaseAddress */
+ #define         IPG_PMB_RSVD_MASK		0xFFFFFE07
+-#define         IPG_PMB_MEMBASEADDRIND	0x00000001
++#define         IPG_PMB_MEMBASEADDRIND		0x00000001
+ #define         IPG_PMB_MEMMAPTYPE		0x00000006
+ #define         IPG_PMB_MEMMAPTYPE0		0x00000002
+ #define         IPG_PMB_MEMMAPTYPE1		0x00000004
+-#define         IPG_PMB_MEMBASEADDRESS	0xFFFFFE00
++#define         IPG_PMB_MEMBASEADDRESS		0xFFFFFE00
+ 
+ /* ConfigStatus */
+ #define IPG_CS_RSVD_MASK                0xFFB0
+@@ -196,20 +196,20 @@ enum ipg_regs {
+ 
+ /* TFDList, TFC */
+ #define	IPG_TFC_RSVD_MASK			0x0000FFFF9FFFFFFF
+-#define	IPG_TFC_FRAMEID			0x000000000000FFFF
++#define	IPG_TFC_FRAMEID				0x000000000000FFFF
+ #define	IPG_TFC_WORDALIGN			0x0000000000030000
+ #define	IPG_TFC_WORDALIGNTODWORD		0x0000000000000000
+-#define	IPG_TFC_WORDALIGNTOWORD		0x0000000000020000
++#define	IPG_TFC_WORDALIGNTOWORD			0x0000000000020000
+ #define	IPG_TFC_WORDALIGNDISABLED		0x0000000000030000
+ #define	IPG_TFC_TCPCHECKSUMENABLE		0x0000000000040000
+ #define	IPG_TFC_UDPCHECKSUMENABLE		0x0000000000080000
+ #define	IPG_TFC_IPCHECKSUMENABLE		0x0000000000100000
+ #define	IPG_TFC_FCSAPPENDDISABLE		0x0000000000200000
+ #define	IPG_TFC_TXINDICATE			0x0000000000400000
+-#define	IPG_TFC_TXDMAINDICATE		0x0000000000800000
++#define	IPG_TFC_TXDMAINDICATE			0x0000000000800000
+ #define	IPG_TFC_FRAGCOUNT			0x000000000F000000
+-#define	IPG_TFC_VLANTAGINSERT		0x0000000010000000
+-#define	IPG_TFC_TFDDONE			0x0000000080000000
++#define	IPG_TFC_VLANTAGINSERT			0x0000000010000000
++#define	IPG_TFC_TFDDONE				0x0000000080000000
+ #define	IPG_TFC_VID				0x00000FFF00000000
+ #define	IPG_TFC_CFI				0x0000100000000000
+ #define	IPG_TFC_USERPRIORITY			0x0000E00000000000
+@@ -217,35 +217,35 @@ enum ipg_regs {
+ /* TFDList, FragInfo */
+ #define	IPG_TFI_RSVD_MASK			0xFFFF00FFFFFFFFFF
+ #define	IPG_TFI_FRAGADDR			0x000000FFFFFFFFFF
+-#define	IPG_TFI_FRAGLEN			0xFFFF000000000000LL
++#define	IPG_TFI_FRAGLEN				0xFFFF000000000000LL
+ 
+ /* RFD data structure masks. */
+ 
+ /* RFDList, RFS */
+ #define	IPG_RFS_RSVD_MASK			0x0000FFFFFFFFFFFF
+ #define	IPG_RFS_RXFRAMELEN			0x000000000000FFFF
+-#define	IPG_RFS_RXFIFOOVERRUN		0x0000000000010000
++#define	IPG_RFS_RXFIFOOVERRUN			0x0000000000010000
+ #define	IPG_RFS_RXRUNTFRAME			0x0000000000020000
+ #define	IPG_RFS_RXALIGNMENTERROR		0x0000000000040000
+ #define	IPG_RFS_RXFCSERROR			0x0000000000080000
+ #define	IPG_RFS_RXOVERSIZEDFRAME		0x0000000000100000
+-#define	IPG_RFS_RXLENGTHERROR		0x0000000000200000
++#define	IPG_RFS_RXLENGTHERROR			0x0000000000200000
+ #define	IPG_RFS_VLANDETECTED			0x0000000000400000
+ #define	IPG_RFS_TCPDETECTED			0x0000000000800000
+ #define	IPG_RFS_TCPERROR			0x0000000001000000
+ #define	IPG_RFS_UDPDETECTED			0x0000000002000000
+ #define	IPG_RFS_UDPERROR			0x0000000004000000
+ #define	IPG_RFS_IPDETECTED			0x0000000008000000
+-#define	IPG_RFS_IPERROR			0x0000000010000000
++#define	IPG_RFS_IPERROR				0x0000000010000000
+ #define	IPG_RFS_FRAMESTART			0x0000000020000000
+ #define	IPG_RFS_FRAMEEND			0x0000000040000000
+-#define	IPG_RFS_RFDDONE			0x0000000080000000
++#define	IPG_RFS_RFDDONE				0x0000000080000000
+ #define	IPG_RFS_TCI				0x0000FFFF00000000
+ 
+ /* RFDList, FragInfo */
+ #define	IPG_RFI_RSVD_MASK			0xFFFF00FFFFFFFFFF
+ #define	IPG_RFI_FRAGADDR			0x000000FFFFFFFFFF
+-#define	IPG_RFI_FRAGLEN			0xFFFF000000000000LL
++#define	IPG_RFI_FRAGLEN				0xFFFF000000000000LL
+ 
+ /* I/O Register masks. */
+ 
+@@ -254,37 +254,37 @@ enum ipg_regs {
+ 
+ /* Statistics Mask */
+ #define	IPG_SM_ALL					0x0FFFFFFF
+-#define	IPG_SM_OCTETRCVOK_FRAMESRCVDOK		0x00000001
+-#define	IPG_SM_MCSTOCTETRCVDOK_MCSTFRAMESRCVDOK	0x00000002
+-#define	IPG_SM_BCSTOCTETRCVDOK_BCSTFRAMESRCVDOK	0x00000004
++#define	IPG_SM_OCTETRCVOK_FRAMESRCVDOK			0x00000001
++#define	IPG_SM_MCSTOCTETRCVDOK_MCSTFRAMESRCVDOK		0x00000002
++#define	IPG_SM_BCSTOCTETRCVDOK_BCSTFRAMESRCVDOK		0x00000004
+ #define	IPG_SM_RXJUMBOFRAMES				0x00000008
+ #define	IPG_SM_TCPCHECKSUMERRORS			0x00000010
+-#define	IPG_SM_IPCHECKSUMERRORS			0x00000020
++#define	IPG_SM_IPCHECKSUMERRORS				0x00000020
+ #define	IPG_SM_UDPCHECKSUMERRORS			0x00000040
+ #define	IPG_SM_MACCONTROLFRAMESRCVD			0x00000080
+ #define	IPG_SM_FRAMESTOOLONGERRORS			0x00000100
+ #define	IPG_SM_INRANGELENGTHERRORS			0x00000200
+ #define	IPG_SM_FRAMECHECKSEQERRORS			0x00000400
+ #define	IPG_SM_FRAMESLOSTRXERRORS			0x00000800
+-#define	IPG_SM_OCTETXMTOK_FRAMESXMTOK		0x00001000
+-#define	IPG_SM_MCSTOCTETXMTOK_MCSTFRAMESXMTDOK	0x00002000
+-#define	IPG_SM_BCSTOCTETXMTOK_BCSTFRAMESXMTDOK	0x00004000
++#define	IPG_SM_OCTETXMTOK_FRAMESXMTOK			0x00001000
++#define	IPG_SM_MCSTOCTETXMTOK_MCSTFRAMESXMTDOK		0x00002000
++#define	IPG_SM_BCSTOCTETXMTOK_BCSTFRAMESXMTDOK		0x00004000
+ #define	IPG_SM_FRAMESWDEFERREDXMT			0x00008000
+-#define	IPG_SM_LATECOLLISIONS			0x00010000
+-#define	IPG_SM_MULTICOLFRAMES			0x00020000
+-#define	IPG_SM_SINGLECOLFRAMES			0x00040000
++#define	IPG_SM_LATECOLLISIONS				0x00010000
++#define	IPG_SM_MULTICOLFRAMES				0x00020000
++#define	IPG_SM_SINGLECOLFRAMES				0x00040000
+ #define	IPG_SM_TXJUMBOFRAMES				0x00080000
+ #define	IPG_SM_CARRIERSENSEERRORS			0x00100000
+ #define	IPG_SM_MACCONTROLFRAMESXMTD			0x00200000
+ #define	IPG_SM_FRAMESABORTXSCOLLS			0x00400000
+-#define	IPG_SM_FRAMESWEXDEFERAL			0x00800000
++#define	IPG_SM_FRAMESWEXDEFERAL				0x00800000
+ 
+ /* Countdown */
+ #define	IPG_CD_RSVD_MASK		0x0700FFFF
+ #define	IPG_CD_COUNT			0x0000FFFF
+-#define	IPG_CD_COUNTDOWNSPEED	0x01000000
++#define	IPG_CD_COUNTDOWNSPEED		0x01000000
+ #define	IPG_CD_COUNTDOWNMODE		0x02000000
+-#define	IPG_CD_COUNTINTENABLED	0x04000000
++#define	IPG_CD_COUNTINTENABLED		0x04000000
+ 
+ /* TxDMABurstThresh */
+ #define IPG_TB_RSVD_MASK                0xFF
+@@ -653,15 +653,28 @@ enum ipg_regs {
+  * Miscellaneous macros.
+  */
+ 
+-/* Marco for printing debug statements. */
++/* Macros for printing debug statements. */
+ #ifdef IPG_DEBUG
+-#  define IPG_DEBUG_MSG(args...)
+-#  define IPG_DDEBUG_MSG(args...) printk(KERN_DEBUG "IPG: " args)
++#  define IPG_DEBUG_MSG(fmt, args...)			\
++do {							\
++	if (0)						\
++		printk(KERN_DEBUG "IPG: " fmt, ##args);	\
++} while (0)
++#  define IPG_DDEBUG_MSG(fmt, args...)			\
++	printk(KERN_DEBUG "IPG: " fmt, ##args)
+ #  define IPG_DUMPRFDLIST(args) ipg_dump_rfdlist(args)
+ #  define IPG_DUMPTFDLIST(args) ipg_dump_tfdlist(args)
+ #else
+-#  define IPG_DEBUG_MSG(args...)
+-#  define IPG_DDEBUG_MSG(args...)
++#  define IPG_DEBUG_MSG(fmt, args...)			\
++do {							\
++	if (0)						\
++		printk(KERN_DEBUG "IPG: " fmt, ##args);	\
++} while (0)
++#  define IPG_DDEBUG_MSG(fmt, args...)			\
++do {							\
++	if (0)						\
++		printk(KERN_DEBUG "IPG: " fmt, ##args);	\
++} while (0)
+ #  define IPG_DUMPRFDLIST(args)
+ #  define IPG_DUMPTFDLIST(args)
+ #endif
+
+
