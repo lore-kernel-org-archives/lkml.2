@@ -1,425 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0C1MCc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 08:02:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60728 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754370Ab0C1MCb (ORCPT
+	id S1754555Ab0C1M2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 08:28:31 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:48718 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754434Ab0C1M2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 08:02:31 -0400
-Date: Sun, 28 Mar 2010 14:02:17 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Lars Lindley <lindley@coyote.org>
-Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: wb35tx.c Coding style fixes.
-Message-ID: <20100328120217.GD1406@ucw.cz>
-References: <1269764725-10190-1-git-send-email-lindley@coyote.org>
+	Sun, 28 Mar 2010 08:28:30 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4BAF4B49.9070308@s5r6.in-berlin.de>
+Date: Sun, 28 Mar 2010 14:27:53 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100102 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269764725-10190-1-git-send-email-lindley@coyote.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Jiri Kosina <jkosina@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
+       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
+       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
+       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+References: <201003242240.54907.arnd@arndb.de> <201003251438.59062.arnd@arndb.de> <4BAD4795.2040700@s5r6.in-berlin.de> <201003271537.40488.arnd@arndb.de>
+In-Reply-To: <201003271537.40488.arnd@arndb.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2010-03-28 10:25:25, Lars Lindley wrote:
-> I fixed the problems reported by checkpatch.pl except some long
-> lines and printk:s.
-> I also removed versioning comments.
-> Builds fine, .o identical to before and checked it with
-> Dan Carpenters strip_whitespace.pl and diff.
-> 
-> Signed-off-by: Lars Lindley <lindley@coyote.org>
+Arnd Bergmann wrote:
+> Your patches look good, but it would be helpful to also set .llseek = no_llseek
+> in the file operations, because that is much easier to grep for than
+> only the nonseekable_open. While it's technically a NOP on the presence of
+> nonseekable_open, it will help that I don't accidentally apply my patch on
+> top of yours.
 
-ack.
+Sounds like a plan, but (a) if my .llseek = no_llseek and your .llseek =
+default_llseek are not within diff context range, you (or whoever else
+merges mine and yours) only get a compiler warning (Initializer entry
+defined twice) rather than a merge conflict which couldn't be missed,
+(b) there won't be a merge conflict in "BKL removal: mark remaining
+users as 'depends on BKL'".  (c) While I don't mind adding more visual
+clutter to ieee1394/*, I prefer terse coding in firewire/*.
 
-> ---
->  drivers/staging/winbond/wb35tx.c |  194 ++++++++++++++++++-------------------
->  1 files changed, 94 insertions(+), 100 deletions(-)
-> 
-> diff --git a/drivers/staging/winbond/wb35tx.c b/drivers/staging/winbond/wb35tx.c
-> index 5869ef4..489a5e7 100644
-> --- a/drivers/staging/winbond/wb35tx.c
-> +++ b/drivers/staging/winbond/wb35tx.c
-> @@ -1,21 +1,21 @@
-> -//============================================================================
-> -//  Copyright (c) 1996-2002 Winbond Electronic Corporation
-> -//
-> -//  Module Name:
-> -//    Wb35Tx.c
-> -//
-> -//  Abstract:
-> -//    Processing the Tx message and put into down layer
-> -//
-> -//============================================================================
-> +/* ========================================================
-> + *  Copyright (c) 1996-2002 Winbond Electronic Corporation
-> + *
-> + *  Module Name:
-> + *    Wb35Tx.c
-> + *
-> + *  Abstract:
-> + *   Processing the Tx message and put into down layer
-> + *
-> + * ========================================================
-> + */
->  #include <linux/usb.h>
->  
->  #include "wb35tx_f.h"
->  #include "mds_f.h"
->  #include "sysdef.h"
->  
-> -unsigned char
-> -Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
-> +unsigned char Wb35Tx_get_tx_buffer(struct hw_data *pHwData, u8 **pBuffer)
->  {
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> @@ -25,28 +25,28 @@ Wb35Tx_get_tx_buffer(struct hw_data * pHwData, u8 **pBuffer)
->  
->  static void Wb35Tx(struct wbsoft_priv *adapter);
->  
-> -static void Wb35Tx_complete(struct urb * pUrb)
-> +static void Wb35Tx_complete(struct urb *pUrb)
->  {
-> -	struct wbsoft_priv *adapter = pUrb->context;
-> -	struct hw_data *	pHwData = &adapter->sHwData;
-> -	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
-> -	struct wb35_mds *pMds = &adapter->Mds;
-> +	struct wbsoft_priv	*adapter = pUrb->context;
-> +	struct hw_data		*pHwData = &adapter->sHwData;
-> +	struct wb35_tx		*pWb35Tx = &pHwData->Wb35Tx;
-> +	struct wb35_mds		*pMds = &adapter->Mds;
->  
->  	printk("wb35: tx complete\n");
-> -	// Variable setting
-> +	/* Variable setting */
->  	pWb35Tx->EP4vm_state = VM_COMPLETED;
-> -	pWb35Tx->EP4VM_status = pUrb->status; //Store the last result of Irp
-> -	pMds->TxOwner[ pWb35Tx->TxSendIndex ] = 0;// Set the owner. Free the owner bit always.
-> +	pWb35Tx->EP4VM_status = pUrb->status; /* Store the last result of Irp */
-> +	pMds->TxOwner[pWb35Tx->TxSendIndex] = 0; /* Set the owner. Free the owner bit always. */
->  	pWb35Tx->TxSendIndex++;
->  	pWb35Tx->TxSendIndex %= MAX_USB_TX_BUFFER_NUMBER;
->  
-> -	if (pHwData->SurpriseRemove || pHwData->HwStop) // Let WbWlanHalt to handle surprise remove
-> +	if (pHwData->SurpriseRemove || pHwData->HwStop) /* Let WbWlanHalt to handle surprise remove */
->  		goto error;
->  
->  	if (pWb35Tx->tx_halt)
->  		goto error;
->  
-> -	// The URB is completed, check the result
-> +	/* The URB is completed, check the result */
->  	if (pWb35Tx->EP4VM_status != 0) {
->  		printk("URB submission failed\n");
->  		pWb35Tx->EP4vm_state = VM_STOP;
-> @@ -64,43 +64,41 @@ error:
->  
->  static void Wb35Tx(struct wbsoft_priv *adapter)
->  {
-> -	struct hw_data *	pHwData = &adapter->sHwData;
-> -	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
-> +	struct hw_data	*pHwData = &adapter->sHwData;
-> +	struct wb35_tx	*pWb35Tx = &pHwData->Wb35Tx;
->  	u8		*pTxBufferAddress;
->  	struct wb35_mds *pMds = &adapter->Mds;
-> -	struct urb *	pUrb = (struct urb *)pWb35Tx->Tx4Urb;
-> -	int         	retv;
-> +	struct urb	*pUrb = (struct urb *)pWb35Tx->Tx4Urb;
-> +	int		retv;
->  	u32		SendIndex;
->  
-> -
->  	if (pHwData->SurpriseRemove || pHwData->HwStop)
->  		goto cleanup;
->  
->  	if (pWb35Tx->tx_halt)
->  		goto cleanup;
->  
-> -	// Ownership checking
-> +	/* Ownership checking */
->  	SendIndex = pWb35Tx->TxSendIndex;
-> -	if (!pMds->TxOwner[SendIndex]) //No more data need to be sent, return immediately
-> +	if (!pMds->TxOwner[SendIndex]) /* No more data need to be sent, return immediately */
->  		goto cleanup;
->  
->  	pTxBufferAddress = pWb35Tx->TxBuffer[SendIndex];
-> -	//
-> -	// Issuing URB
-> -	//
-> +
-> +	/* Issuing URB */
->  	usb_fill_bulk_urb(pUrb, pHwData->WbUsb.udev,
->  			  usb_sndbulkpipe(pHwData->WbUsb.udev, 4),
-> -			  pTxBufferAddress, pMds->TxBufferSize[ SendIndex ],
-> +			  pTxBufferAddress, pMds->TxBufferSize[SendIndex],
->  			  Wb35Tx_complete, adapter);
->  
->  	pWb35Tx->EP4vm_state = VM_RUNNING;
->  	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
-> -	if (retv<0) {
-> +	if (retv < 0) {
->  		printk("EP4 Tx Irp sending error\n");
->  		goto cleanup;
->  	}
->  
-> -	// Check if driver needs issue Irp for EP2
-> +	/* Check if driver needs issue Irp for EP2 */
->  	pWb35Tx->TxFillCount += pMds->TxCountInBuffer[SendIndex];
->  	if (pWb35Tx->TxFillCount > 12)
->  		Wb35Tx_EP2VM_start(adapter);
-> @@ -115,10 +113,10 @@ static void Wb35Tx(struct wbsoft_priv *adapter)
->  
->  void Wb35Tx_start(struct wbsoft_priv *adapter)
->  {
-> -	struct hw_data * pHwData = &adapter->sHwData;
-> +	struct hw_data *pHwData = &adapter->sHwData;
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> -	// Allow only one thread to run into function
-> +	/* Allow only one thread to run into function */
->  	if (atomic_inc_return(&pWb35Tx->TxFireCounter) == 1) {
->  		pWb35Tx->EP4vm_state = VM_RUNNING;
->  		Wb35Tx(adapter);
-> @@ -126,7 +124,7 @@ void Wb35Tx_start(struct wbsoft_priv *adapter)
->  		atomic_dec(&pWb35Tx->TxFireCounter);
->  }
->  
-> -unsigned char Wb35Tx_initial(struct hw_data * pHwData)
-> +unsigned char Wb35Tx_initial(struct hw_data *pHwData)
->  {
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> @@ -135,66 +133,63 @@ unsigned char Wb35Tx_initial(struct hw_data * pHwData)
->  		return false;
->  
->  	pWb35Tx->Tx2Urb = usb_alloc_urb(0, GFP_ATOMIC);
-> -	if (!pWb35Tx->Tx2Urb)
-> -	{
-> -		usb_free_urb( pWb35Tx->Tx4Urb );
-> +	if (!pWb35Tx->Tx2Urb) {
-> +		usb_free_urb(pWb35Tx->Tx4Urb);
->  		return false;
->  	}
->  
->  	return true;
->  }
->  
-> -//======================================================
-> -void Wb35Tx_stop(struct hw_data * pHwData)
-> +void Wb35Tx_stop(struct hw_data *pHwData)
->  {
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> -	// Trying to canceling the Trp of EP2
-> +	/* Trying to canceling the Trp of EP2 */
->  	if (pWb35Tx->EP2vm_state == VM_RUNNING)
-> -		usb_unlink_urb( pWb35Tx->Tx2Urb ); // Only use unlink, let Wb35Tx_destrot to free them
-> -	#ifdef _PE_TX_DUMP_
-> +		usb_unlink_urb(pWb35Tx->Tx2Urb); /* Only use unlink, let Wb35Tx_destrot to free them */
-> +#ifdef _PE_TX_DUMP_
->  	printk("EP2 Tx stop\n");
-> -	#endif
-> +#endif
->  
-> -	// Trying to canceling the Irp of EP4
-> +	/* Trying to canceling the Irp of EP4 */
->  	if (pWb35Tx->EP4vm_state == VM_RUNNING)
-> -		usb_unlink_urb( pWb35Tx->Tx4Urb ); // Only use unlink, let Wb35Tx_destrot to free them
-> -	#ifdef _PE_TX_DUMP_
-> +		usb_unlink_urb(pWb35Tx->Tx4Urb); /* Only use unlink, let Wb35Tx_destrot to free them */
-> +#ifdef _PE_TX_DUMP_
->  	printk("EP4 Tx stop\n");
-> -	#endif
-> +#endif
->  }
->  
-> -//======================================================
-> -void Wb35Tx_destroy(struct hw_data * pHwData)
-> +void Wb35Tx_destroy(struct hw_data *pHwData)
->  {
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> -	// Wait for VM stop
-> +	/* Wait for VM stop */
->  	do {
-> -		msleep(10);  // Delay for waiting function enter 940623.1.a
-> -	} while( (pWb35Tx->EP2vm_state != VM_STOP) && (pWb35Tx->EP4vm_state != VM_STOP) );
-> -	msleep(10);  // Delay for waiting function enter 940623.1.b
-> +		msleep(10);  /* Delay for waiting function enter */
-> +	} while ((pWb35Tx->EP2vm_state != VM_STOP) && (pWb35Tx->EP4vm_state != VM_STOP));
-> +	msleep(10);  /* Delay for waiting function enter */
->  
->  	if (pWb35Tx->Tx4Urb)
-> -		usb_free_urb( pWb35Tx->Tx4Urb );
-> +		usb_free_urb(pWb35Tx->Tx4Urb);
->  
->  	if (pWb35Tx->Tx2Urb)
-> -		usb_free_urb( pWb35Tx->Tx2Urb );
-> +		usb_free_urb(pWb35Tx->Tx2Urb);
->  
-> -	#ifdef _PE_TX_DUMP_
-> +#ifdef _PE_TX_DUMP_
->  	printk("Wb35Tx_destroy OK\n");
-> -	#endif
-> +#endif
->  }
->  
->  void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
->  {
-> -	struct hw_data * pHwData = &adapter->sHwData;
-> +	struct hw_data *pHwData = &adapter->sHwData;
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  	unsigned char Trigger = false;
->  
->  	if (pWb35Tx->TxTimer > TimeCount)
->  		Trigger = true;
-> -	else if (TimeCount > (pWb35Tx->TxTimer+500))
-> +	else if (TimeCount > (pWb35Tx->TxTimer + 500))
->  		Trigger = true;
->  
->  	if (Trigger) {
-> @@ -205,50 +200,50 @@ void Wb35Tx_CurrentTime(struct wbsoft_priv *adapter, u32 TimeCount)
->  
->  static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter);
->  
-> -static void Wb35Tx_EP2VM_complete(struct urb * pUrb)
-> +static void Wb35Tx_EP2VM_complete(struct urb *pUrb)
->  {
-> -	struct wbsoft_priv *adapter = pUrb->context;
-> -	struct hw_data *	pHwData = &adapter->sHwData;
-> -	T02_DESCRIPTOR	T02, TSTATUS;
-> -	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
-> -	u32 *		pltmp = (u32 *)pWb35Tx->EP2_buf;
-> -	u32		i;
-> -	u16		InterruptInLength;
-> +	struct wbsoft_priv	*adapter = pUrb->context;
-> +	struct hw_data		*pHwData = &adapter->sHwData;
-> +	T02_DESCRIPTOR		T02, TSTATUS;
-> +	struct wb35_tx		*pWb35Tx = &pHwData->Wb35Tx;
-> +	u32			*pltmp = (u32 *)pWb35Tx->EP2_buf;
-> +	u32			i;
-> +	u16			InterruptInLength;
->  
->  
-> -	// Variable setting
-> +	/* Variable setting */
->  	pWb35Tx->EP2vm_state = VM_COMPLETED;
->  	pWb35Tx->EP2VM_status = pUrb->status;
->  
-> -	// For Linux 2.4. Interrupt will always trigger
-> -	if (pHwData->SurpriseRemove || pHwData->HwStop) // Let WbWlanHalt to handle surprise remove
-> +	/* For Linux 2.4. Interrupt will always trigger */
-> +	if (pHwData->SurpriseRemove || pHwData->HwStop) /* Let WbWlanHalt to handle surprise remove */
->  		goto error;
->  
->  	if (pWb35Tx->tx_halt)
->  		goto error;
->  
-> -	//The Urb is completed, check the result
-> +	/* The Urb is completed, check the result */
->  	if (pWb35Tx->EP2VM_status != 0) {
->  		printk("EP2 IoCompleteRoutine return error\n");
-> -		pWb35Tx->EP2vm_state= VM_STOP;
-> +		pWb35Tx->EP2vm_state = VM_STOP;
->  		goto error;
->  	}
->  
-> -	// Update the Tx result
-> +	/* Update the Tx result */
->  	InterruptInLength = pUrb->actual_length;
-> -	// Modify for minimum memory access and DWORD alignment.
-> -	T02.value = cpu_to_le32(pltmp[0]) >> 8; // [31:8] -> [24:0]
-> -	InterruptInLength -= 1;// 20051221.1.c Modify the follow for more stable
-> -	InterruptInLength >>= 2; // InterruptInLength/4
-> +	/* Modify for minimum memory access and DWORD alignment. */
-> +	T02.value = cpu_to_le32(pltmp[0]) >> 8; /* [31:8] -> [24:0] */
-> +	InterruptInLength -= 1;
-> +	InterruptInLength >>= 2; /* InterruptInLength / 4 */
->  	for (i = 1; i <= InterruptInLength; i++) {
->  		T02.value |= ((cpu_to_le32(pltmp[i]) & 0xff) << 24);
->  
-> -		TSTATUS.value = T02.value;  //20061009 anson's endian
-> -		Mds_SendComplete( adapter, &TSTATUS );
-> +		TSTATUS.value = T02.value;
-> +		Mds_SendComplete(adapter, &TSTATUS);
->  		T02.value = cpu_to_le32(pltmp[i]) >> 8;
->  	}
-> -
->  	return;
-> +
->  error:
->  	atomic_dec(&pWb35Tx->TxResultCount);
->  	pWb35Tx->EP2vm_state = VM_STOP;
-> @@ -256,10 +251,10 @@ error:
->  
->  static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter)
->  {
-> -	struct hw_data *	pHwData = &adapter->sHwData;
-> -	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
-> -	struct urb *	pUrb = (struct urb *)pWb35Tx->Tx2Urb;
-> -	u32 *	pltmp = (u32 *)pWb35Tx->EP2_buf;
-> +	struct hw_data	*pHwData = &adapter->sHwData;
-> +	struct wb35_tx	*pWb35Tx = &pHwData->Wb35Tx;
-> +	struct urb	*pUrb = (struct urb *)pWb35Tx->Tx2Urb;
-> +	u32		*pltmp = (u32 *)pWb35Tx->EP2_buf;
->  	int		retv;
->  
->  	if (pHwData->SurpriseRemove || pHwData->HwStop)
-> @@ -268,23 +263,23 @@ static void Wb35Tx_EP2VM(struct wbsoft_priv *adapter)
->  	if (pWb35Tx->tx_halt)
->  		goto error;
->  
-> -	//
-> -	// Issuing URB
-> -	//
-> -	usb_fill_int_urb( pUrb, pHwData->WbUsb.udev, usb_rcvintpipe(pHwData->WbUsb.udev,2),
-> -			  pltmp, MAX_INTERRUPT_LENGTH, Wb35Tx_EP2VM_complete, adapter, 32);
-> +	/* Issuing URB */
-> +	usb_fill_int_urb(pUrb, pHwData->WbUsb.udev,
-> +			 usb_rcvintpipe(pHwData->WbUsb.udev, 2),
-> +			 pltmp, MAX_INTERRUPT_LENGTH,
-> +			 Wb35Tx_EP2VM_complete, adapter, 32);
->  
->  	pWb35Tx->EP2vm_state = VM_RUNNING;
->  	retv = usb_submit_urb(pUrb, GFP_ATOMIC);
->  
->  	if (retv < 0) {
-> -		#ifdef _PE_TX_DUMP_
-> +#ifdef _PE_TX_DUMP_
->  		printk("EP2 Tx Irp sending error\n");
-> -		#endif
-> +#endif
->  		goto error;
->  	}
-> -
->  	return;
-> +
->  error:
->  	pWb35Tx->EP2vm_state = VM_STOP;
->  	atomic_dec(&pWb35Tx->TxResultCount);
-> @@ -292,14 +287,13 @@ error:
->  
->  void Wb35Tx_EP2VM_start(struct wbsoft_priv *adapter)
->  {
-> -	struct hw_data * pHwData = &adapter->sHwData;
-> +	struct hw_data *pHwData = &adapter->sHwData;
->  	struct wb35_tx *pWb35Tx = &pHwData->Wb35Tx;
->  
-> -	// Allow only one thread to run into function
-> +	/* Allow only one thread to run into function */
->  	if (atomic_inc_return(&pWb35Tx->TxResultCount) == 1) {
->  		pWb35Tx->EP2vm_state = VM_RUNNING;
->  		Wb35Tx_EP2VM(adapter);
-> -	}
-> -	else
-> +	} else
->  		atomic_dec(&pWb35Tx->TxResultCount);
->  }
+How about I put my nonseekable_open additions into a release branch and
+send you a pull request after a few days exposure in linux-next?  If you
+do not plan to respin your patch queue soon or at all, I could even let
+you pull a for-arnd branch with a semantically correct merge of yours
+and mine.
 
+General thoughts:
+
+".llseek = NULL," so far meant "do the Right Thing on lseek() and
+friends, as far as the fs core can tell".  Shouldn't we keep it that
+way?  It's as close to other ".method = NULL," as it can get, which
+either mean "silently skip this method if it doesn't matter" (e.g.
+.flush) or "fail attempts to use this method with a fitting errno" (e.g.
+.write).
+
+Of course, as we have already seen with infiniband, firewire, ieee1394,
+.llseek = NULL is ambiguous in practice.  Does the driver really want to
+use default_llseek, or should it rather use no_llseek and/or
+nonseekable_open, or should it even implement a dummy_llseek() { return
+0; } which avoids the BKL but preserves ABI behaviour?  This needs to be
+resolved for each and every case eventually, regardless of whether or
+when your addition of .llseek = default_llseek enters mainline.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Stefan Richter
+-=====-==-=- --== ===--
+http://arcgraph.de/sr/
