@@ -1,35 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227Ab0C1Lsp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 07:48:45 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:54303 "EHLO
+	id S1754304Ab0C1Ltd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 07:49:33 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:37062 "EHLO
 	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab0C1Lsn (ORCPT
+	with ESMTP id S1753444Ab0C1Lta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 07:48:43 -0400
+	Sun, 28 Mar 2010 07:49:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=Yj8AaN090G7N0YwCQz/wdGERdPMni40nyIffRQVcE6HFNcECttcNdQYcAnN6uJCsk0
-         0Q11xmcJ+/qBooPaty3YNt/dv4PloRkg59yyXm0v5hq5akWvUvVnaeTl7caONSV4x7Q2
-         avKxaAmztBFVl6yXh2yaaFpxkLpLz+LX9nscY=
-Date: Sun, 28 Mar 2010 14:48:34 +0300
+        b=hTHWgs5xKRI2ii/V5XiRWGaj+TutY5fHIS8CtToveLcTxYTiYMHiuR/BgX8N6Z3tBk
+         uWt6smc3YRQdYuSmiOl6w0ssBLQUv9GB36XM0prVcUgyTy6xnFYmts9h6ZTicp2AeKHD
+         lfZm4DR6VR12CxwNxwGNTW71sGfG9EYywna2o=
+Date: Sun, 28 Mar 2010 14:49:20 +0300
 From: Dan Carpenter <error27@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Bill Pemberton <wfp5p@virginia.edu>,
-       Andrea Gelmini <andrea.gelmini@gelma.net>,
-       Mithlesh Thukral <mithlesh@linsyssoft.com>, devel@driverdev.osuosl.org,
+To: Luca Risolia <luca.risolia@studio.unibo.it>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Andreas Mohr <andi@lisas.de>,
+       linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] comedi: off by one issue
-Message-ID: <20100328114834.GT5069@bicker>
+Subject: [patch] video/zc0301: improve error handling
+Message-ID: <20100328114920.GU5069@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Bill Pemberton <wfp5p@virginia.edu>,
-	Andrea Gelmini <andrea.gelmini@gelma.net>,
-	Mithlesh Thukral <mithlesh@linsyssoft.com>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	Luca Risolia <luca.risolia@studio.unibo.it>,
+	Mauro Carvalho Chehab <mchehab@infradead.org>,
+	Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+	Alexey Dobriyan <adobriyan@gmail.com>, Andreas Mohr <andi@lisas.de>,
+	linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -38,20 +39,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"dac_range_table" has 5 elements.
+Return an error if the controller is not found.
 
 Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-diff --git a/drivers/staging/comedi/drivers/dt2801.c b/drivers/staging/comedi/drivers/dt2801.c
-index 3f365ae..83fb6e5 100644
---- a/drivers/staging/comedi/drivers/dt2801.c
-+++ b/drivers/staging/comedi/drivers/dt2801.c
-@@ -472,7 +472,7 @@ static const struct comedi_lrange *dac_range_table[] = {
+diff --git a/drivers/media/video/zc0301/zc0301_core.c b/drivers/media/video/zc0301/zc0301_core.c
+index e44e4b5..bb51cfb 100644
+--- a/drivers/media/video/zc0301/zc0301_core.c
++++ b/drivers/media/video/zc0301/zc0301_core.c
+@@ -1153,7 +1153,7 @@ zc0301_vidioc_s_ctrl(struct zc0301_device* cam, void __user * arg)
+ 	if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+ 		return -EFAULT;
  
- static const struct comedi_lrange *dac_range_lkup(int opt)
- {
--	if (opt < 0 || opt > 5)
-+	if (opt < 0 || opt >= 5)
- 		return &range_unknown;
- 	return dac_range_table[opt];
- }
+-	for (i = 0; i < ARRAY_SIZE(s->qctrl); i++)
++	for (i = 0; i < ARRAY_SIZE(s->qctrl); i++) {
+ 		if (ctrl.id == s->qctrl[i].id) {
+ 			if (s->qctrl[i].flags & V4L2_CTRL_FLAG_DISABLED)
+ 				return -EINVAL;
+@@ -1163,7 +1163,9 @@ zc0301_vidioc_s_ctrl(struct zc0301_device* cam, void __user * arg)
+ 			ctrl.value -= ctrl.value % s->qctrl[i].step;
+ 			break;
+ 		}
+-
++	}
++	if (i == ARRAY_SIZE(s->qctrl))
++		return -EINVAL;
+ 	if ((err = s->set_ctrl(cam, &ctrl)))
+ 		return err;
+ 
