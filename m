@@ -1,178 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab0C1ACi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 20:02:38 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:57497 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754274Ab0C1ACh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 20:02:37 -0400
-Date: Sat, 27 Mar 2010 20:02:34 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       adobriyan@gmail.com
-Subject: [RFC patch] extable and module add object is static
-Message-ID: <20100328000234.GA4924@Krystal>
-References: <20100327153233.993367557@efficios.com> <20100327224606.GK2343@linux.vnet.ibm.com> <20100327231421.GA4685@Krystal> <20100327232024.GB4685@Krystal> <20100327234314.GL2343@linux.vnet.ibm.com>
-MIME-Version: 1.0
+	id S1754334Ab0C1ADg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 20:03:36 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:54823 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754275Ab0C1ADe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 20:03:34 -0400
+Date: Sun, 28 Mar 2010 01:03:06 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH -v3] x86: Make sure free_init_pages() free pages in boundary
+Message-ID: <20100328000306.GA10304@cmpxchg.org>
+References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-3-git-send-email-yinghai@kernel.org> <20100326230615.GB29222@cmpxchg.org> <4BAD4734.8020503@kernel.org> <20100327000723.GF29222@cmpxchg.org> <4BAD5D25.5060909@kernel.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100327234314.GL2343@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:54:53 up 64 days,  2:32,  3 users,  load average: 0.00, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BAD5D25.5060909@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Sat, Mar 27, 2010 at 07:20:24PM -0400, Mathieu Desnoyers wrote:
-[...]
-> > Something close to "object_is_static()" would be "kernel_text_address()", but it
-> > only considers the text section addresses. I'd need something that would be
-> > broader than that, containing all core kernel and module bss and data sections.
-> > 
-> > Still looking...
+Hi,
+
+On Fri, Mar 26, 2010 at 06:19:33PM -0700, Yinghai Lu wrote:
 > 
-> I was actually feeling pretty good about remembering object_is_on_stack()
-> and finding it again.  ;-)
 > 
-> I am not seeing anything the identifies data or bss, and in any case,
-> other situations such as per-CPU, __read_mostly, and who knows what all
-> else would also need to be handled.  So in the short term, my guess would
-> be that it would be best to provide the three functions (possibly renaming
-> them as noted above), but to leave the responsibility for figuring out
-> which to invoke with the caller.  Always happy to be proven wrong, of
-> course!
+> When CONFIG_NO_BOOTMEM, it could use memory more effient, or more compact.
 > 
-> 							Thanx, Paul
+> Example is:
+> Allocated new RAMDISK: 00ec2000 - 0248ce57
+> Move RAMDISK from 000000002ea04000 - 000000002ffcee56 to 00ec2000 - 0248ce56
+> 
+> The new RAMDISK's end is not page aligned.
+> Last page could use shared with other user.
+> 
+> When free_init_pages are called for initrd or .init, the page could be freed
+> could have chance to corrupt other data.
+> 
+> code segment in free_init_pages()
+> |        for (; addr < end; addr += PAGE_SIZE) {
+> |                ClearPageReserved(virt_to_page(addr));
+> |                init_page_count(virt_to_page(addr));
+> |                memset((void *)(addr & ~(PAGE_SIZE-1)),
+> |                        POISON_FREE_INITMEM, PAGE_SIZE);
+> |                free_page(addr);
+> |                totalram_pages++;
+> |        }
+> last half page could be used as one whole free page.
+> 
+> Try to make the boundaries to be page aligned.
+> 
+> -v2: make the original initramdisk to be aligned, according to Johannes.
+>      otherwise we have chance to lose one page.
+>      we still need to keep initrd_end not aligned, otherwise it could
+>      confuse decompresser.
+> -v3: change to WARN_ON instead according to Johannes.
+> 
+> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 
-I think I found a neat way to do object_is_static(), which is all we need here.
-Can you have a look at the following patch ? If you think it's right, I'll add
-it to the patchset for the next submission.
+Here is what I had in mind when I wrote what you did not read, maybe diff
+works better?
 
+Main differences:
+  o only fix the area allocation in relocate_initrd(), no need to do
+    copy the alignment bits
+  o keep alignment fixups in free_init_pages() out of line
+  o use PAGE_SIZE(); you might dislike the name, it is still the proper
+    operation here.  if you want to fix it, please do it properly
 
-extable and module add object is static
-
-Adds an API to extable.c to check if an object is statically defined. This
-permits, along with object_is_on_stack(), to figure out is an object is either
-statically defined (object_is_static()) or allocated on the stack
-(object_is_on_stack()).
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: akpm@linux-foundation.org
-CC: mingo@elte.hu
-CC: laijs@cn.fujitsu.com
-CC: dipankar@in.ibm.com
-CC: josh@joshtriplett.org
-CC: dvhltc@us.ibm.com
-CC: niv@us.ibm.com
-CC: tglx@linutronix.de
-CC: peterz@infradead.org
-CC: rostedt@goodmis.org
-CC: Valdis.Kletnieks@vt.edu
-CC: dhowells@redhat.com
-CC: eric.dumazet@gmail.com
-CC: Alexey Dobriyan <adobriyan@gmail.com>
----
- include/linux/kernel.h |    2 +
- kernel/extable.c       |   52 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
-
-Index: linux.trees.git/include/linux/kernel.h
-===================================================================
---- linux.trees.git.orig/include/linux/kernel.h	2010-03-27 19:27:02.000000000 -0400
-+++ linux.trees.git/include/linux/kernel.h	2010-03-27 19:28:02.000000000 -0400
-@@ -218,6 +218,8 @@ extern int __kernel_text_address(unsigne
- extern int kernel_text_address(unsigned long addr);
- extern int func_ptr_is_kernel_text(void *ptr);
- 
-+extern int object_is_static(void *obj);
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index adedeef..ec7c672 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -46,7 +46,8 @@ void __init i386_start_kernel(void)
+ 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+ 		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = ramdisk_image + ramdisk_size;
++		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
 +
- struct pid;
- extern struct pid *session_of_pgrp(struct pid *pgrp);
- 
-Index: linux.trees.git/kernel/extable.c
-===================================================================
---- linux.trees.git.orig/kernel/extable.c	2010-03-27 19:28:06.000000000 -0400
-+++ linux.trees.git/kernel/extable.c	2010-03-27 19:54:40.000000000 -0400
-@@ -60,6 +60,14 @@ static inline int init_kernel_text(unsig
- 	return 0;
- }
- 
-+static inline int init_kernel_text_or_data(unsigned long addr)
-+{
-+	if (addr >= (unsigned long)__init_begin &&
-+	    addr <= (unsigned long)__init_end)
-+		return 1;
-+	return 0;
-+}
+ 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index b5a9896..a26a8fd 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -105,7 +105,9 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+ 		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = ramdisk_image + ramdisk_size;
++		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image +
++							 ramdisk_size);
 +
- int core_kernel_text(unsigned long addr)
+ 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ca3f8fa..0594923 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -317,13 +317,14 @@ static void __init relocate_initrd(void)
+ 
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+ 
+ 	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = find_e820_area(0, end_of_lowmem, ramdisk_size,
++	ramdisk_here = find_e820_area(0, end_of_lowmem, area_size,
+ 					 PAGE_SIZE);
+ 
+ 	if (ramdisk_here == -1ULL)
+@@ -332,7 +333,7 @@ static void __init relocate_initrd(void)
+ 
+ 	/* Note: this includes all the lowmem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+-	reserve_early(ramdisk_here, ramdisk_here + ramdisk_size,
++	reserve_early(ramdisk_here, ramdisk_here + area_size,
+ 			 "NEW RAMDISK");
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+ 	initrd_end   = initrd_start + ramdisk_size;
+@@ -378,7 +379,7 @@ static void __init reserve_initrd(void)
  {
- 	if (addr >= (unsigned long)_stext &&
-@@ -113,3 +121,47 @@ int func_ptr_is_kernel_text(void *ptr)
- 		return 1;
- 	return is_module_text_address(addr);
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-	u64 ramdisk_end   = ramdisk_image + ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index e71c5cb..018e793 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -336,6 +336,11 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	if (addr >= end)
+ 		return;
+ 
++	if (WARN_ON(addr & ~PAGE_MASK || end & ~PAGE_MASK)) {
++		addr = PAGE_ALIGN(addr);
++		end &= PAGE_MASK;
++	}
++
+ 	/*
+ 	 * If debugging page accesses then do not free this memory but
+ 	 * mark them not present - any buggy init-section access will
+@@ -355,11 +360,10 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+ 
+-	for (; addr < end; addr += PAGE_SIZE) {
++	for (; addr != end; addr += PAGE_SIZE) {
+ 		ClearPageReserved(virt_to_page(addr));
+ 		init_page_count(virt_to_page(addr));
+-		memset((void *)(addr & ~(PAGE_SIZE-1)),
+-			POISON_FREE_INITMEM, PAGE_SIZE);
++		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+ 		free_page(addr);
+ 		totalram_pages++;
+ 	}
+@@ -376,6 +380,6 @@ void free_initmem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void free_initrd_mem(unsigned long start, unsigned long end)
+ {
+-	free_init_pages("initrd memory", start, end);
++	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
  }
-+
-+/*
-+ * Taking the safe approach to refer to each section individually rather than
-+ * just taking a range between _stext and _end, just in case an architecture
-+ * would decide to override the standard linker scripts and put a section
-+ * outside of this range.
-+ *
-+ * Should be kept in sync with linux/section.h and asm-generic/vmlinux.lds.h.
-+ */
-+static int core_object_is_static(void *obj)
-+{
-+	unsigned long addr = (unsigned long) obj;
-+
-+	if (addr >= (unsigned long)_sdata &&
-+	    addr <= (unsigned long)_edata)
-+		return 1;
-+	if (addr >= (unsigned long)__bss_start &&
-+	    addr <= (unsigned long)__bss_stop)
-+		return 1;
-+	if (addr >= (unsigned long)__per_cpu_start &&
-+	    addr <= (unsigned long)__per_cpu_end)
-+		return 1;
-+	if (addr >= (unsigned long)__start_rodata &&
-+	    addr <= (unsigned long)__end_rodata)
-+		return 1;
-+	if (system_state == SYSTEM_BOOTING &&
-+	    init_kernel_text_or_data(addr))
-+		return 1;
-+	if (core_kernel_text(addr))
-+		return 1;
-+	return 0;
-+}
-+
-+/*
-+ * object_is_static - returns true is an object is statically defined
-+ */
-+int object_is_static(void *obj)
-+{
-+	if (core_object_is_static(obj))
-+		return 1;
-+	if (is_module_address((unsigned long) obj))
-+		return 1;
-+	return 0;
-+}
-
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+ #endif
