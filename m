@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0C1Xis (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 19:38:48 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:37194 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343Ab0C1Xiq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 19:38:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sLNsMVlEIXYPJIEEahVJJ9dbUyNjDetNaVbeGw8icvxNTyu02MONPrbF8NBeTVMThP
-         7LGqjOFAOeztaGvOZTY7Ava4jCnJ4VwNL2bh2NyiAaC8cOMft1+Q65JFWqBURAm3DwVi
-         V0d6b7ddluR6FGXuJIk6kZ6AEHKdXj1HD7qM0=
-Date: Mon, 29 Mar 2010 01:38:48 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Message-ID: <20100328233847.GJ5116@nowhere>
-References: <201003242240.54907.arnd@arndb.de> <20100328231847.GH5116@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100328231847.GH5116@nowhere>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755426Ab0C1Xyr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 19:54:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52831 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755381Ab0C1Xyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 19:54:46 -0400
+Date: Mon, 29 Mar 2010 10:54:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: build warning after merge of the i2c tree
+Message-Id: <20100329105439.1e474095.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__29_Mar_2010_10_54_39_+1100_.kA/a6J1MLt3zJwM"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 01:18:48AM +0200, Frederic Weisbecker wrote:
-> On Wed, Mar 24, 2010 at 10:40:54PM +0100, Arnd Bergmann wrote:
-> > Arnd Bergmann (44):
-> >       [...]
-> >       procfs: kill BKL in llseek
-> 
-> 
-> About this one, there is a "sensible" part:
-> 
-> 
-> @@ -1943,7 +1949,7 @@ static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
->  }
->  
->  static const struct file_operations proc_fdinfo_file_operations = {
-> -	.open		= nonseekable_open,
-> +	.llseek		= generic_file_llseek,
->  	.read		= proc_fdinfo_read,
->  };
->  
-> 
-> Replacing default_llseek() by generic_file_llseek() as you
-> did for most of the other parts is fine.
-> 
-> But the above changes the semantics as it makes it seekable.
-> Why not just keeping it as is? It just ends up in no_llseek().
-> 
+--Signature=_Mon__29_Mar_2010_10_54_39_+1100_.kA/a6J1MLt3zJwM
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Jean,
 
-There is also the ioctl part that takes the bkl in procfs.
-I'll just check nothing weird happens there wrt file pos.
-We probably first need to pushdown the bkl in the procfs
-ioctl handlers.
+After merging the ii2c tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
+drivers/i2c/i2c-core.c:159: warning: 'i2c_legacy_suspend' defined but not u=
+sed
+drivers/i2c/i2c-core.c:172: warning: 'i2c_legacy_resume' defined but not us=
+ed
+
+Introduced by commit 592b0bd0324728fe0aca823951eba06a9494c2f9 ("i2c: Fix
+bus-level power management callbacks").  These routines are only called
+if CONFIG_PM_SLEEP is defined.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__29_Mar_2010_10_54_39_+1100_.kA/a6J1MLt3zJwM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkuv7D8ACgkQjjKRsyhoI8xXnACbB9GnhV0G9Ef5yOXsmwAIvlII
+aJYAmwc4sa3UU2/KOyxvwYk8MUSvB6Gt
+=iRhl
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Mar_2010_10_54_39_+1100_.kA/a6J1MLt3zJwM--
