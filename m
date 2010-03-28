@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab0C1UFf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 16:05:35 -0400
-Received: from mail.perches.com ([173.55.12.10]:1181 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab0C1UFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755181Ab0C1UFe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 16:05:34 -0400
+Received: from smtprelay-h11.telenor.se ([62.127.194.4]:52952 "EHLO
+	smtprelay-h11.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755137Ab0C1UFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Mar 2010 16:05:33 -0400
-Subject: Re: [PATCH 2/2] Staging: line6: fixed 80 character coding style
- issue in midibuf.c This is a patch to the midibuf.c file that fixes up an
- 80 character error thrown by the checkpatch.pl tool Signed-off-by: Johan
- Meiring <johanmeiring@gmail.com>
-From: Joe Perches <joe@perches.com>
-To: Johan Meiring <johanmeiring@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1269804998-7169-1-git-send-email-johanmeiring@gmail.com>
-References: <1269804998-7169-1-git-send-email-johanmeiring@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Mar 2010 13:05:31 -0700
-Message-ID: <1269806731.1500.60.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-SENDER-IP: [83.226.249.196]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQ5AA9Tr0tT4vnEPGdsb2JhbACHaJNADAEBAQE1La9SjHuFAQQ
+X-IronPort-AV: E=Sophos;i="4.51,323,1267398000"; 
+   d="scan'208";a="56735115"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: wbusb_s.h Coding style fixes.
+Date: Sun, 28 Mar 2010 22:05:32 +0200
+Message-Id: <1269806732-15864-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 21:36 +0200, Johan Meiring wrote:
-> ---
->  drivers/staging/line6/midibuf.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/staging/line6/midibuf.c b/drivers/staging/line6/midibuf.c
-> index ab0a5f3..fb2658d 100644
-> --- a/drivers/staging/line6/midibuf.c
-> +++ b/drivers/staging/line6/midibuf.c
-> @@ -76,7 +76,8 @@ int midibuf_bytes_free(struct MidiBuffer *this)
->  	return
->  		midibuf_is_full(this) ?
->  		0 :
-> -		(this->pos_read - this->pos_write + this->size - 1) % this->size + 1;
-> +		(this->pos_read - this->pos_write + this->size - 1) % \
-> +			this->size + 1;
+I fixed comments and some spacing.
 
-It's not necessary to use line continuations like this.
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/wbusb_s.h |   23 ++++++++---------------
+ 1 files changed, 8 insertions(+), 15 deletions(-)
 
-this is an unfortunate variable name, it might be better
-to rename it to mb or something.
-
-The "(write - read + size) % size + 1" might be used a
-couple of times.  Maybe use a macro or function?
-
+diff --git a/drivers/staging/winbond/wbusb_s.h b/drivers/staging/winbond/wbusb_s.h
+index 0c7e6a3..8961ae5 100644
+--- a/drivers/staging/winbond/wbusb_s.h
++++ b/drivers/staging/winbond/wbusb_s.h
+@@ -1,16 +1,10 @@
+-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-// Copyright (c) 1996-2004 Winbond Electronic Corporation
+-//
+-//  Module Name:
+-//    wbusb_s.h
+-//
+-//  Abstract:
+-//    Linux driver.
+-//
+-//  Author:
+-//
+-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-
++/* =========================================================
++ * Copyright (c) 1996-2004 Winbond Electronic Corporation
++ *
++ *  Module Name:
++ *    wbusb_s.h
++ * =========================================================
++ */
+ #ifndef __WINBOND_WBUSB_S_H
+ #define __WINBOND_WBUSB_S_H
+ 
+@@ -18,8 +12,7 @@
+ 
+ struct wb_usb {
+ 	u32	IsUsb20;
+-	struct usb_device *udev;
++	struct	usb_device *udev;
+ 	u32	DetectCount;
+ };
+-
+ #endif
+-- 
+1.7.0.3
 
