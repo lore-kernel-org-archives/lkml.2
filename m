@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab0C1WJB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 18:09:01 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44394 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755286Ab0C1WJA (ORCPT
+	id S1755353Ab0C1WzQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 18:55:16 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:33537 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755314Ab0C1WzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 18:09:00 -0400
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
-       tytso@mit.edu, npiggin@suse.de, mingo@elte.hu,
-       Ruald Andreae <ruald.a@gmail.com>, Jens Axboe <jens.axboe@oracle.com>,
-       Olly Betts <olly@survex.com>, martin f krafft <madduck@madduck.net>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-From: Andi Kleen <andi@firstfloor.org>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
-	<4baeaee5.c5c2f10a.7187.2688@mx.google.com>
-	<20100327204233.0d84542a@infradead.org>
-	<4baf624c.48c3f10a.16d0.ffffccb8@mx.google.com>
-Date: Mon, 29 Mar 2010 00:08:58 +0200
-In-Reply-To: <4baf624c.48c3f10a.16d0.ffffccb8@mx.google.com> (Ben Gamari's message of "Sun, 28 Mar 2010 07:06:04 -0700 (PDT)")
-Message-ID: <87y6hcyu85.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+	Sun, 28 Mar 2010 18:55:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20100326030208.GA5815@linux-sh.org>
+References: <1269219965-23923-1-git-send-email-christofferdall@christofferdall.dk>
+	 <1269219965-23923-4-git-send-email-christofferdall@christofferdall.dk>
+	 <20100323211843.GC19572@n2100.arm.linux.org.uk>
+	 <7d08b87d1003241348g347f092k1142318490e0bdcc@mail.gmail.com>
+	 <20100326024759.GN19308@shareable.org>
+	 <20100326030208.GA5815@linux-sh.org>
+Date: Mon, 29 Mar 2010 00:55:11 +0200
+Message-ID: <7d08b87d1003281555h1eb255f8ic3bcdec08008d5b2@mail.gmail.com>
+Subject: Re: [C/R ARM][PATCH 3/3] c/r: ARM implementation of 
+	checkpoint/restart
+From: Christoffer Dall <christofferdall@christofferdall.dk>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Jamie Lokier <jamie@shareable.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       containers <containers@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Gamari <bgamari.foss@gmail.com> writes:
+On Fri, Mar 26, 2010 at 5:02 AM, Paul Mundt <lethal@linux-sh.org> wrote:
+> On Fri, Mar 26, 2010 at 02:47:59AM +0000, Jamie Lokier wrote:
+>>
+>> It's possible in principle to run many non-MMU binaries on MMU
+>> kernels, but I've never heard of anyone doing it.
+>>
+> FDPIC supports running the same binaries with or without MMU depending on
+> your ABI, it's not really that uncommon, even if it's mostly just used
+> for prototyping.
+>
+I would imagine that the chance that a restart will fail anyway when
+restoring an MMU process on a non-MMU kernel. However, as you suggest,
+the other way around should be possible. Thanks for clearing that up.
 
-You don't say which file system you use, but ext3 and the file systems
-with similar journal design (like reiserfs) all have known fsync starvation
-issues. The problem is that any fsync has to wait for all transactions
-to commit, and this might take a long time depending on how busy
-the disk is.
-
-ext4/XFS/JFS/btrfs should be better in this regard
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Specifically, do you know the meaning of the end_brk field on the
+mm_context_t struct and if I need to checkpoint it on restart for
+non-MMU systems (and potentially do something more clever during
+restart on an MMU kernel?)
