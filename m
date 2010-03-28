@@ -1,176 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab0C1A36 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 20:29:58 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:44857 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328Ab0C1A35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 20:29:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=S+idlitwnL8N2WhMbeID5k2qOG2KDdem2TYmTcNJmWWdX3roV4H2lGUmH6yRnHBVZ1
-         Hqjk2oQ9wmu5PrhrC2AyPaZzCJSuq3UVYY4id6d/+M5UjM2XZ3HoDnZesFX8TU0uwJK0
-         v61ToWEjPGNJkA2WyFiN7iPDVcJa+ZcnxYrCA=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH v3] lockdep: Make lockstats counting per cpu
-Date: Sun, 28 Mar 2010 01:29:57 +0100
-Message-Id: <1269736197-10958-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.6.2.3
+	id S1754450Ab0C1Avy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 20:51:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46122 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754409Ab0C1Avw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 20:51:52 -0400
+Message-ID: <4BAEA7BE.1030707@kernel.org>
+Date: Sat, 27 Mar 2010 17:50:06 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH -v3] x86: Make sure free_init_pages() free pages in boundary
+References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-3-git-send-email-yinghai@kernel.org> <20100326230615.GB29222@cmpxchg.org> <4BAD4734.8020503@kernel.org> <20100327000723.GF29222@cmpxchg.org> <4BAD5D25.5060909@kernel.org> <20100328000306.GA10304@cmpxchg.org>
+In-Reply-To: <20100328000306.GA10304@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Locking statistics are implemented using global atomic variables.
-This is usually fine unless some path write them very often.
+On 03/27/2010 05:03 PM, Johannes Weiner wrote:
+> Hi,
+> 
+> On Fri, Mar 26, 2010 at 06:19:33PM -0700, Yinghai Lu wrote:
+>>
+>>
+>> When CONFIG_NO_BOOTMEM, it could use memory more effient, or more compact.
+>>
+>> Example is:
+>> Allocated new RAMDISK: 00ec2000 - 0248ce57
+>> Move RAMDISK from 000000002ea04000 - 000000002ffcee56 to 00ec2000 - 0248ce56
+>>
+>> The new RAMDISK's end is not page aligned.
+>> Last page could use shared with other user.
+>>
+>> When free_init_pages are called for initrd or .init, the page could be freed
+>> could have chance to corrupt other data.
+>>
+>> code segment in free_init_pages()
+>> |        for (; addr < end; addr += PAGE_SIZE) {
+>> |                ClearPageReserved(virt_to_page(addr));
+>> |                init_page_count(virt_to_page(addr));
+>> |                memset((void *)(addr & ~(PAGE_SIZE-1)),
+>> |                        POISON_FREE_INITMEM, PAGE_SIZE);
+>> |                free_page(addr);
+>> |                totalram_pages++;
+>> |        }
+>> last half page could be used as one whole free page.
+>>
+>> Try to make the boundaries to be page aligned.
+>>
+>> -v2: make the original initramdisk to be aligned, according to Johannes.
+>>      otherwise we have chance to lose one page.
+>>      we still need to keep initrd_end not aligned, otherwise it could
+>>      confuse decompresser.
+>> -v3: change to WARN_ON instead according to Johannes.
+>>
+>> Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Here is what I had in mind when I wrote what you did not read, maybe diff
+> works better?
+> 
+> Main differences:
+>   o only fix the area allocation in relocate_initrd(), no need to do
+>     copy the alignment bits
+>   o keep alignment fixups in free_init_pages() out of line
+>   o use PAGE_SIZE(); you might dislike the name, it is still the proper
+>     operation here.  if you want to fix it, please do it properly
+...
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index e71c5cb..018e793 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -336,6 +336,11 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+>  	if (addr >= end)
+>  		return;
+>  
+> +	if (WARN_ON(addr & ~PAGE_MASK || end & ~PAGE_MASK)) {
+> +		addr = PAGE_ALIGN(addr);
+> +		end &= PAGE_MASK;
+> +	}
+> +
+>  	/*
+>  	 * If debugging page accesses then do not free this memory but
+>  	 * mark them not present - any buggy init-section access will
+> @@ -355,11 +360,10 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+>  
+>  	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+>  
+> -	for (; addr < end; addr += PAGE_SIZE) {
+> +	for (; addr != end; addr += PAGE_SIZE) {
+>  		ClearPageReserved(virt_to_page(addr));
+>  		init_page_count(virt_to_page(addr));
+> -		memset((void *)(addr & ~(PAGE_SIZE-1)),
+> -			POISON_FREE_INITMEM, PAGE_SIZE);
+> +		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+>  		free_page(addr);
+>  		totalram_pages++;
+>  	}
+something wrong here, if someone pass (0x10, 0x20), the will be aligned to [0x1000, 0]
+you will get dead loop 
 
-This is the case for the function and function graph tracers
-that disable irqs for each entry saved (except if the function
-tracer is in preempt disabled only mode).
-And calls to local_irq_save/restore() increment hardirqs_on_events
-and hardirqs_off_events stats (or similar stats for redundant
-versions).
+will update that.
 
-Incrementing these global vars for each function ends up in too
-much cache bouncing if lockstats are enabled.
-
-To solve this, implement the debug_atomic_*() operations using
-per cpu vars.
-
-v2: Use per_cpu() instead of get_cpu_var() to fetch the desired
-cpu vars on debug_atomic_read()
-
-v3: Store the stats in a structure. No need for local_t as we
-are NMI/irq safe.
-
-Suggested-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/lockdep.c           |   15 +--------
- kernel/lockdep_internals.h |   74 +++++++++++++++++++++++++++++++------------
- 2 files changed, 54 insertions(+), 35 deletions(-)
-
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 65b5f5b..3434c81 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -430,20 +430,7 @@ static struct stack_trace lockdep_init_trace = {
- /*
-  * Various lockdep statistics:
-  */
--atomic_t chain_lookup_hits;
--atomic_t chain_lookup_misses;
--atomic_t hardirqs_on_events;
--atomic_t hardirqs_off_events;
--atomic_t redundant_hardirqs_on;
--atomic_t redundant_hardirqs_off;
--atomic_t softirqs_on_events;
--atomic_t softirqs_off_events;
--atomic_t redundant_softirqs_on;
--atomic_t redundant_softirqs_off;
--atomic_t nr_unused_locks;
--atomic_t nr_cyclic_checks;
--atomic_t nr_find_usage_forwards_checks;
--atomic_t nr_find_usage_backwards_checks;
-+DEFINE_PER_CPU(struct lockdep_stats, lockdep_stats);
- #endif
- 
- /*
-diff --git a/kernel/lockdep_internals.h b/kernel/lockdep_internals.h
-index a2ee95a..ccc18f6 100644
---- a/kernel/lockdep_internals.h
-+++ b/kernel/lockdep_internals.h
-@@ -110,29 +110,61 @@ lockdep_count_backward_deps(struct lock_class *class)
- #endif
- 
- #ifdef CONFIG_DEBUG_LOCKDEP
-+
-+#include <asm/local.h>
- /*
-- * Various lockdep statistics:
-+ * Various lockdep statistics.
-+ * We want them per cpu as they are often accessed in fast path
-+ * and we want to avoid too much cache bouncing.
-  */
--extern atomic_t chain_lookup_hits;
--extern atomic_t chain_lookup_misses;
--extern atomic_t hardirqs_on_events;
--extern atomic_t hardirqs_off_events;
--extern atomic_t redundant_hardirqs_on;
--extern atomic_t redundant_hardirqs_off;
--extern atomic_t softirqs_on_events;
--extern atomic_t softirqs_off_events;
--extern atomic_t redundant_softirqs_on;
--extern atomic_t redundant_softirqs_off;
--extern atomic_t nr_unused_locks;
--extern atomic_t nr_cyclic_checks;
--extern atomic_t nr_cyclic_check_recursions;
--extern atomic_t nr_find_usage_forwards_checks;
--extern atomic_t nr_find_usage_forwards_recursions;
--extern atomic_t nr_find_usage_backwards_checks;
--extern atomic_t nr_find_usage_backwards_recursions;
--# define debug_atomic_inc(ptr)		atomic_inc(ptr)
--# define debug_atomic_dec(ptr)		atomic_dec(ptr)
--# define debug_atomic_read(ptr)		atomic_read(ptr)
-+struct lockdep_stats {
-+	int	chain_lookup_hits;
-+	int	chain_lookup_misses;
-+	int	hardirqs_on_events;
-+	int	hardirqs_off_events;
-+	int	redundant_hardirqs_on;
-+	int	redundant_hardirqs_off;
-+	int	softirqs_on_events;
-+	int	softirqs_off_events;
-+	int	redundant_softirqs_on;
-+	int	redundant_softirqs_off;
-+	int	nr_unused_locks;
-+	int	nr_cyclic_checks
-+	int	nr_cyclic_check_recursions;
-+	int	nr_find_usage_forwards_checks;
-+	int	nr_find_usage_forwards_recursions;
-+	int	nr_find_usage_backwards_checks;
-+	int	nr_find_usage_backwards_recursions;
-+};
-+
-+DECLARE_PER_CPU(struct lockdep_stats, lockdep_stats);
-+
-+#define debug_atomic_inc(ptr)			{		\
-+	struct lockdep_stats *__cpu_lockdep_stats;		\
-+								\
-+	WARN_ON_ONCE(!irq_disabled());				\
-+	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
-+	__cpu_lockdep_stats->ptr++;				\
-+}
-+
-+#define debug_atomic_dec(ptr)			{		\
-+	struct lockdep_stats *__cpu_lockdep_stats;		\
-+								\
-+	WARN_ON_ONCE(!irq_disabled());				\
-+	__cpu_lockdep_stats = &__get_cpu_var(lockdep_stats);	\
-+	__cpu_lockdep_stats->ptr--;				\
-+}
-+
-+#define debug_atomic_read(ptr)		({				\
-+	struct lockdep_stats *__cpu_lockdep_stats;			\
-+	unsigned long long __total = 0;					\
-+	int __cpu;							\
-+	for_each_possible_cpu(__cpu) {					\
-+		__cpu_lockdep_stats = &per_cpu(lockdep_stats, cpu);	\
-+		__total += __cpu_lockdep_stats->ptr;			\
-+	}								\
-+	__total;							\
-+})
- #else
- # define debug_atomic_inc(ptr)		do { } while (0)
- # define debug_atomic_dec(ptr)		do { } while (0)
--- 
-1.6.2.3
-
+YH
