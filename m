@@ -1,42 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753438Ab0C1FWk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 01:22:40 -0400
-Received: from kroah.org ([198.145.64.141]:37707 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab0C1FWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 01:22:39 -0400
-Date: Sat, 27 Mar 2010 22:21:58 -0700
-From: Greg KH <greg@kroah.com>
-To: mark.a.allyn@intel.com
-Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com
-Subject: Re: [PATCH 1/1] staging;rar_register: add TODO file
-Message-ID: <20100328052158.GB10471@kroah.com>
-References: <1269471264-11577-1-git-send-email-mark.a.allyn@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269471264-11577-1-git-send-email-mark.a.allyn@intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753444Ab0C1F1E (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 01:27:04 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:34553 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab0C1F1B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 01:27:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jhbo+O4LLeXxuiAKb3jzjxIFiXzAd63hMPToVhJ8AUlhQdJNIT4BpOJ/5322wv+eaC
+         /WLM+KMKTrhGhFHXflZmr2LzRqmZ8p2XMqGNggavEhbUjTw97lzHLndE6q4xk72Hsal6
+         dm7OiuTPeOs0FMFijZNDzjliQM2LOk/UnrIHc=
+From: Kenji Toyama <kenji.toyama@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Kenji Toyama <kenji.toyama@gmail.com>
+Subject: [PATCH 2/2] Staging: asus_oled: Coding Style issue
+Date: Sun, 28 Mar 2010 16:45:33 +1100
+Message-Id: <1269755133-12966-1-git-send-email-kenji.toyama@gmail.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 03:54:24PM -0700, mark.a.allyn@intel.com wrote:
-> From: Mark Allyn <allyn@allyn-test.(none)>
-> 
-> Signed-off-by: Mark Allyn <mark.a.allyn@intel.com>
-> ---
->  0 files changed, 0 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/rar_register/TODO
-> 
-> diff --git a/drivers/staging/rar_register/TODO b/drivers/staging/rar_register/TODO
-> new file mode 100644
-> index 0000000..e69de29
-> -- 
+Minor issue with a space before a tab.
+Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
+---
+ drivers/staging/asus_oled/asus_oled.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is not a patch that can be applied :)
+diff --git a/drivers/staging/asus_oled/asus_oled.c b/drivers/staging/asus_oled/asus_oled.c
+index 7ebecc9..5b279fb 100644
+--- a/drivers/staging/asus_oled/asus_oled.c
++++ b/drivers/staging/asus_oled/asus_oled.c
+@@ -771,7 +771,7 @@ static struct usb_driver oled_driver = {
+ };
+ 
+ static CLASS_ATTR_STRING(version, S_IRUGO,
+-		 	ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
++			ASUS_OLED_UNDERSCORE_NAME " " ASUS_OLED_VERSION);
+ 
+ static int __init asus_oled_init(void)
+ {
+-- 
+1.6.3.3
 
-thanks,
-
-greg k-h
