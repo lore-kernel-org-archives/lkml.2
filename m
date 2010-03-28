@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab0C1DEj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 23:04:39 -0400
-Received: from lobo.ruivo.org ([173.14.175.98]:56099 "EHLO lobo.ruivo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab0C1DEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 23:04:38 -0400
-X-Greylist: delayed 1044 seconds by postgrey-1.27 at vger.kernel.org; Sat, 27 Mar 2010 23:04:38 EDT
-Date: Sat, 27 Mar 2010 22:46:50 -0400
-From: Aristeu Sergio Rozanski Filho <aris@ruivo.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, peterz@infradead.org, gorcunov@gmail.com, aris@redhat.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [watchdog] combine nmi_watchdog and softlockup
-Message-ID: <20100328024650.GA26522@jake.ruivo.org>
-References: <20100323213338.GA29170@redhat.com>
+	id S1752650Ab0C1DMA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 23:12:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53209 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752315Ab0C1DL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 23:11:59 -0400
+Message-ID: <4BAEC91E.8000001@cn.fujitsu.com>
+Date: Sun, 28 Mar 2010 11:12:30 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100323213338.GA29170@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] rcu: move some code from macro to function
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Don,
-> +/* deprecated */
-> +static int __init nosoftlockup_setup(char *str)
-> +{
-> +	no_watchdog = 1;
-> +	return 1;
-> +}
-> +__setup("nosoftlockup", nosoftlockup_setup);
-> +static int __init nonmi_watchdog_setup(char *str)
-> +{
-> +	no_watchdog = 1;
-> +	return 1;
-> +}
-> +__setup("nonmi_watchdog", nonmi_watchdog_setup);
-didn't you just add nonmi_watchdog parameter? I don't think there's a reason
-to keep compatibility here.
 
-the rest of the patch looks fine to me
+cleanup: move some code from macro to function
 
--- 
-Aristeu
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3ec8160..112edb5 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1849,6 +1849,14 @@ static void __init rcu_init_one(struct rcu_state *rsp)
+ 			INIT_LIST_HEAD(&rnp->blocked_tasks[3]);
+ 		}
+ 	}
++
++	rnp = rsp->level[NUM_RCU_LVLS - 1];
++	for_each_possible_cpu(i) {
++		if (i > rnp->grphi)
++			rnp++;
++		rsp->rda[i]->mynode = rnp;
++		rcu_boot_init_percpu_data(i, rsp);
++	}
+ }
+ 
+ /*
+@@ -1859,19 +1867,11 @@ static void __init rcu_init_one(struct rcu_state *rsp)
+ #define RCU_INIT_FLAVOR(rsp, rcu_data) \
+ do { \
+ 	int i; \
+-	int j; \
+-	struct rcu_node *rnp; \
+ 	\
+-	rcu_init_one(rsp); \
+-	rnp = (rsp)->level[NUM_RCU_LVLS - 1]; \
+-	j = 0; \
+ 	for_each_possible_cpu(i) { \
+-		if (i > rnp[j].grphi) \
+-			j++; \
+-		per_cpu(rcu_data, i).mynode = &rnp[j]; \
+ 		(rsp)->rda[i] = &per_cpu(rcu_data, i); \
+-		rcu_boot_init_percpu_data(i, rsp); \
+ 	} \
++	rcu_init_one(rsp); \
+ } while (0)
+ 
+ void __init rcu_init(void)
 
