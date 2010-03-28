@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab0C1QLH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 12:11:07 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:63733 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754726Ab0C1QLF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 12:11:05 -0400
+	id S1754794Ab0C1QaF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 12:30:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab0C1QaD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 12:30:03 -0400
+Date: Sun, 28 Mar 2010 18:28:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: anfei <anfei.zhou@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, rientjes@google.com,
+       kosaki.motohiro@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
+       kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-ID: <20100328162821.GA16765@redhat.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop>
 MIME-Version: 1.0
-Message-ID: <3fa4ae08-42db-4ee0-b86f-567997c35dd4@default>
-Date: Sun, 28 Mar 2010 09:09:17 -0700 (PDT)
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: <eduard.munteanu@linux360.ro>
-Cc: <fweisbec@gmail.com>, <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
-       <lizf@cn.fujitsu.com>, <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] Remove Documentation/trace/kmemtrace.txt
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0206.4BAF7F7A.0130:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <20100328145528.GA14622@desktop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+On 03/28, anfei wrote:
+>
+> On Fri, Mar 26, 2010 at 11:33:56PM +0100, Oleg Nesterov wrote:
+>
+> > Off-topic, but we shouldn't use force_sig(), SIGKILL doesn't
+> > need "force" semantics.
+> >
+> This may need a dedicated patch, there are some other places to
+> force_sig(SIGKILL, ...) too.
 
-Thanks.
+Yes, yes, sure.
 
----
-~Randy
+> > I'd wish I could understand the changelog ;)
+> >
+> Assume thread A and B are in the same group.  If A runs into the oom,
+> and selects B as the victim, B won't exit because at least in exit_mm(),
+> it can not get the mm->mmap_sem semaphore which A has already got.
 
+I see. But still I can't understand. To me, the problem is not that
+B can't exit, the problem is that A doesn't know it should exit. All
+threads should exit and free ->mm. Even if B could exit, this is not
+enough. And, to some extent, it doesn't matter if it holds mmap_sem
+or not.
 
------ Original Message -----
-From: eduard.munteanu@linux360.ro
-To: mingo@elte.hu
-Cc: randy.dunlap@oracle.com, lizf@cn.fujitsu.com, fweisbec@gmail.com, penberg@cs.helsinki.fi, linux-kernel@vger.kernel.org, eduard.munteanu@linux360.ro
-Sent: Sunday, March 28, 2010 1:27:31 AM GMT -08:00 US/Canada Pacific
-Subject: [PATCH] Remove Documentation/trace/kmemtrace.txt
+Don't get me wrong. Even if I don't understand oom_kill.c the patch
+looks obviously good to me, even from "common sense" pov. I am just
+curious.
 
-The current implementation of kmemtrace has been based on ftrace for a
-while. Documentation/trace/kmemtrace.txt concerns the old, relay-based
-implementation, so it's outdated. This removes it to avoid confusion.
+So, my understanding is: we are going to kill the whole thread group
+but TIF_MEMDIE is per-thread. Mark the whole thread group as TIF_MEMDIE
+so that any thread can notice this flag and (say, __alloc_pages_slowpath)
+fail asap.
 
-Signed-off-by: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
----
- Documentation/trace/kmemtrace.txt |  126 -------------------------------------
- 1 files changed, 0 insertions(+), 126 deletions(-)
- delete mode 100644 Documentation/trace/kmemtrace.txt
+Is my understanding correct?
+
+Oleg.
+
