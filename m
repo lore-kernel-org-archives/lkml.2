@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab0C1S4t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 14:56:49 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:61000 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab0C1S4s (ORCPT
+	id S1755055Ab0C1TIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 15:08:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61474 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755025Ab0C1TIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 14:56:48 -0400
+	Sun, 28 Mar 2010 15:08:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aGRMf4Jahi7HNSvAicY4u40cZAZkLStFI1pmzyy9bNIe6dXSQFvNNy/LJxkca1MScQ
-         Oof4m98H+bvKycersHgJ/wHr2RtMhh8NUEi5SHtoAxgcz1uushm+9iP4PWbpquWMqaCB
-         yzV074E/3wVzqWGF9YD9yCsJkZfFvx5ULtHLw=
-Date: Sun, 28 Mar 2010 20:56:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: eduard.munteanu@linux360.ro, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       lizf@cn.fujitsu.com, penberg@cs.helsinki.fi
-Subject: Re: [PATCH] Remove Documentation/trace/kmemtrace.txt
-Message-ID: <20100328185647.GB5116@nowhere>
-References: <3fa4ae08-42db-4ee0-b86f-567997c35dd4@default>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Dz4Q5M2g2lEBJb9pwmAtxeL5sOuXNVm1HxVbzwJLU5pAbr2qXIqdzXRGolO1aa/31f
+         z51nCI1YdynSUKEAjNmj8wQtKKhhMGq5YIkFa8Xczs68ssiYNzmLp8mC22xz7zTBw4kX
+         JVS4L/m6bkjlK58gCWxn614umM8f7YyhlJdbw=
+Message-ID: <4BAFA939.7080000@gmail.com>
+Date: Sun, 28 Mar 2010 12:08:41 -0700
+From: "Justin P. mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3fa4ae08-42db-4ee0-b86f-567997c35dd4@default>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Rename imacfb.txt to efifb.txt and change imacfb to 
+ efifb.
+References: <1269798210-8664-1-git-send-email-justinmattock@gmail.com> <10f740e81003281154i4885f559s3f6ac79f1e697a3e@mail.gmail.com>
+In-Reply-To: <10f740e81003281154i4885f559s3f6ac79f1e697a3e@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 09:09:17AM -0700, Randy Dunlap wrote:
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Thanks.
+On 03/28/2010 11:54 AM, Geert Uytterhoeven wrote:
+> On Sun, Mar 28, 2010 at 19:43, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> Rename imacfb.txt to efifb.txt since imacfb was moved to
+>> efifb,and change imacfb to efifb.
+>> Note:I used git rm for imacfb.txt, but
+>> git renamed this file to efifb.txt after everything was said and
+>> done, not sure if this is correct or not.
+>
+> Git doesn't track renames. It just notices a new file is very similar
+> (in this case identical)
+> to a deleted one.
+>
+> Gr{oetje,eeting}s,
+>
+> 						Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+> 							    -- Linus Torvalds
+>
 
+that's what happened i.g. I did git rm imacfb.txt
+then did a git add efifb.txt
+then git commit
+then git said rename in the end
 
-Joining the party:
+I've never submitted an add/delete so hopefully
+this is o.k.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-Btw, how far are we from removing the ftrace plugin, now
-that we have the allocator trace events?
-
-Thanks.
-
+Justin P. Mattock
