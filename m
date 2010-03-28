@@ -1,734 +1,771 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab0C1Tn7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 15:43:59 -0400
-Received: from smtp1.rdslink.ro ([81.196.12.70]:37912 "EHLO smtp.rdslink.ro"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755104Ab0C1Tn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 15:43:57 -0400
-X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
-Subject: Staging: dt3155: fixed some checkpatch.pl warnings and errors in
- dt3155_isr.c
-From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-To: gregkh@suse.de, hsweeten@visionengravers.com, horms@verge.net.au,
-       ss@aao.gov.au
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Sun, 28 Mar 2010 22:43:45 +0300
-Message-ID: <1269805425.7079.16.camel@tuxtm-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755149Ab0C1Tw4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 15:52:56 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:54393 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755108Ab0C1Twy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 15:52:54 -0400
+X-SENDER-IP: [83.226.249.196]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQ5APJQr0tT4vnEPGdsb2JhbACHaJNBCwEBAQE1La9gjHuFAQQ
+X-IronPort-AV: E=Sophos;i="4.51,323,1267398000"; 
+   d="scan'208";a="56732359"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
+       harvey.harrison@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: wbhal_s.h Coding style fixes.
+Date: Sun, 28 Mar 2010 21:52:37 +0200
+Message-Id: <1269805957-15663-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 72b1cd159a8eb704e85945c907d71f0a8c024b3f Mon Sep 17 00:00:00 2001
-From: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-Date: Sun, 28 Mar 2010 22:33:51 +0300
-Subject: [PATCH 8/8] Staging: dt3155: fixed some checkpatch.pl warnings and errors in dt3155_isr.c
- This is a patch to the dt3155_isr.c file that fixes up errors and warnings found by the checkpatch.pl tool
- Signed-off-by: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
+I fixed checkpatch warnings except some long lines and typedefs.
+I also removed versioning comments.
 
+Signed-off-by: Lars Lindley <lindley@coyote.org>
 ---
- drivers/staging/dt3155/dt3155_isr.c |  453 +++++++++++++++++------------------
- 1 files changed, 225 insertions(+), 228 deletions(-)
+ drivers/staging/winbond/wbhal_s.h |  502 ++++++++++++++++++-------------------
+ 1 files changed, 242 insertions(+), 260 deletions(-)
 
-diff --git a/drivers/staging/dt3155/dt3155_isr.c b/drivers/staging/dt3155/dt3155_isr.c
-index fd7f93d..8a25876 100644
---- a/drivers/staging/dt3155/dt3155_isr.c
-+++ b/drivers/staging/dt3155/dt3155_isr.c
-@@ -1,48 +1,47 @@
- /*
--
--Copyright 1996,2002,2005 Gregory D. Hager, Alfred A. Rizzi, Noah J. Cowan,
--                         Jason Lapenta, Scott Smedley, Greg Sharp
--
--This file is part of the DT3155 Device Driver.
--
--The DT3155 Device Driver is free software; you can redistribute it
--and/or modify it under the terms of the GNU General Public License as
--published by the Free Software Foundation; either version 2 of the
--License, or (at your option) any later version.
--
--The DT3155 Device Driver is distributed in the hope that it will be
--useful, but WITHOUT ANY WARRANTY; without even the implied warranty
--of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
--GNU General Public License for more details.
--
--You should have received a copy of the GNU General Public License
--along with the DT3155 Device Driver; if not, write to the Free
--Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
--MA 02111-1307 USA
--
--   File: dt3155_isr.c
--Purpose: Buffer management routines, and other routines for the ISR
--         (the actual isr is in dt3155_drv.c)
--
---- Changes --
--
--  Date       Programmer  Description of changes made
--  -------------------------------------------------------------------
--  03-Jul-2000 JML       n/a
--  02-Apr-2002 SS        Mods to make work with separate allocator
--                        module; Merged John Roll's mods to make work with
--                        multiple boards.
--  10-Jul-2002 GCS       Complete rewrite of setup_buffers to disallow
--                        buffers which span a 4MB boundary.
--  24-Jul-2002 SS        GPL licence.
--  30-Jul-2002 NJC       Added support for buffer loop.
--  31-Jul-2002 NJC       Complete rewrite of buffer management
--  02-Aug-2002 NJC       Including slab.h instead of malloc.h (no warning).
--                        Also, allocator_init() now returns allocator_max
--                        so cleaned up allocate_buffers() accordingly.
--  08-Aug-2005 SS        port to 2.6 kernel.
--
--*/
-+ *
-+ * Copyright 1996,2002,2005 Gregory D. Hager, Alfred A. Rizzi, Noah J. Cowan,
-+ *                          Jason Lapenta, Scott Smedley, Greg Sharp
-+ *
-+ * This file is part of the DT3155 Device Driver.
-+ *
-+ * The DT3155 Device Driver is free software; you can redistribute it
-+ * and/or modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License, or (at your option) any later version.
-+ *
-+ * The DT3155 Device Driver is distributed in the hope that it will be
-+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with the DT3155 Device Driver; if not, write to the Free
-+ * Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
-+ *
-+ *    File: dt3155_isr.c
-+ * Purpose: Buffer management routines, and other routines for the ISR
-+ *          (the actual isr is in dt3155_drv.c)
-+ *
-+ * -- Changes --
-+ *
-+ * Date       Programmer  Description of changes made
-+ * -------------------------------------------------------------------
-+ * 03-Jul-2000 JML       n/a
-+ * 02-Apr-2002 SS        Mods to make work with separate allocator
-+ *                       module; Merged John Roll's mods to make work with
-+ *                       multiple boards.
-+ * 10-Jul-2002 GCS       Complete rewrite of setup_buffers to disallow
-+ *                       buffers which span a 4MB boundary.
-+ * 24-Jul-2002 SS        GPL licence.
-+ * 30-Jul-2002 NJC       Added support for buffer loop.
-+ * 31-Jul-2002 NJC       Complete rewrite of buffer management
-+ * 02-Aug-2002 NJC       Including slab.h instead of malloc.h (no warning).
-+ *                       Also, allocator_init() now returns allocator_max
-+ *                       so cleaned up allocate_buffers() accordingly.
-+ * 08-Aug-2005 SS        port to 2.6 kernel.
-+ */
+diff --git a/drivers/staging/winbond/wbhal_s.h b/drivers/staging/winbond/wbhal_s.h
+index 372a05e..33457c2 100644
+--- a/drivers/staging/winbond/wbhal_s.h
++++ b/drivers/staging/winbond/wbhal_s.h
+@@ -4,179 +4,166 @@
+ #include <linux/types.h>
+ #include <linux/if_ether.h> /* for ETH_ALEN */
  
- #include <asm/system.h>
- #include <linux/slab.h>
-@@ -66,23 +65,23 @@ struct dt3155_fbuffer_s *dt3155_fbuffer[MAXBOARDS] = {NULL
- #endif
+-//[20040722 WK]
+-#define HAL_LED_SET_MASK		0x001c	//20060901 Extend
+-#define HAL_LED_SET_SHIFT		2
++#define HAL_LED_SET_MASK	0x001c
++#define HAL_LED_SET_SHIFT	2
+ 
+-//supported RF type
++/* supported RF type */
+ #define RF_MAXIM_2825		0
+ #define RF_MAXIM_2827		1
+ #define RF_MAXIM_2828		2
+ #define RF_MAXIM_2829		3
+-#define RF_MAXIM_V1			15
++#define RF_MAXIM_V1		15
+ #define RF_AIROHA_2230		16
+ #define RF_AIROHA_7230		17
+-#define RF_AIROHA_2230S		18	// 20060420 Add this
+-// #define RF_RFMD_2959		32	// 20060626 Remove all about RFMD
+-#define RF_WB_242			33
+-#define RF_WB_242_1			34	// 20060619.5 Add
++#define RF_AIROHA_2230S		18
++#define RF_WB_242		33
++#define RF_WB_242_1		34
+ #define RF_DECIDE_BY_INF	255
+ 
+-//----------------------------------------------------------------
+-// The follow define connect to upper layer
+-//	User must modify for connection between HAL and upper layer
+-//----------------------------------------------------------------
+-
+-
+-
+-
+-/////////////////////////////////////////////////////////////////////////////////////////////////////
+-//================================================================================================
+-// Common define
+-//================================================================================================
+-#define HAL_USB_MODE_BURST( _H )	(_H->SoftwareSet & 0x20 ) // Bit 5 20060901 Modify
+-
+-// Scan interval
+-#define SCAN_MAX_CHNL_TIME				(50)
+-
+-// For TxL2 Frame typr recognise
++/*
++ * ----------------------------------------------------------------
++ * The follow define connect to upper layer
++ *	User must modify for connection between HAL and upper layer
++ * ----------------------------------------------------------------
++ */
++
++/*
++ * ==============================
++ * Common define
++ * ==============================
++ */
++/* Bit 5 */
++#define HAL_USB_MODE_BURST(_H)			(_H->SoftwareSet & 0x20)
++
++/* Scan interval */
++#define SCAN_MAX_CHNL_TIME			(50)
++
++/* For TxL2 Frame typr recognise */
+ #define FRAME_TYPE_802_3_DATA			0
+ #define FRAME_TYPE_802_11_MANAGEMENT		1
+-#define FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE  2
++#define FRAME_TYPE_802_11_MANAGEMENT_CHALLENGE	2
+ #define FRAME_TYPE_802_11_CONTROL		3
+ #define FRAME_TYPE_802_11_DATA			4
+ #define FRAME_TYPE_PROMISCUOUS			5
+ 
+-// The follow definition is used for convert the frame--------------------
+-#define DOT_11_SEQUENCE_OFFSET		22 //Sequence control offset
++/* The follow definition is used for convert the frame------------ */
++#define DOT_11_SEQUENCE_OFFSET			22 /* Sequence control offset */
+ #define DOT_3_TYPE_OFFSET			12
+-#define DOT_11_MAC_HEADER_SIZE		24
++#define DOT_11_MAC_HEADER_SIZE			24
+ #define DOT_11_SNAP_SIZE			6
+-#define DOT_11_TYPE_OFFSET			30 //The start offset of 802.11 Frame. Type encapsulatuin.
++#define DOT_11_TYPE_OFFSET			30 /* The start offset of 802.11 Frame. Type encapsulation. */
+ #define DEFAULT_SIFSTIME			10
+-#define DEFAULT_FRAGMENT_THRESHOLD		2346 // No fragment
++#define DEFAULT_FRAGMENT_THRESHOLD		2346 /* No fragment */
+ #define DEFAULT_MSDU_LIFE_TIME			0xffff
+ 
+-#define LONG_PREAMBLE_PLUS_PLCPHEADER_TIME						(144+48)
+-#define SHORT_PREAMBLE_PLUS_PLCPHEADER_TIME 					(72+24)
+-#define PREAMBLE_PLUS_SIGNAL_PLUS_SIGNALEXTENSION				(16+4+6)
+-#define Tsym 4
++#define LONG_PREAMBLE_PLUS_PLCPHEADER_TIME		(144 + 48)
++#define SHORT_PREAMBLE_PLUS_PLCPHEADER_TIME		(72 + 24)
++#define PREAMBLE_PLUS_SIGNAL_PLUS_SIGNALEXTENSION	(16 + 4 + 6)
++#define Tsym						4
+ 
+-//  Frame Type of Bits (2, 3)---------------------------------------------
++/*  Frame Type of Bits (2, 3)----------------------------------- */
+ #define MAC_TYPE_MANAGEMENT			0x00
+ #define MAC_TYPE_CONTROL			0x04
+ #define MAC_TYPE_DATA				0x08
+-#define MASK_FRAGMENT_NUMBER		0x000F
+-#define SEQUENCE_NUMBER_SHIFT		4
++#define MASK_FRAGMENT_NUMBER			0x000F
++#define SEQUENCE_NUMBER_SHIFT			4
+ 
+ #define  HAL_WOL_TYPE_WAKEUP_FRAME		0x01
+ #define  HAL_WOL_TYPE_MAGIC_PACKET		0x02
+ 
+-// 20040106 ADDED
+-#define HAL_KEYTYPE_WEP40                       0
+-#define HAL_KEYTYPE_WEP104                      1
+-#define HAL_KEYTYPE_TKIP                        2 // 128 bit key
+-#define HAL_KEYTYPE_AES_CCMP                    3 // 128 bit key
++#define HAL_KEYTYPE_WEP40			0
++#define HAL_KEYTYPE_WEP104			1
++#define HAL_KEYTYPE_TKIP			2 /* 128 bit key */
++#define HAL_KEYTYPE_AES_CCMP			3 /* 128 bit key */
+ 
+-// For VM state
++/* For VM state */
+ enum {
+ 	VM_STOP = 0,
+ 	VM_RUNNING,
+ 	VM_COMPLETED
  };
  
--/******************************************************************************
+-//-----------------------------------------------------
+-// Normal Key table format
+-//-----------------------------------------------------
+-// The order of KEY index is MAPPING_KEY_START_INDEX > GROUP_KEY_START_INDEX
+-#define MAX_KEY_TABLE				24	// 24 entry for storing key data
 +/*
-  * Simple array based que struct
-  *
-  * Some handy functions using the buffering structure.
-- *****************************************************************************/
++ * ================================
++ * Normal Key table format
++ * ================================
 + */
- 
- 
--/***************************
-+/*
-  * are_empty_buffers
-  * m is minor # of device
-- ***************************/
--inline bool are_empty_buffers( int m )
-+ */
-+inline bool are_empty_buffers(int m)
- {
--  return ( dt3155_fbuffer[ m ]->empty_len );
-+  return dt3155_fbuffer[m]->empty_len;
- }
- 
--/**************************
-+/*
-  * push_empty
-  * m is minor # of device
-  *
-@@ -91,156 +90,156 @@ inline bool are_empty_buffers( int m )
-  * empty buffer stack.  So, if empty_len == 1, there is one empty buffer,
-  * given by dt3155_fbuffer[m]->empty_buffers[0].
-  * empty_buffers should never fill up, though this is not checked.
-- **************************/
--inline void push_empty( int index, int m )
-+ */
-+inline void push_empty(int index, int m)
- {
--  dt3155_fbuffer[m]->empty_buffers[ dt3155_fbuffer[m]->empty_len ] = index;
-+  dt3155_fbuffer[m]->empty_buffers[dt3155_fbuffer[m]->empty_len] = index;
-   dt3155_fbuffer[m]->empty_len++;
- }
- 
--/**************************
-+/*
-  * pop_empty( m )
-  * m is minor # of device
-- **************************/
--inline int pop_empty( int m )
-+ */
-+inline int pop_empty(int m)
- {
-   dt3155_fbuffer[m]->empty_len--;
--  return dt3155_fbuffer[m]->empty_buffers[ dt3155_fbuffer[m]->empty_len ];
-+  return dt3155_fbuffer[m]->empty_buffers[dt3155_fbuffer[m]->empty_len];
- }
- 
--/*************************
-+/*
-  * is_ready_buf_empty( m )
-  * m is minor # of device
-- *************************/
--inline bool is_ready_buf_empty( int m )
-+ */
-+inline bool is_ready_buf_empty(int m)
- {
--  return ((dt3155_fbuffer[ m ]->ready_len) == 0);
-+  return (dt3155_fbuffer[m]->ready_len) == 0;
- }
- 
--/*************************
-+/*
-  * is_ready_buf_full( m )
-  * m is minor # of device
-  * this should *never* be true if there are any active, locked or empty
-  * buffers, since it corresponds to nbuffers ready buffers!!
-  * 7/31/02: total rewrite. --NJC
-- *************************/
--inline bool is_ready_buf_full( int m )
-+ */
-+inline bool is_ready_buf_full(int m)
- {
--  return ( dt3155_fbuffer[ m ]->ready_len == dt3155_fbuffer[ m ]->nbuffers );
-+  return dt3155_fbuffer[m]->ready_len == dt3155_fbuffer[m]->nbuffers;
- }
- 
--/*****************************************************
-+/*
-  * push_ready( m, buffer )
-  * m is minor # of device
-  *
-- *****************************************************/
--inline void push_ready( int m, int index )
-+ */
-+inline void push_ready(int m, int index)
- {
-   int head = dt3155_fbuffer[m]->ready_head;
- 
--  dt3155_fbuffer[ m ]->ready_que[ head ] = index;
--  dt3155_fbuffer[ m ]->ready_head = ( (head + 1) %
--				      (dt3155_fbuffer[ m ]->nbuffers) );
--  dt3155_fbuffer[ m ]->ready_len++;
-+  dt3155_fbuffer[m]->ready_que[head] = index;
-+  dt3155_fbuffer[m]->ready_head = ((head + 1) %
-+				   (dt3155_fbuffer[m]->nbuffers));
-+  dt3155_fbuffer[m]->ready_len++;
- 
- }
- 
--/*****************************************************
-+/*
-  * get_tail()
-  * m is minor # of device
-  *
-  * Simply comptutes the tail given the head and the length.
-- *****************************************************/
--static inline int get_tail( int m )
-+ */
-+static inline int get_tail(int m)
- {
--  return ((dt3155_fbuffer[ m ]->ready_head -
--	   dt3155_fbuffer[ m ]->ready_len +
--	   dt3155_fbuffer[ m ]->nbuffers)%
--	  (dt3155_fbuffer[ m ]->nbuffers));
-+  return (dt3155_fbuffer[m]->ready_head -
-+	   dt3155_fbuffer[m]->ready_len +
-+	   dt3155_fbuffer[m]->nbuffers)%
-+	  (dt3155_fbuffer[m]->nbuffers);
- }
- 
- 
- 
--/*****************************************************
-+/**
-  * pop_ready()
-  * m is minor # of device
-  *
-  * This assumes that there is a ready buffer ready... should
-  * be checked (e.g. with is_ready_buf_empty()  prior to call.
-- *****************************************************/
--inline int pop_ready( int m )
-+ */
-+inline int pop_ready(int m)
- {
-   int tail;
-   tail = get_tail(m);
--  dt3155_fbuffer[ m ]->ready_len--;
--  return dt3155_fbuffer[ m ]->ready_que[ tail ];
-+  dt3155_fbuffer[m]->ready_len--;
-+  return dt3155_fbuffer[m]->ready_que[tail];
- }
- 
- 
--/*****************************************************
-+/*
-  * printques
-  * m is minor # of device
-- *****************************************************/
--inline void printques( int m )
-+ */
-+inline void printques(int m)
- {
--  int head = dt3155_fbuffer[ m ]->ready_head;
-+  int head = dt3155_fbuffer[m]->ready_head;
-   int tail;
--  int num = dt3155_fbuffer[ m ]->nbuffers;
-+  int num = dt3155_fbuffer[m]->nbuffers;
-   int frame_index;
-   int index;
- 
-   tail = get_tail(m);
- 
-   printk("\n R:");
--  for ( index = tail; index != head; index++, index = index % (num) )
--    {
--      frame_index = dt3155_fbuffer[ m ]->ready_que[ index ];
--      printk(" %d ", frame_index );
--    }
-+  for (index = tail; index != head; index++, index = index % (num)) {
-+	frame_index = dt3155_fbuffer[m]->ready_que[index];
-+	printk(" %d ", frame_index);
-+  }
- 
-   printk("\n E:");
--  for ( index = 0; index < dt3155_fbuffer[ m ]->empty_len; index++ )
--    {
--      frame_index = dt3155_fbuffer[ m ]->empty_buffers[ index ];
--      printk(" %d ", frame_index );
--    }
-+  for (index = 0; index < dt3155_fbuffer[m]->empty_len; index++) {
-+	frame_index = dt3155_fbuffer[m]->empty_buffers[index];
-+	printk(" %d ", frame_index);
-+  }
- 
--  frame_index = dt3155_fbuffer[ m ]->active_buf;
-+  frame_index = dt3155_fbuffer[m]->active_buf;
-   printk("\n A: %d", frame_index);
- 
--  frame_index = dt3155_fbuffer[ m ]->locked_buf;
--  printk("\n L: %d \n", frame_index );
-+  frame_index = dt3155_fbuffer[m]->locked_buf;
-+  printk("\n L: %d\n", frame_index);
- 
- }
- 
--/*****************************************************
-+/*
-  * adjust_4MB
-  *
-  *  If a buffer intersects the 4MB boundary, push
-  *  the start address up to the beginning of the
-  *  next 4MB chunk (assuming bufsize < 4MB).
-- *****************************************************/
--u32 adjust_4MB (u32 buf_addr, u32 bufsize) {
-+ */
-+u32 adjust_4MB(u32 buf_addr, u32 bufsize)
-+{
-   if (((buf_addr+bufsize) & UPPER_10_BITS) != (buf_addr & UPPER_10_BITS))
--    return (buf_addr+bufsize) & UPPER_10_BITS;
-+	return (buf_addr+bufsize) & UPPER_10_BITS;
-   else
--    return buf_addr;
-+	return buf_addr;
- }
- 
- 
--/*****************************************************
-+/*
-  * allocate_buffers
-  *
-  *  Try to allocate enough memory for all requested
-  *  buffers.  If there is not enough free space
-  *  try for less memory.
-- *****************************************************/
--void allocate_buffers (u32 *buf_addr, u32* total_size_kbs,
-+ */
-+void allocate_buffers(u32 *buf_addr, u32 *total_size_kbs,
- 		       u32 bufsize)
- {
-   /* Compute the minimum amount of memory guaranteed to hold all
--     MAXBUFFERS such that no buffer crosses the 4MB boundary.
--     Store this value in the variable "full_size" */
-+   * MAXBUFFERS such that no buffer crosses the 4MB boundary.
-+   * Store this value in the variable "full_size"
-+   */
- 
-   u32 allocator_max;
-   u32 bufs_per_chunk = (FOUR_MB / bufsize);
-@@ -269,14 +268,15 @@ void allocate_buffers (u32 *buf_addr, u32* total_size_kbs,
-   printk("DT3155: ...the allocator has: %d KB\n", allocator_max);
-   size_kbs = (full_size_kbs <= allocator_max ? full_size_kbs : allocator_max);
-   if (size_kbs > min_size_kbs) {
--    if ((*buf_addr = allocator_allocate_dma (size_kbs, GFP_KERNEL)) != 0) {
--      printk("DT3155:  Managed to allocate: %d KB\n", size_kbs);
--      *total_size_kbs = size_kbs;
--      return;
--    }
-+	*buf_addr = allocator_allocate_dma(size_kbs, GFP_KERNEL);
-+	if (*buf_addr != 0) {
-+		printk("DT3155:  Managed to allocate: %d KB\n", size_kbs);
-+		*total_size_kbs = size_kbs;
-+		return;
-+	}
-   }
-   /* If we got here, the allocation failed */
--  printk ("DT3155: Allocator failed!\n");
-+  printk("DT3155: Allocator failed!\n");
-   *buf_addr = 0;
-   *total_size_kbs = 0;
-   return;
-@@ -284,7 +284,7 @@ void allocate_buffers (u32 *buf_addr, u32* total_size_kbs,
- }
- 
- 
--/*****************************************************
-+/*
-  * dt3155_setup_buffers
-  *
-  *  setup_buffers just puts the buffering system into
-@@ -297,9 +297,8 @@ void allocate_buffers (u32 *buf_addr, u32* total_size_kbs,
-  * GCS : Fix DMA problems when buffer spans
-  * 4MB boundary.  Also, add error checking.  This
-  * function will return -ENOMEM when not enough memory.
-- *****************************************************/
-+ */
- u32 dt3155_setup_buffers(u32 *allocatorAddr)
--
- {
-   u32 index;
-   u32 rambuff_addr; /* start of allocation */
-@@ -312,128 +311,127 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-   int m;               /* minor # of device, looped for all devs */
- 
-   /* zero the fbuffer status and address structure */
--  for ( m = 0; m < ndevices; m++)
--    {
--      dt3155_fbuffer[ m ] = &(dt3155_status[ m ].fbuffer);
--
--      /* Make sure the buffering variables are consistent */
--      {
--	u8 *ptr = (u8 *) dt3155_fbuffer[ m ];
--	for( index = 0; index < sizeof(struct dt3155_fbuffer_s); index++)
--	  *(ptr++)=0;
--      }
--    }
-+  for (m = 0; m < ndevices; m++) {
-+	dt3155_fbuffer[m] = &(dt3155_status[m].fbuffer);
 +
-+	/* Make sure the buffering variables are consistent */
-+	{
-+	  u8 *ptr = (u8 *) dt3155_fbuffer[m];
-+	  for (index = 0; index < sizeof(struct dt3155_fbuffer_s); index++)
-+		*(ptr++) = 0;
-+	}
-+  }
++/* The order of KEY index is MAPPING_KEY_START_INDEX > GROUP_KEY_START_INDEX */
++#define MAX_KEY_TABLE			24 /* 24 entry for storing key data */
+ #define GROUP_KEY_START_INDEX		4
+ #define MAPPING_KEY_START_INDEX		8
  
-   /* allocate a large contiguous chunk of RAM */
--  allocate_buffers (&rambuff_addr, &rambuff_size, bufsize);
-+  allocate_buffers(&rambuff_addr, &rambuff_size, bufsize);
-   printk("DT3155: mem info\n");
--  printk("  - rambuf_addr = 0x%x \n", rambuff_addr);
--  printk("  - length (kb) = %u \n", rambuff_size);
--  if( rambuff_addr == 0 )
--    {
--      printk( KERN_INFO
--	      "DT3155: Error setup_buffers() allocator dma failed \n" );
--      return -ENOMEM;
--    }
-+  printk("  - rambuf_addr = 0x%x\n", rambuff_addr);
-+  printk("  - length (kb) = %u\n", rambuff_size);
-+  if (rambuff_addr == 0) {
-+	printk(KERN_INFO
-+	      "DT3155: Error setup_buffers() allocator dma failed\n");
-+	return -ENOMEM;
-+  }
-   *allocatorAddr = rambuff_addr;
-   rambuff_end = rambuff_addr + 1024 * rambuff_size;
- 
-   /* after allocation, we need to count how many useful buffers there
--     are so we can give an equal number to each device */
-+   * are so we can give an equal number to each device
-+   */
-   rambuff_acm = rambuff_addr;
--  for ( index = 0; index < MAXBUFFERS; index++) {
--    rambuff_acm = adjust_4MB (rambuff_acm, bufsize);/*avoid spanning 4MB bdry*/
--    if (rambuff_acm + bufsize > rambuff_end)
--      break;
--    rambuff_acm += bufsize;
-+  for (index = 0; index < MAXBUFFERS; index++) {
-+	/*avoid spanning 4MB bdry*/
-+	rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
-+	if (rambuff_acm + bufsize > rambuff_end)
-+		break;
-+	rambuff_acm += bufsize;
-   }
-   /* Following line is OK, will waste buffers if index
--   * not evenly divisible by ndevices -NJC*/
-+   * not evenly divisible by ndevices -NJC
-+   */
-   numbufs = index / ndevices;
-   printk("  - numbufs = %u\n", numbufs);
-   if (numbufs < 2) {
--    printk( KERN_INFO
--	    "DT3155: Error setup_buffers() couldn't allocate 2 bufs/board\n" );
--    return -ENOMEM;
-+	printk(KERN_INFO
-+	    "DT3155: Error setup_buffers() couldn't allocate 2 bufs/board\n");
-+	return -ENOMEM;
-   }
- 
--  /* now that we have board memory we spit it up */
--  /* between the boards and the buffers          */
-+  /* now that we have board memory we spit it up
-+   * between the boards and the buffers
-+   */
-   rambuff_acm = rambuff_addr;
--  for ( m = 0; m < ndevices; m ++)
--    {
--      rambuff_acm = adjust_4MB (rambuff_acm, bufsize);
+-//--------------------------------------------------------
+-// 			 Descriptor
+-//--------------------------------------------------------
+-#define MAX_DESCRIPTOR_BUFFER_INDEX	8	// Have to multiple of 2
+-//#define FLAG_ERROR_TX_MASK			cpu_to_le32(0x000000bf) //20061009 marked by anson's endian
+-#define FLAG_ERROR_TX_MASK			0x000000bf  //20061009 anson's endian
+-//#define FLAG_ERROR_RX_MASK			0x00000c3f
+-//#define FLAG_ERROR_RX_MASK			cpu_to_le32(0x0000083f)	//20061009 marked by anson's endian
+-									//Don't care replay error,
+-												//it is handled by S/W
+-#define FLAG_ERROR_RX_MASK			0x0000083f	//20060926 anson's endian
 -
--      /* Save the start of this boards buffer space (for mmap).  */
--      dt3155_status[ m ].mem_addr = rambuff_acm;
+-#define FLAG_BAND_RX_MASK			0x10000000	//Bit 28
 -
--      for (index = 0; index < numbufs; index++)
+-typedef struct _R00_DESCRIPTOR
+-{
+-	union
 -	{
--	  rambuff_acm = adjust_4MB (rambuff_acm, bufsize);
--	  if (rambuff_acm + bufsize > rambuff_end) {
--	    /* Should never happen */
--	    printk ("DT3155 PROGRAM ERROR (GCS)\n"
--		    "Error distributing allocated buffers\n");
--	    return -ENOMEM;
--	  }
++/*
++ * =========================================
++ * Descriptor
++ * =========================================
++ */
++#define MAX_DESCRIPTOR_BUFFER_INDEX	8 /* Have to multiple of 2 */
++#define FLAG_ERROR_TX_MASK		0x000000bf
++#define FLAG_ERROR_RX_MASK		0x0000083f
++
++#define FLAG_BAND_RX_MASK		0x10000000 /* Bit 28 */
++
++typedef struct _R00_DESCRIPTOR {
++	union {
+ 		u32	value;
+-		#ifdef _BIG_ENDIAN_  //20060926 anson's endian
+-		struct
+-		{
++#ifdef _BIG_ENDIAN_
++		struct {
+ 			u32	R00_packet_or_buffer_status:1;
+ 			u32	R00_packet_in_fifo:1;
+ 			u32	R00_RESERVED:2;
+ 			u32	R00_receive_byte_count:12;
+ 			u32	R00_receive_time_index:16;
+ 		};
+-		#else
+-		struct
+-		{
++#else
++		struct {
+ 			u32	R00_receive_time_index:16;
+ 			u32	R00_receive_byte_count:12;
+ 			u32	R00_RESERVED:2;
+ 			u32	R00_packet_in_fifo:1;
+ 			u32	R00_packet_or_buffer_status:1;
+ 		};
+-		#endif
++#endif
+ 	};
+ } R00_DESCRIPTOR, *PR00_DESCRIPTOR;
+ 
+-typedef struct _T00_DESCRIPTOR
+-{
+-	union
+-	{
++typedef struct _T00_DESCRIPTOR {
++	union {
+ 		u32	value;
+-		#ifdef _BIG_ENDIAN_  //20061009 anson's endian
+-		struct
+-		{
+-			u32	T00_first_mpdu:1; // for hardware use
+-			u32	T00_last_mpdu:1; // for hardware use
+-			u32	T00_IsLastMpdu:1;// 0: not   1:Yes for software used
+-			u32	T00_IgnoreResult:1;// The same mechanism with T00 setting. 050111 Modify for TS
+-			u32	T00_RESERVED_ID:2;//3 bit ID reserved
+-			u32	T00_tx_packet_id:4;//930519.4.e 930810.3.c
++#ifdef _BIG_ENDIAN_
++		struct {
++			u32	T00_first_mpdu:1; /* for hardware use */
++			u32	T00_last_mpdu:1; /* for hardware use */
++			u32	T00_IsLastMpdu:1;/* 0:not 1:Yes for software used */
++			u32	T00_IgnoreResult:1;/* The same mechanism with T00 setting. */
++			u32	T00_RESERVED_ID:2;/* 3 bit ID reserved */
++			u32	T00_tx_packet_id:4;
+ 			u32	T00_RESERVED:4;
+ 			u32	T00_header_length:6;
+ 			u32	T00_frame_length:12;
+ 		};
+-		#else
+-		struct
+-		{
++#else
++		struct {
+ 			u32	T00_frame_length:12;
+ 			u32	T00_header_length:6;
+ 			u32	T00_RESERVED:4;
+-			u32	T00_tx_packet_id:4;//930519.4.e 930810.3.c
+-			u32	T00_RESERVED_ID:2;//3 bit ID reserved
+-			u32	T00_IgnoreResult:1;// The same mechanism with T00 setting. 050111 Modify for TS
+-			u32	T00_IsLastMpdu:1;// 0: not   1:Yes for software used
+-			u32	T00_last_mpdu:1; // for hardware use
+-			u32	T00_first_mpdu:1; // for hardware use
++			u32	T00_tx_packet_id:4;
++			u32	T00_RESERVED_ID:2; /* 3 bit ID reserved */
++			u32	T00_IgnoreResult:1; /* The same mechanism with T00 setting. */
++			u32	T00_IsLastMpdu:1; /* 0:not 1:Yes for software used */
++			u32	T00_last_mpdu:1; /* for hardware use */
++			u32	T00_first_mpdu:1; /* for hardware use */
+ 		};
+-		#endif
++#endif
+ 	};
+ } T00_DESCRIPTOR, *PT00_DESCRIPTOR;
+ 
+-typedef struct _R01_DESCRIPTOR
+-{
+-	union
+-	{
++typedef struct _R01_DESCRIPTOR {
++	union {
+ 		u32	value;
+-		#ifdef _BIG_ENDIAN_ //20060926 add by anson's endian
+-		struct
+-		{
++#ifdef _BIG_ENDIAN_
++		struct {
+ 			u32	R01_RESERVED:3;
+ 			u32	R01_mod_type:1;
+ 			u32	R01_pre_type:1;
+@@ -197,9 +184,8 @@ typedef struct _R01_DESCRIPTOR
+ 			u32	R01_icv_error:1;
+ 			u32	R01_crc_error:1;
+ 		};
+-		#else
+-		struct
+-		{
++#else
++		struct {
+ 			u32	R01_crc_error:1;
+ 			u32	R01_icv_error:1;
+ 			u32	R01_null_key_to_authentication_frame:1;
+@@ -220,18 +206,15 @@ typedef struct _R01_DESCRIPTOR
+ 			u32	R01_mod_type:1;
+ 			u32	R01_RESERVED:3;
+ 		};
+-		#endif
++#endif
+ 	};
+ } R01_DESCRIPTOR, *PR01_DESCRIPTOR;
+ 
+-typedef struct _T01_DESCRIPTOR
+-{
+-	union
+-	{
++typedef struct _T01_DESCRIPTOR {
++	union {
+ 		u32	value;
+-		#ifdef _BIG_ENDIAN_ //20061009 anson's endian
+-		struct
+-		{
++#ifdef _BIG_ENDIAN_
++		struct {
+ 			u32	T01_rts_cts_duration:16;
+ 			u32	T01_fall_back_rate:3;
+ 			u32	T01_add_rts:1;
+@@ -245,9 +228,8 @@ typedef struct _T01_DESCRIPTOR
+ 			u32	T01_loop_back_wep_mode:1;
+ 			u32	T01_retry_abort_ebable:1;
+ 		};
+-		#else
+-		struct
+-		{
++#else
++		struct {
+ 			u32	T01_retry_abort_ebable:1;
+ 			u32	T01_loop_back_wep_mode:1;
+ 			u32	T01_inhibit_crc:1;
+@@ -261,21 +243,18 @@ typedef struct _T01_DESCRIPTOR
+ 			u32	T01_fall_back_rate:3;
+ 			u32	T01_rts_cts_duration:16;
+ 		};
+-		#endif
++#endif
+ 	};
+ } T01_DESCRIPTOR, *PT01_DESCRIPTOR;
+ 
+-typedef struct _T02_DESCRIPTOR
+-{
+-	union
+-	{
++typedef struct _T02_DESCRIPTOR {
++	union {
+ 		u32	value;
+-		#ifdef _BIG_ENDIAN_  //20061009 add by anson's endian
+-		struct
+-		{
+-			u32	T02_IsLastMpdu:1;// The same mechanism with T00 setting
+-			u32	T02_IgnoreResult:1;// The same mechanism with T00 setting. 050111 Modify for TS
+-			u32	T02_RESERVED_ID:2;// The same mechanism with T00 setting
++#ifdef _BIG_ENDIAN_
++		struct {
++			u32	T02_IsLastMpdu:1; /* The same mechanism with T00 setting */
++			u32	T02_IgnoreResult:1; /* The same mechanism with T00 setting. */
++			u32	T02_RESERVED_ID:2; /* The same mechanism with T00 setting */
+ 			u32	T02_Tx_PktID:4;
+ 			u32	T02_MPDU_Cnt:4;
+ 			u32	T02_RTS_Cnt:4;
+@@ -290,9 +269,8 @@ typedef struct _T02_DESCRIPTOR
+ 			u32	T02_transmit_abort:1;
+ 			u32	T02_transmit_fail:1;
+ 		};
+-		#else
+-		struct
+-		{
++#else
++		struct {
+ 			u32	T02_transmit_fail:1;
+ 			u32	T02_transmit_abort:1;
+ 			u32	T02_out_of_MaxTxMSDULiftTime:1;
+@@ -306,122 +284,120 @@ typedef struct _T02_DESCRIPTOR
+ 			u32	T02_RTS_Cnt:4;
+ 			u32	T02_MPDU_Cnt:4;
+ 			u32	T02_Tx_PktID:4;
+-			u32	T02_RESERVED_ID:2;// The same mechanism with T00 setting
+-			u32	T02_IgnoreResult:1;// The same mechanism with T00 setting. 050111 Modify for TS
+-			u32	T02_IsLastMpdu:1;// The same mechanism with T00 setting
++			u32	T02_RESERVED_ID:2; /* The same mechanism with T00 setting */
++			u32	T02_IgnoreResult:1; /* The same mechanism with T00 setting. */
++			u32	T02_IsLastMpdu:1; /* The same mechanism with T00 setting */
+ 		};
+-		#endif
++#endif
+ 	};
+ } T02_DESCRIPTOR, *PT02_DESCRIPTOR;
+ 
+-struct wb35_descriptor {		// Skip length = 8 DWORD
+-	// ID for descriptor ---, The field doesn't be cleard in the operation of Descriptor definition
++struct wb35_descriptor { /* Skip length = 8 DWORD */
++	/* ID for descriptor ---, The field doesn't be cleard in the operation of Descriptor definition */
+ 	u8	Descriptor_ID;
+-	//----------------------The above region doesn't be cleared by DESCRIPTOR_RESET------
++	/* ----------------------The above region doesn't be cleared by DESCRIPTOR_RESET------ */
+ 	u8	RESERVED[3];
+ 
+ 	u16	FragmentThreshold;
+-	u8	InternalUsed;//Only can be used by operation of descriptor definition
+-	u8	Type;// 0: 802.3	1:802.11 data frame	2:802.11 management frame
++	u8	InternalUsed; /* Only can be used by operation of descriptor definition */
++	u8	Type; /* 0: 802.3 1:802.11 data frame 2:802.11 management frame */
+ 
+-	u8	PreambleMode;// 0: short 1:long
++	u8	PreambleMode;/* 0: short 1:long */
+ 	u8	TxRate;
+ 	u8	FragmentCount;
+-	u8	EapFix; // For speed up key install
++	u8	EapFix; /* For speed up key install */
+ 
+-	// For R00 and T00 ----------------------------------------------
+-	union
+-	{
++	/* For R00 and T00 ------------------------------ */
++	union {
+ 		R00_DESCRIPTOR	R00;
+ 		T00_DESCRIPTOR	T00;
+ 	};
+ 
+-	// For R01 and T01 ----------------------------------------------
+-	union
+-	{
++	/* For R01 and T01 ------------------------------ */
++	union {
+ 		R01_DESCRIPTOR	R01;
+ 		T01_DESCRIPTOR	T01;
+ 	};
+ 
+-	// For R02 and T02 ----------------------------------------------
+-	union
+-	{
+-		u32			R02;
++	/* For R02 and T02 ------------------------------ */
++	union {
++		u32		R02;
+ 		T02_DESCRIPTOR	T02;
+ 	};
+ 
+-	// For R03 and T03 ----------------------------------------------
+-	// For software used
+-	union
+-	{
++	/* For R03 and T03 ------------------------------ */
++	/* For software used */
++	union {
+ 		u32	R03;
+ 		u32	T03;
+-		struct
+-		{
++		struct {
+ 			u8	buffer_number;
+ 			u8	buffer_start_index;
+ 			u16	buffer_total_size;
+ 		};
+ 	};
+ 
+-	// For storing the buffer
+-	u16	buffer_size[ MAX_DESCRIPTOR_BUFFER_INDEX ];
+-	void*	buffer_address[ MAX_DESCRIPTOR_BUFFER_INDEX ];//931130.4.q
 -
--	  dt3155_fbuffer[ m ]->frame_info[ index ].addr = rambuff_acm;
--	  push_empty( index, m );
--	  /* printk("  - Buffer : %lx\n",
--	   * dt3155_fbuffer[ m ]->frame_info[ index ].addr );
--	   */
--	  dt3155_fbuffer[ m ]->nbuffers += 1;
--	  rambuff_acm += bufsize;
-+  for (m = 0; m < ndevices; m++) {
-+	rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
++	/* For storing the buffer */
++	u16	buffer_size[MAX_DESCRIPTOR_BUFFER_INDEX];
++	void	*buffer_address[MAX_DESCRIPTOR_BUFFER_INDEX];
+ };
+ 
+ 
+-#define DEFAULT_NULL_PACKET_COUNT		180000	//20060828.1 Add. 180 seconds
++#define DEFAULT_NULL_PACKET_COUNT	180000	/* 180 seconds */
+ 
+-#define MAX_TXVGA_EEPROM	9	//How many word(u16) of EEPROM will be used for TxVGA
+-#define MAX_RF_PARAMETER	32
++#define MAX_TXVGA_EEPROM		9	/* How many word(u16) of EEPROM will be used for TxVGA */
++#define MAX_RF_PARAMETER		32
+ 
+ typedef struct _TXVGA_FOR_50 {
+-	u8      ChanNo;
+-	u8      TxVgaValue;
++	u8	ChanNo;
++	u8	TxVgaValue;
+ } TXVGA_FOR_50;
+ 
+ 
+-//=====================================================================
+-// Device related include
+-//=====================================================================
++/*
++ * ==============================================
++ * Device related include
++ * ==============================================
++ */
+ 
+ #include "wbusb_s.h"
+ #include "wb35reg_s.h"
+ #include "wb35tx_s.h"
+ #include "wb35rx_s.h"
+ 
+-// For Hal using ==================================================================
++/* For Hal using ============================================ */
+ struct hw_data {
+-	// For compatible with 33
++	/* For compatible with 33 */
+ 	u32	revision;
+-	u32	BB3c_cal; // The value for Tx calibration comes from EEPROM
+-	u32	BB54_cal; // The value for Rx calibration comes from EEPROM
++	u32	BB3c_cal; /* The value for Tx calibration comes from EEPROM */
++	u32	BB54_cal; /* The value for Rx calibration comes from EEPROM */
+ 
+-
+-	// For surprise remove
+-	u32	SurpriseRemove; // 0: Normal 1: Surprise remove
++	/* For surprise remove */
++	u32	SurpriseRemove; /* 0: Normal 1: Surprise remove */
+ 	u8	IsKeyPreSet;
+-	u8	CalOneTime; // 20060630.1
++	u8	CalOneTime;
+ 
+ 	u8	VCO_trim;
+ 
+-	// For Fix 1'st DMA bug
+ 	u32	FragCount;
+-	u32	DMAFix; //V1_DMA_FIX The variable can be removed if driver want to save mem space for V2.
+-
+-	//===============================================
+-	// Definition for MAC address
+-	//===============================================
+-	u8		PermanentMacAddress[ETH_ALEN + 2]; // The Enthernet addr that are stored in EEPROM.  + 2 to 8-byte alignment
+-	u8		CurrentMacAddress[ETH_ALEN + 2]; // The Enthernet addr that are in used.  + 2 to 8-byte alignment
+-
+-	//=====================================================================
+-	// Definition for 802.11
+-	//=====================================================================
+-	u8	*bssid_pointer; // Used by hal_get_bssid for return value
+-	u8	bssid[8];// Only 6 byte will be used. 8 byte is required for read buffer
+-	u8	ssid[32];// maximum ssid length is 32 byte
++	u32	DMAFix; /* V1_DMA_FIX The variable can be removed if driver want to save mem space for V2. */
 +
-+	/* Save the start of this boards buffer space (for mmap).  */
-+	dt3155_status[m].mem_addr = rambuff_acm;
++	/*
++	 * ===============================================
++	 * Definition for MAC address
++	 * ===============================================
++	 */
++	u8	PermanentMacAddress[ETH_ALEN + 2]; /* The Ethernet addr that are stored in EEPROM. + 2 to 8-byte alignment */
++	u8	CurrentMacAddress[ETH_ALEN + 2]; /* The Enthernet addr that are in used. + 2 to 8-byte alignment */
 +
-+	for (index = 0; index < numbufs; index++) {
-+		rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
-+		if (rambuff_acm + bufsize > rambuff_end) {
-+			/* Should never happen */
-+			printk("DT3155 PROGRAM ERROR (GCS)\n"
-+				"Error distributing allocated buffers\n");
-+			return -ENOMEM;
-+		}
-+
-+		dt3155_fbuffer[m]->frame_info[index].addr = rambuff_acm;
-+		push_empty(index, m);
-+		/* printk("  - Buffer : %lx\n",
-+		 * dt3155_fbuffer[ m ]->frame_info[ index ].addr );
-+		 */
-+		dt3155_fbuffer[m]->nbuffers += 1;
-+		rambuff_acm += bufsize;
- 	}
++	/*
++	 * =========================================
++	 * Definition for 802.11
++	 * =========================================
++	 */
++	u8	*bssid_pointer; /* Used by hal_get_bssid for return value */
++	u8	bssid[8]; /* Only 6 byte will be used. 8 byte is required for read buffer */
++	u8	ssid[32]; /* maximum ssid length is 32 byte */
  
--      /* Make sure there is an active buffer there. */
--      dt3155_fbuffer[ m ]->active_buf    = pop_empty( m );
--      dt3155_fbuffer[ m ]->even_happened = 0;
--      dt3155_fbuffer[ m ]->even_stopped  = 0;
-+	/* Make sure there is an active buffer there. */
-+	dt3155_fbuffer[m]->active_buf = pop_empty(m);
-+	dt3155_fbuffer[m]->even_happened = 0;
-+	dt3155_fbuffer[m]->even_stopped  = 0;
+ 	u16	AID;
+ 	u8	ssid_length;
+@@ -433,112 +409,118 @@ struct hw_data {
+ 	u16	BeaconPeriod;
+ 	u16	ProbeDelay;
  
--      /* make sure there is no locked_buf JML 2/28/00 */
--      dt3155_fbuffer[ m ]->locked_buf = -1;
-+	/* make sure there is no locked_buf JML 2/28/00 */
-+	dt3155_fbuffer[m]->locked_buf = -1;
+-	u8	bss_type;// 0: IBSS_NET or 1:ESS_NET
+-	u8	preamble;// 0: short preamble, 1: long preamble
+-	u8	slot_time_select;// 9 or 20 value
+-	u8	phy_type;// Phy select
++	u8	bss_type;/* 0: IBSS_NET or 1:ESS_NET */
++	u8	preamble;/* 0: short preamble, 1: long preamble */
++	u8	slot_time_select; /* 9 or 20 value */
++	u8	phy_type; /* Phy select */
  
--      dt3155_status[ m ].mem_size =
--	rambuff_acm - dt3155_status[ m ].mem_addr;
-+	dt3155_status[m].mem_size =
-+	rambuff_acm - dt3155_status[m].mem_addr;
+ 	u32	phy_para[MAX_RF_PARAMETER];
+ 	u32	phy_number;
  
--      /* setup the ready queue */
--      dt3155_fbuffer[ m ]->ready_head = 0;
--      dt3155_fbuffer[ m ]->ready_len = 0;
--      printk("Available buffers for device %d: %d\n",
--	     m, dt3155_fbuffer[ m ]->nbuffers);
--    }
-+	/* setup the ready queue */
-+	dt3155_fbuffer[m]->ready_head = 0;
-+	dt3155_fbuffer[m]->ready_len = 0;
-+	printk("Available buffers for device %d: %d\n",
-+		m, dt3155_fbuffer[m]->nbuffers);
-+  }
+-	u32	CurrentRadioSw; // 20060320.2 0:On 1:Off
+-	u32	CurrentRadioHw; // 20060825 0:On 1:Off
++	u32	CurrentRadioSw; /* 0:On 1:Off */
++	u32	CurrentRadioHw; /* 0:On 1:Off */
  
-   return 1;
- }
+-	u8	*power_save_point;  // Used by hal_get_power_save_mode for return value
++	u8	*power_save_point; /* Used by hal_get_power_save_mode for return value */
+ 	u8	cwmin;
+ 	u8	desired_power_save;
+-	u8	dtim;// Is running dtim
+-	u8	mapping_key_replace_index;//In Key table, the next index be replaced 931130.4.r
++	u8	dtim; /* Is running dtim */
++	u8	mapping_key_replace_index; /* In Key table, the next index be replaced */
  
--/*****************************************************
-+/*
-  * internal_release_locked_buffer
-  *
-  * The internal function for releasing a locked buffer.
-  * It assumes interrupts are turned off.
-  *
-  * m is minor number of device
-- *****************************************************/
--static inline void internal_release_locked_buffer( int m )
-+ */
-+static inline void internal_release_locked_buffer(int m)
- {
-   /* Pointer into global structure for handling buffers */
--  if ( dt3155_fbuffer[ m ]->locked_buf >= 0 )
--    {
--      push_empty( dt3155_fbuffer[ m ]->locked_buf, m );
--      dt3155_fbuffer[ m ]->locked_buf = -1;
--    }
-+  if (dt3155_fbuffer[m]->locked_buf >= 0) {
-+	push_empty(dt3155_fbuffer[m]->locked_buf, m);
-+	dt3155_fbuffer[m]->locked_buf = -1;
-+  }
- }
+ 	u16	MaxReceiveLifeTime;
+ 	u16	FragmentThreshold;
+ 	u16	FragmentThreshold_tmp;
+ 	u16	cwmax;
  
+-	u8	Key_slot[MAX_KEY_TABLE][8]; //Ownership record for key slot. For Alignment
+-	u32	Key_content[MAX_KEY_TABLE][12]; // 10DW for each entry + 2 for burst command( Off and On valid bit)
++	u8	Key_slot[MAX_KEY_TABLE][8]; /* Ownership record for key slot. For Alignment */
++	u32	Key_content[MAX_KEY_TABLE][12]; /* 10DW for each entry + 2 for burst command (Off and On valid bit) */
+ 	u8	CurrentDefaultKeyIndex;
+ 	u32	CurrentDefaultKeyLength;
  
--/*****************************************************
-+/*
-  * dt3155_release_locked_buffer()
-  * m is minor # of device
-  *
-  * The user function of the above.
-  *
-- *****************************************************/
--inline void dt3155_release_locked_buffer( int m )
-+ */
-+inline void dt3155_release_locked_buffer(int m)
- {
- 	unsigned long int flags;
- 	local_save_flags(flags);
-@@ -443,40 +441,40 @@ inline void dt3155_release_locked_buffer( int m )
- }
+-	//========================================================================
+-	// Variable for each module
+-	//========================================================================
+-	struct wb_usb	WbUsb; // Need WbUsb.h
+-	struct wb35_reg	reg; // Need Wb35Reg.h
+-	struct wb35_tx	Wb35Tx; // Need Wb35Tx.h
+-	struct wb35_rx	Wb35Rx; // Need Wb35Rx.h
++	/*
++	 * ==================================================
++	 * Variable for each module
++	 * ==================================================
++	 */
++	struct wb_usb		WbUsb;	/* Need WbUsb.h */
++	struct wb35_reg		reg;	/* Need Wb35Reg.h */
++	struct wb35_tx		Wb35Tx; /* Need Wb35Tx.h */
++	struct wb35_rx		Wb35Rx; /* Need Wb35Rx.h */
  
+-	struct timer_list	LEDTimer;// For LED
++	struct timer_list	LEDTimer; /* For LED */
  
--/*****************************************************
-+/*
-  * dt3155_flush()
-  * m is minor # of device
-  *
-- *****************************************************/
--inline int dt3155_flush( int m )
-+ */
-+inline int dt3155_flush(int m)
- {
-   int index;
-   unsigned long int flags;
-   local_save_flags(flags);
-   local_irq_disable();
+-	u32		LEDpoint;// For LED
++	u32			LEDpoint; /* For LED */
  
--  internal_release_locked_buffer( m );
--  dt3155_fbuffer[ m ]->empty_len = 0;
-+  internal_release_locked_buffer(m);
-+  dt3155_fbuffer[m]->empty_len = 0;
+-    u32         dto_tx_retry_count;         // LA20040210_DTO kevin
+-    u32         dto_tx_frag_count;          // LA20040210_DTO kevin
+-    u32         rx_ok_count[13];    // index=0: total rx ok
+-    //u32         rx_ok_bytes[13];    // index=0, total rx ok bytes
+-    u32         rx_err_count[13];   // index=0: total rx err
++	u32			dto_tx_retry_count;
++	u32			dto_tx_frag_count;
++	u32			rx_ok_count[13]; /* index=0: total rx ok */
++	u32			rx_err_count[13]; /* index=0: total rx err */
  
--  for ( index = 0; index < dt3155_fbuffer[ m ]->nbuffers; index++ )
--    push_empty( index,  m );
-+  for (index = 0; index < dt3155_fbuffer[m]->nbuffers; index++)
-+	push_empty(index, m);
+-	//for Tx debug
++	/* for Tx debug */
+ 	u32			tx_TBTT_start_count;
+ 	u32			tx_ETR_count;
+ 	u32			tx_WepOn_false_count;
+ 	u32			tx_Null_key_count;
+ 	u32			tx_retry_count[8];
  
-   /* Make sure there is an active buffer there. */
--  dt3155_fbuffer[ m ]->active_buf = pop_empty( m );
-+  dt3155_fbuffer[m]->active_buf = pop_empty(m);
+-	u8		PowerIndexFromEEPROM; // For 2412MHz
+-	u8		power_index;
+-	u8		IsWaitJoinComplete;	// TRUE: set join request
+-	u8		band;
++	u8			PowerIndexFromEEPROM; /* For 2412MHz */
++	u8			power_index;
++	u8			IsWaitJoinComplete; /* TRUE: set join request */
++	u8			band;
  
--  dt3155_fbuffer[ m ]->even_happened = 0;
--  dt3155_fbuffer[ m ]->even_stopped  = 0;
-+  dt3155_fbuffer[m]->even_happened = 0;
-+  dt3155_fbuffer[m]->even_stopped  = 0;
+-	u16		SoftwareSet;
+-	u16		Reserved_s;
++	u16			SoftwareSet;
++	u16			Reserved_s;
  
-   /* setup the ready queue  */
--  dt3155_fbuffer[ m ]->ready_head = 0;
--  dt3155_fbuffer[ m ]->ready_len = 0;
-+  dt3155_fbuffer[m]->ready_head = 0;
-+  dt3155_fbuffer[m]->ready_len = 0;
+-	u32		IsInitOK; // 0: Driver starting   1: Driver init OK
++	u32			IsInitOK; /* 0: Driver starting 1: Driver init OK */
  
-   local_irq_restore(flags);
+-	// For Phy calibration
+-    s32		iq_rsdl_gain_tx_d2;
+-    s32		iq_rsdl_phase_tx_d2;
+-	u32		txvga_setting_for_cal; // 20060703.1 Add
++	/* For Phy calibration */
++	s32			iq_rsdl_gain_tx_d2;
++	s32			iq_rsdl_phase_tx_d2;
++	u32			txvga_setting_for_cal;
  
-   return 0;
- }
+-	u8		TxVgaSettingInEEPROM[ (((MAX_TXVGA_EEPROM*2)+3) & ~0x03) ]; // 20060621 For backup EEPROM value
+-	u8		TxVgaFor24[16]; // Max is 14, 2 for alignment
+-	TXVGA_FOR_50	TxVgaFor50[36];	// 35 channels in 5G. 35x2 = 70 byte. 2 for alignments
++	u8			TxVgaSettingInEEPROM[(((MAX_TXVGA_EEPROM * 2) + 3) & ~0x03)]; /* For EEPROM value */
++	u8			TxVgaFor24[16]; /* Max is 14, 2 for alignment */
++	TXVGA_FOR_50		TxVgaFor50[36];	/* 35 channels in 5G. 35x2 = 70 byte. 2 for alignments */
  
--/*****************************************************
-+/*
-  * dt3155_get_ready_buffer()
-  * m is minor # of device
-  *
-@@ -484,8 +482,8 @@ inline int dt3155_flush( int m )
-  * if it is already there, otherwise it returns 0.
-  * If the user has a buffer locked it will unlock
-  * that buffer before returning the new one.
-- *****************************************************/
--inline int dt3155_get_ready_buffer( int m )
-+ */
-+inline int dt3155_get_ready_buffer(int m)
- {
-   int frame_index;
-   unsigned long int flags;
-@@ -493,21 +491,20 @@ inline int dt3155_get_ready_buffer( int m )
-   local_irq_disable();
+-	u16		Scan_Interval;
+-	u16		RESERVED6;
++	u16			Scan_Interval;
++	u16			RESERVED6;
  
- #ifdef DEBUG_QUES_A
--  printques( m );
-+  printques(m);
+-	// LED control
++	/* LED control */
+ 	u32		LED_control;
+-		// LED_control 4 byte: Gray_Led_1[3]		Gray_Led_0[2]		Led[1]			Led[0]
+-		// Gray_Led
+-		//		For Led gray setting
+-		// Led
+-		//		0: normal control, LED behavior will decide by EEPROM setting
+-		//		1: Turn off specific LED
+-		//		2: Always on specific LED
+-		//		3: slow blinking specific LED
+-		//		4: fast blinking specific LED
+-		//		5: WPS led control is set. Led0 is Red, Led1 id Green
+-		//			Led[1] is parameter for WPS LED mode
+-		//				 // 1:InProgress  2: Error 3: Session overlap 4: Success 20061108 control
+-
+-	u32		LED_LinkOn;		//Turn LED on control
+-	u32		LED_Scanning;	// Let LED in scan process control
+-	u32		LED_Blinking; // Temp variable for shining
++	/*
++	 * LED_control 4 byte: Gray_Led_1[3] Gray_Led_0[2] Led[1] Led[0]
++	 * Gray_Led
++	 *		For Led gray setting
++	 * Led
++	 *		0: normal control,
++	 *			LED behavior will decide by EEPROM setting
++	 *		1: Turn off specific LED
++	 *		2: Always on specific LED
++	 *		3: slow blinking specific LED
++	 *		4: fast blinking specific LED
++	 *		5: WPS led control is set. Led0 is Red, Led1 id Green
++	 *
++	 * Led[1] is parameter for WPS LED mode
++	 *		1:InProgress
++	 *		2: Error
++	 *		3: Session overlap
++	 *		4: Success control
++	 */
++	u32		LED_LinkOn;	/* Turn LED on control */
++	u32		LED_Scanning;	/* Let LED in scan process control */
++	u32		LED_Blinking;	/* Temp variable for shining */
+ 	u32		RxByteCountLast;
+ 	u32		TxByteCountLast;
+ 
+ 	atomic_t	SurpriseRemoveCount;
+ 
+-	// For global timer
+-	u32		time_count;//TICK_TIME_100ms 1 = 100ms
++	/* For global timer */
++	u32		time_count;	/* TICK_TIME_100ms 1 = 100ms */
+ 
+-	// For error recover
++	/* For error recover */
+ 	u32		HwStop;
+ 
+-	// 20060828.1 for avoid AP disconnect
++	/* For avoid AP disconnect */
+ 	u32		NullPacketCount;
+-
+ };
+ 
  #endif
- 
--  internal_release_locked_buffer( m );
-+  internal_release_locked_buffer(m);
- 
--  if (is_ready_buf_empty( m ))
--    frame_index = -1;
--  else
--    {
--      frame_index = pop_ready( m );
--      dt3155_fbuffer[ m ]->locked_buf = frame_index;
--    }
-+  if (is_ready_buf_empty(m)) {
-+	frame_index = -1;
-+  } else {
-+	frame_index = pop_ready(m);
-+	dt3155_fbuffer[m]->locked_buf = frame_index;
-+  }
- 
- #ifdef DEBUG_QUES_B
--  printques( m );
-+  printques(m);
- #endif
- 
-   local_irq_restore(flags);
 -- 
-1.7.0
-
-
+1.7.0.3
 
