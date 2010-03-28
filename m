@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab0C1T7d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 15:59:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:1176 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab0C1T7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 15:59:32 -0400
-Subject: Re: Checkpatch.pl false positive? "ERROR: return is not a
- function, parentheses are not required"
-From: Joe Perches <joe@perches.com>
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>, apw@canonical.com,
-       akpm@linux-foundation.org, dwalker@fifo99.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100328200922.GB27351@core2>
-References: <1269804493.7079.14.camel@tuxtm-linux>
-	 <20100328200922.GB27351@core2>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Mar 2010 12:59:30 -0700
-Message-ID: <1269806370.1500.55.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755176Ab0C1UAQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 16:00:16 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:51507 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755118Ab0C1UAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 16:00:14 -0400
+X-SENDER-IP: [83.226.249.196]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQ5AB9Sr0tT4vnEPGdsb2JhbACHaJNADAEBAQE1La9UjHuFAQQ
+X-IronPort-AV: E=Sophos;i="4.51,323,1267398000"; 
+   d="scan'208";a="56733963"
+From: Lars Lindley <lindley@coyote.org>
+To: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Lars Lindley <lindley@coyote.org>
+Subject: [PATCH] staging: winbond: wblinux_f.h Coding style fixes v2.
+Date: Sun, 28 Mar 2010 22:00:13 +0200
+Message-Id: <1269806413-15784-1-git-send-email-lindley@coyote.org>
+X-Mailer: git-send-email 1.7.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 23:09 +0300, Alexey Dobriyan wrote:
-> On Sun, Mar 28, 2010 at 10:28:13PM +0300, Olimpiu Pascariu wrote:
-> >   return (dt3155_fbuffer[m]->ready_head -
-> >            dt3155_fbuffer[m]->ready_len +
-> >            dt3155_fbuffer[m]->nbuffers)%
-> >           (dt3155_fbuffer[m]->nbuffers);
-> > IMHO the code is correct, though an auxiliary variable could be used to
-> > avoid this error returned by checkpatch.pl. 
-> Yes, checkpatch.pl doesn't understand C.
+I fixed whitespace and comments.
 
-And as currently implemented, can not.
+Signed-off-by: Lars Lindley <lindley@coyote.org>
+---
+ drivers/staging/winbond/wblinux_f.h |   19 ++++++++++---------
+ 1 files changed, 10 insertions(+), 9 deletions(-)
 
-I think this passes checkpatch without warning:
-
-	return (dt3155_fbuffer[m]->ready_head -
-		dt3155_fbuffer[m]->ready_len +
-		dt3155_fbuffer[m]->nbuffers) %
-	       dt3155_fbuffer[m]->nbuffers;
-
-It might be better to use a temporary for dt3155_fbuffer[m]
-so the code could look more like:
-	return (p->ready_head - p->ready_len + p->nbuffers) % p->nbuffers;
-	
+diff --git a/drivers/staging/winbond/wblinux_f.h b/drivers/staging/winbond/wblinux_f.h
+index 868e877..0a9d214 100644
+--- a/drivers/staging/winbond/wblinux_f.h
++++ b/drivers/staging/winbond/wblinux_f.h
+@@ -4,13 +4,14 @@
+ #include "core.h"
+ #include "mds_s.h"
+ 
+-//=========================================================================
+-// Copyright (c) 1996-2004 Winbond Electronic Corporation
+-//
+-// wblinux_f.h
+-//
+-int wb35_start_xmit(struct sk_buff *skb, struct net_device *netdev );
+-void wb35_set_multicast( struct net_device *netdev );
+-struct net_device_stats * wb35_netdev_stats( struct net_device *netdev );
+-
++/*
++ * ====================================================================
++ * Copyright (c) 1996-2004 Winbond Electronic Corporation
++ *
++ * wblinux_f.h
++ * ====================================================================
++ */
++int wb35_start_xmit(struct sk_buff *skb, struct net_device *netdev);
++void wb35_set_multicast(struct net_device *netdev);
++struct net_device_stats *wb35_netdev_stats(struct net_device *netdev);
+ #endif
+-- 
+1.7.0.3
 
