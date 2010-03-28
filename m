@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab0C1PJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 11:09:39 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:52554 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab0C1PJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 11:09:37 -0400
-Date: Mon, 29 Mar 2010 00:09:18 +0900
-To: Maciej Rutecki <maciej.rutecki@gmail.com>
-Cc: jbarnes@virtuousgeek.org, bjorn.helgaas@hp.com, airlied@linux.ie,
-       eric@anholt.net, linux-kernel@vger.kernel.org,
-       dri-devel@lists.sourceforge.net
-Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU
-	hung)
-Message-ID: <20100328150918.GF9758@gamma.logic.tuwien.ac.at>
-References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at> <201003272231.15897.maciej.rutecki@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201003272231.15897.maciej.rutecki@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: Norbert Preining <preining@logic.at>
+	id S1753438Ab0C1PPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 11:15:06 -0400
+Received: from lo.gmane.org ([80.91.229.12]:39013 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752120Ab0C1PPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 11:15:04 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Christophe JAILLET" <christophe.jaillet@wanadoo.fr>
+Subject: Re: [patch] video/sn9c102: improve error handling
+Date: Sun, 28 Mar 2010 17:09:48 +0200
+Message-ID: <honrg5$7uk$1@dough.gmane.org>
+References: <20100328115005.GW5069@bicker>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: aorleans-157-1-152-133.w90-63.abo.wanadoo.fr
+X-MSMail-Priority: Normal
+X-Newsreader: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Antivirus: avast! (VPS 100328-0, 28/03/2010), Outbound message
+X-Antivirus-Status: Clean
+Cc: linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sa, 27 Mär 2010, Maciej Rutecki wrote:
-> http://marc.info/?l=linux-kernel&m=126954749618319&w=2
+Hi,
 
-Yes, I am using modeset, too.
+this patch seems incomplete.
 
-> > I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on
-> >  Debian/sid: xserver-xorg: 7.5+5
-> > video-intel: 2.9.1-3
-> > 
-> > Running D2X-xl (self compiled) (descent2 open source code) X suddenly died,
-> > and after that gdm could not be restarted because after a few secs
-> > it went dead again.
-> > 
-> > In the logs I see:
-> > kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
-> >  elapsed... GPU hung kernel: [ 2486.341240] render error detected, EIR:
-> >  0x00000000
-> > kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR*
-> >  i915_do_wait_request returns -5 (awaiting 113671 at 113604) kernel: [
-> >  2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
-> >  elapsed... GPU hung kernel: [ 2486.669012] render error detected, EIR:
-> >  0x00000000
-> > kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR*
-> >  i915_do_wait_request returns -5 (awaiting 113672 at 113604) kernel: [
-> >  2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
-> >  elapsed... GPU hung kernel: [ 2487.524243] render error detected, EIR:
-> >  0x00000000
-> > kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR*
-> >  i915_do_wait_request returns -5 (awaiting 113673 at 113604) kernel: [
-> >  2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer
-> >  elapsed... GPU hung kernel: [ 2487.916175] render error detected, EIR:
-> >  0x00000000
-> > kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR*
-> >  i915_do_wait_request returns -5 (awaiting 113674 at 113604)
-> > 
-> > Stopping gdm and restarting didn't help to get the graphics card back to
-> >  normal.
-> > 
-> > If you have any ideas how to fix/track/debug that please let me know,
-> > same if you need more information.
+You had an opening { wityhout the corresponding }.
 
-Best wishes
+Best regards,
+Christophe Jaillet.
 
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan            TU Wien, Austria           Debian TeX Task Force
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-`How do you feel?' he asked him.
-bits of me keep
-passing out.' ....
-`We're safe,' he said.
-`Oh good,' said Arthur.
-in one of the
-spaceships of the Vogon Constructor Fleet.'
-this is obviously some strange usage of
-the word "safe" that I wasn't previously aware of.'
-                 --- Arthur after his first ever teleport ride.
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
+"Dan Carpenter" <error27@gmail.com> a écrit
+dans le message de news:20100328115005.GW5069@bicker...
+> Return an error if the controller is not found.
+>
+> Signed-off-by: Dan Carpenter
+<error27@gmail.com>
+>
+> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c
+b/drivers/media/video/sn9c102/sn9c102_core.c
+> index cbf8087..28e19da 100644
+> --- a/drivers/media/video/sn9c102/sn9c102_core.c
+> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
+> @@ -2295,7 +2295,7 @@ sn9c102_vidioc_s_ctrl(struct sn9c102_device* cam,
+void __user * arg)
+>   if (copy_from_user(&ctrl, arg, sizeof(ctrl)))
+>   return -EFAULT;
+>
+> - for (i = 0; i < ARRAY_SIZE(s->qctrl); i++)
+> + for (i = 0; i < ARRAY_SIZE(s->qctrl); i++) {
+>   if (ctrl.id == s->qctrl[i].id) {
+>   if (s->qctrl[i].flags & V4L2_CTRL_FLAG_DISABLED)
+>   return -EINVAL;
+> @@ -2305,7 +2305,9 @@ sn9c102_vidioc_s_ctrl(struct sn9c102_device* cam,
+void __user * arg)
+>   ctrl.value -= ctrl.value % s->qctrl[i].step;
+>   break;
+>   }
+
+
+
