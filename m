@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab0C1Ryr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 13:54:47 -0400
-Received: from mail.pertaminatongkang.co.id ([202.169.54.10]:59264 "EHLO
+	id S1754882Ab0C1R5L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 13:57:11 -0400
+Received: from mail.pertaminatongkang.co.id ([202.169.54.10]:59809 "EHLO
 	mail.pertaminatongkang.co.id" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754853Ab0C1Ryq (ORCPT
+	by vger.kernel.org with ESMTP id S1754848Ab0C1R5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 13:54:46 -0400
-X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Mar 2010 13:54:44 EDT
+	Sun, 28 Mar 2010 13:57:10 -0400
 X-Antivirus-pertaminatongkang-Mail-From: helpdesk0@vt.edu via vegasuz.adslpertaminatongkang.co.id
-X-Antivirus-pertaminatongkang: 1.22-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.012581 secs Process 19695)
-Message-ID: <4821.202.148.12.242.1269798254.squirrel@vegasuz.adslpertaminatongkang.co.id>
-Date: Mon, 29 Mar 2010 00:44:14 +0700 (WIT)
+X-Antivirus-pertaminatongkang: 1.22-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.012347 secs Process 21876)
+Message-ID: <3749.202.148.12.242.1269798734.squirrel@vegasuz.adslpertaminatongkang.co.id>
+Date: Mon, 29 Mar 2010 00:52:14 +0700 (WIT)
 Subject: Response Is Urgently Needed. 
 From: "Virginia Tech Webmail Center" <helpdesk0@vt.edu>
 Reply-To: helpdeskoffice00@googlemail.com
