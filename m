@@ -1,28 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab0C1ROP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 13:14:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59097 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753837Ab0C1ROO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 13:14:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=siTSop4PhxtG2Y8a9tV74cuXG9roYwmirFb9VHB1xURvRR7fj3r/7gXigDYpbvrdYl
-         L4qeeR6F9+p3NSZv6BtmCQ4DaTCJHBvM3vX5McAFDCI6ZyU2/KsxGb5wYJZOpd9Otph6
-         QE2wpPmQmlcAct6ZJS6TU5ue2bxRwl0SP396o=
-MIME-Version: 1.0
-Date: Sun, 28 Mar 2010 22:44:12 +0530
-Message-ID: <f750ee71003281014p328372cfia420271f5d6834f4@mail.gmail.com>
-Subject: test mail. should fail
-From: kartikeyan sadasivuni <s.kartikeyan@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754844Ab0C1R3M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 13:29:12 -0400
+Received: from smtp1-g21.free.fr ([212.27.42.1]:45262 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754819Ab0C1R3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 13:29:11 -0400
+From: Gilles Espinasse <g.esp@free.fr>
+To: jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       Gilles Espinasse <g.esp@free.fr>
+Subject: [PATCH] Fix requr typo on crypto/Kconfig
+Date: Sun, 28 Mar 2010 19:28:25 +0200
+Message-Id: <1269797305-4689-1-git-send-email-g.esp@free.fr>
+X-Mailer: git-send-email 1.6.4.4
+In-Reply-To: <?>
+References: <?>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Gilles Espinasse <g.esp@free.fr>
+---
+ crypto/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/crypto/Kconfig b/crypto/Kconfig
+index 403857a..9d9434f 100644
+--- a/crypto/Kconfig
++++ b/crypto/Kconfig
+@@ -28,7 +28,7 @@ config CRYPTO_FIPS
+ 	  This options enables the fips boot option which is
+ 	  required if you want to system to operate in a FIPS 200
+ 	  certification.  You should say no unless you know what
+-	  this is. Note that CRYPTO_ANSI_CPRNG is requred if this
++	  this is. Note that CRYPTO_ANSI_CPRNG is required if this
+ 	  option is selected
+ 
+ config CRYPTO_ALGAPI
 -- 
-S.Kartikeyan
+1.6.4.4
+
