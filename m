@@ -1,142 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab0C1V1h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 17:27:37 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:49267 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab0C1V1g (ORCPT
+	id S1755262Ab0C1VfL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 17:35:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62471 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab0C1VfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 17:27:36 -0400
-Date: Sun, 28 Mar 2010 16:27:28 -0500
-From: David Fries <david@fries.net>
-To: David Miller <davem@davemloft.net>
-Cc: bzolnier@gmail.com, linux-kernel@vger.kernel.org,
-       linux-ide@vger.kernel.org
-Subject: revert request "ide: skip probe if there are no devices on the
-	port (v2)"
-Message-ID: <20100328212728.GA2674@spacedout.fries.net>
+	Sun, 28 Mar 2010 17:35:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
+Date: Sun, 28 Mar 2010 22:34:54 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, Jiri Kosina <jkosina@suse.cz>,
+       linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
+       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
+       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+       John Kacur <jkacur@redhat.com>
+References: <201003242240.54907.arnd@arndb.de> <201003282205.50886.arnd@arndb.de> <20100328201516.GE5116@nowhere>
+In-Reply-To: <20100328201516.GE5116@nowhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-3.0 (SpacedOut.fries.net [127.0.0.1]); Sun, 28 Mar 2010 16:27:30 -0500 (CDT)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003282334.55253.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+cGB9N6z6HrBFI/l1z4Ul0LAG7Kb0eJQpFRLY
+ gn8VZpJA5mdoNIELm857i6r/qDp+XBl7rq/9HOz95fSzjQA/5Z
+ toYSp9L0QvnBj5jgTAhBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that I have 2.6.34-rc2 booting it no longer detects the cdrom
-drive.  That is looking at the kernel messages, partition dump, and
-after booting hdparm etc does not find the drive.  I expect it is
-because the cdrom is a slave drive without a master on that ribbon.
-Reverting
--------------------------------
-commit a20b2a44eca52818ef52a94959480b7e6ea2f528
-Author: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Date:   Mon Jun 8 22:07:28 2009 +0200
+On Sunday 28 March 2010, Frederic Weisbecker wrote:
+> On Sun, Mar 28, 2010 at 09:05:50PM +0100, Arnd Bergmann wrote:
+> > > General thoughts:
+> > > 
+> > > ".llseek = NULL," so far meant "do the Right Thing on lseek() and
+> > > friends, as far as the fs core can tell".  Shouldn't we keep it that
+> > > way?  It's as close to other ".method = NULL," as it can get, which
+> > > either mean "silently skip this method if it doesn't matter" (e.g.
+> > > .flush) or "fail attempts to use this method with a fitting errno" (e.g.
+> > > .write).
+> > 
+> > My series changes the default from 'default_llseek' to 'generic_file_llseek',
+> > which is almost identical, except for taking the inode mutex instead of the
+> > BKL. 
+> 
+> 
+> What if another file operation changes the file pointer while holding the bkl?
+> You're not protected anymore in this case.
+> 
 
-    ide: skip probe if there are no devices on the port (v2)
-    
-    In ide_probe_port() skip probe if ide_port_wait_ready() returns -ENODEV
-    and print error message instead of debug one if it returns -EBUSY.
-    
-    v2:
-    Fix the default 'rc' value.
-    
-    Signed-off-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
--------------------------------
-fixes the problem.  That branch
-'for-2.6.31' of git://git.kernel.org/pub/scm/linux/kernel/git/bart/ide-2.6
-was merged at d614aec4752f8c61b2e7cb77806b6bd59aa50836 
+Exactly, that's why I changed all the drivers to set default_llseek explicitly.
+Even this is very likely not needed in more than a handful of drivers (if any),
+for a number of reasons:
 
+- sys_read/sys_write *never* hold any locks while calling file_pos_write(),
+  which is the only place they get updated for regular files.
+- concurrent llseek plus other file operations on the same file descriptor
+  usually already have an undefined outcome.
+- when I started inspecting drivers that look at file->f_pos themselves (not
+  the read/write operation arguments), I found that practically all of them
+  are doing this in a totally broken way!
+- The only think we'd probably ever want to lock against in llseek
+  is readdir, which is not used in any drivers, but only in file systems.
 
-boot output, no hdd mentioned
-Again I'm giving it a bad root partition so it dumps the partition
-table at the end of the messages and I can hibernate and resume
-my other kernel.
-on 220bf991b0366cc50a94feede3d7341fa5710ee4 Linux 2.6.34-rc2
-reverting just
-c06d4b0528aa9e515ae9c4a54f47dbca147a429a
-via82cxxx: workaround h/w bugs
-
-Uniform Multi-Platform E-IDE driver
-via82cxxx 0000:00:07.1: VIA vt82c586b (rev 41) IDE UDMA33
-via82cxxx 0000:00:07.1: IDE controller (0x1106:0x0571 rev 0x06)
-via82cxxx 0000:00:07.1: not 100% native mode: will probe irqs later
-ide: disallowing DMA for hda
-ide: disallowing DMA for hdb
-    ide0: BM-DMA at 0xe400-0xe407
-ide: disallowing DMA for hdc
-ide: disallowing DMA for hdd
-    ide1: BM-DMA at 0xe408-0xe40f
-hda: Maxtor 6Y120P0, ATA DISK drive
-ide1: no devices on the port
-ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
-ide1 at 0x170-0x177,0x376 on irq 15
-ide_generic: please use "probe_mask=0x3f" module parameter for probing all legacy ISA IDE ports
-ide-gd driver 1.18
-hda: max request size: 128KiB
-hda: Host Protected Area detected.
-        current capacity is 66055248 sectors (33820 MB)
-        native  capacity is 240121728 sectors (122942 MB)
-hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
-hda: cache flushes supported
- hda: hda1 hda2 hda3
-hda: p3 size 236037312 exceeds device capacity, enabling native capacity
-hda: detected capacity change from 33820286976 to 122942324736
-ide-cd driver 5.00
-...
-VFS: Cannot open root device "1602" or unknown-block(22,2)
-Please append a correct "root=" boot option; here are the available partitions:
-0300       120060864 hda driver: ide-gd
-  0301           49391 hda1
-  0302         1992816 hda2
-  0303       118018656 hda3
-Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
-
-
-
-hdd found and model read with the addition of reverting
-a20b2a44eca52818ef52a94959480b7e6ea2f528
-ide: skip probe if there are no devices on the port (v2)
-
-Uniform Multi-Platform E-IDE driver
-via82cxxx 0000:00:07.1: VIA vt82c586b (rev 41) IDE UDMA33
-via82cxxx 0000:00:07.1: IDE controller (0x1106:0x0571 rev 0x06)
-via82cxxx 0000:00:07.1: not 100% native mode: will probe irqs later
-ide: disallowing DMA for hda
-ide: disallowing DMA for hdb
-    ide0: BM-DMA at 0xe400-0xe407
-ide: disallowing DMA for hdc
-ide: disallowing DMA for hdd
-    ide1: BM-DMA at 0xe408-0xe40f
-hda: Maxtor 6Y120P0, ATA DISK drive
-hdd: PLEXTOR CD-R PX-W4012A, ATAPI CD/DVD-ROM drive
-ide0 at 0x1f0-0x1f7,0x3f6 on irq 14
-ide1 at 0x170-0x177,0x376 on irq 15
-ide_generic: please use "probe_mask=0x3f" module parameter for probing all legacy ISA IDE ports
-ide-gd driver 1.18
-hda: max request size: 128KiB
-hda: Host Protected Area detected.
-        current capacity is 66055248 sectors (33820 MB)
-        native  capacity is 240121728 sectors (122942 MB)
-hda: 66055248 sectors (33820 MB) w/7936KiB Cache, CHS=65531/16/63
-hda: cache flushes supported
- hda: hda1 hda2 hda3
-hda: p3 size 236037312 exceeds device capacity, enabling native capacity
-hda: detected capacity change from 33820286976 to 122942324736
-ide-cd driver 5.00
-ide-cd: hdd: ATAPI 40X CD-ROM CD-R/RW drive, 4096kB Cache
-Uniform CD-ROM driver Revision: 3.20
-...
-VFS: Cannot open root device "1602" or unknown-block(22,2)
-Please append a correct "root=" boot option; here are the available partitions:
-0300       120060864 hda driver: ide-gd
-  0301           49391 hda1
-  0302         1992816 hda2
-  0303       118018656 hda3
-1640         4194302 hdd driver: ide-cdrom
-Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(22,2)
-
--- 
-David Fries <david@fries.net>
-http://fries.net/~david/ (PGP encryption key available)
+	Arnd
