@@ -1,67 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab0C1D6w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 23:58:52 -0400
-Received: from haleb.uoa.edu.er ([196.200.98.2]:49476 "EHLO haleb.uoa.edu.er"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab0C1D6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 23:58:51 -0400
-Message-ID: <34951.89.203.165.62.1269747801.squirrel@webmail.uoa.edu.er>
-Date: Sun, 28 Mar 2010 06:43:21 +0300 (EAT)
-Subject: NOTIFICATION OF WINNING
-From: "FREE LOTTO EMAIL PROMO" <senai@uoa.edu.er>
-Reply-To: claimsoffic@aol.co.uk
-User-Agent: SquirrelMail/1.4.4-1.FC3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+	id S1751661Ab0C1ELw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 00:11:52 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53931
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750990Ab0C1ELu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 00:11:50 -0400
+Date: Sat, 27 Mar 2010 21:12:13 -0700 (PDT)
+Message-Id: <20100327.211213.13750482.davem@davemloft.net>
+To: julia@diku.dk
+Cc: peterz@infradead.org, mingo@elte.hu, tglx@linutronix.de, oleg@redhat.com,
+       sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 7/7] arch/sparc/kernel: Use set_cpus_allowed_ptr
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.64.1003262303500.6480@ask.diku.dk>
+References: <Pine.LNX.4.64.1003262303500.6480@ask.diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <julia@diku.dk>
+Date: Fri, 26 Mar 2010 23:04:09 +0100 (CET)
 
+> Use set_cpus_allowed_ptr rather than set_cpus_allowed.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+ ...
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-
-FROM: GOVERNMENT ACCREDITED LICENSED LOTTERY PROMOTERS.
-82 VICTORIA STREET VICTORIA LONDON SW1 UK.
-Tel: +44 704 570 5223
-Tel:  +44 702 401 9550
-Fax: +44 700 608 8299
-
-NOTIFICATION OF WINNING
-
-We are pleased to inform you of the release, of the recent results of the
-FREELOTTO INTERNATIONAL EMAIL PROMOTION PROGRAM held on the 10th
-March,2010.You were entered as dependent clients with: Referenace Serial
-Number: F2-003-036 and Batch numberFR/45-300-07. Your email address
-attached to the ticket number: 4-20-17-52-34-30 that draw the lucky
-winning number, which consequently won the Daily Jackpot in the first
-category,in four parts. You have been approved for a payment of
-$2,000,000.00 (Two Million United State Dollars) in cash credited to file
-reference number: TFR/9900034943/JPT. All participants for the online
-version were selected randomly from World Wide Web sites through computer
-draw system and extracted from over 100,000 unions, associatons and
-co-oporate bodies that are listed online.This email promotion takes place
-every month.Please note that your lucky winning number falls within our
-European booklet representative office in Europe as indicated in your play
-co upon. In view of this, your $2,000,000.00 (Two Million United State
-Dollars) would be released to you by our payment office in The London.
-*********************************************
-To file for your claim, please contact your fudiciary agent immediately
-via the email below:
-Mr.Richard Smith
-(Freelotto Fiduciary Agent)
-Email :claimsoffic@aol.co.uk
-Tel: +44 704 570 5223
-Tel:  +44 702 401 9550
-Fax: +44 700 608 8299
-********************************************
-Once again congratulations...
-Cordially,
-Mr.Robert Hans
-Online Co-ordinator
-FREE LOTTO EMAIL PROMO
-Sweepstakes International Program.
+Applied, thanks Julia.
