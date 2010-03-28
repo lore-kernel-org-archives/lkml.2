@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab0C1SmT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 14:42:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1170 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754880Ab0C1SmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 14:42:18 -0400
-Subject: [PATCH net-next trivial] MAINTAINERS: ipg: Jesse Huang's email
- address bounces
-From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: Sorbica Shieh <sorbica@icplus.com.tw>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <1269801345.1500.32.camel@Joe-Laptop.home>
-References: <1269801345.1500.32.camel@Joe-Laptop.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Mar 2010 11:42:16 -0700
-Message-ID: <1269801736.1500.36.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755029Ab0C1Sym (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 14:54:42 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:51593 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab0C1Syk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 14:54:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=XyevrwhBZOupkSa7cLCrqzwh5AmoEiPoOI5Fsk8IrEfVNAR6JOJ2g9yVxAhBdKBTfx
+         lAZIawYEU/1wKR7hfqrFjYCynMDTAASZMsA4RfdLMA4VTspdN+UxEbjmAWCAP5un081W
+         NqhklApIGLKIH9ddk3qYKCr+sPw0GV67A342c=
+MIME-Version: 1.0
+In-Reply-To: <1269798210-8664-1-git-send-email-justinmattock@gmail.com>
+References: <1269798210-8664-1-git-send-email-justinmattock@gmail.com>
+Date: Sun, 28 Mar 2010 20:54:38 +0200
+X-Google-Sender-Auth: b74a079c79e9771e
+Message-ID: <10f740e81003281154i4885f559s3f6ac79f1e697a3e@mail.gmail.com>
+Subject: Re: [PATCH] Rename imacfb.txt to efifb.txt and change imacfb to 
+	efifb.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 28d4bf0..73a9e1a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2998,10 +2998,9 @@ F:	net/ipv4/netfilter/ipt_MASQUERADE.c
- IP1000A 10/100/1000 GIGABIT ETHERNET DRIVER
- M:	Francois Romieu <romieu@fr.zoreil.com>
- M:	Sorbica Shieh <sorbica@icplus.com.tw>
--M:	Jesse Huang <jesse@icplus.com.tw>
- L:	netdev@vger.kernel.org
- S:	Maintained
--F:	drivers/net/ipg.c
-+F:	drivers/net/ipg.*
- 
- IPATH DRIVER
- M:	Ralph Campbell <infinipath@qlogic.com>
+On Sun, Mar 28, 2010 at 19:43, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> Rename imacfb.txt to efifb.txt since imacfb was moved to
+> efifb,and change imacfb to efifb.
+> Note:I used git rm for imacfb.txt, but
+> git renamed this file to efifb.txt after everything was said and
+> done, not sure if this is correct or not.
 
+Git doesn't track renames. It just notices a new file is very similar
+(in this case identical)
+to a deleted one.
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
