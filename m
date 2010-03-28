@@ -1,174 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab0C1QpZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 12:45:25 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:37298 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754796Ab0C1QpX (ORCPT
+	id S1754813Ab0C1RKK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 13:10:10 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:57274 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753837Ab0C1RKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 12:45:23 -0400
-From: Marc Zyngier <maz@misterjones.org>
-Cc: linux-kernel@vger.kernel.org, Edwin Peer <epeer@tmtservices.co.za>,
-       Christian Pellegrin <chripell@fsfe.org>
-Subject: [PATCH] Add hotplug support to mcp251x driver
-Date: Sun, 28 Mar 2010 17:45:16 +0100
-Message-Id: <1269794716-8154-1-git-send-email-maz@misterjones.org>
-X-Mailer: git-send-email 1.7.0.3
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: linux-kernel@vger.kernel.org, epeer@tmtservices.co.za, chripell@fsfe.org
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 28 Mar 2010 13:10:08 -0400
+Message-ID: <4BAF8D6A.4000905@cs.helsinki.fi>
+Date: Sun, 28 Mar 2010 20:10:02 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
+       Matt Mackall <mpm@selenic.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 9/9] mm: Fix continuation lines
+References: <cover.1269655208.git.joe@perches.com> <c53e66323c5898fe17221c0813779862189abce3.1269655209.git.joe@perches.com>
+In-Reply-To: <c53e66323c5898fe17221c0813779862189abce3.1269655209.git.joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chip model can now be selected directly by matching the modalias name
-(instead of filling the .model field in platform_data), and allows the
-module to be auto-loaded. Previous behaviour is of course still supported.
+Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Convert the two in-tree users to this feature (icontrol & zeus).
-Tested on an Zeus platform (mcp2515).
+Applied.
 
-Signed-off-by: Marc Zyngier <maz@misterjones.org>
-Cc: Edwin Peer <epeer@tmtservices.co.za>
-Cc: Christian Pellegrin <chripell@fsfe.org>
----
- arch/arm/mach-pxa/icontrol.c         |    9 ++++-----
- arch/arm/mach-pxa/zeus.c             |    4 +---
- drivers/net/can/mcp251x.c            |   14 ++++++++++++++
- include/linux/can/platform/mcp251x.h |    4 ++--
- 4 files changed, 21 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mach-pxa/icontrol.c b/arch/arm/mach-pxa/icontrol.c
-index 771137f..5ccb0ce 100644
---- a/arch/arm/mach-pxa/icontrol.c
-+++ b/arch/arm/mach-pxa/icontrol.c
-@@ -73,7 +73,6 @@ static struct pxa2xx_spi_chip mcp251x_chip_info4 = {
- 
- static struct mcp251x_platform_data mcp251x_info = {
- 	.oscillator_frequency = 16E6,
--	.model                = CAN_MCP251X_MCP2515,
- 	.board_specific_setup = NULL,
- 	.power_enable         = NULL,
- 	.transceiver_enable   = NULL
-@@ -81,7 +80,7 @@ static struct mcp251x_platform_data mcp251x_info = {
- 
- static struct spi_board_info mcp251x_board_info[] = {
- 	{
--		.modalias        = "mcp251x",
-+		.modalias        = "mcp2515",
- 		.max_speed_hz    = 6500000,
- 		.bus_num         = 3,
- 		.chip_select     = 0,
-@@ -90,7 +89,7 @@ static struct spi_board_info mcp251x_board_info[] = {
- 		.irq             = gpio_to_irq(ICONTROL_MCP251x_nIRQ1)
- 	},
- 	{
--		.modalias        = "mcp251x",
-+		.modalias        = "mcp2515",
- 		.max_speed_hz    = 6500000,
- 		.bus_num         = 3,
- 		.chip_select     = 1,
-@@ -99,7 +98,7 @@ static struct spi_board_info mcp251x_board_info[] = {
- 		.irq             = gpio_to_irq(ICONTROL_MCP251x_nIRQ2)
- 	},
- 	{
--		.modalias        = "mcp251x",
-+		.modalias        = "mcp2515",
- 		.max_speed_hz    = 6500000,
- 		.bus_num         = 4,
- 		.chip_select     = 0,
-@@ -108,7 +107,7 @@ static struct spi_board_info mcp251x_board_info[] = {
- 		.irq             = gpio_to_irq(ICONTROL_MCP251x_nIRQ3)
- 	},
- 	{
--		.modalias        = "mcp251x",
-+		.modalias        = "mcp2515",
- 		.max_speed_hz    = 6500000,
- 		.bus_num         = 4,
- 		.chip_select     = 1,
-diff --git a/arch/arm/mach-pxa/zeus.c b/arch/arm/mach-pxa/zeus.c
-index 39896d8..dbd2569 100644
---- a/arch/arm/mach-pxa/zeus.c
-+++ b/arch/arm/mach-pxa/zeus.c
-@@ -414,15 +414,13 @@ static int zeus_mcp2515_transceiver_enable(int enable)
- 
- static struct mcp251x_platform_data zeus_mcp2515_pdata = {
- 	.oscillator_frequency	= 16*1000*1000,
--	.model			= CAN_MCP251X_MCP2515,
- 	.board_specific_setup	= zeus_mcp2515_setup,
--	.transceiver_enable	= zeus_mcp2515_transceiver_enable,
- 	.power_enable		= zeus_mcp2515_transceiver_enable,
- };
- 
- static struct spi_board_info zeus_spi_board_info[] = {
- 	[0] = {
--		.modalias	= "mcp251x",
-+		.modalias	= "mcp2515",
- 		.platform_data	= &zeus_mcp2515_pdata,
- 		.irq		= gpio_to_irq(ZEUS_CAN_GPIO),
- 		.max_speed_hz	= 1*1000*1000,
-diff --git a/drivers/net/can/mcp251x.c b/drivers/net/can/mcp251x.c
-index f8cc168..f521579 100644
---- a/drivers/net/can/mcp251x.c
-+++ b/drivers/net/can/mcp251x.c
-@@ -922,12 +922,16 @@ static int __devinit mcp251x_can_probe(struct spi_device *spi)
- 	struct net_device *net;
- 	struct mcp251x_priv *priv;
- 	struct mcp251x_platform_data *pdata = spi->dev.platform_data;
-+	int model = spi_get_device_id(spi)->driver_data;
- 	int ret = -ENODEV;
- 
- 	if (!pdata)
- 		/* Platform data is required for osc freq */
- 		goto error_out;
- 
-+	if (model)
-+		pdata->model = model;
-+
- 	/* Allocate can/net device */
- 	net = alloc_candev(sizeof(struct mcp251x_priv), TX_ECHO_SKB_MAX);
- 	if (!net) {
-@@ -1117,6 +1121,15 @@ static int mcp251x_can_resume(struct spi_device *spi)
- #define mcp251x_can_resume NULL
- #endif
- 
-+static struct spi_device_id mcp251x_id_table[] = {
-+	{ "mcp251x", 	0 /* Use pdata.model */ },
-+	{ "mcp2510",	CAN_MCP251X_MCP2510 },
-+	{ "mcp2515",	CAN_MCP251X_MCP2515 },
-+	{ },
-+};
-+
-+MODULE_DEVICE_TABLE(spi, mcp251x_id_table);
-+
- static struct spi_driver mcp251x_can_driver = {
- 	.driver = {
- 		.name = DEVICE_NAME,
-@@ -1124,6 +1137,7 @@ static struct spi_driver mcp251x_can_driver = {
- 		.owner = THIS_MODULE,
- 	},
- 
-+	.id_table = mcp251x_id_table,
- 	.probe = mcp251x_can_probe,
- 	.remove = __devexit_p(mcp251x_can_remove),
- 	.suspend = mcp251x_can_suspend,
-diff --git a/include/linux/can/platform/mcp251x.h b/include/linux/can/platform/mcp251x.h
-index 1448177..dba2826 100644
---- a/include/linux/can/platform/mcp251x.h
-+++ b/include/linux/can/platform/mcp251x.h
-@@ -26,8 +26,8 @@
- struct mcp251x_platform_data {
- 	unsigned long oscillator_frequency;
- 	int model;
--#define CAN_MCP251X_MCP2510 0
--#define CAN_MCP251X_MCP2515 1
-+#define CAN_MCP251X_MCP2510 0x2510
-+#define CAN_MCP251X_MCP2515 0x2515
- 	int (*board_specific_setup)(struct spi_device *spi);
- 	int (*transceiver_enable)(int enable);
- 	int (*power_enable) (int enable);
--- 
-1.7.0.3
+> ---
+>  mm/slab.c |    9 +++++----
+>  1 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index a9f325b..ceb4e3a 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -4227,10 +4227,11 @@ static int s_show(struct seq_file *m, void *p)
+>  		unsigned long node_frees = cachep->node_frees;
+>  		unsigned long overflows = cachep->node_overflow;
+>  
+> -		seq_printf(m, " : globalstat %7lu %6lu %5lu %4lu \
+> -				%4lu %4lu %4lu %4lu %4lu", allocs, high, grown,
+> -				reaped, errors, max_freeable, node_allocs,
+> -				node_frees, overflows);
+> +		seq_printf(m, " : globalstat %7lu %6lu %5lu %4lu "
+> +			   "%4lu %4lu %4lu %4lu %4lu",
+> +			   allocs, high, grown,
+> +			   reaped, errors, max_freeable, node_allocs,
+> +			   node_frees, overflows);
+>  	}
+>  	/* cpu stats */
+>  	{
 
