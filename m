@@ -1,177 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768Ab0C1EW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 00:22:57 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60763 "EHLO e4.ny.us.ibm.com"
+	id S1752828Ab0C1Eaz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 00:30:55 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:36870 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196Ab0C1EWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 00:22:55 -0400
-Date: Sat, 27 Mar 2010 21:22:50 -0700
+	id S1751866Ab0C1Eax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 00:30:53 -0400
+Date: Sat, 27 Mar 2010 21:30:47 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: check dynticks idle cpu when start gp
-Message-ID: <20100328042250.GS2343@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+       dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com
+Subject: Re: [patch 0/6] rcu head debugobjects
+Message-ID: <20100328043047.GT2343@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BAECDA0.6050300@cn.fujitsu.com>
+References: <20100327153233.993367557@efficios.com>
+ <20100327224606.GK2343@linux.vnet.ibm.com>
+ <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BAECDA0.6050300@cn.fujitsu.com>
+In-Reply-To: <alpine.LFD.2.00.1003280339590.3147@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 11:31:44AM +0800, Lai Jiangshan wrote:
+On Sun, Mar 28, 2010 at 04:07:10AM +0200, Thomas Gleixner wrote:
+> B1;2005;0cOn Sat, 27 Mar 2010, Paul E. McKenney wrote:
+> > 
+> > o	Patch 4/6 looks good to me, and given that Thomas hasn't
+> > 	complained, I am guessing that he is OK with it.
 > 
-> Currently, if there are/is dynticks idle CPU(s), GPs
-> can not end until we force_quiescent_state().
-> It means we delay our GP frequently.
-> It also means we do non-fastpath work(force QS) frequently.
+> Looks sane at the first glance. Will go over it in detail tomorrow.
 > 
-> This patch add a _hint_ mask to struct rcu_node, and
-> check dynticks idle cpu when start gp.
+> > o	Patch 6/6: Would it be possible to use the object_is_on_stack()
+> > 	function defined in include/linux/sched.h instead of passing
+> > 	in the flag on_stack to bdi_work_init()?  It looks like
+> > 	fs/fs-writeback.c already includes include/linux/sched.h, so
+> > 	shouldn't be a problem from a #include-hell viewpoint.
+> 
+> Well, I'm a bit wary about that. The reason is that we really want
+> the annotation of:
+> 
+>        init_on_stack();
+>        ....
+>        destroy_on_stack();
+> 
+> instead of the confusing:
+> 
+>        init();
+>        ....
+>        destroy_on_stack();
+> 
+> So having an automatism in the bdi_work_init() function will people
+> make forget to put the destroy_on_stack() annotation into it.
+> 
+> The flag is horrible as well. How about this:
+> 
+> /* helper function, do not use in code ! */
+> __bdi_work_init(....., onstack)
+> {
+> 	....
+> 	if (on_stack) {
+> 	   work.state |= WS_ONSTACK;
+> 	   init_rcu_head_on_stack(&work.rcu_head);
+> 	} else {
+> 	....
+> }
+> 
+> See, how this moves also the "work.state |= WS_ONSTACK;" line out of
+> the calling code.
+> 
+> bdi_work_init(...)
+> {
+> 	 __bdi_work_init(...., false);
+> }
+> 
+> bdi_work_init_on_stack(...)
+> {
+> 	 __bdi_work_init(...., true);
+> }
+> 
+> 
+> out of the code.
+> 
+> To make it complete, please do not use the asymmetric:
+> 
+>    destroy_rcu_head_on_stack(&work.rcu_head);
+> 
+> Create a helper function:
+> 
+> bdi_destroy_work_on_stack(...)
+> {
+>    destroy_rcu_head_on_stack(work->rcu_head);
+> }    
+> 
+> That makes it way more readable and we did that with the other on
+> stack initializers as well.
 
-My concern with this one is that it requires the initialization phase
-to look at a large number of rcu_data and rcu_dynticks structures, which
-would give us a large latency hit.  Now we -might- take this hit later
-should we need to invoke force_quiescent_state(), but if the machine is
-fully busy, even that won't happen.
+Hello, Thomas,
 
-So I have to pass on this one, sorry!
-
-And I do have a patch that controls the latency of force_quiescent_state(),
-but the people who asked for it still haven't tested it.  :-/
+I must defer to you on this one.  ;-)
 
 							Thanx, Paul
-
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 1947c4e..a85c5c4 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -666,6 +666,62 @@ rcu_start_gp_per_cpu(struct rcu_state *rsp, struct rcu_node *rnp, struct rcu_dat
->  	__note_new_gpnum(rsp, rnp, rdp);
->  }
-> 
-> +static void rcu_report_qs_rnp(unsigned long mask, struct rcu_state *rsp,
-> +		  struct rcu_node *rnp, unsigned long flags);
-> +
-> +static inline void rcu_check_recent_offcpus(struct rcu_state *rsp,
-> +		struct rcu_node *rnp, unsigned long flags)
-> +	__releases(rnp->lock)
-> +{
-> +#ifdef CONFIG_SMP
-> +#if defined(CONFIG_NO_HZ) || defined(CONFIG_HOTPLUG_CPU)
-> +	/*
-> +	 * if it is leaf node and there are some CPU being dynticks state
-> +	 * or offline-ing recently, we will check and report qs
-> +	 * for these CPU when needed.
-> +	 * (for nonleaf node, rnp->offmask is always 0)
-> +	 */
-> +	if (rnp->qsmask & rnp->offmask) {
-> +		int cpu;
-> +		unsigned long bit;
-> +		unsigned long mask = rnp->qsmask & rnp->offmask;
-> +		struct rcu_data *rdp;
-> +		long curr, curr_nmi;
-> +		int off;
-> +
-> +		cpu = rnp->grplo;
-> +		bit = 1;
-> +		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
-> +			if (!(mask & bit))
-> +				continue;
-> +
-> +			rdp = rsp->rda[cpu];
-> +			curr = rdp->dynticks->dynticks;
-> +			curr_nmi = rdp->dynticks->dynticks_nmi;
-> +
-> +			off = ((curr & 0x1) == 0) && ((curr_nmi & 0x1) == 0);
-> +			off = off || cpu_is_offline(rdp->cpu);
-> +
-> +			if (!off)
-> +				mask &= ~bit;
-> +		}
-> +
-> +		rnp->offmask = mask;
-> +		if (mask) {
-> +			/*
-> +			 * It is impossible that rcu_report_qs_rnp()
-> +			 * calls rcu_report_qs_rsp() again. So we
-> +			 * will not cause recursion.
-> +			 */
-> +			rcu_report_qs_rnp(mask, rsp, rnp, flags);
-> +			return;
-> +		}
-> +	}
-> +#endif
-> +#endif
-> +	raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +}
-> +
->  /*
->   * Start a new RCU grace period if warranted, re-initializing the hierarchy
->   * in preparation for detecting the next grace period.  The caller must hold
-> @@ -717,7 +773,7 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
->  		rnp->completed = rsp->completed;
->  		rsp->signaled = RCU_SIGNAL_INIT; /* force_quiescent_state OK. */
->  		rcu_start_gp_per_cpu(rsp, rnp, rdp);
-> -		raw_spin_unlock_irqrestore(&rnp->lock, flags);
-> +		rcu_check_recent_offcpus(rsp, rnp, flags);
->  		return;
->  	}
-> 
-> @@ -745,14 +801,20 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
->  	 * irqs disabled.
->  	 */
->  	rcu_for_each_node_breadth_first(rsp, rnp) {
-> -		raw_spin_lock(&rnp->lock);	/* irqs already disabled. */
-> +		unsigned long tmp_flags;
-> +
-> +		/* irqs already disabled */
-> +		raw_spin_lock_irqsave(&rnp->lock, tmp_flags);
-> +
->  		rcu_preempt_check_blocked_tasks(rnp);
->  		rnp->qsmask = rnp->qsmaskinit;
->  		rnp->gpnum = rsp->gpnum;
->  		rnp->completed = rsp->completed;
->  		if (rnp == rdp->mynode)
->  			rcu_start_gp_per_cpu(rsp, rnp, rdp);
-> -		raw_spin_unlock(&rnp->lock);	/* irqs remain disabled. */
-> +
-> +		rcu_check_recent_offcpus(rsp, rnp, tmp_flags);
-> +		/* irqs remain disabled. */
->  	}
-> 
->  	rnp = rcu_get_root(rsp);
-> @@ -1190,8 +1252,10 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
->  		cpu = rnp->grplo;
->  		bit = 1;
->  		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
-> -			if ((rnp->qsmask & bit) != 0 && f(rsp->rda[cpu]))
-> +			if ((rnp->qsmask & bit) != 0 && f(rsp->rda[cpu])) {
->  				mask |= bit;
-> +				rnp->offmask |= bit;
-> +			}
->  		}
->  		if (mask != 0) {
-> 
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 4a525a3..8ec96a7 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -104,6 +104,8 @@ struct rcu_node {
->  				/*  an rcu_data structure, otherwise, each */
->  				/*  bit corresponds to a child rcu_node */
->  				/*  structure. */
-> +	unsigned long offmask;	/* Track CPUs which are dynticks state */
-> +				/* or offline-ing recently. */
->  	unsigned long expmask;	/* Groups that have ->blocked_tasks[] */
->  				/*  elements that need to drain to allow the */
->  				/*  current expedited grace period to */
-> 
-> 
-> 
