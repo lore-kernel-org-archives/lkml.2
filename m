@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab0C1Dl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 23:41:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37090 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab0C1Dlz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 23:41:55 -0400
-Date: Sat, 27 Mar 2010 20:42:33 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: linux-kernel@vger.kernel.org, tytso@mit.edu, npiggin@suse.de,
-       mingo@elte.hu, Ruald Andreae <ruald.a@gmail.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Olly Betts <olly@survex.com>,
-       martin f krafft <madduck@madduck.net>
-Subject: Re: Poor interactive performance with I/O loads with fsync()ing
-Message-ID: <20100327204233.0d84542a@infradead.org>
-In-Reply-To: <4baeaee5.c5c2f10a.7187.2688@mx.google.com>
-References: <4b9fa440.12135e0a.7fc8.ffffe745@mx.google.com>
-	<4baeaee5.c5c2f10a.7187.2688@mx.google.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
+	id S1752911Ab0C1DmX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 23:42:23 -0400
+Received: from haleb.uoa.edu.er ([196.200.98.2]:41028 "EHLO haleb.uoa.edu.er"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097Ab0C1DmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 23:42:21 -0400
+Message-ID: <50546.89.203.165.62.1269746819.squirrel@webmail.uoa.edu.er>
+Date: Sun, 28 Mar 2010 06:26:59 +0300 (EAT)
+Subject: NOTIFICATION OF WINNING
+From: "FREE LOTTO EMAIL PROMO" <senai@uoa.edu.er>
+Reply-To: claimsoffic@aol.co.uk
+User-Agent: SquirrelMail/1.4.4-1.FC3
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Mar 2010 18:20:37 -0700 (PDT)
-Ben Gamari <bgamari.foss@gmail.com> wrote:
-
-> Hey all,
-> 
-> I have posted another profile[1] from an incident yesterday. As you
-> can see, both swapper and init (strange?) show up prominently in the
-> profile. Moreover, most processes seem to be in blk_peek_request a
-> disturbingly large percentage of the time. Both of these profiles
-> were taken with 2.6.34-rc kernels.
-> 
-> Anyone have any ideas on how to proceed? Is more profile data
-> necessary? Are the existing profiles at all useful? Thanks,
 
 
-profiles tend to be about cpu usage... and are rather poor to deal with
-anything IO related.
 
-latencytop might get closer in giving useful information....
+FROM: GOVERNMENT ACCREDITED LICENSED LOTTERY PROMOTERS.
+82 VICTORIA STREET VICTORIA LONDON SW1 UK.
+Tel: +44 704 570 5223
+Tel:  +44 702 401 9550
+Fax: +44 700 608 8299
 
-(btw some general suggestion.. make sure you're using noatime or
-relatime as mount option) 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+NOTIFICATION OF WINNING
+
+We are pleased to inform you of the release, of the recent results of the
+FREELOTTO INTERNATIONAL EMAIL PROMOTION PROGRAM held on the 10th
+March,2010.You were entered as dependent clients with: Referenace Serial
+Number: F2-003-036 and Batch numberFR/45-300-07. Your email address
+attached to the ticket number: 4-20-17-52-34-30 that draw the lucky
+winning number, which consequently won the Daily Jackpot in the first
+category,in four parts. You have been approved for a payment of
+$2,000,000.00 (Two Million United State Dollars) in cash credited to file
+reference number: TFR/9900034943/JPT. All participants for the online
+version were selected randomly from World Wide Web sites through computer
+draw system and extracted from over 100,000 unions, associatons and
+co-oporate bodies that are listed online.This email promotion takes place
+every month.Please note that your lucky winning number falls within our
+European booklet representative office in Europe as indicated in your play
+co upon. In view of this, your $2,000,000.00 (Two Million United State
+Dollars) would be released to you by our payment office in The London.
+*********************************************
+To file for your claim, please contact your fudiciary agent immediately
+via the email below:
+Mr.Richard Smith
+(Freelotto Fiduciary Agent)
+Email :claimsoffic@aol.co.uk
+Tel: +44 704 570 5223
+Tel:  +44 702 401 9550
+Fax: +44 700 608 8299
+********************************************
+Once again congratulations...
+Cordially,
+Mr.Robert Hans
+Online Co-ordinator
+FREE LOTTO EMAIL PROMO
+Sweepstakes International Program.
