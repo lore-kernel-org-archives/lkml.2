@@ -1,173 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0C1IdY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 04:33:24 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:44922 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab0C1IdX (ORCPT
+	id S1754068Ab0C1ItN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 04:49:13 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:23005 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753911Ab0C1ItL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 04:33:23 -0400
-Message-ID: <4BAF1450.1090307@cs.helsinki.fi>
-Date: Sun, 28 Mar 2010 11:33:20 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Sun, 28 Mar 2010 04:49:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:openpgp:content-type
+         :content-transfer-encoding;
+        b=BkoMxBncWvC2QUKMu9h+ZI10bcW2lCRDEIsXvUmzV2raOxPEr5O+uc6BSsreL6KOFi
+         Bw8Ham9pRWZgtr9s0HpicTF3T16kaFQf6XpDpEAPkfvcpazLUkxr2mbVoUvLQz1v3Orh
+         Vrha1Vv2ZwXKTMiKNY8RhMqz2ZqWGnfgfmz78=
+Message-ID: <4BAF1802.8070002@gmail.com>
+Date: Sun, 28 Mar 2010 11:49:06 +0300
+From: =?ISO-8859-1?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-To: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
-CC: mingo@elte.hu, randy.dunlap@oracle.com, lizf@cn.fujitsu.com,
-       fweisbec@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Remove Documentation/trace/kmemtrace.txt
-References: <20100326212726.cea150c3.randy.dunlap@oracle.com> <1269764806-27636-1-git-send-email-eduard.munteanu@linux360.ro>
-In-Reply-To: <1269764806-27636-1-git-send-email-eduard.munteanu@linux360.ro>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: scheduler bug: process running since 5124095h
+References: <4BADD408.8080609@gmail.com>
+In-Reply-To: <4BADD408.8080609@gmail.com>
+X-Enigmail-Version: 0.95.0
+OpenPGP: id=5379965D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eduard - Gabriel Munteanu wrote:
-> The current implementation of kmemtrace has been based on ftrace for a
-> while. Documentation/trace/kmemtrace.txt concerns the old, relay-based
-> implementation, so it's outdated. This removes it to avoid confusion.
+On 03/27/2010 11:46 AM, Török Edwin wrote:
+> Hi Ingo, Peter,
 > 
-> Signed-off-by: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
-
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-
-> ---
->  Documentation/trace/kmemtrace.txt |  126 -------------------------------------
->  1 files changed, 0 insertions(+), 126 deletions(-)
->  delete mode 100644 Documentation/trace/kmemtrace.txt
+> top has just shown me this:
+> PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
 > 
-> diff --git a/Documentation/trace/kmemtrace.txt b/Documentation/trace/kmemtrace.txt
-> deleted file mode 100644
-> index 6308735..0000000
-> --- a/Documentation/trace/kmemtrace.txt
-> +++ /dev/null
-> @@ -1,126 +0,0 @@
-> -			kmemtrace - Kernel Memory Tracer
-> -
-> -			  by Eduard - Gabriel Munteanu
-> -			     <eduard.munteanu@linux360.ro>
-> -
-> -I. Introduction
-> -===============
-> -
-> -kmemtrace helps kernel developers figure out two things:
-> -1) how different allocators (SLAB, SLUB etc.) perform
-> -2) how kernel code allocates memory and how much
-> -
-> -To do this, we trace every allocation and export information to the userspace
-> -through the relay interface. We export things such as the number of requested
-> -bytes, the number of bytes actually allocated (i.e. including internal
-> -fragmentation), whether this is a slab allocation or a plain kmalloc() and so
-> -on.
-> -
-> -The actual analysis is performed by a userspace tool (see section III for
-> -details on where to get it from). It logs the data exported by the kernel,
-> -processes it and (as of writing this) can provide the following information:
-> -- the total amount of memory allocated and fragmentation per call-site
-> -- the amount of memory allocated and fragmentation per allocation
-> -- total memory allocated and fragmentation in the collected dataset
-> -- number of cross-CPU allocation and frees (makes sense in NUMA environments)
-> -
-> -Moreover, it can potentially find inconsistent and erroneous behavior in
-> -kernel code, such as using slab free functions on kmalloc'ed memory or
-> -allocating less memory than requested (but not truly failed allocations).
-> -
-> -kmemtrace also makes provisions for tracing on some arch and analysing the
-> -data on another.
-> -
-> -II. Design and goals
-> -====================
-> -
-> -kmemtrace was designed to handle rather large amounts of data. Thus, it uses
-> -the relay interface to export whatever is logged to userspace, which then
-> -stores it. Analysis and reporting is done asynchronously, that is, after the
-> -data is collected and stored. By design, it allows one to log and analyse
-> -on different machines and different arches.
-> -
-> -As of writing this, the ABI is not considered stable, though it might not
-> -change much. However, no guarantees are made about compatibility yet. When
-> -deemed stable, the ABI should still allow easy extension while maintaining
-> -backward compatibility. This is described further in Documentation/ABI.
-> -
-> -Summary of design goals:
-> -	- allow logging and analysis to be done across different machines
-> -	- be fast and anticipate usage in high-load environments (*)
-> -	- be reasonably extensible
-> -	- make it possible for GNU/Linux distributions to have kmemtrace
-> -	included in their repositories
-> -
-> -(*) - one of the reasons Pekka Enberg's original userspace data analysis
-> -    tool's code was rewritten from Perl to C (although this is more than a
-> -    simple conversion)
-> -
-> -
-> -III. Quick usage guide
-> -======================
-> -
-> -1) Get a kernel that supports kmemtrace and build it accordingly (i.e. enable
-> -CONFIG_KMEMTRACE).
-> -
-> -2) Get the userspace tool and build it:
-> -$ git clone git://repo.or.cz/kmemtrace-user.git		# current repository
-> -$ cd kmemtrace-user/
-> -$ ./autogen.sh
-> -$ ./configure
-> -$ make
-> -
-> -3) Boot the kmemtrace-enabled kernel if you haven't, preferably in the
-> -'single' runlevel (so that relay buffers don't fill up easily), and run
-> -kmemtrace:
-> -# '$' does not mean user, but root here.
-> -$ mount -t debugfs none /sys/kernel/debug
-> -$ mount -t proc none /proc
-> -$ cd path/to/kmemtrace-user/
-> -$ ./kmemtraced
-> -Wait a bit, then stop it with CTRL+C.
-> -$ cat /sys/kernel/debug/kmemtrace/total_overruns	# Check if we didn't
-> -							# overrun, should
-> -							# be zero.
-> -$ (Optionally) [Run kmemtrace_check separately on each cpu[0-9]*.out file to
-> -		check its correctness]
-> -$ ./kmemtrace-report
-> -
-> -Now you should have a nice and short summary of how the allocator performs.
-> -
-> -IV. FAQ and known issues
-> -========================
-> -
-> -Q: 'cat /sys/kernel/debug/kmemtrace/total_overruns' is non-zero, how do I fix
-> -this? Should I worry?
-> -A: If it's non-zero, this affects kmemtrace's accuracy, depending on how
-> -large the number is. You can fix it by supplying a higher
-> -'kmemtrace.subbufs=N' kernel parameter.
-> ----
-> -
-> -Q: kmemtrace_check reports errors, how do I fix this? Should I worry?
-> -A: This is a bug and should be reported. It can occur for a variety of
-> -reasons:
-> -	- possible bugs in relay code
-> -	- possible misuse of relay by kmemtrace
-> -	- timestamps being collected unorderly
-> -Or you may fix it yourself and send us a patch.
-> ----
-> -
-> -Q: kmemtrace_report shows many errors, how do I fix this? Should I worry?
-> -A: This is a known issue and I'm working on it. These might be true errors
-> -in kernel code, which may have inconsistent behavior (e.g. allocating memory
-> -with kmem_cache_alloc() and freeing it with kfree()). Pekka Enberg pointed
-> -out this behavior may work with SLAB, but may fail with other allocators.
-> -
-> -It may also be due to lack of tracing in some unusual allocator functions.
-> -
-> -We don't want bug reports regarding this issue yet.
-> ----
-> -
-> -V. See also
-> -===========
-> -
-> -Documentation/kernel-parameters.txt
-> -Documentation/ABI/testing/debugfs-kmemtrace
-> -
+>                                                                  6524
+> edwin     20   0  228m  10m 8116 R    2  0.3  5124095h gkrellm
+> 
+> Now obviously that process is not running since 5124095h!
+> It looks like some overflow to me, the time in nanoseconds would be
+> approx 0xFFFFFE1D2D476000, which is approx. minus 34 minutes.
+> Thats about consistent with the uptime, but I don't know why it became
+> negative:
+>  11:45:48 up 42 min,  9 users,  load average: 0.56, 0.25, 0.19
+> 
+> I've attached the cfs-debug-info.sh output.
+> 
+> This happens when using Linux 2.6.33 (actually glisse's drm-radeon tree
+> which is based on 2.6.33), its the first time I noticed this.
+> 
+> I don't know what caused it, the last things I did was:
 
+I have a simple way to reproduce this:
+1. Boot the system, run top, confirm everything is normal
+2. Run latencytop, and quit (I used version 0.5)
+3. Run top, see 5124095h in the TIME column
+
+For example:
+ 6649 daemon    20   0 74500 8892 3796 S    6  0.2   0:00.03 debsecan
+ 4255 root      20   0  8908  360  260 S    2  0.0   0:00.04 irqbalance
+    1 root      20   0 10332  692  580 S    0  0.0  5124095h init
+
+The processes that get the 5124095h seem random, but there are plenty of
+them (if you sort by 'T', the entire top display is filled with
+processes running since 5124095h).
+
+Best regards,
+--Edwin
