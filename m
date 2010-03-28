@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab0C1DmX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 23:42:23 -0400
-Received: from haleb.uoa.edu.er ([196.200.98.2]:41028 "EHLO haleb.uoa.edu.er"
+	id S1752958Ab0C1Dmy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 23:42:54 -0400
+Received: from haleb.uoa.edu.er ([196.200.98.2]:41027 "EHLO haleb.uoa.edu.er"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab0C1DmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 23:42:21 -0400
-Message-ID: <50546.89.203.165.62.1269746819.squirrel@webmail.uoa.edu.er>
-Date: Sun, 28 Mar 2010 06:26:59 +0300 (EAT)
+	id S1752814Ab0C1Dmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 23:42:52 -0400
+Message-ID: <35237.117.240.232.30.1269746582.squirrel@webmail.uoa.edu.er>
+Date: Sun, 28 Mar 2010 06:23:02 +0300 (EAT)
 Subject: NOTIFICATION OF WINNING
 From: "FREE LOTTO EMAIL PROMO" <senai@uoa.edu.er>
 Reply-To: claimsoffic@aol.co.uk
