@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab0C1DtJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Mar 2010 23:49:09 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:58734 "EHLO e4.ny.us.ibm.com"
+	id S1753003Ab0C1D6w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Mar 2010 23:58:52 -0400
+Received: from haleb.uoa.edu.er ([196.200.98.2]:49476 "EHLO haleb.uoa.edu.er"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab0C1DtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Mar 2010 23:49:07 -0400
-Date: Sat, 27 Mar 2010 20:48:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: make dead code really dead
-Message-ID: <20100328034859.GP2343@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <4BAEC9C8.8080704@cn.fujitsu.com>
+	id S1752277Ab0C1D6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Mar 2010 23:58:51 -0400
+Message-ID: <34951.89.203.165.62.1269747801.squirrel@webmail.uoa.edu.er>
+Date: Sun, 28 Mar 2010 06:43:21 +0300 (EAT)
+Subject: NOTIFICATION OF WINNING
+From: "FREE LOTTO EMAIL PROMO" <senai@uoa.edu.er>
+Reply-To: claimsoffic@aol.co.uk
+User-Agent: SquirrelMail/1.4.4-1.FC3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BAEC9C8.8080704@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 11:15:20AM +0800, Lai Jiangshan wrote:
-> 
-> cleanup: make dead code really dead
 
-Good catch!  I have queued this one up for RCU for 2.6.35.
 
-							Thanx, Paul
 
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> ---
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index e6014e1..1947c4e 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1236,11 +1236,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
->  		break; /* grace period idle or initializing, ignore. */
-> 
->  	case RCU_SAVE_DYNTICK:
-> -
-> -		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
->  		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
->  			break; /* So gcc recognizes the dead code. */
-> 
-> +		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
-> +
->  		/* Record dyntick-idle state. */
->  		force_qs_rnp(rsp, dyntick_save_progress_counter);
->  		raw_spin_lock(&rnp->lock);  /* irqs already disabled */
-> 
+FROM: GOVERNMENT ACCREDITED LICENSED LOTTERY PROMOTERS.
+82 VICTORIA STREET VICTORIA LONDON SW1 UK.
+Tel: +44 704 570 5223
+Tel:  +44 702 401 9550
+Fax: +44 700 608 8299
+
+NOTIFICATION OF WINNING
+
+We are pleased to inform you of the release, of the recent results of the
+FREELOTTO INTERNATIONAL EMAIL PROMOTION PROGRAM held on the 10th
+March,2010.You were entered as dependent clients with: Referenace Serial
+Number: F2-003-036 and Batch numberFR/45-300-07. Your email address
+attached to the ticket number: 4-20-17-52-34-30 that draw the lucky
+winning number, which consequently won the Daily Jackpot in the first
+category,in four parts. You have been approved for a payment of
+$2,000,000.00 (Two Million United State Dollars) in cash credited to file
+reference number: TFR/9900034943/JPT. All participants for the online
+version were selected randomly from World Wide Web sites through computer
+draw system and extracted from over 100,000 unions, associatons and
+co-oporate bodies that are listed online.This email promotion takes place
+every month.Please note that your lucky winning number falls within our
+European booklet representative office in Europe as indicated in your play
+co upon. In view of this, your $2,000,000.00 (Two Million United State
+Dollars) would be released to you by our payment office in The London.
+*********************************************
+To file for your claim, please contact your fudiciary agent immediately
+via the email below:
+Mr.Richard Smith
+(Freelotto Fiduciary Agent)
+Email :claimsoffic@aol.co.uk
+Tel: +44 704 570 5223
+Tel:  +44 702 401 9550
+Fax: +44 700 608 8299
+********************************************
+Once again congratulations...
+Cordially,
+Mr.Robert Hans
+Online Co-ordinator
+FREE LOTTO EMAIL PROMO
+Sweepstakes International Program.
