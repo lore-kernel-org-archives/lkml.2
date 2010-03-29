@@ -1,34 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab0C2DXG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 23:23:06 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54243 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab0C2DXE (ORCPT
+	id S1755597Ab0C2DaT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 23:30:19 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:45362 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab0C2DaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 23:23:04 -0400
-Date: Mon, 29 Mar 2010 14:23:01 +1100
-From: Simon Horman <horms@verge.net.au>
-To: Olimpiu Pascariu <olimpiu.pascariu@gmail.com>
-Cc: gregkh@suse.de, hsweeten@visionengravers.com, ss@aao.gov.au,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Jason Baldus <jason.baldus@gmail.com>
-Subject: Re: Staging: dt3155: fixed some checkpatch.pl warnings and errors
- in dt3155_drv.c
-Message-ID: <20100329032301.GC27607@verge.net.au>
-References: <1269789974.7294.1.camel@tuxtm-linux>
+	Sun, 28 Mar 2010 23:30:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=D45VO4Wo3YJqRBBDLDv3rYLLyppwpseXL62OhmYMoDR6goxOEqDPAGeUgOfOTm16y9
+         gE7gnvAZ/aQocgsBov+/BBvXLYAnlCnvFbO8lmpZIvJXTOizMJCunt1kWO1T9ceeruEH
+         HVWbhk1NPX2PpkbIX3H1OnXRN2M/jUwn+Nmsg=
+Date: Mon, 29 Mar 2010 05:23:33 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+Message-ID: <20100329032332.GK5116@nowhere>
+References: <20100328043446.GA11748@nowhere> <20100328.190235.125554595.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269789974.7294.1.camel@tuxtm-linux>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100328.190235.125554595.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Mar 28, 2010 at 07:02:35PM -0700, David Miller wrote:
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Date: Sun, 28 Mar 2010 06:34:49 +0200
+> 
+> > I get kernel crashes each time I use perf with callchains
+> > on sparc 64.
+> > 
+> > It triggers with a simple:
+> > 
+> > 	perf record -a -f -g sleep 1
+> > 
+> > I'm attaching two different crashlogs, as it seem to happen
+> > randomly, and also my config.
+> 
+> Is your 'perf' a 64-bit or 32-bit binary.  How about the
+> 'sleep' binary?
 
-this patch seems to duplicate work being done by Jason Baldus.
-Could you co-ordinate with him?
 
-http://marc.info/?l=linux-kernel&m=126973249428849&w=2
+Both are 32 bits binaries.
+
