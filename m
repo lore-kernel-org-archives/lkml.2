@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab0C3MgT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Mar 2010 08:36:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48065 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755572Ab0C3MgR (ORCPT
+	id S1755690Ab0C3MiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Mar 2010 08:38:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47527 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab0C3MiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Mar 2010 08:36:17 -0400
-Date: Tue, 30 Mar 2010 14:36:12 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: kernel-janitors@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Richard Purdie <rpurdie@rpsys.net>, Riku Voipio <riku.voipio@iki.fi>
-Subject: Re: [PATCH 08/24] leds: fix dangling pointers
-Message-ID: <20100330123612.GH29472@pengutronix.de>
-References: <1269094385-16114-1-git-send-email-w.sang@pengutronix.de> <1269094385-16114-9-git-send-email-w.sang@pengutronix.de>
+	Tue, 30 Mar 2010 08:38:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=WvjUNP4iSphrA0+sw6dNCLxVBg+8cuetbxpNtCqP1Z6WDbaF8bd22JAPh3mFOHm2hr
+         yTpAZkYEizo+QUk+L4HBmMWRxfi8h7LE3rdI++aim9jkLBk7grQpOPoGXvCK+tC3OqeY
+         rAj5JDY0kdFQjmSqIdN2B1ge1/c/c9X7/sVoY=
+Message-ID: <4BAFF94D.5070402@gmail.com>
+Date: Mon, 29 Mar 2010 09:50:21 +0900
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EemXnrF2ob+xzFeB"
-Content-Disposition: inline
-In-Reply-To: <1269094385-16114-9-git-send-email-w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, Lee.Schermerhorn@hp.com,
+       cl@linux-foundation.org, mingo@elte.hu, adobriyan@gmail.com,
+       tglx@linutronix.de, hpa@zytor.com, yi.zhu@intel.com,
+       reinette.chatre@intel.com, ilw@linux.intel.com,
+       Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCHSET] remove implicit slab.h inclusion from from percpu.h
+References: <1269420538-18039-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1269420538-18039-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/24/2010 05:48 PM, Tejun Heo wrote:
+> Hello,
+> 
+> This is the proper patchset to break implicit slab.h inclusion from
+> percpu.h.  Please refer to the last RFC posting[L] for background.
+> 
+> This patchset contains the following four patches.
+> 
+>  0001-x86-don-t-include-slab.h-from-arch-x86-include-asm-p.patch
+>  0002-iwlwifi-don-t-include-iwl-dev.h-from-iwl-devtrace.h.patch
+>  0003-include-cleanup-Update-gfp.h-and-slab.h-includes-to-.patch
+>  0004-percpu-don-t-implicitly-include-slab.h-from-percpu.h.patch
 
---EemXnrF2ob+xzFeB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Patch descriptions updated to include *-by's and fix some broken
+sentences.  The git tree has been updated accordingly.  I'll ask
+Stephen to pull it into -next soonish.  If nothing breaks too
+drastically there, hopefully, Linus can pull this in.
 
-On Sat, Mar 20, 2010 at 03:12:49PM +0100, Wolfram Sang wrote:
-> Fix I2C-drivers which missed setting clientdata to NULL before freeing the
-> structure it points to. Also fix drivers which do this _after_ the struct=
-ure
-> was freed already.
->=20
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Riku Voipio <riku.voipio@iki.fi>
+Thanks.
 
-please drop this this patch. We reached an agreement that a) setting the
-clientdata-pointer to NULL should be done in the i2c-core [1] and b) how to=
- do
-it. Based on that, I will do the modification of the i2c-core for 2.6.34 (a=
-s it
-fixes the dangling pointers) and then create one single patch removing the =
-then
-superflous calls to i2c_set_clientdata for 2.6.35 (as it is a cleanup). If =
-you
-already applied the above patch to your branch, you don't have to revert; we
-will fix it for you in the next round.
-
-Sorry for the detour!
-
-Kind regards,
-
-   Wolfram
-
-[1] http://thread.gmane.org/gmane.linux.drivers.i2c/5674/focus=3D5729
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---EemXnrF2ob+xzFeB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkux8DwACgkQD27XaX1/VRtGVwCfZkkftdDEO97j7QecceDftlaL
-4h4AnjBYnZQvW4F5FQnXcPDNQGmN5A8+
-=AvUU
------END PGP SIGNATURE-----
-
---EemXnrF2ob+xzFeB--
+-- 
+tejun
