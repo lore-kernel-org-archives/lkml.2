@@ -1,101 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422Ab0C2NAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 09:00:50 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48081 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751955Ab0C2NAs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 09:00:48 -0400
-Date: Mon, 29 Mar 2010 14:00:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Todd Fischer <todd.fischer@ridgerun.com>
-Cc: linux-kernel@vger.kernel.org,
-       davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
-       lrg@slimlogic.co.uk
-Subject: Re: [PATCH 3/5] Add MFD driver for TPS6507x family of
- multi-function chips
-Message-ID: <20100329130046.GD8434@rakim.wolfsonmicro.main>
-References: <1269634292-29686-1-git-send-email-todd.fischer@ridgerun.com>
- <1269634292-29686-2-git-send-email-todd.fischer@ridgerun.com>
- <1269634292-29686-3-git-send-email-todd.fischer@ridgerun.com>
- <1269634292-29686-4-git-send-email-todd.fischer@ridgerun.com>
+	id S1751326Ab0C2NHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 09:07:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910Ab0C2NHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 09:07:11 -0400
+Date: Mon, 29 Mar 2010 15:05:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: John Kacur <jkacur@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       Arnd Bergmann <arnd@arndb.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: kill BKL in ptrace syscall
+Message-ID: <20100329130526.GA23201@redhat.com>
+References: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com> <20100329114046.GB16971@redhat.com> <520f0cf11003290506o629c9ab6n95c94c48ba24acf4@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269634292-29686-4-git-send-email-todd.fischer@ridgerun.com>
-X-Cookie: Uncompensated overtime?  Just Say No.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <520f0cf11003290506o629c9ab6n95c94c48ba24acf4@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 02:11:30PM -0600, Todd Fischer wrote:
-> MFD driver for TPS6507x family of multi-function chips.
+On 03/29, John Kacur wrote:
+>
+> So, just to be clear about this particular patch, who is queuing it up
+> to send to Linus? Would that be you Oleg, as a ptrace maintainer?
 
-This patch should also be updating the regulator driver to work in terms
-of this new MFD driver - otherwise after applying it you'll have two
-incompatible drivers for the same chip at once.
+Cough. I must admit, apart from "urgent" bugfixes the only way I know
+is to send the patch to Andrew.
 
-> @@ -62,4 +63,4 @@ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
->  obj-$(CONFIG_AB4500_CORE)	+= ab4500-core.o
->  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
->  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
-> -obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
-> \ No newline at end of file
-> +obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+So I'd suggest to send this patch to akpm. Of course, if you wish I can
+forward it, but doesn't matter.
 
-Extra change in the diff here (not unreasonable, but...).
+Oleg.
 
-> + * Credits:
-> + *
-> + *    Using code from wm8350-i2c.c, Wolfson Microelectronics PLC.
-> + *
-
-The WM831x is a much better thing to be cloning here - it fits in much
-more directly with the MFD framework, meaning that you don't need...
-
-> +/*
-> + * Register a client device.  This is non-fatal since there is no need to
-> + * fail the entire device init due to a single platform device failing.
-> + */
-> +static void tps6507x_client_dev_register(struct tps6507x_dev *tps6507x,
-> +					 const char *name,
-> +					 struct platform_device **pdev)
-> +{
-
-...stuff like this, you can just use the MFD core.
-
-> +static int tps6507x_i2c_probe(struct i2c_client *i2c,
-> +			    const struct i2c_device_id *id)
-> +{
-
-...
-
-> +	ret = tps6507x_device_init(tps6507x, i2c->irq, i2c->dev.platform_data);
-> +	if (ret < 0)
-> +		goto err;
-
-Does the hardware support SPI?  The reason the Wolfson drivers are split
-up like they are is that the hardware supports both I2C and SPI so room
-is being left to add SPI support but if not then you may as well just
-have a single probe() function which does all the init.
-
-> +/**
-> + * struct tps6507x_dev - tps6507x sub-driver chip access routines
-> + * @read_dev() - I2C register read function
-> + * @write_dev() - I2C register write function
-> + *
-> + * Device data may be used to access the TPS6507x chip
-> + */
-> +
-> +struct tps6507x_dev {
-> +	struct device *dev;
-> +	struct i2c_client *i2c_client;
-> +	int (*read_dev)(struct tps6507x_dev *tps6507x, char reg, int size,
-> +			void *dest);
-> +	int (*write_dev)(struct tps6507x_dev *tps6507x, char reg, int size,
-> +			 void *src);
-> +	struct mutex adc_mutex;
-
-Perhaps worth saving adc_mutex until you add support for the ADC?
