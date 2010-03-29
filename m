@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab0C2S3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:29:44 -0400
-Received: from kroah.org ([198.145.64.141]:41871 "EHLO coco.kroah.org"
+	id S1752713Ab0C2ScG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:32:06 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52536 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750957Ab0C2S3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:29:42 -0400
-Date: Mon, 29 Mar 2010 11:24:43 -0700
-From: Greg KH <greg@kroah.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: stable@kernel.org, linux-nfs@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [stable] nfsd changes for 2.6.34
-Message-ID: <20100329182443.GC3778@kroah.com>
-References: <20100306175212.GB22650@fieldses.org> <20100324142414.GE12057@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100324142414.GE12057@fieldses.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1751441Ab0C2ScD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:32:03 -0400
+Subject: [PATCH next-next-2.6] virtio_net: missing sg_init_table
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Thomas =?ISO-8859-1?Q?M=FCller?= <thomas@mathtm.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 11:31:58 -0700
+Message-ID: <1269887518.13277.13.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 24, 2010 at 10:24:14AM -0400, J. Bruce Fields wrote:
-> On Sat, Mar 06, 2010 at 12:52:12PM -0500, bfields wrote:
-> > Please pull the following nfsd changes from the 'nfsd' branch at:
-> > 
-> >   git://linux-nfs.org/~bfields/linux.git for-2.6.34 nfsd
-> > 
-> > This is an unusually quiet cycle for the NFS server--bugfixes, some IPv6
-> > progress, and one new export operation to improve sync performance.
-> > 
-> > One exception to the 'mostly quiet' statement was a regression in the
-> > rpc code which hit a lot of people: enormous thanks to Neil for tracking
-> > that down.
-> 
-> However, I forgot to Cc stable on all of those.  Stable people, could
-> you also take the following three commits?:
-> 
-> 	f5822754ea006563e1bf0a1f43faaad49c0d8bb2 Revert "sunrpc: fix
-> 	peername failed on closed listener"
-> 	1b644b6e6f6160ae35ce4b52c2ca89ed3e356e18 Revert "sunrpc: move
-> 	the close processing after do recvfrom method"
-> 	301e99ce4a2f42a317129230fd42e6cd874c64b0 nfsd: ensure sockets
-> 	are closed on error
-> 
-> Let me know if you need more information.
+Add missing sg_init_table for sg_set_buf in virtio_net.
 
-I've queued all of these up for the .33 -stable tree.  If any of them
-need to go into .32 (maybe that last one?), please let me know.
+Reported-by: Thomas Müller <thomas@mathtm.de>
+Signed-off-by: Shirley Ma <xma@us.ibm.com>
 
-thanks,
+---
+ drivers/net/virtio_net.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 25dc77c..3f5be35 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -326,6 +326,7 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
+ 	struct scatterlist sg[2];
+ 	int err;
+ 
++	sg_init_table(sg, 2);
+ 	skb = netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN);
+ 	if (unlikely(!skb))
+ 		return -ENOMEM;
+@@ -351,6 +352,7 @@ static int add_recvbuf_big(struct virtnet_info *vi, gfp_t gfp)
+ 	char *p;
+ 	int i, err, offset;
+ 
++	sg_init_table(sg, MAX_SKB_FRAGS + 2);
+ 	/* page in sg[MAX_SKB_FRAGS + 1] is list tail */
+ 	for (i = MAX_SKB_FRAGS + 1; i > 1; --i) {
+ 		first = get_a_page(vi, gfp);
+
+
