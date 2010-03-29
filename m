@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab0C2XVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 19:21:06 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:44091 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754543Ab0C2XU4 (ORCPT
+	id S1754704Ab0C2XVE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:21:04 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:54170 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754220Ab0C2XUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 19:20:56 -0400
+	Mon, 29 Mar 2010 19:20:50 -0400
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -19,9 +19,9 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
        Gary Hade <garyhade@us.ibm.com>,
        Natalie Protasevich <protasnb@gmail.com>,
        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [PATCH 12/14] x86 ioapic: Simplify probe_nr_irqs_gsi.
-Date: Mon, 29 Mar 2010 16:20:23 -0700
-Message-Id: <1269904825-27462-12-git-send-email-ebiederm@xmission.com>
+Subject: [PATCH 07/14] x86 ioapic: Fix the types of gsi values
+Date: Mon, 29 Mar 2010 16:20:18 -0700
+Message-Id: <1269904825-27462-7-git-send-email-ebiederm@xmission.com>
 X-Mailer: git-send-email 1.6.5.2.143.g8cc62
 In-Reply-To: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
 References: <m1r5n2wwah.fsf_-_@fess.ebiederm.org>
@@ -36,106 +36,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Use the global gsi_end value now that all ioapics have
-valid gsi numbers instead of a combination of acpi_probe_gsi
-and walking all of the ioapics and couting their number of
-entries by hand if acpi_probe_gsi gave us an answer we did
-not like.
+This patches fixes the types of gsi_base and gsi_end values in
+struct mp_ioapic_gsi, and the gsi parameter of mp_find_ioapic
+and mp_find_ioapic_pin
 
-This fixes a small bug in probe_nr_irqs_gsi.  Previously
-acpi_probe_gsi unnecessarily added 1 to the maximum
-gsi_end value.  gsi_end is already one past the end of
-the number of gsi's so the additional increment was
-superfluous.
+A gsi is cannonically a u32, not an int.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 ---
- arch/x86/include/asm/mpspec.h  |    6 ------
- arch/x86/kernel/acpi/boot.c    |   23 -----------------------
- arch/x86/kernel/apic/io_apic.c |   17 +++--------------
- 3 files changed, 3 insertions(+), 43 deletions(-)
+ arch/x86/include/asm/io_apic.h |   10 +++++-----
+ arch/x86/kernel/apic/io_apic.c |    4 ++--
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index 29994f0..c82868e 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -105,12 +105,6 @@ extern void mp_config_acpi_legacy_irqs(void);
- struct device;
- extern int mp_register_gsi(struct device *dev, u32 gsi, int edge_level,
- 				 int active_high_low);
--extern int acpi_probe_gsi(void);
--#else /* !CONFIG_ACPI: */
--static inline int acpi_probe_gsi(void)
--{
--	return 0;
--}
- #endif /* CONFIG_ACPI */
+diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+index 35832a0..feeaf0d 100644
+--- a/arch/x86/include/asm/io_apic.h
++++ b/arch/x86/include/asm/io_apic.h
+@@ -180,12 +180,12 @@ extern void ioapic_write_entry(int apic, int pin,
+ extern void setup_ioapic_ids_from_mpc(void);
  
- #define PHYSID_ARRAY_SIZE	BITS_TO_LONGS(MAX_APICS)
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 9c48e99..0e514a1 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -875,29 +875,6 @@ static int __init acpi_parse_madt_lapic_entries(void)
- extern int es7000_plat;
- #endif
+ struct mp_ioapic_gsi{
+-	int gsi_base;
+-	int gsi_end;
++	u32 gsi_base;
++	u32 gsi_end;
+ };
+ extern struct mp_ioapic_gsi  mp_gsi_routing[];
+-int mp_find_ioapic(int gsi);
+-int mp_find_ioapic_pin(int ioapic, int gsi);
++int mp_find_ioapic(u32 gsi);
++int mp_find_ioapic_pin(int ioapic, u32 gsi);
+ void __init mp_register_ioapic(int id, u32 address, u32 gsi_base);
+ extern void __init pre_init_apic_IRQ0(void);
  
--int __init acpi_probe_gsi(void)
--{
--	int idx;
--	int gsi;
--	int max_gsi = 0;
--
--	if (acpi_disabled)
--		return 0;
--
--	if (!acpi_ioapic)
--		return 0;
--
--	max_gsi = 0;
--	for (idx = 0; idx < nr_ioapics; idx++) {
--		gsi = mp_gsi_routing[idx].gsi_end;
--
--		if (gsi > max_gsi)
--			max_gsi = gsi;
--	}
--
--	return max_gsi + 1;
--}
--
- static void assign_to_mp_irq(struct mpc_intsrc *m,
- 				    struct mpc_intsrc *mp_irq)
- {
+@@ -197,7 +197,7 @@ static const int timer_through_8259 = 0;
+ static inline void ioapic_init_mappings(void)	{ }
+ static inline void ioapic_insert_resources(void) { }
+ static inline void probe_nr_irqs_gsi(void)	{ }
+-static inline int mp_find_ioapic(int gsi) { return 0; }
++static inline int mp_find_ioapic(u32 gsi) { return 0; }
+ 
+ struct io_apic_irq_attr;
+ static inline int io_apic_set_pci_routing(struct device *dev, int irq,
 diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 996cf8f..b57b7a3 100644
+index 54ba1f7..32cea57 100644
 --- a/arch/x86/kernel/apic/io_apic.c
 +++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3837,22 +3837,11 @@ int __init io_apic_get_redir_entries (int ioapic)
- 
- void __init probe_nr_irqs_gsi(void)
- {
--	int nr = 0;
-+	int nr;
- 
--	nr = acpi_probe_gsi();
--	if (nr > nr_irqs_gsi) {
-+	nr = gsi_end;
-+	if (nr > nr_irqs_gsi)
- 		nr_irqs_gsi = nr;
--	} else {
--		/* for acpi=off or acpi is not compiled in */
--		int idx;
--
--		nr = 0;
--		for (idx = 0; idx < nr_ioapics; idx++)
--			nr += io_apic_get_redir_entries(idx) + 1;
--
--		if (nr > nr_irqs_gsi)
--			nr_irqs_gsi = nr;
--	}
- 
- 	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
+@@ -4234,7 +4234,7 @@ void __init ioapic_insert_resources(void)
+ 	}
  }
+ 
+-int mp_find_ioapic(int gsi)
++int mp_find_ioapic(u32 gsi)
+ {
+ 	int i = 0;
+ 
+@@ -4249,7 +4249,7 @@ int mp_find_ioapic(int gsi)
+ 	return -1;
+ }
+ 
+-int mp_find_ioapic_pin(int ioapic, int gsi)
++int mp_find_ioapic_pin(int ioapic, u32 gsi)
+ {
+ 	if (WARN_ON(ioapic == -1))
+ 		return -1;
 -- 
 1.6.5.2.143.g8cc62
 
