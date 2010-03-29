@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0C2CAn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:00:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56129 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755656Ab0C2CAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:00:41 -0400
-Message-ID: <4BB00A08.2050702@cn.fujitsu.com>
-Date: Mon, 29 Mar 2010 10:01:44 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: Re: [BUG] perf: hard lockup when using perf-sched
-References: <4BA082EC.8030101@cn.fujitsu.com>	 <4BA9A885.9050105@cn.fujitsu.com>	 <1269415964.6530.25.camel@marge.simson.net>	 <1269418671.6465.6.camel@marge.simson.net>	 <4BAB1924.4060304@cn.fujitsu.com>	 <1269509241.8438.30.camel@marge.simson.net> <1269598293.6174.8.camel@marge.simson.net>
-In-Reply-To: <1269598293.6174.8.camel@marge.simson.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1755697Ab0C2CBJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:01:09 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41422
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755629Ab0C2CBE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 22:01:04 -0400
+Date: Sun, 28 Mar 2010 19:01:28 -0700 (PDT)
+Message-Id: <20100328.190128.187555861.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT]: IDE
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100327.192929.35046895.davem@davemloft.net>
+References: <20100327.192929.35046895.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This seems to work, in contrast to everything I tried yesterday.  Not
-> exactly a thing of beauty, but at least it's an option, so...
-> 
-> perf: fix perf sched record forkbomb deadlock
-> 
-> perf sched record can deadlock a box should the holder of handle->data->lock
-> take an interrupt, and then attempt to acquire an rq lock held by a CPU trying
-> to acquire the same lock.  Disable interrupts.
-> 
+From: David Miller <davem@davemloft.net>
+Date: Sat, 27 Mar 2010 19:29:29 -0700 (PDT)
 
-This patch fixes the lockup on my box. Thanks!
-
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Reported-by: Li Zefan <lizf@cn.fujitsu.com>
-> LKML-Reference: <new-submission>
 > 
+> Please pull to get this revert which should fix regressions
+> reported by users with VIA IDE chips.
+
+Linus, if you haven't pulled yet I pushed another revert
+which fixes disappearing slave CDROM devices.
+
+Just FYI...
+
+The following changes since commit b72c40949b0f04728f2993a1434598d3bad094ea:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../jbarnes/pci-2.6
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/ide-2.6.git master
+
+David S. Miller (2):
+      Revert "via82cxxx: workaround h/w bugs"
+      Revert "ide: skip probe if there are no devices on the port (v2)"
+
+ drivers/ide/ide-probe.c |   12 ++-------
+ drivers/ide/via82cxxx.c |   57 -----------------------------------------------
+ 2 files changed, 3 insertions(+), 66 deletions(-)
