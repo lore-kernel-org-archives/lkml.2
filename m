@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab0C2PXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:23:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32673 "EHLO mx1.redhat.com"
+	id S1752536Ab0C2P0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:26:16 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:37337 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753766Ab0C2PW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:22:59 -0400
-Date: Mon, 29 Mar 2010 17:21:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCHv3 0/2] tracing: function graph output for
- preempt/irqs-off tracers
-Message-ID: <20100329152154.GF1715@jolsa>
-References: <1269606723-12439-1-git-send-email-jolsa@redhat.com>
- <1269615239.19685.78.camel@gandalf.stny.rr.com>
- <20100329111701.GC1715@jolsa>
- <1269875347.19685.4492.camel@gandalf.stny.rr.com>
+	id S1751312Ab0C2P0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 11:26:14 -0400
+Date: Mon, 29 Mar 2010 08:25:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-nfs@vger.kernel.org
+Subject: Re: INFO: suspicious rcu_dereference_check()
+Message-ID: <20100329152557.GD2569@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
+ <1269531400.3648.1.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269875347.19685.4492.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1269531400.3648.1.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 11:09:07AM -0400, Steven Rostedt wrote:
-> On Mon, 2010-03-29 at 13:17 +0200, Jiri Olsa wrote:
-> 
-> > >  # echo 0 > /debug/tracing/tracing_enabled
-> > >  # echo 0 > /debug/tracing/option/display-graph
-> > >  # cat /debug/tracing/trace
-> > > 
-> > > # tracer: irqsoff
-> > > irqbalan-2672    0d..2.   55us+: Unknown type 13
-> > > irqbalan-2672    0d.h2.   62us+: Unknown type 13
+On Thu, Mar 25, 2010 at 11:36:40AM -0400, Trond Myklebust wrote:
+> On Thu, 2010-03-25 at 11:48 +0100, Zdenek Kabelac wrote: 
+> > Hi
 > > 
-> > I forgot the max_tr buffer is actually the one displayed,
-> > so it needs reset as well when the display-graph option
-> > is switched on/off.
-> 
-> No! That breaks the rules. It should still show the contents of the
-> buffer even if we disable the trace or option.
-> 
-> 
-> > > I think you can still do the "event" part, without effecting the way the
-> > > function graph outputs normally. I would not have given up on that
-> > > method.  You don't need to worry about it processing other events,
-> > > because when you register it to write as an event, it will only be
-> > > called when a function graph event was found. It will not be processing
-> > > other events. Only when the tracer itself overrides the default writing
-> > > will it do so.
+> > I've enabled rcu correctness for my  todays 2.6.34-rc2 kernel.
 > > 
-> > The events would be called only for TRACE_GRAPH_RET, TRACE_GRAPH_ENT entries and
-> > not for others, thats right.
+> > I'm getting this INFO: from my kvm guest (which uses host's nfs
+> > exported directory.)
+> > This
 > > 
-> > However it's the graph ouput code that outputs other events' text
-> > within "/*" and "*/".
+> > ===================================================
+> > [ INFO: suspicious rcu_dereference_check() usage. ]
+> > ---------------------------------------------------
+> > fs/nfs/delegation.c:348 invoked rcu_dereference_check() without protection!
 > > 
-> > So using the event way, all other events would be printed as normal
-> > events(standard lines not alligned) with the standard header...
-> > not like comments, as they are in the function_graph tracer.
+> > other info that might help us debug this:
 > > 
-> > I thought it'd be good for graph output to stay the same in irqsoff
-> > tracer as in function_graph tracer.. if that is not the concern
-> > the event way would be probably nicer :)
-> 
-> It is, but you missed my point.
-> 
 > > 
-> > I'm sending updated patchset with above 2 fixies right away,
-> > I can do/resend the event way later if needed.
+> > rcu_scheduler_active = 1, debug_locks = 0
+> > 2 locks held by rm/1820:
+> >  #0:  (&sb->s_type->i_mutex_key#13/1){+.+.+.}, at:
+> > [<ffffffff81138e1b>] do_unlinkat+0x9b/0x1c0
+> >  #1:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff81136a76>]
+> > vfs_unlink+0x56/0xf0
+> > 
+> > stack backtrace:
+> > Pid: 1820, comm: rm Not tainted 2.6.34-rc2-00186-ge79a302 #60
+> > Call Trace:
+> >  [<ffffffff810819fb>] lockdep_rcu_dereference+0xbb/0xc0
+> >  [<ffffffffa0228351>] nfs_inode_return_delegation+0x101/0x110 [nfs]
+> >  [<ffffffffa01fd58d>] nfs_unlink+0xad/0x2a0 [nfs]
+> >  [<ffffffff81136aba>] vfs_unlink+0x9a/0xf0
+> >  [<ffffffff81148365>] ? mnt_want_write+0x65/0xb0
+> >  [<ffffffff81138f03>] do_unlinkat+0x183/0x1c0
+> >  [<ffffffff8142b66d>] ? retint_swapgs+0xe/0x13
+> >  [<ffffffff81083985>] ? trace_hardirqs_on_caller+0x155/0x1a0
+> >  [<ffffffff8142a232>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> >  [<ffffffff811390a2>] sys_unlinkat+0x22/0x40
+> >  [<ffffffff81031dc8>] sysenter_dispatch+0x7/0x2c
+> > 
 > 
-> What I'm saying is that we should have _both_!  The event way (when the
-> option is disabled) and the current way when it is not. That is, if the
-> option is enabled, then the function graph can report all the data the
-> way it was. If the option is disabled, don't reset it, but have an
-> "event" print of the trace as well.
+> It is a 100% bogus warning. There are tentative patches floating around
+> to fix the above warning, but they haven't been merged yet.
 > 
-> Understand what I'm trying to ask?
+> In the meantime, please ignore...
 
-ok, so what you mean is:
-- dont clear the max_tr and 
-- add function graph events.
+Did you want to carry these patches, or would you rather that I do so?
 
-So when the tracing_enabled and display-graph are disabled we will
-get events output rather than 'unknown event' output... right?
+(And sorry for the slow response, was on holiday last week.)
 
-jirka
-
-
-> 
-> -- Steve
-> 
-> 
+							Thanx, Paul
