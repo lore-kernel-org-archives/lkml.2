@@ -1,55 +1,608 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab0C2JO1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:14:27 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:61021 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab0C2JOZ (ORCPT
+	id S1752713Ab0C2J0J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:26:09 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:59985 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0C2J0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:14:25 -0400
-Date: Mon, 29 Mar 2010 12:12:41 +0300
-From: Ozgur Yuksel <ozgur.yuksel@oracle.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Yinghai Lu <yinghai@kernel.org>, Dmitry Torokhov <dtor@mail.ru>,
-       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15621] New: BUG: unable to handle kernel
- paging request - comm: pccardd
-Message-ID: <20100329091241.GA3237@oracle.com>
-References: <bug-15621-10286@https.bugzilla.kernel.org/>
- <20100324071229.5c42e213.akpm@linux-foundation.org>
- <201003251051.40453.bjorn.helgaas@hp.com>
- <20100325170138.GA5424@comet.dominikbrodowski.net>
+	Mon, 29 Mar 2010 05:26:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition
+         :content-transfer-encoding:in-reply-to:user-agent;
+        b=KU/hD2hgHG02z8jPunv5cOG3x+uvqhpuQBdIvq/Emj37oRNGIv0MPYZ58PyXaamojk
+         R/t5QOaO5k4oqD698j8Ec3/axRUHpnyJyjpwkYnEARMaNP3jz7qMDWEuaZqAjlCEIzJs
+         o3mGh3J4aaagWIG/w9iFGjShFK51ISjtRZgUY=
+Date: Mon, 29 Mar 2010 12:24:57 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Kenji Toyama <kenji.toyama@gmail.com>
+Cc: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] Staging: wlags49_h2: Fix coding style issues
+Message-ID: <20100329092457.GA15060@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Kenji Toyama <kenji.toyama@gmail.com>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1269836398-13657-1-git-send-email-kenji.toyama@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100325170138.GA5424@comet.dominikbrodowski.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4BB06F0F.00ED:SCFMA4539814,ss=1,fgs=0
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1269836398-13657-1-git-send-email-kenji.toyama@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thu, Mar 25, 2010 at 06:01:38PM +0100 was the time for Dominik Brodowski to speak thus:
-> 
-> On Thu, Mar 25, 2010 at 10:51:39AM -0600, Bjorn Helgaas wrote:
-> > > It looks like the iomem_resource tree got wrecked.  Has anyone been
-> > > changing anything in there lately?
-> > 
-> > My pci=use_crs patches change the contents of the iomem_resource tree,
-> > and it's possible they broke some assumptions PCMCIA was making, so
-> > you might see if "pci=nocrs" makes any difference.  If it does, please
-> > attach an acpidump and the entire dmesg logs with and without that option.
-> 
-> ... and /proc/iomem as well as /proc/ioports , please.
-Using pci=nocrs workarounds the problem. For data collection, since the boot
-does not complete without the w/a - only dmesg is available. 
+On Mon, Mar 29, 2010 at 03:19:58PM +1100, Kenji Toyama wrote:
+> Fixed lots of coding style issues. There is one left warning about
+> CVS markers, but I think it's better to leave as the original author
+> wanted.
+> Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
 
-With pci=nocrs, accessing /proc/iomem gets killed by kernel for some reason.
+Acked-by: Dan Carpenter <error27@gmail.com>
 
-/proc/iomem /proc/ioports and acpidump are provided for 2.6.31-20-generic-pae
-kernel for convenience / comparison.
+regards,
+dan carpenter
+
+> ---
+>  drivers/staging/wlags49_h2/dhf.c |  372 +++++++++++++++++++++-----------------
+>  1 files changed, 203 insertions(+), 169 deletions(-)
+> 
+> diff --git a/drivers/staging/wlags49_h2/dhf.c b/drivers/staging/wlags49_h2/dhf.c
+> index b6f5834..59dd7b2 100644
+> --- a/drivers/staging/wlags49_h2/dhf.c
+> +++ b/drivers/staging/wlags49_h2/dhf.c
+> @@ -1,21 +1,19 @@
+> -
+> -//   vim:tw=110:ts=4:
+> -/**************************************************************************************************************
+> +/*******************************************************************************
+>  *
+>  * FILE   :	DHF.C
+>  *
+>  * DATE	:	$Date: 2004/07/19 08:16:14 $   $Revision: 1.2 $
+> -* Original	:	2004/05/28 14:05:34    Revision: 1.36      Tag: hcf7_t20040602_01
+> -* Original	:	2004/05/11 06:22:57    Revision: 1.32      Tag: hcf7_t7_20040513_01
+> -* Original	:	2004/04/15 09:24:42    Revision: 1.28      Tag: hcf7_t7_20040415_01
+> -* Original	:	2004/04/08 15:18:16    Revision: 1.27      Tag: t7_20040413_01
+> -* Original	:	2004/04/01 15:32:55    Revision: 1.25      Tag: t7_20040401_01
+> -* Original	:	2004/03/10 15:39:28    Revision: 1.21      Tag: t20040310_01
+> -* Original	:	2004/03/04 11:03:37    Revision: 1.19      Tag: t20040304_01
+> -* Original	:	2004/03/02 09:27:11    Revision: 1.17      Tag: t20040302_03
+> -* Original	:	2004/02/24 13:00:28    Revision: 1.15      Tag: t20040224_01
+> -* Original	:	2004/02/19 10:57:28    Revision: 1.14      Tag: t20040219_01
+> -* Original	:	2003/11/27 09:00:09    Revision: 1.3      Tag: t20021216_01
+> +* Original	: 2004/05/28 14:05:34  Revision: 1.36   Tag: hcf7_t20040602_01
+> +* Original	: 2004/05/11 06:22:57  Revision: 1.32   Tag: hcf7_t7_20040513_01
+> +* Original	: 2004/04/15 09:24:42  Revision: 1.28   Tag: hcf7_t7_20040415_01
+> +* Original	: 2004/04/08 15:18:16  Revision: 1.27   Tag: t7_20040413_01
+> +* Original	: 2004/04/01 15:32:55  Revision: 1.25   Tag: t7_20040401_01
+> +* Original	: 2004/03/10 15:39:28  Revision: 1.21   Tag: t20040310_01
+> +* Original	: 2004/03/04 11:03:37  Revision: 1.19   Tag: t20040304_01
+> +* Original	: 2004/03/02 09:27:11  Revision: 1.17   Tag: t20040302_03
+> +* Original	: 2004/02/24 13:00:28  Revision: 1.15   Tag: t20040224_01
+> +* Original	: 2004/02/19 10:57:28  Revision: 1.14   Tag: t20040219_01
+> +* Original	: 2003/11/27 09:00:09  Revision: 1.3    Tag: t20021216_01
+>  *
+>  * AUTHOR :	John Meertens
+>  *			Nico Valster
+> @@ -35,16 +33,18 @@
+>  *	in WaveLAN/IEEE NICs. To achieve this DHF makes use of the WaveLAN/IEEE
+>  *	WCI as implemented by the HCF-module.
+>  *
+> -*	Download to non-volatile memory is used to update a WaveLAN/IEEE NIC to new
+> -*	firmware. Normally this will be an upgrade to newer firmware, although
+> -*	downgrading to older firmware is possible too.
+> +*	Download to non-volatile memory is used to update a WaveLAN/IEEE NIC to
+> +*	new firmware. Normally this will be an upgrade to newer firmware,
+> +*	although downgrading to older firmware is possible too.
+>  *
+>  * Note: relative to Asserts, the following can be observed:
+> -*	Since the IFB is not known inside the routine, the macro HCFASSERT is replaced with MMDASSERT.
+> -*	Also the line number reported in the assert is raised by FILE_NAME_OFFSET (10000) to discriminate the
+> -*	DHF Asserts from HCF and MMD asserts.
+> +*	Since the IFB is not known inside the routine, the macro HCFASSERT is
+> +*	replaced with MMDASSERT.
+> +*	Also the line number reported in the assert is raised by
+> +*	FILE_NAME_OFFSET (10000) to discriminate the DHF Asserts from HCF and
+> +*	MMD asserts.
+>  *
+> -***************************************************************************************************************
+> +********************************************************************************
+>  *
+>  *
+>  * SOFTWARE LICENSE
+> @@ -54,8 +54,8 @@
+>  * software indicates your acceptance of these terms and conditions.  If you do
+>  * not agree with these terms and conditions, do not use the software.
+>  *
+> -* COPYRIGHT © 1999 - 2000 by Lucent Technologies.	All Rights Reserved
+> -* COPYRIGHT © 2001 - 2004	by Agere Systems Inc.	All Rights Reserved
+> +* COPYRIGHT (C) 1999 - 2000 by Lucent Technologies.	All Rights Reserved
+> +* COPYRIGHT (C) 2001 - 2004	by Agere Systems Inc.	All Rights Reserved
+>  * All rights reserved.
+>  *
+>  * Redistribution and use in source or binary forms, with or without
+> @@ -90,14 +90,14 @@
+>  * DAMAGE.
+>  *
+>  *
+> -**************************************************************************************************************/
+> +*******************************************************************************/
+>  
+>  #include "hcf.h"
+>  #include "hcfdef.h"
+>  #include "dhf.h"
+>  #include "mmd.h"
+>  
+> -//to distinguish MMD from HCF asserts by means of line number
+> +/* to distinguish MMD from HCF asserts by means of line number */
+>  #undef	FILE_NAME_OFFSET
+>  #define FILE_NAME_OFFSET MMD_FILE_NAME_OFFSET
+>  /*-----------------------------------------------------------------------------
+> @@ -106,76 +106,93 @@
+>   *
+>   *---------------------------------------------------------------------------*/
+>  
+> -//                    12345678901234
+> +/*                    12345678901234 */
+>  char signature[14] = "FUPU7D37dhfwci";
+>  
+> -//The binary download function "relocates" the image using constructions like:
+> -//	fw->identity = (CFG_IDENTITY_STRCT FAR *)((char FAR *)fw->identity + (hcf_32)fw );
+> -//under some of the memory models under MSVC 1.52 these constructions degrade to 16-bits pointer arithmetic.
+> -//fw->identity is limited, such that adding it to fw, does not need to carry over from offset to segment.
+> -//However the segment is not set at all.
+> -//As a workaround the PSEUDO_CHARP macro is introduced which is a char pointer except for MSVC 1.52, in
+> -//which case we know that a 32-bit quantity is adequate as a pointer.
+> -//Note that other platforms may experience comparable problems when using the binary download feature.
+> -#if defined(_MSC_VER) && _MSC_VER ==  800				// Visual C++ 1.5
+> +/*
+> + * The binary download function "relocates" the image using constructions like:
+> + * fw->identity=(CFG_IDENTITY_STRCT FAR *)((char FAR *)fw->identity+(hcf_32)fw);
+> + * under some of the memory models under MSVC 1.52 these constructions degrade
+> + * to 16-bits pointer arithmetic.
+> + * fw->identity is limited, such that adding it to fw, does not need to carry
+> + * over from offset to segment.
+> + * However the segment is not set at all.
+> + * As a workaround the PSEUDO_CHARP macro is introduced which is a char pointer
+> + * except for MSVC 1.52, in which case we know that a 32-bit quantity is
+> + * adequate as a pointer.
+> + * Note that other platforms may experience comparable problems when using the
+> + * binary download feature.
+> + */
+> +#if defined(_MSC_VER) && _MSC_VER ==  800	/* Visual C++ 1.5 */
+>  #define PSEUDO_CHARP hcf_32
+>  #else
+> -#define PSEUDO_CHARP hcf_8*
+> +#define PSEUDO_CHARP (hcf_8 *)
+>  #endif
+>  
+>  /*-----------------------------------------------------------------------------
+>   *
+>   * LTV-records retrieved from the NIC to:
+>   *	- determine compatibility between NIC and image
+> - *	- ((setup the buffer size dynamically for non-volatile download (see note below) ))
+> + *	- setup the buffer size dynamically for non-volatile
+> + *	download (see note below)
+>   *	- supply plugging information contained in the PDA (H-I only)
+>   *
+>   *---------------------------------------------------------------------------*/
+>  
+> -// for USB/H1 we needed a smaller value than the CFG_DL_BUF_STRCT reported 8192
+> -// for the time being it seems simpler to always use 2000 for USB/H1 as well as all other cases rather than
+> -// using the "fixed anyway" CFG_DL_BUF_STRCT.
+> +/*
+> + * for USB/H1 we needed a smaller value than the CFG_DL_BUF_STRCT reported 8192
+> + * for the time being it seems simpler to always use 2000 for USB/H1 as well as
+> + * all other cases rather than using the "fixed anyway" CFG_DL_BUF_STRCT.
+> + */
+>  #define DL_SIZE 2000
+>  
+> -//CFG_IDENTITY_STRCT   	pri_identity	= { LOF(CFG_IDENTITY_STRCT), CFG_PRI_IDENTITY };
+> -CFG_SUP_RANGE_STRCT 	mfi_sup        	= { LOF(CFG_SUP_RANGE_STRCT), CFG_NIC_MFI_SUP_RANGE };
+> -CFG_SUP_RANGE_STRCT 	cfi_sup        	= { LOF(CFG_SUP_RANGE_STRCT), CFG_NIC_CFI_SUP_RANGE };
+> -/* Note: could be used rather than the above explained and defined DL_SIZE if need arises
+> - * CFG_DL_BUF_STRCT    	dl_buf         	= { LOF(CFG_DL_BUF_STRCT), CFG_DL_BUF };
+> -*/
+> +/*CFG_IDENTITY_STRCT pri_identity = { LOF(CFG_IDENTITY_STRCT),
+> +				CFG_PRI_IDENTITY }; */
+> +CFG_SUP_RANGE_STRCT  mfi_sup = { LOF(CFG_SUP_RANGE_STRCT),
+> +				CFG_NIC_MFI_SUP_RANGE };
+> +CFG_SUP_RANGE_STRCT  cfi_sup = { LOF(CFG_SUP_RANGE_STRCT),
+> +				CFG_NIC_CFI_SUP_RANGE };
+> +/* Note: could be used rather than the above explained and defined DL_SIZE if
+> + * need arises
+> + * CFG_DL_BUF_STRCT dl_buf = { LOF(CFG_DL_BUF_STRCT),
+> + *				CFG_DL_BUF };
+> + */
+>  
+>  /*-----------------------------------------------------------------------------
+>   * Array ltv_info stores NIC information (in the form of LTV-records)
+>   * needed for download. A NULL record indicates the end of the array.
+>   *---------------------------------------------------------------------------*/
+>  
+> -/* The LTV_INFO_STRUCT is needed to save the sizes of the structs, because after a GET_INFO()
+> - * the len field is changed to the real len of the RID by the called routine.
+> - * This is only relevant if the DHF used without reloading the driver/utility.
+> +/*
+> + * The LTV_INFO_STRUCT is needed to save the sizes of the structs, because after
+> + * a GET_INFO() the len field is changed to the real len of the RID by the
+> + * called routine. This is only relevant if the DHF used without reloading the
+> + * driver/utility.
+>   */
+>  
+>  LTV_INFO_STRUCT ltv_info[] = {
+>  	{ (LTVP)&mfi_sup,			LOF(CFG_SUP_RANGE_STRCT) } ,
+>  	{ (LTVP)&cfi_sup,			LOF(CFG_SUP_RANGE_STRCT) } ,
+> -	{ (LTVP) NULL, 				0 }
+> +	{ (LTVP) NULL,				0 }
+>  };
+>  
+>  
+> -/***********************************************************************************************************/
+> -/***************************************  PROTOTYPES  ******************************************************/
+> -/***********************************************************************************************************/
+> -static int				check_comp_fw( memimage *fw );
+> +/******************************************************************************/
+> +/***************************************  PROTOTYPES  *************************/
+> +/******************************************************************************/
+> +static int check_comp_fw(memimage *fw);
+>  
+>  
+> -/************************************************************************************************************
+> +/*******************************************************************************
+>  *.SUBMODULE		int check_comp_fw( memimage *fw )
+> -*.PURPOSE		Checks compatibility of CFI and MFI, NIC as supplier, station/AP firmware image as supplier.
+> +*.PURPOSE		Checks compatibility of CFI and MFI, NIC as supplier,
+> +			station/AP firmware image as supplier.
+>  *
+>  *.ARGUMENTS
+> -*   fw         	F/W image to be downloaded
+> +*   fw         F/W image to be downloaded
+>  *
+>  *.RETURNS
+> -*   HFC_SUCCESS      	- firmware OK
+> +*   HFC_SUCCESS     - firmware OK
+>  *   DHF_ERR_INCOMP_FW
+>  *
+>  *.DESCRIPTION
+> @@ -183,50 +200,50 @@ static int				check_comp_fw( memimage *fw );
+>  *   retrieved from the card which is currently inserted to check whether the
+>  *   station firmware image to be downloaded is compatible.
+>  *.ENDDOC				END DOCUMENTATION
+> -*************************************************************************************************************/
+> +*******************************************************************************/
+>  int
+> -check_comp_fw( memimage *fw )
+> +check_comp_fw(memimage *fw)
+>  {
+> -CFG_RANGE20_STRCT  		*p;
+> -int   					rc = HCF_SUCCESS;
+> -CFG_RANGE_SPEC_STRCT*	i;
+> -
+> -	switch( fw->identity->typ ) {
+> -	  case CFG_FW_IDENTITY:				//Station F/W
+> -	  case COMP_ID_FW_AP_FAKE:			//;?is this useful (used to be:  CFG_AP_IDENTITY)
+> -		break;
+> -	  default:
+> -		MMDASSERT( DO_ASSERT, fw->identity->typ ) 	//unknown/unsupported firmware_type:
+> +CFG_RANGE20_STRCT  *p;
+> +int	rc = HCF_SUCCESS;
+> +CFG_RANGE_SPEC_STRCT *i;
+> +
+> +	switch (fw->identity->typ) {
+> +	case CFG_FW_IDENTITY:		/* Station F/W */
+> +	case COMP_ID_FW_AP_FAKE:	/* ;? is this useful? */
+> +		break;                  /* (used to be: CFG_AP_IDENTITY) */
+> +	default:
+> +		MMDASSERT(DO_ASSERT, fw->identity->typ) /* unknown/unsupported
+> +								firmware_type:*/
+>  		rc = DHF_ERR_INCOMP_FW;
+> -		return rc; /* ;? how useful is this anyway,
+> -					*  till that is sorted out might as well violate my own single exit principle
+> -					*/
+> +		return rc;      /* ;? how useful is this anyway,
+> +				 * till that is sorted out might as well violate
+> +				 * my own single exit principle */
+>  	}
+>  	p = fw->compat;
+>  	i = NULL;
+> -	while( p->len && i == NULL ) {					// check the MFI ranges
+> -		if ( p->typ  == CFG_MFI_ACT_RANGES_STA ) {
+> -			i = mmd_check_comp( (void*)p, &mfi_sup );
+> -		}
+> +	while (p->len && i == NULL) {		/* check the MFI ranges */
+> +		if (p->typ  == CFG_MFI_ACT_RANGES_STA)
+> +			i = mmd_check_comp((void *)p, &mfi_sup);
+>  		p++;
+>  	}
+> -	MMDASSERT( i, 0 )	//MFI: NIC Supplier not compatible with F/W image Actor
+> -	if ( i ) {
+> +	MMDASSERT(i, 0) /* MFI: NIC Supplier not compatible with
+> +			 * F/W image Actor */
+> +	if (i) {
+>  		p = fw->compat;
+>  		i = NULL;
+> -		while ( p->len && i == NULL ) {			// check the CFI ranges
+> -			if ( p->typ  == CFG_CFI_ACT_RANGES_STA ) {
+> -				 i = mmd_check_comp( (void*)p, &cfi_sup );
+> -			}
+> +		while (p->len && i == NULL) {	/* check the CFI ranges */
+> +			if (p->typ == CFG_CFI_ACT_RANGES_STA)
+> +				i = mmd_check_comp((void *)p, &cfi_sup);
+>  			p++;
+>  		}
+> -		MMDASSERT( i, 0 )	//CFI: NIC Supplier not compatible with F/W image Actor
+> +		MMDASSERT(i, 0)	/*CFI: NIC Supplier not compatible with
+> +				 * F/W image Actor*/
+>  	}
+> -	if ( i == NULL ) {
+> +	if (i == NULL)
+>  		rc = DHF_ERR_INCOMP_FW;
+> -	}
+>  	return rc;
+> -} // check_comp_fw
+> +} /* check_comp_fw */
+>  
+>  
+>  
+> @@ -240,24 +257,24 @@ CFG_RANGE_SPEC_STRCT*	i;
+>  
+>  
+>  
+> -/*************************************************************************************************************
+> -*
+> -*.MODULE 		int dhf_download_binary( void *ifbp, memimage *fw )
+> -*.PURPOSE		Downloads a complete (primary, station, or access point) firmware image to the NIC.
+> +/*******************************************************************************
+> +*.MODULE		int dhf_download_binary( void *ifbp, memimage *fw )
+> +*.PURPOSE		Downloads a complete (primary, station, or access point)
+> +*			firmware image to the NIC.
+>  *
+>  *.ARGUMENTS
+>  *	ifbp		address of the Interface Block
+> -*   fw         	F/W image to be downloaded
+> +*	fw		F/W image to be downloaded
+>  *
+>  *.RETURNS
+> -*   HCF_SUCCESS         	- download completed successfully.
+> -*   DHF_ERR_INCOMP_FW		- firmware not compatible
+> +*   HCF_SUCCESS		- download completed successfully.
+> +*   DHF_ERR_INCOMP_FW	- firmware not compatible
+>  *
+>  *.DESCRIPTION
+>  *   Initialize global variables
+>  *   Connect to the DHF
+> -*   Check the compatibility of the image (For primary firmware images it is checked first
+> -* 	whether download is necessary).
+> +*   Check the compatibility of the image (For primary firmware images it is
+> +*   checked first whether download is necessary).
+>  *   If everything's download the firmware.
+>  *   Disconnect from the DHF.
+>  *
+> @@ -265,52 +282,60 @@ CFG_RANGE_SPEC_STRCT*	i;
+>  *.DIAGRAM
+>  *
+>  *.NOTICE:
+> -	MMDASSERT is unacceptable because some drivers call dhf_download_binary before hcf_connect
+> +	MMDASSERT is unacceptable because some drivers call dhf_download_binary
+> +	before hcf_connect
+>  
+>  * The old comment was:
+>  *.ENDDOC				END DOCUMENTATION
+> -*************************************************************************************************************/
+> +*******************************************************************************/
+>  int
+> -dhf_download_binary( memimage *fw )
+> +dhf_download_binary(memimage *fw)
+>  {
+> -int 			rc = HCF_SUCCESS;
+> -CFG_PROG_STRCT 	*p;
+> -int				i;
+> -
+> -	//validate the image
+> -	for ( i = 0; i < sizeof(signature) && fw->signature[i] == signature[i]; i++ ) /*NOP*/;
+> -	if ( i != sizeof(signature) 		||
+> -		 fw->signature[i] != 0x01   	||
+> -		 //test for Little/Big Endian Binary flag
+> -		 fw->signature[i+1] != ( /*HCF_BIG_ENDIAN ? 'B' : */ 'L' ) ) rc = DHF_ERR_INCOMP_FW;
+> -	else {					//Little Endian Binary format
+> -		fw->codep    = (CFG_PROG_STRCT FAR *)((PSEUDO_CHARP)fw->codep + (hcf_32)fw );
+> -		fw->identity = (CFG_IDENTITY_STRCT FAR *)((PSEUDO_CHARP)fw->identity + (hcf_32)fw );
+> -		fw->compat   = (CFG_RANGE20_STRCT FAR *)((PSEUDO_CHARP)fw->compat + (hcf_32)fw );
+> -		for ( i = 0; fw->p[i]; i++ ) fw->p[i] = ((PSEUDO_CHARP)fw->p[i] + (hcf_32)fw );
+> +int	rc = HCF_SUCCESS;
+> +CFG_PROG_STRCT	*p;
+> +int	i;
+> +
+> +	/* validate the image */
+> +	for (i = 0; i < sizeof(signature) &&
+> +		fw->signature[i] == signature[i]; i++)
+> +		;/*NOP*/
+> +	if (i != sizeof(signature)		||
+> +		fw->signature[i] != 0x01	||
+> +		/* test for Little/Big Endian Binary flag */
+> +		fw->signature[i+1] != (/*HCF_BIG_ENDIAN ? 'B' : */ 'L'))
+> +		rc = DHF_ERR_INCOMP_FW;
+> +	else {				/* Little Endian Binary format */
+> +		fw->codep    = (CFG_PROG_STRCT FAR*)(
+> +			(PSEUDO_CHARP)fw->codep + (hcf_32)fw);
+> +		fw->identity = (CFG_IDENTITY_STRCT FAR*)(
+> +			(PSEUDO_CHARP)fw->identity + (hcf_32)fw);
+> +		fw->compat   = (CFG_RANGE20_STRCT FAR*)(
+> +			(PSEUDO_CHARP)fw->compat + (hcf_32)fw);
+> +		for (i = 0; fw->p[i]; i++)
+> +			fw->p[i] = ((PSEUDO_CHARP)fw->p[i] + (hcf_32)fw);
+>  		p = fw->codep;
+> -		while ( p->len ) {
+> +		while (p->len) {
+>  			p->host_addr = (PSEUDO_CHARP)p->host_addr + (hcf_32)fw;
+>  			p++;
+>  		}
+>  	}
+>  	return rc;
+> -}   // dhf_download_binary
+> +}   /* dhf_download_binary */
+>  
+>  
+> -/*************************************************************************************************************
+> -*
+> -*.MODULE 		int dhf_download_fw( void *ifbp, memimage *fw )
+> -*.PURPOSE		Downloads a complete (primary or tertiary) firmware image to the NIC.
+> +/*******************************************************************************
+> +*.MODULE		int dhf_download_fw( void *ifbp, memimage *fw )
+> +*.PURPOSE		Downloads a complete (primary or tertiary) firmware
+> +*			image to the NIC.
+>  *
+>  *.ARGUMENTS
+>  *	ifbp		address of the Interface Block
+> -*   fw     		F/W image to be downloaded
+> +*	fw		F/W image to be downloaded
+>  *
+>  *.RETURNS
+> -*	HCF_SUCCESS        	- download completed successfully.
+> -*	HCF_ERR_NO_NIC     	- no NIC present
+> -*	DHF_ERR_INCOMP_FW 	- firmware not compatible
+> +*	HCF_SUCCESS		- download completed successfully.
+> +*	HCF_ERR_NO_NIC		- no NIC present
+> +*	DHF_ERR_INCOMP_FW	- firmware not compatible
+>  *
+>  *.DESCRIPTION
+>  * - check the signature of the image
+> @@ -320,71 +345,80 @@ int				i;
+>  *	  -	Controller - Firmware I/F
+>  *!! - if necessary ( i.e. H-I) get the PDA contents from the NIC
+>  * - check the compatibility of the MFI and CFI of the NIC with the F/W image
+> -*	Note: the Primary F/W compatibility is only relevant for the "running" HCF and is already verified in
+> -*	hcf_connect
+> +*	Note: the Primary F/W compatibility is only relevant for the "running"
+> +*	HCF and is already verified in hcf_connect
+>  *!! -	if necessary ( i.e. H-I)
+>  *!!	  -	verify the sumcheck of the PDA
+>  *!!	  -	plug the image (based on the PDA and the default plug records)
+>  * - loop over all the download LTVs in the image which consists of a sequence of
+>  *	  - CFG_PROG_VOLATILE/CFG_PROG_NON_VOLATILE
+> -*	  - 1 or more sequences of CFG_PROG_ADDR, CFG_PROG_DATA,....,CFG_PROG_DATA
+> -*	  -	CFG_PROG_STOP
+> +*	  - 1 or more sequences of CFG_PROG_ADDR, CFG_PROG_DATA, ....,
+> +*		CFG_PROG_DATA, CFG_PROG_STOP
+>  *
+>  *.DIAGRAM
+>  *
+>  *.NOTICE
+>  * The old comment was:
+> -*	// Download primary firmware if necessary and allowed. This is done silently (without telling
+> -*	// the user) and only if the firmware in the download image is newer than the firmware in the
+> -*	// card.  In Major version 4 of the primary firmware functions of Hermes and Shark were
+> -*	// combined. Prior to that two separate versions existed. We only have to download primary
+> -*	// firmware if major version of primary firmware in the NIC < 4.
+> -*	//		download = pri_identity.version_major < 4;
+> -*	//		if ( download ) {
+> -*	//			rc = check_comp_primary( fw );
+> -*	//		}
+> -* It is my understanding that Pri Variant 1 must be updated by Pri Variant 2. The test on
+> -* major version < 4 should amount to the same result but be "principally" less correct
+> -* In deliberation with the Architecture team, it was decided that this upgrade for old H-I
+> -* NICs, is an aspect which belongs on the WSU level not on the DHF level
+> +*	Download primary firmware if necessary and allowed. This is done
+> +*	silently (without telling the user) and only if the firmware in the
+> +*	download image is newer than the firmware in the card.  In Major
+> +*	version 4 of the primary firmware functions of Hermes and Shark were
+> +*	combined. Prior to that two separate versions existed. We only have to
+> +*	download primary firmware if major version of primary firmware in the
+> +*	NIC < 4.
+> +*			download = pri_identity.version_major < 4;
+> +*			if ( download ) {
+> +*				rc = check_comp_primary( fw );
+> +*			}
+> +* It is my understanding that Pri Variant 1 must be updated by Pri Variant 2.
+> +* The test on major version < 4 should amount to the same result but be
+> +* "principally" less correct
+> +* In deliberation with the Architecture team, it was decided that this upgrade
+> +* for old H-I NICs, is an aspect which belongs on the WSU level not on the DHF
+> +* level
+>  *
+>  *.ENDDOC				END DOCUMENTATION
+> -*************************************************************************************************************/
+> +*******************************************************************************/
+>  int
+> -dhf_download_fw( void *ifbp, memimage *fw )
+> +dhf_download_fw(void *ifbp, memimage *fw)
+>  {
+> -int 				rc = HCF_SUCCESS;
+> +int	rc = HCF_SUCCESS;
+>  LTV_INFO_STRUCT_PTR pp = ltv_info;
+> -CFG_PROG_STRCT 		*p = fw->codep;
+> -LTVP 				ltvp;
+> -int					i;
+> -
+> -	MMDASSERT( fw != NULL, 0 )
+> -	//validate the image
+> -	for ( i = 0; i < sizeof(signature) && fw->signature[i] == signature[i]; i++ ) /*NOP*/;
+> -	if ( i != sizeof(signature) 		||
+> -		 fw->signature[i] != 0x01		||
+> -		 //check for binary image
+> -		 ( fw->signature[i+1] != 'C' && fw->signature[i+1] != ( /*HCF_BIG_ENDIAN ? 'B' : */ 'L' ) ) )
+> -		 rc = DHF_ERR_INCOMP_FW;
+> +CFG_PROG_STRCT		*p = fw->codep;
+> +LTVP	ltvp;
+> +int	i;
+> +
+> +	MMDASSERT(fw != NULL, 0)
+> +	/* validate the image */
+> +	for (i = 0; i < sizeof(signature) &&
+> +		fw->signature[i] == signature[i]; i++)
+> +		; /*NOP*/
+> +	if (i != sizeof(signature)		||
+> +		fw->signature[i] != 0x01	||
+> +		/* check for binary image*/
+> +		(fw->signature[i+1] != 'C' &&
+> +		 fw->signature[i+1] != (/*HCF_BIG_ENDIAN ? 'B' : */'L')))
+> +		rc = DHF_ERR_INCOMP_FW;
+>  
+> -//	Retrieve all information needed for download from the NIC
+> -	while ( ( rc == HCF_SUCCESS ) && ( ( ltvp = pp->ltvp) != NULL ) ) {
+> -		ltvp->len = pp++->len;	// Set len to original len. This len is changed to real len by GET_INFO()
+> -		rc = GET_INFO( ltvp );
+> -		MMDASSERT( rc == HCF_SUCCESS, rc )
+> -		MMDASSERT( rc == HCF_SUCCESS, ltvp->typ )
+> -		MMDASSERT( rc == HCF_SUCCESS, ltvp->len )
+> +/*	Retrieve all information needed for download from the NIC */
+> +	while ((rc == HCF_SUCCESS) && ((ltvp = pp->ltvp) != NULL)) {
+> +		ltvp->len = pp++->len; /* Set len to original len. This len is
+> +					* changed to real len by GET_INFO() */
+> +		rc = GET_INFO(ltvp);
+> +		MMDASSERT(rc == HCF_SUCCESS, rc)
+> +		MMDASSERT(rc == HCF_SUCCESS, ltvp->typ)
+> +		MMDASSERT(rc == HCF_SUCCESS, ltvp->len)
+>  	}
+> -	if ( rc == HCF_SUCCESS ) rc = check_comp_fw( fw );
+> -	if ( rc == HCF_SUCCESS ) {
+> -		while ( rc == HCF_SUCCESS && p->len ) {
+> -			rc = PUT_INFO( p );
+> +	if (rc == HCF_SUCCESS)
+> +		rc = check_comp_fw(fw);
+> +	if (rc == HCF_SUCCESS) {
+> +		while (rc == HCF_SUCCESS && p->len) {
+> +			rc = PUT_INFO(p);
+>  			p++;
+>  		}
+>  	}
+> -	MMDASSERT( rc == HCF_SUCCESS, rc )
+> +	MMDASSERT(rc == HCF_SUCCESS, rc)
+>  	return rc;
+> -}   // dhf_download_fw
+> +}   /* dhf_download_fw */
+>  
+>  
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
