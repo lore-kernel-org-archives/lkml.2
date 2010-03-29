@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab0C2RDO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:03:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51412 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab0C2RDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:03:13 -0400
-Date: Mon, 29 Mar 2010 19:02:59 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@osdl.org>, linux-kernel@vger.kernel.org,
-       Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC,PATCH 2/2] perf, x86: Utilize the LBRs for machine/oops
- debugging
-Message-ID: <20100329170259.GA15083@elte.hu>
-References: <20100329122021.765109681@chello.nl>
- <20100329122138.848413757@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329122138.848413757@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+	id S1754261Ab0C2RFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:05:50 -0400
+Received: from ppa03.Princeton.EDU ([128.112.128.214]:37565 "EHLO
+	ppa03.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab0C2RFt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 13:05:49 -0400
+Date: Mon, 29 Mar 2010 13:04:18 -0400
+From: Yury Polyanskiy <ypolyans@princeton.edu>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Joel Becker <Joel.Becker@oracle.com>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@osdl.org>, Jan Glauber <jan.glauber@de.ibm.com>
+Subject: Re: [PATCH] hangcheck-timer is broken on x86
+Message-ID: <20100329130418.2b5c068c@penta.localdomain>
+In-Reply-To: <1269881007.1857.18.camel@work-vm>
+References: <20100323233611.6dcbe4f4@penta.localdomain>
+	<20100326214648.GF9984@mail.oracle.com>
+	<1269824436.1880.2.camel@work-vm>
+	<20100329101106.3678a312@penta.localdomain>
+	<1269881007.1857.18.camel@work-vm>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/5yWNrAt3PZEmREZS7.mM.7b"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/5yWNrAt3PZEmREZS7.mM.7b
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Mon, 29 Mar 2010 09:43:27 -0700
+john stultz <johnstul@us.ibm.com> wrote:
 
-> The LBRs are relatively cheap to keep enabled and provide some history to 
-> OOPSen, also some CPUs are reported to keep them over soft-reset, which 
-> allows us to use them to debug things like tripple faults.
-> 
-> Therefore introduce a boot option: lbr_debug=on, which always enable the 
-> LBRs and will print the LBRs on CPU init and die().
+> > I am not sure which archs do you mean. But in any case,
+> > getrawmonotonic() is not just a wrap around a call to rdtsc() (or acpi
+> > pm timer read). It is based on the clock->raw_time, which is updated
+> > every timer interrupt by the update_wall_time(). So even if underlying
+> > timer wraps, it doesn't lead to getrawmonotonic() returning 0 sec. =20
+>=20
+> What I'm saying is that if you're using getrawmonotonic() to detect
+> hangs, you might miss them, as getrawmonotonic may wrap (and thus stop
+> continually increasing) if the timer interrupt is delayed. This does not
+> apply to systems using the TSC clocksource, but does apply to systems
+> using the acpi_pm.=20
 
-Yummie!
+But if timer interrupt is delayed by more than acpi_pm wrap-around
+time, then the update_wall_time() is also screwed. Since it is not, we
+can rely on getrawmonotonic().
 
-Have you got some sample lbr_debug=1 output as well by any chance, with a 
-crash provoked somewhere? How good is the output in practice? (i.e. how many 
-artificial entries do we have at the end of the buffer, filled with crash 
-related addresses?)
+Y
 
-Also, i think we should use something more descriptive than lbr_debug=y. 
-Perhaps crash_trace=1 or so?
+--Sig_/5yWNrAt3PZEmREZS7.mM.7b
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Plus, it would be nice to have a sysctl entry for this as well - so that 
-production systems can enable this if they want to enrich the output of some 
-difficult-to-analyze kernel crash, without yet another reboot.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-	Ingo
+iEYEARECAAYFAkuw3ZIACgkQemuRe3zuqOQxVgCeILSACbJFNa/op/eT7SRuQzG8
+/l4AoKbn7pChiX6HbFLIAreNB1cqrQSA
+=908W
+-----END PGP SIGNATURE-----
+
+--Sig_/5yWNrAt3PZEmREZS7.mM.7b--
