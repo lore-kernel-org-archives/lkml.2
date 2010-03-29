@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab0C2Jne (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:43:34 -0400
-Received: from mail-bw0-f209.google.com ([209.85.218.209]:60714 "EHLO
-	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab0C2Jnd (ORCPT
+	id S1754350Ab0C2Jo2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:44:28 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51186 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505Ab0C2Jo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:43:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=JQKc7Kp9fXa8CEQY5EPFAPiR/Dq4jk3EC0pdfgxI6Hvtlzv0jTDAjSgCeWh4ZnSR/L
-         VFc0GJ7qUKwwK3uG6RnRLEsI1h4wRticZiCYQUJvWqnDLGKU2vNsTXe9RlsCDfA+07zR
-         CfA1ECz4sk/10MBQOmGCQQyT+ixkfrpGj/gxM=
-Date: Mon, 29 Mar 2010 12:43:22 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Lars Lindley <lindley@coyote.org>
-Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: winbond: wbhal_f.h Coding style fixes.
-Message-ID: <20100329094322.GB15060@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
-	penberg@cs.helsinki.fi, pavel@ucw.cz, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1269796259-8671-1-git-send-email-lindley@coyote.org>
+	Mon, 29 Mar 2010 05:44:26 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4BB07636.7010708@jp.fujitsu.com>
+Date: Mon, 29 Mar 2010 18:43:18 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269796259-8671-1-git-send-email-lindley@coyote.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andi Kleen <andi@firstfloor.org>
+CC: tglx@linutronix.de, linux-kernel@vger.kernel.org, torvalds@osdl.org
+Subject: Re: [PATCH] Allow Intel platforms to declare unsynchronized TSC to
+ kernel
+References: <20100324053257.GA4088@basil.fritz.box> <87zl1r7eod.fsf@basil.nowhere.org>
+In-Reply-To: <87zl1r7eod.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 28, 2010 at 07:10:59PM +0200, Lars Lindley wrote:
-> I fixed all checkpatch problems and also converted the
-> function arguments from hungarian notation and CamelCase.
+(2010/03/29 16:46), Andi Kleen wrote:
+> Andi Kleen <andi@firstfloor.org> writes:
 > 
+>> Allow Intel platforms to declare unsynchronized TSC to kernel
+>>
+>> [This came out of a private discussion with Linus last week]
+> 
+> Ping?  Please review this patch.
+> 
+> -Andi
 
-	[snip]
+Does "constant" implicitly means "synchronized"?
+IMHO the answer is no.
 
-> -#define hal_ibss_disconnect(_A) hal_stop_sync_bss(_A)
-> +#define hal_ibss_disconnect(_A)		(hal_stop_sync_bss(_A))
+Following commit tells us that there could be
+"constant-but-unsynchronized TSC":
+ 6c56ccecf05fafe100ab4ea94f6fccbf5ff00db7
+> So, reenable TSC sync test even on constant and non-stop TSC systems.
 
-The parenthesis around hal_stop_sync_bss() aren't needed.  They don't
-hurt anything, but they're odd.
+Quote from the patch description of commit:
+ 40fb17152c50a69dc304dd632131c2f41281ce44
+> Add support for CPUID_0x80000007_Bit8 on Intel CPUs as well. This bit means
+> that the TSC is invariant with C/P/T states and always runs at constant
+> frequency.
+>
+> With Intel CPUs, we have 3 classes
+> * CPUs where TSC runs at constant rate and does not stop n C-states
+> * CPUs where TSC runs at constant rate, but will stop in deep C-states
+> * CPUs where TSC rate will vary based on P/T-states and TSC will stop in
+>   deep C-states.
 
-Also it appears that no one uses hal_ibss_disconnect().
+It looks like that "invariant" also means "constant."
 
-So far as I'm concerned this can go in as is...
-Acked-by: Dan Carpenter <error27@gmail.com>
+I suppose your change is intended to allow newer platform to declare
+"not invariant", instead of "not invariant but constant."
+Humm, but how things change...?  Still newer platform cannot declare
+one of 3 classes.  Which class is "never on newer platform"?
+Or we need to have 4th new class? 
 
-regards,
-dan carpenter
+At least I think your patch description needs some update,
+to get more comments without confusing reviewers.
+
+
+Thanks,
+H.Seto
 
