@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab0C2QAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:00:12 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:59825 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab0C2QAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:00:07 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Olaf van der Spek <olafvdspek@gmail.com>
-Cc: Ulrich Drepper <drepper@gmail.com>,
-       Luca Barbieri <luca.barbieri@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
-References: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com>
-	<g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com>
-	<b2cc26e41003251229w5d266c18gd17fdcf404136bd7@mail.gmail.com>
-	<ff13bc9a1003251400ted1993ao73c15ee86e3e717a@mail.gmail.com>
-	<a36005b51003260456m441568c1vcc8b90eed0421b9d@mail.gmail.com>
-	<ff13bc9a1003261406w7bf4bb77sf57edce14f0dcc73@mail.gmail.com>
-	<a36005b51003261415u1cc89f84r843abaa81f1d7396@mail.gmail.com>
-	<b2cc26e41003270450w1a90f9b2j5cbbae9726122b4e@mail.gmail.com>
-	<a36005b51003270505s42b5e69co14d2acbb27dc204a@mail.gmail.com>
-	<b2cc26e41003290740i5c548cabgc95d91958cd1075a@mail.gmail.com>
-X-Yow: Hey, I LIKE that POINT!!
-Date: Mon, 29 Mar 2010 18:00:01 +0200
-In-Reply-To: <b2cc26e41003290740i5c548cabgc95d91958cd1075a@mail.gmail.com>
-	(Olaf van der Spek's message of "Mon, 29 Mar 2010 16:40:36 +0200")
-Message-ID: <m2k4svuni6.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.94 (gnu/linux)
+	id S1754559Ab0C2QBO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:01:14 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:39117 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab0C2QBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:01:13 -0400
+Date: Mon, 29 Mar 2010 09:01:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       adobriyan@gmail.com
+Subject: Re: [patch 0/6] rcu head debugobjects
+Message-ID: <20100329160107.GH2569@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100327153233.993367557@efficios.com>
+ <20100327224606.GK2343@linux.vnet.ibm.com>
+ <20100327231421.GA4685@Krystal>
+ <20100327232024.GB4685@Krystal>
+ <20100327234314.GL2343@linux.vnet.ibm.com>
+ <20100329133933.GA23238@Krystal>
+ <20100329145329.GA2569@linux.vnet.ibm.com>
+ <20100329150425.GA26746@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329150425.GA26746@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Olaf van der Spek <olafvdspek@gmail.com> writes:
+On Mon, Mar 29, 2010 at 11:04:25AM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Mon, Mar 29, 2010 at 09:39:33AM -0400, Mathieu Desnoyers wrote:
+> > > Hi Paul,
+> > > 
+> > > Thinking about the rcu head init topic, we might be able to drop the
+> > > init_rcu_head() initializer. The idea is the following:
+> > > 
+> > > - We need init_rcu_head_on_stack()/destroy_rcu_head_on_stack().
+> > > - call_rcu() populates the rcu_head and normally does not care about it being
+> > >   pre-initialized.
+> > > - The activation fixup can detect if a non-initialized rcu head is being
+> > >   activated and just perform the fixup without complaining.
+> > > - If we have two call_rcu() in a row in the same GP on the same rcu_head, the
+> > >   activation check will detect it.
+> > > 
+> > > So either we remove all the init_rcu_head(), as was originally proposed, or we
+> > > use one that is a no-op on !DEBUG configs and initialize the object with DEBUG
+> > > configs.
+> > > 
+> > > That removes the dependency on object_is_static().
+> > 
+> > If I understand correctly, this does sound good.  Here is what I think
+> > you are proposing:
+> > 
+> > o	call_rcu() and friends only complain if handed an rcu_head
+> > 	structure that is still queued awaiting a grace period.
+> > 	They don't care otherwise.
+> > 
+> > o	rcu_do_batch() complains unless the rcu_head structure has
+> > 	most recently been enqueued by call_rcu() or one if its friends.
+> > 
+> > Did I get it right?
+> 
+> Exactly.
 
-> File not found is a very common error message with a pretty will
-> understood meaning.
+Very good!!!
 
-And perfectly applicable here (as you write yourself in the subject).
-
-> Overloading another error code would avoid this confusion, especially
-> since it's far less used.
-
-Changing a well understood error number into a totally misleading one
-only increases confusion.
-
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+							Thanx, Paul
