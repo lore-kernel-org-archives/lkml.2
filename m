@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab0C2Ctw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:49:52 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:43364 "EHLO
+	id S1756113Ab0C2CuG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:50:06 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:43362 "EHLO
 	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755926Ab0C2Cqr (ORCPT
+	with ESMTP id S1755842Ab0C2Cqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Mar 2010 22:46:47 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,213 +16,286 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/31] x86: Make sure free_init_pages() free pages in boundary
-Date: Sun, 28 Mar 2010 19:42:55 -0700
-Message-Id: <1269830604-26214-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 20/31] lmb: Add __NOT_KEEP_LMB to put lmb code to .init
+Date: Sun, 28 Mar 2010 19:43:13 -0700
+Message-Id: <1269830604-26214-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4BB0147B.004A,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BB01479.0101,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_NO_BOOTMEM, it could use memory more effient, or more compact.
+So those lmb bits could released after kernel is booted up.
 
-Example is:
-Allocated new RAMDISK: 00ec2000 - 0248ce57
-Move RAMDISK from 000000002ea04000 - 000000002ffcee56 to 00ec2000 - 0248ce56
+Arch code could define __NOT_KEEP_LMB in asm/lmb.h, __init_lmb will become __init
 
-The new RAMDISK's end is not page aligned.
-Last page could use shared with other user.
+x86 code will use that.
 
-When free_init_pages are called for initrd or .init, the page could be freed
-could have chance to corrupt other data.
-
-code segment in free_init_pages()
-|        for (; addr < end; addr += PAGE_SIZE) {
-|                ClearPageReserved(virt_to_page(addr));
-|                init_page_count(virt_to_page(addr));
-|                memset((void *)(addr & ~(PAGE_SIZE-1)),
-|                        POISON_FREE_INITMEM, PAGE_SIZE);
-|                free_page(addr);
-|                totalram_pages++;
-|        }
-last half page could be used as one whole free page.
-
-Try to make the boundaries to be page aligned.
-
--v2: make the original initramdisk to be aligned, according to Johannes.
-     otherwise we have chance to lose one page.
-     we still need to keep initrd_end not aligned, otherwise it could
-     confuse decompresser.
--v3: change to WARN_ON instead according to Johannes.
--v4: use PAGE_ALIGN according to Johannes.
-     We may fix that MARCO name later to PAGE_ALIGN_UP, and PAGE_ALIGN_DOWN
-     Add comments about assuming ramdisk start is aligned
-     in relocate_initrd(), change to re get ramdisk_image instead of save it
-	to make diff smaller.
-     Add WARN for wrong range according Johannes.
--v6: remove one WARN
-     We need align begin in free_init_pages()
-     not copy more than ramdisk_size according to Johannes
-
-Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
 ---
- arch/x86/kernel/head32.c |    3 ++-
- arch/x86/kernel/head64.c |    3 ++-
- arch/x86/kernel/setup.c  |   10 ++++++----
- arch/x86/mm/init.c       |   32 ++++++++++++++++++++++++++------
- 4 files changed, 36 insertions(+), 12 deletions(-)
+ include/linux/lmb.h |    8 +++++++
+ mm/lmb.c            |   54 ++++++++++++++++++++++++++++++--------------------
+ 2 files changed, 40 insertions(+), 22 deletions(-)
 
-diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
-index adedeef..9a97504 100644
---- a/arch/x86/kernel/head32.c
-+++ b/arch/x86/kernel/head32.c
-@@ -44,9 +44,10 @@ void __init i386_start_kernel(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- 	/* Reserve INITRD */
- 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
-+		/* Assume only end is not page aligned */
- 		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
- 		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
--		u64 ramdisk_end   = ramdisk_image + ramdisk_size;
-+		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
- 	}
- #endif
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index b5a9896..7147143 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -103,9 +103,10 @@ void __init x86_64_start_reservations(char *real_mode_data)
- #ifdef CONFIG_BLK_DEV_INITRD
- 	/* Reserve INITRD */
- 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
-+		/* Assume only end is not page aligned */
- 		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
- 		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
--		unsigned long ramdisk_end   = ramdisk_image + ramdisk_size;
-+		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
- 	}
- #endif
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 5d7ba1a..d76e185 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -314,16 +314,17 @@ static void __init reserve_brk(void)
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
--
-+	/* Assume only end is not page aligned */
- 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
- 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
- 	char *p, *q;
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 1e11fe0..7ae52c8 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -107,6 +107,14 @@ u64 lmb_memory_size(u64 addr, u64 limit);
  
- 	/* We need to move the initrd down into lowmem */
--	ramdisk_here = find_e820_area(0, end_of_lowmem, ramdisk_size,
-+	ramdisk_here = find_e820_area(0, end_of_lowmem, area_size,
- 					 PAGE_SIZE);
+ #include <asm/lmb.h>
  
- 	if (ramdisk_here == -1ULL)
-@@ -332,7 +333,7 @@ static void __init relocate_initrd(void)
- 
- 	/* Note: this includes all the lowmem currently occupied by
- 	   the initrd, we rely on that fact to keep the data intact. */
--	reserve_early(ramdisk_here, ramdisk_here + ramdisk_size,
-+	reserve_early(ramdisk_here, ramdisk_here + area_size,
- 			 "NEW RAMDISK");
- 	initrd_start = ramdisk_here + PAGE_OFFSET;
- 	initrd_end   = initrd_start + ramdisk_size;
-@@ -376,9 +377,10 @@ static void __init relocate_initrd(void)
- 
- static void __init reserve_initrd(void)
- {
-+	/* Assume only end is not page aligned */
- 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
- 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
--	u64 ramdisk_end   = ramdisk_image + ramdisk_size;
-+	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
- 
- 	if (!boot_params.hdr.type_of_loader ||
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index e71c5cb..452ee5b 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -331,11 +331,23 @@ int devmem_is_allowed(unsigned long pagenr)
- 
- void free_init_pages(char *what, unsigned long begin, unsigned long end)
- {
--	unsigned long addr = begin;
-+	unsigned long addr;
-+	unsigned long begin_aligned, end_aligned;
- 
--	if (addr >= end)
-+	/* Make sure boundaries are page aligned */
-+	begin_aligned = PAGE_ALIGN(begin);
-+	end_aligned   = end & PAGE_MASK;
++#ifdef __NOT_KEEP_LMB
++#define __init_lmb __init
++#define __initdata_lmb __initdata
++#else
++#define __init_lmb
++#define __initdata_lmb
++#endif
 +
-+	if (WARN_ON(begin_aligned != begin || end_aligned != end)) {
-+		begin = begin_aligned;
-+		end   = end_aligned;
-+	}
-+
-+	if (begin >= end)
+ #endif /* CONFIG_HAVE_LMB */
+ 
+ #endif /* __KERNEL__ */
+diff --git a/mm/lmb.c b/mm/lmb.c
+index 91a2b33..c14deb9 100644
+--- a/mm/lmb.c
++++ b/mm/lmb.c
+@@ -21,11 +21,11 @@
+ 
+ #define LMB_ALLOC_ANYWHERE	0
+ 
+-struct lmb lmb;
+-static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1];
+-static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1];
++struct lmb lmb __initdata_lmb;
++static struct lmb_property lmb_memory_region[MAX_LMB_REGIONS + 1] __initdata_lmb;
++static struct lmb_property lmb_reserved_region[MAX_LMB_REGIONS + 1] __initdata_lmb;
+ 
+-static int lmb_debug;
++static int lmb_debug __initdata_lmb;
+ 
+ static int __init early_lmb(char *p)
+ {
+@@ -35,7 +35,7 @@ static int __init early_lmb(char *p)
+ }
+ early_param("lmb", early_lmb);
+ 
+-static void lmb_dump(struct lmb_region *region, char *name)
++static void __init_lmb lmb_dump(struct lmb_region *region, char *name)
+ {
+ 	unsigned long long base, size;
+ 	int i;
+@@ -51,7 +51,7 @@ static void lmb_dump(struct lmb_region *region, char *name)
+ 	}
+ }
+ 
+-void lmb_dump_all(void)
++void __init_lmb lmb_dump_all(void)
+ {
+ 	if (!lmb_debug)
  		return;
+@@ -64,13 +64,13 @@ void lmb_dump_all(void)
+ 	lmb_dump(&lmb.reserved, "reserved");
+ }
  
-+	addr = begin;
-+
- 	/*
- 	 * If debugging page accesses then do not free this memory but
- 	 * mark them not present - any buggy init-section access will
-@@ -343,7 +355,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	 */
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 	printk(KERN_INFO "debug: unmapping init memory %08lx..%08lx\n",
--		begin, PAGE_ALIGN(end));
-+		begin, end);
- 	set_memory_np(begin, (end - begin) >> PAGE_SHIFT);
- #else
- 	/*
-@@ -358,8 +370,7 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
- 	for (; addr < end; addr += PAGE_SIZE) {
- 		ClearPageReserved(virt_to_page(addr));
- 		init_page_count(virt_to_page(addr));
--		memset((void *)(addr & ~(PAGE_SIZE-1)),
--			POISON_FREE_INITMEM, PAGE_SIZE);
-+		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
- 		free_page(addr);
- 		totalram_pages++;
- 	}
-@@ -376,6 +387,15 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void free_initrd_mem(unsigned long start, unsigned long end)
+-static unsigned long lmb_addrs_overlap(u64 base1, u64 size1, u64 base2,
++static unsigned long __init_lmb lmb_addrs_overlap(u64 base1, u64 size1, u64 base2,
+ 					u64 size2)
  {
--	free_init_pages("initrd memory", start, end);
-+	/*
-+	 * end could be not aligned, and We can not align that,
-+	 * decompresser could be confused by aligned initrd_end
-+	 * We already reserve the end partial page before in
-+	 *   - i386_start_kernel()
-+	 *   - x86_64_start_kernel()
-+	 *   - relocate_initrd()
-+	 * So here We can do PAGE_ALIGN() safely to get partial page to be freed
-+	 */
-+	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
+ 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+ }
+ 
+-static long lmb_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
++static long __init_lmb lmb_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
+ {
+ 	if (base2 == base1 + size1)
+ 		return 1;
+@@ -80,7 +80,7 @@ static long lmb_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
+ 	return 0;
+ }
+ 
+-static long lmb_regions_adjacent(struct lmb_region *rgn,
++static long __init_lmb lmb_regions_adjacent(struct lmb_region *rgn,
+ 		unsigned long r1, unsigned long r2)
+ {
+ 	u64 base1 = rgn->region[r1].base;
+@@ -91,7 +91,7 @@ static long lmb_regions_adjacent(struct lmb_region *rgn,
+ 	return lmb_addrs_adjacent(base1, size1, base2, size2);
+ }
+ 
+-static void lmb_remove_region(struct lmb_region *rgn, unsigned long r)
++static void __init_lmb lmb_remove_region(struct lmb_region *rgn, unsigned long r)
+ {
+ 	unsigned long i;
+ 
+@@ -103,7 +103,7 @@ static void lmb_remove_region(struct lmb_region *rgn, unsigned long r)
+ }
+ 
+ /* Assumption: base addr of region 1 < base addr of region 2 */
+-static void lmb_coalesce_regions(struct lmb_region *rgn,
++static void __init_lmb lmb_coalesce_regions(struct lmb_region *rgn,
+ 		unsigned long r1, unsigned long r2)
+ {
+ 	rgn->region[r1].size += rgn->region[r2].size;
+@@ -140,7 +140,7 @@ void __init lmb_analyze(void)
+ 		lmb.memory.size += lmb.memory.region[i].size;
+ }
+ 
+-static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
++static long __init_lmb lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
+ {
+ 	unsigned long coalesced = 0;
+ 	long adjacent, i;
+@@ -204,7 +204,7 @@ static long lmb_add_region(struct lmb_region *rgn, u64 base, u64 size)
+ 	return 0;
+ }
+ 
+-long lmb_add(u64 base, u64 size)
++long __init_lmb lmb_add(u64 base, u64 size)
+ {
+ 	struct lmb_region *_rgn = &lmb.memory;
+ 
+@@ -216,7 +216,7 @@ long lmb_add(u64 base, u64 size)
+ 
+ }
+ 
+-static long __lmb_remove(struct lmb_region *rgn, u64 base, u64 size)
++static long __init_lmb __lmb_remove(struct lmb_region *rgn, u64 base, u64 size)
+ {
+ 	u64 rgnbegin, rgnend;
+ 	u64 end = base + size;
+@@ -264,7 +264,7 @@ static long __lmb_remove(struct lmb_region *rgn, u64 base, u64 size)
+ 	return lmb_add_region(rgn, end, rgnend - end);
+ }
+ 
+-long lmb_remove(u64 base, u64 size)
++long __init_lmb lmb_remove(u64 base, u64 size)
+ {
+ 	return __lmb_remove(&lmb.memory, base, size);
+ }
+@@ -283,7 +283,7 @@ long __init lmb_reserve(u64 base, u64 size)
+ 	return lmb_add_region(_rgn, base, size);
+ }
+ 
+-long lmb_overlaps_region(struct lmb_region *rgn, u64 base, u64 size)
++long __init_lmb lmb_overlaps_region(struct lmb_region *rgn, u64 base, u64 size)
+ {
+ 	unsigned long i;
+ 
+@@ -297,12 +297,12 @@ long lmb_overlaps_region(struct lmb_region *rgn, u64 base, u64 size)
+ 	return (i < rgn->cnt) ? i : -1;
+ }
+ 
+-static u64 lmb_align_down(u64 addr, u64 size)
++static u64 __init_lmb lmb_align_down(u64 addr, u64 size)
+ {
+ 	return addr & ~(size - 1);
+ }
+ 
+-static u64 lmb_align_up(u64 addr, u64 size)
++static u64 __init_lmb lmb_align_up(u64 addr, u64 size)
+ {
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
+@@ -449,7 +449,7 @@ u64 __init lmb_phys_mem_size(void)
+ 	return lmb.memory.size;
+ }
+ 
+-u64 lmb_end_of_DRAM(void)
++u64 __init_lmb lmb_end_of_DRAM(void)
+ {
+ 	int idx = lmb.memory.cnt - 1;
+ 
+@@ -513,7 +513,7 @@ int __init lmb_is_reserved(u64 addr)
+ 	return 0;
+ }
+ 
+-int lmb_is_region_reserved(u64 base, u64 size)
++int __init_lmb lmb_is_region_reserved(u64 base, u64 size)
+ {
+ 	return lmb_overlaps_region(&lmb.reserved, base, size);
+ }
+@@ -522,7 +522,7 @@ int lmb_is_region_reserved(u64 base, u64 size)
+  * Given a <base, len>, find which memory regions belong to this range.
+  * Adjust the request and return a contiguous chunk.
+  */
+-int lmb_find(struct lmb_property *res)
++int __init_lmb lmb_find(struct lmb_property *res)
+ {
+ 	int i;
+ 	u64 rstart, rend;
+@@ -699,10 +699,11 @@ static void __init subtract_lmb_reserved(struct range *range, int az)
+ 	int i, count;
+ 	u64 final_start, final_end;
+ 
++#ifdef __NOT_KEEP_LMB
+ 	/* Take out region array itself at first*/
+ 	if (lmb.reserved.region != lmb_reserved_region)
+ 		lmb_free(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
+-
++#endif
+ 	count  = lmb.reserved.cnt;
+ 
+ 	if (lmb_debug)
+@@ -718,9 +719,11 @@ static void __init subtract_lmb_reserved(struct range *range, int az)
+ 			continue;
+ 		subtract_range(range, az, final_start, final_end);
+ 	}
++#ifdef __NOT_KEEP_LMB
+ 	/* Put region array back ? */
+ 	if (lmb.reserved.region != lmb_reserved_region)
+ 		lmb_reserve(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
++#endif
+ }
+ 
+ int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+@@ -745,6 +748,7 @@ int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+ 	subtract_lmb_reserved(range, count);
+ 	nr_range = clean_sort_range(range, count);
+ 
++#ifdef __NOT_KEEP_LMB
+ 	/* Need to clear it ? */
+ 	if (nodeid == MAX_NUMNODES) {
+ 		memset(&lmb.reserved.region[0], 0, sizeof(struct lmb_property) * lmb.reserved.nr_regions);
+@@ -752,6 +756,7 @@ int __init get_free_all_memory_range(struct range **rangep, int nodeid)
+ 		lmb.reserved.nr_regions = 0;
+ 		lmb.reserved.cnt = 0;
+ 	}
++#endif
+ 
+ 	*rangep = range;
+ 	return nr_range;
+@@ -762,9 +767,11 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ 	int i, count;
+ 	u64 final_start, final_end;
+ 
++#ifdef __NOT_KEEP_LMB
+ 	/* Take out region array itself */
+ 	if (lmb.reserved.region != lmb_reserved_region)
+ 		lmb_free(__pa(lmb.reserved.region), sizeof(struct lmb_property) * lmb.reserved.nr_regions);
++#endif
+ 
+ 	count  = lmb.reserved.cnt;
+ 	if (lmb_debug)
+@@ -784,11 +791,14 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ 			pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
+ 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+ 	}
++
++#ifdef __NOT_KEEP_LMB
+ 	/* Clear them to avoid misusing ? */
+ 	memset(&lmb.reserved.region[0], 0, sizeof(struct lmb_property) * lmb.reserved.nr_regions);
+ 	lmb.reserved.region = NULL;
+ 	lmb.reserved.nr_regions = 0;
+ 	lmb.reserved.cnt = 0;
++#endif
  }
  #endif
+ 
 -- 
 1.6.4.2
 
