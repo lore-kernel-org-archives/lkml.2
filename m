@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab0C2RFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:05:50 -0400
-Received: from ppa03.Princeton.EDU ([128.112.128.214]:37565 "EHLO
-	ppa03.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab0C2RFt (ORCPT
+	id S1754002Ab0C2RMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:12:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48159 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab0C2RMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:05:49 -0400
-Date: Mon, 29 Mar 2010 13:04:18 -0400
-From: Yury Polyanskiy <ypolyans@princeton.edu>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Joel Becker <Joel.Becker@oracle.com>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@osdl.org>, Jan Glauber <jan.glauber@de.ibm.com>
-Subject: Re: [PATCH] hangcheck-timer is broken on x86
-Message-ID: <20100329130418.2b5c068c@penta.localdomain>
-In-Reply-To: <1269881007.1857.18.camel@work-vm>
-References: <20100323233611.6dcbe4f4@penta.localdomain>
-	<20100326214648.GF9984@mail.oracle.com>
-	<1269824436.1880.2.camel@work-vm>
-	<20100329101106.3678a312@penta.localdomain>
-	<1269881007.1857.18.camel@work-vm>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
+	Mon, 29 Mar 2010 13:12:52 -0400
+Subject: Re: [RFC,PATCH 2/2] perf, x86: Utilize the LBRs for machine/oops
+ debugging
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@osdl.org>, linux-kernel@vger.kernel.org,
+       Stephane Eranian <eranian@google.com>
+In-Reply-To: <20100329170259.GA15083@elte.hu>
+References: <20100329122021.765109681@chello.nl>
+	 <20100329122138.848413757@chello.nl>  <20100329170259.GA15083@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 19:12:48 +0200
+Message-ID: <1269882768.12097.365.camel@laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/5yWNrAt3PZEmREZS7.mM.7b"; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/5yWNrAt3PZEmREZS7.mM.7b
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2010-03-29 at 19:02 +0200, Ingo Molnar wrote:
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > The LBRs are relatively cheap to keep enabled and provide some history to 
+> > OOPSen, also some CPUs are reported to keep them over soft-reset, which 
+> > allows us to use them to debug things like tripple faults.
+> > 
+> > Therefore introduce a boot option: lbr_debug=on, which always enable the 
+> > LBRs and will print the LBRs on CPU init and die().
+> 
+> Yummie!
+> 
+> Have you got some sample lbr_debug=1 output as well by any chance, with a 
+> crash provoked somewhere? How good is the output in practice? (i.e. how many 
+> artificial entries do we have at the end of the buffer, filled with crash 
+> related addresses?)
 
-On Mon, 29 Mar 2010 09:43:27 -0700
-john stultz <johnstul@us.ibm.com> wrote:
+lbr_debug=on actually, =1 doesn't parse. I had some output, but I was
+still looking at finding out why my %pF formats for CPU0 didn't have
+symbols in, probably a init sequence issue.
 
-> > I am not sure which archs do you mean. But in any case,
-> > getrawmonotonic() is not just a wrap around a call to rdtsc() (or acpi
-> > pm timer read). It is based on the clock->raw_time, which is updated
-> > every timer interrupt by the update_wall_time(). So even if underlying
-> > timer wraps, it doesn't lead to getrawmonotonic() returning 0 sec. =20
->=20
-> What I'm saying is that if you're using getrawmonotonic() to detect
-> hangs, you might miss them, as getrawmonotonic may wrap (and thus stop
-> continually increasing) if the timer interrupt is delayed. This does not
-> apply to systems using the TSC clocksource, but does apply to systems
-> using the acpi_pm.=20
+> Also, i think we should use something more descriptive than lbr_debug=y. 
+> Perhaps crash_trace=1 or so?
 
-But if timer interrupt is delayed by more than acpi_pm wrap-around
-time, then the update_wall_time() is also screwed. Since it is not, we
-can rely on getrawmonotonic().
+Well, I would like to keep LBR in the name, since that is the mechanism
+used, we could maybe do lbr_trace or somesuch?
 
-Y
+> Plus, it would be nice to have a sysctl entry for this as well - so that 
+> production systems can enable this if they want to enrich the output of some 
+> difficult-to-analyze kernel crash, without yet another reboot.
 
---Sig_/5yWNrAt3PZEmREZS7.mM.7b
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+Right, could do, but once it crashed it clearly to late to enable
+anything ;-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkuw3ZIACgkQemuRe3zuqOQxVgCeILSACbJFNa/op/eT7SRuQzG8
-/l4AoKbn7pChiX6HbFLIAreNB1cqrQSA
-=908W
------END PGP SIGNATURE-----
-
---Sig_/5yWNrAt3PZEmREZS7.mM.7b--
