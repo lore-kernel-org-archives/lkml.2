@@ -1,110 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab0C2LRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 07:17:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18822 "EHLO mx1.redhat.com"
+	id S1755525Ab0C2LXv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 07:23:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755230Ab0C2LRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 07:17:13 -0400
-Date: Mon, 29 Mar 2010 13:17:01 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCHv3 0/2] tracing: function graph output for
- preempt/irqs-off tracers
-Message-ID: <20100329111701.GC1715@jolsa>
-References: <1269606723-12439-1-git-send-email-jolsa@redhat.com>
- <1269615239.19685.78.camel@gandalf.stny.rr.com>
+	id S1755465Ab0C2LXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 07:23:49 -0400
+Date: Mon, 29 Mar 2010 13:21:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: anfei <anfei.zhou@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       nishimura@mxp.nes.nec.co.jp,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] oom killer: break from infinite loop
+Message-ID: <20100329112111.GA16971@redhat.com>
+References: <1269447905-5939-1-git-send-email-anfei.zhou@gmail.com> <20100326150805.f5853d1c.akpm@linux-foundation.org> <20100326223356.GA20833@redhat.com> <20100328145528.GA14622@desktop> <20100328162821.GA16765@redhat.com> <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1269615239.19685.78.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.DEB.2.00.1003281341590.30570@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 26, 2010 at 10:53:59AM -0400, Steven Rostedt wrote:
-> On Fri, 2010-03-26 at 13:32 +0100, Jiri Olsa wrote:
+On 03/28, David Rientjes wrote:
+>
+> The problem with this approach is that we could easily deplete all memory
+> reserves if the oom killed task has an extremely large number of threads,
+> there has always been only a single thread with TIF_MEMDIE set per cpuset
+> or memcg; for systems that don't run with cpusets or memory controller,
+> this has been limited to one thread with TIF_MEMDIE for the entire system.
+>
+> There's risk involved with suddenly allowing 1000 threads to have
+> TIF_MEMDIE set and the chances of fully depleting all allowed zones is
+> much higher if they allocate memory prior to exit, for example.
+>
+> An alternative is to fail allocations if they are failable and the
+> allocating task has a pending SIGKILL.  It's better to preempt the oom
+> killer since current is going to be exiting anyway and this avoids a
+> needless kill.
+>
+> That's possible if it's guaranteed that __GFP_NOFAIL allocations with a
+> pending SIGKILL are granted ALLOC_NO_WATERMARKS to prevent them from
+> endlessly looping while making no progress.
+>
+> Comments?
 
-SNIP
+Can't comment, I do not understand these subtleties.
 
-> 
-> Getting better, but I still have some issues ;-)
-> 
-> Without graph, header looks like this: (old way)
-> 
-> # tracer: irqsoff
-> #
-> # irqsoff latency trace v1.1.5 on 2.6.34-rc2
-> # --------------------------------------------------------------------
-> # latency: 326 us, #73/73, CPU#1 | (M:preempt VP:0, KP:0, SP:0 HP:0
-> #P:4)
-> #    -----------------
-> #    | task: swapper-0 (uid:0 nice:0 policy:0 rt_prio:0)
-> #    -----------------
-> #  => started at: save_args
-> #  => ended at:   __do_softirq
-> #
-> #
-> #                  _------=> CPU#            
-> #                 / _-----=> irqs-off        
-> #                | / _----=> need-resched    
-> #                || / _---=> hardirq/softirq 
-> #                ||| / _--=> preempt-depth   
-> #                |||| /_--=> lock-depth       
-> #                |||||/     delay             
-> #  cmd     pid   |||||| time  |   caller      
-> #     \   /      ||||||   \   |   /           
->   <idle>-0       1d..1.    1us+: trace_hardirqs_off_thunk <-save_args
-> 
-> 
-> Lots of good info.
+But I'd like to note that fatal_signal_pending() can be true when the
+process wasn't killed, but another thread does exit_group/exec.
 
-right, I missed the print_trace_header call..
+I am not saying this is wrong, just I'd like to be sure this didn't
+escape your attention.
 
-SNIP
+> ---
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1610,13 +1610,21 @@ try_next_zone:
+>  }
+>
+>  static inline int
+> -should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+> +should_alloc_retry(struct task_struct *p, gfp_t gfp_mask, unsigned int order,
+>  				unsigned long pages_reclaimed)
+>  {
+>  	/* Do not loop if specifically requested */
+>  	if (gfp_mask & __GFP_NORETRY)
+>  		return 0;
+>
+> +	/* Loop if specifically requested */
+> +	if (gfp_mask & __GFP_NOFAIL)
+> +		return 1;
+> +
+> +	/* Task is killed, fail the allocation if possible */
+> +	if (fatal_signal_pending(p))
+> +		return 0;
+> +
+>  	/*
+>  	 * In this implementation, order <= PAGE_ALLOC_COSTLY_ORDER
+>  	 * means __GFP_NOFAIL, but that may not be true in other
+> @@ -1635,13 +1643,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+>  	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
+>  		return 1;
+>
+> -	/*
+> -	 * Don't let big-order allocations loop unless the caller
+> -	 * explicitly requests that.
+> -	 */
+> -	if (gfp_mask & __GFP_NOFAIL)
+> -		return 1;
+> -
+>  	return 0;
+>  }
+>
+> @@ -1798,6 +1799,7 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
+>  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+>  		if (!in_interrupt() &&
+>  		    ((p->flags & PF_MEMALLOC) ||
+> +		     (fatal_signal_pending(p) && (gfp_mask & __GFP_NOFAIL)) ||
+>  		     unlikely(test_thread_flag(TIF_MEMDIE))))
+>  			alloc_flags |= ALLOC_NO_WATERMARKS;
+>  	}
+> @@ -1812,6 +1814,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
+>  	int migratetype)
+>  {
+>  	const gfp_t wait = gfp_mask & __GFP_WAIT;
+> +	const gfp_t nofail = gfp_mask & __GFP_NOFAIL;
+>  	struct page *page = NULL;
+>  	int alloc_flags;
+>  	unsigned long pages_reclaimed = 0;
+> @@ -1876,7 +1879,7 @@ rebalance:
+>  		goto nopage;
+>
+>  	/* Avoid allocations with no watermarks from looping endlessly */
+> -	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
+> +	if (test_thread_flag(TIF_MEMDIE) && !nofail)
+>  		goto nopage;
+>
+>  	/* Try direct reclaim and then allocating */
+> @@ -1888,6 +1891,10 @@ rebalance:
+>  	if (page)
+>  		goto got_pg;
+>
+> +	/* Task is killed, fail the allocation if possible */
+> +	if (fatal_signal_pending(p) && !nofail)
+> +		goto nopage;
+> +
+>  	/*
+>  	 * If we failed to make any progress reclaiming, then we are
+>  	 * running out of options and have to consider going OOM
+> @@ -1909,8 +1916,7 @@ rebalance:
+>  			 * made, there are no other options and retrying is
+>  			 * unlikely to help.
+>  			 */
+> -			if (order > PAGE_ALLOC_COSTLY_ORDER &&
+> -						!(gfp_mask & __GFP_NOFAIL))
+> +			if (order > PAGE_ALLOC_COSTLY_ORDER && !nofail)
+>  				goto nopage;
+>
+>  			goto restart;
+> @@ -1919,7 +1925,7 @@ rebalance:
+>
+>  	/* Check if we should retry the allocation */
+>  	pages_reclaimed += did_some_progress;
+> -	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
+> +	if (should_alloc_retry(p, gfp_mask, order, pages_reclaimed)) {
+>  		/* Wait for some write requests to complete then retry */
+>  		congestion_wait(BLK_RW_ASYNC, HZ/50);
+>  		goto rebalance;
 
->  # echo 0 > /debug/tracing/tracing_enabled
->  # echo 0 > /debug/tracing/option/display-graph
->  # cat /debug/tracing/trace
-> 
-> # tracer: irqsoff
-> irqbalan-2672    0d..2.   55us+: Unknown type 13
-> irqbalan-2672    0d.h2.   62us+: Unknown type 13
-
-I forgot the max_tr buffer is actually the one displayed,
-so it needs reset as well when the display-graph option
-is switched on/off.
-
-
-> 
-> 
-> I think you can still do the "event" part, without effecting the way the
-> function graph outputs normally. I would not have given up on that
-> method.  You don't need to worry about it processing other events,
-> because when you register it to write as an event, it will only be
-> called when a function graph event was found. It will not be processing
-> other events. Only when the tracer itself overrides the default writing
-> will it do so.
-
-The events would be called only for TRACE_GRAPH_RET, TRACE_GRAPH_ENT entries and
-not for others, thats right.
-
-However it's the graph ouput code that outputs other events' text
-within "/*" and "*/".
-
-So using the event way, all other events would be printed as normal
-events(standard lines not alligned) with the standard header...
-not like comments, as they are in the function_graph tracer.
-
-I thought it'd be good for graph output to stay the same in irqsoff
-tracer as in function_graph tracer.. if that is not the concern
-the event way would be probably nicer :)
-
-I'm sending updated patchset with above 2 fixies right away,
-I can do/resend the event way later if needed.
-
-thanks,
-jirka
