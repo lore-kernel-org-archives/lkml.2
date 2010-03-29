@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752955Ab0C2Ojl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 10:39:41 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:60658 "EHLO smtp.polymtl.ca"
+	id S1752894Ab0C2Ojk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 10:39:40 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:60656 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752824Ab0C2Oji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752780Ab0C2Oji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Mar 2010 10:39:38 -0400
-Message-Id: <20100329143702.016858955@efficios.com>
+Message-Id: <20100329143702.569823647@efficios.com>
 References: <20100329143405.252313609@efficios.com>
 User-Agent: quilt/0.46-1
-Date: Mon, 29 Mar 2010 10:34:07 -0400
+Date: Mon, 29 Mar 2010 10:34:09 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com,
@@ -19,26 +19,22 @@ To: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
        dhowells@redhat.com, eric.dumazet@gmail.com, adobriyan@gmail.com,
        "David S. Miller" <davem@davemloft.net>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [patch 2/5] rcu head introduce rcu head init on stack
-Content-Disposition: inline; filename=rcu-head-introduce-rcu-head-init.patch
+Subject: [patch 4/5] rcu head remove init
+Content-Disposition: inline; filename=rcu-head-remove-init.patch
 X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Mon, 29 Mar 2010 14:37:02 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PEM:
-o     Would it be possible to make this bisectable as follows?
+RCU heads really don't need to be initialized. Their state before call_rcu()
+really does not matter.
 
-      a.      Insert a new patch after current patch 4/6 that
-              defines destroy_rcu_head_on_stack(),
-              init_rcu_head_on_stack(), and init_rcu_head() with
-              their !CONFIG_DEBUG_OBJECTS_RCU_HEAD definitions.
-
-This patch performs this transition.
+We need to keep init/destroy_rcu_head_on_stack() though, since we want
+debugobjects to be able to keep track of these objects.
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 CC: David S. Miller <davem@davemloft.net>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 CC: akpm@linux-foundation.org
 CC: mingo@elte.hu
 CC: laijs@cn.fujitsu.com
@@ -54,28 +50,26 @@ CC: dhowells@redhat.com
 CC: eric.dumazet@gmail.com
 CC: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- include/linux/rcupdate.h |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/linux/rcupdate.h |    6 ------
+ 1 file changed, 6 deletions(-)
 
 Index: linux.trees.git/include/linux/rcupdate.h
 ===================================================================
---- linux.trees.git.orig/include/linux/rcupdate.h	2010-03-29 09:43:35.000000000 -0400
-+++ linux.trees.git/include/linux/rcupdate.h	2010-03-29 09:57:09.000000000 -0400
-@@ -83,6 +83,14 @@ extern void rcu_scheduler_starting(void)
-        (ptr)->next = NULL; (ptr)->func = NULL; \
- } while (0)
+--- linux.trees.git.orig/include/linux/rcupdate.h	2010-03-29 10:11:32.000000000 -0400
++++ linux.trees.git/include/linux/rcupdate.h	2010-03-29 10:11:42.000000000 -0400
+@@ -77,12 +77,6 @@ extern void rcu_scheduler_starting(void)
+ #error "Unknown RCU implementation specified to kernel configuration"
+ #endif
  
-+static inline void init_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+
-+static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- extern struct lockdep_map rcu_lock_map;
+-#define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
+-#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
+-#define INIT_RCU_HEAD(ptr) do { \
+-       (ptr)->next = NULL; (ptr)->func = NULL; \
+-} while (0)
+-
+ static inline void init_rcu_head_on_stack(struct rcu_head *head)
+ {
+ }
 
 -- 
 Mathieu Desnoyers
