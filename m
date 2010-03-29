@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0C2RxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:53:01 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57072 "EHLO hera.kernel.org"
+	id S1755491Ab0C2RxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:53:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57102 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755181Ab0C2Rw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:52:59 -0400
+	id S1755388Ab0C2RxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 13:53:02 -0400
 From: Tejun Heo <tj@kernel.org>
 To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 12/17] mfd: update gfp/slab.h includes
-Date: Tue, 30 Mar 2010 02:52:40 +0900
-Message-Id: <1269885165-18617-13-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>
+Subject: [PATCH 16/17] acpi: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:44 +0900
+Message-Id: <1269885165-18617-17-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269885165-18617-1-git-send-email-tj@kernel.org>
 References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 17:52:56 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 17:52:59 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,36 +26,36 @@ gfp.h or slab.h is included as necessary.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Len Brown <lenb@kernel.org>
 ---
- drivers/gpio/rdc321x-gpio.c      |    1 +
- drivers/mfd/davinci_voicecodec.c |    1 +
+ drivers/acpi/apei/apei-base.c |    1 +
+ drivers/acpi/atomicio.c       |    1 +
  2 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
-index 46c5519..e344907 100644
---- a/drivers/gpio/rdc321x-gpio.c
-+++ b/drivers/gpio/rdc321x-gpio.c
-@@ -27,6 +27,7 @@
- #include <linux/pci.h>
- #include <linux/gpio.h>
- #include <linux/mfd/rdc321x.h>
-+#include <linux/slab.h>
- 
- struct rdc321x_gpio {
- 	spinlock_t		lock;
-diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
-index 9886aa8..3e75f02 100644
---- a/drivers/mfd/davinci_voicecodec.c
-+++ b/drivers/mfd/davinci_voicecodec.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index c35fec7..2672880 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -34,6 +34,7 @@
  #include <linux/module.h>
- #include <linux/device.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
 +#include <linux/slab.h>
- #include <linux/delay.h>
  #include <linux/io.h>
- #include <linux/clk.h>
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 4ed1385..e21b1e4 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -31,6 +31,7 @@
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
++#include <linux/slab.h>
+ #include <acpi/atomicio.h>
+ 
+ #define ACPI_PFX "ACPI: "
 -- 
 1.6.4.2
 
