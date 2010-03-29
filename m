@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab0C2Q3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:29:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44497 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754122Ab0C2Q3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:29:05 -0400
-Subject: Re: KVM bug, git bisected
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4BB0D11A.607@redhat.com>
-References: <4BADFD74.8060904@gmail.com>  <4BB0D11A.607@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 18:29:00 +0200
-Message-ID: <1269880140.12097.356.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754723Ab0C2Q3X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:29:23 -0400
+Received: from kroah.org ([198.145.64.141]:48128 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754554Ab0C2Q3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:29:07 -0400
+Date: Mon, 29 Mar 2010 09:26:54 -0700
+From: Greg KH <greg@kroah.com>
+To: mark.a.allyn@intel.com
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com
+Subject: Re: [PATCH 1/1] staging;rar_register: add TODO file
+Message-ID: <20100329162654.GA14150@kroah.com>
+References: <1269878335-8487-1-git-send-email-mark.a.allyn@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269878335-8487-1-git-send-email-mark.a.allyn@intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 12:11 -0400, Rik van Riel wrote:
-> On 03/27/2010 08:43 AM, Kent Overstreet wrote:
-> > commit 5beb49305251e5669852ed541e8e2f2f7696c53e
-> > Author: Rik van Riel <riel@redhat.com>
-> > Date: Fri Mar 5 13:42:07 2010 -0800
-> >
-> > mm: change anon_vma linking to fix multi-process server scalability issue
-> >
-> > I get this when starting kvm. The warning hasn't caused me problems, but
-> > I've also been getting a scheduling while atomic panic when I start kvm
-> > that I can only reproduce when I don't want to. It's definitely config
-> > dependent, I'd guess preempt might have something to do with it.
+On Mon, Mar 29, 2010 at 08:58:55AM -0700, mark.a.allyn@intel.com wrote:
+> From: Mark Allyn <allyn@allyn-test.(none)>
 > 
->  From your trace, it looks like mm_take_all_locks is taking close
-> to 256 locks, which is where the preempt_count could overflow into
-> the softirq count.
+> ---
+>  drivers/staging/rar_register/TODO |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/rar_register/TODO
 > 
-> Since kvm-qemu is exec'd, I am guessing you have a very large
-> number of VMAs in your qemu process.  Is that correct?
-> 
-> Peter, would it be safe to increase PREEMPT_BITS to eg. 10?
+> diff --git a/drivers/staging/rar_register/TODO b/drivers/staging/rar_register/TODO
+> new file mode 100644
+> index 0000000..2ec5e3c
+> --- /dev/null
+> +++ b/drivers/staging/rar_register/TODO
+> @@ -0,0 +1 @@
+> +Todo file for rar_register driver
 
-Possibly, but who's to say the thing won't bloat to 65k at which it'll
-hit the vma limit, but even that can be grown beyond that.
+What, a todo file that just says it is a todo file?
 
-When we started out with this I predicted this would happen, the
-following was said:
+Come on, you can do better than that...
 
----
-> When we created this the promise was that kvm would only do this on a
-> fresh mm with only a few vmas, has that changed?
-
-The number of vmas did increase, but not materially.  We do link with 
-more shared libraries though.
----
-
-That was when we broke the 48 barrier (jul'09), apparently we've now
-bloated to beyond 256, at this rate 10 will not last 6 months.
-
-Alternative we remove the preempt overflow warning, it shouldn't break,
-although it all is very ugly..
-
-
+greg k-h
