@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0C2VTa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:19:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44886 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab0C2VT3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:19:29 -0400
-Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
-From: Peter Zijlstra <peterz@infradead.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       abogani@texware.it
-In-Reply-To: <20100329211525.GA17703@linux.vnet.ibm.com>
-References: <20100329211525.GA17703@linux.vnet.ibm.com>
+	id S1753918Ab0C2VW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:22:28 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:53143 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751772Ab0C2VW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:22:26 -0400
+Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Daniel J Blueman <daniel.blueman@gmail.com>, linux-nfs@vger.kernel.org,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100329190307.GJ30031@ZenIV.linux.org.uk>
+References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
+	 <20100329190307.GJ30031@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 23:19:23 +0200
-Message-ID: <1269897564.12097.372.camel@laptop>
+Date: Mon, 29 Mar 2010 17:22:20 -0400
+Message-ID: <1269897740.15895.82.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 2 sum rcpts/h 9 sum msgs/h 3 total rcpts 2681 max rcpts/h 27 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: F69F25C7E333C2692AA498BA9DCF1292EC7B440C
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 2 total 281 max/h 7 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 14:15 -0700, Paul E. McKenney wrote:
-> Add an rcu_read_lock() / rcu_read_unlock() pair to protect a fork-time
-> cgroup access.  This seems likely to be a false positive.
+On Mon, 2010-03-29 at 20:03 +0100, Al Viro wrote: 
+> On Mon, Mar 29, 2010 at 07:36:45PM +0100, Daniel J Blueman wrote:
+> > Hi Trond,
+> > 
+> > When open fails and should return EPERM [1], instead we see an oops
+> > [2]. I see this on 2.6.34-rc1 and -rc2 mainline; NFS4 server is
+> > mainline 2.6.33.1.
+> > 
+> > Let me know if you can't reproduce it and I'll provide some analysis
+> > from this end.
 > 
-> Located by: Alessio Igor Bogani <abogani@texware.it>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
+> Joy...  ERR_PTR(-EPERM) in nd.intent.file, and whoever had called
+> lookup_instantiate_filp() hadn't bothered to check the return value.
 > 
->  sched.c |    2 ++
->  1 file changed, 2 insertions(+)
+> OK, I think I see what's going on.  Replace
+>                                 lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>                                 return 1;
+> with
+>                                 lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>                                 return state;
+> in fs/nfs/nfs4proc.c:nfs4_open_revalidate() and see if everything works
+> properly (or just lose the lookup_instantiate_filp() in there and simply
+> return state).
 > 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 9ab3cd7..d4bb5e0 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2621,7 +2621,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
->  	if (p->sched_class->task_fork)
->  		p->sched_class->task_fork(p);
->  
-> +	rcu_read_lock();
->  	set_task_cpu(p, cpu);
-> +	rcu_read_unlock();
->  
->  #if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
->  	if (likely(sched_info_on()))
 
-What got accessed? This patch just looks wrong.
+So this raises a point. Originally, the d_revalidate() call was required
+to return a boolean 0 or 1. Nowadays it allows the filesystem to return
+an error value instead.
+
+Should we therefore rewrite the NFS implementation to propagate errors
+like ESTALE (when it means the parent directory is gone), EACCES, EPERM
+and EIO instead of the current behaviour of just dropping the dentry and
+hence forcing a lookup?
+
+Trond
 
