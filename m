@@ -1,106 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab0C2TVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:21:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63874 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752742Ab0C2TVi (ORCPT
+	id S1753345Ab0C2TWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:22:03 -0400
+Received: from mail-ew0-f220.google.com ([209.85.219.220]:62637 "EHLO
+	mail-ew0-f220.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0C2TV7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:21:38 -0400
-X-Authority-Analysis: v=1.0 c=1 a=yqlkXEV8x04A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=7d_E57ReAAAA:8 a=yPCof4ZbAAAA:8 a=FsJUqAuNAAAA:8 a=Tty9oNO6AAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=meVymXHHAAAA:8 a=hOcEJDhqPqEo0Qbn3ScA:9 a=jm9RBlBu-nELeFWZbLvI9ZjtHScA:4 a=PUjeQqilurYA:10 a=D6-X0JM3zdQA:10 a=7DSvI1NPTFQA:10 a=pzSI60jIEQsA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 2.6.29.x - 2.6.31.1] module: fix __module_ref_addr()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Eric Dumazet <dada1@cosmosbay.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Tejun Heo <tj@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       stable <stable@kernel.org>
-In-Reply-To: <20100327143126.GA25615@Krystal>
-References: <20100327143126.GA25615@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 29 Mar 2010 15:21:32 -0400
-Message-ID: <1269890492.19685.4767.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Mar 2010 15:21:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=p1jWLGUk69EnN2w/lMLGVUGlBtnem5cgYD56yAGB5l0bDZIVdLatJ+/XkkON3xCxvF
+         pdHYD51X5SCeo39AFYC0GTAO+T/WAtWN9Us1ZrUTnLkl9zo9ukl52vt9FTNaNOojZ1Dj
+         RLGe+b0G2GymQCqSJ0+CzBYRDtPvKgWT+s07o=
+MIME-Version: 1.0
+In-Reply-To: <20100329190307.GJ30031@ZenIV.linux.org.uk>
+References: <6278d2221003291136p6481fe8emfb039403343c082@mail.gmail.com>
+	 <20100329190307.GJ30031@ZenIV.linux.org.uk>
+Date: Mon, 29 Mar 2010 20:21:57 +0100
+Message-ID: <6278d2221003291221j78d93780uff516b07f134ef0f@mail.gmail.com>
+Subject: Re: [2.6.34-rc2 NFS4 oops] open error path failure...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>, linux-nfs@vger.kernel.org,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does not apply to 2.6.34-rc, and the code in upstream looks
-to have been fixed. Should this go to stable?
+Hi Al,
 
--- Steve
+On Mon, Mar 29, 2010 at 8:03 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Mar 29, 2010 at 07:36:45PM +0100, Daniel J Blueman wrote:
+>> Hi Trond,
+>>
+>> When open fails and should return EPERM [1], instead we see an oops
+>> [2]. I see this on 2.6.34-rc1 and -rc2 mainline; NFS4 server is
+>> mainline 2.6.33.1.
+>>
+>> Let me know if you can't reproduce it and I'll provide some analysis
+>> from this end.
+>
+> Joy...  ERR_PTR(-EPERM) in nd.intent.file, and whoever had called
+> lookup_instantiate_filp() hadn't bothered to check the return value.
+>
+> OK, I think I see what's going on.  Replace
+>                                lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>                                return 1;
+> with
+>                                lookup_instantiate_filp(nd, (struct dentry *)state, NULL);
+>                                return state;
+> in fs/nfs/nfs4proc.c:nfs4_open_revalidate() and see if everything works
+> properly (or just lose the lookup_instantiate_filp() in there and simply
+> return state).
 
+That did the trick!
 
-On Sat, 2010-03-27 at 10:31 -0400, Mathieu Desnoyers wrote:
-> __module_ref_addr() should use per_cpu_ptr() to obfuscate the pointer
-> (RELOC_HIDE is needed for per cpu pointers).
-> 
-> This non-standard per-cpu pointer use has been introduced by commit
-> 720eba31f47aeade8ec130ca7f4353223c49170f
-> 
-> It causes a NULL pointer exception on some configurations when CONFIG_TRACING is
-> enabled on 2.6.33. This patch fixes the problem (acknowledged by Randy who
-> reported the bug).
-> 
-> It did not appear to hurt previously because most of the accesses were done
-> through local_inc, which probably obfuscated the access enough that no compiler
-> optimizations were done. But with local_read() done when CONFIG_TRACING is
-> active, this becomes a problem. Non-CONFIG_TRACING is probably affected as well
-> (module.c contains local_set and local_read that use __module_ref_addr()), but I
-> guess nobody noticed because we've been lucky enough that the compiler did not
-> generate the inappropriate optimization pattern there.
-> 
-> This patch should be queued for the 2.6.29.x through 2.6.33.x stable branches.
-> (tested on 2.6.33.1 x86_64)
-> 
-> The __module_ref_addr() problem disappears in 2.6.34-rc kernels because these
-> percpu accesses were re-factored.
-> 
-> It makes me wonder about other non-standard uses of per_cpu_offset: there is one
-> in module.c and two in lockdep.c, which are still in 2.6.34-rc. This should
-> probably be fixed by the code authors in separate patches.
-> 
-> lockdep.c: commit 8e18257d29238311e82085152741f0c3aa18b74d
-> module.c: commit 6b588c18f8dacfa6d7957c33c5ff832096e752d3
-> 
-> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
-> CC: Eric Dumazet <dada1@cosmosbay.com>
-> CC: Rusty Russell <rusty@rustcorp.com.au>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Andrew Morton <akpm@linux-foundation.org>
-> CC: Linus Torvalds <torvalds@linux-foundation.org>
-> CC: Greg Kroah-Hartman <gregkh@suse.de>
-> CC: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/module.h |    2 +-
->  kernel/module.c        |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6-lttng/include/linux/module.h
-> ===================================================================
-> --- linux-2.6-lttng.orig/include/linux/module.h	2010-03-25 11:01:53.000000000 -0400
-> +++ linux-2.6-lttng/include/linux/module.h	2010-03-25 11:01:59.000000000 -0400
-> @@ -467,7 +467,7 @@ void symbol_put_addr(void *addr);
->  static inline local_t *__module_ref_addr(struct module *mod, int cpu)
->  {
->  #ifdef CONFIG_SMP
-> -	return (local_t *) (mod->refptr + per_cpu_offset(cpu));
-> +	return (local_t *) per_cpu_ptr(mod->refptr, cpu);
->  #else
->  	return &mod->ref;
->  #endif
-> 
+Looks like I should have reported this when I first encountered it,
+but I guess it goes to show there needs to be some NFS validation
+(LTP?). I'm still trying to chase down a rare NFSv4 dentry "Stale NFS
+file handle" issue I've seen.
 
-
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
