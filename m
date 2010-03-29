@@ -1,79 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536Ab0C2P0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:26:16 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:37337 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312Ab0C2P0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:26:14 -0400
-Date: Mon, 29 Mar 2010 08:25:57 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: Zdenek Kabelac <zdenek.kabelac@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-nfs@vger.kernel.org
-Subject: Re: INFO: suspicious rcu_dereference_check()
-Message-ID: <20100329152557.GD2569@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <c4e36d111003250348q678eb2e6w4f3e8133e7fd6e58@mail.gmail.com>
- <1269531400.3648.1.camel@localhost.localdomain>
+	id S1753124Ab0C2P1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:27:37 -0400
+Received: from mail-fx0-f223.google.com ([209.85.220.223]:62997 "EHLO
+	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab0C2P1f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 11:27:35 -0400
+Message-ID: <4BB0C6E1.2090606@petalogix.com>
+Date: Mon, 29 Mar 2010 17:27:29 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269531400.3648.1.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+CC: Eric Dumazet <eric.dumazet@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
+       Grant Likely <grant.likely@secretlab.ca>,
+       John Linn <John.Linn@xilinx.com>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
+Subject: Re: Network performance - iperf
+References: <4BB09021.6020202@petalogix.com> <1269864994.2164.21.camel@edumazet-laptop> <4BB0BF28.5090505@petalogix.com>
+In-Reply-To: <4BB0BF28.5090505@petalogix.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 11:36:40AM -0400, Trond Myklebust wrote:
-> On Thu, 2010-03-25 at 11:48 +0100, Zdenek Kabelac wrote: 
-> > Hi
-> > 
-> > I've enabled rcu correctness for my  todays 2.6.34-rc2 kernel.
-> > 
-> > I'm getting this INFO: from my kvm guest (which uses host's nfs
-> > exported directory.)
-> > This
-> > 
-> > ===================================================
-> > [ INFO: suspicious rcu_dereference_check() usage. ]
-> > ---------------------------------------------------
-> > fs/nfs/delegation.c:348 invoked rcu_dereference_check() without protection!
-> > 
-> > other info that might help us debug this:
-> > 
-> > 
-> > rcu_scheduler_active = 1, debug_locks = 0
-> > 2 locks held by rm/1820:
-> >  #0:  (&sb->s_type->i_mutex_key#13/1){+.+.+.}, at:
-> > [<ffffffff81138e1b>] do_unlinkat+0x9b/0x1c0
-> >  #1:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff81136a76>]
-> > vfs_unlink+0x56/0xf0
-> > 
-> > stack backtrace:
-> > Pid: 1820, comm: rm Not tainted 2.6.34-rc2-00186-ge79a302 #60
-> > Call Trace:
-> >  [<ffffffff810819fb>] lockdep_rcu_dereference+0xbb/0xc0
-> >  [<ffffffffa0228351>] nfs_inode_return_delegation+0x101/0x110 [nfs]
-> >  [<ffffffffa01fd58d>] nfs_unlink+0xad/0x2a0 [nfs]
-> >  [<ffffffff81136aba>] vfs_unlink+0x9a/0xf0
-> >  [<ffffffff81148365>] ? mnt_want_write+0x65/0xb0
-> >  [<ffffffff81138f03>] do_unlinkat+0x183/0x1c0
-> >  [<ffffffff8142b66d>] ? retint_swapgs+0xe/0x13
-> >  [<ffffffff81083985>] ? trace_hardirqs_on_caller+0x155/0x1a0
-> >  [<ffffffff8142a232>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> >  [<ffffffff811390a2>] sys_unlinkat+0x22/0x40
-> >  [<ffffffff81031dc8>] sysenter_dispatch+0x7/0x2c
-> > 
+Michal Simek wrote:
+> Eric Dumazet wrote:
+>> Le lundi 29 mars 2010 à 13:33 +0200, Michal Simek a écrit :
+>>
+>>> Do you have any idea howto improve TCP/UDP performance in general?
+>>> Or tests which can point me on weak places.
+>>
+>> Could you post "netstat -s" on your receiver, after fresh boot and your
+>> iperf session, for 32 MB and 256 MB ram case ?
+>>
 > 
-> It is a 100% bogus warning. There are tentative patches floating around
-> to fix the above warning, but they haven't been merged yet.
+> I am not sure if is helpful but look below.
 > 
-> In the meantime, please ignore...
+Sorry I forget to c&p that second part. :-(
 
-Did you want to carry these patches, or would you rather that I do so?
+Look below.
+Michal
 
-(And sorry for the slow response, was on holiday last week.)
+32MB
 
-							Thanx, Paul
+~ # cat /proc/meminfo | head -n 1
+MemTotal:          30024 kB
+~ # iperf -s
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size: 85.3 KByte (default)
+------------------------------------------------------------
+[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 43577
+[ ID] Interval       Transfer     Bandwidth
+[  6]  0.0-50.0 sec  78.0 MBytes  13.1 Mbits/sec
+~ # ./netstat -s
+Ip:
+     56596 total packets received
+     0 forwarded
+     0 incoming packets discarded
+     56596 incoming packets delivered
+     15752 requests sent out
+Icmp:
+     0 ICMP messages received
+     0 input ICMP message failed.
+     ICMP input histogram:
+     0 ICMP messages sent
+     0 ICMP messages failed
+     ICMP output histogram:
+Tcp:
+     0 active connections openings
+     1 passive connection openings
+     0 failed connection attempts
+     0 connection resets received
+     0 connections established
+     56596 segments received
+     15752 segments send out
+     0 segments retransmited
+     0 bad segments received.
+     0 resets sent
+Udp:
+     0 packets received
+     0 packets to unknown port received.
+     0 packet receive errors
+     0 packets sent
+     RcvbufErrors: 0
+     SndbufErrors: 0
+UdpLite:
+     InDatagrams: 0
+     NoPorts: 0
+     InErrors: 0
+     OutDatagrams: 0
+     RcvbufErrors: 0
+     SndbufErrors: 0
+error parsing /proc/net/snmp: Success
+
+
+
+256MB
+
+
+~ # cat /proc/meminfo | head -n 1
+MemTotal:         257212 kB
+~ # iperf -s
+------------------------------------------------------------
+Server listening on TCP port 5001
+TCP window size: 85.3 KByte (default)
+------------------------------------------------------------
+[  6] local 192.168.0.10 port 5001 connected with 192.168.0.101 port 46069
+[ ID] Interval       Transfer     Bandwidth
+[  6]  0.0-50.2 sec  19.5 MBytes  3.26 Mbits/sec
+~ # ./netstat -s
+Ip:
+     14163 total packets received
+     0 forwarded
+     0 incoming packets discarded
+     14163 incoming packets delivered
+     5209 requests sent out
+Icmp:
+     0 ICMP messages received
+     0 input ICMP message failed.
+     ICMP input histogram:
+     0 ICMP messages sent
+     0 ICMP messages failed
+     ICMP output histogram:
+Tcp:
+     0 active connections openings
+     1 passive connection openings
+     0 failed connection attempts
+     0 connection resets received
+     0 connections established
+     14163 segments received
+     5209 segments send out
+     0 segments retransmited
+     0 bad segments received.
+     0 resets sent
+Udp:
+     0 packets received
+     0 packets to unknown port received.
+     0 packet receive errors
+     0 packets sent
+     RcvbufErrors: 0
+     SndbufErrors: 0
+UdpLite:
+     InDatagrams: 0
+     NoPorts: 0
+     InErrors: 0
+     OutDatagrams: 0
+     RcvbufErrors: 0
+     SndbufErrors: 0
+error parsing /proc/net/snmp: Success
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
