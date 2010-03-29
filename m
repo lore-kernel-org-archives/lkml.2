@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab0C2O51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 10:57:27 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46739 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902Ab0C2O50 (ORCPT
+	id S1753264Ab0C2PEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:04:22 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:52926 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab0C2PEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 10:57:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=SgWjfEwgtqwol0w+1bBtnmBdKrYHlT9jMj+394Z5H71BqP4OAVSwx4kYdaUF6wjROq
-         k5zPxWQ9swdCKK7tH61rFLnw0pVEJbWFBnbnr7/QdgPca+NJ90kKdQ7PQIHT0V6biDi2
-         Pkt0kxzexOQ37ZlPJrb1U6c++0cx9PVeQE3Cc=
+	Mon, 29 Mar 2010 11:04:21 -0400
+Date: Mon, 29 Mar 2010 10:00:57 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Andi Kleen <andi@firstfloor.org>
+cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <20100327131138.GD20695@one.firstfloor.org>
+Message-ID: <alpine.DEB.2.00.1003290952410.14606@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home>
+ <877hp4i76d.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003221300180.17230@router.home> <20100322185310.GA20695@one.firstfloor.org> <alpine.DEB.2.00.1003261231410.30253@router.home> <20100327131138.GD20695@one.firstfloor.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <b2cc26e41003290740i5c548cabgc95d91958cd1075a@mail.gmail.com>
-References: <b2cc26e41003241537h228028c4n1374f4b042175885@mail.gmail.com> 
-	<g76q40hzkdcrt9mt90UYAxe124vaj_firegpg@mail.gmail.com> <b2cc26e41003251229w5d266c18gd17fdcf404136bd7@mail.gmail.com> 
-	<ff13bc9a1003251400ted1993ao73c15ee86e3e717a@mail.gmail.com> 
-	<a36005b51003260456m441568c1vcc8b90eed0421b9d@mail.gmail.com> 
-	<ff13bc9a1003261406w7bf4bb77sf57edce14f0dcc73@mail.gmail.com> 
-	<a36005b51003261415u1cc89f84r843abaa81f1d7396@mail.gmail.com> 
-	<b2cc26e41003270450w1a90f9b2j5cbbae9726122b4e@mail.gmail.com> 
-	<a36005b51003270505s42b5e69co14d2acbb27dc204a@mail.gmail.com> 
-	<b2cc26e41003290740i5c548cabgc95d91958cd1075a@mail.gmail.com>
-From: Ulrich Drepper <drepper@gmail.com>
-Date: Mon, 29 Mar 2010 07:57:05 -0700
-Message-ID: <a36005b51003290757v1de2e357u7478a79fa1c466a@mail.gmail.com>
-Subject: Re: execve() returns ENOENT when ld-linux.so isn't found
-To: Olaf van der Spek <olafvdspek@gmail.com>
-Cc: Luca Barbieri <luca.barbieri@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 07:40, Olaf van der Spek <olafvdspek@gmail.com> wrote:
-> File not found is a very common error message with a pretty will
-> understood meaning. Overloading it in this way causes confusion.
+On Sat, 27 Mar 2010, Andi Kleen wrote:
 
-Again and again: this is not the message the user should ever see.  On
-its own.  Once you precede it with the message about the dynamic
-linker not being found and the name the ENOENT string is the right
-one.
+> On Fri, Mar 26, 2010 at 12:33:07PM -0500, Christoph Lameter wrote:
+> > Here is a pgm.7 manpage describing how the socket API could look like for
+> > a PGM implementation.
+> >
+> > I dumped the RM_* based socket options from the other OS since most of the
+> > options were unusable.
+>
+> I did a quick read and the manpage/interface seem reasonable to me.
+
+Thanks. I will then proceed to get a patch out that implements the
+network environment. Then we can plug the openpgm logic in there.
+
+> You changed the parameter struct fields to lower case. While
+> that looks definitely more Linuxy than before does it mean programs
+> have to #ifdef this? It might be good idea to have at least some
+> optional compat header that #defines.
+
+The socket API will be completely different. The basic handling of the
+sockets is the same (binding, listening, connecting). There is no way of
+mapping M$ socket options to Linux socket options with the approach that
+I proposed in the manpage. The stats structure is different too since some
+key elements were missing.
+
+What users are there of the M$ api? I have seen vendors supplying their
+own pgm implementation (guess due to bit rot in the old M$
+implementation).
+
+
