@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab0C2UOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:14:52 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:49864 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab0C2UOu convert rfc822-to-8bit (ORCPT
+	id S1753630Ab0C2UPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:15:01 -0400
+Received: from forward3.mail.yandex.net ([77.88.46.8]:46440 "EHLO
+	forward3.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752192Ab0C2UO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:14:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=ne1GxJzzcNAsQ9CjyHE/FQ2E0ffFFwGSHOAPKMT3KcDID5DYeE+Fk0cSgSMPe2Rx1R
-         4GJ8WEAOc29iTH7vhlF5/X/GQw7N4+IaEV+I0f/PPtzcOblGHbxFEfHf9tOVTaFpvGl6
-         37SND37S/sQPWywFOFlDq6N3RU9P9j5SiJ6VM=
-References: <aa4c40ff1003241811p151a3aaakad1798c64ab29d24@mail.gmail.com> <20100325113618.024b8643@varda>
-Message-Id: <8E1CBD32-5DCE-4931-A0AB-6713229193D2@gmail.com>
-From: James Lamanna <jlamanna@gmail.com>
-To: =?utf-8?Q?Alejandro_Riveira_Fern=C3=A1ndez?= <ariveira@gmail.com>
-In-Reply-To: <20100325113618.024b8643@varda>
-Content-Type: text/plain;
-	charset=utf-8;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 8BIT
-X-Mailer: iPhone Mail (7D11)
-Mime-Version: 1.0 (iPhone Mail 7D11)
-Subject: Re: Hardware Interrupt Balancing
-Date: Mon, 29 Mar 2010 13:14:35 -0700
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	Mon, 29 Mar 2010 16:14:57 -0400
+X-Greylist: delayed 536 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Mar 2010 16:14:57 EDT
+From: Sergey Temerkhanov <temerkhanov@yandex.ru>
+To: linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] [RFC] Xilinx MPMC SDMA subsystem
+Date: Mon, 29 Mar 2010 23:04:39 +0400
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, steve@digidescorp.com,
+       microblaze-uclinux@itee.uq.edu.au,
+       Sergey Temerkhanov <temerkhanov@cifronik.ru>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <201003172118.41559.temerkhanov@cifronik.ru> <1269877373.6173.27.camel@iscandar.digidescorp.com> <fa686aa41003290856t24a248a5j5dfda623ed2805c0@mail.gmail.com>
+In-Reply-To: <fa686aa41003290856t24a248a5j5dfda623ed2805c0@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201003292304.39657.temerkhanov@yandex.ru>
+X-Yandex-TimeMark: 1269893159
+X-Yandex-Spam: 1
+X-Yandex-Front: smtp4.mail.yandex.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 29 March 2010 19:56:15 Grant Likely wrote:
+> On Mon, Mar 29, 2010 at 9:42 AM, Steven J. Magnani
+> 
+> <steve@digidescorp.com> wrote:
+> > On Fri, 2010-03-26 at 17:53 -0600, Grant Likely wrote:
+> >> I've not got time to review this patch right now, but Sergey and
+> >> Steven, you both posted MPMC drivers on the same day; Steven on the
+> >> microblaze list and Sergey on the powerpc list.  Can you two please
+> >> coordinate and figure out how to mork toward a single driver that will
+> >> meet both your needs?  I don't want to have 2 drivers (3 if you count
+> >> the ll_temac driver) in mainline for the same hardware interface.
+> >
+> > I don't think we'll end up with a single driver. A MPMC DMA Engine
+> > driver is useful only on "loopback" SDMA ports. Sergey's code looks like
+> > a nice generic interface to Xilinx SDMA HW that could be used by the
+> > xlldma and ll_temac drivers, for instance. Both of those will get
+> > smaller, but won't go away.
 
+Yes, it's like having IBM EMAC driver and MAL layer or something 
 
---James
+> >
+> > For this to be useful to me, it would need to be located somewhere more
+> > accessible than arch/powerpc and it would need to have initialization
+> > methods that don't depend on OF. In my build I would have platform code
+> > that binds to the xlldma platform attachment, which would call Sergey's
+> > SDMA code to assign it the proper resources.
+> 
+> That should be fine.
 
-On Mar 25, 2010, at 3:36, Alejandro Riveira Fernández <ariveira@gmail.co 
-m> wrote:
+Well, I'll look at my old code for the platform interface bindings. I remember 
+it worked well on arch/ppc with my other drivers.
 
-> El Wed, 24 Mar 2010 18:11:36 -0700
-> James Lamanna <jlamanna@gmail.com> escribió:
->
->> Hi,
->> I have a Dual Xeon (single core each w/HT) machine and I noticed the
->> other day that interrupts are not
->> being balanced across the 2 processors:
->>
->>          CPU0       CPU1       CPU2       CPU3
->>  0:        306          0          0 3254413993    IO-APIC-edge   
->> timer
->>  1:          0          0          0      13468    IO-APIC-edge   
->> i8042
->>  8:          0          0          0          3    IO-APIC-edge  rtc
->>  9:          0          0          0          0   IO-APIC-level  acpi
->> 12:          0          0          0          4    IO-APIC-edge   
->> i8042
->> 169:          0          0          0          0   IO-APIC-level   
->> uhci_hcd:usb2
->> 177:          0          0          0   16743166   IO-APIC-level   
->> ata_piix
->> 185:          0          0          0          1   IO-APIC-level   
->> ehci_hcd:usb1
->> 193:          0          0          0          0   IO-APIC-level   
->> uhci_hcd:usb3
->> 201:          0          0          0 1867922172   IO-APIC-level   
->> eth0
->> 209:          0          0          0 3254690559   IO-APIC-level   
->> wct4xxp
->> NMI:          1          0          0          0
->> LOC: 3255261535 3255261540 3255261549 3255220504
->> ERR:          0
->> MIS:          0
->>
->> However the cpu_affinity of say, wct4xxp is:
->> # cat /proc/irq/209/smp_affinity
->> 0000000f
->
-> Maybe you just need to run irqbalance http://www.irqbalance.org/
-> « sudo aptitude install irqbalance » in Debian system
+> 
+> > Any objections to having Sergey's code live in drivers/dma, and putting
+> > sdma.h out in include/linux? Might need to tweak the file/function names
+> > some to head off namespace issues. Or is there some other strategy for
+> > managing Xilinx-related drivers common to both Microblaze and PowerPC?
+> 
+> I have no objections.  This sounds like a good plan.
 
-I do not want to use irq balance because everytime irqbalance moves  
-the CPU of my PRI card, there is a hiccup in voice calls.
-I manually moved the interrupts for the wct4xxp to CPU0 using  
-smp_affinity = 1.
+Or we can put Xilinx-related headers to, i.e., include/linux/xilinx. There 
+might be some other candidates for this. 
+> 
+> g.
+> 
 
-However today I got a lot of soft lockups on CPU0 due to asterisk in  
-udp_sendmsg() - unsure if moving the interrupt caused this...could it?
-
-Thanks.
-
--- James
->
+Regards, Sergey Temerkhanov, Cifronic ZAO
