@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab0C2TGa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 15:06:30 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:41467 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab0C2TG3 (ORCPT
+	id S1752792Ab0C2TKz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 15:10:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38493 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab0C2TKy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 15:06:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=RS6EnVf7026n0O9AGnn+57OAAYelhh5+2327qau4lTrvOXMU4GjzKCV+FVyiM8OwCo
-         jMzuQngythBxFQIaux2HYl2IjMVc2LpsAjnzDrpnop53Evop/G9ZaP/a1KqGknpHVYtl
-         UxgH67q5LiYFkGqqSVFhg7v77MgDOLtXw/nxo=
+	Mon, 29 Mar 2010 15:10:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100329185652.GH5101@nowhere>
-References: <1269866171-7331-2-git-send-email-jkacur@redhat.com>
-	 <1383519680.42441269869622199.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-	 <20100329185652.GH5101@nowhere>
-Date: Mon, 29 Mar 2010 21:06:27 +0200
-X-Google-Sender-Auth: 2b8637a7cda9825a
-Message-ID: <520f0cf11003291206i7fae62b7ie7d0e480237aa1f2@mail.gmail.com>
-Subject: Re: [PATCH] nvram: Convert nvram_ioctl to unlocked_ioctl, remove 
-	smp_lock.h
-From: John Kacur <jkacur@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@linux.intel.com>,
-       Arnd Bergmann <arnd@arndb.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Matthew Wilcox <matthew@wil.cx>,
-       Oleg Nesterov <oleg@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+In-Reply-To: <20100327225522.GD13203@n2100.arm.linux.org.uk>
+References: <1268338199-32222-1-git-send-email-mroberto@cpti.cetuc.puc-rio.br> 
+	<20100327225522.GD13203@n2100.arm.linux.org.uk>
+From: Marcelo Jimenez <mroberto@cpti.cetuc.puc-rio.br>
+Date: Mon, 29 Mar 2010 16:10:33 -0300
+Message-ID: <cecb6d8f1003291210q27c0dc47l7d81870e530bb6f0@mail.gmail.com>
+Subject: Re: [PATCH] ARM: mach-sa1100: Put nanoEngine support back in the 
+	kernel.
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: mad_soft@inbox.ru, rpjday@crashcourse.ca, jaswinderrajput@gmail.com,
+       kristoffer.ericson@gmail.com, linux-arm-kernel@lists.infradead.org,
        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 8:56 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Mon, Mar 29, 2010 at 09:33:42AM -0400, John Kacur wrote:
->> Sorry for the double send, I must have messed-up something with
->> git-send-email. The --compose failed on me, and that part of the message was
->> lost afaict.
->>
->> What I wanted to say was, Ingo, in the past you carried nvram fixes, so
->> if no-one objects to this change, can you integrate this one?
->
->
->
-> Note: Just in case, as I don't know if Ingo or Thomas still maintain
-> a kill-bkl tree, I keep this patch somewhere so that if it's not merged
-> in a tree in one week or so, I'll queue it up in mine.
->
+Hi Russel and Kristoffer,
 
-In this particular case, I would like to see it get tip testing though.
+On Sat, Mar 27, 2010 at 19:55, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+>
+> Please don't include defconfigs along with other code.
 
-Thanks.
+Ok, I have removed the defconfig and put it in a separate patch.
+
+>> +#include <linux/init.h>
+>> +#include <linux/kernel.h>
+>> +#include <linux/mtd/mtd.h>
+>> +#include <linux/mtd/partitions.h>
+>> +#include <linux/root_dev.h>
+>> +#include <linux/tty.h>
+>
+> Do you really need tty.h in here?
+
+No, I don't. :) Removed.
+
+>> +/* Flash bank 0 */
+>> +static struct mtd_partition nanoengine_partitions[] = {
+>> +     {
+>> +     .name           = "nanoEngine boot firmware and parameter table",
+>
+> Each '{' should indent the next line by a tab.
+
+Ok, that was another "line over 80 characters" warning. Fixed.
+
+I will resubmit the patch, merged with the CPU FREQ patch, which is
+where it belongs. And a better changelog.
+
+Also I have removed Kristoffer's "Acked-by" because this is a changed version.
+
+Regards,
+Marcelo.
