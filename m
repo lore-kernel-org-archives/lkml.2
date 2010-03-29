@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab0C2Csk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:48:40 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:19484 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755953Ab0C2Cqv (ORCPT
+	id S1756073Ab0C2Csu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:48:50 -0400
+Received: from rcsinet12.oracle.com ([148.87.113.124]:56737 "EHLO
+	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755952Ab0C2Cqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Mar 2010 22:46:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,92 +16,64 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 14/31] lmb: Add find_memory_core_early()
-Date: Sun, 28 Mar 2010 19:43:07 -0700
-Message-Id: <1269830604-26214-15-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/31] x86: Make smp_locks end with page alignment
+Date: Sun, 28 Mar 2010 19:42:54 -0700
+Message-Id: <1269830604-26214-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0203.4BB01468.0093,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0204.4BB01462.0136,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to node range in early_node_map[] with __find_lmb_area
-to find free range.
+Try to fix
+------------[ cut here ]------------
+WARNING: at arch/x86/mm/init.c:342 free_init_pages+0x4c/0xfa()
+free_init_pages: range [0x40daf000, 0x40db5c24] is not aligned
+Modules linked in:
+Pid: 0, comm: swapper Not tainted 2.6.34-rc2-tip-03946-g4f16b23-dirty #50
+Call Trace:
+ [<40232e9f>] warn_slowpath_common+0x65/0x7c
+ [<4021c9f0>] ? free_init_pages+0x4c/0xfa
+ [<40881434>] ? _etext+0x0/0x24
+ [<40232eea>] warn_slowpath_fmt+0x24/0x27
+ [<4021c9f0>] free_init_pages+0x4c/0xfa
+ [<40881434>] ? _etext+0x0/0x24
+ [<40d3f4bd>] alternative_instructions+0xf6/0x100
+ [<40d3fe4f>] check_bugs+0xbd/0xbf
+ [<40d398a7>] start_kernel+0x2d5/0x2e4
+ [<40d390ce>] i386_start_kernel+0xce/0xd5
+---[ end trace 4eaa2a86a8e2da22 ]---
 
-Will be used by find_lmb_area_node()
-
-find_lmb_area_node will be used to find right buffer for NODE_DATA
+Comments in vmlinux.lds.S already said:
+|        /*
+|         * smp_locks might be freed after init
+|         * start/end must be page aligned
+|         */
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- include/linux/mm.h |    2 ++
- mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ arch/x86/kernel/vmlinux.lds.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c8442b6..8070bd8 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1159,6 +1159,8 @@ extern void free_bootmem_with_active_regions(int nid,
- 						unsigned long max_low_pfn);
- int add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid);
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit);
- void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
- 				 u64 goal, u64 limit);
- typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index d03c946..faae23a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -21,6 +21,7 @@
- #include <linux/pagemap.h>
- #include <linux/jiffies.h>
- #include <linux/bootmem.h>
-+#include <linux/lmb.h>
- #include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <linux/kmemcheck.h>
-@@ -3393,6 +3394,34 @@ void __init free_bootmem_with_active_regions(int nid,
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index 44879df..2cc2497 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -291,8 +291,8 @@ SECTIONS
+ 	.smp_locks : AT(ADDR(.smp_locks) - LOAD_OFFSET) {
+ 		__smp_locks = .;
+ 		*(.smp_locks)
+-		__smp_locks_end = .;
+ 		. = ALIGN(PAGE_SIZE);
++		__smp_locks_end = .;
  	}
- }
  
-+#ifdef CONFIG_HAVE_LMB
-+u64 __init find_memory_core_early(int nid, u64 size, u64 align,
-+					u64 goal, u64 limit)
-+{
-+	int i;
-+
-+	/* Need to go over early_node_map to find out good range for node */
-+	for_each_active_range_index_in_nid(i, nid) {
-+		u64 addr;
-+		u64 ei_start, ei_last;
-+
-+		ei_last = early_node_map[i].end_pfn;
-+		ei_last <<= PAGE_SHIFT;
-+		ei_start = early_node_map[i].start_pfn;
-+		ei_start <<= PAGE_SHIFT;
-+		addr = __find_lmb_area(ei_start, ei_last,
-+					 goal, limit, size, align);
-+
-+		if (addr == -1ULL)
-+			continue;
-+
-+		return addr;
-+	}
-+
-+	return -1ULL;
-+}
-+#endif
-+
- int __init add_from_early_node_map(struct range *range, int az,
- 				   int nr_range, int nid)
- {
+ #ifdef CONFIG_X86_64
 -- 
 1.6.4.2
 
