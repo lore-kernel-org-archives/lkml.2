@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0C2QXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:23:37 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:33825 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754296Ab0C2QXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:23:35 -0400
-Date: Mon, 29 Mar 2010 18:23:30 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 4/12] drivers/gpio: Add missing unlock
-In-Reply-To: <Pine.LNX.4.64.1003291734110.21896@ask.diku.dk>
-Message-ID: <Pine.LNX.4.64.1003291822470.21896@ask.diku.dk>
-References: <Pine.LNX.4.64.1003291734110.21896@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754384Ab0C2Q0b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:26:31 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:28438 "EHLO
+	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753704Ab0C2Q03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:26:29 -0400
+Date: Mon, 29 Mar 2010 09:25:13 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jon Masters <jcm@jonmasters.org>
+Subject: [PATCH -next] kmemcheck: build failure after merge of the slabh
+ tree
+Message-Id: <20100329092513.6e6faf2a.randy.dunlap@oracle.com>
+In-Reply-To: <20100329154208.009a8ae2.sfr@canb.auug.org.au>
+References: <20100329154208.009a8ae2.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4BB0D470.0174:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Mon, 29 Mar 2010 15:42:08 +1100 Stephen Rothwell wrote:
 
-In an error handling case the lock is not unlocked.  The return is
-converted to a goto, to share the unlock at the end of the function.
+> Hi Tejun,
+> 
+> After merging the slabh tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 
-A simplified version of the semantic patch that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+This tree seems to be a bit messy.  :(
 
-// <smpl>
-@r exists@
-expression E1;
-identifier f;
-@@
+Sorry if I missed this patch in the (email) storm.
 
-f (...) { <+...
-* spin_lock_irqsave (E1,...);
-... when != E1
-* return ...;
-...+> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
+mm/kmemcheck.c also needs slab.h added to it:
 
 ---
-Corrected patch.  Adjusted the return value.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
- drivers/gpio/timbgpio.c             |   12 ++++++++----
- 1 files changed, 8 insertions(+), 4 deletions(-)
+Fix build errors due to missing slab.h:
 
-diff --git a/drivers/gpio/timbgpio.c b/drivers/gpio/timbgpio.c
-index d4295fa..871608b 100644
---- a/drivers/gpio/timbgpio.c
-+++ b/drivers/gpio/timbgpio.c
-@@ -130,6 +130,7 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
- 	unsigned long flags;
- 	u32 lvr, flr, bflr = 0;
- 	u32 ver;
-+	int ret = 0;
+mm/kmemcheck.c:69: error: dereferencing pointer to incomplete type
+mm/kmemcheck.c:69: error: 'SLAB_NOTRACK' undeclared (first use in this function)
+mm/kmemcheck.c:82: error: dereferencing pointer to incomplete type
+mm/kmemcheck.c:94: error: dereferencing pointer to incomplete type
+mm/kmemcheck.c:94: error: dereferencing pointer to incomplete type
+mm/kmemcheck.c:94: error: 'SLAB_DESTROY_BY_RCU' undeclared (first use in this function)
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ mm/kmemcheck.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20100329.orig/mm/kmemcheck.c
++++ linux-next-20100329/mm/kmemcheck.c
+@@ -1,6 +1,7 @@
+ #include <linux/gfp.h>
+ #include <linux/mm_types.h>
+ #include <linux/mm.h>
++#include <linux/slab.h>
+ #include <linux/kmemcheck.h>
  
- 	if (offset < 0 || offset > tgpio->gpio.ngpio)
- 		return -EINVAL;
-@@ -153,8 +154,10 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
- 	}
- 
- 	if ((trigger & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH) {
--		if (ver < 3)
--			return -EINVAL;
-+		if (ver < 3) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
- 		else {
- 			flr |= 1 << offset;
- 			bflr |= 1 << offset;
-@@ -174,9 +177,10 @@ static int timbgpio_irq_type(unsigned irq, unsigned trigger)
- 		iowrite32(bflr, tgpio->membase + TGPIO_BFLR);
- 
- 	iowrite32(1 << offset, tgpio->membase + TGPIO_ICR);
--	spin_unlock_irqrestore(&tgpio->lock, flags);
- 
--	return 0;
-+out:
-+	spin_unlock_irqrestore(&tgpio->lock, flags);
-+	return ret;
- }
- 
- static void timbgpio_irq(unsigned int irq, struct irq_desc *desc)
+ void kmemcheck_alloc_shadow(struct page *page, int order, gfp_t flags, int node)
+
