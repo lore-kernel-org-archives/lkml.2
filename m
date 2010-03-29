@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab0C2UcE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:32:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51324 "EHLO mx1.redhat.com"
+	id S1753918Ab0C2UcI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:32:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753605Ab0C2Ub7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:31:59 -0400
+	id S1753884Ab0C2UcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:32:04 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip 6/7] perf probe: Support basic type casting
+Subject: [PATCH -tip 7/7] perf probe: Support DW_OP_call_frame_cfa in debuginfo
 To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
        DLE <dle-develop@lists.sourceforge.net>,
@@ -16,8 +16,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 29 Mar 2010 16:38:39 -0400
-Message-ID: <20100329203839.2577.26030.stgit@localhost6.localdomain6>
+Date: Mon, 29 Mar 2010 16:38:54 -0400
+Message-ID: <20100329203854.2577.20037.stgit@localhost6.localdomain6>
 In-Reply-To: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
 References: <20100329203736.2577.56018.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -28,9 +28,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add basic type casting for arguments to perf probe. This allows
-users to specify the actual type of arguments. Of course, if
-user sets invalid types, kprobe-tracer rejects that.
+When building kernel without CONFIG_FRAME_POINTER, gcc uses
+CFA (canonical frame address) for frame base. With this patch,
+perf probe just gets CFI (call frame information) from debuginfo
+and search corresponding CFA from the CFI. IOW, this allows
+perf probe works correctly on the kernel without CONFIG_FRAME_POINTER.
+
+<Before>
+ ./perf probe -fn sched_slice:12 lw.weight
+  Fatal: DW_OP 156 is not supported.
+              (^^^ DW_OP_call_frame_cfa)
+
+<After>
+./perf probe -fn sched_slice:12 lw.weight
+Add new event:
+  probe:sched_slice    (on sched_slice:12 with weight=lw.weight)
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -41,139 +53,64 @@ Cc: Mike Galbraith <efault@gmx.de>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 ---
 
- tools/perf/Documentation/perf-probe.txt |    3 ++-
- tools/perf/util/probe-event.c           |   23 ++++++++++++++++++++++-
- tools/perf/util/probe-event.h           |    1 +
- tools/perf/util/probe-finder.c          |   10 ++++++++--
- 4 files changed, 33 insertions(+), 4 deletions(-)
+ tools/perf/util/probe-finder.c |   14 +++++++++++---
+ tools/perf/util/probe-finder.h |    1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index d781fc5..21820c3 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -85,9 +85,10 @@ PROBE ARGUMENT
- --------------
- Each probe argument follows below syntax.
- 
-- [NAME=]LOCALVAR|$retval|%REG|@SYMBOL
-+ [NAME=]LOCALVAR|$retval|%REG|@SYMBOL[:TYPE]
- 
- 'NAME' specifies the name of this argument (optional). You can use the name of local variable, local data structure member (e.g. var->field, var.field2), or kprobe-tracer argument format (e.g. $retval, %ax, etc). Note that the name of this argument will be set as the last member name if you specify a local data structure member (e.g. field2 for 'var->field1.field2'.)
-+'TYPE' casts the type of this argument (optional). If omitted, perf probe automatically set the type based on debuginfo.
- 
- LINE SYNTAX
- -----------
-diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-index 05ca4a9..bef2805 100644
---- a/tools/perf/util/probe-event.c
-+++ b/tools/perf/util/probe-event.c
-@@ -435,7 +435,7 @@ static void parse_perf_probe_point(char *arg, struct perf_probe_event *pev)
- }
- 
- /* Parse perf-probe event argument */
--static void parse_perf_probe_arg(const char *str, struct perf_probe_arg *arg)
-+static void parse_perf_probe_arg(char *str, struct perf_probe_arg *arg)
- {
- 	char *tmp;
- 	struct perf_probe_arg_field **fieldp;
-@@ -445,9 +445,17 @@ static void parse_perf_probe_arg(const char *str, struct perf_probe_arg *arg)
- 	tmp = strchr(str, '=');
- 	if (tmp) {
- 		arg->name = xstrndup(str, tmp - str);
-+		pr_debug("name:%s ", arg->name);
- 		str = tmp + 1;
- 	}
- 
-+	tmp = strchr(str, ':');
-+	if (tmp) {	/* Type setting */
-+		*tmp = '\0';
-+		arg->type = xstrdup(tmp + 1);
-+		pr_debug("type:%s ", arg->type);
-+	}
-+
- 	tmp = strpbrk(str, "-.");
- 	if (!is_c_varname(str) || !tmp) {
- 		/* A variable, register, symbol or special value */
-@@ -603,6 +611,15 @@ int synthesize_perf_probe_arg(struct perf_probe_arg *pa, char *buf, size_t len)
- 		len -= ret;
- 		field = field->next;
- 	}
-+
-+	if (pa->type) {
-+		ret = e_snprintf(tmp, len, ":%s", pa->type);
-+		if (ret <= 0)
-+			goto error;
-+		tmp += ret;
-+		len -= ret;
-+	}
-+
- 	return tmp - buf;
- error:
- 	die("Failed to synthesize perf probe argument: %s", strerror(-ret));
-@@ -825,6 +842,8 @@ void clear_perf_probe_event(struct perf_probe_event *pev)
- 			free(pev->args[i].name);
- 		if (pev->args[i].var)
- 			free(pev->args[i].var);
-+		if (pev->args[i].type)
-+			free(pev->args[i].type);
- 		field = pev->args[i].field;
- 		while (field) {
- 			next = field->next;
-@@ -1145,6 +1164,8 @@ static int convert_to_kprobe_trace_events(struct perf_probe_event *pev,
- 			if (pev->args[i].name)
- 				tev->args[i].name = xstrdup(pev->args[i].name);
- 			tev->args[i].value = xstrdup(pev->args[i].var);
-+			if (pev->args[i].type)
-+				tev->args[i].type = xstrdup(pev->args[i].type);
- 		}
- 	}
- 
-diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-index 0759db6..5a9837c 100644
---- a/tools/perf/util/probe-event.h
-+++ b/tools/perf/util/probe-event.h
-@@ -57,6 +57,7 @@ struct perf_probe_arg_field {
- struct perf_probe_arg {
- 	char				*name;	/* Argument name */
- 	char				*var;	/* Variable name */
-+	char				*type;	/* Type name */
- 	struct perf_probe_arg_field	*field;	/* Structure fields */
- };
- 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index f3c2706..11d6592 100644
+index 11d6592..26f02b9 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -541,7 +541,10 @@ static void convert_variable(Dwarf_Die *vr_die, struct probe_finder *pf)
- 					&die_mem);
- 		vr_die = &die_mem;
- 	}
--	convert_variable_type(vr_die, pf->tvar);
-+	if (pf->pvar->type)
-+		pf->tvar->type = xstrdup(pf->pvar->type);
-+	else
-+		convert_variable_type(vr_die, pf->tvar);
- 	/* *expr will be cached in libdw. Don't free it. */
- 	return ;
- error:
-@@ -554,13 +557,16 @@ error:
- static void find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
- {
- 	Dwarf_Die vr_die;
--	char buf[32];
-+	char buf[32], *ptr;
+@@ -396,7 +396,6 @@ static void convert_location(Dwarf_Op *op, struct probe_finder *pf)
+ 	const char *regs;
+ 	struct kprobe_trace_arg *tvar = pf->tvar;
  
- 	/* TODO: Support arrays */
- 	if (pf->pvar->name)
- 		pf->tvar->name = xstrdup(pf->pvar->name);
- 	else {
- 		synthesize_perf_probe_arg(pf->pvar, buf, 32);
-+		ptr = strchr(buf, ':');	/* Change type separator to _ */
-+		if (ptr)
-+			*ptr = '_';
- 		pf->tvar->name = xstrdup(buf);
- 	}
+-	/* TODO: support CFA */
+ 	/* If this is based on frame buffer, set the offset */
+ 	if (op->atom == DW_OP_fbreg) {
+ 		if (pf->fb_ops == NULL)
+@@ -623,11 +622,17 @@ static void convert_probe_point(Dwarf_Die *sp_die, struct probe_finder *pf)
+ 	/* Get the frame base attribute/ops */
+ 	dwarf_attr(sp_die, DW_AT_frame_base, &fb_attr);
+ 	ret = dwarf_getlocation_addr(&fb_attr, pf->addr, &pf->fb_ops, &nops, 1);
+-	if (ret <= 0 || nops == 0)
++	if (ret <= 0 || nops == 0) {
+ 		pf->fb_ops = NULL;
++	} else if (nops == 1 && pf->fb_ops[0].atom == DW_OP_call_frame_cfa &&
++		   pf->cfi != NULL) {
++		Dwarf_Frame *frame;
++		ret = dwarf_cfi_addrframe(pf->cfi, pf->addr, &frame);
++		DIE_IF(ret != 0);
++		dwarf_frame_cfa(frame, &pf->fb_ops, &nops);
++	}
  
+ 	/* Find each argument */
+-	/* TODO: use dwarf_cfi_addrframe */
+ 	tev->nargs = pf->pev->nargs;
+ 	tev->args = xzalloc(sizeof(struct kprobe_trace_arg) * tev->nargs);
+ 	for (i = 0; i < pf->pev->nargs; i++) {
+@@ -836,6 +841,9 @@ int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
+ 	if (!dbg)
+ 		return -ENOENT;
+ 
++	/* Get the call frame information from this dwarf */
++	pf.cfi = dwarf_getcfi(dbg);
++
+ 	off = 0;
+ 	line_list__init(&pf.lcache);
+ 	/* Loop on CUs (Compilation Unit) */
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index 3564f22..ddaa2a7 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -42,6 +42,7 @@ struct probe_finder {
+ 	struct list_head	lcache;		/* Line cache for lazy match */
+ 
+ 	/* For variable searching */
++	Dwarf_CFI		*cfi;		/* Call Frame Information */
+ 	Dwarf_Op		*fb_ops;	/* Frame base attribute */
+ 	struct perf_probe_arg	*pvar;		/* Current target variable */
+ 	struct kprobe_trace_arg	*tvar;		/* Current result variable */
 
 
 -- 
