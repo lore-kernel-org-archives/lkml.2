@@ -1,121 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab0C2Q0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:26:41 -0400
-Received: from lucidpixels.com ([75.144.35.66]:59967 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754556Ab0C2Q0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:26:39 -0400
-Date: Mon, 29 Mar 2010 12:26:37 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
- failed: Inappropriate ioctl for device / PreInit returned NULL
-In-Reply-To: <Pine.LNX.4.44L0.1003291116240.1680-100000@iolanthe.rowland.org>
-Message-ID: <alpine.DEB.2.00.1003291224170.27175@p34.internal.lan>
-References: <Pine.LNX.4.44L0.1003291116240.1680-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754635Ab0C2Q07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:26:59 -0400
+Received: from zcars04e.nortel.com ([47.129.242.56]:62742 "EHLO
+	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab0C2Q05 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:26:57 -0400
+Message-ID: <4BB0D455.305@nortel.com>
+Date: Mon, 29 Mar 2010 10:24:53 -0600
+From: "Chris Friesen" <cfriesen@nortel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Jan III Sobieski <jan3sobi3ski@gmail.com>
+CC: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Another Linux Patent Issued [7,684,347 method and apparatus for
+ network packet capture distributed storage system]
+References: <69a32f311003281638g216d6d31n15bb837c5353d773@mail.gmail.com> <4BAFFAAC.9030905@gmail.com>
+In-Reply-To: <4BAFFAAC.9030905@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Mar 2010 16:26:54.0019 (UTC) FILETIME=[A4AC8130:01CACF5C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/28/2010 06:56 PM, Jan III Sobieski wrote:
+> W dniu 2010-03-29 01:38, Jeffrey Merkey pisze:
+>> http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO2&Sect2=HITOFF&p=1&u=%2Fnetahtml%2FPTO%2Fsearch-bool.html&r=1&f=G&l=50&co1=AND&d=PTXT&s1=merkey.INNM.&OS=IN/merkey&RS=IN/merkey
 
+> So you patented network sniffer?
 
-On Mon, 29 Mar 2010, Alan Stern wrote:
+No, he patented a *really fast* network sniffer.
 
-> On Mon, 29 Mar 2010, Justin Piszcz wrote:
->
-> What about the "registers" file?
-Here it is (after I plugged it back in)
-
-bus pci, device 0000:00:0b.0
-OHCI Host Controller
-ohci_hcd
-OHCI 1.0, NO legacy support registers
-control 0x68f RWE RWC HCFS=operational IE PLE CBSR=3
-cmdstatus 0x00000 SOC=0
-intrstatus 0x00000020 FNO
-intrenable 0x8000004e MIE RHSC RD SF WDH
-ed_controlhead 7bef1b90
-hcca frame 0x4657
-fmintvl 0xa7782edf FIT FSMPS=0xa778 FI=0x2edf
-fmremaining 0x80002b76 FRT FR=0x2b76
-periodicstart 0x2a2f
-lsthresh 0x0628
-hub poll timer off
-roothub.a 01000208 POTPGT=1 NPS NDP=8(8)
-roothub.b 00000000 PPCM=0000 DR=0000
-roothub.status 00008000 DRWE
-roothub.portstatus [0] 0x00000100 PPS
-roothub.portstatus [1] 0x00000100 PPS
-roothub.portstatus [2] 0x00000100 PPS
-roothub.portstatus [3] 0x00000100 PPS
-roothub.portstatus [4] 0x00000303 LSDA PPS PES CCS
-roothub.portstatus [5] 0x00000303 LSDA PPS PES CCS
-roothub.portstatus [6] 0x00000100 PPS
-roothub.portstatus [7] 0x00000100 PPS
-
-> This all looks normal.  It's possible that we've been looking for the
-> bug in the wrong place; maybe there's nothing wrong with the OHCI
-> controller.
->
-> So next you should get a usbmon trace showing what happens on bus 2
-> when one of these mouse failures occurs.  Instructions for usbmon are
-> in Documentation/usb/usbmon.txt.
->
-> At the same time, just to be increase my level of certainty, you should
-> apply the following debugging patch for ohci-hcd.  Let's see both the
-> usbmon trace and the dmesg log for the same event.  The trace and the
-> debugging patch will generate plenty of output during normal operation,
-> but don't worry about that.  Only the part starting from shortly before
-> the mouse quits really matters.
-Yes, I've done this before for a bug in the Intel USB controller (P55) on
-another motherboard.. Should be doable, always funny though how it does not
-happen when you are trying to make it happen.
-
-For your patch, what does this patch against? It does not apply cleanly
-for 2.6.33.
-
->
-> Alan Stern
->
->
-> Index: usb-2.6/drivers/usb/host/ohci-hcd.c
-> ===================================================================
-> --- usb-2.6.orig/drivers/usb/host/ohci-hcd.c
-> +++ usb-2.6/drivers/usb/host/ohci-hcd.c
-> @@ -290,6 +290,8 @@ static int ohci_urb_dequeue(struct usb_h
-> 		 */
-> 		urb_priv = urb->hcpriv;
-> 		if (urb_priv) {
-> +			ohci_info(ohci, "start unlink urb %p, ed %p\n",
-> +					urb, urb_priv->ed);
-> 			if (urb_priv->ed->state == ED_OPER)
-> 				start_ed_unlink (ohci, urb_priv->ed);
-> 		}
-> @@ -324,6 +326,9 @@ ohci_endpoint_disable (struct usb_hcd *h
->
-> 	if (!ed)
-> 		return;
-> +	ohci_info(ohci, "disable ed %p (#%02x) state %d%s\n",
-> +			ed, ep->desc.bEndpointAddress, ed->state,
-> +			list_empty(&ed->td_list) ? "" : " (has tds)");
->
-> rescan:
-> 	spin_lock_irqsave (&ohci->lock, flags);
-> @@ -770,6 +775,10 @@ static irqreturn_t ohci_irq (struct usb_
-> 		return IRQ_HANDLED;
-> 	}
->
-> +	ohci_info(ohci, "int %x enable %x rm_list %p\n", ints,
-> +			ohci_readl(ohci, &regs->intrenable),
-> +			ohci->ed_rm_list);
-> +
-> 	/* We only care about interrupts that are enabled */
-> 	ints &= ohci_readl(ohci, &regs->intrenable);
->
->
+Chris
