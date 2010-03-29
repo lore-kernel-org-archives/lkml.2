@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab0C2CsZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:48:25 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:55920 "EHLO
-	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab0C2Cqy (ORCPT
+	id S1756049Ab0C2Csk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:48:40 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:19484 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755953Ab0C2Cqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:46:54 -0400
+	Sun, 28 Mar 2010 22:46:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,53 +16,92 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 31/31] x86: make e820 to be __initdata
-Date: Sun, 28 Mar 2010 19:43:24 -0700
-Message-Id: <1269830604-26214-32-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 14/31] lmb: Add find_memory_core_early()
+Date: Sun, 28 Mar 2010 19:43:07 -0700
+Message-Id: <1269830604-26214-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0209.4BB01465.0064,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0203.4BB01468.0093,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally no users after init boot stage. We can free it
+According to node range in early_node_map[] with __find_lmb_area
+to find free range.
+
+Will be used by find_lmb_area_node()
+
+find_lmb_area_node will be used to find right buffer for NODE_DATA
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 --
- arch/x86/kernel/e820.c      |    2 +-
- 2 files changed, 1 insertions(+), 3 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index cd7de51..f2ab72e 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -73,8 +73,6 @@ struct e820map {
- #define BIOS_END		0x00100000
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c8442b6..8070bd8 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1159,6 +1159,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index d03c946..faae23a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -21,6 +21,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/jiffies.h>
+ #include <linux/bootmem.h>
++#include <linux/lmb.h>
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
+@@ -3393,6 +3394,34 @@ void __init free_bootmem_with_active_regions(int nid,
+ 	}
+ }
  
- #ifdef __KERNEL__
--/* see comment in arch/x86/kernel/e820.c */
--extern struct e820map e820;
- 
- #if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
- extern int centaur_ram_top;
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 2182bb0..5a0d688 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * user can e.g. boot the original kernel with mem=1G while still booting the
-  * next kernel with full memory.
-  */
--struct e820map e820;
-+static struct e820map __initdata e820;
- static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
++#ifdef CONFIG_HAVE_LMB
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
++{
++	int i;
++
++	/* Need to go over early_node_map to find out good range for node */
++	for_each_active_range_index_in_nid(i, nid) {
++		u64 addr;
++		u64 ei_start, ei_last;
++
++		ei_last = early_node_map[i].end_pfn;
++		ei_last <<= PAGE_SHIFT;
++		ei_start = early_node_map[i].start_pfn;
++		ei_start <<= PAGE_SHIFT;
++		addr = __find_lmb_area(ei_start, ei_last,
++					 goal, limit, size, align);
++
++		if (addr == -1ULL)
++			continue;
++
++		return addr;
++	}
++
++	return -1ULL;
++}
++#endif
++
+ int __init add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid)
+ {
 -- 
 1.6.4.2
 
