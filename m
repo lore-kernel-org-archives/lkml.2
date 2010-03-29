@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0C2VBc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:01:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54040
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753296Ab0C2VBa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:01:30 -0400
-Date: Mon, 29 Mar 2010 14:01:31 -0700 (PDT)
-Message-Id: <20100329.140131.118617762.davem@davemloft.net>
-To: fweisbec@gmail.com
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [BUG] fault while using perf callchains in sparc64
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100329204931.GJ5101@nowhere>
-References: <20100328043446.GA11748@nowhere>
-	<20100329.130931.149161813.davem@davemloft.net>
-	<20100329204931.GJ5101@nowhere>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753397Ab0C2VFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:05:24 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52095 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751240Ab0C2VFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:05:23 -0400
+Date: Mon, 29 Mar 2010 14:05:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] NFS: Fix RCU warnings in
+ nfs_inode_return_delegation_noreclaim() [ver #2]
+Message-ID: <20100329210520.GN2569@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100329192159.GM2569@linux.vnet.ibm.com>
+ <20100319022527.GC2894@linux.vnet.ibm.com>
+ <20100318133302.29754.1584.stgit@warthog.procyon.org.uk>
+ <19192.1269889348@redhat.com>
+ <23274.1269893706@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <23274.1269893706@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 29 Mar 2010 22:49:33 +0200
+On Mon, Mar 29, 2010 at 09:15:06PM +0100, David Howells wrote:
+> Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> 
+> > > > 	if (rcu_dereference_check(nfsi->delegation,
+> > > > 				  lockdep_is_held(&clp->cl_lock)) != NULL) {
+> > > 
+> > > If clp->cl_lock protects this pointer, why the need for
+> > > rcu_dereference_check() at all?  The check is redundant since the line
+> > > above gets the very lock we're checking for.
+> > 
+> > Because Arnd Bergmann is working on a set of patches that makes sparse
+> > complain if you access an RCU-protected pointer directly, without using
+> > some flavor of rcu_dereference().
+> > 
+> > So your approach would work for the moment, but would need another
+> > change, probably in the 2.6.35 timeframe.
+> 
+> My objection to using rcu_dereference_check() here is that it's a dynamic
+> check: the compiler emits code to do it, since the lock/unlock status of what
+> the pointer points to cannot be determined easily at compiler time - and then
+> the barrier is interpolated anyway unnecessarily.
 
-> While building perf tools, or the kernel, or whatever, I often
-> get the following error in the middle:
-> 
-> 	gcc: Internal error: Segmentation fault (program as)
-> 
-> And this in the logs:
-> 
-> 	[ 1429.477049] as[2658]: segfault at 4054dfa8 ip 0000000000020690 (rpc 00000000700adcf4) sp 00000000ffcbf008 
-> error 30001 in as[10000+40000]
+But for !CONFIG_PROVE_RCU, rcu_dereference_check() is compiled out:
 
-What distribution and binutils are you using?
+	#define rcu_dereference_check(p, c)     rcu_dereference_raw(p)
+
+And rcu_dereference_raw() is the same as the old rcu_dereference().
+
+So this should not be a problem, given that CONFIG_PROVE_RCU should not
+be used for production systems.
+
+							Thanx, Paul
