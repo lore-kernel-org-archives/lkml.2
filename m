@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab0C2MTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:19:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52771 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751899Ab0C2MTc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:19:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lQzE/YuAbHehqn9em8Jv3daEr1tsSdf5opmRwgNQYtU3SmDT/RFEkyttN+Q92g018E
-         MEZZggwSOW7RlVoKc0im+3ozwdMY9JjW27cyzexKUBkzYBmO1UxjDhjJERyF1bdRpGVB
-         KFqvrG+VD05OuvOPMzrm5hD06fjGC4M1LEwY4=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 8/8] staging: vt6656: tcrc.c: Fixed coding style issues
-Date: Mon, 29 Mar 2010 23:19:20 +1100
-Message-Id: <1269865160-17572-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1752410Ab0C2MTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:19:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752241Ab0C2MTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 08:19:43 -0400
+Date: Mon, 29 Mar 2010 13:17:32 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Americo Wang <xiyou.wangcong@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Roland McGrath <roland@redhat.com>,
+       Spencer Candland <spencer@bluehost.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC,PATCH 1/2] cputimers/proc: do_task_stat()->task_times()
+	can race with getrusage()
+Message-ID: <20100329111731.GA4488@dhcp-lab-161.englab.brq.redhat.com>
+References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326214906.GA18467@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100326214906.GA18467@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed minor problems with indentation.
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/vt6656/tcrc.c |   21 +++++++++++----------
- 1 files changed, 11 insertions(+), 10 deletions(-)
+On Fri, Mar 26, 2010 at 10:49:06PM +0100, Oleg Nesterov wrote:
+> As for do_task_stat()->thread_group_times(), I think we can make it
+> rc-safe without breaking /bin/top.
+> 
+> 	1. add spin_lock_irqsave(&sig->cputimer.lock) around
+> 	   sig->prev_Xtime = max(...)
+The easiest way to avoid that races is move all calls to task_times()
+and thread_group_times() inside ->siglock, but that's a bit crappy.
 
-diff --git a/drivers/staging/vt6656/tcrc.c b/drivers/staging/vt6656/tcrc.c
-index 5f0c747..3464801 100644
---- a/drivers/staging/vt6656/tcrc.c
-+++ b/drivers/staging/vt6656/tcrc.c
-@@ -41,7 +41,7 @@
- 
- /*---------------------  Static Variables  --------------------------*/
- 
--// 32-bit CRC table
-+/* 32-bit CRC table */
- static const DWORD s_adwCrc32Table[256] = {
-     0x00000000L, 0x77073096L, 0xEE0E612CL, 0x990951BAL,
-     0x076DC419L, 0x706AF48FL, 0xE963A535L, 0x9E6495A3L,
-@@ -132,17 +132,18 @@ static const DWORD s_adwCrc32Table[256] = {
-  * Return Value: CRC-32
-  *
- -*/
--DWORD CRCdwCrc32 (PBYTE pbyData, UINT cbByte, DWORD dwCrcSeed)
-+DWORD CRCdwCrc32(PBYTE pbyData, UINT cbByte, DWORD dwCrcSeed)
- {
--    DWORD dwCrc;
-+	DWORD dwCrc;
- 
--    dwCrc = dwCrcSeed;
--    while (cbByte--) {
--        dwCrc = s_adwCrc32Table[(BYTE)((dwCrc ^ (*pbyData)) & 0xFF)] ^ (dwCrc >> 8);
--        pbyData++;
--    }
-+	dwCrc = dwCrcSeed;
-+	while (cbByte--) {
-+		dwCrc = s_adwCrc32Table[(BYTE)((dwCrc ^ (*pbyData)) & 0xFF)] ^
-+			(dwCrc >> 8);
-+		pbyData++;
-+	}
- 
--    return dwCrc;
-+	return dwCrc;
- }
- 
- 
-@@ -164,7 +165,7 @@ DWORD CRCdwCrc32 (PBYTE pbyData, UINT cbByte, DWORD dwCrcSeed)
-  * Return Value: CRC-32
-  *
- -*/
--DWORD CRCdwGetCrc32 (PBYTE pbyData, UINT cbByte)
-+DWORD CRCdwGetCrc32(PBYTE pbyData, UINT cbByte)
- {
-     return ~CRCdwCrc32(pbyData, cbByte, 0xFFFFFFFFL);
- }
--- 
-1.6.3.3
+There is also another impossible race here. On 32-bit machines
+reading/writing sum_exec_runtime is not atomic, IIRC ->siglock
+protect about that as well.
 
+> 	2. Add a couple of barriers into thread_group_cputime()
+> 	   and __exit_signal() so that without ->siglock we can
+> 	   never overestimate utime/stime if we race with exit.
+> 
+> 	   If we underestimate these values, this should be fine:
+> 
+> 	   - the error can't be "systematic", the next read from
+> 	     /prod/pid/stat will see the updated values
+> 
+> 	   - the prev_Xtime logic in thread_group_times() ensures
+> 	     the reported time can never go back.
+> 
+> 	   IOW: at worse, cat /proc/pid/stat can miss the time
+> 	   which the exited thread spent on CPU after the previous
+> 	   read of /proc/pid/stat. This looks absolutely harmless,
+> 	   the next read will see this time.
+> 
+> 	   Probably we can even detect this case if we look at
+> 	   sig->nr_threads and retry.
+Races with __exit_signal() can lead to count Xtime values twice,
+first: in tsk->Xtime, second: after task exits, in sig->Xtime. As now
+we have sig->prev_Xtime, this no longer can break times monotonic,
+but still accounting times twice can be problematic. For example let
+assume, we have many threads and one, which consume 90% cpu-time of
+the process, exits and is accounted twice. Then for long period
+sig->prev_Xtime will show value that is much bigger than the estimated
+value should be.
+
+> I'll try to make patches unless someone has a better idea.
+> 
+> I just can't accept the fact that we are doing while_each_thread()
+> under ->siglock here ;)
+Problem is not only in do_task_stat(). We have couple other places
+where we iterate over all threads with ->siglock taken. Maybe we can somehow
+redesign things to avoid that. Maybe increase tsk>-signal->Xtime together
+with tsk->Xtime is not so bad idea. I'm going to think about that.
+
+Stanislaw
