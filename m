@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122Ab0C2PxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:53:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52934 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752338Ab0C2Pw7 (ORCPT
+	id S1754202Ab0C2P4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:56:44 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:55893 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab0C2P4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:52:59 -0400
-Date: Mon, 29 Mar 2010 08:47:48 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86 fixes
-In-Reply-To: <20100326154354.GA10959@elte.hu>
-Message-ID: <alpine.LFD.2.00.1003290844420.3579@i5.linux-foundation.org>
-References: <20100326154354.GA10959@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 29 Mar 2010 11:56:39 -0400
+Date: Mon, 29 Mar 2010 17:57:00 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux390@de.ibm.com,
+       linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/12] arch/s390/kernel: Add missing unlock
+Message-ID: <20100329155700.GA3066@osiris.boeblingen.de.ibm.com>
+References: <Pine.LNX.4.64.1003291733350.21896@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1003291733350.21896@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Mar 29, 2010 at 05:33:52PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> In the default case the lock is not unlocked.  The return is
+> converted to a goto, to share the unlock at the end of the function.
+> 
+> diff --git a/arch/s390/kernel/topology.c b/arch/s390/kernel/topology.c
+> index 14ef6f0..247b4c2 100644
+> --- a/arch/s390/kernel/topology.c
+> +++ b/arch/s390/kernel/topology.c
+> @@ -165,10 +165,11 @@ static void tl_to_cores(struct tl_info *info)
+>  		default:
+>  			clear_cores();
+>  			machine_has_topology = 0;
+> -			return;
+> +			goto out;
+>  		}
+>  		tle = next_tle(tle);
+>  	}
+> +out:
+>  	spin_unlock_irq(&topology_lock);
 
-
-Ingo, what's the state of the "fix CONFIG_NO_BOOTMEM=y" patches? I've seen 
-the patches several times, but I've been expecting to pull them from the 
--tip tree rather than apply them directly.
-
-It's mainly the "avoid infinite loop" thing, but Yinghai seems to think 
-the three first patches of his (currently 31-patch) series are all 2.6.34 
-material.
-
-Ping?
-
-		Linus
+Applied. Thank you!
