@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab0C2ULl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:11:41 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48995
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752742Ab0C2ULk (ORCPT
+	id S1753411Ab0C2UOa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:14:30 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51030 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab0C2UO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:11:40 -0400
-Date: Mon, 29 Mar 2010 13:11:41 -0700 (PDT)
-Message-Id: <20100329.131141.80866523.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+	Mon, 29 Mar 2010 16:14:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=iZXcoU7qXeuX6AY0/5XjVjXxvB3dFr7VmX+M2t9qIY0L/7PO8YEE7oMOgva3YlIaHW
+         MVlA2b7VY6iM8wGa/JImBMZzK4yAQdB6ht8Uv+LvUsXTgzHgSF8sByiYhlIKLsXN3H7G
+         kAbdbxY8JpOvHwUMlCxRrnlz3VNuoIIXuzcPU=
+Message-ID: <4BB10A21.9080602@pobox.com>
+Date: Mon, 29 Mar 2010 16:14:25 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Subject: Re: [PATCH 15/17] libata: update gfp/slab.h includes
+References: <1269885165-18617-1-git-send-email-tj@kernel.org> <1269885165-18617-16-git-send-email-tj@kernel.org>
+In-Reply-To: <1269885165-18617-16-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/29/2010 01:52 PM, Tejun Heo wrote:
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Stephen Rothwell<sfr@canb.auug.org.au>
+> Cc: Jeff Garzik<jgarzik@pobox.com>
+> ---
+>   drivers/ata/ahci_platform.c |    1 +
+>   drivers/ata/libahci.c       |    1 +
+>   2 files changed, 2 insertions(+), 0 deletions(-)
 
-Please pull to get these Sparc fixes, thanks!
+Unless you object, I'll go ahead and apply this to #upstream...
 
-The following changes since commit b72c40949b0f04728f2993a1434598d3bad094ea:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../jbarnes/pci-2.6
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
-
-David S. Miller (1):
-      sparc64: Properly truncate pt_regs framepointer in perf callback.
-
-Julia Lawall (1):
-      arch/sparc/kernel: Use set_cpus_allowed_ptr
-
-Rob Landley (1):
-      sparc: Fix use of uid16_t and gid16_t in asm/stat.h
-
- arch/sparc/include/asm/stat.h    |    4 ++--
- arch/sparc/kernel/perf_event.c   |    2 +-
- arch/sparc/kernel/sysfs.c        |    4 ++--
- arch/sparc/kernel/us2e_cpufreq.c |    8 ++++----
- arch/sparc/kernel/us3_cpufreq.c  |    8 ++++----
- 5 files changed, 13 insertions(+), 13 deletions(-)
 
