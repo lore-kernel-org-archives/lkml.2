@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753741Ab0C2UPT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:15:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62091 "EHLO mx1.redhat.com"
+	id S1753881Ab0C2UPb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:15:31 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:61360 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab0C2UPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:15:15 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100329192159.GM2569@linux.vnet.ibm.com>
-References: <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Mon, 29 Mar 2010 21:15:06 +0100
-Message-ID: <23274.1269893706@redhat.com>
+	id S1753752Ab0C2UP2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:15:28 -0400
+Date: Mon, 29 Mar 2010 22:15:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       LM Sensors <lm-sensors@lm-sensors.org>
+Subject: [GIT PULL] hwmon fixes for 2.6.34
+Message-ID: <20100329221525.1706d287@hyperion.delvare>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+Hi Linus,
 
-> > > 	if (rcu_dereference_check(nfsi->delegation,
-> > > 				  lockdep_is_held(&clp->cl_lock)) != NULL) {
-> > 
-> > If clp->cl_lock protects this pointer, why the need for
-> > rcu_dereference_check() at all?  The check is redundant since the line
-> > above gets the very lock we're checking for.
-> 
-> Because Arnd Bergmann is working on a set of patches that makes sparse
-> complain if you access an RCU-protected pointer directly, without using
-> some flavor of rcu_dereference().
-> 
-> So your approach would work for the moment, but would need another
-> change, probably in the 2.6.35 timeframe.
+Please pull hwmon subsystem fixes for Linux 2.6.34 from:
 
-My objection to using rcu_dereference_check() here is that it's a dynamic
-check: the compiler emits code to do it, since the lock/unlock status of what
-the pointer points to cannot be determined easily at compiler time - and then
-the barrier is interpolated anyway unnecessarily.
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
 
-David
+ drivers/hwmon/Kconfig    |    4 ++--
+ drivers/hwmon/coretemp.c |    4 ++--
+ drivers/hwmon/w83793.c   |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+---------------
+
+Dan Carpenter (1):
+      hwmon: (w83793) Saving negative errors in unsigned
+
+Dean Nelson (1):
+      hwmon: (coretemp) Add missing newline to dev_warn() message
+
+Jaswinder Singh Rajput (1):
+      hwmon: (asc7621) Add X58 entry in Kconfig
+
+Prarit Bhargava (1):
+      hwmon: (coretemp) Fix cpu model output
+
+Thanks,
+-- 
+Jean Delvare
