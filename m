@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab0C2EmN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 00:42:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53654 "EHLO smtps.tip.net.au"
+	id S1752858Ab0C2Emo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 00:42:44 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:33580 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751398Ab0C2EmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 00:42:11 -0400
-Date: Mon, 29 Mar 2010 15:42:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jon Masters <jcm@jonmasters.org>
-Subject: linux-next: build failure after merge of the slabh tree
-Message-Id: <20100329154208.009a8ae2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.1 (GTK+ 2.18.9; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751398Ab0C2Emn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 00:42:43 -0400
+Date: Sun, 28 Mar 2010 21:42:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: don't call rcu_preempt_note_context_switch() in
+ rcu_check_callbacks()
+Message-ID: <20100329044236.GB2343@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BB014DF.9030905@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BB014DF.9030905@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Mon, Mar 29, 2010 at 10:47:59AM +0800, Lai Jiangshan wrote:
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 7bit
+> 
+> 
+> Even though in user mode or idle mode, rcu_check_callbacks() is not
+> context switch, so we don't call rcu_preempt_note_context_switch()
+> in rcu_check_callbacks().
+> 
+> Though there is no harm that calls rcu_preempt_note_context_switch()
+> in rcu_check_callbacks(), but it is waste.
+> 
+> rcu_check_callbacks()
+>   rcu_sched_qs()
+>     rcu_preempt_note_context_switch()
+>        Now, ->rcu_read_lock_nesting == 0, so we just calls
+>        rcu_preempt_qs(), but, rcu_preempt_check_callbacks()
+>        will call it again and set the ->rcu_read_unlock_special
+>        correct again.
+> 
+> So let rcu_preempt_check_callbacks() handle things for us.
 
-After merging the slabh tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Nice!!!
 
-drivers/misc/hwlat_detector.c: In function 'debug_sample_fread':
-drivers/misc/hwlat_detector.c:713: error: implicit declaration of function 'kzalloc'
-drivers/misc/hwlat_detector.c:713: warning: assignment makes pointer from integer without a cast
-drivers/misc/hwlat_detector.c:755: error: implicit declaration of function 'kfree'
+But how about naming the new function that invokes
+rcu_preempt_note_context_switch() something like
+rcu_sched_note_context_switch(), and then leaving the
+name of rcu_sched_qs() the same (rather than changing
+it to __rcu_sched_qs(), as below)?
 
-Caused by commit d103d3b3e8512312b5254950035366d4422a479a ("percpu: don't
-implicitly include slab.h from percpu.h") from the slabh tree interacting
-with commit 94366eaeaf5ac4831637de39eac48ca62afe4e2a ("hwlat_detector: A
-system hardware latency detector") from the hwlat tree.
+This way, the names clearly call out what the function
+is doing.
 
-I applied the following merge fixup which should be applied to the hwlat
-tree anyway, please Jon (see Documentation/SubmitChecklist Rule #1 :-))?
+Or did I miss the point here?
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 29 Mar 2010 15:38:45 +1100
-Subject: [PATCH] hwlat: using kzalloc/kfree requires the include of slab.h
+						Thanx, Paul
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/misc/hwlat_detector.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/misc/hwlat_detector.c b/drivers/misc/hwlat_detector.c
-index e02d8e1..a56baf4 100644
---- a/drivers/misc/hwlat_detector.c
-+++ b/drivers/misc/hwlat_detector.c
-@@ -50,6 +50,7 @@
- #include <linux/uaccess.h>
- #include <linux/version.h>
- #include <linux/delay.h>
-+#include <linux/slab.h>
- 
- #define BUF_SIZE_DEFAULT	262144UL		/* 8K*(sizeof(entry)) */
- #define BUF_FLAGS		(RB_FL_OVERWRITE)	/* no block on full */
--- 
-1.7.0.3
-
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 3ec8160..c7847ba 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -95,7 +95,7 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
+>   * how many quiescent states passed, just if there was at least
+>   * one since the start of the grace period, this just sets a flag.
+>   */
+> -void rcu_sched_qs(int cpu)
+> +static void __rcu_sched_qs(int cpu)
+>  {
+>  	struct rcu_data *rdp;
+> 
+> @@ -103,6 +103,11 @@ void rcu_sched_qs(int cpu)
+>  	rdp->passed_quiesc_completed = rdp->gpnum - 1;
+>  	barrier();
+>  	rdp->passed_quiesc = 1;
+> +}
+> +
+> +void rcu_sched_qs(int cpu)
+> +{
+> +	__rcu_sched_qs(cpu);
+>  	rcu_preempt_note_context_switch(cpu);
+>  }
+> 
+> @@ -1138,12 +1143,12 @@ void rcu_check_callbacks(int cpu, int user)
+>  		 * a quiescent state, so note it.
+>  		 *
+>  		 * No memory barrier is required here because both
+> -		 * rcu_sched_qs() and rcu_bh_qs() reference only CPU-local
+> +		 * __rcu_sched_qs() and rcu_bh_qs() reference only CPU-local
+>  		 * variables that other CPUs neither access nor modify,
+>  		 * at least not while the corresponding CPU is online.
+>  		 */
+> 
+> -		rcu_sched_qs(cpu);
+> +		__rcu_sched_qs(cpu);
+>  		rcu_bh_qs(cpu);
+> 
+>  	} else if (!in_softirq()) {
+> 
