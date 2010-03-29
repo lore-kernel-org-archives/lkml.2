@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0C2UlF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:41:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46414 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357Ab0C2UlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:41:01 -0400
-Message-ID: <4BB10FED.8040308@kernel.org>
-Date: Mon, 29 Mar 2010 13:39:09 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+	id S1753703Ab0C2Ul2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:41:28 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:43685 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab0C2Ul0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:41:26 -0400
+Date: Mon, 29 Mar 2010 14:41:24 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Stefan Bader <stefan.bader@canonical.com>
+Cc: mingo@elte.hu, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       James.Bottomley@suse.de
+Subject: Re: [PATCH] dma-mapping: Remove WARN_ON in dma_free_coherent
+Message-ID: <20100329204123.GA32165@parisc-linux.org>
+References: <1269886161-2616-1-git-send-email-stefan.bader@canonical.com>
 MIME-Version: 1.0
-To: michael@ellerman.id.au
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH -v9 00/31] use lmb with x86
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org> <1269865331.24620.44.camel@concordia> <4BB0DAC2.3000805@kernel.org>
-In-Reply-To: <4BB0DAC2.3000805@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269886161-2616-1-git-send-email-stefan.bader@canonical.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/29/2010 09:52 AM, Yinghai Lu wrote:
-> On 03/29/2010 05:22 AM, Michael Ellerman wrote:
->> On Sun, 2010-03-28 at 19:42 -0700, Yinghai Lu wrote:
->>> the new lmb could be used to early_res in x86.
->>>
->>> Suggested by: David, Ben, and Thomas
->>>
->>> First three patches should go into 2.6.34
->>>
->>> -v6: change sequence as requested by Thomas
->>> -v7: seperate them to more patches
->>> -v8: add boundary checking to make sure not free partial page.
->>> -v9: use lmb_debug to control print out of reserve_lmb.
->>>      add e820 clean up, and e820 become __initdata
->>
->> Bike shedding perhaps, but can you maintain the naming convention, ie.
->> lmb_xxx() rather than xxx_lmb(). Neither is necessarily better, but all
->> the existing functions use the lmb_xxx() style.
->>
-> 
-> so you want
-> 
-> find_lmb_area ==> lmb_find_area
-> reserve_lmb ==> lmb_reserve
-> free_lmb ==> lmb_free
-> 
-> first one is ok, 
-> 
-> but next two we already have lmb_reserved and lmb_free without checking and increasing the size of region array.
-> 
-> should i use 
-> lmb_reserve_with_check?
-> 
+On Mon, Mar 29, 2010 at 08:09:21PM +0200, Stefan Bader wrote:
+> But it seems modifying that driver would be a bigger effort and maybe
+> not really worthwile as it is a rather old driver. On the other side
+> I was told [1] that this WARN_ON applies only to ARM which could sleep
+> in the free path and it is just bogus for X86. As the code is in
+> arch/x86 it would never be used for anything else than X86 and if
+> its truely bogus on X86, couldn't it get removed?
 
-I change 
+My suggestion was that you remove it from the Ubuntu kernel, not submit
+it upstream.
 
-find_lmb_area ==> lmb_find_area
-reserve_lmb ==> lmb_reserve_area
-free_lmb ==> lmb_free_area
-
-does that look ok to you?
-
-Thanks
-
-Yinghai
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
