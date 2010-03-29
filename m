@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab0C2JLf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:11:35 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49156 "EHLO
+	id S1755111Ab0C2JLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:11:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49162 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab0C2JLe (ORCPT
+	with ESMTP id S1754981Ab0C2JLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:11:34 -0400
-Subject: Re: [PATCH 2/2] perf: Use hot regs with software sched
- switch/migrate events
+	Mon, 29 Mar 2010 05:11:36 -0400
+Subject: Re: [PATCH 1/2] perf: Correctly align perf event tracing buffer
 From: Peter Zijlstra <peterz@infradead.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>
-In-Reply-To: <1269753066-17246-3-git-send-regression-fweisbec@gmail.com>
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1269753066-17246-2-git-send-regression-fweisbec@gmail.com>
 References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com>
-	 <1269753066-17246-3-git-send-regression-fweisbec@gmail.com>
+	 <1269753066-17246-2-git-send-regression-fweisbec@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 10:49:59 +0200
-Message-ID: <1269852599.12097.159.camel@laptop>
+Date: Mon, 29 Mar 2010 10:51:31 +0200
+Message-ID: <1269852691.12097.162.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -28,25 +28,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sun, 2010-03-28 at 07:11 +0200, Frederic Weisbecker wrote:
-> Scheduler's task migration events don't work because they always
-> pass NULL regs perf_sw_event(). The event hence gets filtered
-> in perf_swevent_add().
+> The trace event buffer used by perf to record raw sample events
+> is typed as an array of char and may then not be aligned to 8
+> by alloc_percpu().
 > 
-> Scheduler's context switches events use task_pt_regs() to get
-> the context when the event occured which is a wrong thing to
-> do as this won't give us the place in the kernel where we went
-> to sleep but the place where we left userspace. The result is
-> even more wrong if we switch from a kernel thread.
+> But we need it to be aligned to 8 in sparc64 because we cast
+> this buffer into a random structure type built by the TRACE_EVENT()
+> macro to store the traces. So if a random 64 bits field is accessed
+> inside, it may be not under an expected good alignment.
 > 
-> Use the hot regs snapshot for both events as they belong to the
-> non-interrupt/exception based events family. Unlike page faults
-> or so that provide the regs matching the exact origin of the event,
-> we need to save the current context.
+> Use an array of long instead to force the appropriate alignment, and
+> perform a compile time check to ensure the size in byte of the buffer
+> is a multiple of sizeof(long) so that its actual size doesn't get
+> shrinked under us.
 > 
-> This makes the task migration event working and fix the context
-> switch callchains and origin ip.
+> This fixes unaligned accesses reported while using perf lock
+> in sparc 64.
+> 
+> Suggested-by: David Miller <davem@davemloft.net>
+> Suggested-by: Tejun Heo <htejun@gmail.com>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: David Miller <davem@davemloft.net>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/trace_event_perf.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+> index 0709e4f..69941f3 100644
+> --- a/kernel/trace/trace_event_perf.c
+> +++ b/kernel/trace/trace_event_perf.c
+> @@ -15,7 +15,12 @@ EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
+>  static char *perf_trace_buf;
+>  static char *perf_trace_buf_nmi;
+>  
+> -typedef typeof(char [PERF_MAX_TRACE_SIZE]) perf_trace_t ;
+> +/*
+> + * Force it to be aligned to unsigned long to avoid misaligned accesses
+> + * suprises
+> + */
+> +typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
+> +	perf_trace_t;
+>  
 
-
-But after this its no longer possible to profile userspace on context
-switches is it?
+wouldn't __aligned(8) be simpler?
 
