@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab0C2Rw5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:52:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57021 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754908Ab0C2Rw4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:52:56 -0400
-From: Tejun Heo <tj@kernel.org>
-To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 02/17] kdb: update gfp/slab.h includes
-Date: Tue, 30 Mar 2010 02:52:30 +0900
-Message-Id: <1269885165-18617-3-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1269885165-18617-1-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 17:52:52 +0000 (UTC)
+	id S1755613Ab0C2R5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:57:21 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41074 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755264Ab0C2R5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 13:57:17 -0400
+X-Sasl-enc: Tudj637ujeJc8B+sk9oXHTiaBTjcWlOV/E4KKVbN00hK 1269885435
+Message-ID: <4BB0E937.7070200@imap.cc>
+Date: Mon, 29 Mar 2010 19:53:59 +0200
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: CONFIG_PROVE_RCU breaks proprietary modules (rcu_lock_map)
+References: <4BA689EA.4050102@imap.cc> <20100329150946.GB2569@linux.vnet.ibm.com>
+In-Reply-To: <20100329150946.GB2569@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig4C735A898F90C2AC33AE0A2D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-gfp.h or slab.h is included as necessary.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig4C735A898F90C2AC33AE0A2D
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jason Wessel <jason.wessel@windriver.com>
----
- kernel/debug/kdb/kdb_main.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Am 29.03.2010 17:09 schrieb Paul E. McKenney:
+> On Sun, Mar 21, 2010 at 10:04:42PM +0100, Tilman Schmidt wrote:
+[...]
+>> So if building a proprietary module fails with the message:
+>>
+>> FATAL: modpost: GPL-incompatible module <module> uses GPL-only symbol
+>> 'rcu_lock_map'
+>>
+>> try rebuilding your kernel with the PROVE_RCU option disabled.
+>>
+>> Hope it helps someone.
+>=20
+> I am comfortable with PROVE_RCU being incompatible with non-GPL modules=
+=2E
+> After all, it is only a debugging option, not intended for production u=
+se.
 
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index bad8e63..ec29a9d 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -37,6 +37,7 @@
- #include <linux/kdebug.h>
- #include <linux/proc_fs.h>
- #include <linux/uaccess.h>
-+#include <linux/slab.h>
- #include "kdb_private.h"
- 
- #define GREP_LEN 256
--- 
-1.6.4.2
+I agree completely. I just wanted to publish that fact because it seems
+to be little known and can be quite a puzzler.
 
+Thanks,
+Tilman
+
+--=20
+Tilman Schmidt                    E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+
+
+--------------enig4C735A898F90C2AC33AE0A2D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.12 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkuw6UIACgkQQ3+did9BuFvuSwCePYphSQsEmtHdCGTF9NeZX3BI
+IugAn1wCJ3Gz7Ni7PfifIQt9vP7nMKNN
+=5yw2
+-----END PGP SIGNATURE-----
+
+--------------enig4C735A898F90C2AC33AE0A2D--
