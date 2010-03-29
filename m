@@ -1,93 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab0C2RqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:46:16 -0400
-Received: from smtp3.mundo-r.com ([212.51.32.191]:55352 "EHLO
-	smtp3.mundo-r.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755006Ab0C2RqO (ORCPT
+	id S1754926Ab0C2RtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:49:11 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43772 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab0C2RtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:46:14 -0400
-X-Greylist: delayed 635 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Mar 2010 13:46:14 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0GAIRzdkpbdWOb/2dsb2JhbACBNhzOLIQYBQ
-X-IronPort-AV: E=Sophos;i="4.51,329,1267398000"; 
-   d="scan'208";a="208581592"
-From: =?utf-8?q?Javier=20Mu=C3=B1oz=20Mellid?= <jmunhoz@igalia.com>
-To: gregkh@suse.de, teddy.wang@siliconmotion.com.cn
-Cc: wuzhangjin@gmail.com, sbraun@emlix.com, ralf@linux-mips.org,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       =?UTF-8?q?Javier=20Mu=C3=B1oz=20Mellid?= <jmunhoz@igalia.com>
-Subject: [PATCH] Staging: sm7xx: Fixed coding style issues
-Date: Mon, 29 Mar 2010 19:35:24 +0200
-Message-Id: <1269884124-32520-1-git-send-email-jmunhoz@igalia.com>
-X-Mailer: git-send-email 1.5.4.1
+	Mon, 29 Mar 2010 13:49:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sjRKvjrBVUNKv4wCJRaQNdun77QCOUkoRUt+Szms7b65Y2ywT0U345Yc2UK56ejC0l
+         xsI/M3XCsa24LVfrRiIaQMf1idne5eR1BihVt0bhkwgUsDeLZRU/3ggybXQ3RhDBstN4
+         op2C/ZS5y+JWVxtKxsPvMoR9L7BuSTZhRLjg4=
+Date: Mon, 29 Mar 2010 19:47:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 2/2] perf: Use hot regs with software sched
+	switch/migrate events
+Message-ID: <20100329174723.GB5101@nowhere>
+References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com> <1269753066-17246-3-git-send-regression-fweisbec@gmail.com> <1269852599.12097.159.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269852599.12097.159.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some style and format issues
+On Mon, Mar 29, 2010 at 10:49:59AM +0200, Peter Zijlstra wrote:
+> On Sun, 2010-03-28 at 07:11 +0200, Frederic Weisbecker wrote:
+> > Scheduler's task migration events don't work because they always
+> > pass NULL regs perf_sw_event(). The event hence gets filtered
+> > in perf_swevent_add().
+> > 
+> > Scheduler's context switches events use task_pt_regs() to get
+> > the context when the event occured which is a wrong thing to
+> > do as this won't give us the place in the kernel where we went
+> > to sleep but the place where we left userspace. The result is
+> > even more wrong if we switch from a kernel thread.
+> > 
+> > Use the hot regs snapshot for both events as they belong to the
+> > non-interrupt/exception based events family. Unlike page faults
+> > or so that provide the regs matching the exact origin of the event,
+> > we need to save the current context.
+> > 
+> > This makes the task migration event working and fix the context
+> > switch callchains and origin ip.
+> 
+> 
+> But after this its no longer possible to profile userspace on context
+> switches is it?
 
-Signed-off-by: Javier Muñoz Mellid <jmunhoz@igalia.com>
----
- drivers/staging/sm7xx/smtcfb.c |   17 +++++++++--------
- drivers/staging/sm7xx/smtcfb.h |    2 +-
- 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/staging/sm7xx/smtcfb.c b/drivers/staging/sm7xx/smtcfb.c
-index 9c82a1a..5f8d373 100644
---- a/drivers/staging/sm7xx/smtcfb.c
-+++ b/drivers/staging/sm7xx/smtcfb.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2006 Silicon Motion Technology Corp.
-  * Authors: Ge Wang, gewang@siliconmotion.com
-- * 	    Boyod boyod.yang@siliconmotion.com.cn
-+ *	    Boyod boyod.yang@siliconmotion.com.cn
-  *
-  * Copyright (C) 2009 Lemote, Inc.
-  * Author: Wu Zhangjin, wuzhangjin@gmail.com
-@@ -13,17 +13,18 @@
-  *  more details.
-  *
-  * Version 0.10.26192.21.01
-- * 	- Add PowerPC/Big endian support
-- * 	- Add 2D support for Lynx
-- * 	- Verified on2.6.19.2  Boyod.yang <boyod.yang@siliconmotion.com.cn>
-+ *	- Add PowerPC/Big endian support
-+ *	- Add 2D support for Lynx
-+ *	- Verified on 2.6.19.2
-+ *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  *
-  * Version 0.09.2621.00.01
-- * 	- Only support Linux Kernel's version 2.6.21.
-- *	Boyod.yang  <boyod.yang@siliconmotion.com.cn>
-+ *	- Only support Linux Kernel's version 2.6.21
-+ *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  *
-  * Version 0.09
-- * 	- Only support Linux Kernel's version 2.6.12.
-- * 	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-+ *	- Only support Linux Kernel's version 2.6.12
-+ *	Boyod.yang <boyod.yang@siliconmotion.com.cn>
-  */
- 
- #ifndef __KERNEL__
-diff --git a/drivers/staging/sm7xx/smtcfb.h b/drivers/staging/sm7xx/smtcfb.h
-index 7ee565c..0c11383 100644
---- a/drivers/staging/sm7xx/smtcfb.h
-+++ b/drivers/staging/sm7xx/smtcfb.h
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (C) 2006 Silicon Motion Technology Corp.
-  * Authors:	Ge Wang, gewang@siliconmotion.com
-- *	 	Boyod boyod.yang@siliconmotion.com.cn
-+ *		Boyod boyod.yang@siliconmotion.com.cn
-  *
-  * Copyright (C) 2009 Lemote, Inc.
-  * Author: Wu Zhangjin, wuzhangjin@gmail.com
--- 
-1.7.0.3
+Once the callchain on the kernel finishes, we bounce to the userspace
+part, using task_pt_regs(). The previous version was incorrect because
+it was ignoring the kernel part.
+
+But you makes me wonder... We don't take into account exclude_kernel
+or exclude_user with these hot regs.
+
+I think we need several new things:
+
+Every arch does its own:
+
+	if (!is_user)
+		perf_callchain_kernel(regs, entry);
+
+	if (current->mm)
+		perf_callchain_user(regs, entry);
+
+Plus perf_callchain_user() goes fetching task_pt_regs()
+by itself.
+
+This is a check we should do from the core, according
+to exclude_kernel, exclude_user, user_mode and current->mm
+
+Archs shouldn't bother about these details.
+They should just implement perf_callchain_kernel and perf_callchain_user
+rather than a monolithic one that deals with contexts.
+
+Each time we pass regs to perf_event_overflow() we should call
+a perf_filter_callchain(struct pt_regs *default) that checks the
+exclude_* things and override with task_pt_regs() if needed
+(and if current->mm is set) so that even the ip source will
+be correct.
+
+And a generic perf_callchain() can deal with perf_callchain_kernel()
+and perf_callchain_user() calls, again, according the exclude_*
+policies.
+
+I'm going to make a quick fix for perf_fetch_caller_regs() that
+passes task_pt_regs if exclude_kernel for perf/urgent,
+and I'll do the above cleanups/invasive fixes on perf/core.
 
