@@ -1,136 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab0C2QEK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:04:10 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:44106 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab0C2QEI (ORCPT
+	id S1754469Ab0C2QIT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:08:19 -0400
+Received: from outbound-mail-158.bluehost.com ([67.222.39.38]:42221 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754045Ab0C2QIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:04:08 -0400
-Date: Mon, 29 Mar 2010 12:03:56 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: michael.s.gilbert@gmail.com, davem@davemeloft.net, nhorman@tuxdriver.com,
-       romieu@fr.zoreil.com, eric.dumazet@gmail.com
-Subject: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame DMAs)
-Message-ID: <20100329160356.GC22733@hmsreliant.think-freely.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -4.2 (----)
+	Mon, 29 Mar 2010 12:08:18 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=uKO9rpyAPKfow1eGD81hMKCU/iqcBFI8KC1UX7iRhyq0RUSGnCcvfP/w6TG7yY/gxkDn4IQwQVcE6BLTSzl0Cy70PcTVG6itDjkaDmAEKDoViPHzAh76w0JsV3M3kBz+;
+Date: Mon, 29 Mar 2010 09:07:13 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans de Goede <hdegoede@redhat.com>,
+       Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] resource: shared I/O region support
+Message-ID: <20100329090713.1317942b@jbarnes-piketon>
+In-Reply-To: <20100329081834.GB27956@salidar.me.mortis.eu>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+	<1269523063-30346-1-git-send-email-me@mortis.eu>
+	<20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>
+	<20100325180347.GA2761@salidar.me.mortis.eu>
+	<20100325181633.0313b8a5@lxorguk.ukuu.org.uk>
+	<20100329081834.GB27956@salidar.me.mortis.eu>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Official patch to fix the r8169 frame length check error.
+On Mon, 29 Mar 2010 10:18:34 +0200
+Giel van Schijndel <me@mortis.eu> wrote:
 
-Based on this initial thread:
-http://marc.info/?l=linux-netdev&m=126202972828626&w=1
-This is the official patch to fix the frame length problems in the r8169
-driver.  As noted in the previous thread, while this patch incurs a performance
-hit on the driver, its possible to improve performance dynamically by updating
-the mtu and rx_copybreak values at runtime to return performance to what it was
-for those NICS which are unaffected by the ideosyncracy (if there are any).
+> On Thu, Mar 25, 2010 at 06:16:33PM +0000, Alan Cox wrote:
+> >> +			if (res->flags & IORESOURCE_MUXED)
+> >> +				wake_up(&muxed_resource_wait);
+> >>  			kfree(res);
+> >>  			return;
+> > 
+> > And you'll want a
+> > 
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
+> 
+> Yes, thanks.
+> 
+> Anyone specific I should mail to get this patch applied? I don't see any
+> entry in MAINTAINERS for kernel/resource.c or include/linux/resource.h.
 
-Summary:
+I can take it; sometimes Linus applies resource stuff directly though.
 
-    A while back Eric submitted a patch for r8169 in which the proper
-allocated frame size was written to RXMaxSize to prevent the NIC from dmaing too
-much data.  This was done in commit fdd7b4c3302c93f6833e338903ea77245eb510b4.  A
-long time prior to that however, Francois posted
-126fa4b9ca5d9d7cb7d46f779ad3bd3631ca387c, which expiclitly disabled the MaxSize
-setting due to the fact that the hardware behaved in odd ways when overlong
-frames were received on NIC's supported by this driver.  This was mentioned in a
-security conference recently:
-http://events.ccc.de/congress/2009/Fahrplan//events/3596.en.html
+Can you resend with the appropriate s-o-bs etc?
 
-It seems that if we can't enable frame size filtering, then, as Eric correctly
-noticed, we can find ourselves DMA-ing too much data to a buffer, causing
-corruption.  As a result is seems that we are forced to allocate a frame which
-is ready to handle a maximally sized receive.
-
-This obviously has performance issues with it, so to mitigate that issue, this
-patch does two things:
-
-1) Raises the copybreak value to the frame allocation size, which should force
-appropriately sized packets to get allocated on rx, rather than a full new 16k
-buffer.
-
-2) This patch only disables frame filtering initially (i.e., during the NIC
-open), changing the MTU results in ring buffer allocation of a size in relation
-to the new mtu (along with a warning indicating that this is dangerous).
-
-Because of item (2), individuals who can't cope with the performance hit (or can
-otherwise filter frames to prevent the bug), or who have hardware they are sure
-is unaffected by this issue, can manually lower the copybreak and reset the mtu
-such that performance is restored easily.
-
-Signed-off-by: Neil Horman <nhorman@redhat.com>
-
-
- r8169.c |   29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 964305c..1db95d4 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -187,7 +187,12 @@ static DEFINE_PCI_DEVICE_TABLE(rtl8169_pci_tbl) = {
- 
- MODULE_DEVICE_TABLE(pci, rtl8169_pci_tbl);
- 
--static int rx_copybreak = 200;
-+/*
-+ * we set our copybreak very high so that we don't have
-+ * to allocate 16k frames all the time (see note in
-+ * rtl8169_open()
-+ */
-+static int rx_copybreak = 16383;
- static int use_dac = -1;
- static struct {
- 	u32 msg_enable;
-@@ -3254,9 +3259,13 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
- }
- 
- static void rtl8169_set_rxbufsize(struct rtl8169_private *tp,
--				  struct net_device *dev)
-+				  unsigned int mtu)
- {
--	unsigned int max_frame = dev->mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
-+	unsigned int max_frame = mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
-+
-+	if (max_frame != 16383)
-+		printk(KERN_WARNING "WARNING! Changing of MTU on this NIC"
-+			"May lead to frame reception errors!\n");
- 
- 	tp->rx_buf_sz = (max_frame > RX_BUF_SIZE) ? max_frame : RX_BUF_SIZE;
- }
-@@ -3269,7 +3278,17 @@ static int rtl8169_open(struct net_device *dev)
- 
- 	pm_runtime_get_sync(&pdev->dev);
- 
--	rtl8169_set_rxbufsize(tp, dev);
-+	/*
-+	 * Note that we use a magic value here, its wierd I know
-+	 * its done because, some subset of rtl8169 hardware suffers from
-+	 * a problem in which frames received that are longer than
-+	 * the size set in RxMaxSize register return garbage sizes
-+	 * when received.  To avoid this we need to turn off filtering,
-+	 * which is done by setting a value of 16383 in the RxMaxSize register
-+	 * and allocating 16k frames to handle the largest possible rx value
-+	 * thats what the magic math below does.
-+	 */
-+	rtl8169_set_rxbufsize(tp, 16383 - VLAN_ETH_HLEN - ETH_FCS_LEN);
- 
- 	/*
- 	 * Rx and Tx desscriptors needs 256 bytes alignment.
-@@ -3929,7 +3948,7 @@ static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
- 
- 	rtl8169_down(dev);
- 
--	rtl8169_set_rxbufsize(tp, dev);
-+	rtl8169_set_rxbufsize(tp, dev->mtu);
- 
- 	ret = rtl8169_init_ring(dev);
- 	if (ret < 0)
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
