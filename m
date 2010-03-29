@@ -1,49 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590Ab0C2UvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:51:12 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:44840 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab0C2UvK (ORCPT
+	id S1753719Ab0C2Uv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:51:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40412 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241Ab0C2Uvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:51:10 -0400
-Message-ID: <4BB112B3.6070001@canonical.com>
-Date: Mon, 29 Mar 2010 22:50:59 +0200
-From: Stefan Bader <stefan.bader@canonical.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Mon, 29 Mar 2010 16:51:55 -0400
+Date: Mon, 29 Mar 2010 17:51:43 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH -tip 5/7] perf probe: Query basic types from debuginfo
+Message-ID: <20100329205143.GQ3625@ghostprotocols.net>
+References: <20100329203736.2577.56018.stgit@localhost6.localdomain6> <20100329203829.2577.44718.stgit@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: mingo@elte.hu, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       James.Bottomley@suse.de
-Subject: Re: [PATCH] dma-mapping: Remove WARN_ON in dma_free_coherent
-References: <1269886161-2616-1-git-send-email-stefan.bader@canonical.com> <20100329204123.GA32165@parisc-linux.org>
-In-Reply-To: <20100329204123.GA32165@parisc-linux.org>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329203829.2577.44718.stgit@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox wrote:
-> On Mon, Mar 29, 2010 at 08:09:21PM +0200, Stefan Bader wrote:
->> But it seems modifying that driver would be a bigger effort and maybe
->> not really worthwile as it is a rather old driver. On the other side
->> I was told [1] that this WARN_ON applies only to ARM which could sleep
->> in the free path and it is just bogus for X86. As the code is in
->> arch/x86 it would never be used for anything else than X86 and if
->> its truely bogus on X86, couldn't it get removed?
-> 
-> My suggestion was that you remove it from the Ubuntu kernel, not submit
-> it upstream.
-> 
-No, I did not want to give that impression. But my rational was, that if this is
- really a warning that has no meaning on X86, then why should it stay in code
-that is x86 only. And then why should that not go upstream.
-When I tried following the code, it looked like this was carried forward for
-quite a while and maybe it just stayed because nobody noticed it.
-But with KVM using that scsi driver, other distros might see the same bogus
-warning and then it would be beneficial for all to just remove it.
-If Ingo or hpa say it is needed, ok. But its at least worth a go.
+Em Mon, Mar 29, 2010 at 04:38:29PM -0400, Masami Hiramatsu escreveu:
+> +static void convert_variable_type(Dwarf_Die *vr_die,
+> +				  struct kprobe_trace_arg *targ)
+> +{
+> +	Dwarf_Die type;
+> +	char buf[16];
+> +	int ret;
+> +
+> +	if (die_get_real_type(vr_die, &type) == NULL)
+> +		die("Failed to get a type information of %s.",
+> +		    dwarf_diename(vr_die));
+> +
+> +	ret = die_get_byte_size(&type) * 8;
+> +	if (ret) {
+> +		/* Check the bitwidth */
+> +		if (ret > MAX_BASIC_TYPE_BITS) {
+> +			pr_warning("  Warning: %s exceeds max-bitwidth."
+> +				   " Cut down to %d bits.\n",
+> +				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
+> +			ret = MAX_BASIC_TYPE_BITS;
+> +		}
+> +
+> +		ret = snprintf(buf, 16, "%c%d",
+> +			       die_is_signed_type(&type) ? 's' : 'u', ret);
+> +		if (ret < 0 || ret >= 16)
+> +			die("Failed to convert variable type.");
+> +		targ->type = xstrdup(buf);
 
--Stefan
+Question, should we use the equivalent to panic'ing the kernel in the
+userspace bits in tools/?
+
+I tend to see all code there as potentially part of a library, i.e. to
+be callable by some unantecipated new tool or library that would rather
+receive a return value telling it that the operation can't be performed
+for some reason so that it can inform the user instead of having the
+whole tool exit to the command line.
+
+It may well be that some specific operation needs lots of resources but
+many other don't, panic'c because the one that requires lots of
+resources can't be performed, bringing down a gui/tui is really nasty.
+
+Perhaps the answer will be the same as for when people added panic calls
+in the kernel in the past, "you're screwed up anyway if that happens",
+but it just feels wrong :-\
+
+In the DWARF bits it has even the added twist namespace collapse with
+DIE 8-)
+
+- Arnaldo
