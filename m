@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab0C2QNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:13:54 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3554 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753012Ab0C2QNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:13:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,329,1267430400"; 
-   d="scan'208";a="504590673"
-Subject: Re: [patch] iwlwifi: range checking issue
-From: reinette chatre <reinette.chatre@intel.com>
-To: "Zhu, Yi" <yi.zhu@intel.com>
-Cc: Dan Carpenter <error27@gmail.com>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "Kolekar, Abhijeet" <abhijeet.kolekar@intel.com>,
-       "Berg, Johannes" <johannes.berg@intel.com>,
-       "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-In-Reply-To: <1269828072.4043.247.camel@debian>
-References: <20100328115500.GX5069@bicker>
-	 <1269828072.4043.247.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 09:13:51 -0700
-Message-ID: <1269879231.2446.3410.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1754478Ab0C2QVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:21:06 -0400
+Received: from zcars04e.nortel.com ([47.129.242.56]:62360 "EHLO
+	zcars04e.nortel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154Ab0C2QVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:21:04 -0400
+Message-ID: <4BB0D2CF.9040903@nortel.com>
+Date: Mon, 29 Mar 2010 10:18:23 -0600
+From: "Chris Friesen" <cfriesen@nortel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Brandon Black <blblack@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: behavior of recvmmsg() on blocking sockets
+References: <84621a61003240915p2a4ce6bbjd0c6bfb02ab05ba8@mail.gmail.com>	 <4BAA4EE4.3090900@nortel.com>	 <84621a61003241128x3afbcea1w387aeaa68c887320@mail.gmail.com>	 <4BAA69BF.3080600@nortel.com>	 <84621a61003241255i74282f53v3bb0111808895401@mail.gmail.com> <84621a61003270619p6b4fe81bi24bb1961aba77ffb@mail.gmail.com>
+In-Reply-To: <84621a61003270619p6b4fe81bi24bb1961aba77ffb@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Mar 2010 16:20:39.0881 (UTC) FILETIME=[C5AB9390:01CACF5B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 19:01 -0700, Zhu, Yi wrote:
-> On Sun, 2010-03-28 at 19:55 +0800, Dan Carpenter wrote:
-> > IWL_RATE_COUNT is 13 and IWL_RATE_COUNT_LEGACY is 12.
-> > 
-> > IWL_RATE_COUNT_LEGACY is the right one here because iwl3945_rates
-> > doesn't support 60M and also that's how "rates" is defined in
-> > iwlcore_init_geos() from drivers/net/wireless/iwlwifi/iwl-core.c.
-> > 
-> >         rates = kzalloc((sizeof(struct ieee80211_rate) * IWL_RATE_COUNT_LEGACY),
-> >                         GFP_KERNEL);
-> > 
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> Acked-by: Zhu Yi <yi.zhu@intel.com>
+On 03/27/2010 07:19 AM, Brandon Black wrote:
 
-Great catch. Since this is a fix for a buffer overflow ... could you
-please pass it on to stable also?
+> I've been playing with the timeout argument to recvmmsg as well now,
+> and I'm struggling to see how one would ever use it correctly with the
+> current implementation.
 
-Thank you
+I'd probably do something like this:
 
-Reinette
+prev = current time
+loop forever
+	cur = current time
+	timeout = max_latency - (cur - prev)
+	recvmmsg(timeout)
+	process all received messages
+	prev = cur
 
+
+Basically you determine the max latency you're willing to wait for a
+packet to be handled, then subtract the amount of time you spent
+processing messages from that and pass it into the recvmmsg() call as
+the timeout.  That way no messages will be delayed for longer than the
+max latency. (Not considering scheduling delays.)
+
+Chris
