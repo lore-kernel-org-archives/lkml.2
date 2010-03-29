@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab0C2R5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:57:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41660 "EHLO hera.kernel.org"
+	id S1755324Ab0C2R6r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 13:58:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38219 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754048Ab0C2R5t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:57:49 -0400
-Message-ID: <4BB0EAD0.2030807@kernel.org>
-Date: Tue, 30 Mar 2010 03:00:48 +0900
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1754619Ab0C2R6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 13:58:45 -0400
+Message-ID: <4BB0EA22.7000004@zytor.com>
+Date: Mon, 29 Mar 2010 10:57:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jon Masters <jcm@jonmasters.org>
-Subject: Re: [PATCH -next] kmemcheck: build failure after merge of the slabh
- tree
-References: <20100329154208.009a8ae2.sfr@canb.auug.org.au> <20100329092513.6e6faf2a.randy.dunlap@oracle.com>
-In-Reply-To: <20100329092513.6e6faf2a.randy.dunlap@oracle.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
+       Thomas Renninger <trenn@suse.de>,
+       Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com
+Subject: Re: [PATCH 02/10] x86: fix out of order of gsi - full
+References: <1269221770-9667-1-git-send-email-yinghai@kernel.org>	<1269221770-9667-3-git-send-email-yinghai@kernel.org>	<alpine.LFD.2.00.1003221131470.3147@localhost.localdomain> <m1iq8f1c1f.fsf@fess.ebiederm.org>
+In-Reply-To: <m1iq8f1c1f.fsf@fess.ebiederm.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 29 Mar 2010 17:57:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 03/30/2010 01:25 AM, Randy Dunlap wrote:
-> This tree seems to be a bit messy.  :(
-
-Sorry.  Most of the failures came from me forgetting to run the
-conversion script on codes which are in linux-next but not mainline,
-so all the new codes ended up broken by default.  I just sent out
-patches against trees in linux-next.  Once they're in, there shouldn't
-be many problems.
-
-> Sorry if I missed this patch in the (email) storm.
+On 03/29/2010 06:40 AM, Eric W. Biederman wrote:
 > 
-> mm/kmemcheck.c also needs slab.h added to it:
+> I have played with this a bit and I have a cleaner patchset that
+> addresses this issue.  I plan to sleep on it, and then go through it
+> again before I send it.
+> 
+> Thomas is the procedure for working on this stuff write clean patches
+> and send them, and they will land in an x86 topic branch?
+> 
 
-But this one is something I missed from the mainline (my script didn't
-check for isolated SLAB_* flag usages).  I'll take this one into the
-slabh tree.  Thanks for reporting this.  :-)
+Pretty much, yes.
 
--- 
-tejun
+	-hpa
