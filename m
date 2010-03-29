@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246Ab0C2Krd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 06:47:33 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37616 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab0C2Krc (ORCPT
+	id S1755275Ab0C2Krx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 06:47:53 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:41132 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168Ab0C2Krj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 06:47:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4BB0851B.3000908@jp.fujitsu.com>
-Date: Mon, 29 Mar 2010 19:46:51 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Mon, 29 Mar 2010 06:47:39 -0400
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, torvalds@osdl.org
+Subject: Re: [PATCH] Allow Intel platforms to declare unsynchronized TSC to kernel
+From: Andi Kleen <andi@firstfloor.org>
+References: <20100324053257.GA4088@basil.fritz.box>
+	<87zl1r7eod.fsf@basil.nowhere.org> <4BB07636.7010708@jp.fujitsu.com>
+Date: Mon, 29 Mar 2010 12:47:34 +0200
+In-Reply-To: <4BB07636.7010708@jp.fujitsu.com> (Hidetoshi Seto's message of "Mon, 29 Mar 2010 18:43:18 +0900")
+Message-ID: <87oci776bd.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
-       tglx@linutronix.de
-Subject: Re: [PATCH] x86: mce: Xeon75xx specific interface to get corrected
- memory error information v2
-References: <20100324054044.GA4307@basil.fritz.box> <87vdcf7ent.fsf@basil.nowhere.org> <4BB06500.5060105@jp.fujitsu.com> <20100329090156.GE20695@one.firstfloor.org>
-In-Reply-To: <20100329090156.GE20695@one.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/03/29 18:01), Andi Kleen wrote:
->>>> Xeon 75xx doesn't log physical addresses on corrected machine check
->>>> events in the standard architectural MSRs. Instead the address has to
->>>> be retrieved in a model specific way. This makes it impossible
->>>> to do predictive failure analysis.
->>
->> Could you point proper specification or datasheet to know/check what
->> you are going to do here?
-> 
-> You mean how the model specific interface works?
-> 
-> There's currently no public specification for the interface,
-> but it should be reasonably clear from reading the driver how
-> it works.
-> 
-> -Andi
+Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> writes:
 
-It looks like overengineered...
+> (2010/03/29 16:46), Andi Kleen wrote:
+>> Andi Kleen <andi@firstfloor.org> writes:
+>> 
+>>> Allow Intel platforms to declare unsynchronized TSC to kernel
+>>>
+>>> [This came out of a private discussion with Linus last week]
+>> 
+>> Ping?  Please review this patch.
+>> 
+>> -Andi
+>
+> Does "constant" implicitly means "synchronized"?
 
-I have some questions: Is it impossible to get the address
-after polling handler have processed?  e.g. Is it possible to
-implement this module as mcelog's add-on that hooked & invoked
-immediately after reading /dev/mcelog?  I guess there are
-some limitation/restriction to call pfa_command().
+Yes it does for the CPUID bit.
 
-Are there any alternative way to get the address?
-Polling like edac_i7 doesn't help this?
+> Following commit tells us that there could be
+> "constant-but-unsynchronized TSC":
+>  6c56ccecf05fafe100ab4ea94f6fccbf5ff00db7
+>> So, reenable TSC sync test even on constant and non-stop TSC systems.
 
-You pointed "This makes it impossible to do predictive failure
-analysis", but I guess we could do rough-but-enough analysis that
-requires coarse resolution like sockets.  Or we should not expect
-that one of DIMMs connected to the socket is broken if the socket
-reports corrected memory errors many time?
+First the platform is supposed to clear in this case and when it
+doesn't the later check catches it anyways.
 
+BTW all the things you're mentioning are not actually changed by my
+patch. In this regard it behaves the same as before. I don't think
+the patch description has to describe things it does not change
+or be a general tutorial on TSCs.
 
-Thanks,
-H.Seto
+-Andi
 
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
