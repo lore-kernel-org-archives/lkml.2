@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab0C2Wns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:43:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6445 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab0C2Wnr convert rfc822-to-8bit (ORCPT
+	id S1754530Ab0C2Wnz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 18:43:55 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:34795 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754322Ab0C2Wnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:43:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=WmQFlFFNJNA/Xq7yCaoP3eGhJGNSps2P516XJ/mI43tm90JE2BjoULSu0ytHBbVNF
-	3iIjJ6qRueKGnBhSddLWw==
+	Mon, 29 Mar 2010 18:43:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bFqZuga5gd5WIvNXzhy0vIeSuOo7WBZYx9El9Gjqk8DiRweKpZRMvepHIyMcr+bq7r
+         eECP/qC6V/V3Cj61+h8BEgMfA3Jf+8n2mF7p/uqsvxL2u+H9LXhzwimww1+mDVA9TgYU
+         AflBsyK2H5ofm4fBjI4zcSoBLQNL7YO4jfA4s=
+Date: Tue, 30 Mar 2010 00:43:54 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 2/2] perf: Use hot regs with software sched
+	switch/migrate events
+Message-ID: <20100329224352.GC12254@nowhere>
+References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com> <1269753066-17246-3-git-send-regression-fweisbec@gmail.com> <1269852599.12097.159.camel@laptop> <20100329174723.GB5101@nowhere> <1269885938.12097.367.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20100329211525.GA17703@linux.vnet.ibm.com>
-References: <20100329211525.GA17703@linux.vnet.ibm.com>
-Date: Mon, 29 Mar 2010 15:43:43 -0700
-Message-ID: <6599ad831003291543r71300bcfv2957004bf2e927bb@mail.gmail.com>
-Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
-From: Paul Menage <menage@google.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, abogani@texware.it
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269885938.12097.367.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 2:15 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> Add an rcu_read_lock() / rcu_read_unlock() pair to protect a fork-time
-> cgroup access.  This seems likely to be a false positive.
->
-> Located by: Alessio Igor Bogani <abogani@texware.it>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->
->  sched.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 9ab3cd7..d4bb5e0 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2621,7 +2621,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
->        if (p->sched_class->task_fork)
->                p->sched_class->task_fork(p);
->
-> +       rcu_read_lock();
->        set_task_cpu(p, cpu);
-> +       rcu_read_unlock();
+On Mon, Mar 29, 2010 at 08:05:38PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 19:47 +0200, Frederic Weisbecker wrote:
+> > 
+> > 
+> > I'm going to make a quick fix for perf_fetch_caller_regs() that
+> > passes task_pt_regs if exclude_kernel for perf/urgent,
+> > and I'll do the above cleanups/invasive fixes on perf/core.
+> > 
+> > 
+> ok, sounds sensible, thanks!
 
-I think you're right that this is a false positive - it would only be
-a problem if it were possible for the task to be moved to a different
-cgroup, and I think that shouldn't be the case at this point in the
-fork path since the new process isn't visible on the tasklist yet,
-right?
 
-Paul
+Actually I have doubts about what should be the strict sense
+of exclude_kernel.
+
+Does that mean we exclude any event that happened in the kernel?
+Or does that mean we exclude the part that happened in the kernel?
+
+Depending on the case, we do either.
+
+In perf_swevent_hrtimer(), we simply go back to task_pt_regs()
+if exclude_kernel.
+
+But in other software events, we don't such fix, we actually
+filter out the event if it is not user_mode().
+
+So, I'm a bit confused on what to do.
+I'm tempted to adopt the meaning from perf_swevent_hrtimer()
+for software events too, I'm not sure...
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index b0feb47..3cb5de8 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3986,14 +3986,17 @@ static int perf_tp_event_match(struct perf_event *event,
+ 				struct perf_sample_data *data);
+ 
+ static int perf_exclude_event(struct perf_event *event,
+-			      struct pt_regs *regs)
++			      struct pt_regs **regs)
+ {
+-	if (regs) {
+-		if (event->attr.exclude_user && user_mode(regs))
++	if (*regs) {
++		if (event->attr.exclude_user && user_mode(*regs))
+ 			return 1;
+ 
+-		if (event->attr.exclude_kernel && !user_mode(regs))
+-			return 1;
++		if (event->attr.exclude_kernel && !user_mode(*regs))
++			if (current->mm)
++				*regs = task_pt_regs();
++			else
++				return 1;
+ 	}
+ 
+ 	return 0;
+@@ -4017,7 +4020,7 @@ static int perf_swevent_match(struct perf_event *event,
+ 	if (event->attr.config != event_id)
+ 		return 0;
+ 
+-	if (perf_exclude_event(event, regs))
++	if (perf_exclude_event(event, &regs))
+ 		return 0;
+ 
+ 	if (event->attr.type == PERF_TYPE_TRACEPOINT &&
+@@ -4442,7 +4445,7 @@ void perf_bp_event(struct perf_event *bp, void *data)
+ 
+ 	perf_sample_data_init(&sample, bp->attr.bp_addr);
+ 
+-	if (!perf_exclude_event(bp, regs))
++	if (!perf_exclude_event(bp, &regs))
+ 		perf_swevent_add(bp, 1, 1, &sample, regs);
+ }
+ #else
+
+
