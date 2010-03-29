@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755072Ab0C2Q6K (ORCPT <rfc822;w@1wt.eu>);
+	id S1755112Ab0C2Q6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:58:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51638 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755055Ab0C2Q6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Mar 2010 12:58:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37490 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754059Ab0C2Q6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:58:08 -0400
-Date: Mon, 29 Mar 2010 12:58:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
- failed: Inappropriate ioctl for device / PreInit returned NULL
-In-Reply-To: <alpine.DEB.2.00.1003291224170.27175@p34.internal.lan>
-Message-ID: <Pine.LNX.4.44L0.1003291253410.3358-100000@iolanthe.rowland.org>
+Date: Mon, 29 Mar 2010 18:57:06 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 02/31] x86: Make sure free_init_pages() free pages in
+ boundary
+Message-ID: <20100329165706.GA13961@elte.hu>
+References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
+ <1269830604-26214-3-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269830604-26214-3-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
+	_SUMMARY_
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Mar 2010, Justin Piszcz wrote:
 
-> bus pci, device 0000:00:0b.0
-> OHCI Host Controller
-> ohci_hcd
-> OHCI 1.0, NO legacy support registers
-> control 0x68f RWE RWC HCFS=operational IE PLE CBSR=3
-> cmdstatus 0x00000 SOC=0
-> intrstatus 0x00000020 FNO
-> intrenable 0x8000004e MIE RHSC RD SF WDH
-> ed_controlhead 7bef1b90
-> hcca frame 0x4657
-> fmintvl 0xa7782edf FIT FSMPS=0xa778 FI=0x2edf
-> fmremaining 0x80002b76 FRT FR=0x2b76
-> periodicstart 0x2a2f
-> lsthresh 0x0628
-> hub poll timer off
-> roothub.a 01000208 POTPGT=1 NPS NDP=8(8)
-> roothub.b 00000000 PPCM=0000 DR=0000
-> roothub.status 00008000 DRWE
-> roothub.portstatus [0] 0x00000100 PPS
-> roothub.portstatus [1] 0x00000100 PPS
-> roothub.portstatus [2] 0x00000100 PPS
-> roothub.portstatus [3] 0x00000100 PPS
-> roothub.portstatus [4] 0x00000303 LSDA PPS PES CCS
-> roothub.portstatus [5] 0x00000303 LSDA PPS PES CCS
-> roothub.portstatus [6] 0x00000100 PPS
-> roothub.portstatus [7] 0x00000100 PPS
+Note, i applied the fix below, without it the 32-bit defconfig build would 
+fail with:
 
-I don't notice anything suspicious there.
+ arch/x86/kernel/head32.c: In function 'i386_start_kernel':
+ arch/x86/kernel/head32.c:50: error: implicit declaration of function 'PAGE_ALIGN'
 
-> > At the same time, just to be increase my level of certainty, you should
-> > apply the following debugging patch for ohci-hcd.  Let's see both the
-> > usbmon trace and the dmesg log for the same event.  The trace and the
-> > debugging patch will generate plenty of output during normal operation,
-> > but don't worry about that.  Only the part starting from shortly before
-> > the mouse quits really matters.
-> Yes, I've done this before for a bug in the Intel USB controller (P55) on
-> another motherboard.. Should be doable, always funny though how it does not
-> happen when you are trying to make it happen.
-> 
-> For your patch, what does this patch against? It does not apply cleanly
-> for 2.6.33.
+	Ingo
 
-Yes it does.  Maybe there's something wrong with the way your email 
-client extracted the patch from the message.
-
-> It also fails against 2.6.34-rc2, can you diff -u and show the patch so
-> I can patch manually or include a patch against 2.6.33 or 2.6.34-rc2? 
-
-That _was_ a "diff -u"-style patch.
-
-Alan Stern
-
+Index: linux/arch/x86/kernel/head32.c
+===================================================================
+--- linux.orig/arch/x86/kernel/head32.c
++++ linux/arch/x86/kernel/head32.c
+@@ -7,6 +7,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/start_kernel.h>
++#include <linux/mm.h>
+ 
+ #include <asm/setup.h>
+ #include <asm/sections.h>
