@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755667Ab0C2CPs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:15:48 -0400
-Received: from mail.perches.com ([173.55.12.10]:1194 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab0C2CPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:15:46 -0400
-Subject: Re: linux-next: build warning after merge of the tree
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kyle@mcmartin.ca
-In-Reply-To: <20100328.185707.161194820.davem@davemloft.net>
-References: <20100329103139.1a735227.sfr@canb.auug.org.au>
-	 <20100328.185707.161194820.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 28 Mar 2010 19:15:44 -0700
-Message-ID: <1269828944.1500.105.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755750Ab0C2Cdc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:33:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59010 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755724Ab0C2Cdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 22:33:31 -0400
+Message-ID: <4BB01182.2090301@cn.fujitsu.com>
+Date: Mon, 29 Mar 2010 10:33:38 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] rcu: remove needless struct notifier_block predeclaration
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 18:57 -0700, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > After merging the  tree, today's linux-next build (x86_64 allmodconfig)
-> > produced this warning:
-> > drivers/net/tulip/uli526x.c: In function 'uli526x_rx_packet':
-> > drivers/net/tulip/uli526x.c:861: warning: assignment makes pointer from integer without a cast
-> I just committed the following, let me know if it fixes
-> this.
-> -				    ((new_skb = dev_alloc_skb(rxlen + 2) != NULL))) {
-> +				    (((new_skb = dev_alloc_skb(rxlen + 2)) != NULL))) {
 
-You've an extra () there.
+cleanup: remove needless struct notifier_block predeclaration 
 
-A close paren could have been moved from after
-the NULL to after the "+ 2"
-
-I think it's more readable as:
-				      (new_skb = dev_alloc_skb(rxlen + 2))) {
-
-cheers, Joe
-
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index a519587..ae7b05e 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -86,8 +86,6 @@ static inline void synchronize_rcu_bh_expedited(void)
+ 	synchronize_sched();
+ }
+ 
+-struct notifier_block;
+-
+ #ifdef CONFIG_NO_HZ
+ 
+ extern void rcu_enter_nohz(void);
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 42cc3a0..3be62e1 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -30,8 +30,6 @@
+ #ifndef __LINUX_RCUTREE_H
+ #define __LINUX_RCUTREE_H
+ 
+-struct notifier_block;
+-
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
+ extern int rcu_needs_cpu(int cpu);
