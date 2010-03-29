@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab0C2W7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 18:59:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40288 "EHLO mx1.redhat.com"
+	id S1754486Ab0C2XB3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 19:01:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59871 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278Ab0C2W7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 18:59:19 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100329223609.GR2569@linux.vnet.ibm.com>
-References: <20100329223609.GR2569@linux.vnet.ibm.com> <20100329210520.GN2569@linux.vnet.ibm.com> <20100329192159.GM2569@linux.vnet.ibm.com> <20100319022527.GC2894@linux.vnet.ibm.com> <20100318133302.29754.1584.stgit@warthog.procyon.org.uk> <19192.1269889348@redhat.com> <23274.1269893706@redhat.com> <25276.1269901350@redhat.com> 
-To: paulmck@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Eric Dumazet <eric.dumazet@gmail.com>,
-       Trond.Myklebust@netapp.com, linux-nfs@vger.kernel.org,
+	id S1754140Ab0C2XB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 19:01:28 -0400
+Message-ID: <4BB13133.6030500@zytor.com>
+Date: Mon, 29 Mar 2010 16:01:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc12 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+       David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFS: Fix RCU warnings in nfs_inode_return_delegation_noreclaim() [ver #2]
-Date: Mon, 29 Mar 2010 23:59:03 +0100
-Message-ID: <26760.1269903543@redhat.com>
+Subject: Re: Add PGM protocol support to the IP stack
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home> <877hp4i76d.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003221300180.17230@router.home> <20100322185310.GA20695@one.firstfloor.org>
+In-Reply-To: <20100322185310.GA20695@one.firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 03/22/2010 11:53 AM, Andi Kleen wrote:
+> 
+> There's just no portable atomic64_t. Ok maybe you can use the socket lock
+> to synchronize all the counts if they are only per socket.
+> 
 
-> Only on Alpha.  Otherwise only a volatile access.
+In 2.6.34 there is (although some arches which could support it natively
+don't as of yet... but that's fixable.)  See lib/atomic64.c.
 
-Whilst that is true, it's the principle of the thing.  The extra barrier
-shouldn't be emitted on Alpha.  If Alpha's no longer important, then can we
-scrap smp_read_barrier_depends()?
+	-hpa
 
-My point is that some of these rcu_dereference*()'s are unnecessary.  If
-there're required for correctness tracking purposes, fine; but can we have a
-macro that is just a dummy for the purpose of stripping the pointer Sparse
-annotation?  One that doesn't invoke rcu_dereference_raw() and interpolate a
-barrier, pretend or otherwise, when there's no second reference to order
-against.
 
-David
+
