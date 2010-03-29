@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab0C2Pgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:36:51 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:48618 "EHLO mgw1.diku.dk"
+	id S1754486Ab0C2PhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:37:11 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:48629 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704Ab0C2Pgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:36:49 -0400
-Date: Mon, 29 Mar 2010 17:36:44 +0200 (CEST)
+	id S1754456Ab0C2PhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 11:37:08 -0400
+Date: Mon, 29 Mar 2010 17:37:02 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 11/12] drivers/usb/gadget: Add missing unlock
-Message-ID: <Pine.LNX.4.64.1003291736250.21896@ask.diku.dk>
+To: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 12/12] kernel/trace: Add missing unlock
+Message-ID: <Pine.LNX.4.64.1003291736440.21896@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In an error handling case the lock is not unlocked.  The return is
+In some error handling cases the lock is not unlocked.  The return is
 converted to a goto, to share the unlock at the end of the function.
 
 A simplified version of the semantic patch that finds this problem is as
@@ -34,7 +35,7 @@ identifier f;
 @@
 
 f (...) { <+...
-* spin_lock_irqsave (E1,...);
+* spin_lock_irq (E1,...);
 ... when != E1
 * return ...;
 ...+> }
@@ -43,39 +44,49 @@ f (...) { <+...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/usb/gadget/s3c-hsotg.c      |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ kernel/trace/ring_buffer.c          |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
-index f742c8e..85dedf0 100644
---- a/drivers/usb/gadget/s3c-hsotg.c
-+++ b/drivers/usb/gadget/s3c-hsotg.c
-@@ -2144,6 +2144,7 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	u32 epctrl;
- 	u32 mps;
- 	int dir_in;
-+	int ret = 0;
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 05a9f83..cd2e1d8 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -1201,18 +1201,19 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
  
- 	dev_dbg(hsotg->dev,
- 		"%s: ep %s: a 0x%02x, attr 0x%02x, mps 0x%04x, intr %d\n",
-@@ -2195,7 +2196,8 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	switch (desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) {
- 	case USB_ENDPOINT_XFER_ISOC:
- 		dev_err(hsotg->dev, "no current ISOC support\n");
--		return -EINVAL;
-+		ret = -EINVAL;
+ 	for (i = 0; i < nr_pages; i++) {
+ 		if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
+-			return;
++			goto out;
+ 		p = cpu_buffer->pages->next;
+ 		bpage = list_entry(p, struct buffer_page, list);
+ 		list_del_init(&bpage->list);
+ 		free_buffer_page(bpage);
+ 	}
+ 	if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
+-		return;
 +		goto out;
  
- 	case USB_ENDPOINT_XFER_BULK:
- 		epctrl |= S3C_DxEPCTL_EPType_Bulk;
-@@ -2234,8 +2236,9 @@ static int s3c_hsotg_ep_enable(struct usb_ep *ep,
- 	/* enable the endpoint interrupt */
- 	s3c_hsotg_ctrl_epint(hsotg, index, dir_in, 1);
+ 	rb_reset_cpu(cpu_buffer);
+ 	rb_check_pages(cpu_buffer);
  
 +out:
- 	spin_unlock_irqrestore(&hs_ep->lock, flags);
--	return 0;
-+	return ret;
+ 	spin_unlock_irq(&cpu_buffer->reader_lock);
  }
  
- static int s3c_hsotg_ep_disable(struct usb_ep *ep)
+@@ -1229,7 +1230,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+ 		if (RB_WARN_ON(cpu_buffer, list_empty(pages)))
+-			return;
++			goto out;
+ 		p = pages->next;
+ 		bpage = list_entry(p, struct buffer_page, list);
+ 		list_del_init(&bpage->list);
+@@ -1238,6 +1239,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 	rb_reset_cpu(cpu_buffer);
+ 	rb_check_pages(cpu_buffer);
+ 
++out:
+ 	spin_unlock_irq(&cpu_buffer->reader_lock);
+ }
+ 
