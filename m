@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab0C2QaN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:30:13 -0400
-Received: from mail-fx0-f223.google.com ([209.85.220.223]:49364 "EHLO
-	mail-fx0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754202Ab0C2QaL convert rfc822-to-8bit (ORCPT
+	id S1754566Ab0C2QiK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:38:10 -0400
+Received: from outbound-mail-01.bluehost.com ([69.89.21.11]:48111 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754154Ab0C2QiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:30:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=fkKnOSgU4TysMFtjO6CoMnYj36C98BKP3Q/vXmzf1ZK58jw501FMVMb/Ngt473jgHi
-         wj5MRF9MsFzrCCCSGYNXrCzLJ3OQytCW1CRQ/5g63Tt342v86AqLbwTjA/ic9wTKuyY9
-         bk93nykkY70dP5t4VrJ/fCYdslYb2dy5ITP7g=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1003291208570.24576@pobox.suse.cz>
-References: <1267362296-29079-1-git-send-email-mfwitten@gmail.com> 
-	<201003291456.53387.rusty@rustcorp.com.au> <alpine.LNX.2.00.1003291208570.24576@pobox.suse.cz>
-From: Michael Witten <mfwitten@gmail.com>
-Date: Mon, 29 Mar 2010 10:29:49 -0600
-Message-ID: <b4087cc51003290929r157257f2k2de2c805ff76ca74@mail.gmail.com>
-Subject: Re: [PATCH 00/25] Overview: Docs: kernel-hacking
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Mar 2010 12:38:08 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lM6u6t3sE/YU4k8xaIwqojvifzP11p1saxpBnqt2kMw5Ah/3G29TPsX7Uuck/2nbPZjLf6KOipD1gWgfWz3xkp+/isJZYwLDe1vDLGqCnY8HKCMEFtPpnwYYDvfh3d/z;
+Date: Mon, 29 Mar 2010 09:37:02 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Norbert Preining <preining@logic.at>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
+Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU
+ hung)
+Message-ID: <20100329093702.65a2f1f9@jbarnes-piketon>
+In-Reply-To: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 04:09, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 29 Mar 2010, Rusty Russell wrote:
->
->> > I recently read through Rusty Russell's
->> >
->> >     Unreliable Guide To Hacking The Linux Kernel
->> >
->> > and made changes along the way.
->> >
->> > Though there are 25 patches in this series, most provide
->> > extremely minor modifications.
->>
->> It's good to see someone applying some much needed attention to these; they
->> look fine at first glance; is Jiri happy to take them?
->
-> Hi,
->
-> according to Randy, this is already queued in his linux-doc tree.
+On Sun, 28 Mar 2010 01:11:05 +0900
+Norbert Preining <preining@logic.at> wrote:
 
-Actually, I put a halt to that patch series, and I'm working on a more
-comprehensive version.
+> Dear all,
+> 
+> (please Cc)
+> 
+> I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on Debian/sid:
+> xserver-xorg: 7.5+5
+> video-intel: 2.9.1-3
+> 
+> Running D2X-xl (self compiled) (descent2 open source code) X suddenly died,
+> and after that gdm could not be restarted because after a few secs
+> it went dead again.
+> 
+> In the logs I see:
+> kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> kernel: [ 2486.341240] render error detected, EIR: 0x00000000
+> kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113671 at 113604)
+> kernel: [ 2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> kernel: [ 2486.669012] render error detected, EIR: 0x00000000
+> kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113672 at 113604)
+> kernel: [ 2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> kernel: [ 2487.524243] render error detected, EIR: 0x00000000
+> kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113673 at 113604)
+> kernel: [ 2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
+> kernel: [ 2487.916175] render error detected, EIR: 0x00000000
+> kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113674 at 113604)
+> 
+> Stopping gdm and restarting didn't help to get the graphics card back to normal.
+> 
+> If you have any ideas how to fix/track/debug that please let me know,
+> same if you need more information.
+
+I was seeing something similar on my 945, can you try this patchset?
+It seems to make things much more stable for me.
+
+http://lists.freedesktop.org/archives/intel-gfx/2010-March/006387.html
+
+There are 7 patches starting with that one.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
