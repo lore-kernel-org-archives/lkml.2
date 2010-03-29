@@ -1,254 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349Ab0C2Mr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:47:29 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:25483 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab0C2Mr1 convert rfc822-to-8bit (ORCPT
+	id S1752338Ab0C2Mup (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:50:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43570 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752011Ab0C2Muo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:47:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=c6wZuhAjcSsLBzrhaktjfuJqvgwC8H3MsP8S7c9Z2hjwN3a5m8nz5L27e1s4GyMgO
-	IuaYa7tDcp+7NtgP94eZA==
+	Mon, 29 Mar 2010 08:50:44 -0400
+Date: Mon, 29 Mar 2010 13:50:42 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Todd Fischer <todd.fischer@ridgerun.com>
+Cc: linux-kernel@vger.kernel.org,
+       davinci-linux-open-source@linux.davincidsp.com, sameo@linux.intel.com,
+       lrg@slimlogic.co.uk
+Subject: Re: [PATCH 1/5] Move TPS6507x register definition to header file.
+Message-ID: <20100329125042.GB8434@rakim.wolfsonmicro.main>
+References: <1269634292-29686-1-git-send-email-todd.fischer@ridgerun.com>
+ <1269634292-29686-2-git-send-email-todd.fischer@ridgerun.com>
 MIME-Version: 1.0
-In-Reply-To: <20100329122138.848413757@chello.nl>
-References: <20100329122021.765109681@chello.nl>
-	 <20100329122138.848413757@chello.nl>
-Date: Mon, 29 Mar 2010 13:47:23 +0100
-Message-ID: <bd4cb8901003290547u1baa58fer762da04790a195ab@mail.gmail.com>
-Subject: Re: [RFC,PATCH 2/2] perf, x86: Utilize the LBRs for machine/oops 
-	debugging
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@elte.hu, Linus Torvalds <torvalds@osdl.org>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269634292-29686-2-git-send-email-todd.fischer@ridgerun.com>
+X-Cookie: Uncompensated overtime?  Just Say No.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 1:20 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> The LBRs are relatively cheap to keep enabled and provide some history
-> to OOPSen, also some CPUs are reported to keep them over soft-reset,
-> which allows us to use them to debug things like tripple faults.
->
-> Therefore introduce a boot option: lbr_debug=on, which always enable
-> the LBRs and will print the LBRs on CPU init and die().
->
+On Fri, Mar 26, 2010 at 02:11:28PM -0600, Todd Fischer wrote:
+> Other sub-drivers for the TPS6507x chip will need to use register 
+> definition so move it out of the source file and into a header file.
 
-When this is enabled, it will prevent changing the LBR configuration to
-record only selected branches. Unless you are willing to accept filtered
-content in the kernel dump.
+This....
 
+> diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+> index 04f2e08..f090829 100644
+> --- a/drivers/regulator/Kconfig
+> +++ b/drivers/regulator/Kconfig
+> @@ -190,6 +190,7 @@ config REGULATOR_TPS65023
+>  config REGULATOR_TPS6507X
+>  	tristate "TI TPS6507X Power regulators"
+>  	depends on I2C
+> +	depends on CPU_FREQ
+>  	help
 
-> Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  arch/x86/include/asm/perf_event.h          |    7 ++
->  arch/x86/kernel/cpu/perf_event_intel.c     |    5 -
->  arch/x86/kernel/cpu/perf_event_intel_lbr.c |   86 +++++++++++++++++++++++++++--
->  arch/x86/kernel/dumpstack.c                |    5 +
->  4 files changed, 95 insertions(+), 8 deletions(-)
->
-> Index: linux-2.6/arch/x86/include/asm/perf_event.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/perf_event.h
-> +++ linux-2.6/arch/x86/include/asm/perf_event.h
-> @@ -155,9 +155,14 @@ extern void perf_events_lapic_init(void)
->
->  #define perf_instruction_pointer(regs) ((regs)->ip)
->
-> +void dump_lbr_state(void);
-> +void lbr_off(void);
-> +
->  #else
->  static inline void init_hw_perf_events(void)           { }
-> -static inline void perf_events_lapic_init(void)        { }
-> +static inline void perf_events_lapic_init(void)                { }
-> +static inline void dump_lbr_state(void)                        { }
-> +static inline void lbr_off(void)                       { }
->  #endif
->
->  #endif /* _ASM_X86_PERF_EVENT_H */
-> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -804,10 +804,7 @@ static __initconst const struct x86_pmu
->  static void intel_pmu_cpu_starting(int cpu)
->  {
->        init_debug_store_on_cpu(cpu);
-> -       /*
-> -        * Deal with CPUs that don't clear their LBRs on power-up.
-> -        */
-> -       intel_pmu_lbr_reset();
-> +       intel_pmu_lbr_starting();
->  }
->
->  static void intel_pmu_cpu_dying(int cpu)
-> Index: linux-2.6/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> +++ linux-2.6/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-> @@ -1,12 +1,32 @@
->  #ifdef CONFIG_CPU_SUP_INTEL
->
->  enum {
-> +       LBR_DEBUG_OFF           = 0,
-> +       LBR_DEBUG_ON            = 1,
-> +};
-> +
-> +static int lbr_debug_state __read_mostly;
-> +
-> +static int __init setup_lbr_debug(char *str)
-> +{
-> +       if (!strcmp(str, "on"))
-> +               lbr_debug_state = LBR_DEBUG_ON;
-> +       else
-> +               return 0;
-> +       return 1;
-> +}
-> +
-> +__setup("lbr_debug=", setup_lbr_debug);
-> +
-> +enum {
->        LBR_FORMAT_32           = 0x00,
->        LBR_FORMAT_LIP          = 0x01,
->        LBR_FORMAT_EIP          = 0x02,
->        LBR_FORMAT_EIP_FLAGS    = 0x03,
->  };
->
-> +static DEFINE_PER_CPU(int, lbr_print_done);
-> +
->  /*
->  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
->  * otherwise it becomes near impossible to get a reliable stack.
-> @@ -50,9 +70,6 @@ static void intel_pmu_lbr_reset_64(void)
->
->  static void intel_pmu_lbr_reset(void)
->  {
-> -       if (!x86_pmu.lbr_nr)
-> -               return;
-> -
->        if (x86_pmu.intel_cap.lbr_format == LBR_FORMAT_32)
->                intel_pmu_lbr_reset_32();
->        else
-> @@ -182,6 +199,8 @@ static void intel_pmu_lbr_read(void)
->  {
->        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
->
-> +       cpuc->lbr_stack.nr = 0;
-> +
->        if (!cpuc->lbr_users)
->                return;
->
-> @@ -215,4 +234,65 @@ static void intel_pmu_lbr_init_atom(void
->        x86_pmu.lbr_to     = 0x60;
->  }
->
-> +static void __dump_lbr_state(void)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +       int i;
-> +
-> +       intel_pmu_lbr_read();
-> +       for (i = 0; i < cpuc->lbr_stack.nr; i++) {
-> +               printk(KERN_DEBUG "CPU%d LBR%d: %pF -> %pF\n",
-> +                               smp_processor_id(), i,
-> +                               (void *)cpuc->lbr_entries[i].from,
-> +                               (void *)cpuc->lbr_entries[i].to);
-> +       }
-> +}
-> +
-> +static void intel_pmu_lbr_starting(void)
-> +{
-> +       struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-> +
-> +       if (!x86_pmu.lbr_nr)
-> +               return;
-> +
-> +       cpuc->lbr_users = 1;
-> +       if (lbr_debug_state && !__get_cpu_var(lbr_print_done)) {
-> +               __get_cpu_var(lbr_print_done) = 1;
-> +               __dump_lbr_state();
-> +       }
-> +
-> +       intel_pmu_lbr_reset();
-> +
-> +       if (lbr_debug_state)
-> +               __intel_pmu_lbr_enable();
-> +       else
-> +               cpuc->lbr_users = 0;
-> +}
-> +
-> +void dump_lbr_state(void)
-> +{
-> +       if (!lbr_debug_state)
-> +               return;
-> +
-> +       __dump_lbr_state();
-> +}
-> +
-> +void lbr_off(void)
-> +{
-> +       if (!lbr_debug_state)
-> +               return;
-> +
-> +       __intel_pmu_lbr_disable();
-> +}
-> +
-> +#else
-> +
-> +void dump_lbr_state(void)
-> +{
-> +}
-> +
-> +void lbr_off(void)
-> +{
-> +}
-> +
->  #endif /* CONFIG_CPU_SUP_INTEL */
-> Index: linux-2.6/arch/x86/kernel/dumpstack.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/dumpstack.c
-> +++ linux-2.6/arch/x86/kernel/dumpstack.c
-> @@ -17,6 +17,7 @@
->  #include <linux/sysfs.h>
->
->  #include <asm/stacktrace.h>
-> +#include <asm/perf_event.h>
->
->  #include "dumpstack.h"
->
-> @@ -224,6 +225,8 @@ unsigned __kprobes long oops_begin(void)
->        int cpu;
->        unsigned long flags;
->
-> +       lbr_off();
-> +
->        oops_enter();
->
->        /* racy, but better than risking deadlock. */
-> @@ -306,6 +309,7 @@ int __kprobes __die(const char *str, str
->        printk_address(regs->ip, 1);
->        printk(" RSP <%016lx>\n", regs->sp);
->  #endif
-> +       dump_lbr_state();
->        return 0;
->  }
->
-> @@ -343,6 +347,7 @@ die_nmi(char *str, struct pt_regs *regs,
->        printk(" on CPU%d, ip %08lx, registers:\n",
->                smp_processor_id(), regs->ip);
->        show_registers(regs);
-> +       dump_lbr_state();
->        oops_end(flags, regs, 0);
->        if (do_panic || panic_on_oops)
->                panic("Non maskable interrupt");
->
->
->
+...doesn't match up with this change (which seems bogus anyway).  The
+register move itself seems fine.
