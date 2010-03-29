@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0C2QiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:38:10 -0400
-Received: from outbound-mail-01.bluehost.com ([69.89.21.11]:48111 "HELO
-	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754154Ab0C2QiI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:38:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=lM6u6t3sE/YU4k8xaIwqojvifzP11p1saxpBnqt2kMw5Ah/3G29TPsX7Uuck/2nbPZjLf6KOipD1gWgfWz3xkp+/isJZYwLDe1vDLGqCnY8HKCMEFtPpnwYYDvfh3d/z;
-Date: Mon, 29 Mar 2010 09:37:02 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU
- hung)
-Message-ID: <20100329093702.65a2f1f9@jbarnes-piketon>
-In-Reply-To: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
-References: <20100327161104.GA12043@gamma.logic.tuwien.ac.at>
-X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1754630Ab0C2Qi4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:38:56 -0400
+Received: from lucidpixels.com ([75.144.35.66]:46593 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754194Ab0C2Qiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:38:54 -0400
+Date: Mon, 29 Mar 2010 12:38:53 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>, Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.33: Xorg+khubd lockup (D-state) BUG / ioctl EVIOCGNAME
+ failed: Inappropriate ioctl for device / PreInit returned NULL
+In-Reply-To: <alpine.DEB.2.00.1003291224170.27175@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1003291237480.27175@p34.internal.lan>
+References: <Pine.LNX.4.44L0.1003291116240.1680-100000@iolanthe.rowland.org> <alpine.DEB.2.00.1003291224170.27175@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 28 Mar 2010 01:11:05 +0900
-Norbert Preining <preining@logic.at> wrote:
 
-> Dear all,
-> 
-> (please Cc)
-> 
-> I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on Debian/sid:
-> xserver-xorg: 7.5+5
-> video-intel: 2.9.1-3
-> 
-> Running D2X-xl (self compiled) (descent2 open source code) X suddenly died,
-> and after that gdm could not be restarted because after a few secs
-> it went dead again.
-> 
-> In the logs I see:
-> kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> kernel: [ 2486.341240] render error detected, EIR: 0x00000000
-> kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113671 at 113604)
-> kernel: [ 2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> kernel: [ 2486.669012] render error detected, EIR: 0x00000000
-> kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113672 at 113604)
-> kernel: [ 2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> kernel: [ 2487.524243] render error detected, EIR: 0x00000000
-> kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113673 at 113604)
-> kernel: [ 2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-> kernel: [ 2487.916175] render error detected, EIR: 0x00000000
-> kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5 (awaiting 113674 at 113604)
-> 
-> Stopping gdm and restarting didn't help to get the graphics card back to normal.
-> 
-> If you have any ideas how to fix/track/debug that please let me know,
-> same if you need more information.
 
-I was seeing something similar on my 945, can you try this patchset?
-It seems to make things much more stable for me.
+On Mon, 29 Mar 2010, Justin Piszcz wrote:
 
-http://lists.freedesktop.org/archives/intel-gfx/2010-March/006387.html
+>
+>
+> On Mon, 29 Mar 2010, Alan Stern wrote:
 
-There are 7 patches starting with that one.
+> For your patch, what does this patch against? It does not apply cleanly
+> for 2.6.33.
+It also fails against 2.6.34-rc2, can you diff -u and show the patch so
+I can patch manually or include a patch against 2.6.33 or 2.6.34-rc2? 
+Thanks.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+>
+>> 
+>> Alan Stern
+>> 
+>> 
+>> Index: usb-2.6/drivers/usb/host/ohci-hcd.c
+>> ===================================================================
+>> --- usb-2.6.orig/drivers/usb/host/ohci-hcd.c
+>> +++ usb-2.6/drivers/usb/host/ohci-hcd.c
+>> @@ -290,6 +290,8 @@ static int ohci_urb_dequeue(struct usb_h
+>> 		 */
+>> 		urb_priv = urb->hcpriv;
+>> 		if (urb_priv) {
+>> +			ohci_info(ohci, "start unlink urb %p, ed %p\n",
+>> +					urb, urb_priv->ed);
+>> 			if (urb_priv->ed->state == ED_OPER)
+>> 				start_ed_unlink (ohci, urb_priv->ed);
+>> 		}
+>> @@ -324,6 +326,9 @@ ohci_endpoint_disable (struct usb_hcd *h
+>>
+>> 	if (!ed)
+>> 		return;
+>> +	ohci_info(ohci, "disable ed %p (#%02x) state %d%s\n",
+>> +			ed, ep->desc.bEndpointAddress, ed->state,
+>> +			list_empty(&ed->td_list) ? "" : " (has tds)");
+>> 
+>> rescan:
+>> 	spin_lock_irqsave (&ohci->lock, flags);
+>> @@ -770,6 +775,10 @@ static irqreturn_t ohci_irq (struct usb_
+>> 		return IRQ_HANDLED;
+>> 	}
+>> 
+>> +	ohci_info(ohci, "int %x enable %x rm_list %p\n", ints,
+>> +			ohci_readl(ohci, &regs->intrenable),
+>> +			ohci->ed_rm_list);
+>> +
+>> 	/* We only care about interrupts that are enabled */
+>> 	ints &= ohci_readl(ohci, &regs->intrenable);
+>> 
+>> 
+>
