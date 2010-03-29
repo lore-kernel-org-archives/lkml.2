@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab0C2SAk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:00:40 -0400
-Received: from outbound-mail-158.bluehost.com ([67.222.39.38]:53625 "HELO
+	id S1754360Ab0C2SBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:01:13 -0400
+Received: from outbound-mail-158.bluehost.com ([67.222.39.38]:50324 "HELO
 	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754014Ab0C2SAi (ORCPT
+	by vger.kernel.org with SMTP id S1751784Ab0C2SBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:00:38 -0400
+	Mon, 29 Mar 2010 14:01:10 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=qpMIAkCpeVLKObekaFUTVSRdbj5i1/hrW8eDlGkuhQ9jaAkZqlZ5BQLhsYJNfjoG9QgRMvNQJ3rJHopnciT5LpiXMcEOuaiE2s36fZSndDShptJfJqbyYe0VPnxzZcCS;
-Date: Mon, 29 Mar 2010 10:59:29 -0700
+	b=VnCT2e0eteJZj7DGpV6em8uoqlij+USWJkoXKNrb7+UavVZjuRu35+Zlmjk1qMXH/CoxYwehBn+0BXD7odz7LwZwxB2F3fCARNYA/GEffG8b0so544OSoMiJyocI5DLI;
+Date: Mon, 29 Mar 2010 10:59:59 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: Giel van Schijndel <me@mortis.eu>
 Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans de Goede <hdegoede@redhat.com>,
@@ -22,7 +22,7 @@ Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans de Goede <hdegoede@redhat.com>,
        Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 1/3] resource: shared I/O region support
-Message-ID: <20100329105929.731b055e@jbarnes-piketon>
+Message-ID: <20100329105959.41079449@jbarnes-piketon>
 In-Reply-To: <20100329173800.GA3583@salidar.me.mortis.eu>
 References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
 	<1269523063-30346-1-git-send-email-me@mortis.eu>
@@ -69,7 +69,8 @@ Giel van Schijndel <me@mortis.eu> wrote:
 > 
 > (I copied Alan's signed-off-by from his reply to the patch)
 
-Applied to my for-linus branch with Alan as author.
+...looking again I see it should be in my linux-next branch instead,
+I'll move it over.
 
 Thanks,
 -- 
