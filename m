@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab0C2Pk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:40:58 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41507 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752981Ab0C2Pk4 (ORCPT
+	id S1753966Ab0C2Pl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:41:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47906 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab0C2PlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:40:56 -0400
-Date: Mon, 29 Mar 2010 17:41:32 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf, probe-finder: Build fix on Debian
-Message-ID: <20100329154132.GA16223@aftab>
+	Mon, 29 Mar 2010 11:41:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=QcdAfDvpuZhmqd52bMMQIQi3bkD2R+LIsbqCt5iChrBYR+jeb4zS7hqdGSIuvem6dQ
+         3MD+GPYigsE5UtEpWwuMj9eXbjk0ATcrqRbFZEOSVHMgcFxUpulK/blsRia5dqPj6okb
+         Yo+4/Xg36QH1Irjw/umtvWguGsg9d+O0fuOE0=
+Date: Mon, 29 Mar 2010 18:41:09 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: giulio.benetti@micronovasrl.com
+Cc: grant.likely@secretlab.ca, jeremy.kerr@canonical.com,
+       afleming@freescale.com, jezz@sysmic.org,
+       devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+       David Miller <davem@davemloft.net>
+Subject: Re: [patch] of: check for IS_ERR()
+Message-ID: <20100329154109.GF5069@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	giulio.benetti@micronovasrl.com, grant.likely@secretlab.ca,
+	jeremy.kerr@canonical.com, afleming@freescale.com, jezz@sysmic.org,
+	devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+	David Miller <davem@davemloft.net>
+References: <20100226094941.GE4912@bicker> <20100226.015420.66646406.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100226.015420.66646406.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building chokes with
+On Fri, Feb 26, 2010 at 01:54:20AM -0800, David Miller wrote:
+> From: Dan Carpenter <error27@gmail.com>
+> Date: Fri, 26 Feb 2010 12:49:41 +0300
+> 
+> > get_phy_device() can return an ERR_PTR()
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> > ---
+> > I don't have a cross compile environment set up so I can't even compile 
+> > test this.  :/  But err.h is included so it should be OK.
+> 
+> It should return ERR_PTR() consistently.  Checking for both
+> NULL and ERR_PTR() is undesirable.
 
-In file included from /usr/include/gelf.h:53,
-                 from /usr/include/elfutils/libdw.h:53,
-                 from util/probe-finder.h:61,
-                 from util/probe-finder.c:39:
-/usr/include/libelf.h:98: error: expected specifier-qualifier-list before 'off64_t'
-/usr/include/libelf.h:160: error: expected specifier-qualifier-list before 'off64_t'
-/usr/include/libelf.h:201: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_update'
-/usr/include/libelf.h:207: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getbase'
-/usr/include/libelf.h:305: error: expected declaration specifiers or '...' before 'off64_t'
-/usr/include/libelf.h:317: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getaroff'
-make: *** [util/probe-finder.o] Error 1
-make: *** Waiting for unfinished jobs....
-rm .perf.dev.null
+Hi Giulio,
 
-which is due to the fact that </usr/include/libelf.h> isn't seeing
-off64_t from <sys/types.h>
+get_phy_device() currently returns NULL because of: 3ee82383f0098a2 "phy: 
+fix phy address bug".  If I change it to return ERR_PTR(-ENODEV) that
+will mean we break out of the loop with an error in mdiobus_register()
+where before we would just continue on.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
+drivers/net/phy/mdio_bus.c
+   119                          phydev = mdiobus_scan(bus, i);
+   120                          if (IS_ERR(phydev)) {
+   121                                  err = PTR_ERR(phydev);
+   122                                  goto error;
+   123                          }
 
-This happens on current -git: v2.6.34-rc2-288-gb72c409
+Is that OK?
 
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I'm not really familiar with this hardware at all, I'm just going based
+on static analysis. :/
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 8a8f52d..19c34a5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -508,7 +508,7 @@ ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; e
- 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
- 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
- else
--	BASIC_CFLAGS += -I/usr/include/elfutils
-+	BASIC_CFLAGS += -I/usr/include/elfutils -D_LARGEFILE64_SOURCE
- 	EXTLIBS += -lelf -ldw
- 	LIB_OBJS += util/probe-finder.o
- endif
--- 
-1.5.6.5
-
-
--- 
-Regards/Gruss,
-Boris.
-
---
-Advanced Micro Devices, Inc.
-Operating Systems Research Center
+regards,
+dan carpenter
