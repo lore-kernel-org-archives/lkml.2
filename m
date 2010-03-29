@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0C2JkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:40:04 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:59939 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752931Ab0C2Jj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:39:59 -0400
-Date: Mon, 29 Mar 2010 11:39:53 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH] drivers/serial/sunsu.c: Correct use after free
-Message-ID: <Pine.LNX.4.64.1003291139250.21896@ask.diku.dk>
+	id S1754072Ab0C2Jne (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:43:34 -0400
+Received: from mail-bw0-f209.google.com ([209.85.218.209]:60714 "EHLO
+	mail-bw0-f209.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751771Ab0C2Jnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 05:43:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=JQKc7Kp9fXa8CEQY5EPFAPiR/Dq4jk3EC0pdfgxI6Hvtlzv0jTDAjSgCeWh4ZnSR/L
+         VFc0GJ7qUKwwK3uG6RnRLEsI1h4wRticZiCYQUJvWqnDLGKU2vNsTXe9RlsCDfA+07zR
+         CfA1ECz4sk/10MBQOmGCQQyT+ixkfrpGj/gxM=
+Date: Mon, 29 Mar 2010 12:43:22 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Lars Lindley <lindley@coyote.org>
+Cc: gregkh@suse.de, greg@kroah.com, penberg@cs.helsinki.fi, pavel@ucw.cz,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: winbond: wbhal_f.h Coding style fixes.
+Message-ID: <20100329094322.GB15060@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Lars Lindley <lindley@coyote.org>, gregkh@suse.de, greg@kroah.com,
+	penberg@cs.helsinki.fi, pavel@ucw.cz, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1269796259-8671-1-git-send-email-lindley@coyote.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269796259-8671-1-git-send-email-lindley@coyote.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Sun, Mar 28, 2010 at 07:10:59PM +0200, Lars Lindley wrote:
+> I fixed all checkpatch problems and also converted the
+> function arguments from hungarian notation and CamelCase.
+> 
 
-The of_iounmap is at the out_unmap label, but at that point up has already
-been freed.  The free cannot be moved to the out_unmap label, because that
-label is reachable from cases where up should not be freed.  So the call to
-of_iounmap is just duplicated, and the goto converted to a return.
+	[snip]
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+> -#define hal_ibss_disconnect(_A) hal_stop_sync_bss(_A)
+> +#define hal_ibss_disconnect(_A)		(hal_stop_sync_bss(_A))
 
-// <smpl>
-@@
-expression x,e;
-identifier f;
-iterator I;
-statement S;
-@@
+The parenthesis around hal_stop_sync_bss() aren't needed.  They don't
+hurt anything, but they're odd.
 
-*kfree(x);
-... when != &x
-    when != x = e
-    when != I(x,...) S
-*x->f
-// </smpl>
+Also it appears that no one uses hal_ibss_disconnect().
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+So far as I'm concerned this can go in as is...
+Acked-by: Dan Carpenter <error27@gmail.com>
 
----
- drivers/serial/sunsu.c              |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+regards,
+dan carpenter
 
-diff --git a/drivers/serial/sunsu.c b/drivers/serial/sunsu.c
-index 170d3d6..cbcfb18 100644
---- a/drivers/serial/sunsu.c
-+++ b/drivers/serial/sunsu.c
-@@ -1453,8 +1453,10 @@ static int __devinit su_probe(struct of_device *op, const struct of_device_id *m
- 	if (up->su_type == SU_PORT_KBD || up->su_type == SU_PORT_MS) {
- 		err = sunsu_kbd_ms_init(up);
- 		if (err) {
-+			of_iounmap(&op->resource[0],
-+				   up->port.membase, up->reg_size);
- 			kfree(up);
--			goto out_unmap;
-+			return err;
- 		}
- 		dev_set_drvdata(&op->dev, up);
- 
