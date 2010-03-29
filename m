@@ -1,164 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab0C2AYz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 20:24:55 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:40797 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755381Ab0C2AYx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 20:24:53 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1269821357.8653.231.camel@localhost>
-References: <alpine.DEB.2.00.1003282040480.4731@ernie.pinecrest>
-	 <1269821357.8653.231.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-sYkyPshXPN5NT1RvlzNu"
-Date: Mon, 29 Mar 2010 01:24:45 +0100
-Message-ID: <1269822285.8653.251.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: [PATCH] rt28xx: Make PCI_{MAP,UNMAP}_SINGLE type-safe
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1755487Ab0C2Am7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 20:42:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32976 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755390Ab0C2Am5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 20:42:57 -0400
+Message-ID: <4BAFF737.2030702@kernel.org>
+Date: Sun, 28 Mar 2010 17:41:27 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100228 SUSE/3.0.3-1.1.1 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Subject: Re: [patch v5] x86: page-alin initrd area size
+References: <1269642114-16588-1-git-send-email-yinghai@kernel.org> <1269642114-16588-3-git-send-email-yinghai@kernel.org> <20100326230615.GB29222@cmpxchg.org> <4BAD4734.8020503@kernel.org> <20100327000723.GF29222@cmpxchg.org> <4BAD5D25.5060909@kernel.org> <20100328000306.GA10304@cmpxchg.org> <4BAEA7BE.1030707@kernel.org> <20100328010113.GB10304@cmpxchg.org> <4BAEB7CE.70305@kernel.org> <20100328233502.GC10304@cmpxchg.org>
+In-Reply-To: <20100328233502.GC10304@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/28/2010 04:35 PM, Johannes Weiner wrote:
+> Initrd memory is freed late and page-wise, so allocate full pages and
+> not share the last one with somebody else.
+> 
+> Also add a warning and a fixup in free_init_pages() to catch unaligned
+> ranges more explicitely in the future.
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  arch/x86/kernel/head32.c |    8 +++++++-
+>  arch/x86/kernel/head64.c |    8 +++++++-
+>  arch/x86/kernel/setup.c  |   14 ++++++++++----
+>  arch/x86/mm/init.c       |   12 ++++++++----
+>  4 files changed, 32 insertions(+), 10 deletions(-)
+> 
+> On Sat, Mar 27, 2010 at 06:58:38PM -0700, Yinghai Lu wrote:
+>> please check.
+> 
+> I am really fed up with you replying to one point of an email and
+> skipping over five others.  So here is my version of the patch,
+> the maintainers can choose.
 
---=-sYkyPshXPN5NT1RvlzNu
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+thought I prefer to put calculating out of if
 
-To avoid recurrence of bugs such as <http://bugs.debian.org/575726>,
-change the type of the first parameter to linux_pci_{map,unmap}_single()
-from void * to struct rt_rtmp_adapter *.  Also do not define the macros
-PCI_{MAP,UNMAP}_SINGLE() when building the rt2870sta driver; they are
-not used and if they were that would be a bug.
+> 
+> Differences:
+>   o only align the allocation area size, no need to also copy
+>     alignment bits in relocate_initrd()
+good point.
+>   o keep the alignment fixup in free_init_pages() out of line and
+>     self-contained
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>=20
+why calulate them two times ?
+
+also prefer to put the fat comments in one place.
+
+also we need to align begin too, so don't confuse set_memory_np() and set_memory_rw().
+
+Thanks
+
+Yinghai
+
+Subject: [PATCH -v6] x86: Make sure free_init_pages() free pages in boundary
+
+When CONFIG_NO_BOOTMEM, it could use memory more effient, or more compact.
+
+Example is:
+Allocated new RAMDISK: 00ec2000 - 0248ce57
+Move RAMDISK from 000000002ea04000 - 000000002ffcee56 to 00ec2000 - 0248ce56
+
+The new RAMDISK's end is not page aligned.
+Last page could use shared with other user.
+
+When free_init_pages are called for initrd or .init, the page could be freed
+could have chance to corrupt other data.
+
+code segment in free_init_pages()
+|        for (; addr < end; addr += PAGE_SIZE) {
+|                ClearPageReserved(virt_to_page(addr));
+|                init_page_count(virt_to_page(addr));
+|                memset((void *)(addr & ~(PAGE_SIZE-1)),
+|                        POISON_FREE_INITMEM, PAGE_SIZE);
+|                free_page(addr);
+|                totalram_pages++;
+|        }
+last half page could be used as one whole free page.
+
+Try to make the boundaries to be page aligned.
+
+-v2: make the original initramdisk to be aligned, according to Johannes.
+     otherwise we have chance to lose one page.
+     we still need to keep initrd_end not aligned, otherwise it could
+     confuse decompresser.
+-v3: change to WARN_ON instead according to Johannes.
+-v4: use PAGE_ALIGN according to Johannes.
+     We may fix that MARCO name later to PAGE_ALIGN_UP, and PAGE_ALIGN_DOWN
+     Add comments about assuming ramdisk start is aligned
+     in relocate_initrd(), change to re get ramdisk_image instead of save it
+	to make diff smaller.
+     Add WARN for wrong range according Johannes.
+-v6: remove one WARN
+     We need align begin in free_init_pages()
+     not copy more than ramdisk_size according to Johannes
+
+Reported-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Stanislaw Gruszka <sgruszka@redhat.com>
+
 ---
- drivers/staging/rt2860/rt_linux.h    |   14 +++++---------
- drivers/staging/rt2860/rt_pci_rbus.c |   12 ++++--------
- 2 files changed, 9 insertions(+), 17 deletions(-)
+ arch/x86/kernel/head32.c |    3 ++-
+ arch/x86/kernel/head64.c |    3 ++-
+ arch/x86/kernel/setup.c  |   10 ++++++----
+ arch/x86/mm/init.c       |   32 ++++++++++++++++++++++++++------
+ 4 files changed, 36 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/rt2860/rt_linux.h b/drivers/staging/rt2860/rt_=
-linux.h
-index a7c540f..b370fb2 100644
---- a/drivers/staging/rt2860/rt_linux.h
-+++ b/drivers/staging/rt2860/rt_linux.h
-@@ -455,10 +455,11 @@ void hex_dump(char *str, unsigned char *pSrcBufVA, un=
-signed int SrcBufLen);
-  * Device DMA Access related definitions and data structures.
-  *************************************************************************=
-*********/
- #ifdef RTMP_MAC_PCI
--dma_addr_t linux_pci_map_single(void *handle, void *ptr, size_t size,
--				int sd_idx, int direction);
--void linux_pci_unmap_single(void *handle, dma_addr_t dma_addr, size_t size=
-,
--			    int direction);
-+struct rt_rtmp_adapter;
-+dma_addr_t linux_pci_map_single(struct rt_rtmp_adapter *pAd, void *ptr,
-+				size_t size, int sd_idx, int direction);
-+void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_ad=
-dr,
-+			    size_t size, int direction);
-=20
- #define PCI_MAP_SINGLE(_handle, _ptr, _size, _sd_idx, _dir) \
- 	linux_pci_map_single(_handle, _ptr, _size, _sd_idx, _dir)
-@@ -475,11 +476,6 @@ void linux_pci_unmap_single(void *handle, dma_addr_t d=
-ma_addr, size_t size,
- #define DEV_ALLOC_SKB(_length) \
- 	dev_alloc_skb(_length)
- #endif /* RTMP_MAC_PCI // */
--#ifdef RTMP_MAC_USB
--#define PCI_MAP_SINGLE(_handle, _ptr, _size, _dir) (unsigned long)0
--
--#define PCI_UNMAP_SINGLE(_handle, _ptr, _size, _dir)
--#endif /* RTMP_MAC_USB // */
-=20
- /*
-  * unsigned long
-diff --git a/drivers/staging/rt2860/rt_pci_rbus.c b/drivers/staging/rt2860/=
-rt_pci_rbus.c
-index e0a0aee..acdf09f 100644
---- a/drivers/staging/rt2860/rt_pci_rbus.c
-+++ b/drivers/staging/rt2860/rt_pci_rbus.c
-@@ -790,10 +790,9 @@ IRQ_HANDLE_TYPE rt2860_interrupt(int irq, void *dev_in=
-stance)
-  * invaild or writeback cache
-  * and convert virtual address to physical address
-  */
--dma_addr_t linux_pci_map_single(void *handle, void *ptr, size_t size,
--				int sd_idx, int direction)
-+dma_addr_t linux_pci_map_single(struct rt_rtmp_adapter *pAd, void *ptr,
-+				size_t size, int sd_idx, int direction)
+Index: linux-2.6/arch/x86/mm/init.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/init.c
++++ linux-2.6/arch/x86/mm/init.c
+@@ -331,11 +331,23 @@ int devmem_is_allowed(unsigned long page
+ 
+ void free_init_pages(char *what, unsigned long begin, unsigned long end)
  {
--	struct rt_rtmp_adapter *pAd;
- 	struct os_cookie *pObj;
-=20
+-	unsigned long addr = begin;
++	unsigned long addr;
++	unsigned long begin_aligned, end_aligned;
+ 
+-	if (addr >= end)
++	/* Make sure boundaries are page aligned */
++	begin_aligned = PAGE_ALIGN(begin);
++	end_aligned   = end & PAGE_MASK;
++
++	if (WARN_ON(begin_aligned != begin || end_aligned != end)) {
++		begin = begin_aligned;
++		end   = end_aligned;
++	}
++
++	if (begin >= end)
+ 		return;
+ 
++	addr = begin;
++
  	/*
-@@ -812,7 +811,6 @@ dma_addr_t linux_pci_map_single(void *handle, void *ptr=
-, size_t size,
- 	   sd_idx =3D -1
+ 	 * If debugging page accesses then do not free this memory but
+ 	 * mark them not present - any buggy init-section access will
+@@ -343,7 +355,7 @@ void free_init_pages(char *what, unsigne
  	 */
-=20
--	pAd =3D (struct rt_rtmp_adapter *)handle;
- 	pObj =3D (struct os_cookie *)pAd->OS_Cookie;
-=20
- 	if (sd_idx =3D=3D 1) {
-@@ -826,13 +824,11 @@ dma_addr_t linux_pci_map_single(void *handle, void *p=
-tr, size_t size,
-=20
- }
-=20
--void linux_pci_unmap_single(void *handle, dma_addr_t dma_addr, size_t size=
-,
--			    int direction)
-+void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_ad=
-dr,
-+			    size_t size, int direction)
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+ 	printk(KERN_INFO "debug: unmapping init memory %08lx..%08lx\n",
+-		begin, PAGE_ALIGN(end));
++		begin, end);
+ 	set_memory_np(begin, (end - begin) >> PAGE_SHIFT);
+ #else
+ 	/*
+@@ -358,8 +370,7 @@ void free_init_pages(char *what, unsigne
+ 	for (; addr < end; addr += PAGE_SIZE) {
+ 		ClearPageReserved(virt_to_page(addr));
+ 		init_page_count(virt_to_page(addr));
+-		memset((void *)(addr & ~(PAGE_SIZE-1)),
+-			POISON_FREE_INITMEM, PAGE_SIZE);
++		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
+ 		free_page(addr);
+ 		totalram_pages++;
+ 	}
+@@ -376,6 +387,15 @@ void free_initmem(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ void free_initrd_mem(unsigned long start, unsigned long end)
  {
--	struct rt_rtmp_adapter *pAd;
- 	struct os_cookie *pObj;
-=20
--	pAd =3D (struct rt_rtmp_adapter *)handle;
- 	pObj =3D (struct os_cookie *)pAd->OS_Cookie;
-=20
- 	pci_unmap_single(pObj->pci_dev, dma_addr, size, direction);
---=20
-1.7.0.3
-
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-sYkyPshXPN5NT1RvlzNu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS6/zSOe/yOyVhhEJAQLC+RAAx5Y4bOXXbEJ3Yj2rVmUbtrSKTzRh7+uZ
-H0Tr1TcgHFzGVM0XKXrautb0Ihqv+8Y5Lxly5SgcdHoxtNLixzUmyIeUBtnp6hWX
-OobvmkUnG8DxNIagLIL4QQwW4M5sO0c1qmMn669g5mvCdH5QX78WnH0myvuaDwWq
-YmmM6TLjR9Bih+g/mPBHDmfp3gqjZiq/gqmvLRlOcXx+/c+3W4TCX94MPPtcb7vx
-Al29cIQw1rqYgQ+S/KxOYHkcUxZB4kklJ5JxPBHNyBFTRh2nvLvCsCs0CbpjPlOU
-YJVlipaGIIFhYhTYfW9JB56se5tvh35I1QvuIwiuM+YT6PHYGxkB5/g+5xAjsthp
-emglwa64YgCjjzqdWHnS8iuqKrxwcYBfAK0anoMecCqr1KoMu6p9Ec6bvJfKqHRC
-Vaff76CEtm38fiMLsh43kXRfB3dWsh7Ww3lYgDfYgQtXbEHWTL4rb7yFVd331cdO
-qAayXq5qS4Ui3xBgM0/2tiWJMYvuIl2mO029me2zOR5HIAvXSNLqkZz0tHV/8gAR
-Wo5c3uOzezOgzzFgvEKgO/ZMiRIh98ABqtH7h0RXBs8wkZx2VtiGwJq12lhYk014
-nleIaZXhZi9Omf8IPmPORjUCQ9Ai0RlM1/7evSbgBfWQ8SVgaJbqugMZYL1GsXHH
-PCPekNd5kYY=
-=h5wq
------END PGP SIGNATURE-----
-
---=-sYkyPshXPN5NT1RvlzNu--
+-	free_init_pages("initrd memory", start, end);
++	/*
++	 * end could be not aligned, and We can not align that,
++	 * decompresser could be confused by aligned initrd_end
++	 * We already reserve the end partial page before in
++	 *   - i386_start_kernel()
++	 *   - x86_64_start_kernel()
++	 *   - relocate_initrd()
++	 * So here We can do PAGE_ALIGN() safely to get partial page to be freed
++	 */
++	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
+ }
+ #endif
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -44,9 +44,10 @@ void __init i386_start_kernel(void)
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
+ 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
++		/* Assume only end is not page aligned */
+ 		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = ramdisk_image + ramdisk_size;
++		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+Index: linux-2.6/arch/x86/kernel/head64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head64.c
++++ linux-2.6/arch/x86/kernel/head64.c
+@@ -103,9 +103,10 @@ void __init x86_64_start_reservations(ch
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
+ 	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
++		/* Assume only end is not page aligned */
+ 		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = ramdisk_image + ramdisk_size;
++		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -314,16 +314,17 @@ static void __init reserve_brk(void)
+ #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
+ static void __init relocate_initrd(void)
+ {
+-
++	/* Assume only end is not page aligned */
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+ 	char *p, *q;
+ 
+ 	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = find_e820_area(0, end_of_lowmem, ramdisk_size,
++	ramdisk_here = find_e820_area(0, end_of_lowmem, area_size,
+ 					 PAGE_SIZE);
+ 
+ 	if (ramdisk_here == -1ULL)
+@@ -332,7 +333,7 @@ static void __init relocate_initrd(void)
+ 
+ 	/* Note: this includes all the lowmem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+-	reserve_early(ramdisk_here, ramdisk_here + ramdisk_size,
++	reserve_early(ramdisk_here, ramdisk_here + area_size,
+ 			 "NEW RAMDISK");
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+ 	initrd_end   = initrd_start + ramdisk_size;
+@@ -376,9 +377,10 @@ static void __init relocate_initrd(void)
+ 
+ static void __init reserve_initrd(void)
+ {
++	/* Assume only end is not page aligned */
+ 	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-	u64 ramdisk_end   = ramdisk_image + ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 end_of_lowmem = max_low_pfn_mapped << PAGE_SHIFT;
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
