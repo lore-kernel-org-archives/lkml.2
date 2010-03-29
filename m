@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab0C2JLi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:11:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49162 "EHLO
+	id S1755161Ab0C2JLn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:11:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49172 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754981Ab0C2JLg (ORCPT
+	with ESMTP id S1755121Ab0C2JLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:11:36 -0400
-Subject: Re: [PATCH 1/2] perf: Correctly align perf event tracing buffer
+	Mon, 29 Mar 2010 05:11:39 -0400
+Subject: Re: [PATCHSET] cpuhog: implement and use cpuhog
 From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <1269753066-17246-2-git-send-regression-fweisbec@gmail.com>
-References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com>
-	 <1269753066-17246-2-git-send-regression-fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, rusty@rustcorp.com.au, sivanich@sgi.com,
+       heiko.carstens@de.ibm.com, torvalds@linux-foundation.org, mingo@elte.hu,
+       dipankar@in.ibm.com, josh@freedesktop.org, paulmck@linux.vnet.ibm.com,
+       oleg@redhat.com, akpm@linux-foundation.org
+In-Reply-To: <4B99B15B.8060002@kernel.org>
+References: <1268063603-7425-1-git-send-email-tj@kernel.org>
+	 <1268249155.5279.128.camel@twins>  <4B99B15B.8060002@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 10:51:31 +0200
-Message-ID: <1269852691.12097.162.camel@laptop>
+Date: Mon, 29 Mar 2010 11:11:28 +0200
+Message-ID: <1269853888.12097.191.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,53 +27,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-03-28 at 07:11 +0200, Frederic Weisbecker wrote:
-> The trace event buffer used by perf to record raw sample events
-> is typed as an array of char and may then not be aligned to 8
-> by alloc_percpu().
+On Fri, 2010-03-12 at 12:13 +0900, Tejun Heo wrote:
+> Hello, Peter.
 > 
-> But we need it to be aligned to 8 in sparc64 because we cast
-> this buffer into a random structure type built by the TRACE_EVENT()
-> macro to store the traces. So if a random 64 bits field is accessed
-> inside, it may be not under an expected good alignment.
+> On 03/11/2010 04:25 AM, Peter Zijlstra wrote:
+> > cpuhog as a name doesn't work for me, stop-machine had a name that
+> > described its severity and impact, cpuhog makes me think of while(1);.
+> >
+> > Can't we keep the stop_machine name and make that a workqueue interface
+> > like you propose?
+> >
+> > That way we'd end up with something like:
+> > 
+> > kernel/stop_machine.c
+> >   int stop_cpu(int cpu, stop_fn_t fn, void *arg)
+> >   int stop_machine(struct cpumask *mask, stop_fn_t fn, void *arg)
 > 
-> Use an array of long instead to force the appropriate alignment, and
-> perform a compile time check to ensure the size in byte of the buffer
-> is a multiple of sizeof(long) so that its actual size doesn't get
-> shrinked under us.
-> 
-> This fixes unaligned accesses reported while using perf lock
-> in sparc 64.
-> 
-> Suggested-by: David Miller <davem@davemloft.net>
-> Suggested-by: Tejun Heo <htejun@gmail.com>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_event_perf.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-> index 0709e4f..69941f3 100644
-> --- a/kernel/trace/trace_event_perf.c
-> +++ b/kernel/trace/trace_event_perf.c
-> @@ -15,7 +15,12 @@ EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
->  static char *perf_trace_buf;
->  static char *perf_trace_buf_nmi;
->  
-> -typedef typeof(char [PERF_MAX_TRACE_SIZE]) perf_trace_t ;
-> +/*
-> + * Force it to be aligned to unsigned long to avoid misaligned accesses
-> + * suprises
-> + */
-> +typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
-> +	perf_trace_t;
->  
+> The distinction would be diabling of IRQ on each CPU.
+> hog_[one_]cpu[s]() schedule highest priority task to, well, hog the
+> cpu but doesn't affect contextless part of the cpu (irq, bh, whatnot).
+> In that sense, it is the lowest bottom of upper half but not quite
+> stopping the cpu and I think the distinction is rather important to
+> make.  With the proposed preemption disabling around the callback, it
+> pretty much behaves like a complete hog too.
 
-wouldn't __aligned(8) be simpler?
+Its a pretty minor difference, shouldn't we simply audit all existing
+kstopmachine users and fix that up, having two similar but not quite
+identical interfaces in the kernel sounds like trouble.
+
+> > alternatively, something like schedule_primary_work*() might work I
+> > guess.
+> 
+> I wanted to avoid verbs associatffed with the traditional workqueue -
+> schedule and queue, while emphasizing that this is something that you
+> don't want to abuse - so the verb hog.  monopolize_cpu() was the
+> second choice but hog is shorter, sweeter and can also be used as a
+> noun as-is, so I chose hog.
+> 
+> So, those were my rationales.  What do you think?
+
+Still don't like the name fwiw.
 
