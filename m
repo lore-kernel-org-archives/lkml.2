@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab0C2Csu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:48:50 -0400
-Received: from rcsinet12.oracle.com ([148.87.113.124]:56737 "EHLO
-	rcsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755952Ab0C2Cqv (ORCPT
+	id S1756092Ab0C2Csw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:48:52 -0400
+Received: from acsinet12.oracle.com ([141.146.126.234]:43381 "EHLO
+	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755957Ab0C2Cqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Mar 2010 22:46:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,64 +16,112 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/31] x86: Make smp_locks end with page alignment
-Date: Sun, 28 Mar 2010 19:42:54 -0700
-Message-Id: <1269830604-26214-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 25/31] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
+Date: Sun, 28 Mar 2010 19:43:18 -0700
+Message-Id: <1269830604-26214-26-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0204.4BB01462.0136,ss=1,fgs=0
+X-CT-RefId: str=0001.0A0B0209.4BB01469.000A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Try to fix
-------------[ cut here ]------------
-WARNING: at arch/x86/mm/init.c:342 free_init_pages+0x4c/0xfa()
-free_init_pages: range [0x40daf000, 0x40db5c24] is not aligned
-Modules linked in:
-Pid: 0, comm: swapper Not tainted 2.6.34-rc2-tip-03946-g4f16b23-dirty #50
-Call Trace:
- [<40232e9f>] warn_slowpath_common+0x65/0x7c
- [<4021c9f0>] ? free_init_pages+0x4c/0xfa
- [<40881434>] ? _etext+0x0/0x24
- [<40232eea>] warn_slowpath_fmt+0x24/0x27
- [<4021c9f0>] free_init_pages+0x4c/0xfa
- [<40881434>] ? _etext+0x0/0x24
- [<40d3f4bd>] alternative_instructions+0xf6/0x100
- [<40d3fe4f>] check_bugs+0xbd/0xbf
- [<40d398a7>] start_kernel+0x2d5/0x2e4
- [<40d390ce>] i386_start_kernel+0xce/0xd5
----[ end trace 4eaa2a86a8e2da22 ]---
+lmb_memory_size() will return memory size in lmb.memory.region.
+lmb_free_memory_size() will return free memory size in lmb.memory.region.
 
-Comments in vmlinux.lds.S already said:
-|        /*
-|         * smp_locks might be freed after init
-|         * start/end must be page aligned
-|         */
+So We can get exact reseved size.
+
+Set the size right after initmem_init(), because later bootmem API will
+get area from 16M. (except some fallback).
+
+Later after we remove the bootmem, We could call that just before paging_init().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- arch/x86/kernel/vmlinux.lds.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
-index 44879df..2cc2497 100644
---- a/arch/x86/kernel/vmlinux.lds.S
-+++ b/arch/x86/kernel/vmlinux.lds.S
-@@ -291,8 +291,8 @@ SECTIONS
- 	.smp_locks : AT(ADDR(.smp_locks) - LOAD_OFFSET) {
- 		__smp_locks = .;
- 		*(.smp_locks)
--		__smp_locks_end = .;
- 		. = ALIGN(PAGE_SIZE);
-+		__smp_locks_end = .;
- 	}
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index de6cd06..334281f 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
  
- #ifdef CONFIG_X86_64
+ void init_lmb_memory(void);
+ void fill_lmb_memory(void);
++void find_lmb_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 47eb188..9c4b9da 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1100,3 +1100,20 @@ void __init fill_lmb_memory(void)
+ 	lmb_analyze();
+ 	lmb_dump_all();
+ }
++
++void __init find_lmb_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use lmb to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = lmb_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = lmb_free_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
++}
++
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 3d43f12..b00ccc4 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -979,6 +979,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	initmem_init(0, max_pfn, acpi, k8);
++	find_lmb_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	lmb_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index b86492e..f1af41c 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -52,8 +52,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -820,11 +818,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
 -- 
 1.6.4.2
 
