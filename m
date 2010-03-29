@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab0C2Oxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 10:53:38 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35716 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab0C2Oxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 10:53:36 -0400
-Date: Mon, 29 Mar 2010 07:53:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       adobriyan@gmail.com
-Subject: Re: [patch 0/6] rcu head debugobjects
-Message-ID: <20100329145329.GA2569@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100327153233.993367557@efficios.com>
- <20100327224606.GK2343@linux.vnet.ibm.com>
- <20100327231421.GA4685@Krystal>
- <20100327232024.GB4685@Krystal>
- <20100327234314.GL2343@linux.vnet.ibm.com>
- <20100329133933.GA23238@Krystal>
+	id S1753228Ab0C2OyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 10:54:17 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:55839 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab0C2OyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 10:54:16 -0400
+Date: Mon, 29 Mar 2010 09:50:56 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Martin Sustrik <sustrik@250bpm.com>
+cc: Andi Kleen <andi@firstfloor.org>, David Miller <davem@davemloft.net>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Add PGM protocol support to the IP stack
+In-Reply-To: <4BAE382D.7090903@250bpm.com>
+Message-ID: <alpine.DEB.2.00.1003290946320.13721@router.home>
+References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home> <877hp4i76d.fsf@basil.now
+ <20100327131138.GD20695@one.firstfloor.org> <4BAE382D.7090903@250bpm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329133933.GA23238@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 09:39:33AM -0400, Mathieu Desnoyers wrote:
-> Hi Paul,
-> 
-> Thinking about the rcu head init topic, we might be able to drop the
-> init_rcu_head() initializer. The idea is the following:
-> 
-> - We need init_rcu_head_on_stack()/destroy_rcu_head_on_stack().
-> - call_rcu() populates the rcu_head and normally does not care about it being
->   pre-initialized.
-> - The activation fixup can detect if a non-initialized rcu head is being
->   activated and just perform the fixup without complaining.
-> - If we have two call_rcu() in a row in the same GP on the same rcu_head, the
->   activation check will detect it.
-> 
-> So either we remove all the init_rcu_head(), as was originally proposed, or we
-> use one that is a no-op on !DEBUG configs and initialize the object with DEBUG
-> configs.
-> 
-> That removes the dependency on object_is_static().
+On Sat, 27 Mar 2010, Martin Sustrik wrote:
 
-If I understand correctly, this does sound good.  Here is what I think
-you are proposing:
+> Andi Kleen wrote:
+>
+> > I did a quick read and the manpage/interface seem reasonable to me.
+>
+> You may also have a look at original PGM implementation by Luigi Rizzo
+> (FreeBSD). It's not maintained, but it might give you broader view.
+>
+> http://info.iet.unipi.it/~luigi/pgm-code/
 
-o	call_rcu() and friends only complain if handed an rcu_head
-	structure that is still queued awaiting a grace period.
-	They don't care otherwise.
+Interesting. Which files in that directory contain the most current code?
 
-o	rcu_do_batch() complains unless the rcu_head structure has
-	most recently been enqueued by call_rcu() or one if its friends.
+Looks like the tcpdump patch has been merged.
 
-Did I get it right?
+Here is another tcpdump patch that implements decoding PGM via UDP. Anyone
+know how to submit something like that?
 
-							Thanx, Paul
+(Need to specify -Tpgm option to use pgm decoder on UDP traffic)
+
+Index: tcpdump/interface.h
+===================================================================
+--- tcpdump.orig/interface.h	2010-02-26 18:50:39.411609391 -0600
++++ tcpdump/interface.h	2010-02-26 18:51:04.270350179 -0600
+@@ -74,6 +74,7 @@
+ #define PT_CNFP		7	/* Cisco NetFlow protocol */
+ #define PT_TFTP		8	/* trivial file transfer protocol */
+ #define PT_AODV		9	/* Ad-hoc On-demand Distance Vector Protocol */
++#define PT_PGM		10	/* The PGM protocol */
+
+ #ifndef min
+ #define min(a,b) ((a)>(b)?(b):(a))
+Index: tcpdump/print-udp.c
+===================================================================
+--- tcpdump.orig/print-udp.c	2010-02-26 18:51:35.921610552 -0600
++++ tcpdump/print-udp.c	2010-02-26 18:53:54.440349950 -0600
+@@ -520,6 +520,11 @@
+ 			tftp_print(cp, length);
+ 			break;
+
++		case PT_PGM:
++			udpipaddr_print(ip, sport, dport);
++			pgm_print(cp, length, (const u_char *)ip);
++			break;
++
+ 		case PT_AODV:
+ 			udpipaddr_print(ip, sport, dport);
+ 			aodv_print((const u_char *)(up + 1), length,
+Index: tcpdump/tcpdump.c
+===================================================================
+--- tcpdump.orig/tcpdump.c	2010-02-26 18:37:13.971601597 -0600
++++ tcpdump/tcpdump.c	2010-02-26 18:37:43.290033748 -0600
+@@ -854,6 +854,8 @@
+ 				packettype = PT_TFTP;
+ 			else if (strcasecmp(optarg, "aodv") == 0)
+ 				packettype = PT_AODV;
++			else if (strcasecmp(optarg, "pgm") == 0)
++				packettype = PT_PGM;
+ 			else
+ 				error("unknown packet type `%s'", optarg);
+ 			break;
