@@ -1,84 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab0C2SGB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:06:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab0C2SF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:05:59 -0400
-Date: Mon, 29 Mar 2010 14:05:21 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+	id S1754436Ab0C2SHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:07:43 -0400
+Received: from outbound-mail-158.bluehost.com ([67.222.39.38]:49844 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753725Ab0C2SHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:07:41 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=c9LdyLjUcX1yYip75C428yRq+fHPD95z4HLB74UCPEREkt7PEUm5E8Fx/KqJ8qrDIlEfA4PkJ6ZvypLkv/gcvz+IJGJkPBa84IzTljmg5vVxUSpoy1igyKOjVqm7gwpQ;
+Date: Mon, 29 Mar 2010 11:06:33 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Giel van Schijndel <me@mortis.eu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cleanup __generic_block_fiemap and fix a few minor
-	issues
-Message-ID: <20100329180520.GA4539@localhost.localdomain>
-References: <20100303163715.GB2215@localhost.localdomain> <alpine.LFD.2.00.1003040754150.7046@localhost.localdomain> <20100304162039.GA5722@localhost.localdomain> <20100304085021.1b4e5c58.randy.dunlap@oracle.com> <20100304171253.GB5722@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100304171253.GB5722@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Subject: Re: [PATCH 1/3] resource: shared I/O region support
+Message-ID: <20100329110633.702e3874@jbarnes-piketon>
+In-Reply-To: <4BB0E73F.2080104@zytor.com>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+	<1269523063-30346-1-git-send-email-me@mortis.eu>
+	<20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>
+	<20100325180347.GA2761@salidar.me.mortis.eu>
+	<20100325181633.0313b8a5@lxorguk.ukuu.org.uk>
+	<20100329081834.GB27956@salidar.me.mortis.eu>
+	<20100329090713.1317942b@jbarnes-piketon>
+	<20100329173800.GA3583@salidar.me.mortis.eu>
+	<4BB0E73F.2080104@zytor.com>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 04, 2010 at 12:12:54PM -0500, Josef Bacik wrote:
-> On Thu, Mar 04, 2010 at 08:50:21AM -0800, Randy Dunlap wrote:
-> > On Thu, 4 Mar 2010 11:20:40 -0500 Josef Bacik wrote:
+On Mon, 29 Mar 2010 10:45:35 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 03/29/2010 10:38 AM, Giel van Schijndel wrote:
 > > 
-> > > Ahh yes thats much nicer, thank you.  Here is my updated patch with your
-> > > suggestions.  Thanks,
-> > > 
-> > > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > > ---
-> > >  fs/ioctl.c         |   81 +++++++++++++++++++++++++++++----------------------
-> > >  include/linux/fs.h |    5 ++-
-> > >  2 files changed, 49 insertions(+), 37 deletions(-)
-> > > 
-> > > diff --git a/fs/ioctl.c b/fs/ioctl.c
-> > > index 6c75110..64fed0b 100644
-> > > --- a/fs/ioctl.c
-> > > +++ b/fs/ioctl.c
-> > > @@ -228,13 +228,22 @@ static int ioctl_fiemap(struct file *filp, unsigned long arg)
-> > >  
-> > >  #ifdef CONFIG_BLOCK
-> > >  
-> > > -#define blk_to_logical(inode, blk) (blk << (inode)->i_blkbits)
-> > > -#define logical_to_blk(inode, offset) (offset >> (inode)->i_blkbits);
-> > > +static inline sector_t logical_to_blk(struct inode *inode, loff_t offset)
-> > > +{
-> > > +	return (offset >> inode->i_blkbits);
-> > > +}
-> > > +
-> > > +static inline loff_t blk_to_logical(struct inode *inode, sector_t blk)
-> > > +{
-> > > +	return (blk << inode->i_blkbits);
-> > > +}
-> > >  
-> > >  /**
-> > >   * __generic_block_fiemap - FIEMAP for block based inodes (no locking)
-> > >   * @inode - the inode to map
-> > > - * @arg - the pointer to userspace where we copy everything to
-> > > + * @fieinfo - the fiemap info struct that will be passed back to userspace
-> > > + * @start - where to start mapping in the inode
-> > > + * @len - how much space to map
-> > >   * @get_block - the fs's get_block function
-> > >   *
-> > >   * This does FIEMAP for block based inodes.  Basically it will just loop
+> > Patch after this line:
+> > ========================================================================
+> > resource: shared I/O region support
 > > 
-> > Please fix the kernel-doc notation.  Function parameter notation is like:
+> > SuperIO devices share regions and use lock/unlock operations to chip
+> > select.  We therefore need to be able to request a resource and wait for
+> > it to be freed by whichever other SuperIO device currently hogs it.
+> > Right now you have to poll which is horrible.
 > > 
-> >  * @start: where to start mapping in the inode
+> > Add a MUXED field to IO port resources. If the MUXED field is set on the
+> > resource and on the request (via request_muxed_region) then we block
+> > until the previous owner of the muxed resource releases their region.
+> > 
+> > This allows us to implement proper resource sharing and locking for
+> > superio chips using code of the form
+> > 
+> > enable_my_superio_dev() {
+> > 	request_muxed_region(0x44, 0x02, "superio:watchdog");
+> > 	outb() ..sequence to enable chip
+> > }
+> > 
+> > disable_my_superio_dev() {
+> > 	outb() .. sequence of disable chip
+> > 	release_region(0x44, 0x02);
+> > }
+> > 
+> > Signed-off-by: Giel van Schijndel <me@mortis.eu>
+> > Signed-off-by: Alan Cox <alan@linux.intel.com>
 > 
-> Sounds good, fixed below.  Thanks,
->
+> I have to question this approach a bit.
+> 
+> I would much rather see this as a two-step process, where multiple
+> devices request the same region with a "sharable" flag, and then have a
+> mutex associated with the struct resource (perhaps we need an outer
+> container called "struct muxed_resource" or some such.)
+> 
+> What I *really* object to with this patch is that it inherently assumes
+> that there is only one multiplexed resource in the entire system... but
+> of course nowhere enforces that.
 
-Is there anything else that needs to be done with this?  I just noticed it did
-not get pulled in yet, just wanted to make sure there are no outstanding issues.
-Thanks,
+Well that does keep it simple, and with just one user that's probably
+best.
 
-Josef 
+But why not use the common bus driver method?  Muxing at the resource
+level only seems to solve part of the problem...  It doesn't guarantee
+for example that driver A does something to a shared region that breaks
+driver B; it just makes sure they don't access the same region at the
+same time.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
