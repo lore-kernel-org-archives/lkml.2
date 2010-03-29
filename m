@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab0C2Ky4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 06:54:56 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53217 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755277Ab0C2Kyy (ORCPT
+	id S1755376Ab0C2KzS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 06:55:18 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:44964 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755232Ab0C2KzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 06:54:54 -0400
-Subject: Re: scheduler bug: process running since 5124095h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-In-Reply-To: <1269859960.6844.4.camel@marge.simson.net>
-References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com>
-	 <1269859960.6844.4.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 12:54:51 +0200
-Message-ID: <1269860091.12097.303.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 29 Mar 2010 06:55:16 -0400
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, hpa@zytor.com,
+       tglx@linutronix.de
+Subject: Re: [PATCH] x86: mce: Xeon75xx specific interface to get corrected memory error information v2
+From: Andi Kleen <andi@firstfloor.org>
+References: <20100324054044.GA4307@basil.fritz.box>
+	<87vdcf7ent.fsf@basil.nowhere.org> <4BB06500.5060105@jp.fujitsu.com>
+	<20100329090156.GE20695@one.firstfloor.org>
+	<4BB0851B.3000908@jp.fujitsu.com>
+Date: Mon, 29 Mar 2010 12:55:14 +0200
+In-Reply-To: <4BB0851B.3000908@jp.fujitsu.com> (Hidetoshi Seto's message of "Mon, 29 Mar 2010 19:46:51 +0900")
+Message-ID: <87fx3j75yl.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 12:52 +0200, Mike Galbraith wrote:
-> > I have a simple way to reproduce this:
-> > 1. Boot the system, run top, confirm everything is normal
-> > 2. Run latencytop, and quit (I used version 0.5)
-> > 3. Run top, see 5124095h in the TIME column
-> 
-> Indeed, and I don't even have CONFIG_LATENCYTOP set.  It bisected
-> to...
-> 
-> 761b1d26df542fd5eb348837351e4d2f3bc7bffe is the first bad commit
-> commit 761b1d26df542fd5eb348837351e4d2f3bc7bffe
-> Author: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Date:   Thu Nov 12 13:33:45 2009 +0900
+Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> writes:
 
+> I have some questions: Is it impossible to get the address
+> after polling handler have processed?  e.g. Is it possible to
+> implement this module as mcelog's add-on that hooked & invoked
+> immediately after reading /dev/mcelog?  I guess there are
+> some limitation/restriction to call pfa_command().
 
-Oh lovely, and reverting that cures the issue?
+You need to be in ring 0. In theory you could do it later, but then
+you risk losing the address if there is another error.
 
+> Are there any alternative way to get the address?
+
+No.
+
+> Polling like edac_i7 doesn't help this?
+
+No.
+
+>
+> You pointed "This makes it impossible to do predictive failure
+> analysis", but I guess we could do rough-but-enough analysis that
+> requires coarse resolution like sockets.  Or we should not expect
+
+The main predictive failure analysis interesting here is bad page
+offlining and for that you need an address.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
