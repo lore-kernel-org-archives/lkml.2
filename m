@@ -1,90 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755225Ab0C2R7m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 13:59:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49644 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab0C2R7k (ORCPT
+	id S1754905Ab0C2SAk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:00:40 -0400
+Received: from outbound-mail-158.bluehost.com ([67.222.39.38]:53625 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754014Ab0C2SAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 13:59:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TvouziqcnpUxDK98w0972qcUvow6fweKl+eBA3lvJvp5C5GYqruH4gvjzuRBlAS6bQ
-         ovkEmKdgXBNj2+nNnGyAcM2W4L2JwJEU6Uw9Fo/pNwily7HRZLOzn4lJhtxTqodV8JVQ
-         N6LUJSOrn9zj3OD1ej4/zB3Hjn+2qedOqb9y4=
-Date: Mon, 29 Mar 2010 19:59:39 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Message-ID: <20100329175935.GD5101@nowhere>
-References: <201003242240.54907.arnd@arndb.de> <20100328231847.GH5116@nowhere> <20100328233847.GJ5116@nowhere> <201003291304.24629.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201003291304.24629.arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 29 Mar 2010 14:00:38 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=qpMIAkCpeVLKObekaFUTVSRdbj5i1/hrW8eDlGkuhQ9jaAkZqlZ5BQLhsYJNfjoG9QgRMvNQJ3rJHopnciT5LpiXMcEOuaiE2s36fZSndDShptJfJqbyYe0VPnxzZcCS;
+Date: Mon, 29 Mar 2010 10:59:29 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Hans de Goede <hdegoede@redhat.com>,
+       Jean Delvare <khali@linux-fr.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] resource: shared I/O region support
+Message-ID: <20100329105929.731b055e@jbarnes-piketon>
+In-Reply-To: <20100329173800.GA3583@salidar.me.mortis.eu>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+	<1269523063-30346-1-git-send-email-me@mortis.eu>
+	<20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>
+	<20100325180347.GA2761@salidar.me.mortis.eu>
+	<20100325181633.0313b8a5@lxorguk.ukuu.org.uk>
+	<20100329081834.GB27956@salidar.me.mortis.eu>
+	<20100329090713.1317942b@jbarnes-piketon>
+	<20100329173800.GA3583@salidar.me.mortis.eu>
+X-Mailer: Claws Mail 3.7.2 (GTK+ 2.18.3; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 12:04:24PM +0100, Arnd Bergmann wrote:
-> On Monday 29 March 2010, Frederic Weisbecker wrote:
-> > On Mon, Mar 29, 2010 at 01:18:48AM +0200, Frederic Weisbecker wrote:
-> > > @@ -1943,7 +1949,7 @@ static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
-> > >  }
-> > >  
-> > >  static const struct file_operations proc_fdinfo_file_operations = {
-> > > -     .open           = nonseekable_open,
-> > > +     .llseek         = generic_file_llseek,
-> > >       .read           = proc_fdinfo_read,
-> > >  };
-> > >  
-> > > 
-> > > Replacing default_llseek() by generic_file_llseek() as you
-> > > did for most of the other parts is fine.
-> > > 
-> > > But the above changes the semantics as it makes it seekable.
-> > > Why not just keeping it as is? It just ends up in no_llseek().
+On Mon, 29 Mar 2010 19:38:00 +0200
+Giel van Schijndel <me@mortis.eu> wrote:
+
+> On Mon, Mar 29, 2010 at 09:07:13AM -0700, Jesse Barnes wrote:
+> > On Mon, 29 Mar 2010 10:18:34 +0200> Giel van Schijndel wrote:
+> >> On Thu, Mar 25, 2010 at 06:16:33PM +0000, Alan Cox wrote:
+> >>>> +			if (res->flags & IORESOURCE_MUXED)
+> >>>> +				wake_up(&muxed_resource_wait);
+> >>>>  			kfree(res);
+> >>>>  			return;
+> >>> 
+> >>> And you'll want a
+> >>> 
+> >>> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> >> 
+> >> Yes, thanks.
+> >> 
+> >> Anyone specific I should mail to get this patch applied? I don't see any
+> >> entry in MAINTAINERS for kernel/resource.c or include/linux/resource.h.
+> > 
+> > I can take it; sometimes Linus applies resource stuff directly though.
+> > 
+> > Can you resend with the appropriate s-o-bs etc?
 > 
-> The default is default_llseek, which uses the BKL and cannot be
-> used if procfs is builtin and the BKL is a module.
-
-
-
-Yeah, but you removed the nonseekable_open and made generic_file_llseek
-in llseek on this one.
-This makes it seekable while it wasn't, changing its ABI.
-It wasn't taking the bkl before that as it was calling
-no_llseek().
-
-May be its non seekable property is irrelevant, I don't know,
-but if this behaviour must be changed, it should be in a
-separate patch as that dosn't deal with the bkl.
-
-  
-> > There is also the ioctl part that takes the bkl in procfs.
-> > I'll just check nothing weird happens there wrt file pos.
-> > We probably first need to pushdown the bkl in the procfs
-> > ioctl handlers.
+> Sure.
 > 
-> The BKL in procfs is only for proc files that have registered
-> their own .ioctl instead of .unlocked_ioctl method. Converting
-> every file_operations instance to provide an unlocked_ioctl
-> (as one of the other patches does) makes sure that this path
-> is never taken. BTW, there are less than a handful of procfs files
-> that provide an ioctl operation, and those probably should never
-> have been merged.
+> (I copied Alan's signed-off-by from his reply to the patch)
 
+Applied to my for-linus branch with Alan as author.
 
-There are three of them. I'm going to make them .unlocked_ioctl
-and push the bkl inside, and warn on further uses of .ioctl,
-without applying the bkl there anymore.
-
-That plus your bkl removal in proc seek, should totally remove the
-bkl from procfs.
-
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
