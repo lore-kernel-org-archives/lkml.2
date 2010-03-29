@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab0C2Uv4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 16:51:56 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40412 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241Ab0C2Uvz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 16:51:55 -0400
-Date: Mon, 29 Mar 2010 17:51:43 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH -tip 5/7] perf probe: Query basic types from debuginfo
-Message-ID: <20100329205143.GQ3625@ghostprotocols.net>
-References: <20100329203736.2577.56018.stgit@localhost6.localdomain6> <20100329203829.2577.44718.stgit@localhost6.localdomain6>
+	id S1753612Ab0C2U4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 16:56:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51478 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752979Ab0C2U4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 16:56:18 -0400
+Message-ID: <4BB113E7.4050200@zytor.com>
+Date: Mon, 29 Mar 2010 13:56:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.7) Gecko/20100120 Fedora/3.0.1-1.fc12 Thunderbird/3.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100329203829.2577.44718.stgit@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Stefan Bader <stefan.bader@canonical.com>
+CC: Matthew Wilcox <matthew@wil.cx>, mingo@elte.hu,
+       linux-kernel@vger.kernel.org, James.Bottomley@suse.de
+Subject: Re: [PATCH] dma-mapping: Remove WARN_ON in dma_free_coherent
+References: <1269886161-2616-1-git-send-email-stefan.bader@canonical.com> <20100329204123.GA32165@parisc-linux.org> <4BB112B3.6070001@canonical.com>
+In-Reply-To: <4BB112B3.6070001@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Mar 29, 2010 at 04:38:29PM -0400, Masami Hiramatsu escreveu:
-> +static void convert_variable_type(Dwarf_Die *vr_die,
-> +				  struct kprobe_trace_arg *targ)
-> +{
-> +	Dwarf_Die type;
-> +	char buf[16];
-> +	int ret;
-> +
-> +	if (die_get_real_type(vr_die, &type) == NULL)
-> +		die("Failed to get a type information of %s.",
-> +		    dwarf_diename(vr_die));
-> +
-> +	ret = die_get_byte_size(&type) * 8;
-> +	if (ret) {
-> +		/* Check the bitwidth */
-> +		if (ret > MAX_BASIC_TYPE_BITS) {
-> +			pr_warning("  Warning: %s exceeds max-bitwidth."
-> +				   " Cut down to %d bits.\n",
-> +				   dwarf_diename(&type), MAX_BASIC_TYPE_BITS);
-> +			ret = MAX_BASIC_TYPE_BITS;
-> +		}
-> +
-> +		ret = snprintf(buf, 16, "%c%d",
-> +			       die_is_signed_type(&type) ? 's' : 'u', ret);
-> +		if (ret < 0 || ret >= 16)
-> +			die("Failed to convert variable type.");
-> +		targ->type = xstrdup(buf);
+On 03/29/2010 01:50 PM, Stefan Bader wrote:
+> Matthew Wilcox wrote:
+>> On Mon, Mar 29, 2010 at 08:09:21PM +0200, Stefan Bader wrote:
+>>> But it seems modifying that driver would be a bigger effort and maybe
+>>> not really worthwile as it is a rather old driver. On the other side
+>>> I was told [1] that this WARN_ON applies only to ARM which could sleep
+>>> in the free path and it is just bogus for X86. As the code is in
+>>> arch/x86 it would never be used for anything else than X86 and if
+>>> its truely bogus on X86, couldn't it get removed?
+>>
+>> My suggestion was that you remove it from the Ubuntu kernel, not submit
+>> it upstream.
+>>
+> No, I did not want to give that impression. But my rational was, that if this is
+>  really a warning that has no meaning on X86, then why should it stay in code
+> that is x86 only. And then why should that not go upstream.
+> When I tried following the code, it looked like this was carried forward for
+> quite a while and maybe it just stayed because nobody noticed it.
+> But with KVM using that scsi driver, other distros might see the same bogus
+> warning and then it would be beneficial for all to just remove it.
+> If Ingo or hpa say it is needed, ok. But its at least worth a go.
+> 
 
-Question, should we use the equivalent to panic'ing the kernel in the
-userspace bits in tools/?
 
-I tend to see all code there as potentially part of a library, i.e. to
-be callable by some unantecipated new tool or library that would rather
-receive a return value telling it that the operation can't be performed
-for some reason so that it can inform the user instead of having the
-whole tool exit to the command line.
+-	WARN_ON(irqs_disabled());       /* for portability */
+                                           ^^^^^^^^^^^^^^^
 
-It may well be that some specific operation needs lots of resources but
-many other don't, panic'c because the one that requires lots of
-resources can't be performed, bringing down a gui/tui is really nasty.
+It's there to keep people from writing their drivers incorrectly,
+testing them on x86 only, and then pushing them upstream.
 
-Perhaps the answer will be the same as for when people added panic calls
-in the kernel in the past, "you're screwed up anyway if that happens",
-but it just feels wrong :-\
+Nacked-by: H. Peter Anvin <hpa@zytor.com>
 
-In the DWARF bits it has even the added twist namespace collapse with
-DIE 8-)
-
-- Arnaldo
+	-hpa
