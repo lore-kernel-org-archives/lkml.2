@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0C2VSZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:18:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64916 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab0C2VSY (ORCPT
+	id S1753971Ab0C2VTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:19:20 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52908
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752209Ab0C2VTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:18:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [GIT, RFC] Killing the Big Kernel Lock
-Date: Mon, 29 Mar 2010 23:18:09 +0200
-User-Agent: KMail/1.13.1 (Linux/2.6.33-00063-g0795fff; KDE/4.4.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>,
-       Thomas Gleixner <tglx@linutronix.de>, jblunck@suse.de,
-       Alan Cox <alan@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-References: <201003242240.54907.arnd@arndb.de> <201003291304.24629.arnd@arndb.de> <20100329175935.GD5101@nowhere>
-In-Reply-To: <20100329175935.GD5101@nowhere>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 29 Mar 2010 17:19:19 -0400
+Date: Mon, 29 Mar 2010 14:19:20 -0700 (PDT)
+Message-Id: <20100329.141920.243015356.davem@davemloft.net>
+To: fweisbec@gmail.com
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [BUG] fault while using perf callchains in sparc64
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100329211149.GK5101@nowhere>
+References: <20100329204931.GJ5101@nowhere>
+	<20100329.140131.118617762.davem@davemloft.net>
+	<20100329211149.GK5101@nowhere>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201003292318.10212.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+XsMCERTghpWUs3A1h8dHwo2vNQvUekIH4QMF
- 7YI7D20YW4xhjt+73QNteHiNWovVBjjFAG0pNPScAuCPQzdO3P
- u5ol/81gUcdHsVHH15dTQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 March 2010 19:59:39 Frederic Weisbecker wrote:
-> On Mon, Mar 29, 2010 at 12:04:24PM +0100, Arnd Bergmann wrote:
-> > On Monday 29 March 2010, Frederic Weisbecker wrote:
-> > > On Mon, Mar 29, 2010 at 01:18:48AM +0200, Frederic Weisbecker wrote:
-> > > > @@ -1943,7 +1949,7 @@ static ssize_t proc_fdinfo_read(struct file *file, char __user *buf,
-> > > >  }
-> > > >  
-> > > >  static const struct file_operations proc_fdinfo_file_operations = {
-> > > > -     .open           = nonseekable_open,
-> > > > +     .llseek         = generic_file_llseek,
-> > > >       .read           = proc_fdinfo_read,
-> > > >  };
-> > > >  
-> > > > 
-> > > > Replacing default_llseek() by generic_file_llseek() as you
-> > > > did for most of the other parts is fine.
-> > > > 
-> > > > But the above changes the semantics as it makes it seekable.
-> > > > Why not just keeping it as is? It just ends up in no_llseek().
-> > 
-> > The default is default_llseek, which uses the BKL and cannot be
-> > used if procfs is builtin and the BKL is a module.
-> 
-> Yeah, but you removed the nonseekable_open and made generic_file_llseek
-> in llseek on this one.
-> This makes it seekable while it wasn't, changing its ABI.
-> It wasn't taking the bkl before that as it was calling
-> no_llseek().
+From: Frederic Weisbecker <fweisbec@gmail.com>
+Date: Mon, 29 Mar 2010 23:11:50 +0200
 
-Ah, I see what you mean. That change was certainly not intentional
-an should be reverted. Thanks for pointing this out.
-
-> > The BKL in procfs is only for proc files that have registered
-> > their own .ioctl instead of .unlocked_ioctl method. Converting
-> > every file_operations instance to provide an unlocked_ioctl
-> > (as one of the other patches does) makes sure that this path
-> > is never taken. BTW, there are less than a handful of procfs files
-> > that provide an ioctl operation, and those probably should never
-> > have been merged.
+> On Mon, Mar 29, 2010 at 02:01:31PM -0700, David Miller wrote:
+>> From: Frederic Weisbecker <fweisbec@gmail.com>
+>> Date: Mon, 29 Mar 2010 22:49:33 +0200
+>> 
+>> > While building perf tools, or the kernel, or whatever, I often
+>> > get the following error in the middle:
+>> > 
+>> > 	gcc: Internal error: Segmentation fault (program as)
+>> > 
+>> > And this in the logs:
+>> > 
+>> > 	[ 1429.477049] as[2658]: segfault at 4054dfa8 ip 0000000000020690 (rpc 00000000700adcf4) sp 00000000ffcbf008 
+>> > error 30001 in as[10000+40000]
+>> 
+>> What distribution and binutils are you using?
 > 
-> 
-> There are three of them. I'm going to make them .unlocked_ioctl
-> and push the bkl inside, and warn on further uses of .ioctl,
-> without applying the bkl there anymore.
-> 
-> That plus your bkl removal in proc seek, should totally remove the
-> bkl from procfs.
+> It's a debian lenny, with binutils 2.18.1~cvs20080103-7.
 
-Ok
-
-	Arnd
+I'm using the same here on some boxes, what kind of machine is this?
