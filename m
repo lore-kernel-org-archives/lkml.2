@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab0C2VmK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:42:10 -0400
-Received: from acsinet12.oracle.com ([141.146.126.234]:44300 "EHLO
-	acsinet12.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab0C2VmH (ORCPT
+	id S1754079Ab0C2VnH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:43:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34917 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752272Ab0C2VnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:42:07 -0400
-Date: Mon, 29 Mar 2010 14:40:10 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [Ocfs2-devel]  [GIT PULL] ocfs2 fixes for 2.6.34-rc2
-Message-ID: <20100329214010.GB12499@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4BB11E9F.0019:SCFSTAT928725,ss=1,fgs=0
+	Mon, 29 Mar 2010 17:43:04 -0400
+Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       abogani@texware.it
+In-Reply-To: <20100329213405.GA18143@linux.vnet.ibm.com>
+References: <20100329211525.GA17703@linux.vnet.ibm.com>
+	 <1269897564.12097.372.camel@laptop>
+	 <20100329212932.GO2569@linux.vnet.ibm.com>
+	 <20100329213405.GA18143@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Mar 2010 23:42:55 +0200
+Message-ID: <1269898975.12097.380.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-03-29 at 14:34 -0700, Paul E. McKenney wrote:
 
-Linus et al,
-	Here are various fixes that have collected for ocfs2.  One very
-important fix keeps ocfs2 from running out of inodes with plenty of
-free space.  Another prevents a local crash when using userspace
-cluster stacks.
-	Please pull.
+> And it appears that my patch is at best insufficient:
+> http://paste.ubuntu.com/406189/
+> 
+> Left to myself, I would wrap copy_process() with rcu_read_lock(),
+> but I would rather hear your thoughts before doing too much more
+> semi-random hacking.  ;-)
 
-Joel
+Well, I don't think you can get away with that, copy_process() wants to
+sleep on quite a few places ;-) Also, locks should be taken at the
+smallest possible scope, unless we want to go back to BKL style
+locking :-)
+
+As to that freezer splat, you'd have to chase down the cgroup folks, I'm
+fully ignorant on that.
+
+For the set_task_rq() one, I'm afraid someone (which again I'm afraid
+will be me) will have to look into how the task_group muck ties into the
+cgroup muck as I think the original authors of that ran off :/
 
 
-The following changes since commit a3d3203e4bb40f253b1541e310dc0f9305be7c84:
-  Linus Torvalds (1):
-        Merge branch 'release' of git://git.kernel.org/.../lenb/linux-acpi-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
-
-Mark Fasheh (3):
-      ocfs2: set i_mode on disk during acl operations
-      ocfs2: Always try for maximum bits with new local alloc windows
-      ocfs2: Clear undo bits when local alloc is freed
-
-Sachin Prabhu (1):
-      Skip check for mandatory locks when unlocking
-
-Srinivas Eeda (1):
-      ocfs2: Fix a race in o2dlm lockres mastery
-
-Tao Ma (4):
-      ocfs2: Change bg_chain check for ocfs2_validate_gd_parent.
-      ocfs2: Update i_blocks in reflink operations.
-      ocfs2: Fix the update of name_offset when removing xattrs
-      ocfs2: Init meta_ac properly in ocfs2_create_empty_xattr_block.
-
-Tristan Ye (2):
-      Ocfs2: Journaling i_flags and i_orphaned_slot when adding inode to orphan dir.
-      Ocfs2: Handle deletion of reflinked oprhan inodes correctly.
-
- fs/ocfs2/acl.c           |   77 +++++++++++++++++++++++++--
- fs/ocfs2/dlm/dlmmaster.c |    4 +-
- fs/ocfs2/inode.c         |   15 +++++
- fs/ocfs2/localalloc.c    |   10 ++--
- fs/ocfs2/locks.c         |    2 +-
- fs/ocfs2/namei.c         |   28 ++++++++--
- fs/ocfs2/ocfs2.h         |   14 ++++-
- fs/ocfs2/refcounttree.c  |    1 +
- fs/ocfs2/suballoc.c      |  129 +++++++++++++++++++++++++++++-----------------
- fs/ocfs2/suballoc.h      |    5 ++
- fs/ocfs2/xattr.c         |   12 ++---
- 11 files changed, 223 insertions(+), 74 deletions(-)
 
