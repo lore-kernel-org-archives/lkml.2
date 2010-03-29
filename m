@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756026Ab0C2CrH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 22:47:07 -0400
-Received: from acsinet11.oracle.com ([141.146.126.233]:55973 "EHLO
+	id S1756034Ab0C2Cr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 22:47:29 -0400
+Received: from acsinet11.oracle.com ([141.146.126.233]:56020 "EHLO
 	acsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755869Ab0C2Cq7 (ORCPT
+	with ESMTP id S1755889Ab0C2CrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 22:46:59 -0400
+	Sun, 28 Mar 2010 22:47:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,59 +16,74 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 04/31] lmb: Move lmb.c to mm/
-Date: Sun, 28 Mar 2010 19:42:57 -0700
-Message-Id: <1269830604-26214-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 30/31] x86: Use walk_system_ream_range()instead of e820.map directly
+Date: Sun, 28 Mar 2010 19:43:23 -0700
+Message-Id: <1269830604-26214-31-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4BB01478.0051,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4BB01479.00CC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-that is memory related, so move to mm/ according to Ingo
+So we can make e820 to be __initdata
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- lib/Makefile      |    2 --
- mm/Makefile       |    2 ++
- {lib => mm}/lmb.c |    0
- 3 files changed, 2 insertions(+), 2 deletions(-)
- rename {lib => mm}/lmb.c (100%)
+ arch/x86/kernel/tboot.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/lib/Makefile b/lib/Makefile
-index 2e152ae..a463a4d 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -85,8 +85,6 @@ obj-$(CONFIG_FAULT_INJECTION) += fault-inject.o
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index cc2c604..cf27d64 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -170,34 +170,30 @@ static void tboot_create_trampoline(void)
  
- lib-$(CONFIG_GENERIC_BUG) += bug.o
+ #ifdef CONFIG_ACPI_SLEEP
  
--obj-$(CONFIG_HAVE_LMB) += lmb.o
--
- obj-$(CONFIG_HAVE_ARCH_TRACEHOOK) += syscall.o
+-static void add_mac_region(phys_addr_t start, unsigned long size)
++static int
++add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
+ {
++	u64 start = start_pfn;
++	u64 size = nr_pages;
+ 	struct tboot_mac_region *mr;
+-	phys_addr_t end = start + size;
  
- obj-$(CONFIG_DYNAMIC_DEBUG) += dynamic_debug.o
-diff --git a/mm/Makefile b/mm/Makefile
-index 7a68d2a..df22fd1 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -15,6 +15,8 @@ obj-y			:= bootmem.o filemap.o mempool.o oom_kill.o fadvise.o \
- 			   $(mmu-y)
- obj-y += init-mm.o
+ 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
+ 		panic("tboot: Too many MAC regions\n");
  
-+obj-$(CONFIG_HAVE_LMB) += lmb.o
+ 	if (start && size) {
+ 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
+-		mr->start = round_down(start, PAGE_SIZE);
+-		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
++		mr->start = start << PAGE_SHIFT;
++		mr->size  = (u32) (size << PAGE_SHIFT);
+ 	}
 +
- obj-$(CONFIG_BOUNCE)	+= bounce.o
- obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
- obj-$(CONFIG_HAS_DMA)	+= dmapool.o
-diff --git a/lib/lmb.c b/mm/lmb.c
-similarity index 100%
-rename from lib/lmb.c
-rename to mm/lmb.c
++	return 0;
+ }
+ 
+ static int tboot_setup_sleep(void)
+ {
+-	int i;
+-
+ 	tboot->num_mac_regions = 0;
+ 
+-	for (i = 0; i < e820.nr_map; i++) {
+-		if ((e820.map[i].type != E820_RAM)
+-		 && (e820.map[i].type != E820_RESERVED_KERN))
+-			continue;
+-
+-		add_mac_region(e820.map[i].addr, e820.map[i].size);
+-	}
++	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
+ 
+ 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
+ 
 -- 
 1.6.4.2
 
