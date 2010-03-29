@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab0C2SQJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:16:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51203 "EHLO mx1.redhat.com"
+	id S1754851Ab0C2SQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:16:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54241 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753381Ab0C2SQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:16:05 -0400
-Date: Mon, 29 Mar 2010 20:13:29 +0200
+	id S1753317Ab0C2SQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:16:24 -0400
+Date: Mon, 29 Mar 2010 20:13:59 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
@@ -17,9 +17,8 @@ Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
        Roland McGrath <roland@redhat.com>,
        Spencer Candland <spencer@bluehost.com>,
        Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH -mm 2/4] cputimers: make sure thread_group_cputime() can't
-	count the same thread twice lockless
-Message-ID: <20100329181329.GC16356@redhat.com>
+Subject: [PATCH -mm 3/4] cputimers: thread_group_times: make it rcu-safe
+Message-ID: <20100329181359.GD16356@redhat.com>
 References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326214906.GA18467@redhat.com> <20100329111731.GA4488@dhcp-lab-161.englab.brq.redhat.com> <20100329125415.GA22451@redhat.com> <20100329181204.GA16356@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -30,74 +29,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- change __exit_signal() to do __unhash_process() before we accumulate
-  the counters in ->signal
+thread_group_times() relies on ->siglock hold by the caller when it
+updates sig->prev_Xtime members. Change the code to take cputimer.lock
+around the assignment.
 
-- add a couple of barriers into thread_group_cputime() and __exit_signal()
-  to make sure thread_group_cputime() can never account the same thread
-  twice if it races with exit.
+This makes it rcu-safe and fixes the theoretical race. wait_task_zombie()
+calls it lockless and thus can race with do_task_stat().
 
-  If any thread T was already accounted in ->signal, next_thread() or
-  pid_alive() must see the result of __unhash_process(T).
+Note: we are taking cputimer.lock under ->siglock but this dependency
+is not new, thread_group_cputimer() already does this.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
 
- kernel/exit.c             |   14 +++++++++-----
- kernel/posix-cpu-timers.c |    6 ++++++
- 2 files changed, 15 insertions(+), 5 deletions(-)
+ kernel/sched.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- 34-rc1/kernel/exit.c~cpuacct_2_thread_group_cputime_rcu_safe	2010-03-29 18:03:17.000000000 +0200
-+++ 34-rc1/kernel/exit.c	2010-03-29 18:29:35.000000000 +0200
-@@ -88,6 +88,8 @@ static void __exit_signal(struct task_st
- 					rcu_read_lock_held() ||
- 					lockdep_is_held(&tasklist_lock));
- 	spin_lock(&sighand->siglock);
-+	__unhash_process(tsk, group_dead);
-+	sig->nr_threads--;
+--- 34-rc1/kernel/sched.c~cpuacct_3_thread_group_times_dont_rely_on_siglock	2010-03-29 19:44:25.000000000 +0200
++++ 34-rc1/kernel/sched.c	2010-03-29 19:46:21.000000000 +0200
+@@ -3449,6 +3449,7 @@ void thread_group_times(struct task_stru
+ 	struct signal_struct *sig = p->signal;
+ 	struct task_cputime cputime;
+ 	cputime_t rtime, utime, total;
++	unsigned long flags;
  
- 	posix_cpu_timers_exit(tsk);
- 	if (group_dead) {
-@@ -111,9 +113,14 @@ static void __exit_signal(struct task_st
- 		 * The group leader stays around as a zombie as long
- 		 * as there are other threads.  When it gets reaped,
- 		 * the exit.c code will add its counts into these totals.
--		 * We won't ever get here for the group leader, since it
--		 * will have been the last reference on the signal_struct.
-+		 *
-+		 * Make sure that this thread can't be accounted twice
-+		 * by thread_group_cputime() under rcu. If it sees the
-+		 * the result of accounting below it must see the result
-+		 * of __unhash_process()->__list_del(thread_group) above.
- 		 */
-+		smp_wmb();
-+
- 		sig->utime = cputime_add(sig->utime, tsk->utime);
- 		sig->stime = cputime_add(sig->stime, tsk->stime);
- 		sig->gtime = cputime_add(sig->gtime, tsk->gtime);
-@@ -127,9 +134,6 @@ static void __exit_signal(struct task_st
- 		sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
- 	}
+ 	thread_group_cputime(p, &cputime);
  
--	sig->nr_threads--;
--	__unhash_process(tsk, group_dead);
--
- 	/*
- 	 * Do this under ->siglock, we can race with another thread
- 	 * doing sigqueue_free() if we have SIGQUEUE_PREALLOC signals.
---- 34-rc1/kernel/posix-cpu-timers.c~cpuacct_2_thread_group_cputime_rcu_safe	2010-03-29 18:09:15.000000000 +0200
-+++ 34-rc1/kernel/posix-cpu-timers.c	2010-03-29 18:29:35.000000000 +0200
-@@ -239,6 +239,12 @@ void thread_group_cputime(struct task_st
- 	times->utime = sig->utime;
- 	times->stime = sig->stime;
- 	times->sum_exec_runtime = sig->sum_sched_runtime;
-+	/*
-+	 * This pairs with wmb() in __exit_signal(). If any thread was
-+	 * already accounted in tsk->signal, while_each_thread() must
-+	 * not see it.
-+	 */
-+	smp_rmb();
+@@ -3464,9 +3465,11 @@ void thread_group_times(struct task_stru
+ 	} else
+ 		utime = rtime;
  
- 	rcu_read_lock();
- 	/* make sure we can trust tsk->thread_group list */
++	spin_lock_irqsave(&sig->cputimer.lock, flags);
+ 	sig->prev_utime = max(sig->prev_utime, utime);
+ 	sig->prev_stime = max(sig->prev_stime,
+ 			      cputime_sub(rtime, sig->prev_utime));
++	spin_unlock_irqrestore(&sig->cputimer.lock, flags);
+ 
+ 	*ut = sig->prev_utime;
+ 	*st = sig->prev_stime;
 
