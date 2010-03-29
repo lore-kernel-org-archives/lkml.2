@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab0C2PEW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:04:22 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:52926 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab0C2PEV (ORCPT
+	id S1753379Ab0C2PEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:04:33 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52503 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753296Ab0C2PEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:04:21 -0400
-Date: Mon, 29 Mar 2010 10:00:57 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Andi Kleen <andi@firstfloor.org>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: Add PGM protocol support to the IP stack
-In-Reply-To: <20100327131138.GD20695@one.firstfloor.org>
-Message-ID: <alpine.DEB.2.00.1003290952410.14606@router.home>
-References: <alpine.DEB.2.00.1003181245050.23010@router.home> <87tysccjrn.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003220916170.15360@router.home> <20100322163609.GZ20695@one.firstfloor.org> <alpine.DEB.2.00.1003221146260.17230@router.home>
- <877hp4i76d.fsf@basil.nowhere.org> <alpine.DEB.2.00.1003221300180.17230@router.home> <20100322185310.GA20695@one.firstfloor.org> <alpine.DEB.2.00.1003261231410.30253@router.home> <20100327131138.GD20695@one.firstfloor.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 29 Mar 2010 11:04:30 -0400
+Date: Mon, 29 Mar 2010 11:04:25 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       adobriyan@gmail.com
+Subject: Re: [patch 0/6] rcu head debugobjects
+Message-ID: <20100329150425.GA26746@Krystal>
+References: <20100327153233.993367557@efficios.com> <20100327224606.GK2343@linux.vnet.ibm.com> <20100327231421.GA4685@Krystal> <20100327232024.GB4685@Krystal> <20100327234314.GL2343@linux.vnet.ibm.com> <20100329133933.GA23238@Krystal> <20100329145329.GA2569@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329145329.GA2569@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:04:15 up 65 days, 17:41,  8 users,  load average: 0.18, 0.10,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Mar 2010, Andi Kleen wrote:
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, Mar 29, 2010 at 09:39:33AM -0400, Mathieu Desnoyers wrote:
+> > Hi Paul,
+> > 
+> > Thinking about the rcu head init topic, we might be able to drop the
+> > init_rcu_head() initializer. The idea is the following:
+> > 
+> > - We need init_rcu_head_on_stack()/destroy_rcu_head_on_stack().
+> > - call_rcu() populates the rcu_head and normally does not care about it being
+> >   pre-initialized.
+> > - The activation fixup can detect if a non-initialized rcu head is being
+> >   activated and just perform the fixup without complaining.
+> > - If we have two call_rcu() in a row in the same GP on the same rcu_head, the
+> >   activation check will detect it.
+> > 
+> > So either we remove all the init_rcu_head(), as was originally proposed, or we
+> > use one that is a no-op on !DEBUG configs and initialize the object with DEBUG
+> > configs.
+> > 
+> > That removes the dependency on object_is_static().
+> 
+> If I understand correctly, this does sound good.  Here is what I think
+> you are proposing:
+> 
+> o	call_rcu() and friends only complain if handed an rcu_head
+> 	structure that is still queued awaiting a grace period.
+> 	They don't care otherwise.
+> 
+> o	rcu_do_batch() complains unless the rcu_head structure has
+> 	most recently been enqueued by call_rcu() or one if its friends.
+> 
+> Did I get it right?
 
-> On Fri, Mar 26, 2010 at 12:33:07PM -0500, Christoph Lameter wrote:
-> > Here is a pgm.7 manpage describing how the socket API could look like for
-> > a PGM implementation.
-> >
-> > I dumped the RM_* based socket options from the other OS since most of the
-> > options were unusable.
->
-> I did a quick read and the manpage/interface seem reasonable to me.
+Exactly.
 
-Thanks. I will then proceed to get a patch out that implements the
-network environment. Then we can plug the openpgm logic in there.
+Thanks,
 
-> You changed the parameter struct fields to lower case. While
-> that looks definitely more Linuxy than before does it mean programs
-> have to #ifdef this? It might be good idea to have at least some
-> optional compat header that #defines.
+Mathieu
 
-The socket API will be completely different. The basic handling of the
-sockets is the same (binding, listening, connecting). There is no way of
-mapping M$ socket options to Linux socket options with the approach that
-I proposed in the manpage. The stats structure is different too since some
-key elements were missing.
+> 
+> 							Thanx, Paul
 
-What users are there of the M$ api? I have seen vendors supplying their
-own pgm implementation (guess due to bit rot in the old M$
-implementation).
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
