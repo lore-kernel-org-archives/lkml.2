@@ -1,156 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab0C2Lkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 07:40:45 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59507 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab0C2Lkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 07:40:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=el1uhT/H1sJtWWdX9QC9roASSy4xKM4vxaMAwAC6AjIZkuuKifY/Wbhk7xzuCOOoVe
-         4SKrnuguiDMBOKT8JkbrIxJzsZPXgjVvo/kpCIt7m2qaTVE0/sxidXJ4NK8pgAp31lTv
-         pUY22Ru3lwKAb3FrifT9jC6SDgfUao7aWBIqo=
-From: Kenji Toyama <kenji.toyama@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Kenji Toyama <kenji.toyama@gmail.com>
-Subject: [PATCH 5/5] staging: vt6656: control.c: Fixed coding style issues
-Date: Mon, 29 Mar 2010 22:40:54 +1100
-Message-Id: <1269862854-16487-1-git-send-email-kenji.toyama@gmail.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1751728Ab0C2Lma (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 07:42:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8438 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751045Ab0C2Lm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 07:42:29 -0400
+Date: Mon, 29 Mar 2010 13:40:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       Arnd Bergmann <arnd@arndb.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] ptrace: kill BKL in ptrace syscall
+Message-ID: <20100329114046.GB16971@redhat.com>
+References: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced lots of spaces by real tabs and fixed some 80+ lines.
-Signed-off-by: Daniel Kenji Toyama <kenji.toyama@gmail.com>
----
- drivers/staging/vt6656/control.c |   87 ++++++++++++++++---------------------
- 1 files changed, 38 insertions(+), 49 deletions(-)
+On 03/28, Frederic Weisbecker wrote:
+>
+> From: Arnd Bergmann <arnd@arndb.de>
+>
+> The comment suggests that this usage is stale. There is no bkl in the
+> exec path so if there is a race lurking there, the bkl in ptrace is
+> not going to help in this regard.
 
-diff --git a/drivers/staging/vt6656/control.c b/drivers/staging/vt6656/control.c
-index 7dba771..8aab671 100644
---- a/drivers/staging/vt6656/control.c
-+++ b/drivers/staging/vt6656/control.c
-@@ -30,11 +30,13 @@
-  *      CONTROLnsRequestIn - Read variable length bytes from MEM/BB/MAC/EEPROM
-  *      ControlvWriteByte - Write one byte to MEM/BB/MAC/EEPROM
-  *      ControlvReadByte - Read one byte from MEM/BB/MAC/EEPROM
-- *      ControlvMaskByte - Read one byte from MEM/BB/MAC/EEPROM and clear/set some bits in the same address
-+ *      ControlvMaskByte - Read one byte from MEM/BB/MAC/EEPROM and clear/set
-+ *				some bits in the same address
-  *
-  * Revision History:
-  *      04-05-2004 Jerry Chen:  Initial release
-- *      11-24-2004 Warren Hsu: Add ControlvWriteByte,ControlvReadByte,ControlvMaskByte
-+ *      11-24-2004 Warren Hsu: Add ControlvWriteByte, ControlvReadByte,
-+ *					ControlvMaskByte
-  *
-  */
- 
-@@ -42,8 +44,8 @@
- #include "rndis.h"
- 
- /*---------------------  Static Definitions -------------------------*/
--//static int          msglevel                =MSG_LEVEL_INFO;
--//static int          msglevel                =MSG_LEVEL_DEBUG;
-+/* static int          msglevel                =MSG_LEVEL_INFO;  */
-+/* static int          msglevel                =MSG_LEVEL_DEBUG; */
- /*---------------------  Static Classes  ----------------------------*/
- 
- /*---------------------  Static Variables  --------------------------*/
-@@ -54,56 +56,43 @@
- 
- /*---------------------  Export Functions  --------------------------*/
- 
--
--void ControlvWriteByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs, BYTE byData)
-+void ControlvWriteByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs,
-+			BYTE byData)
- {
--BYTE            byData1;
--
--    byData1 = byData;
--
--    CONTROLnsRequestOut(pDevice,
--                        MESSAGE_TYPE_WRITE,
--                        byRegOfs,
--                        byRegType,
--                        1,
--                        &byData1
--                        );
--
-+	BYTE	byData1;
-+	byData1 = byData;
-+	CONTROLnsRequestOut(pDevice,
-+		MESSAGE_TYPE_WRITE,
-+		byRegOfs,
-+		byRegType,
-+		1,
-+		&byData1);
- }
- 
--
--void ControlvReadByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs, PBYTE pbyData)
-+void ControlvReadByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs,
-+			PBYTE pbyData)
- {
--NTSTATUS        ntStatus;
--BYTE            byData1;
--
--
--    ntStatus = CONTROLnsRequestIn(pDevice,
--                                    MESSAGE_TYPE_READ,
--                                    byRegOfs,
--                                    byRegType,
--                                    1,
--                                    &byData1);
--
--    *pbyData = byData1;
--
-+	NTSTATUS	ntStatus;
-+	BYTE	byData1;
-+	ntStatus = CONTROLnsRequestIn(pDevice,
-+					MESSAGE_TYPE_READ,
-+					byRegOfs,
-+					byRegType,
-+					1,
-+					&byData1);
-+	*pbyData = byData1;
- }
- 
--
--
--void ControlvMaskByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs, BYTE byMask, BYTE byData)
-+void ControlvMaskByte(PSDevice pDevice, BYTE byRegType, BYTE byRegOfs,
-+			BYTE byMask, BYTE byData)
- {
--BYTE            pbyData[2];
--
--    pbyData[0] = byData;
--    pbyData[1] = byMask;
--
--    CONTROLnsRequestOut(pDevice,
--                        MESSAGE_TYPE_WRITE_MASK,
--                        byRegOfs,
--                        byRegType,
--                        2,
--                        pbyData
--                        );
--
-+	BYTE	pbyData[2];
-+	pbyData[0] = byData;
-+	pbyData[1] = byMask;
-+	CONTROLnsRequestOut(pDevice,
-+				MESSAGE_TYPE_WRITE_MASK,
-+				byRegOfs,
-+				byRegType,
-+				2,
-+				pbyData);
- }
--- 
-1.6.3.3
+I never understood this comment too, and I do not see any potentional
+races bkl could prevent.
+
+> Overview of the possibility of "accidental" races this bkl might
+> protect:
+>
+> - ptrace_traceme() is protected against task removal and concurrent
+> read/write on current->ptrace as it locks write tasklist_lock.
+>
+> - arch_ptrace_attach() is serialized by ptrace_traceme() against
+> concurrent PTRACE_TRACEME or PTRACE_ATTACH
+>
+> - ptrace_attach() is protected the same way ptrace_traceme() and
+> in turn serializes arch_ptrace_attach()
+>
+> - ptrace_check_attach() does its own well described serializing too.
+>
+> There is no obvious race here.
+
+Yes, nothing inside sys_ptrace() pathes relies on bkl, and all recent
+changes were done assuming that lock_kernel() doesn't exist.
+
+I think the patch is correct.
+
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>  kernel/ptrace.c |   10 ----------
+>  1 files changed, 0 insertions(+), 10 deletions(-)
+>
+> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+> index 42ad8ae..5357502 100644
+> --- a/kernel/ptrace.c
+> +++ b/kernel/ptrace.c
+> @@ -666,10 +666,6 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+>  	struct task_struct *child;
+>  	long ret;
+>
+> -	/*
+> -	 * This lock_kernel fixes a subtle race with suid exec
+> -	 */
+> -	lock_kernel();
+>  	if (request == PTRACE_TRACEME) {
+>  		ret = ptrace_traceme();
+>  		if (!ret)
+> @@ -703,7 +699,6 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+>   out_put_task_struct:
+>  	put_task_struct(child);
+>   out:
+> -	unlock_kernel();
+>  	return ret;
+>  }
+>
+> @@ -813,10 +808,6 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+>  	struct task_struct *child;
+>  	long ret;
+>
+> -	/*
+> -	 * This lock_kernel fixes a subtle race with suid exec
+> -	 */
+> -	lock_kernel();
+>  	if (request == PTRACE_TRACEME) {
+>  		ret = ptrace_traceme();
+>  		goto out;
+> @@ -846,7 +837,6 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+>   out_put_task_struct:
+>  	put_task_struct(child);
+>   out:
+> -	unlock_kernel();
+>  	return ret;
+>  }
+>  #endif	/* CONFIG_COMPAT */
+> --
+> 1.6.2.3
+>
 
