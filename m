@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab0C2DeH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Mar 2010 23:34:07 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:35993 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755286Ab0C2DeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Mar 2010 23:34:05 -0400
-Date: Mon, 29 Mar 2010 05:33:46 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>, David Miller <davem@davemloft.net>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [GIT PULL] perf fixes
-Message-ID: <20100329033346.GA15157@elte.hu>
-References: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com>
+	id S1755824Ab0C2DhX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Mar 2010 23:37:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58999 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754695Ab0C2DhW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Mar 2010 23:37:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=UYxnfMx56+PUtSxNQ4XVzisYiKla3mMSEVlIhjRrxFw894dYdDUZPlZGGm7lRXmxlF
+         r3b16dHNNG6gNB7n3PtGfbLCEBZgNtFnhnqnvHteIJvaMPiKHLDFTZrAqmlUtjRO/0J3
+         lUCIKV/Dbl4kqDFy7iAZKmUIsGDH6Irz0TNuA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1269753066-17246-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.0 required=5.9 tests=none autolearn=no SpamAssassin version=3.2.5
-	_SUMMARY_
+Date: Sun, 28 Mar 2010 23:37:21 -0400
+Message-ID: <b4198de61003282037p502e9fbfi62123088b9d73923@mail.gmail.com>
+Subject: Discrepancy between comments for sched_find_first_bit
+From: Matt Turner <mattst88@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+include/asm-generic/bitops/sched.h says
+/*
+ * Every architecture must define this function. It's the fastest
+ * way of searching a 100-bit bitmap.  It's guaranteed that at least
+ * one of the 100 bits is cleared.
+ */
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+arch/alpha/include/asm/bitops.h says
+/*
+ * Every architecture must define this function. It's the fastest
+ * way of searching a 140-bit bitmap where the first 100 bits are
+ * unlikely to be set. It's guaranteed that at least one of the 140
+ * bits is set.
+ */
 
-> Ingo,
-> 
-> Please pull the perf/urgent branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/urgent
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (2):
->       perf: Correctly align perf event tracing buffer
->       perf: Use hot regs with software sched switch/migrate events
-> 
-> 
->  include/linux/perf_event.h      |   21 ++++++++++++++-------
->  kernel/perf_event.c             |    4 +---
->  kernel/trace/trace_event_perf.c |   11 +++++++++--
->  3 files changed, 24 insertions(+), 12 deletions(-)
+Is the guarantee that one of the first 100-bits set (and that the last
+40 are useless?), or 140-bits? If it's just the first 100 bits we care
+about, then the alpha version needs to be fixed.
 
-Pulled, thanks a lot Frederic!
+I'm just checking this out, because gcc produces horrendous code for
+sched_find_first_bit on alpha. I rewrote it in assembly and it's
+better than 4 times faster.
 
-	Ingo
+Also, is it even worth optimizing that function? It looks like it's
+only used in kernel/sched_rt.c.
+
+Thanks,
+Matt
