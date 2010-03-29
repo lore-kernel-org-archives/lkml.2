@@ -1,40 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0C2SM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:12:26 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:34749 "EHLO e2.ny.us.ibm.com"
+	id S1754332Ab0C2SOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:14:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47185 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754079Ab0C2SMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 14:12:25 -0400
-Subject: Re: Regression in virtio_net causing kernel BUG when running under
- VirtualBox (bisected)
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Thomas =?ISO-8859-1?Q?M=FCller?= <thomas@mathtm.de>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4BAE1707.2050803@mathtm.de>
-References: <4BAE1707.2050803@mathtm.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Mar 2010 11:12:21 -0700
-Message-ID: <1269886341.13277.6.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1752418Ab0C2SOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 14:14:34 -0400
+Date: Mon, 29 Mar 2010 20:12:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Americo Wang <xiyou.wangcong@gmail.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Roland McGrath <roland@redhat.com>,
+       Spencer Candland <spencer@bluehost.com>,
+       Stanislaw Gruszka <sgruszka@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH -mm 0/4] cputimers/proc: do_task_stat: don't walk through
+	the thread list under ->siglock
+Message-ID: <20100329181204.GA16356@redhat.com>
+References: <20100324204550.GA31777@redhat.com> <20100326035344.GQ3308@balbir.in.ibm.com> <20100326214906.GA18467@redhat.com> <20100329111731.GA4488@dhcp-lab-161.englab.brq.redhat.com> <20100329125415.GA22451@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100329125415.GA22451@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Thomas,
+On 03/29, Oleg Nesterov wrote:
+>
+> Yes sure. I dislike the do_task_stat() case because we always do this,
+> even if this info is not needed, say, for /bin/ps.
 
-Good catch! The problem was sg_init_table was missing for small buffer
-size. When CONFIG_DEBUG_SG is off, you won't hit this, but your test has
-DEBUG_SG on so SG_MAGIC check failed. You can turn DEBUG_SG off to avoid
-this.
+Note also that nobody else in /fs/proc needs ->siglock. Except
+do_io_accounting(), but in this case the user-space explicitly asks for
+this info.
 
-I thought you should hit the same problem before since I didn't remember
-sg_init_table was used for small message size.
 
-I will submit a patch for fix this issue soon.
+OK, This is V2. Still RFC, although I think 1/4 makes sense in any case.
 
-Thanks
-Shirley
+Please comment. Again, I am more or less sure these changes are "correct",
+but I don't know what /bin/top can think ;)
+
+I don't really like the fact thread_group_times() takes cputimer.lock,
+but imho lock_task_sighand() in do_task_stat() is much worse.
+
+Oleg.
 
