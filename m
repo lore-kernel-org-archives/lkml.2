@@ -1,76 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab0C2QBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:01:14 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:39117 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab0C2QBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:01:13 -0400
-Date: Mon, 29 Mar 2010 09:01:07 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: akpm@linux-foundation.org, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       adobriyan@gmail.com
-Subject: Re: [patch 0/6] rcu head debugobjects
-Message-ID: <20100329160107.GH2569@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100327153233.993367557@efficios.com>
- <20100327224606.GK2343@linux.vnet.ibm.com>
- <20100327231421.GA4685@Krystal>
- <20100327232024.GB4685@Krystal>
- <20100327234314.GL2343@linux.vnet.ibm.com>
- <20100329133933.GA23238@Krystal>
- <20100329145329.GA2569@linux.vnet.ibm.com>
- <20100329150425.GA26746@Krystal>
+	id S1754261Ab0C2QEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:04:10 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44106 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752072Ab0C2QEI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:04:08 -0400
+Date: Mon, 29 Mar 2010 12:03:56 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Cc: michael.s.gilbert@gmail.com, davem@davemeloft.net, nhorman@tuxdriver.com,
+       romieu@fr.zoreil.com, eric.dumazet@gmail.com
+Subject: [PATCH] r8169: offical fix for CVE-2009-4537 (overlength frame DMAs)
+Message-ID: <20100329160356.GC22733@hmsreliant.think-freely.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100329150425.GA26746@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -4.2 (----)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 29, 2010 at 11:04:25AM -0400, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Mon, Mar 29, 2010 at 09:39:33AM -0400, Mathieu Desnoyers wrote:
-> > > Hi Paul,
-> > > 
-> > > Thinking about the rcu head init topic, we might be able to drop the
-> > > init_rcu_head() initializer. The idea is the following:
-> > > 
-> > > - We need init_rcu_head_on_stack()/destroy_rcu_head_on_stack().
-> > > - call_rcu() populates the rcu_head and normally does not care about it being
-> > >   pre-initialized.
-> > > - The activation fixup can detect if a non-initialized rcu head is being
-> > >   activated and just perform the fixup without complaining.
-> > > - If we have two call_rcu() in a row in the same GP on the same rcu_head, the
-> > >   activation check will detect it.
-> > > 
-> > > So either we remove all the init_rcu_head(), as was originally proposed, or we
-> > > use one that is a no-op on !DEBUG configs and initialize the object with DEBUG
-> > > configs.
-> > > 
-> > > That removes the dependency on object_is_static().
-> > 
-> > If I understand correctly, this does sound good.  Here is what I think
-> > you are proposing:
-> > 
-> > o	call_rcu() and friends only complain if handed an rcu_head
-> > 	structure that is still queued awaiting a grace period.
-> > 	They don't care otherwise.
-> > 
-> > o	rcu_do_batch() complains unless the rcu_head structure has
-> > 	most recently been enqueued by call_rcu() or one if its friends.
-> > 
-> > Did I get it right?
-> 
-> Exactly.
+Official patch to fix the r8169 frame length check error.
 
-Very good!!!
+Based on this initial thread:
+http://marc.info/?l=linux-netdev&m=126202972828626&w=1
+This is the official patch to fix the frame length problems in the r8169
+driver.  As noted in the previous thread, while this patch incurs a performance
+hit on the driver, its possible to improve performance dynamically by updating
+the mtu and rx_copybreak values at runtime to return performance to what it was
+for those NICS which are unaffected by the ideosyncracy (if there are any).
 
-							Thanx, Paul
+Summary:
+
+    A while back Eric submitted a patch for r8169 in which the proper
+allocated frame size was written to RXMaxSize to prevent the NIC from dmaing too
+much data.  This was done in commit fdd7b4c3302c93f6833e338903ea77245eb510b4.  A
+long time prior to that however, Francois posted
+126fa4b9ca5d9d7cb7d46f779ad3bd3631ca387c, which expiclitly disabled the MaxSize
+setting due to the fact that the hardware behaved in odd ways when overlong
+frames were received on NIC's supported by this driver.  This was mentioned in a
+security conference recently:
+http://events.ccc.de/congress/2009/Fahrplan//events/3596.en.html
+
+It seems that if we can't enable frame size filtering, then, as Eric correctly
+noticed, we can find ourselves DMA-ing too much data to a buffer, causing
+corruption.  As a result is seems that we are forced to allocate a frame which
+is ready to handle a maximally sized receive.
+
+This obviously has performance issues with it, so to mitigate that issue, this
+patch does two things:
+
+1) Raises the copybreak value to the frame allocation size, which should force
+appropriately sized packets to get allocated on rx, rather than a full new 16k
+buffer.
+
+2) This patch only disables frame filtering initially (i.e., during the NIC
+open), changing the MTU results in ring buffer allocation of a size in relation
+to the new mtu (along with a warning indicating that this is dangerous).
+
+Because of item (2), individuals who can't cope with the performance hit (or can
+otherwise filter frames to prevent the bug), or who have hardware they are sure
+is unaffected by this issue, can manually lower the copybreak and reset the mtu
+such that performance is restored easily.
+
+Signed-off-by: Neil Horman <nhorman@redhat.com>
+
+
+ r8169.c |   29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 964305c..1db95d4 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -187,7 +187,12 @@ static DEFINE_PCI_DEVICE_TABLE(rtl8169_pci_tbl) = {
+ 
+ MODULE_DEVICE_TABLE(pci, rtl8169_pci_tbl);
+ 
+-static int rx_copybreak = 200;
++/*
++ * we set our copybreak very high so that we don't have
++ * to allocate 16k frames all the time (see note in
++ * rtl8169_open()
++ */
++static int rx_copybreak = 16383;
+ static int use_dac = -1;
+ static struct {
+ 	u32 msg_enable;
+@@ -3254,9 +3259,13 @@ static void __devexit rtl8169_remove_one(struct pci_dev *pdev)
+ }
+ 
+ static void rtl8169_set_rxbufsize(struct rtl8169_private *tp,
+-				  struct net_device *dev)
++				  unsigned int mtu)
+ {
+-	unsigned int max_frame = dev->mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
++	unsigned int max_frame = mtu + VLAN_ETH_HLEN + ETH_FCS_LEN;
++
++	if (max_frame != 16383)
++		printk(KERN_WARNING "WARNING! Changing of MTU on this NIC"
++			"May lead to frame reception errors!\n");
+ 
+ 	tp->rx_buf_sz = (max_frame > RX_BUF_SIZE) ? max_frame : RX_BUF_SIZE;
+ }
+@@ -3269,7 +3278,17 @@ static int rtl8169_open(struct net_device *dev)
+ 
+ 	pm_runtime_get_sync(&pdev->dev);
+ 
+-	rtl8169_set_rxbufsize(tp, dev);
++	/*
++	 * Note that we use a magic value here, its wierd I know
++	 * its done because, some subset of rtl8169 hardware suffers from
++	 * a problem in which frames received that are longer than
++	 * the size set in RxMaxSize register return garbage sizes
++	 * when received.  To avoid this we need to turn off filtering,
++	 * which is done by setting a value of 16383 in the RxMaxSize register
++	 * and allocating 16k frames to handle the largest possible rx value
++	 * thats what the magic math below does.
++	 */
++	rtl8169_set_rxbufsize(tp, 16383 - VLAN_ETH_HLEN - ETH_FCS_LEN);
+ 
+ 	/*
+ 	 * Rx and Tx desscriptors needs 256 bytes alignment.
+@@ -3929,7 +3948,7 @@ static int rtl8169_change_mtu(struct net_device *dev, int new_mtu)
+ 
+ 	rtl8169_down(dev);
+ 
+-	rtl8169_set_rxbufsize(tp, dev);
++	rtl8169_set_rxbufsize(tp, dev->mtu);
+ 
+ 	ret = rtl8169_init_ring(dev);
+ 	if (ret < 0)
