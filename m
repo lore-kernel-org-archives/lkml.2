@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab0C2Q5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 12:57:17 -0400
-Received: from mga14.intel.com ([143.182.124.37]:21578 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753202Ab0C2Q5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 12:57:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.51,329,1267430400"; 
-   d="scan'208";a="259896168"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Bjorn Helgaas" <bjorn.helgaas@hp.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: lots of "bridge window ... (disabled)" messages
-Date: Mon, 29 Mar 2010 09:57:16 -0700
-Message-Id: <4bb0dbec213331313b@agluck-desktop.sc.intel.com>
+	id S1755011Ab0C2Q5j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 12:57:39 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1090 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754606Ab0C2Q5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 12:57:37 -0400
+Message-ID: <4BB0DBFD.30904@hp.com>
+Date: Mon, 29 Mar 2010 09:57:33 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; HP-UX 9000/785; en-US; rv:1.7.13) Gecko/20060601
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: michal.simek@petalogix.com
+CC: LKML <linux-kernel@vger.kernel.org>,
+       John Williams <john.williams@petalogix.com>, netdev@vger.kernel.org,
+       Grant Likely <grant.likely@secretlab.ca>,
+       John Linn <John.Linn@xilinx.com>,
+       "Steven J. Magnani" <steve@digidescorp.com>,
+       Arnd Bergmann <arnd@arndb.de>, akpm@linux-foundation.org
+Subject: Re: Network performance - iperf
+References: <4BB09021.6020202@petalogix.com> <4BB0D9A1.3090107@hp.com>
+In-Reply-To: <4BB0D9A1.3090107@hp.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+Rick Jones wrote:
+> I don't know how to set fixed socket buffer sizes in iperf, if you were 
+> running netperf though I would suggest fixing the socket buffer sizes 
+> with the test-specific -s (affects local) and -S (affects remote) options:
+> 
+> netperf -t TCP_STREAM -H <remote> -l 30 -- -s 32K -S 32K -m 32K
+> 
+> to test the hypothesis that the autotuning of the socket buffers/window 
+> size is allowing the windows to grow in the larger memory cases beyond 
+> what the TLB in your processor is comfortable with.
 
-I just booted Linus latest git tree on my Tukwila system. I'm
-seeing a lot of bridge windows marked as disabled. Here's the
-start of a diff of dmesg output comparing a kernel from last
-week to today's kernel (git 01e7770 vs. b72c409):
+BTW, by default, netperf will allocate a "ring" of send buffers - the number 
+allocated will be one more than the socket buffer size divided by the send size 
+- so in the example above, there will be two 32KB buffers allocated in netperf's 
+send ring.  A similar calculation may happen on the receive side.
 
-< pci 0000:00:01.0:   bridge window [mem 0xfff00000 - 000fffff pref] reg reading
----
-> pci 0000:00:01.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
-222,224c222,224
-< pci 0000:00:03.0:   bridge window [io  f000 - 0000] reg reading
-< pci 0000:00:03.0:   bridge window [mem 0xfff00000 - 0x000fffff] reg reading
-< pci 0000:00:03.0:   bridge window [mem 0xfff00000 - 000fffff pref] reg reading
----
-> pci 0000:00:03.0:   bridge window [io  0xf000-0x0000] (disabled)
-> pci 0000:00:03.0:   bridge window [mem 0xfff00000-0x000fffff] (disabled)
-> pci 0000:00:03.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
-233c233
-< pci 0000:00:05.0:   bridge window [mem 0xfff00000 - 000fffff pref] reg reading
----
-> pci 0000:00:05.0:   bridge window [mem 0xfff00000-0x000fffff pref] (disabled)
+That can be controlled via the global (before the "--") -W option.
 
-   ... many more such diffs.
+     -W send,recv      Set the number of send,recv buffers
 
-This is the same system that you helped out with a couple of months
-ago that had some issues in _CRS tables with ranges marked as
-"consumer".  The BIOS team fixed the one range that was needed
-to allow access to my EHCI - but they didn't touch anything else.
+So, you might make the netperf command:
 
-Are these new checks related to the same sort of issues in _CRS?
-Or is this some other stuff?  I don't appear to have lost access
-to any devices in today's kernel.
+netperf -t TCP_STREAM -H <remote> -l 30 -W 1,1 -- -s 32K -S 32K -m 32K
 
--Tony
+happy benchmarking,
+
+rick jones
