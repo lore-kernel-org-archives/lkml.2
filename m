@@ -1,40 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab0C2JNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 05:13:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:44950 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab0C2JM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 05:12:59 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Nick Piggin <npiggin@suse.de>
-Subject: Re: Is module refcounting racy?
-Date: Mon, 29 Mar 2010 19:42:56 +1030
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1755096Ab0C2JO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 05:14:27 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:61021 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab0C2JOZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 05:14:25 -0400
+Date: Mon, 29 Mar 2010 12:12:41 +0300
+From: Ozgur Yuksel <ozgur.yuksel@oracle.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Yinghai Lu <yinghai@kernel.org>, Dmitry Torokhov <dtor@mail.ru>,
+       bugzilla-daemon@bugzilla.kernel.org, bugme-daemon@bugzilla.kernel.org,
        linux-kernel@vger.kernel.org
-References: <20100318105533.GE25636@laptop>
-In-Reply-To: <20100318105533.GE25636@laptop>
+Subject: Re: [Bugme-new] [Bug 15621] New: BUG: unable to handle kernel
+ paging request - comm: pccardd
+Message-ID: <20100329091241.GA3237@oracle.com>
+References: <bug-15621-10286@https.bugzilla.kernel.org/>
+ <20100324071229.5c42e213.akpm@linux-foundation.org>
+ <201003251051.40453.bjorn.helgaas@hp.com>
+ <20100325170138.GA5424@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201003291942.56706.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100325170138.GA5424@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4BB06F0F.00ED:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Mar 2010 09:25:34 pm Nick Piggin wrote:
-> Hey,
+Thu, Mar 25, 2010 at 06:01:38PM +0100 was the time for Dominik Brodowski to speak thus:
 > 
-> I've been looking at weird and wonderful ways to do scalable refcounting,
-> for the vfs...
+> On Thu, Mar 25, 2010 at 10:51:39AM -0600, Bjorn Helgaas wrote:
+> > > It looks like the iomem_resource tree got wrecked.  Has anyone been
+> > > changing anything in there lately?
+> > 
+> > My pci=use_crs patches change the contents of the iomem_resource tree,
+> > and it's possible they broke some assumptions PCMCIA was making, so
+> > you might see if "pci=nocrs" makes any difference.  If it does, please
+> > attach an acpidump and the entire dmesg logs with and without that option.
 > 
-> Sadly, module refcounting doesn't fit my bill. But as far as I could see,
-> it is racy.
+> ... and /proc/iomem as well as /proc/ioports , please.
+Using pci=nocrs workarounds the problem. For data collection, since the boot
+does not complete without the w/a - only dmesg is available. 
 
-Other than for advisory purposes, the refcount is only checked against zero
-under stop_machine.  For exactly this reason.
+With pci=nocrs, accessing /proc/iomem gets killed by kernel for some reason.
 
-Hope that helps,
-Rusty.
+/proc/iomem /proc/ioports and acpidump are provided for 2.6.31-20-generic-pae
+kernel for convenience / comparison.
