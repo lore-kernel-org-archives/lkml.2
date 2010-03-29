@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0C2PhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 11:37:11 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:48629 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0C2PhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 11:37:08 -0400
-Date: Mon, 29 Mar 2010 17:37:02 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 12/12] kernel/trace: Add missing unlock
-Message-ID: <Pine.LNX.4.64.1003291736440.21896@ask.diku.dk>
+	id S1753881Ab0C2Pk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 11:40:58 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41507 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab0C2Pk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 11:40:56 -0400
+Date: Mon, 29 Mar 2010 17:41:32 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] perf, probe-finder: Build fix on Debian
+Message-ID: <20100329154132.GA16223@aftab>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Building chokes with
 
-In some error handling cases the lock is not unlocked.  The return is
-converted to a goto, to share the unlock at the end of the function.
+In file included from /usr/include/gelf.h:53,
+                 from /usr/include/elfutils/libdw.h:53,
+                 from util/probe-finder.h:61,
+                 from util/probe-finder.c:39:
+/usr/include/libelf.h:98: error: expected specifier-qualifier-list before 'off64_t'
+/usr/include/libelf.h:160: error: expected specifier-qualifier-list before 'off64_t'
+/usr/include/libelf.h:201: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_update'
+/usr/include/libelf.h:207: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getbase'
+/usr/include/libelf.h:305: error: expected declaration specifiers or '...' before 'off64_t'
+/usr/include/libelf.h:317: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'elf_getaroff'
+make: *** [util/probe-finder.o] Error 1
+make: *** Waiting for unfinished jobs....
+rm .perf.dev.null
 
-A simplified version of the semantic patch that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+which is due to the fact that </usr/include/libelf.h> isn't seeing
+off64_t from <sys/types.h>
 
-// <smpl>
-@r exists@
-expression E1;
-identifier f;
-@@
-
-f (...) { <+...
-* spin_lock_irq (E1,...);
-... when != E1
-* return ...;
-...+> }
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- kernel/trace/ring_buffer.c          |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 05a9f83..cd2e1d8 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1201,18 +1201,19 @@ rb_remove_pages(struct ring_buffer_per_cpu *cpu_buffer, unsigned nr_pages)
- 
- 	for (i = 0; i < nr_pages; i++) {
- 		if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
--			return;
-+			goto out;
- 		p = cpu_buffer->pages->next;
- 		bpage = list_entry(p, struct buffer_page, list);
- 		list_del_init(&bpage->list);
- 		free_buffer_page(bpage);
- 	}
- 	if (RB_WARN_ON(cpu_buffer, list_empty(cpu_buffer->pages)))
--		return;
-+		goto out;
- 
- 	rb_reset_cpu(cpu_buffer);
- 	rb_check_pages(cpu_buffer);
- 
-+out:
- 	spin_unlock_irq(&cpu_buffer->reader_lock);
- }
- 
-@@ -1229,7 +1230,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 
- 	for (i = 0; i < nr_pages; i++) {
- 		if (RB_WARN_ON(cpu_buffer, list_empty(pages)))
--			return;
-+			goto out;
- 		p = pages->next;
- 		bpage = list_entry(p, struct buffer_page, list);
- 		list_del_init(&bpage->list);
-@@ -1238,6 +1239,7 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer,
- 	rb_reset_cpu(cpu_buffer);
- 	rb_check_pages(cpu_buffer);
- 
-+out:
- 	spin_unlock_irq(&cpu_buffer->reader_lock);
- }
- 
+This happens on current -git: v2.6.34-rc2-288-gb72c409
+
+ tools/perf/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 8a8f52d..19c34a5 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -508,7 +508,7 @@ ifneq ($(shell sh -c "(echo '\#include <dwarf.h>'; echo '\#include <libdw.h>'; e
+ 	msg := $(warning No libdw.h found or old libdw.h found, disables dwarf support. Please install elfutils-devel/elfutils-dev);
+ 	BASIC_CFLAGS += -DNO_DWARF_SUPPORT
+ else
+-	BASIC_CFLAGS += -I/usr/include/elfutils
++	BASIC_CFLAGS += -I/usr/include/elfutils -D_LARGEFILE64_SOURCE
+ 	EXTLIBS += -lelf -ldw
+ 	LIB_OBJS += util/probe-finder.o
+ endif
+-- 
+1.5.6.5
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+--
+Advanced Micro Devices, Inc.
+Operating Systems Research Center
