@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754094Ab0C2VvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 17:51:24 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35867 "EHLO gate.crashing.org"
+	id S1754135Ab0C2Vvq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 17:51:46 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:54354 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab0C2VvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 17:51:21 -0400
-Subject: Re: [PATCH 07/31] lmb: Add reserve_lmb/free_lmb
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: michael@ellerman.id.au
-Cc: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1269865322.24620.42.camel@concordia>
-References: <1269830604-26214-1-git-send-email-yinghai@kernel.org>
-	 <1269830604-26214-8-git-send-email-yinghai@kernel.org>
-	 <1269865322.24620.42.camel@concordia>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 30 Mar 2010 08:49:53 +1100
-Message-ID: <1269899393.7101.34.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1752527Ab0C2Vvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Mar 2010 17:51:45 -0400
+Date: Mon, 29 Mar 2010 14:51:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+       dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       abogani@texware.it, menage@google.com, lizf@cn.fujitsu.com
+Subject: Re: [PATCH tip/core/urgent] rcu: protect fork-time cgroup access
+Message-ID: <20100329215138.GP2569@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100329211525.GA17703@linux.vnet.ibm.com>
+ <1269897564.12097.372.camel@laptop>
+ <20100329212932.GO2569@linux.vnet.ibm.com>
+ <20100329213405.GA18143@linux.vnet.ibm.com>
+ <1269898975.12097.380.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1269898975.12097.380.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-03-29 at 23:22 +1100, Michael Ellerman wrote:
-> ^ This is (sort of) what lmb.rmo_size represents. So maybe instead of
-> adding this function, we could just say that the arch code needs to set
-> rmo_size up with an appropriate value, and then use that below. Though
-> maybe that's conflating things. 
+On Mon, Mar 29, 2010 at 11:42:55PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-03-29 at 14:34 -0700, Paul E. McKenney wrote:
+> 
+> > And it appears that my patch is at best insufficient:
+> > http://paste.ubuntu.com/406189/
+> > 
+> > Left to myself, I would wrap copy_process() with rcu_read_lock(),
+> > but I would rather hear your thoughts before doing too much more
+> > semi-random hacking.  ;-)
+> 
+> Well, I don't think you can get away with that, copy_process() wants to
+> sleep on quite a few places ;-) Also, locks should be taken at the
+> smallest possible scope, unless we want to go back to BKL style
+> locking :-)
 
-Well... not quite.
+No argument here!  ;-)
 
-The RMO (which really is the RMA, historical misnaming) is the region of
-memory we can access very early during boot (in real mode on ppc64 but
-I plan to use it to represent the boot-time fixed mapping on ppc32 at
-some stage). It's not strictly equivalent to max lowmem. However, on
-ppc64, it happens to be the size of the first added LMB entry/
+> As to that freezer splat, you'd have to chase down the cgroup folks, I'm
+> fully ignorant on that.
 
-In any case, the LMBs should really not care. They allocate where you
-tell them to. 
+K, adding them to CC.  The two splats are:
 
-IE. That stuff is arch specific enough that I suspect we should just
-move it out, while the concept of max_lowmem is common enough (at least
-for 32-bit archs) that I'm happy to have some provisions for it inside
-the LMB core.
+	http://pastebin.ubuntu.com/406131/
+	http://paste.ubuntu.com/406189/
 
-Maybe what we need is an arch call to set the allocation "limit". It
-could be set in stages during boot. To the initial mapped memory (bolted
-TLB) on ppc32 very early, and then pushed up to max_low_pfn as soon as
-the full MMU setup is done for example. IE. All we need is an
-lmb_set_alloc_limit() called by the arch in the right spots, that
-defines the default allocation limit for lmb_alloc() though of course
-lmb_alloc_base() can be used by callers to enforce explicit limits.
+Some additional RCU protection is required, or perhaps some suppression
+of false positives.  Thoughts?
 
-Cheers,
-Ben.
+> For the set_task_rq() one, I'm afraid someone (which again I'm afraid
+> will be me) will have to look into how the task_group muck ties into the
+> cgroup muck as I think the original authors of that ran off :/
 
+Sigh!
 
+							Thanx, Paul
