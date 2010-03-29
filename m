@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab0C2S2Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 14:28:25 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47180 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751240Ab0C2S2W (ORCPT
+	id S1752022Ab0C2S2X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 14:28:23 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57076 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751045Ab0C2S2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Mar 2010 14:28:22 -0400
-Date: Mon, 29 Mar 2010 19:29:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Giel van Schijndel <me@mortis.eu>,
-       Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] resource: shared I/O region support
-Message-ID: <20100329192957.0aa66eaa@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100329110633.702e3874@jbarnes-piketon>
-References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
-	<1269523063-30346-1-git-send-email-me@mortis.eu>
-	<20100325155705.1ec79dbc@lxorguk.ukuu.org.uk>
-	<20100325180347.GA2761@salidar.me.mortis.eu>
-	<20100325181633.0313b8a5@lxorguk.ukuu.org.uk>
-	<20100329081834.GB27956@salidar.me.mortis.eu>
-	<20100329090713.1317942b@jbarnes-piketon>
-	<20100329173800.GA3583@salidar.me.mortis.eu>
-	<4BB0E73F.2080104@zytor.com>
-	<20100329110633.702e3874@jbarnes-piketon>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.18.6; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Date: Mon, 29 Mar 2010 20:27:36 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Stanislav Brabec <utx@penguin.cz>
+Cc: Andy Green <andy@warmcat.com>, Eric Miao <eric.y.miao@gmail.com>,
+       dbaryshkov@gmail.com, Cyril Hrubis <metan@ucw.cz>, arminlitzel@web.de,
+       kernel list <linux-kernel@vger.kernel.org>, Dirk@opfer-online.de,
+       lenz@cs.wisc.edu, rpurdie@rpsys.net,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       thommycheck@gmail.com, zaurus-devel@www.linuxtogo.org,
+       omegamoon@gmail.com
+Subject: Re: bit errors on spitz
+Message-ID: <20100329182736.GA1373@ucw.cz>
+References: <20100305212708.GC21773@elf.ucw.cz> <f17812d71003072137u51be17a1ie3e50e30dea16f77@mail.gmail.com> <20100308072858.GA29939@atrey.karlin.mff.cuni.cz> <20100308082530.GA1982@atrey.karlin.mff.cuni.cz> <4B98EF5D.5000609@warmcat.com> <1268322155.3990.114.camel@hammer.suse.cz> <4B995EE1.1050609@warmcat.com> <1268384824.4963.35.camel@utx.utx.cz> <20100321204335.GM1933@elf.ucw.cz> <1269207753.13196.53.camel@utx.utx.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1269207753.13196.53.camel@utx.utx.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well that does keep it simple, and with just one user that's probably
-> best.
+On Sun 2010-03-21 22:42:33, Stanislav Brabec wrote:
+> Pavel Machek píše v Ne 21. 03. 2010 v 21:43 +0100:
+> > On Fri 2010-03-12 10:07:04, Stanislav Brabec wrote:
 > 
-> But why not use the common bus driver method?  Muxing at the resource
-> level only seems to solve part of the problem...  It doesn't guarantee
-> for example that driver A does something to a shared region that breaks
-> driver B; it just makes sure they don't access the same region at the
-> same time.
+> > > > > Good tip. It seems that nobody ported driver for the voltage control
+> > > > > chip ISL6271 from 2.4 kernel, and bootloader probably does not set
+> > > > > correct values.
+> > 
+> > Are we sure about this one? If we have wrong voltages on various
+> > parts, that kind-off explains it.
+> > 
+> > Would it be possible to measure (Voltmeter) difference between 2.4
+> > kernel and 2.6 kernel?
+> 
+> If you are ready to run Zaurus in dismantled state, then yes. Measure on
+> the upper pin of the large coil in the center of the
+> http://www.penguin.cz/~utx/zaurus/pcbt_uc.jpg image or on the testpoint
+> nearby (probably to the right).
 
-The obvious reason for not doing that kind of grand over-engineering is
-that you are assuming the devices involved are remotely related. On quite
-a few systems we have a collection of superio config interfaces on random
-low ports all with their own lock/unlock rituals. They range from
-parallel devices to watchdogs and god knows what else. Right now we have
-various bits of driver code (parport is a good one) that exist on a cross
-fingers, pray and poke model. It would be nice to fix that.
+I'm not comfortable dismantling it :-(.
 
-For most super I/O devices the muxing is basically a glorified chip select
-line. There isn't any structure to impose over it. Where you have
-structure there are better ways to do it, but one does not exclude the
-other.
+> Alternatively, it is possible to write a driver. It is just one byte
+> write and one byte read via I2C.
 
-Alan
+Do you know what byte it is? That sounds easy enough...
+
+But I have small problem now -- zaurus seems to work mostly fine
+now. Does it depend on temperature, or what? Tried mtest,
+nothing. Tried compiling kernel, ok... Will try few more times...
+
+								Pavel
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
