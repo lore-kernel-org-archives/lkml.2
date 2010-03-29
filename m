@@ -1,71 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab0C2MEh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Mar 2010 08:04:37 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55663 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab0C2MEf (ORCPT
+	id S1752168Ab0C2MGK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Mar 2010 08:06:10 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:38349 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970Ab0C2MGG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Mar 2010 08:04:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4BB09736.5010009@jp.fujitsu.com>
-Date: Mon, 29 Mar 2010 21:04:06 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Mon, 29 Mar 2010 08:06:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=EUkEp+VYT44+MGKuPlJ0csanYjKfK/7FJeNIIdwMC4TXB9H9gWyR3N1aqRKw8Zeb6A
+         A51SsYdzqGKa8q4LwFtgw+zhPL6su8qT2dfVgFulpEYkM/KQ8oOlLJ2JJwF0yG+4L4C9
+         Uuul6fG4xonwsOMcrJWExd7jW8IghqGFMc94I=
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: =?UTF-8?B?VMO2csO2ayBFZHdpbg==?= <edwintorok@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: scheduler bug: process running since 5124095h
-References: <4BADD408.8080609@gmail.com>  <4BAF1802.8070002@gmail.com> <1269859960.6844.4.camel@marge.simson.net>
-In-Reply-To: <1269859960.6844.4.camel@marge.simson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100329114046.GB16971@redhat.com>
+References: <1269812331-8511-1-git-send-regression-fweisbec@gmail.com>
+	 <20100329114046.GB16971@redhat.com>
+Date: Mon, 29 Mar 2010 14:06:03 +0200
+Message-ID: <520f0cf11003290506o629c9ab6n95c94c48ba24acf4@mail.gmail.com>
+Subject: Re: [PATCH] ptrace: kill BKL in ptrace syscall
+From: John Kacur <jkacur@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       Arnd Bergmann <arnd@arndb.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/03/29 19:52), Mike Galbraith wrote:
-> On Sun, 2010-03-28 at 11:49 +0300, TÃ¶rÃ¶k Edwin wrote:
->> On 03/27/2010 11:46 AM, TÃ¶rÃ¶k Edwin wrote:
->>> Hi Ingo, Peter,
->>>
->>> top has just shown me this:
->>> PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
->>>
->>>                                                                  6524
->>> edwin     20   0  228m  10m 8116 R    2  0.3  5124095h gkrellm
->>>
->>> Now obviously that process is not running since 5124095h!
->>> It looks like some overflow to me, the time in nanoseconds would be
->>> approx 0xFFFFFE1D2D476000, which is approx. minus 34 minutes.
->>> Thats about consistent with the uptime, but I don't know why it became
->>> negative:
->>>  11:45:48 up 42 min,  9 users,  load average: 0.56, 0.25, 0.19
->>>
->>> I've attached the cfs-debug-info.sh output.
->>>
->>> This happens when using Linux 2.6.33 (actually glisse's drm-radeon tree
->>> which is based on 2.6.33), its the first time I noticed this.
->>>
->>> I don't know what caused it, the last things I did was:
+On Mon, Mar 29, 2010 at 1:40 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/28, Frederic Weisbecker wrote:
 >>
->> I have a simple way to reproduce this:
->> 1. Boot the system, run top, confirm everything is normal
->> 2. Run latencytop, and quit (I used version 0.5)
->> 3. Run top, see 5124095h in the TIME column
-> 
-> Indeed, and I don't even have CONFIG_LATENCYTOP set.  It bisected to...
-> 
-> 761b1d26df542fd5eb348837351e4d2f3bc7bffe is the first bad commit
-> commit 761b1d26df542fd5eb348837351e4d2f3bc7bffe
-> Author: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Date:   Thu Nov 12 13:33:45 2009 +0900
+>> From: Arnd Bergmann <arnd@arndb.de>
+>>
+>> The comment suggests that this usage is stale. There is no bkl in the
+>> exec path so if there is a race lurking there, the bkl in ptrace is
+>> not going to help in this regard.
+>
+> I never understood this comment too, and I do not see any potentional
+> races bkl could prevent.
+>
+>> Overview of the possibility of "accidental" races this bkl might
+>> protect:
+>>
+>> - ptrace_traceme() is protected against task removal and concurrent
+>> read/write on current->ptrace as it locks write tasklist_lock.
+>>
+>> - arch_ptrace_attach() is serialized by ptrace_traceme() against
+>> concurrent PTRACE_TRACEME or PTRACE_ATTACH
+>>
+>> - ptrace_attach() is protected the same way ptrace_traceme() and
+>> in turn serializes arch_ptrace_attach()
+>>
+>> - ptrace_check_attach() does its own well described serializing too.
+>>
+>> There is no obvious race here.
+>
+> Yes, nothing inside sys_ptrace() pathes relies on bkl, and all recent
+> changes were done assuming that lock_kernel() doesn't exist.
+>
+> I think the patch is correct.
+>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
+>
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> ---
+>>  kernel/ptrace.c |   10 ----------
+>>  1 files changed, 0 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+>> index 42ad8ae..5357502 100644
+>> --- a/kernel/ptrace.c
+>> +++ b/kernel/ptrace.c
+>> @@ -666,10 +666,6 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+>>       struct task_struct *child;
+>>       long ret;
+>>
+>> -     /*
+>> -      * This lock_kernel fixes a subtle race with suid exec
+>> -      */
+>> -     lock_kernel();
+>>       if (request == PTRACE_TRACEME) {
+>>               ret = ptrace_traceme();
+>>               if (!ret)
+>> @@ -703,7 +699,6 @@ SYSCALL_DEFINE4(ptrace, long, request, long, pid, long, addr, long, data)
+>>   out_put_task_struct:
+>>       put_task_struct(child);
+>>   out:
+>> -     unlock_kernel();
+>>       return ret;
+>>  }
+>>
+>> @@ -813,10 +808,6 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+>>       struct task_struct *child;
+>>       long ret;
+>>
+>> -     /*
+>> -      * This lock_kernel fixes a subtle race with suid exec
+>> -      */
+>> -     lock_kernel();
+>>       if (request == PTRACE_TRACEME) {
+>>               ret = ptrace_traceme();
+>>               goto out;
+>> @@ -846,7 +837,6 @@ asmlinkage long compat_sys_ptrace(compat_long_t request, compat_long_t pid,
+>>   out_put_task_struct:
+>>       put_task_struct(child);
+>>   out:
+>> -     unlock_kernel();
+>>       return ret;
+>>  }
+>>  #endif       /* CONFIG_COMPAT */
+>> --
+>> 1.6.2.3
+>>
 
-Wow, it's easy to reproduce. I'll check it later... 
+So, just to be clear about this particular patch, who is queuing it up
+to send to Linus? Would that be you Oleg, as a ptrace maintainer?
 
-
-Thanks,
-H.Seto
-
+Thanks
